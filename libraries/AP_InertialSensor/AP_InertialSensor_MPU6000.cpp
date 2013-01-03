@@ -313,50 +313,57 @@ float AP_InertialSensor_MPU6000::temperature() {
  * We use the data ready pin if it is available.  Otherwise, read the
  * status register.
  */
-bool AP_InertialSensor_MPU6000::data_ready()
+bool AP_InertialSensor_MPU6000::_data_ready()
 {
     if (_drdy_pin) {
         return _drdy_pin->read() != 0;
     } else {
-        uint8_t status = register_read(MPUREG_INT_STATUS);
-        return (status & BIT_RAW_RDY_INT) != 0;
+        uint8_t status;
+        bool success = _register_read_from_timerprocess(MPUREG_INT_STATUS,
+                &status);
+        return success && (status & BIT_RAW_RDY_INT) != 0;
     }
 }
 
 /**
  * Timer process to poll for new data from the MPU6000.
  */
-void AP_InertialSensor_MPU6000::poll_data(uint32_t now)
+void AP_InertialSensor_MPU6000::_poll_data(uint32_t now)
 {
-    if (data_ready()) {
+    if (_data_ready()) {
         _last_sample_time_micros = now;
-        read_data();
+        _read_data_from_timerprocess();
     }
 }
 
 /*
- *  this is called from the num_samples_available() when the MPU6000
- *  has new sensor data available and add it to _sum[] to ensure this
- *  is the case, these other devices must perform their spi reads
+ *  this is called from the _poll_data, in the timer process context.
+ *  when the MPU6000 has new sensor data available and add it to _sum[] to
+ *  ensure this is the case, these other devices must perform their spi reads
  *  after being called by the AP_TimerProcess.
  */
-void AP_InertialSensor_MPU6000::read_data(void)
+void AP_InertialSensor_MPU6000::_read_data_from_timerprocess()
 {
     static int semfail_ctr = 0;
-    if (_spi_sem) {
-        bool got = _spi_sem->get((void*)&_spi_sem);
-        if (!got) { 
-            semfail_ctr++;
-            if (semfail_ctr > 100) {
-                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
-                            "100 times in AP_InertialSensor_MPU6000::read"));
-            }
-            return;
-        } else {
-            semfail_ctr = 0;
-        }   
-    }
+    bool got = _spi_sem->take_nonblocking();
+    if (!got) { 
+        semfail_ctr++;
+        if (semfail_ctr > 100) {
+            hal.scheduler->panic(PSTR("PANIC: failed to take SPI semaphore "
+                        "100 times in AP_InertialSensor_MPU6000::"
+                        "_read_data_from_timerprocess"));
+        }
+        return;
+    } else {
+        semfail_ctr = 0;
+    }   
 
+    _read_data_transaction();
+
+    _spi_sem->give();
+}
+
+void AP_InertialSensor_MPU6000::_read_data_transaction() {
     /* one resister address followed by seven 2-byte registers */
     uint8_t tx[15];
     uint8_t rx[15];
@@ -380,17 +387,20 @@ void AP_InertialSensor_MPU6000::read_data(void)
             FIFO_getPacket();
         }
     }
-
-    if (_spi_sem) {
-        bool released = _spi_sem->release((void*)&_spi_sem);
-        if (!released) {
-            hal.scheduler->panic(PSTR("PANIC: _spi_sem release failed in "
-                        "AP_InertialSensor_MPU6000::read"));
-        }   
-    }
 }
 
-uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
+bool AP_InertialSensor_MPU6000::_register_read_from_timerprocess(
+        uint8_t reg , uint8_t *result )
+{
+    if (!_spi_sem->take_nonblocking()) {
+        return false;
+    }
+    *result = _register_read(reg);
+    _spi_sem->give();
+    return true;
+}
+
+uint8_t AP_InertialSensor_MPU6000::_register_read( uint8_t reg )
 {
     uint8_t addr = reg | 0x80; // Set most significant bit
 
@@ -438,7 +448,7 @@ reset_chip:
         hal.scheduler->delay(5);
 
         // check it has woken up
-        if (register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
+        if (_register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
             break;
         }
     }
@@ -515,7 +525,7 @@ reset_chip:
     hal.scheduler->delay(1);
 
     // read the product ID rev c has 1/2 the sensitivity of rev d
-    _mpu6000_product_id = register_read(MPUREG_PRODUCT_ID);
+    _mpu6000_product_id = _register_read(MPUREG_PRODUCT_ID);
     //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
 
     if ((_mpu6000_product_id == MPU6000ES_REV_C4) || (_mpu6000_product_id == MPU6000ES_REV_C5) ||
@@ -541,7 +551,7 @@ reset_chip:
     // wait for enough time that we should get a sample
     hal.scheduler->delay(msec_per_sample+2);
 
-    if (!data_ready()) {
+    if (!_data_ready()) {
         // we didn't get a sample - run the whole chip setup
         // again. This sometimes happens after a DTR reset or warm
         // boot of the board
@@ -549,12 +559,20 @@ reset_chip:
         goto reset_chip;
     }
 
-    // read the first lot of data
+    /* read the first lot of data.
+     * _read_data_transaction requires the spi semaphore to be taken by
+     * its caller. */
+    if (!_spi_sem->take(20)) {
+        hal.scheduler->panic(PSTR("PANIC: could not take _spi_sem to read "
+                    "first MPU6000 sample"));
+        return; /* never reached */
+    }
     _last_sample_time_micros = hal.scheduler->micros();
-    read_data();
+    _read_data_transaction();
+    _spi_sem->give();
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(poll_data);
+    hal.scheduler->register_timer_process(_poll_data);
 
 #if MPU6000_DEBUG
     _dump_registers();
@@ -587,7 +605,7 @@ uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 void AP_InertialSensor_MPU6000::_dump_registers(void)
 {
     for (uint8_t reg=25; reg<=108; reg++) {
-        uint8_t v = register_read(reg);
+        uint8_t v = _register_read(reg);
         hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
         if ((reg - 24) % 16 == 0) {
             hal.console->println();
@@ -630,21 +648,21 @@ void AP_InertialSensor_MPU6000::set_dmp_gyro_offsets(int16_t offsetX, int16_t of
 
     if (offsetX != 0) {
         // Read actual value
-        aux_int = (register_read(MPUREG_XG_OFFS_USRH)<<8) | register_read(MPUREG_XG_OFFS_USRL);
+        aux_int = (_register_read(MPUREG_XG_OFFS_USRH)<<8) | _register_read(MPUREG_XG_OFFS_USRL);
         aux_int -= offsetX<<1;           // Adjust to internal units
         // Write to MPU registers
         register_write(MPUREG_XG_OFFS_USRH, (aux_int>>8)&0xFF);
         register_write(MPUREG_XG_OFFS_USRL, aux_int&0xFF);
     }
     if (offsetY != 0) {
-        aux_int = (register_read(MPUREG_YG_OFFS_USRH)<<8) | register_read(MPUREG_YG_OFFS_USRL);
+        aux_int = (_register_read(MPUREG_YG_OFFS_USRH)<<8) | _register_read(MPUREG_YG_OFFS_USRL);
         aux_int -= offsetY<<1;           // Adjust to internal units
         // Write to MPU registers
         register_write(MPUREG_YG_OFFS_USRH, (aux_int>>8)&0xFF);
         register_write(MPUREG_YG_OFFS_USRL, aux_int&0xFF);
     }
     if (offsetZ != 0) {
-        aux_int = (register_read(MPUREG_ZG_OFFS_USRH)<<8) | register_read(MPUREG_ZG_OFFS_USRL);
+        aux_int = (_register_read(MPUREG_ZG_OFFS_USRH)<<8) | _register_read(MPUREG_ZG_OFFS_USRL);
         aux_int -= offsetZ<<1;           // Adjust to internal units
         // Write to MPU registers
         register_write(MPUREG_ZG_OFFS_USRH, (aux_int>>8)&0xFF);
@@ -783,8 +801,8 @@ void AP_InertialSensor_MPU6000::dmp_reset()
 // New data packet in FIFO?
 bool AP_InertialSensor_MPU6000::FIFO_ready()
 {
-    _fifoCountH = register_read(MPUREG_FIFO_COUNTH);
-    _fifoCountL = register_read(MPUREG_FIFO_COUNTL);
+    _fifoCountH = _register_read(MPUREG_FIFO_COUNTH);
+    _fifoCountL = _register_read(MPUREG_FIFO_COUNTL);
     if(_fifoCountL == FIFO_PACKET_SIZE) {
         return 1;
     }
@@ -799,7 +817,7 @@ bool AP_InertialSensor_MPU6000::FIFO_ready()
 void AP_InertialSensor_MPU6000::FIFO_reset()
 {
     uint8_t temp;
-    temp = register_read(MPUREG_USER_CTRL);
+    temp = _register_read(MPUREG_USER_CTRL);
     temp = temp | BIT_USER_CTRL_FIFO_RESET;             // FIFO RESET BIT
     register_write(MPUREG_USER_CTRL, temp);
 }
