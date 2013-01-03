@@ -57,19 +57,24 @@ uint8_t AP_Baro_MS5611::_state;
 uint32_t AP_Baro_MS5611::_timer;
 bool volatile AP_Baro_MS5611::_updated;
 
-AP_HAL::SPIDeviceDriver* AP_Baro_MS5611::_spi = NULL;
-AP_HAL::Semaphore* AP_Baro_MS5611::_spi_sem = NULL;
+AP_Baro_MS5611_Serial* AP_Baro_MS5611::_serial = NULL;
+AP_Baro_MS5611_SPI AP_Baro_MS5611::spi;
+AP_Baro_MS5611_I2C AP_Baro_MS5611::i2c;
 
-uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
+// SPI Device //////////////////////////////////////////////////////////////////
+
+void AP_Baro_MS5611_SPI::init()
 {
-    uint8_t tx[2];
-    uint8_t rx[2];
-    tx[0] = reg; tx[1] = 0;
-    _spi->transaction(tx, rx, 2);
-    return rx[1];
+    _spi = hal.spi->device(AP_HAL::SPIDevice_MS5611);
+    if (_spi == NULL) {
+        hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 could not get "
+                    "valid SPI device driver!"));
+        return;
+    }
+    _spi_sem = _spi->get_semaphore();
 }
 
-uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
+uint16_t AP_Baro_MS5611_SPI::read_16bits(uint8_t reg)
 {
     uint8_t tx[3];
     uint8_t rx[3];
@@ -78,7 +83,7 @@ uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
     return ((uint16_t) rx[1] << 8 ) | ( rx[2] );
 }
 
-uint32_t AP_Baro_MS5611::_spi_read_adc()
+uint32_t AP_Baro_MS5611_SPI::read_adc()
 {
     uint8_t tx[4];
     uint8_t rx[4];
@@ -88,42 +93,102 @@ uint32_t AP_Baro_MS5611::_spi_read_adc()
 }
 
 
-void AP_Baro_MS5611::_spi_write(uint8_t reg)
+void AP_Baro_MS5611_SPI::write(uint8_t reg)
 {
     uint8_t tx[1];
     tx[0] = reg;
     _spi->transaction(tx, NULL, 1);
 }
 
+void AP_Baro_MS5611_SPI::sem_get()
+{
+    static int semfail_ctr = 0;
+    if (_spi_sem) {
+        bool got = _spi_sem->get((void*)&_spi_sem);
+        if (!got) {
+            semfail_ctr++;
+            if (semfail_ctr > 100) {
+                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
+                            "100 times in AP_Baro_MS5611::_update"));
+            }
+            return;
+        }
+    }
+}
+
+void AP_Baro_MS5611_SPI::sem_release()
+{
+    if (_spi_sem) {
+        bool released = _spi_sem->release((void*)&_spi_sem);
+        if (!released) {
+            hal.scheduler->panic(PSTR("PANIC: _spi_sem release failed in "
+                        "AP_Baro_MS5611::_update"));
+        }
+    }
+}
+
+// I2C Device //////////////////////////////////////////////////////////////////
+
+/** I2C address of the MS5611 on the PX4 board. */
+#define MS5611_ADDR 0x76
+
+void AP_Baro_MS5611_I2C::init()
+{
+}
+
+uint16_t AP_Baro_MS5611_I2C::read_16bits(uint8_t reg)
+{
+    uint8_t buf[2];
+
+    if (hal.i2c->readRegisters(MS5611_ADDR, reg, sizeof(buf), buf) == 0)
+        return (((uint16_t)(buf[0]) << 8) | buf[1]);
+
+    return 0;
+}
+
+uint32_t AP_Baro_MS5611_I2C::read_adc()
+{
+    uint8_t buf[3];
+
+    if (hal.i2c->readRegisters(MS5611_ADDR, 0x00, sizeof(buf), buf) == 0)
+        return (((uint32_t)buf[0]) << 16) | (((uint32_t)buf[1]) << 8) | buf[2];
+
+    return 0;
+}
+
+void AP_Baro_MS5611_I2C::write(uint8_t reg)
+{
+    hal.i2c->write(MS5611_ADDR, 1, &reg);
+}
+
 // Public Methods //////////////////////////////////////////////////////////////
+
 // SPI should be initialized externally
 bool AP_Baro_MS5611::init()
 {
-    _spi = hal.spi->device(AP_HAL::SPIDevice_MS5611);
-    if (_spi == NULL) {
-        hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 could not get "
-                    "valid SPI device driver!"));
+    if (_serial == NULL) {
+        hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611: NULL serial driver"));
         return false;
     }
-    _spi_sem = _spi->get_semaphore();
 
-    hal.scheduler->suspend_timer_procs();
+    _serial->init();
+    _serial->sem_get();
 
-    _spi_write(CMD_MS5611_RESET);
+    _serial->write(CMD_MS5611_RESET);
     hal.scheduler->delay(4);
 
     // We read the factory calibration
     // The on-chip CRC is not used
-    C1 = _spi_read_16bits(CMD_MS5611_PROM_C1);
-    C2 = _spi_read_16bits(CMD_MS5611_PROM_C2);
-    C3 = _spi_read_16bits(CMD_MS5611_PROM_C3);
-    C4 = _spi_read_16bits(CMD_MS5611_PROM_C4);
-    C5 = _spi_read_16bits(CMD_MS5611_PROM_C5);
-    C6 = _spi_read_16bits(CMD_MS5611_PROM_C6);
+    C1 = _serial->read_16bits(CMD_MS5611_PROM_C1);
+    C2 = _serial->read_16bits(CMD_MS5611_PROM_C2);
+    C3 = _serial->read_16bits(CMD_MS5611_PROM_C3);
+    C4 = _serial->read_16bits(CMD_MS5611_PROM_C4);
+    C5 = _serial->read_16bits(CMD_MS5611_PROM_C5);
+    C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
 
 
     //Send a command to read Temp first
-    _spi_write(CMD_CONVERT_D2_OSR4096);
+    _serial->write(CMD_CONVERT_D2_OSR4096);
     _timer = hal.scheduler->micros();
     _state = 0;
     Temp=0;
@@ -135,7 +200,7 @@ bool AP_Baro_MS5611::init()
     _d2_count = 0;
 
     hal.scheduler->register_timer_process( AP_Baro_MS5611::_update );
-    hal.scheduler->resume_timer_procs();
+    _serial->sem_release();
 
     // wait for at least one value to be read
     uint32_t tstart = hal.scheduler->millis();
@@ -166,25 +231,11 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
         return;
     }
 
-    static int semfail_ctr = 0;
-    if (_spi_sem) {
-        bool got = _spi_sem->get((void*)&_spi_sem);
-        if (!got) {
-            semfail_ctr++;
-            if (semfail_ctr > 100) {
-                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
-                            "100 times in AP_Baro_MS5611::_update"));
-            }
-            return;
-        } else {
-            semfail_ctr = 0;
-        }
-    }
-
+    _serial->sem_get();
     _timer = tnow;
 
     if (_state == 0) {
-        _s_D2 += _spi_read_adc();// On state 0 we read temp
+        _s_D2 += _serial->read_adc();// On state 0 we read temp
         _d2_count++;
         if (_d2_count == 32) {
             // we have summed 32 values. This only happens
@@ -194,9 +245,9 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
             _d2_count = 16;
         }
         _state++;
-        _spi_write(CMD_CONVERT_D1_OSR4096);      // Command to read pressure
+        _serial->write(CMD_CONVERT_D1_OSR4096);      // Command to read pressure
     } else {
-        _s_D1 += _spi_read_adc();
+        _s_D1 += _serial->read_adc();
         _d1_count++;
         if (_d1_count == 128) {
             // we have summed 128 values. This only happens
@@ -209,20 +260,14 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
         // Now a new reading exists
         _updated = true;
         if (_state == 5) {
-            _spi_write(CMD_CONVERT_D2_OSR4096); // Command to read temperature
+            _serial->write(CMD_CONVERT_D2_OSR4096); // Command to read temperature
             _state = 0;
         } else {
-            _spi_write(CMD_CONVERT_D1_OSR4096); // Command to read pressure
+            _serial->write(CMD_CONVERT_D1_OSR4096); // Command to read pressure
         }
     }
 
-    if (_spi_sem) {
-        bool released = _spi_sem->release((void*)&_spi_sem);
-        if (!released) {
-            hal.scheduler->panic(PSTR("PANIC: _spi_sem release failed in "
-                        "AP_Baro_MS5611::_update"));
-        }
-    }
+    _serial->sem_release();
 }
 
 uint8_t AP_Baro_MS5611::read()
