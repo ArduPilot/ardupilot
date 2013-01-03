@@ -34,8 +34,13 @@ public:
     /* PX4 implementations of Print virtual methods */
     size_t write(uint8_t c);
 
+    bool _initialised;
+
 private:
     void _vdprintf(int fd, const char *fmt, va_list ap);
+    uint16_t _rxBufSize;
+    uint16_t _txBufSize;
+    int16_t _rxChar;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__
