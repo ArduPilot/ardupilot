@@ -22,11 +22,14 @@ public:
     /** Write a single byte command. */
     virtual void write(uint8_t reg) = 0;
 
-    /** Acquire the internal semaphore for this device. */
-    virtual void sem_get() {}
+    /** Acquire the internal semaphore for this device.
+     * take_nonblocking should be used from the timer process,
+     * take_blocking from synchronous code (i.e. init) */
+    virtual bool sem_take_nonblocking() { return true; }
+    virtual bool sem_take_blocking() { return true; }
 
     /** Release the internal semaphore for this device. */
-    virtual void sem_release() {}
+    virtual void sem_give() {}
 };
 
 /** SPI serial device. */
@@ -37,8 +40,9 @@ public:
     virtual uint16_t read_16bits(uint8_t reg);
     virtual uint32_t read_adc();
     virtual void write(uint8_t reg);
-    virtual void sem_get();
-    virtual void sem_release();
+    virtual bool sem_take_nonblocking();
+    virtual bool sem_take_blocking();
+    virtual void sem_give();
 
 private:
     AP_HAL::SPIDeviceDriver *_spi;
