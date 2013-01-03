@@ -2,30 +2,37 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include "RCInput.h"
+#include <drivers/drv_hrt.h>
 
 using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
+
+extern uint16_t ppm_buffer[];
+extern unsigned ppm_decoded_channels;
+extern uint64_t ppm_last_valid_decode;
 
 PX4RCInput::PX4RCInput()
 {}
 
 void PX4RCInput::init(void* machtnichts)
 {
-	for (uint8_t i=0; i<PX4_NUM_RCINPUT_CHANNELS; i++) {
-		_override[i] = 1500;
-	}
-	// lower throttle
-	_override[2] = 1000;
+	clear_overrides();
 }
 
 uint8_t PX4RCInput::valid() {
-	return hal.scheduler->millis() - _last_read > 20;
+	return ppm_last_valid_decode != _last_read;
 }
 
 uint16_t PX4RCInput::read(uint8_t ch) {
-	_last_read = hal.scheduler->millis();
-	return _override[ch];
+	_last_read = ppm_last_valid_decode;
+	if (ch >= PX4_NUM_RCINPUT_CHANNELS) {
+		return 0;
+	}
+	if (_override[ch]) {
+		return _override[ch];
+	}
+	return ppm_buffer[ch];
 }
 
 uint8_t PX4RCInput::read(uint16_t* periods, uint8_t len) {
@@ -61,11 +68,9 @@ bool PX4RCInput::set_override(uint8_t channel, int16_t override) {
 
 void PX4RCInput::clear_overrides()
 {
-#if 0
 	for (uint8_t i = 0; i < PX4_NUM_RCINPUT_CHANNELS; i++) {
 		_override[i] = 0;
 	}
-#endif
 }
 
 #endif
