@@ -82,14 +82,19 @@ AP_OpticalFlow_ADNS3080::init()
     _spi = NULL;
 
 finish:
-    // resume timer
-    hal.scheduler->resume_timer_procs();
-
     // if device is working register the global static read function to
     // be called at 1khz
     if( retvalue ) {
         hal.scheduler->register_timer_process( AP_OpticalFlow_ADNS3080::read );
+        _spi_sem = _spi->get_semaphore();
+        if (_spi_sem == NULL) {
+            hal.scheduler->panic(PSTR("PANIC: Got SPI Driver, but did not "
+                        "get valid SPI semaphore in AP_Optflow_ADNS3080"));
+        }
     }
+
+    // resume timer
+    hal.scheduler->resume_timer_procs();
 
     return retvalue;
 }
@@ -100,13 +105,8 @@ uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 {
     if (_spi == NULL) return 0;
 
-    // get spi semaphore if required
-    AP_HAL::Semaphore* sem = _spi->get_semaphore();
-    if( sem != NULL ) {
-        // if failed to get semaphore then just quietly fail
-        if( !sem->get(this) ) {
-            return 0;
-        }
+    if (!_spi_sem->take_nonblocking()) {
+        return 0;
     }
 
     _spi->cs_assert();
@@ -118,10 +118,7 @@ uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 
     _spi->cs_release();
 
-    // get spi semaphore if required
-    if( sem != NULL ) {
-        sem->release(this);
-    }
+    _spi_sem->give();
 
     return result;
 }
@@ -131,13 +128,8 @@ void AP_OpticalFlow_ADNS3080::write_register(uint8_t address, uint8_t value)
 {
     if (_spi == NULL) return;
 
-    AP_HAL::Semaphore* sem = _spi->get_semaphore();
-    // get spi semaphore if required
-    if( sem != NULL ) {
-        // if failed to get semaphore then just quietly fail
-        if( !sem->get(this) ) {
-            return;
-        }
+    if (!_spi_sem->take_nonblocking()) {
+        return;
     }
 
     _spi->cs_assert();
@@ -149,11 +141,8 @@ void AP_OpticalFlow_ADNS3080::write_register(uint8_t address, uint8_t value)
     _spi->transfer(value);
 
     _spi->cs_release();
-    
-    // get spi3 semaphore if required
-    if( sem != NULL ) {
-        sem->release(this);
-    }
+
+    _spi_sem->give();
 }
 
 // reset sensor by holding a pin high (or is it low?) for 10us.

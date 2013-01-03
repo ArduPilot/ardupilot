@@ -158,6 +158,7 @@ private:
 
     // SPI device
     AP_HAL::SPIDeviceDriver *_spi;
+    AP_HAL::Semaphore *_spi_sem;
 };
 
 #endif
