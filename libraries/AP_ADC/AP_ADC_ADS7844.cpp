@@ -180,13 +180,13 @@ float AP_ADC_ADS7844::Ch(uint8_t ch_num)
     // ensure we have at least one value
     while (_count[ch_num] == 0) /* noop */;
 
-    // grab the value with interrupts disabled, and clear the count
-    hal.scheduler->begin_atomic();
+    // grab the value with timer procs disabled, and clear the count
+    hal.scheduler->suspend_timer_procs();
     count = _count[ch_num];
     sum   = _sum[ch_num];
     _count[ch_num] = 0;
     _sum[ch_num]   = 0;
-    hal.scheduler->end_atomic();
+    hal.scheduler->resume_timer_procs();
 
     return ((float)sum)/count;
 }
@@ -221,8 +221,8 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
         while (_count[channel_numbers[i]] == 0) /* noop */;
     }
 
-    // grab the values with interrupts disabled, and clear the counts
-    hal.scheduler->begin_atomic();
+    // grab the values with timer procs disabled, and clear the counts
+    hal.scheduler->suspend_timer_procs();
     for (i=0; i<6; i++) {
         count[i] = _count[channel_numbers[i]];
         sum[i]   = _sum[channel_numbers[i]];
@@ -235,7 +235,7 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, float *result)
     uint32_t ret = _ch6_last_sample_time_micros - _ch6_delta_time_start_micros;
     _ch6_delta_time_start_micros = _ch6_last_sample_time_micros;
 
-    hal.scheduler->end_atomic();
+    hal.scheduler->resume_timer_procs();
 
     // calculate averages. We keep this out of the cli region
     // to prevent us stalling the ISR while doing the

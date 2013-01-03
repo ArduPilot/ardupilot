@@ -264,8 +264,8 @@ bool AP_InertialSensor_MPU6000::update( void )
     // wait for at least 1 sample
     wait_for_sample();
 
-    // disable interrupts for mininum time
-    hal.scheduler->begin_atomic();
+    // disable timer procs for mininum time
+    hal.scheduler->suspend_timer_procs();
     for (int i=0; i<7; i++) {
         sum[i] = _sum[i];
         _sum[i] = 0;
@@ -277,7 +277,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     // record sample time
     _delta_time_micros = _last_sample_time_micros - _delta_time_start_micros;
     _delta_time_start_micros = _last_sample_time_micros;
-    hal.scheduler->end_atomic();
+    hal.scheduler->resume_timer_procs();
 
     count_scale = 1.0 / count;
 
