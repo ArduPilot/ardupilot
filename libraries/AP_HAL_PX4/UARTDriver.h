@@ -6,7 +6,7 @@
 
 class PX4::PX4UARTDriver : public AP_HAL::UARTDriver {
 public:
-    PX4UARTDriver();
+    PX4UARTDriver(const char *devpath);
     /* PX4 implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
@@ -37,10 +37,10 @@ public:
     bool _initialised;
 
 private:
+    const char *_devpath;
+    int _fd;
+    bool _nonblocking_writes;
     void _vdprintf(int fd, const char *fmt, va_list ap);
-    uint16_t _rxBufSize;
-    uint16_t _txBufSize;
-    int16_t _rxChar;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__

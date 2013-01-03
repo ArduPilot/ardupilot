@@ -32,7 +32,7 @@ static PX4Scheduler schedulerInstance;
 static PX4EEPROMStorage storageDriver;
 
 // only one real UART driver for now
-static PX4UARTDriver uartADriver;
+static PX4UARTDriver uartADriver("/dev/ttyS0");
 static Empty::EmptyUARTDriver uartBDriver;
 static Empty::EmptyUARTDriver uartCDriver;
 
