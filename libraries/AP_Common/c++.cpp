@@ -9,7 +9,7 @@
 #include <AP_HAL.h>
 #include <stdlib.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
 
 void * operator new(size_t size)
 {
