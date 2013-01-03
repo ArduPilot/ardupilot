@@ -22,9 +22,9 @@ AVRTimer AVRScheduler::_timer;
 
 AP_HAL::TimedProc AVRScheduler::_failsafe = NULL;
 volatile bool AVRScheduler::_timer_suspended = false;
+volatile bool AVRScheduler::_in_timer_proc = false;
 AP_HAL::TimedProc AVRScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t AVRScheduler::_num_timer_procs = 0;
-bool AVRScheduler::_in_timer_proc = false;
 
 
 AVRScheduler::AVRScheduler() :
