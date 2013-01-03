@@ -81,19 +81,18 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
     static int semfail_ctr = 0;
     uint8_t ch;
 
-    if (_spi_sem) {
-        bool got = _spi_sem->get((void*)&_spi_sem);
-        if (!got) { 
-            semfail_ctr++;
-            if (semfail_ctr > 100) {
-                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
-                            "100 times in AP_ADC_ADS7844::read"));
-            }
-            return;
-        } else {
-            semfail_ctr = 0;
-        }   
-    }
+    /** Take nonblocking: ::read happens from the TimerProcess context! */
+    bool got = _spi_sem->take_nonblocking();
+    if (!got) { 
+        semfail_ctr++;
+        if (semfail_ctr > 100) {
+            hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
+                        "100 times in AP_ADC_ADS7844::read"));
+        }
+        return;
+    } else {
+        semfail_ctr = 0;
+    }   
 
     uint8_t rx[17];
     _spi->transaction(adc_cmd, rx, 17);
@@ -118,13 +117,7 @@ void AP_ADC_ADS7844::read(uint32_t tnow)
         _sum[ch] += (v >> 3);
     }
 
-    if (_spi_sem) {
-        bool released = _spi_sem->release((void*)&_spi_sem);
-        if (!released) {
-            hal.scheduler->panic(PSTR("PANIC: _spi_sem release failed in "
-                        "AP_ADC_ADS7844::read"));
-        }   
-    }
+    _spi_sem->give();
 
     // record time of this sample
     _ch6_last_sample_time_micros = hal.scheduler->micros();
@@ -140,16 +133,20 @@ void AP_ADC_ADS7844::Init()
     hal.scheduler->suspend_timer_procs();
     _spi = hal.spi->device(AP_HAL::SPIDevice_ADS7844);
     if (_spi == NULL) {
-        hal.scheduler->panic(PSTR("PANIC: AP_ADC_ADS7844 missing SPI device driver\n"));
+        hal.scheduler->panic(PSTR("PANIC: AP_ADC_ADS7844 missing SPI device "
+                    "driver\n"));
     }
+
     _spi_sem = _spi->get_semaphore();
-    
-    if (_spi_sem) {
-        bool taken = _spi_sem->get((void*)&_spi_sem);
-        if (!taken) {
-            hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem in"
-                        "AP_ADC_ADS7844::Init"));
-        }
+
+    if (_spi_sem == NULL) {
+        hal.scheduler->panic(PSTR("PANIC: AP_ADC_ADS7844 missing SPI device "
+                    "semaphore"));
+    }
+   
+    if (!_spi_sem->take(0)) {
+        hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem in"
+                    "AP_ADC_ADS7844::Init"));
     }
     
     _spi->cs_assert();
@@ -165,13 +162,7 @@ void AP_ADC_ADS7844::Init()
     
     _spi->cs_release();
 
-    if (_spi_sem) {
-        bool released = _spi_sem->release((void*)&_spi_sem);
-        if (!released) {
-            hal.scheduler->panic(PSTR("PANIC: failed to release_spi_sem in "
-                        "AP_ADC_ADS7844::Init"));
-        }   
-    }
+    _spi_sem->give();
 
     _ch6_last_sample_time_micros = hal.scheduler->micros();
 
