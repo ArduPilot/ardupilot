@@ -5,86 +5,42 @@
 
 #include "AP_HAL_PX4.h"
 #include "Scheduler.h"
-#include <sys/time.h>
 #include <unistd.h>
-#include <signal.h>
 #include <sched.h>
 #include <errno.h>
 #include <stdio.h>
-
-#define MAIN_TIMER_SIGNAL 17
+#include <drivers/drv_hrt.h>
+#include <nuttx/arch.h>
 
 using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
 
+uint64_t PX4Scheduler::_sketch_start_time;
 
 AP_HAL::TimedProc PX4Scheduler::_failsafe = NULL;
 volatile bool PX4Scheduler::_timer_suspended = false;
 AP_HAL::TimedProc PX4Scheduler::_timer_proc[PX4_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t PX4Scheduler::_num_timer_procs = 0;
 bool PX4Scheduler::_in_timer_proc = false;
-struct timeval PX4Scheduler::_sketch_start_time;
+uint8_t PX4Scheduler::_nested_atomic_ctr;
+bool PX4Scheduler::_timer_pending;
 
 PX4Scheduler::PX4Scheduler()
 {}
 
 void PX4Scheduler::init(void *unused) 
 {
-    sigset_t           sigset;
-    struct sigaction   act;
-    struct sigaction   oact;
-    struct sigevent    notify;
-    struct itimerspec  timer;
-    timer_t            timerid;
-    int                status;
+    _sketch_start_time = hrt_absolute_time();
 
-	gettimeofday(&_sketch_start_time,NULL);
-
-    /* setup a posix timer at 1kHz */
-    (void)sigemptyset(&sigset);
-    (void)sigaddset(&sigset, MAIN_TIMER_SIGNAL);
-    status = sigprocmask(SIG_UNBLOCK, &sigset, NULL);
-    if (status != OK) goto failed;
-
-    act.sa_sigaction = _timer_event;
-    act.sa_flags  = SA_SIGINFO;
-
-    (void)sigfillset(&act.sa_mask);
-    (void)sigdelset(&act.sa_mask, MAIN_TIMER_SIGNAL);
-    status = sigaction(MAIN_TIMER_SIGNAL, &act, &oact);
-    if (status != OK) goto failed;
-
-    notify.sigev_notify          = SIGEV_SIGNAL;
-    notify.sigev_signo           = MAIN_TIMER_SIGNAL;
-    notify.sigev_value.sival_int = 0;
-
-    status = timer_create(CLOCK_REALTIME, &notify, &timerid);
-    if (status != OK) goto failed;
-
-    /* Start the POSIX timer */
-
-    timer.it_value.tv_sec     = 0;
-    timer.it_value.tv_nsec    = 1000000;
-    timer.it_interval.tv_sec  = 0;
-    timer.it_interval.tv_nsec = 1000000;
-    
-    status = timer_settime(timerid, 0, &timer, NULL);
-    if (status != OK) goto failed;
-    
-    return;
-
-failed:
-    panic("Failed to setup PX4 1kHz timer");
+    // setup a 1kHz timer
+	memset(&_call, 0, sizeof(_call));
+	hrt_call_every(&_call, 1000, 1000, _timer_event, NULL);
 }
 
 uint32_t PX4Scheduler::_micros() 
 {
-	struct timeval tp;
-	gettimeofday(&tp,NULL);
-	return 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
-		      (_sketch_start_time.tv_sec +
-		       (_sketch_start_time.tv_usec*1.0e-6)));
+    return (uint32_t)(hrt_absolute_time() - _sketch_start_time);
 }
 
 uint32_t PX4Scheduler::micros() 
@@ -94,18 +50,14 @@ uint32_t PX4Scheduler::micros()
 
 uint32_t PX4Scheduler::millis() 
 {
-	struct timeval tp;
-	gettimeofday(&tp,NULL);
-	return 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
-		      (_sketch_start_time.tv_sec +
-		       (_sketch_start_time.tv_usec*1.0e-6)));
+    return hrt_absolute_time() / 1000;
 }
 
 void PX4Scheduler::delay_microseconds(uint16_t usec) 
 {
 	uint32_t start = micros();
 	while (micros() - start < usec) {
-		usleep(usec - (micros() - start));
+		up_udelay(usec - (micros() - start));
 	}
 }
 
@@ -164,12 +116,6 @@ void PX4Scheduler::resume_timer_procs() {
 
 void PX4Scheduler::begin_atomic() {
     _nested_atomic_ctr++;
-    if (_nested_atomic_ctr == 1) {
-        sigset_t set;
-        sigemptyset(&set);
-        sigaddset(&set, MAIN_TIMER_SIGNAL);
-        sigprocmask(SIG_BLOCK, &set, NULL);
-    }
 }
 
 void PX4Scheduler::end_atomic() {
@@ -178,11 +124,10 @@ void PX4Scheduler::end_atomic() {
         return;
     }
     _nested_atomic_ctr--;
-    if (_nested_atomic_ctr == 0) {
-        sigset_t set;
-        sigemptyset(&set);
-        sigaddset(&set, MAIN_TIMER_SIGNAL);
-        sigprocmask(SIG_UNBLOCK, &set, NULL);
+    if (_nested_atomic_ctr == 0 && _timer_pending) {
+        // a timer went off during an atomic operation - run it now
+        _timer_pending = false;
+        _timer_event(NULL);
     }
 }
 
@@ -191,8 +136,13 @@ void PX4Scheduler::reboot()
     hal.uartA->println_P(PSTR("REBOOT NOT IMPLEMENTED\r\n"));
 }
 
-void PX4Scheduler::_timer_event(int signo, siginfo_t *info, void *ucontext) 
+void PX4Scheduler::_timer_event(void *arg)
 {
+    if (_nested_atomic_ctr != 0) {
+        _timer_pending = true;
+        return;
+    }
+
     uint32_t tnow = _micros();
     if (_in_timer_proc) {
         // the timer calls took longer than the period of the

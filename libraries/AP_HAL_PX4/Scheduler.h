@@ -7,6 +7,7 @@
 #include "AP_HAL_PX4_Namespace.h"
 #include <sys/time.h>
 #include <signal.h>
+#include <drivers/drv_hrt.h>
 
 #define PX4_SCHEDULER_MAX_TIMER_PROCS 4
 
@@ -33,11 +34,13 @@ public:
     bool     interrupts_are_blocked(void) { return _nested_atomic_ctr != 0; }
 
 private:
-    uint8_t _nested_atomic_ctr;
+    static uint8_t _nested_atomic_ctr;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
-    static struct timeval _sketch_start_time;
     static AP_HAL::TimedProc _failsafe;
+    struct hrt_call _call;
+    static bool _timer_pending;
+    static uint64_t _sketch_start_time;
 
     static volatile bool _timer_suspended;
     static AP_HAL::TimedProc _timer_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
@@ -46,7 +49,7 @@ private:
 
     // callable from interrupt handler
     static uint32_t _micros();
-    static void _timer_event(int signo, siginfo_t *info, void *ucontext);
+    static void _timer_event(void *arg);
 
 };
 #endif
