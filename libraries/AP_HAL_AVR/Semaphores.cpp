@@ -3,68 +3,69 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include "Semaphores.h"
+#include "Scheduler.h"
 using namespace AP_HAL_AVR;
 
 extern const AP_HAL::HAL& hal;
 
 // Constructor
-AVRSemaphore::AVRSemaphore() {}
+AVRSemaphore::AVRSemaphore() : _taken(false) {}
 
-// get - to claim ownership of the semaphore 
-bool AVRSemaphore::get(void* caller)
-{
-    bool result = false;
-    hal.scheduler->begin_atomic();
-    if( !_taken ) {
-        _taken = true;
-        _owner = caller;
-        result = true;
+bool AVRSemaphore::give() {
+    if (!_taken) {
+        return false;
+    } else {
+        _taken = false;
+        return true;
     }
-    hal.scheduler->end_atomic();
-    return result;
 }
 
-// release - to give up ownership of the semaphore
-// returns true if successfully released
-bool AVRSemaphore::release(void* caller)
-{
+bool AVRSemaphore::take(uint32_t timeout_ms) {
+    if (AVRScheduler::_in_timer_proc) {
+        hal.scheduler->panic(PSTR("PANIC: AVRSemaphore::take used from "
+                    "inside timer process"));
+        return false; /* Never reached - panic does not return */
+    }
+    return _take_from_mainloop(timeout_ms);
+}
 
-    // check legitimacy of release call
-    if( caller != _owner ) {
+bool AVRSemaphore::take_nonblocking() {
+    if (AVRScheduler::_in_timer_proc) {
+        return _take_nonblocking();
+    } else {
+        return _take_from_mainloop(0);
+    }
+}
+
+bool AVRSemaphore::_take_from_mainloop(uint32_t timeout_ms) {
+    /* Try to take immediately */
+    if (_take_nonblocking()) {
+        return true;
+    } else if (timeout_ms == 0) {
+        /* Return immediately if timeout is 0 */
         return false;
     }
 
-    // if another process is waiting immediately call the provided kontinuation
-    if( _waiting_k != NULL ) {
+    do {
+        /* Delay 1ms until we can successfully take, or we timed out */
+        hal.scheduler->delay(1);
+        timeout_ms--;
+        if (_take_nonblocking()) {
+            return true;
+        }
+    } while (timeout_ms > 0);
 
-        // give ownership to waiting process
-        _owner = _waiting_owner;
-        AP_HAL::Proc k = _waiting_k;
-
-        // clear waiting process
-        _waiting_k = NULL;
-        _waiting_owner = NULL;
-
-        // callback
-        k();
-    }
-
-    // give up the semaphore
-    _taken = false;
-    return true;
+    return false;
 }
 
-// call_on_release - returns true if caller successfully added to the queue to
-// be called back
-bool AVRSemaphore::call_on_release(void* caller, AP_HAL::Proc k)
-{
+bool AVRSemaphore::_take_nonblocking() {
     bool result = false;
     hal.scheduler->begin_atomic();
-    if( _waiting_owner == NULL ) {
-        _waiting_owner = caller;
-        _waiting_k = k;
+    if (!_taken) {
+        _taken = true;
         result = true;
     }
     hal.scheduler->end_atomic();
     return result;
 }
+
