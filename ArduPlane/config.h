@@ -146,7 +146,7 @@
  # define MAGNETOMETER ENABLED
 
  // force HIL mode until we have the drivers done
- # define HIL_MODE HIL_MODE_SENSORS
+ # define HIL_MODE HIL_MODE_ATTITUDE
 #endif
 
 
