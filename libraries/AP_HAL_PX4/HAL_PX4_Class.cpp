@@ -10,6 +10,7 @@
 #include "Console.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
+#include "Storage.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -21,7 +22,6 @@ using namespace PX4;
 static Empty::EmptyI2CDriver  i2cDriver;
 static Empty::EmptySPIDeviceManager spiDeviceManager;
 static Empty::EmptyAnalogIn analogIn;
-static Empty::EmptyStorage storageDriver;
 static Empty::EmptyGPIO gpioDriver;
 static Empty::EmptyRCInput rcinDriver;
 static Empty::EmptyRCOutput rcoutDriver;
@@ -29,6 +29,7 @@ static Empty::EmptyUtil utilInstance;
 
 static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
+static PX4EEPROMStorage storageDriver;
 
 // only one real UART driver for now
 static PX4UARTDriver uartADriver;
