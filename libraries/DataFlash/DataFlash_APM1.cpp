@@ -86,11 +86,17 @@ void DataFlash_APM1::Init(void)
 
     _spi = hal.spi->device(AP_HAL::SPIDevice_Dataflash);
     if (_spi == NULL) {
-        hal.console->println_P(
+        hal.scheduler->panic(
                 PSTR("PANIC: DataFlash SPIDeviceDriver not found"));
-        return;
+        return; /* never reached */
     }
+
     _spi_sem = _spi->get_semaphore();
+    if (_spi_sem == NULL) {
+        hal.scheduler->panic(
+                PSTR("PANIC: DataFlash SPIDeviceDriver semaphore is null"));
+        return; /* never reached */
+    }
 
     // get page size: 512 or 528  (by default: 528)
     df_PageSize = PageSize();
@@ -102,10 +108,8 @@ void DataFlash_APM1::Init(void)
 // This function is mainly to test the device
 void DataFlash_APM1::ReadManufacturerID()
 {
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return;
-    }
+    if (!_spi_sem->take(5))
+        return;
     // activate dataflash command decoder
     _spi->cs_assert();
 
@@ -120,9 +124,7 @@ void DataFlash_APM1::ReadManufacturerID()
     // release SPI bus for use by other sensors
     _spi->cs_release();
 
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
+    _spi_sem->give();
 }
 
 // This function return 1 if Card is inserted on SD slot
@@ -161,15 +163,12 @@ uint8_t DataFlash_APM1::ReadStatus()
 inline
 uint16_t DataFlash_APM1::PageSize()
 {
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return 0;
-    }
+    if (!_spi_sem->take(5))
+        return 0;
+    
     return(528-((ReadStatusReg()&0x01) << 4)); // if first bit 1 trhen 512 else 528 bytes
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
 
+    _spi_sem->give();
 }
 
 // Wait until DataFlash is in ready state...
@@ -181,10 +180,9 @@ void DataFlash_APM1::WaitReady()
 
 void DataFlash_APM1::PageToBuffer(uint8_t BufferNum, uint16_t PageAdr)
 {
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return;
-    }
+    if (!_spi_sem->take(1))
+        return;
+
     // activate dataflash command decoder
     _spi->cs_assert();
 
@@ -206,17 +204,14 @@ void DataFlash_APM1::PageToBuffer(uint8_t BufferNum, uint16_t PageAdr)
     _spi->cs_release();
 
     while(!ReadStatus()) ;  //monitor the status register, wait until busy-flag is high
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
+    _spi_sem->give();
 }
 
 void DataFlash_APM1::BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait)
 {
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return;
-    }
+    if (!_spi_sem->take(1))
+        return;
+
     // activate dataflash command decoder
     _spi->cs_assert();
 
@@ -240,18 +235,15 @@ void DataFlash_APM1::BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t 
     // Check if we need to wait to write the buffer to memory or we can continue...
     if (wait)
         while(!ReadStatus()) ;  //monitor the status register, wait until busy-flag is high
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
+    _spi_sem->give();
 
 }
 
 void DataFlash_APM1::BufferWrite (uint8_t BufferNum, uint16_t IntPageAdr, uint8_t Data)
 {
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return;
-    }
+    if (!_spi_sem->take(1))
+        return;
+    
     // activate dataflash command decoder
     _spi->cs_assert();
 
@@ -267,19 +259,16 @@ void DataFlash_APM1::BufferWrite (uint8_t BufferNum, uint16_t IntPageAdr, uint8_
 
     // release SPI bus for use by other sensors
     _spi->cs_release();
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
+    _spi_sem->give();
 }
 
 uint8_t DataFlash_APM1::BufferRead (uint8_t BufferNum, uint16_t IntPageAdr)
 {
     uint8_t tmp;
 
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return 0;
-    }
+    if (!_spi_sem->take(1))
+        return 0;
+
     // activate dataflash command decoder
     _spi->cs_assert();
 
@@ -297,19 +286,16 @@ uint8_t DataFlash_APM1::BufferRead (uint8_t BufferNum, uint16_t IntPageAdr)
     // release SPI bus for use by other sensors
     _spi->cs_release();
 
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
+    _spi_sem->give();
     return (tmp);
 }
 // *** END OF INTERNAL FUNCTIONS ***
 
 void DataFlash_APM1::PageErase (uint16_t PageAdr)
 {
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return;
-    }
+    if (!_spi_sem->take(1))
+        return;
+
     // activate dataflash command decoder
     _spi->cs_assert();
 
@@ -329,18 +315,15 @@ void DataFlash_APM1::PageErase (uint16_t PageAdr)
     //initiate flash page erase
     _spi->cs_release();
 
+    _spi_sem->give();
     while(!ReadStatus()) ;
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
 }
 
 void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
 {
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return;
-    }
+    if (!_spi_sem->take(1))
+        return;
+
     // activate dataflash command decoder
     _spi->cs_assert();
 
@@ -370,19 +353,14 @@ void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
     //initiate flash page erase
     _spi->cs_release();
     while(!ReadStatus()) ;
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
+    _spi_sem->give();
 }
 
 
 void DataFlash_APM1::ChipErase()
 {
-    //serialDebug("Chip Erase\n");
-    if (_spi_sem) {
-        bool got = _spi_sem->get(this);        
-        if (!got) return;
-    }
+    if (!_spi_sem->take(5))
+        return;
 
     // activate dataflash command decoder
     _spi->cs_assert();
@@ -400,8 +378,6 @@ void DataFlash_APM1::ChipErase()
         hal.scheduler->delay(6);
     }
     
-    if (_spi_sem) {
-        _spi_sem->release(this);
-    }
-
+    _spi_sem->give();
+    
 }
