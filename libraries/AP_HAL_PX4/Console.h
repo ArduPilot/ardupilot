@@ -27,6 +27,9 @@ public:
     int16_t peek();
 
     size_t write(uint8_t c);
+
+private:
+    PX4UARTDriver *_uart;
 };
 
 #endif // __AP_HAL_PX4_CONSOLE_H__
