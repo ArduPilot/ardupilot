@@ -240,6 +240,20 @@ static volatile uint16_t _count;
 
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
+void AP_InertialSensor_MPU6000::wait_for_sample()
+{
+    uint32_t tstart = hal.scheduler->micros();
+    while (num_samples_available() == 0) {
+        uint32_t now = hal.scheduler->micros();
+        uint32_t dt = now - tstart;
+        if (dt > 50000) {
+            hal.scheduler->panic(
+                    PSTR("PANIC: AP_InertialSensor_MPU6000::update "
+                        "waited 50ms for data from interrupt"));
+        }
+    }
+}
+
 bool AP_InertialSensor_MPU6000::update( void )
 {
     int32_t sum[7];
@@ -248,14 +262,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     Vector3f accel_scale = _accel_scale.get();
 
     // wait for at least 1 sample
-    uint32_t tstart = hal.scheduler->micros();
-    while (num_samples_available() == 0) {
-        if (hal.scheduler->micros() - tstart > 50000) {
-            hal.scheduler->panic(
-                    PSTR("PANIC: AP_InertialSensor_MPU6000::update "
-                        "waited 50ms for data from interrupt"));
-        }
-    }
+    wait_for_sample();
 
     // disable interrupts for mininum time
     hal.scheduler->begin_atomic();
@@ -263,6 +270,7 @@ bool AP_InertialSensor_MPU6000::update( void )
         sum[i] = _sum[i];
         _sum[i] = 0;
     }
+
     count = _count;
     _count = 0;
 
@@ -298,6 +306,33 @@ float AP_InertialSensor_MPU6000::temperature() {
 }
 
 /*================ HARDWARE FUNCTIONS ==================== */
+
+/**
+ * Return true if the MPU6000 has new data available for reading.
+ *
+ * We use the data ready pin if it is available.  Otherwise, read the
+ * status register.
+ */
+bool AP_InertialSensor_MPU6000::data_ready()
+{
+    if (_drdy_pin) {
+        return _drdy_pin->read() != 0;
+    } else {
+        uint8_t status = register_read(MPUREG_INT_STATUS);
+        return (status & BIT_RAW_RDY_INT) != 0;
+    }
+}
+
+/**
+ * Timer process to poll for new data from the MPU6000.
+ */
+void AP_InertialSensor_MPU6000::poll_data(uint32_t now)
+{
+    if (data_ready()) {
+        _last_sample_time_micros = now;
+        read_data();
+    }
+}
 
 /*
  *  this is called from the num_samples_available() when the MPU6000
@@ -506,11 +541,7 @@ reset_chip:
     // wait for enough time that we should get a sample
     hal.scheduler->delay(msec_per_sample+2);
 
-#if MPU6000_DEBUG
-    _dump_registers();
-#endif
-
-    if (_drdy_pin->read() == 0) {
+    if (!data_ready()) {
         // we didn't get a sample - run the whole chip setup
         // again. This sometimes happens after a DTR reset or warm
         // boot of the board
@@ -519,7 +550,15 @@ reset_chip:
     }
 
     // read the first lot of data
+    _last_sample_time_micros = hal.scheduler->micros();
     read_data();
+
+    // start the timer process to read samples
+    hal.scheduler->register_timer_process(poll_data);
+
+#if MPU6000_DEBUG
+    _dump_registers();
+#endif
 }
 
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
@@ -539,14 +578,6 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 // get number of samples read from the sensors
 uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 {
-    if (_drdy_pin->read()) {
-        // data is available from the MPU6000 - read the data. 
-        // Note that doing it this way means we doing the read out of
-        // interrupt context, called from the main loop. This avoids
-        // all possible conflicts with the DataFlash SPI bus
-        _last_sample_time_micros = hal.scheduler->micros();
-        read_data();
-    }
     return _count;
 }
 

@@ -53,9 +53,12 @@ protected:
 private:
 
     static void                 read_data();
+    static bool                 data_ready();
+    static void                 poll_data(uint32_t now);
     static AP_HAL::DigitalSource *_drdy_pin;
     static uint8_t              register_read( uint8_t reg );
     static void                 register_write( uint8_t reg, uint8_t val );
+    void                        wait_for_sample();
     void                        hardware_init(Sample_rate sample_rate);
 
     static AP_HAL::SPIDeviceDriver *_spi;
