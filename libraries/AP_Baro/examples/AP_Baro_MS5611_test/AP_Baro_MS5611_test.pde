@@ -13,7 +13,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
-AP_Baro_MS5611 baro;
+AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
 static uint32_t timer;
 
 void setup()

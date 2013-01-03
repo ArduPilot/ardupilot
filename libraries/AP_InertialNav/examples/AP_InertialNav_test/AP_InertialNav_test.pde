@@ -28,7 +28,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 #define A_LED_PIN 27
 #define C_LED_PIN 25
 AP_InertialSensor_MPU6000 ins;
-AP_Baro_MS5611 baro;
+AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
 
 #else
 

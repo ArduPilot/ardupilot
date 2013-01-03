@@ -205,7 +205,13 @@ SITL sitl;
   #if CONFIG_BARO == AP_BARO_BMP085
 AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
-AP_Baro_MS5611 barometer;
+   #if CONFIG_MS5611_SERIAL == SPI
+AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
+   #elif CONFIG_MS5611_SERIAL == I2C
+AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
+   #else
+    #error Unrecognized CONFIG_MS5611_SERIAL setting.
+   #endif
   #endif
 
 AP_Compass_HMC5843 compass;
