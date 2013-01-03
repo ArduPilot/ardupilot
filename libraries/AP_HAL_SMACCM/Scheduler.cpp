@@ -64,17 +64,12 @@ static void scheduler_task(void *arg)
      * time. */
     now = xTaskGetTickCount();
     if (last_wake_time + SCHEDULER_TICKS <= now) {
-      hal.console->printf("now %lu  last %lu\r\n", last_wake_time, now);
       sched->run_failsafe_cb();
       last_wake_time = now;
     } else {
       vTaskDelayUntil(&last_wake_time, SCHEDULER_TICKS);
 
-      if (!xSemaphoreTakeRecursive(g_atomic, 5)) {
-        asm volatile ("bkpt");
-        hal.scheduler->panic("g_atomic took too long");
-      }
-
+      xSemaphoreTakeRecursive(g_atomic, portMAX_DELAY);
       sched->run_callbacks();
       xSemaphoreGiveRecursive(g_atomic);
     }
@@ -135,8 +130,7 @@ static void delay_cb_task(void *arg)
 }
 
 SMACCMScheduler::SMACCMScheduler()
-  : m_delay_cb(NULL), m_suspended(false),
-    m_task(NULL), m_delay_cb_task(NULL),
+  : m_delay_cb(NULL), m_task(NULL), m_delay_cb_task(NULL),
     m_failsafe_cb(NULL), m_num_procs(0)
 {
 }
@@ -218,28 +212,29 @@ void SMACCMScheduler::register_timer_failsafe(AP_HAL::TimedProc k, uint32_t)
 
 void SMACCMScheduler::suspend_timer_procs()
 {
-  m_suspended = true;
+  xSemaphoreTakeRecursive(g_atomic, portMAX_DELAY);
 }
 
 void SMACCMScheduler::resume_timer_procs()
 {
-  m_suspended = false;
+  xSemaphoreGiveRecursive(g_atomic);
 }
 
 void SMACCMScheduler::begin_atomic()
 {
-  xSemaphoreTakeRecursive(g_atomic, portMAX_DELAY);
 }
 
 void SMACCMScheduler::end_atomic()
 {
-  xSemaphoreGiveRecursive(g_atomic);
 }
 
 void SMACCMScheduler::panic(const prog_char_t *errormsg)
 {
   hal.console->println_P(errormsg);
-  m_suspended = true;
+
+  // Try to grab "g_atomic" to suspend timer processes, but with a
+  // timeout in case a timer proc is locked up.
+  xSemaphoreTakeRecursive(g_atomic, 10);
 
   for(;;)
     ;
@@ -256,15 +251,13 @@ void SMACCMScheduler::run_callbacks()
   uint32_t now = micros();
 
   // Run timer processes if not suspended.
-  if (!m_suspended) {
-    portENTER_CRITICAL();
-    uint8_t num_procs = m_num_procs;
-    portEXIT_CRITICAL();
+  portENTER_CRITICAL();
+  uint8_t num_procs = m_num_procs;
+  portEXIT_CRITICAL();
 
-    for (int i = 0; i < num_procs; ++i) {
-      if (m_procs[i] != NULL)
-        m_procs[i](now);
-    }
+  for (int i = 0; i < num_procs; ++i) {
+    if (m_procs[i] != NULL)
+      m_procs[i](now);
   }
 }
 

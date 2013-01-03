@@ -110,7 +110,6 @@ public:
 
 private:
   AP_HAL::Proc m_delay_cb;      /* delay callback */
-  bool m_suspended;             /* true if timers suspended */
   void *m_task;                 /* opaque scheduler task handle */
   void *m_delay_cb_task;        /* opaque delay cb task handle */
   AP_HAL::TimedProc m_procs[SMACCM_SCHEDULER_MAX_TIMER_PROCS];
