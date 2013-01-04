@@ -74,23 +74,23 @@ void PX4UARTDriver::println_P(const prog_char_t *pstr) {
 void PX4UARTDriver::printf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    _vdprintf(_fd, fmt, ap);
+    vdprintf(_fd, fmt, ap);
     va_end(ap);	
 }
 
 void PX4UARTDriver::_printf_P(const prog_char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    _vdprintf(_fd, fmt, ap);
+    vdprintf(_fd, fmt, ap);
     va_end(ap);	
 }
 
 void PX4UARTDriver::vprintf(const char *fmt, va_list ap) {
-    _vdprintf(_fd, fmt, ap);
+    vdprintf(_fd, fmt, ap);
 }
 
 void PX4UARTDriver::vprintf_P(const prog_char *fmt, va_list ap) {
-    _vdprintf(_fd, fmt, ap);
+    vdprintf(_fd, fmt, ap);
 }
 
 /* PX4 implementations of Stream virtual methods */
@@ -143,23 +143,5 @@ size_t PX4UARTDriver::write(uint8_t c) {
 	return ::write(_fd, &c, 1);
 }
 
-void PX4UARTDriver::_vdprintf(int fd, const char *fmt, va_list ap) {
-	char buf[128];
-	if (!_initialised) {
-		return;
-	}
-	int len = vsnprintf(buf, sizeof(buf), fmt, ap);
-	if (len > 0) {
-		if (_nonblocking_writes) {
-			int16_t space = txspace();
-			if (space < len) {
-				len = space;
-			}
-		}
-		if (len > 0) {
-			::write(_fd, buf, len);
-		}
-	}
-}
+#endif // CONFIG_HAL_BOARD
 
-#endif
