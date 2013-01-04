@@ -12,6 +12,7 @@
 #include "UARTDriver.h"
 #include "Storage.h"
 #include "RCInput.h"
+#include "RCOutput.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -29,13 +30,13 @@ static Empty::EmptyI2CDriver  i2cDriver;
 static Empty::EmptySPIDeviceManager spiDeviceManager;
 static Empty::EmptyAnalogIn analogIn;
 static Empty::EmptyGPIO gpioDriver;
-static Empty::EmptyRCOutput rcoutDriver;
 static Empty::EmptyUtil utilInstance;
 
 static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
 static PX4EEPROMStorage storageDriver;
 static PX4RCInput rcinDriver;
+static PX4RCOutput rcoutDriver;
 
 #define UARTA_DEVICE "/dev/ttyS2"
 #define UARTB_DEVICE "/dev/ttyS3"
@@ -72,10 +73,12 @@ static int main_loop(int argc, char **argv)
 {
     extern void setup(void);
     extern void loop(void);
+
     hal.uartA->begin(115200);
     hal.console->init((void*) hal.uartA);
     hal.scheduler->init(NULL);
     hal.rcin->init(NULL);
+    hal.rcout->init(NULL);
 
     setup();
 
