@@ -35,3 +35,9 @@ status.txt
 /Tools/ArdupilotMegaPlanner/3DRRadio/bin
 /Tools/ArdupilotMegaPlanner/3DRRadio/obj
 /Tools/ArdupilotMegaPlanner/bin
+Make.dep
+.depend
+.built
+.context
+*.lst
+*.tlog
