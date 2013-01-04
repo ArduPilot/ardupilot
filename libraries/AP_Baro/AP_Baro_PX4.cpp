@@ -20,37 +20,43 @@ extern const AP_HAL::HAL& hal;
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_PX4::init(void)
 {
-    int fd;
-
-	fd = open(BARO_DEVICE_PATH, 0);
-	if (fd < 0) {
+	_baro_fd = open(BARO_DEVICE_PATH, O_RDONLY);
+	if (_baro_fd < 0) {
         hal.scheduler->panic("Unable to open " BARO_DEVICE_PATH);
 	}
 
 	/* set the driver to poll at 150Hz */
-	ioctl(fd, SENSORIOCSPOLLRATE, 150);
-    close(fd);
+	ioctl(_baro_fd, SENSORIOCSPOLLRATE, 150);
 
-	_baro_sub = orb_subscribe(ORB_ID(sensor_baro));
+    // average over up to 10 samples
+    ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
 
     return true;
 }
 
 // Read the sensor
-uint8_t AP_Baro_PX4::read()
+uint8_t AP_Baro_PX4::read(void)
 {
-	bool baro_updated;
-	orb_check(_baro_sub, &baro_updated);
+    uint16_t count;
+    float pressure_sum, temperature_sum;
+    struct baro_report baro_report;
 
-	if (baro_updated) {
-		struct baro_report	baro_report;
+    // read all available samples and average
+    pressure_sum = 0;
+    temperature_sum = 0;
+    count = 0;
 
-		orb_copy(ORB_ID(sensor_baro), _baro_sub, &baro_report);
+    while (::read(_baro_fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report)) {
+		pressure_sum += baro_report.pressure; // Pressure in mbar
+		temperature_sum += baro_report.temperature; // degrees celcius
+        count++;
+    }
 
-		_pressure = baro_report.pressure; // Pressure in mbar
-		_temperature = baro_report.temperature; // Temperature in degrees celcius
-        _pressure_samples = 1;
+    if (count != 0) {
+        _pressure = pressure_sum / count;
+        _temperature = temperature_sum / count;
         _last_update = hal.scheduler->millis();
+        _pressure_samples = count;
         healthy = true;
         return 1;
     }

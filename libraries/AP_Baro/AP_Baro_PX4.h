@@ -19,8 +19,8 @@ private:
     float _temperature;
     float _pressure;
 
-    // ORB subscription handle
-    int _baro_sub;
+    // baro driver handle
+    int _baro_fd;
 };
 
 #endif //  __AP_BARO_PX4_H__
