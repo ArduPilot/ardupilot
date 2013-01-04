@@ -104,7 +104,8 @@ void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc)
 
 void PX4Scheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) 
 {
-    _failsafe = failsafe;
+    hal.console->printf("Not registering failsafe handler\n");
+//    _failsafe = failsafe;
 }
 
 void PX4Scheduler::suspend_timer_procs() {
