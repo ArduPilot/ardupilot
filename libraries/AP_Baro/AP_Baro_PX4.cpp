@@ -31,7 +31,6 @@ bool AP_Baro_PX4::init(void)
 
         // average over up to 10 samples
         ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
-        hal.console->printf("AP_Baro_PX4: init done fd=%d\n", _baro_fd);
     }
 
     return true;
