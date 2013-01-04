@@ -55,6 +55,7 @@ static void scheduler_task(void *arg)
   portTickType last_wake_time;
   portTickType now;
 
+  vTaskSetApplicationTaskTag(NULL, (pdTASK_HOOK_CODE)3);
   last_wake_time = xTaskGetTickCount();
 
   for (;;) {
@@ -97,6 +98,7 @@ static void delay_cb_task(void *arg)
   portTickType last_wake_time;
   portTickType now;
 
+  vTaskSetApplicationTaskTag(NULL, (pdTASK_HOOK_CODE)4);
   last_wake_time = xTaskGetTickCount();
 
   for (;;) {
@@ -256,8 +258,9 @@ void SMACCMScheduler::run_callbacks()
   portEXIT_CRITICAL();
 
   for (int i = 0; i < num_procs; ++i) {
-    if (m_procs[i] != NULL)
+    if (m_procs[i] != NULL) {
       m_procs[i](now);
+    }
   }
 }
 
