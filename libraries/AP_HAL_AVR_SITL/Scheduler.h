@@ -21,21 +21,23 @@ public:
     uint32_t micros();
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
+
     void     register_timer_process(AP_HAL::TimedProc);
-    void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     suspend_timer_procs();
     void     resume_timer_procs();
-    void     begin_atomic();
-    void     end_atomic();
+
+    void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     reboot();
     void     panic(const prog_char_t *errormsg);
 
     bool     interrupts_are_blocked(void) { return _nested_atomic_ctr != 0; }
 
-    static void timer_event(void);
+    void     sitl_begin_atomic() { _nested_atomic_ctr++; }
+    void     sitl_end_atomic();
 
     // callable from interrupt handler
     static uint32_t _micros();
+    static void timer_event() { _run_timer_procs(true); }
 
 private:
     uint8_t _nested_atomic_ctr;
@@ -44,7 +46,10 @@ private:
     static struct timeval _sketch_start_time;
     static AP_HAL::TimedProc _failsafe;
 
+    static void _run_timer_procs(bool called_from_isr);
+
     static volatile bool _timer_suspended;
+    static volatile bool _timer_event_missed;
     static AP_HAL::TimedProc _timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS];
     static uint8_t _num_timer_procs;
     static bool    _in_timer_proc;

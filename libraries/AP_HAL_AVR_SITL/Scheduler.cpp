@@ -15,6 +15,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_HAL::TimedProc SITLScheduler::_failsafe = NULL;
 volatile bool SITLScheduler::_timer_suspended = false;
+volatile bool SITLScheduler::_timer_event_missed = false;
 AP_HAL::TimedProc SITLScheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t SITLScheduler::_num_timer_procs = 0;
 bool SITLScheduler::_in_timer_proc = false;
@@ -110,26 +111,25 @@ void SITLScheduler::suspend_timer_procs() {
 
 void SITLScheduler::resume_timer_procs() {
     _timer_suspended = false;
-}
-
-void SITLScheduler::begin_atomic() {
-    _nested_atomic_ctr++;
-}
-
-void SITLScheduler::end_atomic() {
-	if (_nested_atomic_ctr == 0) {
-        hal.uartA->println_P(PSTR("ATOMIC NESTING ERROR"));
-        return;
+    if (_timer_event_missed) {
+        _timer_event_missed = false;
+        _run_timer_procs(false);
     }
-    _nested_atomic_ctr--;
 }
+
+void SITLScheduler::sitl_end_atomic() {
+    if (_nested_atomic_ctr == 0) 
+        hal.uartA->println_P(PSTR("NESTED ATOMIC ERROR"));
+    else
+        _nested_atomic_ctr--;
+}   
 
 void SITLScheduler::reboot() 
 {
     hal.uartA->println_P(PSTR("REBOOT NOT IMPLEMENTED\r\n"));
 }
 
-void SITLScheduler::timer_event() 
+void SITLScheduler::_run_timer_procs(bool called_from_isr) 
 {
     uint32_t tnow = _micros();
     if (_in_timer_proc) {
@@ -157,6 +157,8 @@ void SITLScheduler::timer_event()
                 _timer_proc[i](tnow);
             }
         }
+    } else if (called_from_isr) {
+        _timer_event_missed = true;
     }
 
     // and the failsafe, if one is setup

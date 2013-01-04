@@ -193,11 +193,11 @@ void SITL_State::_timer_handler(int signum)
 
 	static bool in_timer;
 
-	if (in_timer || ((SITLScheduler *)hal.scheduler)->interrupts_are_blocked()) {
+	if (in_timer || _scheduler->interrupts_are_blocked()){
 		return;
-	}
-	_scheduler->begin_atomic();
+    }
 
+    _scheduler->sitl_begin_atomic();
 	in_timer = true;
 
 #ifndef __CYGWIN__
@@ -233,14 +233,14 @@ void SITL_State::_timer_handler(int signum)
 	if (_update_count == 0 && _sitl != NULL) {
 		_update_gps(0, 0, 0, 0, 0, false);
 		_scheduler->timer_event();
-		_scheduler->end_atomic();
+        _scheduler->sitl_end_atomic();
 		in_timer = false;
 		return;
 	}
 
 	if (_update_count == last_update_count) {
 		_scheduler->timer_event();
-		_scheduler->end_atomic();
+        _scheduler->sitl_end_atomic();
 		in_timer = false;
 		return;
 	}
@@ -262,7 +262,7 @@ void SITL_State::_timer_handler(int signum)
 	// interrupts, which can lead to recursion
 	_scheduler->timer_event();
 
-	_scheduler->end_atomic();
+    _scheduler->sitl_end_atomic();
 	in_timer = false;
 }
 
