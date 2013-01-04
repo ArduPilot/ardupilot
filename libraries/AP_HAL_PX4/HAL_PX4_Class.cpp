@@ -38,10 +38,11 @@ static PX4EEPROMStorage storageDriver;
 static PX4RCInput rcinDriver;
 
 #define UARTA_DEVICE "/dev/ttyS2"
+#define UARTB_DEVICE "/dev/ttyS3"
 
-// only one real UART driver for now
+// only two real UART drivers for now
 static PX4UARTDriver uartADriver(UARTA_DEVICE);
-static Empty::EmptyUARTDriver uartBDriver;
+static PX4UARTDriver uartBDriver(UARTB_DEVICE);
 static Empty::EmptyUARTDriver uartCDriver;
 
 HAL_PX4::HAL_PX4() :
