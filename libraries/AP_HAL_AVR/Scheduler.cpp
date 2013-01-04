@@ -22,6 +22,7 @@ AVRTimer AVRScheduler::_timer;
 
 AP_HAL::TimedProc AVRScheduler::_failsafe = NULL;
 volatile bool AVRScheduler::_timer_suspended = false;
+volatile bool AVRScheduler::_timer_event_missed = false;
 volatile bool AVRScheduler::_in_timer_proc = false;
 AP_HAL::TimedProc AVRScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t AVRScheduler::_num_timer_procs = 0;
@@ -29,8 +30,7 @@ uint8_t AVRScheduler::_num_timer_procs = 0;
 
 AVRScheduler::AVRScheduler() :
     _delay_cb(NULL),
-    _min_delay_cb_ms(65535),
-    _nested_atomic_ctr(0)
+    _min_delay_cb_ms(65535)
 {}
 
 void AVRScheduler::init(void* _isrregistry) {
@@ -47,8 +47,8 @@ void AVRScheduler::init(void* _isrregistry) {
     TCNT2 = 0;                      /* Set count to 0 */
     TIFR2 = _BV(TOV2);              /* Clear pending interrupts */
     TIMSK2 = _BV(TOIE2);            /* Enable overflow interrupt*/
-    /* Register _timer_event to trigger on overflow */
-    isrregistry->register_signal(ISR_REGISTRY_TIMER2_OVF, _timer_event);   
+    /* Register _timer_isr_event to trigger on overflow */
+    isrregistry->register_signal(ISR_REGISTRY_TIMER2_OVF, _timer_isr_event);   
 }
 
 uint32_t AVRScheduler::micros() {
@@ -119,9 +119,13 @@ void AVRScheduler::suspend_timer_procs() {
 
 void AVRScheduler::resume_timer_procs() {
     _timer_suspended = false;
+    if (_timer_event_missed == true) {
+        _run_timer_procs(false);
+        _timer_event_missed = false;
+    }
 }
 
-void AVRScheduler::_timer_event() {
+void AVRScheduler::_timer_isr_event() {
     // we enable the interrupt again immediately and also enable
     // interrupts. This allows other time critical interrupts to
     // run (such as the serial receive interrupt). We catch the
@@ -131,6 +135,10 @@ void AVRScheduler::_timer_event() {
 
     TCNT2 = RESET_TCNT2_VALUE;
     sei();
+    _run_timer_procs(true);
+}
+
+void AVRScheduler::_run_timer_procs(bool called_from_isr) {
 
     uint32_t tnow = _timer.micros();
     if (_in_timer_proc) {
@@ -149,6 +157,7 @@ void AVRScheduler::_timer_event() {
         }
         return;
     }
+
     _in_timer_proc = true;
 
     if (!_timer_suspended) {
@@ -158,6 +167,8 @@ void AVRScheduler::_timer_event() {
                 _timer_proc[i](tnow);
             }
         }
+    } else if (called_from_isr) {
+        _timer_event_missed = true;
     }
 
     // and the failsafe, if one is setup
@@ -166,22 +177,6 @@ void AVRScheduler::_timer_event() {
     }
 
     _in_timer_proc = false;
-}
-
-void AVRScheduler::begin_atomic() {
-    _nested_atomic_ctr++;
-    cli();
-}
-
-void AVRScheduler::end_atomic() {
-	if (_nested_atomic_ctr == 0) {
-        hal.uartA->println_P(PSTR("ATOMIC NESTING ERROR"));
-        return;
-    }
-    _nested_atomic_ctr--;
-    if (_nested_atomic_ctr == 0) {
-        sei();
-    }
 }
 
 void AVRScheduler::panic(const prog_char_t* errormsg) {

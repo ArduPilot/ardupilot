@@ -1,4 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include <AP_HAL.h>
+
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
@@ -60,12 +66,14 @@ bool AVRSemaphore::_take_from_mainloop(uint32_t timeout_ms) {
 
 bool AVRSemaphore::_take_nonblocking() {
     bool result = false;
-    hal.scheduler->begin_atomic();
+    uint8_t sreg = SREG;
+    cli();
     if (!_taken) {
         _taken = true;
         result = true;
     }
-    hal.scheduler->end_atomic();
+    SREG = sreg;
     return result;
 }
 
+#endif // CONFIG_HAL_BOARD
