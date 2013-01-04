@@ -8,6 +8,8 @@
 #include <AP_Param.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_PX4.h>
+#include <AP_HAL_Empty.h>
 
 #include <AP_Math.h>    // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Declination.h>
@@ -15,16 +17,21 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+AP_Compass_PX4 compass;
+#else
 AP_Compass_HMC5843 compass;
+#endif
 uint32_t timer;
 
 void setup() {
-    hal.console->println("Compass library test (HMC5843 and HMC5883L)");
+    hal.console->println("Compass library test");
 
     if (!compass.init()) {
         hal.console->println("compass initialisation failed!");
         while (1) ;
     }
+    hal.console->println("init done");
 
     compass.set_orientation(AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD); // set compass's orientation on aircraft.
     compass.set_offsets(0,0,0); // set offsets to account for surrounding interference
@@ -40,6 +47,9 @@ void setup() {
         break;
     case AP_COMPASS_TYPE_HMC5883L:
         hal.console->println("HMC5883L");
+        break;
+    case AP_COMPASS_TYPE_PX4:
+        hal.console->println("PX4");
         break;
     default:
         hal.console->println("unknown");
@@ -92,12 +102,12 @@ void loop()
         offset[2] = -(max[2]+min[2])/2;
 
         // display all to user
-        hal.console->printf("Heading: %.2f (%3u,%3u,%3u) i2c error: %u",
-                      ToDeg(heading),
-                      compass.mag_x,
-                      compass.mag_y,
-                      compass.mag_z, 
-		              hal.i2c->lockup_count());
+        hal.console->printf("Heading: %.2f (%3d,%3d,%3d) i2c error: %u",
+			    ToDeg(heading),
+			    (int)compass.mag_x,
+			    (int)compass.mag_y,
+			    (int)compass.mag_z, 
+			    (unsigned)hal.i2c->lockup_count());
 
         // display offsets
         hal.console->printf(" offsets(%.2f, %.2f, %.2f)",
@@ -106,6 +116,8 @@ void loop()
         hal.console->printf(" t=%u", (unsigned)read_time);
 
         hal.console->println();
+    } else {
+	    hal.scheduler->delay(1);
     }
 }
 
