@@ -226,6 +226,7 @@ enum gcs_severity {
 
 #define AP_BARO_BMP085   1
 #define AP_BARO_MS5611   2
+#define AP_BARO_PX4      3
 
 // altitude control algorithms
 enum {

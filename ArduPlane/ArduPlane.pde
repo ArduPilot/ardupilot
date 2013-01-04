@@ -152,6 +152,8 @@ SITL sitl;
 
   #if CONFIG_BARO == AP_BARO_BMP085
 static AP_Baro_BMP085 barometer;
+  #elif CONFIG_BARO == AP_BARO_PX4
+static AP_Baro_PX4 barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
    #if CONFIG_MS5611_SERIAL == SPI
 static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
@@ -162,7 +164,11 @@ static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
    #endif
   #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static AP_Compass_PX4 compass;
+#else
 static AP_Compass_HMC5843 compass;
+#endif
  #endif
 
 // real GPS selection
@@ -193,6 +199,8 @@ AP_GPS_None     g_gps_driver();
 
  # if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
 AP_InertialSensor_MPU6000 ins;
+ # elif CONFIG_INS_TYPE == CONFIG_INS_PX4
+AP_InertialSensor_PX4 ins;
  # elif CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
 AP_InertialSensor_Oilpan ins( &adc );
  #endif // CONFIG_INS_TYPE

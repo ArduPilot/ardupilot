@@ -142,12 +142,10 @@
  # define LED_OFF          HIGH
  # define BATTERY_VOLT_PIN      -1
  # define BATTERY_CURR_PIN      -1
- # define CONFIG_INS_TYPE CONFIG_INS_STUB
+ # define CONFIG_INS_TYPE CONFIG_INS_PX4
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
-
- // force HIL mode until we have the drivers done
- # define HIL_MODE HIL_MODE_SENSORS
+ # define CONFIG_BARO AP_BARO_PX4
 #endif
 
 
