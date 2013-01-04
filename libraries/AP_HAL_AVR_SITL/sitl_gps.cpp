@@ -119,6 +119,7 @@ void SITL_State::_gps_send(uint8_t msgid, uint8_t *buf, uint16_t size)
 void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 			     double speedN, double speedE, bool have_lock)
 {
+	#pragma pack(push,1)
 	struct ubx_nav_posllh {
 		uint32_t	time; // GPS msToW
 		int32_t		longitude;
@@ -167,6 +168,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 		uint8_t satellites;
 		uint32_t res2;
 	} sol;
+	#pragma pack(pop)
         const uint8_t MSG_POSLLH = 0x2;
 	const uint8_t MSG_STATUS = 0x3;
 	const uint8_t MSG_VELNED = 0x12;
