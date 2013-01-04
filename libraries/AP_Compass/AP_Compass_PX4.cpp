@@ -20,7 +20,6 @@
 #include <unistd.h>
 
 #include <drivers/drv_mag.h>
-#include <poll.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -30,7 +29,6 @@ extern const AP_HAL::HAL& hal;
 
 bool AP_Compass_PX4::init(void)
 {
-    hal.console->printf("PX4 compass init started\n");
 	_mag_fd = open(MAG_DEVICE_PATH, O_RDONLY);
 	if (_mag_fd < 0) {
         hal.console->printf("Unable to open " MAG_DEVICE_PATH);
@@ -43,17 +41,19 @@ bool AP_Compass_PX4::init(void)
 	/* set the driver to poll at 150Hz */
 	ioctl(_mag_fd, SENSORIOCSPOLLRATE, 150);
 
+    // average over up to 10 samples
+    ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 10);
+
     healthy = false;
     _count = 0;
     _sum.zero();
-
-    hal.console->printf("PX4 compass init done\n");
 
     return true;
 }
 
 bool AP_Compass_PX4::read(void)
 {
+    accumulate();
     while (_count == 0) {
         accumulate();
         if (_count == 0) {
@@ -81,22 +81,12 @@ bool AP_Compass_PX4::read(void)
 
 void AP_Compass_PX4::accumulate(void)
 {
-    struct pollfd fds;
-    int ret;
-
-    fds.fd = _mag_fd;
-    fds.events = POLLIN;
-    ret = poll(&fds, 1, 0);
-
-	if (ret == 1) {
-        // data is available
-		struct mag_report mag_report;
-        if (::read(_mag_fd, &mag_report, sizeof(mag_report)) == sizeof(mag_report)) {
-            _sum += Vector3f(mag_report.x, mag_report.y, mag_report.z);
-            _count++;
-            healthy = true;
-        }
-	}
+    struct mag_report mag_report;
+    while (::read(_mag_fd, &mag_report, sizeof(mag_report)) == sizeof(mag_report)) {
+        _sum += Vector3f(mag_report.x, mag_report.y, mag_report.z);
+        _count++;
+        healthy = true;
+    }
 }
 
 #endif // CONFIG_HAL_BOARD
