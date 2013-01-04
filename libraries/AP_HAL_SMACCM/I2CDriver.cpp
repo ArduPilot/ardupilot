@@ -29,6 +29,7 @@ using namespace SMACCM;
 void SMACCMI2CDriver::begin()
 {
   i2c_init(I2C_BUS, I2C_SDA, I2C_SCL);
+  _semaphore.init();
 }
 
 // XXX hwf4 doesn't support de-initialization
@@ -44,6 +45,11 @@ void SMACCMI2CDriver::setTimeout(uint16_t ms)
 // XXX hwf4 always uses standard speed
 void SMACCMI2CDriver::setHighSpeed(bool active)
 {
+}
+
+AP_HAL::Semaphore* SMACCMI2CDriver::get_semaphore()
+{
+  return &_semaphore;
 }
 
 uint8_t SMACCMI2CDriver::write(uint8_t addr, uint8_t len, uint8_t* data)

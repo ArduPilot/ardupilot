@@ -77,6 +77,7 @@ bool AP_Compass_HMC5843::read_raw()
 			hal.i2c->setHighSpeed(false);
         }
         healthy = false;
+        _i2c_sem->give();
         return false;
     }
 
@@ -110,7 +111,12 @@ void AP_Compass_HMC5843::accumulate(void)
 	  // the compass gets new data at 75Hz
 	  return;
    }
-   if (read_raw()) {
+
+   _i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+   bool result = read_raw();
+   _i2c_sem->give();
+
+   if (result) {
 	  // the _mag_N values are in the range -2048 to 2047, so we can
 	  // accumulate up to 15 of them in an int16_t. Let's make it 14
 	  // for ease of calculation. We expect to do reads at 10Hz, and
@@ -157,10 +163,14 @@ AP_Compass_HMC5843::init()
 
     hal.scheduler->delay(10);
 
+    _i2c_sem = hal.i2c->get_semaphore();
+    _i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+
     // determine if we are using 5843 or 5883L
     if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
         !read_register(ConfigRegA, &_base_config)) {
         healthy = false;
+        _i2c_sem->give();
         return false;
     }
     if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
@@ -174,6 +184,7 @@ AP_Compass_HMC5843::init()
         product_id = AP_COMPASS_TYPE_HMC5843;
     } else {
         // not behaving like either supported compass type
+        _i2c_sem->give();
         return false;
     }
 
@@ -249,9 +260,11 @@ AP_Compass_HMC5843::init()
 
     // leave test mode
     if (!re_initialise()) {
+        _i2c_sem->give();
         return false;
     }
 
+    _i2c_sem->give();
     _initialised = true;
 
 	// perform an initial read

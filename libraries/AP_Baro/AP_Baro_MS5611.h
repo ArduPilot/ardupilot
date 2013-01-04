@@ -57,6 +57,12 @@ public:
     virtual uint16_t read_16bits(uint8_t reg);
     virtual uint32_t read_adc();
     virtual void write(uint8_t reg);
+    virtual bool sem_take_nonblocking();
+    virtual bool sem_take_blocking();
+    virtual void sem_give();
+
+private:
+    AP_HAL::Semaphore *_i2c_sem;
 };
 
 class AP_Baro_MS5611 : public AP_Baro

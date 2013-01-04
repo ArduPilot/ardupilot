@@ -2,6 +2,7 @@
 #ifndef AP_Compass_HMC5843_H
 #define AP_Compass_HMC5843_H
 
+#include <AP_HAL.h>
 #include "../AP_Common/AP_Common.h"
 #include "../AP_Math/AP_Math.h"
 
@@ -55,6 +56,7 @@ private:
     bool                read_register(uint8_t address, uint8_t *value);
     bool                write_register(uint8_t address, uint8_t value);
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at
+    AP_HAL::Semaphore*  _i2c_sem;
 
     int16_t			    _mag_x;
     int16_t			    _mag_y;

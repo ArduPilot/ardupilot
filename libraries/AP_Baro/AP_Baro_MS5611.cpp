@@ -143,6 +143,12 @@ void AP_Baro_MS5611_SPI::sem_give()
 
 void AP_Baro_MS5611_I2C::init()
 {
+    _i2c_sem = hal.i2c->get_semaphore();
+    if (_i2c_sem == NULL) {
+        hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS5611 did not get "
+                                  "valid I2C semaphroe!"));
+        return; /* never reached */
+    }
 }
 
 uint16_t AP_Baro_MS5611_I2C::read_16bits(uint8_t reg)
@@ -168,6 +174,36 @@ uint32_t AP_Baro_MS5611_I2C::read_adc()
 void AP_Baro_MS5611_I2C::write(uint8_t reg)
 {
     hal.i2c->write(MS5611_ADDR, 1, &reg);
+}
+
+bool AP_Baro_MS5611_I2C::sem_take_blocking() {
+    return _i2c_sem->take(10);
+}
+
+bool AP_Baro_MS5611_I2C::sem_take_nonblocking()
+{
+    /**
+     * Take nonblocking from a TimerProcess context &
+     * monitor for bad failures
+     */
+    static int semfail_ctr = 0;
+    bool got = _i2c_sem->take_nonblocking();
+    if (!got) {
+        semfail_ctr++;
+        if (semfail_ctr > 100) {
+            hal.scheduler->panic(PSTR("PANIC: failed to take _i2c_sem "
+                        "100 times in a row, in AP_Baro_MS5611::_update"));
+        }
+        return false; /* never reached */
+    } else {
+        semfail_ctr = 0;
+    }
+    return got;
+}
+
+void AP_Baro_MS5611_I2C::sem_give()
+{
+    _i2c_sem->give();
 }
 
 // Public Methods //////////////////////////////////////////////////////////////

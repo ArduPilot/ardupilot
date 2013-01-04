@@ -32,6 +32,7 @@ public:
                                   uint8_t len, uint8_t* data) = 0;
 
     virtual uint8_t lockup_count() = 0;
+    virtual AP_HAL::Semaphore* get_semaphore() = 0;
 };
 
 #endif // __AP_HAL_I2C_DRIVER_H__

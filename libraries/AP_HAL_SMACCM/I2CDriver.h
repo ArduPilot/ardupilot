@@ -15,6 +15,7 @@
 #define __AP_HAL_SMACCM_I2CDRIVER_H__
 
 #include <AP_HAL_SMACCM.h>
+#include "Semaphores.h"
 
 class SMACCM::SMACCMI2CDriver : public AP_HAL::I2CDriver {
 public:
@@ -42,7 +43,10 @@ public:
                                   uint8_t len, uint8_t* data);
 
     uint8_t lockup_count();
+    AP_HAL::Semaphore* get_semaphore();
 
+private:
+    SMACCMSemaphore _semaphore;
 };
 
 #endif // __AP_HAL_SMACCM_I2CDRIVER_H__
