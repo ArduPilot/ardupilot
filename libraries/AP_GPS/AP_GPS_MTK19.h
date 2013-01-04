@@ -28,7 +28,7 @@ public:
     static bool 		_detect(uint8_t );
 
 private:
-// XXX this is being ignored by the compiler #pragma pack(1)
+	#pragma pack(push,1)
     struct diyd_mtk_msg {
         int32_t latitude;
         int32_t longitude;
@@ -41,7 +41,7 @@ private:
         uint32_t utc_time;
         uint16_t hdop;
     };
-// #pragma pack(pop)
+	#pragma pack(pop)
     enum diyd_mtk_fix_type {
         FIX_NONE = 1,
         FIX_2D = 2,

@@ -23,7 +23,7 @@ public:
 	static bool         _detect(uint8_t data);
 
 private:
-// XXX this is being ignored by the compiler #pragma pack(1)
+    #pragma pack(push,1)
     struct sirf_geonav {
         uint16_t fix_invalid;
         uint16_t fix_type;
@@ -61,7 +61,7 @@ private:
         uint8_t hdop;
         uint8_t mode_info;
     };
-// #pragma pack(pop)
+    #pragma pack(pop)
     enum sirf_protocol_bytes {
         PREAMBLE1 = 0xa0,
         PREAMBLE2 = 0xa2,

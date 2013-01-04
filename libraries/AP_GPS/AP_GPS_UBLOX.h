@@ -39,7 +39,7 @@ public:
 
 private:
     // u-blox UBX protocol essentials
-// XXX this is being ignored by the compiler #pragma pack(1)
+	#pragma pack(push,1)
     struct ubx_header {
         uint8_t preamble1;
         uint8_t preamble2;
@@ -124,7 +124,8 @@ private:
         uint32_t speed_accuracy;
         uint32_t heading_accuracy;
     };
-// // #pragma pack(pop)
+	#pragma pack(pop)
+
     enum ubs_protocol_bytes {
         PREAMBLE1 = 0xb5,
         PREAMBLE2 = 0x62,
