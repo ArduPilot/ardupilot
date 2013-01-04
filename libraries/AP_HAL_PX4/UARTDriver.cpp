@@ -74,23 +74,23 @@ void PX4UARTDriver::println_P(const prog_char_t *pstr) {
 void PX4UARTDriver::printf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vdprintf(_fd, fmt, ap);
+    _vdprintf(_fd, fmt, ap);
     va_end(ap);	
 }
 
 void PX4UARTDriver::_printf_P(const prog_char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vdprintf(_fd, fmt, ap);
+    _vdprintf(_fd, fmt, ap);
     va_end(ap);	
 }
 
 void PX4UARTDriver::vprintf(const char *fmt, va_list ap) {
-    vdprintf(_fd, fmt, ap);
+    _vdprintf(_fd, fmt, ap);
 }
 
 void PX4UARTDriver::vprintf_P(const prog_char *fmt, va_list ap) {
-    vdprintf(_fd, fmt, ap);
+    _vdprintf(_fd, fmt, ap);
 }
 
 /* PX4 implementations of Stream virtual methods */
@@ -141,6 +141,25 @@ size_t PX4UARTDriver::write(uint8_t c) {
 		return 0;
 	}
 	return ::write(_fd, &c, 1);
+}
+
+// handle %S -> %s
+void PX4UARTDriver::_vdprintf(int fd, const char *fmt, va_list ap)
+{
+	if (strstr(fmt, "%S")) {
+		char *fmt2 = strdup(fmt);
+		if (fmt2 != NULL) {
+			for (uint16_t i=0; fmt2[i]; i++) {
+				if (fmt2[i] == '%' && fmt2[i+1] == 'S') {
+					fmt2[i+1] = 's';
+				}
+			}
+			vdprintf(fd, fmt2, ap);
+			free(fmt2);
+		}
+	} else {
+		vdprintf(fd, fmt, ap);
+	}	
 }
 
 #endif // CONFIG_HAL_BOARD
