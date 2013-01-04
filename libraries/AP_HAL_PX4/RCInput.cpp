@@ -12,10 +12,7 @@ extern uint16_t ppm_buffer[];
 extern unsigned ppm_decoded_channels;
 extern uint64_t ppm_last_valid_decode;
 
-PX4RCInput::PX4RCInput()
-{}
-
-void PX4RCInput::init(void* machtnichts)
+void PX4RCInput::init(void* unused)
 {
 	clear_overrides();
 }

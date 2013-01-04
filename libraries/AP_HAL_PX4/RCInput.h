@@ -8,7 +8,6 @@
 
 class PX4::PX4RCInput : public AP_HAL::RCInput {
 public:
-    PX4RCInput();
     void init(void* machtnichts);
     uint8_t  valid();
     uint16_t read(uint8_t ch);
