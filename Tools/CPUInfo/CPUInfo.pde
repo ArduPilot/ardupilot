@@ -86,7 +86,6 @@ static void show_timings(void)
 	hal.console->println("Note: timings for some operations are very data dependent");
 
 	TIMEIT("nop", asm volatile("nop"::), 255);
-	TIMEIT("cli/sei", hal.scheduler->begin_atomic(); hal.scheduler->end_atomic(), 255);
 
 	TIMEIT("micros()", hal.scheduler->micros(), 200);
 	TIMEIT("millis()", hal.scheduler->millis(), 200);
