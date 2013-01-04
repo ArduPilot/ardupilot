@@ -20,16 +20,19 @@ extern const AP_HAL::HAL& hal;
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_PX4::init(void)
 {
-	_baro_fd = open(BARO_DEVICE_PATH, O_RDONLY);
-	if (_baro_fd < 0) {
-        hal.scheduler->panic("Unable to open " BARO_DEVICE_PATH);
-	}
+    if (_baro_fd == -1) {
+        _baro_fd = open(BARO_DEVICE_PATH, O_RDONLY);
+        if (_baro_fd < 0) {
+            hal.scheduler->panic("Unable to open " BARO_DEVICE_PATH);
+        }
 
-	/* set the driver to poll at 150Hz */
-	ioctl(_baro_fd, SENSORIOCSPOLLRATE, 150);
+        /* set the driver to poll at 150Hz */
+        ioctl(_baro_fd, SENSORIOCSPOLLRATE, 150);
 
-    // average over up to 10 samples
-    ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
+        // average over up to 10 samples
+        ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
+        hal.console->printf("AP_Baro_PX4: init done fd=%d\n", _baro_fd);
+    }
 
     return true;
 }

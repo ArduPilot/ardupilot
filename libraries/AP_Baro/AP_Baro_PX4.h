@@ -8,6 +8,9 @@
 class AP_Baro_PX4 : public AP_Baro
 {
 public:
+    AP_Baro_PX4() : AP_Baro() {
+        _baro_fd = -1;
+    }
     bool init();
     uint8_t read();
     float get_pressure();
