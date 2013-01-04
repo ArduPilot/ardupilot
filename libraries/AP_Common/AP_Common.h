@@ -88,7 +88,8 @@ struct Location {
 #define AP_PRODUCT_ID_NONE                      0x00    // Hardware in the loop
 #define AP_PRODUCT_ID_APM1_1280         0x01    // APM1 with 1280 CPUs
 #define AP_PRODUCT_ID_APM1_2560         0x02    // APM1 with 2560 CPUs
-#define AP_PRODUCT_ID_SITL                      0x03    // Software in the loop
+#define AP_PRODUCT_ID_SITL              0x03    // Software in the loop
+#define AP_PRODUCT_ID_PX4               0x04    // PX4 on NuttX
 #define AP_PRODUCT_ID_APM2ES_REV_C4 0x14        // APM2 with MPU6000ES_REV_C4
 #define AP_PRODUCT_ID_APM2ES_REV_C5     0x15    // APM2 with MPU6000ES_REV_C5
 #define AP_PRODUCT_ID_APM2ES_REV_D6     0x16    // APM2 with MPU6000ES_REV_D6
