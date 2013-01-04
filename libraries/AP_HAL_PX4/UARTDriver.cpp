@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <poll.h>
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>

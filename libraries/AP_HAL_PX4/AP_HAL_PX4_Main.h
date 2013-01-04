@@ -7,10 +7,6 @@
     extern "C" __EXPORT int SKETCH_MAIN(int argc, char * const argv[]); \
     int SKETCH_MAIN(int argc, char * const argv[]) {	\
 	hal.init(argc, argv); \
-        setup(); \
-        for(;;) { \
-		loop(); \
-	} \
 	return OK; \
     }
 
