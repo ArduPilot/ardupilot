@@ -421,6 +421,15 @@ static void check_short_failsafe()
 
 static void startup_INS_ground(bool force_accel_level)
 {
+#if HIL_MODE != HIL_MODE_DISABLED
+    while (!barometer.healthy) {
+        // the barometer becomes healthy when we get the first
+        // HIL_STATE message
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
+        delay(1000);
+    }
+#endif
+
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
     mavlink_delay(500);
 
