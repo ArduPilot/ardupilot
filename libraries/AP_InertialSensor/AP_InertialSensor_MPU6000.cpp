@@ -374,9 +374,9 @@ void AP_InertialSensor_MPU6000::_read_data_transaction() {
     memset(tx,0,15);
     tx[0] = MPUREG_ACCEL_XOUT_H | 0x80;
     _spi->transaction(tx, rx, 15);
-    
+
     for (uint8_t i = 0; i < 7; i++) {
-        _sum[i] += ((rx[2*i+1] << 8) | rx[2*i+2]);
+        _sum[i] += (int16_t)(((uint16_t)rx[2*i+1] << 8) | rx[2*i+2]);
     }   
     
     _count++;
