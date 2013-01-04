@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <termios.h>
 
 using namespace PX4;
 
@@ -23,11 +24,11 @@ PX4UARTDriver::PX4UARTDriver(const char *devpath) {
 extern const AP_HAL::HAL& hal;
 
 /*
-  this UART driver just maps to fd 0/1, which goes to whatever is
-  setup for the PX4 console. Baud rate control is not available.
+  this UART driver maps to a serial device in /dev
  */
 
-void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) {
+void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
+{
 	if (!_initialised) {
 		_fd = open(_devpath, O_RDWR);
 		if (_fd == -1) {
@@ -37,9 +38,18 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) {
 		}
 		_initialised = true;
 	}
+
+	if (b != 0) {
+		// set the baud rate
+		struct termios t;
+		tcgetattr(_fd, &t);
+		cfsetspeed(&t, b);
+		tcsetattr(_fd, TCSANOW, &t);
+	}
 }
 
-void PX4UARTDriver::begin(uint32_t b) {
+void PX4UARTDriver::begin(uint32_t b) 
+{
 	begin(b, 0, 0);
 }
 
