@@ -172,6 +172,7 @@ protected:
 #include "AP_InertialSensor_Oilpan.h"
 #include "AP_InertialSensor_MPU6000.h"
 #include "AP_InertialSensor_Stub.h"
+#include "AP_InertialSensor_PX4.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__
