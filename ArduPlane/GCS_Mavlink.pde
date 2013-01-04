@@ -1800,11 +1800,12 @@ mission_failed:
         float vel = pythagorous2(packet.vx, packet.vy);
         float cog = wrap_360_cd(ToDeg(atan2(packet.vy, packet.vx)) * 100);
 
-        // set gps hil sensor
-        g_gps->setHIL(packet.time_usec/1000,
-                      packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
-                      vel*1.0e-2, cog*1.0e-2, 0, 10);
-
+        if (g_gps != NULL) {
+            // set gps hil sensor
+            g_gps->setHIL(packet.time_usec/1000,
+                          packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
+                          vel*1.0e-2, cog*1.0e-2, 0, 10);
+        }
 
         // rad/sec
         Vector3f gyros;
