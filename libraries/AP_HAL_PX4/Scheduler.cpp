@@ -14,6 +14,7 @@
 #include <drivers/drv_hrt.h>
 #include <nuttx/arch.h>
 #include <systemlib/systemlib.h>
+#include <poll.h>
 
 using namespace PX4;
 
@@ -66,14 +67,11 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
 
 void PX4Scheduler::delay(uint16_t ms)
 {
-	uint32_t start = micros();
+	uint64_t start = hrt_absolute_time();
     
-    while (ms > 0) {
-        while ((micros() - start) >= 1000) {
-            ms--;
-            if (ms == 0) break;
-            start += 1000;
-        }
+    while ((hrt_absolute_time() - start)/1000 < ms) {
+        // this yields the CPU to other apps
+        poll(NULL, 0, 1);
         if (_min_delay_cb_ms <= ms) {
             if (_delay_cb) {
                 _delay_cb();
