@@ -119,8 +119,9 @@ restart:
         case 3:
             _buffer.bytes[_payload_counter++] = data;
             _ck_b += (_ck_a += data);
-            if (_payload_counter == sizeof(_buffer))
+            if (_payload_counter == sizeof(_buffer)) {
                 _step++;
+			}
             break;
 
         // Checksum and message processing
@@ -129,12 +130,13 @@ restart:
             _step++;
             if (_ck_a != data) {
                 _step               = 0;
+				goto restart;
             }
             break;
         case 5:
             _step                   = 0;
             if (_ck_b != data) {
-                break;
+				goto restart;
             }
 
             fix                     = ((_buffer.msg.fix_type == FIX_3D) ||
@@ -209,6 +211,7 @@ restart:
                 ck_b = ck_a         = data;
             } else {
                 step                = 0;
+				goto restart;
             }
             break;
         case 3:
@@ -220,14 +223,15 @@ restart:
             step++;
             if (ck_a != data) {
                 step 				= 0;
+				goto restart;
             }
             break;
         case 5:
             step                    = 0;
-            if (ck_b == data) {
-                return true;
-            }
-			break;
+            if (ck_b != data) {
+				goto restart;
+			}
+			return true;
 	}
     return false;
 }
