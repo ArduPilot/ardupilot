@@ -6,6 +6,7 @@
 
 class Empty::EmptyI2CDriver : public AP_HAL::I2CDriver {
 public:
+    EmptyI2CDriver(AP_HAL::Semaphore* semaphore) : _semaphore(semaphore) {}
     void begin();
     void end();
     void setTimeout(uint16_t ms);
@@ -31,6 +32,10 @@ public:
 
     uint8_t lockup_count();
 
+    AP_HAL::Semaphore* get_semaphore() { return _semaphore; }
+
+private:
+    AP_HAL::Semaphore* _semaphore;
 };
 
 #endif // __AP_HAL_EMPTY_I2CDRIVER_H__
