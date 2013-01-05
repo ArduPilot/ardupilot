@@ -419,9 +419,11 @@ enum gcs_severity {
 #define CONFIG_IMU_OILPAN  1
 #define CONFIG_IMU_MPU6000 2
 #define CONFIG_IMU_SITL    3
+#define CONFIG_IMU_PX4     4
 
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2
+#define AP_BARO_PX4       3
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1

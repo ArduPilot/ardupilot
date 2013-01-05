@@ -193,6 +193,8 @@ AP_InertialSensor_MPU6000 ins;
 AP_InertialSensor_Oilpan ins(&adc);
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
 AP_InertialSensor_Stub ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
+AP_InertialSensor_PX4 ins;
  #endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -204,6 +206,8 @@ SITL sitl;
 // Otherwise, instantiate a real barometer and compass driver
   #if CONFIG_BARO == AP_BARO_BMP085
 AP_Baro_BMP085 barometer;
+  #elif CONFIG_BARO == AP_BARO_PX4
+AP_Baro_PX4 barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
    #if CONFIG_MS5611_SERIAL == SPI
 AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
@@ -214,7 +218,11 @@ AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
    #endif
   #endif
 
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+AP_Compass_PX4 compass;
+ #else
 AP_Compass_HMC5843 compass;
+ #endif
  #endif
 
  #if OPTFLOW == ENABLED
