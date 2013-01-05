@@ -73,6 +73,7 @@ AP_GPS_UBLOX::read(void)
         // read the next byte
         data = _port->read();
 
+	reset:
         switch(_step) {
 
         // Message preamble detection
@@ -131,6 +132,7 @@ AP_GPS_UBLOX::read(void)
                 // assume very large payloads are line noise
                 _payload_length = 0;
                 _step = 0;
+				goto reset;
             }
             _payload_counter = 0;                               // prepare to receive payload
             break;
@@ -152,7 +154,8 @@ AP_GPS_UBLOX::read(void)
             _step++;
             if (_ck_a != data) {
                 Debug("bad cka %x should be %x", data, _ck_a);
-                _step = 0;                                              // bad checksum
+                _step = 0;
+				goto reset;
             }
             break;
         case 8:
@@ -378,6 +381,7 @@ AP_GPS_UBLOX::_detect(uint8_t data)
 	static uint8_t step;
 	static uint8_t ck_a, ck_b;
 
+reset:
 	switch (step) {
         case 1:
             if (PREAMBLE2 == data) {
@@ -416,6 +420,7 @@ AP_GPS_UBLOX::_detect(uint8_t data)
             step++;
             if (ck_a != data) {
                 step = 0;
+				goto reset;
             }
             break;
         case 8:
@@ -423,6 +428,8 @@ AP_GPS_UBLOX::_detect(uint8_t data)
 			if (ck_b == data) {
 				// a valid UBlox packet
 				return true;
+			} else {
+				goto reset;
 			}
     }
     return false;

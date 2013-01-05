@@ -124,6 +124,15 @@ private:
         uint32_t speed_accuracy;
         uint32_t heading_accuracy;
     };
+    // Receive buffer
+    union {
+        ubx_nav_posllh posllh;
+        ubx_nav_status status;
+        ubx_nav_solution solution;
+        ubx_nav_velned velned;
+        ubx_cfg_nav_settings nav_settings;
+        uint8_t bytes[];
+    } _buffer;
 	#pragma pack(pop)
 
     enum ubs_protocol_bytes {
@@ -178,16 +187,6 @@ private:
     bool            _new_speed;
 
     uint8_t         _disable_counter;
-
-    // Receive buffer
-    union {
-        ubx_nav_posllh posllh;
-        ubx_nav_status status;
-        ubx_nav_solution solution;
-        ubx_nav_velned velned;
-        ubx_cfg_nav_settings nav_settings;
-        uint8_t bytes[];
-    } _buffer;
 
     // Buffer parse & GPS state update
     bool        _parse_gps();
