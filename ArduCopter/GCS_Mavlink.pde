@@ -614,11 +614,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_raw_imu3(chan);
         break;
 
-    case MSG_GPS_STATUS:
-        CHECK_PAYLOAD_SIZE(GPS_STATUS);
-        send_gps_status(chan);
-        break;
-
     case MSG_CURRENT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
         send_current_waypoint(chan);
@@ -994,16 +989,6 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_LIMITS_STATUS);
-
-
-        if (last_gps_satellites != g_gps->num_sats) {
-            // this message is mostly a huge waste of bandwidth,
-            // except it is the only message that gives the number
-            // of visible satellites. So only send it when that
-            // changes.
-            send_message(MSG_GPS_STATUS);
-            last_gps_satellites = g_gps->num_sats;
-        }
     }
 
     if (stream_trigger(STREAM_POSITION)) {
