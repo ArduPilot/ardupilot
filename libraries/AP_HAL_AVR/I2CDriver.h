@@ -9,7 +9,7 @@
 
 class AP_HAL_AVR::AVRI2CDriver : public AP_HAL::I2CDriver {
 public:
-    AVRI2CDriver() {}
+    AVRI2CDriver(AP_HAL::Semaphore *sem) : _sem(sem) {}
 
     void begin();
     void end();
@@ -26,6 +26,8 @@ public:
                           uint8_t len, uint8_t* data);
     uint8_t lockup_count() { return _lockup_count; }
 
+    AP_HAL::Semaphore* get_semaphore() { return _sem; }
+
 private:
     uint8_t _start();
     uint8_t _stop();
@@ -39,6 +41,8 @@ private:
     
     uint8_t _lockup_count;
     uint16_t _timeoutDelay;
+
+    AP_HAL::Semaphore *_sem;
 };
 
 #endif // __AP_HAL_AVR_I2C_DRIVER_H__

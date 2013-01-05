@@ -21,7 +21,8 @@ AVRUARTDriverInstance(avrUart0Driver, 0);
 AVRUARTDriverInstance(avrUart1Driver, 1);
 AVRUARTDriverInstance(avrUart2Driver, 2);
 
-static AVRI2CDriver     avrI2CDriver;
+static AVRSemaphore     i2cSemaphore;
+static AVRI2CDriver     avrI2CDriver(&i2cSemaphore);
 static APM2SPIDeviceManager apm2SPIDriver;
 static AVRAnalogIn      avrAnalogIn;
 static AVREEPROMStorage avrEEPROMStorage;
