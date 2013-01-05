@@ -34,7 +34,8 @@ static SITLAnalogIn sitlAnalogIn(&sitlState);
 
 // use the Empty HAL for hardware we don't emulate
 static Empty::EmptyGPIO emptyGPIO;
-static Empty::EmptyI2CDriver emptyI2C;
+static Empty::EmptySemaphore emptyI2Csemaphore;
+static Empty::EmptyI2CDriver emptyI2C(&emptyI2Csemaphore);
 static Empty::EmptySPIDeviceManager emptySPI;
 
 static SITLUARTDriver sitlUart0Driver(0, &sitlState);
