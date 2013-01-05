@@ -11,6 +11,9 @@ static void failsafe_on_event()
         return;
     }
 
+    // log the error to the dataflash
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_THROTTLE);
+
     // This is how to handle a failsafe.
     switch(control_mode) {
         case STABILIZE:
@@ -46,9 +49,6 @@ static void failsafe_on_event()
             }
             break;
     }
-
-    // log the error to the dataflash
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_THROTTLE);
 
 }
 
