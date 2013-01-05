@@ -4,9 +4,7 @@
 
 #include <AP_HAL_Namespace.h>
 
-#include <limits.h>
-
-#define HAL_SEMAPHORE_BLOCK_FOREVER UINT32_MAX
+#define HAL_SEMAPHORE_BLOCK_FOREVER ((uint32_t) 0xFFFFFFFF)
 
 class AP_HAL::Semaphore {
 public:
