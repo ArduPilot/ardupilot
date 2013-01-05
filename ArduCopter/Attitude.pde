@@ -988,22 +988,22 @@ get_throttle_rate(int16_t z_target_speed)
 static void
 get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
-    int32_t altitude_error;
+    int32_t alt_error;
     int16_t desired_rate;
     int32_t linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate altitude error
-    altitude_error    = target_alt - current_loc.alt;
+    alt_error    = target_alt - current_loc.alt;
 
     // check kP to avoid division by zero
     if( g.pi_alt_hold.kP() != 0 ) {
         linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
-        if( altitude_error > 2*linear_distance ) {
-            desired_rate = sqrt(2*250*(altitude_error-linear_distance));
-        }else if( altitude_error < -2*linear_distance ) {
-            desired_rate = -sqrt(2*250*(-altitude_error-linear_distance));
+        if( alt_error > 2*linear_distance ) {
+            desired_rate = sqrt(2*250*(alt_error-linear_distance));
+        }else if( alt_error < -2*linear_distance ) {
+            desired_rate = -sqrt(2*250*(-alt_error-linear_distance));
         }else{
-            desired_rate = g.pi_alt_hold.get_p(altitude_error);
+            desired_rate = g.pi_alt_hold.get_p(alt_error);
         }
     }else{
         desired_rate = 0;
@@ -1013,6 +1013,9 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
 
     // call rate based throttle controller which will update accel based throttle controller targets
     get_throttle_rate(desired_rate);
+
+    // update altitude error reported to GCS
+    altitude_error = alt_error;
 
     // TO-DO: enabled PID logging for this controller
 }
