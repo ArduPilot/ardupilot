@@ -484,6 +484,8 @@ MOTOR_CLASS motors(CONFIG_APM_HARDWARE, &APM_RC, &g.rc_1, &g.rc_2, &g.rc_3, &g.r
 static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
+// used to limit the rate that the pid controller output is logged so that it doesn't negatively affect performance
+static uint8_t pid_log_counter;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -1363,7 +1365,7 @@ static void super_slow_loop()
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
-    static int log_counter = 0;
+    static uint8_t of_log_counter = 0;
 
     // if new data has arrived, process it
     if( optflow.last_update != last_of_update ) {
@@ -1371,9 +1373,9 @@ static void update_optical_flow(void)
         optflow.update_position(ahrs.roll, ahrs.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
 
         // write to log at 5hz
-        log_counter++;
-        if( log_counter >= 4 ) {
-            log_counter = 0;
+        of_log_counter++;
+        if( of_log_counter >= 4 ) {
+            of_log_counter = 0;
             if (g.log_bitmask & MASK_LOG_OPTFLOW) {
                 Log_Write_Optflow();
             }
