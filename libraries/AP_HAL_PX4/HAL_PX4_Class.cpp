@@ -26,7 +26,8 @@
 
 using namespace PX4;
 
-static Empty::EmptyI2CDriver  i2cDriver;
+static Empty::EmptySemaphore  i2cSemaphore;
+static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::EmptySPIDeviceManager spiDeviceManager;
 static Empty::EmptyAnalogIn analogIn;
 static Empty::EmptyGPIO gpioDriver;
