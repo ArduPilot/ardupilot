@@ -27,12 +27,15 @@ void PX4RCOutput::init(void* unused)
 
 void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {
-	// no support for this yet
+    // we can't set this per channel yet
+    if (ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) == 0) {
+        _freq_hz = freq_hz;
+    }
 }
 
 uint16_t PX4RCOutput::get_freq(uint8_t ch) 
 {
-	return 50;
+	return _freq_hz;
 }
 
 void PX4RCOutput::enable_ch(uint8_t ch)
