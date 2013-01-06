@@ -331,7 +331,6 @@ bool AP_InertialSensor_MPU6000::_data_ready()
 void AP_InertialSensor_MPU6000::_poll_data(uint32_t now)
 {
     if (_data_ready()) {
-        _last_sample_time_micros = now;
         _read_data_from_timerprocess();
     }
 }
@@ -358,6 +357,7 @@ void AP_InertialSensor_MPU6000::_read_data_from_timerprocess()
         semfail_ctr = 0;
     }   
 
+    _last_sample_time_micros = hal.scheduler->micros();
     _read_data_transaction();
 
     _spi_sem->give();
