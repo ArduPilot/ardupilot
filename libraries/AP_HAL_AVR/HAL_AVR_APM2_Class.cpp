@@ -68,6 +68,19 @@ void HAL_AVR_APM2::init(int argc, char * const argv[]) const {
     i2c->begin();
     i2c->setTimeout(100);
     analogin->init(NULL);
+
+    /* Enable the pullups on the RX pins of the 3 UARTs This is important when
+     * the RX line is high-Z: capacitive coupling between input and output pins
+     * can cause bytes written to show up as an input. Occasionally this causes
+     * us to detect a phantom GPS by seeing our own outgoing config message.
+     * PE0 : RX0 (uartA)
+     * PD2 : RX1 (uartB)
+     * PH0 : RX2 (uartC)
+     */
+
+    PORTE |= _BV(0);
+    PORTD |= _BV(2);
+    PORTH |= _BV(0);
 };
 
 const HAL_AVR_APM2 AP_HAL_AVR_APM2;
