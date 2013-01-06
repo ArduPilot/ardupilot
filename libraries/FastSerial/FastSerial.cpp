@@ -68,6 +68,18 @@ FastSerial::FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volati
 					   _txBuffer(&__FastSerial__txBuffer[portNumber])
 {
 	setInitialized(portNumber);
+
+	// these bit settings enable pullups on the RX pin on the 3
+	// UARTs. This is important as otherwise we can get capacitive
+	// coupling between the input and output pins, leading us to
+	// read back any bytes we send to the UART as input
+	// bytes. This can cause us to detect a phantom GPS by seeing
+	// our config messages as valid input message, with a valid
+	// checksum.
+	PORTE |= (1<<0);
+	PORTD |= (1<<2);
+	PORTH |= (1<<0);
+
 	begin(57600);
 }
 
