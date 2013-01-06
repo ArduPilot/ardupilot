@@ -6,25 +6,6 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_InertialNav::var_info[] PROGMEM = {
-    // @Param: ACORR_X
-    // @DisplayName: Inertial Nav accelerometer offset correction on x-axis
-    // @Description: Accelerometer offset correction for the x-axis.  Calculated automatically
-    // @Range: -100 100
-    // @Increment: 0.1
-
-    // @Param: ACORR_Y
-    // @DisplayName: Inertial Nav accelerometer correction on y-axis
-    // @Description: Accelerometer offset correction for the y-axis.  Calculated automatically
-    // @Range: -100 100
-    // @Increment: 0.1
-
-    // @Param: ACORR_Z
-    // @DisplayName: Inertial Nav accelerometer correction on z-axis
-    // @Description: Accelerometer offset correction for the z-axis.  Calculated automatically
-    // @Range: -100 100
-    // @Increment: 0.1
-    AP_GROUPINFO("ACORR",   0, AP_InertialNav, accel_correction, 0),
-
     // @Param: TC_XY
     // @DisplayName: Horizontal Time Constant
     // @Description: Time constant for GPS and accel mixing. Higher TC decreases GPS impact on position estimate
@@ -51,15 +32,11 @@ void AP_InertialNav::init()
 
 // save_params - save all parameters to eeprom
 void AP_InertialNav::save_params()
-{
-    Vector3f accel_corr = accel_correction.get();
-    accel_correction.set_and_save(accel_corr);
-}
+{}
 
 // update - updates velocities and positions using latest info from ahrs, ins and barometer if new data is available;
 void AP_InertialNav::update(float dt)
 {
-    Vector3f acc_corr = accel_correction.get();
     Vector3f accel_ef;
     Vector3f velocity_increase;
 
@@ -74,8 +51,6 @@ void AP_InertialNav::update(float dt)
     // check gps
     check_gps();
 
-    // convert accelerometer readings to earth frame
-    Matrix3f dcm = _ahrs->get_dcm_matrix();
     accel_ef = _ahrs->get_accel_ef();
 
     // remove influence of gravity
@@ -87,12 +62,24 @@ void AP_InertialNav::update(float dt)
         accel_ef.x = 0;
         accel_ef.y = 0;
     }
-
-    // get earth frame accelerometer correction
-    accel_correction_ef = dcm * acc_corr;
-
+    
+    //Convert North-East-Down to North-East-Up
+    accel_ef.z = -accel_ef.z;
+    
+    accel_correction_ef.x += _position_error.x * _k3_xy * dt;
+    accel_correction_ef.y += _position_error.y * _k3_xy * dt;
+    accel_correction_ef.z += _position_error.z * _k3_z  * dt;
+    
+    _velocity.x += _position_error.x * _k2_xy * dt;
+    _velocity.y += _position_error.y * _k2_xy * dt;
+    _velocity.z += _position_error.z * _k2_z  * dt;
+    
+    _position_correction.x += _position_error.x * _k1_xy * dt;
+    _position_correction.y += _position_error.y * _k1_xy * dt;
+    _position_correction.z += _position_error.z * _k1_z  * dt;
+    
     // calculate velocity increase adding new acceleration from accelerometers
-    velocity_increase = (-accel_ef + accel_correction_ef) * dt;
+    velocity_increase = (accel_ef + accel_correction_ef) * dt;
 
     // calculate new estimate of position
     _position_base += (_velocity + velocity_increase*0.5) * dt;
@@ -175,9 +162,6 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     x = (float)(lat - _base_lat) * AP_INERTIALNAV_LATLON_TO_CM;
     y = (float)(lon - _base_lon) * _lon_to_m_scaling * AP_INERTIALNAV_LATLON_TO_CM;
 
-    // convert accelerometer readings to earth frame
-    Matrix3f dcm = _ahrs->get_dcm_matrix();
-
     // correct accelerometer offsets using gps
 
     // ublox gps positions are delayed by 400ms
@@ -192,21 +176,8 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
 
     // calculate error in position from gps with our historical estimate
     // To-Do: check why x and y are reversed
-    float err_x = -x - (hist_position_base_x + _position_correction.x);
-    float err_y = -y - (hist_position_base_y + _position_correction.y);
-
-    // calculate correction to accelerometers and apply in the body frame
-    Vector3f accel_corr = accel_correction.get();
-    accel_corr += dcm.mul_transpose(Vector3f((err_x*_k3_xy)*dt,(err_y*_k3_xy)*dt,0));
-    accel_correction.set(accel_corr);
-
-    // correct velocity
-    _velocity.x += (err_x*_k2_xy) * dt;
-    _velocity.y += (err_y*_k2_xy) * dt;
-
-    // correct position
-    _position_correction.x += err_x*_k1_xy * dt;
-    _position_correction.y += err_y*_k1_xy * dt;
+    _position_error.x = x - (hist_position_base_x + _position_correction.x);
+    _position_error.y = y - (hist_position_base_y + _position_correction.y);
 }
 
 // get accel based latitude
@@ -217,7 +188,7 @@ int32_t AP_InertialNav::get_latitude()
         return 0;
     }
 
-    return _base_lat - (int32_t)((_position_base.x + _position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
+    return _base_lat + (int32_t)((_position_base.x + _position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
 }
 
 // get accel based longitude
@@ -228,7 +199,7 @@ int32_t AP_InertialNav::get_longitude()
         return 0;
     }
 
-    return _base_lon - (int32_t)((_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM));
+    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM));
 }
 
 // set_current_position - all internal calculations are recorded as the distances from this point
@@ -264,7 +235,7 @@ float AP_InertialNav::get_latitude_diff()
         return 0;
     }
 
-    return -((_position_base.x+_position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
+    return ((_position_base.x+_position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
 }
 
 // get accel based longitude
@@ -275,7 +246,7 @@ float AP_InertialNav::get_longitude_diff()
         return 0;
     }
 
-    return -(_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM);
+    return (_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM);
 }
 
 // get velocity in latitude & longitude directions
@@ -286,7 +257,7 @@ float AP_InertialNav::get_latitude_velocity()
         return 0;
     }
 
-    return -_velocity.x;
+    return _velocity.x;
     // Note: is +_velocity.x the output velocity in logs is in reverse direction from accel lat
 }
 
@@ -297,7 +268,7 @@ float AP_InertialNav::get_longitude_velocity()
         return 0;
     }
 
-    return -_velocity.y;
+    return _velocity.y;
 }
 
 // set_velocity_xy - set velocity in latitude & longitude directions (in cm/s)
@@ -345,7 +316,6 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
 {
     static uint8_t first_reads = 0;
     float hist_position_base_z;
-    float accel_ef_z_correction;
 
     // discard samples where dt is too large
     if( dt > 0.5f ) {
@@ -358,9 +328,6 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
         first_reads++;
     }
 
-    // get dcm matrix
-    Matrix3f dcm = _ahrs->get_dcm_matrix();
-
     // 3rd order samples (i.e. position from baro) are delayed by 150ms (15 iterations at 100hz)
     // so we should calculate error using historical estimates
     if( _hist_position_estimate_z.num_items() >= 15 ) {
@@ -370,32 +337,7 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
     }
 
     // calculate error in position from baro with our estimate
-    float err = baro_alt - (hist_position_base_z + _position_correction.z);
-
-    // retrieve the existing accelerometer corrections
-    Vector3f accel_corr = accel_correction.get();
-
-    // calculate the accelerometer correction from this iteration in the earth frame
-    accel_ef_z_correction = err * _k3_z * dt;
-
-    // rotate the correction into the body frame (note: this is a shortened form of dcm.mul_transpose(..) because we have only one axis
-    accel_corr.x += accel_ef_z_correction * dcm.c.x;
-    accel_corr.y += accel_ef_z_correction * dcm.c.y;
-    accel_corr.z += accel_ef_z_correction * dcm.c.z;
-
-    // ensure corrections are reasonable
-    accel_corr.x = constrain(accel_corr.x,-AP_INTERTIALNAV_ACCEL_CORR_MAX,AP_INTERTIALNAV_ACCEL_CORR_MAX);
-    accel_corr.y = constrain(accel_corr.y,-AP_INTERTIALNAV_ACCEL_CORR_MAX,AP_INTERTIALNAV_ACCEL_CORR_MAX);
-    accel_corr.z = constrain(accel_corr.z,-AP_INTERTIALNAV_ACCEL_CORR_MAX,AP_INTERTIALNAV_ACCEL_CORR_MAX);
-
-    // set the parameter to include the corrections
-    accel_correction.set(accel_corr);
-
-    // correct velocity
-    _velocity.z += (err*_k2_z) * dt;
-
-    // correct position
-    _position_correction.z += err*_k1_z * dt;
+    _position_error.z = baro_alt - (hist_position_base_z + _position_correction.z);
 }
 
 // set_altitude - set base altitude estimate in cm

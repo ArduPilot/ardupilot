@@ -790,7 +790,7 @@ struct log_INAV {
 static void Log_Write_INAV()
 {
 #if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
-    Vector3f accel_corr = inertial_nav.accel_correction.get();
+    Vector3f accel_corr = inertial_nav.accel_correction_ef;
 
     struct log_INAV pkt = {
         LOG_PACKET_HEADER_INIT(LOG_INAV_MSG),

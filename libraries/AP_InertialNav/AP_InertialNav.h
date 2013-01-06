@@ -112,7 +112,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // public variables
-    AP_Vector3f             accel_correction;          // acceleration corrections
     Vector3f                accel_correction_ef;        // earth frame accelerometer corrections. here for logging purposes only
 
 protected:
@@ -151,6 +150,7 @@ protected:
     Vector3f                _position_base;             // position estimate
     Vector3f                _position_correction;       // sum of correction to _comp_h from delayed 1st order samples    
     Vector3f                _velocity;                  // latest velocity estimate (integrated from accelerometer values)
+    Vector3f                _position_error;
 };
 
 #endif // __AP_INERTIALNAV_H__
