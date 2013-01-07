@@ -538,7 +538,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         send_heartbeat(chan);
-        return true;
+        break;
 
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
