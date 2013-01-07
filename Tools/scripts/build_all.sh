@@ -11,7 +11,7 @@ pushd ArduPlane
 for b in all apm2 apm2beta apm1-hil apm1-hilsensors apm2-hil apm2-hilsensors sitl sitl-mount sitl-newcontrollers; do
     pwd
     make clean
-    make $b
+    make $b -j4
 done
 popd
 
@@ -20,7 +20,7 @@ pushd ArduCopter
 for b in all apm2 apm2beta apm1-hil apm2-hil sitl heli dmp; do
     pwd
     make clean
-    make $b
+    make $b -j4
 done
 popd
 
@@ -29,7 +29,7 @@ pushd APMrover2
 for b in all apm2 sitl; do
     pwd
     make clean
-    make $b
+    make $b -j4
 done
 popd
 
@@ -39,7 +39,7 @@ examples="Tools/VARTest Tools/CPUInfo"
 for d in $examples; do
     pushd $d
     make clean
-    make
+    make -j4
     popd
 done
 
