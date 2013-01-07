@@ -543,6 +543,13 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         return false;
     }
 
+    // if the ins has new data for the main loop then don't send a
+    // mavlink message. We want to prioritise the main flight control
+    // loop over communications
+    if (main_loop_ready()) {
+        return false;
+    }
+
     switch(id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);

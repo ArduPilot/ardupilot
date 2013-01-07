@@ -927,15 +927,24 @@ void setup() {
     init_ardupilot();
 }
 
+/*
+  return true if the main loop is ready to run. This is used by
+  potentially expensive functions that are not timing critical, to
+  defer the expensive processing until after the main loop has run.
+ */
+static bool main_loop_ready(void)
+{
+    return ins.num_samples_available() >= 2;
+}
+
+
 void loop()
 {
     uint32_t timer = micros();
-    uint16_t num_samples;
 
     // We want this to execute fast
     // ----------------------------
-    num_samples = ins.num_samples_available();
-    if (num_samples >= 2) {
+    if (main_loop_ready()) {
 
         #if DEBUG_FAST_LOOP == ENABLED
         Log_Write_Data(DATA_FAST_LOOP, (int32_t)(timer - fast_loopTimer));
