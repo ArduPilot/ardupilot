@@ -51,6 +51,7 @@ void HAL_SMACCM::init(int argc,char* const argv[]) const
   i2c->begin();
   spi->init(NULL);
   storage->init(NULL);
+  rcin->init(NULL);
 }
 
 const HAL_SMACCM AP_HAL_SMACCM;
