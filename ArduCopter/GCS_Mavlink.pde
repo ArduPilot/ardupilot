@@ -39,6 +39,8 @@ static bool gcs_check()
         sent_message = true;
     }
 
+    gcs_send_message(MSG_RETRY_DEFERRED);
+
     return sent_message;
 }
 
