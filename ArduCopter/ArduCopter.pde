@@ -946,6 +946,16 @@ void loop()
     // ----------------------------
     if (main_loop_ready()) {
 
+#if 0
+        uint16_t num_samples = ins.num_samples_available();
+        static uint16_t counter;
+        if (num_samples != 2 || (counter++ % 200 == 0)) {
+            cliSerial->printf_P(PSTR("num_samples=%u dt=%u\n"),
+                                (unsigned)num_samples,
+                                (unsigned)(timer - fast_loopTimer));
+        }
+#endif
+
         #if DEBUG_FAST_LOOP == ENABLED
         Log_Write_Data(DATA_FAST_LOOP, (int32_t)(timer - fast_loopTimer));
         #endif
