@@ -88,15 +88,22 @@ typedef struct {
   # undef PROGMEM
   # define PROGMEM __attribute__(())
  #else
+ #ifndef __PROG_TYPES_COMPAT__
   # undef PROGMEM
   # define PROGMEM __attribute__(( section(".progmem.data") ))
+ #endif
  #endif
 
  # undef PSTR
   /* Need const type for progmem - new for avr-gcc 4.6 */
   # if __AVR__ && __GNUC__ == 4 && __GNUC_MINOR__ > 5 
+ #ifdef __PROG_TYPES_COMPAT__
+ # define PSTR(s) (__extension__({static const char __c[] PROGMEM = (s); \
+                                   (const prog_char_t *)&__c[0]; }))
+ #else
  # define PSTR(s) (__extension__({static const prog_char __c[] PROGMEM = (s); \
                                   (const prog_char_t *)&__c[0]; }))
+ #endif
   #else
  # define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); \
                                   (prog_char_t *)&__c[0]; }))
@@ -106,7 +113,6 @@ typedef struct {
 // a varient of PSTR() for progmem strings passed to %S in printf()
 // this gets the gcc __format__ checking right
 #define FPSTR(s) (wchar_t *)(s)
-
 
 static inline int        strcasecmp_P(const char *str1, const prog_char_t *pstr)
 {
