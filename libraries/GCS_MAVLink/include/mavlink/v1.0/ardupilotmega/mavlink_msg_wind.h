@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_wind_t
 {
- float direction; ///< wind direction (degrees)
+ float direction; ///< wind direction that wind is coming from (degrees)
  float speed; ///< wind speed in ground plane (m/s)
  float speed_z; ///< vertical wind speed (m/s)
 } mavlink_wind_t;
@@ -30,7 +30,7 @@ typedef struct __mavlink_wind_t
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param direction wind direction (degrees)
+ * @param direction wind direction that wind is coming from (degrees)
  * @param speed wind speed in ground plane (m/s)
  * @param speed_z vertical wind speed (m/s)
  * @return length of the message in bytes (excluding serial stream start sign)
@@ -64,7 +64,7 @@ static inline uint16_t mavlink_msg_wind_pack(uint8_t system_id, uint8_t componen
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
- * @param direction wind direction (degrees)
+ * @param direction wind direction that wind is coming from (degrees)
  * @param speed wind speed in ground plane (m/s)
  * @param speed_z vertical wind speed (m/s)
  * @return length of the message in bytes (excluding serial stream start sign)
@@ -110,7 +110,7 @@ static inline uint16_t mavlink_msg_wind_encode(uint8_t system_id, uint8_t compon
  * @brief Send a wind message
  * @param chan MAVLink channel to send the message
  *
- * @param direction wind direction (degrees)
+ * @param direction wind direction that wind is coming from (degrees)
  * @param speed wind speed in ground plane (m/s)
  * @param speed_z vertical wind speed (m/s)
  */
@@ -143,7 +143,7 @@ static inline void mavlink_msg_wind_send(mavlink_channel_t chan, float direction
 /**
  * @brief Get field direction from wind message
  *
- * @return wind direction (degrees)
+ * @return wind direction that wind is coming from (degrees)
  */
 static inline float mavlink_msg_wind_get_direction(const mavlink_message_t* msg)
 {

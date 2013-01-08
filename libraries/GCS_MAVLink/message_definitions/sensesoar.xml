@@ -1,83 +1,143 @@
 <?xml version='1.0'?>
 <mavlink>
-     <include>common.xml</include>
-     <enums>
-          <enum name="SENSESOAR_MODE">
-               <description> Different flight modes </description>
-               <entry name="SENSESOAR_MODE_GLIDING">  Gliding mode with motors off</entry>
-               <entry name="SENSESOAR_MODE_AUTONOMOUS"> Autonomous flight</entry>
-               <entry name="SENSESOAR_MODE_MANUAL"> RC controlled</entry>
-          </enum>
+    <include>common.xml</include>
+    <enums>
+        <enum name="SENSESOAR_MODE">
+            <description> Different flight modes </description>
+            <entry name="SENSESOAR_MODE_GLIDING">
+                <description>Gliding mode with motors off</description>
+            </entry>
+            <entry name="SENSESOAR_MODE_AUTONOMOUS">
+                <description>Autonomous flight</description>
+            </entry>
+            <entry name="SENSESOAR_MODE_MANUAL">
+                <description>RC controlled</description>
+            </entry>
+        </enum>
      </enums>
      <messages>
-          <message id="170" name="OBS_POSITION">
-     Position estimate of the observer in global frame
-     <field type="int32_t" name="lon">Longitude expressed in 1E7</field>
-               <field type="int32_t" name="lat">Latitude expressed in 1E7</field>
-               <field type="int32_t" name="alt">Altitude expressed in milimeters</field>
-          </message>
-          <message id="172" name="OBS_VELOCITY">
-     velocity estimate of the observer in NED inertial frame
-     <field type="float[3]" name="vel">Velocity</field>
-          </message>
-          <message id="174" name="OBS_ATTITUDE">
-     attitude estimate of the observer
-     <field type="double[4]" name="quat">Quaternion re;im</field>
-          </message>
-          <message id="176" name="OBS_WIND">
-     Wind estimate in NED inertial frame
-     <field type="float[3]" name="wind">Wind</field>
-          </message>
-          <message id="178" name="OBS_AIR_VELOCITY">
-     Estimate of the air velocity
-     <field type="float" name="magnitude">Air speed</field>
-               <field type="float" name="aoa">angle of attack</field>
-               <field type="float" name="slip">slip angle</field>
-          </message>
-          <message id="180" name="OBS_BIAS">
-     IMU biases
-     <field type="float[3]" name="accBias">accelerometer bias</field>
-               <field type="float[3]" name="gyroBias">gyroscope bias</field>
-          </message>
-          <message id="182" name="OBS_QFF">
-     estimate of the pressure at sea level
-     <field type="float" name="qff">Wind</field>
-          </message>
-          <message id="183" name="OBS_AIR_TEMP">
-     ambient air temperature
-     <field type="float" name="airT">Air Temperatur</field>
-          </message>
-          <message id="184" name="FILT_ROT_VEL">
-     filtered rotational velocity
-     <field type="float[3]" name="rotVel">rotational velocity</field>
-          </message>
-          <message id="186" name="LLC_OUT">
-     low level control output
-     <field type="int16_t[4]" name="servoOut">Servo signal</field>
-               <field type="int16_t[2]" name="MotorOut">motor signal</field>
-          </message>
-          <message id="188" name="PM_ELEC">
-     Power managment
-     <field type="float" name="PwCons">current power consumption</field>
-               <field type="float" name="BatStat">battery status</field>
-               <field type="float[3]" name="PwGen">Power generation from each module</field>
-          </message>
-          <message id="190" name="SYS_Stat">
-     system status
-     <field type="uint8_t" name="gps">gps status</field>
-               <field type="uint8_t" name="act">actuator status</field>
-               <field type="uint8_t" name="mod">module status</field>
-               <field type="uint8_t" name="commRssi">module status</field>
-          </message>
-          <message id="192" name="CMD_AIRSPEED_CHNG">
-     change commanded air speed
-     <field type="uint8_t" name="target">Target ID</field>
-               <field type="float" name="spCmd">commanded airspeed</field>
-          </message>
-          <message id="194" name="CMD_AIRSPEED_ACK">
-     accept change of airspeed
-     <field type="float" name="spCmd">commanded airspeed</field>
-               <field type="uint8_t" name="ack">0:ack, 1:nack</field>
-          </message>
-     </messages>
+        <message id="170" name="OBS_POSITION">
+            <description>Position estimate of the observer in global frame</description>
+            <field type="int32_t" name="lon">
+                <description>Longitude expressed in 1E7</description>
+            </field>
+            <field type="int32_t" name="lat">
+                <description>Latitude expressed in 1E7</description>
+            </field>
+            <field type="int32_t" name="alt">
+                <description>Altitude expressed in milimeters</description>
+            </field>
+        </message>
+        <message id="172" name="OBS_VELOCITY">
+            <description>velocity estimate of the observer in NED inertial frame</description>
+            <field type="float[3]" name="vel">
+                <description>Velocity</description>
+            </field>
+        </message>
+        <message id="174" name="OBS_ATTITUDE">
+            <description>attitude estimate of the observe</description>
+            <field type="double[4]" name="quat">
+                <description>Quaternion re;im</description>
+            </field>
+        </message>
+        <message id="176" name="OBS_WIND">
+            <description>Wind estimate in NED inertial frame</description>
+            <field type="float[3]" name="wind">
+                <description>Wind</description>
+            </field>
+        </message>
+        <message id="178" name="OBS_AIR_VELOCITY">
+            <description>Estimate of the air velocity</description>
+            <field type="float" name="magnitude">
+                <description>Air speed</description>
+            </field>
+            <field type="float" name="aoa">
+                <description>angle of attack</description>
+            </field>
+            <field type="float" name="slip">
+                <description>slip angle</description>
+            </field>
+        </message>
+        <message id="180" name="OBS_BIAS">
+            <description>IMU biases</description>
+            <field type="float[3]" name="accBias">
+                <description>accelerometer bias</description>
+            </field>
+            <field type="float[3]" name="gyroBias">
+                <description>gyroscope bias</description>
+            </field>
+        </message>
+        <message id="182" name="OBS_QFF">
+            <description>estimate of the pressure at sea level</description>
+            <field type="float" name="qff">
+                <description>Wind</description>
+            </field>
+        </message>
+        <message id="183" name="OBS_AIR_TEMP">
+            <description>ambient air temperature</description>
+            <field type="float" name="airT">
+                <description>Air Temperatur</description>
+            </field>
+        </message>
+        <message id="184" name="FILT_ROT_VEL">
+            <description>filtered rotational velocity</description>
+            <field type="float[3]" name="rotVel">
+                <description>rotational velocity</description>
+            </field>
+        </message>
+        <message id="186" name="LLC_OUT">
+            <description>low level control output</description>
+            <field type="int16_t[4]" name="servoOut">
+                <description>Servo signal</description>
+            </field>
+            <field type="int16_t[2]" name="MotorOut">
+                <description>motor signal</description>
+            </field>
+        </message>
+        <message id="188" name="PM_ELEC">
+            <description>Power managment</description>
+            <field type="float" name="PwCons">
+                <description>current power consumption</description>
+            </field>
+            <field type="float" name="BatStat">
+                <description>battery status</description>
+            </field>
+            <field type="float[3]" name="PwGen">
+                <description>Power generation from each module</description>
+            </field>
+        </message>
+        <message id="190" name="SYS_Stat">
+            <description>system status</description>
+            <field type="uint8_t" name="gps">
+                <description>gps status</description>
+            </field>
+            <field type="uint8_t" name="act">
+                <description>actuator status</description>
+            </field>
+            <field type="uint8_t" name="mod">
+                <description>module status</description>
+            </field>
+            <field type="uint8_t" name="commRssi">
+                <description>module status</description>
+            </field>
+        </message>
+        <message id="192" name="CMD_AIRSPEED_CHNG">
+            <description>change commanded air speed</description>
+            <field type="uint8_t" name="target">
+                <description>Target ID</description>
+            </field>
+            <field type="float" name="spCmd">
+                <description>commanded airspeed</description>
+            </field>
+        </message>
+        <message id="194" name="CMD_AIRSPEED_ACK">
+            <description>accept change of airspeed</description>
+            <field type="float" name="spCmd">
+                <description>commanded airspeed</description>
+            </field>
+            <field type="uint8_t" name="ack">
+                <description>0:ack, 1:nack</description>
+            </field>
+        </message>
+    </messages>
 </mavlink>

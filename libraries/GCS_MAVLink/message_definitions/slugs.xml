@@ -37,21 +37,21 @@
     <messages>
         
         <message name="CPU_LOAD" id="170">
-            Sensor and DSC control loads.
+            <description>Sensor and DSC control loads.</description>
             <field name="sensLoad" type="uint8_t">Sensor DSC Load</field>
             <field name="ctrlLoad" type="uint8_t">Control DSC Load</field>
             <field name="batVolt" type="uint16_t">Battery Voltage in millivolts</field>     
         </message>
         
         <message name="AIR_DATA" id="171">
-            Air data for altitude and airspeed computation.
+            <description>Air data for altitude and airspeed computation.</description>
             <field name="dynamicPressure" type="float">Dynamic pressure (Pa)</field>
             <field name="staticPressure" type="float">Static pressure (Pa)</field>
             <field name="temperature" type="uint16_t">Board temperature</field>     
         </message>
         
         <message name="SENSOR_BIAS" id="172">
-            Accelerometer and gyro biases.
+            <description>Accelerometer and gyro biases.</description>
             <field name="axBias" type="float">Accelerometer X bias (m/s)</field>
             <field name="ayBias" type="float">Accelerometer Y bias (m/s)</field>
             <field name="azBias" type="float">Accelerometer Z bias (m/s)</field>
@@ -61,7 +61,7 @@
         </message>
         
         <message name="DIAGNOSTIC" id="173">
-            Configurable diagnostic messages.
+            <description>Configurable diagnostic messages.</description>
             <field name="diagFl1" type="float">Diagnostic float 1</field>
             <field name="diagFl2" type="float">Diagnostic float 2</field>
             <field name="diagFl3" type="float">Diagnostic float 3</field>
@@ -71,7 +71,7 @@
         </message>
         
         <message name="SLUGS_NAVIGATION" id="176">
-            Data used in the navigation algorithm.
+            <description>Data used in the navigation algorithm.</description>
             <field name="u_m" type="float">Measured Airspeed prior to the Nav Filter</field>
             <field name="phi_c" type="float">Commanded Roll</field>
             <field name="theta_c" type="float">Commanded Pitch</field>
@@ -84,7 +84,7 @@
         </message>
         
         <message name="DATA_LOG" id="177">
-            Configurable data log probes to be used inside Simulink
+            <description>Configurable data log probes to be used inside Simulink.</description>
             <field name="fl_1" type="float">Log value 1 </field>
             <field name="fl_2" type="float">Log value 2 </field>
             <field name="fl_3" type="float">Log value 3 </field>
@@ -94,7 +94,7 @@
         </message>
         
         <message name="GPS_DATE_TIME" id="179">
-            Pilot console PWM messges.
+            <description>Pilot console PWM messges.</description>
             <field name="year"  type="uint8_t">Year reported by Gps </field>
             <field name="month" type="uint8_t">Month reported by Gps </field>
             <field name="day"   type="uint8_t">Day reported by Gps </field>
@@ -105,7 +105,7 @@
         </message>
         
         <message name="MID_LVL_CMDS" id="180">
-            Mid Level commands sent from the GS to the autopilot. These are only sent when being opperated in mid-level commands mode from the ground; for periodic report of these commands generated from the autopilot see message XXXX.
+            <description>Mid Level commands sent from the GS to the autopilot. These are only sent when being opperated in mid-level commands mode from the ground; for periodic report of these commands generated from the autopilot see message XXXX.</description>
             <field name="target" type="uint8_t">The system setting the commands</field>
             <field name="hCommand" type="float">Commanded Airspeed</field>
             <field name="uCommand" type="float">Log value 2 </field>
@@ -114,7 +114,7 @@
          
         
         <message name="CTRL_SRFC_PT" id="181">
-            This message configures the Selective Passthrough mode. it allows to select which control surfaces the Pilot can control from his console. It is implemented as a bitfield as follows: 
+            <description>This message configures the Selective Passthrough mode. it allows to select which control surfaces the Pilot can control from his console. It is implemented as a bitfield as follows: 
             Position          Bit        Code
             =================================
             15-8             Reserved  
@@ -126,7 +126,7 @@
             2                 dre_pass   4
             1                 dlf_pass   2
             0                 drf_pass   1
-            Where Bit 15 is the MSb. 0 = AP has control of the surface; 1 = Pilot Console has control of the surface.
+            Where Bit 15 is the MSb. 0 = AP has control of the surface; 1 = Pilot Console has control of the surface.</description>
             <field name="target" type="uint8_t">The system setting the commands</field>
             <field name="bitfieldPt" type="uint16_t">Bitfield containing the PT configuration</field>
         </message>
@@ -134,7 +134,7 @@
         
         
         <message name="SLUGS_ACTION" id="183">
-            Action messages focused on the SLUGS AP. 
+            <description>Action messages focused on the SLUGS AP. </description>
             <field name="target" type="uint8_t">The system reporting the action</field>
             <field name="actionId" type="uint8_t">Action ID. See apDefinitions.h in the SLUGS /clib directory for the ID names</field>
             <field name="actionVal" type="uint16_t">Value associated with the action</field>

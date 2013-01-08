@@ -5,9 +5,9 @@
 typedef struct __mavlink_attitude_t
 {
  uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- float roll; ///< Roll angle (rad)
- float pitch; ///< Pitch angle (rad)
- float yaw; ///< Yaw angle (rad)
+ float roll; ///< Roll angle (rad, -pi..+pi)
+ float pitch; ///< Pitch angle (rad, -pi..+pi)
+ float yaw; ///< Yaw angle (rad, -pi..+pi)
  float rollspeed; ///< Roll angular speed (rad/s)
  float pitchspeed; ///< Pitch angular speed (rad/s)
  float yawspeed; ///< Yaw angular speed (rad/s)
@@ -39,9 +39,9 @@ typedef struct __mavlink_attitude_t
  * @param msg The MAVLink message to compress the data into
  *
  * @param time_boot_ms Timestamp (milliseconds since system boot)
- * @param roll Roll angle (rad)
- * @param pitch Pitch angle (rad)
- * @param yaw Yaw angle (rad)
+ * @param roll Roll angle (rad, -pi..+pi)
+ * @param pitch Pitch angle (rad, -pi..+pi)
+ * @param yaw Yaw angle (rad, -pi..+pi)
  * @param rollspeed Roll angular speed (rad/s)
  * @param pitchspeed Pitch angular speed (rad/s)
  * @param yawspeed Yaw angular speed (rad/s)
@@ -85,9 +85,9 @@ static inline uint16_t mavlink_msg_attitude_pack(uint8_t system_id, uint8_t comp
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
- * @param roll Roll angle (rad)
- * @param pitch Pitch angle (rad)
- * @param yaw Yaw angle (rad)
+ * @param roll Roll angle (rad, -pi..+pi)
+ * @param pitch Pitch angle (rad, -pi..+pi)
+ * @param yaw Yaw angle (rad, -pi..+pi)
  * @param rollspeed Roll angular speed (rad/s)
  * @param pitchspeed Pitch angular speed (rad/s)
  * @param yawspeed Yaw angular speed (rad/s)
@@ -143,9 +143,9 @@ static inline uint16_t mavlink_msg_attitude_encode(uint8_t system_id, uint8_t co
  * @param chan MAVLink channel to send the message
  *
  * @param time_boot_ms Timestamp (milliseconds since system boot)
- * @param roll Roll angle (rad)
- * @param pitch Pitch angle (rad)
- * @param yaw Yaw angle (rad)
+ * @param roll Roll angle (rad, -pi..+pi)
+ * @param pitch Pitch angle (rad, -pi..+pi)
+ * @param yaw Yaw angle (rad, -pi..+pi)
  * @param rollspeed Roll angular speed (rad/s)
  * @param pitchspeed Pitch angular speed (rad/s)
  * @param yawspeed Yaw angular speed (rad/s)
@@ -197,7 +197,7 @@ static inline uint32_t mavlink_msg_attitude_get_time_boot_ms(const mavlink_messa
 /**
  * @brief Get field roll from attitude message
  *
- * @return Roll angle (rad)
+ * @return Roll angle (rad, -pi..+pi)
  */
 static inline float mavlink_msg_attitude_get_roll(const mavlink_message_t* msg)
 {
@@ -207,7 +207,7 @@ static inline float mavlink_msg_attitude_get_roll(const mavlink_message_t* msg)
 /**
  * @brief Get field pitch from attitude message
  *
- * @return Pitch angle (rad)
+ * @return Pitch angle (rad, -pi..+pi)
  */
 static inline float mavlink_msg_attitude_get_pitch(const mavlink_message_t* msg)
 {
@@ -217,7 +217,7 @@ static inline float mavlink_msg_attitude_get_pitch(const mavlink_message_t* msg)
 /**
  * @brief Get field yaw from attitude message
  *
- * @return Yaw angle (rad)
+ * @return Yaw angle (rad, -pi..+pi)
  */
 static inline float mavlink_msg_attitude_get_yaw(const mavlink_message_t* msg)
 {

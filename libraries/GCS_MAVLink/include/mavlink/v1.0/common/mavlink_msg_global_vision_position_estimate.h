@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_global_vision_position_estimate_t
 {
- uint64_t usec; ///< Timestamp (milliseconds)
+ uint64_t usec; ///< Timestamp (microseconds, synced to UNIX time or since system boot)
  float x; ///< Global X position
  float y; ///< Global Y position
  float z; ///< Global Z position
@@ -38,7 +38,7 @@ typedef struct __mavlink_global_vision_position_estimate_t
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param usec Timestamp (milliseconds)
+ * @param usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param x Global X position
  * @param y Global Y position
  * @param z Global Z position
@@ -84,7 +84,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack(uint8_t 
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
- * @param usec Timestamp (milliseconds)
+ * @param usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param x Global X position
  * @param y Global Y position
  * @param z Global Z position
@@ -142,7 +142,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_encode(uint8_
  * @brief Send a global_vision_position_estimate message
  * @param chan MAVLink channel to send the message
  *
- * @param usec Timestamp (milliseconds)
+ * @param usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param x Global X position
  * @param y Global Y position
  * @param z Global Z position
@@ -187,7 +187,7 @@ static inline void mavlink_msg_global_vision_position_estimate_send(mavlink_chan
 /**
  * @brief Get field usec from global_vision_position_estimate message
  *
- * @return Timestamp (milliseconds)
+ * @return Timestamp (microseconds, synced to UNIX time or since system boot)
  */
 static inline uint64_t mavlink_msg_global_vision_position_estimate_get_usec(const mavlink_message_t* msg)
 {

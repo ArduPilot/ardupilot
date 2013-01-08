@@ -40,6 +40,9 @@
                <entry value="11" name="MAV_AUTOPILOT_FP">
                     <description>FlexiPilot</description>
                </entry>
+               <entry value="12" name="MAV_AUTOPILOT_PX4">
+                   <description>PX4 Autopilot - http://pixhawk.ethz.ch/px4/</description>
+               </entry>
           </enum>
           <enum name="MAV_TYPE">
                <entry value="0" name="MAV_TYPE_GENERIC">
@@ -615,7 +618,7 @@
                     <param index="2">Magnetometer calibration: 0: no, 1: yes</param>
                     <param index="3">Ground pressure: 0: no, 1: yes</param>
                     <param index="4">Radio calibration: 0: no, 1: yes</param>
-                    <param index="5">Empty</param>
+                    <param index="5">Accelerometer calibration: 0: no, 1: yes</param>
                     <param index="6">Empty</param>
                     <param index="7">Empty</param>
                </entry>
@@ -751,30 +754,39 @@
                     <description>The Z or altitude value is out of range.</description>
                </entry>
           </enum>
-          <!--<enum name="MAV_VAR">
-               <description>type of a mavlink parameter</description>
-               <entry value="0" name="MAV_VAR_FLOAT">
-                    <description>32 bit float</description>
+          <enum name="MAV_PARAM_TYPE">
+               <description>Specifies the datatype of a MAVLink parameter.</description>
+               <entry value="1" name="MAV_PARAM_TYPE_UINT8">
+                    <description>8-bit unsigned integer</description>
                </entry>
-               <entry value="1" name="MAV_VAR_UINT8">
-                    <description>8 bit unsigned integer</description>
+               <entry value="2" name="MAV_PARAM_TYPE_INT8">
+                    <description>8-bit signed integer</description>
                </entry>
-               <entry value="2" name="MAV_VAR_INT8">
-                    <description>8 bit signed integer</description>
+               <entry value="3" name="MAV_PARAM_TYPE_UINT16">
+                    <description>16-bit unsigned integer</description>
                </entry>
-               <entry value="3" name="MAV_VAR_UINT16">
-                    <description>16 bit unsigned integer</description>
+               <entry value="4" name="MAV_PARAM_TYPE_INT16">
+                    <description>16-bit signed integer</description>
                </entry>
-               <entry value="4" name="MAV_VAR_INT16">
-                    <description>16 bit signed integer</description>
+               <entry value="5" name="MAV_PARAM_TYPE_UINT32">
+                    <description>32-bit unsigned integer</description>
                </entry>
-               <entry value="5" name="MAV_VAR_UINT32">
-                    <description>32 bit unsigned integer</description>
+               <entry value="6" name="MAV_PARAM_TYPE_INT32">
+                    <description>32-bit signed integer</description>
                </entry>
-               <entry value="6" name="MAV_VAR_INT32">
-                    <description>32 bit signed integer</description>
+               <entry value="7" name="MAV_PARAM_TYPE_UINT64">
+                    <description>64-bit unsigned integer</description>
                </entry>
-          </enum>-->
+               <entry value="8" name="MAV_PARAM_TYPE_INT64">
+                    <description>64-bit signed integer</description>
+               </entry>
+               <entry value="9" name="MAV_PARAM_TYPE_REAL32">
+                    <description>32-bit floating-point</description>
+               </entry>
+               <entry value="10" name="MAV_PARAM_TYPE_REAL64">
+                    <description>64-bit floating-point</description>
+               </entry>
+          </enum>
           <enum name="MAV_RESULT">
                <description>result from a mavlink command</description>
                <entry value="0" name="MAV_RESULT_ACCEPTED">
@@ -935,7 +947,7 @@
                <description>Request to read the onboard parameter with the param_id string id. Onboard parameters are stored as key[const char*] -> value[float]. This allows to send a parameter to any other component (such as the GCS) without the need of previous knowledge of possible parameter names. Thus the same GCS can store different parameters for different autopilots. See also http://qgroundcontrol.org/parameter_interface for a full documentation of QGroundControl and IMU code.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NUL if the length is less than 16 human-readable chars and WITHOUT null termination (NUL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
+               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NULL if the length is less than 16 human-readable chars and WITHOUT null termination (NULL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
                <field type="int16_t" name="param_index">Parameter index. Send -1 to use the param ID field as identifier (else the param id will be ignored)</field>
           </message>
           <message id="21" name="PARAM_REQUEST_LIST">
@@ -945,9 +957,9 @@
           </message>
           <message id="22" name="PARAM_VALUE">
                <description>Emit the value of a onboard parameter. The inclusion of param_count and param_index in the message allows the recipient to keep track of received parameters and allows him to re-request missing parameters after a loss or timeout.</description>
-               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NUL if the length is less than 16 human-readable chars and WITHOUT null termination (NUL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
+               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NULL if the length is less than 16 human-readable chars and WITHOUT null termination (NULL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: see MAVLINK_TYPE enum in mavlink/mavlink_types.h</field>
+               <field type="uint8_t" name="param_type">Onboard parameter type: see the MAV_PARAM_TYPE enum for supported data types.</field>
                <field type="uint16_t" name="param_count">Total number of onboard parameters</field>
                <field type="uint16_t" name="param_index">Index of this onboard parameter</field>
           </message>
@@ -955,9 +967,9 @@
                <description>Set a parameter value TEMPORARILY to RAM. It will be reset to default on system reboot. Send the ACTION MAV_ACTION_STORAGE_WRITE to PERMANENTLY write the RAM contents to EEPROM. IMPORTANT: The receiving component should acknowledge the new parameter value by sending a param_value message to all communication partners. This will also ensure that multiple GCS all have an up-to-date list of all parameters. If the sending GCS did not receive a PARAM_VALUE message within its timeout time, it should re-send the PARAM_SET message.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NUL if the length is less than 16 human-readable chars and WITHOUT null termination (NUL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
+               <field type="char[16]" name="param_id">Onboard parameter id, terminated by NULL if the length is less than 16 human-readable chars and WITHOUT null termination (NULL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: see MAVLINK_TYPE enum in mavlink/mavlink_types.h</field>
+               <field type="uint8_t" name="param_type">Onboard parameter type: see the MAV_PARAM_TYPE enum for supported data types.</field>
           </message>
           <message id="24" name="GPS_RAW_INT">
                <description>The global position, as returned by the Global Positioning System (GPS). This is
@@ -1026,9 +1038,9 @@
           <message id="30" name="ATTITUDE">
                <description>The attitude in the aeronautical frame (right-handed, Z-down, X-front, Y-right).</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
-               <field type="float" name="roll">Roll angle (rad)</field>
-               <field type="float" name="pitch">Pitch angle (rad)</field>
-               <field type="float" name="yaw">Yaw angle (rad)</field>
+               <field type="float" name="roll">Roll angle (rad, -pi..+pi)</field>
+               <field type="float" name="pitch">Pitch angle (rad, -pi..+pi)</field>
+               <field type="float" name="yaw">Yaw angle (rad, -pi..+pi)</field>
                <field type="float" name="rollspeed">Roll angular speed (rad/s)</field>
                <field type="float" name="pitchspeed">Pitch angular speed (rad/s)</field>
                <field type="float" name="yawspeed">Yaw angular speed (rad/s)</field>
@@ -1068,32 +1080,32 @@
                <field type="uint16_t" name="hdg">Compass heading in degrees * 100, 0.0..359.99 degrees. If unknown, set to: 65535</field>
           </message>
           <message id="34" name="RC_CHANNELS_SCALED">
-               <description>The scaled values of the RC channels received. (-100%) -10000, (0%) 0, (100%) 10000</description>
+               <description>The scaled values of the RC channels received. (-100%) -10000, (0%) 0, (100%) 10000. Channels that are inactive should be set to 65535.</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
-               <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.</field>
-               <field type="int16_t" name="chan1_scaled">RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="int16_t" name="chan2_scaled">RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="int16_t" name="chan3_scaled">RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="int16_t" name="chan4_scaled">RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="int16_t" name="chan5_scaled">RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="int16_t" name="chan6_scaled">RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="int16_t" name="chan7_scaled">RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="int16_t" name="chan8_scaled">RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
-               <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 255: 100%</field>
+               <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows for more than 8 servos.</field>
+               <field type="int16_t" name="chan1_scaled">RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="int16_t" name="chan2_scaled">RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="int16_t" name="chan3_scaled">RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="int16_t" name="chan4_scaled">RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="int16_t" name="chan5_scaled">RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="int16_t" name="chan6_scaled">RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="int16_t" name="chan7_scaled">RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="int16_t" name="chan8_scaled">RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000, (invalid) 32767.</field>
+               <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 100: 100%, 255: invalid/unknown.</field>
           </message>
           <message id="35" name="RC_CHANNELS_RAW">
                <description>The RAW values of the RC channels received. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
-               <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.</field>
-               <field type="uint16_t" name="chan1_raw">RC channel 1 value, in microseconds</field>
-               <field type="uint16_t" name="chan2_raw">RC channel 2 value, in microseconds</field>
-               <field type="uint16_t" name="chan3_raw">RC channel 3 value, in microseconds</field>
-               <field type="uint16_t" name="chan4_raw">RC channel 4 value, in microseconds</field>
-               <field type="uint16_t" name="chan5_raw">RC channel 5 value, in microseconds</field>
-               <field type="uint16_t" name="chan6_raw">RC channel 6 value, in microseconds</field>
-               <field type="uint16_t" name="chan7_raw">RC channel 7 value, in microseconds</field>
-               <field type="uint16_t" name="chan8_raw">RC channel 8 value, in microseconds</field>
-               <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 255: 100%</field>
+               <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows for more than 8 servos.</field>
+               <field type="uint16_t" name="chan1_raw">RC channel 1 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint16_t" name="chan2_raw">RC channel 2 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint16_t" name="chan3_raw">RC channel 3 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint16_t" name="chan4_raw">RC channel 4 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint16_t" name="chan5_raw">RC channel 5 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint16_t" name="chan6_raw">RC channel 6 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint16_t" name="chan7_raw">RC channel 7 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint16_t" name="chan8_raw">RC channel 8 value, in microseconds. A value of 65535 implies the channel is unused.</field>
+               <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 100: 100%, 255: invalid/unknown.</field>
           </message>
           <message id="36" name="SERVO_OUTPUT_RAW">
                <description>The RAW values of the servo outputs (for RC input from the remote, use the RC_CHANNELS messages). The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%.</description>
@@ -1109,7 +1121,7 @@
                <field type="uint16_t" name="servo8_raw">Servo output 8 value, in microseconds</field>
           </message>
           <message id="37" name="MISSION_REQUEST_PARTIAL_LIST">
-               <description>Request the overall list of MISSIONs from the system/component. http://qgroundcontrol.org/mavlink/waypoint_protocol</description>
+               <description>Request a partial list of mission items from the system/component. http://qgroundcontrol.org/mavlink/waypoint_protocol. If start and end index are the same, just send one waypoint.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="int16_t" name="start_index">Start index, 0 by default</field>
@@ -1183,7 +1195,7 @@
                <field type="uint8_t" name="type">See MAV_MISSION_RESULT enum</field>
           </message>
           <message id="48" name="SET_GPS_GLOBAL_ORIGIN">
-               <description>As local MISSIONs exist, the global MISSION reference allows to transform between the local coordinate frame and the global (GPS) coordinate frame. This can be necessary when e.g. in- and outdoor settings are connected and the MAV should move from in- to outdoor.</description>
+               <description>As local waypoints exist, the global MISSION reference allows to transform between the local coordinate frame and the global (GPS) coordinate frame. This can be necessary when e.g. in- and outdoor settings are connected and the MAV should move from in- to outdoor.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="int32_t" name="latitude">global position * 1E7</field>
                <field type="int32_t" name="longitude">global position * 1E7</field>
@@ -1350,15 +1362,13 @@
                <field type="uint8_t" name="on_off">1 stream is enabled, 0 stream is stopped.</field>
           </message>
           <message id="69" name="MANUAL_CONTROL">
-               <field type="uint8_t" name="target">The system to be controlled</field>
-               <field type="float" name="roll">roll</field>
-               <field type="float" name="pitch">pitch</field>
-               <field type="float" name="yaw">yaw</field>
-               <field type="float" name="thrust">thrust</field>
-               <field type="uint8_t" name="roll_manual">roll control enabled auto:0, manual:1</field>
-               <field type="uint8_t" name="pitch_manual">pitch auto:0, manual:1</field>
-               <field type="uint8_t" name="yaw_manual">yaw auto:0, manual:1</field>
-               <field type="uint8_t" name="thrust_manual">thrust auto:0, manual:1</field>
+               <description>This message provides an API for manually controlling the vehicle using standard joystick axes nomenclature, along with a joystick-like input device. Unused axes can be disabled an buttons are also transmit as boolean values of their </description>
+               <field type="uint8_t" name="target">The system to be controlled.</field>
+               <field type="int16_t" name="x">X-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to forward(1000)-backward(-1000) movement on a joystick and the pitch of a vehicle.</field>
+               <field type="int16_t" name="y">Y-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to left(-1000)-right(1000) movement on a joystick and the roll of a vehicle.</field>
+               <field type="int16_t" name="z">Z-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to a separate slider movement with maximum being 1000 and minimum being -1000 on a joystick and the thrust of a vehicle.</field>
+               <field type="int16_t" name="r">R-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to a twisting of the joystick, with counter-clockwise being 1000 and clockwise being -1000, and the yaw of a vehicle.</field>
+               <field type="uint16_t" name="buttons">A bitfield corresponding to the joystick buttons' current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 1.</field>
           </message>
           <message id="70" name="RC_CHANNELS_OVERRIDE">
                <description>The RAW values of the RC channels sent to the MAV to override info received from the RC radio. A value of -1 means no change to that channel. A value of 0 means control of that channel should be released back to the RC radio. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.</description>
@@ -1401,6 +1411,24 @@
                <field type="uint16_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
                <field type="uint8_t" name="result">See MAV_RESULT enum</field>
           </message>
+         <message id="80" name="ROLL_PITCH_YAW_RATES_THRUST_SETPOINT">
+             <description>Setpoint in roll, pitch, yaw rates and thrust currently active on the system.</description>
+             <field type="uint32_t" name="time_boot_ms">Timestamp in milliseconds since system boot</field>
+             <field type="float" name="roll_rate">Desired roll rate in radians per second</field>
+             <field type="float" name="pitch_rate">Desired pitch rate in radians per second</field>
+             <field type="float" name="yaw_rate">Desired yaw rate in radians per second</field>
+             <field type="float" name="thrust">Collective thrust, normalized to 0 .. 1</field>
+         </message>
+         <message id="81" name="MANUAL_SETPOINT">
+             <description>Setpoint in roll, pitch, yaw and thrust from the operator</description>
+             <field type="uint32_t" name="time_boot_ms">Timestamp in milliseconds since system boot</field>
+             <field type="float" name="roll">Desired roll rate in radians per second</field>
+             <field type="float" name="pitch">Desired pitch rate in radians per second</field>
+             <field type="float" name="yaw">Desired yaw rate in radians per second</field>
+             <field type="float" name="thrust">Collective thrust, normalized to 0 .. 1</field>
+             <field type="uint8_t" name="mode_switch">Flight mode switch position, 0.. 255</field>
+             <field type="uint8_t" name="manual_override_switch">Override mode switch position, 0.. 255</field>
+         </message>
           <message id="89" name="LOCAL_POSITION_NED_SYSTEM_GLOBAL_OFFSET">
                <description>The offset in X, Y, Z and yaw between the LOCAL_POSITION_NED messages of MAV X and the global coordinate frame in NED coordinates. Coordinate frame is right-handed, Z-axis down (aeronautical frame, NED / north-east-down convention)</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
@@ -1417,18 +1445,18 @@
                <field type="float" name="roll">Roll angle (rad)</field>
                <field type="float" name="pitch">Pitch angle (rad)</field>
                <field type="float" name="yaw">Yaw angle (rad)</field>
-               <field type="float" name="rollspeed">Roll angular speed (rad/s) in body frame</field>
-               <field type="float" name="pitchspeed">Pitch angular speed (rad/s) in body frame</field>
-               <field type="float" name="yawspeed">Yaw angular speed (rad/s) in body frame</field>
+               <field type="float" name="rollspeed">Roll angular speed (rad/s)</field>
+               <field type="float" name="pitchspeed">Pitch angular speed (rad/s)</field>
+               <field type="float" name="yawspeed">Yaw angular speed (rad/s)</field>
                <field type="int32_t" name="lat">Latitude, expressed as * 1E7</field>
                <field type="int32_t" name="lon">Longitude, expressed as * 1E7</field>
                <field type="int32_t" name="alt">Altitude in meters, expressed as * 1000 (millimeters)</field>
                <field type="int16_t" name="vx">Ground X Speed (Latitude), expressed as m/s * 100</field>
                <field type="int16_t" name="vy">Ground Y Speed (Longitude), expressed as m/s * 100</field>
-               <field type="int16_t" name="vz">Ground Z Speed (Altitude), expressed as m/s * 100 (+ve down)</field>
-               <field type="int16_t" name="xacc">X acceleration (mg) in body frame (+ve forward)</field>
-               <field type="int16_t" name="yacc">Y acceleration (mg) in body frame (+ve right)</field>
-               <field type="int16_t" name="zacc">Z acceleration (mg) in body frame (+ve down)</field>
+               <field type="int16_t" name="vz">Ground Z Speed (Altitude), expressed as m/s * 100</field>
+               <field type="int16_t" name="xacc">X acceleration (mg)</field>
+               <field type="int16_t" name="yacc">Y acceleration (mg)</field>
+               <field type="int16_t" name="zacc">Z acceleration (mg)</field>
           </message>
           <message id="91" name="HIL_CONTROLS">
                <description>Sent from autopilot to simulation. Hardware in the loop control outputs</description>
@@ -1473,7 +1501,7 @@
                <field type="float" name="ground_distance">Ground distance in meters. Positive value: distance known. Negative value: Unknown distance</field>
           </message>
           <message id="101" name="GLOBAL_VISION_POSITION_ESTIMATE">
-               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="uint64_t" name="usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
                <field type="float" name="x">Global X position</field>
                <field type="float" name="y">Global Y position</field>
                <field type="float" name="z">Global Z position</field>
@@ -1482,7 +1510,7 @@
                <field type="float" name="yaw">Yaw angle in rad</field>
           </message>
           <message id="102" name="VISION_POSITION_ESTIMATE">
-               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="uint64_t" name="usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
                <field type="float" name="x">Global X position</field>
                <field type="float" name="y">Global Y position</field>
                <field type="float" name="z">Global Z position</field>
@@ -1491,19 +1519,90 @@
                <field type="float" name="yaw">Yaw angle in rad</field>
           </message>
           <message id="103" name="VISION_SPEED_ESTIMATE">
-               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="uint64_t" name="usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
                <field type="float" name="x">Global X speed</field>
                <field type="float" name="y">Global Y speed</field>
                <field type="float" name="z">Global Z speed</field>
           </message>
           <message id="104" name="VICON_POSITION_ESTIMATE">
-               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="uint64_t" name="usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
                <field type="float" name="x">Global X position</field>
                <field type="float" name="y">Global Y position</field>
                <field type="float" name="z">Global Z position</field>
                <field type="float" name="roll">Roll angle in rad</field>
                <field type="float" name="pitch">Pitch angle in rad</field>
                <field type="float" name="yaw">Yaw angle in rad</field>
+          </message>
+          <message id="105" name="HIGHRES_IMU">
+             <description>The IMU readings in SI units in NED body frame</description>
+             <field type="uint64_t" name="time_usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
+             <field type="float" name="xacc">X acceleration (m/s^2)</field>
+             <field type="float" name="yacc">Y acceleration (m/s^2)</field>
+             <field type="float" name="zacc">Z acceleration (m/s^2)</field>
+             <field type="float" name="xgyro">Angular speed around X axis (rad / sec)</field>
+             <field type="float" name="ygyro">Angular speed around Y axis (rad / sec)</field>
+             <field type="float" name="zgyro">Angular speed around Z axis (rad / sec)</field>
+             <field type="float" name="xmag">X Magnetic field (Gauss)</field>
+             <field type="float" name="ymag">Y Magnetic field (Gauss)</field>
+             <field type="float" name="zmag">Z Magnetic field (Gauss)</field>
+             <field type="float" name="abs_pressure">Absolute pressure in millibar</field>
+             <field type="float" name="diff_pressure">Differential pressure in millibar</field>
+             <field type="float" name="pressure_alt">Altitude calculated from pressure</field>
+             <field type="float" name="temperature">Temperature in degrees celsius</field>
+             <field type="uint16_t" name="fields_updated">Bitmask for fields that have updated since last message, bit 0 = xacc, bit 12: temperature</field>
+         </message>
+         <message id="110" name="FILE_TRANSFER_START">
+             <description>Begin file transfer</description>
+             <field type="uint64_t" name="transfer_uid">Unique transfer ID</field>
+             <field type="char[240]" name="dest_path">Destination path</field>
+             <field type="uint8_t" name="direction">Transfer direction: 0: from requester, 1: to requester</field>
+             <field type="uint32_t" name="file_size">File size in bytes</field>
+             <field type="uint8_t" name="flags">RESERVED</field>
+         </message>
+         <message id="111" name="FILE_TRANSFER_DIR_LIST">
+             <description>Get directory listing</description>
+             <field type="uint64_t" name="transfer_uid">Unique transfer ID</field>
+             <field type="char[240]" name="dir_path">Directory path to list</field>
+             <field type="uint8_t" name="flags">RESERVED</field>
+         </message>
+         <message id="112" name="FILE_TRANSFER_RES">
+             <description>File transfer result</description>
+             <field type="uint64_t" name="transfer_uid">Unique transfer ID</field>
+             <field type="uint8_t" name="result">0: OK, 1: not permitted, 2: bad path / file name, 3: no space left on device</field>
+         </message>
+         <message id="147" name="BATTERY_STATUS">
+               <description>Transmitte battery informations for a accu pack.</description>
+               <field type="uint8_t" name="accu_id">Accupack ID</field>
+               <field type="uint16_t" name="voltage_cell_1">Battery voltage of cell 1, in millivolts (1 = 1 millivolt)</field>
+               <field type="uint16_t" name="voltage_cell_2">Battery voltage of cell 2, in millivolts (1 = 1 millivolt), -1: no cell</field>
+               <field type="uint16_t" name="voltage_cell_3">Battery voltage of cell 3, in millivolts (1 = 1 millivolt), -1: no cell</field>
+               <field type="uint16_t" name="voltage_cell_4">Battery voltage of cell 4, in millivolts (1 = 1 millivolt), -1: no cell</field>
+               <field type="uint16_t" name="voltage_cell_5">Battery voltage of cell 5, in millivolts (1 = 1 millivolt), -1: no cell</field>
+               <field type="uint16_t" name="voltage_cell_6">Battery voltage of cell 6, in millivolts (1 = 1 millivolt), -1: no cell</field>
+               <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>
+               <field type="int8_t" name="battery_remaining">Remaining battery energy: (0%: 0, 100%: 100), -1: autopilot does not estimate the remaining battery</field>
+          </message>
+          <message id="148" name="SETPOINT_8DOF">
+               <description>Set the 8 DOF setpoint for a controller.</description>
+               <field type="uint8_t" name="target_system">System ID</field>
+               <field type="float" name="val1">Value 1</field>
+               <field type="float" name="val2">Value 2</field>
+               <field type="float" name="val3">Value 3</field>
+               <field type="float" name="val4">Value 4</field>
+               <field type="float" name="val5">Value 5</field>
+               <field type="float" name="val6">Value 6</field>
+               <field type="float" name="val7">Value 7</field>
+               <field type="float" name="val8">Value 8</field>
+          </message>
+          <message id="149" name="SETPOINT_6DOF">
+               <description>Set the 6 DOF setpoint for a attitude and position controller.</description>
+               <field type="uint8_t" name="target_system">System ID</field>
+               <field type="float" name="trans_x">Translational Component in x</field>
+               <field type="float" name="trans_y">Translational Component in y</field>
+               <field type="float" name="trans_z">Translational Component in z</field>
+               <field type="float" name="rot_x">Rotational Component in x</field>
+               <field type="float" name="rot_y">Rotational Component in y</field>
+               <field type="float" name="rot_z">Rotational Component in z</field>
           </message>
           <!-- MESSAGE IDs 150 - 240: Space for custom messages in individual projectname_messages.xml files -->
           <message id="249" name="MEMORY_VECT">

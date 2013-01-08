@@ -4,24 +4,46 @@
     <enums>
         <enum name="UALBERTA_AUTOPILOT_MODE">
             <description>Available autopilot modes for ualberta uav</description>
-            <entry name="MODE_MANUAL_DIRECT">Raw input pulse widts sent to output</entry>
-            <entry name="MODE_MANUAL_SCALED">Inputs are normalized using calibration, the converted back to raw pulse widths for output</entry>
-            <entry name="MODE_AUTO_PID_ATT"> dfsdfs</entry>
-            <entry name="MODE_AUTO_PID_VEL"> dfsfds</entry>
-            <entry name="MODE_AUTO_PID_POS"> dfsdfsdfs</entry>
+            <entry name="MODE_MANUAL_DIRECT">
+				<description>Raw input pulse widts sent to output</description>
+			</entry>
+            <entry name="MODE_MANUAL_SCALED">
+				<description>Inputs are normalized using calibration, the converted back to raw pulse widths for output</description>
+			</entry>
+            <entry name="MODE_AUTO_PID_ATT">
+				<description> dfsdfs</description>
+			</entry>
+            <entry name="MODE_AUTO_PID_VEL">
+				<description> dfsfds</description>
+			</entry>
+            <entry name="MODE_AUTO_PID_POS">
+				<description> dfsdfsdfs</description>
+			</entry>
         </enum>
         <enum name="UALBERTA_NAV_MODE">
             <description>Navigation filter mode</description>
             <entry name="NAV_AHRS_INIT" />
-            <entry name="NAV_AHRS">AHRS mode</entry>
-            <entry name="NAV_INS_GPS_INIT">INS/GPS initialization mode</entry>
-            <entry name="NAV_INS_GPS">INS/GPS mode</entry>
+            <entry name="NAV_AHRS">
+				<description>AHRS mode</description>
+			</entry>
+            <entry name="NAV_INS_GPS_INIT">
+				<description>INS/GPS initialization mode</description>
+			</entry>
+            <entry name="NAV_INS_GPS">
+				<description>INS/GPS mode</description>
+			</entry>
         </enum>
         <enum name="UALBERTA_PILOT_MODE">
             <description>Mode currently commanded by pilot</description>
-            <entry name="PILOT_MANUAL"> sdf</entry>
-            <entry name="PILOT_AUTO"> dfs</entry>
-            <entry name="PILOT_ROTO"> Rotomotion mode </entry>
+            <entry name="PILOT_MANUAL">
+				<description> sdf</description>
+			</entry>
+            <entry name="PILOT_AUTO">
+				<description> dfs</description>
+			</entry>
+            <entry name="PILOT_ROTO">
+				<description> Rotomotion mode </description>
+			</entry>
         </enum>
     </enums>
     <messages>

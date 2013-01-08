@@ -15,6 +15,7 @@ extern "C" {
 #define X25_INIT_CRC 0xffff
 #define X25_VALIDATE_CRC 0xf0b8
 
+#ifndef HAVE_CRC_ACCUMULATE
 /**
  * @brief Accumulate the X.25 CRC by adding one char at a time.
  *
@@ -33,6 +34,7 @@ static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
         tmp ^= (tmp<<4);
         *crcAccum = (*crcAccum>>8) ^ (tmp<<8) ^ (tmp <<3) ^ (tmp>>4);
 }
+#endif
 
 /**
  * @brief Initiliaze the buffer for the X.25 CRC
