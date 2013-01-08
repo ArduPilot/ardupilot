@@ -115,11 +115,16 @@ uint8_t AP_Baro_BMP085::read()
         }
     }else{
         if (BMP_DATA_READY()) {
-            BMP085_State = 1;                                   // Start again from state = 1
             ReadPress();
             Calculate();
-            Command_ReadTemp();                                 // Read Temp
-            result = 1;                                                 // New pressure reading
+            result = 1;
+            if( BMP085_State >= 5 ) {
+                BMP085_State = 1;                               // Start again from state = 1
+                Command_ReadTemp();                             // next iteration we will read temperature
+            }else{
+                BMP085_State++;
+                Command_ReadPress();                            // next iteration we will read pressure
+            }
         }
     }
     if (result) {
