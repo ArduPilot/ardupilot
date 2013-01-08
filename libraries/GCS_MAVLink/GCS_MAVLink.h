@@ -88,7 +88,7 @@ static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
 /// @returns		Number of bytes available
 static inline uint16_t comm_get_available(mavlink_channel_t chan)
 {
-    uint16_t bytes = 0;
+    int16_t bytes = 0;
     switch(chan) {
 	case MAVLINK_COMM_0:
 		bytes = mavlink_comm_0_port->available();
@@ -99,7 +99,10 @@ static inline uint16_t comm_get_available(mavlink_channel_t chan)
 	default:
 		break;
 	}
-    return bytes;
+	if (bytes == -1) {
+		return 0;
+	}
+    return (uint16_t)bytes;
 }
 
 
