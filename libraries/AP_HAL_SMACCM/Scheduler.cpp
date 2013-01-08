@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #define SCHEDULER_TICKS  (1 / (portTICK_RATE_MS))
 
 /** Stack size of the scheduler thread. */
-#define SCHEDULER_STACK_SIZE 256
+#define SCHEDULER_STACK_SIZE 1536
 
 /** Priority of the scheduler timer process task. */
 #define SCHEDULER_PRIORITY (configMAX_PRIORITIES - 1)
@@ -37,7 +37,7 @@ extern const AP_HAL::HAL& hal;
 #define DELAY_CB_TICKS (1 / (portTICK_RATE_MS))
 
 /** Stack size of the delay callback task. */
-#define DELAY_CB_STACK_SIZE 64
+#define DELAY_CB_STACK_SIZE 512
 
 /** Priority of the delay callback task. */
 #define DELAY_CB_PRIORITY 0
