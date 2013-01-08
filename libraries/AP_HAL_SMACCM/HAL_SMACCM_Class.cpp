@@ -8,8 +8,8 @@ using namespace SMACCM;
 
 // XXX make sure these are assigned correctly
 static SMACCMUARTDriver uartADriver(usart1);
-static SMACCMUARTDriver uartBDriver(usart2);
-static SMACCMUARTDriver uartCDriver(usart3);
+static SMACCMUARTDriver uartBDriver(usart6);
+static SMACCMUARTDriver uartCDriver(NULL);
 
 static SMACCMI2CDriver  i2cDriver;
 static SMACCMSPIDeviceManager spiDeviceManager;

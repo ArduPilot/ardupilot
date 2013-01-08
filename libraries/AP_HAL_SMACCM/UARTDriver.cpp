@@ -23,8 +23,11 @@ SMACCMUARTDriver::SMACCMUARTDriver(struct usart *dev)
 
 void SMACCMUARTDriver::begin(uint32_t baud)
 {
-  usart_init(m_dev, baud);
-  usart_enable(m_dev);
+  if (m_dev != NULL) {
+    usart_init(m_dev, baud);
+    usart_enable(m_dev);
+  }
+
   m_initialized = true;
 }
 
@@ -58,7 +61,11 @@ void SMACCMUARTDriver::set_blocking_writes(bool blocking)
 
 bool SMACCMUARTDriver::tx_pending()
 {
-  return usart_is_tx_pending(m_dev);
+  if (m_dev != NULL) {
+    return usart_is_tx_pending(m_dev);
+  }
+
+  return false;
 }
 
 /* SMACCM implementations of BetterStream virtual methods */
@@ -107,12 +114,18 @@ void SMACCMUARTDriver::vprintf_P(const prog_char *pstr, va_list ap)
 /* SMACCM implementations of Stream virtual methods */
 int16_t SMACCMUARTDriver::available()
 {
-  return (int16_t)usart_available(m_dev);
+  if (m_dev != NULL)
+    return (int16_t)usart_available(m_dev);
+
+  return 0;
 }
 
 int16_t SMACCMUARTDriver::txspace()
 {
-  return (int16_t)usart_txspace(m_dev);
+  if (m_dev != NULL)
+    return (int16_t)usart_txspace(m_dev);
+
+  return 0;
 }
 
 // It looks like this should always be a non-blocking read, so return
@@ -120,6 +133,9 @@ int16_t SMACCMUARTDriver::txspace()
 int16_t SMACCMUARTDriver::read()
 {
   uint8_t c;
+
+  if (m_dev == NULL)
+    return -1;
 
   if (usart_read_timeout(m_dev, 0, &c, 1) == 0)
     return -1;
@@ -131,6 +147,9 @@ int16_t SMACCMUARTDriver::peek()
 {
   uint8_t c;
 
+  if (m_dev == NULL)
+    return -1;
+
   if (!usart_peek(m_dev, &c))
     return -1;
 
@@ -140,6 +159,9 @@ int16_t SMACCMUARTDriver::peek()
 /* SMACCM implementations of Print virtual methods */
 size_t SMACCMUARTDriver::write(uint8_t c)
 {
+  if (m_dev == NULL)
+    return 1;
+
   portTickType delay = m_blocking ? portMAX_DELAY : 0;
   return usart_write_timeout(m_dev, delay, &c, 1);
 }
