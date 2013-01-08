@@ -58,3 +58,8 @@ Additional notes:
                     ready from the previous byte
 
  pgm_read_byte: 0.5 usec per byte
+
+dataflash write: 
+  50 usec per byte, same on APM1 and APM2
+  if we change API to do block writes, will be 8 usec per byte
+
