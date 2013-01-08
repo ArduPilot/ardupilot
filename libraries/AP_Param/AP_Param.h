@@ -121,11 +121,10 @@ public:
     /// Note that if the combination of names is larger than the buffer, the
     /// result in the buffer will be truncated.
     ///
+    /// @param	token			token giving current variable
     /// @param	buffer			The destination buffer
     /// @param	bufferSize		Total size of the destination buffer.
     ///
-    void copy_name(char *buffer, size_t bufferSize, bool force_scalar=false);
-
     void copy_name_token(const ParamToken *token, char *buffer, size_t bufferSize, bool force_scalar=false);
 
     /// Find a variable by name.
@@ -145,7 +144,7 @@ public:
     /// @return                 A pointer to the variable, or NULL if
     ///                         it does not exist.
     ///
-    static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype);
+    static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
 
     /// Find a object in the top level var_info table
     ///

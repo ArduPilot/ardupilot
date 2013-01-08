@@ -507,36 +507,6 @@ void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx
 //
 // If the variable is a group member, prepend the group name.
 //
-void AP_Param::copy_name(char *buffer, size_t buffer_size, bool force_scalar)
-{
-    uint32_t group_element;
-    const struct GroupInfo *ginfo;
-    uint8_t idx;
-    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
-    if (info == NULL) {
-        *buffer = 0;
-        serialDebug("no info found");
-        return;
-    }
-    strncpy_P(buffer, info->name, buffer_size);
-    if (ginfo != NULL) {
-        uint8_t len = strnlen(buffer, buffer_size);
-        if (len < buffer_size) {
-            strncpy_P(&buffer[len], ginfo->name, buffer_size-len);
-        }
-        if ((force_scalar || idx != 0) && AP_PARAM_VECTOR3F == PGM_UINT8(&ginfo->type)) {
-            // the caller wants a specific element in a Vector3f
-            add_vector3f_suffix(buffer, buffer_size, idx);
-        }
-    } else if ((force_scalar || idx != 0) && AP_PARAM_VECTOR3F == PGM_UINT8(&info->type)) {
-        add_vector3f_suffix(buffer, buffer_size, idx);
-    }
-}
-
-// Copy the variable's whole name to the supplied buffer.
-//
-// If the variable is a group member, prepend the group name.
-//
 void AP_Param::copy_name_token(const ParamToken *token, char *buffer, size_t buffer_size, bool force_scalar)
 {
     uint32_t group_element;
@@ -641,14 +611,13 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
 // Find a variable by index. Note that this is quite slow.
 //
 AP_Param *
-AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype)
+AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token)
 {
-    ParamToken token;
     AP_Param *ap;
     uint16_t count=0;
-    for (ap=AP_Param::first(&token, ptype);
+    for (ap=AP_Param::first(token, ptype);
          ap && count < idx;
-         ap=AP_Param::next_scalar(&token, ptype)) {
+         ap=AP_Param::next_scalar(token, ptype)) {
         count++;
     }
     return ap;    
@@ -1050,7 +1019,7 @@ void AP_Param::show_all(void)
          ap;
          ap=AP_Param::next_scalar(&token, &type)) {
         char s[AP_MAX_NAME_SIZE+1];
-        ap->copy_name(s, sizeof(s), true);
+        ap->copy_name_token(&token, s, sizeof(s), true);
         s[AP_MAX_NAME_SIZE] = 0;
 
         switch (type) {
