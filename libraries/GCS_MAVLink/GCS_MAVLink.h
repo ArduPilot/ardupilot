@@ -51,6 +51,8 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 	}
 }
 
+void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
+
 /// Read a byte from the nominated MAVLink channel
 ///
 /// @param chan		Channel to receive on
