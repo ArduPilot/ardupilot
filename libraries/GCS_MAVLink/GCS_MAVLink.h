@@ -13,6 +13,13 @@
 // to select MAVLink 1.0 in the arduino GUI build
 #define MAVLINK_SEPARATE_HELPERS
 
+#define MAVLINK_SEND_UART_BYTES(chan, buf, len) comm_send_buffer(chan, buf, len)
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#include <util/crc16.h>
+#define HAVE_CRC_ACCUMULATE
+#endif
+
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
 // this allows us to make mavlink_message_t much smaller. It means we
@@ -118,6 +125,15 @@ static inline uint16_t comm_get_txspace(mavlink_channel_t chan)
 	}
     return (uint16_t)ret;
 }
+
+#ifdef HAVE_CRC_ACCUMULATE
+// use the AVR C library implementation. This is a bit over twice as
+// fast as the C version
+static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
+{
+	*crcAccum = _crc_ccitt_update(*crcAccum, data);
+}
+#endif
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 #include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
