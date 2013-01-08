@@ -38,9 +38,11 @@ static int16_t read_sonar(void)
     int16_t temp_alt = sonar.read();
 
     if(temp_alt >= sonar.min_distance && temp_alt <= sonar.max_distance * 0.70) {
-        sonar_alt_ok = true;
+        if( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
+            sonar_alt_health++;
+        }
     }else{
-        sonar_alt_ok = false;
+        sonar_alt_health = 0;
     }
 
  #if SONAR_TILT_CORRECTION == 1

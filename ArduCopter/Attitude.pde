@@ -787,15 +787,24 @@ static int16_t
 get_throttle_accel(int16_t z_target_accel)
 {
     static float z_accel_error = 0;     // The acceleration error in cm.
+    static uint32_t last_call_ms = 0;   // the last time this controller was called
     int32_t p,i,d;                      // used to capture pid values for logging
     int16_t output;
     float z_accel_meas;
+    uint32_t now = millis();
 
     // Calculate Earth Frame Z acceleration
     z_accel_meas = -(ahrs.get_accel_ef().z + gravity) * 100;
 
-    // calculate accel error and Filter with fc = 2 Hz
-    z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
+    // reset target altitude if this controller has just been engaged
+    if( now - last_call_ms > 100 ) {
+        // Reset Filter
+        z_accel_error = 0;
+    } else {
+        // calculate accel error and Filter with fc = 2 Hz
+        z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
+    }
+    last_call_ms = now;
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle_accel.get_p(z_accel_error);
@@ -916,12 +925,21 @@ static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
 static void
 get_throttle_rate(int16_t z_target_speed)
 {
+    static uint32_t last_call_ms = 0;
     static float z_rate_error = 0;   // The velocity error in cm.
     int32_t p,i,d;      // used to capture pid values for logging
     int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
+    uint32_t now = millis();
 
-    // calculate rate error and filter with cut off frequency of 2 Hz
-    z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
+    // reset target altitude if this controller has just been engaged
+    if( now - last_call_ms > 100 ) {
+        // Reset Filter
+        z_rate_error    = 0;
+    } else {
+        // calculate rate error and filter with cut off frequency of 2 Hz
+        z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
+    }
+    last_call_ms = now;
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
@@ -980,9 +998,9 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
     if( g.pi_alt_hold.kP() != 0 ) {
         linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
         if( alt_error > 2*linear_distance ) {
-            desired_rate = sqrt(2*250*(alt_error-linear_distance));
+            desired_rate = safe_sqrt(2*250*(alt_error-linear_distance));
         }else if( alt_error < -2*linear_distance ) {
-            desired_rate = -sqrt(2*250*(-alt_error-linear_distance));
+            desired_rate = -safe_sqrt(2*250*(-alt_error-linear_distance));
         }else{
             desired_rate = g.pi_alt_hold.get_p(alt_error);
         }
@@ -1001,44 +1019,45 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
     // TO-DO: enabled PID logging for this controller
 }
 
+// get_throttle_althold_with_slew - altitude controller with slew to avoid step changes in altitude target
+// calls normal althold controller which updates accel based throttle controller targets
+static void
+get_throttle_althold_with_slew(int16_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
+{
+    // limit target altitude change
+    controller_desired_alt += constrain(target_alt-controller_desired_alt, min_climb_rate*0.02, max_climb_rate*0.02);
+
+    // do not let target altitude get too far from current altitude
+    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
+
+    get_throttle_althold(controller_desired_alt, min_climb_rate-250, max_climb_rate+250);   // 250 is added to give head room to alt hold controller
+}
+
 // get_throttle_rate_stabilized - rate controller with additional 'stabilizer'
 // 'stabilizer' ensure desired rate is being met
 // calls normal throttle rate controller which updates accel based throttle controller targets
 static void
 get_throttle_rate_stabilized(int16_t target_rate)
 {
-    static float target_alt = 0;   // The desired altitude in cm.
-    static uint32_t last_call_ms = 0;
-
-    uint32_t now = millis();
-
-    // reset target altitude if this controller has just been engaged
-    if( now - last_call_ms > 1000 ) {
-        target_alt = current_loc.alt;
-    }
-    last_call_ms = millis();
-
-    target_alt += target_rate * 0.02;
+    controller_desired_alt += target_rate * 0.02;
 
     // do not let target altitude get too far from current altitude
-    target_alt = constrain(target_alt,current_loc.alt-750,current_loc.alt+750);
+    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 
-    set_new_altitude(target_alt);
+    set_new_altitude(controller_desired_alt);
 
-    get_throttle_althold(target_alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
+    get_throttle_althold(controller_desired_alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
 }
 
 // get_throttle_land - high level landing logic
 // sends the desired acceleration in the accel based throttle controller
 // called at 50hz
-#define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
-#define LAND_DETECTOR_TRIGGER 50    // number of 50hz iterations with near zero climb rate and low throttle that triggers landing complete.
 static void
 get_throttle_land()
 {
     // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
-    if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_ok)) {
-        get_throttle_althold(LAND_START_ALT, g.auto_velocity_z_min, -abs(g.land_speed));
+    if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+        get_throttle_althold_with_slew(LAND_START_ALT, g.auto_velocity_z_min, -abs(g.land_speed));
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
@@ -1069,23 +1088,29 @@ get_throttle_surface_tracking(int16_t target_rate)
 {
     static float target_sonar_alt = 0;   // The desired altitude in cm above the ground
     static uint32_t last_call_ms = 0;
+    float distance_error;
+    float sonar_induced_slew_rate;
 
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
-    if( now - last_call_ms > 1000 ) {
-        target_sonar_alt = sonar_alt + next_WP.alt - current_loc.alt;
+    if( now - last_call_ms > 200 ) {
+        target_sonar_alt = sonar_alt + controller_desired_alt - current_loc.alt;
     }
-    last_call_ms = millis();
+    last_call_ms = now;
 
     target_sonar_alt += target_rate * 0.02;
+
+    distance_error = (target_sonar_alt-sonar_alt);
+    sonar_induced_slew_rate = constrain(fabs(THR_SURFACE_TRACKING_P * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
     target_sonar_alt = constrain(target_sonar_alt,sonar_alt-750,sonar_alt+750);
-    set_new_altitude(current_loc.alt+(target_sonar_alt-sonar_alt));
+    controller_desired_alt = current_loc.alt+(target_sonar_alt-sonar_alt);
+    set_new_altitude(controller_desired_alt);
 
-    get_throttle_althold(next_WP.alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
+    get_throttle_althold_with_slew(controller_desired_alt, target_rate-sonar_induced_slew_rate, target_rate+sonar_induced_slew_rate);   // VELZ_MAX limits how quickly we react
 }
 
 /*

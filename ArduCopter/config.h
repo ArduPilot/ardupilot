@@ -251,6 +251,18 @@
  # define CONFIG_SONAR ENABLED
 #endif
 
+#ifndef SONAR_ALT_HEALTH_MAX
+ # define SONAR_ALT_HEALTH_MAX 3            // number of good reads that indicates a healthy sonar
+#endif
+
+#ifndef THR_SURFACE_TRACKING_P
+ # define THR_SURFACE_TRACKING_P 0.2        // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
+#endif
+
+#ifndef THR_SURFACE_TRACKING_VELZ_MAX
+ # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max speed number of good reads that indicates a healthy sonar
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Channel 7 default option
 //
@@ -444,7 +456,12 @@
 #ifndef LAND_SPEED
  # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
 #endif
-
+#ifndef LAND_START_ALT
+ # define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
+#endif
+#ifndef LAND_DETECTOR_TRIGGER
+ # define LAND_DETECTOR_TRIGGER 50    // number of 50hz iterations with near zero climb rate and low throttle that triggers landing complete.
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
