@@ -78,6 +78,10 @@ void AVRI2CDriver::begin() {
     TWBR = ((CPU_FREQ / 100000) - 16) / 2;
     // enable twi module, acks, and twi interrupt
     TWCR = _BV(TWEN) | _BV(TWIE) | _BV(TWEA);
+
+    // start in high speed. When a driver gets an error it drops it to
+    // low speed
+    setHighSpeed(true);
 }
 
 void AVRI2CDriver::end() {
