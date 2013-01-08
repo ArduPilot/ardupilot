@@ -315,9 +315,8 @@ GCS_MAVLINK gcs3;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-
+ModeFilterInt16_Size3 sonar_mode_filter(1);
 #if CONFIG_SONAR == ENABLED
-ModeFilterInt16_Size5 sonar_mode_filter(2);
 AP_HAL::AnalogSource *sonar_analog_source;
 AP_RangeFinder_MaxsonarXL *sonar;
 #endif
@@ -640,6 +639,8 @@ static float current_total1;
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude
 ////////////////////////////////////////////////////////////////////////////////
+// The (throttle) controller desired altitude in cm
+static float controller_desired_alt;
 // The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
 static int32_t altitude_error;
 // The cm/s we are moving up or down based on sensor data - Positive = UP
@@ -650,7 +651,7 @@ static int16_t climb_rate_error;
 static int16_t climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t sonar_alt;
-static bool sonar_alt_ok;   // true if we can trust the altitude from the sonar
+static uint8_t sonar_alt_health;   // true if we can trust the altitude from the sonar
 // The climb_rate as reported by sonar in cm/s
 static int16_t sonar_rate;
 // The altitude as reported by Baro in cm – Values can be quite high
@@ -1786,13 +1787,17 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             altitude_error = 0;                         // clear altitude error reported to GCS
             throttle_initialised = true;
             break;
+
         case THROTTLE_STABILIZED_RATE:
         case THROTTLE_DIRECT_ALT:
+            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
             throttle_initialised = true;
             break;
 
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
+        case THROTTLE_SURFACE_TRACKING:
+            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
             if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
@@ -1803,19 +1808,12 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_LAND:
             set_land_complete(false);   // mark landing as incomplete
             land_detector = 0;          // A counter that goes up if our climb rate stalls out.
-            set_new_altitude(0);        // Set a new target altitude
-            throttle_initialised = true;
-            break;
-
-        case THROTTLE_SURFACE_TRACKING:
-            if( g.sonar_enabled ) {
-                set_new_altitude(current_loc.alt);          // by default hold the current altitude
-                if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
-                    reset_throttle_I();
-                }
-                throttle_initialised = true;
+            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
+            // Set target altitude to LAND_START_ALT if we are high, below this altitude the get_throttle_rate_stabilized will take care of setting the next_WP.alt
+            if (current_loc.alt >= LAND_START_ALT) {
+                set_new_altitude(LAND_START_ALT);
             }
-            // To-Do: handle the case where the sonar is not enabled
+            throttle_initialised = true;
             break;
 
         default:
@@ -1954,7 +1952,7 @@ void update_throttle_mode(void)
             altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
         }else{
             int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
-            get_throttle_althold(desired_alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
+            get_throttle_althold_with_slew(desired_alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
         break;
 
@@ -1967,7 +1965,7 @@ void update_throttle_mode(void)
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in next_WP.alt
         if(motors.auto_armed() == true) {
-            get_throttle_althold(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
+            get_throttle_althold_with_slew(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
         break;
 
@@ -1979,7 +1977,7 @@ void update_throttle_mode(void)
     case THROTTLE_SURFACE_TRACKING:
         // surface tracking with sonar or other rangefinder plus pilot input of climb rate
         pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        if( sonar_alt_ok ) {
+        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
             // if sonar is ok, use surface tracking
             get_throttle_surface_tracking(pilot_climb_rate);
         }else{
