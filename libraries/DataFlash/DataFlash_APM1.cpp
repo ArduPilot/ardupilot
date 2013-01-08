@@ -166,9 +166,10 @@ uint16_t DataFlash_APM1::PageSize()
     if (!_spi_sem->take(5))
         return 0;
     
-    return(528-((ReadStatusReg()&0x01) << 4)); // if first bit 1 trhen 512 else 528 bytes
+    uint16_t ret = 528-((ReadStatusReg()&0x01) << 4); // if first bit 1 trhen 512 else 528 bytes
 
     _spi_sem->give();
+    return ret;
 }
 
 // Wait until DataFlash is in ready state...
