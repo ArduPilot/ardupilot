@@ -209,9 +209,9 @@ AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_PX4
 AP_Baro_PX4 barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
-   #if CONFIG_MS5611_SERIAL == SPI
+   #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
 AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
-   #elif CONFIG_MS5611_SERIAL == I2C
+   #elif CONFIG_MS5611_SERIAL == AP_BARO_MS5611_I2C
 AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
    #else
     #error Unrecognized CONFIG_MS5611_SERIAL setting.

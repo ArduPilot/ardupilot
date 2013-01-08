@@ -424,6 +424,9 @@ enum gcs_severity {
 #define AP_BARO_MS5611    2
 #define AP_BARO_PX4       3
 
+#define AP_BARO_MS5611_SPI 1
+#define AP_BARO_MS5611_I2C 2
+
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
 #define ERROR_SUBSYSTEM_RADIO               2
