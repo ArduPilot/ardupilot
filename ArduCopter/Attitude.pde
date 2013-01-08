@@ -74,12 +74,11 @@ get_stabilize_yaw(int32_t target_angle)
 #endif
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;              // used to slow down logging of PID values to dataflash
     // log output if PID logging is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            log_counter = 0;
+    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_YAW_KP ) {
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
+            pid_log_counter = 0;
             Log_Write_PID(CH6_YAW_KP, angle_error, target_rate, i_term, 0, output, tuning_value);
         }
     }
@@ -333,13 +332,11 @@ get_heli_rate_roll(int32_t target_rate)
     output = constrain(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0; // used to slow down logging of PID values to dataflash
-
     // log output if PID logging is on and we are tuning the rate P, I or D gains
     if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            log_counter = 0;
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
+            pid_log_counter = 0;
             Log_Write_PID(CH6_RATE_KP, rate_error, p, i, d, output, tuning_value);
         }
     }
@@ -387,12 +384,9 @@ get_heli_rate_pitch(int32_t target_rate)
     output = constrain(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID logging is on and we are tuning the rate P, I or D gains
     if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            log_counter = 0;
+        if( pid_log_counter == 0 ) {               // relies on get_heli_rate_roll to update pid_log_counter
             Log_Write_PID(CH6_RATE_KP+100, rate_error, p, i, 0, output, tuning_value);
         }
     }
@@ -432,12 +426,11 @@ get_heli_rate_yaw(int32_t target_rate)
     output = constrain(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            log_counter = 0;
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_RATE_KP || g.radio_tuning == CH6_YAW_RATE_KD) ) {
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
+            pid_log_counter = 0;
             Log_Write_PID(CH6_YAW_RATE_KP, rate_error, p, i, d, output, tuning_value);
         }
     }
@@ -479,14 +472,12 @@ get_rate_roll(int32_t target_rate)
     output = constrain(output, -5000, 5000);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0; // used to slow down logging of PID values to dataflash
-
     // log output if PID logging is on and we are tuning the rate P, I or D gains
     if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            log_counter = 0;
-            Log_Write_PID(CH6_RATE_KP, rate_error, p, i, d /*-rate_d_dampener*/, output, tuning_value);
+        pid_log_counter++;                          // Note: get_rate_pitch pid logging relies on this function to update pid_log_counter so if you change the line above you must change the equivalent line in get_rate_pitch
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
+            pid_log_counter = 0;
+            Log_Write_PID(CH6_RATE_KP, rate_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -522,13 +513,10 @@ get_rate_pitch(int32_t target_rate)
     output = constrain(output, -5000, 5000);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID logging is on and we are tuning the rate P, I or D gains
     if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            log_counter = 0;
-            Log_Write_PID(CH6_RATE_KP+100, rate_error, p, i, d/*-rate_d_dampener*/, output, tuning_value);
+        if( pid_log_counter == 0 ) {               // relies on get_rate_roll having updated pid_log_counter
+            Log_Write_PID(CH6_RATE_KP+100, rate_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -561,12 +549,11 @@ get_rate_yaw(int32_t target_rate)
     output = constrain(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_KP || g.radio_tuning == CH6_YAW_RATE_KP) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            log_counter = 0;
+    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_YAW_RATE_KP ) {
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
+            pid_log_counter = 0;
             Log_Write_PID(CH6_YAW_RATE_KP, rate_error, p, i, d, output, tuning_value);
         }
     }
@@ -619,12 +606,11 @@ get_of_roll(int32_t input_roll)
         of_roll = constrain(new_roll, (of_roll-20), (of_roll+20));
 
  #if LOGGING_ENABLED == ENABLED
-        static int8_t log_counter = 0;                                  // used to slow down logging of PID values to dataflash
         // log output if PID logging is on and we are tuning the rate P, I or D gains
         if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
-            log_counter++;
-            if( log_counter >= 5 ) {                    // (update rate / desired output rate) = (100hz / 10hz) = 10
-                log_counter = 0;
+            pid_log_counter++;              // Note: get_of_pitch pid logging relies on this function updating pid_log_counter so if you change the line above you must change the equivalent line in get_of_pitch
+            if( pid_log_counter >= 5 ) {    // (update rate / desired output rate) = (100hz / 10hz) = 10
+                pid_log_counter = 0;
                 Log_Write_PID(CH6_OPTFLOW_KP, tot_x_cm, p, i, d, of_roll, tuning_value);
             }
         }
@@ -674,12 +660,9 @@ get_of_pitch(int32_t input_pitch)
         of_pitch = constrain(new_pitch, (of_pitch-20), (of_pitch+20));
 
  #if LOGGING_ENABLED == ENABLED
-        static int8_t log_counter = 0;                                  // used to slow down logging of PID values to dataflash
         // log output if PID logging is on and we are tuning the rate P, I or D gains
         if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
-            log_counter++;
-            if( log_counter >= 5 ) {                    // (update rate / desired output rate) = (100hz / 10hz) = 10
-                log_counter = 0;
+            if( pid_log_counter == 0 ) {        // relies on get_of_roll having updated the pid_log_counter
                 Log_Write_PID(CH6_OPTFLOW_KP+100, tot_y_cm, p, i, d, of_pitch, tuning_value);
             }
         }
@@ -829,13 +812,12 @@ get_throttle_accel(int16_t z_target_accel)
     output =  constrain(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
 
 #if LOGGING_ENABLED == ENABLED
-    static int8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THR_ACCEL_KD || g.radio_tuning == CH6_THROTTLE_KP) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
-            log_counter = 0;
-            Log_Write_PID(CH6_THR_ACCEL_KD, z_accel_error, p, i, d, output, tuning_value);
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THR_ACCEL_KP || g.radio_tuning == CH6_THR_ACCEL_KI || g.radio_tuning == CH6_THR_ACCEL_KD) ) {
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
+            pid_log_counter = 0;
+            Log_Write_PID(CH6_THR_ACCEL_KP, z_accel_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -956,12 +938,11 @@ get_throttle_rate(int16_t z_target_speed)
     output =  p+i+d;
 
 #if LOGGING_ENABLED == ENABLED
-    static uint8_t log_counter = 0;                                      // used to slow down logging of PID values to dataflash
     // log output if PID loggins is on and we are tuning the yaw
     if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_KP || g.radio_tuning == CH6_THROTTLE_KI || g.radio_tuning == CH6_THROTTLE_KD) ) {
-        log_counter++;
-        if( log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
-            log_counter = 0;
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
+            pid_log_counter = 0;
             Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, output, tuning_value);
         }
     }
@@ -988,21 +969,22 @@ get_throttle_rate(int16_t z_target_speed)
 static void
 get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
+    int32_t alt_error;
     int16_t desired_rate;
     int32_t linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate altitude error
-    altitude_error    = target_alt - current_loc.alt;
+    alt_error    = target_alt - current_loc.alt;
 
     // check kP to avoid division by zero
     if( g.pi_alt_hold.kP() != 0 ) {
         linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
-        if( altitude_error > 2*linear_distance ) {
-            desired_rate = sqrt(2*250*(altitude_error-linear_distance));
-        }else if( altitude_error < -2*linear_distance ) {
-            desired_rate = -sqrt(2*250*(-altitude_error-linear_distance));
+        if( alt_error > 2*linear_distance ) {
+            desired_rate = sqrt(2*250*(alt_error-linear_distance));
+        }else if( alt_error < -2*linear_distance ) {
+            desired_rate = -sqrt(2*250*(-alt_error-linear_distance));
         }else{
-            desired_rate = g.pi_alt_hold.get_p(altitude_error);
+            desired_rate = g.pi_alt_hold.get_p(alt_error);
         }
     }else{
         desired_rate = 0;
@@ -1012,6 +994,9 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
 
     // call rate based throttle controller which will update accel based throttle controller targets
     get_throttle_rate(desired_rate);
+
+    // update altitude error reported to GCS
+    altitude_error = alt_error;
 
     // TO-DO: enabled PID logging for this controller
 }

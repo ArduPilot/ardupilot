@@ -375,11 +375,20 @@ static struct AP_System{
     uint8_t nav_ok                  : 1; // 4   // deprecated
     uint8_t CH7_flag                : 1; // 5   // manages state of the ch7 toggle switch
     uint8_t usb_connected           : 1; // 6   // true if APM is powered from USB connection
-    uint8_t run_50hz_loop           : 1; // 7   // toggles the 100hz loop for 50hz
-    uint8_t alt_sensor_flag         : 1; // 8   // used to track when to read sensors vs estimate alt
-    uint8_t yaw_stopped             : 1; // 9   // Used to manage the Yaw hold capabilities
+    uint8_t alt_sensor_flag         : 1; // 7   // used to track when to read sensors vs estimate alt
+    uint8_t yaw_stopped             : 1; // 8   // Used to manage the Yaw hold capabilities
 
 } ap_system;
+
+/*
+  what navigation updated are needed
+ */
+static struct nav_updates {
+    uint8_t need_velpos             : 1;
+    uint8_t need_dist_bearing       : 1;
+    uint8_t need_nav_controllers    : 1;
+    uint8_t need_nav_pitch_roll     : 1;
+} nav_updates;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -448,6 +457,8 @@ MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
+// used to limit the rate that the pid controller output is logged so that it doesn't negatively affect performance
+static uint8_t pid_log_counter;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -814,14 +825,10 @@ static int16_t gps_fix_count;
 // --------------
 // Time in microseconds of main control loop
 static uint32_t fast_loopTimer;
-// Time in microseconds of 50hz control loop
-static uint32_t fiftyhz_loopTimer;
 // Counters for branching from 10 hz control loop
 static uint8_t medium_loopCounter;
 // Counters for branching from 3 1/3hz control loop
 static uint8_t slow_loopCounter;
-// Counters for branching at 1 hz
-static uint8_t counter_one_herz;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
 // Delta Time in milliseconds for navigation computations, updated with every good GPS read
@@ -928,15 +935,130 @@ void setup() {
 }
 
 /*
-  return true if the main loop is ready to run. This is used by
-  potentially expensive functions that are not timing critical, to
-  defer the expensive processing until after the main loop has run.
+  if the compass is enabled then try to accumulate a reading
  */
-static bool main_loop_ready(void)
+static void compass_accumulate(void)
 {
-    return ins.num_samples_available() >= 2;
+    if (g.compass_enabled) {
+        compass.accumulate();
+    }    
 }
 
+// enable this to get console logging of scheduler performance
+#define SCHEDULER_DEBUG 0
+
+static void perf_update(void)
+{
+    if (g.log_bitmask & MASK_LOG_PM)
+        Log_Write_Performance();
+#if SCHEDULER_DEBUG
+    cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"), 
+                        (unsigned)perf_info_get_num_long_running(),
+                        (unsigned)perf_info_get_num_loops(),
+                        (unsigned long)perf_info_get_max_time());
+#endif
+    perf_info_reset();
+    gps_fix_count = 0;
+}
+
+/*
+  return number of micros until the main loop will want to run again
+ */
+static int16_t main_loop_time_available(void)
+{
+    uint32_t dt = (micros() - fast_loopTimer);
+    if (dt > 10000) {
+        return 0;
+    }
+    return 10000 - dt;
+}
+
+typedef void (*event_fn_t)(void);
+
+struct timer_event_table {
+    event_fn_t func;
+    uint16_t time_interval_10ms;
+    uint16_t min_time_usec;
+};
+
+#define NUM_TIMER_EVENTS 14
+
+/*
+  scheduler table - all regular events apart from the fast_loop()
+  should be listed here, along with how often they should be called
+  (in 10ms units) and the maximum time they are expected to take
+ */
+static const struct timer_event_table PROGMEM timer_events[NUM_TIMER_EVENTS] = {
+    { update_GPS,         2,     900 },
+    { update_navigation,     2,     500 },
+    { medium_loop,           2,     700 },
+    { update_altitude_est,   2,     900 },
+    { fifty_hz_loop,         2,     800 },
+    { run_nav_updates,       2,     500 },
+    { slow_loop,            10,     500 },
+    { gcs_check_input,	     2,     700 },
+    { gcs_send_heartbeat,  100,     700 },
+    { gcs_data_stream_send,  2,    1100 },
+    { gcs_send_deferred,     2,     700 },
+    { compass_accumulate,    2,     600 },
+    { super_slow_loop,     100,    1100 },
+    { perf_update,        1000,     500 }
+};
+static uint16_t timer_counters[NUM_TIMER_EVENTS];
+
+static uint16_t tick_counter;
+static uint32_t event_time_started;
+static uint16_t event_time_allowed;
+
+/*
+  return number of micros until the current event reaches its deadline
+ */
+static uint16_t event_time_available(void)
+{
+    uint32_t dt = micros() - event_time_started;
+    if (dt > event_time_allowed) {
+        return 0;
+    }
+    return event_time_allowed - dt;
+}
+
+/*
+  run as many scheduler events as we can
+ */
+static void run_events(uint16_t time_available_usec)
+{
+    for (uint8_t i=0; i<NUM_TIMER_EVENTS; i++) {
+        if (tick_counter - timer_counters[i] >= pgm_read_word(&timer_events[i].time_interval_10ms)) {
+            // this event is due to run. Do we have enough time to run it?
+            event_time_allowed = pgm_read_word(&timer_events[i].min_time_usec);
+            if (event_time_allowed <= time_available_usec) {
+                // run it
+                event_time_started = micros();
+                event_fn_t func = (event_fn_t)pgm_read_pointer(&timer_events[i].func);
+                func();
+                
+                // record the tick counter when we ran. This drives
+                // when we next run the event
+                timer_counters[i] = tick_counter;
+                
+                // work out how long the event actually took
+                uint32_t time_taken = micros() - event_time_started;
+                
+                if (time_taken > event_time_allowed) {
+                    // the event overran!
+#if SCHEDULER_DEBUG
+                    cliSerial->printf_P(PSTR("overrun in event %u (%u/%u)\n"), 
+                                        (unsigned)i, 
+                                        (unsigned)time_taken,
+                                        (unsigned)event_time_allowed);
+#endif
+                    return;
+                }
+                time_available_usec -= time_taken;
+            }
+        }
+    }
+}
 
 void loop()
 {
@@ -944,17 +1066,7 @@ void loop()
 
     // We want this to execute fast
     // ----------------------------
-    if (main_loop_ready()) {
-
-#if 0
-        uint16_t num_samples = ins.num_samples_available();
-        static uint16_t counter;
-        if (num_samples != 2 || (counter++ % 200 == 0)) {
-            cliSerial->printf_P(PSTR("num_samples=%u dt=%u\n"),
-                                (unsigned)num_samples,
-                                (unsigned)(timer - fast_loopTimer));
-        }
-#endif
+    if (ins.num_samples_available() >= 2) {
 
         #if DEBUG_FAST_LOOP == ENABLED
         Log_Write_Data(DATA_FAST_LOOP, (int32_t)(timer - fast_loopTimer));
@@ -963,8 +1075,8 @@ void loop()
         // check loop time
         perf_info_check_loop_time(timer - fast_loopTimer);
 
-        G_Dt            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
-        fast_loopTimer  = timer;
+        G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
+        fast_loopTimer          = timer;
 
         // for mainloop failure monitoring
         mainLoop_count++;
@@ -973,67 +1085,19 @@ void loop()
         // ---------------------
         fast_loop();
 
-        // run the 50hz loop 1/2 the time
-        ap_system.run_50hz_loop = !ap_system.run_50hz_loop;
-
-        if(ap_system.run_50hz_loop) {
-
-            #if DEBUG_MED_LOOP == ENABLED
-            Log_Write_Data(DATA_MED_LOOP, (int32_t)(timer - fiftyhz_loopTimer));
-            #endif
-
-            // store the micros for the 50 hz timer
-            fiftyhz_loopTimer = timer;
-
-            // check for new GPS messages
-            // --------------------------
-            update_GPS();
-
-            // run navigation routines
-            update_navigation();
-
-            // perform 10hz tasks
-            // ------------------
-            medium_loop();
-
-            // Stuff to run at full 50hz, but after the med loops
-            // --------------------------------------------------
-            fifty_hz_loop();
-
-            counter_one_herz++;
-
-            // trgger our 1 hz loop
-            if(counter_one_herz >= 50) {
-                super_slow_loop();
-                counter_one_herz = 0;
-            }
-            perf_mon_counter++;
-            if (perf_mon_counter >= 500 ) {     // 500 iterations at 50hz = 10 seconds
-                if (g.log_bitmask & MASK_LOG_PM)
-                    Log_Write_Performance();
-                perf_info_reset();
-                gps_fix_count           = 0;
-                perf_mon_counter        = 0;
-            }
-        }else{
-            // process communications with the GCS
-            gcs_check();
-        }
+        tick_counter++;
     } else {
-        if (timer - fast_loopTimer < 9000) {
-            // we have some spare cycles available
-            // less than 10ms has passed. We have at least one millisecond
-            // of free time. The most useful thing to do with that time is
-            // to accumulate some sensor readings, specifically the
-            // compass, which is often very noisy but is not interrupt
-            // driven, so it can't accumulate readings by itself
-            if (g.compass_enabled) {
-                compass.accumulate();
-            }
+        uint16_t time_to_next_loop;
+        uint16_t dt = timer - fast_loopTimer;
+        if (dt > 10000) {
+            time_to_next_loop = 0;
+        } else {
+            time_to_next_loop = 10000 - dt;
         }
+        run_events(time_to_next_loop);
     }
-
 }
+
 
 // Main loop - 100hz
 static void fast_loop()
@@ -1078,6 +1142,7 @@ static void fast_loop()
     // update targets to rate controllers
     update_rate_contoller_targets();
 
+    // agmatthews - USERHOOKS
 #ifdef USERHOOK_FASTLOOP
     USERHOOK_FASTLOOP
 #endif
@@ -1178,6 +1243,7 @@ static void medium_loop()
         // -----------------------
         arm_motors();
 
+        // agmatthews - USERHOOKS
 #ifdef USERHOOK_MEDIUMLOOP
         USERHOOK_MEDIUMLOOP
 #endif
@@ -1185,8 +1251,6 @@ static void medium_loop()
 #if COPTER_LEDS == ENABLED
         update_copter_leds();
 #endif
-
-        slow_loop();
         break;
 
     default:
@@ -1201,10 +1265,6 @@ static void medium_loop()
 // ---------------------------
 static void fifty_hz_loop()
 {
-    // read altitude sensors or estimate altitude
-    // ------------------------------------------
-    update_altitude_est();
-
     // Update the throttle ouput
     // -------------------------
     update_throttle_mode();
@@ -1307,6 +1367,7 @@ static void slow_loop()
         camera_mount2.update_mount_type();
 #endif
 
+        // agmatthews - USERHOOKS
 #ifdef USERHOOK_SLOWLOOP
         USERHOOK_SLOWLOOP
 #endif
@@ -1368,7 +1429,7 @@ static void super_slow_loop()
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
-    static int log_counter = 0;
+    static uint8_t of_log_counter = 0;
 
     // if new data has arrived, process it
     if( optflow.last_update != last_of_update ) {
@@ -1376,9 +1437,9 @@ static void update_optical_flow(void)
         optflow.update_position(ahrs.roll, ahrs.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
 
         // write to log at 5hz
-        log_counter++;
-        if( log_counter >= 4 ) {
-            log_counter = 0;
+        of_log_counter++;
+        if( of_log_counter >= 4 ) {
+            of_log_counter = 0;
             if (g.log_bitmask & MASK_LOG_OPTFLOW) {
                 Log_Write_Optflow();
             }
@@ -1772,16 +1833,21 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_MANUAL:
         case THROTTLE_MANUAL_TILT_COMPENSATED:
             throttle_accel_deactivate();                // this controller does not use accel based throttle controller
+            altitude_error = 0;                         // clear altitude error reported to GCS
             throttle_initialised = true;
             break;
 
         case THROTTLE_ACCELERATION:                     // pilot inputs the desired acceleration
             if( g.throttle_accel_enabled ) {            // this throttle mode requires use of the accel based throttle controller
+                altitude_error = 0;                     // clear altitude error reported to GCS
                 throttle_initialised = true;
             }
             break;
 
         case THROTTLE_RATE:
+            altitude_error = 0;                         // clear altitude error reported to GCS
+            throttle_initialised = true;
+            break;
         case THROTTLE_STABILIZED_RATE:
         case THROTTLE_DIRECT_ALT:
             throttle_initialised = true;
@@ -1850,7 +1916,7 @@ void update_throttle_mode(void)
     }
 
 #if FRAME_CONFIG == HELI_FRAME
-	if (roll_pitch_mode == ROLL_PITCH_STABLE){
+	if (control_mode == STABILIZE){
 		motors.stab_throttle = true;
 	} else {
 		motors.stab_throttle = false;
@@ -1935,6 +2001,7 @@ void update_throttle_mode(void)
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
             throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
+            altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
             get_throttle_rate_stabilized(pilot_climb_rate);
@@ -1946,8 +2013,8 @@ void update_throttle_mode(void)
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
             throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
+            altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
         }else{
-            // To-Do: this should update the global desired altitude variable next_WP.alt
             int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
             get_throttle_althold(desired_alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
@@ -1991,7 +2058,7 @@ static void read_AHRS(void)
     //-----------------------------------------------
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before ahrs update
-    gcs_update();
+    gcs_check_input();
 #endif
 
     ahrs.update();

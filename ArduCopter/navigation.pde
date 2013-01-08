@@ -41,20 +41,14 @@ static void update_navigation()
     }
 #endif
 
-    // calc various navigation values and run controllers if we've received a position update
+    // setup to calculate new navigation values and run controllers if
+    // we've received a position update
     if( pos_updated ) {
 
-        // calculate velocity
-        calc_velocity_and_position();
-
-        // calculate distance, angles to target
-        calc_distance_and_bearing();
-
-        // run navigation controllers
-        run_navigation_contollers();
-
-        // Rotate the nav_lon and nav_lat vectors based on Yaw
-        calc_nav_pitch_roll();
+        nav_updates.need_velpos = 1;
+        nav_updates.need_dist_bearing = 1;
+        nav_updates.need_nav_controllers = 1;
+        nav_updates.need_nav_pitch_roll = 1;
 
         // update log
         if (log_output && (g.log_bitmask & MASK_LOG_NTUN) && motors.armed()) {
@@ -70,6 +64,28 @@ static void update_navigation()
         auto_pitch >>= 1;
     }
 }
+
+/*
+  run navigation updates from nav_updates. Only run one at a time to
+  prevent too much cpu usage hurting the main loop
+ */
+static void run_nav_updates(void)
+{
+    if (nav_updates.need_velpos) {
+        calc_velocity_and_position();
+        nav_updates.need_velpos = 0;
+    } else if (nav_updates.need_dist_bearing) {
+        calc_distance_and_bearing();
+        nav_updates.need_dist_bearing = 0;
+    } else if (nav_updates.need_nav_controllers) {
+        run_navigation_contollers();
+        nav_updates.need_nav_controllers = 0;
+    } else if (nav_updates.need_nav_pitch_roll) {
+        calc_nav_pitch_roll();
+        nav_updates.need_nav_pitch_roll = 0;
+    }
+}
+
 
 //*******************************************************************************************************
 // calc_velocity_and_filtered_position - velocity in lon and lat directions calculated from GPS position

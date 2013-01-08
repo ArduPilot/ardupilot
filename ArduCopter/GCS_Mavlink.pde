@@ -11,6 +11,9 @@ static mavlink_statustext_t pending_status;
 // true when we have received at least 1 MAVLink packet
 static bool mavlink_active;
 
+// true if we are out of time in our event timeslice
+static bool	gcs_out_of_time;
+
 
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_ ## id ## _LEN) return false
@@ -18,30 +21,35 @@ static bool mavlink_active;
 // prototype this for use inside the GCS class
 static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 
-// gcs_check - throttles communication with ground station.
-// should be called regularly
-// returns true if it has sent a message to the ground station
-static bool gcs_check()
+
+
+// gcs_check_delay - keep GCS communications going
+// in our delay callback
+static void gcs_check_delay()
 {
     static uint32_t last_1hz, last_50hz;
-    bool sent_message = false;
 
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_message(MSG_HEARTBEAT);
-        sent_message = true;
+        gcs_send_heartbeat();
     }
-    if (tnow - last_50hz > 20 && !sent_message) {
+    if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
+        gcs_check_input();
         gcs_data_stream_send();
-        sent_message = true;
+        gcs_send_deferred();
+    }
     }
 
-    gcs_send_message(MSG_RETRY_DEFERRED);
+static void gcs_send_heartbeat(void)
+{
+    gcs_send_message(MSG_HEARTBEAT);
+}
 
-    return sent_message;
+static void gcs_send_deferred(void)
+{
+    gcs_send_message(MSG_RETRY_DEFERRED);
 }
 
 /*
@@ -483,18 +491,6 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     accel_offsets.z);
 }
 
-static void NOINLINE send_gps_status(mavlink_channel_t chan)
-{
-    mavlink_msg_gps_status_send(
-        chan,
-        g_gps->num_sats,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
-}
-
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(
@@ -545,10 +541,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         return false;
     }
 
-    // if the ins has new data for the main loop then don't send a
-    // mavlink message. We want to prioritise the main flight control
-    // loop over communications
-    if (main_loop_ready()) {
+    // if we don't have at least 1ms remaining before the main loop
+    // wants to fire then don't send a mavlink message. We want to
+    // prioritise the main flight control loop over communications
+    if (event_time_available() < 500) {
+        gcs_out_of_time = true;
         return false;
     }
 
@@ -556,7 +553,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         send_heartbeat(chan);
-        return true;
+        break;
 
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
@@ -680,6 +677,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
     }
+
     return true;
 }
 
@@ -968,6 +966,8 @@ GCS_MAVLINK::data_stream_send(void)
         return;
     }
 
+    gcs_out_of_time = false;
+
     if (_queued_parameter != NULL) {
         if (streamRateParams.get() <= 0) {
             streamRateParams.set(50);
@@ -978,6 +978,8 @@ GCS_MAVLINK::data_stream_send(void)
         // don't send anything else at the same time as parameters
         return;
     }
+
+    if (gcs_out_of_time) return;
 
     if (in_mavlink_delay) {
         // don't send any other stream types while in the delay callback
@@ -991,6 +993,8 @@ GCS_MAVLINK::data_stream_send(void)
         //cliSerial->printf("mav1 %d\n", (int)streamRateRawSensors.get());
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1);
         send_message(MSG_EXTENDED_STATUS2);
@@ -1000,14 +1004,20 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_LIMITS_STATUS);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_POSITION)) {
         send_message(MSG_LOCATION);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
         //cliSerial->printf("mav4 %d\n", (int)streamRateRawController.get());
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
@@ -1015,16 +1025,22 @@ GCS_MAVLINK::data_stream_send(void)
         //cliSerial->printf("mav5 %d\n", (int)streamRateRCChannels.get());
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
         //cliSerial->printf("mav6 %d\n", (int)streamRateExtra1.get());
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
         //cliSerial->printf("mav7 %d\n", (int)streamRateExtra2.get());
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
@@ -1452,21 +1468,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
         enum ap_var_type p_type;
         AP_Param *vp;
+        char param_name[AP_MAX_NAME_SIZE];
         if (packet.param_index != -1) {
             vp = AP_Param::find_by_index(packet.param_index, &p_type);
             if (vp == NULL) {
                 gcs_send_text_fmt(PSTR("Unknown parameter index %d"), packet.param_index);
                 break;
             }
+            vp->copy_name(param_name, sizeof(param_name), true);
         } else {
             vp = AP_Param::find(packet.param_id, &p_type);
             if (vp == NULL) {
                 gcs_send_text_fmt(PSTR("Unknown parameter %.16s"), packet.param_id);
                 break;
             }
+            strncpy(param_name, packet.param_id, AP_MAX_NAME_SIZE);
         }
-        char param_name[AP_MAX_NAME_SIZE];
-        vp->copy_name(param_name, sizeof(param_name), true);
 
         float value = vp->cast_to_float(p_type);
         mavlink_msg_param_value_send(
@@ -2090,7 +2107,7 @@ GCS_MAVLINK::queued_param_send()
     value = vp->cast_to_float(_queued_parameter_type);
 
     char param_name[AP_MAX_NAME_SIZE];
-    vp->copy_name(param_name, sizeof(param_name), true);
+    vp->copy_name_token(&_queued_parameter_token, param_name, sizeof(param_name), true);
 
     mavlink_msg_param_value_send(
         chan,
@@ -2138,13 +2155,14 @@ static void mavlink_delay_cb()
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_message(MSG_HEARTBEAT);
+        gcs_send_heartbeat();
         gcs_send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
+        gcs_check_input();
         gcs_data_stream_send();
+        gcs_send_deferred();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
@@ -2182,7 +2200,7 @@ static void gcs_data_stream_send(void)
 /*
  *  look for incoming commands on the GCS links
  */
-static void gcs_update(void)
+static void gcs_check_input(void)
 {
     gcs0.update();
     if (gcs3.initialised) {
