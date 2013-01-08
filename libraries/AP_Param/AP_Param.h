@@ -126,6 +126,8 @@ public:
     ///
     void copy_name(char *buffer, size_t bufferSize, bool force_scalar=false);
 
+    void copy_name_token(const ParamToken *token, char *buffer, size_t bufferSize, bool force_scalar=false);
+
     /// Find a variable by name.
     ///
     /// If the variable has no name, it cannot be found by this interface.
@@ -263,6 +265,10 @@ private:
                                     uint32_t *                group_element,
                                     const struct GroupInfo ** group_ret,
                                     uint8_t *                 idx);
+    const struct Info *			find_var_info_token(const ParamToken *token,
+                                                    uint32_t *                 group_element,
+                                                    const struct GroupInfo **  group_ret,
+                                                    uint8_t *                  idx);
     static const struct Info *  find_by_header_group(
                                     struct Param_header phdr, void **ptr,
                                     uint8_t vindex,
