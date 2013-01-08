@@ -1470,12 +1470,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         AP_Param *vp;
         char param_name[AP_MAX_NAME_SIZE];
         if (packet.param_index != -1) {
-            vp = AP_Param::find_by_index(packet.param_index, &p_type);
+            AP_Param::ParamToken token;
+            vp = AP_Param::find_by_index(packet.param_index, &p_type, &token);
             if (vp == NULL) {
                 gcs_send_text_fmt(PSTR("Unknown parameter index %d"), packet.param_index);
                 break;
             }
-            vp->copy_name(param_name, sizeof(param_name), true);
+            vp->copy_name_token(&token, param_name, sizeof(param_name), true);
         } else {
             vp = AP_Param::find(packet.param_id, &p_type);
             if (vp == NULL) {
