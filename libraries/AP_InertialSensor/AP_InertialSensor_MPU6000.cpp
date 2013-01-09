@@ -317,12 +317,16 @@ bool AP_InertialSensor_MPU6000::_data_ready()
 {
     if (_drdy_pin) {
         return _drdy_pin->read() != 0;
-    } else {
+    }
+    bool got = _spi_sem->take_nonblocking();
+    if (got) {
         uint8_t status;
         bool success = _register_read_from_timerprocess(MPUREG_INT_STATUS,
-                &status);
+                                                        &status);
+        _spi_sem->give();
         return success && (status & BIT_RAW_RDY_INT) != 0;
     }
+    return false;
 }
 
 /**
@@ -343,7 +347,7 @@ void AP_InertialSensor_MPU6000::_poll_data(uint32_t now)
  */
 void AP_InertialSensor_MPU6000::_read_data_from_timerprocess()
 {
-    static int semfail_ctr = 0;
+    static uint8_t semfail_ctr = 0;
     bool got = _spi_sem->take_nonblocking();
     if (!got) { 
         semfail_ctr++;
@@ -433,6 +437,10 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
        up PE6 to the hal.gpio abstraction.
        (It is not a valid pin under Arduino.) */
     _drdy_pin = hal.gpio->channel(70);
+
+    if (!_spi_sem->take(100)) {
+        hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
+    }
 
 reset_chip:
     // Chip reset
@@ -562,14 +570,8 @@ reset_chip:
     /* read the first lot of data.
      * _read_data_transaction requires the spi semaphore to be taken by
      * its caller. */
-    if (!_spi_sem->take(20)) {
-        hal.scheduler->panic(PSTR("PANIC: could not take _spi_sem to read "
-                    "first MPU6000 sample"));
-        return; /* never reached */
-    }
     _last_sample_time_micros = hal.scheduler->micros();
     _read_data_transaction();
-    _spi_sem->give();
 
     // start the timer process to read samples
     hal.scheduler->register_timer_process(_poll_data);
@@ -577,6 +579,8 @@ reset_chip:
 #if MPU6000_DEBUG
     _dump_registers();
 #endif
+
+    _spi_sem->give();
 }
 
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
