@@ -511,14 +511,22 @@ upload: $(SKETCHHEX)
 configure:
 	$(warning WARNING - A $(SKETCHBOOK)/config.mk file has been written)
 	$(warning Please edit the file to match your system configuration, if you use a different board or port)
-	@echo \# Select \'mega\' for the original APM, or \'mega2560\' for the V2 APM. > $(SKETCHBOOK)/config.mk
-	@echo BOARD=mega2560     >> $(SKETCHBOOK)/config.mk
+	@echo  > $(SKETCHBOOK)/config.mk
+	@echo \# Select \'mega\' for the 1280 APM1, \'mega2560\' otherwise >> $(SKETCHBOOK)/config.mk
+	@echo BOARD = mega2560     >> $(SKETCHBOOK)/config.mk
+	@echo  >> $(SKETCHBOOK)/config.mk
+	@echo \# HAL_BOARD determines default HAL target. >> $(SKETCHBOOK)/config.mk
+	@echo HAL_BOARD ?= HAL_BOARD_APM2 >> $(SKETCHBOOK)/config.mk
+	@echo  >> $(SKETCHBOOK)/config.mk
 	@echo \# The communication port used to communicate with the APM. >> $(SKETCHBOOK)/config.mk
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
-	@echo PORT=com3 >> $(SKETCHBOOK)/config.mk
+	@echo PORT = com3 >> $(SKETCHBOOK)/config.mk
 else
-	@echo PORT=/dev/ttyUSB0 >> $(SKETCHBOOK)/config.mk
+	@echo PORT = /dev/ttyUSB0 >> $(SKETCHBOOK)/config.mk
 endif
+	@echo  >> $(SKETCHBOOK)/config.mk
+	@echo \# PX4 app build: uncomment and fill in the path to PX4 Firmware repository: >> $(SKETCHBOOK)/config.mk
+	@echo \# PX4_ROOT = /path/to/Firmware >> $(SKETCHBOOK)/config.mk
 
 debug:
 	$(AVARICE) --mkII --capture --jtag usb :4242 & \
