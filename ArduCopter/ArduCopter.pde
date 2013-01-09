@@ -944,6 +944,14 @@ static void compass_accumulate(void)
     }    
 }
 
+/*
+  try to accumulate a baro reading
+ */
+static void barometer_accumulate(void)
+{
+    barometer.accumulate();
+}
+
 // enable this to get console logging of scheduler performance
 #define SCHEDULER_DEBUG 0
 
@@ -981,7 +989,7 @@ struct timer_event_table {
     uint16_t min_time_usec;
 };
 
-#define NUM_TIMER_EVENTS 14
+#define NUM_TIMER_EVENTS 15
 
 /*
   scheduler table - all regular events apart from the fast_loop()
@@ -989,18 +997,19 @@ struct timer_event_table {
   (in 10ms units) and the maximum time they are expected to take
  */
 static const struct timer_event_table PROGMEM timer_events[NUM_TIMER_EVENTS] = {
-    { update_GPS,         2,     900 },
+    { update_GPS,            2,     900 },
     { update_navigation,     2,     500 },
     { medium_loop,           2,     700 },
     { update_altitude_est,   2,     900 },
-    { fifty_hz_loop,         2,     800 },
+    { fifty_hz_loop,         2,     950 },
     { run_nav_updates,       2,     500 },
     { slow_loop,            10,     500 },
     { gcs_check_input,	     2,     700 },
     { gcs_send_heartbeat,  100,     700 },
     { gcs_data_stream_send,  2,    1100 },
-    { gcs_send_deferred,     2,     700 },
-    { compass_accumulate,    2,     600 },
+    { gcs_send_deferred,     2,    1000 },
+    { compass_accumulate,    2,     700 },
+    { barometer_accumulate,  1,     900 },
     { super_slow_loop,     100,    1100 },
     { perf_update,        1000,     500 }
 };
@@ -1044,7 +1053,7 @@ static void run_events(uint16_t time_available_usec)
                 // work out how long the event actually took
                 uint32_t time_taken = micros() - event_time_started;
                 
-                if (time_taken > event_time_allowed) {
+                if (time_taken > event_time_allowed+500) {
                     // the event overran!
 #if SCHEDULER_DEBUG
                     cliSerial->printf_P(PSTR("overrun in event %u (%u/%u)\n"), 
@@ -1067,10 +1076,6 @@ void loop()
     // We want this to execute fast
     // ----------------------------
     if (ins.num_samples_available() >= 2) {
-
-        #if DEBUG_FAST_LOOP == ENABLED
-        Log_Write_Data(DATA_FAST_LOOP, (int32_t)(timer - fast_loopTimer));
-        #endif
 
         // check loop time
         perf_info_check_loop_time(timer - fast_loopTimer);
@@ -1308,6 +1313,7 @@ static void fifty_hz_loop()
     if (g.log_bitmask & MASK_LOG_RAW && motors.armed())
         Log_Write_Raw();
 #endif
+
 }
 
 
@@ -2180,7 +2186,7 @@ static void update_altitude_est()
     if(ap_system.alt_sensor_flag) {
         ap_system.alt_sensor_flag = false;
         update_altitude();
-        if(g.log_bitmask & MASK_LOG_CTUN && motors.armed()) {
+        if ((g.log_bitmask & MASK_LOG_CTUN) && motors.armed()) {
             Log_Write_Control_Tuning();
         }
     }
@@ -2189,7 +2195,7 @@ static void update_altitude_est()
         update_altitude();
         ap_system.alt_sensor_flag = false;
 
-        if(g.log_bitmask & MASK_LOG_CTUN && motors.armed()) {
+        if ((g.log_bitmask & MASK_LOG_CTUN) && motors.armed()) {
             Log_Write_Control_Tuning();
         }
     }else{
