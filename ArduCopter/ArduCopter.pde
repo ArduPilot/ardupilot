@@ -1009,7 +1009,7 @@ static const struct timer_event_table PROGMEM timer_events[NUM_TIMER_EVENTS] = {
     { gcs_data_stream_send,  2,    1100 },
     { gcs_send_deferred,     2,    1000 },
     { compass_accumulate,    2,     700 },
-    { barometer_accumulate,  1,     900 },
+    { barometer_accumulate,  2,     900 },
     { super_slow_loop,     100,    1100 },
     { perf_update,        1000,     500 }
 };
