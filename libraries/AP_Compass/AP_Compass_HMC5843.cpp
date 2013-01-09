@@ -112,7 +112,10 @@ void AP_Compass_HMC5843::accumulate(void)
 	  return;
    }
 
-   _i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+   if (!_i2c_sem->take(5)) {
+       // the bus is busy - try again later
+       return;
+   }
    bool result = read_raw();
    _i2c_sem->give();
 
@@ -164,7 +167,9 @@ AP_Compass_HMC5843::init()
     hal.scheduler->delay(10);
 
     _i2c_sem = hal.i2c->get_semaphore();
-    _i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    if (!_i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        hal.scheduler->panic(PSTR("Failed to get HMC5843 semaphore"));
+    }
 
     // determine if we are using 5843 or 5883L
     if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
