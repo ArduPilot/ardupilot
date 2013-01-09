@@ -4,6 +4,7 @@ set -x
 
 killall -q ArduPlane.elf
 pkill -f runsim.py
+killall -q JSBSim
 set -e
 
 autotest=$(dirname $(readlink -e $0))
