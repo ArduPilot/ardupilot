@@ -1,7 +1,8 @@
 # find the mk/ directory, which is where this makefile fragment
-# lives
-MK_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+# lives. (patsubst strips the trailing slash.)
+MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
+# APPDIR is defined for the PX4 build only
 ifeq ($(APPDIR),)
 
 ####################

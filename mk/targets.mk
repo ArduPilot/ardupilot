@@ -61,6 +61,7 @@ obc: apm2
 sitl-mount: EXTRAFLAGS += "-DMOUNT=ENABLED"
 sitl-mount: sitl
 
+.PHONY: etags
 etags:
 	cd .. && etags -f ArduCopter/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduCopter libraries)
 
