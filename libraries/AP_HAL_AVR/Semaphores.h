@@ -17,7 +17,7 @@ protected:
     bool _take_from_mainloop(uint32_t timeout_ms);
     bool _take_nonblocking();
 
-    bool _taken;
+    volatile bool _taken;
 };
 
 #endif  // __AP_HAL_AVR_SEMAPHORES_H__
