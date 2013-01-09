@@ -600,6 +600,7 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 // get number of samples read from the sensors
 uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 {
+    _poll_data(0);
     return _count;
 }
 
