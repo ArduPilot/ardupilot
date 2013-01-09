@@ -1,6 +1,7 @@
 
 #ifndef __AP_HAL_AVR_UART_DRIVER_H__
 #define __AP_HAL_AVR_UART_DRIVER_H__
+#include <AP_HAL_Boards.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <stdint.h>
