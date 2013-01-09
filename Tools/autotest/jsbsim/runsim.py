@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # run a jsbsim model as a child process
 
-import sys, os, pexpect, fdpexpect, socket
+import sys, os, pexpect, socket
 import math, time, select, struct, signal, errno
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pysim'))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
 
-import util, fgFDM, atexit
+import util, fgFDM, atexit, fdpexpect
 
 class control_state(object):
     def __init__(self):
