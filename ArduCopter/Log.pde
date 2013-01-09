@@ -892,57 +892,67 @@ static void Log_Read_Startup()
 
 static void Log_Write_Data(uint8_t _index, int32_t _data)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_DATA_MSG);
-    DataFlash.WriteByte(_index);
-    DataFlash.WriteByte(DATA_INT32);
-    DataFlash.WriteLong(_data);
-    DataFlash.WriteByte(END_BYTE);
+    if (g.log_bitmask != 0) {
+        DataFlash.WriteByte(HEAD_BYTE1);
+        DataFlash.WriteByte(HEAD_BYTE2);
+        DataFlash.WriteByte(LOG_DATA_MSG);
+        DataFlash.WriteByte(_index);
+        DataFlash.WriteByte(DATA_INT32);
+        DataFlash.WriteLong(_data);
+        DataFlash.WriteByte(END_BYTE);
+    }
 }
 
 static void Log_Write_Data(uint8_t _index, float _data)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_DATA_MSG);
-    DataFlash.WriteByte(_index);
-    DataFlash.WriteByte(DATA_FLOAT);
-    DataFlash.WriteLong(get_int(_data));
-    DataFlash.WriteByte(END_BYTE);
+    if (g.log_bitmask != 0) {
+        DataFlash.WriteByte(HEAD_BYTE1);
+        DataFlash.WriteByte(HEAD_BYTE2);
+        DataFlash.WriteByte(LOG_DATA_MSG);
+        DataFlash.WriteByte(_index);
+        DataFlash.WriteByte(DATA_FLOAT);
+        DataFlash.WriteLong(get_int(_data));
+        DataFlash.WriteByte(END_BYTE);
+    }
 }
 
 static void Log_Write_Data(uint8_t _index, int16_t _data)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_DATA_MSG);
-    DataFlash.WriteByte(_index);
-    DataFlash.WriteByte(DATA_INT16);
-    DataFlash.WriteInt(_data);
-    DataFlash.WriteByte(END_BYTE);
+    if (g.log_bitmask != 0) {
+        DataFlash.WriteByte(HEAD_BYTE1);
+        DataFlash.WriteByte(HEAD_BYTE2);
+        DataFlash.WriteByte(LOG_DATA_MSG);
+        DataFlash.WriteByte(_index);
+        DataFlash.WriteByte(DATA_INT16);
+        DataFlash.WriteInt(_data);
+        DataFlash.WriteByte(END_BYTE);
+    }
 }
 
 static void Log_Write_Data(uint8_t _index, uint16_t _data)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_DATA_MSG);
-    DataFlash.WriteByte(_index);
-    DataFlash.WriteByte(DATA_UINT16);
-    DataFlash.WriteInt(_data);
-    DataFlash.WriteByte(END_BYTE);
+    if (g.log_bitmask != 0) {
+        DataFlash.WriteByte(HEAD_BYTE1);
+        DataFlash.WriteByte(HEAD_BYTE2);
+        DataFlash.WriteByte(LOG_DATA_MSG);
+        DataFlash.WriteByte(_index);
+        DataFlash.WriteByte(DATA_UINT16);
+        DataFlash.WriteInt(_data);
+        DataFlash.WriteByte(END_BYTE);
+    }
 }
 
 
 static void Log_Write_Event(uint8_t _index)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_DATA_MSG);
-    DataFlash.WriteByte(_index);
-    DataFlash.WriteByte(DATA_EVENT);
-    DataFlash.WriteByte(END_BYTE);
+    if (g.log_bitmask != 0) {
+        DataFlash.WriteByte(HEAD_BYTE1);
+        DataFlash.WriteByte(HEAD_BYTE2);
+        DataFlash.WriteByte(LOG_DATA_MSG);
+        DataFlash.WriteByte(_index);
+        DataFlash.WriteByte(DATA_EVENT);
+        DataFlash.WriteByte(END_BYTE);
+    }
 }
 
 // Read a mode packet
