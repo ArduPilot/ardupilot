@@ -8,6 +8,12 @@
 #include "AP_HAL_Namespace.h"
 #include "AP_HAL_Boards.h"
 
+#ifdef __GNUC__
+ #define WARN_IF_UNUSED __attribute__ ((warn_unused_result))
+#else
+ #define WARN_IF_UNUSED
+#endif
+
 /* HAL Module Classes (all pure virtual) */
 #include "UARTDriver.h"
 #include "I2CDriver.h"
