@@ -44,11 +44,22 @@ void setup()
 void loop()
 {
     float tmp_float;
+    static uint32_t last_print;
 
-    if((hal.scheduler->micros()- timer) > 50000L) {
-        timer = hal.scheduler->micros();
+    bmp085.accumulate();
+
+    // accumulate values at 50Hz
+    if ((hal.scheduler->micros()- timer) > 20000L) {
         bmp085.read();
-        uint32_t read_time = hal.scheduler->micros() - timer;
+        timer = hal.scheduler->micros();
+    }
+
+    // print at 2Hz
+    if ((hal.scheduler->millis()- last_print) >= 500) {
+	uint32_t start = hal.scheduler->micros();
+        last_print = hal.scheduler->millis();
+        bmp085.read();
+        uint32_t read_time = hal.scheduler->micros() - start;
         if (! bmp085.healthy) {
             hal.console->println("not healthy");
             return;
