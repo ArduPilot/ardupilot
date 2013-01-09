@@ -280,7 +280,9 @@ void AP_Baro_MS5611::_update(uint32_t tnow)
         return;
     }
 
-    _serial->sem_take_nonblocking();
+    if (!_serial->sem_take_nonblocking()) {
+        return;
+    }
     _timer = tnow;
 
     if (_state == 0) {
