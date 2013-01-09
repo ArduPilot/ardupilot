@@ -11,6 +11,10 @@
  * Written by James Bielman <jamesjb@galois.com>, 20 December 2012
  */
 
+#include <AP_HAL_Boards.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
 #include <AP_HAL.h>
 #include <hwf4/i2c.h>
 #include <hwf4/gpio.h>
@@ -88,3 +92,5 @@ uint8_t SMACCMI2CDriver::lockup_count()
 {
   return 0;
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

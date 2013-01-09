@@ -9,6 +9,9 @@
  */
 
 #include "UARTDriver.h"
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
 #include <stdio.h>              // for vsnprintf
 
 using namespace SMACCM;
@@ -165,3 +168,5 @@ size_t SMACCMUARTDriver::write(uint8_t c)
   portTickType delay = m_blocking ? portMAX_DELAY : 0;
   return usart_write_timeout(m_dev, delay, &c, 1);
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

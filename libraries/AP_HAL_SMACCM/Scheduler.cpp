@@ -11,6 +11,10 @@
  * Written by James Bielman <jamesjb@galois.com>, 20 December 2012
  */
 
+#include <AP_HAL_Boards.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
 #include <hwf4/gpio.h>
 #include <hwf4/timer.h>
 
@@ -275,3 +279,5 @@ void SMACCMScheduler::run_delay_cb()
   if (m_delay_cb)
     m_delay_cb();
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

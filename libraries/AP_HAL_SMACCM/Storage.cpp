@@ -11,6 +11,10 @@
  * Written by James Bielman <jamesjb@galois.com>, 20 December 2012
  */
 
+#include <AP_HAL_Boards.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
 #include <string.h>
 #include <hwf4/eeprom.h>
 
@@ -78,3 +82,5 @@ void SMACCMStorage::write_block(uint16_t loc, void* src, size_t n)
 {
   eeprom_write(loc, (const uint8_t *)src, n);
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

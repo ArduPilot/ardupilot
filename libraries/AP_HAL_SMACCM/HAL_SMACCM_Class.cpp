@@ -1,5 +1,8 @@
 
 #include <AP_HAL.h>
+#include <AP_HAL_Boards.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
 
 #include "HAL_SMACCM_Class.h"
 #include "AP_HAL_SMACCM_Private.h"
@@ -56,3 +59,4 @@ void HAL_SMACCM::init(int argc,char* const argv[]) const
 
 const HAL_SMACCM AP_HAL_SMACCM;
 
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

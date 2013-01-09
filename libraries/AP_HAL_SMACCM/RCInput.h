@@ -3,7 +3,6 @@
 #define __AP_HAL_SMACCM_RCINPUT_H__
 
 #include <AP_HAL_SMACCM.h>
-#include <hwf4/timer.h>
 
 class SMACCM::SMACCMRCInput : public AP_HAL::RCInput {
 public:

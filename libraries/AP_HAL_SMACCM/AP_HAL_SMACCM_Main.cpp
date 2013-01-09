@@ -1,3 +1,19 @@
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/*
+ * AP_HAL_SMACCM_Main.cpp --- AP_HAL_SMACCM main task implementation.
+ *
+ * Copyright (C) 2012, Galois, Inc.
+ * All Rights Reserved.
+ *
+ * This software is released under the "BSD3" license.  Read the file
+ * "LICENSE" for more information.
+ *
+ * Written by James Bielman <jamesjb@galois.com>, 20 December 2012
+ */
+
+#include <AP_HAL_Boards.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
 
 #include <AP_HAL_SMACCM.h>
 #include <AP_HAL_SMACCM_Main.h>
@@ -27,3 +43,5 @@ void SMACCM::hal_main()
   for (;;)
     ;
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

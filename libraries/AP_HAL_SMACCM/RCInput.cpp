@@ -1,4 +1,8 @@
 
+#include <AP_HAL_Boards.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
 #include "RCInput.h"
 
 #include <hwf4/timer.h>
@@ -99,3 +103,5 @@ void SMACCMRCInput::clear_overrides()
   for (int i = 0; i < PPM_MAX_CHANNELS; ++i)
     _override[i] = 0;
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

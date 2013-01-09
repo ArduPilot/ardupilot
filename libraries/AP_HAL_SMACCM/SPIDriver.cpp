@@ -8,6 +8,10 @@
  * "LICENSE" for more information.
  */
 
+#include <AP_HAL_Boards.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
 #include "SPIDriver.h"
 #include <FreeRTOS.h>
 #include <hwf4/spi.h>
@@ -106,3 +110,5 @@ AP_HAL::SPIDeviceDriver* SMACCMSPIDeviceManager::device(AP_HAL::SPIDevice dev)
       return NULL;
   }
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

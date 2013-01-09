@@ -1,6 +1,8 @@
 
 #include "Semaphores.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
 using namespace SMACCM;
 
 SMACCMSemaphore::SMACCMSemaphore()
@@ -34,3 +36,5 @@ bool SMACCMSemaphore::give()
 {
   return xSemaphoreGive(m_semaphore);
 }
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
