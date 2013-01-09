@@ -30,7 +30,6 @@
  *               Command_ReadPress(): Send commando to read Pressure
  *               ReadTemp() : Read temp register
  *               ReadPress() : Read press register
- *               Calculate() : Calculate Temperature and Pressure in real units
  *
  *
  */
@@ -76,17 +75,17 @@ bool AP_Baro_BMP085::init()
         return false;
     }
 
-    ac1 = ((int)buff[0] << 8) | buff[1];
-    ac2 = ((int)buff[2] << 8) | buff[3];
-    ac3 = ((int)buff[4] << 8) | buff[5];
-    ac4 = ((int)buff[6] << 8) | buff[7];
-    ac5 = ((int)buff[8] << 8) | buff[9];
-    ac6 = ((int)buff[10] << 8) | buff[11];
-    b1 = ((int)buff[12] << 8) | buff[13];
-    b2 = ((int)buff[14] << 8) | buff[15];
-    mb = ((int)buff[16] << 8) | buff[17];
-    mc = ((int)buff[18] << 8) | buff[19];
-    md = ((int)buff[20] << 8) | buff[21];
+    ac1 = ((int16_t)buff[0] << 8) | buff[1];
+    ac2 = ((int16_t)buff[2] << 8) | buff[3];
+    ac3 = ((int16_t)buff[4] << 8) | buff[5];
+    ac4 = ((int16_t)buff[6] << 8) | buff[7];
+    ac5 = ((int16_t)buff[8] << 8) | buff[9];
+    ac6 = ((int16_t)buff[10] << 8) | buff[11];
+    b1 = ((int16_t)buff[12] << 8) | buff[13];
+    b2 = ((int16_t)buff[14] << 8) | buff[15];
+    mb = ((int16_t)buff[16] << 8) | buff[17];
+    mc = ((int16_t)buff[18] << 8) | buff[19];
+    md = ((int16_t)buff[20] << 8) | buff[21];
 
     //Send a command to read Temp
     Command_ReadTemp();
@@ -109,20 +108,24 @@ void AP_Baro_BMP085::accumulate(void)
     }
     if (BMP085_State == 0) {
         ReadTemp();
-        Command_ReadPress();
     } else {
         ReadPress();
         Calculate();
-        Command_ReadTemp();
     }
-    BMP085_State ^= 1;
+    BMP085_State++;
+    if (BMP085_State == 5) {
+        BMP085_State = 0;
+        Command_ReadTemp();
+    } else {
+        Command_ReadPress();
+    }
 }
 
 
 // Read the sensor using accumulated data
 uint8_t AP_Baro_BMP085::read()
 {
-    if (BMP_DATA_READY()) {
+    if (_count == 0 && BMP_DATA_READY()) {
         accumulate();
     }
     if (_count == 0) {
@@ -133,6 +136,7 @@ uint8_t AP_Baro_BMP085::read()
     Temp = _temp_sum / _count;
     Press = _press_sum / _count;
 
+    _pressure_samples = _count;
     _count = 0;
     _temp_sum = 0;
     _press_sum = 0;
@@ -218,6 +222,7 @@ void AP_Baro_BMP085::ReadTemp()
 
     RawTemp = _temp_filter.apply(_temp_sensor);
 }
+
 
 // Calculate Temperature and Pressure in real units.
 void AP_Baro_BMP085::Calculate()
