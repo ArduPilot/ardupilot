@@ -1038,7 +1038,13 @@ static uint16_t event_time_available(void)
 static void run_events(uint16_t time_available_usec)
 {
     for (uint8_t i=0; i<NUM_TIMER_EVENTS; i++) {
-        if (tick_counter - timer_counters[i] >= pgm_read_word(&timer_events[i].time_interval_10ms)) {
+        // Make sure to use 16-bit arithmetic here for this comparison
+        // to handle the rollover case.  Due to C integer promotion
+        // rules, we have to force the type of the difference here to
+        // "uint16_t" or the compiler will do a 32-bit comparison on a
+        // 32-bit platform.
+        uint16_t dt = tick_counter - timer_counters[i];
+        if (dt >= pgm_read_word(&timer_events[i].time_interval_10ms)) {
             // this event is due to run. Do we have enough time to run it?
             event_time_allowed = pgm_read_word(&timer_events[i].min_time_usec);
             if (event_time_allowed <= time_available_usec) {
