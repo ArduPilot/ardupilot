@@ -60,7 +60,7 @@ extern const AP_HAL::HAL& hal;
 #define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
 #endif
 
-// oversampling 3 gives highest resolution
+// oversampling 3 gives 26ms conversion time. We then average
 #define OVERSAMPLING 3
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -69,8 +69,6 @@ bool AP_Baro_BMP085::init()
     uint8_t buff[22];
 
     hal.gpio->pinMode(BMP085_EOC, GPIO_INPUT);// End Of Conversion (PC7) input
-
-    BMP085_State = 0;                    // Initial state
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
@@ -93,7 +91,7 @@ bool AP_Baro_BMP085::init()
     //Send a command to read Temp
     Command_ReadTemp();
     
-    BMP085_State = 1;
+    BMP085_State = 0;
 
     // init raw temo
     RawTemp = 0;
@@ -103,30 +101,43 @@ bool AP_Baro_BMP085::init()
 }
 
 // Read the sensor. This is a state machine
-// We read Temperature (state=1) and then Pressure (state!=1) on alternate calls
+// acumulate a new sensor reading
+void AP_Baro_BMP085::accumulate(void)
+{
+    if (!BMP_DATA_READY()) {
+        return;
+    }
+    if (BMP085_State == 0) {
+        ReadTemp();
+        Command_ReadPress();
+    } else {
+        ReadPress();
+        Calculate();
+        Command_ReadTemp();
+    }
+    BMP085_State ^= 1;
+}
+
+
+// Read the sensor using accumulated data
 uint8_t AP_Baro_BMP085::read()
 {
-    uint8_t result = 0;
+    if (BMP_DATA_READY()) {
+        accumulate();
+    }
+    if (_count == 0) {
+        return 0;
+    }
+    _last_update = hal.scheduler->millis();
 
-    if (BMP085_State == 1) {
-        if (BMP_DATA_READY()) {
-            BMP085_State = 2;
-            ReadTemp();                                                          // On state 1 we read temp
-            Command_ReadPress();
-        }
-    }else{
-        if (BMP_DATA_READY()) {
-            BMP085_State = 1;                                   // Start again from state = 1
-            ReadPress();
-            Calculate();
-            Command_ReadTemp();                                 // Read Temp
-            result = 1;                                                 // New pressure reading
-        }
-    }
-    if (result) {
-        _last_update = hal.scheduler->millis();
-    }
-    return(result);
+    Temp = _temp_sum / _count;
+    Press = _press_sum / _count;
+
+    _count = 0;
+    _temp_sum = 0;
+    _press_sum = 0;
+
+    return 1;
 }
 
 float AP_Baro_BMP085::get_pressure() {
@@ -221,7 +232,7 @@ void AP_Baro_BMP085::Calculate()
     x1 = ((int32_t)RawTemp - ac6) * ac5 >> 15;
     x2 = ((int32_t) mc << 11) / (x1 + md);
     b5 = x1 + x2;
-    Temp = (b5 + 8) >> 4;
+    _temp_sum += (b5 + 8) >> 4;
 
     // Pressure calculations
     b6 = b5 - 4000;
@@ -243,5 +254,12 @@ void AP_Baro_BMP085::Calculate()
     x1 = (p >> 8) * (p >> 8);
     x1 = (x1 * 3038) >> 16;
     x2 = (-7357 * p) >> 16;
-    Press = p + ((x1 + x2 + 3791) >> 4);
+    _press_sum += p + ((x1 + x2 + 3791) >> 4);
+
+    _count++;
+    if (_count == 254) {
+        _temp_sum *= 0.5;
+        _press_sum *= 0.5;
+        _count /= 2;
+    }
 }

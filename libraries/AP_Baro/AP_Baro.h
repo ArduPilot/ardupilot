@@ -24,6 +24,9 @@ public:
     virtual int32_t         get_raw_pressure() = 0;
     virtual int32_t         get_raw_temp() = 0;
 
+    // accumulate a reading - overridden in some drivers
+    virtual void            accumulate(void) {}
+
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
     // the callback is a delay() like routine

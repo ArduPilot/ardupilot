@@ -18,6 +18,7 @@ public:
     /* AP_Baro public interface: */
     bool            init();
     uint8_t         read();
+    void 			accumulate(void);
     float           get_pressure();
     float           get_temperature();
 
@@ -27,9 +28,12 @@ public:
 private:
     int32_t         RawPress;
     int32_t         RawTemp;
-    int16_t         Temp;
-    uint32_t        Press;
-
+    float		    _temp_sum;
+    float			_press_sum;
+    uint8_t			_count;
+    float           Temp;
+    float           Press;
+    
     // State machine
     uint8_t                         BMP085_State;
     // Internal calibration registers
