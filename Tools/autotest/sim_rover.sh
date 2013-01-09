@@ -10,7 +10,7 @@ autotest=$(dirname $(readlink -e $0))
 pushd $autotest/../../APMrover2
 make clean sitl
 
-tfile=$(tempfile)
+tfile=$(mktemp)
 (
 echo r
 ) > $tfile
