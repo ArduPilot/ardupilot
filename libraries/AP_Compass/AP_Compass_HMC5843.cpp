@@ -14,7 +14,7 @@
  */
 
 // AVR LibC Includes
-#include <math.h>
+#include <AP_Math.h>
 #include <AP_HAL.h>
 
 #include "AP_Compass_HMC5843.h"

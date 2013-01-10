@@ -7,6 +7,8 @@
  */
 
 #include <AP_HAL.h>
+#include <AP_Math.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 
 #include "AP_HAL_AVR_SITL.h"
