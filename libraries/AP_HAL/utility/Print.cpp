@@ -197,7 +197,7 @@ size_t Print::printFloat(float number, uint8_t digits)
   size_t n = 0;
   
   // Handle negative numbers
-  if (number < 0.0)
+  if (number < 0.0f)
   {
      n += print('-');
      number = -number;
@@ -206,7 +206,7 @@ size_t Print::printFloat(float number, uint8_t digits)
   // Round correctly so that print(1.999, 2) prints as "2.00"
   float rounding = 0.5;
   for (uint8_t i=0; i<digits; ++i)
-    rounding /= 10.0;
+    rounding /= 10.0f;
   
   number += rounding;
 
@@ -223,7 +223,7 @@ size_t Print::printFloat(float number, uint8_t digits)
   // Extract digits from the remainder one at a time
   while (digits-- > 0)
   {
-    remainder *= 10.0;
+    remainder *= 10.0f;
     int toPrint = int(remainder);
     n += print(toPrint);
     remainder -= toPrint; 

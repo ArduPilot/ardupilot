@@ -353,8 +353,8 @@ void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, int8_t di
     // call raw motor set-up method
     add_motor_raw(
         motor_num,
-        cos(radians(angle_degrees + 90)),               // roll factor
-        cos(radians(angle_degrees)),                    // pitch factor
+        cosf(radians(angle_degrees + 90)),               // roll factor
+        cosf(radians(angle_degrees)),                    // pitch factor
         (float)direction,                                               // yaw factor
         testing_order);
 

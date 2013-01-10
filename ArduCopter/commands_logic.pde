@@ -819,7 +819,7 @@ static void do_repeat_servo()
         event_timer             = 0;
         event_value             = command_cond_queue.alt;
         event_repeat    = command_cond_queue.lat * 2;
-        event_delay             = command_cond_queue.lng * 500.0;         // /2 (half cycle time) * 1000 (convert to milliseconds)
+        event_delay             = command_cond_queue.lng * 500.0f;         // /2 (half cycle time) * 1000 (convert to milliseconds)
 
         switch(command_cond_queue.p1) {
         case CH_5:
@@ -843,7 +843,7 @@ static void do_repeat_relay()
 {
     event_id                = RELAY_TOGGLE;
     event_timer             = 0;
-    event_delay             = command_cond_queue.lat * 500.0;     // /2 (half cycle time) * 1000 (convert to milliseconds)
+    event_delay             = command_cond_queue.lat * 500.0f;     // /2 (half cycle time) * 1000 (convert to milliseconds)
     event_repeat    = command_cond_queue.alt * 2;
     update_events();
 }

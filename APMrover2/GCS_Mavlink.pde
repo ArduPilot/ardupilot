@@ -1361,9 +1361,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				case MAV_FRAME_MISSION:
 				case MAV_FRAME_GLOBAL:
 					{
-						tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
-						tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7
-						tell_command.alt = packet.z*1.0e2; // in as m converted to cm
+						tell_command.lat = 1.0e7f*packet.x; // in as DD converted to * t7
+						tell_command.lng = 1.0e7f*packet.y; // in as DD converted to * t7
+						tell_command.alt = packet.z*1.0e2f; // in as m converted to cm
 						tell_command.options = 0; // absolute altitude
 						break;
 					}
@@ -1371,10 +1371,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL_NED
 				case MAV_FRAME_LOCAL_NED: // local (relative to home position)
 					{
-						tell_command.lat = 1.0e7*ToDeg(packet.x/
-						(radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lat;
-						tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lng;
-						tell_command.alt = -packet.z*1.0e2;
+						tell_command.lat = 1.0e7f*ToDeg(packet.x/
+						(radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+						tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
+						tell_command.alt = -packet.z*1.0e2f;
 						tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
 						break;
 					}
@@ -1383,10 +1383,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL
 				case MAV_FRAME_LOCAL: // local (relative to home position)
 					{
-						tell_command.lat = 1.0e7*ToDeg(packet.x/
-						(radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lat;
-						tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lng;
-						tell_command.alt = packet.z*1.0e2;
+						tell_command.lat = 1.0e7f*ToDeg(packet.x/
+						(radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+						tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
+						tell_command.alt = packet.z*1.0e2f;
 						tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
 						break;
 					}
@@ -1394,9 +1394,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 				case MAV_FRAME_GLOBAL_RELATIVE_ALT: // absolute lat/lng, relative altitude
 					{
-						tell_command.lat = 1.0e7 * packet.x; // in as DD converted to * t7
-						tell_command.lng = 1.0e7 * packet.y; // in as DD converted to * t7
-						tell_command.alt = packet.z * 1.0e2;
+						tell_command.lat = 1.0e7f * packet.x; // in as DD converted to * t7
+						tell_command.lng = 1.0e7f * packet.y; // in as DD converted to * t7
+						tell_command.alt = packet.z * 1.0e2f;
 						tell_command.options = MASK_OPTIONS_RELATIVE_ALT; // store altitude relative!! Always!!
 						break;
 					}
@@ -1557,7 +1557,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else if (var_type == AP_PARAM_INT32) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -2147483648.0, 2147483647.0);
+                    v = constrain(v, -2147483648.0f, 2147483647.0f);
 					((AP_Int32 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT16) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
@@ -1634,12 +1634,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			mavlink_msg_hil_state_decode(msg, &packet);
 			
 			float vel = pythagorous2(packet.vx, packet.vy);
-            float cog = wrap_360_cd(ToDeg(atan2(packet.vy, packet.vx)) * 100);
+            float cog = wrap_360_cd(ToDeg(atan2f(packet.vy, packet.vx)) * 100);
 			
             // set gps hil sensor
             g_gps->setHIL(packet.time_usec/1000,
-                          packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
-                          vel*1.0e-2, cog*1.0e-2, 0, 10);
+                          packet.lat*1.0e-7f, packet.lon*1.0e-7f, packet.alt*1.0e-3f,
+                          vel*1.0e-2f, cog*1.0e-2f, 0, 10);
 			
 			// rad/sec
             Vector3f gyros;
@@ -1649,9 +1649,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // m/s/s
             Vector3f accels;
-            accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
-            accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
-            accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
+            accels.x = packet.xacc * (GRAVITY_MSS/1000.0f);
+            accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
+            accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
             
             ins.set_gyro(gyros);
 

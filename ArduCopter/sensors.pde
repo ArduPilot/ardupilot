@@ -10,9 +10,9 @@ static void ReadSCP1000(void) {
 static void init_sonar(void)
 {
   #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar->calculate_scaler(g.sonar_type, 3.3);
+    sonar->calculate_scaler(g.sonar_type, 3.3f);
   #else
-    sonar->calculate_scaler(g.sonar_type, 5.0);
+    sonar->calculate_scaler(g.sonar_type, 5.0f);
   #endif
 }
  #endif
@@ -28,7 +28,7 @@ static void init_barometer(void)
 static int32_t read_barometer(void)
 {
     barometer.read();
-    return baro_filter.apply(barometer.get_altitude() * 100.0);
+    return baro_filter.apply(barometer.get_altitude() * 100.0f);
 }
 
 // return sonar altitude in centimeters
@@ -37,7 +37,7 @@ static int16_t read_sonar(void)
 #if CONFIG_SONAR == ENABLED
     int16_t temp_alt = sonar->read();
 
-    if(temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * 0.70) {
+    if(temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * 0.70f) {
         sonar_alt_ok = true;
     }else{
         sonar_alt_ok = false;
@@ -46,7 +46,7 @@ static int16_t read_sonar(void)
  #if SONAR_TILT_CORRECTION == 1
     // correct alt for angle of the sonar
     float temp = cos_pitch_x * cos_roll_x;
-    temp = max(temp, 0.707);
+    temp = max(temp, 0.707f);
     temp_alt = (float)temp_alt * temp;
  #endif
 
@@ -115,7 +115,7 @@ static void read_battery(void)
     if(g.battery_monitoring == 4) {
         batt_curr_analog_source->set_pin(g.battery_curr_pin);
         current_amps1    = CURRENT_AMPS(batt_curr_analog_source->read_average());
-        current_total1   += current_amps1 * 0.02778;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
+        current_total1   += current_amps1 * 0.02778f;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered

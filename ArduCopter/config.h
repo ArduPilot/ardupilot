@@ -114,7 +114,7 @@
   # define RC_FAST_SPEED 				125
   # define RTL_YAW                  	YAW_LOOK_AT_HOME
   # define TILT_COMPENSATION 			5
-  # define RATE_INTEGRATOR_LEAK_RATE 	0.02
+  # define RATE_INTEGRATOR_LEAK_RATE 	0.02f
   # define RATE_ROLL_D    				0
   # define RATE_PITCH_D       			0
   # define HELI_PITCH_FF				0
@@ -365,17 +365,17 @@
 // Battery monitoring
 //
 #ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    9.6
+ # define LOW_VOLTAGE                    9.6f
 #endif
 #ifndef VOLT_DIV_RATIO
- # define VOLT_DIV_RATIO                 3.56
+ # define VOLT_DIV_RATIO                 3.56f
 #endif
 
 #ifndef CURR_AMP_PER_VOLT
- # define CURR_AMP_PER_VOLT              27.32
+ # define CURR_AMP_PER_VOLT              27.32f
 #endif
 #ifndef CURR_AMPS_OFFSET
- # define CURR_AMPS_OFFSET               0.0
+ # define CURR_AMPS_OFFSET               0.0f
 #endif
 #ifndef HIGH_DISCHARGE
  # define HIGH_DISCHARGE                 1760
@@ -392,7 +392,7 @@
 // INPUT_VOLTAGE
 //
 #ifndef INPUT_VOLTAGE
- # define INPUT_VOLTAGE                  5.0
+ # define INPUT_VOLTAGE                  5.0f
 #endif
 
 
@@ -425,22 +425,22 @@
 #endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
- #define OPTFLOW_ROLL_P 2.5
+ #define OPTFLOW_ROLL_P 2.5f
 #endif
 #ifndef OPTFLOW_ROLL_I
- #define OPTFLOW_ROLL_I 0.5
+ #define OPTFLOW_ROLL_I 0.5f
 #endif
 #ifndef OPTFLOW_ROLL_D
- #define OPTFLOW_ROLL_D 0.12
+ #define OPTFLOW_ROLL_D 0.12f
 #endif
 #ifndef OPTFLOW_PITCH_P
- #define OPTFLOW_PITCH_P 2.5
+ #define OPTFLOW_PITCH_P 2.5f
 #endif
 #ifndef OPTFLOW_PITCH_I
- #define OPTFLOW_PITCH_I 0.5
+ #define OPTFLOW_PITCH_I 0.5f
 #endif
 #ifndef OPTFLOW_PITCH_D
- #define OPTFLOW_PITCH_D 0.12
+ #define OPTFLOW_PITCH_D 0.12f
 #endif
 #ifndef OPTFLOW_IMAX
  #define OPTFLOW_IMAX 1
@@ -530,7 +530,7 @@
 // Y6 Support
 
 #ifndef TOP_BOTTOM_RATIO
- # define TOP_BOTTOM_RATIO       1.00
+ # define TOP_BOTTOM_RATIO       1.00f
 #endif
 
 
@@ -725,26 +725,26 @@
 // Extra motor values that are changed from time to time by jani @ jDrones as software
 // and charachteristics changes.
 #ifdef MOTORS_JD880
- # define STABILIZE_ROLL_P          3.7
- # define STABILIZE_ROLL_I          0.0
- # define STABILIZE_ROLL_IMAX    	8.0            // degrees
- # define STABILIZE_PITCH_P         3.7
- # define STABILIZE_PITCH_I         0.0
- # define STABILIZE_PITCH_IMAX   	8.0            // degrees
+ # define STABILIZE_ROLL_P          3.7f
+ # define STABILIZE_ROLL_I          0.0f
+ # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
+ # define STABILIZE_PITCH_P         3.7f
+ # define STABILIZE_PITCH_I         0.0f
+ # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
 #endif
 
 #ifdef MOTORS_JD850
- # define STABILIZE_ROLL_P          4.2
- # define STABILIZE_ROLL_I          0.0
- # define STABILIZE_ROLL_IMAX    	8.0            // degrees
- # define STABILIZE_PITCH_P         4.2
- # define STABILIZE_PITCH_I         0.0
- # define STABILIZE_PITCH_IMAX   	8.0            // degrees
+ # define STABILIZE_ROLL_P          4.2f
+ # define STABILIZE_ROLL_I          0.0f
+ # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
+ # define STABILIZE_PITCH_P         4.2f
+ # define STABILIZE_PITCH_I         0.0f
+ # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
 #endif
 
 
 #ifndef ACRO_P
- # define ACRO_P                 4.5
+ # define ACRO_P                 4.5f
 #endif
 
 #ifndef AXIS_LOCK_ENABLED
@@ -753,33 +753,33 @@
 
 // Good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
- # define STABILIZE_ROLL_P          4.5
+ # define STABILIZE_ROLL_P          4.5f
 #endif
 #ifndef STABILIZE_ROLL_I
- # define STABILIZE_ROLL_I          0.0
+ # define STABILIZE_ROLL_I          0.0f
 #endif
 #ifndef STABILIZE_ROLL_IMAX
- # define STABILIZE_ROLL_IMAX    	8.0            // degrees
+ # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
- # define STABILIZE_PITCH_P         4.5
+ # define STABILIZE_PITCH_P         4.5f
 #endif
 #ifndef STABILIZE_PITCH_I
- # define STABILIZE_PITCH_I         0.0
+ # define STABILIZE_PITCH_I         0.0f
 #endif
 #ifndef STABILIZE_PITCH_IMAX
- # define STABILIZE_PITCH_IMAX   	8.0            // degrees
+ # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
 #endif
 
 #ifndef  STABILIZE_YAW_P
- # define STABILIZE_YAW_P           4.5            // increase for more aggressive Yaw Hold, decrease if it's bouncy
+ # define STABILIZE_YAW_P           4.5f            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
- # define STABILIZE_YAW_I           0.0
+ # define STABILIZE_YAW_I           0.0f
 #endif
 #ifndef  STABILIZE_YAW_IMAX
- # define STABILIZE_YAW_IMAX        8.0            // degrees * 100
+ # define STABILIZE_YAW_IMAX        8.0f            // degrees * 100
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
@@ -798,42 +798,42 @@
  # define MAX_INPUT_PITCH_ANGLE     4500
 #endif
 #ifndef RATE_ROLL_P
- # define RATE_ROLL_P        		0.150
+ # define RATE_ROLL_P        		0.150f
 #endif
 #ifndef RATE_ROLL_I
- # define RATE_ROLL_I        		0.100
+ # define RATE_ROLL_I        		0.100f
 #endif
 #ifndef RATE_ROLL_D
- # define RATE_ROLL_D        		0.004
+ # define RATE_ROLL_D        		0.004f
 #endif
 #ifndef RATE_ROLL_IMAX
- # define RATE_ROLL_IMAX         	5.0                    // degrees
+ # define RATE_ROLL_IMAX         	5.0f                    // degrees
 #endif
 
 #ifndef RATE_PITCH_P
- # define RATE_PITCH_P       		0.150
+ # define RATE_PITCH_P       		0.150f
 #endif
 #ifndef RATE_PITCH_I
- # define RATE_PITCH_I       		0.100
+ # define RATE_PITCH_I       		0.100f
 #endif
 #ifndef RATE_PITCH_D
- # define RATE_PITCH_D       		0.004
+ # define RATE_PITCH_D       		0.004f
 #endif
 #ifndef RATE_PITCH_IMAX
- # define RATE_PITCH_IMAX        	5.0                    // degrees
+ # define RATE_PITCH_IMAX        	5.0f                    // degrees
 #endif
 
 #ifndef RATE_YAW_P
- # define RATE_YAW_P              	0.25
+ # define RATE_YAW_P              	0.25f
 #endif
 #ifndef RATE_YAW_I
- # define RATE_YAW_I              	0.015
+ # define RATE_YAW_I              	0.015f
 #endif
 #ifndef RATE_YAW_D
- # define RATE_YAW_D              	0.000
+ # define RATE_YAW_D              	0.000f
 #endif
 #ifndef RATE_YAW_IMAX
- # define RATE_YAW_IMAX            	8.0          // degrees
+ # define RATE_YAW_IMAX            	8.0f          // degrees
 #endif
 
 
@@ -869,16 +869,16 @@
 // Loiter control gains
 //
 #ifndef LOITER_P
- # define LOITER_P             		.20
+ # define LOITER_P             		.20f
 #endif
 #ifndef LOITER_I
- # define LOITER_I             		0.0
+ # define LOITER_I             		0.0f
 #endif
 #ifndef LOITER_IMAX
  # define LOITER_IMAX          		30             // degrees
 #endif
 #ifndef LOITER_REPOSITION_RATE
- # define LOITER_REPOSITION_RATE   500.0            // cm/s
+ # define LOITER_REPOSITION_RATE   500.0f            // cm/s
 #endif
 
 
@@ -886,13 +886,13 @@
 // Loiter Navigation control gains
 //
 #ifndef LOITER_RATE_P
- # define LOITER_RATE_P          	5.0            //
+ # define LOITER_RATE_P          	5.0f            //
 #endif
 #ifndef LOITER_RATE_I
- # define LOITER_RATE_I          	0.04           // Wind control
+ # define LOITER_RATE_I          	0.04f           // Wind control
 #endif
 #ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.40           // try 2 or 3 for LOITER_RATE 1
+ # define LOITER_RATE_D          	0.40f           // try 2 or 3 for LOITER_RATE 1
 #endif
 #ifndef LOITER_RATE_IMAX
  # define LOITER_RATE_IMAX       	30                     // degrees
@@ -902,13 +902,13 @@
 // WP Navigation control gains
 //
 #ifndef NAV_P
- # define NAV_P                     2.4                    //
+ # define NAV_P                     2.4f                    //
 #endif
 #ifndef NAV_I
- # define NAV_I                     0.17           // Wind control
+ # define NAV_I                     0.17f           // Wind control
 #endif
 #ifndef NAV_D
- # define NAV_D                     0.00           // .95
+ # define NAV_D                     0.00f           // .95
 #endif
 #ifndef NAV_IMAX
  # define NAV_IMAX                  18                     // degrees
@@ -945,10 +945,10 @@
 #endif
 
 #ifndef ALT_HOLD_P
- # define ALT_HOLD_P            2.0
+ # define ALT_HOLD_P            2.0f
 #endif
 #ifndef ALT_HOLD_I
- # define ALT_HOLD_I            0.0
+ # define ALT_HOLD_I            0.0f
 #endif
 #ifndef ALT_HOLD_IMAX
  # define ALT_HOLD_IMAX         300
@@ -956,13 +956,13 @@
 
 // RATE control
 #ifndef THROTTLE_P
- # define THROTTLE_P            6.0
+ # define THROTTLE_P            6.0f
 #endif
 #ifndef THROTTLE_I
- # define THROTTLE_I            0.0
+ # define THROTTLE_I            0.0f
 #endif
 #ifndef THROTTLE_D
- # define THROTTLE_D            0.2
+ # define THROTTLE_D            0.2f
 #endif
 
 #ifndef THROTTLE_IMAX
@@ -986,13 +986,13 @@
 
 // Throttle Accel control
 #ifndef THROTTLE_ACCEL_P
- # define THROTTLE_ACCEL_P  0.75
+ # define THROTTLE_ACCEL_P  0.75f
 #endif
 #ifndef THROTTLE_ACCEL_I
- # define THROTTLE_ACCEL_I  1.50
+ # define THROTTLE_ACCEL_I  1.50f
 #endif
 #ifndef THROTTLE_ACCEL_D
- # define THROTTLE_ACCEL_D 0.0
+ # define THROTTLE_ACCEL_D 0.0f
 #endif
 #ifndef THROTTLE_ACCEL_IMAX
  # define THROTTLE_ACCEL_IMAX 500
@@ -1003,7 +1003,7 @@
 // Crosstrack compensation
 //
 #ifndef CROSSTRACK_GAIN
- # define CROSSTRACK_GAIN       .2
+ # define CROSSTRACK_GAIN       .2f
 #endif
 #ifndef CROSSTRACK_MIN_DISTANCE
  # define CROSSTRACK_MIN_DISTANCE       15

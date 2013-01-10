@@ -120,26 +120,26 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
     {
         float gamma = dcm.pitch; // neglecting angle of attack for now
 		float yaw = dcm.yaw;
-        mavlink_msg_global_position_send(chan,timeStamp,current_loc.lat/1.0e7,
-			current_loc.lng/1.0e7,current_loc.alt/1.0e2,gps.ground_speed/1.0e2*cos(gamma)*cos(yaw),
-			gps.ground_speed/1.0e2*cos(gamma)*sin(yaw),gps.ground_speed/1.0e2*sin(gamma));
+        mavlink_msg_global_position_send(chan,timeStamp,current_loc.lat/1.0e7f,
+			current_loc.lng/1.0e7f,current_loc.alt/1.0e2f,gps.ground_speed/1.0e2f*cosf(gamma)*cosf(yaw),
+			gps.ground_speed/1.0e2f*cosf(gamma)*sinf(yaw),gps.ground_speed/1.0e2f*sinf(gamma));
         break;
     }
     case MSG_LOCAL_LOCATION:
     {
         float gamma = dcm.pitch; // neglecting angle of attack for now
 		float yaw = dcm.yaw;
-        mavlink_msg_local_position_send(chan,timeStamp,ToRad((current_loc.lat-home.lat)/1.0e7)*radius_of_earth,
-			ToRad((current_loc.lng-home.lng)/1.0e7)*radius_of_earth*cos(ToRad(home.lat/1.0e7)),
-			(current_loc.alt-home.alt)/1.0e2, gps.ground_speed/1.0e2*cos(gamma)*cos(yaw),
-			 gps.ground_speed/1.0e2*cos(gamma)*sin(yaw),gps.ground_speed/1.0e2*sin(gamma));
+        mavlink_msg_local_position_send(chan,timeStamp,ToRad((current_loc.lat-home.lat)/1.0e7f)*radius_of_earth,
+			ToRad((current_loc.lng-home.lng)/1.0e7f)*radius_of_earth*cosf(ToRad(home.lat/1.0e7f)),
+			(current_loc.alt-home.alt)/1.0e2f, gps.ground_speed/1.0e2f*cosf(gamma)*cosf(yaw),
+			 gps.ground_speed/1.0e2f*cosf(gamma)*sinf(yaw),gps.ground_speed/1.0e2f*sinf(gamma));
         break;
     }
     case MSG_GPS_RAW:
     {
         mavlink_msg_gps_raw_send(chan,timeStamp,gps.status(),
-			gps.latitude/1.0e7,gps.longitude/1.0e7,gps.altitude/100.0,
-			2.0,10.0,gps.ground_speed/100.0,gps.ground_course/100.0);
+			gps.latitude/1.0e7f,gps.longitude/1.0e7f,gps.altitude/100.0f,
+			2.0f,10.0f,gps.ground_speed/100.0f,gps.ground_course/100.0f);
         break;
     }
     case MSG_AIRSPEED:
@@ -179,8 +179,8 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 		//Serial.printf_P(PSTR("sending accel: %f %f %f\n"), accel.x, accel.y, accel.z);
 		//Serial.printf_P(PSTR("sending gyro: %f %f %f\n"), gyro.x, gyro.y, gyro.z);
         mavlink_msg_raw_imu_send(chan,timeStamp,
-            accel.x*1000.0/gravity,accel.y*1000.0/gravity,accel.z*1000.0/gravity,
-			gyro.x*1000.0,gyro.y*1000.0,gyro.z*1000.0,
+            accel.x*1000.0f/gravity,accel.y*1000.0f/gravity,accel.z*1000.0f/gravity,
+			gyro.x*1000.0f,gyro.y*1000.0f,gyro.z*1000.0f,
             compass.mag_x,compass.mag_y,compass.mag_z);
         mavlink_msg_raw_pressure_send(chan,timeStamp,
             adc.Ch(AIRSPEED_CH),pitot.RawPress,0);

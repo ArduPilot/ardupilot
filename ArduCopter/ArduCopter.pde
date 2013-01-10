@@ -627,7 +627,7 @@ static int8_t CH7_wp_index;
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Voltage of battery, initialized above threshold for filter
-static float battery_voltage1 = LOW_VOLTAGE * 1.05;
+static float battery_voltage1 = LOW_VOLTAGE * 1.05f;
 // refers to the instant amp draw – based on an Attopilot Current sensor
 static float current_amps1;
 // refers to the total amps drawn – based on an Attopilot Current sensor
@@ -1816,11 +1816,11 @@ void update_simple_mode(void)
 
     if (simple_counter == 1) {
         // roll
-        simple_cos_x = sin(radians(90 - delta));
+        simple_cos_x = sinf(radians(90 - delta));
 
     }else if (simple_counter > 2) {
         // pitch
-        simple_sin_y = cos(radians(90 - delta));
+        simple_sin_y = cosf(radians(90 - delta));
         simple_counter = 0;
     }
 
@@ -2216,7 +2216,7 @@ static void update_altitude_est()
 }
 
 static void tuning(){
-    tuning_value = (float)g.rc_6.control_in / 1000.0;
+    tuning_value = (float)g.rc_6.control_in / 1000.0f;
     g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);                   // 0 to 1
 
     switch(g.radio_tuning) {

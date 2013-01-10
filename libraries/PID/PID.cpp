@@ -7,6 +7,7 @@
 
 #include "PID.h"
 #include <AP_HAL.h>
+#include <AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,13 +37,13 @@ int32_t PID::get_pid(int32_t error, float scaler)
     }
     _last_t = tnow;
 
-    delta_time = (float)dt / 1000.0;
+    delta_time = (float)dt / 1000.0f;
 
     // Compute proportional component
     output += error * _kp;
 
     // Compute derivative component if time has elapsed
-    if ((fabs(_kd) > 0) && (dt > 0)) {
+    if ((fabsf(_kd) > 0) && (dt > 0)) {
         float derivative;
 
 		if (isnan(_last_derivative)) {
@@ -57,7 +58,7 @@ int32_t PID::get_pid(int32_t error, float scaler)
 
         // discrete low pass filter, cuts out the
         // high frequency noise that can drive the controller crazy
-        float RC = 1/(2*M_PI*_fCut);
+        float RC = 1/(2*PI*_fCut);
         derivative = _last_derivative +
                      ((delta_time / (RC + delta_time)) *
                       (derivative - _last_derivative));
@@ -74,7 +75,7 @@ int32_t PID::get_pid(int32_t error, float scaler)
     output *= scaler;
 
     // Compute integral component if time has elapsed
-    if ((fabs(_ki) > 0) && (dt > 0)) {
+    if ((fabsf(_ki) > 0) && (dt > 0)) {
         _integrator             += (error * _ki) * scaler * delta_time;
         if (_integrator < -_imax) {
             _integrator = -_imax;

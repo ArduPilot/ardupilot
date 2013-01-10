@@ -346,21 +346,21 @@ void AP_Mount::update_mount_position()
             // allow pilot speed position input to come directly from an RC_Channel
             if (_roll_rc_in && (rc_ch[_roll_rc_in-1])) {
                 //_roll_control_angle += angle_input(rc_ch[_roll_rc_in-1], _roll_angle_min, _roll_angle_max) * 0.00001 * _joystick_speed;
-                _roll_control_angle += rc_ch[_roll_rc_in-1]->norm_input() * 0.00001 * _joystick_speed;
-                if (_roll_control_angle < radians(_roll_angle_min*0.01)) _roll_control_angle = radians(_roll_angle_min*0.01);
-                if (_roll_control_angle > radians(_roll_angle_max*0.01)) _roll_control_angle = radians(_roll_angle_max*0.01);
+                _roll_control_angle += rc_ch[_roll_rc_in-1]->norm_input() * 0.00001f * _joystick_speed;
+                if (_roll_control_angle < radians(_roll_angle_min*0.01f)) _roll_control_angle = radians(_roll_angle_min*0.01f);
+                if (_roll_control_angle > radians(_roll_angle_max*0.01f)) _roll_control_angle = radians(_roll_angle_max*0.01f);
             }
             if (_tilt_rc_in && (rc_ch[_tilt_rc_in-1])) {
                 //_tilt_control_angle += angle_input(rc_ch[_tilt_rc_in-1], _tilt_angle_min, _tilt_angle_max) * 0.00001 * _joystick_speed;
-                _tilt_control_angle += rc_ch[_tilt_rc_in-1]->norm_input() * 0.00001 * _joystick_speed;
-                if (_tilt_control_angle < radians(_tilt_angle_min*0.01)) _tilt_control_angle = radians(_tilt_angle_min*0.01);
-                if (_tilt_control_angle > radians(_tilt_angle_max*0.01)) _tilt_control_angle = radians(_tilt_angle_max*0.01);
+                _tilt_control_angle += rc_ch[_tilt_rc_in-1]->norm_input() * 0.00001f * _joystick_speed;
+                if (_tilt_control_angle < radians(_tilt_angle_min*0.01f)) _tilt_control_angle = radians(_tilt_angle_min*0.01f);
+                if (_tilt_control_angle > radians(_tilt_angle_max*0.01f)) _tilt_control_angle = radians(_tilt_angle_max*0.01f);
             }
             if (_pan_rc_in && (rc_ch[_pan_rc_in-1])) {
                 //_pan_control_angle += angle_input(rc_ch[_pan_rc_in-1], _pan_angle_min, _pan_angle_max) * 0.00001 * _joystick_speed;
-                _pan_control_angle += rc_ch[_pan_rc_in-1]->norm_input() * 0.00001 * _joystick_speed;
-                if (_pan_control_angle < radians(_pan_angle_min*0.01)) _pan_control_angle = radians(_pan_angle_min*0.01);
-                if (_pan_control_angle > radians(_pan_angle_max*0.01)) _pan_control_angle = radians(_pan_angle_max*0.01);
+                _pan_control_angle += rc_ch[_pan_rc_in-1]->norm_input() * 0.00001f * _joystick_speed;
+                if (_pan_control_angle < radians(_pan_angle_min*0.01f)) _pan_control_angle = radians(_pan_angle_min*0.01f);
+                if (_pan_control_angle > radians(_pan_angle_max*0.01f)) _pan_control_angle = radians(_pan_angle_max*0.01f);
             }
         } else {
 #endif
@@ -408,9 +408,9 @@ void AP_Mount::update_mount_position()
 #endif
 
     // write the results to the servos
-    move_servo(_roll_idx, _roll_angle*10, _roll_angle_min*0.1, _roll_angle_max*0.1);
-    move_servo(_tilt_idx, _tilt_angle*10, _tilt_angle_min*0.1, _tilt_angle_max*0.1);
-    move_servo(_pan_idx,  _pan_angle*10,  _pan_angle_min*0.1,  _pan_angle_max*0.1);
+    move_servo(_roll_idx, _roll_angle*10, _roll_angle_min*0.1f, _roll_angle_max*0.1f);
+    move_servo(_tilt_idx, _tilt_angle*10, _tilt_angle_min*0.1f, _tilt_angle_max*0.1f);
+    move_servo(_pan_idx,  _pan_angle*10,  _pan_angle_min*0.1f,  _pan_angle_max*0.1f);
 }
 
 void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)
@@ -449,7 +449,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
     {
 #if MNT_RETRACT_OPTION == ENABLED
     case MAV_MOUNT_MODE_RETRACT:      // Load and keep safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization
-        set_retract_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
+        set_retract_angles(packet.input_b*0.01f, packet.input_a*0.01f, packet.input_c*0.01f);
         if (packet.save_position)
         {
             _retract_angles.save();
@@ -458,7 +458,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 #endif
 
     case MAV_MOUNT_MODE_NEUTRAL:      //  Load and keep neutral position (Roll,Pitch,Yaw) from EEPROM
-        set_neutral_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
+        set_neutral_angles(packet.input_b*0.01f, packet.input_a*0.01f, packet.input_c*0.01f);
         if (packet.save_position)
         {
             _neutral_angles.save();
@@ -466,7 +466,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
         break;
 
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:      // Load neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
-        set_control_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
+        set_control_angles(packet.input_b*0.01f, packet.input_a*0.01f, packet.input_c*0.01f);
         break;
 
     case MAV_MOUNT_MODE_RC_TARGETING:      // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
@@ -570,19 +570,19 @@ AP_Mount::angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
 float
 AP_Mount::angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
 {
-    return radians(angle_input(rc, angle_min, angle_max)*0.01);
+    return radians(angle_input(rc, angle_min, angle_max)*0.01f);
 }
 
 void
 AP_Mount::calc_GPS_target_angle(struct Location *target)
 {
-    float GPS_vector_x = (target->lng-_current_loc->lng)*cos(ToRad((_current_loc->lat+target->lat)*.00000005))*.01113195;
-    float GPS_vector_y = (target->lat-_current_loc->lat)*.01113195;
+    float GPS_vector_x = (target->lng-_current_loc->lng)*cosf(ToRad((_current_loc->lat+target->lat)*0.00000005f))*0.01113195f;
+    float GPS_vector_y = (target->lat-_current_loc->lat)*0.01113195f;
     float GPS_vector_z = (target->alt-_current_loc->alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
-    float target_distance = 100.0*pythagorous2(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
+    float target_distance = 100.0f*pythagorous2(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
     _roll_control_angle  = 0;
-    _tilt_control_angle  = atan2(GPS_vector_z, target_distance);
-    _pan_control_angle   = atan2(GPS_vector_x, GPS_vector_y);
+    _tilt_control_angle  = atan2f(GPS_vector_z, target_distance);
+    _pan_control_angle   = atan2f(GPS_vector_x, GPS_vector_y);
 }
 
 /// Stabilizes mount relative to the Earth's frame

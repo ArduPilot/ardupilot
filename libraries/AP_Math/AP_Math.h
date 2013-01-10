@@ -17,13 +17,13 @@
 #include "polygon.h"
 
 #ifndef PI
-#define PI 3.141592653589793
+#define PI 3.141592653589793f
 #endif
-#define DEG_TO_RAD 0.017453292519943295769236907684886
-#define RAD_TO_DEG 57.295779513082320876798154814105
+#define DEG_TO_RAD 0.017453292519943295769236907684886f
+#define RAD_TO_DEG 57.295779513082320876798154814105f
 
 // acceleration due to gravity in m/s/s
-#define GRAVITY_MSS 9.80665
+#define GRAVITY_MSS 9.80665f
 
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f

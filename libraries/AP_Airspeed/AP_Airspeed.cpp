@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @DisplayName: Airspeed ratio
     // @Description: Airspeed calibration ratio
     // @Increment: 0.1
-    AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 1.9936),
+    AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 1.9936f),
 
     AP_GROUPEND
 };
@@ -73,6 +73,6 @@ void AP_Airspeed::read(void)
     }
     _airspeed_raw           = _source->read_average();
     airspeed_pressure       = max(_airspeed_raw - _offset, 0);
-    _airspeed               = 0.7 * _airspeed +
-                              0.3 * sqrt(airspeed_pressure * _ratio);
+    _airspeed               = 0.7f * _airspeed +
+                              0.3f * sqrtf(airspeed_pressure * _ratio);
 }

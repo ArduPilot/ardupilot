@@ -100,13 +100,13 @@ static void show_timings(void)
 	TIMEIT("dmul", v_out_d *= v_d, 100);
 	TIMEIT("ddiv", v_out_d /= v_d, 100);
 
-	TIMEIT("sin()", v_out = sin(v_f), 20);
-	TIMEIT("cos()", v_out = cos(v_f), 20);
-	TIMEIT("tan()", v_out = tan(v_f), 20);
-	TIMEIT("acos()", v_out = acos(v_f * 0.2), 20);
-	TIMEIT("asin()", v_out = asin(v_f * 0.2), 20);
-	TIMEIT("atan2()", v_out = atan2(v_f * 0.2, v_f * 0.3), 20);
-	TIMEIT("sqrt()",v_out = sqrt(v_f), 20);
+	TIMEIT("sin()", v_out = sinf(v_f), 20);
+	TIMEIT("cos()", v_out = cosf(v_f), 20);
+	TIMEIT("tan()", v_out = tanf(v_f), 20);
+	TIMEIT("acos()", v_out = acosf(v_f * 0.2), 20);
+	TIMEIT("asin()", v_out = asinf(v_f * 0.2), 20);
+	TIMEIT("atan2()", v_out = atan2f(v_f * 0.2, v_f * 0.3), 20);
+	TIMEIT("sqrt()",v_out = sqrtf(v_f), 20);
 
 	TIMEIT("iadd8", v_out_8 += v_8, 100);
 	TIMEIT("isub8", v_out_8 -= v_8, 100);

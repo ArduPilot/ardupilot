@@ -58,12 +58,12 @@ void Quaternion::earth_to_body(Vector3f &v)
 // create a quaternion from Euler angles
 void Quaternion::from_euler(float roll, float pitch, float yaw)
 {
-    float cr2 = cos(roll*0.5);
-    float cp2 = cos(pitch*0.5);
-    float cy2 = cos(yaw*0.5);
-    float sr2 = sin(roll*0.5);
-    float sp2 = sin(pitch*0.5);
-    float sy2 = sin(yaw*0.5);
+    float cr2 = cosf(roll*0.5f);
+    float cp2 = cosf(pitch*0.5f);
+    float cy2 = cosf(yaw*0.5f);
+    float sr2 = sinf(roll*0.5f);
+    float sp2 = sinf(pitch*0.5f);
+    float sy2 = sinf(yaw*0.5f);
 
     q1 = cr2*cp2*cy2 + sr2*sp2*sy2;
     q2 = sr2*cp2*cy2 - cr2*sp2*sy2;
@@ -75,15 +75,15 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
 void Quaternion::to_euler(float *roll, float *pitch, float *yaw)
 {
     if (roll) {
-        *roll = (atan2(2.0*(q1*q2 + q3*q4),
-                       1 - 2.0*(q2*q2 + q3*q3)));
+        *roll = (atan2f(2.0f*(q1*q2 + q3*q4),
+                       1 - 2.0f*(q2*q2 + q3*q3)));
     }
     if (pitch) {
         // we let safe_asin() handle the singularities near 90/-90 in pitch
-        *pitch = safe_asin(2.0*(q1*q3 - q4*q2));
+        *pitch = safe_asin(2.0f*(q1*q3 - q4*q2));
     }
     if (yaw) {
-        *yaw = atan2(2.0*(q1*q4 + q2*q3),
-                     1 - 2.0*(q3*q3 + q4*q4));
+        *yaw = atan2f(2.0f*(q1*q4 + q2*q3),
+                      1 - 2.0f*(q3*q3 + q4*q4));
     }
 }

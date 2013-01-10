@@ -40,7 +40,7 @@ AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_HAL::AnalogSource *sourc
 // Public Methods //////////////////////////////////////////////////////////////
 float AP_RangeFinder_MaxsonarXL::calculate_scaler(int sonar_type, float adc_refence_voltage)
 {
-    float type_scaler = 1.0;
+    float type_scaler = 1.0f;
     switch(sonar_type) {
     case AP_RANGEFINDER_MAXSONARXL:
         type_scaler = AP_RANGEFINDER_MAXSONARXL_SCALER;
@@ -63,6 +63,6 @@ float AP_RangeFinder_MaxsonarXL::calculate_scaler(int sonar_type, float adc_refe
         max_distance = AP_RANGEFINDER_MAXSONARHRLV_MAX_DISTANCE;
         break;
     }
-    _scaler = type_scaler * adc_refence_voltage / 5.0;
+    _scaler = type_scaler * adc_refence_voltage / 5.0f;
     return _scaler;
 }

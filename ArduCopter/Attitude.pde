@@ -708,7 +708,7 @@ static void update_throttle_cruise(int16_t throttle)
     }
     // calc average throttle if we are in a level hover
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_avg = throttle_avg * .99 + (float)throttle * .01;
+        throttle_avg = throttle_avg * 0.99f + (float)throttle * 0.01f;
         g.throttle_cruise = throttle_avg;
     }
 }
@@ -795,7 +795,7 @@ get_throttle_accel(int16_t z_target_accel)
     z_accel_meas = -(ahrs.get_accel_ef().z + GRAVITY_MSS) * 100;
 
     // calculate accel error and Filter with fc = 2 Hz
-    z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
+    z_accel_error = z_accel_error + 0.11164f * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle_accel.get_p(z_accel_error);
@@ -921,7 +921,7 @@ get_throttle_rate(int16_t z_target_speed)
     int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
     // calculate rate error and filter with cut off frequency of 2 Hz
-    z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
+    z_rate_error    = z_rate_error + 0.20085f * ((z_target_speed - climb_rate) - z_rate_error);
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
@@ -980,9 +980,9 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
     if( g.pi_alt_hold.kP() != 0 ) {
         linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
         if( alt_error > 2*linear_distance ) {
-            desired_rate = sqrt(2*250*(alt_error-linear_distance));
+            desired_rate = sqrtf(2*250*(alt_error-linear_distance));
         }else if( alt_error < -2*linear_distance ) {
-            desired_rate = -sqrt(2*250*(-alt_error-linear_distance));
+            desired_rate = -sqrtf(2*250*(-alt_error-linear_distance));
         }else{
             desired_rate = g.pi_alt_hold.get_p(alt_error);
         }
@@ -1018,7 +1018,7 @@ get_throttle_rate_stabilized(int16_t target_rate)
     }
     last_call_ms = millis();
 
-    target_alt += target_rate * 0.02;
+    target_alt += target_rate * 0.02f;
 
     // do not let target altitude get too far from current altitude
     target_alt = constrain(target_alt,current_loc.alt-750,current_loc.alt+750);
@@ -1078,7 +1078,7 @@ get_throttle_surface_tracking(int16_t target_rate)
     }
     last_call_ms = millis();
 
-    target_sonar_alt += target_rate * 0.02;
+    target_sonar_alt += target_rate * 0.02f;
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition

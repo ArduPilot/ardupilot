@@ -341,8 +341,8 @@ enum gcs_severity {
 #define DATA_RTL_REACHED_ALT            31
 
 // battery monitoring macros
-#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
-#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
+#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0f))*g.volt_div_ratio
+#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0f))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */
@@ -389,8 +389,8 @@ enum gcs_severity {
 #define PIEZO_PIN AN5           //Last pin on the back ADC connector
 
 // RADIANS
-#define RADX100 0.000174532925
-#define DEGX100 5729.57795
+#define RADX100 0.000174532925f
+#define DEGX100 5729.57795f
 
 
 // EEPROM addresses

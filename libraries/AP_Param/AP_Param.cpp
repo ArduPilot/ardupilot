@@ -696,7 +696,7 @@ bool AP_Param::save(void)
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
-            (fabs(v1-v2) < 0.0001*fabs(v1))) {
+            (fabsf(v1-v2) < 0.0001f*fabsf(v1))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
             return true;

@@ -28,7 +28,7 @@ void read_airspeed(void)
 		airpressure_raw = ((float)adc.Ch(AIRSPEED_CH) * .25) + (airpressure_raw * .75);
 		airpressure 	= (int)airpressure_raw - airpressure_offset;
 		airpressure 	= max(airpressure, 0);
-		airspeed 		= sqrt((float)airpressure * get(PARAM_ARSPD_RATIO)) * 100;
+		airspeed 		= sqrtf((float)airpressure * get(PARAM_ARSPD_RATIO)) * 100;
 	#endif
 
 	calc_airspeed_errors();
