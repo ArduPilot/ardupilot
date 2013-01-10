@@ -907,6 +907,9 @@ void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t ma
 AP_Param param_loader(var_info, WP_START_BYTE);
 
 void setup() {
+    // this needs to be the first call, as it fills memory with
+    // sentinel values
+    memcheck_init();
     cliSerial = hal.console;
 
     // Load the default values of variables listed in var_info[]s
@@ -931,7 +934,6 @@ void setup() {
     batt_curr_analog_source = hal.analogin->channel(g.battery_curr_pin);
     board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
-    memcheck_init();
     init_ardupilot();
 }
 
