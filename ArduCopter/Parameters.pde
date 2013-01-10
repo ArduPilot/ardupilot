@@ -419,7 +419,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FRAME
     // @DisplayName: Frame Orientation
-    // @Description: Controls motor mixing The maximum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
+    // @Description: Controls motor mixing. Quad: 0=+ 1=X
     // @User: Standard
     // @Range: 0 32767
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
