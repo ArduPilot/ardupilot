@@ -201,7 +201,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 
  	for(int16_t i = 0; i < 200; i++){
 	 	int32_t temp = 2 * 100 * (wp_distance - g.waypoint_radius * 100);
-		max_speed = sqrt((float)temp);
+		max_speed = sqrtf((float)temp);
 		max_speed = min(max_speed, g.waypoint_speed_max);
 		cliSerial->printf("Zspeed: %ld, %d, %ld\n", temp, max_speed, wp_distance);
 	 	wp_distance += 100;
@@ -561,8 +561,8 @@ test_gps(uint8_t argc, const Menu::arg *argv)
  *                                                       temp.c.x, temp.c.y, temp.c.z);
  *
  *               int16_t _pitch         = degrees(-asin(temp.c.x));
- *               int16_t _roll      = degrees(atan2(temp.c.y, temp.c.z));
- *               int16_t _yaw       = degrees(atan2(temp.b.x, temp.a.x));
+ *               int16_t _roll      = degrees(atan2f(temp.c.y, temp.c.z));
+ *               int16_t _yaw       = degrees(atan2f(temp.b.x, temp.a.x));
  *               cliSerial->printf_P(PSTR(	"angles\n"
  *                                                               "%d \t %d \t %d\n\n"),
  *                                                               _pitch,

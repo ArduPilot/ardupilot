@@ -48,7 +48,7 @@ AP_AHRS_DCM::update(void)
     // if the update call took more than 0.2 seconds then discard it,
     // otherwise we may move too far. This happens when arming motors 
     // in ArduCopter
-    if (delta_t > 0.2) {
+    if (delta_t > 0.2f) {
         _ra_sum.zero();
         _ra_deltat = 0;
         return;
@@ -129,14 +129,14 @@ AP_AHRS_DCM::check_matrix(void)
     // the pitch calculation via asin().  These NaN values can
     // feed back into the rest of the DCM matrix via the
     // error_course value.
-    if (!(_dcm_matrix.c.x < 1.0 &&
-          _dcm_matrix.c.x > -1.0)) {
+    if (!(_dcm_matrix.c.x < 1.0f &&
+          _dcm_matrix.c.x > -1.0f)) {
         // We have an invalid matrix. Force a normalisation.
         renorm_range_count++;
         normalize();
 
         if (_dcm_matrix.is_nan() ||
-            fabs(_dcm_matrix.c.x) > 10) {
+            fabsf(_dcm_matrix.c.x) > 10) {
             // normalisation didn't fix the problem! We're
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
@@ -172,16 +172,16 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
     // we don't want to compound the error by making DCM less
     // accurate.
 
-    renorm_val = 1.0 / a.length();
+    renorm_val = 1.0f / a.length();
 
     // keep the average for reporting
     _renorm_val_sum += renorm_val;
     _renorm_val_count++;
 
-    if (!(renorm_val < 2.0 && renorm_val > 0.5)) {
+    if (!(renorm_val < 2.0f && renorm_val > 0.5f)) {
         // this is larger than it should get - log it as a warning
         renorm_range_count++;
-        if (!(renorm_val < 1.0e6 && renorm_val > 1.0e-6)) {
+        if (!(renorm_val < 1.0e6f && renorm_val > 1.0e-6f)) {
             // we are getting values which are way out of
             // range, we will reset the matrix and hope we
             // can recover our attitude using drift
@@ -245,8 +245,8 @@ AP_AHRS_DCM::yaw_error_compass(void)
     }
 
     // get the earths magnetic field (only X and Y components needed)
-    Vector3f mag_earth = Vector3f(cos(_compass->get_declination()),
-                                  sin(_compass->get_declination()), 0);
+    Vector3f mag_earth = Vector3f(cosf(_compass->get_declination()),
+                                  sinf(_compass->get_declination()), 0);
 
     // calculate the error term in earth frame
     Vector3f error = rb % mag_earth;
@@ -259,7 +259,7 @@ AP_AHRS_DCM::yaw_error_compass(void)
 float
 AP_AHRS_DCM::yaw_error_gps(void)
 {
-    return sin(ToRad(_gps->ground_course * 0.01) - yaw);
+    return sinf(ToRad(_gps->ground_course * 0.01f) - yaw);
 }
 
 
@@ -270,10 +270,10 @@ float
 AP_AHRS_DCM::_P_gain(float spin_rate)
 {
     if (spin_rate < ToDeg(50)) {
-        return 1.0;
+        return 1.0f;
     }
     if (spin_rate > ToDeg(500)) {
-        return 10.0;
+        return 10.0f;
     }
     return spin_rate/ToDeg(50);
 }
@@ -299,7 +299,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     if (_compass && _compass->use_for_yaw()) {
         if (_compass->last_update != _compass_last_update) {
-            yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6;
+            yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6f;
             _compass_last_update = _compass->last_update;
             // we force an additional compass read()
             // here. This has the effect of throwing away
@@ -316,10 +316,10 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     } else if (_fly_forward && have_gps()) {
         if (_gps->last_fix_time != _gps_last_update &&
             _gps->ground_speed >= GPS_SPEED_MIN) {
-            yaw_deltat = (_gps->last_fix_time - _gps_last_update) * 1.0e-3;
+            yaw_deltat = (_gps->last_fix_time - _gps_last_update) * 1.0e-3f;
             _gps_last_update = _gps->last_fix_time;
             if (!_have_initial_yaw) {
-                _dcm_matrix.from_euler(roll, pitch, ToRad(_gps->ground_course*0.01));
+                _dcm_matrix.from_euler(roll, pitch, ToRad(_gps->ground_course*0.01f));
                 _omega_yaw_P.zero();
                 _have_initial_yaw = true;
             }
@@ -332,7 +332,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         // we don't have any new yaw information
         // slowly decay _omega_yaw_P to cope with loss
         // of our yaw source
-        _omega_yaw_P *= 0.97;
+        _omega_yaw_P *= 0.97f;
         return;
     }
 
@@ -358,12 +358,12 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     // don't update the drift term if we lost the yaw reference
     // for more than 2 seconds
-    if (yaw_deltat < 2.0 && spin_rate < ToRad(SPIN_RATE_LIMIT)) {
+    if (yaw_deltat < 2.0f && spin_rate < ToRad(SPIN_RATE_LIMIT)) {
         // also add to the I term
         _omega_I_sum.z += error.z * _ki_yaw * yaw_deltat;
     }
 
-    _error_yaw_sum += fabs(yaw_error);
+    _error_yaw_sum += fabsf(yaw_error);
     _error_yaw_count++;
 }
 
@@ -411,7 +411,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // As a fallback we use the fixed wing acceleration correction
         // if we have an airspeed estimate (which we only have if
         // _fly_forward is set), otherwise no correction
-        if (_ra_deltat < 0.2) {
+        if (_ra_deltat < 0.2f) {
             // not enough time has accumulated
             return;
         }
@@ -489,8 +489,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Vector3f vdelta = (velocity - _last_velocity) * v_scale;
     // limit vertical acceleration correction to 0.5 gravities. The
     // barometer sometimes gives crazy acceleration changes. 
-    vdelta.z = constrain(vdelta.z, -0.5, 0.5);
-    GA_e = Vector3f(0, 0, -1.0) + vdelta;
+    vdelta.z = constrain(vdelta.z, -0.5f, 0.5f);
+    GA_e = Vector3f(0, 0, -1.0f) + vdelta;
     GA_e.normalize();
     if (GA_e.is_inf()) {
         // wait for some non-zero acceleration information
@@ -500,7 +500,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // calculate the error term in earth frame.
     Vector3f GA_b = _ra_sum / (_ra_deltat * GRAVITY_MSS);
     float length = GA_b.length();
-    if (length > 1.0) {
+    if (length > 1.0f) {
         GA_b /= length;
         if (GA_b.is_inf()) {
             // wait for some non-zero acceleration information
@@ -518,10 +518,10 @@ AP_AHRS_DCM::drift_correction(float deltat)
     float tilt = pythagorous2(GA_e.x, GA_e.y);
 
     // equation 11
-    float theta = atan2(GA_b.y, GA_b.x);
+    float theta = atan2f(GA_b.y, GA_b.x);
 
     // equation 12
-    Vector3f GA_e2 = Vector3f(cos(theta)*tilt, sin(theta)*tilt, GA_e.z);
+    Vector3f GA_e2 = Vector3f(cosf(theta)*tilt, sinf(theta)*tilt, GA_e.z);
 
     // step 6
     error = GA_b % GA_e2;
@@ -533,8 +533,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
     if (_compass && _compass->use_for_yaw()) {
-        if (have_gps() && gps_gain == 1.0) {
-            error.z *= sin(fabs(roll));
+        if (have_gps() && gps_gain == 1.0f) {
+            error.z *= sinf(fabsf(roll));
         } else {
             error.z = 0;
         }
@@ -617,7 +617,7 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
     }
 
     float diff_length = fuselageDirectionDiff.length();
-    if (diff_length > 0.2) {
+    if (diff_length > 0.2f) {
         // when turning, use the attitude response to estimate
         // wind speed
         float V;
@@ -632,18 +632,18 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
         Vector3f fuselageDirectionSum = fuselageDirection + _last_fuse;
         Vector3f velocitySum = velocity + _last_vel;
 
-        float theta = atan2(velocityDiff.y, velocityDiff.x) - atan2(fuselageDirectionDiff.y, fuselageDirectionDiff.x);
-        float sintheta = sin(theta);
-        float costheta = cos(theta);
+        float theta = atan2f(velocityDiff.y, velocityDiff.x) - atan2f(fuselageDirectionDiff.y, fuselageDirectionDiff.x);
+        float sintheta = sinf(theta);
+        float costheta = cosf(theta);
 
         Vector3f wind = Vector3f();
         wind.x = velocitySum.x - V * (costheta * fuselageDirectionSum.x - sintheta * fuselageDirectionSum.y);
         wind.y = velocitySum.y - V * (sintheta * fuselageDirectionSum.x + costheta * fuselageDirectionSum.y);
         wind.z = velocitySum.z - V * fuselageDirectionSum.z;
-        wind *= 0.5;
+        wind *= 0.5f;
 
 	if (wind.length() < _wind.length() + 20) {
-		_wind = _wind * 0.95 + wind * 0.05;
+		_wind = _wind * 0.95f + wind * 0.05f;
 	}
 
         _last_wind_time = now;
@@ -651,7 +651,7 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
         // when flying straight use airspeed to get wind estimate if available
         Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
         Vector3f wind = velocity - airspeed;
-        _wind = _wind * 0.92 + wind * 0.08;
+        _wind = _wind * 0.92f + wind * 0.08f;
     }    
 }
 
@@ -734,8 +734,8 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 		// constrain the airspeed by the ground speed
 		// and AHRS_WIND_MAX
 		*airspeed_ret = constrain(*airspeed_ret, 
-					  _gps->ground_speed*0.01 - _wind_max, 
-					  _gps->ground_speed*0.01 + _wind_max);
+					  _gps->ground_speed*0.01f - _wind_max, 
+					  _gps->ground_speed*0.01f + _wind_max);
 	}
 	return ret;
 }

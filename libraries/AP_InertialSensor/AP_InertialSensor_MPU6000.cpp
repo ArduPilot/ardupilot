@@ -6,7 +6,7 @@
 extern const AP_HAL::HAL& hal;
 
 // MPU6000 accelerometer scaling
-#define MPU6000_ACCEL_SCALE_1G    (GRAVITY / 4096.0)
+#define MPU6000_ACCEL_SCALE_1G    (GRAVITY / 4096.0f)
 
 // MPU 6000 registers
 #define MPUREG_XG_OFFS_TC                               0x00
@@ -318,7 +318,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     }
     hal.scheduler->resume_timer_procs();
 
-    count_scale = 1.0 / _num_samples;
+    count_scale = 1.0f / _num_samples;
 
     _gyro  = Vector3f(_gyro_data_sign[0] * sum[_gyro_data_index[0]],
                       _gyro_data_sign[1] * sum[_gyro_data_index[1]],

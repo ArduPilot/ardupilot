@@ -312,8 +312,8 @@ static void Log_Write_Current()
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         throttle_in         : g.rc_3.control_in,
         throttle_integrator : throttle_integrator,
-        battery_voltage     : (int16_t) (battery_voltage1 * 100.0),
-        current_amps        : (int16_t) (current_amps1 * 100.0),
+        battery_voltage     : (int16_t) (battery_voltage1 * 100.0f),
+        current_amps        : (int16_t) (current_amps1 * 100.0f),
         current_total       : (int16_t) current_total1
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -329,8 +329,8 @@ static void Log_Read_Current()
     cliSerial->printf_P(PSTR("CURR, %d, %lu, %4.4f, %4.4f, %d\n"),
                     (int)pkt.throttle_in,
                     (unsigned long)pkt.throttle_integrator,
-                    (float)pkt.battery_voltage/100.f,
-                    (float)pkt.current_amps/100.f,
+                    (float)pkt.battery_voltage/100.0f,
+                    (float)pkt.current_amps/100.0f,
                     (int)pkt.current_total);
 }
 
@@ -1159,7 +1159,6 @@ static void Log_Read_Camera()
 {
     struct log_Camera pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
-
                                      // 1
     cliSerial->printf_P(PSTR("CAMERA, %lu, "),(unsigned long)pkt.gps_time); // 1 time
     print_latlon(cliSerial, pkt.latitude);              // 2 lat

@@ -79,11 +79,11 @@ AP_AHRS_MPU6000::update(void)
 // TO-DO: should remove and replace with more standard functions
 float AP_AHRS_MPU6000::wrap_PI(float angle_in_radians)
 {
-    if( angle_in_radians > M_PI ) {
-        return(angle_in_radians - 2*M_PI);
+    if( angle_in_radians > PI ) {
+        return(angle_in_radians - 2*PI);
     }
-    else if( angle_in_radians < -M_PI ) {
-        return(angle_in_radians + 2*M_PI);
+    else if( angle_in_radians < -PI ) {
+        return(angle_in_radians + 2*PI);
     }
     else{
         return(angle_in_radians);
@@ -141,13 +141,13 @@ void AP_AHRS_MPU6000::drift_correction( float deltat )
         // TO-DO: fix this.  Currently it makes the roll and pitch drift more!
         // If bias values are greater than 1 LSB we update the hardware offset
         // registers
-        if( fabs(_gyro_bias[0])>1.0 ) {
+        if( fabsf(_gyro_bias[0])>1.0f ) {
             //_mpu6000->set_gyro_offsets(-1*(int)_gyro_bias[0],0,0);
             //_mpu6000->set_gyro_offsets(0,-1*(int)_gyro_bias[0],0);
             //_gyro_bias[0] -= (int)_gyro_bias[0];  // we remove the part that
             // we have already corrected on registers...
         }
-        if (fabs(_gyro_bias[1])>1.0) {
+        if (fabsf(_gyro_bias[1])>1.0f) {
             //_mpu6000->set_gyro_offsets(-1*(int)_gyro_bias[1],0,0);
             //_gyro_bias[1] -= (int)_gyro_bias[1];
         }
@@ -199,9 +199,9 @@ void
 AP_AHRS_MPU6000::push_gains_to_dmp()
 {
     uint8_t gain;
-    if( _kp.get() >= 1.0 ) {
+    if( _kp.get() >= 1.0f ) {
         gain = 0xFF;
-    }else if( _kp.get() <= 0.0 ) {
+    }else if( _kp.get() <= 0.0f ) {
         gain = 0x00;
     }else{
         gain = (uint8_t)((float)0xFF * _kp.get());
@@ -226,8 +226,8 @@ AP_AHRS_MPU6000::yaw_error_compass(void)
     }
 
     // get the earths magnetic field (only X and Y components needed)
-    Vector3f mag_earth = Vector3f(cos(_compass->get_declination()),
-                                  sin(_compass->get_declination()), 0);
+    Vector3f mag_earth = Vector3f(cosf(_compass->get_declination()),
+                                  sinf(_compass->get_declination()), 0);
 
     // calculate the error term in earth frame
     Vector3f error = rb % mag_earth;
@@ -290,7 +290,7 @@ AP_AHRS_MPU6000::drift_correction_yaw(void)
             yaw_error = wrap_PI(heading - yaw_corrected);
 
             // shift the corrected yaw towards the compass heading a bit
-            yaw_corrected += wrap_PI(yaw_error * _kp_yaw.get() * 0.1);
+            yaw_corrected += wrap_PI(yaw_error * _kp_yaw.get() * 0.1f);
 
             // rebuild the dcm matrix yet again
             _dcm_matrix.from_euler(dmp_roll, dmp_pitch, yaw_corrected);

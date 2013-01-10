@@ -6,21 +6,21 @@
 
 void stabilize()
 {
-	float ch1_inf = 1.0;
-	float ch2_inf = 1.0;
-	float ch4_inf = 1.0;
+	float ch1_inf = 1.0f;
+	float ch2_inf = 1.0f;
+	float ch4_inf = 1.0f;
 #if AIRSPEED_SENSOR == ENABLED
 	float speed_scaler = STANDARD_SPEED_SQUARED / (airspeed * airspeed);
-	speed_scaler = constrain(speed_scaler, 0.11, 9.0);
+	speed_scaler = constrain(speed_scaler, 0.11f, 9.0f);
 #endif
 #if AIRSPEED_SENSOR == DISABLED
 	float speed_scaler;
 	if (servo_out[CH_THROTTLE] > 0) 
-		speed_scaler = 0.5 + (THROTTLE_CRUISE / servo_out[CH_THROTTLE] / 2.0);	// First order taylor expansion of square root
+		speed_scaler = 0.5f + (THROTTLE_CRUISE / servo_out[CH_THROTTLE] / 2.0f);	// First order taylor expansion of square root
 																				// Should maybe be to the 2/7 power, but we aren't goint to implement that...
 	else
-		speed_scaler = 1.67;
-	speed_scaler = constrain(speed_scaler, 0.6, 1.67);		// This case is constrained tighter as we don't have real speed info
+		speed_scaler = 1.67f;
+	speed_scaler = constrain(speed_scaler, 0.6f, 1.67f);		// This case is constrained tighter as we don't have real speed info
 #endif
 	
 	
@@ -36,7 +36,7 @@ void stabilize()
 	// Calculate dersired servo output for the roll 
 	// ---------------------------------------------
 	servo_out[CH_ROLL]	= pidServoRoll.get_pid((nav_roll - dcm.roll_sensor), deltaMiliSeconds, speed_scaler);
-	servo_out[CH_PITCH] = pidServoPitch.get_pid((nav_pitch + fabs(dcm.roll_sensor * get(PARAM_KFF_PTCHCOMP)) - (dcm.pitch_sensor - get(PARAM_TRIM_PITCH))), deltaMiliSeconds, speed_scaler);
+	servo_out[CH_PITCH] = pidServoPitch.get_pid((nav_pitch + fabsf(dcm.roll_sensor * get(PARAM_KFF_PTCHCOMP)) - (dcm.pitch_sensor - get(PARAM_TRIM_PITCH))), deltaMiliSeconds, speed_scaler);
 	//Serial.print(" servo_out[CH_ROLL] ");
 	//Serial.print(servo_out[CH_ROLL],DEC);
 
@@ -45,12 +45,12 @@ void stabilize()
 	if ((control_mode < FLY_BY_WIRE_A) || (ENABLE_STICK_MIXING == 1 && control_mode > FLY_BY_WIRE_B)) {
 	
 		ch1_inf = (float)radio_in[CH_ROLL] - (float)radio_trim(CH_ROLL);
-		ch1_inf = fabs(ch1_inf);
+		ch1_inf = fabsf(ch1_inf);
 		ch1_inf = min(ch1_inf, 400.0);
 		ch1_inf = ((400.0 - ch1_inf) /400.0);
 		
 		ch2_inf = (float)radio_in[CH_PITCH] - radio_trim(CH_PITCH);
-		ch2_inf = fabs(ch2_inf);									
+		ch2_inf = fabsf(ch2_inf);									
 		ch2_inf = min(ch2_inf, 400.0);							
 		ch2_inf = ((400.0 - ch2_inf) /400.0);
 		
@@ -73,7 +73,7 @@ void stabilize()
 	// -----------------------------------------------
 	if (control_mode <= FLY_BY_WIRE_B || ENABLE_STICK_MIXING == 1) {
 		ch4_inf = (float)radio_in[CH_RUDDER] - (float)radio_trim(CH_RUDDER);
-		ch4_inf = fabs(ch4_inf);									
+		ch4_inf = fabsf(ch4_inf);									
 		ch4_inf = min(ch4_inf, 400.0);							
 		ch4_inf = ((400.0 - ch4_inf) /400.0);
 	}
@@ -249,19 +249,19 @@ void set_servos_4(void)
 		float x1,x2,y1,y2,x,y,r,z;
 		
 		y1 = 110600*current_loc.lat/t7;
-		x1 = (PI/180)*6378137*(cos(atan(0.99664719*tan(current_loc.lat/t7*PI/180))))*(current_loc.lng/t7);
+		x1 = (PI/180)*6378137*(cosf(atanf(0.99664719f*tanf(current_loc.lat/t7*PI/180))))*(current_loc.lng/t7);
 
 		y2 = 110600*trackVehicle_loc.lat/t7;
-		x2 = (PI/180)*6378137*(cos(atan(0.99664719*tan(current_loc.lat/t7*PI/180))))*(trackVehicle_loc.lng/t7);
+		x2 = (PI/180)*6378137*(cosf(atanf(0.99664719f*tanf(current_loc.lat/t7*PI/180))))*(trackVehicle_loc.lng/t7);
 
 		x = abs(x2 - x1);
 		y = abs(y2 - y1);
 
-		r = sqrt(x*x+y*y);
-		z = trackVehicle_loc.alt/100.0 - current_loc.alt;
+		r = sqrtf(x*x+y*y);
+		z = trackVehicle_loc.alt/100.0f - current_loc.alt;
 
-		phi   = (atan(z/r)*180/PI);
-		theta = (atan(x/y)*180/PI);
+		phi   = (atanf(z/r)*180/PI);
+		theta = (atanf(x/y)*180/PI);
 		// Check to see which quadrant of the angle
 		
 		if (trackVehicle_loc.lat >= current_loc.lat && trackVehicle_loc.lng >= current_loc.lng)
@@ -294,8 +294,8 @@ void set_servos_4(void)
 		Serial.print("theta: "); Serial.println(theta);
 		
 		// Outputing to the servos
-		servo_out[CH_ROLL] = 10000*phi/90.0;
-		servo_out[CH_PITCH] = 10000*theta/360.0;
+		servo_out[CH_ROLL] = 10000*phi/90.0f;
+		servo_out[CH_PITCH] = 10000*theta/360.0f;
 		servo_out[CH_RUDDER] = 0;
 		servo_out[CH_THROTTLE] = 0;
 

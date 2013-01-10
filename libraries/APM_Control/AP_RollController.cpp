@@ -34,13 +34,13 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	_last_t = tnow;
 	
 	if(_ahrs == NULL) return 0; // can't control without a reference
-	float delta_time    = (float)dt / 1000.0;
+	float delta_time    = (float)dt / 1000.0f;
 	
 	int32_t angle_err = angle - _ahrs->roll_sensor;
 	
 	float rate = _ahrs->get_roll_rate_earth();
 	
-	float RC = 1/(2*M_PI*_fCut);
+	float RC = 1/(2*PI*_fCut);
 	rate = _last_rate +
 	(delta_time / (RC + delta_time)) * (rate - _last_rate);
 	_last_rate = rate;
@@ -60,7 +60,7 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	
 	//rate integrator
         if (!stabilize) {
-		if ((fabs(_ki_rate) > 0) && (dt > 0))
+		if ((fabsf(_ki_rate) > 0) && (dt > 0))
 		{
 			_integrator += (rate_error * _ki_rate) * scaler * delta_time;
 			if (_integrator < -4500-out) _integrator = -4500-out;

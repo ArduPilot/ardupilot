@@ -708,7 +708,7 @@ static void update_throttle_cruise(int16_t throttle)
     }
     // calc average throttle if we are in a level hover
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_avg = throttle_avg * .99 + (float)throttle * .01;
+        throttle_avg = throttle_avg * 0.99f + (float)throttle * 0.01f;
         g.throttle_cruise = throttle_avg;
     }
 }
@@ -802,7 +802,7 @@ get_throttle_accel(int16_t z_target_accel)
         z_accel_error = 0;
     } else {
         // calculate accel error and Filter with fc = 2 Hz
-        z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
+        z_accel_error = z_accel_error + 0.11164f * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
     }
     last_call_ms = now;
 
@@ -937,7 +937,7 @@ get_throttle_rate(int16_t z_target_speed)
         z_rate_error    = 0;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
-        z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
+        z_rate_error    = z_rate_error + 0.20085f * ((z_target_speed - climb_rate) - z_rate_error);
     }
     last_call_ms = now;
 
@@ -1039,7 +1039,7 @@ get_throttle_althold_with_slew(int16_t target_alt, int16_t min_climb_rate, int16
 static void
 get_throttle_rate_stabilized(int16_t target_rate)
 {
-    controller_desired_alt += target_rate * 0.02;
+    controller_desired_alt += target_rate * 0.02f;
 
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
@@ -1098,7 +1098,7 @@ get_throttle_surface_tracking(int16_t target_rate)
     }
     last_call_ms = now;
 
-    target_sonar_alt += target_rate * 0.02;
+    target_sonar_alt += target_rate * 0.02f;
 
     distance_error = (target_sonar_alt-sonar_alt);
     sonar_induced_slew_rate = constrain(fabs(THR_SURFACE_TRACKING_P * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);

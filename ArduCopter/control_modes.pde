@@ -176,8 +176,8 @@ static void read_trim_switch()
 static void save_trim()
 {
     // save roll and pitch trim
-    float roll_trim = ToRad((float)g.rc_1.control_in/100.0);
-    float pitch_trim = ToRad((float)g.rc_2.control_in/100.0);
+    float roll_trim = ToRad((float)g.rc_1.control_in/100.0f);
+    float pitch_trim = ToRad((float)g.rc_2.control_in/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
 }
 
@@ -192,10 +192,10 @@ static void auto_trim()
         led_mode = SAVE_TRIM_LEDS;
 
         // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)-g.rc_1.control_in / 4000.0);
+        float roll_trim_adjustment = ToRad((float)-g.rc_1.control_in / 4000.0f);
 
         // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)g.rc_2.control_in / 4000.0);
+        float pitch_trim_adjustment = ToRad((float)g.rc_2.control_in / 4000.0f);
 
         // make sure accelerometer values impact attitude quickly
         ahrs.set_fast_gains(true);

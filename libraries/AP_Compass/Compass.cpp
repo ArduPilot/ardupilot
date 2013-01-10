@@ -144,26 +144,26 @@ Compass::calculate_heading(float roll, float pitch)
     float sin_pitch;
     float heading;
 
-    cos_roll = cos(roll);
-    sin_roll = sin(roll);
-    cos_pitch = cos(pitch);
-    sin_pitch = sin(pitch);
+    cos_roll = cosf(roll);
+    sin_roll = sinf(roll);
+    cos_pitch = cosf(pitch);
+    sin_pitch = sinf(pitch);
 
     // Tilt compensated magnetic field X component:
     headX = mag_x*cos_pitch + mag_y*sin_roll*sin_pitch + mag_z*cos_roll*sin_pitch;
     // Tilt compensated magnetic field Y component:
     headY = mag_y*cos_roll - mag_z*sin_roll;
     // magnetic heading
-    heading = atan2(-headY,headX);
+    heading = atan2f(-headY,headX);
 
     // Declination correction (if supplied)
-    if( fabs(_declination) > 0.0 )
+    if( fabsf(_declination) > 0.0f )
     {
         heading = heading + _declination;
-        if (heading > M_PI)    // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0 * M_PI);
-        else if (heading < -M_PI)
-            heading += (2.0 * M_PI);
+        if (heading > PI)    // Angle normalization (-180 deg, 180 deg)
+            heading -= (2.0f * PI);
+        else if (heading < -PI)
+            heading += (2.0f * PI);
     }
 
     return heading;
@@ -178,11 +178,11 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
     float cos_pitch = safe_sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
     float heading;
 
-    // sin(pitch) = - dcm_matrix(3,1)
-    // cos(pitch)*sin(roll) = - dcm_matrix(3,2)
-    // cos(pitch)*cos(roll) = - dcm_matrix(3,3)
+    // sinf(pitch) = - dcm_matrix(3,1)
+    // cosf(pitch)*sinf(roll) = - dcm_matrix(3,2)
+    // cosf(pitch)*cosf(roll) = - dcm_matrix(3,3)
 
-    if (cos_pitch == 0.0) {
+    if (cos_pitch == 0.0f) {
         // we are pointing straight up or down so don't update our
         // heading using the compass. Wait for the next iteration when
         // we hopefully will have valid values again.
@@ -195,16 +195,16 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
     headY = mag_y*dcm_matrix.c.z/cos_pitch - mag_z*dcm_matrix.c.y/cos_pitch;
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    heading = constrain(atan2(-headY,headX), -3.15, 3.15);
+    heading = constrain(atan2f(-headY,headX), -3.15f, 3.15f);
 
     // Declination correction (if supplied)
-    if( fabs(_declination) > 0.0 )
+    if( fabsf(_declination) > 0.0f )
     {
         heading = heading + _declination;
-        if (heading > M_PI)    // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0 * M_PI);
-        else if (heading < -M_PI)
-            heading += (2.0 * M_PI);
+        if (heading > PI)    // Angle normalization (-180 deg, 180 deg)
+            heading -= (2.0f * PI);
+        else if (heading < -PI)
+            heading += (2.0f * PI);
     }
 
     return heading;
@@ -254,7 +254,7 @@ Compass::null_offsets(void)
         for (uint8_t i=0; i<_mag_history_size; i++) {
             // fill the history buffer with the current mag vector,
             // with the offset removed
-            _mag_history[i] = Vector3i((mag_x+0.5) - ofs.x, (mag_y+0.5) - ofs.y, (mag_z+0.5) - ofs.z);
+            _mag_history[i] = Vector3i((mag_x+0.5f) - ofs.x, (mag_y+0.5f) - ofs.y, (mag_z+0.5f) - ofs.z);
         }
         _mag_history_index = 0;
         return;
@@ -289,7 +289,7 @@ Compass::null_offsets(void)
     }
 
     // put the vector in the history
-    _mag_history[_mag_history_index] = Vector3i((mag_x+0.5) - ofs.x, (mag_y+0.5) - ofs.y, (mag_z+0.5) - ofs.z);
+    _mag_history[_mag_history_index] = Vector3i((mag_x+0.5f) - ofs.x, (mag_y+0.5f) - ofs.y, (mag_z+0.5f) - ofs.z);
     _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
 
     // equation 6 of Bills paper

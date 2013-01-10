@@ -479,7 +479,7 @@ static void NOINLINE send_wind(mavlink_channel_t chan)
     Vector3f wind = ahrs.wind_estimate();
     mavlink_msg_wind_send(
         chan,
-        degrees(atan2(-wind.y, -wind.x)), // use negative, to give
+        degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
                                           // direction wind is coming from
         wind.length(),
         wind.z);
@@ -1467,9 +1467,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
         {
-            tell_command.lat = 1.0e7*packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7*packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z*1.0e2;                                     // in as m converted to cm
+            tell_command.lat = 1.0e7f*packet.x;                                     // in as DD converted to * t7
+            tell_command.lng = 1.0e7f*packet.y;                                     // in as DD converted to * t7
+            tell_command.alt = packet.z*1.0e2f;                                     // in as m converted to cm
             tell_command.options = 0;                                     // absolute altitude
             break;
         }
@@ -1477,10 +1477,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL_NED
         case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7*ToDeg(packet.x/
-                                           (radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lat;
-            tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lng;
-            tell_command.alt = -packet.z*1.0e2;
+            tell_command.lat = 1.0e7f*ToDeg(packet.x/
+                                           (radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
+            tell_command.alt = -packet.z*1.0e2f;
             tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
             break;
         }
@@ -1489,10 +1489,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL
         case MAV_FRAME_LOCAL:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7*ToDeg(packet.x/
-                                           (radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lat;
-            tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lng;
-            tell_command.alt = packet.z*1.0e2;
+            tell_command.lat = 1.0e7f*ToDeg(packet.x/
+                                           (radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
+            tell_command.alt = packet.z*1.0e2f;
             tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
             break;
         }
@@ -1500,9 +1500,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:                         // absolute lat/lng, relative altitude
         {
-            tell_command.lat = 1.0e7 * packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7 * packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z * 1.0e2;
+            tell_command.lat = 1.0e7f * packet.x;                                     // in as DD converted to * t7
+            tell_command.lng = 1.0e7f * packet.y;                                     // in as DD converted to * t7
+            tell_command.alt = packet.z * 1.0e2f;
             tell_command.options = MASK_OPTIONS_RELATIVE_ALT;                                     // store altitude relative!! Always!!
             break;
         }
@@ -1800,7 +1800,7 @@ mission_failed:
         mavlink_msg_hil_state_decode(msg, &packet);
 
         float vel = pythagorous2(packet.vx, packet.vy);
-        float cog = wrap_360_cd(ToDeg(atan2(packet.vy, packet.vx)) * 100);
+        float cog = wrap_360_cd(ToDeg(atan2f(packet.vy, packet.vx)) * 100);
 
         if (g_gps != NULL) {
             // set gps hil sensor

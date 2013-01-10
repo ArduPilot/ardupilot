@@ -379,15 +379,15 @@ void AP_Baro_MS5611::_calculate()
     // multiple samples, giving us more precision
     dT = D2-(((uint32_t)C5)<<8);
     TEMP = (dT * C6)/8388608;
-    OFF = C2 * 65536.0 + (C4 * dT) / 128;
-    SENS = C1 * 32768.0 + (C3 * dT) / 256;
+    OFF = C2 * 65536.0f + (C4 * dT) / 128;
+    SENS = C1 * 32768.0f + (C3 * dT) / 256;
 
     if (TEMP < 0) {
         // second order temperature compensation when under 20 degrees C
         float T2 = (dT*dT) / 0x80000000;
         float Aux = TEMP*TEMP;
-        float OFF2 = 2.5*Aux;
-        float SENS2 = 1.25*Aux;
+        float OFF2 = 2.5f*Aux;
+        float SENS2 = 1.25f*Aux;
         TEMP = TEMP - T2;
         OFF = OFF - OFF2;
         SENS = SENS - SENS2;

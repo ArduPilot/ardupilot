@@ -289,7 +289,7 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
         // TO-DO: replace with gravity #define form location.cpp
         accel_offset.z += GRAVITY;
 
-        total_change = fabs(prev.x - accel_offset.x) + fabs(prev.y - accel_offset.y) + fabs(prev.z - accel_offset.z);
+        total_change = fabsf(prev.x - accel_offset.x) + fabsf(prev.y - accel_offset.y) + fabsf(prev.z - accel_offset.z);
         max_offset = (accel_offset.x > accel_offset.y) ? accel_offset.x : accel_offset.y;
         max_offset = (max_offset > accel_offset.z) ? max_offset : accel_offset.z;
 
@@ -416,7 +416,7 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
 
     // reset
     beta[0] = beta[1] = beta[2] = 0;
-    beta[3] = beta[4] = beta[5] = 1.0/GRAVITY;
+    beta[3] = beta[4] = beta[5] = 1.0f/GRAVITY;
     
     while( num_iterations < 20 && change > eps ) {
         num_iterations++;
@@ -454,11 +454,11 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
     accel_offsets.z = beta[2] * accel_scale.z;
 
     // sanity check scale
-    if( accel_scale.is_nan() || fabs(accel_scale.x-1.0) > 0.1 || fabs(accel_scale.y-1.0) > 0.1 || fabs(accel_scale.z-1.0) > 0.1 ) {
+    if( accel_scale.is_nan() || fabsf(accel_scale.x-1.0f) > 0.1f || fabsf(accel_scale.y-1.0f) > 0.1f || fabsf(accel_scale.z-1.0f) > 0.1f ) {
         success = false;
     }
     // sanity check offsets (2.0 is roughly 2/10th of a G, 5.0 is roughly half a G)
-    if( accel_offsets.is_nan() || fabs(accel_offsets.x) > 2.0 || fabs(accel_offsets.y) > 2.0 || fabs(accel_offsets.z) > 3.0 ) {
+    if( accel_offsets.is_nan() || fabsf(accel_offsets.x) > 2.0f || fabsf(accel_offsets.y) > 2.0f || fabsf(accel_offsets.z) > 3.0f ) {
         success = false;
     }
 
@@ -478,8 +478,8 @@ void AP_InertialSensor::_calibrate_update_matrices(float dS[6], float JS[6][6],
         b = beta[3+j];
         dx = (float)data[j] - beta[j];
         residual -= b*b*dx*dx;
-        jacobian[j] = 2.0*b*b*dx;
-        jacobian[3+j] = -2.0*b*dx*dx;
+        jacobian[j] = 2.0f*b*b*dx;
+        jacobian[3+j] = -2.0f*b*dx*dx;
     }
     
     for( j=0; j<6; j++ ) {
@@ -496,9 +496,9 @@ void AP_InertialSensor::_calibrate_reset_matrices(float dS[6], float JS[6][6])
 {
     int16_t j,k;
     for( j=0; j<6; j++ ) {
-        dS[j] = 0.0;
+        dS[j] = 0.0f;
         for( k=0; k<6; k++ ) {
-            JS[j][k] = 0.0;
+            JS[j][k] = 0.0f;
         }
     }
 }
@@ -515,7 +515,7 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
         //eliminate all nonzero entries below JS[i][i]
         for( j=i+1; j<6; j++ ) {
             mu = JS[i][j]/JS[i][i];
-            if( mu != 0.0 ) {
+            if( mu != 0.0f ) {
                 dS[j] -= mu*dS[i];
                 for( k=j; k<6; k++ ) {
                     JS[k][j] -= mu*JS[k][i];
@@ -527,12 +527,12 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
     //back-substitute
     for( i=5; i>=0; i-- ) {
         dS[i] /= JS[i][i];
-        JS[i][i] = 1.0;
+        JS[i][i] = 1.0f;
         
         for( j=0; j<i; j++ ) {
             mu = JS[i][j];
             dS[j] -= mu*dS[i];
-            JS[i][j] = 0.0;
+            JS[i][j] = 0.0f;
         }
     }
 

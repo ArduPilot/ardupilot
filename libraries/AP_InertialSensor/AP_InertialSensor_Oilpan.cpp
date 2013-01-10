@@ -24,17 +24,17 @@ const float AP_InertialSensor_Oilpan::_adc_constraint = 900;
 // Tested value : 418
 
 // Oilpan accelerometer scaling & offsets
-#define OILPAN_ACCEL_SCALE_1G   (GRAVITY * 2.0 / (2465.0 - 1617.0))
-#define OILPAN_RAW_ACCEL_OFFSET ((2465.0 + 1617.0) * 0.5)
-#define OILPAN_RAW_GYRO_OFFSET  1658.0
+#define OILPAN_ACCEL_SCALE_1G   (GRAVITY * 2.0f / (2465.0f - 1617.0f))
+#define OILPAN_RAW_ACCEL_OFFSET ((2465.0f + 1617.0f) * 0.5f)
+#define OILPAN_RAW_GYRO_OFFSET  1658.0f
 
 #define ToRad(x) radians(x)      // *pi/180
 // IDG500 Sensitivity (from datasheet) => 2.0mV/degree/s,
 // 0.8mV/ADC step => 0.8/3.33 = 0.4
 // Tested values : 0.4026, ?, 0.4192
-const float AP_InertialSensor_Oilpan::_gyro_gain_x = ToRad(0.4);
-const float AP_InertialSensor_Oilpan::_gyro_gain_y = ToRad(0.41);
-const float AP_InertialSensor_Oilpan::_gyro_gain_z = ToRad(0.41);
+const float AP_InertialSensor_Oilpan::_gyro_gain_x = ToRad(0.4f);
+const float AP_InertialSensor_Oilpan::_gyro_gain_y = ToRad(0.41f);
+const float AP_InertialSensor_Oilpan::_gyro_gain_z = ToRad(0.41f);
 
 /* ------ Public functions -------------------------------------------*/
 

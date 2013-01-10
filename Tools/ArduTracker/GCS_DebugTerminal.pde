@@ -781,8 +781,8 @@ GCS_DEBUGTERMINAL::run_debugt_command(char *buf)
 			port->printf_P(PSTR("nav_pitch (%.2f) - pitch_sensor (%.2f) + pitch_comp (%.2f) = %.2f\n"),
 						   (float)nav_pitch / 100,
 						   (float)dcm.pitch_sensor / 100,
-						   fabs(dcm.roll_sensor * get(PARAM_KFF_PTCHCOMP)) / 100,
-						   (float)(nav_pitch-dcm.pitch_sensor + fabs(dcm.roll_sensor * get(PARAM_KFF_PTCHCOMP))) / 100);
+						   fabsf(dcm.roll_sensor * get(PARAM_KFF_PTCHCOMP)) / 100,
+						   (float)(nav_pitch-dcm.pitch_sensor + fabsf(dcm.roll_sensor * get(PARAM_KFF_PTCHCOMP))) / 100);
 			port->printf_P(PSTR("servo_out[CH_PITCH] (%.2f) = PID[nav_pitch + pitch_comp - pitch_sensor]"),
 						   (float)servo_out[CH_PITCH] / 100);
 
@@ -1275,12 +1275,12 @@ void
 GCS_DEBUGTERMINAL::print_rlocation(Location *wp) 
 {
 	//float x, y;
-	//y = (float)(wp->lat - current_loc.lat) * 0.0111194927;
-	//x = (float)(wp->lng - current_loc.lng) * cos(radians(current_loc.lat)) * 0.0111194927;
+	//y = (float)(wp->lat - current_loc.lat) * 0.0111194927f;
+	//x = (float)(wp->lng - current_loc.lng) * cosf(radians(current_loc.lat)) * 0.0111194927f;
 	BetterStream *port = _port;
 	int x, y;
-	y = (wp->lat - current_loc.lat) * 0.0111194927;
-	x = (wp->lng - current_loc.lng) * cos(radians(current_loc.lat)) * 0.0111194927;
+	y = (wp->lat - current_loc.lat) * 0.0111194927f;
+	x = (wp->lng - current_loc.lng) * cosf(radians(current_loc.lat)) * 0.0111194927f;
 	port->printf_P(PSTR("dP = <%d%c, %d%c, %.1f> meters\n"),
 				   abs(y), (y >= 0 ? 'N' : 'S'),
 				   abs(x), (x >= 0 ? 'E' : 'W'),

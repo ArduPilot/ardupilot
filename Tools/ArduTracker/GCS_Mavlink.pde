@@ -490,18 +490,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         {
             case MAV_FRAME_GLOBAL:
             {
-                tell_command.lng = 1.0e7*packet.x;
-                tell_command.lat = 1.0e7*packet.y;
-                tell_command.alt = packet.z*1.0e2;
+                tell_command.lng = 1.0e7f*packet.x;
+                tell_command.lat = 1.0e7f*packet.y;
+                tell_command.alt = packet.z*1.0e2f;
                 break;
             }
 
             case MAV_FRAME_LOCAL: // local (relative to home position)
             {
-                tell_command.lng = 1.0e7*ToDeg(packet.x/
-                        (radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lng;
-                tell_command.lat = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lat;
-                tell_command.alt = -packet.z*1.0e2 + home.alt;
+                tell_command.lng = 1.0e7f*ToDeg(packet.x/
+                        (radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lng;
+                tell_command.lat = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lat;
+                tell_command.alt = -packet.z*1.0e2f + home.alt;
                 break;
             }
         }

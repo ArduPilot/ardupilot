@@ -97,8 +97,8 @@ bool AP_Motors::setup_throttle_curve()
     int16_t min_pwm = _rc_throttle->radio_min;
     int16_t max_pwm = _rc_throttle->radio_max;
 	int16_t mid_throttle_pwm = (max_pwm + min_pwm) / 2;
-    int16_t mid_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_mid/100.0);
-    int16_t max_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_max/100.0);
+    int16_t mid_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_mid/100.0f);
+    int16_t max_thrust_pwm = min_pwm + (float)(max_pwm - min_pwm) * ((float)_throttle_curve_max/100.0f);
     bool retval = true;
 
     // some basic checks that the curve is valid

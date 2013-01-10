@@ -82,7 +82,7 @@ static void show_data()
         for (i=0; i<6; i++) {
             if (result[i] < min[i]) min[i] = result[i];
             if (result[i] > max[i]) max[i] = result[i];
-            if (fabs(result[i]) > 0x8000) {
+            if (fabsf(result[i]) > 0x8000) {
                 hal.console->printf("result[%u]=%f\n", (unsigned)i, result[i]);
             }
         }
