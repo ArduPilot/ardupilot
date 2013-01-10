@@ -8,7 +8,7 @@
  *   of the License, or (at your option) any later version.
  */
 
-#include <math.h>
+#include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_Baro.h>
 #include <AP_HAL.h>

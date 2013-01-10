@@ -7,7 +7,7 @@
 //	License as published by the Free Software Foundation; either
 //	version 2.1 of the License, or (at your option) any later version.
 
-#include <math.h>
+#include <AP_Math.h>
 #include <AP_HAL.h>
 
 #include "AP_RollController.h"

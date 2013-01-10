@@ -3,7 +3,7 @@
 /// @file	AC_PID.cpp
 /// @brief	Generic PID algorithm
 
-#include <math.h>
+#include <AP_Math.h>
 #include "AC_PID.h"
 
 // Examples for _filter:

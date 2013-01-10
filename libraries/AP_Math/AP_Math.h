@@ -8,6 +8,9 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <math.h>
+#ifdef __AVR__
+# include <AP_Math_AVR_Compat.h>
+#endif
 #include <stdint.h>
 #include "rotations.h"
 #include "vector2.h"

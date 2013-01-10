@@ -23,9 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
 
-
+#include <AP_Math.h>
 #include "../AP_HAL_Namespace.h"
 #include "Print.h"
 using namespace AP_HAL;
