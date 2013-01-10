@@ -15,6 +15,10 @@
 
 #define MAVLINK_SEND_UART_BYTES(chan, buf, len) comm_send_buffer(chan, buf, len)
 
+// define our own MAVLINK_MESSAGE_CRC() macro to allow it to be put
+// into progmem
+#define MAVLINK_MESSAGE_CRC(msgid) mavlink_get_message_crc(msgid)
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #include <util/crc16.h>
 #define HAVE_CRC_ACCUMULATE
@@ -145,5 +149,8 @@ uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
 
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t);
+
+// return CRC byte for a mavlink message ID
+uint8_t mavlink_get_message_crc(uint8_t msgid);
 
 #endif // GCS_MAVLink_h
