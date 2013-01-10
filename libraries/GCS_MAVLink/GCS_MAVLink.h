@@ -12,6 +12,15 @@
 // to select MAVLink 1.0 in the arduino GUI build
 #define MAVLINK_SEPARATE_HELPERS
 
+// define our own MAVLINK_MESSAGE_CRC() macro to allow it to be put
+// into progmem
+#define MAVLINK_MESSAGE_CRC(msgid) mavlink_get_message_crc(msgid)
+
+#if defined( __AVR_ATmega1280__ ) || defined( __AVR_ATmega2560__ )
+#include <util/crc16.h>
+#define HAVE_CRC_ACCUMULATE
+#endif
+
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
 // this allows us to make mavlink_message_t much smaller. It means we
@@ -123,5 +132,8 @@ uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
 
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t);
+
+// return CRC byte for a mavlink message ID
+uint8_t mavlink_get_message_crc(uint8_t msgid);
 
 #endif // GCS_MAVLink_h
