@@ -268,19 +268,29 @@ run_rate_controllers()
 		g.rc_1.servo_out = get_heli_rate_roll(roll_rate_target_bf);
 		g.rc_2.servo_out = get_heli_rate_pitch(pitch_rate_target_bf);
         g.rc_4.servo_out = get_heli_rate_yaw(yaw_rate_target_bf);
+        // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
+        if( g.throttle_accel_enabled && throttle_accel_controller_active ) {
+        set_throttle_out(get_heli_throttle_accel(throttle_accel_target_ef), false);
+    }
+        
     }
 #else
     // call rate controllers
     g.rc_1.servo_out = get_rate_roll(roll_rate_target_bf);
     g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf);
     g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
-#endif
-
     // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
     if( g.throttle_accel_enabled && throttle_accel_controller_active ) {
         set_throttle_out(get_throttle_accel(throttle_accel_target_ef), true);
     }
+#endif
+
+    
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// The following is a bulk pre-compiler section for Trad Heli
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 #if FRAME_CONFIG == HELI_FRAME
 // init_rate_controllers - set-up filters for rate controller inputs
@@ -290,7 +300,7 @@ void init_rate_controllers()
    // 1st parameter is time_step, 2nd parameter is time_constant
    rate_roll_filter.set_cutoff_frequency(0.01, 2.0);
    rate_pitch_filter.set_cutoff_frequency(0.01, 2.0);
-   // rate_yaw_filter.set_cutoff_frequency(0.01, 2.0);
+   rate_thr_filter.set_cutoff_frequency(0.01, 2.0);
    // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
 }
 
@@ -407,9 +417,6 @@ get_heli_rate_yaw(int32_t target_rate)
 	// get current rate
     current_rate    = (omega.z * DEGX100);
 	
-	// filter input
-	// current_rate = rate_yaw_filter.apply(current_rate);
-	
     // rate control
     rate_error              = target_rate - current_rate;
 
@@ -440,7 +447,147 @@ get_heli_rate_yaw(int32_t target_rate)
 	// output control
 	return output;
 }
+
+// get_angle_boost - returns a throttle including compensation for roll/pitch angle
+// throttle value should be 0 ~ 1000
+// for traditional helicopters
+static int16_t get_angle_boost(int16_t throttle)
+{
+    float angle_boost_factor = cos_pitch_x * cos_roll_x;
+    angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
+    int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
+
+    // to allow logging of angle boost
+    angle_boost = throttle_above_mid*angle_boost_factor;
+
+    return throttle + angle_boost;
+}
+
+// get_heli_throttle_rate - calculates desired angle of attack of the blades to achieve altitude rate
+// sets accel based throttle controller target
+static void
+get_heli_throttle_rate(int16_t z_target_speed)
+{
+    static uint32_t last_call_ms = 0;
+    static float z_rate_error = 0;  // The velocity error in cm.
+    int32_t p,i,d,ff;                  // used to capture pid values for logging
+    uint32_t now = millis();
+
+    // reset target altitude if this controller has just been engaged
+    if( now - last_call_ms > 100 ) {
+        // Reset Filter
+        z_rate_error    = 0;
+    } else {
+        // calculate rate error and filter with cut off frequency of 2 Hz
+        z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
+    }
+    last_call_ms = now;
+
+    // separately calculate p, i, d values for logging
+    p = g.pid_throttle.get_p(z_rate_error);
+
+    // freeze I term if we've breached throttle limits
+    if(motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT)) {
+        i = g.pid_throttle.get_integrator();
+    }else{
+        i = g.pid_throttle.get_i(z_rate_error, .02);
+    }
+    d = g.pid_throttle.get_d(z_rate_error, .02);
+    
+    // filter input for rate Feedforward
+	z_target_speed = rate_thr_filter.apply(z_target_speed);
+    ff = g.heli_alt_rate_ff*(z_target_speed);
+
+    // consolidate target acceleration
+    throttle_rate_pd_output =  p+d;
+    
+    // consolidate angle of attack
+    throttle_rate_soft_output = i+ff;
+
+#if LOGGING_ENABLED == ENABLED
+    // log output if PID loggins is on and we are tuning the yaw
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_KP || g.radio_tuning == CH6_THROTTLE_KI || g.radio_tuning == CH6_THROTTLE_KD) ) {
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
+            pid_log_counter = 0;
+            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, throttle_rate_pd_output+throttle_rate_soft_output, tuning_value);
+        }
+    }
+#endif
+
+    // send output to accelerometer based throttle controller if enabled otherwise send directly to motors
+    if( g.throttle_accel_enabled ) {
+        // set target for accel based throttle controller
+        set_throttle_accel_target(throttle_rate_pd_output);
+    }else{
+        set_throttle_out(g.throttle_cruise+throttle_rate_pd_output+throttle_rate_soft_output, false);
+    }
+
+    // update throttle cruise
+    // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration
+    if( z_target_speed == 0 ) {
+        update_throttle_cruise(g.rc_3.servo_out);
+    }
+}
+
+// get_throttle_accel - accelerometer based throttle controller
+// returns an actual throttle output (0 ~ 1000) to be sent to the motors
+static int16_t
+get_heli_throttle_accel(int16_t z_target_accel)
+{
+    static float z_accel_error = 0;     // The acceleration error in cm.
+    static uint32_t last_call_ms = 0;   // the last time this controller was called
+    int32_t p,i,d;                      // used to capture pid values for logging
+    int16_t output;
+    float z_accel_meas;
+    uint32_t now = millis();
+
+    // Calculate Earth Frame Z acceleration
+    z_accel_meas = -(ahrs.get_accel_ef().z + gravity) * 100;
+
+    // reset target altitude if this controller has just been engaged
+    if( now - last_call_ms > 100 ) {
+        // Reset Filter
+        z_accel_error = 0;
+    } else {
+        // calculate accel error and Filter with fc = 2 Hz
+        z_accel_error = z_accel_error + 0.11164 * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
+    }
+    last_call_ms = now;
+
+    // separately calculate p, i, d values for logging
+    p = g.pid_throttle_accel.get_p(z_accel_error);
+    // freeze I term if we've breached throttle limits
+    if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
+        i = g.pid_throttle_accel.get_integrator();
+    }else{
+        i = g.pid_throttle_accel.get_i(z_accel_error, .01);
+    }
+    d = g.pid_throttle_accel.get_d(z_accel_error, .01);
+
+    //
+    // limit the rate
+    output =  constrain(p+i+d+g.throttle_cruise+throttle_rate_soft_output, g.throttle_min, g.throttle_max);
+
+#if LOGGING_ENABLED == ENABLED
+    // log output if PID loggins is on and we are tuning the yaw
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THR_ACCEL_KP || g.radio_tuning == CH6_THR_ACCEL_KI || g.radio_tuning == CH6_THR_ACCEL_KD) ) {
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
+            pid_log_counter = 0;
+            Log_Write_PID(CH6_THR_ACCEL_KP, z_accel_error, p, i, d, output, tuning_value);
+        }
+    }
+#endif
+
+    return output;
+}
+
 #endif // HELI_FRAME
+//////////////////////////////////////////////////////////////////////////////////////
+// End bulk pre-compiler section for Trad_Heli
+//////////////////////////////////////////////////////////////////////////////////////
+
 
 #if FRAME_CONFIG != HELI_FRAME
 static int16_t
@@ -713,22 +860,7 @@ static void update_throttle_cruise(int16_t throttle)
     }
 }
 
-#if FRAME_CONFIG == HELI_FRAME
-// get_angle_boost - returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1000
-// for traditional helicopters
-static int16_t get_angle_boost(int16_t throttle)
-{
-    float angle_boost_factor = cos_pitch_x * cos_roll_x;
-    angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
-    int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
-
-    // to allow logging of angle boost
-    angle_boost = throttle_above_mid*angle_boost_factor;
-
-    return throttle + angle_boost;
-}
-#else   // all multicopters
+#if FRAME_CONFIG != HELI_FRAME  // all multicopters
 // get_angle_boost - returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1000
 static int16_t get_angle_boost(int16_t throttle)
@@ -745,40 +877,6 @@ static int16_t get_angle_boost(int16_t throttle)
     angle_boost = throttle_out - throttle;
 
     return throttle_out;
-}
-#endif // FRAME_CONFIG == HELI_FRAME
-
- // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
- // provide 0 to cut motors
-void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
-{
-    if( apply_angle_boost ) {
-        g.rc_3.servo_out = get_angle_boost(throttle_out);
-    }else{
-        g.rc_3.servo_out = throttle_out;
-        // clear angle_boost for logging purposes
-        angle_boost = 0;
-    }
-}
-
-// set_throttle_accel_target - to be called by upper throttle controllers to set desired vertical acceleration in earth frame
-void set_throttle_accel_target( int16_t desired_acceleration )
-{
-    if( g.throttle_accel_enabled ) {
-        throttle_accel_target_ef = desired_acceleration;
-        throttle_accel_controller_active = true;
-    }else{
-        // To-Do log dataflash or tlog error
-        cliSerial->print_P(PSTR("Err: target sent to inactive acc thr controller!\n"));
-    }
-}
-
-// disable_throttle_accel - disables the accel based throttle controller
-// it will be re-enasbled on the next set_throttle_accel_target
-// required when we wish to set motors to zero when pilot inputs zero throttle
-void throttle_accel_deactivate()
-{
-    throttle_accel_controller_active = false;
 }
 
 // get_throttle_accel - accelerometer based throttle controller
@@ -833,6 +931,104 @@ get_throttle_accel(int16_t z_target_accel)
 
     return output;
 }
+
+// get_throttle_rate - calculates desired accel required to achieve desired z_target_speed
+// sets accel based throttle controller target
+static void
+get_throttle_rate(int16_t z_target_speed)
+{
+    static uint32_t last_call_ms = 0;
+    static float z_rate_error = 0;   // The velocity error in cm.
+    int32_t p,i,d;      // used to capture pid values for logging
+    int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
+    uint32_t now = millis();
+
+    // reset target altitude if this controller has just been engaged
+    if( now - last_call_ms > 100 ) {
+        // Reset Filter
+        z_rate_error    = 0;
+    } else {
+        // calculate rate error and filter with cut off frequency of 2 Hz
+        z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
+    }
+    last_call_ms = now;
+
+    // separately calculate p, i, d values for logging
+    p = g.pid_throttle.get_p(z_rate_error);
+
+    // freeze I term if we've breached throttle limits
+    if(motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT)) {
+        i = g.pid_throttle.get_integrator();
+    }else{
+        i = g.pid_throttle.get_i(z_rate_error, .02);
+    }
+    d = g.pid_throttle.get_d(z_rate_error, .02);
+
+    // consolidate target acceleration
+    output =  p+i+d;
+
+#if LOGGING_ENABLED == ENABLED
+    // log output if PID loggins is on and we are tuning the yaw
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_KP || g.radio_tuning == CH6_THROTTLE_KI || g.radio_tuning == CH6_THROTTLE_KD) ) {
+        pid_log_counter++;
+        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
+            pid_log_counter = 0;
+            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, output, tuning_value);
+        }
+    }
+#endif
+
+    // send output to accelerometer based throttle controller if enabled otherwise send directly to motors
+    if( g.throttle_accel_enabled ) {
+        // set target for accel based throttle controller
+        set_throttle_accel_target(output);
+    }else{
+        set_throttle_out(g.throttle_cruise+output, true);
+    }
+
+    // update throttle cruise
+    // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration
+    if( z_target_speed == 0 ) {
+        update_throttle_cruise(g.rc_3.servo_out);
+    }
+}
+
+#endif // FRAME_CONFIG != HELI_FRAME
+
+ // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
+ // provide 0 to cut motors
+void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
+{
+    if( apply_angle_boost ) {
+        g.rc_3.servo_out = get_angle_boost(throttle_out);
+    }else{
+        g.rc_3.servo_out = throttle_out;
+        // clear angle_boost for logging purposes
+        angle_boost = 0;
+    }
+}
+
+// set_throttle_accel_target - to be called by upper throttle controllers to set desired vertical acceleration in earth frame
+void set_throttle_accel_target( int16_t desired_acceleration )
+{
+    if( g.throttle_accel_enabled ) {
+        throttle_accel_target_ef = desired_acceleration;
+        throttle_accel_controller_active = true;
+    }else{
+        // To-Do log dataflash or tlog error
+        cliSerial->print_P(PSTR("Err: target sent to inactive acc thr controller!\n"));
+    }
+}
+
+// disable_throttle_accel - disables the accel based throttle controller
+// it will be re-enasbled on the next set_throttle_accel_target
+// required when we wish to set motors to zero when pilot inputs zero throttle
+void throttle_accel_deactivate()
+{
+    throttle_accel_controller_active = false;
+}
+
+
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to
 // climb rate in cm/s.  we use radio_in instead of control_in to get the full range
@@ -920,67 +1116,6 @@ static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
     return desired_alt;
 }
 
-// get_throttle_rate - calculates desired accel required to achieve desired z_target_speed
-// sets accel based throttle controller target
-static void
-get_throttle_rate(int16_t z_target_speed)
-{
-    static uint32_t last_call_ms = 0;
-    static float z_rate_error = 0;   // The velocity error in cm.
-    int32_t p,i,d;      // used to capture pid values for logging
-    int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
-    uint32_t now = millis();
-
-    // reset target altitude if this controller has just been engaged
-    if( now - last_call_ms > 100 ) {
-        // Reset Filter
-        z_rate_error    = 0;
-    } else {
-        // calculate rate error and filter with cut off frequency of 2 Hz
-        z_rate_error    = z_rate_error + 0.20085 * ((z_target_speed - climb_rate) - z_rate_error);
-    }
-    last_call_ms = now;
-
-    // separately calculate p, i, d values for logging
-    p = g.pid_throttle.get_p(z_rate_error);
-
-    // freeze I term if we've breached throttle limits
-    if(motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT)) {
-        i = g.pid_throttle.get_integrator();
-    }else{
-        i = g.pid_throttle.get_i(z_rate_error, .02);
-    }
-    d = g.pid_throttle.get_d(z_rate_error, .02);
-
-    // consolidate target acceleration
-    output =  p+i+d;
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_KP || g.radio_tuning == CH6_THROTTLE_KI || g.radio_tuning == CH6_THROTTLE_KD) ) {
-        pid_log_counter++;
-        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
-            pid_log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, output, tuning_value);
-        }
-    }
-#endif
-
-    // send output to accelerometer based throttle controller if enabled otherwise send directly to motors
-    if( g.throttle_accel_enabled ) {
-        // set target for accel based throttle controller
-        set_throttle_accel_target(output);
-    }else{
-        set_throttle_out(g.throttle_cruise+output, true);
-    }
-
-    // update throttle cruise
-    // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration
-    if( z_target_speed == 0 ) {
-        update_throttle_cruise(g.rc_3.servo_out);
-    }
-}
-
 // get_throttle_althold - hold at the desired altitude in cm
 // updates accel based throttle controller targets
 // Note: max_climb_rate is an optional parameter to allow reuse of this function by landing controller
@@ -1011,7 +1146,12 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
     desired_rate = constrain(desired_rate, min_climb_rate, max_climb_rate);
 
     // call rate based throttle controller which will update accel based throttle controller targets
+    
+#if FRAME_CONFIG == HELI_FRAME
+    get_heli_throttle_rate(desired_rate);
+#else
     get_throttle_rate(desired_rate);
+#endif
 
     // update altitude error reported to GCS
     altitude_error = alt_error;

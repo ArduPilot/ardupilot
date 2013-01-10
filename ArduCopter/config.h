@@ -97,7 +97,7 @@
   # define HELI_YAW_FF					0  
   # define RC_FAST_SPEED 				125
   # define STABILIZE_THROTTLE			THROTTLE_MANUAL
-  # define MPU6K_FILTER                 10
+  # define HELI_ALT_RATE_FF             0
 #endif
 
 
@@ -113,9 +113,7 @@
 #ifndef CONFIG_IMU_TYPE
  # define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
 #endif
-#ifndef MPU6K_FILTER
- # define MPU6K_FILTER MPU6K_DEFAULT_FILTER
-#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // ADC Enable - used to eliminate for systems which don't have ADC.

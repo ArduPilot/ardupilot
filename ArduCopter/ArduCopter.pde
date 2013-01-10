@@ -599,6 +599,10 @@ static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration
 static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
+#if FRAME_CONFIG == HELI_FRAME
+static int16_t throttle_rate_pd_output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
+static int16_t throttle_rate_soft_output;   // varies the angle of attack of the blades to achieve rate
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -614,7 +618,7 @@ AP_LeadFilter yLeadFilter;      // Lat  GPS lag filter
 #if FRAME_CONFIG == HELI_FRAME
 LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
 LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
-// LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter
+LowPassFilterFloat rate_thr_filter;     // Rate Yaw filter
 #endif // HELI_FRAME
 
 // Barometer filter
@@ -1927,7 +1931,11 @@ void update_throttle_mode(void)
             throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+#if FRAME_CONFIG == HELI_FRAME
+            get_heli_throttle_rate(pilot_climb_rate);
+#else             
             get_throttle_rate(pilot_climb_rate);
+#endif            
         }
         break;
 

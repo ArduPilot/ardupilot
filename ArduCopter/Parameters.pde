@@ -441,6 +441,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(heli_pitch_ff, "RATE_PIT_FF",            HELI_PITCH_FF),
 	GSCALAR(heli_roll_ff, "RATE_RLL_FF",            HELI_ROLL_FF),
 	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
+    GSCALAR(heli_alt_rate_ff, "THR_RATE_FF",        HELI_ALT_RATE_FF),
 #endif
 
     // RC channel
