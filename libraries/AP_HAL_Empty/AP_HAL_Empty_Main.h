@@ -8,6 +8,7 @@
     int main (void) {\
 	hal.init(0, NULL);			\
         setup();\
+        hal.scheduler->system_initialized(); \
         for(;;) loop();\
         return 0;\
     }\
