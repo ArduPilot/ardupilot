@@ -9,7 +9,6 @@
 
 class AP_HAL_AVR::AVRConsoleDriver : public AP_HAL::ConsoleDriver {
 public:
-    AVRConsoleDriver();
     void init(void* baseuartdriver);
     void backend_open();
     void backend_close();
@@ -35,27 +34,9 @@ public:
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
+
 private:
-    struct Buffer {
-        /* public methods:*/
-        bool allocate(uint16_t size);
-        bool push(uint8_t b);
-        int16_t  pop();
-        int16_t  peek();
-
-        uint16_t bytes_free();
-        uint16_t bytes_used();
-    private:
-        uint16_t _head, _tail; /* Head and tail indicies */
-        uint16_t _mask;       /* Buffer size mask for index wrap */
-        uint8_t *_bytes;      /* Pointer to allocated buffer */
-    };
-
-    Buffer _txbuf;
-    Buffer _rxbuf;
-
     AP_HAL::UARTDriver* _base_uart;
-    bool _user_backend;
 };
 
 #endif // __AP_HAL_AVR_CONSOLE_DRIVER_H__
