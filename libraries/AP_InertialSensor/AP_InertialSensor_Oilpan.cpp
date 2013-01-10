@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #include "AP_InertialSensor_Oilpan.h"
 
 // ADC channel mappings on for the APM Oilpan
@@ -123,3 +125,5 @@ uint16_t AP_InertialSensor_Oilpan::num_samples_available()
 {
     return _adc->num_samples_available(_sensors) / _sample_threshold;
 }
+#endif // CONFIG_HAL_BOARD
+
