@@ -241,7 +241,7 @@ bool AVRUARTDriver::_allocBuffer(Buffer *buffer, uint16_t size)
 	buffer->mask = mask;
 
 	// allocate memory for the buffer - if this fails, we fail.
-	buffer->bytes = (uint8_t *) malloc(buffer->mask + 1);
+	buffer->bytes = (uint8_t *) malloc(buffer->mask + (size_t)1);
 
 	return (buffer->bytes != NULL);
 }
