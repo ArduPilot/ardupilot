@@ -198,10 +198,12 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    hal.rcout->set_freq(_motor_to_channel_map[AP_MOTORS_MOT_1], _speed_hz);
-    hal.rcout->set_freq(_motor_to_channel_map[AP_MOTORS_MOT_2], _speed_hz);
-    hal.rcout->set_freq(_motor_to_channel_map[AP_MOTORS_MOT_3], _speed_hz);
-    hal.rcout->set_freq(_motor_to_channel_map[AP_MOTORS_MOT_4], _speed_hz);
+    uint32_t mask = 
+	    1U << _motor_to_channel_map[AP_MOTORS_MOT_1] |
+	    1U << _motor_to_channel_map[AP_MOTORS_MOT_2] |
+	    1U << _motor_to_channel_map[AP_MOTORS_MOT_3] |
+	    1U << _motor_to_channel_map[AP_MOTORS_MOT_4];
+    hal.rcout->set_freq(mask, _speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors

@@ -34,11 +34,13 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // check each enabled motor
+    uint32_t mask = 0;
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->set_freq( _motor_to_channel_map[i], _speed_hz );
+		mask |= 1U << _motor_to_channel_map[i];
         }
     }
+    hal.rcout->set_freq( mask, _speed_hz );
 }
 
 // set frame orientation (normally + or X)
