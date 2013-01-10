@@ -42,10 +42,21 @@ void EmptyScheduler::suspend_timer_procs()
 void EmptyScheduler::resume_timer_procs()
 {}
 
+bool EmptyScheduler::in_timerprocess() {
+    return false;
+}
+
 void EmptyScheduler::begin_atomic()
 {}
 
 void EmptyScheduler::end_atomic()
+{}
+
+bool EmptyScheduler::system_initializing() {
+    return false;
+}
+
+void EmptyScheduler::system_initialized()
 {}
 
 void EmptyScheduler::panic(const prog_char_t *errormsg) {
