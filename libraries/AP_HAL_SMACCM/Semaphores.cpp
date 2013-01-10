@@ -1,8 +1,9 @@
 
 #include "Semaphores.h"
-#include <task.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+
+#include <task.h>
 
 using namespace SMACCM;
 
