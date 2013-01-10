@@ -44,9 +44,6 @@ void AP_InertialNav::init()
 void AP_InertialNav::save_params()
 {
     Vector3f accel_corr = accel_correction.get();
-    accel_corr.x = constrain(accel_corr.x,-100,100);
-    accel_corr.y = constrain(accel_corr.y,-100,100);
-    accel_corr.z = constrain(accel_corr.z,-100,100);
     accel_correction.set_and_save(accel_corr);
 }
 
@@ -376,6 +373,13 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
     accel_corr.x += accel_ef_z_correction * dcm.c.x;
     accel_corr.y += accel_ef_z_correction * dcm.c.y;
     accel_corr.z += accel_ef_z_correction * dcm.c.z;
+
+    // ensure corrections are reasonable
+    accel_corr.x = constrain(accel_corr.x,-AP_INTERTIALNAV_ACCEL_CORR_MAX,AP_INTERTIALNAV_ACCEL_CORR_MAX);
+    accel_corr.y = constrain(accel_corr.y,-AP_INTERTIALNAV_ACCEL_CORR_MAX,AP_INTERTIALNAV_ACCEL_CORR_MAX);
+    accel_corr.z = constrain(accel_corr.z,-AP_INTERTIALNAV_ACCEL_CORR_MAX,AP_INTERTIALNAV_ACCEL_CORR_MAX);
+
+    // set the parameter to include the corrections
     accel_correction.set(accel_corr);
 
     // correct velocity
