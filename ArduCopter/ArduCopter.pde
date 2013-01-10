@@ -1795,7 +1795,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
-        case THROTTLE_SURFACE_TRACKING:
             controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
             if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
@@ -1958,7 +1957,13 @@ void update_throttle_mode(void)
     case THROTTLE_HOLD:
         // alt hold plus pilot input of climb rate
         pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        get_throttle_rate_stabilized(pilot_climb_rate);
+        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
+            // if sonar is ok, use surface tracking
+            get_throttle_surface_tracking(pilot_climb_rate);
+        }else{
+            // if no sonar fall back stabilize rate controller
+            get_throttle_rate_stabilized(pilot_climb_rate);
+        }
         break;
 
     case THROTTLE_AUTO:
@@ -1971,18 +1976,6 @@ void update_throttle_mode(void)
     case THROTTLE_LAND:
         // landing throttle controller
         get_throttle_land();
-        break;
-
-    case THROTTLE_SURFACE_TRACKING:
-        // surface tracking with sonar or other rangefinder plus pilot input of climb rate
-        pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
-            // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(pilot_climb_rate);
-        }else{
-            // if no sonar fall back stabilize rate controller
-            get_throttle_rate_stabilized(pilot_climb_rate);
-        }
         break;
     }
 }
