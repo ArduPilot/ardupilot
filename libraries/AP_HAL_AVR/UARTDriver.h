@@ -64,8 +64,8 @@ public:
 	///
 	/// Public so the interrupt handlers can see it
 	struct Buffer {
-		volatile uint16_t head, tail;	///< head and tail pointers
-		uint16_t mask;					///< buffer size mask for pointer wrap
+		volatile uint8_t head, tail;	///< head and tail pointers
+		uint8_t mask;					///< buffer size mask for pointer wrap
 		uint8_t *bytes;					///< pointer to allocated buffer
 	};
 private:
@@ -119,7 +119,7 @@ private:
 	/// @note if we could bring the max size down to 256, the mask and head/tail
 	///       pointers in the buffer could become uint8_t.
 	///
-	static const uint16_t _max_buffer_size = 512;
+	static const uint16_t _max_buffer_size = 256;
 };
 
 extern AP_HAL_AVR::AVRUARTDriver::Buffer __AVRUARTDriver__rxBuffer[];
@@ -131,7 +131,7 @@ extern AP_HAL_AVR::AVRUARTDriver::Buffer __AVRUARTDriver__txBuffer[];
 ISR(_RXVECTOR, ISR_BLOCK)                                               \
 {                                                                       \
         uint8_t c;                                                      \
-        uint16_t i;                                                     \
+        uint8_t i;                                                     \
                                                                         \
         /* read the byte as quickly as possible */                      \
         c = _UDR;                                                       \

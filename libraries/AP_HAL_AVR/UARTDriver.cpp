@@ -61,8 +61,8 @@ void AVRUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) {
 		if (0 == txSpace)
 			txSpace = _txBuffer->mask + 1;
 
-		if (rxSpace == (_rxBuffer->mask + 1) && 
-			txSpace == (_txBuffer->mask + 1)) {
+		if (rxSpace == (_rxBuffer->mask + 1U) && 
+			txSpace == (_txBuffer->mask + 1U)) {
 			// avoid re-allocating the buffers if possible
 			need_allocate = false;
 			*_ucsrb &= ~(_portEnableBits | _portTxBits);
@@ -179,7 +179,7 @@ void AVRUARTDriver::flush(void) {
 }
 
 size_t AVRUARTDriver::write(uint8_t c) {
-	uint16_t i;
+	uint8_t i;
 
 	if (!_open) // drop bytes if not open
 		return 0;
@@ -212,7 +212,7 @@ size_t AVRUARTDriver::write(uint8_t c) {
 
 bool AVRUARTDriver::_allocBuffer(Buffer *buffer, uint16_t size)
 {
-	uint16_t mask;
+	uint8_t mask;
 	uint8_t	 shift;
 
 	// init buffer state
@@ -224,7 +224,7 @@ bool AVRUARTDriver::_allocBuffer(Buffer *buffer, uint16_t size)
 	// Note that we ignore requests for more than BUFFER_MAX space.
 	for (shift = 1; (1U << shift) < min(_max_buffer_size, size); shift++)
 		;
-	mask = (1 << shift) - 1;
+	mask = (1U << shift) - 1;
 
 	// If the descriptor already has a buffer allocated we need to take
 	// care of it.
