@@ -89,7 +89,13 @@ static void init_ardupilot()
     // The console port buffers are defined to be sufficiently large to support
     // the MAVLink protocol efficiently
     //
-    hal.uartA->begin(SERIAL0_BAUD, 128, 256);
+#if HIL_MODE != HIL_MODE_DISABLED
+    // we need more memory for HIL, as we get a much higher packet rate
+    hal.uartA->begin(SERIAL0_BAUD, 256, 256);
+#else
+    // use a bit less for non-HIL operation
+    hal.uartA->begin(SERIAL0_BAUD, 128, 128);
+#endif
 
     // GPS serial port.
     //
@@ -163,7 +169,7 @@ static void init_ardupilot()
     }
 #else
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 256);
+    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
     gcs3.init(hal.uartC);
 #endif
 
