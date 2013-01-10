@@ -661,6 +661,10 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 AP_Param param_loader(var_info, WP_START_BYTE);
 
 void setup() {
+    // this needs to be the first call, as it fills memory with
+    // sentinel values
+    memcheck_init();
+
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -680,7 +684,6 @@ void setup() {
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
     
     airspeed.init(pitot_analog_source);
-    memcheck_init();
     init_ardupilot();
 }
 
