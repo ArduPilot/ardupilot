@@ -18,7 +18,7 @@
 //
 // XXX the bytes show up on the wire, but at least my test unit (EM-411) seems to ignore them.
 //
-static uint8_t init_messages[] = {
+static const uint8_t init_messages[] PROGMEM = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa8, 0xb0, 0xb3,
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3
 };
@@ -35,7 +35,7 @@ AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
     // before calling us.
 
     // send SiRF binary setup messages
-    _port->write(init_messages, sizeof(init_messages));
+    _write_progstr_block(_port, (const prog_char *)init_messages, sizeof(init_messages));
     idleTimeout = 1200;
 }
 
