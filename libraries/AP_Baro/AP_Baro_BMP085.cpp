@@ -41,7 +41,7 @@
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 
 #include <AP_HAL.h>
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #include "AP_Baro_BMP085.h"
 
 extern const AP_HAL::HAL& hal;
@@ -268,3 +268,4 @@ void AP_Baro_BMP085::Calculate()
         _count /= 2;
     }
 }
+#endif // CONFIG_HAL_BOARD
