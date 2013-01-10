@@ -117,6 +117,22 @@ void SITLScheduler::resume_timer_procs() {
     }
 }
 
+bool SITLScheduler::in_timerprocess() {
+    return _in_timer_proc;
+}
+
+bool SITLScheduler::system_initializing() {
+    return !_initialized;
+}
+
+void SITLScheduler::system_initialized() {
+    if (_initialized) {
+        panic(
+            PSTR("PANIC: scheduler system initialized called more than once"));
+    }
+    _initialized = true;
+}
+
 void SITLScheduler::sitl_end_atomic() {
     if (_nested_atomic_ctr == 0) 
         hal.uartA->println_P(PSTR("NESTED ATOMIC ERROR"));
