@@ -127,11 +127,14 @@
 // V2.3.13 - Official release
 //         - Fail-safe vales changed back to normal fail-safe values. Use until APM code knows how to handle lost channel signal (800us)
 
-// 16-12-2012
+// 10-01-2013
 // V2.3.14pre - Internal test release
 //            - If one or more or all channel(s) are disconnected, throttle is set to fail-safe low (RTL)
 //            - If the misssing channel(s) are regained, throttle control is regained
 
+// 11-01-2013
+// V2.3.14 - temporary release for ArduCopter 2.9
+//         - fail-safe throttle low can be set with a define
 
 // -------------------------------------------------------------
 
@@ -174,7 +177,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.14pre"; 
+const char ver[15] = "ArduPPMv2.3.14"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -194,6 +197,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // -------------------------------------------------------------
 
 //#define _APM_FAILSAFE_   // Used to spesify APM 800us channel loss fail safe values, remove to use normal fail safe values (stand alone encoder board)
+
+#define _THROTTLE_LOW_FAILSAFE_INDICATION //if set, throttle is set to low in an error condition
 
 // -------------------------------------------------------------
 // SERVO LIMIT VALUES
@@ -669,6 +674,7 @@ CHECK_PINS_LOOP: // Input servo pin check loop
             //Reset ppm single channel fail-safe timeout
             ppm_timeout[ ppm_channel ] = 0;
 
+        #ifdef _THROTTLE_LOW_FAILSAFE_INDICATION
             // Check for forced throttle fail-safe
             if( throttle_failsafe_force )
             {
@@ -678,6 +684,7 @@ CHECK_PINS_LOOP: // Input servo pin check loop
                     servo_width = PPM_THROTTLE_FAILSAFE;
                 }
             }
+        #endif
     
         #ifdef _AVERAGE_FILTER_
             // Average filter to smooth input jitter
