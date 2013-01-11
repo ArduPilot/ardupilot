@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// ArduPPM (PPM Encoder) V2.3.14pre
+// ArduPPM (PPM Encoder) V2.3.14
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2.x (ATmega32u2)
@@ -135,6 +135,7 @@
 // 11-01-2013
 // V2.3.14 - temporary release for ArduCopter 2.9
 //         - fail-safe throttle low can be set with a define
+//         - recovery from error condition can also be set with a define
 
 // -------------------------------------------------------------
 
@@ -199,6 +200,11 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 //#define _APM_FAILSAFE_   // Used to spesify APM 800us channel loss fail safe values, remove to use normal fail safe values (stand alone encoder board)
 
 #define _THROTTLE_LOW_FAILSAFE_INDICATION //if set, throttle is set to low in an error condition
+#define _THROTTLE_LOW_RECOVERY_POSSIBLE //if set, a channel can be regained when the error disappears, only makes sense together with _THROTTLE_LOW_FAILSAFE_INDICATION
+
+#if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && !defined _THROTTLE_LOW_FAILSAFE_INDICATION
+#error failsafe recovery is only possible with throttle_low_failsafe_indication defined as well
+#endif
 
 // -------------------------------------------------------------
 // SERVO LIMIT VALUES
@@ -333,8 +339,10 @@ volatile uint8_t ppm_timeout[ PPM_ARRAY_MAX ];
 #define SERVO_INPUT_CONNECTED_VALUE 100
 volatile uint8_t servo_input_connected[ PPM_ARRAY_MAX ];
 
+#ifdef _THROTTLE_LOW_RECOVERY_POSSIBLE
 // count the channels which have been once connected but then got disconnected
 volatile uint8_t disconnected_channels;
+#endif
 
 // AVR parameters for PhoneDrone and APM2 boards using ATmega32u2
 #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
@@ -427,8 +435,10 @@ volatile bool ppm_generator_active = false;
 // Used to indicate a brownout restart
 volatile bool brownout_reset = false;
 
+#ifdef _THROTTLE_LOW_FAILSAFE_INDICATION
 // Used to force throttle fail-safe mode (RTL)
 volatile bool throttle_failsafe_force = false;
+#endif
 
 // ------------------------------------------------------------------------------
 // PPM GENERATOR START - TOGGLE ON COMPARE INTERRUPT ENABLE
@@ -782,11 +792,15 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
         PPM_COMPARE += failsafe_ppm[ ppm_out_channel ];
         sei();
 
+    #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && defined _THROTTLE_LOW_FAILSAFE_INDICATION
         // Count the channel that we have lost
         if( servo_input_connected[ ppm_out_channel ] )
         {
             disconnected_channels++;
         }
+    #elif defined _THROTTLE_LOW_FAILSAFE_INDICATION
+        throttle_failsafe_force = true; 
+    #endif
 
     #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
         // Turn on RX LED to indicate a fail-safe condition
@@ -811,7 +825,8 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
     {
         ppm_out_channel = 0;
 
-		// Did we lose one or more active servo input channel? If so force throttle fail-safe (RTL)
+	#ifdef _THROTTLE_LOW_RECOVERY_POSSIBLE
+        // Did we lose one or more active servo input channel? If so force throttle fail-safe (RTL)
         if( disconnected_channels > 0 )
         {
             throttle_failsafe_force = true;
@@ -822,6 +837,7 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
         }
 
         disconnected_channels = 0;
+    #endif
 
         #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
         // Blink TX LED when PPM generator has finished a pulse train
