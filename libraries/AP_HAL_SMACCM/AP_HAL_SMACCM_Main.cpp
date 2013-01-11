@@ -31,6 +31,8 @@ static void main_task(void *arg)
 {
   hal.init(0, NULL);
   setup();
+  hal.scheduler->system_initialized();
+
   for (;;)
     loop();
 }

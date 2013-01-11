@@ -7,6 +7,7 @@
     int main (int argc, char * const argv[]) {	\
 	hal.init(argc, argv); \
         setup(); \
+        hal.scheduler->system_initialized(); \
         for(;;) { \
 		loop(); \
 		AVR_SITL::SITL_State::loop_hook(); \

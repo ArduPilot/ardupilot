@@ -26,7 +26,13 @@ public:
     void     suspend_timer_procs();
     void     resume_timer_procs();
 
+    bool     in_timerprocess();
+
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
+
+    bool     system_initializing();
+    void     system_initialized();
+
     void     reboot();
     void     panic(const prog_char_t *errormsg);
 
@@ -53,6 +59,8 @@ private:
     static AP_HAL::TimedProc _timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS];
     static uint8_t _num_timer_procs;
     static bool    _in_timer_proc;
+
+    bool _initialized;
 
 };
 #endif

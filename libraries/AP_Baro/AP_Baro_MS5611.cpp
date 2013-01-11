@@ -119,10 +119,13 @@ bool AP_Baro_MS5611_SPI::sem_take_nonblocking()
     static int semfail_ctr = 0;
     bool got = _spi_sem->take_nonblocking();
     if (!got) {
-        semfail_ctr++;
-        if (semfail_ctr > 100) {
-            hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
-                        "100 times in a row, in AP_Baro_MS5611::_update"));
+        if (!hal.scheduler->system_initializing()) {
+            semfail_ctr++;
+            if (semfail_ctr > 100) {
+                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
+                                          "100 times in a row, in "
+                                          "AP_Baro_MS5611::_update"));
+            }
         }
         return false; /* never reached */
     } else {
@@ -189,10 +192,13 @@ bool AP_Baro_MS5611_I2C::sem_take_nonblocking()
     static int semfail_ctr = 0;
     bool got = _i2c_sem->take_nonblocking();
     if (!got) {
-        semfail_ctr++;
-        if (semfail_ctr > 100) {
-            hal.scheduler->panic(PSTR("PANIC: failed to take _i2c_sem "
-                        "100 times in a row, in AP_Baro_MS5611::_update"));
+        if (!hal.scheduler->system_initializing()) {
+            semfail_ctr++;
+            if (semfail_ctr > 100) {
+                hal.scheduler->panic(PSTR("PANIC: failed to take _i2c_sem "
+                                          "100 times in a row, in "
+                                          "AP_Baro_MS5611::_update"));
+            }
         }
         return false; /* never reached */
     } else {

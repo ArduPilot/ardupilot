@@ -32,7 +32,7 @@ void SMACCMRCInput::init(void *unused)
 uint8_t SMACCMRCInput::valid()
 {
   // If any of the overrides are positive, we have valid data.
-  for (int i = 0; i < PPM_MAX_CHANNELS; ++i)
+  for (int i = 0; i < SMACCM_RCINPUT_CHANNELS; ++i)
     if (_override[i] > 0)
       return true;
 
@@ -88,7 +88,7 @@ bool SMACCMRCInput::set_override(uint8_t channel, int16_t override)
   if (override < 0)
     return false;
 
-  if (channel < PPM_MAX_CHANNELS) {
+  if (channel < SMACCM_RCINPUT_CHANNELS) {
     _override[channel] = override;
     if (override != 0) {
       return true;
@@ -100,7 +100,7 @@ bool SMACCMRCInput::set_override(uint8_t channel, int16_t override)
 
 void SMACCMRCInput::clear_overrides()
 {
-  for (int i = 0; i < PPM_MAX_CHANNELS; ++i)
+  for (int i = 0; i < SMACCM_RCINPUT_CHANNELS; ++i)
     _override[i] = 0;
 }
 

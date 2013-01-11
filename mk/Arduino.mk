@@ -522,7 +522,7 @@ configure:
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
 	@echo PORT = com3 >> $(SKETCHBOOK)/config.mk
 else
-	@echo PORT = /dev/ttyUSB0 >> $(SKETCHBOOK)/config.mk
+	@echo PORT = /dev/ttyACM0 >> $(SKETCHBOOK)/config.mk
 endif
 	@echo  >> $(SKETCHBOOK)/config.mk
 	@echo \# PX4 app build: uncomment and fill in the path to PX4 Firmware repository: >> $(SKETCHBOOK)/config.mk

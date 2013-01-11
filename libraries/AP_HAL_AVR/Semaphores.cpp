@@ -27,7 +27,7 @@ bool AVRSemaphore::give() {
 }
 
 bool AVRSemaphore::take(uint32_t timeout_ms) {
-    if (AVRScheduler::_in_timer_proc) {
+    if (hal.scheduler->in_timerprocess()) {
         hal.scheduler->panic(PSTR("PANIC: AVRSemaphore::take used from "
                     "inside timer process"));
         return false; /* Never reached - panic does not return */
@@ -36,7 +36,7 @@ bool AVRSemaphore::take(uint32_t timeout_ms) {
 }
 
 bool AVRSemaphore::take_nonblocking() {
-    if (AVRScheduler::_in_timer_proc) {
+    if (hal.scheduler->in_timerprocess()) {
         return _take_nonblocking();
     } else {
         return _take_from_mainloop(0);
