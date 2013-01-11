@@ -110,15 +110,12 @@ private:
 	static void _freeBuffer(Buffer *buffer);
 
 	/// default receive buffer size
-	static const uint16_t _default_rx_buffer_size = 128;
+	static const uint16_t _default_rx_buffer_size = 4;
 
 	/// default transmit buffer size
 	static const uint16_t _default_tx_buffer_size = 16;
 
 	/// maxium tx/rx buffer size
-	/// @note if we could bring the max size down to 256, the mask and head/tail
-	///       pointers in the buffer could become uint8_t.
-	///
 	static const uint16_t _max_buffer_size = 256;
 };
 
