@@ -33,7 +33,12 @@ public:
     void     panic(const prog_char_t *errormsg);
     bool     interrupts_are_blocked(void) { return _nested_atomic_ctr != 0; }
 
+    bool     in_timerprocess();
+    bool     system_initializing();
+    void     system_initialized();
+
 private:
+    bool _initialized;
     static uint8_t _nested_atomic_ctr;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;

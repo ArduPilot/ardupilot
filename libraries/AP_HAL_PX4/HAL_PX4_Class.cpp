@@ -82,6 +82,7 @@ static int main_loop(int argc, char **argv)
     hal.rcout->init(NULL);
 
     setup();
+    hal.scheduler->system_initialized();
 
     while (true) {
 		loop();

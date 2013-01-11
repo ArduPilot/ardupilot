@@ -187,4 +187,20 @@ void PX4Scheduler::panic(const prog_char_t *errormsg) {
     exit(1);
 }
 
+bool PX4Scheduler::in_timerprocess() {
+    return _in_timer_proc;
+}
+
+bool PX4Scheduler::system_initializing() {
+    return !_initialized;
+}
+
+void PX4Scheduler::system_initialized() {
+    if (_initialized) {
+        panic(PSTR("PANIC: scheduler::system_initialized called"
+                   "more than once"));
+    }
+    _initialized = true;
+}
+
 #endif
