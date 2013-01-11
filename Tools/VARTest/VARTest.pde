@@ -109,6 +109,7 @@ void setup() {
 	cliSerial->printf_P(PSTR("RLL2SRV_P=%f\n"),
 					g.pidServoRoll.kP());
 
+#if 0
 	char s[AP_MAX_NAME_SIZE+1];
 
 	g.throttle_min.copy_name(s, sizeof(s));
@@ -118,6 +119,7 @@ void setup() {
 	g.channel_roll.radio_min.copy_name(s, sizeof(s));
 	s[AP_MAX_NAME_SIZE] = 0;
 	cliSerial->printf_P(PSTR("RC1_MIN.copy_name()->%s %p\n"), s, &g.channel_roll.radio_min);
+#endif
 
 	Vector3f ofs;
 	ofs = compass.get_offsets();
@@ -181,7 +183,7 @@ void test_vector3f(void)
 	}
 }
 
-
+#if 0
 // test all interfaces for a variable
 void test_variable(AP_Param *ap, enum ap_var_type type)
 {
@@ -372,5 +374,6 @@ void test_variable(AP_Param *ap, enum ap_var_type type)
 		break;
 	}
 }
+#endif
 
 AP_HAL_MAIN();
