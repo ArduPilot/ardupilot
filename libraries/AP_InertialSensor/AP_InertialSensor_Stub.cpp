@@ -35,8 +35,8 @@ bool AP_InertialSensor_Stub::new_data_available( void ) {
 float AP_InertialSensor_Stub::temperature() {
     return 0.0;
 }
-uint32_t AP_InertialSensor_Stub::get_delta_time_micros() {
-    return _delta_time_usec;
+float AP_InertialSensor_Stub::get_delta_time() {
+    return _delta_time_usec * 1.0e-6;
 }
 uint32_t AP_InertialSensor_Stub::get_last_sample_time_micros() {
     return _last_update_ms * 1000;

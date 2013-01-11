@@ -105,9 +105,9 @@ float AP_InertialSensor_PX4::temperature(void)
     return 0.0;
 }
 
-uint32_t AP_InertialSensor_PX4::get_delta_time_micros(void) 
+float AP_InertialSensor_PX4::get_delta_time(void) 
 {
-    return _delta_time_usec;
+    return _delta_time_usec * 1.0e-6;
 }
 
 uint32_t AP_InertialSensor_PX4::get_last_sample_time_micros(void) 

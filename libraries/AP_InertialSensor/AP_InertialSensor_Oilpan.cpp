@@ -107,8 +107,8 @@ float AP_InertialSensor_Oilpan::temperature() {
     return _temp;
 }
 
-uint32_t AP_InertialSensor_Oilpan::get_delta_time_micros() {
-    return _delta_time_micros;
+float AP_InertialSensor_Oilpan::get_delta_time() {
+    return _delta_time_micros * 1.0e-6;
 }
 
 /* ------ Private functions -------------------------------------------*/

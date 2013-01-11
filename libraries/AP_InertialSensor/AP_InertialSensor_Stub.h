@@ -17,7 +17,7 @@ public:
     bool            update();
     bool            new_data_available();
     float           temperature();
-    uint32_t        get_delta_time_micros();
+    float	        get_delta_time();
     uint32_t        get_last_sample_time_micros();
     float           get_gyro_drift_rate();
     uint16_t        num_samples_available();

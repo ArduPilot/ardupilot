@@ -45,7 +45,7 @@ public:
     uint16_t            num_samples_available();
 
     // get_delta_time returns the time period in seconds overwhich the sensor data was collected
-    uint32_t            get_delta_time_micros();
+    float            	get_delta_time();
 
 protected:
     uint16_t                    _init_sensor( Sample_rate sample_rate );
@@ -66,7 +66,8 @@ private:
     static AP_HAL::SPIDeviceDriver *_spi;
     static AP_HAL::Semaphore *_spi_sem;
 
-    uint8_t _msec_per_sample;
+    uint8_t 					_msec_per_sample;
+    uint16_t					_num_samples;
 
     float                       _temp;
 

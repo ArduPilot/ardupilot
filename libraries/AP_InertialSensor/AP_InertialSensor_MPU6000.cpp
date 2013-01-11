@@ -190,13 +190,7 @@ const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 int16_t AP_InertialSensor_MPU6000::_mpu6000_product_id = AP_PRODUCT_ID_NONE;
 AP_HAL::DigitalSource *AP_InertialSensor_MPU6000::_drdy_pin = NULL;
 
-// variables to calculate time period over which a group of samples were
-// collected
-// time period overwhich samples were collected (initialise to non-zero
-// number but will be overwritten on 2nd read in any case)
-static volatile uint32_t _delta_time_micros = 1;
 // time we start collecting sample (reset on update)
-static volatile uint32_t _delta_time_start_micros = 0;
 // time latest sample was collected
 static volatile uint32_t _last_sample_time_micros = 0;
 
@@ -304,7 +298,6 @@ void AP_InertialSensor_MPU6000::wait_for_sample()
 bool AP_InertialSensor_MPU6000::update( void )
 {
     int32_t sum[7];
-    uint16_t count;
     float count_scale;
     Vector3f accel_scale = _accel_scale.get();
 
@@ -320,17 +313,12 @@ bool AP_InertialSensor_MPU6000::update( void )
             _sum[i] = 0;
         }
 
-        count = _count;
+        _num_samples = _count;
         _count = 0;
-
-        // record sample time
-        _delta_time_micros = _last_sample_time_micros
-            - _delta_time_start_micros;
-        _delta_time_start_micros = _last_sample_time_micros;
     }
     hal.scheduler->resume_timer_procs();
 
-    count_scale = 1.0 / count;
+    count_scale = 1.0 / _num_samples;
 
     _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale;
     _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale;
@@ -659,9 +647,9 @@ void AP_InertialSensor_MPU6000::_dump_registers(void)
 
 
 // get_delta_time returns the time period in seconds overwhich the sensor data was collected
-uint32_t AP_InertialSensor_MPU6000::get_delta_time_micros() 
+float AP_InertialSensor_MPU6000::get_delta_time() 
 {
-    return _delta_time_micros;
+    return _msec_per_sample * 0.001 * _num_samples;
 }
 
 // Update gyro offsets with new values.  Offsets provided in as scaled deg/sec values
