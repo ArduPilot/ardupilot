@@ -1034,13 +1034,6 @@ void loop()
 // Main loop - 100hz
 static void fast_loop()
 {
-    // run low level rate controllers that only require IMU data
-    run_rate_controllers();
-
-    // write out the servo PWM values
-    // ------------------------------
-    set_servos_4();
-
     // IMU DCM Algorithm
     // --------------------
     read_AHRS();
@@ -1048,6 +1041,13 @@ static void fast_loop()
     // reads all of the necessary trig functions for cameras, throttle, etc.
     // --------------------------------------------------------------------
     update_trig();
+
+    // run low level rate controllers that only require IMU data
+    run_rate_controllers();
+
+    // write out the servo PWM values
+    // ------------------------------
+    set_servos_4();
 
     // Inertial Nav
     // --------------------
