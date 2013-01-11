@@ -1104,7 +1104,7 @@
  # define LOG_PID                       DISABLED
 #endif
 #ifndef LOG_ITERM
- # define LOG_ITERM                     ENABLED
+ # define LOG_ITERM                     DISABLED
 #endif
 #ifndef LOG_INAV
  # define LOG_INAV                      DISABLED
