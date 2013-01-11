@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-// ArduPPM Version v0.9.87
+// ArduPPM Version v0.9.89
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ARDUCOPTER 2 : PPM ENCODER for AT Mega 328p and APM v1.4 Boards
 // By:John Arne Birkeland - 2011
@@ -35,11 +35,13 @@
 //	0.9.85 : Added brownout reset detection flag
 //	0.9.86 : Added a #define to disable Radio Passthrough mode (hardware failsafe for Arduplane)
 //	0.9.87 : #define correction for radio passthrough (was screwed up).
+//  0.9.88 : LED fail-safe indication is on whenever throttle is low
+//  0.9.89 : LED fail-safe change can be reverted with a define
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // PREPROCESSOR DIRECTIVES
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#include "..\Libraries\PPM_Encoder.h"
+#include "../Libraries/PPM_Encoder.h"
 #include <util/delay.h>
 
 
@@ -283,7 +285,11 @@ int main(void)
 	// ------------------------------------------------------------------------------
 	while( 1 )
 	{
+	#if defined _THROTTLE_LOW_RECOVERY_POSSIBLE
+		if ( throttle_failsafe_force )	// We have an error 
+	#else
 		if ( servo_error_condition || servo_input_missing )	// We have an error 
+	#endif
 		{
 			blink_led ( 6 * LOOP_TIMER_10MS ); // Status LED very fast blink if invalid servo input or missing signal
 		}
@@ -368,7 +374,11 @@ int main(void)
 		// ------------------------------------------------------------------------------
 		// Status LED control
 		// ------------------------------------------------------------------------------
-		if ( servo_error_condition || servo_input_missing )	// We have an error 
+	#ifdef _THROTTLE_LOW_FAILSAFE_INDICATION
+		if ( throttle_failsafe_force ) // We have an error 
+	#else
+		if ( servo_error_condition || servo_input_missing )	// We have an error
+	#endif
 		{
 			blink_led ( 6 * LOOP_TIMER_10MS ); // Status LED very fast blink if invalid servo input or missing signal
 		}
