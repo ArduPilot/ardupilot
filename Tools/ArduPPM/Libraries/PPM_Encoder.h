@@ -199,8 +199,8 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
 //#define _APM_FAILSAFE_   // Used to spesify APM 800us channel loss fail safe values, remove to use normal fail safe values (stand alone encoder board)
 
-#define _THROTTLE_LOW_FAILSAFE_INDICATION //if set, throttle is set to low in an error condition
-#define _THROTTLE_LOW_RECOVERY_POSSIBLE //if set, a channel can be regained when the error disappears, only makes sense together with _THROTTLE_LOW_FAILSAFE_INDICATION
+//#define _THROTTLE_LOW_FAILSAFE_INDICATION //if set, throttle is set to low when a single channel is lost
+//#define _THROTTLE_LOW_RECOVERY_POSSIBLE //if set, throttle low recovers from being low when the single channel comes back, only makes sense together with _THROTTLE_LOW_FAILSAFE_INDICATION
 
 #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && !defined _THROTTLE_LOW_FAILSAFE_INDICATION
 #error failsafe recovery is only possible with throttle_low_failsafe_indication defined as well
