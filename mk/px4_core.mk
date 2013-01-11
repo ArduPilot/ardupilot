@@ -123,6 +123,11 @@ else
   LIBTOKENS        :=    $(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
 endif
 
+ifeq ($(SYSTYPE),Darwin)
+  # use BWK awk
+  AWK =  awk
+endif
+
 #
 # Find sketchbook libraries referenced by the sketch.
 #
