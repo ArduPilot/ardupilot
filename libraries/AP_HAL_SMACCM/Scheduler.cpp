@@ -137,7 +137,7 @@ static void delay_cb_task(void *arg)
 
 SMACCMScheduler::SMACCMScheduler()
   : m_delay_cb(NULL), m_task(NULL), m_delay_cb_task(NULL),
-    m_failsafe_cb(NULL), m_num_procs(0)
+    m_failsafe_cb(NULL), m_num_procs(0), m_initializing(true)
 {
 }
 
@@ -278,6 +278,24 @@ void SMACCMScheduler::run_delay_cb()
 {
   if (m_delay_cb)
     m_delay_cb();
+}
+
+/** Return true if in the context of a timer process. */
+bool SMACCMScheduler::in_timerprocess()
+{
+  return (xTaskGetCurrentTaskHandle() == m_task);
+}
+
+/** Return true if the system is initializing. */
+bool SMACCMScheduler::system_initializing()
+{
+  return m_initializing;
+}
+
+/** Set the system initializing flag to false. */
+void SMACCMScheduler::system_initialized()
+{
+  m_initializing = false;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

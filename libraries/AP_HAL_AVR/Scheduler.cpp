@@ -30,7 +30,8 @@ uint8_t AVRScheduler::_num_timer_procs = 0;
 
 AVRScheduler::AVRScheduler() :
     _delay_cb(NULL),
-    _min_delay_cb_ms(65535)
+    _min_delay_cb_ms(65535),
+    _initialized(false)
 {}
 
 void AVRScheduler::init(void* _isrregistry) {
@@ -125,6 +126,10 @@ void AVRScheduler::resume_timer_procs() {
     }
 }
 
+bool AVRScheduler::in_timerprocess() {
+    return _in_timer_proc;
+}
+
 void AVRScheduler::_timer_isr_event() {
     // we enable the interrupt again immediately and also enable
     // interrupts. This allows other time critical interrupts to
@@ -177,6 +182,18 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
     }
 
     _in_timer_proc = false;
+}
+
+bool AVRScheduler::system_initializing() {
+    return !_initialized;
+}
+
+void AVRScheduler::system_initialized() {
+    if (_initialized) {
+        panic(PSTR("PANIC: scheduler::system_initialized called"
+                   "more than once"));
+    }
+    _initialized = true;
 }
 
 void AVRScheduler::panic(const prog_char_t* errormsg) {

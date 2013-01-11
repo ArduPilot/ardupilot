@@ -108,6 +108,15 @@ public:
    */
   void run_delay_cb();
 
+  /** Return true if in the context of a timer process. */
+  bool in_timerprocess();
+
+  /** Return true if the system is initializing. */
+  bool system_initializing();
+
+  /** Set the system initializing flag to false. */
+  void system_initialized();
+
 private:
   AP_HAL::Proc m_delay_cb;      /* delay callback */
   void *m_task;                 /* opaque scheduler task handle */
@@ -115,6 +124,7 @@ private:
   AP_HAL::TimedProc m_procs[SMACCM_SCHEDULER_MAX_TIMER_PROCS];
   AP_HAL::TimedProc m_failsafe_cb;
   uint8_t m_num_procs;          /* number of entries in "m_procs" */
+  bool m_initializing;          /* true if initializing */
 };
 
 #endif // __AP_HAL_SMACCM_SCHEDULER_H__

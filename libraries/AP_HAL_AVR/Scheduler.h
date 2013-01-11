@@ -18,8 +18,6 @@ public:
 
 /* Scheduler implementation: */
 class AP_HAL_AVR::AVRScheduler : public AP_HAL::Scheduler {
-    /* AVRSemaphore gets access to _in_timer_proc */
-    friend class AVRSemaphore;
 public:
     AVRScheduler();
     /* AP_HAL::Scheduler methods */
@@ -37,18 +35,24 @@ public:
     void     suspend_timer_procs();
     void     resume_timer_procs();
 
+    bool     in_timerprocess();
+
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
+
+    bool     system_initializing();
+    void     system_initialized();
+
     void     panic(const prog_char_t *errormsg);
     void     reboot();
-
-protected:
-    static volatile bool _in_timer_proc;
 
 private:
     static AVRTimer _timer;
 
+    static volatile bool _in_timer_proc;
+
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
+    bool _initialized;
 
     /* _timer_isr_event() and _run_timer_procs are static so they can be
      * called from an interrupt. */

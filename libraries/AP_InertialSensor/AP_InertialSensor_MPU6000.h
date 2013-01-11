@@ -61,10 +61,12 @@ private:
     static bool _register_read_from_timerprocess( uint8_t reg, uint8_t *val );
     static void                 register_write( uint8_t reg, uint8_t val );
     void                        wait_for_sample();
-    void                        hardware_init(Sample_rate sample_rate);
+    bool                        hardware_init(Sample_rate sample_rate);
 
     static AP_HAL::SPIDeviceDriver *_spi;
     static AP_HAL::Semaphore *_spi_sem;
+
+    uint8_t _msec_per_sample;
 
     float                       _temp;
 

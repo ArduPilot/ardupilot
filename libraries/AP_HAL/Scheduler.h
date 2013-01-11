@@ -21,9 +21,14 @@ public:
     virtual void     register_timer_process(AP_HAL::TimedProc) = 0;
     virtual void     suspend_timer_procs() = 0;
     virtual void     resume_timer_procs() = 0;
+
+    virtual bool     in_timerprocess() = 0;
     
     virtual void     register_timer_failsafe(AP_HAL::TimedProc,
                         uint32_t period_us) = 0;
+
+    virtual bool     system_initializing() = 0;
+    virtual void     system_initialized() = 0;
 
     virtual void     panic(const prog_char_t *errormsg) = 0;
     virtual void     reboot() = 0;

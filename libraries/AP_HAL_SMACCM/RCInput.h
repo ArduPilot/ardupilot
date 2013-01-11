@@ -4,6 +4,8 @@
 
 #include <AP_HAL_SMACCM.h>
 
+#define SMACCM_RCINPUT_CHANNELS 8
+
 class SMACCM::SMACCMRCInput : public AP_HAL::RCInput {
 public:
     SMACCMRCInput();
@@ -17,7 +19,7 @@ public:
     void clear_overrides();
 
 private:
-    uint16_t _override[PPM_MAX_CHANNELS];
+    uint16_t _override[SMACCM_RCINPUT_CHANNELS];
 };
 
 #endif // __AP_HAL_SMACCM_RCINPUT_H__
