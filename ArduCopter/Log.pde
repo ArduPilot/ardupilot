@@ -892,6 +892,7 @@ static void Log_Read_Startup()
 
 static void Log_Write_Data(uint8_t _index, int32_t _data)
 {
+    if (g.log_bitmask == 0) return;
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_DATA_MSG);
@@ -903,6 +904,7 @@ static void Log_Write_Data(uint8_t _index, int32_t _data)
 
 static void Log_Write_Data(uint8_t _index, float _data)
 {
+    if (g.log_bitmask == 0) return;
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_DATA_MSG);
@@ -914,6 +916,7 @@ static void Log_Write_Data(uint8_t _index, float _data)
 
 static void Log_Write_Data(uint8_t _index, int16_t _data)
 {
+    if (g.log_bitmask == 0) return;
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_DATA_MSG);
@@ -925,6 +928,7 @@ static void Log_Write_Data(uint8_t _index, int16_t _data)
 
 static void Log_Write_Data(uint8_t _index, uint16_t _data)
 {
+    if (g.log_bitmask == 0) return;
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_DATA_MSG);
@@ -937,6 +941,7 @@ static void Log_Write_Data(uint8_t _index, uint16_t _data)
 
 static void Log_Write_Event(uint8_t _index)
 {
+    if (g.log_bitmask == 0) return;
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_DATA_MSG);
