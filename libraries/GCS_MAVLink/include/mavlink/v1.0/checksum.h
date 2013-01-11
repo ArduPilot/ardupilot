@@ -24,6 +24,7 @@ extern "C" {
  * @param data new char to hash
  * @param crcAccum the already accumulated checksum
  **/
+#ifndef HAVE_CRC_ACCUMULATE
 static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
 {
         /*Accumulate one byte of data into the CRC*/
@@ -33,6 +34,7 @@ static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
         tmp ^= (tmp<<4);
         *crcAccum = (*crcAccum>>8) ^ (tmp<<8) ^ (tmp <<3) ^ (tmp>>4);
 }
+#endif
 
 /**
  * @brief Initiliaze the buffer for the X.25 CRC

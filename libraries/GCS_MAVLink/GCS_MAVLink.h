@@ -125,6 +125,15 @@ static inline uint16_t comm_get_txspace(mavlink_channel_t chan)
     return (uint16_t)ret;
 }
 
+#ifdef HAVE_CRC_ACCUMULATE
+// use the AVR C library implementation. This is a bit over twice as
+// fast as the C version
+static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
+{
+	*crcAccum = _crc_ccitt_update(*crcAccum, data);
+}
+#endif
+
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 #include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
 
