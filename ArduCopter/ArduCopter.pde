@@ -12,36 +12,37 @@
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
  *
- *  Special Thanks for Contributors:
+ *  Special Thanks for Contributors (in alphabetical order by first name):
  *
- *  Hein Hollander      :Octo Support
- *  Dani Saez           :V Ocoto Support
- *  Max Levine			:Tri Support, Graphics
- *  Jose Julio			:Stabilization Control laws
- *  Randy MacKay		:Heli Support
- *  Jani Hiriven		:Testing feedback
- *  Andrew Tridgell		:Mavlink Support
- *  James Goppert		:Mavlink Support
- *  Doug Weibel			:Libraries
- *  Mike Smith			:Libraries, Coding support
- *  HappyKillmore		:Mavlink GCS
- *  Michael Oborne		:Mavlink GCS
- *  Jack Dunkle			:Alpha testing
- *  Christof Schmid		:Alpha testing
- *  Oliver				:Piezo support
- *  Guntars				:Arming safety suggestion
- *  Igor van Airde      :Control Law optimization
- *  Jean-Louis Naudin   :Auto Landing
- *  Sandro Benigno      :Camera support
- *  Olivier Adler       :PPM Encoder
- *  John Arne Birkeland	:PPM Encoder
  *  Adam M Rivera		:Auto Compass Declination
- *  Marco Robustini		:Alpha testing
+ *  Amilcar Lucas		:Camera mount library
+ *  Andrew Tridgell		:General development, Mavlink Support
  *  Angel Fernandez		:Alpha testing
+ *  Doug Weibel			:Libraries
+ *  Christof Schmid		:Alpha testing
+ *  Dani Saez           :V Octo Support
+ *  Gregory Fletcher	:Camera mount orientation math
+ *  Guntars				:Arming safety suggestion
+ *  HappyKillmore		:Mavlink GCS
+ *  Hein Hollander      :Octo Support
+ *  Igor van Airde      :Control Law optimization
+ *  Leonard Hall 		:Flight Dynamics, INAV throttle
+ *  Jonathan Challinger :Inertial Navigation
+ *  Jean-Louis Naudin   :Auto Landing
+ *  Max Levine			:Tri Support, Graphics
+ *  Jack Dunkle			:Alpha testing
+ *  James Goppert		:Mavlink Support
+ *  Jani Hiriven		:Testing feedback
+ *  John Arne Birkeland	:PPM Encoder
+ *  Jose Julio			:Stabilization Control laws
+ *  Randy Mackay		:General development and release
+ *  Marco Robustini		:Lead tester
+ *  Michael Oborne		:Mission Planner GCS
+ *  Mike Smith			:Libraries, Coding support
+ *  Oliver				:Piezo support
+ *  Olivier Adler       :PPM Encoder
  *  Robert Lefebvre		:Heli Support & LEDs
- *  Amilcar Lucas		:mount and camera configuration
- *  Gregory Fletcher	:mount orientation math
- *	Leonard Hall 		:Flight Dynamics
+ *  Sandro Benigno      :Camera support
  *
  *  And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
  *
