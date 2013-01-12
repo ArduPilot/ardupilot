@@ -821,7 +821,7 @@ AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
 // The number of GPS fixes we have had
-static int16_t gps_fix_count;
+static uint8_t gps_fix_count;
 
 // System Timers
 // --------------

@@ -7,8 +7,6 @@
 
 #define HEAD_BYTE1  0xA3    // Decimal 163
 #define HEAD_BYTE2  0x95    // Decimal 149
-#define END_BYTE    0xBA    // Decimal 186
-
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
@@ -246,51 +244,74 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
     s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
 }
 
+/*
+  unfortunately these need to be macros because of a limitation of
+  named member structure initialisation in g++
+ */
+#define LOG_PACKET_HEADER          uint8_t head1, head2, msgid
+#define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
+
+/*
+  every logged packet starts with 3 bytes
+ */
+struct log_Header {
+    LOG_PACKET_HEADER;
+};
+
+/*
+  read a packet, stripping off the header bytes
+ */
+static void ReadPacket(void *pkt, uint16_t size)
+{
+    DataFlash.ReadBlock((void *)(sizeof(log_Header)+(uintptr_t)pkt), size - sizeof(log_Header));
+}
+
+struct log_GPS {
+    LOG_PACKET_HEADER;
+    uint32_t gps_time;
+    uint8_t  num_sats;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  rel_altitude;
+    int32_t  altitude;
+    uint32_t ground_speed;
+    int32_t  ground_course;
+};
+
 // Write an GPS packet. Total length : 31 bytes
 static void Log_Write_GPS()
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_GPS_MSG);
-
-    DataFlash.WriteLong(g_gps->time);           		 // 1
-    DataFlash.WriteByte(g_gps->num_sats);       		 // 2
-
-    DataFlash.WriteLong(g_gps->latitude);       		 // 3
-    DataFlash.WriteLong(g_gps->longitude);       		 // 4
-    DataFlash.WriteLong(current_loc.alt);       		 // 5
-    DataFlash.WriteLong(g_gps->altitude);       		 // 6
-
-    DataFlash.WriteInt(g_gps->ground_speed);    		 // 7
-    DataFlash.WriteLong(g_gps->ground_course);  		 // 8
-
-    DataFlash.WriteByte(END_BYTE);
+    struct log_GPS pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
+    	gps_time      : g_gps->time,
+        num_sats      : g_gps->num_sats,
+        latitude      : g_gps->latitude,
+        longitude     : g_gps->longitude,
+        rel_altitude  : current_loc.alt,
+        altitude      : g_gps->altitude,
+        ground_speed  : g_gps->ground_speed,
+        ground_course : g_gps->ground_course
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a GPS packet
 static void Log_Read_GPS()
 {
-    int32_t temp1   = DataFlash.ReadLong();           // 1 time
-    int8_t temp2    = DataFlash.ReadByte();           // 2 sats
-    int32_t temp3   = DataFlash.ReadLong();           // 3 lat
-    int32_t temp4   = DataFlash.ReadLong();           // 4 lon
-    float temp5     = DataFlash.ReadLong() / 100.0;   // 5 sensor alt
-    float temp6     = DataFlash.ReadLong() / 100.0;   // 6 gps alt
-    int16_t temp7   = DataFlash.ReadInt();            // 7 ground speed
-    int32_t temp8   = DataFlash.ReadLong();           // 8 ground course
+    struct log_GPS pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-    //  1   2    3      4     5      6      7    8
-    cliSerial->printf_P(PSTR("GPS, %ld, %d, "),
-                    (long)temp1,                          // 1 time
-                    (int)temp2);                          // 2 sats
-    print_latlon(cliSerial, temp3);
+    cliSerial->printf_P(PSTR("GPS, %ld, %u, "),
+                        (long)pkt.gps_time,
+                        (unsigned)pkt.num_sats);
+    print_latlon(cliSerial, pkt.latitude);
     cliSerial->print_P(PSTR(", "));
-    print_latlon(cliSerial, temp4);
+    print_latlon(cliSerial, pkt.longitude);
     cliSerial->printf_P(PSTR(", %4.4f, %4.4f, %d, %ld\n"),
-                    temp5,                                // 5 gps alt
-                    temp6,                                // 6 sensor alt
-                    (int)temp7,                           // 7 ground speed
-                    (long)temp8);                         // 8 ground course
+                        pkt.rel_altitude*0.01,
+                        pkt.altitude*0.01,
+                        (unsigned long)pkt.ground_speed,
+                        (long)pkt.ground_course);
 }
 
 static void Log_Write_Raw()
@@ -309,18 +330,6 @@ static void Log_Write_Raw()
     DataFlash.WriteLong(get_int(accel.x));
     DataFlash.WriteLong(get_int(accel.y));
     DataFlash.WriteLong(get_int(accel.z));
-
-    DataFlash.WriteByte(END_BYTE);
-
-	/*
-	DataFlash.WriteByte(HEAD_BYTE1);
-	DataFlash.WriteByte(HEAD_BYTE2);
-	DataFlash.WriteByte(LOG_RAW_MSG);
-	DataFlash.WriteLong(get_int(ahrs._omega_I.x));
-	DataFlash.WriteLong(get_int(ahrs._omega_I.y));
-
-    DataFlash.WriteByte(END_BYTE);
-	*/
 }
 
 // Read a raw accel/gyro packet
@@ -358,8 +367,6 @@ static void Log_Write_Current()
     DataFlash.WriteInt(battery_voltage1     * 100.0);           // 3
     DataFlash.WriteInt(current_amps1        * 100.0);           // 4
     DataFlash.WriteInt(current_total1);                                 // 5
-
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a Current packet
@@ -435,8 +442,6 @@ static void Log_Write_Motors()
     DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);    //3
     DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);    //4
  #endif
-
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a Motors packet.
@@ -523,7 +528,6 @@ static void Log_Write_Optflow()
     DataFlash.WriteLong(optflow.vlon);    //optflow_offset.lng + optflow.lng);
     DataFlash.WriteLong(of_roll);
     DataFlash.WriteLong(of_pitch);
-    DataFlash.WriteByte(END_BYTE);
  #endif     // OPTFLOW == ENABLED
 }
 
@@ -570,8 +574,6 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt(nav_roll);                           // 6
 	DataFlash.WriteInt(lon_speed);                          // 7
 	DataFlash.WriteInt(lat_speed);                          // 8
-
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a Nav Tuning packet.
@@ -607,9 +609,6 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteInt(climb_rate);                 	    // 7
     DataFlash.WriteInt(g.rc_3.servo_out);                  	// 8
     DataFlash.WriteInt(desired_climb_rate);                  // 9
-
-
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read an control tuning packet
@@ -646,8 +645,6 @@ static void Log_Write_Iterm()
 	DataFlash.WriteInt((int16_t)g.pid_loiter_rate_lon.get_integrator()); 	// 10
 	DataFlash.WriteInt((int16_t)g.pid_throttle.get_integrator()); 			// 11
 	DataFlash.WriteInt(g.throttle_cruise); 									// 12
-
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read an control tuning packet
@@ -667,39 +664,45 @@ static void Log_Read_Iterm()
 }
 
 
+struct log_Performance {
+    LOG_PACKET_HEADER;
+    uint8_t renorm_count;
+    uint8_t renorm_blowup;
+    uint8_t gps_fix_count;
+    uint16_t num_long_running;
+    uint16_t num_loops;
+    uint32_t max_time;
+    uint8_t end;
+};
+
 // Write a performance monitoring packet. Total length : 11 bytes
 static void Log_Write_Performance()
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
-    DataFlash.WriteByte(ahrs.renorm_range_count);           //1
-    DataFlash.WriteByte(ahrs.renorm_blowup_count);          //2
-    DataFlash.WriteByte(gps_fix_count);                     //3
-    DataFlash.WriteInt(perf_info_get_num_long_running());   //4  - number of long running loops
-    DataFlash.WriteInt(perf_info_get_num_loops());          //5  - total number of loops
-    DataFlash.WriteLong(perf_info_get_max_time());          //6  - time of longest running loop
-    DataFlash.WriteByte(END_BYTE);
+    struct log_Performance pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
+        renorm_count     : ahrs.renorm_range_count,
+        renorm_blowup    : ahrs.renorm_blowup_count,
+        gps_fix_count    : gps_fix_count,
+        num_long_running : perf_info_get_num_long_running(),
+        num_loops        : perf_info_get_num_loops(),
+        max_time         : perf_info_get_max_time(),
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a performance packet
 static void Log_Read_Performance()
 {
-    int8_t temp1    = DataFlash.ReadByte();
-    int8_t temp2    = DataFlash.ReadByte();
-    int8_t temp3    = DataFlash.ReadByte();
-    uint16_t temp4  = DataFlash.ReadInt();
-    uint16_t temp5  = DataFlash.ReadInt();
-    uint32_t temp6  = DataFlash.ReadLong();
-
-    //                         1   2   3   4   5    6
-    cliSerial->printf_P(PSTR("PM, %d, %d, %d, %u, %u, %lu\n"),
-                    (int)temp1,
-                    (int)temp2,
-                    (int)temp3,
-                    (unsigned int)temp4,
-                    (unsigned int)temp5,
-                    (unsigned long)temp6);
+    struct log_Performance pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+    //                            1   2   3   4   5    6
+    cliSerial->printf_P(PSTR("PM, %u, %u, %u, %u, %u, %lu\n"),
+                        (unsigned)pkt.renorm_count,
+                        (unsigned)pkt.renorm_blowup,
+                        (unsigned)pkt.gps_fix_count,
+                        (unsigned)pkt.num_long_running,
+                        (unsigned)pkt.num_loops,
+                        (unsigned long)pkt.max_time);
 }
 
 // Write a command processing packet.  Total length : 21 bytes
@@ -717,8 +720,6 @@ static void Log_Write_Cmd(uint8_t num, struct Location *wp)
     DataFlash.WriteLong(wp->alt);                       // 6
     DataFlash.WriteLong(wp->lat);                       // 7
     DataFlash.WriteLong(wp->lng);                       // 8
-
-    DataFlash.WriteByte(END_BYTE);
 }
 //CMD, 3, 0, 16, 8, 1, 800, 340440192, -1180692736
 
@@ -761,7 +762,6 @@ static void Log_Write_Attitude()
     DataFlash.WriteInt(g.rc_4.control_in);                                  // 5
     DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                          // 6
     DataFlash.WriteInt((uint16_t)nav_yaw);                                  // 7 (this used to be compass.heading)
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read an attitude packet
@@ -810,8 +810,6 @@ static void Log_Write_INAV()
     DataFlash.WriteLong(get_int(inertial_nav.get_longitude_diff()));        // 12 accel based lon from home
     DataFlash.WriteLong(get_int(inertial_nav.get_latitude_velocity()));     // 13 accel based lat velocity
     DataFlash.WriteLong(get_int(inertial_nav.get_longitude_velocity()));    // 14 accel based lon velocity
-
-    DataFlash.WriteByte(END_BYTE);
 #endif
 }
 
@@ -858,7 +856,6 @@ static void Log_Write_Mode(uint8_t mode)
     DataFlash.WriteByte(LOG_MODE_MSG);
     DataFlash.WriteByte(mode);
     DataFlash.WriteInt(g.throttle_cruise);
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a mode packet
@@ -875,7 +872,6 @@ static void Log_Write_Startup()
     DataFlash.WriteByte(HEAD_BYTE1);
     DataFlash.WriteByte(HEAD_BYTE2);
     DataFlash.WriteByte(LOG_STARTUP_MSG);
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a startup packet
@@ -899,7 +895,6 @@ static void Log_Write_Data(uint8_t _index, int32_t _data)
         DataFlash.WriteByte(_index);
         DataFlash.WriteByte(DATA_INT32);
         DataFlash.WriteLong(_data);
-        DataFlash.WriteByte(END_BYTE);
     }
 }
 
@@ -912,7 +907,6 @@ static void Log_Write_Data(uint8_t _index, float _data)
         DataFlash.WriteByte(_index);
         DataFlash.WriteByte(DATA_FLOAT);
         DataFlash.WriteLong(get_int(_data));
-        DataFlash.WriteByte(END_BYTE);
     }
 }
 
@@ -925,7 +919,6 @@ static void Log_Write_Data(uint8_t _index, int16_t _data)
         DataFlash.WriteByte(_index);
         DataFlash.WriteByte(DATA_INT16);
         DataFlash.WriteInt(_data);
-        DataFlash.WriteByte(END_BYTE);
     }
 }
 
@@ -938,7 +931,6 @@ static void Log_Write_Data(uint8_t _index, uint16_t _data)
         DataFlash.WriteByte(_index);
         DataFlash.WriteByte(DATA_UINT16);
         DataFlash.WriteInt(_data);
-        DataFlash.WriteByte(END_BYTE);
     }
 }
 
@@ -951,7 +943,6 @@ static void Log_Write_Event(uint8_t _index)
         DataFlash.WriteByte(LOG_DATA_MSG);
         DataFlash.WriteByte(_index);
         DataFlash.WriteByte(DATA_EVENT);
-        DataFlash.WriteByte(END_BYTE);
     }
 }
 
@@ -996,8 +987,6 @@ static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, in
     DataFlash.WriteLong(d);                                     // 5
     DataFlash.WriteLong(output);                        // 6
     DataFlash.WriteLong(gain * 1000);                   // 7
-
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a PID packet
@@ -1036,7 +1025,6 @@ static void Log_Write_DMP()
     DataFlash.WriteInt((int16_t)ahrs2.pitch_sensor);                        // 4
     DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                          // 5
     DataFlash.WriteInt((uint16_t)ahrs2.yaw_sensor);                         // 6
-    DataFlash.WriteByte(END_BYTE);
 #endif
 }
 
@@ -1075,7 +1063,6 @@ static void Log_Write_Camera()
     DataFlash.WriteInt((int16_t)ahrs.roll_sensor);       // 5
     DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);      // 6
     DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);       // 7
-    DataFlash.WriteByte(END_BYTE);
 #endif
 }
 
@@ -1112,7 +1099,6 @@ static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
     DataFlash.WriteByte(sub_system);                // 1 sub system
     DataFlash.WriteByte(error_code);                // 2 error code
-    DataFlash.WriteByte(END_BYTE);
 }
 
 // Read an error packet
@@ -1193,8 +1179,7 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 
     DataFlash.StartRead(start_page);
 
-	while(page < end_page && page != -1){
-
+	while (page < end_page && page != -1) {
 		data = DataFlash.ReadByte();
 
 		// This is a state machine to read the packets
@@ -1293,14 +1278,6 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
                         break;
 				}
 				break;
-		case 3:
-			if(data == END_BYTE){
-				packet_count++;
-			}else{
-				cliSerial->printf_P(PSTR("Error Reading END_BYTE: %d\n"),data);
-			}
-			log_step = 0;                   // Restart sequence: new packet...
-			break;
 		}
 		page = DataFlash.GetPage();
 	}
