@@ -106,7 +106,35 @@ public:
     uint8_t get_num_logs(void);
     void start_new_log(void);
 
+	/*
+      every logged packet starts with 3 bytes
+    */
+    struct log_Header {
+        uint8_t head1, head2, msgid;
+    };
+
+    /*
+      read a packet, stripping off the header bytes
+    */
+    void ReadPacket(void *pkt, uint16_t size) {
+        ReadBlock((void *)(sizeof(struct log_Header)+(uintptr_t)pkt), size - sizeof(struct log_Header));
+    }
+
 };
+
+/*
+  unfortunately these need to be macros because of a limitation of
+  named member structure initialisation in g++
+ */
+#define LOG_PACKET_HEADER	       uint8_t head1, head2, msgid;
+#define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
+
+// once the logging code is all converted we will remove these from
+// this header
+#define HEAD_BYTE1  0xA3    // Decimal 163
+#define HEAD_BYTE2  0x95    // Decimal 149
+
+
 
 #include "DataFlash_APM1.h"
 #include "DataFlash_APM2.h"
