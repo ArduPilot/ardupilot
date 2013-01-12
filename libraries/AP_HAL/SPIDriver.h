@@ -25,6 +25,7 @@ public:
     virtual void cs_assert() = 0;
     virtual void cs_release() = 0;
     virtual uint8_t transfer (uint8_t data) = 0;
+    virtual void transfer (const uint8_t *data, uint16_t len) = 0;
 };
 
 #endif // __AP_HAL_SPI_DRIVER_H__
