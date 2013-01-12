@@ -49,9 +49,21 @@ void AP_Scheduler::run(uint16_t time_available)
 {
     for (uint8_t i=0; i<_num_tasks; i++) {
         uint16_t dt = _tick_counter - _last_run[i];
-        if (dt >= pgm_read_word(&_tasks[i].interval_ticks)) {
+        uint16_t interval_ticks = pgm_read_word(&_tasks[i].interval_ticks);
+        if (dt >= interval_ticks) {
             // this task is due to run. Do we have enough time to run it?
             _task_time_allowed = pgm_read_word(&_tasks[i].max_time_micros);
+
+            if (dt >= interval_ticks*2) {
+                // we've slipped a whole run of this task!
+                if (_debug != 0) {
+                    hal.console->printf_P(PSTR("Scheduler slip task[%u] (%u/%u/%u)\n"), 
+                                          (unsigned)i, 
+                                          (unsigned)dt,
+                                          (unsigned)interval_ticks,
+                                          (unsigned)_task_time_allowed);
+                }
+            }
             if (_task_time_allowed <= time_available) {
                 // run it
                 _task_time_started = hal.scheduler->micros();
