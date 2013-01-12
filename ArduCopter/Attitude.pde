@@ -458,18 +458,15 @@ get_rate_roll(int32_t target_rate)
     rate_error  = target_rate - current_rate;
     p           = g.pid_rate_roll.get_p(rate_error);
 
-    // freeze I term if we've breached roll-pitch limits
-    if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
-        i	= g.pid_rate_roll.get_integrator();
-    }else{
-        i   = g.pid_rate_roll.get_i(rate_error, G_Dt);
-    }
-
+    i = g.pid_rate_roll.get_i(rate_error, G_Dt);
+    
     d = g.pid_rate_roll.get_d(rate_error, G_Dt);
     output = p + i + d;
 
     // constrain output
     output = constrain(output, -5000, 5000);
+    
+    motors.set_roll_musthave_pct((float)i/output);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -500,17 +497,16 @@ get_rate_pitch(int32_t target_rate)
     // call pid controller
     rate_error      = target_rate - current_rate;
     p               = g.pid_rate_pitch.get_p(rate_error);
-    // freeze I term if we've breached roll-pitch limits
-    if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
-        i = g.pid_rate_pitch.get_integrator();
-    }else{
-        i = g.pid_rate_pitch.get_i(rate_error, G_Dt);
-    }
+
+    i = g.pid_rate_pitch.get_i(rate_error, G_Dt);
+
     d = g.pid_rate_pitch.get_d(rate_error, G_Dt);
     output = p + i + d;
 
     // constrain output
     output = constrain(output, -5000, 5000);
+    
+    motors.set_pitch_musthave_pct((float)i/output);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains

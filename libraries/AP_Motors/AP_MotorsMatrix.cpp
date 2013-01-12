@@ -89,6 +89,16 @@ void AP_MotorsMatrix::output_min()
     }
 }
 
+void AP_MotorsMatrix::set_roll_musthave_pct(float pct)
+{
+    _roll_musthave_percent = constrain(pct,0.0,1.0);
+}
+
+void AP_MotorsMatrix::set_pitch_musthave_pct(float pct)
+{
+    _pitch_musthave_percent = constrain(pct,0.0,1.0);
+}
+
 // output_armed - sends commands to the motors
 void AP_MotorsMatrix::output_armed()
 {
@@ -96,6 +106,8 @@ void AP_MotorsMatrix::output_armed()
     int16_t out_min = _rc_throttle->radio_min;
     int16_t out_max = _rc_throttle->radio_max;
     int16_t rc_yaw_constrained_pwm;
+    float roll_musthave_pct = _roll_musthave_percent;
+    float pitch_musthave_pct = _pitch_musthave_percent;
     int16_t rc_yaw_excess;
     int16_t upper_margin, lower_margin;
     int16_t motor_adjustment = 0;
@@ -143,16 +155,26 @@ void AP_MotorsMatrix::output_armed()
             rc_yaw_constrained_pwm = _rc_yaw->pwm_out;
             rc_yaw_excess = 0;
         }
+        
+        if(_rc_roll->pwm_out != 0) {
+            float lim_pct = fabs((float)AP_MOTORS_MATRIX_RP_LOWER_LIMIT_PWM/_rc_roll->pwm_out);
+            roll_musthave_pct = constrain(lim_pct+roll_musthave_pct,0.0f,1.0f);
+        }
+        
+        if(_rc_pitch->pwm_out != 0) {
+            float lim_pct = fabs((float)AP_MOTORS_MATRIX_RP_LOWER_LIMIT_PWM/_rc_pitch->pwm_out);
+            pitch_musthave_pct = constrain(lim_pct+pitch_musthave_pct,0.0f,1.0f);
+        }
 
         // initialise upper and lower margins
         upper_margin = lower_margin = out_max - out_min;
-
+        
         // add roll, pitch, throttle and constrained yaw for each motor
         for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
             if( motor_enabled[i] ) {
                 motor_out[i] = _rc_throttle->radio_out +
-                               _rc_roll->pwm_out * _roll_factor[i] +
-                               _rc_pitch->pwm_out * _pitch_factor[i] +
+                               _rc_roll->pwm_out * _roll_factor[i] * roll_musthave_pct +
+                               _rc_pitch->pwm_out * _pitch_factor[i] * pitch_musthave_pct +
                                rc_yaw_constrained_pwm * _yaw_factor[i];
 
                 // calculate remaining room between fastest running motor and top of pwm range
@@ -193,6 +215,27 @@ void AP_MotorsMatrix::output_armed()
 
             // we haven't even been able to apply roll, pitch and minimal yaw without adjusting throttle so mark all limits as breached
             _reached_limit |= AP_MOTOR_ROLLPITCH_LIMIT | AP_MOTOR_YAW_LIMIT | AP_MOTOR_THROTTLE_LIMIT;
+        }
+        
+        float roll_pitch_nicetohave[AP_MOTORS_MAX_NUM_MOTORS];
+                
+        for(i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if(motor_enabled[i])
+                roll_pitch_nicetohave[i] = _rc_roll->pwm_out * _roll_factor[i] * (1.0-roll_musthave_pct) + _rc_pitch->pwm_out * _pitch_factor[i] * (1.0-pitch_musthave_pct);
+        }
+        
+        float scale_factor = 1;
+        for(i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if(motor_enabled[i] && roll_pitch_nicetohave[i] != 0) {
+                scale_factor = min((float)max(max(0,out_max - motor_out[i]), max(0,motor_out[i] - out_min))/fabs(roll_pitch_nicetohave[i]), scale_factor);
+            }
+        }
+        
+        constrain(scale_factor,0.0,1.0);
+        
+        for(i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if(motor_enabled[i])
+                motor_out[i] += roll_pitch_nicetohave[i] * scale_factor;
         }
 
         // if we didn't give all the yaw requested, calculate how much additional yaw we can add
