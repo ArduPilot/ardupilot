@@ -97,10 +97,34 @@ void DataFlash_SITL::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, 
 	buffer[BufferNum][IntPageAdr] = (uint8_t)Data;
 }
 
+void DataFlash_SITL::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
+                                const void *pHeader, uint8_t hdr_size,
+                                const void *pBuffer, uint16_t size)
+{
+    if (hdr_size) {
+        memcpy(&buffer[BufferNum][IntPageAdr],
+               pHeader,
+               hdr_size);
+    }
+    memcpy(&buffer[BufferNum][IntPageAdr+hdr_size],
+           pBuffer,
+           size);
+}
+
 unsigned char DataFlash_SITL::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
 {
 	return (unsigned char)buffer[BufferNum][IntPageAdr];
 }
+
+// read size bytes of data to a page. The caller must ensure that
+// the data fits within the page, otherwise it will wrap to the
+// start of the page
+bool DataFlash_SITL::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size)
+{
+	memcpy(pBuffer, &buffer[BufferNum][IntPageAdr], size);
+    return true;
+}
+
 
 // *** END OF INTERNAL FUNCTIONS ***
 
