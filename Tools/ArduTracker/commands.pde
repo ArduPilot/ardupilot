@@ -178,10 +178,10 @@ void set_next_WP(struct Location *wp)
 	loiter_sum 		= 0;
 	loiter_total 	= 0;
 
-	float rads = (abs(next_WP.lat)/t7) * 0.0174532925;
+	float rads = (abs(next_WP.lat)/t7) * 0.0174532925f;
 	//377,173,810 / 10,000,000 = 37.717381 * 0.0174532925 = 0.658292482926943
-	scaleLongDown = cos(rads);
-	scaleLongUp = 1.0f/cos(rads);
+	scaleLongDown = cosf(rads);
+	scaleLongUp = 1.0f/cosf(rads);
 
 	// this is handy for the groundstation
 	wp_totalDistance 	= getDistance(&current_loc, &next_WP);

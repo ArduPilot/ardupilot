@@ -274,8 +274,8 @@ static void Log_Read_GPS()
     int8_t temp2    = DataFlash.ReadByte();           // 2 sats
     int32_t temp3   = DataFlash.ReadLong();           // 3 lat
     int32_t temp4   = DataFlash.ReadLong();           // 4 lon
-    float temp5     = DataFlash.ReadLong() / 100.0;   // 5 sensor alt
-    float temp6     = DataFlash.ReadLong() / 100.0;   // 6 gps alt
+    float temp5     = DataFlash.ReadLong() / 100.0f;  // 5 sensor alt
+    float temp6     = DataFlash.ReadLong() / 100.0f;  // 6 gps alt
     int16_t temp7   = DataFlash.ReadInt();            // 7 ground speed
     int32_t temp8   = DataFlash.ReadLong();           // 8 ground course
 
@@ -355,8 +355,8 @@ static void Log_Write_Current()
 
     DataFlash.WriteInt(g.rc_3.control_in);                      // 1
     DataFlash.WriteLong(throttle_integrator);                   // 2
-    DataFlash.WriteInt(battery_voltage1     * 100.0);           // 3
-    DataFlash.WriteInt(current_amps1        * 100.0);           // 4
+    DataFlash.WriteInt(battery_voltage1     * 100.0f);          // 3
+    DataFlash.WriteInt(current_amps1        * 100.0f);          // 4
     DataFlash.WriteInt(current_total1);                                 // 5
 
     DataFlash.WriteByte(END_BYTE);
@@ -367,8 +367,8 @@ static void Log_Read_Current()
 {
     int16_t temp1 = DataFlash.ReadInt();                        // 1
     int32_t temp2 = DataFlash.ReadLong();                       // 2
-    float temp3 = DataFlash.ReadInt() / 100.f;          // 3
-    float temp4 = DataFlash.ReadInt() / 100.f;          // 4
+    float temp3 = DataFlash.ReadInt() / 100.0f;          // 3
+    float temp4 = DataFlash.ReadInt() / 100.0f;          // 4
     int16_t temp5 = DataFlash.ReadInt();                        // 5
 
     //  1    2    3      4      5
@@ -1085,7 +1085,7 @@ static void Log_Read_Camera()
     int32_t temp1   = DataFlash.ReadLong();             // 1 time
     int32_t temp2   = DataFlash.ReadLong();             // 2 lat
     int32_t temp3   = DataFlash.ReadLong();             // 3 lon
-    float temp4     = DataFlash.ReadLong() / 100.0;     // 4 altitude
+    float temp4     = DataFlash.ReadLong() / 100.0f;    // 4 altitude
     int16_t temp5   = DataFlash.ReadInt();              // 5 roll in centidegrees
     int16_t temp6   = DataFlash.ReadInt();              // 6 pitch in centidegrees
     uint16_t temp7  = DataFlash.ReadInt();              // 7 yaw in centidegrees

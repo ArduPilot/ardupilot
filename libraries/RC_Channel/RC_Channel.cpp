@@ -180,7 +180,7 @@ RC_Channel::calc_pwm(void)
         radio_out       = (_reverse >= 0) ? (radio_min + pwm_out) : (radio_max - pwm_out);
 
     }else if(_type == RC_CHANNEL_TYPE_ANGLE_RAW) {
-        pwm_out         = (float)servo_out * .1;
+        pwm_out         = (float)servo_out * 0.1f;
         radio_out       = (pwm_out * _reverse) + radio_trim;
 
     }else{     // RC_CHANNEL_TYPE_ANGLE

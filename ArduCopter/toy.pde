@@ -116,7 +116,7 @@ void roll_pitch_toy()
         get_acro_yaw(0);
         yaw_timer--;
 
-        if((yaw_timer == 0) || (fabs(omega.z) < .17)) {
+        if((yaw_timer == 0) || (fabsf(omega.z) < 0.17f)) {
             ap_system.yaw_stopped = true;
             nav_yaw = ahrs.yaw_sensor;
         }

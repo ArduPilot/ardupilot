@@ -94,7 +94,7 @@ static void stabilize_pitch(float speed_scaler)
 {
 #if APM_CONTROL == DISABLED
     int32_t tempcalc = nav_pitch_cd +
-        fabs(ahrs.roll_sensor * g.kff_pitch_compensation) +
+        fabsf(ahrs.roll_sensor * g.kff_pitch_compensation) +
         (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
         (ahrs.pitch_sensor - g.pitch_trim_cd);
     if (inverted_flight) {
@@ -123,12 +123,12 @@ static void stabilize_stick_mixing()
     float ch2_inf;
         
     ch1_inf = (float)g.channel_roll.radio_in - (float)g.channel_roll.radio_trim;
-    ch1_inf = fabs(ch1_inf);
+    ch1_inf = fabsf(ch1_inf);
     ch1_inf = min(ch1_inf, 400.0);
     ch1_inf = ((400.0 - ch1_inf) /400.0);
         
     ch2_inf = (float)g.channel_pitch.radio_in - g.channel_pitch.radio_trim;
-    ch2_inf = fabs(ch2_inf);
+    ch2_inf = fabsf(ch2_inf);
     ch2_inf = min(ch2_inf, 400.0);
     ch2_inf = ((400.0 - ch2_inf) /400.0);
         
@@ -156,7 +156,7 @@ static void stabilize_yaw(float speed_scaler)
         // important for steering on the ground during landing
         // -----------------------------------------------
         ch4_inf = (float)g.channel_rudder.radio_in - (float)g.channel_rudder.radio_trim;
-        ch4_inf = fabs(ch4_inf);
+        ch4_inf = fabsf(ch4_inf);
         ch4_inf = min(ch4_inf, 400.0);
         ch4_inf = ((400.0 - ch4_inf) /400.0);
     }
@@ -328,7 +328,7 @@ static void calc_nav_roll()
     }
 
     // Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
-    nav_roll = ToDeg(atan(speed*turn_rate/GRAVITY_MSS)*100);
+    nav_roll = ToDeg(atanf(speed*turn_rate/GRAVITY_MSS)*100);
 
 #else
     // this is the old nav_roll calculation. We will use this for 2.50
@@ -362,7 +362,7 @@ static void throttle_slew_limit(int16_t last_throttle)
     // if slew limit rate is set to zero then do not slew limit
     if (g.throttle_slewrate) {                   
         // limit throttle change by the given percentage per second
-        float temp = g.throttle_slewrate * G_Dt * 0.01 * fabs(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
+        float temp = g.throttle_slewrate * G_Dt * 0.01 * fabsf(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
         // allow a minimum change of 1 PWM per cycle
         if (temp < 1) {
             temp = 1;

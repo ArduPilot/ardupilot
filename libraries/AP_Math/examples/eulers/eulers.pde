@@ -22,7 +22,7 @@ static float rad_diff(float rad1, float rad2)
     if (diff < -PI) {
         diff += 2*PI;
     }
-    return fabs(diff);
+    return fabsf(diff);
 }
 
 static void check_result(float roll, float pitch, float yaw,

@@ -11,7 +11,7 @@
 /// See http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
 //
 #include <inttypes.h>
-#include <math.h>
+#include <AP_Math.h>
 #include <Filter.h>
 #include <DerivativeFilter.h>
 

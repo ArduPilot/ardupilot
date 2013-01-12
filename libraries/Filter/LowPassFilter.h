@@ -78,7 +78,7 @@ template <class T>
 void LowPassFilter<T>::set_cutoff_frequency(float time_step, float cutoff_freq)
 {
     // calculate alpha
-    float rc = 1/(2*(float)M_PI*cutoff_freq);
+    float rc = 1/(2*PI*cutoff_freq);
     _alpha = time_step / (time_step + rc);
 }
 

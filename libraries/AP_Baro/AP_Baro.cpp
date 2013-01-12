@@ -8,7 +8,7 @@
  *   of the License, or (at your option) any later version.
  */
 
-#include <math.h>
+#include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_Baro.h>
 #include <AP_HAL.h>
@@ -83,9 +83,9 @@ void AP_Baro::calibrate()
                         "for more than 500ms in AP_Baro::calibrate [3]\r\n"));
             }
         } while (!healthy);
-        ground_pressure = (ground_pressure * 0.8) + (get_pressure() * 0.2);
-        ground_temperature = (ground_temperature * 0.8) + 
-            (get_temperature() * 0.2);
+        ground_pressure = (ground_pressure * 0.8f) + (get_pressure() * 0.2f);
+        ground_temperature = (ground_temperature * 0.8f) + 
+            (get_temperature() * 0.2f);
 
         hal.scheduler->delay(100);
     }
@@ -111,7 +111,7 @@ float AP_Baro::get_altitude(void)
     // unsmoothed values
     scaling                                 = (float)_ground_pressure / (float)get_pressure();
     temp                                    = ((float)_ground_temperature) + 273.15f;
-    _altitude = log(scaling) * temp * 29.271267f;
+    _altitude = logf(scaling) * temp * 29.271267f;
 
     _last_altitude_t = _last_update;
 
@@ -128,6 +128,6 @@ float AP_Baro::get_climb_rate(void)
 {
     // we use a 7 point derivative filter on the climb rate. This seems
     // to produce somewhat reasonable results on real hardware
-    return _climb_rate_filter.slope() * 1.0e3;
+    return _climb_rate_filter.slope() * 1.0e3f;
 }
 

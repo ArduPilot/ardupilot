@@ -330,14 +330,14 @@ void AP_MotorsHeli::reset_swash()
     if( swash_type == AP_MOTORS_HELI_SWASH_CCPM ) {                     //CCPM Swashplate, perform servo control mixing
 
         // roll factors
-        _rollFactor[CH_1] = cos(radians(servo1_pos + 90 - phase_angle));
-        _rollFactor[CH_2] = cos(radians(servo2_pos + 90 - phase_angle));
-        _rollFactor[CH_3] = cos(radians(servo3_pos + 90 - phase_angle));
+        _rollFactor[CH_1] = cosf(radians(servo1_pos + 90 - phase_angle));
+        _rollFactor[CH_2] = cosf(radians(servo2_pos + 90 - phase_angle));
+        _rollFactor[CH_3] = cosf(radians(servo3_pos + 90 - phase_angle));
 
         // pitch factors
-        _pitchFactor[CH_1] = cos(radians(servo1_pos - phase_angle));
-        _pitchFactor[CH_2] = cos(radians(servo2_pos - phase_angle));
-        _pitchFactor[CH_3] = cos(radians(servo3_pos - phase_angle));
+        _pitchFactor[CH_1] = cosf(radians(servo1_pos - phase_angle));
+        _pitchFactor[CH_2] = cosf(radians(servo2_pos - phase_angle));
+        _pitchFactor[CH_3] = cosf(radians(servo3_pos - phase_angle));
 
         // collective factors
         _collectiveFactor[CH_1] = 1;
@@ -363,10 +363,10 @@ void AP_MotorsHeli::reset_swash()
     }
 
     // set roll, pitch and throttle scaling
-    _roll_scaler = 1.0;
-    _pitch_scaler = 1.0;
-    _collective_scalar = ((float)(_rc_throttle->radio_max - _rc_throttle->radio_min))/1000.0;
-	_stab_throttle_scalar = 1.0;
+    _roll_scaler = 1.0f;
+    _pitch_scaler = 1.0f;
+    _collective_scalar = ((float)(_rc_throttle->radio_max - _rc_throttle->radio_min))/1000.0f;
+	_stab_throttle_scalar = 1.0f;
 
     // we must be in set-up mode so mark swash as uninitialised
     _swash_initialised = false;
@@ -391,25 +391,25 @@ void AP_MotorsHeli::init_swash()
     collective_mid = constrain(collective_mid, collective_min, collective_max);
 
     // calculate throttle mid point
-    throttle_mid = ((float)(collective_mid-collective_min))/((float)(collective_max-collective_min))*1000.0;
+    throttle_mid = ((float)(collective_mid-collective_min))/((float)(collective_max-collective_min))*1000.0f;
 
     // determine roll, pitch and throttle scaling
-    _roll_scaler = (float)roll_max/4500.0;
-    _pitch_scaler = (float)pitch_max/4500.0;
-    _collective_scalar = ((float)(collective_max-collective_min))/1000.0;
-	_stab_throttle_scalar = ((float)(stab_col_max - stab_col_min))/100.0;
+    _roll_scaler = (float)roll_max/4500.0f;
+    _pitch_scaler = (float)pitch_max/4500.0f;
+    _collective_scalar = ((float)(collective_max-collective_min))/1000.0f;
+	_stab_throttle_scalar = ((float)(stab_col_max - stab_col_min))/100.0f;
 
     if( swash_type == AP_MOTORS_HELI_SWASH_CCPM ) {                     //CCPM Swashplate, perform control mixing
 
         // roll factors
-        _rollFactor[CH_1] = cos(radians(servo1_pos + 90 - phase_angle));
-        _rollFactor[CH_2] = cos(radians(servo2_pos + 90 - phase_angle));
-        _rollFactor[CH_3] = cos(radians(servo3_pos + 90 - phase_angle));
+        _rollFactor[CH_1] = cosf(radians(servo1_pos + 90 - phase_angle));
+        _rollFactor[CH_2] = cosf(radians(servo2_pos + 90 - phase_angle));
+        _rollFactor[CH_3] = cosf(radians(servo3_pos + 90 - phase_angle));
 
         // pitch factors
-        _pitchFactor[CH_1] = cos(radians(servo1_pos - phase_angle));
-        _pitchFactor[CH_2] = cos(radians(servo2_pos - phase_angle));
-        _pitchFactor[CH_3] = cos(radians(servo3_pos - phase_angle));
+        _pitchFactor[CH_1] = cosf(radians(servo1_pos - phase_angle));
+        _pitchFactor[CH_2] = cosf(radians(servo2_pos - phase_angle));
+        _pitchFactor[CH_3] = cosf(radians(servo3_pos - phase_angle));
 
         // collective factors
         _collectiveFactor[CH_1] = 1;

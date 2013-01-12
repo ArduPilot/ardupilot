@@ -53,7 +53,7 @@ static void navigate()
 // Disabled for now
 void calc_distance_error()
 {
-    distance_estimate       += (float)g_gps->ground_speed * .0002 * cos(radians(bearing_error_cd * .01));
+    distance_estimate       += (float)g_gps->ground_speed * .0002f * cosf(radians(bearing_error_cd * .01f));
     distance_estimate       -= DST_EST_GAIN * (float)(distance_estimate - GPS_wp_distance);
     wp_distance             = max(distance_estimate,10);
 }
@@ -165,7 +165,7 @@ static void update_loiter()
  *       if (wp_distance < g.loiter_radius){
  *               nav_bearing += 9000;
  *       }else{
- *               nav_bearing -= 100 * M_PI / 180 * asin(g.loiter_radius / wp_distance);
+ *               nav_bearing -= 100 * M_PI / 180 * asinf(g.loiter_radius / wp_distance);
  *       }
  *
  *       update_crosstrack();
@@ -182,9 +182,9 @@ static void update_crosstrack(void)
         Vector2f wind2d = Vector2f(wind.x, wind.y);
         float speed;
         if (ahrs.airspeed_estimate(&speed)) {
-            Vector2f nav_vector = Vector2f(cos(radians(nav_bearing_cd*0.01)), sin(radians(nav_bearing_cd*0.01))) * speed;
+            Vector2f nav_vector = Vector2f(cosf(radians(nav_bearing_cd*0.01)), sinf(radians(nav_bearing_cd*0.01))) * speed;
             Vector2f nav_adjusted = nav_vector - wind2d;
-            nav_bearing_cd = degrees(atan2(nav_adjusted.y, nav_adjusted.x)) * 100;
+            nav_bearing_cd = degrees(atan2f(nav_adjusted.y, nav_adjusted.x)) * 100;
         }
     }
 
@@ -194,7 +194,7 @@ static void update_crosstrack(void)
     if (wp_totalDistance >= g.crosstrack_min_distance && 
         abs(wrap_180_cd(target_bearing_cd - crosstrack_bearing_cd)) < 4500) {
         // Meters we are off track line
-        crosstrack_error = sin(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               
+        crosstrack_error = sinf(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               
         nav_bearing_cd += constrain_int32(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
         nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
     }

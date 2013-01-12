@@ -36,7 +36,7 @@ static float longitude_scale(const struct Location *loc)
         // the same scale factor.
         return scale;
     }
-    scale = cos((fabs((float)loc->lat)/1.0e7) * 0.0174532925);
+    scale = cosf((fabsf((float)loc->lat)/1.0e7f) * 0.0174532925f);
     last_lat = loc->lat;
     return scale;
 }
@@ -53,7 +53,7 @@ float get_distance(const struct Location *loc1, const struct Location *loc2)
         return -1;
     float dlat              = (float)(loc2->lat - loc1->lat);
     float dlong             = ((float)(loc2->lng - loc1->lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlong) * 0.01113195;
+    return pythagorous2(dlat, dlong) * 0.01113195f;
 }
 
 // return distance in centimeters to between two locations, or -1 if
@@ -68,7 +68,7 @@ int32_t get_bearing_cd(const struct Location *loc1, const struct Location *loc2)
 {
     int32_t off_x = loc2->lng - loc1->lng;
     int32_t off_y = (loc2->lat - loc1->lat) / longitude_scale(loc2);
-    int32_t bearing = 9000 + atan2(-off_y, off_x) * 5729.57795;
+    int32_t bearing = 9000 + atan2f(-off_y, off_x) * 5729.57795f;
     if (bearing < 0) bearing += 36000;
     return bearing;
 }
@@ -120,17 +120,17 @@ bool location_passed_point(struct Location &location,
  */
 void location_update(struct Location *loc, float bearing, float distance)
 {
-    float lat1 = radians(loc->lat*1.0e-7);
-    float lon1 = radians(loc->lng*1.0e-7);
+    float lat1 = radians(loc->lat*1.0e-7f);
+    float lon1 = radians(loc->lng*1.0e-7f);
     float brng = radians(bearing);
     float dr = distance/RADIUS_OF_EARTH;
 
-    float lat2 = asin(sin(lat1)*cos(dr) +
-                      cos(lat1)*sin(dr)*cos(brng));
-    float lon2 = lon1 + atan2(sin(brng)*sin(dr)*cos(lat1),
-                              cos(dr)-sin(lat1)*sin(lat2));
-    loc->lat = degrees(lat2)*1.0e7;
-    loc->lng = degrees(lon2)*1.0e7;
+    float lat2 = asinf(sinf(lat1)*cosf(dr) +
+                       cosf(lat1)*sinf(dr)*cosf(brng));
+    float lon2 = lon1 + atan2f(sinf(brng)*sinf(dr)*cosf(lat1),
+                               cosf(dr)-sinf(lat1)*sinf(lat2));
+    loc->lat = degrees(lat2)*1.0e7f;
+    loc->lng = degrees(lon2)*1.0e7f;
 }
 
 /*
@@ -140,8 +140,8 @@ void location_update(struct Location *loc, float bearing, float distance)
 void location_offset(struct Location *loc, float ofs_north, float ofs_east)
 {
     if (ofs_north != 0 || ofs_east != 0) {
-        float dlat = ofs_north * 89.831520982;
-        float dlng = (ofs_east * 89.831520982) / longitude_scale(loc);
+        float dlat = ofs_north * 89.831520982f;
+        float dlng = (ofs_east * 89.831520982f) / longitude_scale(loc);
         loc->lat += dlat;
         loc->lng += dlng;
     }

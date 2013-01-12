@@ -10,7 +10,7 @@
 
 #include "AP_OpticalFlow.h"
 
-#define FORTYFIVE_DEGREES 0.78539816
+#define FORTYFIVE_DEGREES 0.78539816f
 
 // pointer to the last instantiated optical flow sensor.  Will be turned into
 // a table if we ever add support for more than one sensor
@@ -81,8 +81,8 @@ void AP_OpticalFlow::update_conversion_factors()
 {
     // multiply this number by altitude and pixel change to get horizontal
     // move (in same units as altitude)
-    conv_factor = ((1.0 / (float)(num_pixels * scaler))
-        * 2.0 * tan(field_of_view / 2.0));
+    conv_factor = ((1.0f / (float)(num_pixels * scaler))
+                   * 2.0f * tanf(field_of_view / 2.0f));
     // 0.00615
     radians_to_pixels = (num_pixels * scaler) / field_of_view;
     // 162.99
@@ -97,8 +97,8 @@ void AP_OpticalFlow::update_position(float roll, float pitch,
 
     // only update position if surface quality is good and angle is not
     // over 45 degrees
-    if( surface_quality >= 10 && fabs(roll) <= FORTYFIVE_DEGREES
-     && fabs(pitch) <= FORTYFIVE_DEGREES ) {
+    if( surface_quality >= 10 && fabsf(roll) <= FORTYFIVE_DEGREES
+     && fabsf(pitch) <= FORTYFIVE_DEGREES ) {
 	altitude = max(altitude, 0);
         // calculate expected x,y diff due to roll and pitch change
         exp_change_x = diff_roll * radians_to_pixels;
@@ -108,7 +108,7 @@ void AP_OpticalFlow::update_position(float roll, float pitch,
         change_x = dx - exp_change_x;
         change_y = dy - exp_change_y;
 
-        float avg_altitude = (altitude + _last_altitude)*0.5;
+        float avg_altitude = (altitude + _last_altitude)*0.5f;
 
         // convert raw change to horizontal movement in cm
         // perhaps this altitude should actually be the distance to the

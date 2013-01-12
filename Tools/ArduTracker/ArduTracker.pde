@@ -742,8 +742,8 @@ void update_GPS(void)
 		// Calculate new climb rate
 		add_altitude_data(millis()/100, gps.altitude/10);
 
-		COGX = cos(ToRad(gps.ground_course/100.0));
-		COGY = sin(ToRad(gps.ground_course/100.0));
+		COGX = cosf(ToRad(gps.ground_course/100.0));
+		COGY = sinf(ToRad(gps.ground_course/100.0));
 	}
 }
 

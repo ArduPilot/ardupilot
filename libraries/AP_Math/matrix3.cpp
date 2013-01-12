@@ -100,12 +100,12 @@ void Matrix3<T>::rotation(enum Rotation r)
 template <typename T>
 void Matrix3<T>::from_euler(float roll, float pitch, float yaw)
 {
-    float cp = cos(pitch);
-    float sp = sin(pitch);
-    float sr = sin(roll);
-    float cr = cos(roll);
-    float sy = sin(yaw);
-    float cy = cos(yaw);
+    float cp = cosf(pitch);
+    float sp = sinf(pitch);
+    float sr = sinf(roll);
+    float cr = cosf(roll);
+    float sy = sinf(yaw);
+    float cy = cosf(yaw);
 
     a.x = cp * cy;
     a.y = (sr * sp * cy) - (cr * sy);
@@ -127,10 +127,10 @@ void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw)
         *pitch = -safe_asin(c.x);
     }
     if (roll != NULL) {
-        *roll = atan2(c.y, c.z);
+        *roll = atan2f(c.y, c.z);
     }
     if (yaw != NULL) {
-        *yaw = atan2(b.x, a.x);
+        *yaw = atan2f(b.x, a.x);
     }
 }
 

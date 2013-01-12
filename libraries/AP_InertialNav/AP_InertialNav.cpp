@@ -67,7 +67,7 @@ void AP_InertialNav::update(float dt)
     Vector3f velocity_increase;
 
     // discard samples where dt is too large
-    if( dt > 0.1 ) {
+    if( dt > 0.1f ) {
         return;
     }
 
@@ -152,7 +152,7 @@ void AP_InertialNav::check_gps()
 
         // calculate time since last gps reading
         now = hal.scheduler->millis();
-        float dt = (float)(now - _gps_last_update) / 1000.0;
+        float dt = (float)(now - _gps_last_update) / 1000.0f;
 
         // call position correction method
         correct_with_gps((*_gps_ptr)->longitude, (*_gps_ptr)->latitude, dt);
@@ -170,7 +170,7 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     float hist_position_base_x, hist_position_base_y;
 
     // discard samples where dt is too large
-    if( dt > 1.0 || dt == 0 || !_xy_enabled) {
+    if( dt > 1.0f || dt == 0 || !_xy_enabled) {
         return;
     }
 
@@ -243,7 +243,7 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
 
     // set longitude->meters scaling
     // this is used to offset the shrinking longitude as we go towards the poles
-    _lon_to_m_scaling = cos((fabs((float)lat)/10000000.0) * 0.0174532925);
+    _lon_to_m_scaling = cosf((fabsf((float)lat)/10000000.0f) * 0.0174532925f);
 
     // reset corrections to base position to zero
     _position_base.x = 0;
@@ -335,7 +335,7 @@ void AP_InertialNav::check_baro()
     // calculate time since last baro reading
     baro_update_time = _baro->get_last_update();
     if( baro_update_time != _baro_last_update ) {
-        float dt = (float)(baro_update_time - _baro_last_update) / 1000.0;
+        float dt = (float)(baro_update_time - _baro_last_update) / 1000.0f;
         // call correction method
         correct_with_baro(_baro->get_altitude()*100, dt);
         _baro_last_update = baro_update_time;
@@ -351,7 +351,7 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
     float accel_ef_z_correction;
 
     // discard samples where dt is too large
-    if( dt > 0.5 ) {
+    if( dt > 0.5f ) {
         return;
     }
 

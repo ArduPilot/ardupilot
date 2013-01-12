@@ -23,7 +23,7 @@ static void throttle_slew_limit(int16_t last_throttle)
     // if slew limit rate is set to zero then do not slew limit
     if (g.throttle_slewrate) {                   
         // limit throttle change by the given percentage per second
-        float temp = g.throttle_slewrate * G_Dt * 0.01 * fabs(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
+        float temp = g.throttle_slewrate * G_Dt * 0.01f * fabsf(g.channel_throttle.radio_max - g.channel_throttle.radio_min);
         // allow a minimum change of 1 PWM per cycle
         if (temp < 1) {
             temp = 1;

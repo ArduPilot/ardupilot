@@ -1,5 +1,5 @@
 
-#include <math.h>
+#include <AP_Math.h>
 #include <FastSerial.h>
 #include "Arduino.h"
 #include "AP_PerfMon.h"

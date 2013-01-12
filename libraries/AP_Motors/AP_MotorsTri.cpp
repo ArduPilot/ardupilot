@@ -80,7 +80,7 @@ void AP_MotorsTri::output_armed()
     _rc_throttle->calc_pwm();
     _rc_yaw->calc_pwm();
 
-    int roll_out            = (float)_rc_roll->pwm_out * .866;
+    int roll_out            = (float)_rc_roll->pwm_out * 0.866f;
     int pitch_out           = _rc_pitch->pwm_out / 2;
 
     //left front

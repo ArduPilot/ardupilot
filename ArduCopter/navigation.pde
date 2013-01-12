@@ -13,11 +13,11 @@ static void update_navigation()
 
         // used to calculate speed in X and Y, iterms
         // ------------------------------------------
-        dTnav = (float)(millis() - nav_last_gps_update)/ 1000.0;
+        dTnav = (float)(millis() - nav_last_gps_update)/ 1000.0f;
         nav_last_gps_update = millis();
 
         // prevent runup from bad GPS
-        dTnav = min(dTnav, 1.0);
+        dTnav = min(dTnav, 1.0f);
 
         // save GPS time
         nav_last_gps_time = g_gps->time;
@@ -34,7 +34,7 @@ static void update_navigation()
     // check for inertial nav updates
     if( inertial_nav.position_ok() ) {
         // 50hz
-        dTnav = 0.02;   // To-Do: calculate the time from the mainloop or INS readings?
+        dTnav = 0.02f;   // To-Do: calculate the time from the mainloop or INS readings?
 
         // signal to run nav controllers
         pos_updated = true;
@@ -108,7 +108,7 @@ static void calc_velocity_and_position(){
     }
 
     // this speed is ~ in cm because we are using 10^7 numbers from GPS
-    float tmp = 1.0/dTnav;
+    float tmp = 1.0f/dTnav;
 
 #if INERTIAL_NAV_XY == ENABLED
     if( inertial_nav.position_ok() ) {
@@ -338,11 +338,11 @@ static void update_nav_wp()
             //1 degree = 0.0174532925 radians
 
             // wrap
-            if (circle_angle > 6.28318531)
-                circle_angle -= 6.28318531;
+            if (circle_angle > 6.28318531f)
+                circle_angle -= 6.28318531f;
 
-            next_WP.lng = circle_WP.lng + (g.circle_radius * 100 * cos(1.57 - circle_angle) * scaleLongUp);
-            next_WP.lat = circle_WP.lat + (g.circle_radius * 100 * sin(1.57 - circle_angle));
+            next_WP.lng = circle_WP.lng + (g.circle_radius * 100 * cosf(1.57f - circle_angle) * scaleLongUp);
+            next_WP.lat = circle_WP.lat + (g.circle_radius * 100 * sinf(1.57f - circle_angle));
 
             // use error as the desired rate towards the target
             // nav_lon, nav_lat is calculated
@@ -563,8 +563,8 @@ static void calc_nav_rate(int16_t max_speed)
 
     // rotate by 90 to deal with trig functions
     temp                    = (9000l - wp_bearing) * RADX100;
-    temp_x                  = cos(temp);
-    temp_y                  = sin(temp);
+    temp_x                  = cosf(temp);
+    temp_y                  = sinf(temp);
 
     // rotate desired spped vector:
     int32_t x_target_speed = max_speed   * temp_x - cross_speed * temp_y;
@@ -629,7 +629,7 @@ static int16_t get_desired_speed(int16_t max_speed)
     	 	int32_t s_min 	= WAYPOINT_SPEED_MIN;
     	 	temp 			+= s_min * s_min;
             if( temp < 0 ) temp = 0;                // check to ensure we don't try to take the sqrt of a negative number
-    		max_speed 		= sqrt((float)temp);
+    		max_speed 		= sqrtf((float)temp);
             max_speed 		= min(max_speed, g.waypoint_speed_max);
         }
     }
@@ -653,7 +653,7 @@ static void update_crosstrack(void)
         abs(wrap_180(wp_bearing - original_wp_bearing)) < 4500) {
 
 	    float temp = (wp_bearing - original_wp_bearing) * RADX100;
-    	crosstrack_error = sin(temp) * wp_distance;          // Meters we are off track line
+    	crosstrack_error = sinf(temp) * wp_distance;          // Meters we are off track line
     }else{
         // fade out crosstrack
         crosstrack_error >>= 1;
