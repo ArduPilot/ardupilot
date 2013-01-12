@@ -19,6 +19,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
+    // @Param: SERIAL0_BAUD
+    // @DisplayName: Telemetry Baud Rate
+    // @Description: The baud rate used on the main uart
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+    // @User: Standard
+    GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
+
     // @Param: SERIAL3_BAUD
     // @DisplayName: Telemetry Baud Rate
     // @Description: The baud rate used on the telemetry port
