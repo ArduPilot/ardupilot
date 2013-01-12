@@ -29,6 +29,10 @@ uint8_t EmptySPIDeviceDriver::transfer (uint8_t data)
     return 0;
 }
 
+void EmptySPIDeviceDriver::transfer (const uint8_t *data, uint16_t len)
+{
+}
+
 EmptySPIDeviceManager::EmptySPIDeviceManager()
 {}
 
