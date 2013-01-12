@@ -17,7 +17,6 @@ static void process_nav_command()
         break;
 
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
-        set_yaw_mode(YAW_HOLD);
         do_land();
         break;
 
@@ -291,6 +290,9 @@ static void do_land()
     // hold at our current location
     set_next_WP(&current_loc);
     wp_control = LOITER_MODE;
+
+    // hold current heading
+    set_yaw_mode(YAW_HOLD);
 
     set_throttle_mode(THROTTLE_LAND);
 }
