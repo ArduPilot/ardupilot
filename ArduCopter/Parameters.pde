@@ -1003,6 +1003,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif
 
     GOBJECT(barometer, "GND_", AP_Baro),
+    GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
 #if AP_LIMITS == ENABLED
     //@Group: LIM_

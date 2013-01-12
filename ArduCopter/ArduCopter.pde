@@ -99,8 +99,9 @@
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AP_Limits.h>
-#include <memcheck.h>
-#include <SITL.h>
+#include <memcheck.h>           // memory limit checker
+#include <SITL.h>               // software in the loop support
+#include <AP_Scheduler.h>       // main loop scheduler
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -138,6 +139,8 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 //
 static Parameters g;
 
+// main loop scheduler
+AP_Scheduler scheduler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -817,8 +820,6 @@ AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
-// Used to manage the rate of performance logging messages
-static int16_t perf_mon_counter;
 // The number of GPS fixes we have had
 static int16_t gps_fix_count;
 
@@ -906,6 +907,31 @@ void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t ma
 // setup the var_info table
 AP_Param param_loader(var_info, WP_START_BYTE);
 
+/*
+  scheduler table - all regular tasks apart from the fast_loop()
+  should be listed here, along with how often they should be called
+  (in 10ms units) and the maximum time they are expected to take (in
+  microseconds)
+ */
+static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+    { update_GPS,            2,     900 },
+    { update_navigation,     2,     500 },
+    { medium_loop,           2,     700 },
+    { update_altitude_est,   2,    1000 },
+    { fifty_hz_loop,         2,     950 },
+    { run_nav_updates,       2,     500 },
+    { slow_loop,            10,     500 },
+    { gcs_check_input,	     2,     700 },
+    { gcs_send_heartbeat,  100,     700 },
+    { gcs_data_stream_send,  2,    1500 },
+    { gcs_send_deferred,     2,    1200 },
+    { compass_accumulate,    2,     700 },
+    { barometer_accumulate,  2,     900 },
+    { super_slow_loop,     100,    1100 },
+    { perf_update,        1000,     500 }
+};
+
+
 void setup() {
     // this needs to be the first call, as it fills memory with
     // sentinel values
@@ -935,6 +961,9 @@ void setup() {
     board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
+
+    // initialise the main loop scheduler
+    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
 }
 
 /*
@@ -962,7 +991,7 @@ static void perf_update(void)
 {
     if (g.log_bitmask & MASK_LOG_PM)
         Log_Write_Performance();
-#if SCHEDULER_DEBUG
+#if 1
     cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"), 
                         (unsigned)perf_info_get_num_long_running(),
                         (unsigned)perf_info_get_num_loops(),
@@ -970,112 +999,6 @@ static void perf_update(void)
 #endif
     perf_info_reset();
     gps_fix_count = 0;
-}
-
-/*
-  return number of micros until the main loop will want to run again
- */
-static int16_t main_loop_time_available(void)
-{
-    uint32_t dt = (micros() - fast_loopTimer);
-    if (dt > 10000) {
-        return 0;
-    }
-    return 10000 - dt;
-}
-
-typedef void (*event_fn_t)(void);
-
-struct timer_event_table {
-    event_fn_t func;
-    uint16_t time_interval_10ms;
-    uint16_t min_time_usec;
-};
-
-#define NUM_TIMER_EVENTS 15
-
-/*
-  scheduler table - all regular events apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 10ms units) and the maximum time they are expected to take
- */
-static const struct timer_event_table PROGMEM timer_events[NUM_TIMER_EVENTS] = {
-    { update_GPS,            2,     900 },
-    { update_navigation,     2,     500 },
-    { medium_loop,           2,     700 },
-    { update_altitude_est,   2,     900 },
-    { fifty_hz_loop,         2,     950 },
-    { run_nav_updates,       2,     500 },
-    { slow_loop,            10,     500 },
-    { gcs_check_input,	     2,     700 },
-    { gcs_send_heartbeat,  100,     700 },
-    { gcs_data_stream_send,  2,    1100 },
-    { gcs_send_deferred,     2,    1000 },
-    { compass_accumulate,    2,     700 },
-    { barometer_accumulate,  2,     900 },
-    { super_slow_loop,     100,    1100 },
-    { perf_update,        1000,     500 }
-};
-static uint16_t timer_counters[NUM_TIMER_EVENTS];
-
-static uint16_t tick_counter;
-static uint32_t event_time_started;
-static uint16_t event_time_allowed;
-
-/*
-  return number of micros until the current event reaches its deadline
- */
-static uint16_t event_time_available(void)
-{
-    uint32_t dt = micros() - event_time_started;
-    if (dt > event_time_allowed) {
-        return 0;
-    }
-    return event_time_allowed - dt;
-}
-
-/*
-  run as many scheduler events as we can
- */
-static void run_events(uint16_t time_available_usec)
-{
-    for (uint8_t i=0; i<NUM_TIMER_EVENTS; i++) {
-        // Make sure to use 16-bit arithmetic here for this comparison
-        // to handle the rollover case.  Due to C integer promotion
-        // rules, we have to force the type of the difference here to
-        // "uint16_t" or the compiler will do a 32-bit comparison on a
-        // 32-bit platform.
-        uint16_t dt = tick_counter - timer_counters[i];
-        if (dt >= pgm_read_word(&timer_events[i].time_interval_10ms)) {
-            // this event is due to run. Do we have enough time to run it?
-            event_time_allowed = pgm_read_word(&timer_events[i].min_time_usec);
-            if (event_time_allowed <= time_available_usec) {
-                // run it
-                event_time_started = micros();
-                event_fn_t func = (event_fn_t)pgm_read_pointer(&timer_events[i].func);
-                func();
-                
-                // record the tick counter when we ran. This drives
-                // when we next run the event
-                timer_counters[i] = tick_counter;
-                
-                // work out how long the event actually took
-                uint32_t time_taken = micros() - event_time_started;
-                
-                if (time_taken > event_time_allowed+500) {
-                    // the event overran!
-#if SCHEDULER_DEBUG
-                    cliSerial->printf_P(PSTR("overrun in event %u (%u/%u)\n"), 
-                                        (unsigned)i, 
-                                        (unsigned)time_taken,
-                                        (unsigned)event_time_allowed);
-#endif
-                    return;
-                }
-                time_available_usec -= time_taken;
-            }
-        }
-    }
 }
 
 void loop()
@@ -1099,16 +1022,14 @@ void loop()
         // ---------------------
         fast_loop();
 
-        tick_counter++;
+        // tell the scheduler one tick has passed
+        scheduler.tick();
     } else {
-        uint16_t time_to_next_loop;
         uint16_t dt = timer - fast_loopTimer;
-        if (dt > 10000) {
-            time_to_next_loop = 0;
-        } else {
-            time_to_next_loop = 10000 - dt;
+        if (dt < 10000) {
+            uint16_t time_to_next_loop = 10000 - dt;
+            scheduler.run(time_to_next_loop);
         }
-        run_events(time_to_next_loop);
     }
 }
 

@@ -61,6 +61,9 @@ public:
         // barometer object (needed for SITL)
         k_param_barometer,
 
+        // scheduler object (for debugging)
+        k_param_scheduler,
+
         // Misc
         //
         k_param_log_bitmask = 20,
