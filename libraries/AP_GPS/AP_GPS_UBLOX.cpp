@@ -50,6 +50,7 @@ AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
     _configure_gps();
 
     _nav_setting = nav_setting;
+	_step = 0;
 }
 
 // Process bytes available from the stream

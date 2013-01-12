@@ -22,6 +22,7 @@ AP_GPS_MTK16::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
 	_port = s;
     _port->flush();
+	_step = 0;
 
     // initialize serial port for binary protocol use
     // XXX should assume binary, let GPS_AUTO handle dynamic config?

@@ -29,6 +29,7 @@ AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
 	_port = s;
     _port->flush();
+	_step = 0;
 
     // For modules that default to something other than SiRF binary,
     // the module-specific subclass should take care of switching to binary mode
