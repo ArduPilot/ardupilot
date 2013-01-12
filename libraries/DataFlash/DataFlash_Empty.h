@@ -23,6 +23,10 @@ private:
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase();
     
+    void BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
+                    const void *pHeader, uint8_t hdr_size,
+                    const void *pBuffer, uint16_t size);
+    bool BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size);
 public:
 
     DataFlash_Empty() {}

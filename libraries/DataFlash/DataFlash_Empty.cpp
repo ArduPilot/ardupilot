@@ -63,6 +63,15 @@ unsigned char DataFlash_Empty::BufferRead (unsigned char BufferNum,
         uint16_t IntPageAdr)
 { return 0; }
 
+void DataFlash_Empty::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
+                    const void *pHeader, uint8_t hdr_size,
+                    const void *pBuffer, uint16_t size)
+{ }
+
+bool DataFlash_Empty::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr,
+        void *pBuffer, uint16_t size)
+{ return false; }
+
 // *** END OF INTERNAL FUNCTIONS ***
 
 void DataFlash_Empty::PageErase (uint16_t PageAdr) { }
