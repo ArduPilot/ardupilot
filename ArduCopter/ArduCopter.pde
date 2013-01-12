@@ -991,12 +991,12 @@ static void perf_update(void)
 {
     if (g.log_bitmask & MASK_LOG_PM)
         Log_Write_Performance();
-#if 1
-    cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"), 
-                        (unsigned)perf_info_get_num_long_running(),
-                        (unsigned)perf_info_get_num_loops(),
-                        (unsigned long)perf_info_get_max_time());
-#endif
+    if (scheduler.debug()) {
+        cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"), 
+                            (unsigned)perf_info_get_num_long_running(),
+                            (unsigned)perf_info_get_num_loops(),
+                            (unsigned long)perf_info_get_max_time());
+    }
     perf_info_reset();
     gps_fix_count = 0;
 }
