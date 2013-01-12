@@ -1069,7 +1069,6 @@ get_throttle_land()
                 set_land_complete(true);
                 if( g.rc_3.control_in == 0 || ap.failsafe ) {
                     init_disarm_motors();
-                    reset_throttle_I();
                 }
             }
         }else{
@@ -1164,6 +1163,12 @@ static void reset_throttle_I(void)
     g.pi_alt_hold.reset_I();
     g.pid_throttle.reset_I();
     g.pid_throttle_accel.reset_I();
+}
+
+static void set_accel_throttle_I_from_pilot_throttle(void)
+{
+    // shift difference between pilot's throttle and hover throttle into accelerometer I
+    g.pid_throttle_accel.set_integrator(g.rc_3.control_in-g.throttle_cruise);
 }
 
 static void reset_stability_I(void)

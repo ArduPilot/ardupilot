@@ -1799,8 +1799,9 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_AUTO:
             controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
-            if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
+            if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
+                set_accel_throttle_I_from_pilot_throttle();
             }
             throttle_initialised = true;
             break;
