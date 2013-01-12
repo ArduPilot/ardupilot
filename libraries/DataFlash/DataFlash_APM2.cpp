@@ -194,19 +194,17 @@ void DataFlash_APM2::PageToBuffer(uint8_t BufferNum, uint16_t PageAdr)
     // activate dataflash command decoder
     _spi->cs_assert();
 
-    if (BufferNum==0)
-        _spi->transfer(DF_TRANSFER_PAGE_TO_BUFFER_1);
-    else
-        _spi->transfer(DF_TRANSFER_PAGE_TO_BUFFER_2);
-
+    uint8_t cmd[4];
+    cmd[0] = BufferNum?DF_TRANSFER_PAGE_TO_BUFFER_2:DF_TRANSFER_PAGE_TO_BUFFER_1;
     if(df_PageSize==512) {
-        _spi->transfer((uint8_t)(PageAdr >> 7));
-        _spi->transfer((uint8_t)(PageAdr << 1));
+        cmd[1] = (uint8_t)(PageAdr >> 7);
+        cmd[2] = (uint8_t)(PageAdr << 1);
     }else{
-        _spi->transfer((uint8_t)(PageAdr >> 6));
-        _spi->transfer((uint8_t)(PageAdr << 2));
+        cmd[1] = (uint8_t)(PageAdr >> 6);
+        cmd[2] = (uint8_t)(PageAdr << 2);
     }
-    _spi->transfer(0x00);                 // don´t care bytes
+    cmd[3] = 0;
+    _spi->transfer(cmd, sizeof(cmd));
 
     //initiate the transfer
     _spi->cs_release();
@@ -226,19 +224,17 @@ void DataFlash_APM2::BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t 
     // activate dataflash command decoder
     _spi->cs_assert();
 
-    if (BufferNum==0)
-        _spi->transfer(DF_BUFFER_1_TO_PAGE_WITH_ERASE);
-    else
-        _spi->transfer(DF_BUFFER_2_TO_PAGE_WITH_ERASE);
-
+    uint8_t cmd[4];
+    cmd[0] = BufferNum?DF_BUFFER_2_TO_PAGE_WITH_ERASE:DF_BUFFER_1_TO_PAGE_WITH_ERASE;
     if(df_PageSize==512) {
-        _spi->transfer((uint8_t)(PageAdr >> 7));
-        _spi->transfer((uint8_t)(PageAdr << 1));
+        cmd[1] = (uint8_t)(PageAdr >> 7);
+        cmd[2] = (uint8_t)(PageAdr << 1);
     }else{
-        _spi->transfer((uint8_t)(PageAdr >> 6));
-        _spi->transfer((uint8_t)(PageAdr << 2));
+        cmd[1] = (uint8_t)(PageAdr >> 6);
+        cmd[2] = (uint8_t)(PageAdr << 2);
     }
-    _spi->transfer(0x00);         // don´t care bytes
+    cmd[3] = 0;
+    _spi->transfer(cmd, sizeof(cmd));
 
     //initiate the transfer
     _spi->cs_release();
@@ -260,28 +256,21 @@ void DataFlash_APM2::BlockWrite (uint8_t BufferNum, uint16_t IntPageAdr,
     // activate dataflash command decoder
     _spi->cs_assert();
 
-    if (BufferNum==0)
-        _spi->transfer(DF_BUFFER_1_WRITE);
-    else
-        _spi->transfer(DF_BUFFER_2_WRITE);
-
-    _spi->transfer(0x00);                                                                 // don't care
-    _spi->transfer((uint8_t)(IntPageAdr>>8));       // upper part of internal buffer address
-    _spi->transfer((uint8_t)(IntPageAdr));                  // lower part of internal buffer address
-
-    const uint8_t *pData;
+    uint8_t cmd[] = { 
+        (uint8_t)(BufferNum?DF_BUFFER_2_WRITE:DF_BUFFER_1_WRITE), 
+        0, 
+        (uint8_t)(IntPageAdr>>8), 
+        (uint8_t)(IntPageAdr)
+    };
+    _spi->transfer(cmd, sizeof(cmd));
 
     // transfer header, if any
-    pData = (const uint8_t *)pHeader;
-    while (hdr_size--) {
-        _spi->transfer(*pData++);
+    if (hdr_size != 0) {
+        _spi->transfer((const uint8_t *)pHeader, hdr_size);
     }
 
     // transfer data
-    pData = (const uint8_t *)pBuffer;
-    while (size--) {
-        _spi->transfer(*pData++);
-    }
+    _spi->transfer((const uint8_t *)pBuffer, size);
 
     // release SPI bus for use by other sensors
     _spi->cs_release();
