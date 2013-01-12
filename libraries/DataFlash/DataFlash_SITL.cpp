@@ -84,22 +84,22 @@ void DataFlash_SITL::WaitReady()
 
 void DataFlash_SITL::PageToBuffer(unsigned char BufferNum, uint16_t PageAdr)
 {
-	pread(flash_fd, buffer[BufferNum-1], DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
+	pread(flash_fd, buffer[BufferNum], DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
 }
 
 void DataFlash_SITL::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait)
 {
-	pwrite(flash_fd, buffer[BufferNum-1], DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
+	pwrite(flash_fd, buffer[BufferNum], DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
 }
 
 void DataFlash_SITL::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data)
 {
-	buffer[BufferNum-1][IntPageAdr] = (uint8_t)Data;
+	buffer[BufferNum][IntPageAdr] = (uint8_t)Data;
 }
 
 unsigned char DataFlash_SITL::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
 {
-	return (unsigned char)buffer[BufferNum-1][IntPageAdr];
+	return (unsigned char)buffer[BufferNum][IntPageAdr];
 }
 
 // *** END OF INTERNAL FUNCTIONS ***
