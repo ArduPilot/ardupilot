@@ -501,10 +501,6 @@
  # define FS_THR_VALUE_DEFAULT             975
 #endif
 
-#ifndef FS_THR_RTL_MIN_DISTANCE
- # define FS_THR_RTL_MIN_DISTANCE          1500     // the minimum distance from home in which
-#endif
-
 
 #ifndef MINIMUM_THROTTLE
  # define MINIMUM_THROTTLE       130
