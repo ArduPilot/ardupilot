@@ -363,9 +363,9 @@ static void Log_Write_Current()
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         throttle_in         : g.rc_3.control_in,
         throttle_integrator : throttle_integrator,
-        battery_voltage     : battery_voltage1 * 100.0,
-        current_amps        : current_amps1 * 100.0,
-        current_total       : current_total1
+        battery_voltage     : (int16_t) (battery_voltage1 * 100.0),
+        current_amps        : (int16_t) (current_amps1 * 100.0),
+        current_total       : (int16_t) current_total1
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -554,12 +554,12 @@ static void Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
-        wp_distance : wp_distance,
-        wp_bearing  : wp_bearing/100,
-        lat_error   : lat_error,
-        lon_error   : long_error,
-        nav_pitch   : nav_pitch,
-        nav_roll    : nav_roll,
+        wp_distance : (int16_t) wp_distance,
+        wp_bearing  : (int16_t) (wp_bearing/100),
+        lat_error   : (int16_t) lat_error,
+        lon_error   : (int16_t) long_error,
+        nav_pitch   : (int16_t) nav_pitch,
+        nav_roll    : (int16_t) nav_roll,
         lat_speed   : lat_speed,
         lon_speed   : lon_speed
     };
@@ -605,8 +605,8 @@ static void Log_Write_Control_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         throttle_in         : g.rc_3.control_in,
         sonar_alt           : sonar_alt,
-        baro_alt            : baro_alt,
-        next_wp_alt         : next_WP.alt,
+        baro_alt            : (int16_t) baro_alt,
+        next_wp_alt         : (int16_t) next_WP.alt,
         nav_throttle        : nav_throttle,
         angle_boost         : angle_boost,
         climb_rate          : climb_rate,
@@ -653,15 +653,15 @@ static void Log_Write_Iterm()
 {
     struct log_Iterm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-        rate_roll       : g.pid_rate_roll.get_integrator(),
-        rate_pitch      : g.pid_rate_pitch.get_integrator(),
-        rate_yaw        : g.pid_rate_yaw.get_integrator(),
-        accel_throttle  : g.pid_throttle_accel.get_integrator(),
-        nav_lat         : g.pid_nav_lat.get_integrator(),
-        nav_lon         : g.pid_nav_lon.get_integrator(),
-        loiter_rate_lat : g.pid_loiter_rate_lat.get_integrator(),
-        loiter_rate_lon : g.pid_loiter_rate_lon.get_integrator(),
-        throttle_cruise : g.throttle_cruise
+        rate_roll       : (int16_t) g.pid_rate_roll.get_integrator(),
+        rate_pitch      : (int16_t) g.pid_rate_pitch.get_integrator(),
+        rate_yaw        : (int16_t) g.pid_rate_yaw.get_integrator(),
+        accel_throttle  : (int16_t) g.pid_throttle_accel.get_integrator(),
+        nav_lat         : (int16_t) g.pid_nav_lat.get_integrator(),
+        nav_lon         : (int16_t) g.pid_nav_lon.get_integrator(),
+        loiter_rate_lat : (int16_t) g.pid_loiter_rate_lat.get_integrator(),
+        loiter_rate_lon : (int16_t) g.pid_loiter_rate_lon.get_integrator(),
+        throttle_cruise : (int16_t) g.throttle_cruise
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
