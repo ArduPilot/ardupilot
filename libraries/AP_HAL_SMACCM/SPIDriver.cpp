@@ -59,6 +59,10 @@ uint8_t SMACCMSPIDeviceDriver::transfer (uint8_t data)
   return 0;
 }
 
+void SMACCMSPIDeviceDriver::transfer (const uint8_t *data, uint16_t len)
+{
+}
+
 //////////////////////////////////////////////////////////////////////
 // SPI Device Instances
 

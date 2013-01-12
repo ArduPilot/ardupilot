@@ -30,6 +30,7 @@ public:
     void cs_assert();
     void cs_release();
     uint8_t transfer (uint8_t data);
+    void transfer (const uint8_t *data, uint16_t len);
 private:
     SMACCMSemaphore _semaphore;
     struct spi_bus *_bus;
