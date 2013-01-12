@@ -1240,8 +1240,8 @@ static void fifty_hz_loop()
 #endif
     }
 
-    if (g.log_bitmask & MASK_LOG_RAW && motors.armed())
-        Log_Write_Raw();
+    if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
+        Log_Write_IMU();
 #endif
 
 }
@@ -1335,7 +1335,9 @@ static void slow_loop()
 // 1Hz loop
 static void super_slow_loop()
 {
-    Log_Write_Data(DATA_AP_STATE, ap.value);
+    if (g.log_bitmask != 0) {
+        Log_Write_Data(DATA_AP_STATE, ap.value);
+    }
 
     if (g.log_bitmask & MASK_LOG_CUR && motors.armed())
         Log_Write_Current();

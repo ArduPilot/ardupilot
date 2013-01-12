@@ -78,7 +78,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_PM) cliSerial->printf_P(PSTR(" PM"));
         if (g.log_bitmask & MASK_LOG_CTUN) cliSerial->printf_P(PSTR(" CTUN"));
         if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf_P(PSTR(" NTUN"));
-        if (g.log_bitmask & MASK_LOG_RAW) cliSerial->printf_P(PSTR(" RAW"));
+        if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf_P(PSTR(" IMU"));
         if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf_P(PSTR(" CMD"));
         if (g.log_bitmask & MASK_LOG_CUR) cliSerial->printf_P(PSTR(" CURRENT"));
         if (g.log_bitmask & MASK_LOG_MOTORS) cliSerial->printf_P(PSTR(" MOTORS"));
@@ -196,7 +196,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CTUN);
         TARG(NTUN);
         TARG(MODE);
-        TARG(RAW);
+        TARG(IMU);
         TARG(CMD);
         TARG(CUR);
         TARG(MOTORS);
@@ -314,355 +314,378 @@ static void Log_Read_GPS()
                         (long)pkt.ground_course);
 }
 
-static void Log_Write_Raw()
+struct log_IMU {
+    LOG_PACKET_HEADER;
+    Vector3f gyro;
+    Vector3f accel;
+};
+
+// Write an imu accel/gyro packet. Total length : 27 bytes
+static void Log_Write_IMU()
 {
-    Vector3f gyro = ins.get_gyro();
-    Vector3f accel = ins.get_accel();
-
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_RAW_MSG);
-
-    DataFlash.WriteLong(get_int(gyro.x));
-    DataFlash.WriteLong(get_int(gyro.y));
-    DataFlash.WriteLong(get_int(gyro.z));
-
-    DataFlash.WriteLong(get_int(accel.x));
-    DataFlash.WriteLong(get_int(accel.y));
-    DataFlash.WriteLong(get_int(accel.z));
+    struct log_IMU pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
+        gyro      : ins.get_gyro(),
+        accel     : ins.get_accel()
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a raw accel/gyro packet
-static void Log_Read_Raw()
+static void Log_Read_IMU()
 {
-    float logvar;
-    cliSerial->printf_P(PSTR("RAW,"));
-    for (int16_t y = 0; y < 6; y++) {
-        logvar = get_float(DataFlash.ReadLong());
-        cliSerial->print(logvar);
-        cliSerial->print_P(PSTR(", "));
-    }
-    cliSerial->println_P(PSTR(" "));
+    struct log_IMU pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-	/*
-	float temp1 = get_float(DataFlash.ReadLong());
-	float temp2 = get_float(DataFlash.ReadLong());
-
-	cliSerial->printf_P(PSTR("RAW, %4.4f, %4.4f\n"),
-			temp1,
-			temp2);
-	*/
+    //                                 1      2      3      4      5      6
+    cliSerial->printf_P(PSTR("IMU, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+        (float)pkt.gyro.x,
+        (float)pkt.gyro.y,
+        (float)pkt.gyro.z,
+        (float)pkt.accel.x,
+        (float)pkt.accel.y,
+        (float)pkt.accel.z);
 }
 
+struct log_Current {
+    LOG_PACKET_HEADER;
+    int16_t throttle_in;
+    uint32_t throttle_integrator;
+    int16_t battery_voltage;
+    int16_t current_amps;
+    int16_t current_total;
+};
 
 // Write an Current data packet. Total length : 16 bytes
 static void Log_Write_Current()
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_CURRENT_MSG);
-
-    DataFlash.WriteInt(g.rc_3.control_in);                      // 1
-    DataFlash.WriteLong(throttle_integrator);                   // 2
-    DataFlash.WriteInt(battery_voltage1     * 100.0);           // 3
-    DataFlash.WriteInt(current_amps1        * 100.0);           // 4
-    DataFlash.WriteInt(current_total1);                                 // 5
+    struct log_Current pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
+        throttle_in         : g.rc_3.control_in,
+        throttle_integrator : throttle_integrator,
+        battery_voltage     : battery_voltage1 * 100.0,
+        current_amps        : current_amps1 * 100.0,
+        current_total       : current_total1
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a Current packet
 static void Log_Read_Current()
 {
-    int16_t temp1 = DataFlash.ReadInt();                        // 1
-    int32_t temp2 = DataFlash.ReadLong();                       // 2
-    float temp3 = DataFlash.ReadInt() / 100.f;          // 3
-    float temp4 = DataFlash.ReadInt() / 100.f;          // 4
-    int16_t temp5 = DataFlash.ReadInt();                        // 5
+    struct log_Current pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-    //  1    2    3      4      5
-    cliSerial->printf_P(PSTR("CURR, %d, %ld, %4.4f, %4.4f, %d\n"),
-                    (int)temp1,
-                    (long)temp2,
-                    temp3,
-                    temp4,
-                    (int)temp5);
+    //                               1    2      3      4   5
+    cliSerial->printf_P(PSTR("CURR, %d, %lu, %4.4f, %4.4f, %d\n"),
+                    (int)pkt.throttle_in,
+                    (unsigned long)pkt.throttle_integrator,
+                    (float)pkt.battery_voltage/100.f,
+                    (float)pkt.current_amps/100.f,
+                    (int)pkt.current_total);
 }
+
+struct log_Motors {
+    LOG_PACKET_HEADER;
+#if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+    int16_t motor_out[8];
+#elif FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
+    int16_t motor_out[6];
+#elif FRAME_CONFIG == HELI_FRAME
+    int16_t motor_out[4];
+    int16_t ext_gyro_gain;
+#else        // quads & TRI_FRAME
+    int16_t motor_out[4];
+#endif
+};
 
 // Write an Motors packet. Total length : 12 ~ 20 bytes
 static void Log_Write_Motors()
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_MOTORS_MSG);
-
- #if FRAME_CONFIG ==     TRI_FRAME
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);    //1
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);    //2
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);    //3
-    DataFlash.WriteInt(g.rc_4.radio_out);    //4
-
- #elif FRAME_CONFIG == HEXA_FRAME
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);    //1
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);    //2
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);    //3
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);    //4
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_5]);    //5
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_6]);    //6
-
- #elif FRAME_CONFIG == Y6_FRAME
-    //left
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);    //1
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);    //2
-    //right
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_5]);    //3
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);    //4
-    //back
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_6]);    //5
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);    //6
-
- #elif FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);    //1
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);    //2
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);    //3
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);    //4
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_5]);    //5
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_6]);     //6
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_7]);    //7
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_8]);    //8
-
- #elif FRAME_CONFIG == HELI_FRAME
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);    //1
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);    //2
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);    //3
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);    //4
-    DataFlash.WriteInt(motors.ext_gyro_gain);    //5
-
- #else        // quads
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_1]);    //1
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_2]);    //2
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_3]);    //3
-    DataFlash.WriteInt(motors.motor_out[AP_MOTORS_MOT_4]);    //4
- #endif
+    struct log_Motors pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MOTORS_MSG),
+#if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
+                         motors.motor_out[AP_MOTORS_MOT_2],
+                         motors.motor_out[AP_MOTORS_MOT_3],
+                         motors.motor_out[AP_MOTORS_MOT_4],
+                         motors.motor_out[AP_MOTORS_MOT_5],
+                         motors.motor_out[AP_MOTORS_MOT_6],
+                         motors.motor_out[AP_MOTORS_MOT_7],
+                         motors.motor_out[AP_MOTORS_MOT_8]}
+#elif FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
+        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
+                         motors.motor_out[AP_MOTORS_MOT_2],
+                         motors.motor_out[AP_MOTORS_MOT_3],
+                         motors.motor_out[AP_MOTORS_MOT_4],
+                         motors.motor_out[AP_MOTORS_MOT_5],
+                         motors.motor_out[AP_MOTORS_MOT_6]}
+#elif FRAME_CONFIG == HELI_FRAME
+        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
+                         motors.motor_out[AP_MOTORS_MOT_2],
+                         motors.motor_out[AP_MOTORS_MOT_3],
+                         motors.motor_out[AP_MOTORS_MOT_4]}
+        ext_gyro_gain   : motors.ext_gyro_gain;
+#elif FRAME_CONFIG == TRI_FRAME
+        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
+                         motors.motor_out[AP_MOTORS_MOT_2],
+                         motors.motor_out[AP_MOTORS_MOT_4],
+                         motors.motor_out[g.rc_4.radio_out]}
+#else // QUAD frame
+        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
+                         motors.motor_out[AP_MOTORS_MOT_2],
+                         motors.motor_out[AP_MOTORS_MOT_3],
+                         motors.motor_out[AP_MOTORS_MOT_4]}
+#endif
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a Motors packet.
 static void Log_Read_Motors()
 {
- #if FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
-    int16_t temp1 = DataFlash.ReadInt();                        // 1
-    int16_t temp2 = DataFlash.ReadInt();                        // 2
-    int16_t temp3 = DataFlash.ReadInt();                        // 3
-    int16_t temp4 = DataFlash.ReadInt();                        // 4
-    int16_t temp5 = DataFlash.ReadInt();                        // 5
-    int16_t temp6 = DataFlash.ReadInt();                        // 6
-    // 1  2   3   4   5   6
-    cliSerial->printf_P(PSTR("MOT, %d, %d, %d, %d, %d, %d\n"),
-                    (int)temp1,         //1
-                    (int)temp2,         //2
-                    (int)temp3,         //3
-                    (int)temp4,         //4
-                    (int)temp5,         //5
-                    (int)temp6);        //6
+    struct log_Motors pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
- #elif FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
-    int16_t temp1 = DataFlash.ReadInt();                        // 1
-    int16_t temp2 = DataFlash.ReadInt();                        // 2
-    int16_t temp3 = DataFlash.ReadInt();                        // 3
-    int16_t temp4 = DataFlash.ReadInt();                        // 4
-    int16_t temp5 = DataFlash.ReadInt();                        // 5
-    int16_t temp6 = DataFlash.ReadInt();                        // 6
-    int16_t temp7 = DataFlash.ReadInt();                        // 7
-    int16_t temp8 = DataFlash.ReadInt();                        // 8
-    // 1   2   3   4   5   6   7   8
+#if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+                                 // 1   2   3   4   5   6   7   8
     cliSerial->printf_P(PSTR("MOT, %d, %d, %d, %d, %d, %d, %d, %d\n"),
-                    (int)temp1,         //1
-                    (int)temp2,         //2
-                    (int)temp3,         //3
-                    (int)temp4,         //4
-                    (int)temp5,         //5
-                    (int)temp6,         //6
-                    (int)temp7,         //7
-                    (int)temp8);        //8
-
- #elif FRAME_CONFIG == HELI_FRAME
-    int16_t temp1 = DataFlash.ReadInt();                        // 1
-    int16_t temp2 = DataFlash.ReadInt();                        // 2
-    int16_t temp3 = DataFlash.ReadInt();                        // 3
-    int16_t temp4 = DataFlash.ReadInt();                        // 4
-    int16_t temp5 = DataFlash.ReadInt();                        // 5
-    // 1   2   3   4   5
+                    (int)pkt.motor_out[0],
+                    (int)pkt.motor_out[1],
+                    (int)pkt.motor_out[2],
+                    (int)pkt.motor_out[3],
+                    (int)pkt.motor_out[4],
+                    (int)pkt.motor_out[5],
+                    (int)pkt.motor_out[6],
+                    (int)pkt.motor_out[7]);
+#elif FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
+                                 // 1   2   3   4   5   6
+    cliSerial->printf_P(PSTR("MOT, %d, %d, %d, %d, %d, %d\n"),
+                    (int)pkt.motor_out[0],
+                    (int)pkt.motor_out[1],
+                    (int)pkt.motor_out[2],
+                    (int)pkt.motor_out[3],
+                    (int)pkt.motor_out[4],
+                    (int)pkt.motor_out[5]);
+#elif FRAME_CONFIG == HELI_FRAME
+                                 // 1   2   3   4   5
     cliSerial->printf_P(PSTR("MOT, %d, %d, %d, %d, %d\n"),
-                    (int)temp1,         //1
-                    (int)temp2,         //2
-                    (int)temp3,         //3
-                    (int)temp4,         //4
-                    (int)temp5);        //5
-
- #else        // quads, TRIs
-    int16_t temp1 = DataFlash.ReadInt();                        // 1
-    int16_t temp2 = DataFlash.ReadInt();                        // 2
-    int16_t temp3 = DataFlash.ReadInt();                        // 3
-    int16_t temp4 = DataFlash.ReadInt();                        // 4
-
-    // 1   2   3   4
+                    (int)pkt.motor_out[0],
+                    (int)pkt.motor_out[1],
+                    (int)pkt.motor_out[2],
+                    (int)pkt.motor_out[3],
+                    (int)pkt.ext_gyro_gain);
+#else // TRI_FRAME or QUAD_FRAME
+                                 // 1   2   3   4
     cliSerial->printf_P(PSTR("MOT, %d, %d, %d, %d\n"),
-                    (int)temp1,         //1
-                    (int)temp2,         //2
-                    (int)temp3,         //3
-                    (int)temp4);     //4;
- #endif
+                    (int)pkt.motor_out[0],
+                    (int)pkt.motor_out[1],
+                    (int)pkt.motor_out[2],
+                    (int)pkt.motor_out[3]);
+#endif
 }
+
+struct log_Optflow {
+    LOG_PACKET_HEADER;
+    int16_t dx;
+    int16_t dy;
+    uint8_t surface_quality;
+    int16_t x_cm;
+    int16_t y_cm;
+    float   latitude;
+    float   longitude;
+    int32_t roll;
+    int32_t pitch;
+};
 
 // Write an optical flow packet. Total length : 30 bytes
 static void Log_Write_Optflow()
 {
  #if OPTFLOW == ENABLED
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_OPTFLOW_MSG);
-    DataFlash.WriteInt((int)optflow.dx);
-    DataFlash.WriteInt((int)optflow.dy);
-    DataFlash.WriteInt((int)optflow.surface_quality);
-    DataFlash.WriteInt((int)optflow.x_cm);
-    DataFlash.WriteInt((int)optflow.y_cm);
-    DataFlash.WriteLong(optflow.vlat);    //optflow_offset.lat + optflow.lat);
-    DataFlash.WriteLong(optflow.vlon);    //optflow_offset.lng + optflow.lng);
-    DataFlash.WriteLong(of_roll);
-    DataFlash.WriteLong(of_pitch);
+    struct log_Optflow pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
+        dx              : optflow.dx,
+        dy              : optflow.dx,
+        surface_quality : optflow.surface_quality,
+        x_cm            : optflow.x_cm,
+        y_cm            : optflow.y_cm,
+        latitude        : optflow.vlat,
+        longitude       : optflow.vlon,
+        roll            : of_roll,
+        pitch           : of_pitch
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // OPTFLOW == ENABLED
 }
 
 // Read an optical flow packet.
 static void Log_Read_Optflow()
 {
-    int16_t temp1   = DataFlash.ReadInt();                      // 1
-    int16_t temp2   = DataFlash.ReadInt();                      // 2
-    int16_t temp3   = DataFlash.ReadInt();                      // 3
-    int16_t temp4   = DataFlash.ReadInt();                      // 4
-    int16_t temp5   = DataFlash.ReadInt();                      // 5
-    float temp6     = DataFlash.ReadLong();                     // 6
-    float temp7     = DataFlash.ReadLong();                     // 7
-    int32_t temp8   = DataFlash.ReadLong();                     // 8
-    int32_t temp9   = DataFlash.ReadLong();                     // 9
+    struct log_Optflow pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
+    //                             1   2   3   4   5      6      7    8    9
     cliSerial->printf_P(PSTR("OF, %d, %d, %d, %d, %d, %4.7f, %4.7f, %ld, %ld\n"),
-                    (int)temp1,
-                    (int)temp2,
-                    (int)temp3,
-                    (int)temp4,
-                    (int)temp5,
-                    temp6,
-                    temp7,
-                    (long)temp8,
-                    (long)temp9);
+                    (int)pkt.dx,
+                    (int)pkt.dy,
+                    (int)pkt.surface_quality,
+                    (int)pkt.x_cm,
+                    (int)pkt.y_cm,
+                    (float)pkt.latitude,
+                    (float)pkt.longitude,
+                    (long)pkt.roll,
+                    (long)pkt.pitch);
 }
+
+struct log_Nav_Tuning {
+    LOG_PACKET_HEADER;
+    int16_t wp_distance;
+    int16_t wp_bearing;
+    int16_t lat_error;
+    int16_t lon_error;
+    int16_t nav_pitch;
+    int16_t nav_roll;
+    int16_t lat_speed;
+    int16_t lon_speed;
+};
 
 // Write an Nav Tuning packet. Total length : 24 bytes
 static void Log_Write_Nav_Tuning()
 {
-    //Matrix3f tempmat = dcm.get_dcm_matrix();
-
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
-
-	DataFlash.WriteInt(wp_distance);                        // 1
-	DataFlash.WriteInt(wp_bearing/100);                 // 2
-	DataFlash.WriteInt(long_error);                         // 3
-	DataFlash.WriteInt(lat_error);                          // 4
-
-	DataFlash.WriteInt(nav_pitch);                          // 5
-	DataFlash.WriteInt(nav_roll);                           // 6
-	DataFlash.WriteInt(lon_speed);                          // 7
-	DataFlash.WriteInt(lat_speed);                          // 8
+    struct log_Nav_Tuning pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
+        wp_distance : wp_distance,
+        wp_bearing  : wp_bearing/100,
+        lat_error   : lat_error,
+        lon_error   : long_error,
+        nav_pitch   : nav_pitch,
+        nav_roll    : nav_roll,
+        lat_speed   : lat_speed,
+        lon_speed   : lon_speed
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a Nav Tuning packet.
 static void Log_Read_Nav_Tuning()
 {
-    int16_t temp;
+    struct log_Nav_Tuning pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-    cliSerial->printf_P(PSTR("NTUN, "));
-
-    for(int8_t i = 1; i < 8; i++ ) {
-        temp = DataFlash.ReadInt();
-        cliSerial->printf_P(PSTR("%d, "), (int)temp);
-    }
-    // read 8
-    temp = DataFlash.ReadInt();
-    cliSerial->printf_P(PSTR("%d\n"), (int)temp);
+    //                               1   2   3   4   5   6   7   8
+    cliSerial->printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+        (int)pkt.wp_distance,
+        (int)pkt.wp_bearing,
+        (int)pkt.lat_error,
+        (int)pkt.lon_error,
+        (int)pkt.nav_pitch,
+        (int)pkt.nav_roll,
+        (int)pkt.lat_speed,
+        (int)pkt.lon_speed
+    );
 }
 
+struct log_Control_Tuning {
+    LOG_PACKET_HEADER;
+    int16_t throttle_in;
+    int16_t sonar_alt;
+    int16_t baro_alt;
+    int16_t next_wp_alt;
+    int16_t nav_throttle;
+    int16_t angle_boost;
+    int16_t climb_rate;
+    int16_t throttle_out;
+    int16_t desired_climb_rate;
+};
 
 // Write a control tuning packet. Total length : 26 bytes
 static void Log_Write_Control_Tuning()
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
-
-    DataFlash.WriteInt(g.rc_3.control_in);                 	// 1
-    DataFlash.WriteInt(sonar_alt);                          // 2
-    DataFlash.WriteInt(baro_alt);                           // 3
-    DataFlash.WriteInt(next_WP.alt);                        // 4
-    DataFlash.WriteInt(nav_throttle);                       // 5
-    DataFlash.WriteInt(angle_boost);                        // 6
-    DataFlash.WriteInt(climb_rate);                 	    // 7
-    DataFlash.WriteInt(g.rc_3.servo_out);                  	// 8
-    DataFlash.WriteInt(desired_climb_rate);                  // 9
+    struct log_Control_Tuning pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
+        throttle_in         : g.rc_3.control_in,
+        sonar_alt           : sonar_alt,
+        baro_alt            : baro_alt,
+        next_wp_alt         : next_WP.alt,
+        nav_throttle        : nav_throttle,
+        angle_boost         : angle_boost,
+        climb_rate          : climb_rate,
+        throttle_out        : g.rc_3.servo_out,
+        desired_climb_rate  : desired_climb_rate
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read an control tuning packet
 static void Log_Read_Control_Tuning()
 {
-    int16_t temp;
+    struct log_Control_Tuning pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-    cliSerial->printf_P(PSTR("CTUN, "));
-
-    for(uint8_t i = 1; i < 9; i++ ) {
-        temp = DataFlash.ReadInt();
-        cliSerial->printf_P(PSTR("%d, "), (int)temp);
-    }
-    // read 9
-    temp = DataFlash.ReadInt();
-    cliSerial->printf_P(PSTR("%d\n"), (int)temp);
+    //                               1   2   3   4   5   6   7   8   9
+    cliSerial->printf_P(PSTR("CTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+        (int)pkt.throttle_in,
+        (int)pkt.sonar_alt,
+        (int)pkt.baro_alt,
+        (int)pkt.next_wp_alt,
+        (int)pkt.nav_throttle,
+        (int)pkt.angle_boost,
+        (int)pkt.climb_rate,
+        (int)pkt.throttle_out,
+        (int)pkt.desired_climb_rate
+    );
 }
+
+struct log_Iterm {
+    LOG_PACKET_HEADER;
+    int16_t rate_roll;
+    int16_t rate_pitch;
+    int16_t rate_yaw;
+    int16_t accel_throttle;
+    int16_t nav_lat;
+    int16_t nav_lon;
+    int16_t loiter_rate_lat;
+    int16_t loiter_rate_lon;
+    int16_t throttle_cruise;
+};
 
 static void Log_Write_Iterm()
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_ITERM_MSG);
-
-    DataFlash.WriteInt((int16_t)g.pi_stabilize_roll.get_integrator());   	// 1
-    DataFlash.WriteInt((int16_t)g.pi_stabilize_pitch.get_integrator());  	// 2
-    DataFlash.WriteInt((int16_t)g.pi_stabilize_yaw.get_integrator());    	// 3
-    DataFlash.WriteInt((int16_t)g.pid_rate_roll.get_integrator());     		// 4
-    DataFlash.WriteInt((int16_t)g.pid_rate_pitch.get_integrator());    	 	// 5
-    DataFlash.WriteInt((int16_t)g.pid_rate_yaw.get_integrator());    	 	// 6
-	DataFlash.WriteInt((int16_t)g.pid_nav_lat.get_integrator());         	// 7
-	DataFlash.WriteInt((int16_t)g.pid_nav_lon.get_integrator());         	// 8
-	DataFlash.WriteInt((int16_t)g.pid_loiter_rate_lat.get_integrator()); 	// 9
-	DataFlash.WriteInt((int16_t)g.pid_loiter_rate_lon.get_integrator()); 	// 10
-	DataFlash.WriteInt((int16_t)g.pid_throttle.get_integrator()); 			// 11
-	DataFlash.WriteInt(g.throttle_cruise); 									// 12
+    struct log_Iterm pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
+        rate_roll       : g.pid_rate_roll.get_integrator(),
+        rate_pitch      : g.pid_rate_pitch.get_integrator(),
+        rate_yaw        : g.pid_rate_yaw.get_integrator(),
+        accel_throttle  : g.pid_throttle_accel.get_integrator(),
+        nav_lat         : g.pid_nav_lat.get_integrator(),
+        nav_lon         : g.pid_nav_lon.get_integrator(),
+        loiter_rate_lat : g.pid_loiter_rate_lat.get_integrator(),
+        loiter_rate_lon : g.pid_loiter_rate_lon.get_integrator(),
+        throttle_cruise : g.throttle_cruise
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read an control tuning packet
 static void Log_Read_Iterm()
 {
-    int16_t temp;
+    struct log_Iterm pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
+    //                                1   2   3   4   5   6   7   8   9
+    cliSerial->printf_P(PSTR("ITERM, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+        (int)pkt.rate_roll,
+        (int)pkt.rate_pitch,
+        (int)pkt.rate_yaw,
+        (int)pkt.accel_throttle,
+        (int)pkt.nav_lat,
+        (int)pkt.nav_lon,
+        (int)pkt.loiter_rate_lat,
+        (int)pkt.loiter_rate_lon,
+        (int)pkt.throttle_cruise
+    );
     cliSerial->printf_P(PSTR("ITERM, "));
-
-    for(uint8_t i = 1; i < 12; i++ ) {
-        temp = DataFlash.ReadInt();
-        cliSerial->printf_P(PSTR("%d, "), (int)temp);
-    }
-    // read 12
-    temp = DataFlash.ReadInt();
-    cliSerial->println((int)temp);
 }
-
 
 struct log_Performance {
     LOG_PACKET_HEADER;
@@ -685,7 +708,7 @@ static void Log_Write_Performance()
         gps_fix_count    : gps_fix_count,
         num_long_running : perf_info_get_num_long_running(),
         num_loops        : perf_info_get_num_loops(),
-        max_time         : perf_info_get_max_time(),
+        max_time         : perf_info_get_max_time()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -705,86 +728,114 @@ static void Log_Read_Performance()
                         (unsigned long)pkt.max_time);
 }
 
+struct log_Cmd {
+    LOG_PACKET_HEADER;
+    uint8_t command_total;
+    uint8_t command_number;
+    uint8_t waypoint_id;
+    uint8_t waypoint_options;
+    uint8_t waypoint_param1;
+    int32_t waypoint_altitude;
+    int32_t waypoint_latitude;
+    int32_t waypoint_longitude;
+};
+
 // Write a command processing packet.  Total length : 21 bytes
 static void Log_Write_Cmd(uint8_t num, struct Location *wp)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_CMD_MSG);
-
-    DataFlash.WriteByte(g.command_total);       // 1
-    DataFlash.WriteByte(num);                                   // 2
-    DataFlash.WriteByte(wp->id);                        // 3
-    DataFlash.WriteByte(wp->options);                   // 4
-    DataFlash.WriteByte(wp->p1);                        // 5
-    DataFlash.WriteLong(wp->alt);                       // 6
-    DataFlash.WriteLong(wp->lat);                       // 7
-    DataFlash.WriteLong(wp->lng);                       // 8
+    struct log_Cmd pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
+        command_total       : g.command_total,
+        command_number      : num,
+        waypoint_id         : wp->id,
+        waypoint_options    : wp->options,
+        waypoint_param1     : wp->p1,
+        waypoint_altitude   : wp->alt,
+        waypoint_latitude   : wp->lat,
+        waypoint_longitude  : wp->lng
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
-//CMD, 3, 0, 16, 8, 1, 800, 340440192, -1180692736
-
 
 // Read a command processing packet
 static void Log_Read_Cmd()
 {
-    int8_t temp1    = DataFlash.ReadByte();
-    int8_t temp2    = DataFlash.ReadByte();
-    int8_t temp3    = DataFlash.ReadByte();
-    int8_t temp4    = DataFlash.ReadByte();
-    int8_t temp5    = DataFlash.ReadByte();
-    int32_t temp6   = DataFlash.ReadLong();
-    int32_t temp7   = DataFlash.ReadLong();
-    int32_t temp8   = DataFlash.ReadLong();
+    struct log_Cmd pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-    //  1   2    3   4   5   6   7    8
-    cliSerial->printf_P(PSTR( "CMD, %d, %d, %d, %d, %d, %ld, %ld, %ld\n"),
-                    (int)temp1,
-                    (int)temp2,
-                    (int)temp3,
-                    (int)temp4,
-                    (int)temp5,
-                    (long)temp6,
-                    (long)temp7,
-                    (long)temp8);
+    //                               1   2   3   4   5    6    7    8
+    cliSerial->printf_P(PSTR( "CMD, %u, %u, %u, %u, %u, %ld, %ld, %ld\n"),
+                    (unsigned)pkt.command_total,
+                    (unsigned)pkt.command_number,
+                    (unsigned)pkt.waypoint_id,
+                    (unsigned)pkt.waypoint_options,
+                    (unsigned)pkt.waypoint_param1,
+                    (long)pkt.waypoint_altitude,
+                    (long)pkt.waypoint_latitude,
+                    (long)pkt.waypoint_longitude);
 }
+
+struct log_Attitude {
+    LOG_PACKET_HEADER;
+    int16_t roll_in;
+    int16_t roll;
+    int16_t pitch_in;
+    int16_t pitch;
+    int16_t yaw_in;
+    uint16_t yaw;
+    uint16_t nav_yaw;
+};
 
 // Write an attitude packet. Total length : 16 bytes
 static void Log_Write_Attitude()
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_ATTITUDE_MSG);
-
-    DataFlash.WriteInt(control_roll);										// 1
-    DataFlash.WriteInt((int16_t)ahrs.roll_sensor);                          // 2
-    DataFlash.WriteInt(control_pitch);                                      // 3
-    DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);                         // 4
-    DataFlash.WriteInt(g.rc_4.control_in);                                  // 5
-    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                          // 6
-    DataFlash.WriteInt((uint16_t)nav_yaw);                                  // 7 (this used to be compass.heading)
+    struct log_Attitude pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
+        roll_in     : (int16_t)control_roll,
+        roll        : (int16_t)ahrs.roll_sensor,
+        pitch_in    : (int16_t)control_pitch,
+        pitch       : (int16_t)ahrs.pitch_sensor,
+        yaw_in      : (int16_t)g.rc_4.control_in,
+        yaw         : (uint16_t)ahrs.yaw_sensor,
+        nav_yaw     : (uint16_t)nav_yaw
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read an attitude packet
 static void Log_Read_Attitude()
 {
-    int16_t temp1   = DataFlash.ReadInt();
-    int16_t temp2   = DataFlash.ReadInt();
-    int16_t temp3   = DataFlash.ReadInt();
-    int16_t temp4   = DataFlash.ReadInt();
-    int16_t temp5   = DataFlash.ReadInt();
-    uint16_t temp6  = DataFlash.ReadInt();
-    uint16_t temp7  = DataFlash.ReadInt();
+    struct log_Attitude pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-    // 1   2   3    4   5   6  7    8   9
+    //                              1   2   3    4   5   6  7
     cliSerial->printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
-                    (int)temp1,
-                    (int)temp2,
-                    (int)temp3,
-                    (int)temp4,
-                    (int)temp5,
-                    (unsigned)temp6,
-                    (unsigned)temp7);
+                    (int)pkt.roll_in,
+                    (int)pkt.roll,
+                    (int)pkt.pitch_in,
+                    (int)pkt.pitch,
+                    (int)pkt.yaw_in,
+                    (unsigned)pkt.yaw,
+                    (unsigned)pkt.nav_yaw);
 }
+
+struct log_INAV {
+    LOG_PACKET_HEADER;
+    int16_t baro_alt;
+    int16_t inav_alt;
+    int16_t baro_climb_rate;
+    int16_t inav_climb_rate;
+    float   accel_corr_x;
+    float   accel_corr_y;
+    float   accel_corr_z;
+    float   accel_corr_ef_z;
+    int32_t gps_lat_from_home;
+    int32_t gps_lon_from_home;
+    float   inav_lat_from_home;
+    float   inav_lon_from_home;
+    float   inav_lat_speed;
+    float   inav_lon_speed;
+};
 
 // Write an INAV packet. Total length : 52 Bytes
 static void Log_Write_INAV()
@@ -792,78 +843,76 @@ static void Log_Write_INAV()
 #if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     Vector3f accel_corr = inertial_nav.accel_correction.get();
 
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_INAV_MSG);
-
-    DataFlash.WriteInt((int16_t)baro_alt);                                  // 1 barometer altitude
-    DataFlash.WriteInt((int16_t)inertial_nav.get_altitude());               // 2 accel + baro filtered altitude
-    DataFlash.WriteInt((int16_t)baro_rate);                                 // 3 barometer based climb rate
-    DataFlash.WriteInt((int16_t)inertial_nav.get_velocity_z());             // 4 accel + baro based climb rate
-    DataFlash.WriteLong(get_int(accel_corr.x));                             // 5 accel correction x-axis
-    DataFlash.WriteLong(get_int(accel_corr.y));                             // 6 accel correction y-axis
-    DataFlash.WriteLong(get_int(accel_corr.z));                             // 7 accel correction z-axis
-    DataFlash.WriteLong(get_int(inertial_nav.accel_correction_ef.z));       // 8 accel correction earth frame
-    DataFlash.WriteLong(g_gps->latitude-home.lat);                          // 9 lat from home
-    DataFlash.WriteLong(g_gps->longitude-home.lng);                         // 10 lon from home
-    DataFlash.WriteLong(get_int(inertial_nav.get_latitude_diff()));         // 11 accel based lat from home
-    DataFlash.WriteLong(get_int(inertial_nav.get_longitude_diff()));        // 12 accel based lon from home
-    DataFlash.WriteLong(get_int(inertial_nav.get_latitude_velocity()));     // 13 accel based lat velocity
-    DataFlash.WriteLong(get_int(inertial_nav.get_longitude_velocity()));    // 14 accel based lon velocity
+    struct log_INAV pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_INAV_MSG),
+        baro_alt            : (int16_t)baro_alt,                        // 1 barometer altitude
+        inav_alt            : (int16_t)inertial_nav.get_altitude(),     // 2 accel + baro filtered altitude
+        baro_climb_rate     : baro_rate,                                // 3 barometer based climb rate
+        inav_climb_rate     : (int16_t)inertial_nav.get_velocity_z(),   // 4 accel + baro based climb rate
+        accel_corr_x        : accel_corr.x,                             // 5 accel correction x-axis
+        accel_corr_y        : accel_corr.y,                             // 6 accel correction y-axis
+        accel_corr_z        : accel_corr.z,                             // 7 accel correction z-axis
+        accel_corr_ef_z     : inertial_nav.accel_correction_ef.z,       // 8 accel correction earth frame
+        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 9 lat from home
+        gps_lon_from_home   : g_gps->longitude-home.lng,                // 10 lon from home
+        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 11 accel based lat from home
+        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 12 accel based lon from home
+        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 13 accel based lat velocity
+        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 14 accel based lon velocity
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 #endif
 }
 
 // Read an INAV packet
 static void Log_Read_INAV()
 {
-    int16_t temp1   = DataFlash.ReadInt();              // 1 barometer altitude
-    int16_t temp2   = DataFlash.ReadInt();              // 2 accel + baro filtered altitude
-    int16_t temp3   = DataFlash.ReadInt();              // 3 barometer based climb rate
-    int16_t temp4   = DataFlash.ReadInt();              // 4 accel + baro based climb rate
-    float temp5     = get_float(DataFlash.ReadLong());  // 5 accel correction x-axis
-    float temp6     = get_float(DataFlash.ReadLong());  // 6 accel correction y-axis
-    float temp7     = get_float(DataFlash.ReadLong());  // 7 accel correction z-axis
-    float temp8     = get_float(DataFlash.ReadLong());  // 8 accel correction earth frame
-    int32_t temp9   = DataFlash.ReadLong();             // 9 lat from home
-    int32_t temp10  = DataFlash.ReadLong();             // 10 lon from home
-    float temp11    = get_float(DataFlash.ReadLong());  // 11 accel based lat from home
-    float temp12    = get_float(DataFlash.ReadLong());  // 12 accel based lon from home
-    float temp13    = get_float(DataFlash.ReadLong());  // 13 accel based lat velocity
-    float temp14    = get_float(DataFlash.ReadLong());  // 14 accel based lon velocity
-                                  // 1   2   3   4      5      6      7      8    9   10   11     12     13     14
+    struct log_INAV pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+
+                                  // 1   2   3   4      5      6      7      8    9   10     11     12     13     14
     cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
-                    (int)temp1,
-                    (int)temp2,
-                    (int)temp3,
-                    (int)temp4,
-                    temp5,
-                    temp6,
-                    temp7,
-                    temp8,
-                    temp9,
-                    temp10,
-                    temp11,
-                    temp12,
-                    temp13,
-                    temp14);
+                    (int)pkt.baro_alt,                  // 1 barometer altitude
+                    (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
+                    (int)pkt.baro_climb_rate,           // 3 barometer based climb rate
+                    (int)pkt.inav_climb_rate,           // 4 accel + baro based climb rate
+                    (float)pkt.accel_corr_x,            // 5 accel correction x-axis
+                    (float)pkt.accel_corr_y,            // 6 accel correction y-axis
+                    (float)pkt.accel_corr_z,            // 7 accel correction z-axis
+                    (float)pkt.accel_corr_ef_z,         // 8 accel correction earth frame
+                    (long)pkt.gps_lat_from_home,        // 9 lat from home
+                    (long)pkt.gps_lon_from_home,        // 10 lon from home
+                    (float)pkt.inav_lat_from_home,      // 11 accel based lat from home
+                    (float)pkt.inav_lon_from_home,      // 12 accel based lon from home
+                    (float)pkt.inav_lat_speed,          // 13 accel based lat velocity
+                    (float)pkt.inav_lon_speed);         // 14 accel based lon velocity
 }
+
+struct log_Mode {
+    LOG_PACKET_HEADER;
+    uint8_t mode;
+    int16_t throttle_cruise;
+};
 
 // Write a mode packet. Total length : 7 bytes
 static void Log_Write_Mode(uint8_t mode)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_MODE_MSG);
-    DataFlash.WriteByte(mode);
-    DataFlash.WriteInt(g.throttle_cruise);
+    struct log_Mode pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
+        mode            : mode,
+        throttle_cruise : g.throttle_cruise,
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a mode packet
 static void Log_Read_Mode()
 {
+    struct log_Mode pkt;
+    ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("MOD:"));
-    print_flight_mode(DataFlash.ReadByte());
-    cliSerial->printf_P(PSTR(", %d\n"),(int)DataFlash.ReadInt());
+    print_flight_mode(pkt.mode);
+    cliSerial->printf_P(PSTR(", %d\n"),(int)pkt.throttle_cruise);
 }
 
 // Write Startup packet. Total length : 4 bytes
@@ -880,237 +929,328 @@ static void Log_Read_Startup()
     cliSerial->printf_P(PSTR("START UP\n"));
 }
 
-#define DATA_INT32 0
-#define DATA_FLOAT 1
-#define DATA_INT16 2
-#define DATA_UINT16 3
-#define DATA_EVENT 4
+struct log_Event {
+    LOG_PACKET_HEADER;
+    uint8_t id;
+};
 
-static void Log_Write_Data(uint8_t _index, int32_t _data)
+// Wrote an event packet
+static void Log_Write_Event(uint8_t id)
 {
     if (g.log_bitmask != 0) {
-        DataFlash.WriteByte(HEAD_BYTE1);
-        DataFlash.WriteByte(HEAD_BYTE2);
-        DataFlash.WriteByte(LOG_DATA_MSG);
-        DataFlash.WriteByte(_index);
-        DataFlash.WriteByte(DATA_INT32);
-        DataFlash.WriteLong(_data);
+        struct log_Event pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
+            id  : id
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
-static void Log_Write_Data(uint8_t _index, float _data)
+// Read an event packet
+static void Log_Read_Event()
+{
+    struct log_Event pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+    cliSerial->printf_P(PSTR("EV: %u\n"), (unsigned)pkt.id);
+}
+
+struct log_Data_Int16t {
+    LOG_PACKET_HEADER;
+    uint8_t id;
+    int16_t data_value;
+};
+
+// Write an int16_t data packet
+static void Log_Write_Data(uint8_t id, int16_t value)
 {
     if (g.log_bitmask != 0) {
-        DataFlash.WriteByte(HEAD_BYTE1);
-        DataFlash.WriteByte(HEAD_BYTE2);
-        DataFlash.WriteByte(LOG_DATA_MSG);
-        DataFlash.WriteByte(_index);
-        DataFlash.WriteByte(DATA_FLOAT);
-        DataFlash.WriteLong(get_int(_data));
+        struct log_Data_Int16t pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_DATA_INT16_MSG),
+            id          : id,
+            data_value  : value
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
-static void Log_Write_Data(uint8_t _index, int16_t _data)
+// Read an int16_t data packet
+static void Log_Read_Int16t()
+{
+    struct log_Data_Int16t pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+    cliSerial->printf_P(PSTR("DATA: %u, %d\n"), (unsigned)pkt.id, (int)pkt.data_value);
+}
+
+struct log_Data_UInt16t {
+    LOG_PACKET_HEADER;
+    uint8_t id;
+    uint16_t data_value;
+};
+
+// Write an uint16_t data packet
+static void Log_Write_Data(uint8_t id, uint16_t value)
 {
     if (g.log_bitmask != 0) {
-        DataFlash.WriteByte(HEAD_BYTE1);
-        DataFlash.WriteByte(HEAD_BYTE2);
-        DataFlash.WriteByte(LOG_DATA_MSG);
-        DataFlash.WriteByte(_index);
-        DataFlash.WriteByte(DATA_INT16);
-        DataFlash.WriteInt(_data);
+        struct log_Data_UInt16t pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_DATA_UINT16_MSG),
+            id          : id,
+            data_value  : value
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
-static void Log_Write_Data(uint8_t _index, uint16_t _data)
+// Read an uint16_t data packet
+static void Log_Read_UInt16t()
+{
+    struct log_Data_UInt16t pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+    cliSerial->printf_P(PSTR("DATA: %u, %u\n"), (unsigned)pkt.id, (unsigned)pkt.data_value);
+}
+
+struct log_Data_Int32t {
+    LOG_PACKET_HEADER;
+    uint8_t id;
+    int32_t data_value;
+};
+
+// Write an int32_t data packet
+static void Log_Write_Data(uint8_t id, int32_t value)
 {
     if (g.log_bitmask != 0) {
-        DataFlash.WriteByte(HEAD_BYTE1);
-        DataFlash.WriteByte(HEAD_BYTE2);
-        DataFlash.WriteByte(LOG_DATA_MSG);
-        DataFlash.WriteByte(_index);
-        DataFlash.WriteByte(DATA_UINT16);
-        DataFlash.WriteInt(_data);
+        struct log_Data_Int32t pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_DATA_INT32_MSG),
+            id          : id,
+            data_value  : value
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
+// Read an int32_t data packet
+static void Log_Read_Int32t()
+{
+    struct log_Data_Int32t pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+    cliSerial->printf_P(PSTR("DATA: %u, %ld\n"), (unsigned)pkt.id, (long)pkt.data_value);
+}
 
-static void Log_Write_Event(uint8_t _index)
+struct log_Data_UInt32t {
+    LOG_PACKET_HEADER;
+    uint8_t id;
+    uint32_t data_value;
+};
+
+// Write a uint32_t data packet
+static void Log_Write_Data(uint8_t id, uint32_t value)
 {
     if (g.log_bitmask != 0) {
-        DataFlash.WriteByte(HEAD_BYTE1);
-        DataFlash.WriteByte(HEAD_BYTE2);
-        DataFlash.WriteByte(LOG_DATA_MSG);
-        DataFlash.WriteByte(_index);
-        DataFlash.WriteByte(DATA_EVENT);
+        struct log_Data_UInt32t pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_DATA_UINT32_MSG),
+            id          : id,
+            data_value  : value
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
-// Read a mode packet
-static void Log_Read_Data()
+// Read a uint32_t data packet
+static void Log_Read_UInt32t()
 {
-    int8_t _index = DataFlash.ReadByte();
-    int8_t _type = DataFlash.ReadByte();
+    struct log_Data_UInt32t pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+    cliSerial->printf_P(PSTR("DATA: %u, %lu\n"), (unsigned)pkt.id, (unsigned long)pkt.data_value);
+}
 
-    if(_type == DATA_EVENT) {
-        cliSerial->printf_P(PSTR("EV: %u\n"), _index);
+struct log_Data_Float {
+    LOG_PACKET_HEADER;
+    uint8_t id;
+    float data_value;
+};
 
-    }else if(_type == DATA_FLOAT) {
-        float _value = get_float(DataFlash.ReadLong());
-        cliSerial->printf_P(PSTR("DATA: %u, %1.6f\n"), _index, _value);
-
-    }else if(_type == DATA_INT16) {
-        int16_t _value = DataFlash.ReadInt();
-        cliSerial->printf_P(PSTR("DATA: %u, %d\n"), _index, _value);
-
-    }else if(_type == DATA_UINT16) {
-        uint16_t _value = DataFlash.ReadInt();
-        cliSerial->printf_P(PSTR("DATA: %u, %u\n"), _index, _value);
-
-    }else if(_type == DATA_INT32) {
-        int32_t _value = DataFlash.ReadLong();
-        cliSerial->printf_P(PSTR("DATA: %u, %ld\n"), _index, _value);
+// Write a float data packet
+static void Log_Write_Data(uint8_t id, float value)
+{
+    if (g.log_bitmask != 0) {
+        struct log_Data_Float pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_DATA_FLOAT_MSG),
+            id          : id,
+            data_value  : value
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
     }
 }
+
+// Read a float data packet
+static void Log_Read_Float()
+{
+    struct log_Data_Float pkt;
+    ReadPacket(&pkt, sizeof(pkt));
+    cliSerial->printf_P(PSTR("DATA: %u, %1.6f\n"), (unsigned)pkt.id, (float)pkt.data_value);
+}
+
+struct log_PID {
+    LOG_PACKET_HEADER;
+    uint8_t id;
+    int32_t error;
+    int32_t p;
+    int32_t i;
+    int32_t d;
+    int32_t output;
+    float  gain;
+};
 
 // Write an PID packet. Total length : 28 bytes
 static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_PID_MSG);
-
-    DataFlash.WriteByte(pid_id);                        // 1
-    DataFlash.WriteLong(error);                                 // 2
-    DataFlash.WriteLong(p);                                     // 3
-    DataFlash.WriteLong(i);                                     // 4
-    DataFlash.WriteLong(d);                                     // 5
-    DataFlash.WriteLong(output);                        // 6
-    DataFlash.WriteLong(gain * 1000);                   // 7
+    struct log_PID pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PID_MSG),
+        id      : pid_id,
+        error   : error,
+        p       : p,
+        i       : i,
+        d       : d,
+        output  : output,
+        gain    : gain
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read a PID packet
 static void Log_Read_PID()
 {
-    int8_t temp1    = DataFlash.ReadByte();             // pid id
-    int32_t temp2   = DataFlash.ReadLong();             // error
-    int32_t temp3   = DataFlash.ReadLong();             // p
-    int32_t temp4   = DataFlash.ReadLong();             // i
-    int32_t temp5   = DataFlash.ReadLong();             // d
-    int32_t temp6   = DataFlash.ReadLong();             // output
-    float temp7     = DataFlash.ReadLong() / 1000.f;                    // gain
+    struct log_PID pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-    //  1    2    3    4    5    6      7
-    cliSerial->printf_P(PSTR("PID-%d, %ld, %ld, %ld, %ld, %ld, %4.4f\n"),
-                    (int)temp1,         // pid id
-                    (long)temp2,                // error
-                    (long)temp3,                // p
-                    (long)temp4,                // i
-                    (long)temp5,                // d
-                    (long)temp6,                // output
-                    temp7);             // gain
+    //                             1    2    3    4    5    6      7
+    cliSerial->printf_P(PSTR("PID-%u, %ld, %ld, %ld, %ld, %ld, %4.4f\n"),
+                    (unsigned)pkt.id,
+                    (long)pkt.error,
+                    (long)pkt.p,
+                    (long)pkt.i,
+                    (long)pkt.d,
+                    (long)pkt.output,
+                    (float)pkt.gain);
 }
+
+struct log_DMP {
+    LOG_PACKET_HEADER;
+    int16_t  dcm_roll;
+    int16_t  dmp_roll;
+    int16_t  dcm_pitch;
+    int16_t  dmp_pitch;
+    uint16_t dcm_yaw;
+    uint16_t dmp_yaw;
+};
 
 // Write a DMP attitude packet. Total length : 16 bytes
 static void Log_Write_DMP()
 {
 #if SECONDARY_DMP_ENABLED == ENABLED
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_DMP_MSG);
-
-    DataFlash.WriteInt((int16_t)ahrs.roll_sensor);                          // 1
-    DataFlash.WriteInt((int16_t)ahrs2.roll_sensor);                         // 2
-    DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);                         // 3
-    DataFlash.WriteInt((int16_t)ahrs2.pitch_sensor);                        // 4
-    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);                          // 5
-    DataFlash.WriteInt((uint16_t)ahrs2.yaw_sensor);                         // 6
+    struct log_DMP pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_DMP_MSG),
+        dcm_roll    : (int16_t)ahrs.roll_sensor,
+        dmp_roll    : (int16_t)ahrs2.roll_sensor,
+        dcm_pitch   : (int16_t)ahrs.pitch_sensor,
+        dmp_pitch   : (int16_t)ahrs2.pitch_sensor,
+        dcm_yaw     : (uint16_t)ahrs.yaw_sensor,
+        dmp_yaw     : (uint16_t)ahrs2.yaw_sensor
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 #endif
 }
 
 // Read a DMP attitude packet
 static void Log_Read_DMP()
 {
-    int16_t temp1   = DataFlash.ReadInt();
-    int16_t temp2   = DataFlash.ReadInt();
-    int16_t temp3   = DataFlash.ReadInt();
-    int16_t temp4   = DataFlash.ReadInt();
-    uint16_t temp5   = DataFlash.ReadInt();
-    uint16_t temp6  = DataFlash.ReadInt();
+    struct log_DMP pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
-                             // 1   2   3   4   5   6
+                                 // 1   2   3   4   5   6
     cliSerial->printf_P(PSTR("DMP, %d, %d, %d, %d, %u, %u\n"),
-                    (int)temp1,
-                    (int)temp2,
-                    (int)temp3,
-                    (int)temp4,
-                    (unsigned)temp5,
-                    (unsigned)temp6);
+                    (int)pkt.dcm_roll,
+                    (int)pkt.dmp_roll,
+                    (int)pkt.dcm_pitch,
+                    (int)pkt.dmp_pitch,
+                    (unsigned)pkt.dcm_yaw,
+                    (unsigned)pkt.dmp_yaw);
 }
+
+struct log_Camera {
+    LOG_PACKET_HEADER;
+    uint32_t gps_time;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  altitude;
+    int16_t  roll;
+    int16_t  pitch;
+    uint16_t yaw;
+};
 
 // Write a Camera packet. Total length : 26 bytes
 static void Log_Write_Camera()
 {
 #if CAMERA == ENABLED
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_CAMERA_MSG);
-
-    DataFlash.WriteLong(g_gps->time);           		 // 1
-    DataFlash.WriteLong(current_loc.lat);       		 // 2
-    DataFlash.WriteLong(current_loc.lng);       		 // 3
-    DataFlash.WriteLong(current_loc.alt);       		 // 4
-    DataFlash.WriteInt((int16_t)ahrs.roll_sensor);       // 5
-    DataFlash.WriteInt((int16_t)ahrs.pitch_sensor);      // 6
-    DataFlash.WriteInt((uint16_t)ahrs.yaw_sensor);       // 7
+    struct log_Camera pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
+        gps_time    : g_gps->time,
+        latitude    : current_loc.lat,
+        longitude   : current_loc.lng,
+        altitude    : current_loc.alt,
+        roll        : (int16_t)ahrs.roll_sensor,
+        pitch       : (int16_t)ahrs.pitch_sensor,
+        yaw         : (uint16_t)ahrs.yaw_sensor
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 #endif
 }
 
 // Read a camera packet
 static void Log_Read_Camera()
 {
-    int32_t temp1   = DataFlash.ReadLong();             // 1 time
-    int32_t temp2   = DataFlash.ReadLong();             // 2 lat
-    int32_t temp3   = DataFlash.ReadLong();             // 3 lon
-    float temp4     = DataFlash.ReadLong() / 100.0;     // 4 altitude
-    int16_t temp5   = DataFlash.ReadInt();              // 5 roll in centidegrees
-    int16_t temp6   = DataFlash.ReadInt();              // 6 pitch in centidegrees
-    uint16_t temp7  = DataFlash.ReadInt();              // 7 yaw in centidegrees
+    struct log_Camera pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
                                      // 1
-    cliSerial->printf_P(PSTR("CAMERA, %ld, "),(long)temp1);  // 1 time
-    print_latlon(cliSerial, temp2);                         // 2 lat
+    cliSerial->printf_P(PSTR("CAMERA, %lu, "),(unsigned long)pkt.gps_time); // 1 time
+    print_latlon(cliSerial, pkt.latitude);              // 2 lat
     cliSerial->print_P(PSTR(", "));
-    print_latlon(cliSerial, temp3);                         // 3 lon
-                                 // 4   5   6   7
-    cliSerial->printf_P(PSTR(", %4.4f, %d, %d, %u\n"),
-                    temp4,                                  // 4 altitude
-                    (int)temp5,                             // 5 roll in centidegrees
-                    (int)temp6,                             // 6 pitch in centidegrees
-                    (unsigned int)temp7);                   // 7 yaw in centidegrees
+    print_latlon(cliSerial, pkt.longitude);             // 3 lon
+                               // 4   5   6   7
+    cliSerial->printf_P(PSTR(", %ld, %d, %d, %u\n"),
+                    (long)pkt.altitude,                 // 4 altitude
+                    (int)pkt.roll,                      // 5 roll in centidegrees
+                    (int)pkt.pitch,                     // 6 pitch in centidegrees
+                    (unsigned)pkt.yaw);                 // 7 yaw in centidegrees
 }
 
-// Write an error packet. Total length : 6 bytes
+struct log_Error {
+    LOG_PACKET_HEADER;
+    uint8_t sub_system;
+    uint8_t error_code;
+};
+
+// Write an error packet. Total length : 5 bytes
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 {
-    DataFlash.WriteByte(HEAD_BYTE1);
-    DataFlash.WriteByte(HEAD_BYTE2);
-    DataFlash.WriteByte(LOG_ERROR_MSG);
-
-    DataFlash.WriteByte(sub_system);                // 1 sub system
-    DataFlash.WriteByte(error_code);                // 2 error code
+    struct log_Error pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
+        sub_system    : sub_system,
+        error_code    : error_code,
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Read an error packet
 static void Log_Read_Error()
 {
-    uint8_t sub_system   = DataFlash.ReadByte();    // 1 sub system
-    uint8_t error_code   = DataFlash.ReadByte();    // 2 error code
+    struct log_Error pkt;
+    ReadPacket(&pkt, sizeof(pkt));
 
     cliSerial->print_P(PSTR("ERR, "));
 
     // print subsystem
-    switch(sub_system) {
+    switch(pkt.sub_system) {
         case ERROR_SUBSYSTEM_MAIN:
             cliSerial->print_P(PSTR("MAIN"));
             break;
@@ -1127,12 +1267,13 @@ static void Log_Read_Error()
             cliSerial->print_P(PSTR("FS"));
             break;
         default:
-            cliSerial->printf_P(PSTR("%d"),(int)sub_system);    // 1 sub system
+            // if undefined print subsytem as a number
+            cliSerial->printf_P(PSTR("%u"),(unsigned)pkt.sub_system);
             break;
     }
 
     // print error code
-    cliSerial->printf_P(PSTR(", %d\n"),(int)error_code);    // 2 error code
+    cliSerial->printf_P(PSTR(", %u\n"),(unsigned)pkt.error_code);
 }
 
 
@@ -1221,8 +1362,8 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 						Log_Read_Performance();
 						break;
 
-					case LOG_RAW_MSG:
-						Log_Read_Raw();
+					case LOG_IMU_MSG:
+						Log_Read_IMU();
 						break;
 
 					case LOG_CMD_MSG:
@@ -1249,8 +1390,8 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
 						Log_Read_GPS();
 						break;
 
-					case LOG_DATA_MSG:
-						Log_Read_Data();
+					case LOG_EVENT_MSG:
+						Log_Read_Event();
 						break;
 
 					case LOG_PID_MSG:
@@ -1276,6 +1417,26 @@ static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
                     case LOG_ERROR_MSG:
                         Log_Read_Error();
                         break;
+
+                    case LOG_DATA_INT16_MSG:
+						Log_Read_Int16t();
+						break;
+
+                    case LOG_DATA_UINT16_MSG:
+						Log_Read_UInt16t();
+						break;
+
+                    case LOG_DATA_INT32_MSG:
+						Log_Read_Int32t();
+						break;
+
+                    case LOG_DATA_UINT32_MSG:
+						Log_Read_UInt32t();
+						break;
+
+                    case LOG_DATA_FLOAT_MSG:
+						Log_Read_Float();
+						break;
 				}
 				break;
 		}
@@ -1297,7 +1458,7 @@ static void Log_Write_Cmd(uint8_t num, struct Location *wp) {
 }
 static void Log_Write_Mode(uint8_t mode) {
 }
-static void Log_Write_Raw() {
+static void Log_Write_IMU() {
 }
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon) {
 }
@@ -1311,15 +1472,17 @@ static void Log_Write_Attitude() {
 }
 static void Log_Write_INAV() {
 }
-static void Log_Write_Data(uint8_t _index, float _data){
+static void Log_Write_Data(uint8_t id, int16_t value){
 }
-static void Log_Write_Data(uint8_t _index, int32_t _data){
+static void Log_Write_Data(uint8_t id, uint16_t value){
 }
-static void Log_Write_Data(uint8_t _index, int16_t _data){
+static void Log_Write_Data(uint8_t id, int32_t value){
 }
-static void Log_Write_Data(uint8_t _index, uint16_t _data){
+static void Log_Write_Data(uint8_t id, uint32_t value){
 }
-static void Log_Write_Event(uint8_t _index){
+static void Log_Write_Data(uint8_t id, float value){
+}
+static void Log_Write_Event(uint8_t id){
 }
 static void Log_Write_Optflow() {
 }

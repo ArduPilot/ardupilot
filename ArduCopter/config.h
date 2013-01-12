@@ -1065,8 +1065,8 @@
 #ifndef LOG_MODE
  # define LOG_MODE                      ENABLED
 #endif
-#ifndef LOG_RAW
- # define LOG_RAW                       DISABLED
+#ifndef LOG_IMU
+ # define LOG_IMU                       DISABLED
 #endif
 #ifndef LOG_CMD
  # define LOG_CMD                       ENABLED
@@ -1102,18 +1102,18 @@
 #define DEFAULT_LOG_BITMASK \
     LOGBIT(ATTITUDE_FAST)   | \
     LOGBIT(ATTITUDE_MED)    | \
-    LOGBIT(GPS)                             | \
-    LOGBIT(PM)                              | \
-    LOGBIT(CTUN)                    | \
-    LOGBIT(NTUN)                    | \
-    LOGBIT(MODE)                    | \
-    LOGBIT(RAW)                             | \
-    LOGBIT(CMD)                             | \
-    LOGBIT(CUR)                             | \
-    LOGBIT(MOTORS)                  | \
-    LOGBIT(OPTFLOW)                 | \
-    LOGBIT(PID)                     | \
-    LOGBIT(ITERM)                   | \
+    LOGBIT(GPS)             | \
+    LOGBIT(PM)              | \
+    LOGBIT(CTUN)            | \
+    LOGBIT(NTUN)            | \
+    LOGBIT(MODE)            | \
+    LOGBIT(IMU)             | \
+    LOGBIT(CMD)             | \
+    LOGBIT(CUR)             | \
+    LOGBIT(MOTORS)          | \
+    LOGBIT(OPTFLOW)         | \
+    LOGBIT(PID)             | \
+    LOGBIT(ITERM)           | \
     LOGBIT(INAV)
 
 // if we are using fast, Disable Medium

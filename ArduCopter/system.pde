@@ -571,7 +571,9 @@ static void
 init_simple_bearing()
 {
     initial_simple_bearing = ahrs.yaw_sensor;
-    Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
+    if (g.log_bitmask != 0) {
+        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
+    }
 }
 
 #if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED

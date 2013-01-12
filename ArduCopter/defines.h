@@ -277,19 +277,24 @@ enum gcs_severity {
 #define LOG_CONTROL_TUNING_MSG          0x04
 #define LOG_NAV_TUNING_MSG              0x05
 #define LOG_PERFORMANCE_MSG             0x06
-#define LOG_RAW_MSG                     0x07
+#define LOG_IMU_MSG                     0x07
 #define LOG_CMD_MSG                     0x08
 #define LOG_CURRENT_MSG                 0x09
 #define LOG_STARTUP_MSG                 0x0A
 #define LOG_MOTORS_MSG                  0x0B
 #define LOG_OPTFLOW_MSG                 0x0C
-#define LOG_DATA_MSG                    0x0D
+#define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E
 #define LOG_ITERM_MSG                   0x0F
 #define LOG_DMP_MSG                     0x10
 #define LOG_INAV_MSG                    0x11
 #define LOG_CAMERA_MSG                  0x12
 #define LOG_ERROR_MSG                   0x13
+#define LOG_DATA_INT16_MSG              0x14
+#define LOG_DATA_UINT16_MSG             0x15
+#define LOG_DATA_INT32_MSG              0x16
+#define LOG_DATA_UINT32_MSG             0x17
+#define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
@@ -300,7 +305,7 @@ enum gcs_severity {
 #define MASK_LOG_CTUN                   (1<<4)
 #define MASK_LOG_NTUN                   (1<<5)
 #define MASK_LOG_MODE                   (1<<6)
-#define MASK_LOG_RAW                    (1<<7)
+#define MASK_LOG_IMU                    (1<<7)
 #define MASK_LOG_CMD                    (1<<8)
 #define MASK_LOG_CUR                    (1<<9)
 #define MASK_LOG_MOTORS                 (1<<10)
