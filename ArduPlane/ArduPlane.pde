@@ -765,7 +765,7 @@ static void fast_loop()
     calc_bearing_error();
 
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-        Log_Write_Attitude(ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor);
+        Log_Write_Attitude();
 
     if (g.log_bitmask & MASK_LOG_RAW)
         Log_Write_Raw();
@@ -880,7 +880,7 @@ static void medium_loop()
         medium_loopCounter++;
 
         if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-            Log_Write_Attitude(ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor);
+            Log_Write_Attitude();
 
         if (g.log_bitmask & MASK_LOG_CTUN)
             Log_Write_Control_Tuning();
@@ -889,7 +889,7 @@ static void medium_loop()
             Log_Write_Nav_Tuning();
 
         if (g.log_bitmask & MASK_LOG_GPS)
-            Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
+            Log_Write_GPS();
         break;
 
     // This case controls the slow loop
