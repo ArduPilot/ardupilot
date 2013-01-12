@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       Example of DataFlash library.
  *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
@@ -25,6 +26,15 @@ DataFlash_APM2 DataFlash;
 DataFlash_APM1 DataFlash;
 #endif
 
+struct test_packet {
+    uint8_t head1, head2;
+    uint16_t v1, v2, v3, v4;
+    int32_t  l1, l2;
+    uint8_t ck1, ck2;
+    uint8_t dummy[60];
+};
+
+#define NUM_PACKETS 20
 
 void setup()
 {
@@ -36,11 +46,16 @@ void setup()
     hal.scheduler->delay(20);
     DataFlash.ReadManufacturerID();
     hal.scheduler->delay(10);
-    hal.console->print("Manufacturer:");
-    hal.console->print(int(DataFlash.df_manufacturer));
-    hal.console->print(",");
-    hal.console->print(DataFlash.df_device);
-    hal.console->println();
+    hal.console->printf("Manufacturer: 0x%x Device: 0x%x PageSize: %u NumPages: %u\n",
+			(unsigned)DataFlash.df_manufacturer,
+			(unsigned)DataFlash.df_device,
+			(unsigned)DataFlash.df_PageSize,
+			(unsigned)DataFlash.df_NumPages);
+
+    if (DataFlash.NeedErase()) {
+        hal.console->println("Erasing...");
+        DataFlash.EraseAll();
+    }
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
@@ -48,72 +63,64 @@ void setup()
     hal.console->println("After testing perform erase before using DataFlash for logging!");
     hal.console->println("");
     hal.console->println("Writing to flash... wait...");
-    for (int i = 0; i < 40; i++) {     // Write 1000 packets...
-        // We write packets of binary data... (without worry about nothing more)
-        DataFlash.WriteByte(HEAD_BYTE1);
-        DataFlash.WriteByte(HEAD_BYTE2);
-        DataFlash.WriteInt(2000 + i);
-        DataFlash.WriteInt(2001 + i);
-        DataFlash.WriteInt(2002 + i);
-        DataFlash.WriteInt(2003 + i);
-        DataFlash.WriteLong((long)i * 5000);
-        DataFlash.WriteLong((long)i * 16268);
-        DataFlash.WriteByte(0xA2);               // 2 bytes of checksum (example)
-        DataFlash.WriteByte(0x4E);
-        hal.scheduler->delay(10);
+
+    uint32_t total_micros = 0;
+    uint16_t i;
+
+    for (i = 0; i < NUM_PACKETS; i++) {
+        uint32_t start = hal.scheduler->micros();
+        // note that we use g++ style initialisers to make larger
+        // structures easier to follow        
+        struct test_packet pkt = {
+        	head1 : HEAD_BYTE1, 
+            head2 : HEAD_BYTE2,
+            v1    : 2000 + i,
+            v2    : 2001 + i,
+            v3    : 2002 + i,
+            v4    : 2003 + i,
+            l1    : (long)i * 5000,
+            l2    : (long)i * 16268,
+            ck1   : 0xA2, 
+            ck2   : 0x4E 
+        };
+        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        total_micros += hal.scheduler->micros() - start;
+        hal.scheduler->delay(50);
     }
+
+    hal.console->printf("Average write time %.1f usec/byte\n", 
+                        (double)total_micros/((float)i*sizeof(struct test_packet)));
+
+    // ensure last page is written
+    DataFlash.FinishWrite();
+
     hal.scheduler->delay(100);
 }
 
 void loop()
 {
-    int i, tmp_int;
-    uint8_t tmp_byte1, tmp_byte2;
-    long tmp_long;
+    uint16_t i;
 
     hal.console->println("Start reading page 1...");
 
     DataFlash.StartRead(1);      // We start reading from page 1
 
-    for (i = 0; i < 40; i++) {          // Read 200 packets...
-
-        tmp_byte1 = DataFlash.ReadByte();
-        tmp_byte2 = DataFlash.ReadByte();
-
-        hal.console->print("PACKET:");
-
-        if ((tmp_byte1 == HEAD_BYTE1) && (tmp_byte1 == HEAD_BYTE1)) {
-            // Read 4 ints...
-            tmp_int = DataFlash.ReadInt();
-            hal.console->print(tmp_int);
-            hal.console->print(",");
-            tmp_int = DataFlash.ReadInt();
-            hal.console->print(tmp_int);
-            hal.console->print(",");
-            tmp_int = DataFlash.ReadInt();
-            hal.console->print(tmp_int);
-            hal.console->print(",");
-            tmp_int = DataFlash.ReadInt();
-            hal.console->print(tmp_int);
-            hal.console->print(",");
-
-            // Read 2 longs...
-            tmp_long = DataFlash.ReadLong();
-            hal.console->print(tmp_long);
-            hal.console->print(",");
-            tmp_long = DataFlash.ReadLong();
-            hal.console->print(tmp_long);
-            hal.console->print(";");
-
-            // Read the checksum...
-            tmp_byte1 = DataFlash.ReadByte();
-            tmp_byte2 = DataFlash.ReadByte();
-        }
-        hal.console->println();
+    for (i = 0; i < NUM_PACKETS; i++) {
+        struct test_packet pkt;
+        DataFlash.ReadBlock(&pkt, sizeof(pkt));
+        hal.console->printf("PACKET: %02x,%02x,%u,%u,%u,%u,%ld,%ld,%02x,%02x\n",
+                            (unsigned)pkt.head1,
+                            (unsigned)pkt.head2,
+                            (unsigned)pkt.v1,
+                            (unsigned)pkt.v2,
+                            (unsigned)pkt.v3,
+                            (unsigned)pkt.v4,
+                            (long)pkt.l1,
+                            (long)pkt.l2,
+                            (unsigned)pkt.ck1,
+                            (unsigned)pkt.ck2);
     }
-    hal.console->println("");
-    hal.console->println("Test complete.  Test will repeat in 20 seconds");
-    hal.console->println("");
+    hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");
     hal.scheduler->delay(20000);
 }
 
