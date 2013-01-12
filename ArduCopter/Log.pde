@@ -5,9 +5,6 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
-#define HEAD_BYTE1  0xA3    // Decimal 163
-#define HEAD_BYTE2  0x95    // Decimal 149
-
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
 static bool     print_log_menu(void);
@@ -244,28 +241,6 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
     s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
 }
 
-/*
-  unfortunately these need to be macros because of a limitation of
-  named member structure initialisation in g++
- */
-#define LOG_PACKET_HEADER          uint8_t head1, head2, msgid
-#define LOG_PACKET_HEADER_INIT(id) head1 : HEAD_BYTE1, head2 : HEAD_BYTE2, msgid : id
-
-/*
-  every logged packet starts with 3 bytes
- */
-struct log_Header {
-    LOG_PACKET_HEADER;
-};
-
-/*
-  read a packet, stripping off the header bytes
- */
-static void ReadPacket(void *pkt, uint16_t size)
-{
-    DataFlash.ReadBlock((void *)(sizeof(log_Header)+(uintptr_t)pkt), size - sizeof(log_Header));
-}
-
 struct log_GPS {
     LOG_PACKET_HEADER;
     uint32_t gps_time;
@@ -299,7 +274,7 @@ static void Log_Write_GPS()
 static void Log_Read_GPS()
 {
     struct log_GPS pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     cliSerial->printf_P(PSTR("GPS, %ld, %u, "),
                         (long)pkt.gps_time,
@@ -717,7 +692,7 @@ static void Log_Write_Performance()
 static void Log_Read_Performance()
 {
     struct log_Performance pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     //                            1   2   3   4   5    6
     cliSerial->printf_P(PSTR("PM, %u, %u, %u, %u, %u, %lu\n"),
                         (unsigned)pkt.renorm_count,
