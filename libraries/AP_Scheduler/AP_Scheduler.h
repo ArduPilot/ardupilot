@@ -50,6 +50,9 @@ public:
 	// return the number of microseconds available for the current task
 	uint16_t time_available_usec(void);
 
+    // return debug parameter
+    uint8_t debug(void) { return _debug; }
+
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
