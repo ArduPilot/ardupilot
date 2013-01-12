@@ -25,6 +25,7 @@ public:
     void cs_assert();
     void cs_release();
     uint8_t transfer(uint8_t data);
+    void transfer(const uint8_t *data, uint16_t len);
 
 private:
     void _cs_assert();
@@ -59,6 +60,7 @@ public:
     void cs_assert();
     void cs_release();
     uint8_t transfer(uint8_t data);
+    void transfer(const uint8_t *data, uint16_t len);
 
 private:
     void _cs_assert();
@@ -92,11 +94,13 @@ public:
     void cs_assert();
     void cs_release();
     uint8_t transfer(uint8_t data);
+    void transfer(const uint8_t *data, uint16_t len);
 
 private:
     void _cs_assert();
     void _cs_release();
     uint8_t _transfer(uint8_t data);
+    void _transfer(const uint8_t *data, uint16_t size);
     static AP_HAL_AVR::AVRSemaphore _semaphore;
 
     AP_HAL_AVR::AVRDigitalSource *_cs_pin;

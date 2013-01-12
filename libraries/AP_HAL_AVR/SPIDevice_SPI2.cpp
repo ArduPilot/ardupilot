@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
@@ -93,6 +94,11 @@ void AVRSPI2DeviceDriver::cs_release() {
 
 uint8_t AVRSPI2DeviceDriver::transfer(uint8_t data) {
     return _transfer(data);
+}
+
+void AVRSPI2DeviceDriver::transfer(const uint8_t *data, uint16_t len) {
+    while (len--)
+        _transfer(*data++);
 }
 
 #endif

@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
@@ -73,13 +74,27 @@ uint8_t AVRSPI3DeviceDriver::_transfer(uint8_t data) {
     return UDR3;
 }
 
+void AVRSPI3DeviceDriver::_transfer(const uint8_t *data, uint16_t len) {
+    while (len--) {
+        /* Wait for empty transmit buffer */
+        while ( !( UCSR3A & _BV(UDRE3)) ) ;
+
+        /* Put data into buffer, sends the data */
+        UDR3 = *data++;
+
+        /* Wait for data to be received */
+        while ( !(UCSR3A & _BV(RXC3)) ) ;
+
+        // dummy read of UDR3 to complete
+        UDR3;
+    }
+}
+
 void AVRSPI3DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
         uint16_t len) {
     _cs_assert();
     if (rx == NULL) {
-        for (uint16_t i = 0; i < len; i++) {
-            _transfer(tx[i]);
-        }
+        _transfer(tx, len);
     } else {
         for (uint16_t i = 0; i < len; i++) {
             rx[i] = _transfer(tx[i]);
@@ -98,6 +113,10 @@ void AVRSPI3DeviceDriver::cs_release() {
 
 uint8_t AVRSPI3DeviceDriver::transfer(uint8_t data) {
     return _transfer(data);
+}
+
+void AVRSPI3DeviceDriver::transfer(const uint8_t *data, uint16_t len) {
+    _transfer(data, len);
 }
 
 #endif
