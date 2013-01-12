@@ -15,9 +15,6 @@
 #include <AP_HAL_AVR.h>
 
 
-#define HEAD_BYTE1 0xA3
-#define HEAD_BYTE2 0x95
-
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -27,11 +24,10 @@ DataFlash_APM1 DataFlash;
 #endif
 
 struct test_packet {
-    uint8_t head1, head2;
+    LOG_PACKET_HEADER;
     uint16_t v1, v2, v3, v4;
     int32_t  l1, l2;
-    uint8_t ck1, ck2;
-    uint8_t dummy[60];
+    uint8_t dummy[80];
 };
 
 #define NUM_PACKETS 20
@@ -72,20 +68,17 @@ void setup()
         // note that we use g++ style initialisers to make larger
         // structures easier to follow        
         struct test_packet pkt = {
-        	head1 : HEAD_BYTE1, 
-            head2 : HEAD_BYTE2,
+            LOG_PACKET_HEADER_INIT(7),
             v1    : 2000 + i,
             v2    : 2001 + i,
             v3    : 2002 + i,
             v4    : 2003 + i,
             l1    : (long)i * 5000,
-            l2    : (long)i * 16268,
-            ck1   : 0xA2, 
-            ck2   : 0x4E 
+            l2    : (long)i * 16268
         };
         DataFlash.WriteBlock(&pkt, sizeof(pkt));
         total_micros += hal.scheduler->micros() - start;
-        hal.scheduler->delay(50);
+        hal.scheduler->delay(20);
     }
 
     hal.console->printf("Average write time %.1f usec/byte\n", 
@@ -108,17 +101,16 @@ void loop()
     for (i = 0; i < NUM_PACKETS; i++) {
         struct test_packet pkt;
         DataFlash.ReadBlock(&pkt, sizeof(pkt));
-        hal.console->printf("PACKET: %02x,%02x,%u,%u,%u,%u,%ld,%ld,%02x,%02x\n",
+        hal.console->printf("PACKET: %02x,%02x,%02x,%u,%u,%u,%u,%ld,%ld\n",
                             (unsigned)pkt.head1,
                             (unsigned)pkt.head2,
+                            (unsigned)pkt.msgid,
                             (unsigned)pkt.v1,
                             (unsigned)pkt.v2,
                             (unsigned)pkt.v3,
                             (unsigned)pkt.v4,
                             (long)pkt.l1,
-                            (long)pkt.l2,
-                            (unsigned)pkt.ck1,
-                            (unsigned)pkt.ck2);
+                            (long)pkt.l2);
     }
     hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");
     hal.scheduler->delay(20000);
