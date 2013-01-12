@@ -134,24 +134,28 @@ enum gcs_severity {
     SEVERITY_CRITICAL
 };
 
-//  Logging parameters
-#define LOG_INDEX_MSG                   0xF0
-#define LOG_ATTITUDE_MSG                0x01
-#define LOG_GPS_MSG                             0x02
-#define LOG_MODE_MSG                    0X03
-#define LOG_CONTROL_TUNING_MSG  0X04
-#define LOG_NAV_TUNING_MSG              0X05
-#define LOG_PERFORMANCE_MSG             0X06
-#define LOG_RAW_MSG                             0x07
-#define LOG_CMD_MSG                             0x08
-#define LOG_CURRENT_MSG                 0x09
-#define LOG_STARTUP_MSG                 0x0A
-#define TYPE_AIRSTART_MSG               0x00
-#define TYPE_GROUNDSTART_MSG    0x01
-#define MAX_NUM_LOGS                    100
+// Logging message types. NOTE: If you change the value of one
+// of these then existing logs will break! Only add at the end, and 
+// mark unused ones as 'deprecated', but leave them in
+enum log_messages {
+    LOG_INDEX_MSG,
+    LOG_ATTITUDE_MSG,
+    LOG_GPS_MSG,
+    LOG_MODE_MSG,
+    LOG_CONTROL_TUNING_MSG,
+    LOG_NAV_TUNING_MSG,
+    LOG_PERFORMANCE_MSG,
+    LOG_RAW_MSG,
+    LOG_CMD_MSG,
+    LOG_CURRENT_MSG,
+    LOG_STARTUP_MSG,
+    TYPE_AIRSTART_MSG,
+    TYPE_GROUNDSTART_MSG,
+    MAX_NUM_LOGS
+};
 
-#define MASK_LOG_ATTITUDE_FAST  (1<<0)
-#define MASK_LOG_ATTITUDE_MED   (1<<1)
+#define MASK_LOG_ATTITUDE_FAST          (1<<0)
+#define MASK_LOG_ATTITUDE_MED           (1<<1)
 #define MASK_LOG_GPS                    (1<<2)
 #define MASK_LOG_PM                     (1<<3)
 #define MASK_LOG_CTUN                   (1<<4)
