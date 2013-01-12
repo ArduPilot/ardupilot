@@ -1,6 +1,11 @@
 ArduCopter Release Notes:
 
 ------------------------------------------------------------------
+ArduCopter 2.9-rc4 12-Jan-2013
+Improvements over 2.9-rc3:
+1) Smoother transition between manual and auto flight modes (Leonard)
+2) bug fix for LAND not actually landing when initiated from failsafe (Randy/Craig)
+------------------------------------------------------------------
 ArduCopter 2.9-rc3 11-Jan-2013
 Improvements over 2.9-rc2:
 1) alt hold with sonar improvements - now on by default (Leonard/Randy)
