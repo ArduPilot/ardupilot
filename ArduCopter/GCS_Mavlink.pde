@@ -1782,7 +1782,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 ((AP_Float *)vp)->set_and_save(packet.param_value);
             } else if (var_type == AP_PARAM_INT32) {
 #if LOGGING_ENABLED == ENABLED
-                Log_Write_Data(1, ((AP_Int32 *)vp)->get());
+                if (g.log_bitmask != 0) {
+                    Log_Write_Data(DATA_MAVLINK_FLOAT, ((AP_Int32 *)vp)->get());
+                }
 #endif
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
@@ -1790,7 +1792,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 ((AP_Int32 *)vp)->set_and_save(v);
             } else if (var_type == AP_PARAM_INT16) {
 #if LOGGING_ENABLED == ENABLED
-                Log_Write_Data(3, (int32_t)((AP_Int16 *)vp)->get());
+                if (g.log_bitmask != 0) {
+                    Log_Write_Data(DATA_MAVLINK_INT16, (int16_t)((AP_Int16 *)vp)->get());
+                }
 #endif
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
@@ -1798,7 +1802,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 ((AP_Int16 *)vp)->set_and_save(v);
             } else if (var_type == AP_PARAM_INT8) {
 #if LOGGING_ENABLED == ENABLED
-                Log_Write_Data(4, (int32_t)((AP_Int8 *)vp)->get());
+                if (g.log_bitmask != 0) {
+                    Log_Write_Data(DATA_MAVLINK_INT8, (int8_t)((AP_Int8 *)vp)->get());
+                }
 #endif
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
