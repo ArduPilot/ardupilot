@@ -125,6 +125,11 @@ public:
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    // set overall board orientation
+    void set_board_orientation(enum Rotation orientation) {
+        _board_orientation = orientation;
+    }
+
 protected:
 
     // sensor specific init to be overwritten by descendant classes
@@ -166,6 +171,9 @@ protected:
 
     // filtering frequency (0 means default)
     AP_Int8                 _mpu6000_filter;
+
+    // board orientation from AHRS
+    enum Rotation			_board_orientation;
 };
 
 #include "AP_InertialSensor_Oilpan.h"

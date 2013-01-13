@@ -320,14 +320,21 @@ bool AP_InertialSensor_MPU6000::update( void )
 
     count_scale = 1.0 / _num_samples;
 
-    _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale;
-    _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale;
-    _gyro.z = _gyro_scale * _gyro_data_sign[2] * sum[_gyro_data_index[2]] * count_scale;
+    _gyro  = Vector3f(_gyro_data_sign[0] * sum[_gyro_data_index[0]],
+                      _gyro_data_sign[1] * sum[_gyro_data_index[1]],
+                      _gyro_data_sign[2] * sum[_gyro_data_index[2]]);
+    _gyro.rotate(_board_orientation);
+    _gyro *= _gyro_scale * count_scale;
     _gyro -= _gyro_offset;
 
-    _accel.x = accel_scale.x * _accel_data_sign[0] * sum[_accel_data_index[0]] * count_scale * MPU6000_ACCEL_SCALE_1G;
-    _accel.y = accel_scale.y * _accel_data_sign[1] * sum[_accel_data_index[1]] * count_scale * MPU6000_ACCEL_SCALE_1G;
-    _accel.z = accel_scale.z * _accel_data_sign[2] * sum[_accel_data_index[2]] * count_scale * MPU6000_ACCEL_SCALE_1G;
+    _accel   = Vector3f(_accel_data_sign[0] * sum[_accel_data_index[0]],
+                        _accel_data_sign[1] * sum[_accel_data_index[1]],
+                        _accel_data_sign[2] * sum[_accel_data_index[2]]);
+    _accel.rotate(_board_orientation);
+    _accel *= count_scale * MPU6000_ACCEL_SCALE_1G;
+    _accel.x *= accel_scale.x;
+    _accel.y *= accel_scale.y;
+    _accel.z *= accel_scale.z;
     _accel -= _accel_offset;
 
     _temp    = _temp_to_celsius(sum[_temp_data_index] * count_scale);

@@ -79,15 +79,22 @@ bool AP_InertialSensor_PX4::update(void)
 
     Vector3f accel_scale = _accel_scale.get();
 
-    _accel.x =   accel_scale.x * _raw_sensors.accelerometer_m_s2[0] / _raw_sensors.accelerometer_counter;
-    _accel.y = - accel_scale.y * _raw_sensors.accelerometer_m_s2[1] / _raw_sensors.accelerometer_counter;
-    _accel.z = - accel_scale.z * _raw_sensors.accelerometer_m_s2[2] / _raw_sensors.accelerometer_counter;
-    _accel -= _accel_offset;
+    _accel   = Vector3f(_raw_sensors.accelerometer_m_s2[0],
+                        _raw_sensors.accelerometer_m_s2[1],
+                        _raw_sensors.accelerometer_m_s2[2]);
+    _accel.rotate(_board_orientation);
+    _accel.x *= accel_scale.x;
+    _accel.y *= accel_scale.y;
+    _accel.z *= accel_scale.z;
+    _accel   /= _raw_sensors.accelerometer_counter;
+    _accel   -= _accel_offset;
 
-    _gyro.x =   _raw_sensors.gyro_rad_s[0] / _raw_sensors.gyro_counter;
-    _gyro.y = - _raw_sensors.gyro_rad_s[1] / _raw_sensors.gyro_counter;
-    _gyro.z = - _raw_sensors.gyro_rad_s[2] / _raw_sensors.gyro_counter;
-    _gyro -= _gyro_offset;
+    _gyro    = Vector3f(_raw_sensors.gyro_rad_s[0],
+                        _raw_sensors.gyro_rad_s[1],
+                        _raw_sensors.gyro_rad_s[2]);
+    _gyro.rotate(_board_orientation);
+    _gyro   /= _raw_sensors.gyro_counter;
+    _gyro   -= _gyro_offset;
 
     memset(&_raw_sensors, 0, sizeof(_raw_sensors));
 
