@@ -333,6 +333,9 @@ static void startup_ground(void)
 {
     gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
+    // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
+    ahrs.init();
+
     // Warm up and read Gyro offsets
     // -----------------------------
     ins.init(AP_InertialSensor::COLD_START,
@@ -341,9 +344,6 @@ static void startup_ground(void)
  #if CLI_ENABLED == ENABLED
     report_ins();
  #endif
-
-    // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
-    ahrs.init();
 
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
