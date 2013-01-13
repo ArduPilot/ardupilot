@@ -25,6 +25,7 @@
 // acceleration due to gravity in m/s/s
 #define GRAVITY_MSS 9.80665
 
+#define ROTATION_COMBINATION_SUPPORT 0
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
@@ -36,10 +37,12 @@ float           safe_asin(float v);
 // a varient of sqrt() that always gives a valid answer.
 float           safe_sqrt(float v);
 
+#if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board
 // rotation to an existing rotation of a sensor such as the compass
 enum Rotation           rotation_combination(enum Rotation r1, enum Rotation r2, bool *found = NULL);
+#endif
 
 // return distance in meters between two locations
 float                   get_distance(const struct Location *loc1, const struct Location *loc2);

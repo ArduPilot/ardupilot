@@ -106,6 +106,60 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = tmp; z = -z;
         return;
     }
+    case ROTATION_ROLL_90: {
+        tmp = z; z = y; y = -tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_YAW_45: {
+        tmp = z; z = y; y = -tmp;
+        tmp = HALF_SQRT_2*(x - y);
+        y   = HALF_SQRT_2*(x + y);
+        x = tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_YAW_90: {
+        tmp = z; z = y; y = -tmp;
+        tmp = x; x = -y; y = tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_YAW_135: {
+        tmp = z; z = y; y = -tmp;
+        tmp = -HALF_SQRT_2*(x + y);
+        y   =  HALF_SQRT_2*(x - y);
+        x = tmp;
+        return;
+    }
+    case ROTATION_ROLL_270: {
+        tmp = z; z = -y; y = tmp;
+        return;
+    }
+    case ROTATION_ROLL_270_YAW_45: {
+        tmp = z; z = -y; y = tmp;
+        tmp = HALF_SQRT_2*(x - y);
+        y   = HALF_SQRT_2*(x + y);
+        x = tmp;
+        return;
+    }
+    case ROTATION_ROLL_270_YAW_90: {
+        tmp = z; z = -y; y = tmp;
+        tmp = x; x = -y; y = tmp;
+        return;
+    }
+    case ROTATION_ROLL_270_YAW_135: {
+        tmp = z; z = -y; y = tmp;
+        tmp = -HALF_SQRT_2*(x + y);
+        y   =  HALF_SQRT_2*(x - y);
+        x = tmp;
+        return;
+    }
+    case ROTATION_PITCH_90: {
+        tmp = z; z = -x; x = tmp;
+        return;
+    }
+    case ROTATION_PITCH_270: {
+        tmp = z; z = x; x = -tmp;
+        return;
+    }
     }
 }
 

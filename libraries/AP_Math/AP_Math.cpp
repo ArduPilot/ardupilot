@@ -31,7 +31,7 @@ float safe_sqrt(float v)
     return ret;
 }
 
-
+#if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board
 // rotation to an existing rotation of a sensor such as the compass
@@ -67,6 +67,7 @@ enum Rotation rotation_combination(enum Rotation r1, enum Rotation r2, bool *fou
     }
     return ROTATION_NONE;
 }
+#endif
 
 // constrain a value
 float constrain(float amt, float low, float high) {

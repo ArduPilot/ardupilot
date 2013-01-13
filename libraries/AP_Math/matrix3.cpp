@@ -37,6 +37,16 @@
 #define MATRIX_ROTATION_ROLL_180_YAW_225   Matrix3f(-HALF_SQRT_2, -HALF_SQRT_2, 0, -HALF_SQRT_2, HALF_SQRT_2, 0, 0, 0, -1)
 #define MATRIX_ROTATION_ROLL_180_YAW_270   Matrix3f(0, -1, 0, -1, 0, 0, 0, 0, -1)
 #define MATRIX_ROTATION_ROLL_180_YAW_315   Matrix3f(HALF_SQRT_2, -HALF_SQRT_2, 0, -HALF_SQRT_2, -HALF_SQRT_2, 0, 0, 0, -1)
+#define MATRIX_ROTATION_ROLL_90            Matrix3f(1, 0,  0,  0, 0, -1,  0,  1, 0)
+#define MATRIX_ROTATION_ROLL_90_YAW_45     Matrix3f(HALF_SQRT_2, 0, HALF_SQRT_2, HALF_SQRT_2, 0, -HALF_SQRT_2, 0, 1, 0)
+#define MATRIX_ROTATION_ROLL_90_YAW_90     Matrix3f(0, 0, 1, 1, 0, 0, 0, 1, 0)
+#define MATRIX_ROTATION_ROLL_90_YAW_135    Matrix3f(-HALF_SQRT_2, 0, HALF_SQRT_2, HALF_SQRT_2, 0, HALF_SQRT_2, 0, 1, 0)
+#define MATRIX_ROTATION_ROLL_270           Matrix3f(1, 0,  0,  0, 0,  1,  0, -1, 0)
+#define MATRIX_ROTATION_ROLL_270_YAW_45    Matrix3f(HALF_SQRT_2, 0, -HALF_SQRT_2, HALF_SQRT_2, 0, HALF_SQRT_2, 0, -1, 0)
+#define MATRIX_ROTATION_ROLL_270_YAW_90    Matrix3f(0, 0, -1, 1, 0, 0, 0, -1, 0)
+#define MATRIX_ROTATION_ROLL_270_YAW_135   Matrix3f(-HALF_SQRT_2, 0, -HALF_SQRT_2, HALF_SQRT_2, 0, -HALF_SQRT_2, 0, -1, 0)
+#define MATRIX_ROTATION_PITCH_90           Matrix3f(0, 0,  1,  0, 1,  0, -1,  0, 0)
+#define MATRIX_ROTATION_PITCH_270          Matrix3f(0, 0, -1,  0, 1,  0,  1,  0, 0)
 
 // fill in a matrix with a standard rotation
 template <typename T>
@@ -91,6 +101,36 @@ void Matrix3<T>::rotation(enum Rotation r)
         break;
     case ROTATION_ROLL_180_YAW_315:
         *this = MATRIX_ROTATION_ROLL_180_YAW_315;
+        break;
+    case ROTATION_ROLL_90:
+        *this = MATRIX_ROTATION_ROLL_90;
+        break;
+    case ROTATION_ROLL_90_YAW_45:
+        *this = MATRIX_ROTATION_ROLL_90_YAW_45;
+        break;
+    case ROTATION_ROLL_90_YAW_90:
+        *this = MATRIX_ROTATION_ROLL_90_YAW_90;
+        break;
+    case ROTATION_ROLL_90_YAW_135:
+        *this = MATRIX_ROTATION_ROLL_90_YAW_135;
+        break;
+    case ROTATION_ROLL_270:
+        *this = MATRIX_ROTATION_ROLL_270;
+        break;
+    case ROTATION_ROLL_270_YAW_45:
+        *this = MATRIX_ROTATION_ROLL_270_YAW_45;
+        break;
+    case ROTATION_ROLL_270_YAW_90:
+        *this = MATRIX_ROTATION_ROLL_270_YAW_90;
+        break;
+    case ROTATION_ROLL_270_YAW_135:
+        *this = MATRIX_ROTATION_ROLL_270_YAW_135;
+        break;
+    case ROTATION_PITCH_90:
+        *this = MATRIX_ROTATION_PITCH_90;
+        break;
+    case ROTATION_PITCH_270:
+        *this = MATRIX_ROTATION_PITCH_270;
         break;
     }
 }
