@@ -227,12 +227,13 @@ static void init_ardupilot()
         //----------------
         //read_EEPROM_airstart_critical();
 #if HIL_MODE != HIL_MODE_ATTITUDE
+        ahrs.init();
+        ahrs.set_fly_forward(true);
+
         ins.init(AP_InertialSensor::WARM_START, 
                  ins_sample_rate,
                  flash_leds);
 
-        ahrs.init();
-        ahrs.set_fly_forward(true);
 #endif
 
         // This delay is important for the APM_RC library to work.
@@ -442,6 +443,9 @@ static void startup_INS_ground(bool force_accel_level)
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
     mavlink_delay(1000);
 
+    ahrs.init();
+    ahrs.set_fly_forward(true);
+
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);
@@ -453,7 +457,6 @@ static void startup_INS_ground(bool force_accel_level)
         ins.init_accel(flash_leds);
     }
 #endif
-    ahrs.set_fly_forward(true);
     ahrs.reset();
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
