@@ -165,7 +165,7 @@ void
 AP_OpticalFlow_ADNS3080::update(uint32_t now)
 {
     uint8_t motion_reg;
-    surface_quality = (uint16_t)read_register(ADNS3080_SQUAL);
+    surface_quality = read_register(ADNS3080_SQUAL);
     hal.scheduler->delay_microseconds(50);
 
     // check for movement, update x,y values

@@ -35,7 +35,7 @@ public:
     // raw sensor change in x and y position (i.e. unrotated)
     int      raw_dx, raw_dy;
     // image quality (below 15 you really can't trust the x,y values returned)
-    int      surface_quality;
+    uint8_t      surface_quality;
     // total x,y position
     int      x,y;
     // rotated change in x and y position
