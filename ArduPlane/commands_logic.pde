@@ -229,6 +229,7 @@ static void do_RTL(void)
     control_mode    = RTL;
     crash_timer     = 0;
     next_WP                 = home;
+    loiter_direction = 1;
 
     // Altitude to hold over home
     // Set by configuration tool
@@ -261,15 +262,26 @@ static void do_land()
     set_next_WP(&next_nav_command);
 }
 
+static void loiter_set_direction_wp(struct Location *nav_command) 
+{
+    if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
+        loiter_direction = -1;
+    } else {
+        loiter_direction=1;
+    }
+}
+
 static void do_loiter_unlimited()
 {
     set_next_WP(&next_nav_command);
+    loiter_set_direction_wp(&next_nav_command);
 }
 
 static void do_loiter_turns()
 {
     set_next_WP(&next_nav_command);
     loiter_total = next_nav_command.p1 * 360;
+    loiter_set_direction_wp(&next_nav_command);
 }
 
 static void do_loiter_time()
@@ -277,6 +289,7 @@ static void do_loiter_time()
     set_next_WP(&next_nav_command);
     loiter_time_ms = millis();
     loiter_time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
+    loiter_set_direction_wp(&next_nav_command);
 }
 
 /********************************************************************************/
@@ -490,6 +503,7 @@ static bool verify_within_distance()
 
 static void do_loiter_at_location()
 {
+    loiter_direction = 1;
     next_WP = current_loc;
 }
 
