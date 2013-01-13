@@ -230,8 +230,11 @@ static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf_P(PSTR(
-                        "Now connect the main lipo and follow the instruction on the wiki for your frame setup.\n"
-                        "For security remember to disconnect the main lipo after the test, then hit any key to exit.\n"
+                        "Connect battery for this test.\n"
+                        "Motors will not spin in channel order (1,2,3,4) but by frame position order.\n"
+                        "Front (& right of centerline) motor first, then in clockwise order around frame.\n"
+                        "http://code.google.com/p/arducopter/wiki/AC2_Props_2 for demo video.\n"
+                        "Remember to disconnect battery after this test.\n"
                         "Any key to exit.\n"));
     while(1) {
         delay(20);
