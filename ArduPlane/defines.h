@@ -85,6 +85,9 @@ enum FlightMode {
 //--------------------
 #define MASK_OPTIONS_RELATIVE_ALT       (1<<0)          // 1 = Relative
                                                         // altitude
+#define MASK_OPTIONS_LOITER_DIRECTION   (1<<2)          // 0 = CW
+                                                        // 1 = CCW
+
 
 //repeating events
 #define NO_REPEAT 0

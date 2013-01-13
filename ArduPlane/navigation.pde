@@ -151,11 +151,11 @@ static void update_loiter()
     if(wp_distance <= (uint32_t)max(g.loiter_radius,0)) {
         power = float(wp_distance) / float(g.loiter_radius);
         power = constrain(power, 0.5, 1);
-        nav_bearing_cd += 9000.0 * (2.0 + power);
+        nav_bearing_cd += 9000.0 * (2.0 + power) * loiter_direction;
     } else if(wp_distance < (uint32_t)max((g.loiter_radius + LOITER_RANGE),0)) {
         power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
         power = constrain(power, 0.5, 1);                               //power = constrain(power, 0, 1);
-        nav_bearing_cd -= power * 9000;
+        nav_bearing_cd -= power * 9000 * loiter_direction;
     } else{
         update_crosstrack();
         loiter_time_ms = millis();                              // keep start time for loiter updating till we get within LOITER_RANGE of orbit

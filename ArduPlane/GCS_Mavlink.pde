@@ -1206,13 +1206,25 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         switch (tell_command.id) {                                              // Switch to map APM command fields inot MAVLink command fields
 
+        case MAV_CMD_NAV_LOITER_TIME:
         case MAV_CMD_NAV_LOITER_TURNS:
+            if (tell_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
+                param3 = -g.loiter_radius;
+            } else {
+                param3 = g.loiter_radius;
+            }
         case MAV_CMD_NAV_TAKEOFF:
         case MAV_CMD_DO_SET_HOME:
-        case MAV_CMD_NAV_LOITER_TIME:
             param1 = tell_command.p1;
             break;
 
+        case MAV_CMD_NAV_LOITER_UNLIM:
+            if (tell_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
+                param3 = -g.loiter_radius;;
+            } else {
+                param3 = g.loiter_radius;
+            }
+            break;
         case MAV_CMD_CONDITION_CHANGE_ALT:
             x=0;                                // Clear fields loaded above that we don't want sent for this command
             y=0;
@@ -1481,16 +1493,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // Switch to map APM command fields into MAVLink command fields
         switch (tell_command.id) {
-        case MAV_CMD_NAV_WAYPOINT:
         case MAV_CMD_NAV_LOITER_UNLIM:
+		    if (packet.param3 < 0) {
+		        tell_command.options |= MASK_OPTIONS_LOITER_DIRECTION;
+		    }
+        case MAV_CMD_NAV_WAYPOINT:
         case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         case MAV_CMD_NAV_LAND:
             break;
 
         case MAV_CMD_NAV_LOITER_TURNS:
+        case MAV_CMD_NAV_LOITER_TIME:
+            if (packet.param3 < 0) {
+                tell_command.options |= MASK_OPTIONS_LOITER_DIRECTION;
+            } 
         case MAV_CMD_NAV_TAKEOFF:
         case MAV_CMD_DO_SET_HOME:
-        case MAV_CMD_NAV_LOITER_TIME:
             tell_command.p1 = packet.param1;
             break;
 
