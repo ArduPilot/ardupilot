@@ -6,7 +6,7 @@
 set -e
 set -x
 
-targets="clean all"
+targets="clean apm1 clean apm2"
 
 [ $# -gt 0 ] && {
     targets="$*"
@@ -23,7 +23,7 @@ for b in $TESTS; do
 	echo "Skipping build of $b"
     else
 	for t in $targets; do
-	    make $t
+	    make -j4 $t
 	done
     fi
     popd
