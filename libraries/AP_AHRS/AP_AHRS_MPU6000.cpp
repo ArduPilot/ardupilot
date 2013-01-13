@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       AP_AHRS_MPU6000.cpp
  *
@@ -32,6 +33,9 @@ extern const AP_HAL::HAL& hal;
 void
 AP_AHRS_MPU6000::init()
 {
+    // call parent init
+    AP_AHRS::init();
+
     // suspend timer so interrupts on spi bus do not interfere with
     // communication to mpu6000
     hal.scheduler->suspend_timer_procs();

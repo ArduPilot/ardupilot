@@ -40,8 +40,9 @@ public:
         _gyro_drift_limit = ins->get_gyro_drift_rate();
     }
 
-    // empty init
+    // init sets up INS board orientation
     virtual void init() {
+        _ins->set_board_orientation((enum Rotation)_board_orientation.get());
     };
 
     // Accessors
@@ -50,6 +51,7 @@ public:
     }
     void set_compass(Compass *compass) {
         _compass = compass;
+        _compass->set_board_orientation((enum Rotation)_board_orientation.get());
     }
     void set_barometer(AP_Baro *barometer) {
         _barometer = barometer;
@@ -157,6 +159,7 @@ public:
     AP_Int8 _gps_use;
     AP_Int8 _baro_use;
     AP_Int8 _wind_max;
+    AP_Int8 _board_orientation;
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];

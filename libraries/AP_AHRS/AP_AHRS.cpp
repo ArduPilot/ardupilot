@@ -75,6 +75,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TRIM", 8, AP_AHRS, _trim, 0),
 
+    // @Param: ORIENTATION
+    // @DisplayName: Board Orientation
+    // @Description: Overall board orientation. This rotates the IMU and compass readings to allow the board to be oriented in your vehicle at any 90 or 45 degree angle. This option takes affect on next boot. After changing you will need to re-level your vehicle.
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315
+    // @User: Advanced
+    AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
+
     AP_GROUPEND
 };
 
