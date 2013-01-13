@@ -18,6 +18,9 @@
 #include <AP_InertialSensor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+
 AP_InertialSensor_PX4 ins;
 
 void setup(void)
@@ -180,7 +183,7 @@ void run_test()
 			// display results
 			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f \t Temp:%4.2f dt:%u\n"), 
 								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z, temperature,
-								  ins.get_delta_time_micros());
+								  (unsigned)(1.0e6*ins.get_delta_time()));
 		}
     }
 
@@ -189,5 +192,10 @@ void run_test()
         hal.console->read();
     }
 }
+
+#else
+void setup() {}
+void loop() {}
+#endif // CONFIG_HAL_BOARD
 
 AP_HAL_MAIN();
