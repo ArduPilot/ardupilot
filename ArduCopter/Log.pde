@@ -310,7 +310,7 @@ static void Log_Write_IMU()
 static void Log_Read_IMU()
 {
     struct log_IMU pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                                 1      2      3      4      5      6
     cliSerial->printf_P(PSTR("IMU, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
@@ -349,7 +349,7 @@ static void Log_Write_Current()
 static void Log_Read_Current()
 {
     struct log_Current pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                               1    2      3      4   5
     cliSerial->printf_P(PSTR("CURR, %d, %lu, %4.4f, %4.4f, %d\n"),
@@ -420,7 +420,7 @@ static void Log_Write_Motors()
 static void Log_Read_Motors()
 {
     struct log_Motors pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
 #if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
                                  // 1   2   3   4   5   6   7   8
@@ -482,8 +482,8 @@ static void Log_Write_Optflow()
         dx              : optflow.dx,
         dy              : optflow.dx,
         surface_quality : optflow.surface_quality,
-        x_cm            : optflow.x_cm,
-        y_cm            : optflow.y_cm,
+        x_cm            : (int16_t) optflow.x_cm,
+        y_cm            : (int16_t) optflow.y_cm,
         latitude        : optflow.vlat,
         longitude       : optflow.vlon,
         roll            : of_roll,
@@ -497,7 +497,7 @@ static void Log_Write_Optflow()
 static void Log_Read_Optflow()
 {
     struct log_Optflow pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                             1   2   3   4   5      6      7    8    9
     cliSerial->printf_P(PSTR("OF, %d, %d, %d, %d, %d, %4.7f, %4.7f, %ld, %ld\n"),
@@ -545,7 +545,7 @@ static void Log_Write_Nav_Tuning()
 static void Log_Read_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                               1   2   3   4   5   6   7   8
     cliSerial->printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d, %d, %d\n"),
@@ -595,7 +595,7 @@ static void Log_Write_Control_Tuning()
 static void Log_Read_Control_Tuning()
 {
     struct log_Control_Tuning pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                               1   2   3   4   5   6   7   8   9
     cliSerial->printf_P(PSTR("CTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
@@ -645,7 +645,7 @@ static void Log_Write_Iterm()
 static void Log_Read_Iterm()
 {
     struct log_Iterm pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                                1   2   3   4   5   6   7   8   9
     cliSerial->printf_P(PSTR("ITERM, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
@@ -736,7 +736,7 @@ static void Log_Write_Cmd(uint8_t num, struct Location *wp)
 static void Log_Read_Cmd()
 {
     struct log_Cmd pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                               1   2   3   4   5    6    7    8
     cliSerial->printf_P(PSTR( "CMD, %u, %u, %u, %u, %u, %ld, %ld, %ld\n"),
@@ -781,7 +781,7 @@ static void Log_Write_Attitude()
 static void Log_Read_Attitude()
 {
     struct log_Attitude pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                              1   2   3    4   5   6  7
     cliSerial->printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
@@ -843,7 +843,7 @@ static void Log_Write_INAV()
 static void Log_Read_INAV()
 {
     struct log_INAV pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
                                   // 1   2   3   4      5      6      7      8    9   10     11     12     13     14
     cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
@@ -884,7 +884,7 @@ static void Log_Write_Mode(uint8_t mode)
 static void Log_Read_Mode()
 {
     struct log_Mode pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("MOD:"));
     print_flight_mode(pkt.mode);
     cliSerial->printf_P(PSTR(", %d\n"),(int)pkt.throttle_cruise);
@@ -925,7 +925,7 @@ static void Log_Write_Event(uint8_t id)
 static void Log_Read_Event()
 {
     struct log_Event pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("EV: %u\n"), (unsigned)pkt.id);
 }
 
@@ -952,7 +952,7 @@ static void Log_Write_Data(uint8_t id, int16_t value)
 static void Log_Read_Int16t()
 {
     struct log_Data_Int16t pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("DATA: %u, %d\n"), (unsigned)pkt.id, (int)pkt.data_value);
 }
 
@@ -979,7 +979,7 @@ static void Log_Write_Data(uint8_t id, uint16_t value)
 static void Log_Read_UInt16t()
 {
     struct log_Data_UInt16t pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("DATA: %u, %u\n"), (unsigned)pkt.id, (unsigned)pkt.data_value);
 }
 
@@ -1006,7 +1006,7 @@ static void Log_Write_Data(uint8_t id, int32_t value)
 static void Log_Read_Int32t()
 {
     struct log_Data_Int32t pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("DATA: %u, %ld\n"), (unsigned)pkt.id, (long)pkt.data_value);
 }
 
@@ -1033,7 +1033,7 @@ static void Log_Write_Data(uint8_t id, uint32_t value)
 static void Log_Read_UInt32t()
 {
     struct log_Data_UInt32t pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("DATA: %u, %lu\n"), (unsigned)pkt.id, (unsigned long)pkt.data_value);
 }
 
@@ -1060,7 +1060,7 @@ static void Log_Write_Data(uint8_t id, float value)
 static void Log_Read_Float()
 {
     struct log_Data_Float pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("DATA: %u, %1.6f\n"), (unsigned)pkt.id, (float)pkt.data_value);
 }
 
@@ -1076,7 +1076,7 @@ struct log_PID {
 };
 
 // Write an PID packet. Total length : 28 bytes
-static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain)
+static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain)
 {
     struct log_PID pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PID_MSG),
@@ -1095,7 +1095,7 @@ static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, in
 static void Log_Read_PID()
 {
     struct log_PID pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     //                             1    2    3    4    5    6      7
     cliSerial->printf_P(PSTR("PID-%u, %ld, %ld, %ld, %ld, %ld, %4.4f\n"),
@@ -1139,7 +1139,7 @@ static void Log_Write_DMP()
 static void Log_Read_DMP()
 {
     struct log_DMP pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
                                  // 1   2   3   4   5   6
     cliSerial->printf_P(PSTR("DMP, %d, %d, %d, %d, %u, %u\n"),
@@ -1184,7 +1184,7 @@ static void Log_Write_Camera()
 static void Log_Read_Camera()
 {
     struct log_Camera pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
                                      // 1
     cliSerial->printf_P(PSTR("CAMERA, %lu, "),(unsigned long)pkt.gps_time); // 1 time
@@ -1220,7 +1220,7 @@ static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 static void Log_Read_Error()
 {
     struct log_Error pkt;
-    ReadPacket(&pkt, sizeof(pkt));
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
     cliSerial->print_P(PSTR("ERR, "));
 
@@ -1469,7 +1469,7 @@ static void Log_Write_Motors() {
 }
 static void Log_Write_Performance() {
 }
-static void Log_Write_PID(int8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {
+static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {
 }
 static void Log_Write_DMP() {
 }
