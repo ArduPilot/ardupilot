@@ -322,7 +322,12 @@ bool AP_Compass_HMC5843::read()
     if (product_id == AP_COMPASS_TYPE_HMC5883L) {
         rot_mag.rotate(ROTATION_YAW_90);
     }
+
+    // add components orientation
     rot_mag.rotate(_orientation);
+
+    // add in board orientation
+    rot_mag.rotate(_board_orientation);
 
     rot_mag += _offset.get();
     mag_x = rot_mag.x;

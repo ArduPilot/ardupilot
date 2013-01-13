@@ -123,6 +123,11 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // set overall board orientation
+    void set_board_orientation(enum Rotation orientation) {
+        _board_orientation = orientation;
+    }
+
 protected:
     enum Rotation _orientation;
     AP_Vector3f _offset;
@@ -137,5 +142,8 @@ protected:
     static const uint8_t _mag_history_size = 20;
     uint8_t _mag_history_index;
     Vector3i _mag_history[_mag_history_size];
+
+    // board orientation from AHRS
+    enum Rotation _board_orientation;
 };
 #endif

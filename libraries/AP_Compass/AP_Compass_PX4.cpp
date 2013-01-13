@@ -64,7 +64,7 @@ bool AP_Compass_PX4::read(void)
     _sum /= _count;
     _sum *= 1000;
     _sum.rotate(_orientation);
-
+    _sum.rotate(_board_orientation);
     _sum += _offset.get();
 
     mag_x = _sum.x;
