@@ -59,8 +59,4 @@ private:
 
 };
 
-
-// Helper functions
-uint32_t        get_distance_meters(struct Location *loc1, struct Location *loc2); // distance in meters between two locations
-
 #endif // __AP_LIMIT_GEOFENCE_H__
