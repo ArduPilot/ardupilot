@@ -300,6 +300,7 @@ static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->println_P(PSTR("Initialising gyros"));
+    ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);

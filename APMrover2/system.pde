@@ -425,6 +425,8 @@ static void startup_INS_ground(bool force_accel_level)
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
 	mavlink_delay(1000);
 
+    ahrs.init();
+	ahrs.set_fly_forward(true);
 	ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate, 
              flash_leds);
@@ -434,7 +436,6 @@ static void startup_INS_ground(bool force_accel_level)
         // it once via the ground station	
         ins.init_accel(flash_leds);
 	}
-	ahrs.set_fly_forward(true);
     ahrs.reset();
 
 #endif // HIL_MODE_ATTITUDE
