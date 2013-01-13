@@ -470,6 +470,8 @@ get_rate_roll(int32_t target_rate)
 
     // constrain output
     output = constrain(output, -5000, 5000);
+    
+    motors.set_roll_musthave_pct((float)i/output);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -511,6 +513,8 @@ get_rate_pitch(int32_t target_rate)
 
     // constrain output
     output = constrain(output, -5000, 5000);
+    
+    motors.set_pitch_musthave_pct((float)i/output);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
