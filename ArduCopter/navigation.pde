@@ -423,7 +423,7 @@ static void calc_loiter(int16_t x_error, int16_t y_error)
     }
 
     output                  = p + i + d;
-    nav_lon                 = constrain(output, -32000, 32000); // constraint to remove chance of overflow when adding int32_t to int16_t
+    nav_lon                 = constrain(output, -4500, 4500); // constrain max angle to 45 degrees
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the yaw
@@ -456,7 +456,7 @@ static void calc_loiter(int16_t x_error, int16_t y_error)
     }
 
     output                  = p + i + d;
-    nav_lat                 = constrain(output, -32000, 32000); // constraint to remove chance of overflow when adding int32_t to int16_t
+    nav_lat                 = constrain(output, -4500, 4500); // constrain max angle to 45 degrees
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the yaw
@@ -502,7 +502,7 @@ static void calc_loiter(int16_t x_error, int16_t y_error)
     }
 
     output                  = p + i + d;
-    nav_lon                 = constrain(output, -32000, 32000); // constraint to remove chance of overflow when adding int32_t to int16_t
+    nav_lon                 = constrain(output, -4500, 4500); // constrain max angle to 45 degrees
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the yaw
@@ -535,7 +535,7 @@ static void calc_loiter(int16_t x_error, int16_t y_error)
     }
 
     output                  = p + i + d;
-    nav_lat                 = constrain(output, -32000, 32000); // constraint to remove chance of overflow when adding int32_t to int16_t
+    nav_lat                 = constrain(output, -4500, 4500); // constrain max angle to 45 degrees
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the yaw
