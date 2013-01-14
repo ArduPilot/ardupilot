@@ -129,9 +129,6 @@ static int32_t get_RTL_alt()
 
 static void set_next_WP(struct Location *wp)
 {
-    //SendDebug("MSG <set_next_wp> wp_index: ");
-    //SendDebugln(g.command_index, DEC);
-
     // copy the current WP into the OldWP slot
     // ---------------------------------------
     if (next_WP.lat == 0 || command_nav_index <= 1) {
@@ -143,20 +140,15 @@ static void set_next_WP(struct Location *wp)
             prev_WP = current_loc;
     }
 
-    //cliSerial->printf("set_next_WP #%d, ", command_nav_index);
-    //print_wp(&prev_WP, command_nav_index -1);
-
     // Load the next_WP slot
     // ---------------------
-    next_WP = *wp;
+    next_WP.options = wp->options;
+    next_WP.lat = wp->lat;
+    next_WP.lng = wp->lng;
 
-    // used to control and limit the rate of climb
-    // -------------------------------------------
-    // We don't set next WP below 1m
-    next_WP.alt = max(next_WP.alt, 100);
-
-    // Save new altitude so we can track it for climb_rate
-    set_new_altitude(next_WP.alt);
+    // Set new target altitude so we can track it for climb_rate
+    // To-Do: remove the restriction on negative altitude targets (after testing)
+    set_new_altitude(max(wp->alt,100));
 
     // this is handy for the groundstation
     // -----------------------------------
