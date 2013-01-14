@@ -592,6 +592,10 @@ static void calc_nav_pitch_roll()
 
     // flip pitch because forward is negative
     auto_pitch = -auto_pitch;
+
+    // constrain maximum roll and pitch angles to 45 degrees
+    auto_roll = constrain(auto_roll, -4500, 4500);
+    auto_pitch = constrain(auto_pitch, -4500, 4500);
 }
 
 static int16_t get_desired_speed(int16_t max_speed)
