@@ -66,6 +66,7 @@
 #define CH7_SAVE_WP 7
 #define CH7_MULTI_MODE 8
 #define CH7_CAMERA_TRIGGER 9
+#define CH7_SONAR 10            // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
 
 
 
