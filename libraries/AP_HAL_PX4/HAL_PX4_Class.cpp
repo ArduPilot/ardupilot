@@ -39,12 +39,12 @@ static PX4EEPROMStorage storageDriver;
 static PX4RCInput rcinDriver;
 static PX4RCOutput rcoutDriver;
 
-#define UARTA_DEVICE "/dev/ttyS2"
-#define UARTB_DEVICE "/dev/ttyS3"
+#define UARTA_DEFAULT_DEVICE "/dev/ttyS0"
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 
 // only two real UART drivers for now
-static PX4UARTDriver uartADriver(UARTA_DEVICE);
-static PX4UARTDriver uartBDriver(UARTB_DEVICE);
+static PX4UARTDriver uartADriver(UARTA_DEFAULT_DEVICE);
+static PX4UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE);
 static Empty::EmptyUARTDriver uartCDriver;
 
 HAL_PX4::HAL_PX4() :
@@ -84,59 +84,87 @@ static int main_loop(int argc, char **argv)
     setup();
     hal.scheduler->system_initialized();
 
-    while (true) {
+    while (!thread_should_exit) {
 		loop();
 
         // yield the CPU for 1ms between loops to let other apps 
         // get some CPU time
 		poll(NULL, 0, 1);
 	}
+    thread_running = false;
     return 0;
+}
+
+static void usage(void)
+{
+    printf("Usage: %s [options] {start,stop,status}\n", SKETCHNAME);
+    printf("Options:\n");
+    printf("\t-d DEVICE         set terminal device (default %s)\n", UARTA_DEFAULT_DEVICE);
+    printf("\n");
 }
 
 
 void HAL_PX4::init(int argc, char * const argv[]) const 
 {
+    int i;
+    const char *device = UARTA_DEFAULT_DEVICE;
+
     if (argc < 1) {
 		printf("%s: missing command (try '%s start')", 
                SKETCHNAME, SKETCHNAME);
+        usage();
         exit(1);
     }
 
-    if (strcmp(argv[1], "start") == 0) {
-		if (thread_running) {
-			printf("%s already running\n", SKETCHNAME);
-			/* this is not an error */
-			exit(0);
-		}
+    for (i=0; i<argc; i++) {
+        if (strcmp(argv[i], "start") == 0) {
+            if (thread_running) {
+                printf("%s already running\n", SKETCHNAME);
+                /* this is not an error */
+                exit(0);
+            }
 
-        printf("Starting %s on %s\n", SKETCHNAME, UARTA_DEVICE);
+            uartADriver.set_device_path(device);
+            printf("Starting %s on %s\n", SKETCHNAME, device);
 
-		thread_should_exit = false;
-		daemon_task = task_spawn(SKETCHNAME,
-                                 SCHED_RR,
-                                 SCHED_PRIORITY_DEFAULT,
-                                 4096,
-                                 main_loop,
-                                 NULL);
-		exit(0);
-	}
+            thread_running = true;
+            thread_should_exit = false;
+            daemon_task = task_spawn(SKETCHNAME,
+                                     SCHED_RR,
+                                     SCHED_PRIORITY_DEFAULT,
+                                     4096,
+                                     main_loop,
+                                     NULL);
+            exit(0);
+        }
 
-    if (strcmp(argv[1], "stop") == 0) {
-		thread_should_exit = true;
-		exit(0);
-	}
+        if (strcmp(argv[i], "stop") == 0) {
+            thread_should_exit = true;
+            exit(0);
+        }
  
-	if (strcmp(argv[1], "status") == 0) {
-		if (thread_running) {
-			printf("\t%s is running\n", SKETCHNAME);
-		} else {
-			printf("\t%s is not started\n", SKETCHNAME);
+        if (strcmp(argv[i], "status") == 0) {
+            if (thread_running) {
+                printf("\t%s is running\n", SKETCHNAME);
+            } else {
+                printf("\t%s is not started\n", SKETCHNAME);
+            }
+            exit(0);
+        }
+
+		if (strcmp(argv[i], "-d") == 0) {
+            // set terminal device
+			if (argc > i + 1) {
+                device = strdup(argv[i+1]);
+			} else {
+				printf("missing parameter to -d DEVICE\n");
+                usage();
+                exit(1);
+			}
 		}
-		exit(0);
-	}
+    }
  
-	printf("%s: unrecognized command ('start', 'stop' or 'status')", SKETCHNAME);
+    usage();
 	exit(1);
 }
 

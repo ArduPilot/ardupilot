@@ -36,6 +36,10 @@ public:
 
     bool _initialised;
 
+    void set_device_path(const char *path) {
+	    _devpath = path;
+    }
+
 private:
     const char *_devpath;
     int _fd;
