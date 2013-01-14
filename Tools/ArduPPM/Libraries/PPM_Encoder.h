@@ -797,10 +797,7 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
 
     #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && defined _THROTTLE_LOW_FAILSAFE_INDICATION
         // Count the channel that we have lost
-        if( servo_input_connected[ ppm_out_channel ] )
-        {
-            disconnected_channels++;
-        }
+        disconnected_channels++;
     #elif defined _THROTTLE_LOW_FAILSAFE_INDICATION
         throttle_failsafe_force = true; 
     #endif
