@@ -658,7 +658,7 @@
 
 
 
-// LOITER Mode
+// Optical Flow LOITER Mode
 #ifndef OF_LOITER_YAW
  # define OF_LOITER_YAW          	YAW_HOLD
 #endif
@@ -829,6 +829,11 @@
 #endif
 #ifndef LOITER_IMAX
  # define LOITER_IMAX          		30             // degrees
+#endif
+
+// Loiter repositioning configuration (experimental)
+#ifndef LOITER_REPOSITIONING
+ # define LOITER_REPOSITIONING      DISABLED
 #endif
 #ifndef LOITER_REPOSITION_RATE
  # define LOITER_REPOSITION_RATE   500.0            // cm/s
