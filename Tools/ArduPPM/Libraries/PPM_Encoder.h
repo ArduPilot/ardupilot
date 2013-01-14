@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// ArduPPM (PPM Encoder) V2.3.14
+// ArduPPM (PPM Encoder) V2.3.15
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2.x (ATmega32u2)
@@ -137,6 +137,9 @@
 //         - fail-safe throttle low can be set with a define
 //         - recovery from error condition can also be set with a define
 
+// 13-01-2013
+// V2.3.15 - very small bug fix: speedup
+
 // -------------------------------------------------------------
 
 #ifndef _PPM_ENCODER_H_
@@ -178,7 +181,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.14"; 
+const char ver[15] = "ArduPPMv2.3.15"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -830,13 +833,12 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
         if( disconnected_channels > 0 )
         {
             throttle_failsafe_force = true;
+            disconnected_channels = 0;
         }
         else
         {
             throttle_failsafe_force = false;
         }
-
-        disconnected_channels = 0;
     #endif
 
         #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
