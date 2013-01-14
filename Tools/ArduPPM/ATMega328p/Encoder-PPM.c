@@ -37,6 +37,7 @@
 //	0.9.87 : #define correction for radio passthrough (was screwed up).
 //  0.9.88 : LED fail-safe indication is on whenever throttle is low
 //  0.9.89 : LED fail-safe change can be reverted with a define
+//  0.9.90 : Small improvements in library
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // PREPROCESSOR DIRECTIVES
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
