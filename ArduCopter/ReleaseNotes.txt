@@ -1,5 +1,9 @@
 ArduCopter Release Notes:
-
+------------------------------------------------------------------
+ArduCopter 2.9-rc5 14-Jan-2013
+Improvements over 2.9-rc4:
+1) add constraint to loiter commanded roll and pitch angles
+2) relax altitude requirement for take-off command to complete
 ------------------------------------------------------------------
 ArduCopter 2.9-rc4 12-Jan-2013
 Improvements over 2.9-rc3:
