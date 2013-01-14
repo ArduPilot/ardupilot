@@ -159,7 +159,8 @@ apm_option("CH7_OPTION" TYPE STRING
         "CH7_DO_NOTHING"
         "CH7_SAVE_WP"
         "CH7_DO_NOTHING"
-        "CH7_CAMERA_TRIGGER")
+        "CH7_CAMERA_TRIGGER"
+        "CH7_SONAR")
 
 apm_option("ACCEL_ALT_HOLD" TYPE BOOL ADVANCED
     DESCRIPTION "Disabled by default, work in progress."

@@ -164,6 +164,11 @@ static void read_trim_switch()
             }
             break;
 #endif
+
+        case CH7_SONAR:
+            // enable or disable the sonar
+            g.sonar_enabled = ap_system.CH7_flag;
+            break;
     }
 }
 
