@@ -7,7 +7,8 @@
 #include <AP_Progmem.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
-
+#include <AP_HAL_PX4.h>
+#include <AP_HAL_Empty.h>
 #include <AP_Param.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <Filter.h>                     // Filter library
@@ -23,6 +24,8 @@ ModeFilterInt16_Size5 mfilter(2);  // buffer of 5 values, result will be from bu
 //AverageFilterInt16_Size5 mfilter;  // buffer of 5 values.  result will be average of these 5
 
 AverageFilterUInt16_Size4 _temp_filter;
+
+butter50hz8_0 butter;
 
 void setup()
 {
@@ -50,7 +53,11 @@ void readTemp()
 
     raw_temp = _temp_filter.apply(_temp_sensor);
 
-    hal.console->printf("RT: %ld\n", raw_temp);
+    // use a butter filter on the result, just so we have a
+    // butterworth filter example
+    butter.filter(raw_temp);
+
+    hal.console->printf("RT: %lu\n", (unsigned long)raw_temp);
 }
 
 //Main loop where the action takes place
