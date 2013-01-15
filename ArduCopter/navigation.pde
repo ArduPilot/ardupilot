@@ -193,36 +193,6 @@ static void run_navigation_contollers()
         // calculates the desired Roll and Pitch
         update_nav_wp();
         break;
-
-#if    LOITER_REPOSITIONING == ENABLED   // Robert Lefebvre 16/12/2012
-    // switch passthrough to LOITER
-    case LOITER:
-    case POSITION:
-        // This feature allows us to reposition the quad when the user lets
-        // go of the sticks
-
-        if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 100) {
-            ap.loiter_override = true;
-        }
-
-        // Allow the user to take control temporarily,
-        if(ap.loiter_override){
-            
-            // reset LOITER to current position
-            next_WP.lat += LOITER_REPOSITION_RATE * dTnav * ((sin_yaw_y * g.rc_1.control_in) + (cos_yaw_x * g.rc_2.control_in))/4500.0;
-            next_WP.lng += LOITER_REPOSITION_RATE * dTnav * ((sin_yaw_y * g.rc_2.control_in) + (cos_yaw_x * g.rc_1.control_in))/4500.0;
-
-            if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) < 100) {
-                next_WP.lat = current_loc.lat;
-                next_WP.lng = current_loc.lng;
-                ap.loiter_override  = false;
-            }
-        }
-        wp_control = LOITER_MODE;
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;  
-#else   // LOITER_REPOSITIONING        
         
     // switch passthrough to LOITER
     case LOITER:
@@ -256,7 +226,6 @@ static void run_navigation_contollers()
         // calculates the desired Roll and Pitch
         update_nav_wp();
         break;
-#endif // LOITER_REPOSITIONING
 
     case LAND:
         verify_land();
@@ -374,87 +343,6 @@ static bool check_missed_wp()
 #define NAV_ERR_MAX 600
 #define NAV_RATE_ERR_MAX 250
 
-#if    LOITER_REPOSITIONING == ENABLED   // Robert Lefebvre 16/12/2012
-
-static void calc_loiter(int16_t x_error, int16_t y_error)
-{
-    int32_t p,i,d;                                              // used to capture pid values for logging
-    int32_t output;
-    int32_t x_target_speed, y_target_speed;
-
-    // East / West
-    x_target_speed  = g.pi_loiter_lon.get_p(x_error);                           // calculate desired speed from lon error
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID logging is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_LOITER_KP || g.radio_tuning == CH6_LOITER_KI) ) {
-        Log_Write_PID(CH6_LOITER_KP, x_error, x_target_speed, 0, 0, x_target_speed, tuning_value);
-    }
-#endif
-
-    // calculate rate error
-    x_rate_error    = x_target_speed - lon_speed;                           // calc the speed error
-
-    p                               = g.pid_loiter_rate_lon.get_p(x_rate_error);
-    i                               = g.pid_loiter_rate_lon.get_i(x_rate_error, dTnav);
-    d                               = g.pid_loiter_rate_lon.get_d(x_rate_error, dTnav);
-    d                               = constrain(d, -2000, 2000);
-
-    // get rid of noise
-    if(abs(lon_speed) < 50) {
-        d = 0;
-    }
-
-    output                  = p + i + d;
-    nav_lon                 = constrain(output, -4500, 4500); // constrain max angle to 45 degrees
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID logging is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_LOITER_RATE_KP || g.radio_tuning == CH6_LOITER_RATE_KI || g.radio_tuning == CH6_LOITER_RATE_KD) ) {
-        Log_Write_PID(CH6_LOITER_RATE_KP, x_rate_error, p, i, d, nav_lon, tuning_value);
-    }
-#endif
-
-    // North / South
-    y_target_speed  = g.pi_loiter_lat.get_p(y_error);                           // calculate desired speed from lat error
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID logging is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_LOITER_KP || g.radio_tuning == CH6_LOITER_KI) ) {
-        Log_Write_PID(CH6_LOITER_KP+100, y_error, y_target_speed, 0, 0, y_target_speed, tuning_value);
-    }
-#endif
-
-    // calculate rate error
-    y_rate_error    = y_target_speed - lat_speed;                          // calc the speed error
-
-    p                               = g.pid_loiter_rate_lat.get_p(y_rate_error);
-    i                               = g.pid_loiter_rate_lat.get_i(y_rate_error, dTnav);
-    d                               = g.pid_loiter_rate_lat.get_d(y_rate_error, dTnav);
-    d                               = constrain(d, -2000, 2000);
-
-    // get rid of noise
-    if(abs(lat_speed) < 50) {
-        d = 0;
-    }
-
-    output                  = p + i + d;
-    nav_lat                 = constrain(output, -4500, 4500); // constrain max angle to 45 degrees
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID logging is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_LOITER_RATE_KP || g.radio_tuning == CH6_LOITER_RATE_KI || g.radio_tuning == CH6_LOITER_RATE_KD) ) {
-        Log_Write_PID(CH6_LOITER_RATE_KP+100, y_rate_error, p, i, d, nav_lat, tuning_value);
-    }
-#endif
-
-    // copy over I term to Nav_Rate
-    g.pid_nav_lon.set_integrator(g.pid_loiter_rate_lon.get_integrator());
-    g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
-}
-
-#else   // LOITER_REPOSITIONING   
-
 static void calc_loiter(int16_t x_error, int16_t y_error)
 {
     int32_t p,i,d;                                              // used to capture pid values for logging
@@ -531,8 +419,6 @@ static void calc_loiter(int16_t x_error, int16_t y_error)
     g.pid_nav_lon.set_integrator(g.pid_loiter_rate_lon.get_integrator());
     g.pid_nav_lat.set_integrator(g.pid_loiter_rate_lat.get_integrator());
 }
-
-#endif   // LOITER_REPOSITIONING   
 
 static void calc_nav_rate(int16_t max_speed)
 {
