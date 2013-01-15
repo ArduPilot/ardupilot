@@ -62,9 +62,6 @@ public:
     uint16_t df_device;
     uint16_t df_PageSize;
 
-    DataFlash_Class() {
-    }                        // Constructor
-
     virtual void Init(void) = 0;
     virtual void ReadManufacturerID() = 0;
     virtual bool CardInserted(void) = 0;
@@ -100,19 +97,6 @@ public:
     // page handling
     uint16_t df_NumPages;
 
-    // high level interface
-    int16_t find_last_log(void);
-    void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
-    uint8_t get_num_logs(void);
-    void start_new_log(void);
-
-	/*
-      every logged packet starts with 3 bytes
-    */
-    struct log_Header {
-        uint8_t head1, head2, msgid;
-    };
-
     /*
       read a packet, stripping off the header bytes
     */
@@ -120,6 +104,20 @@ public:
         ReadBlock((void *)(sizeof(struct log_Header)+(uintptr_t)pkt), size - sizeof(struct log_Header));
     }
 
+    // high level interface
+    int16_t find_last_log(void);
+    void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
+    uint8_t get_num_logs(void);
+    void start_new_log(void);
+    uint16_t log_read_process(uint16_t start_page, uint16_t end_page, 
+                              void (*callback)(uint8_t msgid));
+
+	/*
+      every logged packet starts with 3 bytes
+    */
+    struct log_Header {
+        uint8_t head1, head2, msgid;
+    };
 };
 
 /*
