@@ -10,6 +10,7 @@
 #include "FilterWithBuffer.h"
 #include "LowPassFilter.h"
 #include "ModeFilter.h"
+#include "Butter.h"
 
 #endif //__FILTER_H__
 
