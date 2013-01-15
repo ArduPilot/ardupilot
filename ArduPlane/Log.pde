@@ -11,21 +11,6 @@ static int8_t   dump_log(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   erase_logs(uint8_t argc,                const Menu::arg *argv);
 static int8_t   select_logs(uint8_t argc,               const Menu::arg *argv);
 
-// This is the help function
-// PSTR is an AVR macro to read strings from flash memory
-// printf_P is a version of print_f that reads from flash memory
-//static int8_t	help_log(uint8_t argc,          const Menu::arg *argv)
-/*{
- *       cliSerial->printf_P(PSTR("\n"
- *                                                "Commands:\n"
- *                                                "  dump <n>"
- *                                                "  erase (all logs)\n"
- *                                                "  enable <name> | all\n"
- *                                                "  disable <name> | all\n"
- *                                                "\n"));
- *   return 0;
- *  }*/
-
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
@@ -78,7 +63,7 @@ print_log_menu(void)
     if (num_logs == 0) {
         cliSerial->printf_P(PSTR("\nNo logs\n\n"));
     }else{
-        cliSerial->printf_P(PSTR("\n%d logs\n"), (int)num_logs);
+        cliSerial->printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
 
         for(int16_t i=num_logs; i>=1; i--) {
             int16_t last_log_start = log_start, last_log_end = log_end;
@@ -531,90 +516,50 @@ static void Log_Read_Mode()
 // Read the DataFlash.log memory : Packet Parser
 static void Log_Read(int16_t start_page, int16_t end_page)
 {
-    int16_t packet_count = 0;
-
- #ifdef AIRFRAME_NAME
-    cliSerial->printf_P(PSTR((AIRFRAME_NAME)
- #endif
     cliSerial->printf_P(PSTR("\n" THISFIRMWARE
-                         "\nFree RAM: %u\n"),
-                    memcheck_available_memory());
+                             "\nFree RAM: %u\n"),
+                        memcheck_available_memory());
 
-    if(start_page > end_page)
-    {
-        packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
-        packet_count += Log_Read_Process(1, end_page);
-    } else {
-        packet_count = Log_Read_Process(start_page, end_page);
-    }
-
-    cliSerial->printf_P(PSTR("Number of packets read: %d\n"), (int) packet_count);
+    DataFlash.log_read_process(start_page, end_page, log_callback);
 }
 
 // Read the DataFlash.log memory : Packet Parser
-static int16_t Log_Read_Process(int16_t start_page, int16_t end_page)
+static void log_callback(uint8_t msgid)
 {
-    uint8_t data;
-    uint8_t log_step = 0;
-    int16_t page = start_page;
-    int16_t packet_count = 0;
-
-    DataFlash.StartRead(start_page);
-    while (page < end_page && page != -1) {
-        data = DataFlash.ReadByte();
-
-        switch(log_step)     // This is a state machine to read the packets
-        {
-        case 0:
-            if(data == HEAD_BYTE1)  // Head byte 1
-                log_step++;
-            break;
-        case 1:
-            if(data == HEAD_BYTE2)  // Head byte 2
-                log_step++;
-            else
-                log_step = 0;
-            break;
-        case 2:
-            log_step = 0;
-            switch (data) {
-            case LOG_ATTITUDE_MSG:
-                Log_Read_Attitude();
-                break;
-            case LOG_MODE_MSG:
-                Log_Read_Mode();
-                break;
-            case LOG_CONTROL_TUNING_MSG:
-                Log_Read_Control_Tuning();
-                break;
-            case LOG_NAV_TUNING_MSG:
-                Log_Read_Nav_Tuning();
-                break;
-            case LOG_PERFORMANCE_MSG:
-                Log_Read_Performance();
-                break;
-            case LOG_RAW_MSG:
-                Log_Read_Raw();
-                break;
-            case LOG_CMD_MSG:
-                Log_Read_Cmd();
-                break;
-            case LOG_CURRENT_MSG:
-                Log_Read_Current();
-                break;
-            case LOG_STARTUP_MSG:
-                Log_Read_Startup();
-                break;
-            case LOG_GPS_MSG:
-                    Log_Read_GPS();
-                    break;
-            }
-            break;
-        }
-        page = DataFlash.GetPage();
+    switch (msgid) {
+    case LOG_ATTITUDE_MSG:
+        Log_Read_Attitude();
+        break;
+    case LOG_MODE_MSG:
+        Log_Read_Mode();
+        break;
+    case LOG_CONTROL_TUNING_MSG:
+        Log_Read_Control_Tuning();
+        break;
+    case LOG_NAV_TUNING_MSG:
+        Log_Read_Nav_Tuning();
+        break;
+    case LOG_PERFORMANCE_MSG:
+        Log_Read_Performance();
+        break;
+    case LOG_RAW_MSG:
+        Log_Read_Raw();
+        break;
+    case LOG_CMD_MSG:
+        Log_Read_Cmd();
+        break;
+    case LOG_CURRENT_MSG:
+        Log_Read_Current();
+        break;
+    case LOG_STARTUP_MSG:
+        Log_Read_Startup();
+        break;
+    case LOG_GPS_MSG:
+        Log_Read_GPS();
+        break;
     }
-    return packet_count;
 }
+
                         
 #else // LOGGING_ENABLED
 
