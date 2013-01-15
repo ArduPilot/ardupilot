@@ -78,7 +78,7 @@ static void run_nav_updates(void)
         calc_distance_and_bearing();
         nav_updates.need_dist_bearing = 0;
     } else if (nav_updates.need_nav_controllers) {
-        run_navigation_contollers();
+        run_navigation_controllers();
         nav_updates.need_nav_controllers = 0;
     } else if (nav_updates.need_nav_pitch_roll) {
         calc_nav_pitch_roll();
@@ -181,7 +181,7 @@ static void calc_location_error(struct Location *next_loc)
 }
 
 // called after a GPS read
-static void run_navigation_contollers()
+static void run_navigation_controllers()
 {
     // wp_distance is in CM
     // --------------------
