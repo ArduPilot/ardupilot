@@ -1,14 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #if LITE == DISABLED
 #if LOGGING_ENABLED == ENABLED
 
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
-
-#define HEAD_BYTE1 	0xA3	// Decimal 163
-#define HEAD_BYTE2 	0x95	// Decimal 149
-#define END_BYTE	0xBA	// Decimal 186
-
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
@@ -17,21 +13,6 @@ static int8_t	erase_logs(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
 
 static int16_t cur_throttle =0;
-
-// This is the help function
-// PSTR is an AVR macro to read strings from flash memory
-// printf_P is a version of print_f that reads from flash memory
-//static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
-/*{
-	cliSerial->printf_P(PSTR("\n"
-						 "Commands:\n"
-						 "  dump <n>"
-						 "  erase (all logs)\n"
-						 "  enable <name> | all\n"
-						 "  disable <name> | all\n"
-						 "\n"));
-    return 0;
-}*/
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -228,7 +209,6 @@ static void Log_Write_Attitude(int16_t log_roll, int16_t log_pitch, uint16_t log
 	DataFlash.WriteInt(log_roll);
 	DataFlash.WriteInt(log_pitch);
 	DataFlash.WriteInt(log_yaw);
-	DataFlash.WriteByte(END_BYTE);
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -251,7 +231,6 @@ static void Log_Write_Performance()
 	DataFlash.WriteInt((int)(ahrs.get_gyro_drift().y * 1000));
 	DataFlash.WriteInt((int)(ahrs.get_gyro_drift().z * 1000));
 	DataFlash.WriteInt(pmTest1);
-	DataFlash.WriteByte(END_BYTE);
 }
 #endif
 
@@ -268,7 +247,6 @@ static void Log_Write_Cmd(uint8_t num, struct Location *wp)
 	DataFlash.WriteLong(wp->alt);
 	DataFlash.WriteLong(wp->lat);
 	DataFlash.WriteLong(wp->lng);
-	DataFlash.WriteByte(END_BYTE);
 }
 
 static void Log_Write_Startup(uint8_t type)
@@ -278,7 +256,6 @@ static void Log_Write_Startup(uint8_t type)
 	DataFlash.WriteByte(LOG_STARTUP_MSG);
 	DataFlash.WriteByte(type);
 	DataFlash.WriteByte(g.command_total);
-	DataFlash.WriteByte(END_BYTE);
 
 	// create a location struct to hold the temp Waypoints for printing
 	struct Location cmd = get_cmd_with_index(0);
@@ -309,7 +286,6 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)(g.channel_throttle.servo_out));
 	DataFlash.WriteInt((int)(g.channel_rudder.servo_out));
 	DataFlash.WriteInt((int)(accel.y * 10000));
-	DataFlash.WriteByte(END_BYTE);
 }
 #endif
 
@@ -326,7 +302,6 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt(altitude_error);
 	DataFlash.WriteInt(0);
 	DataFlash.WriteInt((int)(nav_gain_scaler*1000));
-	DataFlash.WriteByte(END_BYTE);
 }
 
 // Write a mode packet. Total length : 5 bytes
@@ -336,7 +311,6 @@ static void Log_Write_Mode(uint8_t mode)
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_MODE_MSG);
 	DataFlash.WriteByte(mode);
-	DataFlash.WriteByte(END_BYTE);
 }
 
 // Write an GPS packet. Total length : 30 bytes
@@ -359,7 +333,6 @@ static void Log_Write_GPS(	int32_t log_Time, int32_t log_Lattitude, int32_t log_
 	DataFlash.WriteInt(0);
 	DataFlash.WriteInt(0);
 	DataFlash.WriteInt(0);
-	DataFlash.WriteByte(END_BYTE);
 }
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
@@ -380,8 +353,6 @@ static void Log_Write_Raw()
 	DataFlash.WriteLong((long)accel.x);
 	DataFlash.WriteLong((long)accel.y);
 	DataFlash.WriteLong((long)accel.z);
-
-	DataFlash.WriteByte(END_BYTE);
 }
 #endif
 
@@ -394,7 +365,6 @@ static void Log_Write_Current()
 	DataFlash.WriteInt((int)(battery_voltage1 	* 100.0));
 	DataFlash.WriteInt((int)(current_amps1 		* 100.0));
 	DataFlash.WriteInt((int)current_total1);
-	DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a Current packet
@@ -572,108 +542,57 @@ static void Log_Read_Raw()
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(int16_t start_page, int16_t end_page)
 {
-	int packet_count = 0;
-
-	#ifdef AIRFRAME_NAME
-		cliSerial->printf_P(PSTR((AIRFRAME_NAME)
-	#endif
 	cliSerial->printf_P(PSTR("\n" THISFIRMWARE
-						 "\nFree RAM: %u\n"),
-                    memcheck_available_memory());
+                             "\nFree RAM: %u\n"),
+                        memcheck_available_memory());
 
-    if(start_page > end_page)
-    {
-	packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
-    	packet_count += Log_Read_Process(1, end_page);
-    } else {
-    	packet_count = Log_Read_Process(start_page, end_page);
-    }
-
-	cliSerial->printf_P(PSTR("Number of packets read: %d\n"), packet_count);
+	DataFlash.log_read_process(start_page, end_page, log_callback);
 }
 
 // Read the DataFlash log memory : Packet Parser
-static int Log_Read_Process(int16_t start_page, int16_t end_page)
+static void log_callback(uint8_t msgid)
 {
-	uint8_t data;
-	uint8_t log_step = 0;
-	int page = start_page;
-	int packet_count = 0;
+    switch (msgid) {
+    case LOG_ATTITUDE_MSG: 
+        Log_Read_Attitude();
+        break;
+        
+    case LOG_MODE_MSG:
+        Log_Read_Mode();
+        break;
 
-	DataFlash.StartRead(start_page);
-	while (page < end_page && page != -1){
-		data = DataFlash.ReadByte();
+    case LOG_CONTROL_TUNING_MSG:
+        Log_Read_Control_Tuning();
+        break;
 
-		switch(log_step)		 // This is a state machine to read the packets
-			{
-			case 0:
-				if(data == HEAD_BYTE1)	// Head byte 1
-					log_step++;
-				break;
-			case 1:
-				if(data == HEAD_BYTE2)	// Head byte 2
-					log_step++;
-				else
-					log_step = 0;
-				break;
-			case 2:
-				if(data == LOG_ATTITUDE_MSG){
-					Log_Read_Attitude();
-					log_step++;
+    case LOG_NAV_TUNING_MSG:
+        Log_Read_Nav_Tuning();
+        break;
 
-				}else if(data == LOG_MODE_MSG){
-					Log_Read_Mode();
-					log_step++;
+    case LOG_PERFORMANCE_MSG:
+        Log_Read_Performance();
+        break;
+    
+    case LOG_RAW_MSG:
+        Log_Read_Raw();
+        break;
 
-				}else if(data == LOG_CONTROL_TUNING_MSG){
-					Log_Read_Control_Tuning();
-					log_step++;
+    case LOG_CMD_MSG:
+        Log_Read_Cmd();
+        break;
 
-				}else if(data == LOG_NAV_TUNING_MSG){
-					Log_Read_Nav_Tuning();
-					log_step++;
+    case LOG_CURRENT_MSG:
+        Log_Read_Current();
+        break;
 
-				}else if(data == LOG_PERFORMANCE_MSG){
-					Log_Read_Performance();
-					log_step++;
+    case LOG_STARTUP_MSG:
+        Log_Read_Startup();
+        break;
 
-				}else if(data == LOG_RAW_MSG){
-					Log_Read_Raw();
-					log_step++;
-
-				}else if(data == LOG_CMD_MSG){
-					Log_Read_Cmd();
-					log_step++;
-
-				}else if(data == LOG_CURRENT_MSG){
-					Log_Read_Current();
-					log_step++;
-
-				}else if(data == LOG_STARTUP_MSG){
-					Log_Read_Startup();
-					log_step++;
-				}else {
-					if(data == LOG_GPS_MSG){
-						Log_Read_GPS();
-						log_step++;
-					}else{
-						cliSerial->printf_P(PSTR("Error Reading Packet: %d\n"),packet_count);
-						log_step = 0;	 // Restart, we have a problem...
-					}
-				}
-				break;
-			case 3:
-				if(data == END_BYTE){
-					 packet_count++;
-				}else{
-					cliSerial->printf_P(PSTR("Error Reading END_BYTE: %d\n"),data);
-				}
-				log_step = 0;			// Restart sequence: new packet...
-				break;
-			}
-		page = DataFlash.GetPage();
-		}
-	return packet_count;
+    case LOG_GPS_MSG:
+        Log_Read_GPS();
+        break;
+    }
 }
 
 #else // LOGGING_ENABLED
