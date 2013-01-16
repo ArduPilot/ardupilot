@@ -183,7 +183,7 @@ void APM2RCOutput::write(uint8_t ch, uint16_t period_us) {
 }
 
 void APM2RCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len) {
-    for (int i = 0; i < ch; i++) {
+    for (int i = 0; i < len; i++) {
         write(i + ch, period_us[i]); 
     }
 }
