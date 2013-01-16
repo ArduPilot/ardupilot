@@ -163,10 +163,8 @@ static void control_failsafe(uint16_t pwm)
             }
             if (failsafeCounter == 1) {
                 gcs_send_text_fmt(PSTR("MSG FS OFF %u"), (unsigned)pwm);
-            }else if(failsafeCounter == 0) {
+            } else if(failsafeCounter == 0) {
                 ch3_failsafe = false;
-            }else if (failsafeCounter <0) {
-                failsafeCounter = -1;
             }
         }
     }
