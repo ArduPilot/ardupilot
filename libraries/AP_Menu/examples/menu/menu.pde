@@ -47,6 +47,7 @@ setup(void)
 void
 loop(void)
 {
+    hal.console->printf("not reached\n");
 }
 
 AP_HAL_MAIN();
