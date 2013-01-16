@@ -25,7 +25,6 @@ void EmptyUARTDriver::vprintf_P(const prog_char *pstr, va_list ap) {}
 int16_t EmptyUARTDriver::available() { return 0; }
 int16_t EmptyUARTDriver::txspace() { return 1; }
 int16_t EmptyUARTDriver::read() { return -1; }
-int16_t EmptyUARTDriver::peek() { return -1; }
 
 /* Empty implementations of Print virtual methods */
 size_t EmptyUARTDriver::write(uint8_t c) { return 0; }

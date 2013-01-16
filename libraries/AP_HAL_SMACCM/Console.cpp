@@ -125,15 +125,6 @@ int16_t SMACCMConsoleDriver::read()
   }
 }
 
-int16_t SMACCMConsoleDriver::peek()
-{
-  if (_user_backend) {
-    return _rxbuf.peek();
-  } else {
-    return _d->peek();
-  }
-}
-
 size_t SMACCMConsoleDriver::write(uint8_t c)
 {
   if (_user_backend) {
@@ -189,15 +180,6 @@ int16_t SMACCMConsoleDriver::Buffer::pop()
   }
   uint8_t b = _bytes[_tail];
   _tail = ( _tail + 1 ) & _mask;
-  return (int16_t) b;
-}
-
-int16_t SMACCMConsoleDriver::Buffer::peek()
-{
-  if ( _tail == _head ) {
-    return -1;
-  }
-  uint8_t b = _bytes[_tail];
   return (int16_t) b;
 }
 

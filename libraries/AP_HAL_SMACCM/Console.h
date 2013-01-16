@@ -32,7 +32,6 @@ public:
     int16_t available();
     int16_t txspace();
     int16_t read();
-    int16_t peek();
 
     size_t write(uint8_t c);
 private:
@@ -44,7 +43,6 @@ private:
         bool allocate(uint16_t size);
         bool push(uint8_t b);
         int16_t  pop();
-        int16_t  peek();
 
         uint16_t bytes_free();
         uint16_t bytes_used();

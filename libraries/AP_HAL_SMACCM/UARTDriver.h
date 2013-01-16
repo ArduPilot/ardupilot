@@ -36,7 +36,6 @@ public:
   int16_t available();
   int16_t txspace();
   int16_t read();
-  int16_t peek();
 
   /* SMACCM implementations of Print virtual methods */
   size_t write(uint8_t c);

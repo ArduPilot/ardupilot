@@ -130,10 +130,6 @@ int16_t PX4UARTDriver::read() {
 	return -1;
 }
 
-int16_t PX4UARTDriver::peek() { 
-	return -1;
-}
-
 /* PX4 implementations of Print virtual methods */
 size_t PX4UARTDriver::write(uint8_t c) { 
 	if (!_initialised) {

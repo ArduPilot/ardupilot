@@ -15,10 +15,9 @@ public:
      * FastSerial library. As far as concerns go, it belongs with available() */
     virtual int16_t txspace() = 0;
 
-    /* return value for read() and peek() :
+    /* return value for read():
      * -1 if nothing available, uint8_t value otherwise. */
     virtual int16_t read() = 0;
-    virtual int16_t peek() = 0;
 
 };
 

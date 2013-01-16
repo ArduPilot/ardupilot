@@ -71,10 +71,6 @@ int16_t PX4ConsoleDriver::read() {
 	return _uart->read();
 }
 
-int16_t PX4ConsoleDriver::peek() {
-	return _uart->peek();
-}
-
 size_t PX4ConsoleDriver::write(uint8_t c) {
 	return _uart->write(c);
 }

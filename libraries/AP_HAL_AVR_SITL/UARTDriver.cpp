@@ -139,11 +139,6 @@ int16_t SITLUARTDriver::read(void)
     return -1;
 }
 
-int16_t SITLUARTDriver::peek(void) 
-{
-    return -1;
-}
-
 void SITLUARTDriver::flush(void) 
 {
 }

@@ -95,11 +95,6 @@ int16_t SITLConsoleDriver::read()
     return _base_uart->read();
 }
 
-int16_t SITLConsoleDriver::peek() 
-{
-        return _base_uart->peek();
-}
-
 // Print method implementations /////////////////////////////////////////
 
 size_t SITLConsoleDriver::write(uint8_t c) 

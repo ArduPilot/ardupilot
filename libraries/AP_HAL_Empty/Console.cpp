@@ -66,10 +66,6 @@ int16_t EmptyConsoleDriver::read() {
     return _d->read();
 }
 
-int16_t EmptyConsoleDriver::peek() {
-    return _d->peek();
-}
-
 size_t EmptyConsoleDriver::write(uint8_t c) {
     return _d->write(c);
 }

@@ -150,16 +150,6 @@ int16_t AVRUARTDriver::read(void) {
 	return (c);
 }
 
-int16_t AVRUARTDriver::peek(void) {
-
-	// if the head and tail are equal, the buffer is empty
-	if (!_open || (_rxBuffer->head == _rxBuffer->tail))
-		return (-1);
-
-	// pull character from tail
-	return (_rxBuffer->bytes[_rxBuffer->tail]);
-}
-
 void AVRUARTDriver::flush(void) {
 	// don't reverse this or there may be problems if the RX interrupt
 	// occurs after reading the value of _rxBuffer->head but before writing

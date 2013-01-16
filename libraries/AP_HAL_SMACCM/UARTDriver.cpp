@@ -146,19 +146,6 @@ int16_t SMACCMUARTDriver::read()
   return (int16_t)c;
 }
 
-int16_t SMACCMUARTDriver::peek()
-{
-  uint8_t c;
-
-  if (m_dev == NULL)
-    return -1;
-
-  if (!usart_peek(m_dev, &c))
-    return -1;
-
-  return (int16_t)c;
-}
-
 /* SMACCM implementations of Print virtual methods */
 size_t SMACCMUARTDriver::write(uint8_t c)
 {
