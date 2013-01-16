@@ -408,8 +408,8 @@ static void set_mode(byte mode)
 
     // used to stop fly_aways
     // set to false if we have low throttle
-    motors.auto_armed(g.rc_3.control_in > 0);
-    set_auto_armed(g.rc_3.control_in > 0);
+    motors.auto_armed(g.rc_3.control_in > 0 || ap.failsafe);
+    set_auto_armed(g.rc_3.control_in > 0 || ap.failsafe);
 
     // if we change modes, we must clear landed flag
     set_land_complete(false);
@@ -568,17 +568,6 @@ static void set_mode(byte mode)
 
     default:
         break;
-    }
-
-    if(ap.failsafe) {
-        // this is to allow us to fly home without interactive throttle control
-        set_throttle_mode(THROTTLE_AUTO);
-    	ap.manual_throttle = false;
-
-        // does not wait for us to be in high throttle, since the
-        // Receiver will be outputting low throttle
-        motors.auto_armed(true);
-    	set_auto_armed(true);
     }
 
     if(ap.manual_attitude) {

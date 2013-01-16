@@ -12,6 +12,8 @@
 #define AP_INTERTIALNAV_TC_XY   3.0 // default time constant for complementary filter's X & Y axis
 #define AP_INTERTIALNAV_TC_Z    7.0 // default time constant for complementary filter's Z axis
 
+#define AP_INTERTIALNAV_ACCEL_CORR_MAX 100.0    // max allowed accelerometer offset correction
+
 // #defines to control how often historical accel based positions are saved
 // so they can later be compared to laggy gps readings
 #define AP_INTERTIALNAV_SAVE_POS_AFTER_ITERATIONS   10

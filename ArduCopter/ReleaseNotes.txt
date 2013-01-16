@@ -1,8 +1,26 @@
 ArduCopter Release Notes:
-
+------------------------------------------------------------------
+ArduCopter 2.9-rc5 14-Jan-2013
+Improvements over 2.9-rc4:
+1) add constraint to loiter commanded roll and pitch angles
+2) relax altitude requirement for take-off command to complete
+------------------------------------------------------------------
+ArduCopter 2.9-rc4 12-Jan-2013
+Improvements over 2.9-rc3:
+1) Smoother transition between manual and auto flight modes (Leonard)
+2) bug fix for LAND not actually landing when initiated from failsafe (Randy/Craig)
+------------------------------------------------------------------
+ArduCopter 2.9-rc3 11-Jan-2013
+Improvements over 2.9-rc2:
+1) alt hold with sonar improvements - now on by default (Leonard/Randy)
+2) performance and memory useage improvements (Tridge/Randy)
+3) increase APM1 baro pressure read from 5hz to 8.3hz to improve alt hold (Randy)
+4) bug fix: altitude error reported to GCS (Randy)
+5) limit inertial nav's max accel offset correction to 100cm/s/s to speed up recovery after hard impacts (Randy)_
+6) moved rate controllers to run after ins read (Tridge/Randy)
 ------------------------------------------------------------------
 ArduCopter 2.9-rc2 31-Dec-2012
-Improvements over 2.9-rc2:
+Improvements over 2.9-rc1:
 1) increased throttle rate gains from 1.0 to 6.0
 2) APM1 fix so it works with inertial nav (5hz update rate of baro was beyond the tolerance set in the inav library)
 ------------------------------------------------------------------

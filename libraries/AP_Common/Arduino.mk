@@ -228,19 +228,19 @@ endif
 #
 # Tool options
 #
-DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS)
+DEFINES			=	-D__PROG_TYPES_COMPAT__ -DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS) $(EXTRAFLAGS)
 OPTFLAGS		=	-Os -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder
 DEPFLAGS		=	-MD -MT $@
 
 # XXX warning options TBD
 CXXOPTS			= 	-mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions
 COPTS			=	-mcall-prologues -ffunction-sections -fdata-sections
-ASOPTS			=	-assembler-with-cpp 
+ASOPTS			=	
 LISTOPTS		=	-adhlns=$(@:.o=.lst)
 
 CXXFLAGS		=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
-CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
-ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES)     $(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
+CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
+ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) $(DEPFLAGS) $(ASOPTS)
 LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--relax,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 
 ifeq ($(BOARD),mega)

@@ -121,6 +121,7 @@ public:
 #else
 	virtual void write(uint8_t c);
 #endif
+	uint8_t write_buffer_nonblock(const uint8_t *buf, uint8_t len);
 	using BetterStream::write;
 	//@}
 
@@ -150,8 +151,8 @@ public:
 	///
 	/// Public so the interrupt handlers can see it
 	struct Buffer {
-		volatile uint16_t head, tail;	///< head and tail pointers
-		uint16_t mask;					///< buffer size mask for pointer wrap
+		volatile uint8_t head, tail;	///< head and tail pointers
+		uint8_t mask;					///< buffer size mask for pointer wrap
 		uint8_t *bytes;					///< pointer to allocated buffer
 	};
 
@@ -229,7 +230,7 @@ private:
 	/// @note if we could bring the max size down to 256, the mask and head/tail
 	///       pointers in the buffer could become uint8_t.
 	///
-	static const unsigned int	_max_buffer_size = 512;
+	static const unsigned int	_max_buffer_size = 256;
 };
 
 // Used by the per-port interrupt vectors
@@ -242,7 +243,7 @@ extern FastSerial::Buffer __FastSerial__txBuffer[];
 ISR(_RXVECTOR, ISR_BLOCK)                                               \
 {                                                                       \
         uint8_t c;                                                      \
-        uint16_t i;                                                      \
+        uint8_t i;                                                      \
                                                                         \
         /* read the byte as quickly as possible */                      \
         c = _UDR;                                                       \

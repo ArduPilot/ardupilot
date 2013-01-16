@@ -227,7 +227,7 @@ void FastSerial::flush(void)
 #if defined(ARDUINO) && ARDUINO >= 100
 size_t FastSerial::write(uint8_t c)
 {
-	uint16_t i;
+	uint8_t i;
 
 	if (!_open) // drop bytes if not open
 		return 0;
@@ -257,7 +257,7 @@ size_t FastSerial::write(uint8_t c)
 #else
 void FastSerial::write(uint8_t c)
 {
-	uint16_t i;
+	uint8_t i;
 
 	if (!_open) // drop bytes if not open
 		return;
@@ -276,11 +276,35 @@ void FastSerial::write(uint8_t c)
 }
 #endif
 
+
+uint8_t FastSerial::write_buffer_nonblock(const uint8_t *buf, uint8_t len)
+{
+	if (!_open) // drop bytes if not open
+		return 0;
+
+	// if it won't fit, don't send it at all
+	if (len > txspace()) {
+		return 0;
+	}
+
+	uint8_t len1 = _txBuffer->mask+1 - _txBuffer->head;
+	if (len1 >= len) {
+		memcpy(&_txBuffer->bytes[_txBuffer->head], buf, len);
+	} else {
+		memcpy(&_txBuffer->bytes[_txBuffer->head], buf, len1);
+		memcpy(&_txBuffer->bytes[0], buf+len1, len - len1);
+	}
+	_txBuffer->head = (_txBuffer->head + len) & _txBuffer->mask;
+	*_ucsrb |= _portTxBits;
+	return len;
+}
+
+
 // Buffer management ///////////////////////////////////////////////////////////
 
 bool FastSerial::_allocBuffer(Buffer *buffer, unsigned int size)
 {
-	uint16_t	mask;
+	uint8_t	mask;
 	uint8_t		shift;
 
 	// init buffer state

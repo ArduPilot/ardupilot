@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.9-rc2"
+#define THISFIRMWARE "ArduCopter V2.9-rc5"
 /*
  *  ArduCopter Version 2.9
  *  Lead author:	Jason Short
@@ -12,36 +12,37 @@
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
  *
- *  Special Thanks for Contributors:
+ *  Special Thanks for Contributors (in alphabetical order by first name):
  *
- *  Hein Hollander      :Octo Support
- *  Dani Saez           :V Ocoto Support
- *  Max Levine			:Tri Support, Graphics
- *  Jose Julio			:Stabilization Control laws
- *  Randy MacKay		:Heli Support
- *  Jani Hiriven		:Testing feedback
- *  Andrew Tridgell		:Mavlink Support
- *  James Goppert		:Mavlink Support
- *  Doug Weibel			:Libraries
- *  Mike Smith			:Libraries, Coding support
- *  HappyKillmore		:Mavlink GCS
- *  Michael Oborne		:Mavlink GCS
- *  Jack Dunkle			:Alpha testing
- *  Christof Schmid		:Alpha testing
- *  Oliver				:Piezo support
- *  Guntars				:Arming safety suggestion
- *  Igor van Airde      :Control Law optimization
- *  Jean-Louis Naudin   :Auto Landing
- *  Sandro Benigno      :Camera support
- *  Olivier Adler       :PPM Encoder
- *  John Arne Birkeland	:PPM Encoder
  *  Adam M Rivera		:Auto Compass Declination
- *  Marco Robustini		:Alpha testing
+ *  Amilcar Lucas		:Camera mount library
+ *  Andrew Tridgell		:General development, Mavlink Support
  *  Angel Fernandez		:Alpha testing
+ *  Doug Weibel			:Libraries
+ *  Christof Schmid		:Alpha testing
+ *  Dani Saez           :V Octo Support
+ *  Gregory Fletcher	:Camera mount orientation math
+ *  Guntars				:Arming safety suggestion
+ *  HappyKillmore		:Mavlink GCS
+ *  Hein Hollander      :Octo Support
+ *  Igor van Airde      :Control Law optimization
+ *  Leonard Hall 		:Flight Dynamics, INAV throttle
+ *  Jonathan Challinger :Inertial Navigation
+ *  Jean-Louis Naudin   :Auto Landing
+ *  Max Levine			:Tri Support, Graphics
+ *  Jack Dunkle			:Alpha testing
+ *  James Goppert		:Mavlink Support
+ *  Jani Hiriven		:Testing feedback
+ *  John Arne Birkeland	:PPM Encoder
+ *  Jose Julio			:Stabilization Control laws
+ *  Randy Mackay		:General development and release
+ *  Marco Robustini		:Lead tester
+ *  Michael Oborne		:Mission Planner GCS
+ *  Mike Smith			:Libraries, Coding support
+ *  Oliver				:Piezo support
+ *  Olivier Adler       :PPM Encoder
  *  Robert Lefebvre		:Heli Support & LEDs
- *  Amilcar Lucas		:mount and camera configuration
- *  Gregory Fletcher	:mount orientation math
- *	Leonard Hall 		:Flight Dynamics
+ *  Sandro Benigno      :Camera support
  *
  *  And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
  *
@@ -1040,13 +1041,6 @@ void loop()
 // Main loop - 100hz
 static void fast_loop()
 {
-    // run low level rate controllers that only require IMU data
-    run_rate_controllers();
-
-    // write out the servo PWM values
-    // ------------------------------
-    set_servos_4();
-
     // IMU DCM Algorithm
     // --------------------
     read_AHRS();
@@ -1054,6 +1048,13 @@ static void fast_loop()
     // reads all of the necessary trig functions for cameras, throttle, etc.
     // --------------------------------------------------------------------
     update_trig();
+
+    // run low level rate controllers that only require IMU data
+    run_rate_controllers();
+
+    // write out the servo PWM values
+    // ------------------------------
+    set_servos_4();
 
     // Inertial Nav
     // --------------------
@@ -1602,7 +1603,6 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
         case ROLL_PITCH_TOY:
-        case ROLL_PITCH_LOITER_PR:
             roll_pitch_initialised = true;
             break;
     }
@@ -1710,16 +1710,6 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
         
-    case ROLL_PITCH_LOITER_PR:
-    
-        // LOITER does not get SIMPLE mode ability
-        
-        nav_roll                += constrain(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
-        nav_pitch               += constrain(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
-
-        get_stabilize_roll(nav_roll);
-        get_stabilize_pitch(nav_pitch);
-        break;
     }
 	
 	#if FRAME_CONFIG != HELI_FRAME
@@ -1805,11 +1795,11 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
-        case THROTTLE_SURFACE_TRACKING:
             controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
-            if ( throttle_mode < THROTTLE_HOLD ) {      // reset the alt hold I terms if previous throttle mode was manual
+            if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
+                set_accel_throttle_I_from_pilot_throttle();
             }
             throttle_initialised = true;
             break;
@@ -1972,7 +1962,13 @@ void update_throttle_mode(void)
     case THROTTLE_HOLD:
         // alt hold plus pilot input of climb rate
         pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        get_throttle_rate_stabilized(pilot_climb_rate);
+        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
+            // if sonar is ok, use surface tracking
+            get_throttle_surface_tracking(pilot_climb_rate);
+        }else{
+            // if no sonar fall back stabilize rate controller
+            get_throttle_rate_stabilized(pilot_climb_rate);
+        }
         break;
 
     case THROTTLE_AUTO:
@@ -1985,18 +1981,6 @@ void update_throttle_mode(void)
     case THROTTLE_LAND:
         // landing throttle controller
         get_throttle_land();
-        break;
-
-    case THROTTLE_SURFACE_TRACKING:
-        // surface tracking with sonar or other rangefinder plus pilot input of climb rate
-        pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
-            // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(pilot_climb_rate);
-        }else{
-            // if no sonar fall back stabilize rate controller
-            get_throttle_rate_stabilized(pilot_climb_rate);
-        }
         break;
     }
 }

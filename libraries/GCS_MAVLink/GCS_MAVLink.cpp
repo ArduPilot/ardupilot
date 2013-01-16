@@ -51,3 +51,11 @@ uint8_t mav_var_type(enum ap_var_type t)
 }
 
 
+static const uint8_t mavlink_message_crc_progmem[256] PROGMEM = MAVLINK_MESSAGE_CRCS;
+
+// return CRC byte for a mavlink message ID
+uint8_t mavlink_get_message_crc(uint8_t msgid)
+{
+	return pgm_read_byte(&mavlink_message_crc_progmem[msgid]);
+}
+

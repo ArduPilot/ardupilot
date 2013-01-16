@@ -75,6 +75,7 @@ private:
     // ensure we can't initialise twice
     bool                        _initialised;
     static int16_t              _mpu6000_product_id;
+    uint32_t					_micros_per_sample;
 
     // dmp related methods and parameters
     static void                 dmp_register_write(uint8_t bank, uint8_t address, uint8_t num_bytes, uint8_t data[]); // Method to write multiple bytes into dmp registers.  Requires a "bank"

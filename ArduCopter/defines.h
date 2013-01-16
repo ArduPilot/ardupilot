@@ -28,7 +28,6 @@
 #define ROLL_PITCH_AUTO         2
 #define ROLL_PITCH_STABLE_OF    3
 #define ROLL_PITCH_TOY          4       // THOR This is the Roll and Pitch mode
-#define ROLL_PITCH_LOITER_PR    5
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation
@@ -39,7 +38,6 @@
 #define THROTTLE_HOLD                       6   // alt hold plus pilot input of climb rate
 #define THROTTLE_AUTO                       7   // auto pilot altitude controller with target altitude held in next_WP.alt
 #define THROTTLE_LAND                       8   // landing throttle controller
-#define THROTTLE_SURFACE_TRACKING           9   // ground tracking with sonar or other rangefinder
 
 
 // active altitude sensor
@@ -65,6 +63,7 @@
 #define CH7_SAVE_WP 7
 #define CH7_MULTI_MODE 8
 #define CH7_CAMERA_TRIGGER 9
+#define CH7_SONAR 10            // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
 
 
 

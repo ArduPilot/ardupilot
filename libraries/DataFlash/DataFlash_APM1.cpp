@@ -387,7 +387,6 @@ void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
     }
 
     SPI_transfer(0x00);
-	serialDebug("BL Erase, %d\n", BlockAdr);
 
     //initiate flash page erase
     CS_inactive();

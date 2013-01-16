@@ -440,10 +440,6 @@
  # define FS_THR_VALUE_DEFAULT             975
 #endif
 
-#ifndef FS_THR_RTL_MIN_DISTANCE
- # define FS_THR_RTL_MIN_DISTANCE          1500     // the minimum distance from home in which
-#endif
-
 
 #ifndef MINIMUM_THROTTLE
  # define MINIMUM_THROTTLE       130
@@ -661,7 +657,7 @@
 
 
 
-// LOITER Mode
+// Optical Flow LOITER Mode
 #ifndef OF_LOITER_YAW
  # define OF_LOITER_YAW          	YAW_HOLD
 #endif
@@ -833,10 +829,6 @@
 #ifndef LOITER_IMAX
  # define LOITER_IMAX          		30             // degrees
 #endif
-#ifndef LOITER_REPOSITION_RATE
- # define LOITER_REPOSITION_RATE   500.0            // cm/s
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Loiter Navigation control gains
@@ -1043,7 +1035,7 @@
  # define LOG_PID                       DISABLED
 #endif
 #ifndef LOG_ITERM
- # define LOG_ITERM                     ENABLED
+ # define LOG_ITERM                     DISABLED
 #endif
 #ifndef LOG_INAV
  # define LOG_INAV                      DISABLED

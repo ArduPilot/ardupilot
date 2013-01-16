@@ -118,7 +118,7 @@ uint8_t AP_Baro_BMP085::read()
             ReadPress();
             Calculate();
             result = 1;
-            if( BMP085_State >= 5 ) {
+            if( BMP085_State >= 6 ) {
                 BMP085_State = 1;                               // Start again from state = 1
                 Command_ReadTemp();                             // next iteration we will read temperature
             }else{

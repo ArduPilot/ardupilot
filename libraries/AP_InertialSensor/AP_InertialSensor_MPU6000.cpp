@@ -185,7 +185,6 @@ int16_t AP_InertialSensor_MPU6000::_mpu6000_product_id = AP_PRODUCT_ID_NONE;
 
 // variables to calculate time period over which a group of samples were collected
 static volatile uint32_t _delta_time_micros = 1;   // time period overwhich samples were collected (initialise to non-zero number but will be overwritten on 2nd read in any case)
-static volatile uint32_t _delta_time_start_micros = 0;  // time we start collecting sample (reset on update)
 static volatile uint32_t _last_sample_time_micros = 0;  // time latest sample was collected
 
 // DMP related static variables
@@ -253,8 +252,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     _count = 0;
 
     // record sample time
-    _delta_time_micros = _last_sample_time_micros - _delta_time_start_micros;
-    _delta_time_start_micros = _last_sample_time_micros;
+    _delta_time_micros = count * _micros_per_sample;
     SREG = oldSREG;
 
     count_scale = 1.0 / count;
@@ -391,15 +389,18 @@ void AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     case RATE_50HZ:
         rate = MPUREG_SMPLRT_50HZ;
         default_filter = BITS_DLPF_CFG_20HZ;
+        _micros_per_sample = 20000;
         break;
     case RATE_100HZ:
         rate = MPUREG_SMPLRT_100HZ;
         default_filter = BITS_DLPF_CFG_42HZ;
+        _micros_per_sample = 10000;
         break;
     case RATE_200HZ:
     default:
         rate = MPUREG_SMPLRT_200HZ;
         default_filter = BITS_DLPF_CFG_42HZ;
+        _micros_per_sample = 5000;
         break;
     }
     
