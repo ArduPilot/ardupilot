@@ -118,6 +118,9 @@ static void init_ardupilot()
 	
     load_parameters();
 
+    // after parameter load setup correct baud rate on uartA
+    hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
+
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);

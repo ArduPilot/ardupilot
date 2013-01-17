@@ -55,12 +55,13 @@ public:
         k_param_battery_curr_pin,
 
 
-	// 110: Telemetry control
-	//
-	k_param_gcs0 = 110, // stream rates for port0
-	k_param_gcs3,       // stream rates for port3
-	k_param_sysid_this_mav,
-	k_param_sysid_my_gcs,
+        // 110: Telemetry control
+        //
+        k_param_gcs0 = 110, // stream rates for port0
+        k_param_gcs3,       // stream rates for port3
+        k_param_sysid_this_mav,
+        k_param_sysid_my_gcs,
+        k_param_serial0_baud,
         k_param_serial3_baud,
         k_param_telem_delay,
 
@@ -78,18 +79,18 @@ public:
         k_param_airspeed_ratio,
         k_param_ground_temperature,
         k_param_ground_pressure,
-	k_param_compass_enabled,
-	k_param_compass,
-	k_param_battery_monitoring,
-	k_param_volt_div_ratio,
-	k_param_curr_amp_per_volt,
-	k_param_input_voltage,
-	k_param_pack_capacity,
+        k_param_compass_enabled,
+        k_param_compass,
+        k_param_battery_monitoring,
+        k_param_volt_div_ratio,
+        k_param_curr_amp_per_volt,
+        k_param_input_voltage,
+        k_param_pack_capacity,
         k_param_airspeed_offset,
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_SONAR == ENABLED       
- 	k_param_sonar_enabled,
- 	k_param_sonar_type,
+        k_param_sonar_enabled,
+        k_param_sonar_type,
 #endif
 #endif
         k_param_ahrs,  // AHRS group
@@ -231,115 +232,116 @@ public:
         // 254,255: reserved
         };
 
-        AP_Int16    format_version;
+    AP_Int16    format_version;
 	AP_Int8	    software_type;
 
 	// Telemetry control
 	//
 	AP_Int16    sysid_this_mav;
 	AP_Int16    sysid_my_gcs;
-        AP_Int8	    serial3_baud;
-        AP_Int8     telem_delay;
+    AP_Int8	    serial0_baud;
+    AP_Int8	    serial3_baud;
+    AP_Int8     telem_delay;
 
-        // Crosstrack navigation
-        //
-        AP_Float    crosstrack_gain;
-        AP_Int16    crosstrack_entry_angle;
+    // Crosstrack navigation
+    //
+    AP_Float    crosstrack_gain;
+    AP_Int16    crosstrack_entry_angle;
     
-        // Estimation
-        //
-        AP_Float    altitude_mix;
-        AP_Float    airspeed_ratio;
+    // Estimation
+    //
+    AP_Float    altitude_mix;
+    AP_Float    airspeed_ratio;
 	AP_Int16    airspeed_offset;
 
-        // Waypoints
-        //
-        AP_Int8     waypoint_mode;
-        AP_Int8     command_total;
-        AP_Int8     command_index;
-        AP_Int8     waypoint_radius;
+    // Waypoints
+    //
+    AP_Int8     waypoint_mode;
+    AP_Int8     command_total;
+    AP_Int8     command_index;
+    AP_Int8     waypoint_radius;
     
-        // Fly-by-wire
-        //
-        AP_Int8     flybywire_airspeed_min;
-        AP_Int8     flybywire_airspeed_max;
-        AP_Int16    FBWB_min_altitude;
+    // Fly-by-wire
+    //
+    AP_Int8     flybywire_airspeed_min;
+    AP_Int8     flybywire_airspeed_max;
+    AP_Int16    FBWB_min_altitude;
     
-        // Throttle
-        //
-        AP_Int8     throttle_min;
-        AP_Int8     throttle_max;
-        AP_Int8     throttle_slewrate;
-    	AP_Int8     throttle_fs_enabled;
-        AP_Int16    throttle_fs_value;
-        AP_Int8     throttle_cruise;
+    // Throttle
+    //
+    AP_Int8     throttle_min;
+    AP_Int8     throttle_max;
+    AP_Int8     throttle_slewrate;
+    AP_Int8     throttle_fs_enabled;
+    AP_Int16    throttle_fs_value;
+    AP_Int8     throttle_cruise;
     
-    	// Failsafe
-        AP_Int8     short_fs_action;
-        AP_Int8     long_fs_action;
+    // Failsafe
+    AP_Int8     short_fs_action;
+    AP_Int8     long_fs_action;
 	AP_Int8	    gcs_heartbeat_fs_enabled;
 
-        // Flight modes
-        //
-        AP_Int8     flight_mode_channel;
-        AP_Int8     flight_mode1;
-        AP_Int8     flight_mode2;
-        AP_Int8     flight_mode3;
-        AP_Int8     flight_mode4;
-        AP_Int8     flight_mode5;
-        AP_Int8     flight_mode6;
+    // Flight modes
+    //
+    AP_Int8     flight_mode_channel;
+    AP_Int8     flight_mode1;
+    AP_Int8     flight_mode2;
+    AP_Int8     flight_mode3;
+    AP_Int8     flight_mode4;
+    AP_Int8     flight_mode5;
+    AP_Int8     flight_mode6;
     
-        // Navigational maneuvering limits
-        //
-        AP_Int16    roll_limit;
-        AP_Int16    pitch_limit_max;
-        AP_Int16    pitch_limit_min;
+    // Navigational maneuvering limits
+    //
+    AP_Int16    roll_limit;
+    AP_Int16    pitch_limit_max;
+    AP_Int16    pitch_limit_min;
     
-        // Misc
-        //
-        AP_Int8     auto_trim;
-        AP_Int16    num_resets;
-        AP_Int16    log_bitmask;
-        AP_Int16    log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
-        AP_Int8	    reset_switch_chan;
-        AP_Int8	    manual_level;	
-        AP_Int16    airspeed_cruise;
-        AP_Int16    min_gndspeed;
-        AP_Int8	    ch7_option;
+    // Misc
+    //
+    AP_Int8     auto_trim;
+    AP_Int16    num_resets;
+    AP_Int16    log_bitmask;
+    AP_Int16    log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
+    AP_Int8	    reset_switch_chan;
+    AP_Int8	    manual_level;	
+    AP_Int16    airspeed_cruise;
+    AP_Int16    min_gndspeed;
+    AP_Int8	    ch7_option;
         
-        AP_Int16    ground_temperature;
-        AP_Int32    ground_pressure;
-        AP_Int8	    compass_enabled;
-        AP_Int16    angle_of_attack;
-        AP_Int8	    battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
-        AP_Float    volt_div_ratio;
-        AP_Float    curr_amp_per_volt;
-        AP_Float    input_voltage;
-		AP_Int16    pack_capacity;		// Battery pack capacity less reserve
-    	AP_Int8 rssi_pin;
-    	AP_Int8 battery_volt_pin;
-    	AP_Int8 battery_curr_pin;
+    AP_Int16    ground_temperature;
+    AP_Int32    ground_pressure;
+    AP_Int8	    compass_enabled;
+    AP_Int16    angle_of_attack;
+    AP_Int8	    battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
+    AP_Float    volt_div_ratio;
+    AP_Float    curr_amp_per_volt;
+    AP_Float    input_voltage;
+    AP_Int16    pack_capacity;		// Battery pack capacity less reserve
+    AP_Int8 rssi_pin;
+    AP_Int8 battery_volt_pin;
+    AP_Int8 battery_curr_pin;
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 #if CONFIG_SONAR == ENABLED     
-        AP_Int8	    sonar_enabled;
+    AP_Int8	    sonar_enabled;
 	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV,
-				  // 2 = XLL (XL with 10m range)   
-				  // 3 = HRLV 
+    // 2 = XLL (XL with 10m range)   
+    // 3 = HRLV 
 #endif
 #endif
 
 // ************ ThermoPilot parameters  ************************ 
 //  - JLN update
 
-        AP_Int8     auto_wp_radius;
-        AP_Int16    sonar_trigger;
-        AP_Int16    turn_gain;
-        AP_Int8     booster;
+    AP_Int8     auto_wp_radius;
+    AP_Int16    sonar_trigger;
+    AP_Int16    turn_gain;
+    AP_Int8     booster;
         
 // ************************************************************   
 
-        // RC channels
+    // RC channels
     RC_Channel  channel_roll;
     RC_Channel  channel_pitch;
     RC_Channel  channel_throttle;
@@ -349,15 +351,15 @@ public:
     RC_Channel_aux	rc_7;
     RC_Channel_aux	rc_8;
 
-        // PID controllers
-        //
-        PID         pidNavRoll;
-        PID         pidServoRoll;
-        PID         pidServoPitch;
-        PID         pidNavPitchAirspeed;
-        PID         pidServoRudder;
-        PID         pidTeThrottle;
-        PID         pidNavPitchAltitude;
+    // PID controllers
+    //
+    PID         pidNavRoll;
+    PID         pidServoRoll;
+    PID         pidServoPitch;
+    PID         pidNavPitchAirspeed;
+    PID         pidServoRudder;
+    PID         pidTeThrottle;
+    PID         pidNavPitchAltitude;
 
     Parameters() :
         // RC channels
