@@ -51,7 +51,9 @@ public:
     }
     void set_compass(Compass *compass) {
         _compass = compass;
-        _compass->set_board_orientation((enum Rotation)_board_orientation.get());
+        if (_compass != NULL) {
+            _compass->set_board_orientation((enum Rotation)_board_orientation.get());
+        }
     }
     void set_barometer(AP_Baro *barometer) {
         _barometer = barometer;
