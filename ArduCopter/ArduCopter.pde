@@ -620,8 +620,6 @@ AP_LeadFilter yLeadFilter;      // Lat  GPS lag filter
 LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
 LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 LowPassFilterFloat rate_thr_filter;     // Rate Yaw filter
-float thr_accel_filter_alpha_min;       // Minimum LPF Alpha for Throttle Output based on Defined Cut-off Frequency
-float thr_accel_filter_alpha_active;    // Active LPF Alpha for Throttle Output
 #endif // HELI_FRAME
 
 // Barometer filter
@@ -1298,10 +1296,6 @@ static void slow_loop()
 
     case 1:
         slow_loopCounter++;
-        
-#if FRAME_CONFIG == HELI_FRAME
-        calc_throttle_accel_filter_alpha_min();
-#endif
 
 #if MOUNT == ENABLED
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);

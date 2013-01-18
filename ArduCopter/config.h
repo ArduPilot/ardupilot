@@ -98,7 +98,6 @@
   # define RC_FAST_SPEED 				125
   # define STABILIZE_THROTTLE			THROTTLE_MANUAL
   # define HELI_ALT_RATE_FF             0
-  #define Max_Thr_Filter_Rate 10
 #endif
 
 

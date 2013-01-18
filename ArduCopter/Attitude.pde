@@ -264,16 +264,13 @@ void
 run_rate_controllers()
 {
 #if FRAME_CONFIG == HELI_FRAME          // helicopters only use rate controllers for yaw and only when not using an external gyro
-
-    static int16_t filtered_throttle_setting;
-
     if(!motors.ext_gyro_enabled) {
 		g.rc_1.servo_out = get_heli_rate_roll(roll_rate_target_bf);
 		g.rc_2.servo_out = get_heli_rate_pitch(pitch_rate_target_bf);
         g.rc_4.servo_out = get_heli_rate_yaw(yaw_rate_target_bf);
         // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
         if( g.throttle_accel_enabled && throttle_accel_controller_active ) {
-        set_heli_filtered_throttle_out(get_heli_throttle_accel(throttle_accel_target_ef));
+        set_throttle_out(get_heli_throttle_accel(throttle_accel_target_ef), false);
     }
         
     }
@@ -523,7 +520,7 @@ get_heli_throttle_rate(int16_t z_target_speed)
         // set target for accel based throttle controller
         set_throttle_accel_target(throttle_rate_pd_output);
     }else{
-        set_heli_filtered_throttle_out(g.throttle_cruise+throttle_rate_pd_output+throttle_rate_soft_output);
+        set_throttle_out(g.throttle_cruise+throttle_rate_pd_output+throttle_rate_soft_output, false);
     }
 
     // update throttle cruise
@@ -585,34 +582,6 @@ get_heli_throttle_accel(int16_t z_target_accel)
 
     return output;
 }
-
-
-
-void calc_throttle_accel_filter_alpha_min(void)
-{
-    float rc = 1/(2*3.141592*Max_Thr_Filter_Rate);
-    thr_accel_filter_alpha_min = 0.01/(0.01 + rc);
-}
-
-
-
-// set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
-void set_heli_filtered_throttle_out( int16_t throttle_out)
-{
-    static float last_throttle;
-    static float new_accel_filter_alpha_active (1);
-
-    new_accel_filter_alpha_active = 1-((1 - thr_accel_filter_alpha_min) * (labs(ahrs.roll_sensor) + labs(ahrs.pitch_sensor)))/4500;
-    thr_accel_filter_alpha_active = thr_accel_filter_alpha_active + 0.024512*(new_accel_filter_alpha_active - thr_accel_filter_alpha_active);
-    last_throttle = last_throttle + thr_accel_filter_alpha_active * (throttle_out - last_throttle);
-    g.rc_3.servo_out = last_throttle;
-    
-}
-    
-    
-    
-    
-   
 
 #endif // HELI_FRAME
 //////////////////////////////////////////////////////////////////////////////////////
