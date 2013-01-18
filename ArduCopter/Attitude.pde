@@ -319,7 +319,7 @@ get_heli_rate_roll(int32_t target_rate)
 			i		= g.pid_rate_roll.get_integrator();
 		}
 	} else {
-		i			= g.pid_rate_roll.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);		// Flybarless Helis get huge I-terms. I-term controls much of the rate
+		i			= g.pid_rate_roll.get_i(rate_error, G_Dt);		// Flybarless Helis get huge I-terms. I-term controls much of the rate
 	}
 	
 	d = g.pid_rate_roll.get_d(rate_error, G_Dt);
@@ -371,7 +371,7 @@ get_heli_rate_pitch(int32_t target_rate)
 			i		= g.pid_rate_pitch.get_integrator();
 		}
 	} else {
-		i			= g.pid_rate_pitch.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// Flybarless Helis get huge I-terms. I-term controls much of the rate
+		i			= g.pid_rate_pitch.get_i(rate_error, G_Dt);	// Flybarless Helis get huge I-terms. I-term controls much of the rate
 	}
 	
 	d = g.pid_rate_pitch.get_d(rate_error, G_Dt);
