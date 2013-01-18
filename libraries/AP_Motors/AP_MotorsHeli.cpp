@@ -242,10 +242,15 @@ void AP_MotorsHeli::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    if(_rc_throttle->control_in > 0) {
-        // we have pushed up the throttle
-        // remove safety
-        _auto_armed = true;
+
+    if (rsc_mode > 0){
+        if (motor_runup_complete == true && _rc_throttle->control_in > 0){      // If motor is running, we are cleared for auto
+            _auto_armed = true;                                                 // take-off
+        }
+    } else {   
+        if(_rc_throttle->control_in > 0) {                                      // We have pushed up the throttle. There is no good way
+            _auto_armed = true;                                                 // to know if the motor is running if RSC_Mode = 0
+        }
     }
 
     // for helis - armed or disarmed we allow servos to move
