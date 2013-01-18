@@ -1860,52 +1860,68 @@ void update_throttle_mode(void)
 
     switch(throttle_mode) {
 
-    case THROTTLE_MANUAL:
-        // completely manual throttle
+    case THROTTLE_MANUAL:                                                   // completely manual throttle
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
         }else{
-            // send pilot's output directly to motors
-            set_throttle_out(g.rc_3.control_in, false);
+            set_throttle_out(g.rc_3.control_in, false);                     // send pilot's output directly to motors
 
-            // update estimate of throttle cruise
-			#if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.coll_out);
-			#else
-			update_throttle_cruise(g.rc_3.control_in);
-			#endif  //HELI_FRAME
-			
-
-            // check if we've taken off yet
-            if (!ap.takeoff_complete && motors.armed()) {
+#if FRAME_CONFIG == HELI_FRAME
+            update_throttle_cruise(motors.coll_out);                        // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
+                if (motors.rsc_mode > 0){
+                    if (motors.motor_runup_complete == true) {
+                        if (g.rc_3.control_in > g.throttle_cruise) {
+                            set_takeoff_complete(true);                     // we must be in the air by now
+                        }   
+                    }
+                } else {                                                    // If RSC is not routed through APM, there is no way
+                    if (g.rc_3.control_in > g.throttle_cruise) {            // to know if the motor is running or not.  What can   
+                        set_takeoff_complete(true);                         // we do? <shrug> R.L.
+                    } 
+                } 
+            }
+#else
+			update_throttle_cruise(g.rc_3.control_in);                      // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
                 if (g.rc_3.control_in > g.throttle_cruise) {
-                    // we must be in the air by now
-                    set_takeoff_complete(true);
+                    set_takeoff_complete(true);                             // we must be in the air by now
                 }
             }
+#endif  //HELI_FRAME 
+
         }
         break;
 
-    case THROTTLE_MANUAL_TILT_COMPENSATED:
-        // manual throttle but with angle boost
+    case THROTTLE_MANUAL_TILT_COMPENSATED:                                  // manual throttle but with angle boost
         if (g.rc_3.control_in <= 0) {
-            set_throttle_out(0, false); // no need for angle boost with zero throttle
+            set_throttle_out(0, false);                                     // no need for angle boost with zero throttle
         }else{
             set_throttle_out(g.rc_3.control_in, true);
 
-            // update estimate of throttle cruise
-            #if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.coll_out);
-			#else
-			update_throttle_cruise(g.rc_3.control_in);
-			#endif  //HELI_FRAME
-
-            if (!ap.takeoff_complete && motors.armed()) {
+#if FRAME_CONFIG == HELI_FRAME
+            update_throttle_cruise(motors.coll_out);                        // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
+                if (motors.rsc_mode > 0){
+                    if (motors.motor_runup_complete == true) {
+                        if (g.rc_3.control_in > g.throttle_cruise) {
+                            set_takeoff_complete(true);                     // we must be in the air by now
+                        }   
+                    }
+                } else {                                                    // If RSC is not routed through APM, there is no way
+                    if (g.rc_3.control_in > g.throttle_cruise) {            // to know if the motor is running or not.  What can   
+                        set_takeoff_complete(true);                         // we do? <shrug> R.L.
+                    } 
+                } 
+            }
+#else
+			update_throttle_cruise(g.rc_3.control_in);                      // update estimate of throttle cruise
+            if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
                 if (g.rc_3.control_in > g.throttle_cruise) {
-                    // we must be in the air by now
-                    set_takeoff_complete(true);
+                    set_takeoff_complete(true);                             // we must be in the air by now
                 }
             }
+#endif  //HELI_FRAME 
         }
         break;
 
