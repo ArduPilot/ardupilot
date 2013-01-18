@@ -1989,9 +1989,20 @@ void update_throttle_mode(void)
 
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in next_WP.alt
+        
+#if FRAME_CONFIG == HELI_FRAME
+        if (motors.auto_armed() == true) {                   
+            get_throttle_althold_with_slew(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max); 
+        } else {
+            set_throttle_out(motors.stab_col_min*10, false);                                                    // Avoid harshing the mechanics pushing into the ground
+        }                                                                                                       // stab_col_min should gently push down on the ground
+        
+#else       
         if(motors.auto_armed() == true) {
             get_throttle_althold_with_slew(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
+#endif // HELI_FRAME        
+
         break;
 
     case THROTTLE_LAND:
