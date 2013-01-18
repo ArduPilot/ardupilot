@@ -561,7 +561,7 @@ get_heli_throttle_accel(int16_t z_target_accel)
     if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
         i = g.pid_throttle_accel.get_integrator();
     }else{
-        i = g.pid_throttle_accel.get_leaky_i(z_accel_error, .01, RATE_INTEGRATOR_LEAK_RATE);
+        i = g.pid_throttle_accel.get_i(z_accel_error, .01);
     }
     d = g.pid_throttle_accel.get_d(z_accel_error, .01);
 
