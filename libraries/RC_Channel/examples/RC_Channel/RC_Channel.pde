@@ -117,7 +117,7 @@ void read_radio()
 void print_pwm()
 {
     for (int i=0; i<8; i++) {
-	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc[i].control_in);
+        hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc[i].control_in);
     }
     hal.console->printf("\n");
 }
@@ -126,68 +126,68 @@ void print_pwm()
 void print_radio_values()
 {
     for (int i=0; i<8; i++) {
-	     hal.console->printf("CH%u: %u|%u\n",
-			  (unsigned)i+1, 
-			  (unsigned)rc[i].radio_min, 
-			  (unsigned)rc[i].radio_max); 
+        hal.console->printf("CH%u: %u|%u\n",
+                            (unsigned)i+1,
+                            (unsigned)rc[i].radio_min,
+                            (unsigned)rc[i].radio_max);
     }
 }
 
 
 void setup_radio(void)
 {
-	hal.console->println("\n\nRadio Setup:");
-	uint8_t i;
-	
-	for(i = 0; i < 100;i++){
-		hal.scheduler->delay(20);
-		read_radio();
-	}
-		
-	rc_1.radio_min = rc_1.radio_in;
-	rc_2.radio_min = rc_2.radio_in;
-	rc_3.radio_min = rc_3.radio_in;
-	rc_4.radio_min = rc_4.radio_in;
-	rc_5.radio_min = rc_5.radio_in;
-	rc_6.radio_min = rc_6.radio_in;
-	rc_7.radio_min = rc_7.radio_in;
-	rc_8.radio_min = rc_8.radio_in;
+    hal.console->println("\n\nRadio Setup:");
+    uint8_t i;
 
-	rc_1.radio_max = rc_1.radio_in;
-	rc_2.radio_max = rc_2.radio_in;
-	rc_3.radio_max = rc_3.radio_in;
-	rc_4.radio_max = rc_4.radio_in;
-	rc_5.radio_max = rc_5.radio_in;
-	rc_6.radio_max = rc_6.radio_in;
-	rc_7.radio_max = rc_7.radio_in;
-	rc_8.radio_max = rc_8.radio_in;
+    for(i = 0; i < 100; i++) {
+        hal.scheduler->delay(20);
+        read_radio();
+    }
 
-	rc_1.radio_trim = rc_1.radio_in;
-	rc_2.radio_trim = rc_2.radio_in;
-	rc_4.radio_trim = rc_4.radio_in;
-	// 3 is not trimed
-	rc_5.radio_trim = 1500;
-	rc_6.radio_trim = 1500;
-	rc_7.radio_trim = 1500;
-	rc_8.radio_trim = 1500;
-			
-	hal.console->println("\nMove all controls to each extreme. Hit Enter to save:");
-	while(1){
-		
-		hal.scheduler->delay(20);
-		// Filters radio input - adjust filters in the radio.pde file
-		// ----------------------------------------------------------
-		read_radio();
+    rc_1.radio_min = rc_1.radio_in;
+    rc_2.radio_min = rc_2.radio_in;
+    rc_3.radio_min = rc_3.radio_in;
+    rc_4.radio_min = rc_4.radio_in;
+    rc_5.radio_min = rc_5.radio_in;
+    rc_6.radio_min = rc_6.radio_in;
+    rc_7.radio_min = rc_7.radio_in;
+    rc_8.radio_min = rc_8.radio_in;
 
-		rc_1.update_min_max();
-		rc_2.update_min_max();
-		rc_3.update_min_max();
-		rc_4.update_min_max();
-		rc_5.update_min_max();
-		rc_6.update_min_max();
-		rc_7.update_min_max();
-		rc_8.update_min_max();
-		
+    rc_1.radio_max = rc_1.radio_in;
+    rc_2.radio_max = rc_2.radio_in;
+    rc_3.radio_max = rc_3.radio_in;
+    rc_4.radio_max = rc_4.radio_in;
+    rc_5.radio_max = rc_5.radio_in;
+    rc_6.radio_max = rc_6.radio_in;
+    rc_7.radio_max = rc_7.radio_in;
+    rc_8.radio_max = rc_8.radio_in;
+
+    rc_1.radio_trim = rc_1.radio_in;
+    rc_2.radio_trim = rc_2.radio_in;
+    rc_4.radio_trim = rc_4.radio_in;
+    // 3 is not trimed
+    rc_5.radio_trim = 1500;
+    rc_6.radio_trim = 1500;
+    rc_7.radio_trim = 1500;
+    rc_8.radio_trim = 1500;
+
+    hal.console->println("\nMove all controls to each extreme. Hit Enter to save:");
+    while(1) {
+
+        hal.scheduler->delay(20);
+        // Filters radio input - adjust filters in the radio.pde file
+        // ----------------------------------------------------------
+        read_radio();
+
+        rc_1.update_min_max();
+        rc_2.update_min_max();
+        rc_3.update_min_max();
+        rc_4.update_min_max();
+        rc_5.update_min_max();
+        rc_6.update_min_max();
+        rc_7.update_min_max();
+        rc_8.update_min_max();
+
         if(hal.console->available() > 0) {
             hal.console->println("Radio calibrated, Showing control values:");
             break;

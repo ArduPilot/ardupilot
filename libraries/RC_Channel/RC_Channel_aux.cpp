@@ -52,43 +52,43 @@ void update_aux_servo_function( RC_Channel_aux* rc_a,
                                 RC_Channel_aux* rc_f,
                                 RC_Channel_aux* rc_g)
 {
-	_aux_channels[0] = rc_a;
-	_aux_channels[1] = rc_b;
-	_aux_channels[2] = rc_c;
-	_aux_channels[3] = rc_d;
-	_aux_channels[4] = rc_e;
-	_aux_channels[5] = rc_f;
-	_aux_channels[6] = rc_g;
+    _aux_channels[0] = rc_a;
+    _aux_channels[1] = rc_b;
+    _aux_channels[2] = rc_c;
+    _aux_channels[3] = rc_d;
+    _aux_channels[4] = rc_e;
+    _aux_channels[5] = rc_f;
+    _aux_channels[6] = rc_g;
 
     // set auxiliary ranges
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] == NULL) continue;
-		RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
-		switch (function) {
-		case RC_Channel_aux::k_flap:
-		case RC_Channel_aux::k_flap_auto:
-		case RC_Channel_aux::k_flaperon:
-		case RC_Channel_aux::k_egg_drop:
-			_aux_channels[i]->set_range(0,100);
-			break;
-		case RC_Channel_aux::k_aileron:
-		case RC_Channel_aux::k_aileron_with_input:
-			_aux_channels[i]->set_angle(4500);
-			break;
-		case RC_Channel_aux::k_elevator:
-		case RC_Channel_aux::k_elevator_with_input:
-			_aux_channels[i]->set_angle(4500);
-			break;
-		case RC_Channel_aux::k_dspoiler1:
-		    _aux_channels[i]->set_angle(4500);
-			break;
-		case RC_Channel_aux::k_dspoiler2:
-		    _aux_channels[i]->set_angle(4500);
-			break;
-		default:
-			break;
-		}
-	}
+        RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
+        switch (function) {
+        case RC_Channel_aux::k_flap:
+        case RC_Channel_aux::k_flap_auto:
+        case RC_Channel_aux::k_flaperon:
+        case RC_Channel_aux::k_egg_drop:
+            _aux_channels[i]->set_range(0,100);
+            break;
+        case RC_Channel_aux::k_aileron:
+        case RC_Channel_aux::k_aileron_with_input:
+            _aux_channels[i]->set_angle(4500);
+            break;
+        case RC_Channel_aux::k_elevator:
+        case RC_Channel_aux::k_elevator_with_input:
+            _aux_channels[i]->set_angle(4500);
+            break;
+        case RC_Channel_aux::k_dspoiler1:
+            _aux_channels[i]->set_angle(4500);
+            break;
+        case RC_Channel_aux::k_dspoiler2:
+            _aux_channels[i]->set_angle(4500);
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 /// Should be called after the the servo functions have been initialized
@@ -98,46 +98,46 @@ enable_aux_servos()
     // enable all channels that are not set to k_none or k_nr_aux_servo_functions
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i]) {
-			RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
-			// see if it is a valid function
-			if (function < RC_Channel_aux::k_nr_aux_servo_functions) {
-				_aux_channels[i]->enable_out();
-			}
-		}
-	}
+            RC_Channel_aux::Aux_servo_function_t function = (RC_Channel_aux::Aux_servo_function_t)_aux_channels[i]->function.get();
+            // see if it is a valid function
+            if (function < RC_Channel_aux::k_nr_aux_servo_functions) {
+                _aux_channels[i]->enable_out();
+            }
+        }
+    }
 }
 
 /*
-  set radio_out for all channels matching the given function type
+ *  set radio_out for all channels matching the given function type
  */
 void
 RC_Channel_aux::set_radio(RC_Channel_aux::Aux_servo_function_t function, int16_t value)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->radio_out = constrain_int16(value,_aux_channels[i]->radio_min,_aux_channels[i]->radio_max);
+            _aux_channels[i]->radio_out = constrain_int16(value,_aux_channels[i]->radio_min,_aux_channels[i]->radio_max);
             _aux_channels[i]->output();
-		}
+        }
     }
 }
 
 /*
-  set and save the trim value to radio_in for all channels matching
-  the given function type
+ *  set and save the trim value to radio_in for all channels matching
+ *  the given function type
  */
 void
 RC_Channel_aux::set_radio_trim(RC_Channel_aux::Aux_servo_function_t function)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->radio_trim = _aux_channels[i]->radio_in;
-			_aux_channels[i]->radio_trim.save();
-		}
+            _aux_channels[i]->radio_trim = _aux_channels[i]->radio_in;
+            _aux_channels[i]->radio_trim.save();
+        }
     }
 }
 
 /*
-  set the radio_out value for any channel with the given function to radio_min
+ *  set the radio_out value for any channel with the given function to radio_min
  */
 void
 RC_Channel_aux::set_radio_to_min(RC_Channel_aux::Aux_servo_function_t function)
@@ -146,12 +146,12 @@ RC_Channel_aux::set_radio_to_min(RC_Channel_aux::Aux_servo_function_t function)
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
             _aux_channels[i]->radio_out = _aux_channels[i]->radio_min;
             _aux_channels[i]->output();
-		}
+        }
     }
 }
 
 /*
-  set the radio_out value for any channel with the given function to radio_max
+ *  set the radio_out value for any channel with the given function to radio_max
  */
 void
 RC_Channel_aux::set_radio_to_max(RC_Channel_aux::Aux_servo_function_t function)
@@ -160,86 +160,86 @@ RC_Channel_aux::set_radio_to_max(RC_Channel_aux::Aux_servo_function_t function)
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
             _aux_channels[i]->radio_out = _aux_channels[i]->radio_max;
             _aux_channels[i]->output();
-		}
+        }
     }
 }
 
 /*
-  set the radio_out value for any channel with the given function to radio_trim
+ *  set the radio_out value for any channel with the given function to radio_trim
  */
 void
 RC_Channel_aux::set_radio_to_trim(RC_Channel_aux::Aux_servo_function_t function)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->radio_out = _aux_channels[i]->radio_trim;
+            _aux_channels[i]->radio_out = _aux_channels[i]->radio_trim;
             _aux_channels[i]->output();
-		}
+        }
     }
 }
 
 /*
-  copy radio_in to radio_out for a given function
+ *  copy radio_in to radio_out for a given function
  */
 void
 RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::Aux_servo_function_t function, bool do_input_output)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			if (do_input_output) {
-				_aux_channels[i]->input();
-			}
-			_aux_channels[i]->radio_out = _aux_channels[i]->radio_in;
-			if (do_input_output) {
-				_aux_channels[i]->output();
-			}
-		}
+            if (do_input_output) {
+                _aux_channels[i]->input();
+            }
+            _aux_channels[i]->radio_out = _aux_channels[i]->radio_in;
+            if (do_input_output) {
+                _aux_channels[i]->output();
+            }
+        }
     }
 }
 
 /*
-  set servo_out and call calc_pwm() for a given function
+ *  set servo_out and call calc_pwm() for a given function
  */
 void
 RC_Channel_aux::set_servo_out(RC_Channel_aux::Aux_servo_function_t function, int16_t value)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->servo_out = value;
-			_aux_channels[i]->calc_pwm();
+            _aux_channels[i]->servo_out = value;
+            _aux_channels[i]->calc_pwm();
             _aux_channels[i]->output();
-		}
+        }
     }
 }
 
 /*
-  return true if a particular function is assigned to at least one RC channel
+ *  return true if a particular function is assigned to at least one RC channel
  */
 bool
 RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t function)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			return true;
-		}
-	}
-	return false;
+            return true;
+        }
+    }
+    return false;
 }
 
 /*
-  set servo_out and angle_min/max, then calc_pwm and output a
-  value. This is used to move a AP_Mount servo
+ *  set servo_out and angle_min/max, then calc_pwm and output a
+ *  value. This is used to move a AP_Mount servo
  */
 void
 RC_Channel_aux::move_servo(RC_Channel_aux::Aux_servo_function_t function,
-						   int16_t value, int16_t angle_min, int16_t angle_max)
+                           int16_t value, int16_t angle_min, int16_t angle_max)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->servo_out = value;
-			_aux_channels[i]->set_range(angle_min, angle_max);
-			_aux_channels[i]->calc_pwm();
-			_aux_channels[i]->output();
-		}
-	}
+            _aux_channels[i]->servo_out = value;
+            _aux_channels[i]->set_range(angle_min, angle_max);
+            _aux_channels[i]->calc_pwm();
+            _aux_channels[i]->output();
+        }
+    }
 }
