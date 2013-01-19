@@ -3,6 +3,7 @@
 ifneq ($(PX4_ROOT),)
 
 px4:
+	make -C $(PX$_ROOT) configure_pc4fmu
 	make -C $(PX4_ROOT) EXTERNAL_APPS=$(PWD)
 
 px4-clean: clean
