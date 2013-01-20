@@ -84,6 +84,7 @@ static int main_loop(int argc, char **argv)
     setup();
     hal.scheduler->system_initialized();
 
+    thread_running = true;
     while (!thread_should_exit) {
 		loop();
 
@@ -127,7 +128,6 @@ void HAL_PX4::init(int argc, char * const argv[]) const
             uartADriver.set_device_path(device);
             printf("Starting %s on %s\n", SKETCHNAME, device);
 
-            thread_running = true;
             thread_should_exit = false;
             daemon_task = task_spawn(SKETCHNAME,
                                      SCHED_RR,
