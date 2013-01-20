@@ -106,8 +106,8 @@ static void calc_gndspeed_undershoot()
 }
 
 static void calc_bearing_error()
-{
-    bearing_error_cd = nav_bearing_cd - ahrs.yaw_sensor;
+{ 
+    bearing_error_cd = nav_bearing_cd - calc_bearing_cd;  // see get_wind()    
     bearing_error_cd = wrap_180_cd(bearing_error_cd);
 }
 
@@ -204,5 +204,37 @@ static void update_crosstrack(void)
 static void reset_crosstrack()
 {
     crosstrack_bearing_cd   = get_bearing_cd(&prev_WP, &next_WP);       // Used for track following
+}
+static void get_wind()      //GF  // Need to add GPS  validation check to the caller of this. If gps is lost then just leave wind data frozen util new data comes.
+{   
+     //Greg's wind calculator and nav bearing wind adjuster
+     
+    float air_speed, aspeed; 
+    if(HIL_MODE == HIL_MODE_ATTITUDE){
+        air_speed = airspeed.get_airspeed();
+    }else{            
+        if (ahrs.airspeed_estimate(&aspeed)) {
+           air_speed = aspeed;
+        }
+    }        
+    float air_dir = ahrs.yaw;  //radians
+    air_vel_v2f.x = sin(air_dir) * air_speed;        
+    air_vel_v2f.y = cos(air_dir) * air_speed;
+    gnd_vel_v2f.x = g_gps->velocity_east();   
+    gnd_vel_v2f.y = g_gps->velocity_north();
+    wind_vel_v2f = gnd_vel_v2f - air_vel_v2f;
+   // wind_speed = sqrt(sq(wind_vel_v2f.x) + sq(wind_vel_v2f.y));
+   // wind_direction_cd = wrap_360_cd(degrees(atan2(wind_vel_v2f.x, wind_vel_v2f.y))*100);                
+    calc_bearing_v2f = air_vel_v2f + wind_vel_v2f;
+    calc_bearing_cd = wrap_360_cd(degrees(atan2(calc_bearing_v2f.x, calc_bearing_v2f.y))*100);             
+}
+//
+static long calc_turn_pt(int32_t first_bearing, int32_t second_bearing)
+{
+    float angle = (18000 - (second_bearing - first_bearing))/2;
+    angle = ToRad(angle*0.01);
+    float turn_pt_m = fabs((sin(M_PI/2 - angle)*g.waypoint_radius)/sin(angle));         // turn radius in meters
+    constrain (turn_pt_m,10.0,(g.waypoint_radius*1.5));
+    return (int32_t)turn_pt_m;
 }
 

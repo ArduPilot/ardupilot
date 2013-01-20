@@ -128,11 +128,14 @@ static void init_ardupilot()
     }
 #else
     // we have a 2nd serial port for telemetry
+  #if DEBUG_NAV == ENABLED    
+    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, SERIAL_BUFSIZE);
+  #else	
     hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
             128, SERIAL_BUFSIZE);
     gcs3.init(hal.uartC);
+  #endif
 #endif
-
     mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
@@ -183,7 +186,8 @@ static void init_ardupilot()
 	g_gps = &g_gps_driver;
     // GPS Initialization
     g_gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G);
-
+	// When the mission is started and wp#1 is set, home becomes the previous or from wp. 
+    next_WP = home;
     //mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
     mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
     mavlink_system.type = MAV_TYPE_FIXED_WING;
@@ -323,29 +327,37 @@ static void set_mode(enum FlightMode mode)
         // don't switch modes if we are already in the correct mode.
         return;
     }
+    loiter_trig = false;
+    turn_around = false;
+    nav_wp_sw   = true; 
+    
     if(g.auto_trim > 0 && control_mode == MANUAL)
         trim_control_surfaces();
-
+    prev_control_mode = control_mode;
     control_mode = mode;
     crash_timer = 0;
-
+    print_flight_mode(control_mode);
     switch(control_mode)
     {
     case INITIALISING:
     case MANUAL:
     case CIRCLE:
     case STABILIZE:
-    case TRAINING:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
-        break;
 
     case AUTO:
+        nav_wp_sw = true;
+        turn_around = false;
+        turn_step = 1;
         update_auto();
         break;
 
     case RTL:
-        do_RTL();
+        nav_wp_sw = true;
+        turn_around = false;
+        turn_step = 1;    
+        do_RTL();        
         break;
 
     case LOITER:
@@ -353,7 +365,10 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case GUIDED:
-        set_guided_WP();
+        nav_wp_sw = true;
+        turn_around = false;
+        turn_step = 1;
+        set_guided_WP();                
         break;
 
     default:
@@ -622,5 +637,6 @@ static void print_comma(void)
 {
     cliSerial->print_P(PSTR(","));
 }
+
 
 

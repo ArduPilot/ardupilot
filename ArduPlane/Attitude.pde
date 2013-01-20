@@ -305,43 +305,252 @@ static void calc_nav_pitch()
     }
     nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
 }
-
-
 static void calc_nav_roll()
-{
-#define NAV_ROLL_BY_RATE 0
-#if NAV_ROLL_BY_RATE
-    // Scale from centidegrees (PID input) to radians per second. A P gain of 1.0 should result in a
-    // desired rate of 1 degree per second per degree of error - if you're 15 degrees off, you'll try
-    // to turn at 15 degrees per second.
-    float turn_rate = ToRad(g.pidNavRoll.get_pid(bearing_error_cd) * .01);
-
-    // Use airspeed_cruise as an analogue for airspeed if we don't have airspeed.
-    float speed;
-    if (!ahrs.airspeed_estimate(&speed)) {
-        speed = g.airspeed_cruise_cm*0.01;
-
-        // Floor the speed so that the user can't enter a bad value
-        if(speed < 6) {
-            speed = 6;
+{  
+    static int32_t raw_nav_roll;
+    static int32_t raw_nav_roll_fixed; 
+    static int32_t raw_nav_roll_pid;    
+    static int16_t count_a;
+    static int16_t count_b;
+    float air_speed = airspeed.get_airspeed();  
+    //if (ahrs.airspeed_estimate(&aspeed)) {
+    //   air_speed = aspeed * 100;
+    //}
+    static float nav_bender = 0;
+    static float turn_radius;
+    static int32_t reverse_turn_cd = 0;
+    static int8_t reverse = 1;
+    static int16_t loiter_error;
+#if DEBUG_NAV == ENABLED    // For debug printing only      
+    static bool once_a = 1;
+    static bool once_b = 1; 
+#endif           
+    if(nav_wp_sw || loiter_trig){
+#if DEBUG_NAV == ENABLED      
+        once_b = true;
+#endif        
+        turn_radius = float(g.waypoint_radius);
+        if(prev_control_mode != control_mode) turn_around = false;
+        // Normal Left turn
+        if((bearing_error_cd < -g.nav_pid_angle_cd || turn_step > 1) && lock != 1 && !loiter_trig){  
+            switch(turn_step){
+                case 1:
+                    lock = -1;                             
+                    if(turn_around){                  
+                        reverse_turn_cd = wrap_360_cd(last_wp_bearing_cd + g.turn_back_angle_cd - g.turn_back_angle_comp_cd);                                  
+                        reverse = -1; // Do the oposite of the normal
+                        turn_step ++;
+#if DEBUG_NAV == ENABLED                        
+                        Serial3.print("***acute angle trig L****  next hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+#endif                        
+                    }
+                break;             
+                case 2:                  
+                    if(wrap_360_cd(reverse_turn_cd - calc_bearing_cd) < 500){
+                        reverse_turn_cd = wrap_360_cd(current_wp_bearing_cd - g.turn_back_angle_cd + g.turn_back_angle_comp_cd);                         
+                        reverse = 1;  //Return to normal turn
+                        turn_step ++;
+#if DEBUG_NAV == ENABLED                        
+                        Serial3.print("*** turn around *** next hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+#endif                        
+                    }                                                                                          
+                break;
+                case 3:
+                    if(wrap_360_cd(calc_bearing_cd - reverse_turn_cd) < 500){                        
+                        reverse = -1;
+                        turn_step ++;
+#if DEBUG_NAV == ENABLED                        
+                        Serial3.println("*** turn back ***");
+#endif                        
+                    }
+                break;
+                case 4:
+                    if(bearing_error_cd < g.nav_pid_angle_cd){                    
+                        turn_around = false;
+                        turn_step = 1;                                                          
+                    }
+                break;
+                default:                                                                                   
+                    lock = -1;
+                break;
+             }                      
+        } 
+        //Normal Right turn
+        else if((bearing_error_cd > g.nav_pid_angle_cd || turn_step > 1) && lock != -1 && !loiter_trig){   
+            switch(turn_step){
+                case 1:
+                    lock = 1;
+                    if(turn_around){
+                        turn_step ++;
+                        reverse_turn_cd = wrap_360_cd(last_wp_bearing_cd - g.turn_back_angle_cd + g.turn_back_angle_comp_cd);                                   
+                        reverse = -1; // Do the oposite of the normal
+#if DEBUG_NAV == ENABLED                        
+                        Serial3.print("***acute angle trig R****  hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+#endif                        
+                    }            
+                break;             
+                case 2:                  
+                    if(wrap_360_cd(calc_bearing_cd - reverse_turn_cd) < 500){
+                        turn_step ++;
+                        reverse_turn_cd = wrap_360_cd(current_wp_bearing_cd + g.turn_back_angle_cd - g.turn_back_angle_comp_cd);                        
+                        reverse = 1;  //Return to normal turn
+#if DEBUG_NAV == ENABLED                        
+                        Serial3.print("*** turn around *** next hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+#endif                        
+                    }                                                                                                             
+                break;
+                case 3:
+                    if(wrap_360_cd(reverse_turn_cd - calc_bearing_cd) < 500){
+                        turn_step ++;
+                        reverse = -1;
+#if DEBUG_NAV == ENABLED                        
+    Serial3.println("*** turn back ***");
+#endif    
+                    }              
+                break;
+                case 4:
+                    if(bearing_error_cd > -g.nav_pid_angle_cd){
+                        turn_step = 1;
+                        turn_around = false;                                                                                                         
+                    }
+                break;
+                default:                                                                                   
+                    lock = 1;                 
+                break;
+             }                                                
         }
-    }
+        // Loiter
+        else if(loiter_trig){                     
+            switch (turn_step){
+                case 1:    // Set up for loiter entry
+                    turn_step ++;
+                    turn_around = false;
+                    reverse = -1;                                                        
+                break;
+                case 2:    // Start loitering turn                
+                    if(wrap_360_cd(calc_bearing_cd - loiter_entry_bearing_cd) < 500){                        
+                        turn_step ++;
+                        reverse = 1;                        
+                    }
+                break;
+                case 3:    
+                   // This is the NAV loiter controler right turn
+                    loiter_error = wp_distance - g.loiter_radius;
+                    if(lock == 1){                   
+                        nav_bearing_cd -= 9000;
+                        nav_bearing_cd += ((g.nav_data_latency * 5.73 * g_gps->ground_speed) / g.loiter_radius);                  
+                        nav_bearing_cd += constrain(((loiter_error) / float(g.loiter_radius) * g.loiter_P * 100),-1500, 9000);                         
+                    }
+                    // Left turn
+                    if(lock == -1){    
+                        nav_bearing_cd += 9000;
+                        nav_bearing_cd -= ((g.nav_data_latency * 5.73 * g_gps->ground_speed) / g.loiter_radius);                  
+                        nav_bearing_cd -= constrain(((loiter_error) / float(g.loiter_radius) * g.loiter_P * 100),-9000, 1500);                        
+                    }                        
+                    nav_bearing_cd = wrap_360_cd(nav_bearing_cd);                    
+                    calc_bearing_error();
+                break;
+            }
+         // If we have a waypoint switch while loitering, then stop loiter and turn to new wp.
+            if(nav_wp_sw){  
+                turn_step = 1;
+                turn_around = false;
+                loiter_trig = false;
+                return;
+            }
+#if DEBUG_NAV == ENABLED            
+            if(once_a){Serial3.println("*** loiter trigered 2 ***"); once_a = false;}
+#endif            
+        }
+        else{          // Be sure to always fall thru to here!
+            lock = 0;    //WARNING setting reverse or lock to zero can cause flyaways (nav_roll stuck on 0) if we don't get to the else. 
+            reverse = 1;   // Relax, I know I set lock to zero. That's so the wp switch can choose left or right based on the bering error and next wp. 
+            turn_step = 1;   // We alwas have a wp and the with all the wp trigers we should not fly away. I think.
+            nav_wp_sw = false;
+            turn_around = false;
+            g.pidNavRoll.reset_I(); 
 
-    // Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
-    nav_roll = ToDeg(atan(speed*turn_rate/GRAVITY_MSS)*100);
-
-#else
-    // this is the old nav_roll calculation. We will use this for 2.50
-    // then remove for a future release
-    float nav_gain_scaler = 0.01 * g_gps->ground_speed / g.scaling_speed;
-    nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
-    nav_roll_cd = g.pidNavRoll.get_pid(bearing_error_cd, nav_gain_scaler); //returns desired bank angle in degrees*100
+            if(prev_control_mode != control_mode || control_mode == GUIDED || prev_nav_cmd_index != nav_command_index || jump){  
+                prev_WP = current_loc;
+                prev_control_mode = control_mode;
+                reset_crosstrack();
+                navigate();
+                calc_bearing_error();
+#if DEBUG_NAV == ENABLED              
+                Serial3.print("** current bearing : ");Serial3.println(g_gps->ground_course);
+                Serial3.println("*** current loc set as from WP ***");
+                Serial3.print("bearing_error : ");Serial3.println(bearing_error_cd);
+#endif                
+            }            
+         }                 
+#if DEBUG_NAV == ENABLED       
+         count_a ++;
+         if(once_a){
+             once_a = false;
+             Serial3.print("****** nav fixed ****** : "); Serial3.println(raw_nav_roll);
+             //Serial3.print(", next_WP.id : "); Serial3.println(next_WP.id);
+         }
+         if(count_a > 49){
+             count_a = 0;
+             Serial3.print("nav fixed : ");Serial3.print(raw_nav_roll);Serial3.print(", rad : ");Serial3.println(g.waypoint_radius);Serial3.print(", next_WP.id : "); Serial3.println(next_WP.id);Serial3.print(", bender : "); Serial3.println(nav_bender,2);
+             Serial3.print(", turn step : ");Serial3.print(turn_step);Serial3.print(" L : ");Serial3.println(loiter_trig); 
+         }                  
 #endif
 
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+     // Fixed nav roll tries to fly a circular ground path by maintaining a constant radius with a variable ground speed.
+     // Air speed is not used in this method. Inputs are gps speed(2d) and turn radius and left/right. 
+     // Roll angle = atan((Vg^2/(r*g)), where Vg is ground speed, r is turn radius, and g is gravity.        
+         
+         raw_nav_roll_fixed = degrees(atan(sq(g_gps->ground_speed*.01)/(turn_radius * gravity))) * 100 * lock * reverse;             
+               
+    }
+     // Normal PID
+    else{        
+#if DEBUG_NAV == ENABLED          // For debug printing only 88888888888
+         if(once_b){          
+             Serial3.println("***** nav pid until futher notice *****");                        
+             once_a = true;
+             once_b = false;
+         }    
+#endif
+             lock = 0;
+             reverse = 1;
+             turn_step = 1;      
+#if DEBUG_NAV == ENABLED       
+         count_b ++;
+         if(count_b > 49){
+             count_b = 0;             
+             Serial3.print(", nav pid : ");Serial3.println(raw_nav_roll); Serial3.print(", bender : "); Serial3.println(nav_bender,2);
+             Serial3.print(", mode : ");Serial3.print(control_mode);Serial3.print(", turn step : ");Serial3.println(turn_step);
+         
+         }
+#endif         
+         //888888888888888888888888888888888888                               
+    }
+    float nav_gain_scaler = 0.01 * g_gps->ground_speed / g.scaling_speed;
+    nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);      
+    raw_nav_roll_pid = g.pidNavRoll.get_pid(bearing_error_cd, nav_gain_scaler); //returns desired bank angle in degrees*100 
+
+   // The Bender!  1 = 100% nav_roll_fixed, 0 = 100% nav_roll_pid
+   // 1000 is 10 degrees. Bearing error > X deg(g.bender_angle) means 100% nav_fixed. Bearing error from zero to X deg is blended, zero is 100% nav_pid.
+   //--------------------------------------------------------------------------------------------
+    if(turn_step <= 3 && nav_wp_sw && turn_around && !loiter_trig){
+        nav_bender = 1;
+    }   
+    else if((turn_step == 4 || (turn_step == 1 && !turn_around)) && nav_wp_sw && !loiter_trig){
+        nav_bender = float(g.bender_angle_cd - abs(bearing_error_cd))/float(g.bender_angle_cd) - 1; 
+        nav_bender = constrain(fabs(nav_bender),0,1);                        
+    }
+    else if(loiter_trig && turn_step < 3) {
+        nav_bender = 1;
+    }
+    else nav_bender = 0;   
+    raw_nav_roll = (1 - nav_bender) * raw_nav_roll_pid + nav_bender * raw_nav_roll_fixed;                      
+    nav_roll_cd = 0.6 * nav_roll_cd + 0.4 * raw_nav_roll;    // a little filtering?
+    nav_roll_cd = raw_nav_roll; 
+    if(control_mode == GUIDED || control_mode == RTL) nav_roll_cd = constrain(nav_roll_cd, (0.78 * -g.roll_limit_cd.get()), (0.78 * g.roll_limit_cd.get())); // Had to put a tighter leash on these modes as you can get there rairly, if you have a loiter as the last command.   
+    else nav_roll_cd = constrain(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());     
 }
-
-
 /*****************************************
 * Roll servo slew limit
 *****************************************/

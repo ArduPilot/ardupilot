@@ -226,15 +226,13 @@ static bool verify_condition_command()          // Returns true if command compl
 
 static void do_RTL(void)
 {
-    control_mode    = RTL;
+    set_mode(RTL);
     crash_timer     = 0;
-    next_WP                 = home;
-
+    set_next_WP(&home);
+    nav_command_ID = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     // Altitude to hold over home
     // Set by configuration tool
-    // -------------------------
     next_WP.alt = read_alt_to_hold();
-
     if (g.log_bitmask & MASK_LOG_MODE)
         Log_Write_Mode(control_mode);
 }
@@ -357,18 +355,30 @@ static bool verify_land()
 
 static bool verify_nav_wp()
 {
-    hold_course = -1;
-    update_crosstrack();
-    if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-        gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
-                          (unsigned)nav_command_index,
-                          (unsigned)get_distance(&current_loc, &next_WP));
-        return true;
-    }
+    hold_course = -1;         
 
-    // have we circled around the waypoint?
+    float predictor = g.predict_k * (g_gps->ground_speed - airspeed.get_airspeed_cm()) + g.predict_t * g_gps->ground_speed;
+
+    if(!nav_wp_sw) update_crosstrack(); 
+    if(control_mode == GUIDED){
+        if(check_loiter_trig()){   
+            return true;
+        }
+    }    
+    else if(control_mode == AUTO){    
+        if(wp_distance > 0 && wp_distance <= (turn_point_m + predictor)) {
+            gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
+                              (unsigned)nav_command_index,
+                              (unsigned)get_distance(&current_loc, &next_WP));
+      
+            return true;
+        }
+        // have we circled around the waypoint?
     if (loiter_sum > 300) {
         gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
+        
+ // Serial3.println("*****did a loop******");               
+ //Serial3.print("predictor = ");Serial3.println(predictor);                       
         return true;
     }
 
@@ -377,51 +387,93 @@ static bool verify_nav_wp()
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
                           (unsigned)get_distance(&current_loc, &next_WP));
+ // Serial3.println("*****past 90 deg line*****");               
+  //Serial3.print("predictor = ");Serial3.println(predictor);                     
+                          
         return true;
     }
-
+    }
     return false;
 }
 
 static bool verify_loiter_unlim()
 {
-    update_loiter();
-    calc_bearing_error();
+    if(!loiter_trig)check_loiter_trig();
+
     return false;
 }
 
 static bool verify_loiter_time()
 {
-    update_loiter();
-    calc_bearing_error();
-    if ((millis() - loiter_time_ms) > loiter_time_max_ms) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
-        return true;
+    if(!loiter_trig) check_loiter_trig();
+    if ((millis() - loiter_time_ms) > loiter_time_max_ms && loiter_trig) {
+        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));        
+        if(check_loiter_exit()) return true; 
     }
     return false;
 }
 
 static bool verify_loiter_turns()
 {
-    update_loiter();
-    calc_bearing_error();
-    if(loiter_sum > loiter_total) {
+    if(!loiter_trig) check_loiter_trig();
+    if(loiter_sum > loiter_total && loiter_trig) {
         loiter_total = 0;
-        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
-        // clear the command queue;
-        return true;
+        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));       
+        if(check_loiter_exit()) return true;
     }
     return false;
 }
+// This initiates a loiter sequnce at the proper time
+static bool check_loiter_trig()
+{
+    predictor = g.predict_k * (g_gps->ground_speed - airspeed.get_airspeed_cm()) + g.predict_t * g_gps->ground_speed;
+    if(wp_distance < (g.loiter_radius + g.waypoint_radius + predictor) * 0.93){
+        turn_step = 1; 
+        loiter_trig = true;
+        // Decide left or right loiter and set what's needed.
+        
+        if(wrap_180_cd(next_wp_bearing_cd - current_wp_bearing_cd) >= 0 && lock != -1) {
+            lock = 1;
+            loiter_entry_bearing_cd = wrap_360_cd(calc_bearing_cd - g.turn_back_angle_cd);
+            loiter_exit_bearing_cd = wrap_360_cd(next_wp_bearing_cd + 5600);
+        }  
+        else if(wrap_180_cd(next_wp_bearing_cd - current_wp_bearing_cd) < 0 && lock != 1) {
+            lock = -1; 
+            loiter_entry_bearing_cd = wrap_360_cd(calc_bearing_cd + g.turn_back_angle_cd);
+            loiter_exit_bearing_cd = wrap_360_cd(next_wp_bearing_cd - 5600);
+        }        
+        
+       // Serial3.println("*** loiter trigered 1 ***");
+        return true;
+    }
+    return false;    
+}
+// This will ultimately triger a set_next_WP() and the normal turn controler will complete the turn to the next WP.
+static bool check_loiter_exit()
+{    
+    if(lock == 1 && wrap_360_cd(loiter_exit_bearing_cd - calc_bearing_cd) < 500){     
+        turn_around = false;        
+        loiter_trig = false;
+        lock = 0;
+        return true;    
+    }
+    if(lock == -1 && wrap_360_cd(calc_bearing_cd - loiter_exit_bearing_cd) < 500){
+        turn_around = false;        
+        loiter_trig = false;
+        lock = 0;
+        return true;
+    }      
+    return false;    
+}
 
 static bool verify_RTL()
-{
-    if (wp_distance <= g.waypoint_radius) {
+{ 
+    if(check_loiter_trig()){  
         gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
         return true;
-    }else{
-        return false;
     }
+    return false;
+    
 }
 
 /********************************************************************************/
@@ -495,9 +547,10 @@ static void do_loiter_at_location()
 
 static void do_jump()
 {
-    if (next_nonnav_command.lat == 0) {
+    if (jump_counter == 0) {
         // the jump counter has reached zero - ignore
         gcs_send_text_fmt(PSTR("Jumps left: 0 - skipping"));
+        jump_counter = -2;
         return;
     }
     if (next_nonnav_command.p1 >= g.command_total) {
@@ -507,28 +560,22 @@ static void do_jump()
 
     struct Location temp;
     temp = get_cmd_with_index(g.command_index);
-
+    //jump = true;
+    
     gcs_send_text_fmt(PSTR("Jump to WP %u. Jumps left: %d"),
                       (unsigned)next_nonnav_command.p1,
                       (int)next_nonnav_command.lat);
-    if (next_nonnav_command.lat > 0) {
-        // Decrement repeat counter
-        temp.lat                        = next_nonnav_command.lat - 1;                                          
-        set_cmd_with_index(temp, g.command_index);
+    if(jump_counter > 0) {
+       jump_counter--; 
     }
-
     nav_command_ID          = NO_COMMAND;
     next_nav_command.id     = NO_COMMAND;
     non_nav_command_ID      = NO_COMMAND;
 
     gcs_send_text_fmt(PSTR("setting command index: %i"), next_nonnav_command.p1);
-    g.command_index.set_and_save(next_nonnav_command.p1);
+    g.command_index.set(next_nonnav_command.p1);
     nav_command_index       = next_nonnav_command.p1;
-    // Need to back "next_WP" up as it was set to the next waypoint following the jump
-    next_WP = prev_WP;
-
     temp = get_cmd_with_index(g.command_index);
-
     next_nav_command = temp;
     nav_command_ID = next_nav_command.id;
     non_nav_command_index = g.command_index;
@@ -623,3 +670,4 @@ static void do_repeat_relay()
     event_state.repeat          = next_nonnav_command.alt * 2;
     update_events();
 }
+

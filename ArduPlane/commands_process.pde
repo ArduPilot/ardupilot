@@ -50,8 +50,6 @@ static void verify_commands(void)
         non_nav_command_ID = NO_COMMAND;
     }
 }
-
-
 static void process_next_command()
 {
     // This function makes sure that we always have a current navigation command
@@ -64,18 +62,26 @@ static void process_next_command()
     // ---------------------------------
     if (nav_command_ID == NO_COMMAND) {    // no current navigation command loaded
         temp.id = MAV_CMD_NAV_LAST;
+   // prev_nav_cmd_index = nav_command_index; // gaf        
         while(temp.id >= MAV_CMD_NAV_LAST && nav_command_index <= g.command_total) {
             nav_command_index++;
-            temp = get_cmd_with_index(nav_command_index);
+            if(nav_command_index <= g.command_total){
+                temp = get_cmd_with_index(nav_command_index);
+                if(temp.id == MAV_CMD_DO_JUMP){             
+                    jump = true;
+                    if(jump_counter == -2) jump_counter = temp.lat; // Reseting the jump counter for the next pass.
+                }
+            }            
         }
 
         gcs_send_text_fmt(PSTR("Nav command index updated to #%i"),nav_command_index);
-
-        if(nav_command_index > g.command_total) {
+// That last bit fixes the bug where if do_jump is the last command, it does the jump with out the need for a phantom wp at the end, otherwise it would RTL instead of jump.
+// Or does it...?
+        if(nav_command_index > g.command_total) {   
             // we are out of commands!
             gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
             handle_no_commands();
-        } else {
+        }else {            
             next_nav_command = temp;
             nav_command_ID = next_nav_command.id;
             non_nav_command_index = NO_COMMAND;                                 // This will cause the next intervening non-nav command (if any) to be loaded
@@ -84,7 +90,7 @@ static void process_next_command()
             if (g.log_bitmask & MASK_LOG_CMD) {
                 Log_Write_Cmd(g.command_index, &next_nav_command);
             }
-            handle_process_nav_cmd();
+        if(!jump) handle_process_nav_cmd(); // This supresses the nav command after the jump, which was causing me problems.
         }
     }
 
@@ -143,3 +149,4 @@ static void process_non_nav_command()
         }
     }
 }
+

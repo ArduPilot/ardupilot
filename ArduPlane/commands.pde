@@ -152,12 +152,27 @@ static void set_next_WP(struct Location *wp)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------
-    prev_WP = next_WP;
-
+    prev_WP = next_WP; 
     // Load the next_WP slot
     // ---------------------
     next_WP = *wp;
-
+    // Tells the nav_roll controller of a wp change.
+    // ---------------------
+    nav_wp_sw = true;
+    turn_step = 1;
+// Looking ahead to the "after next wp" to see if there is a jump.       
+//    
+    after_next_nav_cmd_index = nav_command_index + 1;
+    after_next_WP = get_cmd_with_index(after_next_nav_cmd_index);           // Normal WP change situation
+    if(after_next_WP.id == MAV_CMD_DO_JUMP && after_next_WP.lat != 0){      // If DO_JUMP then handle it.
+        after_next_nav_cmd_index = after_next_WP.p1;
+        after_next_WP = get_cmd_with_index(after_next_nav_cmd_index);       
+    }
+    prev_nav_cmd_index    = nav_command_index;   
+    last_wp_bearing_cd    = current_wp_bearing_cd;    
+    current_wp_bearing_cd = get_bearing_cd(&prev_WP,&next_WP);
+    next_wp_bearing_cd    = get_bearing_cd(&next_WP,&after_next_WP);
+    
     // if lat and lon is zero, then use current lat/lon
     // this allows a mission to contain a "loiter on the spot"
     // command
@@ -169,8 +184,6 @@ static void set_next_WP(struct Location *wp)
             next_WP.alt = current_loc.alt;
         }
     }
-
-
     // are we already past the waypoint? This happens when we jump
     // waypoints, and it can cause us to skip a waypoint. If we are
     // past the waypoint when we start on a leg, then use the current
@@ -192,7 +205,7 @@ static void set_next_WP(struct Location *wp)
 
     // zero out our loiter vals to watch for missed waypoints
     loiter_delta            = 0;
-    loiter_sum                      = 0;
+    loiter_sum              = 0;
     loiter_total            = 0;
 
     // this is handy for the groundstation
@@ -208,18 +221,65 @@ static void set_next_WP(struct Location *wp)
     // set a new crosstrack bearing
     // ----------------------------
     reset_crosstrack();
+    last_turn_point = turn_point_m;
+    turn_point_m = calc_turn_pt(current_wp_bearing_cd, next_wp_bearing_cd);
+    //
+    if(prev_WP.id != MAV_CMD_NAV_LOITER_TURNS && prev_WP.id != MAV_CMD_NAV_LOITER_TIME && !jump){    
+        if(last_turn_point >= g.waypoint_radius * 1.6){
+            turn_around = true;
+          //  Serial3.println("*** turn around trigger set ***");        
+        }
+    }
+    if(turn_point_m >= g.waypoint_radius * 1.6 || turn_point_m <= 0){ 
+       turn_point_m = g.waypoint_radius * 1.6; 
+    }
+     // jump detector
+    if(jump){
+       jump = false;
+#if DEBUG_NAV == ENABLED       
+       Serial3.println("*** JUMP DETECTED ***");
+#endif       
+    }  
+#if DEBUG_NAV == ENABLED 
+    Serial3.print("      next wp # : ");
+    Serial3.print(nav_command_index);
+    Serial3.print("    current bearing : ");
+    Serial3.println(current_wp_bearing_cd*.01,1);
+    Serial3.print("after next wp # : ");
+    Serial3.print(after_next_nav_cmd_index);
+    Serial3.print("       next bearing : ");
+    Serial3.println(next_wp_bearing_cd*.01,1);     
+    Serial3.print("last turn point distance : ");
+    Serial3.println(last_turn_point);
+    Serial3.print("next turn point distance : ");
+    Serial3.println(turn_point_m);
+#endif    
 }
 
 static void set_guided_WP(void)
 {
     // copy the current location into the OldWP slot
     // ---------------------------------------
-    prev_WP = current_loc;
+    //prev_WP = next_WP;
 
     // Load the next_WP slot
     // ---------------------
     next_WP = guided_WP;
+    
+    set_mode(GUIDED);  
+    
+    turn_around = false;
 
+    wp_distance = get_distance(&current_loc, &next_WP);  
+    if(wp_distance > (2 * g.loiter_radius) && prev_control_mode != GUIDED){            
+        nav_wp_sw = true;
+        nav_command_ID = MAV_CMD_NAV_WAYPOINT;
+    }
+    else {
+        nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
+        turn_step = 3;
+        loiter_trig = true; 
+    }            
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
     target_altitude_cm = current_loc.alt;
@@ -237,6 +297,8 @@ static void set_guided_WP(void)
     // set a new crosstrack bearing
     // ----------------------------
     reset_crosstrack();
+    
+  //  Serial3.print("** guided wp id # : ");Serial3.println(next_WP.id);
 }
 
 // run this at setup on the ground
@@ -277,6 +339,7 @@ void init_home()
     guided_WP.alt += g.RTL_altitude_cm;
 
 }
+
 
 
 

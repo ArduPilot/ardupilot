@@ -290,6 +290,8 @@ static bool usb_connected;
 // This is the state of the flight control system
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
 enum FlightMode control_mode  = INITIALISING;
+// previous contol mode used in roll navigation logic
+uint8_t prev_control_mode   = MANUAL;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 uint8_t oldSwitchPosition;
@@ -357,7 +359,8 @@ static bool have_position;
 ////////////////////////////////////////////////////////////////////////////////
 // Constants
 const float radius_of_earth   = 6378100;        // meters
-
+// gravity on earth
+const float gravity = 9.81; // meters/ sec^2          
 // This is the currently calculated direction to fly.
 // deg * 100 : 0 to 360
 static int32_t nav_bearing_cd;
@@ -374,11 +377,54 @@ static int32_t crosstrack_bearing_cd;
 // deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
 static int32_t hold_course                   = -1;              // deg * 100 dir of plane
 
+// Bearing from last_wp to current_wp
+static int32_t    current_wp_bearing_cd;    // This is the same as crosstrack bearing!
+// Bearing from current_wp to after_next_wp
+static int32_t    next_wp_bearing_cd;
+//  Bearing of the previous leg
+static int32_t    last_wp_bearing_cd;
+//
+static int8_t lock = 0;
+//
+static float predictor = 0;
+//
+static bool       nav_wp_sw = false;
+//
+static bool       turn_around = false;
+//
+static bool       jump = false;
+//
+static int32_t    jump_counter = -2;
+//
+static bool       loiter_trig = false;
+//
+static int8_t     turn_step = 1;
+
+// 2d air speed vector
+static Vector2f air_vel_v2f;
+// 2d ground speed vector,  
+static Vector2f gnd_vel_v2f;
+// 2d wind velocity vector.
+static Vector2f wind_vel_v2f;
+// Calculated groung track from AHRS,airspeed, & wind speed vector.
+static Vector2f calc_bearing_v2f;
+// Wind speed estimate in m/s.
+static float wind_speed;
+// Wind direction estemate in centadegrees
+static int32_t wind_direction_cd;
+// Calculated bearing.
+static int32_t calc_bearing_cd;
+
 // There may be two active commands in Auto mode.
+//
+static uint8_t prev_nav_cmd_index;
 // This indicates the active navigation command by index number
 static uint8_t nav_command_index;
+//
+static uint8_t after_next_nav_cmd_index;
 // This indicates the active non-navigation command by index number
 static uint8_t non_nav_command_index;
+
 // This is the command type (eg navigate to waypoint) of the active navigation command
 static uint8_t nav_command_ID          = NO_COMMAND;
 static uint8_t non_nav_command_ID      = NO_COMMAND;
@@ -470,11 +516,19 @@ static int16_t takeoff_pitch_cd;
 // this controls throttle suppression in auto modes
 static bool throttle_suppressed;
 
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
 // Previous target bearing.  Used to calculate loiter rotations.  Hundredths of a degree
 static int32_t old_target_bearing_cd;
+
+//Loiter entery angle
+static int32_t loiter_entry_bearing_cd;
+
+//Loiter exit bearing
+static int32_t loiter_exit_bearing_cd;
 
 // Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
 static int32_t loiter_total;
@@ -506,6 +560,9 @@ static int32_t nav_pitch_cd;
 // Distance between plane and next waypoint.  Meters
 // is not static because AP_Camera uses it
 int32_t wp_distance;
+//
+float  turn_point_m;
+float  last_turn_point;
 
 // Distance between previous and next waypoint.  Meters
 static int32_t wp_totalDistance;
@@ -567,6 +624,8 @@ static struct   Location current_loc;
 static struct   Location next_WP;
 // The location of the active waypoint in Guided mode.
 static struct   Location guided_WP;
+// The way point after the next way point. Used in nav calculations for turn point.
+static struct   Location after_next_WP;
 // The location structure information from the Nav command being processed
 static struct   Location next_nav_command;
 // The location structure information from the Non-Nav command being processed
@@ -757,6 +816,11 @@ static void fast_loop()
 #endif
 
     ahrs.update();
+	// Increasing the rate these functions are executed during turns
+    if(nav_wp_sw || loiter_trig){
+       get_wind();
+       navigate();    
+    }	
 
     // uses the yaw from the DCM to give more accurate turns
     calc_bearing_error();
@@ -838,7 +902,10 @@ static void medium_loop()
 
         // calculate the plane's desired bearing
         // -------------------------------------
-        navigate();
+        if(!nav_wp_sw && !loiter_trig){
+            get_wind();
+            navigate();
+        }
 
         break;
 
@@ -1105,7 +1172,17 @@ static void update_current_flight_mode(void)
 
         switch(control_mode) {
         case RTL:
+            crash_checker();
+            calc_nav_roll();
+            calc_nav_pitch();
+            calc_throttle();
+            break;		
         case LOITER:
+            crash_checker();
+            calc_nav_roll();
+            calc_nav_pitch();
+            calc_throttle();
+            break;		
         case GUIDED:
             crash_checker();
             calc_nav_roll();
@@ -1197,9 +1274,10 @@ static void update_current_flight_mode(void)
             // we have no GPS installed and have lost radio contact
             // or we just want to fly around in a gentle circle w/o GPS
             // ----------------------------------------------------
-            nav_roll_cd  = g.roll_limit_cd / 3;
-            nav_pitch_cd = 0;
-
+            calc_nav_pitch();                       
+            nav_roll_cd = degrees(atan(sq(g_gps->ground_speed*.01)/(float(g.waypoint_radius) * 2 * gravity))) * 100;
+            nav_roll_cd = constrain(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+            calc_throttle();
             if (failsafe != FAILSAFE_NONE) {
                 g.channel_throttle.servo_out = g.throttle_cruise;
             }
@@ -1234,10 +1312,13 @@ static void update_navigation()
         break;
             
     case LOITER:
+        verify_commands();
+        break;	
     case RTL:
+        verify_commands();
+        break;	
     case GUIDED:
-        update_loiter();
-        calc_bearing_error();
+        verify_commands();
         break;
 
     case MANUAL:
@@ -1277,3 +1358,4 @@ static void update_alt()
 }
 
 AP_HAL_MAIN();
+

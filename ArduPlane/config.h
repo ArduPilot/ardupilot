@@ -830,4 +830,27 @@
 #ifndef SERIAL_BUFSIZE
 # define SERIAL_BUFSIZE 256
 #endif
-
+#ifndef STANDARD_TURN_BACK_ANGLE
+ #define STANDARD_TURN_BACK_ANGLE 3000
+#endif
+#ifndef TURN_BACK_COMP
+ #define TURN_BACK_COMP 300 
+#endif 
+#ifndef NAV_PID_ANGLE
+ #define NAV_PID_ANGLE 200
+#endif
+#ifndef NAV_BLENDER_ANGLE
+ #define NAV_BLENDER_ANGLE 2000
+#endif 
+#ifndef PREDICT_K
+ #define PREDICT_K 0.06
+#endif
+#ifndef PREDICT_T 
+ #define PREDICT_T 0.006
+#endif
+#ifndef NAV_LOITER_P
+ #define NAV_LOITER_P 0.01
+#endif
+#ifndef NAV_MODE
+ #define NAV_MODE 0
+#endif

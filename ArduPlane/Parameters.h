@@ -136,7 +136,14 @@ public:
         k_param_camera = 160,
         k_param_camera_mount,
         k_param_camera_mount2,
-
+        // Wind corection parameters
+        k_param_predict_k,
+        k_param_predict_t,
+        k_param_turn_back_angle_cd,
+        k_param_turn_back_angle_comp_cd,
+        k_param_nav_pid_angle_cd,
+        k_param_bender_angle_cd,
+        k_param_loiter_P,
         //
         // Battery monitoring parameters
         //
@@ -171,7 +178,7 @@ public:
         k_param_throttle_slewrate,
         k_param_throttle_suppress_manual,
         k_param_throttle_passthru_stabilize,
-
+        k_param_nav_data_latency,
         //
         // 200: Feed-forward gains
         //
@@ -314,7 +321,16 @@ public:
     AP_Int16 pitch_limit_max_cd;
     AP_Int16 pitch_limit_min_cd;
     AP_Int16 alt_offset;
-
+    // Navigation wind correction parameters
+    //
+    AP_Float predict_k;
+    AP_Float predict_t;
+    AP_Int32 turn_back_angle_cd;
+    AP_Int32 turn_back_angle_comp_cd;
+    AP_Int32 nav_pid_angle_cd;
+    AP_Int32 bender_angle_cd;
+    AP_Float loiter_P;
+    AP_Int32 nav_data_latency;
     // Misc
     //
     AP_Int8 auto_trim;
@@ -425,3 +441,4 @@ public:
 extern const AP_Param::Info var_info[];
 
 #endif // PARAMETERS_H
+

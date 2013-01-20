@@ -180,7 +180,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(waypoint_radius,        "WP_RADIUS",      WP_RADIUS_DEFAULT),
-
+    // GAF NAV STUFF
+    GSCALAR(predict_k,              "NAV_WIND_CST",    PREDICT_K),
+    GSCALAR(predict_t,              "NAV_TIME_CST",    PREDICT_K),
+    GSCALAR(turn_back_angle_cd,     "NAV_TURN_BACK",   STANDARD_TURN_BACK_ANGLE),
+    GSCALAR(turn_back_angle_comp_cd,"NAV_TRNBK_COMP",  TURN_BACK_COMP),
+    GSCALAR(nav_pid_angle_cd,       "NAV_PID_ANGLE",   NAV_PID_ANGLE),
+    GSCALAR(bender_angle_cd,        "NAV_BLNDR_ANGL",  NAV_BLENDER_ANGLE),
+    GSCALAR(loiter_P,               "NAV_LOITER_P",    NAV_LOITER_P),
+    GSCALAR(nav_data_latency,       "NAV_DATA_LAG",   7000),
     // @Param: WP_LOITER_RAD
     // @DisplayName: Waypoint Loiter Radius
     // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter
@@ -718,3 +726,4 @@ static void load_parameters(void)
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }
+
