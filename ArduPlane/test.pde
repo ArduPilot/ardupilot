@@ -653,7 +653,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
         if (!barometer.healthy) {
             cliSerial->println_P(PSTR("not healthy"));
         } else {
-            cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %ld Temperature: %.1f\n"),
+            cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),
                             current_loc.alt / 100.0,
                             barometer.get_pressure(), 0.1*barometer.get_temperature());
         }
