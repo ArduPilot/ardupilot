@@ -31,17 +31,16 @@ public:
 private:
     uint16_t        _init_sensor( Sample_rate sample_rate );
     uint32_t        _last_update_usec;
-    uint32_t        _delta_time_usec;
+    float           _delta_time;
+    Vector3f		_accel_sum;
+    uint32_t        _accel_sum_count;
+    Vector3f		_gyro_sum;
+    uint32_t        _gyro_sum_count;
+    uint8_t         _sample_divider;
 
-    // accelerometer ORB subscription handle
-    int _accel_sub;
-
-    // gyro ORB subscription handle
-    int _gyro_sub;
-
-    // raw sensor values, combined structure
-    struct sensor_combined_s _raw_sensors;
-    
+    // accelerometer and gyro driver handles
+    int _accel_fd;
+    int _gyro_fd;
 };
 #endif
 #endif // __AP_INERTIAL_SENSOR_PX4_H__

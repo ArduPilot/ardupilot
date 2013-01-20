@@ -13,55 +13,46 @@ const extern AP_HAL::HAL& hal;
 
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
-#include <uORB/uORB.h>
-#include <uORB/topics/sensor_combined.h>
 
-uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) {
-    uint16_t rate_hz;
-    int fd;
-
+uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) 
+{
     switch (sample_rate) {
     case RATE_50HZ:
-        rate_hz = 50;
+        _sample_divider = 4;
         break;
     case RATE_100HZ:
-        rate_hz = 100;
+        _sample_divider = 2;
         break;
     case RATE_200HZ:
     default:
-        rate_hz = 200;
+        _sample_divider = 1;
         break;
     }
 
 	// init accelerometers
-	fd = open(ACCEL_DEVICE_PATH, 0);
-	if (fd < 0) {
+	_accel_fd = open(ACCEL_DEVICE_PATH, O_RDONLY);
+	if (_accel_fd < 0) {
         hal.scheduler->panic("Unable to open accel device " ACCEL_DEVICE_PATH);
     }
 
-    /* set the accel internal sampling rate */
-    ioctl(fd, ACCELIOCSSAMPLERATE, rate_hz);
-
-    /* set the driver poll rate */
-    ioctl(fd, SENSORIOCSPOLLRATE, rate_hz);
-
-    close(fd);
-	_accel_sub = orb_subscribe(ORB_ID(sensor_accel));
-
-	// init gyros
-	fd = open(GYRO_DEVICE_PATH, 0);
-	if (fd < 0) {
+	_gyro_fd = open(GYRO_DEVICE_PATH, O_RDONLY);
+	if (_gyro_fd < 0) {
         hal.scheduler->panic("Unable to open gyro device " GYRO_DEVICE_PATH);
     }
 
-    /* set the gyro internal sampling rate */
-    ioctl(fd, GYROIOCSSAMPLERATE, rate_hz);
+    /* 
+     * set the accel and gyro sampling rate. We always set these to
+     * 200 then average in this driver
+     */
+    ioctl(_accel_fd, ACCELIOCSSAMPLERATE, 200);
+    ioctl(_accel_fd, SENSORIOCSPOLLRATE,  200);
+    ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  200);
+    ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  200);
 
-    /* set the driver poll rate  */
-    ioctl(fd, SENSORIOCSPOLLRATE, rate_hz);
-
-    close(fd);
-	_gyro_sub = orb_subscribe(ORB_ID(sensor_gyro));
+    // ask for a 10 sample buffer. The mpu6000 PX4 driver doesn't
+    // support this yet, but when it does we want to use it
+    ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 10);
+    ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 10);
 
     return AP_PRODUCT_ID_PX4;
 }
@@ -71,32 +62,34 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) {
 bool AP_InertialSensor_PX4::update(void) 
 {
     while (num_samples_available() == 0) {
-        hal.scheduler->delay_microseconds(1);
+        hal.scheduler->delay(1);
     }
     uint32_t now = hal.scheduler->micros();
-    _delta_time_usec = now - _last_update_usec;
+
+    // the current mpu6000 PX4 driver does not buffer samples, so
+    // using the sample count times 5ms would produce a bad delta time
+    // if we missed one. For now we need to use the clock to get the
+    // delta time
+    _delta_time = (now - _last_update_usec) * 1.0e-6f;
     _last_update_usec = now;
 
     Vector3f accel_scale = _accel_scale.get();
 
-    _accel   = Vector3f(_raw_sensors.accelerometer_m_s2[0],
-                        _raw_sensors.accelerometer_m_s2[1],
-                        _raw_sensors.accelerometer_m_s2[2]);
+    _accel   = _accel_sum / _accel_sum_count;
     _accel.rotate(_board_orientation);
     _accel.x *= accel_scale.x;
     _accel.y *= accel_scale.y;
     _accel.z *= accel_scale.z;
-    _accel   /= _raw_sensors.accelerometer_counter;
     _accel   -= _accel_offset;
 
-    _gyro    = Vector3f(_raw_sensors.gyro_rad_s[0],
-                        _raw_sensors.gyro_rad_s[1],
-                        _raw_sensors.gyro_rad_s[2]);
+    _gyro    = _gyro_sum / _gyro_sum_count;
     _gyro.rotate(_board_orientation);
-    _gyro   /= _raw_sensors.gyro_counter;
     _gyro   -= _gyro_offset;
 
-    memset(&_raw_sensors, 0, sizeof(_raw_sensors));
+    _accel_sum.zero();
+    _accel_sum_count = 0;
+    _gyro_sum.zero();
+    _gyro_sum_count = 0;
 
     return true;
 }
@@ -114,7 +107,7 @@ float AP_InertialSensor_PX4::temperature(void)
 
 float AP_InertialSensor_PX4::get_delta_time(void) 
 {
-    return _delta_time_usec * 1.0e-6;
+    return _delta_time;
 }
 
 uint32_t AP_InertialSensor_PX4::get_last_sample_time_micros(void) 
@@ -130,45 +123,20 @@ float AP_InertialSensor_PX4::get_gyro_drift_rate(void)
 
 uint16_t AP_InertialSensor_PX4::num_samples_available(void)
 {
-	bool accel_updated=false;
-	bool gyro_updated =false;
-
-	orb_check(_accel_sub, &accel_updated);
-	if (accel_updated) {
-		struct accel_report	accel_report;
-
-		orb_copy(ORB_ID(sensor_accel), _accel_sub, &accel_report);
-
-		_raw_sensors.accelerometer_m_s2[0] += accel_report.x;
-		_raw_sensors.accelerometer_m_s2[1] += accel_report.y;
-		_raw_sensors.accelerometer_m_s2[2] += accel_report.z;
-
-		_raw_sensors.accelerometer_raw[0] = accel_report.x_raw;
-		_raw_sensors.accelerometer_raw[1] = accel_report.y_raw;
-		_raw_sensors.accelerometer_raw[2] = accel_report.z_raw;
-
-		_raw_sensors.accelerometer_counter++;
+    struct accel_report	accel_report;
+    struct gyro_report	gyro_report;
+    
+    if (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report)) {
+        _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
+        _accel_sum_count++;
 	}
 
-	orb_check(_gyro_sub, &gyro_updated);
-
-	if (gyro_updated) {
-		struct gyro_report	gyro_report;
-
-		orb_copy(ORB_ID(sensor_gyro), _gyro_sub, &gyro_report);
-
-		_raw_sensors.gyro_rad_s[0] += gyro_report.x;
-		_raw_sensors.gyro_rad_s[1] += gyro_report.y;
-		_raw_sensors.gyro_rad_s[2] += gyro_report.z;
-
-		_raw_sensors.gyro_raw[0] = gyro_report.x_raw;
-		_raw_sensors.gyro_raw[1] = gyro_report.y_raw;
-		_raw_sensors.gyro_raw[2] = gyro_report.z_raw;
-
-		_raw_sensors.gyro_counter++;
+    if (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report)) {
+        _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
+        _gyro_sum_count++;
 	}
 
-    return min(_raw_sensors.accelerometer_counter, _raw_sensors.gyro_counter);
+    return min(_accel_sum_count, _gyro_sum_count) / _sample_divider;
 }
 
 #endif // CONFIG_HAL_BOARD
