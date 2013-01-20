@@ -1,0 +1,63 @@
+#!nsh
+
+# APM startup script for NuttX on PX4
+
+uorb start
+
+# mount binfs so we can find the built-in apps
+mount -t binfs /dev/null /bin
+
+set device /dev/ttyS1
+set sketch NONE
+
+if [ -f /bin/ArduPlane ]
+then
+	set sketch ArduPlane
+fi
+
+if [ -f /bin/ArduCopter ]
+then
+	set sketch ArduCopter
+fi
+
+if [ -f /bin/APMrover2 ]
+then
+	set sketch APMrover2
+fi
+
+if [ $sketch != NONE ]
+then
+	echo "Starting APM sensors"
+	mpu6000 start
+	ms5611 start
+	hmc5883 start
+	echo Trying PX4IO start
+	if px4io start
+	then
+		echo Setting up PX4IO board
+		echo Loading FMU_pass mixer
+		mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
+		echo Setting FMU mode_serial
+		fmu mode_serial
+	else
+		echo Setting up PX4FMU direct mode
+		fmu start mode_pwm
+		if [ $device == /dev/ttyS1 ]
+		then
+			# ttyS1 is used for PWM output when there
+			# is no IO board
+			set device /dev/ttyS2
+		fi
+	fi
+	echo Starting $sketch
+	$sketch -d $device start
+
+	# if starting on the console, tell nsh to exit
+	# this prevents it from chewing bytes
+	if [ $device == /dev/ttyS0 ]
+	then
+		exit
+	fi
+else
+	echo "No APM sketch found"
+fi
