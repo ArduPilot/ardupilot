@@ -20,7 +20,7 @@ extern const AP_HAL::HAL& hal;
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_PX4::init(void)
 {
-    if (_baro_fd == -1) {
+    if (_baro_fd <= 0) {
         _baro_fd = open(BARO_DEVICE_PATH, O_RDONLY);
         if (_baro_fd < 0) {
             hal.scheduler->panic("Unable to open " BARO_DEVICE_PATH);
@@ -39,31 +39,35 @@ bool AP_Baro_PX4::init(void)
 // Read the sensor
 uint8_t AP_Baro_PX4::read(void)
 {
-    uint16_t count;
-    float pressure_sum, temperature_sum;
+    accumulate();
+    if (_sum_count == 0) {
+        // no data available
+        return 0;
+    }
+
+    _pressure    = (_pressure_sum / _sum_count) * 100.0f;
+    _temperature = (_temperature_sum / _sum_count) * 10.0f;
+    _pressure_samples = _sum_count;
+
+    _pressure_sum = 0;
+    _temperature_sum = 0;
+    _sum_count = 0;
+
+    healthy = true;
+    return 1;
+}
+
+// accumulate sensor values
+void AP_Baro_PX4::accumulate(void)
+{
     struct baro_report baro_report;
 
-    // read all available samples and average
-    pressure_sum = 0;
-    temperature_sum = 0;
-    count = 0;
-
     while (::read(_baro_fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report)) {
-		pressure_sum += baro_report.pressure; // Pressure in mbar
-		temperature_sum += baro_report.temperature; // degrees celcius
-        count++;
-    }
-
-    if (count != 0) {
-        _pressure = pressure_sum / count;
-        _temperature = temperature_sum / count;
+		_pressure_sum += baro_report.pressure; // Pressure in mbar
+		_temperature_sum += baro_report.temperature; // degrees celcius
+        _sum_count++;
         _last_update = hal.scheduler->millis();
-        _pressure_samples = count;
-        healthy = true;
-        return 1;
     }
-    
-    return 0;
 }
 
 float AP_Baro_PX4::get_pressure() {
