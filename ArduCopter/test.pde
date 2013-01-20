@@ -811,13 +811,13 @@ test_baro(uint8_t argc, const Menu::arg *argv)
         delay(100);
         int32_t alt = read_barometer();                 // calls barometer.read()
 
-        int32_t pres = barometer.get_pressure();
+        float pres = barometer.get_pressure();
         int16_t temp = barometer.get_temperature();
         int32_t raw_pres = barometer.get_raw_pressure();
         int32_t raw_temp = barometer.get_raw_temp();
-        cliSerial->printf_P(PSTR("alt: %ldcm, pres: %ldmbar, temp: %d/100degC,"
+        cliSerial->printf_P(PSTR("alt: %ldcm, pres: %fmbar, temp: %d/100degC,"
                              " raw pres: %ld, raw temp: %ld\n"),
-                        alt, pres,temp, raw_pres, raw_temp);
+                            (long)alt, pres, (int)temp, (long)raw_pres, (long)raw_temp);
         if(cliSerial->available() > 0) {
             return (0);
         }
