@@ -27,7 +27,7 @@ bool AP_Baro_PX4::init(void)
         }
 
         /* set the driver to poll at 150Hz */
-        ioctl(_baro_fd, SENSORIOCSPOLLRATE, 150);
+        ioctl(_baro_fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX);
 
         // average over up to 10 samples
         ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
