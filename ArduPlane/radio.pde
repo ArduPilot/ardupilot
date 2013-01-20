@@ -183,12 +183,14 @@ static void trim_control_surfaces()
         // corresponding transmitter input channel, which k_aileron
         // doesn't have
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron_with_input);
+        // same for the secondary elevator
+        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_elevator_with_input);
     } else{
         elevon1_trim = ch1_temp;
         elevon2_trim = ch2_temp;
         //Recompute values here using new values for elevon1_trim and elevon2_trim
         //We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed
-        uint16_t center                         = 1500;
+        uint16_t center                 = 1500;
         g.channel_roll.radio_trim       = center;
         g.channel_pitch.radio_trim      = center;
     }

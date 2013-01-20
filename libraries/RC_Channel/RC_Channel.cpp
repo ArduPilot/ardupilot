@@ -142,7 +142,7 @@ RC_Channel::set_pwm(int16_t pwm)
     }
 }
 
-// read input from APM_RC - create a control_in value, but use a 
+// read input from APM_RC - create a control_in value, but use a
 // zero value for the dead zone. When done this way the control_in
 // value can be used as servo_out to give the same output as input
 void
@@ -229,8 +229,8 @@ RC_Channel::update_min_max()
 }
 
 /*
-  return an "angle in centidegrees" (normally -4500 to 4500) from
-  the current radio_in value using the specified dead_zone
+ *  return an "angle in centidegrees" (normally -4500 to 4500) from
+ *  the current radio_in value using the specified dead_zone
  */
 int16_t
 RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
@@ -251,13 +251,13 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
 }
 
 /*
-  return an "angle in centidegrees" (normally -4500 to 4500) from
-  the current radio_in value
+ *  return an "angle in centidegrees" (normally -4500 to 4500) from
+ *  the current radio_in value
  */
 int16_t
 RC_Channel::pwm_to_angle()
 {
-	return pwm_to_angle_dz(_dead_zone);
+    return pwm_to_angle_dz(_dead_zone);
 }
 
 
@@ -271,8 +271,8 @@ RC_Channel::angle_to_pwm()
 }
 
 /*
-  convert a pulse width modulation value to a value in the configured
-  range, using the specified deadzone
+ *  convert a pulse width modulation value to a value in the configured
+ *  range, using the specified deadzone
  */
 int16_t
 RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
@@ -280,7 +280,7 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
     if (_reverse == -1) {
-	    r_in = radio_max.get() - (r_in - radio_min.get());
+        r_in = radio_max.get() - (r_in - radio_min.get());
     }
 
     int16_t radio_trim_low  = radio_min + dead_zone;
@@ -294,8 +294,8 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
 }
 
 /*
-  convert a pulse width modulation value to a value in the configured
-  range
+ *  convert a pulse width modulation value to a value in the configured
+ *  range
  */
 int16_t
 RC_Channel::pwm_to_range()
@@ -331,7 +331,7 @@ RC_Channel::norm_output()
     else
         ret = (float)(radio_out - mid) / (float)(radio_max  - mid);
     if (_reverse == -1) {
-	    ret = -ret;
+        ret = -ret;
     }
     return ret;
 }

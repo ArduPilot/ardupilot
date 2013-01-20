@@ -29,7 +29,7 @@ public:
     RC_Channel(uint8_t ch_out) :
         _high(1),
         _ch_out(ch_out) {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
     }
 
     // setup min and max radio values in CLI
@@ -85,20 +85,20 @@ public:
     // includes offset from PWM
     //int16_t   get_radio_out(void);
 
-    int16_t                                         pwm_to_angle_dz(uint16_t dead_zone);
-    int16_t                                         pwm_to_angle();
-    float                                           norm_input();
-    float                                           norm_output();
-    int16_t                                         angle_to_pwm();
-    int16_t                                         pwm_to_range();
-    int16_t                                         pwm_to_range_dz(uint16_t dead_zone);
-    int16_t                                         range_to_pwm();
+    int16_t        pwm_to_angle_dz(uint16_t dead_zone);
+    int16_t        pwm_to_angle();
+    float        norm_input();
+    float        norm_output();
+    int16_t        angle_to_pwm();
+    int16_t        pwm_to_range();
+    int16_t        pwm_to_range_dz(uint16_t dead_zone);
+    int16_t        range_to_pwm();
 
-    void                                            output();
-    void                                            input();
-    void                                            enable_out();
+    void        output();
+    void        input();
+    void        enable_out();
 
-    static const struct AP_Param::GroupInfo         var_info[];
+    static const struct AP_Param::GroupInfo        var_info[];
 
 private:
     AP_Int8         _reverse;
