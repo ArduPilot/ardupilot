@@ -479,6 +479,9 @@ static int32_t old_target_bearing_cd;
 // Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
 static int32_t loiter_total;
 
+// Direction for loiter. 1 for clockwise, -1 for counter-clockwise
+static int8_t loiter_direction = 1;
+
 // The amount in degrees we have turned since recording old_target_bearing
 static int16_t loiter_delta;
 
