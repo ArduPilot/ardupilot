@@ -8,6 +8,7 @@ px4:
 
 px4-clean: clean
 	make -C $(PX4_ROOT) EXTERNAL_APPS=$(PWD) clean
+	make -C $(PX4_ROOT) EXTERNAL_APPS=$(PWD) configure_px4fmu
 
 px4-upload:
 	make -C $(PX4_ROOT) EXTERNAL_APPS=$(PWD) upload
