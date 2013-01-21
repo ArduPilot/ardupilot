@@ -259,8 +259,11 @@ all:		.built
 #
 depend:		.depend
 .depend:	$(MAKEFILE_LIST) $(SRCS)
-	@$(MKDEP) --dep-path . $(CC) -- $(CFLAGS) -- $(CSRCS) >Make.dep
-	@$(MKDEP) --dep-path . $(CXX) -- $(CXXFLAGS) -- $(CXXSRCS) >>Make.dep
+	@$(CXX) -M -MT $(BUILDROOT)/$(SKETCH).o $(CXXFLAGS) $(CXXSRCS) > Make.dep
+	@for f in $(SKETCHLIBSRCS); do \
+		src=$${f##$(SKETCHBOOK)/}; \
+		obj=$(BUILDROOT)/$${src%.*}.o; \
+		$(CXX) -M -MT $$obj $(CXXFLAGS) $$f; done >> Make.dep
 	@touch $@
 
 ifneq ($(APPNAME),)
