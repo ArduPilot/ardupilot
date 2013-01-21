@@ -12,7 +12,11 @@
 using namespace PX4;
 
 #define EEPROM_SIZE 4096
-#define EEPROM_FILE "/fs/microsd/apm-eeprom"
+
+// name the eeprom file after the sketch so you can use the same sd
+// card for ArduCopter and ArduPlane
+#define EEPROM_DIR "/fs/microsd/APM"
+#define EEPROM_FILE EEPROM_DIR "/" SKETCHNAME ".eeprom"
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,6 +36,7 @@ static ssize_t pwrite(int fd, const void *buf, size_t count, off_t ofs)
 void PX4EEPROMStorage::_eeprom_open(void)
 {
 	if (_eeprom_fd == -1) {
+		mkdir(EEPROM_DIR, 0777);
 		_eeprom_fd = open(EEPROM_FILE, O_RDWR|O_CREAT, 0777);
 		if (_eeprom_fd == -1) {
 			hal.scheduler->panic("Failed to open " EEPROM_FILE);
