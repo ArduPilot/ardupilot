@@ -31,6 +31,8 @@ then
 	mpu6000 start
 	ms5611 start
 	hmc5883 start
+	adc start
+
 	echo Trying PX4IO start
 	if px4io start
 	then
