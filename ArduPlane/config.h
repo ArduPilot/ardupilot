@@ -99,6 +99,7 @@
  # define BATTERY_CURR_PIN      1      // Battery current on A1
  # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
+ # define CONFIG_PITOT_SOURCE_ADC_CHANNEL 7
  # define CONFIG_BARO     AP_BARO_BMP085
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define A_LED_PIN        27
@@ -115,6 +116,8 @@
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
+ # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
+ # define CONFIG_PITOT_SCALING 4.0
  # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
  # define MAGNETOMETER ENABLED
  # ifdef APM2_BETA_HARDWARE
@@ -133,6 +136,8 @@
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_STUB
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
+ # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
+ # define CONFIG_PITOT_SCALING 4.0
  # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define A_LED_PIN        27
@@ -144,6 +149,8 @@
  # define BATTERY_CURR_PIN      -1
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
+ # define CONFIG_PITOT_SOURCE_ANALOG_PIN 11
+ # define CONFIG_PITOT_SCALING (4.0*5.0/3.3)
  # define MAGNETOMETER ENABLED
  # define MAG_ORIENTATION   ROTATION_NONE
  # define CONFIG_BARO AP_BARO_PX4
@@ -162,28 +169,12 @@
  # endif
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Barometer
-//
-
 #ifndef CONFIG_BARO
- # define CONFIG_BARO AP_BARO_BMP085
+ # error "CONFIG_BARO not set"
 #endif
 
 #ifndef CONFIG_PITOT_SOURCE
- # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
-#endif
-
-#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
- # ifndef CONFIG_PITOT_SOURCE_ADC_CHANNEL
-  #  define CONFIG_PITOT_SOURCE_ADC_CHANNEL 7
- # endif
-#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
- # ifndef CONFIG_PITOT_SOURCE_ANALOG_PIN
-  #  define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
- # endif
-#else
- # warning Invalid value for CONFIG_PITOT_SOURCE
+ # error "CONFIG_PITOT_SOURCE not set"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
