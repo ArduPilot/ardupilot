@@ -37,6 +37,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 			return;
 		}
 		_initialised = true;
+
 	}
 
 	if (b != 0) {
@@ -47,6 +48,15 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		// disable LF -> CR/LF
 		t.c_oflag &= ~ONLCR;
 		tcsetattr(_fd, TCSANOW, &t);
+	}
+	if (rxS != 0 && rxS != _readbuf_size) {
+		_readbuf_size = rxS;
+		if (_readbuf != NULL) {
+			free(_readbuf);
+		}
+		_readbuf = (uint8_t *)malloc(_readbuf_size);
+		_readbuf_ofs = 0;
+		_readbuf_count = 0;
 	}
 }
 
@@ -101,6 +111,13 @@ int16_t PX4UARTDriver::available() {
 	if (!_initialised) {
 		return 0;
 	}
+	if (_readbuf_count != 0) {
+		// avoid the cost of the ioctl if possible. This means
+		// we are giving a lower response than is real, but
+		// this saves a lot of ioctl system calls, which are
+		// quite expensive (especially in the GPS driver)
+		return (int16_t)_readbuf_count;
+	}
 	if (ioctl(_fd, FIONREAD, (long unsigned int)&ret) == 0 && ret > 0) {
 		if (ret > 90) ret = 90;
 		return ret;
@@ -121,13 +138,28 @@ int16_t PX4UARTDriver::txspace() {
 }
 
 int16_t PX4UARTDriver::read() { 
-	if (available() > 0) {
-		uint8_t c;
-		if (::read(_fd, &c, 1) == 1) {
-			return c;
+	uint8_t c;
+	if (!_initialised || _readbuf == NULL) {
+		return -1;
+	}
+	if (_readbuf_count == 0) {
+		// refill the read buffer
+		int16_t avail = available();
+		if (avail > 0) {
+			int n = ::read(_fd, _readbuf, _readbuf_size);
+			if (n > 0) {
+				_readbuf_count = n;
+				_readbuf_ofs = 0;
+			}
 		}
 	}
-	return -1;
+	if (_readbuf_count == 0) {
+		return -1;
+	}
+	c = _readbuf[_readbuf_ofs];
+	_readbuf_ofs++;
+	_readbuf_count--;
+	return c;
 }
 
 /* PX4 implementations of Print virtual methods */

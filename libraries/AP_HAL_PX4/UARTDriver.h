@@ -44,6 +44,12 @@ private:
     int _fd;
     bool _nonblocking_writes;
     void _vdprintf(int fd, const char *fmt, va_list ap);
+
+    // we keep a small read buffer to lower the cost of ::read() system calls
+    uint16_t _readbuf_size;
+    uint8_t *_readbuf;
+    uint16_t _readbuf_count;
+    uint16_t _readbuf_ofs;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__
