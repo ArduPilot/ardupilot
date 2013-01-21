@@ -32,14 +32,15 @@ private:
     uint16_t        _init_sensor( Sample_rate sample_rate );
     static		    void _ins_timer(uint32_t now);
     static          void _accumulate(void);
-    uint32_t        _last_update_usec;
+    uint64_t        _last_update_usec;
     float           _delta_time;
     static Vector3f	_accel_sum;
     static uint32_t _accel_sum_count;
     static Vector3f	_gyro_sum;
     static uint32_t _gyro_sum_count;
     static volatile bool _in_accumulate;
-    static uint64_t _last_timestamp;
+    static uint64_t _last_accel_timestamp;
+    static uint64_t _last_gyro_timestamp;
     uint8_t  _sample_divider;
 
     // accelerometer and gyro driver handles

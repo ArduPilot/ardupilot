@@ -19,7 +19,8 @@ uint32_t AP_InertialSensor_PX4::_accel_sum_count;
 Vector3f AP_InertialSensor_PX4::_gyro_sum;
 uint32_t AP_InertialSensor_PX4::_gyro_sum_count;
 volatile bool AP_InertialSensor_PX4::_in_accumulate;
-uint64_t AP_InertialSensor_PX4::_last_timestamp;
+uint64_t AP_InertialSensor_PX4::_last_accel_timestamp;
+uint64_t AP_InertialSensor_PX4::_last_gyro_timestamp;
 int AP_InertialSensor_PX4::_accel_fd;
 int AP_InertialSensor_PX4::_gyro_fd;
 
@@ -80,10 +81,10 @@ bool AP_InertialSensor_PX4::update(void)
 
     hal.scheduler->suspend_timer_procs();
 
-    // base the time on the number of gyro samples, as that is what is
+    // base the time on the gyro timestamp, as that is what is
     // multiplied by time to integrate in DCM
-    _delta_time = _gyro_sum_count / 200.0;
-    _last_update_usec = (uint32_t)_last_timestamp;
+    _delta_time = (_last_gyro_timestamp - _last_update_usec) * 1.0e-6f;
+    _last_update_usec = _last_gyro_timestamp;
 
     _accel = _accel_sum / _accel_sum_count;
     _accel_sum.zero();
@@ -145,16 +146,20 @@ void AP_InertialSensor_PX4::_accumulate(void)
     }
     _in_accumulate = true;
 
-    if (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report)) {
+    if (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
+        accel_report.timestamp != _last_accel_timestamp) {        
         _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
         _accel_sum_count++;
+        _last_accel_timestamp = accel_report.timestamp;
 	}
 
-    if (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report)) {
+    if (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
+        gyro_report.timestamp != _last_gyro_timestamp) {        
         _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
         _gyro_sum_count++;
-        _last_timestamp = gyro_report.timestamp;
+        _last_gyro_timestamp = gyro_report.timestamp;
 	}
+
     _in_accumulate = false;
 }
 
