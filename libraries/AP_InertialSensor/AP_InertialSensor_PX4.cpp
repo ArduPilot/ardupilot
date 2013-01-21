@@ -14,6 +14,15 @@ const extern AP_HAL::HAL& hal;
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
 
+Vector3f AP_InertialSensor_PX4::_accel_sum;
+uint32_t AP_InertialSensor_PX4::_accel_sum_count;
+Vector3f AP_InertialSensor_PX4::_gyro_sum;
+uint32_t AP_InertialSensor_PX4::_gyro_sum_count;
+volatile bool AP_InertialSensor_PX4::_in_accumulate;
+uint64_t AP_InertialSensor_PX4::_last_timestamp;
+int AP_InertialSensor_PX4::_accel_fd;
+int AP_InertialSensor_PX4::_gyro_fd;
+
 uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) 
 {
     switch (sample_rate) {
@@ -54,6 +63,9 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 10);
     ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 10);
 
+    // register a 1kHz timer to read from PX4 sensor drivers
+    hal.scheduler->register_timer_process(_ins_timer);
+
     return AP_PRODUCT_ID_PX4;
 }
 
@@ -64,32 +76,34 @@ bool AP_InertialSensor_PX4::update(void)
     while (num_samples_available() == 0) {
         hal.scheduler->delay(1);
     }
-    uint32_t now = hal.scheduler->micros();
-
-    // the current mpu6000 PX4 driver does not buffer samples, so
-    // using the sample count times 5ms would produce a bad delta time
-    // if we missed one. For now we need to use the clock to get the
-    // delta time
-    _delta_time = (now - _last_update_usec) * 1.0e-6f;
-    _last_update_usec = now;
-
     Vector3f accel_scale = _accel_scale.get();
 
-    _accel   = _accel_sum / _accel_sum_count;
+    hal.scheduler->suspend_timer_procs();
+
+    // base the time on the number of gyro samples, as that is what is
+    // multiplied by time to integrate in DCM
+    _delta_time = _gyro_sum_count / 200.0;
+    _last_update_usec = (uint32_t)_last_timestamp;
+
+    _accel = _accel_sum / _accel_sum_count;
+    _accel_sum.zero();
+    _accel_sum_count = 0;
+
+    _gyro = _gyro_sum / _gyro_sum_count;
+    _gyro_sum.zero();
+    _gyro_sum_count = 0;
+
+    hal.scheduler->resume_timer_procs();
+
+    // add offsets and rotation
     _accel.rotate(_board_orientation);
     _accel.x *= accel_scale.x;
     _accel.y *= accel_scale.y;
     _accel.z *= accel_scale.z;
     _accel   -= _accel_offset;
 
-    _gyro    = _gyro_sum / _gyro_sum_count;
     _gyro.rotate(_board_orientation);
-    _gyro   -= _gyro_offset;
-
-    _accel_sum.zero();
-    _accel_sum_count = 0;
-    _gyro_sum.zero();
-    _gyro_sum_count = 0;
+    _gyro -= _gyro_offset;
 
     return true;
 }
@@ -121,11 +135,16 @@ float AP_InertialSensor_PX4::get_gyro_drift_rate(void)
     return ToRad(0.5/60);
 }
 
-uint16_t AP_InertialSensor_PX4::num_samples_available(void)
+void AP_InertialSensor_PX4::_accumulate(void)
 {
     struct accel_report	accel_report;
     struct gyro_report	gyro_report;
-    
+
+    if (_in_accumulate) {
+        return;
+    }
+    _in_accumulate = true;
+
     if (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report)) {
         _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
         _accel_sum_count++;
@@ -134,8 +153,19 @@ uint16_t AP_InertialSensor_PX4::num_samples_available(void)
     if (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report)) {
         _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
         _gyro_sum_count++;
+        _last_timestamp = gyro_report.timestamp;
 	}
+    _in_accumulate = false;
+}
 
+void AP_InertialSensor_PX4::_ins_timer(uint32_t now)
+{
+    _accumulate();
+}
+
+uint16_t AP_InertialSensor_PX4::num_samples_available(void)
+{
+    _accumulate();
     return min(_accel_sum_count, _gyro_sum_count) / _sample_divider;
 }
 
