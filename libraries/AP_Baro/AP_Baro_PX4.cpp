@@ -17,6 +17,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+float AP_Baro_PX4::_pressure_sum;
+float AP_Baro_PX4::_temperature_sum;
+uint32_t AP_Baro_PX4::_sum_count;
+uint32_t AP_Baro_PX4::_last_timer;
+uint64_t AP_Baro_PX4::_last_timestamp;
+volatile bool AP_Baro_PX4::_in_accumulate;
+int AP_Baro_PX4::_baro_fd;
+
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_PX4::init(void)
 {
@@ -31,6 +39,8 @@ bool AP_Baro_PX4::init(void)
 
         // average over up to 10 samples
         ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
+
+        hal.scheduler->register_timer_process(_baro_timer);
     }
 
     return true;
@@ -48,7 +58,7 @@ uint8_t AP_Baro_PX4::read(void)
     _pressure    = (_pressure_sum / _sum_count) * 100.0f;
     _temperature = (_temperature_sum / _sum_count) * 10.0f;
     _pressure_samples = _sum_count;
-
+    _last_update = (uint32_t)_last_timestamp;
     _pressure_sum = 0;
     _temperature_sum = 0;
     _sum_count = 0;
@@ -58,16 +68,37 @@ uint8_t AP_Baro_PX4::read(void)
 }
 
 // accumulate sensor values
-void AP_Baro_PX4::accumulate(void)
+void AP_Baro_PX4::_accumulate(void)
 {
     struct baro_report baro_report;
+    if (_in_accumulate) {
+        return;
+    }
+    _in_accumulate = true;
 
     while (::read(_baro_fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report)) {
 		_pressure_sum += baro_report.pressure; // Pressure in mbar
 		_temperature_sum += baro_report.temperature; // degrees celcius
         _sum_count++;
-        _last_update = hal.scheduler->millis();
+        _last_timestamp = baro_report.timestamp;
     }
+    _in_accumulate = false;
+}
+
+// accumulate sensor values
+void AP_Baro_PX4::accumulate(void)
+{
+    _accumulate();
+}
+
+void AP_Baro_PX4::_baro_timer(uint32_t now)
+{
+    // accumulate samples at 100Hz
+    if (now - _last_timer > 10000) {
+        return;
+    }
+    _last_timer = hal.scheduler->micros();
+    _accumulate();
 }
 
 float AP_Baro_PX4::get_pressure() {
