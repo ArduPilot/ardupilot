@@ -32,6 +32,7 @@ public:
 
     /* PX4 implementations of Print virtual methods */
     size_t write(uint8_t c);
+    size_t write(const uint8_t *buffer, size_t size);
 
     bool _initialised;
 
@@ -42,7 +43,6 @@ public:
 private:
     const char *_devpath;
     int _fd;
-    bool _nonblocking_writes;
     void _vdprintf(int fd, const char *fmt, va_list ap);
 
     // we keep a small read buffer to lower the cost of ::read() system calls

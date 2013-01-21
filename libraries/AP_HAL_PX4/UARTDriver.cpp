@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -69,8 +71,16 @@ void PX4UARTDriver::begin(uint32_t b)
 void PX4UARTDriver::end() {}
 void PX4UARTDriver::flush() {}
 bool PX4UARTDriver::is_initialized() { return true; }
-void PX4UARTDriver::set_blocking_writes(bool blocking) {
-	_nonblocking_writes = !blocking;
+void PX4UARTDriver::set_blocking_writes(bool blocking) 
+{
+	unsigned v;
+    v = fcntl(_fd, F_GETFL, 0);
+    if (blocking) {
+        v &= ~O_NONBLOCK;
+    } else {
+        v |= O_NONBLOCK;
+    }
+    fcntl(_fd, F_SETFL, v);
 }
 bool PX4UARTDriver::tx_pending() { return false; }
 
@@ -144,14 +154,11 @@ int16_t PX4UARTDriver::read() {
 	}
 	if (_readbuf_count == 0) {
 		// refill the read buffer
-		int16_t avail = available();
-		if (avail > 0) {
-			int n = ::read(_fd, _readbuf, _readbuf_size);
-			if (n > 0) {
-				_readbuf_count = n;
-				_readbuf_ofs = 0;
-			}
-		}
+        int n = ::read(_fd, _readbuf, _readbuf_size);
+        if (n > 0) {
+            _readbuf_count = n;
+            _readbuf_ofs = 0;
+        }
 	}
 	if (_readbuf_count == 0) {
 		return -1;
@@ -163,14 +170,28 @@ int16_t PX4UARTDriver::read() {
 }
 
 /* PX4 implementations of Print virtual methods */
-size_t PX4UARTDriver::write(uint8_t c) { 
+size_t PX4UARTDriver::write(uint8_t c) 
+{ 
 	if (!_initialised) {
 		return 0;
 	}
-	if (_nonblocking_writes && txspace() == 0) {
+	int ret = ::write(_fd, &c, 1);
+    if (ret == -1) {
+        ret = 0;
+    }
+    return ret;
+}
+
+size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
+{
+	if (!_initialised) {
 		return 0;
 	}
-	return ::write(_fd, &c, 1);
+	int ret = ::write(_fd, buffer, size);
+    if (ret == -1) {
+        ret = 0;
+    }
+    return ret;
 }
 
 // handle %S -> %s
