@@ -13,6 +13,7 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "AnalogIn.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -29,7 +30,6 @@ using namespace PX4;
 static Empty::EmptySemaphore  i2cSemaphore;
 static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::EmptySPIDeviceManager spiDeviceManager;
-static Empty::EmptyAnalogIn analogIn;
 static Empty::EmptyGPIO gpioDriver;
 static Empty::EmptyUtil utilInstance;
 
@@ -38,6 +38,7 @@ static PX4Scheduler schedulerInstance;
 static PX4EEPROMStorage storageDriver;
 static PX4RCInput rcinDriver;
 static PX4RCOutput rcoutDriver;
+static PX4AnalogIn analogIn;
 
 #define UARTA_DEFAULT_DEVICE "/dev/ttyS0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
@@ -64,7 +65,7 @@ HAL_PX4::HAL_PX4() :
         &utilInstance) /* util */
 {}
 
-static bool thread_should_exit = false;		/**< Daemon exit flag */
+bool _px4_thread_should_exit = false;		/**< Daemon exit flag */
 static bool thread_running = false;		/**< Daemon status flag */
 static int daemon_task;				/**< Handle of daemon task / thread */
 
@@ -75,17 +76,18 @@ static int main_loop(int argc, char **argv)
     extern void setup(void);
     extern void loop(void);
 
-    hal.uartA->begin(115200);
+    hal.uartA->begin(57600);
     hal.console->init((void*) hal.uartA);
     hal.scheduler->init(NULL);
     hal.rcin->init(NULL);
     hal.rcout->init(NULL);
+    hal.analogin->init(NULL);
 
     setup();
     hal.scheduler->system_initialized();
 
     thread_running = true;
-    while (!thread_should_exit) {
+    while (!_px4_thread_should_exit) {
 		loop();
 
         // yield the CPU for 1ms between loops to let other apps 
@@ -128,7 +130,7 @@ void HAL_PX4::init(int argc, char * const argv[]) const
             uartADriver.set_device_path(device);
             printf("Starting %s on %s\n", SKETCHNAME, device);
 
-            thread_should_exit = false;
+            _px4_thread_should_exit = false;
             daemon_task = task_spawn(SKETCHNAME,
                                      SCHED_RR,
                                      SCHED_PRIORITY_DEFAULT,
@@ -139,12 +141,14 @@ void HAL_PX4::init(int argc, char * const argv[]) const
         }
 
         if (strcmp(argv[i], "stop") == 0) {
-            thread_should_exit = true;
+            _px4_thread_should_exit = true;
             exit(0);
         }
  
         if (strcmp(argv[i], "status") == 0) {
-            if (thread_running) {
+            if (_px4_thread_should_exit && thread_running) {
+                printf("\t%s is exiting\n", SKETCHNAME);
+            } else if (thread_running) {
                 printf("\t%s is running\n", SKETCHNAME);
             } else {
                 printf("\t%s is not started\n", SKETCHNAME);
