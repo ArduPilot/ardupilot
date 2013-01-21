@@ -14,6 +14,7 @@
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "AnalogIn.h"
+#include "Util.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -31,7 +32,6 @@ static Empty::EmptySemaphore  i2cSemaphore;
 static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::EmptySPIDeviceManager spiDeviceManager;
 static Empty::EmptyGPIO gpioDriver;
-static Empty::EmptyUtil utilInstance;
 
 static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
@@ -39,6 +39,7 @@ static PX4EEPROMStorage storageDriver;
 static PX4RCInput rcinDriver;
 static PX4RCOutput rcoutDriver;
 static PX4AnalogIn analogIn;
+static PX4Util utilInstance;
 
 #define UARTA_DEFAULT_DEVICE "/dev/ttyS0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"

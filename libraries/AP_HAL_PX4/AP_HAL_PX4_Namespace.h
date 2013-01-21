@@ -11,6 +11,7 @@ namespace PX4 {
 	class PX4RCOutput;
 	class PX4AnalogIn;
 	class PX4AnalogSource;
+	class PX4Util;
 }
 
 #endif //__AP_HAL_PX4_NAMESPACE_H__
