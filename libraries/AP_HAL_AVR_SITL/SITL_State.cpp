@@ -393,6 +393,7 @@ void SITL_State::_simulator_output(void)
 		_motors_on = false;
 		for (i=0; i<4; i++) {
 			if ((control.pwm[i]-1000)/1000.0 > 0) {
+                control.pwm[i] = ((control.pwm[i]-1000) * _sitl->engine_mul) + 1000;                
 				_motors_on = true;
 			}
 		}
