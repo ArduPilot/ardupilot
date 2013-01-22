@@ -48,6 +48,8 @@ private:
     int _fd;
     void _vdprintf(int fd, const char *fmt, va_list ap);
 
+    bool _nonblocking_writes;
+
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
     uint8_t *_readbuf;

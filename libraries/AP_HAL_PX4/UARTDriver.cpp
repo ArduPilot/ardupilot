@@ -38,6 +38,12 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 				_devpath, strerror(errno));
 			return;
 		}
+
+        // always set it non-blocking for the low level IO
+        unsigned v;
+        v = fcntl(_fd, F_GETFL, 0);
+        fcntl(_fd, F_SETFL, v | O_NONBLOCK);
+
 		_initialised = true;
         if (rxS == 0) {
             rxS = 128;
@@ -101,14 +107,7 @@ void PX4UARTDriver::flush() {}
 bool PX4UARTDriver::is_initialized() { return true; }
 void PX4UARTDriver::set_blocking_writes(bool blocking) 
 {
-	unsigned v;
-    v = fcntl(_fd, F_GETFL, 0);
-    if (blocking) {
-        v &= ~O_NONBLOCK;
-    } else {
-        v |= O_NONBLOCK;
-    }
-    fcntl(_fd, F_SETFL, v);
+    _nonblocking_writes = !blocking;
 }
 bool PX4UARTDriver::tx_pending() { return false; }
 
@@ -218,8 +217,15 @@ int16_t PX4UARTDriver::read()
  */
 size_t PX4UARTDriver::write(uint8_t c) 
 { 
-    if (txspace() == 0) {
+    if (!_initialised) {
         return 0;
+    }
+    uint16_t _head;
+    while (BUF_SPACE(_writebuf) == 0) {
+        if (_nonblocking_writes) {
+            return 0;
+        }
+        hal.scheduler->delay(1);
     }
     _writebuf[_writebuf_tail] = c;
     BUF_ADVANCETAIL(_writebuf, 1);
