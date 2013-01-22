@@ -20,11 +20,11 @@
 #include <AP_HAL_Empty_Private.h>
 
 #include <stdlib.h>
-#include <poll.h>
 #include <systemlib/systemlib.h>
 #include <nuttx/config.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <pthread.h>
 
 using namespace PX4;
 
@@ -90,10 +90,9 @@ static int main_loop(int argc, char **argv)
     thread_running = true;
     while (!_px4_thread_should_exit) {
 		loop();
-
-        // yield the CPU for 1ms between loops to let other apps 
+        // yield the CPU between loops to let other apps 
         // get some CPU time
-		poll(NULL, 0, 1);
+		pthread_yield();
 	}
     thread_running = false;
     return 0;

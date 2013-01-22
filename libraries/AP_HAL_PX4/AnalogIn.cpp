@@ -11,7 +11,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <nuttx/analog/adc.h>
-#include <poll.h>
 
 #define ANLOGIN_DEBUGGING 0
 
