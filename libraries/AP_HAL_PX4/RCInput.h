@@ -21,6 +21,7 @@ private:
     /* override state */
     uint16_t _override[PX4_NUM_RCINPUT_CHANNELS];
     uint64_t _last_read;
+    bool _override_valid;
 };
 
 #endif // __AP_HAL_PX4_RCINPUT_H__

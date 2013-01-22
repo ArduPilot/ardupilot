@@ -17,12 +17,15 @@ void PX4RCInput::init(void* unused)
 	clear_overrides();
 }
 
-uint8_t PX4RCInput::valid() {
-	return ppm_last_valid_decode != _last_read;
+uint8_t PX4RCInput::valid() 
+{
+	return ppm_last_valid_decode != _last_read || _override_valid;
 }
 
-uint16_t PX4RCInput::read(uint8_t ch) {
+uint16_t PX4RCInput::read(uint8_t ch) 
+{
 	_last_read = ppm_last_valid_decode;
+	_override_valid = false;
 	if (ch >= PX4_NUM_RCINPUT_CHANNELS) {
 		return 0;
 	}
@@ -32,7 +35,8 @@ uint16_t PX4RCInput::read(uint8_t ch) {
 	return ppm_buffer[ch];
 }
 
-uint8_t PX4RCInput::read(uint16_t* periods, uint8_t len) {
+uint8_t PX4RCInput::read(uint16_t* periods, uint8_t len) 
+{
 	if (len > PX4_NUM_RCINPUT_CHANNELS) {
 		len = PX4_NUM_RCINPUT_CHANNELS;
 	}
@@ -42,7 +46,8 @@ uint8_t PX4RCInput::read(uint16_t* periods, uint8_t len) {
 	return len;
 }
 
-bool PX4RCInput::set_overrides(int16_t *overrides, uint8_t len) {
+bool PX4RCInput::set_overrides(int16_t *overrides, uint8_t len) 
+{
 	bool res = false;
 	for (uint8_t i = 0; i < len; i++) {
 		res |= set_override(i, overrides[i]);
@@ -54,11 +59,13 @@ bool PX4RCInput::set_override(uint8_t channel, int16_t override) {
 	if (override < 0) {
 		return false; /* -1: no change. */
 	}
-	if (channel < PX4_NUM_RCINPUT_CHANNELS) {
-		_override[channel] = override;
-		if (override != 0) {
-			return true;
-		}
+	if (channel >= PX4_NUM_RCINPUT_CHANNELS) {
+		return false;
+	}
+	_override[channel] = override;
+	if (override != 0) {
+		_override_valid = true;
+		return true;
 	}
 	return false;
 }
@@ -66,7 +73,7 @@ bool PX4RCInput::set_override(uint8_t channel, int16_t override) {
 void PX4RCInput::clear_overrides()
 {
 	for (uint8_t i = 0; i < PX4_NUM_RCINPUT_CHANNELS; i++) {
-		_override[i] = 0;
+		set_override(i, 0);
 	}
 }
 
