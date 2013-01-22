@@ -123,28 +123,50 @@ void PX4UARTDriver::println_P(const prog_char_t *pstr) {
 void PX4UARTDriver::printf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    _vdprintf(_fd, fmt, ap);
+    _vprintf(fmt, ap);
     va_end(ap);	
 }
 
 void PX4UARTDriver::_printf_P(const prog_char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    _vdprintf(_fd, fmt, ap);
+    _vprintf(fmt, ap);
     va_end(ap);	
 }
 
 void PX4UARTDriver::vprintf(const char *fmt, va_list ap) {
-    _vdprintf(_fd, fmt, ap);
+    _vprintf(fmt, ap);
 }
 
 void PX4UARTDriver::vprintf_P(const prog_char *fmt, va_list ap) {
-    _vdprintf(_fd, fmt, ap);
+    _vprintf(fmt, ap);
+}
+
+
+void PX4UARTDriver::_internal_vprintf(const char *fmt, va_list ap)
+{
+    if (hal.scheduler->in_timerprocess()) {
+        // not allowed from timers
+        return;
+    }
+    char *buf = NULL;
+    int n = avsprintf(&buf, fmt, ap);
+    if (n > 0) {
+        write((const uint8_t *)buf, n);
+    }
+    if (buf != NULL) {
+        free(buf);    
+    }
 }
 
 // handle %S -> %s
-void PX4UARTDriver::_vdprintf(int fd, const char *fmt, va_list ap)
+void PX4UARTDriver::_vprintf(const char *fmt, va_list ap)
 {
+    if (hal.scheduler->in_timerprocess()) {
+        // not allowed from timers
+        return;
+    }
+    // we don't use vdprintf() as it goes directly to the file descriptor
 	if (strstr(fmt, "%S")) {
 		char *fmt2 = strdup(fmt);
 		if (fmt2 != NULL) {
@@ -153,11 +175,11 @@ void PX4UARTDriver::_vdprintf(int fd, const char *fmt, va_list ap)
 					fmt2[i+1] = 's';
 				}
 			}
-			vdprintf(fd, fmt2, ap);
+            _internal_vprintf(fmt2, ap);
 			free(fmt2);
 		}
 	} else {
-		vdprintf(fd, fmt, ap);
+        _internal_vprintf(fmt, ap);
 	}	
 }
 
@@ -220,6 +242,10 @@ size_t PX4UARTDriver::write(uint8_t c)
     if (!_initialised) {
         return 0;
     }
+    if (hal.scheduler->in_timerprocess()) {
+        // not allowed from timers
+        return 0;
+    }
     uint16_t _head;
     while (BUF_SPACE(_writebuf) == 0) {
         if (_nonblocking_writes) {
@@ -240,6 +266,10 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
 	if (!_initialised) {
 		return 0;
 	}
+    if (hal.scheduler->in_timerprocess()) {
+        // not allowed from timers
+        return 0;
+    }
     uint16_t _head, space;
     space = BUF_SPACE(_writebuf);
     if (space == 0) {
