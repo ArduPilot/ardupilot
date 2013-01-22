@@ -793,7 +793,8 @@ GCS_MAVLINK::update(void)
     status.packet_rx_drop_count = 0;
 
     // process received bytes
-    while (comm_get_available(chan))
+    uint16_t nbytes = comm_get_available(chan);
+    for (uint16_t i=0; i<nbytes; i++) {
     {
         uint8_t c = comm_receive_ch(chan);
 
