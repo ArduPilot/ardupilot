@@ -6,6 +6,7 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_InertialNav::var_info[] PROGMEM = {
+    // start numbering at 1 because 0 was previous used for body frame accel offsets
     // @Param: TC_XY
     // @DisplayName: Horizontal Time Constant
     // @Description: Time constant for GPS and accel mixing. Higher TC decreases GPS impact on position estimate
@@ -62,22 +63,22 @@ void AP_InertialNav::update(float dt)
         accel_ef.x = 0;
         accel_ef.y = 0;
     }
-    
+
     //Convert North-East-Down to North-East-Up
     accel_ef.z = -accel_ef.z;
-    
+
     accel_correction_ef.x += _position_error.x * _k3_xy * dt;
     accel_correction_ef.y += _position_error.y * _k3_xy * dt;
     accel_correction_ef.z += _position_error.z * _k3_z  * dt;
-    
+
     _velocity.x += _position_error.x * _k2_xy * dt;
     _velocity.y += _position_error.y * _k2_xy * dt;
     _velocity.z += _position_error.z * _k2_z  * dt;
-    
+
     _position_correction.x += _position_error.x * _k1_xy * dt;
     _position_correction.y += _position_error.y * _k1_xy * dt;
     _position_correction.z += _position_error.z * _k1_z  * dt;
-    
+
     // calculate velocity increase adding new acceleration from accelerometers
     velocity_increase = (accel_ef + accel_correction_ef) * dt;
 
@@ -123,7 +124,7 @@ bool AP_InertialNav::position_ok()
 void AP_InertialNav::check_gps()
 {
     uint32_t gps_time;
-    uint32_t now;
+    uint32_t now = hal.scheduler->millis();
 
     if( _gps_ptr == NULL || *_gps_ptr == NULL )
         return;
@@ -135,7 +136,6 @@ void AP_InertialNav::check_gps()
     if( gps_time != _gps_last_time ) {
 
         // calculate time since last gps reading
-        now = hal.scheduler->millis();
         float dt = (float)(now - _gps_last_update) / 1000.0f;
 
         // call position correction method
@@ -144,6 +144,12 @@ void AP_InertialNav::check_gps()
         // record gps time and system time of this update
         _gps_last_time = gps_time;
         _gps_last_update = now;
+    }
+
+    // clear position error if GPS updates stop arriving
+    if( now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS ) {
+        _position_error.x = 0;
+        _position_error.y = 0;
     }
 }
 
@@ -162,8 +168,6 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     x = (float)(lat - _base_lat) * AP_INERTIALNAV_LATLON_TO_CM;
     y = (float)(lon - _base_lon) * _lon_to_m_scaling * AP_INERTIALNAV_LATLON_TO_CM;
 
-    // correct accelerometer offsets using gps
-
     // ublox gps positions are delayed by 400ms
     // we store historical position at 10hz so 4 iterations ago
     if( _hist_position_estimate_x.num_items() >= AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS ) {
@@ -175,7 +179,6 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     }
 
     // calculate error in position from gps with our historical estimate
-    // To-Do: check why x and y are reversed
     _position_error.x = x - (hist_position_base_x + _position_correction.x);
     _position_error.y = y - (hist_position_base_y + _position_correction.y);
 }
