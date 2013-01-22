@@ -74,7 +74,7 @@ bool AP_Compass_PX4::read(void)
     _sum.zero();
     _count = 0;
 
-    last_update = hal.scheduler->micros();
+    last_update = _last_timestamp;
 
     return true;
 }
@@ -82,9 +82,11 @@ bool AP_Compass_PX4::read(void)
 void AP_Compass_PX4::accumulate(void)
 {
     struct mag_report mag_report;
-    while (::read(_mag_fd, &mag_report, sizeof(mag_report)) == sizeof(mag_report)) {
+    while (::read(_mag_fd, &mag_report, sizeof(mag_report)) == sizeof(mag_report) &&
+           mag_report.timestamp != _last_timestamp) {
         _sum += Vector3f(mag_report.x, mag_report.y, mag_report.z);
         _count++;
+        _last_timestamp = mag_report.timestamp;
         healthy = true;
     }
 }

@@ -19,6 +19,7 @@ private:
     int _mag_fd;
     Vector3f _sum;
     uint32_t _count;
+    uint64_t _last_timestamp;
 };
 
 #endif // AP_Compass_PX4_H
