@@ -34,22 +34,34 @@ public:
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 
-    bool _initialised;
+    volatile bool _initialised;
+    volatile bool _in_timer;
 
     void set_device_path(const char *path) {
 	    _devpath = path;
     }
+
+    void _timer_tick(void);
 
 private:
     const char *_devpath;
     int _fd;
     void _vdprintf(int fd, const char *fmt, va_list ap);
 
-    // we keep a small read buffer to lower the cost of ::read() system calls
-    uint16_t _readbuf_size;
+    // we use in-task ring buffers to reduce the system call cost
+    // of ::read() and ::write() in the main loop
     uint8_t *_readbuf;
-    uint16_t _readbuf_count;
-    uint16_t _readbuf_ofs;
+    uint16_t _readbuf_size;
+
+    // _head is where the next available data is. _tail is where new
+    // data is put
+    volatile uint16_t _readbuf_head;
+    volatile uint16_t _readbuf_tail;
+
+    uint8_t *_writebuf;
+    uint16_t _writebuf_size;
+    volatile uint16_t _writebuf_head;
+    volatile uint16_t _writebuf_tail;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__

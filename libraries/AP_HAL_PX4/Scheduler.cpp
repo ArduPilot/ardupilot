@@ -15,6 +15,7 @@
 #include <nuttx/arch.h>
 #include <systemlib/systemlib.h>
 #include <poll.h>
+#include "UARTDriver.h"
 
 using namespace PX4;
 
@@ -159,7 +160,13 @@ void *PX4Scheduler::_timer_thread(void)
     while (!_px4_thread_should_exit) {
         // run timers at 1kHz
         poll(NULL, 0, 1);
+
+        // run registered timers
         _run_timers(true);
+
+        // process any pending serial bytes
+        ((PX4UARTDriver *)hal.uartA)->_timer_tick();
+        ((PX4UARTDriver *)hal.uartB)->_timer_tick();
     }
     return NULL;
 }
