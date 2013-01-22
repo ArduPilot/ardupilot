@@ -58,7 +58,7 @@ uint8_t AP_Baro_PX4::read(void)
     _pressure    = (_pressure_sum / _sum_count) * 100.0f;
     _temperature = (_temperature_sum / _sum_count) * 10.0f;
     _pressure_samples = _sum_count;
-    _last_update = (uint32_t)_last_timestamp;
+    _last_update = (uint32_t)_last_timestamp/1000;
     _pressure_sum = 0;
     _temperature_sum = 0;
     _sum_count = 0;
@@ -76,7 +76,8 @@ void AP_Baro_PX4::_accumulate(void)
     }
     _in_accumulate = true;
 
-    while (::read(_baro_fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report)) {
+    while (::read(_baro_fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report) &&
+           baro_report.timestamp != _last_timestamp) {
 		_pressure_sum += baro_report.pressure; // Pressure in mbar
 		_temperature_sum += baro_report.temperature; // degrees celcius
         _sum_count++;
