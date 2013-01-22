@@ -41,6 +41,10 @@ void PX4Scheduler::init(void *unused)
 	param.sched_priority = SCHED_PRIORITY_DEFAULT + 1;
 	(void)pthread_attr_setschedparam(&thread_attr, &param);
 
+    // we run as a FIFO task as we don't want the main task to preempt
+    // us. This keeps the locking much simpler between the two threads
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
 	pthread_create(&_thread, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_timer_thread, this);
 }
 
@@ -56,6 +60,10 @@ uint32_t PX4Scheduler::millis()
 
 void PX4Scheduler::delay_microseconds(uint16_t usec) 
 {
+    if (_in_timer_proc) {
+        ::printf("ERROR: delay_microseconds() from timer process\n");
+        return;
+    }
 	uint32_t start = micros();
 	while (micros() - start < usec) {
 		up_udelay(usec - (micros() - start));
@@ -64,6 +72,10 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
 
 void PX4Scheduler::delay(uint16_t ms)
 {
+    if (_in_timer_proc) {
+        ::printf("ERROR: delay() from timer process\n");
+        return;
+    }
 	uint64_t start = hrt_absolute_time();
     
     while ((hrt_absolute_time() - start)/1000 < ms && 

@@ -90,6 +90,12 @@ static int main_loop(int argc, char **argv)
     thread_running = true;
     while (!_px4_thread_should_exit) {
 		loop();
+        if (hal.scheduler->in_timerprocess()) {
+            // we are running when a timer process is running! This is
+            // a scheduling error, and breaks the assumptions made in
+            // our locking system
+            ::printf("ERROR: timer processing running in loop()\n");
+        }
         // yield the CPU between loops to let other apps 
         // get some CPU time
 		pthread_yield();
