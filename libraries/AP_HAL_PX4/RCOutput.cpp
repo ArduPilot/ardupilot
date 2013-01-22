@@ -27,6 +27,10 @@ void PX4RCOutput::init(void* unused)
 
 void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {
+    if (freq_hz == _freq_hz) {
+        // avoid the ioctl() if possible
+        return;
+    }
     // we can't set this per channel yet
     if (ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) == 0) {
         _freq_hz = freq_hz;
@@ -60,7 +64,13 @@ void PX4RCOutput::disable_mask(uint32_t chmask)
 
 void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
 {
-    ioctl(_pwm_fd, PWM_SERVO_SET(ch), (unsigned long)period_us);
+    if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
+        return;
+    }
+    if (period_us != _period[ch]) {
+        ioctl(_pwm_fd, PWM_SERVO_SET(ch), (unsigned long)period_us);
+        _period[ch] = period_us;
+    }
 }
 
 void PX4RCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
@@ -72,11 +82,10 @@ void PX4RCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 
 uint16_t PX4RCOutput::read(uint8_t ch) 
 {
-    servo_position_t pos;
-	if (ioctl(_pwm_fd, PWM_SERVO_GET(ch), (unsigned long)&pos) == 0) {
-       return pos;
+    if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
+        return 0;
     }
-    return 0;
+    return _period[ch];
 }
 
 void PX4RCOutput::read(uint16_t* period_us, uint8_t len)

@@ -4,6 +4,8 @@
 
 #include <AP_HAL_PX4.h>
 
+#define PX4_NUM_OUTPUT_CHANNELS 16
+
 class PX4::PX4RCOutput : public AP_HAL::RCOutput 
 {
 public:
@@ -22,6 +24,7 @@ public:
 private:
     int _pwm_fd;
     uint16_t _freq_hz;
+    uint16_t _period[PX4_NUM_OUTPUT_CHANNELS];
 };
 
 #endif // __AP_HAL_PX4_RCOUTPUT_H__
