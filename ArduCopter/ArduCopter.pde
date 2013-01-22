@@ -545,9 +545,11 @@ static uint8_t rtl_state;
 static float cos_roll_x         = 1;
 static float cos_pitch_x        = 1;
 static float cos_yaw_x          = 1;
-static float sin_yaw_y;
-static float sin_roll;
-static float sin_pitch;
+static float sin_yaw_y          = 1;
+static float cos_yaw            = 1;
+static float sin_yaw            = 1;
+static float sin_roll           = 1;
+static float sin_pitch          = 1;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SIMPLE Mode
@@ -1596,6 +1598,13 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_TOY:
             roll_pitch_initialised = true;
             break;
+
+        case ROLL_PITCH_VELOCITY:
+            // require gps lock
+            if( ap.home_is_set ) {
+                roll_pitch_initialised = true;
+            }
+            break;
     }
 
     // if initialisation has been successful update the yaw mode
@@ -1700,7 +1709,18 @@ void update_roll_pitch_mode(void)
     case ROLL_PITCH_TOY:
         roll_pitch_toy();
         break;
-        
+
+    case ROLL_PITCH_VELOCITY:
+        // apply SIMPLE mode transform
+        if(ap.simple_mode && ap_system.new_radio_frame) {
+            update_simple_mode();
+        }
+        control_roll            = g.rc_1.control_in;
+        control_pitch           = g.rc_2.control_in;
+
+        // pilot controls velocity up to 4.5 m/s
+        get_roll_pitch_vel(-control_pitch/10, control_roll/10);
+        break;
     }
 
 	#if FRAME_CONFIG != HELI_FRAME
@@ -2011,6 +2031,9 @@ static void update_trig(void){
     // added to convert earth frame to body frame for rate controllers
     sin_pitch       = -temp.c.x;
     sin_roll        = temp.c.y / cos_pitch_x;
+
+    sin_yaw               = constrain(temp.b.x/cos_pitch_x, -1.0, 1.0);
+    cos_yaw               = constrain(temp.a.x/cos_pitch_x, -1.0, 1.0);
 
     //flat:
     // 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
