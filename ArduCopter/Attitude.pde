@@ -228,8 +228,8 @@ get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
 
     z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;
 
-    accel_forward = accel_forward + 0.11164 * (accel_req_forward - accel_forward);
-    accel_right = accel_right + 0.11164 * (accel_req_right - accel_right);
+    accel_forward = accel_forward + 0.11164f * (accel_req_forward - accel_forward);
+    accel_right = accel_right + 0.11164f * (accel_req_right - accel_right);
 
     desired_roll = constrain((accel_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
     desired_pitch = constrain((-accel_forward/(-z_accel_meas*cos_roll_x))*(18000/M_PI), -4500, 4500);
@@ -276,16 +276,16 @@ get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon)
     int16_t lon_p,lon_i,lon_d;
 
     // calculate vel error and Filter with fc = 2 Hz
-    speed_error_lat = speed_error_lat + 0.11164 * ((vel_lat - speed_lat) - speed_error_lat);
-    speed_error_lon = speed_error_lon + 0.11164 * ((vel_lon - speed_lon) - speed_error_lon);
+    speed_error_lat = speed_error_lat + 0.11164f * ((vel_lat - speed_lat) - speed_error_lat);
+    speed_error_lon = speed_error_lon + 0.11164f * ((vel_lon - speed_lon) - speed_error_lon);
 
     lat_p   = g.pid_loiter_rate_lat.get_p(speed_error_lat);
-    lat_i   = g.pid_loiter_rate_lat.get_i(speed_error_lat, .01);
-    lat_d   = g.pid_loiter_rate_lat.get_d(speed_error_lat, .01);
+    lat_i   = g.pid_loiter_rate_lat.get_i(speed_error_lat, .01f);
+    lat_d   = g.pid_loiter_rate_lat.get_d(speed_error_lat, .01f);
 
     lon_p   = g.pid_loiter_rate_lon.get_p(speed_error_lon);
-    lon_i   = g.pid_loiter_rate_lon.get_i(speed_error_lon, .01);
-    lon_d   = g.pid_loiter_rate_lon.get_d(speed_error_lon, .01);
+    lon_i   = g.pid_loiter_rate_lon.get_i(speed_error_lon, .01f);
+    lon_d   = g.pid_loiter_rate_lon.get_d(speed_error_lon, .01f);
 
     accel_lat = (lat_p+lat_i+lat_d);
     accel_lon = (lon_p+lon_i+lon_d);
@@ -336,8 +336,8 @@ get_loiter_pos_lat_lon(int32_t target_lat, int32_t target_lon)
     int16_t linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate distance error and Filter with fc = 2 Hz
-    dist_error_lat = dist_error_lat + 0.11164 * ((target_lat - inertial_nav.get_latitude_diff()) - dist_error_lat);
-    dist_error_lon = dist_error_lon + 0.11164 * ((target_lon - inertial_nav.get_longitude_diff()) - dist_error_lon);
+    dist_error_lat = dist_error_lat + 0.11164f * ((target_lat - inertial_nav.get_latitude_diff()) - dist_error_lat);
+    dist_error_lon = dist_error_lon + 0.11164f * ((target_lon - inertial_nav.get_longitude_diff()) - dist_error_lon);
 
     linear_distance = MAX_LOITER_POS_ACCEL/(2*g.pi_loiter_lat.kP()*g.pi_loiter_lat.kP());
 
@@ -392,8 +392,8 @@ get_loiter_pos_vel(int16_t vel_forward, int16_t vel_right)
         vel_lon = MAX_LOITER_POS_VEL_VELOCITY * vel_lon/vel_total;
     }
 
-    pos_lat += vel_lat * 0.01;
-    pos_lon += vel_lon * 0.01;
+    pos_lat += vel_lat * 0.01f;
+    pos_lon += vel_lon * 0.01f;
 
     get_loiter_pos_lat_lon(pos_lat, pos_lon);
 
@@ -471,9 +471,9 @@ void init_rate_controllers()
 {
    // initalise low pass filters on rate controller inputs
    // 1st parameter is time_step, 2nd parameter is time_constant
-   rate_roll_filter.set_cutoff_frequency(0.01, 2.0);
-   rate_pitch_filter.set_cutoff_frequency(0.01, 2.0);
-   // rate_yaw_filter.set_cutoff_frequency(0.01, 2.0);
+   rate_roll_filter.set_cutoff_frequency(0.01f, 2.0f);
+   rate_pitch_filter.set_cutoff_frequency(0.01f, 2.0f);
+   // rate_yaw_filter.set_cutoff_frequency(0.01f, 2.0f);
    // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
 }
 
@@ -775,8 +775,8 @@ get_of_roll(int32_t input_roll)
         // only stop roll if caller isn't modifying roll
         if( input_roll == 0 && current_loc.alt < 1500) {
             p = g.pid_optflow_roll.get_p(-tot_x_cm);
-            i = g.pid_optflow_roll.get_i(-tot_x_cm,1.0);              // we could use the last update time to calculate the time change
-            d = g.pid_optflow_roll.get_d(-tot_x_cm,1.0);
+            i = g.pid_optflow_roll.get_i(-tot_x_cm,1.0f);              // we could use the last update time to calculate the time change
+            d = g.pid_optflow_roll.get_d(-tot_x_cm,1.0f);
             new_roll = p+i+d;
         }else{
             g.pid_optflow_roll.reset_I();
@@ -828,8 +828,8 @@ get_of_pitch(int32_t input_pitch)
         // only stop roll if caller isn't modifying pitch
         if( input_pitch == 0 && current_loc.alt < 1500 ) {
             p = g.pid_optflow_pitch.get_p(tot_y_cm);
-            i = g.pid_optflow_pitch.get_i(tot_y_cm, 1.0);              // we could use the last update time to calculate the time change
-            d = g.pid_optflow_pitch.get_d(tot_y_cm, 1.0);
+            i = g.pid_optflow_pitch.get_i(tot_y_cm, 1.0f);              // we could use the last update time to calculate the time change
+            d = g.pid_optflow_pitch.get_d(tot_y_cm, 1.0f);
             new_pitch = p + i + d;
         }else{
             tot_y_cm = 0;
@@ -903,7 +903,7 @@ static void update_throttle_cruise(int16_t throttle)
 static int16_t get_angle_boost(int16_t throttle)
 {
     float angle_boost_factor = cos_pitch_x * cos_roll_x;
-    angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
+    angle_boost_factor = 1.0f - constrain(angle_boost_factor, .5f, 1.0f);
     int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
 
     // to allow logging of angle boost
@@ -919,7 +919,7 @@ static int16_t get_angle_boost(int16_t throttle)
     float temp = cos_pitch_x * cos_roll_x;
     int16_t throttle_out;
 
-    temp = constrain(temp, .5, 1.0);
+    temp = constrain(temp, 0.5f, 1.0f);
     temp = constrain(9000-max(labs(roll_axis),labs(pitch_axis)), 0, 3000) / (3000 * temp);
     throttle_out = constrain((float)(throttle-g.throttle_min) * temp + g.throttle_min, g.throttle_min, 1000);
 
@@ -994,9 +994,9 @@ get_throttle_accel(int16_t z_target_accel)
     if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
         i = g.pid_throttle_accel.get_integrator();
     }else{
-        i = g.pid_throttle_accel.get_i(z_accel_error, .01);
+        i = g.pid_throttle_accel.get_i(z_accel_error, .01f);
     }
-    d = g.pid_throttle_accel.get_d(z_accel_error, .01);
+    d = g.pid_throttle_accel.get_d(z_accel_error, .01f);
 
     //
     // limit the rate
@@ -1207,7 +1207,7 @@ static void
 get_throttle_althold_with_slew(int16_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
     // limit target altitude change
-    controller_desired_alt += constrain(target_alt-controller_desired_alt, min_climb_rate*0.02, max_climb_rate*0.02);
+    controller_desired_alt += constrain(target_alt-controller_desired_alt, min_climb_rate*0.02f, max_climb_rate*0.02f);
 
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
