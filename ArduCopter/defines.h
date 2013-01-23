@@ -25,12 +25,12 @@
 #define YAW_TOY                         7       // THOR This is the Yaw mode
 
 
-#define ROLL_PITCH_STABLE       0
-#define ROLL_PITCH_ACRO         1
-#define ROLL_PITCH_AUTO         2
-#define ROLL_PITCH_STABLE_OF    3
-#define ROLL_PITCH_TOY          4       // THOR This is the Roll and Pitch mode
-#define ROLL_PITCH_VELOCITY     5       // pilot inputs the desired horizontal velocities
+#define ROLL_PITCH_STABLE           0
+#define ROLL_PITCH_ACRO             1
+#define ROLL_PITCH_AUTO             2
+#define ROLL_PITCH_STABLE_OF        3
+#define ROLL_PITCH_TOY              4       // THOR This is the Roll and Pitch mode
+#define ROLL_PITCH_LOITER_POS_VEL   5       // pilot inputs the desired horizontal velocities
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation

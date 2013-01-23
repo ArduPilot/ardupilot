@@ -216,42 +216,20 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
 	set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
 }
 
-
 // Accel controled Roll and Pitch
 static void
-get_roll_pitch_accel(int16_t accel_forward, int16_t accel_right)
+get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
 {
-    static float z_accel_meas = 0;     // The acceleration error in cm.
+    static float z_accel_meas = 0;      // The acceleration error in cm.
+    static float accel_forward = 0;   // The acceleration error in cm.
+    static float accel_right = 0;     // The acceleration error in cm.
     int16_t desired_roll;
     int16_t desired_pitch;
 
-    // int16_t forward_accel_meas;
-    // int16_t right_accel_meas;
+    z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;
 
-    // int16_t accel_forward_error;
-    // int16_t accel_right_error;
-
-    Vector3f accel = ins.get_accel();
-
-    // calculate accel error and Filter with fc = 2 Hz
-    z_accel_meas = z_accel_meas + 0.11164 * (accel.z*100 - z_accel_meas);
-
-    // Matrix3f dcm_matrix   = ahrs.get_dcm_matrix();
-
-    // Calculate Earth Frame Z acceleration
-    // forward_accel_meas = (accel.x * cos_pitch_x + accel.y * sin_roll * sin_pitch + accel.z * cos_roll_x * sin_pitch)* 100.0;
-    // right_accel_meas = (accel.y * cos_roll_x - accel.z * sin_roll)* 100.0;
-    // accel_forward_error = accel_forward - forward_accel_meas;
-    // accel_right_error = accel_right - right_accel_meas;
-
-    // forward_p   = g.pid_loiter_accel_forward.get_p(lat_speed_error);
-    // forward_i   = g.pid_loiter_accel_forward.get_i(lat_speed_error, .01);
-    // forward_d   = g.pid_loiter_accel_forward.get_d(lat_speed_error, .01);
-
-    // right_p   = g.pid_loiter_accel_right.get_p(lon_speed_error);
-    // right_i   = g.pid_loiter_accel_right.get_i(lon_speed_error, .01);
-    // right_d   = g.pid_loiter_accel_right.get_d(lon_speed_error, .01);
-
+    accel_forward = accel_forward + 0.11164 * (accel_req_forward - accel_forward);
+    accel_right = accel_right + 0.11164 * (accel_req_right - accel_right);
 
     desired_roll = constrain((accel_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
     desired_pitch = constrain((-accel_forward/(-z_accel_meas*cos_roll_x))*(18000/M_PI), -4500, 4500);
@@ -259,119 +237,165 @@ get_roll_pitch_accel(int16_t accel_forward, int16_t accel_right)
     get_stabilize_roll(desired_roll);
     get_stabilize_pitch(desired_pitch);
 
-    // for logging purposes only
+    // update nav_roll and nav_pitch for reporting purposes
     nav_roll = desired_roll;
     nav_pitch = desired_pitch;
-    //Serial.printf("Test: accel_x:%4.2f  accel_y:%4.2f  z_accel_meas:%4.2f  desired_roll:%4.2f  desired_pitch:%4.2f   M_PI:%4.2f \n", 1.0*accel_x, 1.0*accel_y, 1.0*z_accel_meas, 1.0*control_roll, 1.0*control_pitch, 1.0*M_PI);
 }
 
 
 // Velocity controled Roll and Pitch
 static void
-get_roll_pitch_vel(int16_t vel_x, int16_t vel_y)
+get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
 {
-    static float lat_speed_error = 0;     // The velocity in cm/s.
-    static float lon_speed_error = 0;     // The velocity in cm/s.
+    float accel_forward;
+    float accel_right;
 
-    float lat_speed = inertial_nav.get_latitude_velocity();
-    float lon_speed = inertial_nav.get_longitude_velocity();
+    accel_forward = accel_lat*cos_yaw + accel_lon*sin_yaw;
+    accel_right = -accel_lat*sin_yaw + accel_lon*cos_yaw;
 
-    int16_t lat_vel;
-    int16_t lon_vel;
+    get_loiter_accel(accel_forward, accel_right);
+}
 
-    int16_t accel_x;
-    int16_t accel_y;
-    float accel_total;
+
+// Velocity controled Roll and Pitch
+#define MAX_LOITER_VEL_ACCEL 600
+static void
+get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon)
+{
+    static float speed_error_lat = 0;     // The velocity in cm/s.
+    static float speed_error_lon = 0;     // The velocity in cm/s.
+
+    float speed_lat = inertial_nav.get_latitude_velocity();
+    float speed_lon = inertial_nav.get_longitude_velocity();
+
+    int32_t accel_lat;
+    int32_t accel_lon;
+    int32_t accel_total;
 
     int16_t lat_p,lat_i,lat_d;
     int16_t lon_p,lon_i,lon_d;
 
-    lat_vel = vel_x*cos_yaw - vel_y*sin_yaw;
-    lon_vel = vel_x*sin_yaw + vel_y*cos_yaw;
-
     // calculate vel error and Filter with fc = 2 Hz
-    lat_speed_error = lat_speed_error + 0.11164 * ((lat_vel -lat_speed) - lat_speed_error);
-    lon_speed_error = lon_speed_error + 0.11164 * ((lon_vel - lon_speed) - lon_speed_error);
+    speed_error_lat = speed_error_lat + 0.11164 * ((vel_lat - speed_lat) - speed_error_lat);
+    speed_error_lon = speed_error_lon + 0.11164 * ((vel_lon - speed_lon) - speed_error_lon);
 
-    lat_p   = g.pid_loiter_rate_lat.get_p(lat_speed_error);
-    lat_i   = g.pid_loiter_rate_lat.get_i(lat_speed_error, .01);
-    lat_d   = g.pid_loiter_rate_lat.get_d(lat_speed_error, .01);
+    lat_p   = g.pid_loiter_rate_lat.get_p(speed_error_lat);
+    lat_i   = g.pid_loiter_rate_lat.get_i(speed_error_lat, .01);
+    lat_d   = g.pid_loiter_rate_lat.get_d(speed_error_lat, .01);
 
-    lon_p   = g.pid_loiter_rate_lon.get_p(lon_speed_error);
-    lon_i   = g.pid_loiter_rate_lon.get_i(lon_speed_error, .01);
-    lon_d   = g.pid_loiter_rate_lon.get_d(lon_speed_error, .01);
+    lon_p   = g.pid_loiter_rate_lon.get_p(speed_error_lon);
+    lon_i   = g.pid_loiter_rate_lon.get_i(speed_error_lon, .01);
+    lon_d   = g.pid_loiter_rate_lon.get_d(speed_error_lon, .01);
 
-    accel_x = (lat_p+lat_i+lat_d)*cos_yaw + (lon_p+lon_i+lon_d)*sin_yaw;
-    accel_y = -(lat_p+lat_i+lat_d)*sin_yaw + (lon_p+lon_i+lon_d)*cos_yaw;
+    accel_lat = (lat_p+lat_i+lat_d);
+    accel_lon = (lon_p+lon_i+lon_d);
 
-    accel_total = safe_sqrt(accel_x*accel_x + accel_y*accel_y);
+    accel_total = safe_sqrt(accel_lat*accel_lat + accel_lon*accel_lon);
 
-    if( accel_total > 300 ) {
-        accel_x = 300 * accel_x/accel_total;
-        accel_y = 300 * accel_x/accel_total;
+    if( accel_total > MAX_LOITER_VEL_ACCEL ) {
+        accel_lat = MAX_LOITER_VEL_ACCEL * accel_lat/accel_total;
+        accel_lon = MAX_LOITER_VEL_ACCEL * accel_lon/accel_total;
     }
 
-    get_roll_pitch_accel(accel_x, accel_y);
-
-    // log output if PID logging is on and we are tuning the yaw
-    /*pid_log_counter++;
-    if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-        pid_log_counter = 0;
-        Log_Write_PID(1, lat_speed_error, lat_p, lat_i, lat_d, (lat_p+lat_i+lat_d), accel_x);
-        Log_Write_PID(2, lon_speed_error, lon_p, lon_i, lon_d, (lon_p+lon_i+lon_d), accel_y);
-    }*/
-
-    //Serial.printf("Test: vel_x:%4.2f  vel_y:%4.2f  sin_yaw:%4.2f  cos_yaw:%4.2f  accel_x:%4.2f   accel_y:%4.2f \n", 1.0*vel_x, 1.0*vel_y, 1.0*sin_yaw, 1.0*cos_yaw, 1.0*accel_x, 1.0*accel_y);
+    get_loiter_accel_lat_lon(accel_lat, accel_lon);
 }
 
 
 // Velocity controled Roll and Pitch
 static void
-get_roll_pitch_pos(int32_t target_lat, int32_t target_lon)
+get_loiter_vel(int16_t vel_forward, int16_t vel_right)
 {
-    static float lat_error;
-    int16_t desired_lat_vel;
+    int16_t vel_lat;
+    int16_t vel_lon;
 
-    static float lon_error;
-    int16_t desired_lon_vel;
+    vel_lat = vel_forward*cos_yaw - vel_right*sin_yaw;
+    vel_lon = vel_forward*sin_yaw + vel_right*cos_yaw;
 
-    float total_error;
-    int16_t sqrt_vel;
+    get_loiter_vel(vel_lat, vel_lon);
+}
 
-    int16_t vel_x;
-    int16_t vel_y;
+
+// Velocity controled Roll and Pitch
+#define MAX_LOITER_POS_VELOCITY 1500
+#define MAX_LOITER_POS_ACCEL 500
+
+static void
+get_loiter_pos_lat_lon(int32_t target_lat, int32_t target_lon)
+{
+    static float dist_error_lat;
+    int32_t desired_vel_lat;
+
+    static float dist_error_lon;
+    int32_t desired_vel_lon;
+
+    int32_t dist_error_total;
+
+    int16_t vel_sqrt;
+    int32_t vel_total;
 
     int16_t linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate distance error and Filter with fc = 2 Hz
-    lat_error = lat_error + 0.11164 * ((target_lat - inertial_nav.get_latitude_diff()) - lat_error);
-    lon_error = lon_error + 0.11164 * ((target_lon - inertial_nav.get_longitude_diff()) - lon_error);
+    dist_error_lat = dist_error_lat + 0.11164 * ((target_lat - inertial_nav.get_latitude_diff()) - dist_error_lat);
+    dist_error_lon = dist_error_lon + 0.11164 * ((target_lon - inertial_nav.get_longitude_diff()) - dist_error_lon);
 
-    linear_distance = 250/(2*g.pi_loiter_lat.kP()*g.pi_loiter_lat.kP());
+    linear_distance = MAX_LOITER_POS_ACCEL/(2*g.pi_loiter_lat.kP()*g.pi_loiter_lat.kP());
 
-    total_error = safe_sqrt(lat_error*lat_error + lon_error*lon_error);
-    if( total_error > 2*linear_distance ) {
-        sqrt_vel = constrain(safe_sqrt(2*250*(total_error-linear_distance)),0,1000);
-        desired_lat_vel = sqrt_vel * lat_error/total_error;
-        desired_lon_vel = sqrt_vel * lon_error/total_error;
+    dist_error_total = safe_sqrt(dist_error_lat*dist_error_lat + dist_error_lon*dist_error_lon);
+    if( dist_error_total > 2*linear_distance ) {
+        vel_sqrt = constrain(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
+        desired_vel_lat = vel_sqrt * dist_error_lat/dist_error_total;
+        desired_vel_lon = vel_sqrt * dist_error_lon/dist_error_total;
     }else{
-        desired_lat_vel = g.pi_loiter_lat.get_p(lat_error);
-        desired_lon_vel = g.pi_loiter_lon.get_p(lon_error);
+        desired_vel_lat = g.pi_loiter_lat.get_p(dist_error_lat);
+        desired_vel_lon = g.pi_loiter_lon.get_p(dist_error_lon);
     }
 
-    vel_x = constrain(desired_lat_vel*cos_yaw + desired_lon_vel*sin_yaw, -3000, 3000);
-    vel_y = constrain(-desired_lat_vel*sin_yaw + desired_lon_vel*cos_yaw, -3000, 3000);
+    vel_total = safe_sqrt(desired_vel_lat*desired_vel_lat + desired_vel_lon*desired_vel_lon);
+    if( vel_total > MAX_LOITER_POS_VELOCITY ) {
+        desired_vel_lat = MAX_LOITER_POS_VELOCITY * desired_vel_lat/vel_total;
+        desired_vel_lon = MAX_LOITER_POS_VELOCITY * desired_vel_lon/vel_total;
+    }
 
-    get_roll_pitch_vel(vel_x, vel_y);
+    get_loiter_vel_lat_lon(desired_vel_lat, desired_vel_lon);
 
-    // log output if PID logging is on and we are tuning the yaw
-    /*pid_log_counter++;
-    if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-        pid_log_counter = 0;
-        Log_Write_PID(3, lat_error, lon_error, desired_lat_vel, desired_lon_vel, total_error, linear_distance);
-    }*/
-    // Serial.printf("Test: target_lat:%4.2f  inertial_nav.get_latitude_diff():%4.2f  linear_distance:%4.2f  desired_lat_vel:%4.2f  vel_x:%4.2f \n", 1.0*target_lat, 1.0*inertial_nav.get_latitude_diff(), 1.0*linear_distance, 1.0*desired_lat_vel, 1.0*vel_x);
-    // Serial.printf("Test: target_lon:%4.2f  inertial_nav.get_longitude_diff():%4.2f  linear_distance:%4.2f  desired_lon_vel:%4.2f  vel_y:%4.2f \n", 1.0*target_lon, 1.0*inertial_nav.get_longitude_diff(), 1.0*linear_distance, 1.0*desired_lon_vel, 1.0*vel_y);
+}
+
+
+#define MAX_LOITER_POS_VEL_VELOCITY 1000
+// Velocity controled Roll and Pitch
+static void
+get_loiter_pos_vel(int16_t vel_forward, int16_t vel_right)
+{
+    static float pos_lat;
+    static float pos_lon;
+
+    int32_t vel_lat;
+    int32_t vel_lon;
+    int32_t vel_total;
+    static uint32_t last_call_ms = 0;   // the last time this controller was called
+    uint32_t now = millis();
+
+    vel_lat = vel_forward*cos_yaw - vel_right*sin_yaw;
+    vel_lon = vel_forward*sin_yaw + vel_right*cos_yaw;
+
+    // reset target pos if this controller has just been engaged
+    if( now - last_call_ms > 100 ) {
+        pos_lat = inertial_nav.get_latitude_diff();
+        pos_lon = inertial_nav.get_longitude_diff();
+    }
+    last_call_ms = now;
+
+    vel_total = safe_sqrt(vel_lat*vel_lat + vel_lon*vel_lon);
+    if( vel_total > MAX_LOITER_POS_VEL_VELOCITY ) {
+        vel_lat = MAX_LOITER_POS_VEL_VELOCITY * vel_lat/vel_total;
+        vel_lon = MAX_LOITER_POS_VEL_VELOCITY * vel_lon/vel_total;
+    }
+
+    pos_lat += vel_lat * 0.01;
+    pos_lon += vel_lon * 0.01;
+
+    get_loiter_pos_lat_lon(pos_lat, pos_lon);
 
 }
 
@@ -898,7 +922,6 @@ static int16_t get_angle_boost(int16_t throttle)
     temp = constrain(temp, .5, 1.0);
     temp = constrain(9000-max(labs(roll_axis),labs(pitch_axis)), 0, 3000) / (3000 * temp);
     throttle_out = constrain((float)(throttle-g.throttle_min) * temp + g.throttle_min, g.throttle_min, 1000);
-    //Serial.printf("Thin:%4.2f  sincos:%4.2f  temp:%4.2f  roll_axis:%4.2f  Out:%4.2f   \n", 1.0*throttle, 1.0*cos_pitch_x * cos_roll_x, 1.0*temp, 1.0*roll_axis, 1.0*constrain((float)value * temp, 0, 1000));
 
     // to allow logging of angle boost
     angle_boost = throttle_out - throttle;

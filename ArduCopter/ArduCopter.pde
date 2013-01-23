@@ -1599,7 +1599,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             roll_pitch_initialised = true;
             break;
 
-        case ROLL_PITCH_VELOCITY:
+        case ROLL_PITCH_LOITER_POS_VEL:
             // require gps lock
             if( ap.home_is_set ) {
                 roll_pitch_initialised = true;
@@ -1710,7 +1710,7 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
 
-    case ROLL_PITCH_VELOCITY:
+    case ROLL_PITCH_LOITER_POS_VEL:
         // apply SIMPLE mode transform
         if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
@@ -1718,8 +1718,8 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
-        // pilot controls velocity up to 4.5 m/s
-        get_roll_pitch_vel(-control_pitch/10, control_roll/10);
+        // Set max velocity to 2.5 m/s for conservative start
+        get_loiter_pos_vel(-control_pitch/(1*4.5), control_roll/(1*4.5));
         break;
     }
 
