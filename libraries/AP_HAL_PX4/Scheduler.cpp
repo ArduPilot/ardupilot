@@ -16,6 +16,7 @@
 #include <systemlib/systemlib.h>
 #include <poll.h>
 #include "UARTDriver.h"
+#include "Storage.h"
 
 using namespace PX4;
 
@@ -179,6 +180,9 @@ void *PX4Scheduler::_timer_thread(void)
         // process any pending serial bytes
         ((PX4UARTDriver *)hal.uartA)->_timer_tick();
         ((PX4UARTDriver *)hal.uartB)->_timer_tick();
+
+        // process any pending storage writes
+        ((PX4Storage *)hal.storage)->_timer_tick();
     }
     return NULL;
 }

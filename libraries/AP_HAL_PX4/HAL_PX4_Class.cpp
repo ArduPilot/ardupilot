@@ -35,7 +35,7 @@ static Empty::EmptyGPIO gpioDriver;
 
 static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
-static PX4EEPROMStorage storageDriver;
+static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
 static PX4RCOutput rcoutDriver;
 static PX4AnalogIn analogIn;

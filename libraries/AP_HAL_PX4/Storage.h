@@ -6,10 +6,16 @@
 #include <AP_HAL.h>
 #include "AP_HAL_PX4_Namespace.h"
 
-class PX4::PX4EEPROMStorage : public AP_HAL::Storage {
+#define PX4_STORAGE_SIZE 4096
+#define PX4_STORAGE_MAX_WRITE 1024
+#define PX4_STORAGE_LINE_SHIFT 7
+#define PX4_STORAGE_LINE_SIZE (1<<PX4_STORAGE_LINE_SHIFT)
+#define PX4_STORAGE_NUM_LINES (PX4_STORAGE_SIZE/PX4_STORAGE_LINE_SIZE)
+
+class PX4::PX4Storage : public AP_HAL::Storage {
 public:
-    PX4EEPROMStorage() {
-	    _eeprom_fd = -1;
+    PX4Storage() {
+	    _fd = -1;
     }
     void init(void* machtnichts) {}
     uint8_t  read_byte(uint16_t loc);
@@ -22,9 +28,15 @@ public:
     void write_dword(uint16_t loc, uint32_t value);
     void write_block(uint16_t dst, void* src, size_t n);
 
+    void _timer_tick(void);
+
 private:
-    int _eeprom_fd;
-    void _eeprom_open(void);
+    int _fd;
+    void _storage_create(void);
+    void _storage_open(void);
+    void _mark_dirty(uint16_t loc, uint16_t length);
+    uint8_t _buffer[PX4_STORAGE_SIZE];
+    volatile uint32_t _dirty_mask;
 };
 
 #endif // __AP_HAL_PX4_STORAGE_H__
