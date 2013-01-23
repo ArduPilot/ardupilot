@@ -28,7 +28,7 @@ void PX4Storage::_storage_create(void)
 {
 	mkdir(STORAGE_DIR, 0777);
 	unlink(STORAGE_FILE);
-	_fd = open(STORAGE_FILE, O_RDWR|O_CREAT|O_TRUNC, 0666);
+	_fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
 	if (_fd == -1) {
 		hal.scheduler->panic("Failed to create " STORAGE_FILE);
 	}
