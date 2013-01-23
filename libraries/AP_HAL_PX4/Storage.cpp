@@ -58,6 +58,13 @@ void PX4Storage::_storage_open(void)
 	}
 }
 
+/*
+  mark some lines as dirty. Note that there is no attempt to avoid
+  the race condition between this code and the _timer_tick() code
+  below, which both update _dirty_mask. If we lose the race then the
+  result is that a line is written more than once, but it won't result
+  in a line not being written.
+ */
 void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
 	uint16_t end = loc + length;
@@ -166,14 +173,13 @@ void PX4Storage::_timer_tick(void)
 	uint8_t i, n;
 	for (i=0; i<PX4_STORAGE_NUM_LINES; i++) {
 		if (_dirty_mask & (1<<i)) {
-			// mark that line clean
-			_dirty_mask &= ~(1<<i);
 			break;
 		}
 	}
 	if (i == PX4_STORAGE_NUM_LINES) {
 		return;
 	}
+	uint32_t write_mask = (1U<<i);
 	// see how many lines to write
 	for (n=1; (i+n) < PX4_STORAGE_NUM_LINES && 
 		     n < (1024>>PX4_STORAGE_LINE_SHIFT); n++) {
@@ -181,12 +187,21 @@ void PX4Storage::_timer_tick(void)
 			break;
 		}		
 		// mark that line clean
-		_dirty_mask &= ~(1<<(i+n));
+		write_mask |= (1<<(n+i));
 	}
 
-	// write them
+	/*
+	  write the lines. This also updates _dirty_mask. Note that
+	  because this is a SCHED_FIFO thread it will not be preempted
+	  by the main task except during blocking calls. This means we
+	  don't need a semaphore around the _dirty_mask updates.
+	 */
 	if (lseek(_fd, i<<PX4_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<PX4_STORAGE_LINE_SHIFT)) {
-		write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT);
+		_dirty_mask &= ~write_mask;
+		if (write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT) != n<<PX4_STORAGE_LINE_SHIFT) {
+			// write error - likely EINTR
+			_dirty_mask |= write_mask;
+		}
 		if (_dirty_mask == 0) {
 			fsync(_fd);
 		}
