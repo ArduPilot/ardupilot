@@ -216,7 +216,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
 	set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
 }
 
-// Accel controled Roll and Pitch
+// get_loiter_accel - loiter acceration controllers with desired accelerations provided in forward/right directions in cm/s/s
 static void
 get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
 {
@@ -243,7 +243,7 @@ get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
 }
 
 
-// Velocity controled Roll and Pitch
+// get_loiter_accel_lat_lon - loiter acceration controller with desired accelerations provided in lat/lon directions in cm/s/s
 static void
 get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
 {
@@ -254,10 +254,11 @@ get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
     accel_right = -accel_lat*sin_yaw + accel_lon*cos_yaw;
 
     get_loiter_accel(accel_forward, accel_right);
+
 }
 
 
-// Velocity controled Roll and Pitch
+// get_loiter_vel_lat_lon - loiter velocity controller with desired velocity provided in lat/lon directions in cm/s
 #define MAX_LOITER_VEL_ACCEL 600
 static void
 get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon)
@@ -298,27 +299,12 @@ get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon)
     }
 
     get_loiter_accel_lat_lon(accel_lat, accel_lon);
+
 }
 
-
-// Velocity controled Roll and Pitch
-static void
-get_loiter_vel(int16_t vel_forward, int16_t vel_right)
-{
-    int16_t vel_lat;
-    int16_t vel_lon;
-
-    vel_lat = vel_forward*cos_yaw - vel_right*sin_yaw;
-    vel_lon = vel_forward*sin_yaw + vel_right*cos_yaw;
-
-    get_loiter_vel(vel_lat, vel_lon);
-}
-
-
-// Velocity controled Roll and Pitch
+// get_loiter_pos_lat_lon - loiter position controller with desired position provided as distance from home in lat/lon directions in cm
 #define MAX_LOITER_POS_VELOCITY 1500
 #define MAX_LOITER_POS_ACCEL 500
-
 static void
 get_loiter_pos_lat_lon(int32_t target_lat, int32_t target_lon)
 {
@@ -358,12 +344,11 @@ get_loiter_pos_lat_lon(int32_t target_lat, int32_t target_lon)
     }
 
     get_loiter_vel_lat_lon(desired_vel_lat, desired_vel_lon);
-
 }
 
 
 #define MAX_LOITER_POS_VEL_VELOCITY 1000
-// Velocity controled Roll and Pitch
+// get_loiter_pos_vel - loiter velocity controller with desired velocity provided in front/right directions in cm/s
 static void
 get_loiter_pos_vel(int16_t vel_forward, int16_t vel_right)
 {
@@ -386,17 +371,19 @@ get_loiter_pos_vel(int16_t vel_forward, int16_t vel_right)
     }
     last_call_ms = now;
 
+    // constrain the velocity vector and scale if necessary
     vel_total = safe_sqrt(vel_lat*vel_lat + vel_lon*vel_lon);
     if( vel_total > MAX_LOITER_POS_VEL_VELOCITY ) {
         vel_lat = MAX_LOITER_POS_VEL_VELOCITY * vel_lat/vel_total;
         vel_lon = MAX_LOITER_POS_VEL_VELOCITY * vel_lon/vel_total;
     }
 
+    // To-Do: replace 0.01f with actual dT since last call
     pos_lat += vel_lat * 0.01f;
     pos_lon += vel_lon * 0.01f;
 
+    // call loiter position controller
     get_loiter_pos_lat_lon(pos_lat, pos_lon);
-
 }
 
 // set_roll_rate_target - to be called by upper controllers to set roll rate targets in the earth frame
