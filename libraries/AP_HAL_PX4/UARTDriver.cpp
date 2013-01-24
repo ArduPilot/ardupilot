@@ -19,9 +19,11 @@ using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
 
-PX4UARTDriver::PX4UARTDriver(const char *devpath) {
-	_devpath = devpath;
-}
+PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
+	_devpath(devpath),
+    _perf_uart(perf_alloc(PC_ELAPSED, perf_name))
+{}
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -316,6 +318,7 @@ void PX4UARTDriver::_timer_tick(void)
     uint16_t _tail;
     n = BUF_AVAILABLE(_writebuf);
     if (n > 0) {
+        perf_begin(_perf_uart);
         if (_tail > _writebuf_head) {
             // do as a single write
             int ret = ::write(_fd, &_writebuf[_writebuf_head], n);
@@ -336,12 +339,14 @@ void PX4UARTDriver::_timer_tick(void)
                 }
             }
         }
+        perf_end(_perf_uart);
     }
 
     // try to fill the read buffer
     uint16_t _head;
     n = BUF_SPACE(_readbuf);
     if (n > 0) {
+        perf_begin(_perf_uart);
         if (_readbuf_tail < _head) {
             // one read will do
             int ret = ::read(_fd, &_readbuf[_readbuf_tail], n);
@@ -361,6 +366,7 @@ void PX4UARTDriver::_timer_tick(void)
                 }
             }
         }
+        perf_end(_perf_uart);
     }
 
     _in_timer = false;

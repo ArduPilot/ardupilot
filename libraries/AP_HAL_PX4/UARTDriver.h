@@ -3,10 +3,11 @@
 #define __AP_HAL_PX4_UARTDRIVER_H__
 
 #include <AP_HAL_PX4.h>
+#include <systemlib/perf_counter.h>
 
 class PX4::PX4UARTDriver : public AP_HAL::UARTDriver {
 public:
-    PX4UARTDriver(const char *devpath);
+    PX4UARTDriver(const char *devpath, const char *perf_name);
     /* PX4 implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
@@ -65,6 +66,7 @@ private:
     uint16_t _writebuf_size;
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
+    perf_counter_t  _perf_uart;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__
