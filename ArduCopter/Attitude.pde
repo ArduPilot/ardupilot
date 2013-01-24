@@ -288,8 +288,8 @@ void init_rate_controllers()
 {
    // initalise low pass filters on rate controller inputs
    // 1st parameter is time_step, 2nd parameter is time_constant
-   rate_roll_filter.set_cutoff_frequency(0.01, 2.0);
-   rate_pitch_filter.set_cutoff_frequency(0.01, 2.0);
+   rate_roll_filter.set_cutoff_frequency(0.01, 0.1);
+   rate_pitch_filter.set_cutoff_frequency(0.01, 0.1);
    // rate_yaw_filter.set_cutoff_frequency(0.01, 2.0);
    // other option for initialisation is rate_roll_filter.set_cutoff_frequency(<time_step>,<cutoff_freq>);
 }
