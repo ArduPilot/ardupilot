@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <poll.h>
+#include <drivers/drv_hrt.h>
 
 using namespace PX4;
 
@@ -45,8 +47,8 @@ static PX4Util utilInstance;
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 
 // only two real UART drivers for now
-static PX4UARTDriver uartADriver(UARTA_DEFAULT_DEVICE);
-static PX4UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE);
+static PX4UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "APM_uartA");
+static PX4UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
 static Empty::EmptyUARTDriver uartCDriver;
 
 HAL_PX4::HAL_PX4() :
@@ -69,13 +71,34 @@ HAL_PX4::HAL_PX4() :
 bool _px4_thread_should_exit = false;		/**< Daemon exit flag */
 static bool thread_running = false;		/**< Daemon status flag */
 static int daemon_task;				/**< Handle of daemon task / thread */
+static bool ran_overtime;
 
 extern const AP_HAL::HAL& hal;
+
+static void semaphore_yield(void *sem)
+{
+    sem_post((sem_t *)sem);
+}
+
+/*
+  this is called when loop() takes more than 1 second to run. If that
+  happens then something is blocking for a long time in the main
+  sketch - probably waiting on a low priority driver. Set the priority
+  of the APM task low to let the driver run.
+ */
+static void loop_overtime(void *)
+{
+    struct sched_param param;
+    param.sched_priority = APM_OVERTIME_PRIORITY;
+    sched_setscheduler(daemon_task, SCHED_FIFO, &param);
+    ran_overtime = true;
+}
 
 static int main_loop(int argc, char **argv)
 {
     extern void setup(void);
     extern void loop(void);
+
 
     hal.uartA->begin(57600);
     hal.console->init((void*) hal.uartA);
@@ -87,18 +110,59 @@ static int main_loop(int argc, char **argv)
     setup();
     hal.scheduler->system_initialized();
 
+    perf_counter_t perf_loop = perf_alloc(PC_ELAPSED, "APM_loop");
+    perf_counter_t perf_overrun = perf_alloc(PC_COUNT, "APM_overrun");
+    sem_t loop_semaphore;
+    struct hrt_call loop_call;
+    struct hrt_call loop_overtime_call;
+
+    sem_init(&loop_semaphore, 0, 0);
+             
     thread_running = true;
+
+    ::printf("APM: Starting main loop\n");
+
     while (!_px4_thread_should_exit) {
+        perf_begin(perf_loop);
+        
+        /*
+          this ensures a tight loop waiting on a lower priority driver
+          will eventually give up some time for the driver to run. It
+          will only ever be called if a loop() call runs for more than
+          1 second
+         */
+        hrt_call_after(&loop_overtime_call, 1000000, (hrt_callout)loop_overtime, NULL);
+
 		loop();
+
+        if (ran_overtime) {
+            /*
+              we ran over 1s in loop(), and our priority was lowered
+              to let a driver run. Set it back to high priority now.
+             */
+            struct sched_param param;
+            param.sched_priority = APM_MAIN_PRIORITY;
+            sched_setscheduler(daemon_task, SCHED_FIFO, &param);
+            perf_count(perf_overrun);
+            ran_overtime = false;
+        }
+
+        perf_end(perf_loop);
+
         if (hal.scheduler->in_timerprocess()) {
             // we are running when a timer process is running! This is
             // a scheduling error, and breaks the assumptions made in
             // our locking system
             ::printf("ERROR: timer processing running in loop()\n");
         }
-        // yield the CPU between loops to let other apps 
-        // get some CPU time
-		pthread_yield();
+
+        /*
+          give up 500 microseconds of time, to ensure drivers get a
+          chance to run. This gives us better timing performance than
+          a poll(NULL, 0, 1)
+         */
+        hrt_call_after(&loop_call, 500, (hrt_callout)semaphore_yield, &loop_semaphore);
+        sem_wait(&loop_semaphore);
 	}
     thread_running = false;
     return 0;
@@ -138,8 +202,8 @@ void HAL_PX4::init(int argc, char * const argv[]) const
 
             _px4_thread_should_exit = false;
             daemon_task = task_spawn(SKETCHNAME,
-                                     SCHED_RR,
-                                     SCHED_PRIORITY_DEFAULT,
+                                     SCHED_FIFO,
+                                     APM_MAIN_PRIORITY,
                                      4096,
                                      main_loop,
                                      NULL);

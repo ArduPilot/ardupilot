@@ -8,6 +8,7 @@
 
 #include <AP_HAL_PX4.h>
 #include "AP_HAL_PX4_Namespace.h"
+#include <systemlib/perf_counter.h>
 
 class HAL_PX4 : public AP_HAL::HAL {
 public:
