@@ -8,8 +8,14 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <pthread.h>
+#include <systemlib/perf_counter.h>
 
 #define PX4_SCHEDULER_MAX_TIMER_PROCS 8
+
+#define APM_MAIN_PRIORITY    200
+#define APM_TIMER_PRIORITY   201
+#define APM_IO_PRIORITY       60
+#define APM_OVERTIME_PRIORITY 10
 
 /* Scheduler implementation: */
 class PX4::PX4Scheduler : public AP_HAL::Scheduler {
@@ -39,7 +45,6 @@ private:
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::TimedProc _failsafe;
-    pthread_t _thread;
     volatile bool _timer_pending;
     uint64_t _sketch_start_time;
 
@@ -48,9 +53,17 @@ private:
     uint8_t _num_timer_procs;
     volatile bool _in_timer_proc;
     volatile bool _timer_event_missed;
+
+    pthread_t _timer_thread_ctx;
+    pthread_t _io_thread_ctx;
+
     void *_timer_thread(void);
+    void *_io_thread(void);
+
     void _run_timers(bool called_from_timer_thread);
 
+    perf_counter_t  _perf_timers;
+    perf_counter_t  _perf_delay;
 };
 #endif
 #endif // __AP_HAL_PX4_SCHEDULER_H__

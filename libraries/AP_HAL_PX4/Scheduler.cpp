@@ -15,6 +15,7 @@
 #include <nuttx/arch.h>
 #include <systemlib/systemlib.h>
 #include <poll.h>
+
 #include "UARTDriver.h"
 #include "Storage.h"
 
@@ -24,7 +25,9 @@ extern const AP_HAL::HAL& hal;
 
 extern bool _px4_thread_should_exit;
 
-PX4Scheduler::PX4Scheduler()
+PX4Scheduler::PX4Scheduler() :
+    _perf_timers(perf_alloc(PC_ELAPSED, "APM_timers")),
+	_perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
 {}
 
 void PX4Scheduler::init(void *unused) 
@@ -33,20 +36,26 @@ void PX4Scheduler::init(void *unused)
 
     // setup the timer thread - this will call tasks at 1kHz
 	pthread_attr_t thread_attr;
+	struct sched_param param;
+
 	pthread_attr_init(&thread_attr);
 	pthread_attr_setstacksize(&thread_attr, 2048);
 
-    // the timer thread needs a higher priority than the main code, so
-    // it runs as soon as its poll() delay returns
-	struct sched_param param;
-	param.sched_priority = SCHED_PRIORITY_DEFAULT + 1;
+	param.sched_priority = APM_TIMER_PRIORITY;
 	(void)pthread_attr_setschedparam(&thread_attr, &param);
-
-    // we run as a FIFO task as we don't want the main task to preempt
-    // us. This keeps the locking much simpler between the two threads
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
-	pthread_create(&_thread, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_timer_thread, this);
+	pthread_create(&_timer_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_timer_thread, this);
+
+    // the IO thread runs at lower priority
+	pthread_attr_init(&thread_attr);
+	pthread_attr_setstacksize(&thread_attr, 2048);
+
+	param.sched_priority = APM_IO_PRIORITY;
+	(void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_io_thread, this);
 }
 
 uint32_t PX4Scheduler::micros() 
@@ -65,10 +74,12 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
         ::printf("ERROR: delay_microseconds() from timer process\n");
         return;
     }
+    perf_begin(_perf_delay);
 	uint32_t start = micros();
 	while (micros() - start < usec) {
 		up_udelay(usec - (micros() - start));
 	}
+    perf_end(_perf_delay);
 }
 
 void PX4Scheduler::delay(uint16_t ms)
@@ -77,6 +88,7 @@ void PX4Scheduler::delay(uint16_t ms)
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
+    perf_begin(_perf_delay);
 	uint64_t start = hrt_absolute_time();
     
     while ((hrt_absolute_time() - start)/1000 < ms && 
@@ -89,6 +101,7 @@ void PX4Scheduler::delay(uint16_t ms)
             }
         }
     }
+    perf_end(_perf_delay);
     if (_px4_thread_should_exit) {
         exit(1);
     }
@@ -171,11 +184,20 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 void *PX4Scheduler::_timer_thread(void)
 {
     while (!_px4_thread_should_exit) {
-        // run timers at 1kHz
         poll(NULL, 0, 1);
 
         // run registered timers
+        perf_begin(_perf_timers);
         _run_timers(true);
+        perf_end(_perf_timers);
+    }
+    return NULL;
+}
+
+void *PX4Scheduler::_io_thread(void)
+{
+    while (!_px4_thread_should_exit) {
+        poll(NULL, 0, 1);
 
         // process any pending serial bytes
         ((PX4UARTDriver *)hal.uartA)->_timer_tick();
