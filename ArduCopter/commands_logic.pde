@@ -226,7 +226,7 @@ static void do_RTL(void)
     set_throttle_mode(RTL_THR);
 
     // set navigation mode
-    wp_control = LOITER_MODE;
+    set_nav_mode(NAV_LOITER);
 
     // initial climb starts at current location
     set_next_WP(&current_loc);
@@ -242,7 +242,7 @@ static void do_RTL(void)
 // do_takeoff - initiate takeoff navigation command
 static void do_takeoff()
 {
-    wp_control = LOITER_MODE;
+    set_nav_mode(NAV_LOITER);
 
     // Start with current location
     Location temp = current_loc;
@@ -263,7 +263,7 @@ static void do_takeoff()
 // do_nav_wp - initiate move to next waypoint
 static void do_nav_wp()
 {
-    wp_control = WP_MODE;
+    set_nav_mode(NAV_WP);
 
     set_next_WP(&command_nav_queue);
 
@@ -292,7 +292,7 @@ static void do_land()
 {
     // hold at our current location
     set_next_WP(&current_loc);
-    wp_control = LOITER_MODE;
+    set_nav_mode(NAV_LOITER);
 
     // hold current heading
     set_yaw_mode(YAW_HOLD);
@@ -302,22 +302,22 @@ static void do_land()
 
 static void do_loiter_unlimited()
 {
-    wp_control = LOITER_MODE;
+    set_nav_mode(NAV_LOITER);
 
     //cliSerial->println("dloi ");
     if(command_nav_queue.lat == 0) {
         set_next_WP(&current_loc);
-        wp_control = LOITER_MODE;
+        set_nav_mode(NAV_LOITER);
     }else{
         set_next_WP(&command_nav_queue);
-        wp_control = WP_MODE;
+        set_nav_mode(NAV_WP);
     }
 }
 
 // do_loiter_turns - initiate moving in a circle
 static void do_loiter_turns()
 {
-    wp_control = CIRCLE_MODE;
+    set_nav_mode(NAV_CIRCLE);
 
     if(command_nav_queue.lat == 0) {
         // allow user to specify just the altitude
@@ -344,11 +344,11 @@ static void do_loiter_turns()
 static void do_loiter_time()
 {
     if(command_nav_queue.lat == 0) {
-        wp_control              = LOITER_MODE;
+        set_nav_mode(NAV_LOITER);
         loiter_time     = millis();
         set_next_WP(&current_loc);
     }else{
-        wp_control              = WP_MODE;
+        set_nav_mode(NAV_WP);
         set_next_WP(&command_nav_queue);
     }
 
@@ -407,7 +407,7 @@ static bool verify_nav_wp()
         // we have reached our goal
 
         // loiter at the WP
-        wp_control      = LOITER_MODE;
+        set_nav_mode(NAV_LOITER);
 
         if ((millis() - loiter_time) > loiter_time_max) {
             wp_verify_byte |= NAV_DELAY;
@@ -428,9 +428,9 @@ static bool verify_nav_wp()
 
 static bool verify_loiter_unlimited()
 {
-    if(wp_control == WP_MODE &&  wp_distance <= (g.waypoint_radius * 100)) {
+    if(nav_mode == NAV_WP &&  wp_distance <= (g.waypoint_radius * 100)) {
         // switch to position hold
-        wp_control      = LOITER_MODE;
+        set_nav_mode(NAV_LOITER);
     }
     return false;
 }
@@ -438,16 +438,16 @@ static bool verify_loiter_unlimited()
 // verify_loiter_time - check if we have loitered long enough
 static bool verify_loiter_time()
 {
-    if(wp_control == LOITER_MODE) {
+    if(nav_mode == NAV_LOITER) {
         if ((millis() - loiter_time) > loiter_time_max) {
             return true;
         }
     }
-    if(wp_control == WP_MODE &&  wp_distance <= (g.waypoint_radius * 100)) {
+    if(nav_mode == NAV_WP &&  wp_distance <= (g.waypoint_radius * 100)) {
         // reset our loiter time
         loiter_time = millis();
         // switch to position hold
-        wp_control      = LOITER_MODE;
+        set_nav_mode(NAV_LOITER);
     }
     return false;
 }
@@ -487,7 +487,7 @@ static bool verify_RTL()
                 set_new_altitude(get_RTL_alt());
 
                 // set navigation mode
-                wp_control = WP_MODE;
+                set_nav_mode(NAV_WP);
 
                 // set yaw mode
                 set_yaw_mode(RTL_YAW);
@@ -501,7 +501,7 @@ static bool verify_RTL()
             // if we've reached home initiate loiter
             if (wp_distance <= g.waypoint_radius * 100 || check_missed_wp()) {
                 rtl_state = RTL_STATE_LOITERING_AT_HOME;
-                wp_control = LOITER_MODE;
+                set_nav_mode(NAV_LOITER);
 
                 // set loiter timer
                 rtl_loiter_start_time = millis();

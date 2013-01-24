@@ -194,11 +194,11 @@
 #define NO_COMMAND 0
 
 
-// Navigation modes held in wp_control variable
-#define LOITER_MODE 1
-#define WP_MODE 2
-#define CIRCLE_MODE 3
-#define NO_NAV_MODE 4
+// Navigation modes held in nav_mode variable
+#define NAV_NONE        0
+#define NAV_CIRCLE      1
+#define NAV_LOITER      2
+#define NAV_WP          3
 
 // Yaw override behaviours - used for setting yaw_override_behaviour
 #define YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT     0   // auto pilot takes back yaw control at next waypoint

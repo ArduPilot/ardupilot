@@ -78,7 +78,8 @@ static void run_nav_updates(void)
         calc_distance_and_bearing();
         nav_updates.need_dist_bearing = 0;
     } else if (nav_updates.need_nav_controllers) {
-        run_navigation_controllers();
+        run_autopilot();
+        update_nav_mode();
         nav_updates.need_nav_controllers = 0;
     } else if (nav_updates.need_nav_pitch_roll) {
         calc_nav_pitch_roll();
@@ -158,6 +159,9 @@ static void calc_distance_and_bearing()
     wp_bearing          = get_bearing_cd(&current_loc, &next_WP);
     home_bearing        = get_bearing_cd(&current_loc, &home);
 
+    // update super simple bearing (if required) because it relies on home_bearing
+    update_super_simple_beading();
+
     // bearing to target (used when yaw_mode = YAW_LOOK_AT_LOCATION)
     yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
 }
@@ -180,115 +184,84 @@ static void calc_location_error(struct Location *next_loc)
     lat_error       = next_loc->lat - current_loc.lat;                                                          // 500 - 0 = 500 Go North
 }
 
-// called after a GPS read
-static void run_navigation_controllers()
+// run_autopilot - highest level call to process mission commands
+static void run_autopilot()
 {
-    // wp_distance is in CM
-    // --------------------
-    switch(control_mode) {
-    case AUTO:
-        // note: wp_control is handled by commands_logic
-        verify_commands();
-
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-
-    case GUIDED:
-        // switch to loiter once we've reached the target location and altitude
-        if(verify_nav_wp()) {
-            set_mode(LOITER);
-        }
-        update_nav_wp();
-        break;
-
-    case RTL:
-        // execute the RTL state machine
-        verify_RTL();
-
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-        
-    // switch passthrough to LOITER
-    case LOITER:
-    case POSITION:
-        // This feature allows us to reposition the quad when the user lets
-        // go of the sticks
-
-        if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500) {
-            if(wp_distance > 500){
-                ap.loiter_override = true;
+    switch( control_mode ) {
+        case AUTO:
+            // majority of command logic is in commands_logic.pde
+            verify_commands();
+            break;
+        case GUIDED:
+            // switch to loiter once we've reached the target location and altitude
+            if(verify_nav_wp()) {
+                set_nav_mode(NAV_LOITER);
             }
-        }
-
-        // Allow the user to take control temporarily,
-        if(ap.loiter_override) {
-            // this sets the copter to not try and nav while we control it
-            wp_control      = NO_NAV_MODE;
-
-            // reset LOITER to current position
-            next_WP.lat = current_loc.lat;
-            next_WP.lng = current_loc.lng;
-
-            if(g.rc_2.control_in == 0 && g.rc_1.control_in == 0) {
-                wp_control          = LOITER_MODE;
-                ap.loiter_override  = false;
-            }
-        }else{
-            wp_control = LOITER_MODE;
-        }
-
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-
-    case LAND:
-        verify_land();
-        // calculates the desired Roll and Pitch
-        update_nav_wp();
-        break;
-
-    case CIRCLE:
-        wp_control              = CIRCLE_MODE;
-        update_nav_wp();
-        break;
-
-    case STABILIZE:
-    case TOY_A:
-    case TOY_M:
-        wp_control = NO_NAV_MODE;
-        update_nav_wp();
-        break;
-    }
-
-    // are we in SIMPLE mode?
-    if(ap.simple_mode && g.super_simple) {
-        // get distance to home
-        if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
-            // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = wrap_360(home_bearing+18000);
-        }
+        case RTL:
+            verify_RTL();
+            break;
     }
 }
 
-// update_nav_wp - high level calculation of nav_lat and nav_lon based on wp_control
-// called after gps read from run_navigation_controller
-static void update_nav_wp()
+// set_nav_mode - update nav mode and initialise any variables as required
+static bool set_nav_mode(uint8_t new_nav_mode)
+{
+    // boolean to ensure proper initialisation of nav modes
+    bool nav_initialised = false;
+
+    // return immediately if no change
+    if( new_nav_mode == nav_mode ) {
+        return true;
+    }
+
+    switch( new_nav_mode ) {
+
+        case NAV_NONE:
+            nav_initialised = true;
+            break;
+
+        case NAV_CIRCLE:
+            // start circling around current location
+            set_next_WP(&current_loc);
+            circle_WP       = next_WP;
+            circle_angle    = 0;
+            nav_initialised = true;
+            break;
+
+        case NAV_LOITER:
+            // set target to current position
+            next_WP.lat = current_loc.lat;
+            next_WP.lng = current_loc.lng;
+            nav_initialised = true;
+            break;
+
+        case NAV_WP:
+            nav_initialised = true;
+            break;
+    }
+
+    // if initialisation has been successful update the yaw mode
+    if( nav_initialised ) {
+        nav_mode = new_nav_mode;
+    }
+
+    // return success or failure
+    return nav_initialised;
+}
+
+// update_nav_mode - run navigation controller based on nav_mode
+static void update_nav_mode()
 {
     int16_t loiter_delta;
     int16_t speed;
 
-    switch( wp_control ) {
-        case LOITER_MODE:
-            // calc error to target
-            calc_location_error(&next_WP);
+    switch( nav_mode ) {
 
-            // use error as the desired rate towards the target
-            calc_loiter(long_error, lat_error);
+        case NAV_NONE:
+            // do nothing
             break;
 
-        case CIRCLE_MODE:
+        case NAV_CIRCLE:
             // check if we have missed the WP
             loiter_delta = (wp_bearing - old_wp_bearing)/100;
 
@@ -316,37 +289,65 @@ static void update_nav_wp()
             // use error as the desired rate towards the target
             // nav_lon, nav_lat is calculated
 
+            // if the target location is >4m use waypoint controller
             if(wp_distance > 400) {
                 calc_nav_rate(get_desired_speed(g.waypoint_speed_max));
             }else{
                 // calc the lat and long error to the target
                 calc_location_error(&next_WP);
-
+                // call loiter controller
                 calc_loiter(long_error, lat_error);
             }
             break;
 
-        case WP_MODE:
-            // calc error to target
-            calc_location_error(&next_WP);
+        case NAV_LOITER:
+            // check if user is overriding the loiter controller
+            if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500) {
+                if(wp_distance > 500){
+                    ap.loiter_override = true;
+                }
+            }
 
+            // check if user has release sticks
+            if(ap.loiter_override) {
+                if(g.rc_2.control_in == 0 && g.rc_1.control_in == 0) {
+                    ap.loiter_override  = false;
+                    // reset LOITER to current position
+                    next_WP.lat = current_loc.lat;
+                    next_WP.lng = current_loc.lng;
+                }
+                // We bring copy over our Iterms for wind control, but we don't navigate
+                nav_lon = g.pid_loiter_rate_lon.get_integrator();
+                nav_lat = g.pid_loiter_rate_lon.get_integrator();
+                nav_lon = constrain(nav_lon, -2000, 2000);
+                nav_lat = constrain(nav_lat, -2000, 2000);
+            }else{
+                // calc error to target
+                calc_location_error(&next_WP);
+                // use error as the desired rate towards the target
+                calc_loiter(long_error, lat_error);
+            }
+            break;
+
+        case NAV_WP:
+            // calc position error to target
+            calc_location_error(&next_WP);
+            // calc speed to target
             speed = get_desired_speed(g.waypoint_speed_max);
             // use error as the desired rate towards the target
             calc_nav_rate(speed);
             break;
-
-        case NO_NAV_MODE:
-            // clear out our nav so we can do things like land straight down
-            // or change Loiter position
-
-            // We bring copy over our Iterms for wind control, but we don't navigate
-            nav_lon = g.pid_loiter_rate_lon.get_integrator();
-            nav_lat = g.pid_loiter_rate_lon.get_integrator();
-
-            nav_lon                 = constrain(nav_lon, -2000, 2000);                              // 20 degrees
-            nav_lat                 = constrain(nav_lat, -2000, 2000);                              // 20 degrees
-            break;
     }
+
+    /*
+    // To-Do: check that we haven't broken toy mode
+    case TOY_A:
+    case TOY_M:
+        set_nav_mode(NAV_NONE);
+        update_nav_wp();
+        break;
+    }
+    */
 }
 
 static bool check_missed_wp()

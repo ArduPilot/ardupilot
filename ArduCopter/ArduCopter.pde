@@ -510,9 +510,8 @@ union float_int {
 ////////////////////////////////////////////////////////////////////////////////
 // This is the angle from the copter to the "next_WP" location in degrees * 100
 static int32_t wp_bearing;
-// Status of the Waypoint tracking mode. Options include:
-// NO_NAV_MODE, WP_MODE, LOITER_MODE, CIRCLE_MODE
-static uint8_t wp_control;
+// navigation mode - options include NAV_NONE, NAV_LOITER, NAV_CIRCLE, NAV_WP
+static uint8_t nav_mode;
 // Register containing the index of the current navigation command in the mission script
 static int16_t command_nav_index;
 // Register containing the index of the previous navigation command in the mission script
@@ -1764,6 +1763,20 @@ void update_simple_mode(void)
 
     g.rc_1.control_in = _roll;
     g.rc_2.control_in = _pitch;
+}
+
+// update_super_simple_beading - adjusts simple bearing based on location
+// should be called after home_bearing has been updated
+void update_super_simple_beading()
+{
+    // are we in SIMPLE mode?
+    if(ap.simple_mode && g.super_simple) {
+        // get distance to home
+        if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
+            // we reset the angular offset to be a vector from home to the quad
+            initial_simple_bearing = wrap_360(home_bearing+18000);
+        }
+    }
 }
 
 // set_throttle_mode - sets the throttle mode and initialises any variables as required

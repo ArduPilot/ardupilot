@@ -405,6 +405,7 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(YAW_ACRO);
         set_roll_pitch_mode(ROLL_PITCH_ACRO);
         set_throttle_mode(THROTTLE_MANUAL);
+        set_nav_mode(NAV_NONE);
         // reset acro axis targets to current attitude
 		if(g.axis_enabled){
             roll_axis 	= ahrs.roll_sensor;
@@ -419,6 +420,7 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(YAW_HOLD);
         set_roll_pitch_mode(ROLL_PITCH_STABLE);
         set_throttle_mode(STABILIZE_THROTTLE);
+        set_nav_mode(NAV_NONE);
         break;
 
     case ALT_HOLD:
@@ -427,6 +429,7 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(ALT_HOLD_YAW);
         set_roll_pitch_mode(ALT_HOLD_RP);
         set_throttle_mode(ALT_HOLD_THR);
+        set_nav_mode(NAV_NONE);
         break;
 
     case AUTO:
@@ -480,7 +483,7 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(GUIDED_YAW);
         set_roll_pitch_mode(GUIDED_RP);
         set_throttle_mode(GUIDED_THR);
-        wp_control = WP_MODE;
+        set_nav_mode(NAV_WP);
         wp_verify_byte = 0;
         set_next_WP(&guided_WP);
         break;
@@ -525,11 +528,10 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(YAW_TOY);
         set_roll_pitch_mode(ROLL_PITCH_TOY);
         set_throttle_mode(THROTTLE_AUTO);
-        wp_control      = NO_NAV_MODE;
+        set_nav_mode(NAV_NONE);
 
         // save throttle for fast exit of Alt hold
         saved_toy_throttle = g.rc_3.control_in;
-
         break;
 
     case TOY_M:
@@ -537,7 +539,7 @@ static void set_mode(uint8_t mode)
     	ap.manual_attitude = true;
         set_yaw_mode(YAW_TOY);
         set_roll_pitch_mode(ROLL_PITCH_TOY);
-        wp_control          = NO_NAV_MODE;
+        set_nav_mode(NAV_NONE);
         set_throttle_mode(THROTTLE_HOLD);
         break;
 
