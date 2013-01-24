@@ -168,6 +168,7 @@ void PX4Storage::_timer_tick(void)
 	if (_fd == -1 || _dirty_mask == 0) {
 		return;
 	}
+	perf_begin(_perf_storage);
 	// write out the first dirty set of lines. We don't write more
 	// than one to keep the latency of this call to a minimum
 	uint8_t i, n;
@@ -177,6 +178,9 @@ void PX4Storage::_timer_tick(void)
 		}
 	}
 	if (i == PX4_STORAGE_NUM_LINES) {
+		// this shouldn't be possible
+		perf_end(_perf_storage);
+		perf_count(_perf_errors);
 		return;
 	}
 	uint32_t write_mask = (1U<<i);
@@ -201,11 +205,15 @@ void PX4Storage::_timer_tick(void)
 		if (write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT) != n<<PX4_STORAGE_LINE_SHIFT) {
 			// write error - likely EINTR
 			_dirty_mask |= write_mask;
+			perf_count(_perf_errors);
 		}
 		if (_dirty_mask == 0) {
-			fsync(_fd);
+			if (fsync(_fd) != 0) {
+				perf_count(_perf_errors);
+			}
 		}
 	}
+	perf_end(_perf_storage);
 }
 
 #endif // CONFIG_HAL_BOARD
