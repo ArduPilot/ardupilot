@@ -81,6 +81,16 @@ static void semaphore_yield(void *sem)
 }
 
 /*
+  set the priority of the main APM task
+ */
+static void set_priority(uint8_t priority)
+{
+    struct sched_param param;
+    param.sched_priority = priority;
+    sched_setscheduler(daemon_task, SCHED_FIFO, &param);    
+}
+
+/*
   this is called when loop() takes more than 1 second to run. If that
   happens then something is blocking for a long time in the main
   sketch - probably waiting on a low priority driver. Set the priority
@@ -88,9 +98,7 @@ static void semaphore_yield(void *sem)
  */
 static void loop_overtime(void *)
 {
-    struct sched_param param;
-    param.sched_priority = APM_OVERTIME_PRIORITY;
-    sched_setscheduler(daemon_task, SCHED_FIFO, &param);
+    set_priority(APM_OVERTIME_PRIORITY);
     ran_overtime = true;
 }
 
@@ -107,6 +115,12 @@ static int main_loop(int argc, char **argv)
     hal.rcout->init(NULL);
     hal.analogin->init(NULL);
 
+    /*
+      run setup() at low priority to ensure CLI doesn't hang the
+      system, and to allow initial sensor read loops to run
+     */
+    set_priority(APM_STARTUP_PRIORITY);
+
     setup();
     hal.scheduler->system_initialized();
 
@@ -120,7 +134,10 @@ static int main_loop(int argc, char **argv)
              
     thread_running = true;
 
-    ::printf("APM: Starting main loop\n");
+    /*
+      switch to high priority for main loop
+     */
+    set_priority(APM_MAIN_PRIORITY);
 
     while (!_px4_thread_should_exit) {
         perf_begin(perf_loop);
@@ -140,9 +157,7 @@ static int main_loop(int argc, char **argv)
               we ran over 1s in loop(), and our priority was lowered
               to let a driver run. Set it back to high priority now.
              */
-            struct sched_param param;
-            param.sched_priority = APM_MAIN_PRIORITY;
-            sched_setscheduler(daemon_task, SCHED_FIFO, &param);
+            set_priority(APM_MAIN_PRIORITY);
             perf_count(perf_overrun);
             ran_overtime = false;
         }
@@ -204,7 +219,7 @@ void HAL_PX4::init(int argc, char * const argv[]) const
             daemon_task = task_spawn(SKETCHNAME,
                                      SCHED_FIFO,
                                      APM_MAIN_PRIORITY,
-                                     4096,
+                                     8192,
                                      main_loop,
                                      NULL);
             exit(0);

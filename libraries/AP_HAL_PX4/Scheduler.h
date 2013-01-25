@@ -16,6 +16,7 @@
 #define APM_TIMER_PRIORITY   201
 #define APM_IO_PRIORITY       60
 #define APM_OVERTIME_PRIORITY 10
+#define APM_STARTUP_PRIORITY  10
 
 /* Scheduler implementation: */
 class PX4::PX4Scheduler : public AP_HAL::Scheduler {
