@@ -1601,7 +1601,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             roll_pitch_initialised = true;
             break;
 
-        case ROLL_PITCH_LOITER:
+        case ROLL_PITCH_LOITER_INAV:
             // require gps lock
             if( ap.home_is_set ) {
                 roll_pitch_initialised = true;
@@ -1712,7 +1712,7 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
 
-    case ROLL_PITCH_LOITER:
+    case ROLL_PITCH_LOITER_INAV:
         // apply SIMPLE mode transform
         if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
