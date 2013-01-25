@@ -1095,6 +1095,8 @@ static void print_enabled(bool b)
 static void
 init_esc()
 {
+    // reduce update rate to motors to 50Hz
+    motors.set_update_rate(50);
     motors.enable();
     motors.armed(true);
     while(1) {
