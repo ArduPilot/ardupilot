@@ -126,8 +126,10 @@ RC_Channel_aux::set_radio_trim(RC_Channel_aux::Aux_servo_function_t function)
 {
     for (uint8_t i = 0; i < 7; i++) {
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
-			_aux_channels[i]->radio_trim = _aux_channels[i]->radio_in;
-			_aux_channels[i]->radio_trim.save();
+			if (_aux_channels[i]->radio_in != 0) {
+				_aux_channels[i]->radio_trim = _aux_channels[i]->radio_in;
+				_aux_channels[i]->radio_trim.save();
+			}
 		}
     }
 }
