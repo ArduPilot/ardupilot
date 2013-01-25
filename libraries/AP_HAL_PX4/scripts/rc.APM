@@ -2,6 +2,11 @@
 
 # APM startup script for NuttX on PX4
 
+if [ -f /fs/microsd/APM/nostart ]
+then
+   echo "APM/nostart found - skipping"
+else
+
 uorb start
 
 # mount binfs so we can find the built-in apps
@@ -62,4 +67,5 @@ then
 	fi
 else
 	echo "No APM sketch found"
+fi
 fi
