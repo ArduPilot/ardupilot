@@ -447,16 +447,12 @@ static void set_mode(uint8_t mode)
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
 
-        // start circling around current location
-        set_next_WP(&current_loc);
-        circle_WP       = next_WP;
-
         // set yaw to point to center of circle
         yaw_look_at_WP = circle_WP;
         set_yaw_mode(YAW_LOOK_AT_LOCATION);
         set_roll_pitch_mode(CIRCLE_RP);
         set_throttle_mode(CIRCLE_THR);
-        circle_angle    = 0;
+        set_nav_mode(NAV_CIRCLE);
         break;
 
     case LOITER:
@@ -466,6 +462,7 @@ static void set_mode(uint8_t mode)
         set_roll_pitch_mode(LOITER_RP);
         set_throttle_mode(LOITER_THR);
         set_next_WP(&current_loc);
+        set_nav_mode(NAV_LOITER);
         break;
 
     case POSITION:
@@ -475,6 +472,7 @@ static void set_mode(uint8_t mode)
         set_roll_pitch_mode(LOITER_RP);
         set_throttle_mode(THROTTLE_MANUAL);
         set_next_WP(&current_loc);
+        set_nav_mode(NAV_LOITER);
         break;
 
     case GUIDED:
@@ -516,6 +514,7 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(OF_LOITER_YAW);
         set_roll_pitch_mode(OF_LOITER_RP);
         set_throttle_mode(OF_LOITER_THR);
+        set_nav_mode(NAV_NONE);
         set_next_WP(&current_loc);
         break;
 

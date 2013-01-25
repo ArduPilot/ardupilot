@@ -617,6 +617,9 @@ static uint16_t loiter_time_max;
 static uint32_t loiter_time;
 // The synthetic location created to make the copter do circles around a WP
 static struct   Location circle_WP;
+// inertial nav loiter variables
+static float loiter_lat_from_home_cm;
+static float loiter_lon_from_home_cm;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1419,7 +1422,7 @@ static void update_GPS(void)
                 // We countdown N number of good GPS fixes
                 // so that the altitude is more accurate
                 // -------------------------------------
-                if (current_loc.lat == 0) {
+                if (g_gps->latitude == 0) {
                     ground_start_count = 5;
 
                 }else{
@@ -1598,7 +1601,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             roll_pitch_initialised = true;
             break;
 
-        case ROLL_PITCH_LOITER_POS_VEL:
+        case ROLL_PITCH_LOITER:
             // require gps lock
             if( ap.home_is_set ) {
                 roll_pitch_initialised = true;
@@ -1709,16 +1712,25 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
 
-    case ROLL_PITCH_LOITER_POS_VEL:
+    case ROLL_PITCH_LOITER:
         // apply SIMPLE mode transform
         if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
         }
+        // copy user input for logging purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
-        // Set max velocity to 2.5 m/s for conservative start
-        get_loiter_pos_vel(-control_pitch/(1*4.5), control_roll/(1*4.5));
+        // update loiter target from user controls - max velocity is 5.0 m/s
+        if( control_roll != 0 || control_pitch != 0 ) {
+            loiter_set_pos_from_velocity(-control_pitch/(2*4.5), control_roll/(2*4.5),0.01f);
+        }
+
+        // copy latest output from nav controller to stabilize controller
+        nav_roll    = auto_roll;
+        nav_pitch   = auto_pitch;
+        get_stabilize_roll(nav_roll);
+        get_stabilize_pitch(nav_pitch);
         break;
     }
 
