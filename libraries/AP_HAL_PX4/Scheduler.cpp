@@ -18,6 +18,7 @@
 
 #include "UARTDriver.h"
 #include "Storage.h"
+#include "RCOutput.h"
 
 using namespace PX4;
 
@@ -190,6 +191,9 @@ void *PX4Scheduler::_timer_thread(void)
         perf_begin(_perf_timers);
         _run_timers(true);
         perf_end(_perf_timers);
+
+        // process any pending RC output requests
+        ((PX4RCOutput *)hal.rcout)->_timer_tick();
     }
     return NULL;
 }
