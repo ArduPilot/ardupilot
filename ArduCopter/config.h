@@ -608,9 +608,23 @@
 #define EARTH_FRAME     0
 #define BODY_FRAME      1
 
-// Stabilize Mode
-#ifndef STABILIZE_THROTTLE
- # define STABILIZE_THROTTLE		THROTTLE_MANUAL_TILT_COMPENSATED
+// Flight mode roll, pitch, yaw, throttle and navigation definitions
+
+// Acro Mode
+#ifndef ACRO_YAW
+ # define ACRO_YAW           	    YAW_ACRO
+#endif
+
+#ifndef ACRO_RP
+ # define ACRO_RP            	    ROLL_PITCH_ACRO
+#endif
+
+#ifndef ACRO_THR
+ # define ACRO_THR           	    THROTTLE_MANUAL
+#endif
+
+#ifndef ACRO_NAV
+ # define ACRO_NAV           	    NAV_NONE
 #endif
 
 // Alt Hold Mode
@@ -626,6 +640,10 @@
  # define ALT_HOLD_THR           	THROTTLE_HOLD
 #endif
 
+#ifndef ALT_HOLD_NAV
+ # define ALT_HOLD_NAV           	NAV_NONE
+#endif
+
 // AUTO Mode
 #ifndef AUTO_YAW
  # define AUTO_YAW                  YAW_LOOK_AT_NEXT_WP
@@ -637,6 +655,23 @@
 
 #ifndef AUTO_THR
  # define AUTO_THR                  THROTTLE_AUTO
+#endif
+
+// CIRCLE Mode
+#ifndef CIRCLE_YAW
+ # define CIRCLE_YAW             	YAW_LOOK_AT_LOCATION
+#endif
+
+#ifndef CIRCLE_RP
+ # define CIRCLE_RP                 ROLL_PITCH_AUTO
+#endif
+
+#ifndef CIRCLE_THR
+ # define CIRCLE_THR                THROTTLE_HOLD
+#endif
+
+#ifndef CIRCLE_NAV
+ # define CIRCLE_NAV           	    NAV_CIRCLE
 #endif
 
 // Guided Mode
@@ -652,17 +687,8 @@
  # define GUIDED_THR                THROTTLE_AUTO
 #endif
 
-// CIRCLE Mode
-#ifndef CIRCLE_YAW
- # define CIRCLE_YAW             	YAW_LOOK_AT_NEXT_WP
-#endif
-
-#ifndef CIRCLE_RP
- # define CIRCLE_RP                 ROLL_PITCH_AUTO
-#endif
-
-#ifndef CIRCLE_THR
- # define CIRCLE_THR                THROTTLE_HOLD
+#ifndef GUIDED_NAV
+ # define GUIDED_NAV           	    NAV_WP
 #endif
 
 // LOITER Mode
@@ -676,6 +702,27 @@
 
 #ifndef LOITER_THR
  # define LOITER_THR                THROTTLE_HOLD
+#endif
+
+#ifndef LOITER_NAV
+ # define LOITER_NAV                NAV_LOITER
+#endif
+
+// POSITION Mode
+#ifndef POSITION_YAW
+ # define POSITION_YAW             	YAW_HOLD
+#endif
+
+#ifndef POSITION_RP
+ # define POSITION_RP               ROLL_PITCH_AUTO
+#endif
+
+#ifndef POSITION_THR
+ # define POSITION_THR              THROTTLE_HOLD
+#endif
+
+#ifndef POSITION_NAV
+ # define POSITION_NAV              NAV_LOITER
 #endif
 
 
@@ -730,6 +777,10 @@
 
 #ifndef OF_LOITER_THR
  # define OF_LOITER_THR             THROTTLE_HOLD
+#endif
+
+#ifndef OF_LOITER_NAV
+ # define OF_LOITER_NAV             NAV_NONE
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
