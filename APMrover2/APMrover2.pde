@@ -894,7 +894,7 @@ static void slow_loop()
 static void one_second_loop()
 {
 #if LITE == DISABLED
-	if (g.log_bitmask & MASK_LOG_CUR)
+	if (g.log_bitmask & MASK_LOG_CURRENT)
 		Log_Write_Current();
 #endif
 	// send a heartbeat

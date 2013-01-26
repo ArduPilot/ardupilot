@@ -57,7 +57,7 @@ print_log_menu(void)
 		PLOG(MODE);
 		PLOG(IMU);
 		PLOG(CMD);
-		PLOG(CUR);
+		PLOG(CURRENT);
 		#undef PLOG
 	}
 
@@ -178,7 +178,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(MODE);
 		TARG(IMU);
 		TARG(CMD);
-		TARG(CUR);
+		TARG(CURRENT);
 		#undef TARG
 	}
 
@@ -370,7 +370,7 @@ static void Log_Write_Current()
 // Read a Current packet
 static void Log_Read_Current()
 {
-	cliSerial->printf_P(PSTR("CURR, %d, %4.4f, %4.4f, %d\n"),
+	cliSerial->printf_P(PSTR("CURRENT, %d, %4.4f, %4.4f, %d\n"),
 			DataFlash.ReadInt(),
 			((float)DataFlash.ReadInt() / 100.f),
 			((float)DataFlash.ReadInt() / 100.f),

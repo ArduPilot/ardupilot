@@ -661,8 +661,8 @@
 #ifndef LOG_CMD
 # define LOG_CMD				ENABLED
 #endif
-#ifndef LOG_CUR
-# define LOG_CUR			DISABLED
+#ifndef LOG_CURRENT
+# define LOG_CURRENT			DISABLED
 #endif
 
 // calculate the default log_bitmask
@@ -678,7 +678,7 @@
 		LOGBIT(MODE)			| \
 		LOGBIT(IMU)				| \
 		LOGBIT(CMD)				| \
-		LOGBIT(CUR)
+		LOGBIT(CURRENT)
 
 
 //////////////////////////////////////////////////////////////////////////////
