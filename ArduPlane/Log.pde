@@ -54,7 +54,7 @@ print_log_menu(void)
         PLOG(MODE);
         PLOG(RAW);
         PLOG(CMD);
-        PLOG(CUR);
+        PLOG(CURRENT);
  #undef PLOG
     }
 
@@ -170,7 +170,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(MODE);
         TARG(RAW);
         TARG(CMD);
-        TARG(CUR);
+        TARG(CURRENT);
  #undef TARG
     }
 
@@ -598,7 +598,7 @@ static void Log_Read_Current()
 {
     struct log_Current pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
-    cliSerial->printf_P(PSTR("CURR, %d, %4.4f, %4.4f, %d\n"),
+    cliSerial->printf_P(PSTR("CURRENT, %d, %4.4f, %4.4f, %d\n"),
                     (int)pkt.throttle_in,
                     ((float)pkt.battery_voltage / 100.f),
                     ((float)pkt.current_amps / 100.f),

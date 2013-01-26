@@ -739,24 +739,24 @@
 #ifndef LOG_CMD
  # define LOG_CMD                                ENABLED
 #endif
-#ifndef LOG_CUR
- # define LOG_CUR                        DISABLED
+#ifndef LOG_CURRENT
+ # define LOG_CURRENT                            DISABLED
 #endif
 
 // calculate the default log_bitmask
 #define LOGBIT(_s)      (LOG_ ## _s ? MASK_LOG_ ## _s : 0)
 
-#define DEFAULT_LOG_BITMASK \
-    LOGBIT(ATTITUDE_FAST)   | \
-    LOGBIT(ATTITUDE_MED)    | \
-    LOGBIT(GPS)                             | \
-    LOGBIT(PM)                              | \
-    LOGBIT(CTUN)                    | \
-    LOGBIT(NTUN)                    | \
-    LOGBIT(MODE)                    | \
-    LOGBIT(RAW)                             | \
-    LOGBIT(CMD)                             | \
-    LOGBIT(CUR)
+#define DEFAULT_LOG_BITMASK     \
+    LOGBIT(ATTITUDE_FAST)       | \
+    LOGBIT(ATTITUDE_MED)        | \
+    LOGBIT(GPS)                 | \
+    LOGBIT(PM)                  | \
+    LOGBIT(CTUN)                | \
+    LOGBIT(NTUN)                | \
+    LOGBIT(MODE)                | \
+    LOGBIT(RAW)                 | \
+    LOGBIT(CMD)                 | \
+    LOGBIT(CURRENT)
 
 
 //////////////////////////////////////////////////////////////////////////////
