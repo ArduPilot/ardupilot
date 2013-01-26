@@ -761,7 +761,7 @@ static void fast_loop()
         Log_Write_Attitude();
 
     if (g.log_bitmask & MASK_LOG_RAW)
-        Log_Write_Raw();
+        Log_Write_IMU();
 
     // inertial navigation
     // ------------------
