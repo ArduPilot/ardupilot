@@ -391,14 +391,10 @@ static bool verify_nav_wp()
     }
 
     // Did we pass the WP?	// Distance checking
-    if((wp_distance <= (g.waypoint_radius * 100)) || check_missed_wp()) {
-        // if we have a distance calc error, wp_distance may be less than 0
-        if(wp_distance > 0) {
-            wp_verify_byte |= NAV_LOCATION;
-
-            if(loiter_time == 0) {
-                loiter_time = millis();
-            }
+    if((wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0)) || check_missed_wp()) {
+        wp_verify_byte |= NAV_LOCATION;
+        if(loiter_time == 0) {
+            loiter_time = millis();
         }
     }
 
@@ -428,7 +424,7 @@ static bool verify_nav_wp()
 
 static bool verify_loiter_unlimited()
 {
-    if(nav_mode == NAV_WP &&  wp_distance <= (g.waypoint_radius * 100)) {
+    if(nav_mode == NAV_WP &&  wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0)) {
         // switch to position hold
         set_nav_mode(NAV_LOITER);
     }
@@ -443,7 +439,7 @@ static bool verify_loiter_time()
             return true;
         }
     }
-    if(nav_mode == NAV_WP &&  wp_distance <= (g.waypoint_radius * 100)) {
+    if(nav_mode == NAV_WP &&  wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0)) {
         // reset our loiter time
         loiter_time = millis();
         // switch to position hold
@@ -499,7 +495,7 @@ static bool verify_RTL()
 
         case RTL_STATE_RETURNING_HOME:
             // if we've reached home initiate loiter
-            if (wp_distance <= g.waypoint_radius * 100 || check_missed_wp()) {
+            if (wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0) || check_missed_wp()) {
                 rtl_state = RTL_STATE_LOITERING_AT_HOME;
                 set_nav_mode(NAV_LOITER);
 
@@ -653,7 +649,7 @@ static bool verify_change_alt()
 static bool verify_within_distance()
 {
     //cliSerial->printf("cond dist :%d\n", (int)condition_value);
-    if (wp_distance < condition_value) {
+    if (wp_distance < max(condition_value,0)) {
         condition_value = 0;
         return true;
     }

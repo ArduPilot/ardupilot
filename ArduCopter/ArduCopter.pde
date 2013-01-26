@@ -699,7 +699,7 @@ static int32_t home_bearing;
 static int32_t home_distance;
 // distance between plane and next_WP in cm
 // is not static because AP_Camera uses it
-int32_t wp_distance;
+uint32_t wp_distance;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors

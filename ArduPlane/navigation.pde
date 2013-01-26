@@ -148,11 +148,11 @@ static void update_loiter()
 {
     float power;
 
-    if(wp_distance <= g.loiter_radius) {
+    if(wp_distance <= (unsigned)max(g.loiter_radius,0)) {
         power = float(wp_distance) / float(g.loiter_radius);
         power = constrain(power, 0.5, 1);
         nav_bearing_cd += 9000.0 * (2.0 + power);
-    } else if(wp_distance < (g.loiter_radius + LOITER_RANGE)) {
+    } else if(wp_distance < (unsigned long)max((g.loiter_radius + LOITER_RANGE),0)) {
         power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
         power = constrain(power, 0.5, 1);                               //power = constrain(power, 0, 1);
         nav_bearing_cd -= power * 9000;
@@ -191,7 +191,7 @@ static void update_crosstrack(void)
     // Crosstrack Error
     // ----------------
     // If we are too far off or too close we don't do track following
-    if (wp_totalDistance >= g.crosstrack_min_distance && 
+    if (wp_totalDistance >= (unsigned)max(g.crosstrack_min_distance,0) &&
         abs(wrap_180_cd(target_bearing_cd - crosstrack_bearing_cd)) < 4500) {
         // Meters we are off track line
         crosstrack_error = sinf(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               

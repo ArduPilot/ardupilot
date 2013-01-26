@@ -43,22 +43,16 @@ static float longitude_scale(const struct Location *loc)
 
 
 
-// return distance in meters to between two locations, or -1
-// if one of the locations is invalid
+// return distance in meters to between two locations
 float get_distance(const struct Location *loc1, const struct Location *loc2)
 {
-    if (loc1->lat == 0 || loc1->lng == 0)
-        return -1;
-    if(loc2->lat == 0 || loc2->lng == 0)
-        return -1;
     float dlat              = (float)(loc2->lat - loc1->lat);
     float dlong             = ((float)(loc2->lng - loc1->lng)) * longitude_scale(loc2);
     return pythagorous2(dlat, dlong) * 0.01113195f;
 }
 
-// return distance in centimeters to between two locations, or -1 if
-// one of the locations is invalid
-int32_t get_distance_cm(const struct Location *loc1, const struct Location *loc2)
+// return distance in centimeters to between two locations
+uint32_t get_distance_cm(const struct Location *loc1, const struct Location *loc2)
 {
     return get_distance(loc1, loc2) * 100;
 }

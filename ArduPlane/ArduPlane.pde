@@ -498,7 +498,7 @@ static int32_t nav_pitch_cd;
 ////////////////////////////////////////////////////////////////////////////////
 // Distance between plane and next waypoint.  Meters
 // is not static because AP_Camera uses it
-int32_t wp_distance;
+uint32_t wp_distance;
 
 // Distance between previous and next waypoint.  Meters
 static int32_t wp_totalDistance;

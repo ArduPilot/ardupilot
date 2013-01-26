@@ -565,7 +565,7 @@ static void update_crosstrack(void)
 {
     // Crosstrack Error
     // ----------------
-    if (wp_distance >= (g.crosstrack_min_distance * 100) &&
+    if (wp_distance >= (unsigned long)max((g.crosstrack_min_distance * 100),0) &&
         abs(wrap_180(wp_bearing - original_wp_bearing)) < 4500) {
 
 	    float temp = (wp_bearing - original_wp_bearing) * RADX100;

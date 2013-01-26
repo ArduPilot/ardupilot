@@ -318,7 +318,7 @@ static bool verify_land()
 
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
-    if (((wp_distance > 0) && (wp_distance <= (g.land_flare_sec*g_gps->ground_speed*0.01)))
+    if ((wp_distance <= (g.land_flare_sec*g_gps->ground_speed*0.01))
         || (adjusted_altitude_cm() <= next_WP.alt + g.land_flare_alt*100)) {
 
         land_complete = true;
@@ -359,7 +359,7 @@ static bool verify_nav_wp()
 {
     hold_course = -1;
     update_crosstrack();
-    if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
+    if (wp_distance <= (unsigned)max(g.waypoint_radius,0)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
                           (unsigned)get_distance(&current_loc, &next_WP));
@@ -416,7 +416,7 @@ static bool verify_loiter_turns()
 
 static bool verify_RTL()
 {
-    if (wp_distance <= g.waypoint_radius) {
+    if (wp_distance <= (unsigned)max(g.waypoint_radius,0)) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
         return true;
     }else{
@@ -477,7 +477,7 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
-    if (wp_distance < condition_value) {
+    if (wp_distance < max(condition_value,0)) {
         condition_value = 0;
         return true;
     }
