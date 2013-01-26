@@ -52,7 +52,7 @@ print_log_menu(void)
         PLOG(CTUN);
         PLOG(NTUN);
         PLOG(MODE);
-        PLOG(RAW);
+        PLOG(IMU);
         PLOG(CMD);
         PLOG(CURRENT);
  #undef PLOG
@@ -168,7 +168,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CTUN);
         TARG(NTUN);
         TARG(MODE);
-        TARG(RAW);
+        TARG(IMU);
         TARG(CMD);
         TARG(CURRENT);
  #undef TARG
