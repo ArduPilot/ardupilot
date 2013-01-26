@@ -707,8 +707,8 @@ static void fast_loop()
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 			Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
 
-		if (g.log_bitmask & MASK_LOG_RAW)
-			Log_Write_Raw();
+		if (g.log_bitmask & MASK_LOG_IMU)
+			Log_Write_IMU();
 	#endif
 #endif
 	// inertial navigation

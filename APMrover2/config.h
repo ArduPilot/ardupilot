@@ -655,8 +655,8 @@
 #ifndef LOG_MODE
 # define LOG_MODE				ENABLED
 #endif
-#ifndef LOG_RAW
-# define LOG_RAW				DISABLED
+#ifndef LOG_IMU
+# define LOG_IMU				DISABLED
 #endif
 #ifndef LOG_CMD
 # define LOG_CMD				ENABLED
@@ -676,7 +676,7 @@
 		LOGBIT(CTUN)			| \
 		LOGBIT(NTUN)			| \
 		LOGBIT(MODE)			| \
-		LOGBIT(RAW)				| \
+		LOGBIT(IMU)				| \
 		LOGBIT(CMD)				| \
 		LOGBIT(CUR)
 

@@ -55,7 +55,7 @@ print_log_menu(void)
 		PLOG(CTUN);
 		PLOG(NTUN);
 		PLOG(MODE);
-		PLOG(RAW);
+		PLOG(IMU);
 		PLOG(CMD);
 		PLOG(CUR);
 		#undef PLOG
@@ -176,7 +176,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(CTUN);
 		TARG(NTUN);
 		TARG(MODE);
-		TARG(RAW);
+		TARG(IMU);
 		TARG(CMD);
 		TARG(CUR);
 		#undef TARG
@@ -337,7 +337,7 @@ static void Log_Write_GPS(	int32_t log_Time, int32_t log_Lattitude, int32_t log_
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
-static void Log_Write_Raw()
+static void Log_Write_IMU()
 {
 	Vector3f gyro = ins.get_gyro();
 	Vector3f accel = ins.get_accel();
@@ -345,7 +345,7 @@ static void Log_Write_Raw()
 	accel *= t7;
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
-	DataFlash.WriteByte(LOG_RAW_MSG);
+	DataFlash.WriteByte(LOG_IMU_MSG);
 
 	DataFlash.WriteLong((long)gyro.x);
 	DataFlash.WriteLong((long)gyro.y);
@@ -526,10 +526,10 @@ static void Log_Read_GPS()
 }
 
 // Read a raw accel/gyro packet
-static void Log_Read_Raw()
+static void Log_Read_IMU()
 {
 	float logvar;
-	cliSerial->printf_P(PSTR("RAW: "));
+	cliSerial->printf_P(PSTR("IMU: "));
 	for (int y = 0; y < 6; y++) {
 		logvar = (float)DataFlash.ReadLong() / t7;
 		cliSerial->print(logvar);
@@ -573,8 +573,8 @@ static void log_callback(uint8_t msgid)
         Log_Read_Performance();
         break;
     
-    case LOG_RAW_MSG:
-        Log_Read_Raw();
+    case LOG_IMU_MSG:
+        Log_Read_IMU();
         break;
 
     case LOG_CMD_MSG:
@@ -609,7 +609,7 @@ static void Log_Write_Performance() {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static void Log_Write_Attitude(int16_t log_roll, int16_t log_pitch, uint16_t log_yaw) {}
 static void Log_Write_Control_Tuning() {}
-static void Log_Write_Raw() {}
+static void Log_Write_IMU() {}
 
 
 #endif // LOGGING_ENABLED
