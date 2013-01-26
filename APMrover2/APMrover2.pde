@@ -291,8 +291,6 @@ AP_Mount camera_mount(g_gps, &dcm);
 static bool usb_connected;
 #endif
 
-static const char *comma = ",";
-
 /* Radio values
 		Channel assignments
 			1   Steering
@@ -812,7 +810,7 @@ cliSerial->println(tempaccel.z, DEC);
 				Log_Write_Nav_Tuning();
 
 			if (g.log_bitmask & MASK_LOG_GPS)
-				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
+				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
 #endif
 			break;
 
