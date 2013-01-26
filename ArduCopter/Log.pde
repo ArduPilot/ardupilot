@@ -49,7 +49,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf_P(PSTR(" NTUN"));
         if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf_P(PSTR(" IMU"));
         if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf_P(PSTR(" CMD"));
-        if (g.log_bitmask & MASK_LOG_CUR) cliSerial->printf_P(PSTR(" CURRENT"));
+        if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf_P(PSTR(" CURRENT"));
         if (g.log_bitmask & MASK_LOG_MOTORS) cliSerial->printf_P(PSTR(" MOTORS"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
@@ -167,7 +167,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(MODE);
         TARG(IMU);
         TARG(CMD);
-        TARG(CUR);
+        TARG(CURRENT);
         TARG(MOTORS);
         TARG(OPTFLOW);
         TARG(PID);
@@ -325,8 +325,8 @@ static void Log_Read_Current()
     struct log_Current pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                               1    2      3      4   5
-    cliSerial->printf_P(PSTR("CURR, %d, %lu, %4.4f, %4.4f, %d\n"),
+    //                                  1    2      3      4   5
+    cliSerial->printf_P(PSTR("CURRENT, %d, %lu, %4.4f, %4.4f, %d\n"),
                     (int)pkt.throttle_in,
                     (unsigned long)pkt.throttle_integrator,
                     (float)pkt.battery_voltage/100.0f,

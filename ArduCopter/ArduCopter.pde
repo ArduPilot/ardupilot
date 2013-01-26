@@ -1345,7 +1345,7 @@ static void super_slow_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
-    if (g.log_bitmask & MASK_LOG_CUR && motors.armed())
+    if (g.log_bitmask & MASK_LOG_CURRENT && motors.armed())
         Log_Write_Current();
 
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds

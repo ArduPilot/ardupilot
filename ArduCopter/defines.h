@@ -308,7 +308,7 @@ enum gcs_severity {
 #define MASK_LOG_MODE                   (1<<6)
 #define MASK_LOG_IMU                    (1<<7)
 #define MASK_LOG_CMD                    (1<<8)
-#define MASK_LOG_CUR                    (1<<9)
+#define MASK_LOG_CURRENT                (1<<9)
 #define MASK_LOG_MOTORS                 (1<<10)
 #define MASK_LOG_OPTFLOW                (1<<11)
 #define MASK_LOG_PID                    (1<<12)
