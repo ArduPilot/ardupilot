@@ -370,7 +370,7 @@ static void Log_Write_Current()
 // Read a Current packet
 static void Log_Read_Current()
 {
-	cliSerial->printf_P(PSTR("CURR: %d, %4.4f, %4.4f, %d\n"),
+	cliSerial->printf_P(PSTR("CURR, %d, %4.4f, %4.4f, %d\n"),
 			DataFlash.ReadInt(),
 			((float)DataFlash.ReadInt() / 100.f),
 			((float)DataFlash.ReadInt() / 100.f),
@@ -382,7 +382,7 @@ static void Log_Read_Control_Tuning()
 {
 	float logvar;
 
-	cliSerial->printf_P(PSTR("CTUN: "));
+	cliSerial->printf_P(PSTR("CTUN, "));
 	for (int y = 1; y < 10; y++) {
 		logvar = DataFlash.ReadInt();
                 if(y == 7) cur_throttle = logvar;
@@ -402,7 +402,7 @@ static void Log_Read_Nav_Tuning()
     for (int8_t i=0; i<7; i++) {
         d[i] = DataFlash.ReadInt();
     }
-	cliSerial->printf_P(PSTR("NTUN: %4.4f, %d, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f,\n"),		// \n
+	cliSerial->printf_P(PSTR("NTUN, %4.4f, %d, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f,\n"),		// \n
                     d[0]/100.0,
                     d[1],
                     ((uint16_t)d[2])/100.0,
@@ -418,7 +418,7 @@ static void Log_Read_Performance()
 	int32_t pm_time;
 	int logvar;
 
-	cliSerial->printf_P(PSTR("PM: "));
+	cliSerial->printf_P(PSTR("PM, "));
 	pm_time = DataFlash.ReadLong();
 	cliSerial->print(pm_time);
 	cliSerial->print(comma);
@@ -441,7 +441,7 @@ static void Log_Read_Cmd()
 	uint8_t logvarb;
 	int32_t logvarl;
 
-	cliSerial->printf_P(PSTR("CMD: "));
+	cliSerial->printf_P(PSTR("CMD, "));
 	for(int i = 1; i < 4; i++) {
 		logvarb = DataFlash.ReadByte();
 		cliSerial->print(logvarb, DEC);
@@ -478,7 +478,7 @@ static void Log_Read_Attitude()
     d[0] = DataFlash.ReadInt();
     d[1] = DataFlash.ReadInt();
     d[2] = DataFlash.ReadInt();
-	cliSerial->printf_P(PSTR("ATT: %d, %d, %u\n"),
+	cliSerial->printf_P(PSTR("ATT, %d, %d, %u\n"),
                     d[0], d[1],
                     (uint16_t)d[2]);
 }
@@ -486,7 +486,7 @@ static void Log_Read_Attitude()
 // Read a mode packet
 static void Log_Read_Mode()
 {
-	cliSerial->printf_P(PSTR("MOD: "));
+	cliSerial->printf_P(PSTR("MOD, "));
     print_flight_mode(DataFlash.ReadByte());
 }
 
@@ -510,17 +510,17 @@ static void Log_Read_GPS()
     k = DataFlash.ReadInt();
     m = DataFlash.ReadInt();
     /*
-	cliSerial->printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %d, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+	cliSerial->printf_P(PSTR("GPS, %ld, %d, %d, %4.7f, %4.7f, %d, %4.4f, %4.4f, %4.4f, %4.4f\n"),
                     (long)l[0], (int)b[0], (int)b[1],
                     l[1]/t7, l[2]/t7, 
                     (int)i,
                     l[3]/100.0, l[4]/100.0, l[5]/100.0, l[6]/100.0); */
-	cliSerial->printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+	cliSerial->printf_P(PSTR("GPS, %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
                     (long)l[0], (int)b[0], (int)b[1],
                     l[1]/t7, l[2]/t7, 
                     l[4]/100.0, l[3]/100.0, l[5]/100.0, l[6]/100.0);
                                         
-        cliSerial->printf_P(PSTR("THP: %4.7f, %4.7f, %4.4f, %2.1f, %2.1f, %2.1f, %d\n"),
+        cliSerial->printf_P(PSTR("THP, %4.7f, %4.7f, %4.4f, %2.1f, %2.1f, %2.1f, %d\n"),
                     l[1]/t7, l[2]/t7, l[3]/100.0,
                     (float)j/100.0, (float)k/100.0, (float)m/100.0, cur_throttle);
 }
@@ -529,7 +529,7 @@ static void Log_Read_GPS()
 static void Log_Read_IMU()
 {
 	float logvar;
-	cliSerial->printf_P(PSTR("IMU: "));
+	cliSerial->printf_P(PSTR("IMU, "));
 	for (int y = 0; y < 6; y++) {
 		logvar = (float)DataFlash.ReadLong() / t7;
 		cliSerial->print(logvar);
