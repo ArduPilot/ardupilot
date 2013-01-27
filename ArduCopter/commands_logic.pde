@@ -391,7 +391,7 @@ static bool verify_nav_wp()
     }
 
     // Did we pass the WP?	// Distance checking
-    if((wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0)) || check_missed_wp()) {
+    if((wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) || check_missed_wp()) {
         wp_verify_byte |= NAV_LOCATION;
         if(loiter_time == 0) {
             loiter_time = millis();
@@ -424,7 +424,7 @@ static bool verify_nav_wp()
 
 static bool verify_loiter_unlimited()
 {
-    if(nav_mode == NAV_WP &&  wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0)) {
+    if(nav_mode == NAV_WP &&  wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
         // switch to position hold
         set_nav_mode(NAV_LOITER);
     }
@@ -620,7 +620,7 @@ static void do_yaw()
 static bool verify_wait_delay()
 {
     //cliSerial->print("vwd");
-    if ((unsigned)(millis() - condition_start) > (unsigned)condition_value) {
+    if (millis() - condition_start > (uint32_t)max(condition_value,0)) {
         //cliSerial->println("y");
         condition_value = 0;
         return true;

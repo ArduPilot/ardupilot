@@ -354,7 +354,7 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
                 break;
         }
         interact->printf_P(
-                PSTR("USER: Place APM %S and press any key.\n"), msg);
+                PSTR("Place APM %S and press any key.\n"), msg);
 
         // wait for user input
         interact->blocking_read();
