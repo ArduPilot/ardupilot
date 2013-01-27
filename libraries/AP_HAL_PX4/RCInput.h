@@ -3,8 +3,8 @@
 #define __AP_HAL_PX4_RCINPUT_H__
 
 #include <AP_HAL_PX4.h>
-
-#define PX4_NUM_RCINPUT_CHANNELS 8
+#include <drivers/drv_rc_input.h>
+#include <systemlib/perf_counter.h>
 
 class PX4::PX4RCInput : public AP_HAL::RCInput {
 public:
@@ -17,11 +17,16 @@ public:
     bool set_override(uint8_t channel, int16_t override);
     void clear_overrides();
 
+    void _timer_tick(void);
+
 private:
     /* override state */
-    uint16_t _override[PX4_NUM_RCINPUT_CHANNELS];
+    uint16_t _override[RC_INPUT_MAX_CHANNELS];
+    struct rc_input_values _rcin;
+    int _rc_sub;
     uint64_t _last_read;
     bool _override_valid;
+    perf_counter_t _perf_rcin;
 };
 
 #endif // __AP_HAL_PX4_RCINPUT_H__

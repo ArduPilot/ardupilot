@@ -19,6 +19,7 @@
 #include "UARTDriver.h"
 #include "Storage.h"
 #include "RCOutput.h"
+#include "RCInput.h"
 
 using namespace PX4;
 
@@ -194,6 +195,9 @@ void *PX4Scheduler::_timer_thread(void)
 
         // process any pending RC output requests
         ((PX4RCOutput *)hal.rcout)->_timer_tick();
+
+        // process any pending RC input requests
+        ((PX4RCInput *)hal.rcin)->_timer_tick();
     }
     return NULL;
 }

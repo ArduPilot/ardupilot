@@ -3,42 +3,47 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include "RCInput.h"
 #include <drivers/drv_hrt.h>
+#include <uORB/uORB.h>
 
 using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
 
-extern uint16_t ppm_buffer[];
-extern unsigned ppm_decoded_channels;
-extern uint64_t ppm_last_valid_decode;
-
 void PX4RCInput::init(void* unused)
 {
+	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
+	_rc_sub = orb_subscribe(ORB_ID(input_rc));
+	if (_rc_sub == -1) {
+		hal.scheduler->panic("Unable to subscribe to input_rc");		
+	}
 	clear_overrides();
 }
 
 uint8_t PX4RCInput::valid() 
 {
-	return ppm_last_valid_decode != _last_read || _override_valid;
+	return _rcin.timestamp != _last_read || _override_valid;
 }
 
 uint16_t PX4RCInput::read(uint8_t ch) 
 {
-	_last_read = ppm_last_valid_decode;
-	_override_valid = false;
-	if (ch >= PX4_NUM_RCINPUT_CHANNELS) {
+	if (ch >= RC_INPUT_MAX_CHANNELS) {
 		return 0;
 	}
+	_last_read = _rcin.timestamp;
+	_override_valid = false;
 	if (_override[ch]) {
 		return _override[ch];
 	}
-	return ppm_buffer[ch];
+	if (ch >= _rcin.channel_count) {
+		return 0;
+	}
+	return _rcin.values[ch];
 }
 
 uint8_t PX4RCInput::read(uint16_t* periods, uint8_t len) 
 {
-	if (len > PX4_NUM_RCINPUT_CHANNELS) {
-		len = PX4_NUM_RCINPUT_CHANNELS;
+	if (len > RC_INPUT_MAX_CHANNELS) {
+		len = RC_INPUT_MAX_CHANNELS;
 	}
 	for (uint8_t i = 0; i < len; i++){
 		periods[i] = read(i);
@@ -59,7 +64,7 @@ bool PX4RCInput::set_override(uint8_t channel, int16_t override) {
 	if (override < 0) {
 		return false; /* -1: no change. */
 	}
-	if (channel >= PX4_NUM_RCINPUT_CHANNELS) {
+	if (channel >= RC_INPUT_MAX_CHANNELS) {
 		return false;
 	}
 	_override[channel] = override;
@@ -72,9 +77,19 @@ bool PX4RCInput::set_override(uint8_t channel, int16_t override) {
 
 void PX4RCInput::clear_overrides()
 {
-	for (uint8_t i = 0; i < PX4_NUM_RCINPUT_CHANNELS; i++) {
+	for (uint8_t i = 0; i < RC_INPUT_MAX_CHANNELS; i++) {
 		set_override(i, 0);
 	}
+}
+
+void PX4RCInput::_timer_tick(void)
+{
+	perf_begin(_perf_rcin);
+	bool rc_updated = false;
+	if (orb_check(_rc_sub, &rc_updated) == 0 && rc_updated) {
+		orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
+	}
+	perf_end(_perf_rcin);
 }
 
 #endif
