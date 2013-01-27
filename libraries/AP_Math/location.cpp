@@ -26,7 +26,7 @@
 // radius of earth in meters
 #define RADIUS_OF_EARTH 6378100
 
-static float longitude_scale(const struct Location *loc)
+float longitude_scale(const struct Location *loc)
 {
     static int32_t last_lat;
     static float scale = 1.0;
