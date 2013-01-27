@@ -864,7 +864,7 @@ void AP_InertialSensor_MPU6000::FIFO_reset()
 void AP_InertialSensor_MPU6000::FIFO_getPacket()
 {
     uint8_t i;
-    int16_t q_long[4];
+    int16_t q_data[4];
     uint8_t addr = MPUREG_FIFO_R_W | 0x80;      // Set most significant bit to indicate a read
     uint8_t received_packet[DMP_FIFO_BUFFER_SIZE];    // FIFO packet buffer
     _spi->cs_assert();
@@ -875,20 +875,15 @@ void AP_InertialSensor_MPU6000::FIFO_getPacket()
     _spi->cs_release();
 
     // we are using 16 bits resolution
-    q_long[0] = (int16_t) ((((uint16_t) received_packet[0]) << 8) + ((uint16_t) received_packet[1]));
-    q_long[1] = (int16_t) ((((uint16_t) received_packet[4]) << 8) + ((uint16_t) received_packet[5]));
-    q_long[2] = (int16_t) ((((uint16_t) received_packet[8]) << 8) + ((uint16_t) received_packet[9]));
-    q_long[3] = (int16_t) ((((uint16_t) received_packet[12]) << 8) + ((uint16_t) received_packet[13]));
-    // Take care of sign
-    for (i = 0; i < 4; i++ ) {
-        if(q_long[i] > 32767) {
-            q_long[i] -= 65536;
-        }
-    }
-    quaternion.q1 = ((float)q_long[0]) / 16384.0f;       // convert from fixed point to float
-    quaternion.q2 = ((float)q_long[2]) / 16384.0f;       // convert from fixed point to float
-    quaternion.q3 = ((float)q_long[1]) / 16384.0f;       // convert from fixed point to float
-    quaternion.q4 = ((float)-q_long[3]) / 16384.0f;       // convert from fixed point to float
+    q_data[0] = (int16_t) ((((uint16_t) received_packet[0]) << 8) + ((uint16_t) received_packet[1]));
+    q_data[1] = (int16_t) ((((uint16_t) received_packet[4]) << 8) + ((uint16_t) received_packet[5]));
+    q_data[2] = (int16_t) ((((uint16_t) received_packet[8]) << 8) + ((uint16_t) received_packet[9]));
+    q_data[3] = (int16_t) ((((uint16_t) received_packet[12]) << 8) + ((uint16_t) received_packet[13]));
+
+    quaternion.q1 = ((float)q_data[0]) / 16384.0f;       // convert from fixed point to float
+    quaternion.q2 = ((float)q_data[2]) / 16384.0f;       // convert from fixed point to float
+    quaternion.q3 = ((float)q_data[1]) / 16384.0f;       // convert from fixed point to float
+    quaternion.q4 = ((float)-q_data[3]) / 16384.0f;       // convert from fixed point to float
 }
 
 // dmp_set_gyro_calibration - apply default gyro calibration FS=2000dps and default orientation
