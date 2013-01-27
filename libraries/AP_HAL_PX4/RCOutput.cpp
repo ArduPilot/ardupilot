@@ -23,8 +23,7 @@ void PX4RCOutput::init(void* unused)
     if (_pwm_fd == -1) {
         hal.scheduler->panic("Unable to open " PWM_OUTPUT_DEVICE_PATH);
     }
-    if (ioctl(_pwm_fd, PWM_IO_SET_FEATURES, PWM_IO_FEATURE_ARM_OK) != 0 ||
-        ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
+    if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming\n");
     }
 }
