@@ -210,7 +210,7 @@ void PX4Storage::_timer_tick(void)
 	uint32_t write_mask = (1U<<i);
 	// see how many lines to write
 	for (n=1; (i+n) < PX4_STORAGE_NUM_LINES && 
-		     n < (1024>>PX4_STORAGE_LINE_SHIFT); n++) {
+		     n < (PX4_STORAGE_MAX_WRITE>>PX4_STORAGE_LINE_SHIFT); n++) {
 		if (!(_dirty_mask & (1<<(n+i)))) {
 			break;
 		}		
