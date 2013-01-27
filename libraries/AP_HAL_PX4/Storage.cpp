@@ -28,34 +28,48 @@ void PX4Storage::_storage_create(void)
 {
 	mkdir(STORAGE_DIR, 0777);
 	unlink(STORAGE_FILE);
-	_fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
-	if (_fd == -1) {
+	int fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
+	if (fd == -1) {
 		hal.scheduler->panic("Failed to create " STORAGE_FILE);
 	}
 	for (uint16_t loc=0; loc<sizeof(_buffer); loc += PX4_STORAGE_MAX_WRITE) {
-		if (write(_fd, &_buffer[loc], PX4_STORAGE_MAX_WRITE) != PX4_STORAGE_MAX_WRITE) {
+		if (write(fd, &_buffer[loc], PX4_STORAGE_MAX_WRITE) != PX4_STORAGE_MAX_WRITE) {
 			hal.scheduler->panic("Error filling " STORAGE_FILE);			
 		}
 	}
 	// ensure the directory is updated with the new size
-	fsync(_fd);
+	fsync(fd);
+	close(fd);
 }
 
 void PX4Storage::_storage_open(void)
 {
-	if (_fd != -1) {
+	if (_initialised) {
 		return;
 	}
 
 	_dirty_mask = 0;
-	_fd = open(STORAGE_FILE, O_RDWR);
-	if (_fd == -1) {
+	int fd = open(STORAGE_FILE, O_RDONLY);
+	if (fd == -1) {
 		_storage_create();
-	} else if (read(_fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-		close(_fd);
-		_fd = -1;
-		_storage_create();		
+		fd = open(STORAGE_FILE, O_RDONLY);
+		if (fd == -1) {
+			hal.scheduler->panic("Failed to open " STORAGE_FILE);
+		}
 	}
+	if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
+		close(fd);
+		_storage_create();
+		fd = open(STORAGE_FILE, O_RDONLY);
+		if (fd == -1) {
+			hal.scheduler->panic("Failed to open " STORAGE_FILE);
+		}
+		if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
+			hal.scheduler->panic("Failed to read " STORAGE_FILE);
+		}
+	}
+	close(fd);
+	_initialised = true;
 }
 
 /*
@@ -165,10 +179,20 @@ void PX4Storage::write_block(uint16_t loc, void *src, size_t n)
 
 void PX4Storage::_timer_tick(void)
 {
-	if (_fd == -1 || _dirty_mask == 0) {
+	if (!_initialised || _dirty_mask == 0) {
 		return;
 	}
 	perf_begin(_perf_storage);
+
+	if (_fd == -1) {
+		_fd = open(STORAGE_FILE, O_WRONLY);
+		if (_fd == -1) {
+			perf_end(_perf_storage);
+			perf_count(_perf_errors);
+			return;	
+		}
+	}
+
 	// write out the first dirty set of lines. We don't write more
 	// than one to keep the latency of this call to a minimum
 	uint8_t i, n;
@@ -205,10 +229,14 @@ void PX4Storage::_timer_tick(void)
 		if (write(_fd, &_buffer[i<<PX4_STORAGE_LINE_SHIFT], n<<PX4_STORAGE_LINE_SHIFT) != n<<PX4_STORAGE_LINE_SHIFT) {
 			// write error - likely EINTR
 			_dirty_mask |= write_mask;
+			close(_fd);
+			_fd = -1;
 			perf_count(_perf_errors);
 		}
 		if (_dirty_mask == 0) {
 			if (fsync(_fd) != 0) {
+				close(_fd);
+				_fd = -1;
 				perf_count(_perf_errors);
 			}
 		}

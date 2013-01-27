@@ -36,6 +36,7 @@ public:
 
 private:
     int _fd;
+    volatile bool _initialised;
     void _storage_create(void);
     void _storage_open(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
