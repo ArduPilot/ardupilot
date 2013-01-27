@@ -359,7 +359,7 @@ static bool verify_nav_wp()
 {
     hold_course = -1;
     update_crosstrack();
-    if (wp_distance <= (unsigned)max(g.waypoint_radius,0)) {
+    if (wp_distance <= (uint32_t)max(g.waypoint_radius,0)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
                           (unsigned)get_distance(&current_loc, &next_WP));
@@ -416,7 +416,7 @@ static bool verify_loiter_turns()
 
 static bool verify_RTL()
 {
-    if (wp_distance <= (unsigned)max(g.waypoint_radius,0)) {
+    if (wp_distance <= (uint32_t)max(g.waypoint_radius,0)) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
         return true;
     }else{

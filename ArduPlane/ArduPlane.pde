@@ -501,7 +501,7 @@ static int32_t nav_pitch_cd;
 uint32_t wp_distance;
 
 // Distance between previous and next waypoint.  Meters
-static int32_t wp_totalDistance;
+static uint32_t wp_totalDistance;
 
 // event control state
 enum event_type { 
