@@ -700,6 +700,14 @@ static int32_t home_distance;
 // distance between plane and next_WP in cm
 // is not static because AP_Camera uses it
 uint32_t wp_distance;
+// wpinav variables
+Vector2f wpinav_origin;         // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
+Vector2f wpinav_destination;    // target destination in cm from home (equivalent to next_WP)
+Vector2f wpinav_target;         // the intermediate target location in cm from home
+Vector2f wpinav_pos_delta;      // position difference between origin and destination
+float wpinav_track_length;      // distance in cm between origin and destination
+float wpinav_track_desired;     // the desired distance along the track in cm
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
@@ -1777,9 +1785,9 @@ void update_simple_mode(void)
     g.rc_2.control_in = _pitch;
 }
 
-// update_super_simple_beading - adjusts simple bearing based on location
+// update_super_simple_bearing - adjusts simple bearing based on location
 // should be called after home_bearing has been updated
-void update_super_simple_beading()
+void update_super_simple_bearing()
 {
     // are we in SIMPLE mode?
     if(ap.simple_mode && g.super_simple) {

@@ -200,6 +200,7 @@
 #define NAV_LOITER      2
 #define NAV_WP          3
 #define NAV_LOITER_INAV 4
+#define NAV_WP_INAV     5
 
 // Yaw override behaviours - used for setting yaw_override_behaviour
 #define YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT     0   // auto pilot takes back yaw control at next waypoint

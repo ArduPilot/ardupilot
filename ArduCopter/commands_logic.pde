@@ -226,7 +226,7 @@ static void do_RTL(void)
     set_throttle_mode(RTL_THR);
 
     // set navigation mode
-    set_nav_mode(NAV_LOITER);
+    set_nav_mode(NAV_LOITER_ACTIVE);
 
     // initial climb starts at current location
     set_next_WP(&current_loc);
@@ -242,7 +242,7 @@ static void do_RTL(void)
 // do_takeoff - initiate takeoff navigation command
 static void do_takeoff()
 {
-    set_nav_mode(NAV_LOITER);
+    set_nav_mode(NAV_LOITER_ACTIVE);
 
     // Start with current location
     Location temp = current_loc;
@@ -263,7 +263,7 @@ static void do_takeoff()
 // do_nav_wp - initiate move to next waypoint
 static void do_nav_wp()
 {
-    set_nav_mode(NAV_WP);
+    set_nav_mode(NAV_WP_ACTIVE);
 
     set_next_WP(&command_nav_queue);
 
@@ -292,7 +292,7 @@ static void do_land()
 {
     // hold at our current location
     set_next_WP(&current_loc);
-    set_nav_mode(NAV_LOITER);
+    set_nav_mode(NAV_LOITER_ACTIVE);
 
     // hold current heading
     set_yaw_mode(YAW_HOLD);
@@ -302,15 +302,15 @@ static void do_land()
 
 static void do_loiter_unlimited()
 {
-    set_nav_mode(NAV_LOITER);
+    set_nav_mode(NAV_LOITER_ACTIVE);
 
     //cliSerial->println("dloi ");
     if(command_nav_queue.lat == 0) {
         set_next_WP(&current_loc);
-        set_nav_mode(NAV_LOITER);
+        set_nav_mode(NAV_LOITER_ACTIVE);
     }else{
         set_next_WP(&command_nav_queue);
-        set_nav_mode(NAV_WP);
+        set_nav_mode(NAV_WP_ACTIVE);
     }
 }
 
@@ -344,11 +344,12 @@ static void do_loiter_turns()
 static void do_loiter_time()
 {
     if(command_nav_queue.lat == 0) {
-        set_nav_mode(NAV_LOITER);
+        set_nav_mode(NAV_LOITER_ACTIVE);
         loiter_time     = millis();
         set_next_WP(&current_loc);
     }else{
-        set_nav_mode(NAV_WP);
+        set_nav_mode(NAV_WP_ACTIVE);
+
         set_next_WP(&command_nav_queue);
     }
 
@@ -403,12 +404,10 @@ static bool verify_nav_wp()
         // we have reached our goal
 
         // loiter at the WP
-        set_nav_mode(NAV_LOITER);
+        set_nav_mode(NAV_LOITER_ACTIVE);
 
         if ((millis() - loiter_time) > loiter_time_max) {
             wp_verify_byte |= NAV_DELAY;
-            //gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
-            //cliSerial->println("vlt done");
         }
     }
 
@@ -424,9 +423,9 @@ static bool verify_nav_wp()
 
 static bool verify_loiter_unlimited()
 {
-    if(nav_mode == NAV_WP &&  wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
+    if(nav_mode == NAV_WP_ACTIVE && wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
         // switch to position hold
-        set_nav_mode(NAV_LOITER);
+        set_nav_mode(NAV_LOITER_ACTIVE);
     }
     return false;
 }
@@ -434,16 +433,16 @@ static bool verify_loiter_unlimited()
 // verify_loiter_time - check if we have loitered long enough
 static bool verify_loiter_time()
 {
-    if(nav_mode == NAV_LOITER) {
+    if(nav_mode == NAV_LOITER_ACTIVE) {
         if ((millis() - loiter_time) > loiter_time_max) {
             return true;
         }
     }
-    if(nav_mode == NAV_WP &&  wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
+    if(nav_mode == NAV_WP_ACTIVE &&  wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
         // reset our loiter time
         loiter_time = millis();
         // switch to position hold
-        set_nav_mode(NAV_LOITER);
+        set_nav_mode(NAV_LOITER_ACTIVE);
     }
     return false;
 }
@@ -483,7 +482,7 @@ static bool verify_RTL()
                 set_new_altitude(get_RTL_alt());
 
                 // set navigation mode
-                set_nav_mode(NAV_WP);
+                set_nav_mode(NAV_WP_ACTIVE);
 
                 // set yaw mode
                 set_yaw_mode(RTL_YAW);
@@ -497,7 +496,7 @@ static bool verify_RTL()
             // if we've reached home initiate loiter
             if (wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0) || check_missed_wp()) {
                 rtl_state = RTL_STATE_LOITERING_AT_HOME;
-                set_nav_mode(NAV_LOITER);
+                set_nav_mode(NAV_LOITER_ACTIVE);
 
                 // set loiter timer
                 rtl_loiter_start_time = millis();
@@ -515,8 +514,7 @@ static bool verify_RTL()
                     // land
                     do_land();
                     // override landing location (do_land defaults to current location)
-                    next_WP.lat = home.lat;
-                    next_WP.lng = home.lng;
+                    set_next_WP_latlon(home.lat, home.lng);
                     // update RTL state
                     rtl_state = RTL_STATE_LAND;
                 }else{

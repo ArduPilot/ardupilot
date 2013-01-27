@@ -607,6 +607,15 @@
 #define EARTH_FRAME     0
 #define BODY_FRAME      1
 
+// active NAV controller
+#ifndef NAV_WP_ACTIVE
+ # define NAV_WP_ACTIVE NAV_WP
+#endif
+// active LOITER controller
+#ifndef NAV_LOITER_ACTIVE
+ # define NAV_LOITER_ACTIVE NAV_LOITER
+#endif
+
 // Flight mode roll, pitch, yaw, throttle and navigation definitions
 
 // Acro Mode
@@ -704,7 +713,7 @@
 #endif
 
 #ifndef LOITER_NAV
- # define LOITER_NAV                NAV_LOITER
+ # define LOITER_NAV                NAV_LOITER_ACTIVE
 #endif
 
 // POSITION Mode
@@ -721,7 +730,7 @@
 #endif
 
 #ifndef POSITION_NAV
- # define POSITION_NAV              NAV_LOITER
+ # define POSITION_NAV              NAV_LOITER_ACTIVE
 #endif
 
 
