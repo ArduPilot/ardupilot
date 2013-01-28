@@ -248,8 +248,7 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_LOITER:
             // set target to current position
-            next_WP.lat = current_loc.lat;
-            next_WP.lng = current_loc.lng;
+            set_next_WP_latlon(current_loc.lat, current_loc.lng);
             nav_initialised = true;
             break;
 
@@ -259,6 +258,7 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_LOITER_INAV:
             loiter_set_target(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff());
+            // To-Do: below allows user to move around set point but do we want to allow this when in Auto flight mode?
             nav_initialised = set_roll_pitch_mode(ROLL_PITCH_LOITER_INAV);
             break;
 
@@ -311,6 +311,7 @@ static void update_nav_mode()
                 circle_angle -= 6.28318531f;
 
             // update target location
+            // To-Do: ensure this target is updated for inertial navigation controller
             set_next_WP_latlon(
                 circle_WP.lat + (g.circle_radius * 100 * sinf(1.57f - circle_angle)),
                 circle_WP.lng + (g.circle_radius * 100 * cosf(1.57f - circle_angle) * scaleLongUp));
@@ -860,11 +861,13 @@ loiter_set_pos_from_velocity(int16_t vel_forward_cms, int16_t vel_right_cms, flo
     loiter_lon_from_home_cm += vel_lon * dt;
 
     // update next_WP location for reporting purposes
-    next_WP.lat = home.lat + loiter_lat_from_home_cm;
-    next_WP.lng = home.lng + loiter_lat_from_home_cm * scaleLongUp;
+    set_next_WP_latlon(
+        home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
+        home.lng + loiter_lat_from_home_cm / LATLON_TO_CM * scaleLongUp);
 }
 
 // loiter_set_target - set loiter's target position from home in cm
+// To-Do: change this function to accept a target in lat/lon format (and remove setting of next_WP?)
 static void
 loiter_set_target(float lat_from_home_cm, float lon_from_home_cm)
 {
@@ -872,8 +875,9 @@ loiter_set_target(float lat_from_home_cm, float lon_from_home_cm)
     loiter_lon_from_home_cm = lon_from_home_cm;
 
     // update next_WP location for reporting purposes
-    next_WP.lat = home.lat + loiter_lat_from_home_cm;
-    next_WP.lng = home.lng + loiter_lat_from_home_cm * scaleLongUp;
+    set_next_WP_latlon(
+        home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
+        home.lng + loiter_lat_from_home_cm / LATLON_TO_CM * scaleLongUp);
 }
 
 //////////////////////////////////////////////////////////
@@ -885,24 +889,18 @@ loiter_set_target(float lat_from_home_cm, float lon_from_home_cm)
 static void
 get_wpinav_pos(float dt)
 {
-    // reuse loiter position controller
+    // re-use loiter position controller
     get_loiter_pos_lat_lon(wpinav_target.x, wpinav_target.y, dt);
 }
 
 // wpinav_set_destination - set destination using lat/lon coordinates
-void wpinav_set_destination(Location& destination)
+void wpinav_set_destination(const Location& destination)
 {
-    wpinav_origin.x = inertial_nav.get_latitude_diff();
-    wpinav_origin.y = inertial_nav.get_longitude_diff();
-    wpinav_destination.x = (destination.lat-home.lat) * LATLON_TO_CM;
-    wpinav_destination.y = (destination.lng-home.lng) * LATLON_TO_CM * scaleLongDown;
-    wpinav_pos_delta = wpinav_destination - wpinav_origin;
-    wpinav_track_length = wpinav_pos_delta.length();
-    wpinav_track_desired = 0;
+    wpinav_set_origin_and_destination(current_loc, destination);
 }
 
 // wpinav_set_origin_and_destination - set origin and destination using lat/lon coordinates
-void wpinav_set_origin_and_destination(Location& origin, Location& destination)
+void wpinav_set_origin_and_destination(const Location& origin, const Location& destination)
 {
     wpinav_origin.x = (origin.lat-home.lat) * LATLON_TO_CM;
     wpinav_origin.y = (origin.lng-home.lng) * LATLON_TO_CM * scaleLongDown;
@@ -910,45 +908,60 @@ void wpinav_set_origin_and_destination(Location& origin, Location& destination)
     wpinav_destination.y = (destination.lng-home.lng) * LATLON_TO_CM * scaleLongDown;
     wpinav_pos_delta = wpinav_destination - wpinav_origin;
     wpinav_track_length = wpinav_pos_delta.length();
+    wpinav_track_desired = 0;
 
-    // reset the desired distance along the track to the closest point's distance
-    Vector2f curr(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff());
-    float line_a = wpinav_pos_delta.y;
-    float line_b = -wpinav_pos_delta.x;
-    float line_c = wpinav_pos_delta.x * wpinav_origin.y - wpinav_pos_delta.y * wpinav_origin.x;
-    float line_m = line_a / line_b;
-    line_m = 1/line_m;
-    line_a = line_m;
-    line_b = -1;
-    line_c = curr.y - line_m * curr.x;
-
-    // calculate the distance to the closest point along the track and it's distance from the origin
-    wpinav_track_desired = abs(line_a*wpinav_origin.x + line_b*wpinav_origin.y + line_c) / safe_sqrt(line_a*line_a+line_b*line_b);
+    // set next_WP, prev_WP for reporting purposes
+    // To-Do: move calcs below to a function
+    set_next_WP_latlon(
+        home.lat + wpinav_destination.x / LATLON_TO_CM,
+        home.lng + wpinav_destination.y / LATLON_TO_CM * scaleLongUp);
 }
 
-#define WPINAV_MAX_POS_ERROR 100.0f        // maximum distance (in cm) that the desired track can stray from our current location.
+#define WPINAV_MAX_POS_ERROR 2000.0f        // maximum distance (in cm) that the desired track can stray from our current location.
 void
 wpinav_advance_track_desired(float velocity_cms, float dt)
 {
+    float cross_track_dist;
+    float track_covered;
+    float track_desired_max;
+    float line_a, line_b, line_c, line_m;
+
     // get current location
     Vector2f curr(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff());
 
-    float line_a = wpinav_pos_delta.y;
-    float line_b = -wpinav_pos_delta.x;
-    float line_c = wpinav_pos_delta.x * wpinav_origin.y - wpinav_pos_delta.y * wpinav_origin.x;
-    float line_m = line_a / line_b;
-    float cross_track_dist = abs(line_a * curr.x + line_b * curr.y + line_c ) / wpinav_track_length;
+    // check for zero length segment
+    if( wpinav_pos_delta.x == 0 && wpinav_pos_delta.y == 0) {
+        wpinav_target = wpinav_destination;
+        return;
+    }
 
-    line_m = 1/line_m;
-    line_a = line_m;
-    line_b = -1;
-    line_c = curr.y - line_m * curr.x;
+    if( wpinav_pos_delta.x == 0 ) {
+        // x is zero
+        cross_track_dist = fabs(curr.x - wpinav_destination.x);
+        track_covered = fabs(curr.y - wpinav_origin.y);
+    }else if(wpinav_pos_delta.y == 0) {
+        // y is zero
+        cross_track_dist = fabs(curr.y - wpinav_destination.y);
+        track_covered = fabs(curr.x - wpinav_origin.x);
+    }else{
+        // both x and y non zero
+        line_a = wpinav_pos_delta.y;
+        line_b = -wpinav_pos_delta.x;
+        line_c = wpinav_pos_delta.x * wpinav_origin.y - wpinav_pos_delta.y * wpinav_origin.x;
+        line_m = line_a / line_b;
+        cross_track_dist = abs(line_a * curr.x + line_b * curr.y + line_c ) / wpinav_track_length;
 
-    // calculate the distance to the closest point along the track and it's distance from the origin
-    float track_covered = abs(line_a*wpinav_origin.x + line_b*wpinav_origin.y + line_c) / safe_sqrt(line_a*line_a+line_b*line_b);
+        line_m = 1/line_m;
+        line_a = line_m;
+        line_b = -1;
+        line_c = curr.y - line_m * curr.x;
+
+        // calculate the distance to the closest point along the track and it's distance from the origin
+        track_covered = abs(line_a*wpinav_origin.x + line_b*wpinav_origin.y + line_c) / safe_sqrt(line_a*line_a+line_b*line_b);
+    }
 
     // maximum distance along the track that we will allow (stops target point from getting too far from the current position)
-    float track_desired_max = track_covered + safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR-cross_track_dist*cross_track_dist);
+    track_desired_max = track_covered + safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR-cross_track_dist*cross_track_dist);
 
     // advance the current target
     wpinav_track_desired += velocity_cms * dt;

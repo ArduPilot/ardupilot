@@ -161,11 +161,6 @@ static void set_next_WP(struct Location *wp)
     // to check if we have missed the WP
     // ---------------------------------
     original_wp_bearing = wp_bearing;
-
-#if NAV_WP_ACTIVE == NAV_WP_INAV
-    // set inertial navigation controller's target incase it's called
-    wpinav_set_origin_and_destination(prev_WP, next_WP);
-#endif
 }
 
 // set_next_WP_latlon - update just lat and lon targets for nav controllers
@@ -174,11 +169,6 @@ static void set_next_WP_latlon(uint32_t lat, uint32_t lon)
     // Load the next_WP slot
     next_WP.lat = lat;
     next_WP.lng = lon;
-
-#if NAV_WP_ACTIVE == NAV_WP_INAV
-    // set inertial navigation controller's target incase it's called
-    wpinav_set_destination(next_WP);
-#endif
 }
 
 // run this at setup on the ground

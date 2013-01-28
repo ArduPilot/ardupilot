@@ -228,9 +228,6 @@ static void do_RTL(void)
     // set navigation mode
     set_nav_mode(NAV_LOITER_ACTIVE);
 
-    // initial climb starts at current location
-    set_next_WP(&current_loc);
-
     // override altitude to RTL altitude
     set_new_altitude(get_RTL_alt());
 }
@@ -475,14 +472,19 @@ static bool verify_RTL()
         case RTL_STATE_INITIAL_CLIMB:
             // rely on verify_altitude function to update alt_change_flag when we've reached the target
             if(alt_change_flag == REACHED_ALT || alt_change_flag == DESCENDING) {
-                // Set navigation target to home
-                set_next_WP(&home);
-
                 // override target altitude to RTL altitude
                 set_new_altitude(get_RTL_alt());
 
                 // set navigation mode
                 set_nav_mode(NAV_WP_ACTIVE);
+
+#if NAV_WP_ACTIVE == NAV_WP
+                // Set navigation target to home
+                set_next_WP(&home);
+#else
+                // Set inav navigation target to home
+                wpinav_set_destination(home);
+#endif
 
                 // set yaw mode
                 set_yaw_mode(RTL_YAW);
@@ -514,6 +516,7 @@ static bool verify_RTL()
                     // land
                     do_land();
                     // override landing location (do_land defaults to current location)
+                    // To-do: ensure this location override is being sent to inav loiter controller
                     set_next_WP_latlon(home.lat, home.lng);
                     // update RTL state
                     rtl_state = RTL_STATE_LAND;
@@ -534,6 +537,7 @@ static bool verify_RTL()
                 // switch to regular loiter mode
                 set_mode(LOITER);
                 // override location and altitude
+                // To-Do: ensure this target location is being sent to loiter controller
                 set_next_WP(&home);
                 // override altitude to RTL altitude
                 set_new_altitude(g.rtl_alt_final);
