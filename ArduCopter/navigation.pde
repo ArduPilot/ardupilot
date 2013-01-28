@@ -157,21 +157,31 @@ static void calc_velocity_and_position(){
 //****************************************************************
 static void calc_distance_and_bearing()
 {
-    // waypoint distance from plane in cm
-    // ---------------------------------------
-    wp_distance     = get_distance_cm(&current_loc, &next_WP);
-    home_distance   = get_distance_cm(&current_loc, &home);
+    // waypoint distance (in cm) and bearaing from plane
+    if( waypoint_valid(next_WP) ) {
+        wp_distance = get_distance_cm(&current_loc, &next_WP);
+        wp_bearing  = get_bearing_cd(&current_loc, &next_WP);
+    }else{
+        wp_distance = 0;
+        wp_bearing = 0;
+    }
 
-    // wp_bearing is bearing to next waypoint
-    // --------------------------------------------
-    wp_bearing          = get_bearing_cd(&current_loc, &next_WP);
-    home_bearing        = get_bearing_cd(&current_loc, &home);
+    // calculate home distance and bearing
+    if( ap.home_is_set ) {
+        home_distance = get_distance_cm(&current_loc, &home);
+        home_bearing = get_bearing_cd(&current_loc, &home);
 
-    // update super simple bearing (if required) because it relies on home_bearing
-    update_super_simple_bearing();
+        // update super simple bearing (if required) because it relies on home_bearing
+        update_super_simple_bearing();
+    }else{
+        home_distance = 0;
+        home_bearing = 0;
+    }    
 
-    // bearing to target (used when yaw_mode = YAW_LOOK_AT_LOCATION)
-    yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
+    // calculate bearing to target (used when yaw_mode = YAW_LOOK_AT_LOCATION)
+    if( waypoint_valid(yaw_look_at_WP) ) {
+        yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
+    }
 }
 
 static void calc_location_error(struct Location *next_loc)
@@ -361,6 +371,10 @@ static void update_nav_mode()
             break;
 
         case NAV_WP_INAV:
+            // move forward on the waypoint
+            // To-Do: slew up the speed to the max waypoint speed instead of immediately jumping to max
+            wpinav_advance_track_desired(g.waypoint_speed_max, 0.1f);
+            // run the navigation controller
             get_wpinav_pos(0.1f);
             break;
     }
@@ -677,6 +691,16 @@ static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t de
     return wrap_360(current_yaw + constrain(wrap_180(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
 }
 
+// valid_waypoint - checks if a waypoint has been initialised or not
+static bool waypoint_valid(Location &wp)
+{
+     if( wp.lat != 0 || wp.lng != 0 ) {
+         return true;
+     }else{
+         return false;
+     }
+}
+
 ////////////////////////////////////////////////////
 // Loiter controller using inertial nav
 ////////////////////////////////////////////////////
@@ -932,6 +956,9 @@ wpinav_advance_track_desired(float velocity_cms, float dt)
     // constrain the target from moving too far
     if( wpinav_track_desired > track_desired_max ) {
         wpinav_track_desired = track_desired_max;
+    }
+    if( wpinav_track_desired > wpinav_track_length ) {
+        wpinav_track_desired = wpinav_track_length;
     }
 
     // recalculate the desired position
