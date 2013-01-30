@@ -64,7 +64,7 @@ void APM1RCInput::init(void* _isrregistry) {
      */
     TCCR4A = _BV(WGM40) | _BV(WGM41);
     TCCR4B = _BV(WGM43) | _BV(WGM42) | _BV(CS41) | _BV(ICES4);
-    OCR4A  = 40000;
+    OCR4A  = 40000 - 1; // -1 to correct for wrap
 
     /* OCR4B and OCR4C will be used by RCOutput_APM1. init to nil output */
     OCR4B  = 0xFFFF;
@@ -72,6 +72,9 @@ void APM1RCInput::init(void* _isrregistry) {
 
     /* Enable input capture interrupt */
     TIMSK4 |= _BV(ICIE4);
+    
+    /* Enable overflow interrupt */
+    TIMSK4 |= _BV(TOIE4);
 }
 
 uint8_t APM1RCInput::valid() { return _valid; }
