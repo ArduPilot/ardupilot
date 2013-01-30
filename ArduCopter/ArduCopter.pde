@@ -1840,6 +1840,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 void update_throttle_mode(void)
 {
     int16_t pilot_climb_rate;
+    int16_t pilot_throttle_scaled;
 
     if(ap.do_flip)     // this is pretty bad but needed to flip in AP modes.
         return;
@@ -1867,19 +1868,20 @@ void update_throttle_mode(void)
             set_throttle_out(0, false);
         }else{
             // send pilot's output directly to motors
-            set_throttle_out(g.rc_3.control_in, false);
+            pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
+            set_throttle_out(pilot_throttle_scaled, false);
 
             // update estimate of throttle cruise
 			#if FRAME_CONFIG == HELI_FRAME
             update_throttle_cruise(motors.coll_out);
 			#else
-			update_throttle_cruise(g.rc_3.control_in);
+			update_throttle_cruise(pilot_throttle_scaled);
 			#endif  //HELI_FRAME
 			
 
             // check if we've taken off yet
             if (!ap.takeoff_complete && motors.armed()) {
-                if (g.rc_3.control_in > g.throttle_cruise) {
+                if (pilot_throttle_scaled > g.throttle_cruise) {
                     // we must be in the air by now
                     set_takeoff_complete(true);
                 }
@@ -1892,17 +1894,18 @@ void update_throttle_mode(void)
         if (g.rc_3.control_in <= 0) {
             set_throttle_out(0, false); // no need for angle boost with zero throttle
         }else{
-            set_throttle_out(g.rc_3.control_in, true);
+            pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
+            set_throttle_out(pilot_throttle_scaled, true);
 
             // update estimate of throttle cruise
             #if FRAME_CONFIG == HELI_FRAME
             update_throttle_cruise(motors.coll_out);
 			#else
-			update_throttle_cruise(g.rc_3.control_in);
+			update_throttle_cruise(pilot_throttle_scaled);
 			#endif  //HELI_FRAME
 
             if (!ap.takeoff_complete && motors.armed()) {
-                if (g.rc_3.control_in > g.throttle_cruise) {
+                if (pilot_throttle_scaled > g.throttle_cruise) {
                     // we must be in the air by now
                     set_takeoff_complete(true);
                 }

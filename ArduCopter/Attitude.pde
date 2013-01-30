@@ -834,10 +834,41 @@ get_throttle_accel(int16_t z_target_accel)
     return output;
 }
 
+// get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
+// used only for manual throttle modes
+// returns throttle output 0 to 1000
+#define THROTTLE_IN_MIDDLE 500          // the throttle mid point
+static int16_t get_pilot_desired_throttle(int16_t throttle_control)
+{
+    int16_t throttle_out;
+
+    // exit immediately in the simple cases
+    if( throttle_control == 0 || g.throttle_mid == 500) {
+        return throttle_control;
+    }
+
+    // ensure reasonable throttle values
+    throttle_control = constrain(throttle_control,0,1000);
+    g.throttle_mid = constrain(g.throttle_mid,300,700);
+
+    // check throttle is above, below or in the deadband
+    if (throttle_control < THROTTLE_IN_MIDDLE) {
+        // below the deadband
+        throttle_out = (float)throttle_control * (float)g.throttle_mid / 500.0f;
+    }else if(throttle_control > THROTTLE_IN_MIDDLE) {
+        // above the deadband
+        throttle_out = g.throttle_mid + ((float)(throttle_control-500))*(float)(1000-g.throttle_mid)/500.0f;
+    }else{
+        // must be in the deadband
+        throttle_out = g.throttle_mid;
+    }
+
+    return throttle_out;
+}
+
 // get_pilot_desired_climb_rate - transform pilot's throttle input to
 // climb rate in cm/s.  we use radio_in instead of control_in to get the full range
 // without any deadzone at the bottom
-#define THROTTLE_IN_MIDDLE 500          // the throttle mid point
 #define THROTTLE_IN_DEADBAND 100        // the throttle input channel's deadband in PWM
 #define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+THROTTLE_IN_DEADBAND)  // top of the deadband
 #define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-THROTTLE_IN_DEADBAND)  // bottom of the deadband

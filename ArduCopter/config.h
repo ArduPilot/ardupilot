@@ -902,6 +902,10 @@
  # define THROTTLE_CRUISE       450            //
 #endif
 
+#ifndef THR_MID
+ # define THR_MID        500                            // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#endif
+
 #ifndef ALT_HOLD_P
  # define ALT_HOLD_P            2.0
 #endif
