@@ -2056,8 +2056,10 @@ static void update_altitude()
     baro_rate			= constrain(baro_rate, -500, 500);
 
     // read in sonar altitude and calculate sonar rate
-    if(g.sonar_enabled) {
-        sonar_alt       = read_sonar();
+    sonar_alt           = read_sonar();
+    // start calculating the sonar_rate as soon as valid sonar readings start coming in so that we are ready when the sonar_alt_health becomes 3
+    // Note: post 2.9.1 release we will remove the sonar_rate variable completely
+    if(sonar_alt_health > 1) {
         sonar_rate      = (sonar_alt - old_sonar_alt) * 10;
         sonar_rate      = constrain(sonar_rate, -150, 150);
     }
