@@ -188,7 +188,8 @@ public:
         k_param_radio_tuning_high,
         k_param_radio_tuning_low,
         k_param_rc_speed = 192,
-        k_param_failsafe_battery_enabled, // 193
+        k_param_failsafe_battery_enabled,
+        k_param_throttle_mid, // 194
 
         //
         // 200: flight modes
@@ -305,6 +306,7 @@ public:
     AP_Int8         failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
     AP_Int16        throttle_cruise;
+    AP_Int16        throttle_mid;
 
     // Flight modes
     //
