@@ -284,11 +284,15 @@ static void setup_wait_key(void)
 static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
+    float trim_roll, trim_pitch;
+
     cliSerial->println_P(PSTR("Initialising gyros"));
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              delay, flash_leds, &timer_scheduler);
-    ins.calibrate_accel(delay, flash_leds, setup_printf_P, setup_wait_key);
+    ins.calibrate_accel(delay, flash_leds, setup_printf_P, setup_wait_key, trim_roll, trim_pitch);
+    // reset ahrs's trim to suggested values from calibration routine
+    ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     report_ins();
     return(0);
 }
