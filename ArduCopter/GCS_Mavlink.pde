@@ -1227,9 +1227,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 trim_radio();
             }
             if (packet.param5 == 1) {
+                float trim_roll, trim_pitch;
                 // this blocks
                 AP_InertialSensor_UserInteractStream interact(hal.console);
-                ins.calibrate_accel(flash_leds, &interact);
+                if(ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch)) {
+                    // reset ahrs's trim to suggested values from calibration routine
+                    ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                }
             }
             result = MAV_RESULT_ACCEPTED;
             break;
