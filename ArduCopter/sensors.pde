@@ -35,6 +35,12 @@ static int32_t read_barometer(void)
 static int16_t read_sonar(void)
 {
 #if CONFIG_SONAR == ENABLED
+    // exit immediately if sonar is disabled
+    if( !g.sonar_enabled ) {
+        sonar_alt_health = 0;
+        return 0;
+    }
+
     int16_t temp_alt = sonar->read();
 
     if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * 0.70f) {
