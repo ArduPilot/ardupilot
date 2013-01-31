@@ -1195,10 +1195,10 @@ static void reset_throttle_I(void)
     g.pid_throttle_accel.reset_I();
 }
 
-static void set_accel_throttle_I_from_pilot_throttle(void)
+static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_throttle_accel.set_integrator(g.rc_3.control_in-g.throttle_cruise);
+    g.pid_throttle_accel.set_integrator(pilot_throttle-g.throttle_cruise);
 }
 
 static void reset_stability_I(void)
