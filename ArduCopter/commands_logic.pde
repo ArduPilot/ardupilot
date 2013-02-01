@@ -439,7 +439,7 @@ static bool verify_loiter_time()
             return true;
         }
     }
-    if(nav_mode == NAV_WP &&  wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0)) {
+    if(nav_mode == NAV_WP &&  wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
         // reset our loiter time
         loiter_time = millis();
         // switch to position hold
@@ -495,7 +495,7 @@ static bool verify_RTL()
 
         case RTL_STATE_RETURNING_HOME:
             // if we've reached home initiate loiter
-            if (wp_distance <= (unsigned long)max((g.waypoint_radius * 100),0) || check_missed_wp()) {
+            if (wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0) || check_missed_wp()) {
                 rtl_state = RTL_STATE_LOITERING_AT_HOME;
                 set_nav_mode(NAV_LOITER);
 
