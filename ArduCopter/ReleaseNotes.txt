@@ -1,5 +1,11 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 2.9.1-rc2 01-Feb-2013
+Improvements over 2.9.1-rc1:
+1) small corretion to use of THR_MID to scale lower end of manual throttle between THR_MIN and 500 instead of 0 and 500
+2) bug fix for longitude scaling being incorrectly calculated using Next Waypoint instead of home which could lead to scaling being 1
+3) ESC calibration change to set update rate to ESCs to 50hz to allow simonk ESC to be calibrated
+------------------------------------------------------------------
 ArduCopter 2.9.1-rc1 31-Jan-2013
 Improvements over 2.9:
 1) THR_MID parameter added to allow users to adjust the manual throttle so that vehicle hovers at about mid stick
