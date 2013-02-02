@@ -648,21 +648,13 @@ static float current_total1;
 static float controller_desired_alt;
 // The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
 static int32_t altitude_error;
-// The cm/s we are moving up or down based on sensor data - Positive = UP
-static int16_t climb_rate_actual;
-// Used to dither our climb_rate over 50hz
-static int16_t climb_rate_error;
 // The cm/s we are moving up or down based on filtered data - Positive = UP
 static int16_t climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t sonar_alt;
 static uint8_t sonar_alt_health;   // true if we can trust the altitude from the sonar
-// The climb_rate as reported by sonar in cm/s
-static int16_t sonar_rate;
 // The altitude as reported by Baro in cm – Values can be quite high
 static int32_t baro_alt;
-// The climb_rate as reported by Baro in cm/s
-static int16_t baro_rate;
 
 static int16_t saved_toy_throttle;
 
@@ -827,9 +819,7 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
 AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
@@ -931,7 +921,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
     { update_navigation,     2,     500 },
     { medium_loop,           2,     700 },
-    { update_altitude_est,   2,    1000 },
+    { update_altitude,       5,    1000 },
     { fifty_hz_loop,         2,     950 },
     { run_nav_updates,       2,     500 },
     { slow_loop,            10,     500 },
@@ -1225,6 +1215,9 @@ static void medium_loop()
 // ---------------------------
 static void fifty_hz_loop()
 {
+    // get altitude and climb rate from inertial lib
+    read_inertial_altitude();
+
     // Update the throttle ouput
     // -------------------------
     update_throttle_mode();
@@ -2078,107 +2071,28 @@ static void update_trig(void){
     // 270 = cos_yaw: -1.00, sin_yaw:  0.00,
 }
 
-// updated at 10hz
+// read baro and sonar altitude at 10hz
 static void update_altitude()
 {
-    int32_t old_baro_alt    = baro_alt;
-    int16_t old_sonar_alt   = sonar_alt;
-
 #if HIL_MODE == HIL_MODE_ATTITUDE
     // we are in the SIM, fake out the baro and Sonar
-    int16_t fake_relative_alt = g_gps->altitude - gps_base_alt;
-    baro_alt                = fake_relative_alt;
-    baro_rate               = (baro_alt - old_baro_alt) * 5;             // 5hz
+    baro_alt                = g_gps->altitude - gps_base_alt;
+
     if(g.sonar_enabled) {
-        sonar_alt           = fake_relative_alt;
-        sonar_rate          = baro_rate;
+        sonar_alt           = baro_alt;
     }
-    current_loc.alt = baro_alt;
-    climb_rate_actual = baro_rate;
 #else
-    // read in actual baro altitude
+    // read in baro altitude
     baro_alt            = read_barometer();
 
-    // calc baro based vertical velocity
-    int16_t temp		= (baro_alt - old_baro_alt) * 10;
-    baro_rate           = (temp + baro_rate) >> 1;
-    baro_rate			= constrain(baro_rate, -500, 500);
-
-    // read in sonar altitude and calculate sonar rate
+    // read in sonar altitude
     sonar_alt           = read_sonar();
-    // start calculating the sonar_rate as soon as valid sonar readings start coming in so that we are ready when the sonar_alt_health becomes 3
-    // Note: post 2.9.1 release we will remove the sonar_rate variable completely
-    if(sonar_alt_health > 1) {
-        sonar_rate      = (sonar_alt - old_sonar_alt) * 10;
-        sonar_rate      = constrain(sonar_rate, -150, 150);
-    }
-
-    // Note: with inertial nav, alt and rate are pulled from the inav lib at 50hz in update_altitude_est function
-    // so none of the below is required
-# if INERTIAL_NAV_Z != ENABLED
-    // if no sonar set current alt to baro alt
-    if(!g.sonar_enabled) {
-        // NO Sonar case
-        current_loc.alt = baro_alt;
-        climb_rate_actual = baro_rate;
-    }else{
-        // Blend barometer and sonar data together
-        float scale;
-        if(baro_alt < 800) {
-            scale = (float)(sonar_alt - 400) / 200.0;
-            scale = constrain(scale, 0.0, 1.0);
-            // solve for a blended altitude
-            current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale);
-
-            // solve for a blended climb_rate
-            climb_rate_actual = ((float)sonar_rate * (1.0 - scale)) + (float)baro_rate * scale;
-
-        }else{
-            // we must be higher than sonar (>800), don't get tricked by bad sonar reads
-            current_loc.alt = baro_alt;
-            // dont blend, go straight baro
-            climb_rate_actual       = baro_rate;
-        }
-    }
-    // climb_rate_error is used to spread the change in climb rate across the next 5 samples
-    climb_rate_error = (climb_rate_actual - climb_rate) / 5;
-# endif // INERTIAL_NAV_Z != ENABLED
 #endif  // HIL_MODE == HIL_MODE_ATTITUDE
 
-    // update the target altitude
-    verify_altitude();
-}
-
-static void update_altitude_est()
-{
-#if INERTIAL_NAV_Z == ENABLED
-    // with inertial nav we can update the altitude and climb rate at 50hz
-    current_loc.alt = inertial_nav.get_altitude();
-    climb_rate = inertial_nav.get_velocity_z();
-
-    // update baro and sonar alt and climb rate just for logging purposes
-    // To-Do: remove alt_sensor_flag and move update_altitude to be called from 10hz loop
-    if(ap_system.alt_sensor_flag) {
-        ap_system.alt_sensor_flag = false;
-        update_altitude();
-        if ((g.log_bitmask & MASK_LOG_CTUN) && motors.armed()) {
-            Log_Write_Control_Tuning();
-        }
+    // write altitude info to dataflash logs
+    if ((g.log_bitmask & MASK_LOG_CTUN) && motors.armed()) {
+        Log_Write_Control_Tuning();
     }
-#else
-    if(ap_system.alt_sensor_flag) {
-        update_altitude();
-        ap_system.alt_sensor_flag = false;
-
-        if ((g.log_bitmask & MASK_LOG_CTUN) && motors.armed()) {
-            Log_Write_Control_Tuning();
-        }
-    }else{
-        // simple dithering of climb rate
-        climb_rate += climb_rate_error;
-        current_loc.alt += (climb_rate / 50);
-    }
-#endif
 }
 
 static void tuning(){
@@ -2331,9 +2245,7 @@ static void tuning(){
 #if INERTIAL_NAV_XY == ENABLED
         inertial_nav.set_time_constant_xy(tuning_value);
 #endif
-#if INERTIAL_NAV_Z == ENABLED
         inertial_nav.set_time_constant_z(tuning_value);
-#endif
         break;
 
     case CH6_THR_ACCEL_KP:

@@ -1281,8 +1281,5 @@
 #ifndef INERTIAL_NAV_XY
  # define INERTIAL_NAV_XY DISABLED
 #endif
-#ifndef INERTIAL_NAV_Z
- # define INERTIAL_NAV_Z ENABLED
-#endif
 
 #endif // __ARDUCOPTER_CONFIG_H__

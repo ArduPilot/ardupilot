@@ -89,6 +89,7 @@ static void run_nav_updates(void)
 {
     if (nav_updates.need_velpos) {
         calc_velocity_and_position();
+        verify_altitude();
         nav_updates.need_velpos = 0;
     } else if (nav_updates.need_dist_bearing) {
         calc_distance_and_bearing();

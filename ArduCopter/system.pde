@@ -227,10 +227,8 @@ static void init_ardupilot()
         init_optflow();
     }
 
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     // initialise inertial nav
     inertial_nav.init();
-#endif
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT

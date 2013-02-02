@@ -187,9 +187,7 @@ static void init_disarm_motors()
 
     g.throttle_cruise.save();
 
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     inertial_nav.save_params();
-#endif
 
     // we are not in the air
     set_takeoff_complete(false);

@@ -772,7 +772,6 @@ struct log_INAV {
     LOG_PACKET_HEADER;
     int16_t baro_alt;
     int16_t inav_alt;
-    int16_t baro_climb_rate;
     int16_t inav_climb_rate;
     float   accel_corr_x;
     float   accel_corr_y;
@@ -789,28 +788,25 @@ struct log_INAV {
 // Write an INAV packet. Total length : 52 Bytes
 static void Log_Write_INAV()
 {
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     Vector3f accel_corr = inertial_nav.accel_correction_ef;
 
     struct log_INAV pkt = {
         LOG_PACKET_HEADER_INIT(LOG_INAV_MSG),
         baro_alt            : (int16_t)baro_alt,                        // 1 barometer altitude
         inav_alt            : (int16_t)inertial_nav.get_altitude(),     // 2 accel + baro filtered altitude
-        baro_climb_rate     : baro_rate,                                // 3 barometer based climb rate
-        inav_climb_rate     : (int16_t)inertial_nav.get_velocity_z(),   // 4 accel + baro based climb rate
-        accel_corr_x        : accel_corr.x,                             // 5 accel correction x-axis
-        accel_corr_y        : accel_corr.y,                             // 6 accel correction y-axis
-        accel_corr_z        : accel_corr.z,                             // 7 accel correction z-axis
-        accel_corr_ef_z     : inertial_nav.accel_correction_ef.z,       // 8 accel correction earth frame
-        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 9 lat from home
-        gps_lon_from_home   : g_gps->longitude-home.lng,                // 10 lon from home
-        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 11 accel based lat from home
-        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 12 accel based lon from home
-        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 13 accel based lat velocity
-        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 14 accel based lon velocity
+        inav_climb_rate     : (int16_t)inertial_nav.get_velocity_z(),   // 3 accel + baro based climb rate
+        accel_corr_x        : accel_corr.x,                             // 4 accel correction x-axis
+        accel_corr_y        : accel_corr.y,                             // 5 accel correction y-axis
+        accel_corr_z        : accel_corr.z,                             // 6 accel correction z-axis
+        accel_corr_ef_z     : inertial_nav.accel_correction_ef.z,       // 7 accel correction earth frame
+        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 8 lat from home
+        gps_lon_from_home   : g_gps->longitude-home.lng,                // 9 lon from home
+        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 10 accel based lat from home
+        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 11 accel based lon from home
+        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 12 accel based lat velocity
+        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 13 accel based lon velocity
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif
 }
 
 // Read an INAV packet
@@ -819,11 +815,10 @@ static void Log_Read_INAV()
     struct log_INAV pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-                                  // 1   2   3   4      5      6      7      8    9   10     11     12     13     14
-    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
+                                  // 1   2   3   4      5      6      7      8    9   10     11     12     13
+    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
                     (int)pkt.baro_alt,                  // 1 barometer altitude
                     (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
-                    (int)pkt.baro_climb_rate,           // 3 barometer based climb rate
                     (int)pkt.inav_climb_rate,           // 4 accel + baro based climb rate
                     (float)pkt.accel_corr_x,            // 5 accel correction x-axis
                     (float)pkt.accel_corr_y,            // 6 accel correction y-axis
