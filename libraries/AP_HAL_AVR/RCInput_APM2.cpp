@@ -64,7 +64,7 @@ void APM2RCInput::init(void* _isrregistry) {
      */
     TCCR5A = _BV(WGM50) | _BV(WGM51);
     TCCR5B = _BV(WGM53) | _BV(WGM52) | _BV(CS51) | _BV(ICES5);
-    OCR5A  = 40000;
+    OCR5A  = 40000 - 1; // -1 to correct for wrap
 
     /* OCR5B and OCR5C will be used by RCOutput_APM2. init to nil output */
     OCR5B  = 0xFFFF;
@@ -72,6 +72,9 @@ void APM2RCInput::init(void* _isrregistry) {
 
     /* Enable input capture interrupt */
     TIMSK5 |= _BV(ICIE5);
+    
+    /* Enable overflow interrupt */
+    TIMSK5 |= _BV(TOIE5);
 }
 
 uint8_t APM2RCInput::valid() { return _valid; }
