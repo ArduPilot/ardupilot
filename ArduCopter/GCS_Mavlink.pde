@@ -937,8 +937,38 @@ GCS_MAVLINK::update(void)
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
-    AP_Int16 *stream_rates = &streamRateRawSensors;
-    uint8_t rate = (uint8_t)stream_rates[stream_num].get();
+    uint8_t rate;
+    switch (stream_num) {
+        case STREAM_RAW_SENSORS:
+            rate = streamRateRawSensors.get();
+            break;
+        case STREAM_EXTENDED_STATUS:
+            rate = streamRateExtendedStatus.get();
+            break;
+        case STREAM_RC_CHANNELS:
+            rate = streamRateRCChannels.get();
+            break;
+        case STREAM_RAW_CONTROLLER:
+            rate = streamRateRawController.get();
+            break;
+        case STREAM_POSITION:
+            rate = streamRatePosition.get();
+            break;
+        case STREAM_EXTRA1:
+            rate = streamRateExtra1.get();
+            break;
+        case STREAM_EXTRA2:
+            rate = streamRateExtra2.get();
+            break;
+        case STREAM_EXTRA3:
+            rate = streamRateExtra3.get();
+            break;
+        case STREAM_PARAMS:
+            rate = streamRateParams.get();
+            break;
+        default:
+            rate = 0;
+    }
 
     if (rate == 0) {
         return false;
