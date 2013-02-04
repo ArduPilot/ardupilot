@@ -259,9 +259,21 @@ static void do_takeoff()
 // do_nav_wp - initiate move to next waypoint
 static void do_nav_wp()
 {
+    // set nav mode
     set_nav_mode(NAV_WP_ACTIVE);
 
+    // set target location
+#if NAV_WP_ACTIVE == NAV_WP
+    // Set navigation target
     set_next_WP(&command_nav_queue);
+#else
+    // Set inav navigation target
+    wpinav_set_destination(command_nav_queue);
+#endif
+
+    // set throttle mode to AUTO although we are likely already in this mode
+    set_throttle_mode(THROTTLE_AUTO);
+    set_new_altitude(command_nav_queue.alt);
 
     // this is our bitmask to verify we have met all conditions to move on
     wp_verify_byte  = 0;
@@ -286,43 +298,60 @@ static void do_nav_wp()
 // do_land - initiate landing procedure
 static void do_land()
 {
-    // hold at our current location
-    set_next_WP(&current_loc);
+    // switch into loiter mode
     set_nav_mode(NAV_LOITER_ACTIVE);
 
     // hold current heading
     set_yaw_mode(YAW_HOLD);
 
+    // set throttle mode to land
     set_throttle_mode(THROTTLE_LAND);
 }
 
+// do_loiter_unlimited - start loitering with no end conditions
 static void do_loiter_unlimited()
 {
-    set_nav_mode(NAV_LOITER_ACTIVE);
-
-    //cliSerial->println("dloi ");
-    if(command_nav_queue.lat == 0) {
-        set_next_WP(&current_loc);
+    // if no location specified loiter at current location
+    if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
         set_nav_mode(NAV_LOITER_ACTIVE);
     }else{
-        set_next_WP(&command_nav_queue);
+        // location specified so fly to the target location
         set_nav_mode(NAV_WP_ACTIVE);
+#if NAV_WP_ACTIVE == NAV_WP
+        // Set navigation target
+        set_next_WP(&command_nav_queue);
+#else
+        // Set inav navigation target
+        wpinav_set_destination(command_nav_queue);
+#endif
+    }
+
+    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
+    set_throttle_mode(THROTTLE_AUTO);
+
+    // set target altitude if provided
+    if( command_nav_queue.alt != 0 ) {
+        set_new_altitude(command_nav_queue.alt);
     }
 }
 
 // do_loiter_turns - initiate moving in a circle
 static void do_loiter_turns()
 {
+    // set nav mode to CIRCLE
     set_nav_mode(NAV_CIRCLE);
 
-    if(command_nav_queue.lat == 0) {
-        // allow user to specify just the altitude
-        if(command_nav_queue.alt > 0) {
-            current_loc.alt = command_nav_queue.alt;
-        }
-        set_next_WP(&current_loc);
-    }else{
-        set_next_WP(&command_nav_queue);
+    // set horizontal location target
+    if( command_nav_queue.lat != 0 || command_nav_queue.lng != 0) {
+        set_next_WP_latlon(command_nav_queue.lat, command_nav_queue.lng);
+    } 
+
+    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
+    set_throttle_mode(THROTTLE_AUTO);
+
+    // set target altitude if provided
+    if( command_nav_queue.alt != 0 ) {
+        set_new_altitude(command_nav_queue.alt);
     }
 
     circle_WP = next_WP;
@@ -339,14 +368,28 @@ static void do_loiter_turns()
 // do_loiter_time - initiate loitering at a point for a given time period
 static void do_loiter_time()
 {
-    if(command_nav_queue.lat == 0) {
+    // if no position specificed loiter at current location
+    if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
         set_nav_mode(NAV_LOITER_ACTIVE);
         loiter_time     = millis();
-        set_next_WP(&current_loc);
     }else{
+        // location specified so fly to the target location
         set_nav_mode(NAV_WP_ACTIVE);
-
+#if NAV_WP_ACTIVE == NAV_WP
+        // Set navigation target
         set_next_WP(&command_nav_queue);
+#else
+        // Set inav navigation target
+        wpinav_set_destination(command_nav_queue);
+#endif
+    }
+
+    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
+    set_throttle_mode(THROTTLE_AUTO);
+
+    // set target altitude if provided
+    if( command_nav_queue.alt != 0 ) {
+        set_new_altitude(command_nav_queue.alt);
     }
 
     loiter_time_max = command_nav_queue.p1 * 1000;     // units are (seconds)
@@ -574,11 +617,11 @@ static void do_wait_delay()
 
 static void do_change_alt()
 {
-    Location temp   = next_WP;
-    condition_start = current_loc.alt;
-    //condition_value	= command_cond_queue.alt;
-    temp.alt                = command_cond_queue.alt;
-    set_next_WP(&temp);
+    // set throttle mode to AUTO
+    set_throttle_mode(THROTTLE_AUTO);
+
+    // set altitude target
+    set_new_altitude(command_cond_queue.alt);
 }
 
 static void do_within_distance()
@@ -632,19 +675,8 @@ static bool verify_wait_delay()
 
 static bool verify_change_alt()
 {
-    //cliSerial->printf("change_alt, ca:%d, na:%d\n", (int)current_loc.alt, (int)next_WP.alt);
-    if ((int32_t)condition_start < next_WP.alt) {
-        // we are going higer
-        if(current_loc.alt > next_WP.alt) {
-            return true;
-        }
-    }else{
-        // we are going lower
-        if(current_loc.alt < next_WP.alt) {
-            return true;
-        }
-    }
-    return false;
+    // rely on alt change flag
+    return (alt_change_flag == REACHED_ALT);
 }
 
 static bool verify_within_distance()
