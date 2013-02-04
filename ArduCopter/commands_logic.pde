@@ -239,21 +239,20 @@ static void do_RTL(void)
 // do_takeoff - initiate takeoff navigation command
 static void do_takeoff()
 {
-    set_nav_mode(NAV_LOITER_ACTIVE);
-
-    // Start with current location
-    Location temp = current_loc;
-
-    // alt is always relative
-    temp.alt = command_nav_queue.alt;
-
-    // Set our waypoint
-    set_next_WP(&temp);
-
     // set our yaw mode
     set_yaw_mode(YAW_HOLD);
 
+    // set our nav mode to loiter
+    set_nav_mode(NAV_LOITER_ACTIVE);
+
+    // set throttle mode to AUTO although we should already be in this mode
+    set_throttle_mode(THROTTLE_AUTO);
+
+    // set target altitude
+    set_new_altitude(command_nav_queue.alt);
+
     // prevent flips
+    // To-Do: check if this is still necessary
     reset_I_all();    
 }
 
