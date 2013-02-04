@@ -107,7 +107,7 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
         temp.options &= ~(MASK_OPTIONS_RELATIVE_ALT);
     }
     // zero unused bits
-    temp.options &= (MASK_OPTIONS_RELATIVE_ALT + MASK_OPTIONS_LOITER_DIRECTION);
+    temp.options &= (MASK_OPTIONS_RELATIVE_ALT | MASK_OPTIONS_LOITER_DIRECTION);
 
     hal.storage->write_byte(mem, temp.id);
 
