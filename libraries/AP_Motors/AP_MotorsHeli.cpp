@@ -529,7 +529,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 void AP_MotorsHeli::rsc_control()
 
 {
-    if (armed() && rsc_ramp >= rsc_ramp_up_rate){                       // rsc_ramp will never increase if rsc_mode = 0
+    if (armed() && (rsc_ramp >= rsc_ramp_up_rate)){                     // rsc_ramp will never increase if rsc_mode = 0
         if (motor_runup_timer < MOTOR_RUNUP_TIME){                      // therefore motor_runup_complete can never be true
             motor_runup_timer++;
         } else {
