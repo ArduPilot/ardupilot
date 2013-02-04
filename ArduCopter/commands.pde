@@ -188,7 +188,7 @@ static void init_home()
         Log_Write_Cmd(0, &home);
 
     // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
-    float rads              = (fabs((float)next_WP.lat)/t7) * 0.0174532925;
+    float rads              = (fabs((float)home.lat)/t7) * 0.0174532925;
     scaleLongDown           = cos(rads);
     scaleLongUp             = 1.0f/cos(rads);
 

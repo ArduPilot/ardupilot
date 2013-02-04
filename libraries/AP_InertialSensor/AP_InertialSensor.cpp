@@ -269,7 +269,9 @@ AP_InertialSensor::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_l
 // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on), 
                                         void (*send_msg)(const prog_char_t *, ...),
-                                        void (*wait_key)(void))
+                                        void (*wait_key)(void),
+                                        float &trim_roll,
+                                        float &trim_pitch)
 {
     Vector3f samples[6];
     Vector3f new_offsets;
@@ -338,6 +340,10 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
         _accel_offset.set(new_offsets);
         _accel_scale.set(new_scaling);
         _save_parameters();
+
+        // calculate the trims as well and pass back to caller
+        _calculate_trim(samples[0], trim_roll, trim_pitch);
+
         return true;
     }
 
@@ -355,7 +361,7 @@ bool AP_InertialSensor::calibrate_accel(void (*delay_cb)(unsigned long t), void 
 // accel_offsets are output from the calibration routine
 // accel_scale are output from the calibration routine
 // returns true if successful
-bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale )
+bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale)
 {
     int16_t i;
     int16_t num_iterations = 0;
@@ -491,6 +497,33 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
 
     for( i=0; i<6; i++ ) {
         delta[i] = dS[i];
+    }
+}
+
+// _calculate_trim  - calculates the x and y trim angles (in radians) given a raw accel sample (i.e. no scaling or offsets applied) taken when the vehicle was level
+void AP_InertialSensor::_calculate_trim(Vector3f accel_sample, float& trim_roll, float& trim_pitch)
+{
+    // scale sample and apply offsets
+    Vector3f accel_scale = _accel_scale.get();
+    Vector3f accel_offsets = _accel_offset.get();
+    Vector3f scaled_accels_x( accel_sample.x * accel_scale.x - accel_offsets.x,
+                              0,
+                              accel_sample.z * accel_scale.z - accel_offsets.z );
+    Vector3f scaled_accels_y( 0,
+                              accel_sample.y * accel_scale.y - accel_offsets.y,
+                              accel_sample.z * accel_scale.z - accel_offsets.z );
+
+    // calculate x and y axis angle (i.e. roll and pitch angles)
+    Vector3f vertical = Vector3f(0,0,-1);
+    trim_roll = scaled_accels_y.angle(vertical);
+    trim_pitch = scaled_accels_x.angle(vertical);
+
+    // angle call doesn't return the sign so take care of it here
+    if( scaled_accels_y.y > 0 ) {
+        trim_roll = -trim_roll;
+    }
+    if( scaled_accels_x.x < 0 ) {
+        trim_pitch = -trim_pitch;
     }
 }
 

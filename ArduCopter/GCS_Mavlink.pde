@@ -1096,8 +1096,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 trim_radio();
             }
             if (packet.param5 == 1) {
+                float trim_roll, trim_pitch;
                 // this blocks
-                ins.calibrate_accel(mavlink_delay, flash_leds, gcs_send_text_fmt, setup_wait_key);
+                ins.calibrate_accel(mavlink_delay, flash_leds, gcs_send_text_fmt, setup_wait_key, trim_roll, trim_pitch);
+                // reset ahrs's trim to suggested values from calibration routine
+                trim_roll = constrain(trim_roll, ToRad(-10.0f), ToRad(10.0f));
+                trim_pitch = constrain(trim_pitch, ToRad(-10.0f), ToRad(10.0f));
+                ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
             }
             result = MAV_RESULT_ACCEPTED;
             break;

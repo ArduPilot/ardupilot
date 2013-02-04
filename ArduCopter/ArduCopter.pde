@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.9"
+#define THISFIRMWARE "ArduCopter V2.9.1"
 /*
  *  ArduCopter Version 2.9
  *  Lead author:	Jason Short
@@ -1789,7 +1789,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
             if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
-                set_accel_throttle_I_from_pilot_throttle();
+                set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
             }
             throttle_initialised = true;
             break;
@@ -1829,6 +1829,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 void update_throttle_mode(void)
 {
     int16_t pilot_climb_rate;
+    int16_t pilot_throttle_scaled;
 
     if(ap.do_flip)     // this is pretty bad but needed to flip in AP modes.
         return;
@@ -1854,7 +1855,9 @@ void update_throttle_mode(void)
         if(g.rc_3.control_in <= 0){
             set_throttle_out(0, false);
         }else{
-            set_throttle_out(g.rc_3.control_in, false);                     // send pilot's output directly to motors
+            // send pilot's output directly to motors
+            pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
+            set_throttle_out(pilot_throttle_scaled, false);
 
 #if FRAME_CONFIG == HELI_FRAME
             update_throttle_cruise(motors.coll_out);                        // update estimate of throttle cruise
@@ -1874,7 +1877,7 @@ void update_throttle_mode(void)
 #else
 			update_throttle_cruise(g.rc_3.control_in);                      // update estimate of throttle cruise
             if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
-                if (g.rc_3.control_in > g.throttle_cruise) {
+                if (pilot_throttle_scaled > g.throttle_cruise) {
                     set_takeoff_complete(true);                             // we must be in the air by now
                 }
             }
@@ -1887,7 +1890,8 @@ void update_throttle_mode(void)
         if (g.rc_3.control_in <= 0) {
             set_throttle_out(0, false);                                     // no need for angle boost with zero throttle
         }else{
-            set_throttle_out(g.rc_3.control_in, true);
+            pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
+            set_throttle_out(pilot_throttle_scaled, true);
 
 #if FRAME_CONFIG == HELI_FRAME
             update_throttle_cruise(motors.coll_out);                        // update estimate of throttle cruise
@@ -1907,7 +1911,7 @@ void update_throttle_mode(void)
 #else
 			update_throttle_cruise(g.rc_3.control_in);                      // update estimate of throttle cruise
             if (!ap.takeoff_complete && motors.armed()) {                   // check if we've taken off yet
-                if (g.rc_3.control_in > g.throttle_cruise) {
+                if (pilot_throttle_scaled > g.throttle_cruise) {
                     set_takeoff_complete(true);                             // we must be in the air by now
                 }
             }
@@ -2072,8 +2076,10 @@ static void update_altitude()
     baro_rate			= constrain(baro_rate, -500, 500);
 
     // read in sonar altitude and calculate sonar rate
-    if(g.sonar_enabled) {
-        sonar_alt       = read_sonar();
+    sonar_alt           = read_sonar();
+    // start calculating the sonar_rate as soon as valid sonar readings start coming in so that we are ready when the sonar_alt_health becomes 3
+    // Note: post 2.9.1 release we will remove the sonar_rate variable completely
+    if(sonar_alt_health > 1) {
         sonar_rate      = (sonar_alt - old_sonar_alt) * 10;
         sonar_rate      = constrain(sonar_rate, -150, 150);
     }

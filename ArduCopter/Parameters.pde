@@ -327,6 +327,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
 
+    // @Param: THR_MID
+    // @DisplayName: Throttle Mid Position
+    // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
+    // @User: Standard
+    // @Range: 300 700
+    // @Increment: 1
+    GSCALAR(throttle_mid,        "THR_MID",    THR_MID),
+
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230

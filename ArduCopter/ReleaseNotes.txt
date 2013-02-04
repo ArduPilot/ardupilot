@@ -1,6 +1,20 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 2.9-rc5 14-Jan-2013
+ArduCopter 2.9.1 & 2.9.1-rc2 01-Feb-2013
+Improvements over 2.9.1-rc1:
+1) small corretion to use of THR_MID to scale lower end of manual throttle between THR_MIN and 500 instead of 0 and 500
+2) bug fix for longitude scaling being incorrectly calculated using Next Waypoint instead of home which could lead to scaling being 1
+3) ESC calibration change to set update rate to ESCs to 50hz to allow simonk ESC to be calibrated
+------------------------------------------------------------------
+ArduCopter 2.9.1-rc1 31-Jan-2013
+Improvements over 2.9:
+1) THR_MID parameter added to allow users to adjust the manual throttle so that vehicle hovers at about mid stick
+2) bug fix for autotrim - roll axis was backwards
+3) bug fix to set sonar_alt_health to zero when sonar is disabled
+4) capture level roll and pitch trims as part of accel calibration
+5) bug fix to ppm encoder false positives
+------------------------------------------------------------------
+ArduCopter 2.9 & 2.9-rc5 14-Jan-2013
 Improvements over 2.9-rc4:
 1) add constraint to loiter commanded roll and pitch angles
 2) relax altitude requirement for take-off command to complete
