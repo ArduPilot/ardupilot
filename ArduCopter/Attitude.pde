@@ -848,8 +848,12 @@ get_throttle_accel(int16_t z_target_accel)
 #define THROTTLE_IN_MIDDLE 500          // the throttle mid point
 static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 {
-    int16_t throttle_out;
 
+#if FRAME_CONFIG == HELI_FRAME                                      // Don't use this for Trad_Helis, we already use Stab_Col
+    return throttle_control;
+#else
+    
+    int16_t throttle_out;
     // exit immediately in the simple cases
     if( throttle_control == 0 || g.throttle_mid == 500) {
         return throttle_control;
@@ -872,6 +876,7 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
     }
 
     return throttle_out;
+#endif // FRAME_CONFIG TRADHELI
 }
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to
