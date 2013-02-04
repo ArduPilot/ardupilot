@@ -208,6 +208,8 @@
  #define CONFIG_PITOT_SOURCE_ANALOG_PIN -1
  #undef CONFIG_PITOT_SCALING
  #define CONFIG_PITOT_SCALING 4.0
+ #undef  CONFIG_COMPASS
+ #define CONFIG_COMPASS  AP_COMPASS_HIL
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
