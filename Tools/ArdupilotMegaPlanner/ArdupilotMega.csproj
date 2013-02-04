@@ -99,7 +99,8 @@
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>mykey.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup />
@@ -122,54 +123,77 @@
   <PropertyGroup>
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="alglibnet2, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="alglibnet2">
+      <HintPath>Lib\alglibnet2.dll</HintPath>
     </Reference>
     <Reference Include="BSE.Windows.Forms">
+      <HintPath>Lib\BSE.Windows.Forms.dll</HintPath>
     </Reference>
     <Reference Include="Core">
+      <HintPath>Lib\Core.dll</HintPath>
     </Reference>
     <Reference Include="DirectShowLib-2005">
+      <HintPath>Lib\DirectShowLib-2005.dll</HintPath>
     </Reference>
     <Reference Include="GMap.NET.Core">
+      <HintPath>Lib\GMap.NET.Core.dll</HintPath>
     </Reference>
     <Reference Include="GMap.NET.WindowsForms">
+      <HintPath>Lib\GMap.NET.WindowsForms.dll</HintPath>
     </Reference>
     <Reference Include="ICSharpCode.SharpZipLib">
+      <HintPath>Lib\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Ionic.Zip.Reduced">
+      <HintPath>Lib\Ionic.Zip.Reduced.dll</HintPath>
     </Reference>
     <Reference Include="IronPython, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\IronPython.dll</HintPath>
     </Reference>
     <Reference Include="IronPython.Modules, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\IronPython.Modules.dll</HintPath>
     </Reference>
     <Reference Include="KMLib">
+      <HintPath>Lib\KMLib.dll</HintPath>
     </Reference>
     <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\log4net.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="MetaDataExtractor">
+      <HintPath>Lib\MetaDataExtractor.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.DirectX, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\Microsoft.DirectX.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.DirectX.DirectInput, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\Microsoft.DirectX.DirectInput.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Dynamic">
+      <HintPath>Lib\Microsoft.Dynamic.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Scripting, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Microsoft.Scripting">
+      <HintPath>Lib\Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.Core">
+      <HintPath>Lib\Microsoft.Scripting.Core.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Scripting.Debugging">
+      <HintPath>Lib\Microsoft.Scripting.Debugging.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Scripting.ExtensionAttribute, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Microsoft.Scripting.ExtensionAttribute">
+      <HintPath>Lib\Microsoft.Scripting.ExtensionAttribute.dll</HintPath>
     </Reference>
     <Reference Include="netDxf, Version=0.1.2.0, Culture=neutral, PublicKeyToken=1c75adeaa4c98f42, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -179,11 +203,11 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\OpenTK.dll</HintPath>
     </Reference>
-    <Reference Include="OpenTK.GLControl, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="OpenTK.GLControl">
+      <HintPath>Lib\OpenTK.GLControl.dll</HintPath>
     </Reference>
-    <Reference Include="SharpKml, Version=1.1.0.0, Culture=neutral, PublicKeyToken=e608cd7d975805ad, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="SharpKml">
+      <HintPath>Lib\SharpKml.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <Private>False</Private>
@@ -195,6 +219,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Data.SQLite">
+      <HintPath>Lib\System.Data.SQLite.DLL</HintPath>
     </Reference>
     <Reference Include="System.Drawing">
       <Private>False</Private>
@@ -207,6 +232,7 @@
       <HintPath>Lib\System.Reactive.dll</HintPath>
     </Reference>
     <Reference Include="System.Speech">
+      <HintPath>Lib\System.Speech.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Web">
@@ -222,8 +248,8 @@
     <Reference Include="Transitions">
       <HintPath>Lib\Transitions.dll</HintPath>
     </Reference>
-    <Reference Include="ZedGraph, Version=5.1.2.878, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="ZedGraph">
+      <HintPath>Lib\ZedGraph.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -1432,7 +1458,6 @@
     <None Include="AeroSimRCAPMHil.zip" />
     <None Include="app.config" />
     <None Include="arducopter-xplane.zip" />
-    <None Include="ArdupilotMega_TemporaryKey.pfx" />
     <None Include="m3u\GeoRefnetworklink.kml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -1568,9 +1593,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
+  <!--<PropertyGroup>
     <PostBuildEvent>"$(TargetDir)version.exe" "$(TargetPath)" &gt; "$(TargetDir)version.txt"</PostBuildEvent>
-  </PropertyGroup>
+  </PropertyGroup>-->
   <PropertyGroup>
     <PreBuildEvent>
     </PreBuildEvent>
