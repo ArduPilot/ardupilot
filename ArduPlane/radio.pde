@@ -183,10 +183,11 @@ static void trim_control_surfaces()
             g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
         }
 
-        // the secondary aileron is trimmed only if it has a
+        // the secondary aileron/elevator is trimmed only if it has a
         // corresponding transmitter input channel, which k_aileron
         // doesn't have
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron_with_input);
+        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_elevator_with_input);
     } else{
         if (ch1_temp != 0) {
             elevon1_trim = ch1_temp;
