@@ -10,13 +10,57 @@ using namespace AP_HAL_AVR;
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
+#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 )
+#define  AVR_TIMER_OVF_VECT     TIMER4_OVF_vect
+#define  AVR_TIMER_TCNT             TCNT4
+#define  AVR_TIMER_TIFR              TIFR4
+#define  AVR_TIMER_TCCRA           TCCR4A
+#define  AVR_TIMER_TCCRB           TCCR4B
+#define  AVR_TIMER_OCRA            OCR4A
+#define  AVR_TIMER_TIMSK           TIMSK4
+#define  AVR_TIMER_TOIE             TOIE4
+#define  AVR_TIMER_WGM0           WGM40
+#define  AVR_TIMER_WGM1           WGM41
+#define  AVR_TIMER_WGM2           WGM42
+#define  AVR_TIMER_WGM3           WGM43
+#define  AVR_TIMER_CS1               CS41
+
+
+#elif (CONFIG_HAL_BOARD == HAL_BOARD_APM2 )
+#define  AVR_TIMER_OVF_VECT     TIMER5_OVF_vect 
+#define  AVR_TIMER_TCNT             TCNT5
+#define  AVR_TIMER_TIFR              TIFR5
+#define  AVR_TIMER_TCCRA           TCCR5A
+#define  AVR_TIMER_TCCRB           TCCR5B
+#define  AVR_TIMER_OCRA            OCR5A
+#define  AVR_TIMER_TIMSK           TIMSK5
+#define  AVR_TIMER_TOIE             TOIE5
+#define  AVR_TIMER_WGM0           WGM50
+#define  AVR_TIMER_WGM1           WGM51
+#define  AVR_TIMER_WGM2           WGM52
+#define  AVR_TIMER_WGM3           WGM53
+#define  AVR_TIMER_CS1               CS51
+
+#endif
+
 static volatile uint32_t timer_micros_counter = 0;
 static volatile uint32_t timer_millis_counter = 0;
 
 void AVRTimer::init() {
-    // this needs to be called before setup() or some functions won't
-    // work there
-    sei();
+    uint8_t oldSREG = SREG;
+    cli();
+
+    // Timer cleanup before configuring
+    AVR_TIMER_TCNT = 0;
+    AVR_TIMER_TIFR = 0;
+    
+    // Set timer 8x prescaler fast PWM mode toggle compare at OCRA
+    AVR_TIMER_TCCRA = _BV( AVR_TIMER_WGM0 ) | _BV( AVR_TIMER_WGM1 );
+    AVR_TIMER_TCCRB |= _BV( AVR_TIMER_WGM3 ) | _BV( AVR_TIMER_WGM2 ) | _BV( AVR_TIMER_CS1 );
+    AVR_TIMER_OCRA  = 40000 - 1; // -1 to correct for wrap
+
+    // Enable overflow interrupt
+    AVR_TIMER_TIMSK |= _BV( AVR_TIMER_TOIE );
 
     // set a2d prescale factor to 128
     // 16 MHz / 128 = 125 KHz, inside the desired 50-200 KHz range.
@@ -33,17 +77,9 @@ void AVRTimer::init() {
     // here so they can be used as normal digital i/o; they will be
     // reconnected in Serial.begin()
     UCSR0B = 0;
+    
+    SREG = oldSREG;
 }
-
-#if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 )
-#define  AVR_TIMER_OVF_VECT     TIMER4_OVF_vect
-#define  AVR_TIMER_TCNT             TCNT4
-#define  AVR_TIMER_TIFR              TIFR4
-#elif (CONFIG_HAL_BOARD == HAL_BOARD_APM2 )
-#define  AVR_TIMER_OVF_VECT     TIMER5_OVF_vect 
-#define  AVR_TIMER_TCNT             TCNT5
-#define  AVR_TIMER_TIFR              TIFR5
-#endif
 
 SIGNAL( AVR_TIMER_OVF_VECT)
 {

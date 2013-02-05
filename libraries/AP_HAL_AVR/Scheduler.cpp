@@ -37,8 +37,7 @@ AVRScheduler::AVRScheduler() :
 void AVRScheduler::init(void* _isrregistry) {
     ISRRegistry* isrregistry = (ISRRegistry*) _isrregistry;
 
-    /* _timer: sets up timer hardware to Arduino defaults, and
-     * uses TIMER0 to implement millis & micros */
+    /* _timer: sets up timer hardware to implement millis & micros. */
     _timer.init();
 
     /* TIMER2: Setup the overflow interrupt to occur at 1khz. */
@@ -50,6 +49,9 @@ void AVRScheduler::init(void* _isrregistry) {
     TIMSK2 = _BV(TOIE2);            /* Enable overflow interrupt*/
     /* Register _timer_isr_event to trigger on overflow */
     isrregistry->register_signal(ISR_REGISTRY_TIMER2_OVF, _timer_isr_event);   
+    
+    /* Turn on global interrupt flag, AVR interupt system will start from this point */
+    sei();
 }
 
 uint32_t AVRScheduler::micros() {
@@ -101,9 +103,10 @@ void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc) {
          * incremented. */
         _timer_proc[_num_timer_procs] = proc;
         /* _num_timer_procs is used from interrupt, and multiple bytes long. */
+        uint8_t oldSREG = SREG;
         cli();
         _num_timer_procs++;
-        sei();
+        SREG = oldSREG;
     }
 
 }
