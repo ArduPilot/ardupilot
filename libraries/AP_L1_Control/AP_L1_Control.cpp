@@ -1,7 +1,7 @@
 #include "AP_L1_Control.h"
 #define RADIUS_OF_EARTH 6378100
 
-Vector2f geo2planar(Vector2f &ref, Vector2f &wp)
+Vector2f geo2planar(const Vector2f &ref, const Vector2f &wp)
 {
     Vector2f out;
 
@@ -11,7 +11,7 @@ Vector2f geo2planar(Vector2f &ref, Vector2f &wp)
     return out;
 }
 
-Vector2f planar2geo(Vector2f &ref, Vector2f &wp)
+Vector2f planar2geo(const Vector2f &ref, const Vector2f &wp)
 {
     Vector2f out;
 

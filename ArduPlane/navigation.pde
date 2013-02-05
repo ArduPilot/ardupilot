@@ -146,6 +146,11 @@ static int32_t wrap_180_cd(int32_t error)
 
 static void update_loiter()
 {
+
+#if L1_CONTROL
+    calc_L1_circ(L1, g.loiter_radius, next_WP, current_loc, L1_ref);
+    calc_nu_cd();
+#else
     float power;
 
     if(wp_distance <= (uint32_t)max(g.loiter_radius,0)) {
@@ -171,34 +176,55 @@ static void update_loiter()
  *       update_crosstrack();
  */
     nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
+#endif
 }
 
-static void update_crosstrack(void)
+#if L1_CONTROL
+static void calc_nu_cd()
+{
+    nav_bearing_cd = get_bearing_cd(&current_loc, &L1_ref);
+    wind_correct_bearing(nav_bearing_cd);
+    nu_cd = nav_bearing_cd - ahrs.yaw_sensor;
+    nu_cd = constrain_int32(wrap_180_cd(nu_cd),-9000, 9000);
+}
+#endif
+
+static void wind_correct_bearing(int32_t &nav_bearing_cd)
 {
     // if we are using a compass for navigation, then adjust the
     // heading to account for wind
+
     if (g.crosstrack_use_wind && compass.use_for_yaw()) {
         Vector3f wind = ahrs.wind_estimate();
         Vector2f wind2d = Vector2f(wind.x, wind.y);
         float speed;
         if (ahrs.airspeed_estimate(&speed)) {
-            Vector2f nav_vector = Vector2f(cosf(radians(nav_bearing_cd*0.01)), sinf(radians(nav_bearing_cd*0.01))) * speed;
+            Vector2f nav_vector = Vector2f(cos(radians(nav_bearing_cd*0.01)), sin(radians(nav_bearing_cd*0.01))) * speed;
             Vector2f nav_adjusted = nav_vector - wind2d;
-            nav_bearing_cd = degrees(atan2f(nav_adjusted.y, nav_adjusted.x)) * 100;
+            nav_bearing_cd = degrees(atan2(nav_adjusted.y, nav_adjusted.x)) * 100;
         }
     }
+}
+
+static void update_crosstrack(void)
+{
+#if L1_CONTROL
+    calc_L1_line(L1, prev_WP, next_WP, current_loc, L1_ref);
+    calc_nu_cd();
+#else
+    wind_correct_bearing(nav_bearing_cd);
 
     // Crosstrack Error
     // ----------------
     // If we are too far off or too close we don't do track following
-    if (wp_totalDistance >= (uint32_t)max(g.crosstrack_min_distance,0) &&
+    if (wp_totalDistance >= (uint32_t)max(g.crosstrack_min_distance,0) && 
         abs(wrap_180_cd(target_bearing_cd - crosstrack_bearing_cd)) < 4500) {
         // Meters we are off track line
-        crosstrack_error = sinf(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               
+        crosstrack_error = sinf(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;
         nav_bearing_cd += constrain_int32(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
         nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
     }
-
+#endif
 }
 
 static void reset_crosstrack()

@@ -18,10 +18,12 @@
 
 #include <AP_Math.h>
 
+
 //Convert a 2D vector from latitude and longitude to planar coordinates based on a reference point
 Vector2f        geo2planar(const Vector2f &ref, const Vector2f &wp);
 
 //Convert a 2D vector from planar coordinates to latitude and longitude based on a reference point
+Vector2f        planar2geo(const Vector2f &ref, const Vector2f &wp);
 
 
 /*Calculate a reference point for L1 control based on a circle.
