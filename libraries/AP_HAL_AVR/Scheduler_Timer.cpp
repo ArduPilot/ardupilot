@@ -38,9 +38,11 @@ void AVRTimer::init() {
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 )
 #define  AVR_TIMER_OVF_VECT     TIMER4_OVF_vect
 #define  AVR_TIMER_TCNT             TCNT4
+#define  AVR_TIMER_TIFR              TIFR4
 #elif (CONFIG_HAL_BOARD == HAL_BOARD_APM2 )
 #define  AVR_TIMER_OVF_VECT     TIMER5_OVF_vect 
 #define  AVR_TIMER_TCNT             TCNT5
+#define  AVR_TIMER_TIFR              TIFR5
 #endif
 
 SIGNAL( AVR_TIMER_OVF_VECT)
@@ -53,11 +55,22 @@ SIGNAL( AVR_TIMER_OVF_VECT)
 uint32_t AVRTimer::micros() {
     uint8_t oldSREG = SREG;
 	cli();
+
     // Hardcoded for AVR@16MHZ and 8x pre-scale 16-bit timer
     //uint32_t time_micros = timer_micros_counter + (AVR_TIMER_TCNT / 2);
-    uint32_t time_micros = timer_micros_counter + (AVR_TIMER_TCNT >> 1);
+    //uint32_t time_micros = timer_micros_counter + (AVR_TIMER_TCNT >> 1);
+    
+    uint32_t time_micros = timer_micros_counter;
+    uint16_t tcnt = AVR_TIMER_TCNT;
+	
+    // Check for  imminent timer overflow interrupt and pre-increment counter
+    if ( AVR_TIMER_TIFR & 1 && tcnt < 39999 )
+    {
+            time_micros += 40000 / 2;
+    }
     SREG = oldSREG;
-	return  time_micros;
+
+	return  time_micros + (tcnt >> 1);
 }
 
 uint32_t AVRTimer::millis() {
@@ -65,9 +78,19 @@ uint32_t AVRTimer::millis() {
 	cli();
     // Hardcoded for AVR@16MHZ and 8x pre-scale 16-bit timer
     //uint32_t time_millis = timer_millis_counter + (AVR_TIMER_TCNT / 2000) ;
-    uint32_t time_millis =  timer_millis_counter + (AVR_TIMER_TCNT >> 11); // AVR_TIMER_CNT / 2048 is close enough (24us counter delay)
+    //uint32_t time_millis =  timer_millis_counter + (AVR_TIMER_TCNT >> 11); // AVR_TIMER_CNT / 2048 is close enough (24us counter delay)
+
+    uint32_t time_millis =  timer_millis_counter;
+    uint16_t tcnt = AVR_TIMER_TCNT;
+    
+    // Check for imminent timer overflow interrupt and pre-increment counter
+    if ( AVR_TIMER_TIFR & 1 && tcnt < 39999 )
+    {
+            time_millis += 40000 / 2000;
+    }
     SREG = oldSREG;
-	return  time_millis;
+
+	return  time_millis + (tcnt >> 11);
 }
 
 
