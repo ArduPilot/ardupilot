@@ -99,6 +99,18 @@ uint16_t AVRTimer::ticks( uint16_t &ticksTimer ) {
   return tcnt - old;
 }
 
+uint16_t AVRTimer::ticks( uint16_t ticksTimer, uint16_t ticksDelay ) {
+  uint8_t _sreg = SREG;
+  cli();
+  uint16_t tcnt = AVR_TIMER_TCNT;
+  SREG = _sreg;
+  uint16_t old = ticksTimer;
+  if( tcnt < old ) tcnt += 40000; // TCNT wrap
+  tcnt -= old;  
+  if( tcnt < ticksDelay ) return ticksDelay - tcnt;
+  return 0;
+}
+
 
 uint32_t AVRTimer::micros() {
     uint8_t oldSREG = SREG;

@@ -12,6 +12,7 @@ class AP_HAL_AVR::AVRTimer {
 public:
     static void     init();
     static uint16_t ticks( uint16_t &ticksTimer);
+    static uint16_t ticks( uint16_t ticksTimer, uint16_t ticksDelay);
     static uint32_t millis();
     static uint32_t micros();
     static void     delay_microseconds(uint16_t us);
@@ -29,6 +30,7 @@ public:
     void     delay(uint16_t ms);
     
     uint16_t ticks(uint16_t &ticksTimer);
+    uint16_t ticks(uint16_t ticksTimer, uint16_t ticksDelay);
     uint32_t millis();
     uint32_t micros();
     

@@ -58,6 +58,10 @@ uint16_t AVRScheduler::ticks( uint16_t &ticksTimer ) {
     return _timer.ticks( ticksTimer );
 }
 
+uint16_t AVRScheduler::ticks( uint16_t ticksTimer, uint16_t ticksDelay ) {
+    return _timer.ticks( ticksTimer, ticksDelay );
+}
+
 uint32_t AVRScheduler::micros() {
     return _timer.micros();
 }
