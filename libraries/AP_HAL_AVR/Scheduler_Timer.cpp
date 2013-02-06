@@ -88,6 +88,18 @@ SIGNAL( AVR_TIMER_OVF_VECT)
     timer_millis_counter += 40000 / 2000; // 20ms each overlflow
 }
 
+uint16_t AVRTimer::ticks( uint16_t &ticksTimer ) {
+  uint8_t _sreg = SREG;
+  cli();
+  uint16_t tcnt = AVR_TIMER_TCNT;
+  SREG = _sreg;
+  uint16_t old = ticksTimer;
+  ticksTimer = tcnt;
+  if( tcnt < old ) tcnt += 40000; // TCNT wrap
+  return tcnt - old;
+}
+
+
 uint32_t AVRTimer::micros() {
     uint8_t oldSREG = SREG;
 	cli();
@@ -128,7 +140,6 @@ uint32_t AVRTimer::millis() {
 
 	return  time_millis + (tcnt >> 11);
 }
-
 
 /* Delay for the given number of microseconds.  Assumes a 16 MHz clock. */
 void AVRTimer::delay_microseconds(uint16_t us)
