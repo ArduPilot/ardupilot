@@ -1,5 +1,9 @@
 #!/bin/bash
 
+killall -q JSBSim
+killall -q ArduPlane.elf
+pkill -f runsim.py
+
 set -e
 set -x
 
@@ -17,4 +21,10 @@ rm -f $tfile
 gnome-terminal -e '../Tools/autotest/jsbsim/runsim.py --home=-35.362938,149.165085,584,270'
 sleep 2
 popd
-mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551
+
+# if you wanted to forward packets out a serial link for testing andropilot, then 
+# add --out /dev/serial/by-id/usb-FTDI* to your command line. You might also like to
+# add --map and --console
+
+mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 $*
+
