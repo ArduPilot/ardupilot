@@ -241,7 +241,7 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
     do {
         bool success = hardware_init(sample_rate);
         if (success) {
-            hal.scheduler->delay(_msec_per_sample+2);
+            hal.scheduler->delay(5+2);
             if (_data_ready()) {
                 break;
             } else {
@@ -339,16 +339,14 @@ bool AP_InertialSensor_MPU6000::update( void )
 
     _temp    = _temp_to_celsius(sum[_temp_data_index] * count_scale);
 
+    if (_last_filter_hz != _mpu6000_filter) {
+        if (_spi_sem->take(10)) {
+            _set_filter_register(_mpu6000_filter, 0);
+            _spi_sem->give();
+        }
+    }
+
     return true;
-}
-
-bool AP_InertialSensor_MPU6000::new_data_available( void )
-{
-    return _count != 0;
-}
-
-float AP_InertialSensor_MPU6000::temperature() {
-    return _temp;
 }
 
 /*================ HARDWARE FUNCTIONS ==================== */
@@ -491,6 +489,39 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
     _spi->transaction(tx, rx, 2);
 }
 
+/*
+  set the DLPF filter frequency. Assumes caller has taken semaphore
+ */
+void AP_InertialSensor_MPU6000::_set_filter_register(uint8_t filter_hz, uint8_t default_filter)
+{
+    uint8_t filter = default_filter;
+    // choose filtering frequency
+    switch (filter_hz) {
+    case 5:
+        filter = BITS_DLPF_CFG_5HZ;
+        break;
+    case 10:
+        filter = BITS_DLPF_CFG_10HZ;
+        break;
+    case 20:
+        filter = BITS_DLPF_CFG_20HZ;
+        break;
+    case 42:
+        filter = BITS_DLPF_CFG_42HZ;
+        break;
+    case 98:
+        filter = BITS_DLPF_CFG_98HZ;
+        break;
+    }
+
+    if (filter != 0) {
+        _last_filter_hz = filter_hz;
+
+        register_write(MPUREG_CONFIG, filter);
+    }
+}
+
+
 bool AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
 {
     if (!_spi_sem->take(100)) {
@@ -527,60 +558,35 @@ bool AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     hal.scheduler->delay(1);
 
-    uint8_t rate, filter, default_filter;
+    uint8_t default_filter;
 
     // sample rate and filtering
     // to minimise the effects of aliasing we choose a filter
     // that is less than half of the sample rate
     switch (sample_rate) {
     case RATE_50HZ:
-        rate = MPUREG_SMPLRT_50HZ;
-        default_filter = BITS_DLPF_CFG_20HZ;
-        _msec_per_sample = 20;
+        // this is used for plane and rover, where noise resistance is
+        // more important than update rate. Tests on an aerobatic plane
+        // show that 10Hz is fine, and makes it very noise resistant
+        default_filter = BITS_DLPF_CFG_10HZ;
+        _sample_shift = 2;
         break;
     case RATE_100HZ:
-        rate = MPUREG_SMPLRT_100HZ;
         default_filter = BITS_DLPF_CFG_42HZ;
-        _msec_per_sample = 10;
+        _sample_shift = 1;
         break;
     case RATE_200HZ:
     default:
-        rate = MPUREG_SMPLRT_200HZ;
         default_filter = BITS_DLPF_CFG_42HZ;
-        _msec_per_sample = 5;
+        _sample_shift = 0;
         break;
     }
-    
-    // choose filtering frequency
-    switch (_mpu6000_filter) {
-    case 5:
-        filter = BITS_DLPF_CFG_5HZ;
-        break;
-    case 10:
-        filter = BITS_DLPF_CFG_10HZ;
-        break;
-    case 20:
-        filter = BITS_DLPF_CFG_20HZ;
-        break;
-    case 42:
-        filter = BITS_DLPF_CFG_42HZ;
-        break;
-    case 98:
-        filter = BITS_DLPF_CFG_98HZ;
-        break;
-    case 0:
-    default:
-        // the user hasn't specified a specific frequency,
-        // use the default value for the given sample rate
-        filter = default_filter;
-    }
 
-    // set sample rate
-    register_write(MPUREG_SMPLRT_DIV, rate);
-    hal.scheduler->delay(1);
+    _set_filter_register(_mpu6000_filter, default_filter);
 
-    // set low pass filter
-    register_write(MPUREG_CONFIG, filter);
+    // set sample rate to 200Hz, and use _sample_divider to give
+    // the requested rate to the application
+    register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);
     hal.scheduler->delay(1);
 
     register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
@@ -633,7 +639,7 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 {
     _poll_data(0);
-    return _count;
+    return _count >> _sample_shift;
 }
 
 
@@ -656,7 +662,8 @@ void AP_InertialSensor_MPU6000::_dump_registers(void)
 // get_delta_time returns the time period in seconds overwhich the sensor data was collected
 float AP_InertialSensor_MPU6000::get_delta_time() 
 {
-    return _msec_per_sample * 0.001 * _num_samples;
+    // the sensor runs at 200Hz
+    return 0.005 * _num_samples;
 }
 
 // Update gyro offsets with new values.  Offsets provided in as scaled deg/sec values
