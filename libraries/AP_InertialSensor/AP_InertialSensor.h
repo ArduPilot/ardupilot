@@ -104,12 +104,6 @@ public:
      */
     virtual bool update() = 0;
 
-    // check if the sensors have new data
-    virtual bool new_data_available(void) = 0;
-
-    /* Temperature, in degrees celsius, of the gyro. */
-    virtual float temperature() = 0;
-
     /* get_delta_time returns the time period in seconds
      * overwhich the sensor data was collected
      */

@@ -109,17 +109,6 @@ bool AP_InertialSensor_PX4::update(void)
     return true;
 }
 
-bool AP_InertialSensor_PX4::new_data_available(void) 
-{
-    return num_samples_available() > 0;
-}
-
-
-float AP_InertialSensor_PX4::temperature(void) 
-{
-    return 0.0;
-}
-
 float AP_InertialSensor_PX4::get_delta_time(void) 
 {
     return _delta_time;

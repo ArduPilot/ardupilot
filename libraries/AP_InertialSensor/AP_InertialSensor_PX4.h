@@ -21,8 +21,6 @@ public:
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
-    bool            new_data_available();
-    float           temperature();
     float        	get_delta_time();
     uint32_t        get_last_sample_time_micros();
     float           get_gyro_drift_rate();

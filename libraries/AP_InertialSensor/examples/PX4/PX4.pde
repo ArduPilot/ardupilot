@@ -151,7 +151,6 @@ void run_test()
 {
     Vector3f accel;
     Vector3f gyro;
-    float temperature;
     float length;
 	uint8_t counter = 0;
 
@@ -175,14 +174,13 @@ void run_test()
         ins.update();
         accel = ins.get_accel();
         gyro = ins.get_gyro();
-        temperature = ins.temperature();
 
         length = accel.length();
 
 		if (counter++ % 50 == 0) {
 			// display results
-			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f \t Temp:%4.2f dt:%u\n"), 
-								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z, temperature,
+			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f \t dt:%u\n"), 
+								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z,
 								  (unsigned)(1.0e6*ins.get_delta_time()));
 		}
     }
