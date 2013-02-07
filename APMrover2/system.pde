@@ -334,16 +334,13 @@ static void startup_ground(void)
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
-static void set_mode(uint8_t mode)
+static void set_mode(enum mode mode)
 {       
 
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
-	if(g.auto_trim > 0 && control_mode == MANUAL)
-		trim_control_surfaces();
-
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
@@ -352,7 +349,6 @@ static void set_mode(uint8_t mode)
 	{
 		case MANUAL:
 		case LEARNING:
-		case CIRCLE:
 			break;
 
 		case AUTO:
@@ -395,23 +391,6 @@ static void check_long_failsafe()
 		if(failsafe == FAILSAFE_GCS && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
 		if(failsafe == FAILSAFE_LONG && rc_override_active && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
 		if(failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) failsafe = FAILSAFE_NONE;
-	}
-}
-
-static void check_short_failsafe()
-{
-	// only act on changes
-	// -------------------
-	if(failsafe == FAILSAFE_NONE){
-		if(ch3_failsafe) {					// The condition is checked and the flag ch3_failsafe is set in radio.pde
-			failsafe_short_on_event(FAILSAFE_SHORT);
-		}
-	}
-
-	if(failsafe == FAILSAFE_SHORT){
-		if(!ch3_failsafe) {
-			failsafe_short_off_event();
-		}
 	}
 }
 
@@ -547,7 +526,7 @@ uint16_t board_voltage(void)
 }
 
 static void
-print_flight_mode(uint8_t mode)
+print_mode(uint8_t mode)
 {
     switch (mode) {
     case MANUAL:

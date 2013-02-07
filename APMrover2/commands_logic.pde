@@ -194,13 +194,6 @@ static bool verify_takeoff()
 {  return true;
 }
 
-static void calc_turn_radius(void)    // JLN update - adjut automaticaly the wp_radius Vs the speed and the turn angle
-{
-  wp_radius = ground_speed * 150 / g.roll_limit.get();
-  //cliSerial->println(wp_radius, DEC);
-}
-
-
 static bool verify_nav_wp()
 {
     update_crosstrack();
@@ -210,15 +203,6 @@ static bool verify_nav_wp()
                           (unsigned)nav_command_index,
                           (unsigned)get_distance(&current_loc, &next_WP));
         return true;
-    }
-
-    if(g.auto_wp_radius) { 
-        calc_turn_radius();  // JLN update - auto-adap the wp_radius Vs the gspeed and max roll angle
-
-        if ((wp_distance > 0) && (wp_distance <= wp_radius)) {
-            gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),nav_command_index);
-            return true;
-        }
     }
 
     // have we gone past the waypoint?
@@ -335,12 +319,9 @@ static void do_change_speed()
 {
 	switch (next_nonnav_command.p1)
 	{
-		case 0: // Airspeed
-			if(next_nonnav_command.alt > 0)
-				g.airspeed_cruise.set(next_nonnav_command.alt * 100);
-			break;
-		case 1: // Ground speed
-			g.min_gndspeed.set(next_nonnav_command.alt * 100);
+		case 0:
+			if (next_nonnav_command.alt > 0)
+				g.speed_cruise.set(next_nonnav_command.alt * 100);
 			break;
 	}
 

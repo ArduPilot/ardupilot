@@ -39,7 +39,7 @@ version 2.1 of the License, or (at your option) any later version.
 //  2012-04-30: Successfully tested in autonomous nav with a waypoints list recorded in live mode
 //  2012-04-30: Now a full version for APM v1 or APM v2 with magnetometer
 //  2012-04-27: Cosmetic changes
-//  2012-04-26: Only one PID (pidNavRoll) for steering the wheel with nav_roll
+//  2012-04-26: Only one PID (pidNavRoll) for steering the wheel with nav_steer
 //  2012-04-26: Added ground_speed and ground_course variables in Update_GPS
 //  2012-04-26: Set GPS to 10 Hz (updated in the AP_GPS lib)
 //  2012-04-22: Tested on Traxxas Monster Jam Grinder XL-5 3602
@@ -178,7 +178,7 @@ DataFlash_Empty DataFlash;
 static GPS         *g_gps;
 
 // flight modes convenience array
-static AP_Int8		*flight_modes = &g.flight_mode1;
+static AP_Int8		*modes = &g.mode1;
 
 #if HIL_MODE == HIL_MODE_DISABLED
 
@@ -310,7 +310,7 @@ static bool usb_connected;
 ////////////////////////////////////////////////////////////////////////////////
 // This is the state of the flight control system
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
-uint8_t    control_mode        = INITIALISING;
+enum mode   control_mode        = INITIALISING;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 uint8_t 	oldSwitchPosition;
@@ -391,6 +391,7 @@ static uint8_t	non_nav_command_index;
 static uint8_t	nav_command_ID		= NO_COMMAND;	
 static uint8_t	non_nav_command_ID	= NO_COMMAND;	
 
+// ground speed error in m/s
 static float	groundspeed_error;	
 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
 static int16_t     throttle_nudge = 0;
@@ -408,9 +409,8 @@ static bool obstacle = false;
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
 ////////////////////////////////////////////////////////////////////////////////
-// The amount current ground speed is below min ground speed.  Centimeters per second
-static int32_t 	groundspeed_undershoot = 0;
-static int32_t 	ground_speed = 0;
+// The amount current ground speed is below min ground speed.  meters per second
+static float 	ground_speed = 0;
 static int16_t throttle_last = 0, throttle = 500;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -430,7 +430,7 @@ static float	crosstrack_error;
 // Used to track the CH7 toggle state.
 // When CH7 goes LOW PWM from HIGH PWM, this value will have been set true
 // This allows advanced functionality to know when to execute
-static bool trim_flag;
+static bool ch7_flag;
 // This register tracks the current Mission Command index when writing
 // a mission using CH7 in flight
 static int8_t CH7_wp_index;
@@ -453,21 +453,18 @@ static float	current_total1;
 
 // JLN Update
 uint32_t  timesw                  = 0;
-static bool speed_boost = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
 // The instantaneous desired bank angle.  Hundredths of a degree
-static int32_t nav_roll;
-// Calculated radius for the wp turn based on ground speed and max turn angle
-static int32_t    wp_radius;
+static int32_t nav_steer;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
 // Distance between plane and next waypoint.  Meters
-static int32_t wp_distance;
+static float wp_distance;
 // Distance between previous and next waypoint.  Meters
 static int32_t wp_totalDistance;
 
@@ -671,10 +668,6 @@ static void fast_loop()
     // some space available
     gcs_send_message(MSG_RETRY_DEFERRED);
 
-	// check for loss of control signal failsafe condition
-	// ------------------------------------
-	check_short_failsafe();
-
 	#if HIL_MODE == HIL_MODE_SENSORS
 		// update hil before dcm update
 		gcs_update();
@@ -718,12 +711,12 @@ static void fast_loop()
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
-	update_current_flight_mode();
+	update_current_mode();
 
-	// apply desired roll, pitch and yaw to the plane
-	// ----------------------------------------------
-	if (control_mode > LEARNING)
-		learning();
+	// apply desired steering if in an auto mode
+	if (control_mode >= AUTO) {
+        g.channel_steer.servo_out = nav_steer;
+    }
 
 	// write out the servo PWM values
 	// ------------------------------
@@ -751,7 +744,6 @@ static void medium_loop()
 		case 0:
 			medium_loopCounter++;
             update_GPS();
-            calc_gndspeed_undershoot();
             
 //#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -878,13 +870,6 @@ static void slow_loop()
             check_usb_mux();
 #endif
 
-#if TRACE == ENABLED
-         //     cliSerial->printf_P(PSTR("NAV->gnd_crs=%3.0f, nav_brg=%3.0f, tgt_brg=%3.0f, brg_err=%3.0f, nav_rll=%3.1f rsvo=%3.1f\n"), 
-         //           ahrs.yaw_sensor*0.01, (float)nav_bearing/100, (float)target_bearing/100, (float)bearing_error/100, (float)nav_roll/100, (float)g.channel_roll.servo_out/100);           
-             // cliSerial->printf_P(PSTR("WPL->g.command_total=%d, g.command_index=%d, nav_command_index=%d\n"), 
-                //    g.command_total, g.command_index, nav_command_index);      
-    	   cliSerial->printf_P(PSTR("NAV->gnd_crs=%3.0f,  sonar_dist = %d    obstacle = %d\n"), ahrs.yaw_sensor*0.01, (int)sonar_dist, obstacle);                
-#endif                          
 			break;
 	}
 }
@@ -929,25 +914,27 @@ static void update_GPS(void)
 				ground_start_count = 0;
 			}
 		}
-        ground_speed   = g_gps->ground_speed;
+        ground_speed   = g_gps->ground_speed * 0.01;
 	}
 }
 
-static void update_current_flight_mode(void)
+static void update_current_mode(void)
 { 
-    switch(control_mode){
+    switch (control_mode){
     case AUTO:
     case RTL:
-        calc_nav_roll();
+    case GUIDED:
+        calc_nav_steer();
         calc_throttle();
         break;
 
     case LEARNING:
     case MANUAL:
-        nav_roll        = 0;
-        g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
-        g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
-        g.channel_rudder.servo_out = g.channel_roll.pwm_to_angle();
+        nav_steer        = 0;
+        g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
+        break;
+
+    case INITIALISING:
         break;
 	}
 }
@@ -955,6 +942,11 @@ static void update_current_flight_mode(void)
 static void update_navigation()
 {
     switch (control_mode) {
+    case MANUAL:
+    case LEARNING:
+    case INITIALISING:
+        break;
+
     case AUTO:
 		verify_commands();
         break;
@@ -962,9 +954,9 @@ static void update_navigation()
     case RTL:
     case GUIDED:
         // no loitering around the wp with the rover, goes direct to the wp position
-        calc_nav_roll();
+        calc_nav_steer();
         calc_bearing_error();
-        if(verify_RTL()) {  
+        if (verify_RTL()) {  
             g.channel_throttle.servo_out = g.throttle_min.get();
             set_mode(MANUAL);
         }

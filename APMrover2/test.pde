@@ -90,10 +90,10 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 
 		cliSerial->printf_P(PSTR("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
-							g.channel_roll.radio_in,
-							g.channel_pitch.radio_in,
+							g.channel_steer.radio_in,
+							g.rc_2.radio_in,
 							g.channel_throttle.radio_in,
-							g.channel_rudder.radio_in,
+							g.rc_4.radio_in,
 							g.rc_5.radio_in,
 							g.rc_6.radio_in,
 							g.rc_7.radio_in,
@@ -146,10 +146,8 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		read_radio();
 
-		g.channel_roll.calc_pwm();
-		g.channel_pitch.calc_pwm();
+		g.channel_steer.calc_pwm();
 		g.channel_throttle.calc_pwm();
-		g.channel_rudder.calc_pwm();
 
 		// write out the servo PWM values
 		// ------------------------------
@@ -158,10 +156,10 @@ test_radio(uint8_t argc, const Menu::arg *argv)
         tuning_value = constrain(((float)(g.rc_7.radio_in - g.rc_7.radio_min) / (float)(g.rc_7.radio_max - g.rc_7.radio_min)),0,1);
                 
 		cliSerial->printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d  Tuning = %2.3f\n"),
-							g.channel_roll.control_in,
-							g.channel_pitch.control_in,
+							g.channel_steer.control_in,
+							g.rc_2.control_in,
 							g.channel_throttle.control_in,
-							g.channel_rudder.control_in,
+							g.rc_4.control_in,
 							g.rc_5.control_in,
 							g.rc_6.control_in,
 							g.rc_7.control_in,
@@ -207,13 +205,13 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 
 		if (oldSwitchPosition != readSwitch()){
 			cliSerial->printf_P(PSTR("CONTROL MODE CHANGED: "));
-            print_flight_mode(readSwitch());
+            print_mode(readSwitch());
 			fail_test++;
 		}
 
 		if(g.throttle_fs_enabled && g.channel_throttle.get_failsafe()){
 			cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.channel_throttle.radio_in);
-            print_flight_mode(readSwitch());
+            print_mode(readSwitch());
 			fail_test++;
 		}
 
@@ -293,8 +291,8 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 {
 	delay(1000);
 
-	cliSerial->printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
-	cliSerial->printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
+	cliSerial->printf_P(PSTR("%u waypoints\n"), (unsigned)g.command_total);
+	cliSerial->printf_P(PSTR("Hit radius: %f\n"), g.waypoint_radius);
 
 	for(uint8_t i = 0; i <= g.command_total; i++){
 		struct Location temp = get_cmd_with_index(i);
@@ -325,7 +323,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 
 	cliSerial->printf_P(PSTR("Control CH "));
 
-	cliSerial->println(FLIGHT_MODE_CHANNEL, DEC);
+	cliSerial->println(MODE_CHANNEL, DEC);
 
 	while(1){
 		delay(20);

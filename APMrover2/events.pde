@@ -1,33 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 
-static void failsafe_short_on_event(int fstype)
-{
-	// This is how to handle a short loss of control signal failsafe.
-	failsafe = fstype;
-	ch3_failsafe_timer = millis();
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event on, "));
-	switch(control_mode)
-	{
-		case MANUAL: 
-		case LEARNING:
-			break;
-
-		case AUTO: 
-		case GUIDED: 
-			if(g.short_fs_action == 1) {
-				set_mode(RTL);
-			}
-			break;
-			
-		case CIRCLE: 
-		case RTL: 
-		default:
-			break;
-	}
-    gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
-}
-
 static void failsafe_long_on_event(int fstype)
 {
 	// This is how to handle a long loss of control signal failsafe.
@@ -38,7 +11,6 @@ static void failsafe_long_on_event(int fstype)
 	{
 		case MANUAL: 
 		case LEARNING:
-		case CIRCLE: 
 			set_mode(RTL);
 			break;
 
@@ -54,21 +26,6 @@ static void failsafe_long_on_event(int fstype)
 			break;
 	}
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
-}
-
-static void failsafe_short_off_event()
-{
-	// We're back in radio contact
-	gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event off"));
-	failsafe = FAILSAFE_NONE;
-
-	// re-read the switch so we can return to our preferred mode
-	// --------------------------------------------------------
-	reset_control_switch();
-
-	// Reset control integrators
-	// ---------------------
-	reset_I();
 }
 
 #if BATTERY_EVENT == ENABLED

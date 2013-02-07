@@ -44,14 +44,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: MANUAL_LEVEL
     // @DisplayName: Manual Level
-    // @Description: Setting this to Disabled(0) will enable autolevel on every boot. Setting it to Enabled(1) will do a calibration only when you tell it to
+    // @Description: Setting this to Disabled(0) will enable autolevel on every boot. Setting it to Enabled(1) will do a calibration only when you tell it to. This defaults to enabled.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-	GSCALAR(manual_level,           "MANUAL_LEVEL",     0),
+	GSCALAR(manual_level,           "MANUAL_LEVEL",     1),
 	
     // @Param: XTRK_GAIN_SC
     // @DisplayName: Crosstrack Gain
-    // @Description: The scale between distance off the line and angle to meet the line (in Degrees * 100)
+    // @Description: This controls how hard the Rover tries to follow the lines between waypoints, as opposed to driving directly to the next waypoint. The value is the scale between distance off the line and angle to meet the line (in Degrees * 100)
     // @Range: 0 2000
     // @Increment: 1
     // @User: Standard
@@ -68,11 +68,19 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	GSCALAR(command_total,          "CMD_TOTAL",        0),
 	GSCALAR(command_index,          "CMD_INDEX",        0),
-	GSCALAR(waypoint_radius,        "WP_RADIUS",        WP_RADIUS_DEFAULT),
+
+    // @Param: WP_RADIUS
+    // @DisplayName: Waypoint radius
+    // @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
+    // @Units: meters
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @User: Standard
+	GSCALAR(waypoint_radius,        "WP_RADIUS",        2.0f),
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting to which the autopilot will apply.
+    // @Description: The minimum throttle setting to which the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
@@ -95,110 +103,98 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     THROTTLE_SLEW_LIMIT),
+	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     0),
 
     // @Param: THR_FAILSAFE
     // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
+    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
 	GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE",     THROTTLE_FAILSAFE),
 
     // @Param: THR_FS_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers.
     // @User: Standard
 	GSCALAR(throttle_fs_value,      "THR_FS_VALUE",     THROTTLE_FS_VALUE),
 
-    // @Param: TRIM_THROTTLE
+    // @Param: CRUISE_THROTTLE
     // @DisplayName: Throttle cruise percentage
-    // @Description: The target percentage of throttle to apply for normal flight
+    // @Description: The target percentage of throttle to apply for auto missions.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-	GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
+	GSCALAR(throttle_cruise,        "CRUISE_THROTTLE",    50),
 
-    // @Param: FS_SHORT_ACTN
-    // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (1 second) failsafe event
-    // @Values: 0:None,1:ReturnToLaunch
+    // @Param: CRUISE_SPEED
+    // @DisplayName: Target speed in auto modes
+    // @Description: The target speed in auto missions.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
     // @User: Standard
-	GSCALAR(short_fs_action,        "FS_SHORT_ACTN",    SHORT_FAILSAFE_ACTION),
+	GSCALAR(speed_cruise,        "CRUISE_SPEED",    5),
 
-    // @Param: FS_LONG_ACTN
-    // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (20 second) failsafe event
-    // @Values: 0:None,1:ReturnToLaunch
-    // @User: Standard
-	GSCALAR(long_fs_action,         "FS_LONG_ACTN",     LONG_FAILSAFE_ACTION),
-
-    // @Param: FS_GCS_ENABL
+    // @Param: FS_GCS_ENABLE
     // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after 20 seconds of no MAVLink heartbeat messages
+    // @Description: Enable ground control station telemetry failsafe
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-	GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL",   GCS_HEARTBEAT_FAILSAFE),
+	GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABLE",   0),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
+    // @Param: MODE_CH
+    // @DisplayName: Mode channel
     // @Description: RC Channel to use for flight mode control
     // @User: Advanced
-	GSCALAR(flight_mode_channel,    "FLTMODE_CH",       FLIGHT_MODE_CHANNEL),
+	GSCALAR(mode_channel,    "MODE_CH",       MODE_CHANNEL),
 
-    // @Param: FLTMODE1
-    // @DisplayName: FlightMode1
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @Param: MODE1
+    // @DisplayName: Mode1
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
     // @User: Standard
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-	GSCALAR(flight_mode1,           "FLTMODE1",         FLIGHT_MODE_1),
+	GSCALAR(mode1,           "MODE1",         MODE_1),
 
-    // @Param: FLTMODE2
-    // @DisplayName: FlightMode2
+    // @Param: MODE2
+    // @DisplayName: Mode2
     // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
     // @User: Standard
-	GSCALAR(flight_mode2,           "FLTMODE2",         FLIGHT_MODE_2),
+	GSCALAR(mode2,           "MODE2",         MODE_2),
 
-    // @Param: FLTMODE3
-    // @DisplayName: FlightMode3
+    // @Param: MODE3
+    // @DisplayName: Mode3
     // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
     // @User: Standard
-	GSCALAR(flight_mode3,           "FLTMODE3",         FLIGHT_MODE_3),
+	GSCALAR(mode3,           "MODE3",         MODE_3),
 
-    // @Param: FLTMODE4
-    // @DisplayName: FlightMode4
+    // @Param: MODE4
+    // @DisplayName: Mode4
     // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
     // @User: Standard
-	GSCALAR(flight_mode4,           "FLTMODE4",         FLIGHT_MODE_4),
+	GSCALAR(mode4,           "MODE4",         MODE_4),
 
-    // @Param: FLTMODE5
-    // @DisplayName: FlightMode5
+    // @Param: MODE5
+    // @DisplayName: Mode5
     // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
     // @User: Standard
-	GSCALAR(flight_mode5,           "FLTMODE5",         FLIGHT_MODE_5),
+	GSCALAR(mode5,           "MODE5",         MODE_5),
 
-    // @Param: FLTMODE6
-    // @DisplayName: FlightMode6
+    // @Param: MODE6
+    // @DisplayName: Mode6
     // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
     // @User: Standard
-	GSCALAR(flight_mode6,           "FLTMODE6",         FLIGHT_MODE_6),
+	GSCALAR(mode6,           "MODE6",         MODE_6),
 
-	GSCALAR(roll_limit,             "LIM_ROLL_CD",      HEAD_MAX_CENTIDEGREE),
-	GSCALAR(pitch_limit_max,        "LIM_PITCH_MAX",    PITCH_MAX_CENTIDEGREE),
-	GSCALAR(pitch_limit_min,        "LIM_PITCH_MIN",    PITCH_MIN_CENTIDEGREE),
-
-	GSCALAR(auto_trim,              "TRIM_AUTO",        AUTO_TRIM),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 	GSCALAR(log_last_filenumber,    "LOG_LASTFILE",     0),
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
-	GSCALAR(airspeed_cruise,        "TRIM_ARSPD_CM",    AIRSPEED_CRUISE_CM),
-	GSCALAR(min_gndspeed,           "MIN_GNDSPD_CM",    MIN_GNDSPEED_CM),
 	GSCALAR(ch7_option,             "CH7_OPT",          CH7_OPTION),
 
 	GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
@@ -244,29 +240,23 @@ const AP_Param::Info var_info[] PROGMEM = {
 
  // ************************************************************
         // APMrover parameters - JLN update
-	GSCALAR(auto_wp_radius,         "ROV_AWPR_NAV",     AUTO_WP_RADIUS),
 	GSCALAR(sonar_trigger,          "ROV_SONAR_TRIG",   SONAR_TRIGGER),
-	GSCALAR(turn_gain,              "ROV_GAIN",         TURN_GAIN),
 	GSCALAR(booster,                 "ROV_BOOSTER",     BOOSTER),
         
 // ************************************************************
 
-	GGROUP(channel_roll,            "RC1_", RC_Channel),
-	GGROUP(channel_pitch,           "RC2_", RC_Channel),
+	GGROUP(channel_steer,           "RC1_", RC_Channel),
+	GGROUP(rc_2,                    "RC2_", RC_Channel_aux),
 	GGROUP(channel_throttle,        "RC3_", RC_Channel),
-	GGROUP(channel_rudder,          "RC4_", RC_Channel),
+	GGROUP(rc_4,                    "RC4_", RC_Channel_aux),
 	GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
 	GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
 	GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
 	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
-	GGROUP(pidNavRoll,              "HDNG2RLL_",  PID),
-	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
-	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
-	GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
-	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
-	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
-	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
+	GGROUP(pidNavSteer,             "HDNG2STEER_",  PID),
+	GGROUP(pidServoSteer,           "STEER2SRV_",   PID),
+	GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
 	// variables not in the g class which contain EEPROM saved variables
 	GOBJECT(compass,                "COMPASS_",	Compass),

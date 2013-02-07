@@ -391,13 +391,10 @@ static void Log_Read_Startup()
 
 struct log_Control_Tuning {
     LOG_PACKET_HEADER;
-    int16_t roll_out;
-    int16_t nav_roll_cd;
+    int16_t steer_out;
     int16_t roll;
-    int16_t pitch_out;
     int16_t pitch;
     int16_t throttle_out;
-    int16_t rudder_out;
     int16_t accel_y;
 };
 
@@ -408,14 +405,11 @@ static void Log_Write_Control_Tuning()
     Vector3f accel = ins.get_accel();
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-        roll_out        : (int16_t)g.channel_roll.servo_out,
-        nav_roll_cd     : (int16_t)nav_roll,
+        steer_out       : (int16_t)g.channel_steer.servo_out,
         roll            : (int16_t)ahrs.roll_sensor,
-        pitch_out       : (int16_t)g.channel_pitch.servo_out,
         pitch           : (int16_t)ahrs.pitch_sensor,
         throttle_out    : (int16_t)g.channel_throttle.servo_out,
-        rudder_out      : (int16_t)g.channel_rudder.servo_out,
-        accel_y         : (int16_t)accel.y * 10000
+        accel_y         : (int16_t)(accel.y * 10000)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -427,14 +421,11 @@ static void Log_Read_Control_Tuning()
     struct log_Control_Tuning pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    cliSerial->printf_P(PSTR("CTUN, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f\n"),
-        (float)pkt.roll_out / 100.f,
-        (float)pkt.nav_roll_cd / 100.f,
+    cliSerial->printf_P(PSTR("CTUN, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f\n"),
+        (float)pkt.steer_out / 100.f,
         (float)pkt.roll / 100.f,
-        (float)pkt.pitch_out / 100.f,
         (float)pkt.pitch / 100.f,
         (float)pkt.throttle_out / 100.f,
-        (float)pkt.rudder_out / 100.f,
         (float)pkt.accel_y / 10000.f
     );
 }
@@ -459,7 +450,7 @@ static void Log_Write_Nav_Tuning()
         target_bearing_cd   : (uint16_t)target_bearing,
         nav_bearing_cd      : (uint16_t)nav_bearing,
         altitude_error_cm   : (int16_t)altitude_error,
-        nav_gain_scheduler  : (int16_t)nav_gain_scaler*1000
+        nav_gain_scheduler  : (int16_t)(nav_gain_scaler*1000)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -500,7 +491,7 @@ static void Log_Read_Mode()
     struct log_Mode pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
     cliSerial->printf_P(PSTR("MOD,"));
-    print_flight_mode(pkt.mode);
+    print_mode(pkt.mode);
 }
 
 struct log_GPS {

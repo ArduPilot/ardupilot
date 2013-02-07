@@ -46,7 +46,6 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case AUTO:
     case RTL:
     case GUIDED:
-    case CIRCLE:
         base_mode = MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
@@ -142,6 +141,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
     case AUTO:
     case RTL:
+    case GUIDED:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
         control_sensors_enabled |= (1<<12); // yaw position
@@ -235,7 +235,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
     int16_t bearing = nav_bearing / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
-        nav_roll / 1.0e2,
+        nav_steer / 1.0e2,
         0,
         bearing,
         target_bearing / 100,
@@ -275,10 +275,10 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port 0
-        10000 * g.channel_roll.norm_output(),
-        10000 * g.channel_pitch.norm_output(),
+        10000 * g.channel_steer.norm_output(),
+        0,
         10000 * g.channel_throttle.norm_output(),
-        10000 * g.channel_rudder.norm_output(),
+        0,
         0,
         0,
         0,
@@ -1068,7 +1068,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case LEARNING:
             case AUTO:
             case RTL:
-                set_mode(packet.custom_mode);
+                set_mode((enum mode)packet.custom_mode);
                 break;
             }
 
