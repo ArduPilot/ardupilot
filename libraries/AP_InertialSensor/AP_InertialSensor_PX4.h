@@ -41,6 +41,12 @@ private:
     static uint64_t _last_gyro_timestamp;
     uint8_t  _sample_divider;
 
+    // support for updating filter at runtime
+    uint8_t _last_filter_hz;
+    uint8_t _default_filter_hz;
+
+    void _set_filter_frequency(uint8_t filter_hz);
+
     // accelerometer and gyro driver handles
     static int _accel_fd;
     static int _gyro_fd;

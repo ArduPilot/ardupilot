@@ -29,13 +29,16 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     switch (sample_rate) {
     case RATE_50HZ:
         _sample_divider = 4;
+        _default_filter_hz = 10;
         break;
     case RATE_100HZ:
         _sample_divider = 2;
+        _default_filter_hz = 42;
         break;
     case RATE_200HZ:
     default:
         _sample_divider = 1;
+        _default_filter_hz = 42;
         break;
     }
 
@@ -67,7 +70,21 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     // register a 1kHz timer to read from PX4 sensor drivers
     hal.scheduler->register_timer_process(_ins_timer);
 
+    _set_filter_frequency(_mpu6000_filter);
+
     return AP_PRODUCT_ID_PX4;
+}
+
+/*
+  set the filter frequency
+ */
+void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
+{
+    if (filter_hz == 0) {
+        filter_hz = _default_filter_hz;
+    }
+    ioctl(_gyro_fd,  GYROIOCSLOWPASS,  filter_hz);
+    ioctl(_accel_fd, ACCELIOCSLOWPASS, filter_hz);
 }
 
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
@@ -105,6 +122,11 @@ bool AP_InertialSensor_PX4::update(void)
 
     _gyro.rotate(_board_orientation);
     _gyro -= _gyro_offset;
+
+    if (_last_filter_hz != _mpu6000_filter) {
+        _set_filter_frequency(_mpu6000_filter);
+        _last_filter_hz = _mpu6000_filter;
+    }
 
     return true;
 }
