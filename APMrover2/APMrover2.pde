@@ -91,6 +91,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <Filter.h>			// Filter library
+#include <Butter.h>			// Filter library - butterworth filter
 #include <AP_Buffer.h>      // FIFO buffer library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AverageFilter.h>	// Mode Filter from Filter library
@@ -416,8 +417,8 @@ static int16_t throttle_last = 0, throttle = 500;
 ////////////////////////////////////////////////////////////////////////////////
 // Location Errors
 ////////////////////////////////////////////////////////////////////////////////
-// Difference between current bearing and desired bearing.  Hundredths of a degree
-static int32_t bearing_error;
+// Difference between current bearing and desired bearing.  in centi-degrees
+static int32_t bearing_error_cd;
 // Difference between current altitude and desired altitude.  Centimeters
 static int32_t altitude_error;
 // Distance perpandicular to the course line that we are off trackline.  Meters 

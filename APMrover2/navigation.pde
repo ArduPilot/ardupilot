@@ -40,8 +40,10 @@ static void navigate()
 
 static void calc_bearing_error()
 {    
-	bearing_error = nav_bearing - ahrs.yaw_sensor;
-	bearing_error = wrap_180(bearing_error);
+    static butter10hz1_6 butter;
+
+	bearing_error_cd = wrap_180(nav_bearing - ahrs.yaw_sensor);
+    bearing_error_cd = butter.filter(bearing_error_cd);
 }
 
 static long wrap_360(long error)

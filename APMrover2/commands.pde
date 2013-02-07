@@ -185,7 +185,8 @@ void init_home()
 
 static void restart_nav()
 {  
-    reset_I();
+    g.pidNavSteer.reset_I();
+    g.pidSpeedThrottle.reset_I();
     prev_WP = current_loc;
     nav_command_ID = NO_COMMAND;
     nav_command_index = 0;

@@ -8,11 +8,11 @@ handle_process_nav_cmd()
 {
 	// reset navigation integrators
 	// -------------------------
-	reset_I();
+    g.pidNavSteer.reset_I();
 
-		gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nav_command.id);
+    gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nav_command.id);
+
 	switch(next_nav_command.id){
-
 		case MAV_CMD_NAV_TAKEOFF:
 			do_takeoff();
 			break;

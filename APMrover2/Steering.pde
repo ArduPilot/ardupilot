@@ -23,7 +23,7 @@ static void calc_throttle()
    
    groundspeed_error = g.speed_cruise - ground_speed; 
         
-   throttle = throttle_target + g.pidSpeedThrottle.get_pid(groundspeed_error);
+   throttle = throttle_target + (g.pidSpeedThrottle.get_pid(groundspeed_error * 100) / 100);
    g.channel_throttle.servo_out = constrain_int16(throttle, g.throttle_min.get(), g.throttle_max.get());
 }
 
@@ -42,20 +42,11 @@ static void calc_nav_steer()
 
     // negative error = left turn
 	// positive error = right turn
-
-	nav_steer = g.pidNavSteer.get_pid(bearing_error, nav_gain_scaler);	//returns desired bank angle in degrees*100
+	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
 
     if (obstacle) {  // obstacle avoidance 
 	    nav_steer += 9000;    // if obstacle in front turn 90° right	
     }
-}
-
-// Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
-// Keeps outdated data out of our calculations
-static void reset_I(void)
-{
-	g.pidNavSteer.reset_I();
-	g.pidSpeedThrottle.reset_I();
 }
 
 /*****************************************
