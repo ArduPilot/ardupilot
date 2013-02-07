@@ -337,20 +337,20 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
                 msg = PSTR("level");
                 break;
             case 1:
-                msg = PSTR("on it's left side");
+                msg = PSTR("on its LEFT side");
                 break;
             case 2:
-                msg = PSTR("on it's right side");
+                msg = PSTR("on its RIGHT side");
                 break;
             case 3:
-                msg = PSTR("nose down");
+                msg = PSTR("nose DOWN");
                 break;
             case 4:
-                msg = PSTR("nose up");
+                msg = PSTR("nose UP");
                 break;
             default:    // default added to avoid compiler warning
             case 5:
-                msg = PSTR("on it's back");
+                msg = PSTR("on its BACK");
                 break;
         }
         interact->printf_P(
