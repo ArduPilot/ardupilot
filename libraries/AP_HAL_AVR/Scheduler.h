@@ -11,6 +11,8 @@
 class AP_HAL_AVR::AVRTimer {
 public:
     static void     init();
+    static uint16_t ticks( uint16_t &ticksTimer);
+    static uint16_t ticks( uint16_t ticksTimer, uint16_t ticksDelay);
     static uint32_t millis();
     static uint32_t micros();
     static void     delay_microseconds(uint16_t us);
@@ -26,8 +28,12 @@ public:
      * AP_HAL_AVR::ISRRegistry*. */
     void     init(void *isrregistry);
     void     delay(uint16_t ms);
+    
+    uint16_t ticks(uint16_t &ticksTimer);
+    uint16_t ticks(uint16_t ticksTimer, uint16_t ticksDelay);
     uint32_t millis();
     uint32_t micros();
+    
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
 
@@ -44,7 +50,7 @@ public:
 
     void     panic(const prog_char_t *errormsg);
     void     reboot();
-
+    
 private:
     static AVRTimer _timer;
 
