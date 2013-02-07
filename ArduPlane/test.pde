@@ -24,6 +24,9 @@ static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_rawgps(uint8_t argc,                       const Menu::arg *argv);
 static int8_t   test_modeswitch(uint8_t argc,           const Menu::arg *argv);
 static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
+#endif
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -60,6 +63,9 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
     {"logging",             test_logging},
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    {"shell", 				test_shell},
+#endif
 
 };
 
@@ -405,6 +411,18 @@ test_logging(uint8_t argc, const Menu::arg *argv)
                     (unsigned long)DF_LOGGING_FORMAT);
     return 0;
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+/*
+ *  run a debug shell
+ */
+static int8_t
+test_shell(uint8_t argc, const Menu::arg *argv)
+{
+    hal.util->run_debug_shell(cliSerial);
+    return 0;
+}
+#endif
 
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
