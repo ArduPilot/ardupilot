@@ -88,24 +88,33 @@ SIGNAL( AVR_TIMER_OVF_VECT)
     timer_millis_counter += 40000 / 2000; // 20ms each overlflow
 }
 
+// Return how much time (in ticks) has passed since last time ticks( ticksTimer) was called.
+// ticksTimer starts over each time function is called.
 uint16_t AVRTimer::ticks( uint16_t &ticksTimer ) {
   uint8_t _sreg = SREG;
   cli();
   uint16_t tcnt = AVR_TIMER_TCNT;
   SREG = _sreg;
+
   uint16_t old = ticksTimer;
   ticksTimer = tcnt;
   if( tcnt < old ) tcnt += 40000; // TCNT wrap
   return tcnt - old;
 }
 
+// Return time in ticks until ticksDelay is reached from the last time ticks( ticksTimer ); was called. If more time then ticksDelay has passed, return 0.
+// Alternativly if ticksDelay == 0, return how much time (in ticks) has passed since last time ticks( ticksTimer ) was called, without restarting the ticksTimer
 uint16_t AVRTimer::ticks( uint16_t ticksTimer, uint16_t ticksDelay ) {
   uint8_t _sreg = SREG;
   cli();
   uint16_t tcnt = AVR_TIMER_TCNT;
   SREG = _sreg;
+
   uint16_t old = ticksTimer;
   if( tcnt < old ) tcnt += 40000; // TCNT wrap
+  // Return passed time without reseting the timer
+  if( ticksDelay == 0 ) return tcnt - old;
+  // Return time until ticksDelay is reached
   tcnt -= old;  
   if( tcnt < ticksDelay ) return ticksDelay - tcnt;
   return 0;

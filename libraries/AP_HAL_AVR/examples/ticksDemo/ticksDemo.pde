@@ -34,8 +34,12 @@ inline uint16_t local_ticks( uint16_t ticksTimer, uint16_t ticksDelay ) {
   cli();
   uint16_t tcnt = AVR_TIMER_TCNT;
   SREG = _sreg;
+
   uint16_t old = ticksTimer;
   if( tcnt < old ) tcnt += 40000; // TCNT wrap
+  // Return passed time without reseting the timer
+  if( ticksDelay == 0 ) return tcnt - old;
+  // Return time until ticksDelay is reached
   tcnt -= old;  
   if( tcnt < ticksDelay ) return ticksDelay - tcnt;
   return 0;
@@ -246,12 +250,24 @@ void setup(void) {
     resultWait = hal.scheduler->ticks( timerWait );
     hal.console->printf_P( PSTR("ticks() wait 10.25ms = %fms\n"), resultWait / 2000.0f );
 
+    hal.scheduler->ticks( timerWait );
+      // ticks timing()
+      while( hal.scheduler->ticks( timerWait, false ) < 10.25 * 2000 );
+    resultWait = hal.scheduler->ticks( timerWait );
+    hal.console->printf_P( PSTR("ticks( ticksTimer, false ) wait 10.25ms = %fms\n"), resultWait / 2000.0f );
+
+
     local_ticks( timerWait );
       // ticks timing()
       while( local_ticks( timerWait, 10.25 * 2000 ) );
     resultWait = local_ticks( timerWait );
-    hal.console->printf_P( PSTR("Local ticks() wait 10.25ms = %fms\n"), resultWait / 2000.0f );
+    hal.console->printf_P( PSTR("\nLocal ticks() wait 10.25ms = %fms\n"), resultWait / 2000.0f );
 
+    local_ticks( timerWait );
+      // ticks timing()
+      while( local_ticks( timerWait, false ) < 10.25 * 2000 );
+    resultWait = local_ticks( timerWait );
+    hal.console->printf_P( PSTR("Local ticks( ticksTimer, false ) wait 10.25ms = %fms\n"), resultWait / 2000.0f );
 
     // Timer functions execution time
     // ----------------------------------------------------------------------------------------------
@@ -298,7 +314,7 @@ void setup(void) {
     }
     ticks = local_ticks( timer );
     result = ticks / (repCount * 2.0f);
-    hal.console->printf_P( PSTR("Local ticks() = %fus\n"), result );
+    hal.console->printf_P( PSTR("\nLocal ticks() = %fus\n"), result );
 }
 
 AP_HAL_MAIN();
