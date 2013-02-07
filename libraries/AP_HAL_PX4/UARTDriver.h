@@ -44,6 +44,10 @@ public:
 
     void _timer_tick(void);
 
+    int _get_fd(void) {
+	    return _fd;
+    }
+
 private:
     const char *_devpath;
     int _fd;
