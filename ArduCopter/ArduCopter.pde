@@ -1614,6 +1614,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             break;
 
         case ROLL_PITCH_LOITER_INAV:
+        case ROLL_PITCH_WP_INAV:
             // require gps lock
             if( ap.home_is_set ) {
                 roll_pitch_initialised = true;
@@ -1727,6 +1728,15 @@ void update_roll_pitch_mode(void)
             loiter_set_pos_from_velocity(-control_pitch/(2*4.5), control_roll/(2*4.5),0.01f);
         }
 
+        // copy latest output from nav controller to stabilize controller
+        nav_roll    = auto_roll;
+        nav_pitch   = auto_pitch;
+        get_stabilize_roll(nav_roll);
+        get_stabilize_pitch(nav_pitch);
+        break;
+
+    case ROLL_PITCH_WP_INAV:
+        // To-Do: allow pilot to take control of target location
         // copy latest output from nav controller to stabilize controller
         nav_roll    = auto_roll;
         nav_pitch   = auto_pitch;

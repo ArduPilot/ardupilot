@@ -264,7 +264,8 @@ static bool set_nav_mode(uint8_t new_nav_mode)
             break;
 
         case NAV_WP_INAV:
-            nav_initialised = true;
+            // To-Do: below allows user to move around set point but do we want to allow this when in Auto flight mode?
+            nav_initialised = set_roll_pitch_mode(ROLL_PITCH_WP_INAV);
             break;
     }
 
@@ -397,7 +398,7 @@ static bool check_missed_wp()
     int32_t temp;
     temp = wp_bearing - original_wp_bearing;
     temp = wrap_180(temp);
-    return (labs(temp) > 9000);         // we passed the waypoint by 100 degrees
+    return (labs(temp) > 9000);         // we passed the waypoint by 90 degrees
 }
 
 ////////////////////////////////////////////////////////////////
@@ -538,7 +539,7 @@ static void calc_nav_rate(int16_t max_speed)
 static void calc_nav_pitch_roll()
 {
     // To-Do: remove this hack dependent upon nav_mode
-    if( nav_mode != NAV_LOITER_INAV ) {
+    if( nav_mode != NAV_LOITER_INAV && nav_mode != NAV_WP_INAV ) {
         // rotate the vector
         auto_roll       = (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
         auto_pitch      = (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;

@@ -150,25 +150,30 @@ static void set_next_WP(struct Location *wp)
     // To-Do: remove the restriction on negative altitude targets (after testing)
     set_new_altitude(max(wp->alt,100));
 
-    // this is handy for the groundstation
-    // -----------------------------------
+    // recalculate waypoint distance and bearing
     wp_distance             = get_distance_cm(&current_loc, &next_WP);
     wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
+    original_wp_bearing     = wp_bearing;       // to check if we have missed the WP
 
     // calc the location error:
     calc_location_error(&next_WP);
-
-    // to check if we have missed the WP
-    // ---------------------------------
-    original_wp_bearing = wp_bearing;
 }
 
 // set_next_WP_latlon - update just lat and lon targets for nav controllers
 static void set_next_WP_latlon(uint32_t lat, uint32_t lon)
 {
+    // save current location as previous location
+    prev_WP = current_loc;
+
     // Load the next_WP slot
     next_WP.lat = lat;
     next_WP.lng = lon;
+
+    // recalculate waypoint distance and bearing
+    // To-Do: these functions are too expensive to be called every time we update the next_WP
+    wp_distance             = get_distance_cm(&current_loc, &next_WP);
+    wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
+    original_wp_bearing     = wp_bearing;       // to check if we have missed the WP
 }
 
 // run this at setup on the ground
