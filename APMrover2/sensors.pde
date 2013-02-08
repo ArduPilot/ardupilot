@@ -39,10 +39,5 @@ static void read_battery(void)
         current_amps1    = CURRENT_AMPS(batt_curr_pin->read_average());
         current_total1   += current_amps1 * (float)delta_ms_medium_loop * 0.0002778;                                    // .0002778 is 1/3600 (conversion to hours)
     }
-	
-	#if BATTERY_EVENT == ENABLED
-		if(battery_voltage1 < LOW_VOLTAGE)	low_battery_event();
-		if(g.battery_monitoring == 4 && current_total1 > g.pack_capacity)	low_battery_event();
-	#endif
 }
 

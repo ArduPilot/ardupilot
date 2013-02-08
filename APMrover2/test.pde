@@ -209,7 +209,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 			fail_test++;
 		}
 
-		if(g.throttle_fs_enabled && g.channel_throttle.get_failsafe()){
+		if (g.fs_throttle_enabled && g.channel_throttle.get_failsafe()){
 			cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.channel_throttle.radio_in);
             print_mode(readSwitch());
 			fail_test++;

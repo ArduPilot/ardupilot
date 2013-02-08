@@ -16,9 +16,7 @@ static void failsafe_long_on_event(int fstype)
 
 		case AUTO: 
 		case GUIDED: 
-			if(g.long_fs_action == 1) {
-				set_mode(RTL);
-			}
+            set_mode(RTL);
 			break;
 			
 		case RTL: 
@@ -27,15 +25,6 @@ static void failsafe_long_on_event(int fstype)
 	}
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
-
-#if BATTERY_EVENT == ENABLED
-static void low_battery_event(void)
-{
-	gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
-	set_mode(RTL);
-	g.throttle_cruise = THROTTLE_CRUISE;
-}
-#endif
 
 static void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
 {

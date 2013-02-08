@@ -83,8 +83,10 @@ static void read_radio()
 
 static void control_failsafe(uint16_t pwm)
 {
-	if(g.throttle_fs_enabled == 0)
+	if (!g.fs_throttle_enabled) {
+        // no throttle failsafe
 		return;
+    }
 
 	// Check for failsafe condition based on loss of GCS control
 	if (rc_override_active) {
@@ -95,8 +97,8 @@ static void control_failsafe(uint16_t pwm)
 		}
 
 	//Check for failsafe and debounce funky reads
-	} else if (g.throttle_fs_enabled) {
-		if (pwm < (unsigned)g.throttle_fs_value){
+	} else if (g.fs_throttle_enabled) {
+		if (pwm < (unsigned)g.fs_throttle_value){
 			// we detect a failsafe from radio
 			// throttle has dropped below the mark
 			failsafeCounter++;

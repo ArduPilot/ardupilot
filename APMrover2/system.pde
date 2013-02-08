@@ -383,7 +383,7 @@ static void check_long_failsafe()
 		if(! rc_override_active && failsafe == FAILSAFE_SHORT && millis() - ch3_failsafe_timer > FAILSAFE_LONG_TIME) {
 			failsafe_long_on_event(FAILSAFE_LONG);
 		}
-		if(g.gcs_heartbeat_fs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
+		if (g.fs_gcs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
 			failsafe_long_on_event(FAILSAFE_GCS);
 		}
 	} else {
@@ -412,7 +412,7 @@ static void startup_INS_ground(bool force_accel_level)
 	ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate, 
              flash_leds);
-    if (force_accel_level || g.manual_level == 0) {
+    if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	

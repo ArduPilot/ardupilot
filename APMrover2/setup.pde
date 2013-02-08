@@ -302,13 +302,7 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
              ins_sample_rate,
              flash_leds);
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    bool success = ins.calibrate_accel(flash_leds, &interact);
-    if (success) {
-        if (g.manual_level == 0) {
-            cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
-            g.manual_level.set_and_save(1);
-        }
-    }
+    ins.calibrate_accel(flash_leds, &interact);
     return(0);
 }
 #endif
@@ -416,16 +410,16 @@ static void report_throttle()
 	cliSerial->printf_P(PSTR("Throttle\n"));
 	print_divider();
 
-	cliSerial->printf_P(PSTR("min: %d\n"
-						 "max: %d\n"
-						 "cruise: %d\n"
-						 "failsafe_enabled: %d\n"
-						 "failsafe_value: %d\n"),
-						 (int)g.throttle_min,
-						 (int)g.throttle_max,
-						 (int)g.throttle_cruise,
-						 (int)g.throttle_fs_enabled,
-						 (int)g.throttle_fs_value);
+	cliSerial->printf_P(PSTR("min: %u\n"
+                             "max: %u\n"
+                             "cruise: %u\n"
+                             "failsafe_enabled: %u\n"
+                             "failsafe_value: %u\n"),
+						 (unsigned)g.throttle_min,
+						 (unsigned)g.throttle_max,
+						 (unsigned)g.throttle_cruise,
+						 (unsigned)g.fs_throttle_enabled,
+						 (unsigned)g.fs_throttle_value);
 	print_blanks(2);
 }
 

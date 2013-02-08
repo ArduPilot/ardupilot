@@ -17,14 +17,8 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 14;
-
-	// The parameter software_type is set up solely for ground station use
-	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
-	// GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
-	// values within that range to identify different branches.
-	//
-    static const uint16_t k_software_type = 20;		// 0 for APM trunk
+    static const uint16_t k_format_version = 15;
+    static const uint16_t k_software_type = 20;
 
     enum {
         // Layout version number, always key zero.
@@ -34,13 +28,12 @@ public:
 
         // Misc
         //
-        k_param_log_bitmask,
+        k_param_log_bitmask = 10,
         k_param_num_resets,
-        k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
         k_param_reset_switch_chan,
-        k_param_manual_level,
-        k_param_ins,                        // libraries/AP_InertialSensor variables        
-        k_param_rssi_pin,
+
+        // IO pins
+        k_param_rssi_pin = 20,
         k_param_battery_volt_pin,
         k_param_battery_curr_pin,
 
@@ -58,22 +51,15 @@ public:
         //
         // 130: Sensor parameters
         //
-        k_param_imu = 130,  
-        k_param_compass_enabled,
-        k_param_compass,
-        k_param_battery_monitoring,
+        k_param_compass_enabled = 130,
+
+        // 140: battery controls
+        k_param_battery_monitoring = 140,
         k_param_volt_div_ratio,
         k_param_curr_amp_per_volt,
         k_param_input_voltage,
         k_param_pack_capacity,
 
-#if CONFIG_SONAR == ENABLED       
-        k_param_sonar_enabled,
-        k_param_sonar_type,
-#endif
-
-        k_param_ahrs,  // AHRS group
-        
         //
         // 150: Navigation parameters
         //
@@ -94,22 +80,27 @@ public:
         k_param_rc_7,
         k_param_rc_8,
 
-        k_param_throttle_min,
+        // throttle control
+        k_param_throttle_min = 170,
         k_param_throttle_max,
-        k_param_throttle_fs_enabled, // 170
-        k_param_throttle_fs_value,
         k_param_throttle_cruise,
-
-        k_param_long_fs_action,
-        k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
+        k_param_throttle_reduction,
 
-        // 180: APMrover parameters - JLN update
-        k_param_sonar_trigger,
-        k_param_booster,        
+        // failsafe control
+        k_param_fs_action = 180,
+        k_param_fs_timeout,
+        k_param_fs_throttle_enabled,
+        k_param_fs_throttle_value,
+        k_param_fs_gcs_enabled,
+
+        // obstacle control
+        k_param_sonar_trigger = 190,
+        k_param_sonar_enabled,
+        k_param_sonar_type,
         
         //
-        // 210: flight modes
+        // 210: driving modes
         //
         k_param_mode_channel = 210,
         k_param_mode1,
@@ -122,29 +113,38 @@ public:
         //
         // 220: Waypoint data
         //
-        k_param_waypoint_mode = 220,
-        k_param_command_total,
+        k_param_command_total = 220,
         k_param_command_index,
         k_param_waypoint_radius,
 
-        // other objects
-        k_param_sitl = 230,
-
         //
         // 240: PID Controllers
-        k_param_pidNavSteer = 240,
-
-        // steering-to-servo PID:
+        k_param_pidNavSteer = 230,
         k_param_pidServoSteer,
-
-        // steering-to-servo PID:
         k_param_pidSpeedThrottle,
+
+        // other objects
+        k_param_sitl = 240,
+        k_param_ahrs,
+        k_param_ins,
+        k_param_compass,
 
         // 254,255: reserved
         };
 
     AP_Int16    format_version;
 	AP_Int8	    software_type;
+
+    // Misc
+    //
+    AP_Int16    log_bitmask;
+    AP_Int16    num_resets;
+    AP_Int8	    reset_switch_chan;
+
+    // IO pins
+    AP_Int8     rssi_pin;
+    AP_Int8     battery_volt_pin;
+    AP_Int8     battery_curr_pin;
 
 	// Telemetry control
 	//
@@ -154,77 +154,22 @@ public:
     AP_Int8	    serial3_baud;
     AP_Int8     telem_delay;
 
-    // Crosstrack navigation
-    //
-    AP_Float    crosstrack_gain;
-    AP_Int16    crosstrack_entry_angle;
-    
-    // Waypoints
-    //
-    AP_Int8     waypoint_mode;
-    AP_Int8     command_total;
-    AP_Int8     command_index;
-    AP_Float    waypoint_radius;
-    
-    // Throttle
-    //
-    AP_Int8     throttle_min;
-    AP_Int8     throttle_max;
-    AP_Int8     throttle_slewrate;
-    AP_Int8     throttle_fs_enabled;
-    AP_Int16    throttle_fs_value;
-    AP_Int8     throttle_cruise;
-    
-    // Failsafe
-    AP_Int8     long_fs_action;
-	AP_Int8	    gcs_heartbeat_fs_enabled;
-
-    // Flight modes
-    //
-    AP_Int8     mode_channel;
-    AP_Int8     mode1;
-    AP_Int8     mode2;
-    AP_Int8     mode3;
-    AP_Int8     mode4;
-    AP_Int8     mode5;
-    AP_Int8     mode6;
-    
-    // Misc
-    //
-    AP_Int16    num_resets;
-    AP_Int16    log_bitmask;
-    AP_Int16    log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
-    AP_Int8	    reset_switch_chan;
-    AP_Int8	    manual_level;	
-    AP_Float    speed_cruise;
-    AP_Int8	    ch7_option;
-        
+    // sensor parameters
     AP_Int8	    compass_enabled;
+
+    // battery controls
     AP_Int8	    battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Float    volt_div_ratio;
     AP_Float    curr_amp_per_volt;
     AP_Float    input_voltage;
-    AP_Int16    pack_capacity;		// Battery pack capacity less reserve
-    AP_Int8     rssi_pin;
-    AP_Int8     battery_volt_pin;
-    AP_Int8     battery_curr_pin;
+    AP_Int16    pack_capacity;		// Battery pack capacity less reserve    
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-#if CONFIG_SONAR == ENABLED     
-    AP_Int8	    sonar_enabled;
-	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV,
-    // 2 = XLL (XL with 10m range)   
-    // 3 = HRLV 
-#endif
-#endif
-
-// ************ ThermoPilot parameters  ************************ 
-//  - JLN update
-
-    AP_Float    sonar_trigger;
-    AP_Int8     booster;
-        
-// ************************************************************   
+    // navigation parameters
+    //
+    AP_Float    crosstrack_gain;
+    AP_Int16    crosstrack_entry_angle;
+    AP_Float    speed_cruise;
+    AP_Int8	    ch7_option;
 
     // RC channels
     RC_Channel      channel_steer;
@@ -235,6 +180,43 @@ public:
     RC_Channel_aux	rc_6;
     RC_Channel_aux	rc_7;
     RC_Channel_aux	rc_8;
+
+    // Throttle
+    //
+    AP_Int8     throttle_min;
+    AP_Int8     throttle_max;
+    AP_Int8     throttle_cruise;
+    AP_Int8     throttle_slewrate;
+
+    // failsafe control
+    AP_Int8     fs_action;
+    AP_Float    fs_timeout;
+    AP_Int8     fs_throttle_enabled;
+    AP_Int16    fs_throttle_value;
+	AP_Int8	    fs_gcs_enabled;
+
+    // obstacle control
+    AP_Float    sonar_trigger;
+    AP_Int8	    sonar_enabled;
+	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV, 2 = XLL (XL with 10m
+                              // range), 
+    // 3 = HRLV 
+
+    // driving modes
+    //
+    AP_Int8     mode_channel;
+    AP_Int8     mode1;
+    AP_Int8     mode2;
+    AP_Int8     mode3;
+    AP_Int8     mode4;
+    AP_Int8     mode5;
+    AP_Int8     mode6;
+    
+    // Waypoints
+    //
+    AP_Int8     command_total;
+    AP_Int8     command_index;
+    AP_Float    waypoint_radius;
 
     // PID controllers
     //
@@ -255,9 +237,9 @@ public:
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-        pidNavSteer         (0.7,             0.1,             0.2,             200),
-        pidServoSteer       (0.5,             0.1,             0.2,             200),
-        pidSpeedThrottle    (0.7,             0.2,             0.2,             200)
+        pidNavSteer         (0.7,             0.1,             0.2,             2000),
+        pidServoSteer       (0.5,             0.1,             0.2,             2000),
+        pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
         {}
 };
 
