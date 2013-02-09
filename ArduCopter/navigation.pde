@@ -712,22 +712,11 @@ static bool waypoint_valid(Location &wp)
 static void
 get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
 {
-    static float z_accel_meas = 0;      // The acceleration error in cm.
-    static float accel_forward = 0;   // The acceleration error in cm.
-    static float accel_right = 0;     // The acceleration error in cm.
-
-    z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;
-
-    // calculate accel and filter with fc = 2 Hz
-    // 100hz sample rate, 2hz filter, alpha = 0.11164f 
-    // 20hz sample rate, 2hz filter, alpha = 0.38587f
-    // 10hz sample rate, 2hz filter, alpha = 0.55686f
-    accel_forward = accel_forward + 0.55686f * (accel_req_forward - accel_forward);
-    accel_right = accel_right + 0.55686f * (accel_req_right - accel_right);
+    float z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;    // gravity in cm/s/s
 
     // update angle targets that will be passed to stabilize controller
-    auto_roll = constrain((accel_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
-    auto_pitch = constrain((-accel_forward/(-z_accel_meas*cos_roll_x))*(18000/M_PI), -4500, 4500);
+    auto_roll = constrain((accel_req_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
+    auto_pitch = constrain((-accel_req_forward/(-z_accel_meas*cos_roll_x))*(18000/M_PI), -4500, 4500);
 }
 
 
@@ -750,8 +739,8 @@ get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
 static void
 get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon, float dt)
 {
-    static float speed_error_lat = 0;     // The velocity in cm/s.
-    static float speed_error_lon = 0;     // The velocity in cm/s.
+    float speed_error_lat = 0;     // The velocity in cm/s.
+    float speed_error_lon = 0;     // The velocity in cm/s.
 
     float speed_lat = inertial_nav.get_latitude_velocity();
     float speed_lon = inertial_nav.get_longitude_velocity();
@@ -763,12 +752,9 @@ get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon, float dt)
     int16_t lat_p,lat_i,lat_d;
     int16_t lon_p,lon_i,lon_d;
 
-    // calculate vel error and Filter with fc = 2 Hz
-    // 100hz sample rate, 2hz filter, alpha = 0.11164f 
-    // 20hz sample rate, 2hz filter, alpha = 0.38587f
-    // 10hz sample rate, 2hz filter, alpha = 0.55686f
-    speed_error_lat = speed_error_lat + 0.55686f * ((vel_lat - speed_lat) - speed_error_lat);
-    speed_error_lon = speed_error_lon + 0.55686f * ((vel_lon - speed_lon) - speed_error_lon);
+    // calculate vel error
+    speed_error_lat = vel_lat - speed_lat;
+    speed_error_lon = vel_lon - speed_lon;
 
     lat_p   = g.pid_loiter_rate_lat.get_p(speed_error_lat);
     lat_i   = g.pid_loiter_rate_lat.get_i(speed_error_lat, dt);
@@ -797,10 +783,10 @@ get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon, float dt)
 static void
 get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_home, float dt)
 {
-    static float dist_error_lat;
+    float dist_error_lat;
     int32_t desired_vel_lat;
 
-    static float dist_error_lon;
+    float dist_error_lon;
     int32_t desired_vel_lon;
 
     int32_t dist_error_total;
@@ -810,12 +796,9 @@ get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_hom
 
     int16_t linear_distance;      // the distace we swap between linear and sqrt.
 
-    // calculate distance error and Filter with fc = 2 Hz
-    // 100hz sample rate, 2hz filter, alpha = 0.11164f 
-    // 20hz sample rate, 2hz filter, alpha = 0.38587f
-    // 10hz sample rate, 2hz filter, alpha = 0.55686f
-    dist_error_lat = dist_error_lat + 0.55686f * ((target_lat_from_home - inertial_nav.get_latitude_diff()) - dist_error_lat);
-    dist_error_lon = dist_error_lon + 0.55686f * ((target_lon_from_home - inertial_nav.get_longitude_diff()) - dist_error_lon);
+    // calculate distance error
+    dist_error_lat = target_lat_from_home - inertial_nav.get_latitude_diff();
+    dist_error_lon = target_lon_from_home - inertial_nav.get_longitude_diff();
 
     linear_distance = MAX_LOITER_POS_ACCEL/(2*g.pi_loiter_lat.kP()*g.pi_loiter_lat.kP());
 
