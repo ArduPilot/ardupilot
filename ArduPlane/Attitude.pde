@@ -395,7 +395,10 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && takeoff_complete == false) {
+    if (control_mode==AUTO && takeoff_complete == false &&
+            g_gps != NULL &&
+            g_gps->status() == GPS::GPS_OK &&
+            g_gps->ground_speed >= g.takeoff_throttle_min_speed) {
         // we're in auto takeoff 
         throttle_suppressed = false;
         return false;
