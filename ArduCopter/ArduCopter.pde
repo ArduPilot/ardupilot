@@ -1138,6 +1138,11 @@ static void medium_loop()
     case 2:
         medium_loopCounter++;
 
+        // log compass information
+        if (motors.armed() && g.log_bitmask & MASK_LOG_COMPASS) {
+            Log_Write_Compass();
+        }
+
         if(control_mode == TOY_A) {
             update_toy_throttle();
 
@@ -1294,11 +1299,7 @@ static void slow_loop()
 #endif
         }
 
-
-        if(motors.armed()) {
-            if (g.log_bitmask & MASK_LOG_ITERM)
-                Log_Write_Iterm();
-        }else{
+        if(!motors.armed()) {
             // check the user hasn't updated the frame orientation
             motors.set_frame_orientation(g.frame_orientation);
         }

@@ -1159,8 +1159,8 @@
 #ifndef LOG_PID
  # define LOG_PID                       DISABLED
 #endif
-#ifndef LOG_ITERM
- # define LOG_ITERM                     DISABLED
+#ifndef LOG_COMPASS
+ # define LOG_COMPASS                   DISABLED
 #endif
 #ifndef LOG_INAV
  # define LOG_INAV                      DISABLED
@@ -1186,7 +1186,7 @@
     LOGBIT(MOTORS)          | \
     LOGBIT(OPTFLOW)         | \
     LOGBIT(PID)             | \
-    LOGBIT(ITERM)           | \
+    LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
 
 // if we are using fast, Disable Medium

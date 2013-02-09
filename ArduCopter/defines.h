@@ -288,7 +288,7 @@ enum gcs_severity {
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E
-#define LOG_ITERM_MSG                   0x0F
+#define LOG_COMPASS_MSG                 0x0F
 #define LOG_DMP_MSG                     0x10
 #define LOG_INAV_MSG                    0x11
 #define LOG_CAMERA_MSG                  0x12
@@ -314,7 +314,7 @@ enum gcs_severity {
 #define MASK_LOG_MOTORS                 (1<<10)
 #define MASK_LOG_OPTFLOW                (1<<11)
 #define MASK_LOG_PID                    (1<<12)
-#define MASK_LOG_ITERM                  (1<<13)
+#define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14)
 #define MASK_LOG_CAMERA                 (1<<15)
 

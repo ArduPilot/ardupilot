@@ -53,7 +53,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_MOTORS) cliSerial->printf_P(PSTR(" MOTORS"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
-        if (g.log_bitmask & MASK_LOG_ITERM) cliSerial->printf_P(PSTR(" ITERM"));
+        if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
         if (g.log_bitmask & MASK_LOG_INAV) cliSerial->printf_P(PSTR(" INAV"));
         if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
     }
@@ -171,7 +171,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(MOTORS);
         TARG(OPTFLOW);
         TARG(PID);
-        TARG(ITERM);
+        TARG(COMPASS);
         TARG(INAV);
         TARG(CAMERA);
  #undef TARG
@@ -585,55 +585,45 @@ static void Log_Read_Control_Tuning()
     );
 }
 
-struct log_Iterm {
+struct log_Compass {
     LOG_PACKET_HEADER;
-    int16_t rate_roll;
-    int16_t rate_pitch;
-    int16_t rate_yaw;
-    int16_t accel_throttle;
-    int16_t nav_lat;
-    int16_t nav_lon;
-    int16_t loiter_rate_lat;
-    int16_t loiter_rate_lon;
-    int16_t throttle_cruise;
+    int16_t mag_x;
+    int16_t mag_y;
+    int16_t mag_z;
+    int16_t offset_x;
+    int16_t offset_y;
+    int16_t offset_z;
 };
 
-static void Log_Write_Iterm()
+// Write a Compass packet. Total length : 15 bytes
+static void Log_Write_Compass()
 {
-    struct log_Iterm pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-        rate_roll       : (int16_t) g.pid_rate_roll.get_integrator(),
-        rate_pitch      : (int16_t) g.pid_rate_pitch.get_integrator(),
-        rate_yaw        : (int16_t) g.pid_rate_yaw.get_integrator(),
-        accel_throttle  : (int16_t) g.pid_throttle_accel.get_integrator(),
-        nav_lat         : (int16_t) g.pid_nav_lat.get_integrator(),
-        nav_lon         : (int16_t) g.pid_nav_lon.get_integrator(),
-        loiter_rate_lat : (int16_t) g.pid_loiter_rate_lat.get_integrator(),
-        loiter_rate_lon : (int16_t) g.pid_loiter_rate_lon.get_integrator(),
-        throttle_cruise : (int16_t) g.throttle_cruise
+    Vector3f mag_offsets = compass.get_offsets();
+    struct log_Compass pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
+        mag_x       : compass.mag_x,
+        mag_y       : compass.mag_y,
+        mag_z       : compass.mag_z,
+        offset_x    : mag_offsets.x,
+        offset_y    : mag_offsets.y,
+        offset_z    : mag_offsets.z,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Read an control tuning packet
-static void Log_Read_Iterm()
+// Read a camera packet
+static void Log_Read_Compass()
 {
-    struct log_Iterm pkt;
+    struct log_Compass pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
-
-    //                                1   2   3   4   5   6   7   8   9
-    cliSerial->printf_P(PSTR("ITERM, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
-        (int)pkt.rate_roll,
-        (int)pkt.rate_pitch,
-        (int)pkt.rate_yaw,
-        (int)pkt.accel_throttle,
-        (int)pkt.nav_lat,
-        (int)pkt.nav_lon,
-        (int)pkt.loiter_rate_lat,
-        (int)pkt.loiter_rate_lon,
-        (int)pkt.throttle_cruise
-    );
-    cliSerial->printf_P(PSTR("ITERM, "));
+                                     // 1   2   3   4   5   6
+    cliSerial->printf_P(PSTR("COMPASS, %d, %d, %d, %d, %d, %d\n"),
+                    (int)pkt.mag_x,
+                    (int)pkt.mag_y,
+                    (int)pkt.mag_z,
+                    (int)pkt.offset_x,
+                    (int)pkt.offset_y,
+                    (int)pkt.offset_z);
 }
 
 struct log_Performance {
@@ -1227,7 +1217,6 @@ static void Log_Read_Error()
     cliSerial->printf_P(PSTR(", %u\n"),(unsigned)pkt.error_code);
 }
 
-
 // Read the DataFlash log memory
 static void Log_Read(int16_t start_page, int16_t end_page)
 {
@@ -1312,8 +1301,8 @@ static void log_callback(uint8_t msgid)
         Log_Read_PID();
         break;
         
-    case LOG_ITERM_MSG:
-        Log_Read_Iterm();
+    case LOG_COMPASS_MSG:
+        Log_Read_Compass();
         break;
         
     case LOG_DMP_MSG:
@@ -1364,7 +1353,7 @@ static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_IMU() {}
 static void Log_Write_GPS() {}
 static void Log_Write_Current() {}
-static void Log_Write_Iterm() {}
+static void Log_Write_Compass() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_INAV() {}
 static void Log_Write_Data(uint8_t id, int16_t value){}
