@@ -67,7 +67,11 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
-
+    
+    if (ap.failsafe == true)  {
+        system_status = MAV_STATE_CRITICAL;
+    }
+    
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
