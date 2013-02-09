@@ -19,7 +19,7 @@ const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-int32_t PID::get_pid(int32_t error, float scaler)
+float PID::get_pid(float error, float scaler)
 {
     uint32_t tnow = hal.scheduler->millis();
     uint32_t dt = tnow - _last_t;
