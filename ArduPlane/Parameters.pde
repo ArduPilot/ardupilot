@@ -88,9 +88,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   1),
 
-    // @Param: TKOFF_THR_MIN_ARSPD
+    // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
-    // @Description: Min speed in cm/s before unsupressing throttle in auto-takeoff
+    // @Description: Min speed in cm/s before un-suppressing throttle in auto-takeoff
     // @Units: cm/s
     // @User: User
     GSCALAR(takeoff_throttle_min_speed,     "TKOFF_THR_MINSPD",  0),

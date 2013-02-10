@@ -379,7 +379,7 @@ static void throttle_slew_limit(int16_t last_throttle)
    *       AND
    *       2 - Our reported altitude is within 10 meters of the home altitude.
    *       3 - Our reported speed is under 5 meters per second.
-   *       4 - We are not performing a takeoff in Auto mode
+   *       4 - We are not performing a takeoff in Auto mode or takeoff speed not yet reached
    *       OR
    *       5 - Home location is not set
 */
