@@ -110,7 +110,7 @@ static void init_optflow()
 static void read_battery(void)
 {
     static uint8_t low_battery_counter = 0;
-
+    
     if(g.battery_monitoring == 0) {
         battery_voltage1 = 0;
         return;
@@ -138,6 +138,20 @@ static void read_battery(void)
     }else{
         // reset low_battery_counter in case it was a temporary voltage dip
         low_battery_counter = 0;
+    }    
+}
+
+// check_Vcc - check board voltage and invoke failsafe if necessary
+// called at 10hz
+#define Vcc_FS_COUNTER     20      // 20 iterations at 10hz is 2 seconds
+static void check_Vcc(void){
+    static uint8_t low_Vcc_counter = 0;
+    if ( board_voltage() < Vcc_WARN ){
+        low_Vcc_counter++;
+        if (low_Vcc_counter >= Vcc_FS_COUNTER){
+            low_Vcc_counter = Vcc_FS_COUNTER;
+            low_battery_event();
+        }
     }
 }
 

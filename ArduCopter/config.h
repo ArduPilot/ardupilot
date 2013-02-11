@@ -333,6 +333,10 @@
  # define HIGH_DISCHARGE                 1760
 #endif
 
+#ifndef Vcc_WARN
+ #define Vcc_WARN                         4500      // 4500 = 4.5V
+#endif
+
 // Battery failsafe
 #ifndef FS_BATTERY
  # define FS_BATTERY              DISABLED

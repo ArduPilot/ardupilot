@@ -1166,6 +1166,8 @@ static void medium_loop()
         if (g.battery_monitoring != 0) {
             read_battery();
         }
+        
+        check_Vcc();
 
         // Accel trims      = hold > 2 seconds
         // Throttle cruise  = switch less than 1 second

@@ -15,6 +15,7 @@
 //#define DMP_ENABLED ENABLED
 //#define SECONDARY_DMP_ENABLED ENABLED       // allows running DMP in parallel with DCM for testing purposes
 
+#define CONFIG_APM_HARDWARE     APM_HARDWARE_APM2
 #define FRAME_CONFIG HELI_FRAME
 /*
  *  options:
