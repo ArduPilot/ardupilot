@@ -350,11 +350,15 @@ static bool verify_land()
             gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), hold_course);
         }
 
-        // reload any airspeed or groundspeed parameters that may have
-        // been set for landing
-        g.airspeed_cruise_cm.load();
-        g.min_gndspeed_cm.load();
-        g.throttle_cruise.load();
+        if (g_gps->ground_speed*0.01 < 3.0) {
+            // reload any airspeed or groundspeed parameters that may have
+            // been set for landing. We don't do this till ground
+            // speed drops below 3.0 m/s as otherwise we will change
+            // target speeds too early.
+            g.airspeed_cruise_cm.load();
+            g.min_gndspeed_cm.load();
+            g.throttle_cruise.load();
+        }
     }
 
     if (hold_course != -1) {
