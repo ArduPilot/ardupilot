@@ -96,12 +96,6 @@ static void low_battery_event(uint8_t failure_type)
     // warn the ground station and log to dataflash
     gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, failure_type);
-
-#if COPTER_LEDS == ENABLED
-    if ( bitRead(g.copter_leds_mode, 3) ) {         // Only Activate if a battery is connected to avoid alarm on USB only
-        piezo_on();
-    }
-#endif // COPTER_LEDS
 }
 
 

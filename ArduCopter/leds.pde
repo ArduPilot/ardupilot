@@ -189,7 +189,14 @@ static void update_copter_leds(void)
             copter_leds_aux_off();                                  //if sub-control of Ch7 is low, turn Aux LED off
         }
     }
-
+    
+    if ( bitRead(g.copter_leds_mode, 3) ) {                         // if piezo beep mode is on
+        if (ap.armed && ap.low_battery){                            // if we are armed with a low battery
+            piezo_on();                                             // turn the beeper on
+        } else {
+            piezo_off();                                            // else turn beeper off to stop incessant beeping while disarmed
+        }
+    }
 }
 
 static void copter_leds_reset(void) {
