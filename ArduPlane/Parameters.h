@@ -356,7 +356,7 @@ public:
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Int8 rudder_steer;
-    AP_Int8 takeoff_throttle_min_speed;
+    AP_Float takeoff_throttle_min_speed;
 
     // RC channels
     RC_Channel channel_roll;

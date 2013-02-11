@@ -90,8 +90,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
-    // @Description: Min speed in cm/s before un-suppressing throttle in auto-takeoff
-    // @Units: cm/s
+    // @Description: Min speed in m/s before un-suppressing throttle in auto-takeoff
+    // @Units: m/s
     // @User: User
     GSCALAR(takeoff_throttle_min_speed,     "TKOFF_THR_MINSPD",  0),
 
