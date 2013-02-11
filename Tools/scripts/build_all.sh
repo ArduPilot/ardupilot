@@ -43,4 +43,9 @@ for d in $examples; do
     popd
 done
 
+. config.mk
+test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
+    ./Tools/scripts/build_all_px4.sh
+}
+
 exit 0
