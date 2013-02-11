@@ -62,7 +62,7 @@ static void failsafe_off_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_ERROR_RESOLVED);
 }
 
-static void low_battery_event(void)
+static void low_battery_event(uint8_t failure_type)
 {
     // failsafe check
     if (g.failsafe_battery_enabled && !ap.low_battery && motors.armed()) {
@@ -95,7 +95,7 @@ static void low_battery_event(void)
 
     // warn the ground station and log to dataflash
     gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_BATTERY);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, failure_type);
 
 #if COPTER_LEDS == ENABLED
     if ( bitRead(g.copter_leds_mode, 3) ) {         // Only Activate if a battery is connected to avoid alarm on USB only

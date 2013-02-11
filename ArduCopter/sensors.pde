@@ -133,7 +133,7 @@ static void read_battery(void)
         low_battery_counter++;
         if( low_battery_counter >= BATTERY_FS_COUNTER ) {
             low_battery_counter = BATTERY_FS_COUNTER;   // ensure counter does not overflow
-            low_battery_event();
+            low_battery_event(ERROR_CODE_FAILSAFE_BATTERY);
         }
     }else{
         // reset low_battery_counter in case it was a temporary voltage dip
@@ -146,11 +146,11 @@ static void read_battery(void)
 #define Vcc_FS_COUNTER     20      // 20 iterations at 10hz is 2 seconds
 static void check_Vcc(void){
     static uint8_t low_Vcc_counter = 0;
-    if ( board_voltage() < Vcc_WARN ){
+    if ( !ap.low_battery && (board_voltage() < Vcc_WARN )){
         low_Vcc_counter++;
         if (low_Vcc_counter >= Vcc_FS_COUNTER){
             low_Vcc_counter = Vcc_FS_COUNTER;
-            low_battery_event();
+            low_battery_event(ERROR_CODE_FAILSAFE_Vcc);
         }
     }
 }
