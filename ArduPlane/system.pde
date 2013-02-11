@@ -337,11 +337,15 @@ static void set_mode(enum FlightMode mode)
     {
     case INITIALISING:
     case MANUAL:
-    case CIRCLE:
     case STABILIZE:
     case TRAINING:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
+        break;
+
+    case CIRCLE:
+        // the altitude to circle at is taken from the current altitude
+        next_WP.alt = current_loc.alt;
         break;
 
     case AUTO:

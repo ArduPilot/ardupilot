@@ -1194,14 +1194,12 @@ static void update_current_flight_mode(void)
 
         case CIRCLE:
             // we have no GPS installed and have lost radio contact
-            // or we just want to fly around in a gentle circle w/o GPS
-            // ----------------------------------------------------
+            // or we just want to fly around in a gentle circle w/o GPS,
+            // holding altitude at the altitude we set when we
+            // switched into the mode
             nav_roll_cd  = g.roll_limit_cd / 3;
-            nav_pitch_cd = 0;
-
-            if (failsafe != FAILSAFE_NONE) {
-                g.channel_throttle.servo_out = g.throttle_cruise;
-            }
+            calc_nav_pitch();
+            calc_throttle();
             break;
 
         case MANUAL:
