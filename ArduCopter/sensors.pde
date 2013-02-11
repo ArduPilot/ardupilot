@@ -152,6 +152,9 @@ static void check_Vcc(void){
             low_Vcc_counter = Vcc_FS_COUNTER;
             low_battery_event(ERROR_CODE_FAILSAFE_Vcc);
         }
+    } else {
+        // reset low_Vcc_counter in case it was a temporary voltage dip
+        low_Vcc_counter = 0;
     }
 }
 
