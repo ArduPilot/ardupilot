@@ -544,6 +544,9 @@ bool AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
         if (_register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
             break;
         }
+#if MPU6000_DEBUG
+        _dump_registers();
+#endif
     }
     if (tries == 5) {
         hal.console->println_P(PSTR("Failed to boot MPU6000 5 times"));
@@ -647,10 +650,11 @@ uint16_t AP_InertialSensor_MPU6000::num_samples_available()
 // dump all config registers - used for debug
 void AP_InertialSensor_MPU6000::_dump_registers(void)
 {
-    for (uint8_t reg=25; reg<=108; reg++) {
+    hal.console->println_P(PSTR("MPU6000 registers"));
+    for (uint8_t reg=MPUREG_PRODUCT_ID; reg<=108; reg++) {
         uint8_t v = _register_read(reg);
         hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
-        if ((reg - 24) % 16 == 0) {
+        if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
             hal.console->println();
         }
     }
