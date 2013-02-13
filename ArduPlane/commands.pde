@@ -184,10 +184,13 @@ static void set_next_WP(struct Location *wp)
     // -----------------------------------------------
     target_altitude_cm = current_loc.alt;
 
-    if(prev_WP.id != MAV_CMD_NAV_TAKEOFF && prev_WP.alt != home.alt && (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND))
+    if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
+        prev_WP.alt != home.alt && 
+        (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
         offset_altitude_cm = next_WP.alt - prev_WP.alt;
-    else
-        offset_altitude_cm = 0;
+    } else {
+        offset_altitude_cm = 0;        
+    }
 
     // zero out our loiter vals to watch for missed waypoints
     loiter_delta            = 0;

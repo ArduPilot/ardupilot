@@ -113,9 +113,9 @@ static void calc_bearing_error()
 
 static void calc_altitude_error()
 {
-    if(control_mode == AUTO && offset_altitude_cm != 0) {
+    if (control_mode == AUTO && offset_altitude_cm != 0) {
         // limit climb rates
-        target_altitude_cm = next_WP.alt - ((float)((wp_distance -30) * offset_altitude_cm) / (float)(wp_totalDistance - 30));
+        target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 
         // stay within a certain range
         if(prev_WP.alt > next_WP.alt) {
