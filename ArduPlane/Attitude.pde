@@ -426,6 +426,10 @@ static void set_servos(void)
 {
     int16_t last_throttle = g.channel_throttle.radio_out;
 
+    // copy manual and non-auto flap auxiliary servos no matter what mode we are in
+    RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap);
+    RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual);
+
     if (control_mode == MANUAL) {
         // do a direct pass through of radio values
         if (g.mix_mode == 0) {
