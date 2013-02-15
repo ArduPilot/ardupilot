@@ -46,6 +46,11 @@ void failsafe_check(uint32_t tnow)
         for (uint8_t ch=start_ch; ch<4; ch++) {
             hal.rcout->write(ch, hal.rcin->read(ch));
         }
+        // Pass signal to auxiliary channels
+        int16_t aileron_in = g.channel_roll.pwm_to_angle_dz(0);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, aileron_in);
+        int16_t elevator_in = g.channel_pitch.pwm_to_angle_dz(0);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, elevator_in);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap, true);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto, true);
