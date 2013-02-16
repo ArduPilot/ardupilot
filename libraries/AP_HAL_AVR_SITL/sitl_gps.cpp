@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
   SITL handling
 
@@ -22,6 +23,7 @@
 #include "../AP_GPS/AP_GPS_UBLOX.h"
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <time.h>
 
 using namespace AVR_SITL;
 extern const AP_HAL::HAL& hal;
@@ -88,7 +90,7 @@ int SITL_State::gps_pipe(void)
 /*
   send a UBLOX GPS message
  */
-void SITL_State::_gps_send(uint8_t msgid, uint8_t *buf, uint16_t size)
+static void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 {
         const uint8_t PREAMBLE1 = 0xb5;
         const uint8_t PREAMBLE2 = 0x62;
@@ -114,10 +116,9 @@ void SITL_State::_gps_send(uint8_t msgid, uint8_t *buf, uint16_t size)
 
 
 /*
-  possibly send a new GPS UBLOX packet
+  send a new set of GPS UBLOX packets
  */
-void SITL_State::_update_gps(double latitude, double longitude, float altitude,
-			     double speedN, double speedE, bool have_lock)
+static void _update_gps_ubx(const struct gps_data *d)
 {
 	#pragma pack(push,1)
 	struct ubx_nav_posllh {
@@ -173,9 +174,123 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	const uint8_t MSG_STATUS = 0x3;
 	const uint8_t MSG_VELNED = 0x12;
         const uint8_t MSG_SOL = 0x6;
+
+	pos.time = hal.scheduler->millis(); // FIX
+	pos.longitude = d->longitude * 1.0e7;
+	pos.latitude  = d->latitude * 1.0e7;
+	pos.altitude_ellipsoid = d->altitude*1000.0;
+	pos.altitude_msl = d->altitude*1000.0;
+	pos.horizontal_accuracy = 5;
+	pos.vertical_accuracy = 10;
+
+	status.time = pos.time;
+	status.fix_type = d->have_lock?3:0;
+	status.fix_status = d->have_lock?1:0;
+	status.differential_status = 0;
+	status.res = 0;
+	status.time_to_first_fix = 0;
+	status.uptime = hal.scheduler->millis();
+
+	velned.time = pos.time;
+	velned.ned_north = 100.0 * d->speedN;
+	velned.ned_east  = 100.0 * d->speedE;
+	velned.ned_down  = 0;
+	velned.speed_2d = pythagorous2(d->speedN, d->speedE) * 100;
+	velned.speed_3d = velned.speed_2d;
+	velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0;
+	if (velned.heading_2d < 0.0) {
+		velned.heading_2d += 360.0 * 100000.0;
+	}
+	velned.speed_accuracy = 2;
+	velned.heading_accuracy = 4;
+
+	memset(&sol, 0, sizeof(sol));
+	sol.fix_type = d->have_lock?3:0;
+	sol.fix_status = 221;
+	sol.satellites = d->have_lock?10:3;
+
+	_gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
+	_gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
+	_gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
+	_gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
+}
+
+static void swap_uint32(uint32_t *v, uint8_t n)
+{
+	while (n--) {
+		*v = htonl(*v);
+		v++;
+	}
+}
+
+/*
+  MTK type simple checksum
+ */
+static void mtk_checksum(const uint8_t *data, uint8_t n, uint8_t *ck_a, uint8_t *ck_b)
+{
+	*ck_a = *ck_b = 0;
+	while (n--) {
+		*ck_a += *data++;
+		*ck_b += *ck_a;
+	}
+}
+
+/*
+  send a new GPS MTK packet
+ */
+static void _update_gps_mtk(const struct gps_data *d)
+{
+    #pragma pack(push,1)
+    struct mtk_msg {
+	    uint8_t preamble1;
+	    uint8_t preamble2;
+	    uint8_t msg_class;
+	    uint8_t msg_id;
+	    int32_t latitude;
+	    int32_t longitude;
+	    int32_t altitude;
+	    int32_t ground_speed;
+	    int32_t ground_course;
+	    uint8_t satellites;
+	    uint8_t fix_type;
+	    uint32_t utc_time;
+	    uint8_t ck_a;
+	    uint8_t ck_b;
+    } p;
+    #pragma pack(pop)
+
+	p.preamble1     = 0xb5;
+	p.preamble2     = 0x62;
+	p.msg_class     = 1;
+	p.msg_id        = 5;
+    p.latitude      = d->latitude  * 1.0e6;
+    p.longitude     = d->longitude * 1.0e6;
+    p.altitude      = d->altitude * 100;
+    p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
+    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0;
+	if (p.ground_course < 0.0) {
+		p.ground_course += 360.0 * 1000000.0;
+	}
+    p.satellites    = d->have_lock?10:3;
+    p.fix_type      = d->have_lock?3:1;
+    p.utc_time      = time(NULL);
+
+    swap_uint32((uint32_t *)&p.latitude, 5);
+    swap_uint32((uint32_t *)&p.utc_time, 1);
+	mtk_checksum(&p.msg_class, sizeof(p)-4, &p.ck_a, &p.ck_b);
+
+	write(gps_state.gps_fd, &p, sizeof(p));
+}
+
+/*
+  possibly send a new GPS packet
+ */
+void SITL_State::_update_gps(double latitude, double longitude, float altitude,
+			     double speedN, double speedE, bool have_lock)
+{
 	struct gps_data d;
 
-	// 5Hz, to match the real UBlox config in APM
+	// 5Hz, to match the real config in APM
 	if (hal.scheduler->millis() - gps_state.last_update < 200) {
 		return;
 	}
@@ -204,48 +319,23 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 		}
 	}
 
-	pos.time = hal.scheduler->millis(); // FIX
-	pos.longitude = d.longitude * 1.0e7;
-	pos.latitude  = d.latitude * 1.0e7;
-	pos.altitude_ellipsoid = d.altitude*1000.0;
-	pos.altitude_msl = d.altitude*1000.0;
-	pos.horizontal_accuracy = 5;
-	pos.vertical_accuracy = 10;
-
-	status.time = pos.time;
-	status.fix_type = d.have_lock?3:0;
-	status.fix_status = d.have_lock?1:0;
-	status.differential_status = 0;
-	status.res = 0;
-	status.time_to_first_fix = 0;
-	status.uptime = hal.scheduler->millis();
-
-	velned.time = pos.time;
-	velned.ned_north = 100.0 * d.speedN;
-	velned.ned_east  = 100.0 * d.speedE;
-	velned.ned_down  = 0;
-	velned.speed_2d = pythagorous2(d.speedN, d.speedE) * 100;
-	velned.speed_3d = velned.speed_2d;
-	velned.heading_2d = ToDeg(atan2f(d.speedE, d.speedN)) * 100000.0;
-	if (velned.heading_2d < 0.0) {
-		velned.heading_2d += 360.0 * 100000.0;
-	}
-	velned.speed_accuracy = 2;
-	velned.heading_accuracy = 4;
-
-	memset(&sol, 0, sizeof(sol));
-	sol.fix_type = d.have_lock?3:0;
-	sol.fix_status = 221;
-	sol.satellites = d.have_lock?10:3;
-
 	if (gps_state.gps_fd == 0) {
 		return;
 	}
 
-	_gps_send(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
-	_gps_send(MSG_STATUS, (uint8_t*)&status, sizeof(status));
-	_gps_send(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
-	_gps_send(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
+	switch ((SITL::GPSType)_sitl->gps_type.get()) {
+	case SITL::GPS_TYPE_UBLOX:
+		_update_gps_ubx(&d);
+		break;
+
+	case SITL::GPS_TYPE_MTK:
+		_update_gps_mtk(&d);
+		break;
+
+	case SITL::GPS_TYPE_MTK16:
+	case SITL::GPS_TYPE_MTK19:
+		break;
+	}
 }
 
 #endif

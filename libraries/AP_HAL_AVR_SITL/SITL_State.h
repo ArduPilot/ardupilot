@@ -55,8 +55,10 @@ private:
     // from the timer
     static void _update_barometer(float height);
     static void _update_compass(float roll, float pitch, float yaw);
+
     static void _update_gps(double latitude, double longitude, float altitude,
 			    double speedN, double speedE, bool have_lock);
+
     static void _update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
 			    double rollRate, 	double pitchRate,double yawRate,	// Local to plane
 			    double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
@@ -68,7 +70,6 @@ private:
     static float _rand_float(void);
     static Vector3f _rand_vec3f(void);
     static Vector3f _heading_to_mag(float roll, float pitch, float yaw);
-    static void _gps_send(uint8_t msgid, uint8_t *buf, uint16_t size);
 
     // signal handlers
     static void _sig_fpe(int signum);
