@@ -3,7 +3,8 @@
 import os, glob, re
 
 from param import *
-
+from wikiemit import WikiEmit
+from xmlemit import XmlEmit
 
 # Regular expressions for parsing the parameter metadata
 
@@ -14,50 +15,6 @@ prog_param_fields = re.compile(r"\s*//\s*@(\w+): (.*)")
 prog_groups = re.compile(r"@Group:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*G", re.MULTILINE)
     
 prog_group_param = re.compile(r"@Param:\s*(\w+).*((?:\n\s*//\s*@(\w+): (.*))+)\s*AP_", re.MULTILINE)
-
-prog_values_field = re.compile(r"\s*(-?\w+:\w+)+,*")
-
-def camelcase_escape(word):
-    if re.match(r"([A-Z][a-z]+[A-Z][a-z]*)", word.strip()):
-        return "!"+word
-    else:
-        return word
-
-def wikichars_escape(text):
-    for c in "*,{,},[,],_,=,#,^,~,!,@,$,|,<,>,&,|,\,/".split(','):
-        text = re.sub("\\"+c, '`'+c+'`', text)
-    return text
-
-def wiki_parameters(g, f):    
-    
-    t = "\n\n== %s Parameters ==\n"  % (camelcase_escape(g.name))
-    
-    for param in g.params:
-        if hasattr(param, 'DisplayName'):   
-            t += "\n\n=== %s (%s) ===" % (camelcase_escape(param.DisplayName),camelcase_escape(param.name))
-        else:
-            t += "\n\n=== %s ===" % camelcase_escape(param.name)
-                
-        if hasattr(param, 'Description'):   
-            t += "\n\n_%s_\n" % wikichars_escape(param.Description)
-        else:
-            t += "\n\n_TODO: description_\n"
-            
-        for field in param.__dict__.keys():
-            if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
-                if field == 'Values' and prog_values_field.match(param.__dict__[field]):
-                    t+= " * Values \n"
-                    values = (param.__dict__[field]).split(',')
-                    t+="|| *Value* || *Meaning* ||\n"
-                    for value in values:
-                        v = value.split(':')
-                        t+="|| "+v[0]+" || "+camelcase_escape(v[1])+" ||\n"
-                else:
-                    t += " * %s: %s\n" % (camelcase_escape(field), wikichars_escape(param.__dict__[field]))
-                
-    #print t
-    f.write(t)
-
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "*/Parameters.pde")
@@ -154,25 +111,20 @@ for library in libraries:
 
     print "Processed %u documented parameters" % len(library.params)
 
-wiki_fname = 'Parameters.wiki'
-f = open(wiki_fname, mode='w')
-preamble = '''#summary Dynamically generated list of documented parameters
-= Table of Contents = 
-<wiki:toc max_depth="4" />
+    def do_emit(emit):
+        for vehicle in vehicles:
+            emit.emit(vehicle, f)
+        
+        emit.start_libraries()
+            
+        for library in libraries:
+            if library.params:
+                emit.emit(library, f)
+           
+        emit.close()
     
-= Vehicles =    
-'''
-f.write(preamble)
+    do_emit(XmlEmit())
+    do_emit(WikiEmit())
 
-for vehicle in vehicles:
-    wiki_parameters(vehicle, f)
 
-t = "\n\n=Libraries=\n\n"
-f.write(t)
-    
-for library in libraries:
-    if library.params:
-        wiki_parameters(library, f)
-   
-f.close
 
