@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/time.h>
 
 using namespace AVR_SITL;
 extern const AP_HAL::HAL& hal;
@@ -114,6 +115,23 @@ static void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 	write(gps_state.gps_fd, chk, sizeof(chk));
 }
 
+/*
+  return GPS time of week in milliseconds
+ */
+static uint32_t millis_time_of_week(void)
+{
+	struct tm tm;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	tm = *gmtime(&tv.tv_sec);
+	uint32_t tsec;
+	tsec = 
+		tm.tm_wday * 24 * 3600 + 
+		tm.tm_hour * 3600 +
+		tm.tm_min  * 60 +
+		tm.tm_sec;
+	return tsec + (tv.tv_usec/1000);
+}
 
 /*
   send a new set of GPS UBLOX packets
@@ -183,7 +201,7 @@ static void _update_gps_ubx(const struct gps_data *d)
 	pos.horizontal_accuracy = 5;
 	pos.vertical_accuracy = 10;
 
-	status.time = pos.time;
+	status.time = millis_time_of_week();
 	status.fix_type = d->have_lock?3:0;
 	status.fix_status = d->have_lock?1:0;
 	status.differential_status = 0;
@@ -191,7 +209,7 @@ static void _update_gps_ubx(const struct gps_data *d)
 	status.time_to_first_fix = 0;
 	status.uptime = hal.scheduler->millis();
 
-	velned.time = pos.time;
+	velned.time = status.time;
 	velned.ned_north = 100.0 * d->speedN;
 	velned.ned_east  = 100.0 * d->speedE;
 	velned.ned_down  = 0;
@@ -274,7 +292,16 @@ static void _update_gps_mtk(const struct gps_data *d)
 	}
     p.satellites    = d->have_lock?10:3;
     p.fix_type      = d->have_lock?3:1;
-    p.utc_time      = time(NULL);
+
+	// the spec is not very clear, but the time field seems to be
+	// seconds since the start of the day in UTC time, done in powers
+	// of 100.  Quite bizarre.
+	struct tm tm;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	tm = *gmtime(&tv.tv_sec);
+
+    p.utc_time = tm.tm_sec + tm.tm_min*100 + tm.tm_hour*100*100;
 
     swap_uint32((uint32_t *)&p.latitude, 5);
     swap_uint32((uint32_t *)&p.utc_time, 1);
@@ -321,9 +348,20 @@ static void _update_gps_mtk16(const struct gps_data *d)
 	}
     p.satellites    = d->have_lock?10:3;
     p.fix_type      = d->have_lock?3:1;
-    p.utc_date      = time(NULL);
-    p.utc_time      = time(NULL);
-	p.hdop          = 0;
+
+	// the spec is not very clear, but the time field seems to be
+	// hundreadths of a second since the start of the day in UTC time,
+	// done in powers of 100. 
+	// The data is powers of 100 as well, but in days since 1/1/2000
+	struct tm tm;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	tm = *gmtime(&tv.tv_sec);
+
+    p.utc_date = (tm.tm_year-2000) + tm.tm_mon*100 + tm.tm_mday*100*100;
+    p.utc_time = tv.tv_usec/10000 + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
+
+	p.hdop          = 115;
 
 	mtk_checksum(&p.size, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
@@ -368,9 +406,20 @@ static void _update_gps_mtk19(const struct gps_data *d)
 	}
     p.satellites    = d->have_lock?10:3;
     p.fix_type      = d->have_lock?3:1;
-    p.utc_date      = time(NULL);
-    p.utc_time      = time(NULL);
-	p.hdop          = 0;
+
+	// the spec is not very clear, but the time field seems to be
+	// hundreadths of a second since the start of the day in UTC time,
+	// done in powers of 100. 
+	// The data is powers of 100 as well, but in days since 1/1/2000
+	struct tm tm;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	tm = *gmtime(&tv.tv_sec);
+
+    p.utc_date = (tm.tm_year-2000) + tm.tm_mon*100 + tm.tm_mday*100*100;
+    p.utc_time = tv.tv_usec/10000 + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
+
+	p.hdop          = 115;
 
 	mtk_checksum(&p.size, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
