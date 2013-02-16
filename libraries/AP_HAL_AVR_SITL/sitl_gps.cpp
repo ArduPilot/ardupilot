@@ -235,6 +235,7 @@ static void mtk_checksum(const uint8_t *data, uint8_t n, uint8_t *ck_a, uint8_t 
 	}
 }
 
+
 /*
   send a new GPS MTK packet
  */
@@ -283,17 +284,118 @@ static void _update_gps_mtk(const struct gps_data *d)
 }
 
 /*
+  send a new GPS MTK 1.6 packet
+ */
+static void _update_gps_mtk16(const struct gps_data *d)
+{
+    #pragma pack(push,1)
+    struct mtk_msg {
+	    uint8_t preamble1;
+	    uint8_t preamble2;
+	    uint8_t size;
+        int32_t latitude;
+        int32_t longitude;
+        int32_t altitude;
+        int32_t ground_speed;
+        int32_t ground_course;
+        uint8_t satellites;
+        uint8_t fix_type;
+        uint32_t utc_date;
+        uint32_t utc_time;
+        uint16_t hdop;
+	    uint8_t ck_a;
+	    uint8_t ck_b;
+    } p;
+    #pragma pack(pop)
+
+	p.preamble1     = 0xd0;
+	p.preamble2     = 0xdd;
+	p.size          = sizeof(p) - 5;
+    p.latitude      = d->latitude  * 1.0e6;
+    p.longitude     = d->longitude * 1.0e6;
+    p.altitude      = d->altitude * 100;
+    p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
+    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0;
+	if (p.ground_course < 0.0) {
+		p.ground_course += 360.0 * 100.0;
+	}
+    p.satellites    = d->have_lock?10:3;
+    p.fix_type      = d->have_lock?3:1;
+    p.utc_date      = time(NULL);
+    p.utc_time      = time(NULL);
+	p.hdop          = 0;
+
+	mtk_checksum(&p.size, sizeof(p)-4, &p.ck_a, &p.ck_b);
+
+	write(gps_state.gps_fd, &p, sizeof(p));
+}
+
+/*
+  send a new GPS MTK 1.9 packet
+ */
+static void _update_gps_mtk19(const struct gps_data *d)
+{
+    #pragma pack(push,1)
+    struct mtk_msg {
+	    uint8_t preamble1;
+	    uint8_t preamble2;
+	    uint8_t size;
+        int32_t latitude;
+        int32_t longitude;
+        int32_t altitude;
+        int32_t ground_speed;
+        int32_t ground_course;
+        uint8_t satellites;
+        uint8_t fix_type;
+        uint32_t utc_date;
+        uint32_t utc_time;
+        uint16_t hdop;
+	    uint8_t ck_a;
+	    uint8_t ck_b;
+    } p;
+    #pragma pack(pop)
+
+	p.preamble1     = 0xd1;
+	p.preamble2     = 0xdd;
+	p.size          = sizeof(p) - 5;
+    p.latitude      = d->latitude  * 1.0e7;
+    p.longitude     = d->longitude * 1.0e7;
+    p.altitude      = d->altitude * 100;
+    p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
+    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0;
+	if (p.ground_course < 0.0) {
+		p.ground_course += 360.0 * 100.0;
+	}
+    p.satellites    = d->have_lock?10:3;
+    p.fix_type      = d->have_lock?3:1;
+    p.utc_date      = time(NULL);
+    p.utc_time      = time(NULL);
+	p.hdop          = 0;
+
+	mtk_checksum(&p.size, sizeof(p)-4, &p.ck_a, &p.ck_b);
+
+	write(gps_state.gps_fd, &p, sizeof(p));
+}
+
+/*
   possibly send a new GPS packet
  */
 void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 			     double speedN, double speedE, bool have_lock)
 {
 	struct gps_data d;
+	char c;
 
 	// 5Hz, to match the real config in APM
 	if (hal.scheduler->millis() - gps_state.last_update < 200) {
 		return;
 	}
+
+	// swallow any config bytes
+	if (gps_state.gps_fd != 0) {
+		read(gps_state.gps_fd, &c, 1);
+	}
+
 	gps_state.last_update = hal.scheduler->millis();
 
 	d.latitude = latitude;
@@ -324,6 +426,10 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	}
 
 	switch ((SITL::GPSType)_sitl->gps_type.get()) {
+	case SITL::GPS_TYPE_NONE:
+		// no GPS attached
+		break;
+
 	case SITL::GPS_TYPE_UBLOX:
 		_update_gps_ubx(&d);
 		break;
@@ -333,7 +439,11 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 		break;
 
 	case SITL::GPS_TYPE_MTK16:
+		_update_gps_mtk16(&d);
+		break;
+
 	case SITL::GPS_TYPE_MTK19:
+		_update_gps_mtk19(&d);
 		break;
 	}
 }

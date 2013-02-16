@@ -33,10 +33,11 @@ public:
     }
 
     enum GPSType { 
-        GPS_TYPE_UBLOX = 0,
-        GPS_TYPE_MTK   = 1,
-        GPS_TYPE_MTK16 = 2,
-        GPS_TYPE_MTK19 = 3
+        GPS_TYPE_NONE  = 0,
+        GPS_TYPE_UBLOX = 1,
+        GPS_TYPE_MTK   = 2,
+        GPS_TYPE_MTK16 = 3,
+        GPS_TYPE_MTK19 = 4
     };
 
 	struct sitl_fdm state;
