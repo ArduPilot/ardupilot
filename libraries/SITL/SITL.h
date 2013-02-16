@@ -57,6 +57,7 @@ public:
 	AP_Int8  gps_disable; // disable simulated GPS
 	AP_Int8  gps_delay;   // delay in samples
     AP_Int8  gps_type;    // see enum GPSType
+    AP_Float gps_byteloss;// byte loss as a percent
 
     // wind control
     AP_Float wind_speed;

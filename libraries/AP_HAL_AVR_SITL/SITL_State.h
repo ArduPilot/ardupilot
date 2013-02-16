@@ -56,6 +56,25 @@ private:
     static void _update_barometer(float height);
     static void _update_compass(float roll, float pitch, float yaw);
 
+    struct gps_data {
+	    double latitude;
+	    double longitude;
+	    float altitude;
+	    double speedN;
+	    double speedE;
+	    bool have_lock;
+    };
+
+    #define MAX_GPS_DELAY 100
+    static gps_data _gps_data[MAX_GPS_DELAY];
+
+    static void _gps_write(uint8_t *p, uint16_t size);
+    static void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size);
+    static void _update_gps_ubx(const struct gps_data *d);
+    static void _update_gps_mtk(const struct gps_data *d);
+    static void _update_gps_mtk16(const struct gps_data *d);
+    static void _update_gps_mtk19(const struct gps_data *d);
+
     static void _update_gps(double latitude, double longitude, float altitude,
 			    double speedN, double speedE, bool have_lock);
 

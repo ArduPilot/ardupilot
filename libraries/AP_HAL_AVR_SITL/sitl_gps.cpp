@@ -29,19 +29,9 @@
 using namespace AVR_SITL;
 extern const AP_HAL::HAL& hal;
 
-#define MAX_GPS_DELAY 100
-
-struct gps_data {
-	double latitude;
-	double longitude;
-	float altitude;
-	double speedN;
-	double speedE;
-	bool have_lock;
-} gps_data[MAX_GPS_DELAY];
-
 static uint8_t next_gps_index;
 static uint8_t gps_delay;
+SITL_State::gps_data SITL_State::_gps_data[MAX_GPS_DELAY];
 
 // state of GPS emulation
 static struct {
@@ -87,11 +77,28 @@ int SITL_State::gps_pipe(void)
 	return gps_state.client_fd;
 }
 
+/*
+  write some bytes from the simulated GPS
+ */
+void SITL_State::_gps_write(uint8_t *p, uint16_t size)
+{
+	while (size--) {
+		if (_sitl->gps_byteloss > 0.0) {
+			float r = ((((unsigned)random()) % 1000000)) / 1.0e4;
+			if (r < _sitl->gps_byteloss) {
+				// lose the byte
+				p++;
+				continue;
+			}
+		}
+		write(gps_state.gps_fd, p++, 1);
+	}
+}
 
 /*
   send a UBLOX GPS message
  */
-static void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
+void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 {
         const uint8_t PREAMBLE1 = 0xb5;
         const uint8_t PREAMBLE2 = 0x62;
@@ -110,9 +117,9 @@ static void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 	for (uint8_t i=0; i<size; i++) {
 		chk[1] += (chk[0] += buf[i]);
 	}
-	write(gps_state.gps_fd, hdr, sizeof(hdr));
-	write(gps_state.gps_fd, buf, size);
-	write(gps_state.gps_fd, chk, sizeof(chk));
+	_gps_write(hdr, sizeof(hdr));
+	_gps_write(buf, size);
+	_gps_write(chk, sizeof(chk));
 }
 
 /*
@@ -136,7 +143,7 @@ static uint32_t millis_time_of_week(void)
 /*
   send a new set of GPS UBLOX packets
  */
-static void _update_gps_ubx(const struct gps_data *d)
+void SITL_State::_update_gps_ubx(const struct gps_data *d)
 {
 	#pragma pack(push,1)
 	struct ubx_nav_posllh {
@@ -257,7 +264,7 @@ static void mtk_checksum(const uint8_t *data, uint8_t n, uint8_t *ck_a, uint8_t 
 /*
   send a new GPS MTK packet
  */
-static void _update_gps_mtk(const struct gps_data *d)
+void SITL_State::_update_gps_mtk(const struct gps_data *d)
 {
     #pragma pack(push,1)
     struct mtk_msg {
@@ -307,13 +314,13 @@ static void _update_gps_mtk(const struct gps_data *d)
     swap_uint32((uint32_t *)&p.utc_time, 1);
 	mtk_checksum(&p.msg_class, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
-	write(gps_state.gps_fd, &p, sizeof(p));
+	_gps_write((uint8_t*)&p, sizeof(p));
 }
 
 /*
   send a new GPS MTK 1.6 packet
  */
-static void _update_gps_mtk16(const struct gps_data *d)
+void SITL_State::_update_gps_mtk16(const struct gps_data *d)
 {
     #pragma pack(push,1)
     struct mtk_msg {
@@ -365,13 +372,13 @@ static void _update_gps_mtk16(const struct gps_data *d)
 
 	mtk_checksum(&p.size, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
-	write(gps_state.gps_fd, &p, sizeof(p));
+	_gps_write((uint8_t*)&p, sizeof(p));
 }
 
 /*
   send a new GPS MTK 1.9 packet
  */
-static void _update_gps_mtk19(const struct gps_data *d)
+void SITL_State::_update_gps_mtk19(const struct gps_data *d)
 {
     #pragma pack(push,1)
     struct mtk_msg {
@@ -423,7 +430,7 @@ static void _update_gps_mtk19(const struct gps_data *d)
 
 	mtk_checksum(&p.size, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
-	write(gps_state.gps_fd, &p, sizeof(p));
+	_gps_write((uint8_t*)&p, sizeof(p));
 }
 
 /*
@@ -455,18 +462,18 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	d.have_lock = have_lock;
 
 	// add in some GPS lag
-	gps_data[next_gps_index++] = d;
+	_gps_data[next_gps_index++] = d;
 	if (next_gps_index >= gps_delay) {
 		next_gps_index = 0;
 	}
 
-	d = gps_data[next_gps_index];
+	d = _gps_data[next_gps_index];
 
 	if (_sitl->gps_delay != gps_delay) {
 		// cope with updates to the delay control
 		gps_delay = _sitl->gps_delay;
 		for (uint8_t i=0; i<gps_delay; i++) {
-			gps_data[i] = d;
+			_gps_data[i] = d;
 		}
 	}
 
