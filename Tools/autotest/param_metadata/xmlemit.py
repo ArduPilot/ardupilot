@@ -31,7 +31,6 @@ class XmlEmit(Emit):
         self.f.write('<libraries>')
     
     def emit(self, g, f):
-        # FIXME - quote XML strings
         t = '''<parameters name=%s>\n'''  % quoteattr(g.name) # i.e. ArduPlane
         
         for param in g.params:
