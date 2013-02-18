@@ -8,9 +8,6 @@ static void init_commands()
     prev_nav_index          = NO_COMMAND;
     command_cond_queue.id   = NO_COMMAND;
     command_nav_queue.id    = NO_COMMAND;
-
-    ap.fast_corner          = false;
-	reset_desired_speed();
 }
 
 // Getters
@@ -154,9 +151,6 @@ static void set_next_WP(struct Location *wp)
     wp_distance             = get_distance_cm(&current_loc, &next_WP);
     wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
     original_wp_bearing     = wp_bearing;       // to check if we have missed the WP
-
-    // calc the location error:
-    calc_location_error(&next_WP);
 }
 
 // set_next_WP_latlon - update just lat and lon targets for nav controllers
@@ -191,10 +185,8 @@ static void init_home()
     // no need to save this to EPROM
     set_cmd_with_index(home, 0);
 
-#if INERTIAL_NAV_XY == ENABLED
     // set inertial nav's home position
     inertial_nav.set_current_position(g_gps->longitude, g_gps->latitude);
-#endif
 
     if (g.log_bitmask & MASK_LOG_CMD)
         Log_Write_Cmd(0, &home);

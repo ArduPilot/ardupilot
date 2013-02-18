@@ -226,7 +226,7 @@ static void do_RTL(void)
     set_throttle_mode(RTL_THR);
 
     // set navigation mode
-    set_nav_mode(NAV_LOITER_ACTIVE);
+    set_nav_mode(NAV_LOITER);
 
     // override altitude to RTL altitude
     set_new_altitude(get_RTL_alt());
@@ -239,11 +239,11 @@ static void do_RTL(void)
 // do_takeoff - initiate takeoff navigation command
 static void do_takeoff()
 {
-    // set our yaw mode
-    set_yaw_mode(YAW_HOLD);
+    // set roll-pitch mode
+    set_roll_pitch_mode(AUTO_RP);
 
-    // set our nav mode to loiter
-    set_nav_mode(NAV_LOITER_ACTIVE);
+    // set yaw mode
+    set_yaw_mode(YAW_HOLD);
 
     // set throttle mode to AUTO although we should already be in this mode
     set_throttle_mode(THROTTLE_AUTO);
@@ -251,29 +251,30 @@ static void do_takeoff()
     // set target altitude
     set_new_altitude(command_nav_queue.alt);
 
+    // set our nav mode to loiter
+    set_nav_mode(NAV_LOITER);
+
     // prevent flips
     // To-Do: check if this is still necessary
     reset_I_all();    
 }
 
 // do_nav_wp - initiate move to next waypoint
+// note: caller should set yaw mode
 static void do_nav_wp()
 {
-    // set nav mode
-    set_nav_mode(NAV_WP_ACTIVE);
+    // set roll-pitch mode
+    set_roll_pitch_mode(AUTO_RP);
 
-    // set target location
-#if NAV_WP_ACTIVE == NAV_WP
-    // Set navigation target
-    set_next_WP(&command_nav_queue);
-#else
-    // Set inav navigation target
-    wpinav_set_destination(command_nav_queue);
-#endif
-
-    // set throttle mode to AUTO although we are likely already in this mode
+    // set throttle mode
     set_throttle_mode(THROTTLE_AUTO);
     set_new_altitude(command_nav_queue.alt);
+
+    // set nav mode
+    set_nav_mode(NAV_WP);
+
+    // Set inav navigation target
+    wpinav_set_destination(command_nav_queue);
 
     // this is our bitmask to verify we have met all conditions to move on
     wp_verify_byte  = 0;
@@ -296,35 +297,34 @@ static void do_nav_wp()
 }
 
 // do_land - initiate landing procedure
+// caller should set roll_pitch_mode to ROLL_PITCH_AUTO (for no pilot input) or ROLL_PITCH_LOITER (for pilot input)
+// caller should set yaw_mode
 static void do_land()
 {
-    // switch into loiter mode
-    set_nav_mode(NAV_LOITER_ACTIVE);
+    if( ap.home_is_set ) {
+        // switch to loiter if we have gps
+        set_roll_pitch_mode(ROLL_PITCH_LOITER);
+    }else{
+        // otherwise remain with stabilize roll and pitch
+        set_roll_pitch_mode(ROLL_PITCH_STABLE);
+    }
 
-    // hold current heading
+    // hold yaw while landing
     set_yaw_mode(YAW_HOLD);
 
     // set throttle mode to land
     set_throttle_mode(THROTTLE_LAND);
+
+    // switch into loiter nav mode
+    set_nav_mode(NAV_LOITER);
 }
 
 // do_loiter_unlimited - start loitering with no end conditions
+// note: caller should set yaw_mode
 static void do_loiter_unlimited()
 {
-    // if no location specified loiter at current location
-    if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        set_nav_mode(NAV_LOITER_ACTIVE);
-    }else{
-        // location specified so fly to the target location
-        set_nav_mode(NAV_WP_ACTIVE);
-#if NAV_WP_ACTIVE == NAV_WP
-        // Set navigation target
-        set_next_WP(&command_nav_queue);
-#else
-        // Set inav navigation target
-        wpinav_set_destination(command_nav_queue);
-#endif
-    }
+    // set roll-pitch mode (no pilot input)
+    set_roll_pitch_mode(AUTO_RP);
 
     // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
     set_throttle_mode(THROTTLE_AUTO);
@@ -333,28 +333,44 @@ static void do_loiter_unlimited()
     if( command_nav_queue.alt != 0 ) {
         set_new_altitude(command_nav_queue.alt);
     }
+
+    // if no location specified loiter at current location
+    if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
+        set_nav_mode(NAV_LOITER);
+    }else{
+        // location specified so fly to the target location
+        set_nav_mode(NAV_WP);
+        // Set inav navigation target
+        wpinav_set_destination(command_nav_queue);
+    }
+
 }
 
 // do_loiter_turns - initiate moving in a circle
 static void do_loiter_turns()
 {
+    // set roll-pitch mode (no pilot input)
+    set_roll_pitch_mode(AUTO_RP);
+
+    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
+    set_throttle_mode(THROTTLE_AUTO);
+
+    // set target altitude if provided
+    if( command_nav_queue.alt != 0 ) {
+        set_new_altitude(command_nav_queue.alt);
+    }
+
     // set nav mode to CIRCLE
     set_nav_mode(NAV_CIRCLE);
 
     // set horizontal location target
     if( command_nav_queue.lat != 0 || command_nav_queue.lng != 0) {
         set_next_WP_latlon(command_nav_queue.lat, command_nav_queue.lng);
-    } 
-
-    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
-    set_throttle_mode(THROTTLE_AUTO);
-
-    // set target altitude if provided
-    if( command_nav_queue.alt != 0 ) {
-        set_new_altitude(command_nav_queue.alt);
     }
-
     circle_WP = next_WP;
+    yaw_look_at_WP = circle_WP;
+    // set yaw to point to center of circle
+    set_yaw_mode(CIRCLE_YAW);
 
     loiter_total = command_nav_queue.p1 * 360;
     loiter_sum       = 0;
@@ -366,30 +382,28 @@ static void do_loiter_turns()
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
+// note: caller should set yaw_mode
 static void do_loiter_time()
 {
-    // if no position specificed loiter at current location
-    if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        set_nav_mode(NAV_LOITER_ACTIVE);
-        loiter_time     = millis();
-    }else{
-        // location specified so fly to the target location
-        set_nav_mode(NAV_WP_ACTIVE);
-#if NAV_WP_ACTIVE == NAV_WP
-        // Set navigation target
-        set_next_WP(&command_nav_queue);
-#else
-        // Set inav navigation target
-        wpinav_set_destination(command_nav_queue);
-#endif
-    }
+    // set roll-pitch mode (no pilot input)
+    set_roll_pitch_mode(AUTO_RP);
 
     // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
     set_throttle_mode(THROTTLE_AUTO);
-
     // set target altitude if provided
     if( command_nav_queue.alt != 0 ) {
         set_new_altitude(command_nav_queue.alt);
+    }
+
+    // if no position specificed loiter at current location
+    if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
+        set_nav_mode(NAV_LOITER);
+        loiter_time     = millis();
+    }else{
+        // location specified so fly to the target location
+        set_nav_mode(NAV_WP);
+        // Set inav navigation target
+        wpinav_set_destination(command_nav_queue);
     }
 
     loiter_time_max = command_nav_queue.p1 * 1000;     // units are (seconds)
@@ -404,6 +418,8 @@ static bool verify_takeoff()
 {
     // wait until we are ready!
     if(g.rc_3.control_in == 0) {
+        // To-Do: reset loiter target if we have not yet taken-off
+        // do not allow I term to build up if we have not yet taken-off
         return false;
     }
     // are we above our target altitude?
@@ -443,7 +459,7 @@ static bool verify_nav_wp()
         // we have reached our goal
 
         // loiter at the WP
-        set_nav_mode(NAV_LOITER_ACTIVE);
+        set_nav_mode(NAV_LOITER);
 
         if ((millis() - loiter_time) > loiter_time_max) {
             wp_verify_byte |= NAV_DELAY;
@@ -462,9 +478,9 @@ static bool verify_nav_wp()
 
 static bool verify_loiter_unlimited()
 {
-    if(nav_mode == NAV_WP_ACTIVE && wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
+    if(nav_mode == NAV_WP && wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
         // switch to position hold
-        set_nav_mode(NAV_LOITER_ACTIVE);
+        set_nav_mode(NAV_LOITER);
     }
     return false;
 }
@@ -472,16 +488,16 @@ static bool verify_loiter_unlimited()
 // verify_loiter_time - check if we have loitered long enough
 static bool verify_loiter_time()
 {
-    if(nav_mode == NAV_LOITER_ACTIVE) {
+    if(nav_mode == NAV_LOITER) {
         if ((millis() - loiter_time) > loiter_time_max) {
             return true;
         }
     }
-    if(nav_mode == NAV_WP_ACTIVE &&  wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
+    if(nav_mode == NAV_WP &&  wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) {
         // reset our loiter time
         loiter_time = millis();
         // switch to position hold
-        set_nav_mode(NAV_LOITER_ACTIVE);
+        set_nav_mode(NAV_LOITER);
     }
     return false;
 }
@@ -518,15 +534,9 @@ static bool verify_RTL()
                 set_new_altitude(get_RTL_alt());
 
                 // set navigation mode
-                set_nav_mode(NAV_WP_ACTIVE);
-
-#if NAV_WP_ACTIVE == NAV_WP
-                // Set navigation target to home
-                set_next_WP(&home);
-#else
+                set_nav_mode(NAV_WP);
                 // Set inav navigation target to home
                 wpinav_set_destination(home);
-#endif
 
                 // set yaw mode
                 set_yaw_mode(RTL_YAW);
@@ -540,7 +550,7 @@ static bool verify_RTL()
             // if we've reached home initiate loiter
             if (wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0) || check_missed_wp()) {
                 rtl_state = RTL_STATE_LOITERING_AT_HOME;
-                set_nav_mode(NAV_LOITER_ACTIVE);
+                set_nav_mode(NAV_LOITER);
 
                 // set loiter timer
                 rtl_loiter_start_time = millis();

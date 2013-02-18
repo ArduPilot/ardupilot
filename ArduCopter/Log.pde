@@ -489,13 +489,13 @@ static void Log_Read_Optflow()
 struct log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint32_t wp_distance;
-    int16_t wp_bearing;
-    int16_t lat_error;
-    int16_t lon_error;
-    int16_t nav_pitch;
-    int16_t nav_roll;
-    int16_t lat_speed;
-    int16_t lon_speed;
+    int16_t  wp_bearing;
+    float    lat_error;
+    float    lon_error;
+    int16_t  nav_pitch;
+    int16_t  nav_roll;
+    int16_t  lat_speed;
+    int16_t  lon_speed;
 };
 
 // Write an Nav Tuning packet. Total length : 24 bytes
@@ -505,12 +505,12 @@ static void Log_Write_Nav_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
         wp_distance : wp_distance,
         wp_bearing  : (int16_t) (wp_bearing/100),
-        lat_error   : (int16_t) lat_error,
-        lon_error   : (int16_t) long_error,
+        lat_error   : lat_error,
+        lon_error   : lon_error,
         nav_pitch   : (int16_t) nav_pitch,
         nav_roll    : (int16_t) nav_roll,
-        lat_speed   : lat_speed,
-        lon_speed   : lon_speed
+        lat_speed   : (int16_t) inertial_nav.get_latitude_velocity(),
+        lon_speed   : (int16_t) inertial_nav.get_longitude_velocity()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -521,12 +521,12 @@ static void Log_Read_Nav_Tuning()
     struct log_Nav_Tuning pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                               1   2   3   4   5   6   7   8
-    cliSerial->printf_P(PSTR("NTUN, %lu, %d, %d, %d, %d, %d, %d, %d\n"),
+    //                                1   2     3     4   5   6   7   8
+    cliSerial->printf_P(PSTR("NTUN, %lu, %d, %.0f, %.0f, %d, %d, %d, %d\n"),
         (unsigned long)pkt.wp_distance,
         (int)pkt.wp_bearing,
-        (int)pkt.lat_error,
-        (int)pkt.lon_error,
+        (float)pkt.lat_error,
+        (float)pkt.lon_error,
         (int)pkt.nav_pitch,
         (int)pkt.nav_roll,
         (int)pkt.lat_speed,

@@ -607,14 +607,6 @@
 #define EARTH_FRAME     0
 #define BODY_FRAME      1
 
-// active NAV controller
-#ifndef NAV_WP_ACTIVE
- # define NAV_WP_ACTIVE NAV_WP
-#endif
-// active LOITER controller
-#ifndef NAV_LOITER_ACTIVE
- # define NAV_LOITER_ACTIVE NAV_LOITER
-#endif
 
 // Flight mode roll, pitch, yaw, throttle and navigation definitions
 
@@ -631,10 +623,6 @@
  # define ACRO_THR           	    THROTTLE_MANUAL
 #endif
 
-#ifndef ACRO_NAV
- # define ACRO_NAV           	    NAV_NONE
-#endif
-
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
  # define ALT_HOLD_YAW           	YAW_HOLD
@@ -646,10 +634,6 @@
 
 #ifndef ALT_HOLD_THR
  # define ALT_HOLD_THR           	THROTTLE_HOLD
-#endif
-
-#ifndef ALT_HOLD_NAV
- # define ALT_HOLD_NAV           	NAV_NONE
 #endif
 
 // AUTO Mode
@@ -705,7 +689,7 @@
 #endif
 
 #ifndef LOITER_RP
- # define LOITER_RP                 ROLL_PITCH_AUTO
+ # define LOITER_RP                 ROLL_PITCH_LOITER
 #endif
 
 #ifndef LOITER_THR
@@ -713,7 +697,7 @@
 #endif
 
 #ifndef LOITER_NAV
- # define LOITER_NAV                NAV_LOITER_ACTIVE
+ # define LOITER_NAV                NAV_LOITER
 #endif
 
 // POSITION Mode
@@ -730,7 +714,7 @@
 #endif
 
 #ifndef POSITION_NAV
- # define POSITION_NAV              NAV_LOITER_ACTIVE
+ # define POSITION_NAV              NAV_LOITER
 #endif
 
 
@@ -1275,11 +1259,6 @@
 // experimental mpu6000 DMP code
 #ifndef SECONDARY_DMP_ENABLED
  # define SECONDARY_DMP_ENABLED DISABLED
-#endif
-
-// Inertia based contollers.
-#ifndef INERTIAL_NAV_XY
- # define INERTIAL_NAV_XY DISABLED
 #endif
 
 #endif // __ARDUCOPTER_CONFIG_H__

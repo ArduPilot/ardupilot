@@ -356,17 +356,15 @@ static union {
         uint8_t manual_throttle    : 1; // 4
 
         uint8_t low_battery        : 1; // 5    // Used to track if the battery is low - LED output flashes when the batt is low
-        uint8_t loiter_override    : 1; // 6    // Are we navigating while holding a positon? This is set to false once the speed drops below 1m/s
-        uint8_t armed              : 1; // 7
-        uint8_t auto_armed         : 1; // 8
+        uint8_t armed              : 1; // 6
+        uint8_t auto_armed         : 1; // 7
 
-        uint8_t failsafe           : 1; // 9    // A status flag for the failsafe state
-        uint8_t do_flip            : 1; // 10   // Used to enable flip code
-        uint8_t takeoff_complete   : 1; // 11
-        uint8_t land_complete      : 1; // 12
-        uint8_t compass_status     : 1; // 13
-        uint8_t gps_status         : 1; // 14
-        uint8_t fast_corner        : 1; // 15   // should we take the waypoint quickly or slow down?
+        uint8_t failsafe           : 1; // 8    // A status flag for the failsafe state
+        uint8_t do_flip            : 1; // 9    // Used to enable flip code
+        uint8_t takeoff_complete   : 1; // 10
+        uint8_t land_complete      : 1; // 11
+        uint8_t compass_status     : 1; // 12
+        uint8_t gps_status         : 1; // 13
     };
     uint16_t value;
 } ap;
@@ -383,28 +381,6 @@ static struct AP_System{
     uint8_t yaw_stopped             : 1; // 8   // Used to manage the Yaw hold capabilities
 
 } ap_system;
-
-/*
-  what navigation updated are needed
- */
-static struct nav_updates {
-    uint8_t need_velpos             : 1;
-    uint8_t need_dist_bearing       : 1;
-    uint8_t need_nav_controllers    : 1;
-    uint8_t need_nav_pitch_roll     : 1;
-} nav_updates;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// velocity in lon and lat directions calculated from GPS position and accelerometer data
-// updated after GPS read - 5-10hz
-static int16_t lon_speed;       // expressed in cm/s.  positive numbers mean moving east
-static int16_t lat_speed;       // expressed in cm/s.  positive numbers when moving north
-
-// The difference between the desired rate of travel and the actual rate of travel
-// updated after GPS read - 5-10hz
-static int16_t x_rate_error;
-static int16_t y_rate_error;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Radio
@@ -525,11 +501,7 @@ static uint8_t command_cond_index;
 // NAV_LOCATION - have we reached the desired location?
 // NAV_DELAY    - have we waited at the waypoint the desired time?
 static uint8_t wp_verify_byte;                                                  // used for tracking state of navigating waypoints
-// used to limit the speed ramp up of WP navigation
-// Acceleration is limited to 1m/s/s
-static int16_t max_speed_old;
-// Used to track how many cm we are from the "next_WP" location
-static int32_t long_error, lat_error;
+static float lon_error, lat_error;      // Used to report how many cm we are from the next waypoint or loiter target position
 static int16_t control_roll;
 static int16_t control_pitch;
 static uint8_t rtl_state;
@@ -618,8 +590,8 @@ static uint32_t loiter_time;
 // The synthetic location created to make the copter do circles around a WP
 static struct   Location circle_WP;
 // inertial nav loiter variables
-static float loiter_lat_from_home_cm;
-static float loiter_lon_from_home_cm;
+static float loiter_lat_from_home_cm;   // loiter's target latitude in cm from home
+static float loiter_lon_from_home_cm;   // loiter's target longitude in cm from home
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -919,11 +891,11 @@ AP_Param param_loader(var_info, WP_START_BYTE);
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
-    { update_navigation,     2,     500 },
+    { update_navigation,     10,    500 },
     { medium_loop,           2,     700 },
     { update_altitude,       5,    1000 },
     { fifty_hz_loop,         2,     950 },
-    { run_nav_updates,       2,     500 },
+    { run_nav_updates,      10,     800 },
     { slow_loop,            10,     500 },
     { gcs_check_input,	     2,     700 },
     { gcs_send_heartbeat,  100,     700 },
@@ -1614,8 +1586,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             roll_pitch_initialised = true;
             break;
 
-        case ROLL_PITCH_LOITER_INAV:
-        case ROLL_PITCH_WP_INAV:
+        case ROLL_PITCH_LOITER:
             // require gps lock
             if( ap.home_is_set ) {
                 roll_pitch_initialised = true;
@@ -1680,19 +1651,15 @@ void update_roll_pitch_mode(void)
         break;
 
     case ROLL_PITCH_AUTO:
-        // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
-        // mix in user control with Nav control
-        nav_roll                += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
-        nav_pitch               += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());                 // 40 deg a second
+        // copy latest output from nav controller to stabilize controller
+        nav_roll    = auto_roll;
+        nav_pitch   = auto_pitch;
+        get_stabilize_roll(nav_roll);
+        get_stabilize_pitch(nav_pitch);
 
-        control_roll            = g.rc_1.control_mix(nav_roll);
-        control_pitch           = g.rc_2.control_mix(nav_pitch);
-
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
+        // copy control_roll and pitch for reporting purposes
+        control_roll = nav_roll;
+        control_pitch = nav_pitch;
         break;
 
     case ROLL_PITCH_STABLE_OF:
@@ -1715,7 +1682,7 @@ void update_roll_pitch_mode(void)
         roll_pitch_toy();
         break;
 
-    case ROLL_PITCH_LOITER_INAV:
+    case ROLL_PITCH_LOITER:
         // apply SIMPLE mode transform
         if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
@@ -1729,15 +1696,6 @@ void update_roll_pitch_mode(void)
             loiter_set_pos_from_velocity(-control_pitch/(2*4.5), control_roll/(2*4.5),0.01f);
         }
 
-        // copy latest output from nav controller to stabilize controller
-        nav_roll    = auto_roll;
-        nav_pitch   = auto_pitch;
-        get_stabilize_roll(nav_roll);
-        get_stabilize_pitch(nav_pitch);
-        break;
-
-    case ROLL_PITCH_WP_INAV:
-        // To-Do: allow pilot to take control of target location
         // copy latest output from nav controller to stabilize controller
         nav_roll    = auto_roll;
         nav_pitch   = auto_pitch;
@@ -2253,9 +2211,8 @@ static void tuning(){
 #endif
 
     case CH6_INAV_TC:
-#if INERTIAL_NAV_XY == ENABLED
+        // To-Do: allowing tuning TC for xy and z separately
         inertial_nav.set_time_constant_xy(tuning_value);
-#endif
         inertial_nav.set_time_constant_z(tuning_value);
         break;
 
