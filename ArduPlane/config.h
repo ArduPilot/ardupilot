@@ -149,6 +149,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
+ # define USB_MUX_PIN -1
  # define BATTERY_VOLT_PIN      -1
  # define BATTERY_CURR_PIN      -1
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
@@ -159,7 +160,7 @@
  # define MAG_ORIENTATION   ROTATION_NONE
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
- # define SERIAL0_BAUD 57600
+ # define SERIAL0_BAUD 115200
 #endif
 
 
