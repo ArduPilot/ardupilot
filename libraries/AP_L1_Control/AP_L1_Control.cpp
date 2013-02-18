@@ -22,12 +22,13 @@ Vector2f planar2geo(const Vector2f &ref, const Vector2f &wp)
 }
 
 void calc_L1_circ(  uint8_t                 L1,
-                    const uint8_t                 turn_radius,
+                    const uint8_t           turn_radius,
                     const struct Location & turn_center_loc,
                     const struct Location & current_loc,
-                    struct Location &       L1_ref)
+                    struct Location &       L1_ref,
+                    const int8_t            dir)
 {
-    int8_t side, dir=1;
+    int8_t side;
     float beta, gamma, wp_distance;
     Vector2f q1, q2(0,1);
     Vector2f air((current_loc.lat/1.0e7), (current_loc.lng/1.0e7));
@@ -54,7 +55,7 @@ void calc_L1_circ(  uint8_t                 L1,
         gamma=acos(q1*q2);
         L1_ref=current_loc;
         //beta is angle between vector from vehicle to circle center, and vehcile to L1_ref
-        beta=dir* -acos (( sq(wp_distance) + sq(L1) - sq(turn_radius) ) / (2*wp_distance*L1));
+        beta=-dir* -acos (( sq(wp_distance) + sq(L1) - sq(turn_radius) ) / (2*wp_distance*L1));
         location_offset(&L1_ref, L1*sin(beta+side*gamma), L1*cos(beta+side*gamma));
     }
 }

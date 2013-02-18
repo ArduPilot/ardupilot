@@ -148,7 +148,7 @@ static void update_loiter()
 {
 
 #if L1_CONTROL
-    calc_L1_circ(L1, g.loiter_radius, next_WP, current_loc, L1_ref);
+    calc_L1_circ(L1, g.loiter_radius, next_WP, current_loc, L1_ref, loiter_direction);
     calc_nu_cd();
 #else
     float power;

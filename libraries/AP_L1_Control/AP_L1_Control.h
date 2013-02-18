@@ -25,18 +25,19 @@ Vector2f        geo2planar(const Vector2f &ref, const Vector2f &wp);
 //Convert a 2D vector from planar coordinates to latitude and longitude based on a reference point
 Vector2f        planar2geo(const Vector2f &ref, const Vector2f &wp);
 
-
 /*Calculate a reference point for L1 control based on a circle.
  *  L1:  Reference length, smaller is equivalent to higher gain [meters]
  *  turn_radius: Radius of the circle [meters]
  *  turn_center_loc: Center of the circle
  *  current_loc: Current location of vehicle
- *  L1_ref: Generated Reference Point  */
+ *  L1_ref: Generated Reference Point  
+ *  dir: direction of turn, 1 for clockwise, -1 for counter-clockwise */
 void        calc_L1_circ(  uint8_t                  L1,
                            const uint8_t            turn_radius,
                            const struct Location &  turn_center_loc,
                            const struct Location &  current_loc,
-                           struct Location &        L1_ref);
+                           struct Location &        L1_ref,
+                           const int8_t             dir);
 
 /*Calculate a reference point for L1 control based on a line.
  *  L1: Reference length, smaller is equivalent to higher gain [meters]
