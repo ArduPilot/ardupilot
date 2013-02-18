@@ -43,9 +43,6 @@
  */
 
 // Inertia based contollers
-#define INERTIAL_NAV_XY ENABLED
-#define NAV_WP_ACTIVE NAV_WP_INAV
-#define NAV_LOITER_ACTIVE NAV_LOITER_INAV
 #define RTL_YAW YAW_HOLD
 
 //#define MOTORS_JD880
