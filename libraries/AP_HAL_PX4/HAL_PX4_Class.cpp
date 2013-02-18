@@ -43,13 +43,14 @@ static PX4RCOutput rcoutDriver;
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 
-#define UARTA_DEFAULT_DEVICE "/dev/ttyS0"
+#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
+#define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
 
-// only two real UART drivers for now
+// 3 UART drivers, for GPS plus two mavlink-enabled devices
 static PX4UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "APM_uartA");
 static PX4UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
-static Empty::EmptyUARTDriver uartCDriver;
+static PX4UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
 
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
@@ -108,7 +109,9 @@ static int main_loop(int argc, char **argv)
     extern void loop(void);
 
 
-    hal.uartA->begin(57600);
+    hal.uartA->begin(115200);
+    hal.uartB->begin(38400);
+    hal.uartC->begin(57600);
     hal.console->init((void*) hal.uartA);
     hal.scheduler->init(NULL);
     hal.rcin->init(NULL);
@@ -187,7 +190,8 @@ static void usage(void)
 {
     printf("Usage: %s [options] {start,stop,status}\n", SKETCHNAME);
     printf("Options:\n");
-    printf("\t-d DEVICE         set terminal device (default %s)\n", UARTA_DEFAULT_DEVICE);
+    printf("\t-d  DEVICE         set terminal device (default %s)\n", UARTA_DEFAULT_DEVICE);
+    printf("\t-d2 DEVICE         set second terminal device (default %s)\n", UARTC_DEFAULT_DEVICE);
     printf("\n");
 }
 
@@ -195,7 +199,8 @@ static void usage(void)
 void HAL_PX4::init(int argc, char * const argv[]) const 
 {
     int i;
-    const char *device = UARTA_DEFAULT_DEVICE;
+    const char *deviceA = UARTA_DEFAULT_DEVICE;
+    const char *deviceC = UARTC_DEFAULT_DEVICE;
 
     if (argc < 1) {
 		printf("%s: missing command (try '%s start')", 
@@ -212,8 +217,10 @@ void HAL_PX4::init(int argc, char * const argv[]) const
                 exit(0);
             }
 
-            uartADriver.set_device_path(device);
-            printf("Starting %s on %s\n", SKETCHNAME, device);
+            uartADriver.set_device_path(deviceA);
+            uartCDriver.set_device_path(deviceC);
+            printf("Starting %s on %s and %s\n", 
+                   SKETCHNAME, deviceA, deviceC);
 
             _px4_thread_should_exit = false;
             daemon_task = task_spawn(SKETCHNAME,
@@ -244,9 +251,20 @@ void HAL_PX4::init(int argc, char * const argv[]) const
 		if (strcmp(argv[i], "-d") == 0) {
             // set terminal device
 			if (argc > i + 1) {
-                device = strdup(argv[i+1]);
+                deviceA = strdup(argv[i+1]);
 			} else {
 				printf("missing parameter to -d DEVICE\n");
+                usage();
+                exit(1);
+			}
+		}
+
+		if (strcmp(argv[i], "-d2") == 0) {
+            // set uartC terminal device
+			if (argc > i + 1) {
+                deviceC = strdup(argv[i+1]);
+			} else {
+				printf("missing parameter to -d2 DEVICE\n");
                 usage();
                 exit(1);
 			}
