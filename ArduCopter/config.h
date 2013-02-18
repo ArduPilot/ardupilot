@@ -968,7 +968,7 @@
 #endif
 
 #ifndef AUTO_SLEW_RATE
- # define AUTO_SLEW_RATE         	30                     // degrees/sec
+ # define AUTO_SLEW_RATE         	45                     // degrees/sec
 #endif
 
 #ifndef AUTO_YAW_SLEW_RATE

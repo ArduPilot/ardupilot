@@ -444,7 +444,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Auto Slew Rate
     // @Description: This restricts the rate of change of the roll and pitch attitude commanded by the auto pilot
     // @Units: Degrees/Second
-	// @Range: 1 45
+	// @Range: 1 90
     // @Increment: 1
     // @User: Advanced
     GSCALAR(auto_slew_rate, "AUTO_SLEW",            AUTO_SLEW_RATE),

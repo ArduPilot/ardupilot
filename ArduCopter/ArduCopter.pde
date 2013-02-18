@@ -1609,6 +1609,9 @@ void update_roll_pitch_mode(void)
 {
     switch(roll_pitch_mode) {
     case ROLL_PITCH_ACRO:
+        // copy user input for reporting purposes
+        control_roll            = g.rc_1.control_in;
+        control_pitch           = g.rc_2.control_in;
 
 #if FRAME_CONFIG == HELI_FRAME
 		if(g.axis_enabled) {
@@ -1651,9 +1654,13 @@ void update_roll_pitch_mode(void)
         break;
 
     case ROLL_PITCH_AUTO:
+        // copy user input for reporting purposes
+        control_roll  = g.rc_1.control_in;
+        control_pitch = g.rc_2.control_in;
+
         // copy latest output from nav controller to stabilize controller
-        nav_roll    = auto_roll;
-        nav_pitch   = auto_pitch;
+        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1697,8 +1704,8 @@ void update_roll_pitch_mode(void)
         }
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    = auto_roll;
-        nav_pitch   = auto_pitch;
+        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
