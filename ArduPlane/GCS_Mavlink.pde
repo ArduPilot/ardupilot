@@ -999,18 +999,37 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         else
             break;
 
-        if (packet.req_stream_id >= STREAM_PARAMS) {
-            // invalid
-            break;
-        }
-
-        if (packet.req_stream_id == MAV_DATA_STREAM_ALL) {
+        switch (packet.req_stream_id) {
+        case MAV_DATA_STREAM_ALL:
             // note that we don't set STREAM_PARAMS - that is internal only
             for (uint8_t i=0; i<STREAM_PARAMS; i++) {
                 streamRates[i].set_and_save_ifchanged(freq);
             }
-        } else {
-            streamRates[packet.req_stream_id].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_RAW_SENSORS:
+            streamRates[STREAM_RAW_SENSORS].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_EXTENDED_STATUS:
+            streamRates[STREAM_EXTENDED_STATUS].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_RC_CHANNELS:
+            streamRates[STREAM_RC_CHANNELS].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_RAW_CONTROLLER:
+            streamRates[STREAM_RAW_CONTROLLER].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_POSITION:
+            streamRates[STREAM_POSITION].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_EXTRA1:
+            streamRates[STREAM_EXTRA1].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_EXTRA2:
+            streamRates[STREAM_EXTRA2].set_and_save_ifchanged(freq);
+            break;
+        case MAV_DATA_STREAM_EXTRA3:
+            streamRates[STREAM_EXTRA3].set_and_save_ifchanged(freq);
+            break;
         }
         break;
     }
