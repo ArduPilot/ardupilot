@@ -752,16 +752,19 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
     }
 }
 
+/*
+  default stream rates to 1Hz
+ */
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  0),
-    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  0),
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  0),
-    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  0),
-    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  0),
-    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  0),
-    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  0),
-    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  0),
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  0),
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  1),
+    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  1),
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  1),
+    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  1),
+    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  1),
+    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  1),
+    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  1),
+    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  1),
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  50),
     AP_GROUPEND
 };
 
@@ -771,6 +774,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_send_timeout(1000), // 1 second
     waypoint_receive_timeout(1000) // 1 second
 {
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void
