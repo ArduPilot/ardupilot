@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <drivers/drv_hrt.h>
 
 using namespace PX4;
 
@@ -34,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
 	if (!_initialised) {
-		_fd = open(_devpath, O_RDWR);
+		_fd = open(_devpath, O_RDWR | O_NONBLOCK);
 		if (_fd == -1) {
 			fprintf(stdout, "Failed to open UART device %s - %s\n",
 				_devpath, strerror(errno));
@@ -249,6 +250,7 @@ size_t PX4UARTDriver::write(uint8_t c)
         return 0;
     }
     uint16_t _head;
+
     while (BUF_SPACE(_writebuf) == 0) {
         if (_nonblocking_writes) {
             return 0;
@@ -302,6 +304,44 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
 }
 
 /*
+  try writing n bytes, handling an unresponsive port
+ */
+int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
+{
+    int ret = 0;
+
+    // the FIONWRITE check is to cope with broken O_NONBLOCK behaviour
+    // in NuttX on ttyACM0
+    int nwrite = 0;
+    if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
+        if (nwrite > n) {
+            nwrite = n;
+        }
+        if (nwrite > 0) {
+            ret = ::write(_fd, buf, nwrite);
+        }
+    }
+
+    if (ret > 0) {
+        BUF_ADVANCEHEAD(_writebuf, ret);
+        _last_write_time = hrt_absolute_time();
+        return ret;
+    }
+
+    if (hrt_absolute_time() - _last_write_time > 2000) {
+        // we haven't done a successful write for 3ms, which means the 
+        // port is running at less than 500 bytes/sec. Start
+        // discarding bytes, even if this is a blocking port. This
+        // prevents the ttyACM0 port blocking startup if the endpoint
+        // is not connected
+        BUF_ADVANCEHEAD(_writebuf, n);
+        _last_write_time = hrt_absolute_time();
+        return n;
+    }
+    return ret;
+}
+
+/*
   push any pending bytes to/from the serial port. This is called at
   1kHz in the timer thread. Doing it this way reduces the system call
   overhead in the main task enormously. 
@@ -321,22 +361,13 @@ void PX4UARTDriver::_timer_tick(void)
         perf_begin(_perf_uart);
         if (_tail > _writebuf_head) {
             // do as a single write
-            int ret = ::write(_fd, &_writebuf[_writebuf_head], n);
-            if (ret > 0) {
-                BUF_ADVANCEHEAD(_writebuf, ret);
-            }
+            _write_fd(&_writebuf[_writebuf_head], n);
         } else {
             // split into two writes
             uint16_t n1 = _writebuf_size - _writebuf_head;
-            int ret = ::write(_fd, &_writebuf[_writebuf_head], n1);
-            if (ret > 0) {
-                BUF_ADVANCEHEAD(_writebuf, ret);
-            }
+            int ret = _write_fd(&_writebuf[_writebuf_head], n1);
             if (ret == n1 && n != n1) {
-                ret = ::write(_fd, &_writebuf[_writebuf_head], n - n1);                
-                if (ret > 0) {
-                    BUF_ADVANCEHEAD(_writebuf, ret);
-                }
+                _write_fd(&_writebuf[_writebuf_head], n - n1);                
             }
         }
         perf_end(_perf_uart);
