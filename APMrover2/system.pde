@@ -417,6 +417,7 @@ static void startup_INS_ground(bool force_accel_level)
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	
         ins.init_accel(flash_leds);
+        ahrs.set_trim(Vector3f(0, 0, 0));
 	}
     ahrs.reset();
 
