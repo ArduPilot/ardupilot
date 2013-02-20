@@ -49,9 +49,14 @@ then
 	      echo "No new px4io firmware"
 	   else
 	      echo "Loading /fs/microsd/px4io.bin"
-	      px4io update /fs/microsd/px4io.bin > /fs/microsd/APM/px4io_update.log
-	      cp /fs/microsd/px4io.bin /fs/microsd/px4io.bin.loaded
-	      echo "Loaded /fs/microsd/px4io.bin OK" >> /fs/microsd/APM/px4io_update.log
+	      if px4io update /fs/microsd/px4io.bin > /fs/microsd/APM/px4io_update.log
+	      then
+	      	cp /fs/microsd/px4io.bin /fs/microsd/px4io.bin.loaded
+	      	echo "Loaded /fs/microsd/px4io.bin OK" >> /fs/microsd/APM/px4io_update.log
+	      else
+	      	echo "Failed loading /fs/microsd/px4io.bin" >> /fs/microsd/APM/px4io_update.log
+		echo "Failed to upgrade PX4IO firmware - check PX4IO is in bootloader mode"
+	      fi
 	   fi
 	fi
 
