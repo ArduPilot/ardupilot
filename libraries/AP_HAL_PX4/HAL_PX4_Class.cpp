@@ -149,9 +149,9 @@ static int main_loop(int argc, char **argv)
           this ensures a tight loop waiting on a lower priority driver
           will eventually give up some time for the driver to run. It
           will only ever be called if a loop() call runs for more than
-          1 second
+          0.1 second
          */
-        hrt_call_after(&loop_overtime_call, 1000000, (hrt_callout)loop_overtime, NULL);
+        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
 
 		loop();
 
