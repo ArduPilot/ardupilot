@@ -17,6 +17,7 @@ const prog_char AP_GPS_Auto::_sirf_set_binary[]  PROGMEM = SIRF_SET_BINARY;
 
 
 AP_GPS_Auto::AP_GPS_Auto(GPS **gps)  :
+	GPS(),
     _gps(gps)
 {
 }

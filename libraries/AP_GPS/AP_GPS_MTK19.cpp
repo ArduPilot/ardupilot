@@ -17,12 +17,6 @@
 #include "AP_GPS_MTK19.h"
 #include <stdint.h>
 
-// Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_MTK19::AP_GPS_MTK19() : GPS()
-{
-	_step = 0;
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 void
 AP_GPS_MTK19::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)

@@ -17,6 +17,11 @@
 
 class AP_GPS_HIL : public GPS {
 public:
+    AP_GPS_HIL() : 
+		GPS(),
+		_updated(false)
+		{}
+
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
 

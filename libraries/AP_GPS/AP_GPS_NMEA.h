@@ -52,6 +52,16 @@
 class AP_GPS_NMEA : public GPS
 {
 public:
+	AP_GPS_NMEA(void) : 
+	GPS(),
+	_parity(0),
+	_is_checksum_term(false),
+	_sentence_type(0),
+	_term_number(0),
+	_term_offset(0),
+	_gps_data_good(false)
+		{}
+
     /// Perform a (re)initialisation of the GPS; sends the
     /// protocol configuration messages.
     ///

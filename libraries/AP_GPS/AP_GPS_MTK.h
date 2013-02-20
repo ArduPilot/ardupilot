@@ -20,6 +20,12 @@
 
 class AP_GPS_MTK : public GPS {
 public:
+    AP_GPS_MTK() :
+		GPS(),
+		_step(0),
+		_payload_counter(0)
+		{}
+
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
     static bool _detect(uint8_t );

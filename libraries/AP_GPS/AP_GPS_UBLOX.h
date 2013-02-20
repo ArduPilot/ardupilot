@@ -27,6 +27,17 @@
 class AP_GPS_UBLOX : public GPS
 {
 public:
+	AP_GPS_UBLOX() :
+		GPS(),
+		_step(0),
+		_msg_id(0),
+		_payload_length(0),
+		_payload_counter(0),
+		_fix_count(0),
+		_disable_counter(0),
+		next_fix(false)
+		{}
+
     // Methods
     virtual void                    init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool                    read();
