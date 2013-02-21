@@ -41,3 +41,5 @@ Make.dep
 .context
 *.lst
 *.tlog
+
+.DS_Store
