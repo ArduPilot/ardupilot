@@ -383,7 +383,7 @@
 # define THROTTLE_CRUISE		45
 #endif
 #ifndef THROTTLE_MAX
-# define THROTTLE_MAX			75
+# define THROTTLE_MAX			100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -411,7 +411,7 @@
 # define XTRACK_GAIN          1 // deg/m
 #endif
 #ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   20 // deg
+# define XTRACK_ENTRY_ANGLE   50 // deg
 #endif
 # define XTRACK_GAIN_SCALED XTRACK_GAIN*100
 # define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE*100

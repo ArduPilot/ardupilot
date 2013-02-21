@@ -58,7 +58,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
 
     // @Param: SERIAL0_BAUD
-    // @DisplayName: Telemetry Baud Rate
+    // @DisplayName: USB Console Baud Rate
     // @Description: The baud rate used on the first serial port
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
     // @User: Standard
@@ -136,13 +136,31 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
     // @Param: CRUISE_SPEED
-    // @DisplayName: Target speed in auto modes
+    // @DisplayName: Target cruise speed in auto modes
     // @Description: The target speed in auto missions.
     // @Units: m/s
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
 	GSCALAR(speed_cruise,        "CRUISE_SPEED",    5),
+
+    // @Param: SPEED_TURN_GAIN
+    // @DisplayName: Target speed reduction while turning
+    // @Description: The percentage to reduce the throttle while turning. If this is 100% then the target speed is not reduced while turning. If this is 50% then the target speed is reduced in proportion to the turn rate, with a reduction of 50% when the steering is maximally deflected.
+    // @Units: percent
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+	GSCALAR(speed_turn_gain,    "SPEED_TURN_GAIN",  50),
+
+    // @Param: SPEED_TURN_DIST
+    // @DisplayName: Distance to turn to start reducing speed
+    // @Description: The distance to the next turn at which the rover reduces its target speed by the SPEED_TURN_GAIN
+    // @Units: meters
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+	GSCALAR(speed_turn_dist,    "SPEED_TURN_DIST",  2.0f),
 
     // @Param: CH7_OPTION
     // @DisplayName: Channel 7 option
@@ -171,7 +189,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
-    // @Description: The maximum throttle setting to which the autopilot will apply.
+    // @Description: The maximum throttle setting to which the autopilot will apply. This can be used to prevent overheating a ESC or motor on an electric rover.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
@@ -180,7 +198,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: CRUISE_THROTTLE
     // @DisplayName: Base throttle percentage in auto
-    // @Description: The base throttle percentage to use in auto mode
+    // @Description: The base throttle percentage to use in auto mode. The CRUISE_SPEED parameter controls the target speed, but the rover starts with the CRUISE_THROTTLE setting as the initial estimate for how much throttle is needed to achieve that speed. It then adjusts the throttle based on how fast the rover is actually going.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
