@@ -168,7 +168,7 @@ DataFlash_Empty DataFlash;
 //
 // There are three basic options related to flight sensor selection.
 //
-// - Normal flight mode.  Real sensors are used.
+// - Normal driving mode.  Real sensors are used.
 // - HIL Attitude mode.  Most sensors are disabled, as the HIL
 //   protocol supplies attitude information directly.
 // - HIL Sensors mode.  Synthetic sensors are configured that
@@ -451,9 +451,6 @@ static float	current_total1;
 //static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery 2 Voltage, initialized above threshold for filter
 //static float	current_amps2;									// Current (Amperes) draw from battery 2
 //static float	current_total2;									// Totalized current (Amp-hours) from battery 2
-
-// JLN Update
-uint32_t  timesw                  = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
