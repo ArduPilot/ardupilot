@@ -15,6 +15,8 @@ uint8_t flip_state;
 
 static int8_t flip_dir;
 
+// hello world
+
 void init_flip()
 {
     if(false == ap.do_flip) {
