@@ -1,0 +1,74 @@
+ArduPilotMega 2.0 Commands
+
+Command Structure in bytes
+0 0x00	byte	Command ID
+1 0x01	byte	Parameter 1
+2 0x02	long	Parameter 2
+3 0x03	..
+4 0x04	..
+5 0x05	..
+6 0x06	long	Parameter 3
+7 0x07	..
+8 0x08	..
+9 0x09	..
+10 0x0A	long	Parameter 4
+11 0x0B	..
+11 0x0C	..
+11 0x0D	..
+
+
+***********************************
+Commands below MAV_CMD_NAV_LAST are commands that have a end criteria, eg "reached waypoint" or "reached altitude"
+***********************************
+Command ID	Name								Parameter 1			Altitude			Latitude			Longitude
+0x10 / 16	MAV_CMD_NAV_WAYPOINT				delay (seconds)		altitude			lat					lon
+0x11 / 17	MAV_CMD_NAV_LOITER_UNLIM 			(forever)			altitude			lat					lon
+
+0x14 / 20	MAV_CMD_NAV_RETURN_TO_LAUNCH		-					-					-					-
+0x15 / 21	MAV_CMD_NAV_LAND					-					-					-					-
+0x16 / 22	MAV_CMD_NAV_TAKEOFF					-					altitude			-					-
+0x19 / 22	MAV_CMD_NAV_LOITER_TIME				-					altitude			-					-
+
+			NOTE:  for command 0x16 the value takeoff pitch specifies the minimum pitch for the case with airspeed sensor and the target pitch for the case without.
+
+
+***********************************
+May Commands - these commands are optional to finish
+Command ID		Name								Parameter 1			Parameter 2			Parameter 3			Parameter 4
+0x70 / 112		MAV_CMD_CONDITION_DELAY				-					-					time (seconds) -
+0x71 / 113		MAV_CMD_CONDITION_CHANGE_ALT 		rate (cm/sec)		alt (finish)		-					-
+													Note: rate must be > 10 cm/sec due to integer math
+
+//	MAV_CMD_NAV_LAND_OPTIONS			(NOT CURRENTLY IN MAVLINK PROTOCOL OR IMPLEMENTED IN APM)
+
+0x72 / 114		MAV_CMD_CONDITION_DISTANCE			-					-					distance (meters)	-
+0x71 / 115		MAV_CMD_CONDITION_YAW				angle				speed				direction (-1,1)	rel (1), abs (0)
+
+***********************************
+Unexecuted commands > MAV_CMD_NAV_LAST are dropped when ready for the next command < MAV_CMD_NAV_LAST so plan/queue commands accordingly!
+For example if you had a string of CMD_MAV_CONDITION commands following a 0x10 command that had not finished when the waypoint was
+reached, the unexecuted CMD_MAV_CONDITION and CMD_MAV_DO commands would be skipped and the next command < MAV_CMD_NAV_LAST would be loaded
+***********************************
+Now Commands - these commands are executed once until no more new now commands are available
+
+Command ID		Name						Parameter 1			Parameter 2			Parameter 3			Parameter 4
+0xB1 / 177		MAV_CMD_DO_JUMP				index				-					repeat count		-
+				Note:  The repeat count must be greater than 1 for the command to execute.  Use a repeat count of 1 if you intend a single use.
+
+0XB2 / 178		MAV_CMD_DO_CHANGE_SPEED 	Speed type			Speed (m/s)			Throttle (Percent)	-
+								(0=Airspeed, 1=Ground Speed)	(-1 indicates no change)(-1 indicates no change)
+
+0xB3 / 179		MAV_CMD_DO_SET_HOME			Use current 		altitude			lat					lon
+								(1=use current location, 0=use specified location)
+
+0xB4 / 180		MAV_CMD_DO_SET_PARAMETER	Param number		Param value			(NOT CURRENTLY IMPLEMENTED IN APM)
+0xB5 / 181		MAV_CMD_DO_SET_RELAY		Relay number		On/off  (1/0)		-					-
+0xB6 / 182		MAV_CMD_DO_REPEAT_RELAY		Relay number		Cycle count			Cycle time (sec)	-
+				Note:  Max cycle time = 60 sec, A repeat relay or repeat servo command will cancel any current repeating event
+
+0xB7 / 183		MAV_CMD_DO_SET_SERVO		Servo number (5-8)	On/off  (1/0)		-					-
+0xB6 / 184		MAV_CMD_DO_REPEAT_SERVO		Servo number (5-8)	Cycle count			Cycle time (sec)	-
+				Note:  Max cycle time = 60 sec, A repeat relay or repeat servo command will cancel any current repeating event
+
+// need to add command
+0xB7 / 201		MAV_CMD_DO_SET_ROI			Yaw_Mode			altitude			lat					lon
