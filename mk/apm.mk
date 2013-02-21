@@ -2,24 +2,33 @@
 # lives. (patsubst strips the trailing slash.)
 MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
-# APPDIR is defined for the PX4 build only
-ifeq ($(APPDIR),)
+include $(MK_DIR)/environ.mk
 
-####################
-# AVR and SITL build
-
-
-include $(MK_DIR)/Arduino.mk
-include $(MK_DIR)/targets.mk
+# short-circuit build for the configure target
+ifeq ($(MAKECMDGOALS),configure)
+include $(MK_DIR)/configure.mk
 
 else
 
-####################
-# PX4 build
+# common makefile components
+include $(MK_DIR)/targets.mk
+include $(MK_DIR)/sketch_sources.mk
 
-include $(MK_DIR)/px4_core.mk
-
+# board specific includes
+ifeq ($(HAL_BOARD),HAL_BOARD_APM1)
+include $(MK_DIR)/board_avr.mk
 endif
 
-# these targets need to be outside the APPDIR if above
-include $(MK_DIR)/px4_targets.mk
+ifeq ($(HAL_BOARD),HAL_BOARD_APM2)
+include $(MK_DIR)/board_avr.mk
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
+include $(MK_DIR)/board_avr_sitl.mk
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_PX4)
+include $(MK_DIR)/board_px4.mk
+endif
+
+endif

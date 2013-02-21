@@ -1,3 +1,22 @@
+default: all
+
+# convenient targets for our supported boards
+sitl: HAL_BOARD = HAL_BOARD_AVR_SITL
+sitl: TOOLCHAIN = NATIVE
+sitl: all
+
+apm1: HAL_BOARD = HAL_BOARD_APM1
+apm1: TOOLCHAIN = AVR
+apm1: all
+
+apm2: HAL_BOARD = HAL_BOARD_APM2
+apm2: TOOLCHAIN = AVR
+apm2: all
+
+empty: HAL_BOARD = HAL_BOARD_EMPTY
+empty: TOOLCHAIN = AVR
+empty: all
+
 
 nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
 nologging: all
@@ -66,3 +85,11 @@ etags:
 	cd .. && etags -f ArduCopter/TAGS --lang=c++ $$(git ls-files ArduCopter libraries)
 	cd .. && etags -f ArduPlane/TAGS --lang=c++ $$(git ls-files ArduPlane libraries)
 	cd .. && etags -f APMrover2/TAGS --lang=c++ $$(git ls-files APMrover2 libraries)
+
+clean:
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+	@del /S $(BUILDROOT)
+else
+	@rm -fr $(BUILDROOT)
+endif
+
