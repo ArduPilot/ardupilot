@@ -14,6 +14,7 @@ static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
 #endif
 static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
 static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
+static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -39,11 +40,18 @@ static const struct Menu::command main_menu_commands[] PROGMEM = {
 #endif
 	{"setup",		setup_mode},
 	{"test",		test_mode},
+    {"reboot",      reboot_board},
 	{"help",		main_menu_help}
 };
 
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
+
+static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
+{
+    reboot_apm();
+    return 0;
+}
 
 // the user wants the CLI. It never exits
 static void run_cli(AP_HAL::UARTDriver *port)
