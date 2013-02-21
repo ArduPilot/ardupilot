@@ -192,7 +192,6 @@ static void init_ardupilot()
 
   compass.set_orientation(MAG_ORIENTATION);  // set compass's orientation on aircraft.
   compass.set_offsets(0,0,0);  // set offsets to account for surrounding interference
-  compass.set_declination(ToRad(0.0));  // set local difference between magnetic north and true north
 
   cliSerial->print("Compass auto-detected as: ");
   switch( compass.product_id ) {
