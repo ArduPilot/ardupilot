@@ -377,7 +377,7 @@
 // Battery monitoring
 //
 #ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    9.6f
+ # define LOW_VOLTAGE                    10.5f
 #endif
 #ifndef VOLT_DIV_RATIO
  # define VOLT_DIV_RATIO                 3.56f
