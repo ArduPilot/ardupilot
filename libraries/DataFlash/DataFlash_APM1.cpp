@@ -18,15 +18,9 @@
  *       Methods:
  *               Init() : Library initialization (SPI initialization)
  *               StartWrite(page) : Start a write session. page=start page.
- *               WriteByte(data) : Write a byte
- *               WriteInt(data) :  Write an integer (2 bytes)
- *               WriteLong(data) : Write a long (4 bytes)
  *               StartRead(page) : Start a read on (page)
  *               GetWritePage() : Returns the last page written to
  *               GetPage() : Returns the last page read
- *               ReadByte()
- *               ReadInt()
- *               ReadLong()
  *
  *       Properties:
  *

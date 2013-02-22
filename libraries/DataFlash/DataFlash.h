@@ -77,17 +77,11 @@ public:
     void StartWrite(int16_t PageAdr);
     void FinishWrite(void);
     void WriteBlock(const void *pBuffer, uint16_t size);
-    void WriteByte(uint8_t data);
-    void WriteInt(int16_t data);
-    void WriteLong(int32_t data);
 
 
     // Read methods
     void StartRead(int16_t PageAdr);
     void ReadBlock(void *pBuffer, uint16_t size);
-    uint8_t ReadByte();
-    int16_t ReadInt();
-    int32_t ReadLong();
 
     // file numbers
     void SetFileNumber(uint16_t FileNumber);
@@ -111,6 +105,7 @@ public:
     void start_new_log(void);
     uint16_t log_read_process(uint16_t start_page, uint16_t end_page, 
                               void (*callback)(uint8_t msgid));
+    void DumpPageInfo(AP_HAL::BetterStream *port);
 
 	/*
       every logged packet starts with 3 bytes

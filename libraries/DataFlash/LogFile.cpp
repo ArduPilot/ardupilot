@@ -239,7 +239,8 @@ uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_pag
     StartRead(start_page);
 
 	while (true) {
-		uint8_t data = ReadByte();
+		uint8_t data;
+        ReadBlock(&data, 1);
 
 		// This is a state machine to read the packets
 		switch(log_step) {
@@ -265,10 +266,26 @@ uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_pag
 		}
         uint16_t new_page = GetPage();
         if (new_page != page) {
-            if (new_page == end_page) break;
+            if (new_page == end_page) {
+                return packet_count;
+            }
             page = new_page;
         }
 	}
 
 	return packet_count;
 }
+
+/*
+  dump header information from all log pages
+ */
+void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port)
+{
+    for (uint16_t count=1; count<=df_NumPages; count++) {
+        StartRead(count);
+        port->printf_P(PSTR("DF page, log file #, log page: %u,\t"), (unsigned)count);
+        port->printf_P(PSTR("%u,\t"), (unsigned)GetFileNumber());
+        port->printf_P(PSTR("%u\n"), (unsigned)GetFilePage());
+    }
+}
+

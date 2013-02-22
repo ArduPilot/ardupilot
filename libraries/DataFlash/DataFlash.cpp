@@ -64,21 +64,6 @@ void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size)
 }
 
 
-void DataFlash_Class::WriteByte(uint8_t data)
-{
-    WriteBlock(&data, sizeof(data));
-}
-
-void DataFlash_Class::WriteInt(int16_t data)
-{
-    WriteBlock(&data, sizeof(data));
-}
-
-void DataFlash_Class::WriteLong(int32_t data)
-{
-    WriteBlock(&data, sizeof(data));
-}
-
 // Get the last page written to
 int16_t DataFlash_Class::GetWritePage()
 {
@@ -143,27 +128,6 @@ void DataFlash_Class::ReadBlock(void *pBuffer, uint16_t size)
     }
 }
 
-uint8_t DataFlash_Class::ReadByte()
-{
-    uint8_t result = 0;
-    ReadBlock(&result, sizeof(result));
-    return result;
-}
-
-int16_t DataFlash_Class::ReadInt()
-{
-    int16_t result;
-    ReadBlock(&result, sizeof(result));
-    return result;
-}
-
-int32_t DataFlash_Class::ReadLong()
-{
-    int32_t result;
-    ReadBlock(&result, sizeof(result));
-    return result;
-}
-
 void DataFlash_Class::SetFileNumber(uint16_t FileNumber)
 {
     df_FileNumber = FileNumber;
@@ -190,7 +154,8 @@ void DataFlash_Class::EraseAll()
     }
     // write the logging format in the last page
     StartWrite(df_NumPages+1);
-    WriteLong(DF_LOGGING_FORMAT);
+    uint32_t version = DF_LOGGING_FORMAT;
+    WriteBlock(&version, sizeof(version));
     FinishWrite();
 }
 
@@ -199,7 +164,9 @@ void DataFlash_Class::EraseAll()
  */
 bool DataFlash_Class::NeedErase(void)
 {
+    uint32_t version;
     StartRead(df_NumPages+1);
-    return ReadLong() != DF_LOGGING_FORMAT;
+    ReadBlock(&version, sizeof(version));
+    return version != DF_LOGGING_FORMAT;
 }
 
