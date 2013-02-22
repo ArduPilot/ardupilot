@@ -851,13 +851,13 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
     g.throttle_mid = constrain(g.throttle_mid,300,700);
 
     // check throttle is above, below or in the deadband
-    if (throttle_control < THROTTLE_IN_MIDDLE) {
-        // below the deadband
-        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(g.throttle_mid - g.throttle_min))/((float)(500-g.throttle_min));
-    }else if(throttle_control > THROTTLE_IN_MIDDLE) {
-        // above the deadband
-        throttle_out = g.throttle_mid + ((float)(throttle_control-500))*(float)(1000-g.throttle_mid)/500.0f;
-    }else{
+	if (throttle_control < THROTTLE_IN_MIDDLE) {
+		// below the deadband
+		throttle_out = g.throttle_min + ((int32_t)(throttle_control - g.throttle_min) * (int32_t)(g.throttle_mid - g.throttle_min)) / (500 - g.throttle_min);
+	}else if(throttle_control > THROTTLE_IN_MIDDLE) {
+		// above the deadband
+		throttle_out = g.throttle_mid + ((int32_t)(throttle_control - 500) * (int32_t)(1000 - g.throttle_mid)) / 500;
+	}else{
         // must be in the deadband
         throttle_out = g.throttle_mid;
     }
