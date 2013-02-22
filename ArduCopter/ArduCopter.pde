@@ -561,12 +561,12 @@ static int32_t initial_simple_bearing;
 // Rate contoller targets
 ////////////////////////////////////////////////////////////////////////////////
 static uint8_t rate_targets_frame = EARTH_FRAME;    // indicates whether rate targets provided in earth or body frame
-static int32_t roll_rate_target_ef = 0;
-static int32_t pitch_rate_target_ef = 0;
-static int32_t yaw_rate_target_ef = 0;
-static int32_t roll_rate_target_bf = 0;     // body frame roll rate target
-static int32_t pitch_rate_target_bf = 0;    // body frame pitch rate target
-static int32_t yaw_rate_target_bf = 0;      // body frame yaw rate target
+static int32_t roll_rate_target_ef;
+static int32_t pitch_rate_target_ef;
+static int32_t yaw_rate_target_ef;
+static int32_t roll_rate_target_bf;     // body frame roll rate target
+static int32_t pitch_rate_target_bf;    // body frame pitch rate target
+static int32_t yaw_rate_target_bf;      // body frame yaw rate target
 
 ////////////////////////////////////////////////////////////////////////////////
 // Throttle variables
