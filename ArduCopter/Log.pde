@@ -29,10 +29,10 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-    int16_t log_start;
-    int16_t log_end;
-    int16_t temp;
-    int16_t last_log_num = DataFlash.find_last_log();
+    uint16_t log_start;
+    uint16_t log_end;
+    uint16_t temp;
+    uint16_t last_log_num = DataFlash.find_last_log();
 
     uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -66,7 +66,7 @@ print_log_menu(void)
         cliSerial->printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
 
         for(int16_t i=num_logs; i>=1; i--) {
-            int16_t last_log_start = log_start, last_log_end = log_end;
+            uint16_t last_log_start = log_start, last_log_end = log_end;
             temp = last_log_num-i+1;
             DataFlash.get_log_boundaries(temp, log_start, log_end);
             cliSerial->printf_P(PSTR("Log %d,    start %d,   end %d\n"), (int)temp, (int)log_start, (int)log_end);
@@ -84,25 +84,20 @@ static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
     int16_t dump_log;
-    int16_t dump_log_start;
-    int16_t dump_log_end;
-    int16_t last_log_num;
+    uint16_t dump_log_start;
+    uint16_t dump_log_end;
+    uint16_t last_log_num;
 
     // check that the requested log number can be read
     dump_log = argv[1].i;
     last_log_num = DataFlash.find_last_log();
 
     if (dump_log == -2) {
-        for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
-            DataFlash.StartRead(count);
-            cliSerial->printf_P(PSTR("DF page, log file #, log page: %d,\t"), (int)count);
-            cliSerial->printf_P(PSTR("%d,\t"), (int)DataFlash.GetFileNumber());
-            cliSerial->printf_P(PSTR("%d\n"), (int)DataFlash.GetFilePage());
-        }
+        DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
-        Log_Read(1, DataFlash.df_NumPages);
+        Log_Read(1, 0);
         return(-1);
     } else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
         cliSerial->printf_P(PSTR("bad log number\n"));
@@ -856,7 +851,6 @@ struct log_Startup {
 // Write Startup packet. Total length : 4 bytes
 static void Log_Write_Startup()
 {
-    DataFlash.WriteByte(LOG_STARTUP_MSG);
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG)
     };
@@ -1228,11 +1222,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
                              "\nFree RAM: %u\n"),
                         (unsigned) memcheck_available_memory());
 
- #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    cliSerial->printf_P(PSTR("APM 1\n"));
- #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    cliSerial->printf_P(PSTR("APM 2\n"));
- #endif
+    cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
 #if CLI_ENABLED == ENABLED
 	setup_show(0, NULL);
