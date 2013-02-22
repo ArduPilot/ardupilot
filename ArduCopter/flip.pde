@@ -27,10 +27,6 @@ void init_flip()
 
 void roll_flip()
 {
-    // Pitch
-    //g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
-    get_stabilize_pitch(g.rc_2.control_in);
-
     int32_t roll = ahrs.roll_sensor * flip_dir;
 
     // Roll State machine
@@ -38,8 +34,11 @@ void roll_flip()
     case 0:
         if (roll < 4500) {
             // Roll control
-            g.rc_1.servo_out = AAP_ROLL_OUT * flip_dir;
-            set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
+			roll_rate_target_bf     = 40000 * flip_dir;
+		    if(ap.manual_throttle){
+    		    // increase throttle right before flip
+                set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
+            }
         }else{
             flip_state++;
         }
@@ -47,12 +46,15 @@ void roll_flip()
 
     case 1:
         if((roll >= 4500) || (roll < -9000)) {
-		#if FRAME_CONFIG == HELI_FRAME
-			g.rc_1.servo_out = get_heli_rate_roll(40000 * flip_dir);
-		#else
-            g.rc_1.servo_out = get_rate_roll(40000 * flip_dir);
-		#endif // HELI_FRAME
-        set_throttle_out(g.rc_3.control_in - AAP_THR_DEC, false);
+		    #if FRAME_CONFIG == HELI_FRAME
+				roll_rate_target_bf = 30000 * flip_dir;
+		    #else
+			    roll_rate_target_bf = 30000 * flip_dir;
+		    #endif
+		    // decrease throttle while inverted
+		    if(ap.manual_throttle){
+                set_throttle_out(g.rc_3.control_in - AAP_THR_DEC, false);
+            }
         }else{
             flip_state++;
             flip_timer = 0;
@@ -60,10 +62,15 @@ void roll_flip()
         break;
 
     case 2:
+        // 100 = 1 second with 100hz
         if (flip_timer < 100) {
-            //g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
-            get_stabilize_roll(g.rc_1.control_in);
-            set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
+            // we no longer need to adjust the roll_rate. 
+            // It will be handled by normal flight control loops
+
+            // increase throttle to gain any lost alitude
+            if(ap.manual_throttle){
+                set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
+            }
             flip_timer++;
         }else{
         	Log_Write_Event(DATA_END_FLIP);

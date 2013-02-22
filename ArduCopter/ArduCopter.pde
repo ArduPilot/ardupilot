@@ -1051,6 +1051,18 @@ static void fast_loop()
     // --------------------------------------------------------------------
     update_trig();
 
+	// Acrobatic control
+    if (ap.do_flip) {
+        if(abs(g.rc_1.control_in) < 4000) {
+            // calling roll_flip will override the desired roll rate and throttle output
+            roll_flip();
+        }else{
+            // force an exit from the loop if we are not hands off sticks.
+            ap.do_flip = false;
+            Log_Write_Event(DATA_EXIT_FLIP);
+        }
+    }
+
     // run low level rate controllers that only require IMU data
     run_rate_controllers();
 
@@ -1087,7 +1099,6 @@ static void fast_loop()
 #ifdef USERHOOK_FASTLOOP
     USERHOOK_FASTLOOP
 #endif
-
 }
 
 static void medium_loop()
@@ -1622,17 +1633,6 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 // 100hz update rate
 void update_roll_pitch_mode(void)
 {
-    if (ap.do_flip) {
-        if(abs(g.rc_1.control_in) < 4000) {
-            roll_flip();
-            return;
-        }else{
-            // force an exit from the loop if we are not hands off sticks.
-            ap.do_flip = false;
-            Log_Write_Event(DATA_EXIT_FLIP);
-        }
-    }
-
     switch(roll_pitch_mode) {
     case ROLL_PITCH_ACRO:
 
