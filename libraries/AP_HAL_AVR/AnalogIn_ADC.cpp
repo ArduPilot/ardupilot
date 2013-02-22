@@ -68,6 +68,7 @@ float ADCSource::_read_average() {
 
 void ADCSource::setup_read() {
     if (_pin == ANALOG_INPUT_BOARD_VCC) {
+	ADCSRB = (ADCSRB & ~(1 << MUX5));
         ADMUX = _BV(REFS0)|_BV(MUX4)|_BV(MUX3)|_BV(MUX2)|_BV(MUX1);
     } else if (_pin == ANALOG_INPUT_NONE) {
         /* noop */
