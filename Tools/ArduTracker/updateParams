@@ -1,5 +1,0 @@
-#!/bin/bash
-echo Updating Parameters ...
-awk -f paramgen.awk paramgen.in
-echo Finished.
-echo Did you increment firmware version?
