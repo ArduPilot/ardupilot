@@ -47,9 +47,9 @@ void roll_flip()
     case 1:
         if((roll >= 4500) || (roll < -9000)) {
 		    #if FRAME_CONFIG == HELI_FRAME
-				roll_rate_target_bf = 30000 * flip_dir;
+				roll_rate_target_bf = 40000 * flip_dir;
 		    #else
-			    roll_rate_target_bf = 30000 * flip_dir;
+			    roll_rate_target_bf = 40000 * flip_dir;
 		    #endif
 		    // decrease throttle while inverted
 		    if(ap.manual_throttle){
