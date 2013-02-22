@@ -22,7 +22,7 @@ AP_HAL::AnalogSource* ch13;
 AP_HAL::AnalogSource* vcc;
 
 void setup (void) {
-    hal.console->printf_P(PSTR("Starting AP_HAL_AVR::AnalogIn test\r\n"));
+    hal.console->printf_P(PSTR("Starting AP_HAL::AnalogIn test\r\n"));
     ch0 = hal.analogin->channel(0);
     ch1 = hal.analogin->channel(1);
     ch2 = hal.analogin->channel(2);
