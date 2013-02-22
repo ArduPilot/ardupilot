@@ -29,10 +29,10 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-	int16_t log_start;
-	int16_t log_end;
-	int16_t temp;	
-	int16_t last_log_num = DataFlash.find_last_log();
+	uint16_t log_start;
+	uint16_t log_end;
+	uint16_t temp;	
+	uint16_t last_log_num = DataFlash.find_last_log();
 	
 	uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -67,7 +67,7 @@ print_log_menu(void)
 		cliSerial->printf_P(PSTR("\n%d logs\n"), num_logs);
 
 		for(int i=num_logs;i>=1;i--) {
-            int last_log_start = log_start, last_log_end = log_end;
+            uint16_t last_log_start = log_start, last_log_end = log_end;
 			temp = last_log_num-i+1;
 			DataFlash.get_log_boundaries(temp, log_start, log_end);
 			cliSerial->printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
@@ -85,8 +85,8 @@ static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
 	int16_t dump_log;
-	int16_t dump_log_start;
-	int16_t dump_log_end;
+	uint16_t dump_log_start;
+	uint16_t dump_log_end;
 	uint8_t last_log_num;
 
 	// check that the requested log number can be read
@@ -94,16 +94,11 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	last_log_num = DataFlash.find_last_log();
 	
 	if (dump_log == -2) {
-		for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
-			DataFlash.StartRead(count);
-			cliSerial->printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
-			cliSerial->printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
-			cliSerial->printf_P(PSTR("%d\n"), DataFlash.GetFilePage());
-		}
+        DataFlash.DumpPageInfo(cliSerial);
 		return(-1);
 	} else if (dump_log <= 0) {
 		cliSerial->printf_P(PSTR("dumping all\n"));
-		Log_Read(1, DataFlash.df_NumPages);
+		Log_Read(1, 0);
 		return(-1);
 	} else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
 		cliSerial->printf_P(PSTR("bad log number\n"));
@@ -121,13 +116,6 @@ dump_log(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-
-void erase_callback(unsigned long t) {
-    mavlink_delay(t);
-    if (DataFlash.GetWritePage() % 128 == 0) {
-        cliSerial->printf_P(PSTR("+"));
-    }
-}
 
 static void do_erase_logs(void)
 {
