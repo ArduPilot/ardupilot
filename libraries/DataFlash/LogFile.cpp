@@ -5,7 +5,7 @@
 
 // This function determines the number of whole or partial log files in the DataFlash
 // Wholly overwritten files are (of course) lost.
-uint8_t DataFlash_Class::get_num_logs(void)
+uint8_t DataFlash_Block::get_num_logs(void)
 {
     uint16_t lastpage;
     uint16_t last;
@@ -40,7 +40,7 @@ uint8_t DataFlash_Class::get_num_logs(void)
 
 
 // This function starts a new log file in the DataFlash
-void DataFlash_Class::start_new_log(void)
+void DataFlash_Block::start_new_log(void)
 {
     uint16_t last_page = find_last_page();
 
@@ -71,7 +71,7 @@ void DataFlash_Class::start_new_log(void)
 
 // This function finds the first and last pages of a log file
 // The first page may be greater than the last page if the DataFlash has been filled and partially overwritten.
-void DataFlash_Class::get_log_boundaries(uint8_t log_num, uint16_t & start_page, uint16_t & end_page)
+void DataFlash_Block::get_log_boundaries(uint8_t log_num, uint16_t & start_page, uint16_t & end_page)
 {
     uint16_t num = get_num_logs();
     uint16_t look;
@@ -117,7 +117,7 @@ void DataFlash_Class::get_log_boundaries(uint8_t log_num, uint16_t & start_page,
     }
 }
 
-bool DataFlash_Class::check_wrapped(void)
+bool DataFlash_Block::check_wrapped(void)
 {
     StartRead(df_NumPages);
     if(GetFileNumber() == 0xFFFF)
@@ -128,7 +128,7 @@ bool DataFlash_Class::check_wrapped(void)
 
 
 // This funciton finds the last log number
-uint16_t DataFlash_Class::find_last_log(void)
+uint16_t DataFlash_Block::find_last_log(void)
 {
     uint16_t last_page = find_last_page();
     StartRead(last_page);
@@ -136,7 +136,7 @@ uint16_t DataFlash_Class::find_last_log(void)
 }
 
 // This function finds the last page of the last file
-uint16_t DataFlash_Class::find_last_page(void)
+uint16_t DataFlash_Block::find_last_page(void)
 {
     uint16_t look;
     uint16_t bottom = 1;
@@ -177,7 +177,7 @@ uint16_t DataFlash_Class::find_last_page(void)
 }
 
 // This function finds the last page of a particular log file
-uint16_t DataFlash_Class::find_last_page_of_log(uint16_t log_number)
+uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 {
     uint16_t look;
     uint16_t bottom;
@@ -235,7 +235,7 @@ uint16_t DataFlash_Class::find_last_page_of_log(uint16_t log_number)
   Call the callback() function on each log message found in the page
   range. Return the number of log messages found
 */
-uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_page, 
+uint16_t DataFlash_Block::log_read_process(uint16_t start_page, uint16_t end_page, 
                                            void (*callback)(uint8_t msgid))
 {
     uint8_t log_step = 0;
@@ -285,7 +285,7 @@ uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_pag
 /*
   dump header information from all log pages
  */
-void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port)
+void DataFlash_Block::DumpPageInfo(AP_HAL::BetterStream *port)
 {
     for (uint16_t count=1; count<=df_NumPages; count++) {
         StartRead(count);
@@ -298,7 +298,7 @@ void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port)
 /*
   show information about the device
  */
-void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port)
+void DataFlash_Block::ShowDeviceInfo(AP_HAL::BetterStream *port)
 {
     if (!CardInserted()) {
         port->println_P(PSTR("No dataflash inserted"));
@@ -312,4 +312,3 @@ void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port)
                    (unsigned)df_NumPages+1,
                    (unsigned)df_PageSize);
 }
-
