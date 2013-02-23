@@ -17,6 +17,40 @@
 
 class DataFlash_Class
 {
+public:
+    // initialisation
+    virtual void Init(void) = 0;
+    virtual bool CardInserted(void) = 0;
+
+    // erase handling
+    bool NeedErase(void);
+    void EraseAll();
+
+    /* Write a block of data at current offset */
+    void WriteBlock(const void *pBuffer, uint16_t size);
+
+    /*
+      read a packet, stripping off the header bytes
+    */
+    void ReadPacket(void *pkt, uint16_t size);
+
+    // high level interface
+    int16_t find_last_log(void);
+    void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
+    uint8_t get_num_logs(void);
+    void start_new_log(void);
+    uint16_t log_read_process(uint16_t start_page, uint16_t end_page, 
+                              void (*callback)(uint8_t msgid));
+    void DumpPageInfo(AP_HAL::BetterStream *port);
+    void ShowDeviceInfo(AP_HAL::BetterStream *port);
+
+	/*
+      every logged packet starts with 3 bytes
+    */
+    struct log_Header {
+        uint8_t head1, head2, msgid;
+    };
+
 private:
     struct PageHeader {
         uint16_t FileNumber;
@@ -52,67 +86,35 @@ private:
     // start of the page
     virtual bool BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size) = 0;
 
+    // start reading at the given page
+    void StartRead(int16_t PageAdr);
+
     // internal high level functions
     int16_t find_last_page(void);
     int16_t find_last_page_of_log(uint16_t log_number);
     bool check_wrapped(void);
-
-public:
-    uint8_t df_manufacturer;
-    uint16_t df_device;
-    uint16_t df_PageSize;
-
-    virtual void Init(void) = 0;
-    virtual void ReadManufacturerID() = 0;
-    virtual bool CardInserted(void) = 0;
-
     int16_t GetPage(void);
     int16_t GetWritePage(void);
-
-    // erase handling
-    void EraseAll();
-    bool NeedErase(void);
-
-    // Write methods
     void StartWrite(int16_t PageAdr);
     void FinishWrite(void);
-    void WriteBlock(const void *pBuffer, uint16_t size);
-
 
     // Read methods
-    void StartRead(int16_t PageAdr);
     void ReadBlock(void *pBuffer, uint16_t size);
 
     // file numbers
     void SetFileNumber(uint16_t FileNumber);
-    uint16_t GetFileNumber();
     uint16_t GetFilePage();
+    uint16_t GetFileNumber();
+
+protected:
+    uint8_t df_manufacturer;
+    uint16_t df_device;
 
     // page handling
+    uint16_t df_PageSize;
     uint16_t df_NumPages;
 
-    /*
-      read a packet, stripping off the header bytes
-    */
-    void ReadPacket(void *pkt, uint16_t size) {
-        ReadBlock((void *)(sizeof(struct log_Header)+(uintptr_t)pkt), size - sizeof(struct log_Header));
-    }
-
-    // high level interface
-    int16_t find_last_log(void);
-    void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
-    uint8_t get_num_logs(void);
-    void start_new_log(void);
-    uint16_t log_read_process(uint16_t start_page, uint16_t end_page, 
-                              void (*callback)(uint8_t msgid));
-    void DumpPageInfo(AP_HAL::BetterStream *port);
-
-	/*
-      every logged packet starts with 3 bytes
-    */
-    struct log_Header {
-        uint8_t head1, head2, msgid;
-    };
+    virtual void ReadManufacturerID() = 0;
 };
 
 /*
@@ -126,7 +128,6 @@ public:
 // this header
 #define HEAD_BYTE1  0xA3    // Decimal 163
 #define HEAD_BYTE2  0x95    // Decimal 149
-
 
 
 #include "DataFlash_APM1.h"

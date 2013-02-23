@@ -226,9 +226,11 @@ int16_t DataFlash_Class::find_last_page_of_log(uint16_t log_number)
 }
 
 
-// Read the DataFlash log memory : Packet Parser. Call the callback() 
-// function on each log message found in the page range. Return the
-// number of log messages found
+/*
+  Read the DataFlash log memory
+  Call the callback() function on each log message found in the page
+  range. Return the number of log messages found
+*/
 uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_page, 
                                            void (*callback)(uint8_t msgid))
 {
@@ -266,7 +268,7 @@ uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_pag
 		}
         uint16_t new_page = GetPage();
         if (new_page != page) {
-            if (new_page == end_page) {
+            if (new_page == end_page || new_page == start_page) {
                 return packet_count;
             }
             page = new_page;
@@ -287,5 +289,23 @@ void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port)
         port->printf_P(PSTR("%u,\t"), (unsigned)GetFileNumber());
         port->printf_P(PSTR("%u\n"), (unsigned)GetFilePage());
     }
+}
+
+/*
+  show information about the device
+ */
+void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port)
+{
+    if (!CardInserted()) {
+        port->println_P(PSTR("No dataflash inserted"));
+        return;
+    }
+    ReadManufacturerID();
+    port->printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
+                    (unsigned)df_manufacturer,
+                    (unsigned)df_device);
+    port->printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
+                   (unsigned)df_NumPages+1,
+                   (unsigned)df_PageSize);
 }
 

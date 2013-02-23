@@ -128,6 +128,11 @@ void DataFlash_Class::ReadBlock(void *pBuffer, uint16_t size)
     }
 }
 
+void DataFlash_Class::ReadPacket(void *pkt, uint16_t size)
+{
+    ReadBlock((void *)(sizeof(struct log_Header)+(uintptr_t)pkt), size - sizeof(struct log_Header));
+}
+
 void DataFlash_Class::SetFileNumber(uint16_t FileNumber)
 {
     df_FileNumber = FileNumber;
@@ -169,4 +174,5 @@ bool DataFlash_Class::NeedErase(void)
     ReadBlock(&version, sizeof(version));
     return version != DF_LOGGING_FORMAT;
 }
+
 
