@@ -35,8 +35,8 @@ public:
     void ReadPacket(void *pkt, uint16_t size);
 
     // high level interface
-    int16_t find_last_log(void);
-    void get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page);
+    uint16_t find_last_log(void);
+    void get_log_boundaries(uint8_t log_num, uint16_t & start_page, uint16_t & end_page);
     uint8_t get_num_logs(void);
     void start_new_log(void);
     uint16_t log_read_process(uint16_t start_page, uint16_t end_page, 
@@ -87,15 +87,15 @@ private:
     virtual bool BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size) = 0;
 
     // start reading at the given page
-    void StartRead(int16_t PageAdr);
+    void StartRead(uint16_t PageAdr);
 
     // internal high level functions
-    int16_t find_last_page(void);
-    int16_t find_last_page_of_log(uint16_t log_number);
+    uint16_t find_last_page(void);
+    uint16_t find_last_page_of_log(uint16_t log_number);
     bool check_wrapped(void);
-    int16_t GetPage(void);
-    int16_t GetWritePage(void);
-    void StartWrite(int16_t PageAdr);
+    uint16_t GetPage(void);
+    uint16_t GetWritePage(void);
+    void StartWrite(uint16_t PageAdr);
     void FinishWrite(void);
 
     // Read methods

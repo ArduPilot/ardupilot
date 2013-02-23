@@ -9,7 +9,7 @@
 extern AP_HAL::HAL& hal;
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
-void DataFlash_Class::StartWrite(int16_t PageAdr)
+void DataFlash_Class::StartWrite(uint16_t PageAdr)
 {
     df_BufferIdx  = 0;
     df_BufferNum  = 0;
@@ -65,18 +65,18 @@ void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size)
 
 
 // Get the last page written to
-int16_t DataFlash_Class::GetWritePage()
+uint16_t DataFlash_Class::GetWritePage()
 {
     return df_PageAdr;
 }
 
 // Get the last page read
-int16_t DataFlash_Class::GetPage()
+uint16_t DataFlash_Class::GetPage()
 {
     return df_Read_PageAdr;
 }
 
-void DataFlash_Class::StartRead(int16_t PageAdr)
+void DataFlash_Class::StartRead(uint16_t PageAdr)
 {
     df_Read_BufferNum = 0;
     df_Read_PageAdr   = PageAdr;
