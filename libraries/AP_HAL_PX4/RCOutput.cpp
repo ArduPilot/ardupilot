@@ -70,8 +70,8 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     if (ch >= PX4_NUM_OUTPUT_CHANNELS) {
         return;
     }
-    if (ch > _max_channel) {
-        _max_channel = ch;
+    if (ch >= _max_channel) {
+        _max_channel = ch + 1;
     }
     if (period_us != _period[ch]) {
         _period[ch] = period_us;
