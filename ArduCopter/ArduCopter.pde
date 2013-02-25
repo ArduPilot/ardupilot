@@ -415,6 +415,7 @@ static struct AP_System{
     uint8_t run_50hz_loop           : 1; // 7   // toggles the 100hz loop for 50hz
     uint8_t alt_sensor_flag         : 1; // 8   // used to track when to read sensors vs estimate alt
     uint8_t yaw_stopped             : 1; // 9   // Used to manage the Yaw hold capabilities
+    uint8_t critical_battery        : 1; // 10  // Used to track critical battery status
 
 } ap_system;
 
@@ -656,7 +657,8 @@ static int8_t CH7_wp_index;
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Voltage of battery, initialized above threshold for filter
-static float battery_voltage1 = LOW_VOLTAGE * 1.05;
+static float battery_voltage1 = LOW_VOLTAGE1 * 1.05;
+static float battery_voltage2 = LOW_VOLTAGE1 * 1.05;
 // refers to the instant amp draw – based on an Attopilot Current sensor
 static float current_amps1;
 // refers to the total amps drawn – based on an Attopilot Current sensor

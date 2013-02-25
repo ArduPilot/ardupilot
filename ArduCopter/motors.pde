@@ -165,7 +165,7 @@ static void init_arm_motors()
     // reset the low battery system if our current voltage level is good
     // this is for cases where a separate battery is used for APM
     // the low voltage trigger would have been set if the APM was booted without motor battery connected
-    if ((((g.battery_monitoring > 0) && (battery_voltage1 > g.low_voltage)) || (g.battery_monitoring == 0)) && (board_voltage() > Vcc_WARN )){   
+    if ((((g.battery_monitoring > 0) && (battery_voltage1 > g.low_voltage)) || (g.battery_monitoring == 0)) && (board_voltage() > Vcc_LOW )){   
         set_low_battery(false);
     }
 

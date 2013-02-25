@@ -90,7 +90,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Voltage Divider
     // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)
     // @User: Advanced
-    GSCALAR(volt_div_ratio, "VOLT_DIVIDER",     VOLT_DIV_RATIO),
+    GSCALAR(volt_div_ratio, "VOLT_DIVIDER",     VOLT1_DIV_RATIO),
 
     // @Param: AMP_PER_VOLT
     // @DisplayName: Current Amps per volt
@@ -130,7 +130,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 20
     // @Increment: .1
     // @User: Standard
-    GSCALAR(low_voltage,    "LOW_VOLT",         LOW_VOLTAGE),
+    GSCALAR(low_voltage,    "LOW_VOLT",         LOW_VOLTAGE1),
 
     // @Param: SUPER_SIMPLE
     // @DisplayName: Enable Super Simple Mode

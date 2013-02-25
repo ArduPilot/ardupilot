@@ -784,6 +784,7 @@ static void report_batt_monitor()
     if(g.battery_monitoring == 0) print_enabled(false);
     if(g.battery_monitoring == 3) cliSerial->printf_P(PSTR("volts"));
     if(g.battery_monitoring == 4) cliSerial->printf_P(PSTR("volts and cur"));
+    if(g.battery_monitoring == 5) cliSerial->printf_P(PSTR("dual voltage"));
     print_blanks(2);
 }
 

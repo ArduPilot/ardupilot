@@ -316,11 +316,23 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    9.6
+#ifndef LOW_VOLTAGE1
+ # define LOW_VOLTAGE1                    10.5
 #endif
-#ifndef VOLT_DIV_RATIO
- # define VOLT_DIV_RATIO                 3.56
+#ifndef CRITICAL_VOLTAGE1
+ # define CRITICAL_VOLTAGE1               9.6
+#endif
+#ifndef VOLT1_DIV_RATIO
+ # define VOLT1_DIV_RATIO                 3.56
+#endif
+#ifndef LOW_VOLTAGE2
+ # define LOW_VOLTAGE2                    7.0
+#endif
+#ifndef CRITICAL_VOLTAGE2
+ # define CRITICAL_VOLTAGE2               6.4
+#endif
+#ifndef VOLT2_DIV_RATIO
+ # define VOLT2_DIV_RATIO                 2.0
 #endif
 
 #ifndef CURR_AMP_PER_VOLT
@@ -333,8 +345,11 @@
  # define HIGH_DISCHARGE                 1760
 #endif
 
-#ifndef Vcc_WARN
- #define Vcc_WARN                         4500      // 4500 = 4.5V
+#ifndef Vcc_LOW
+ #define Vcc_LOW                         4500      // 4500 = 4.5V
+#endif
+#ifndef Vcc_CRITICAL
+ #define Vcc_CRITICAL                    4000      // 4000 = 4.0V
 #endif
 
 // Battery failsafe
