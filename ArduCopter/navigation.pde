@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // update_navigation - invokes navigation routines
-// called at 50hz
+// called at 10hz
 static void update_navigation()
 {
     static uint32_t nav_last_update = 0;        // the system time of the last time nav was run update
@@ -150,10 +150,8 @@ static bool set_nav_mode(uint8_t new_nav_mode)
             break;
 
         case NAV_CIRCLE:
-            // start circling around current location
-            set_next_WP(&current_loc);
-            circle_WP       = next_WP;
-            circle_angle    = 0;
+            // set center of circle to current position
+            circle_set_center(Vector2f(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff()), ahrs.yaw);
             nav_initialised = true;
             break;
 
@@ -180,8 +178,6 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 // update_nav_mode - run navigation controller based on nav_mode
 static void update_nav_mode()
 {
-    int16_t loiter_delta;
-
     switch( nav_mode ) {
 
         case NAV_NONE:
@@ -189,30 +185,8 @@ static void update_nav_mode()
             break;
 
         case NAV_CIRCLE:
-            // check if we have missed the WP
-            loiter_delta = (wp_bearing - old_wp_bearing)/100;
-
-            // reset the old value
-            old_wp_bearing = wp_bearing;
-
-            // wrap values
-            if (loiter_delta > 180) loiter_delta -= 360;
-            if (loiter_delta < -180) loiter_delta += 360;
-
-            // sum the angle around the WP
-            loiter_sum += loiter_delta;
-
-            circle_angle += (circle_rate * dTnav);
-
-            // wrap
-            if (circle_angle > 6.28318531f)
-                circle_angle -= 6.28318531f;
-
-            // update target location
-            // To-Do: ensure this target is updated for inertial navigation controller
-            set_next_WP_latlon(
-                circle_WP.lat + (g.circle_radius * 100 * sinf(1.57f - circle_angle)),
-                circle_WP.lng + (g.circle_radius * 100 * cosf(1.57f - circle_angle) * scaleLongUp));
+            // call circle controller which in turn calls loiter controller
+            circle_get_pos(dTnav);
             break;
 
         case NAV_LOITER:
@@ -222,9 +196,9 @@ static void update_nav_mode()
         case NAV_WP:
             // move forward on the waypoint
             // To-Do: slew up the speed to the max waypoint speed instead of immediately jumping to max
-            wpinav_advance_track_desired(g.waypoint_speed_max, 0.1f);
+            wpinav_advance_track_desired(g.waypoint_speed_max, dTnav);
             // run the navigation controller
-            get_wpinav_pos(0.1f);
+            get_wpinav_pos(dTnav);
             break;
     }
 
@@ -296,9 +270,6 @@ static void verify_altitude()
 // Keeps old data out of our calculation / logs
 static void reset_nav_params(void)
 {
-    // always start Circle mode at same angle
-    circle_angle                    = 0;
-
     // We must be heading to a new WP, so XTrack must be 0
     crosstrack_error                = 0;
 
@@ -609,4 +580,56 @@ wpinav_advance_track_desired(float velocity_cms, float dt)
     float track_length_pct = wpinav_track_desired/wpinav_track_length;
     wpinav_target.x = wpinav_origin.x + wpinav_pos_delta.x * track_length_pct;
     wpinav_target.y = wpinav_origin.y + wpinav_pos_delta.y * track_length_pct;
+}
+
+//////////////////////////////////////////////////////////
+// circle navigation controller
+//////////////////////////////////////////////////////////
+
+// circle_set_center -- set circle controller's center position and starting angle
+static void
+circle_set_center(const Vector2f pos_vec, float heading_in_radians)
+{
+    // set circle center
+    circle_center = pos_vec;
+
+    // set starting angle to current heading - 180 degrees
+    circle_angle = heading_in_radians-ToRad(180);
+    if( circle_angle > 180 ) {
+        circle_angle -= 180;
+    }
+    if( circle_angle < -180 ) {
+        circle_angle -= 180;
+    }
+
+    // initialise other variables
+    circle_angle_total = 0;
+}
+
+// circle_get_pos - circle position controller's main call which in turn calls loiter controller with updated target position
+static void
+circle_get_pos(float dt)
+{
+    float angle_delta = circle_rate * dt;
+    float cir_radius = g.circle_radius * 100;
+    Vector2f circle_target;
+
+    // update the target angle
+    circle_angle += angle_delta;
+    if( circle_angle > 180 ) {
+        circle_angle -= 360;
+    }
+    if( circle_angle <= -180 ) {
+        circle_angle += 360;
+    }
+
+    // update the total angle travelled
+    circle_angle_total += angle_delta;
+
+    // calculate target position
+    circle_target.x = circle_center.x + cir_radius * sinf(1.57f - circle_angle);
+    circle_target.y = circle_center.y + cir_radius * cosf(1.57f - circle_angle);
+
+    // re-use loiter position controller
+    get_loiter_pos_lat_lon(circle_target.x, circle_target.y, dt);
 }

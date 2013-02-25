@@ -25,7 +25,7 @@ static void process_nav_command()
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:              //18 Loiter N Times
-        do_loiter_turns();
+        do_circle();
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:              // 19
@@ -159,7 +159,7 @@ static bool verify_must()
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:
-        return verify_loiter_turns();
+        return verify_circle();
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:
@@ -346,8 +346,8 @@ static void do_loiter_unlimited()
 
 }
 
-// do_loiter_turns - initiate moving in a circle
-static void do_loiter_turns()
+// do_circle - initiate moving in a circle
+static void do_circle()
 {
     // set roll-pitch mode (no pilot input)
     set_roll_pitch_mode(AUTO_RP);
@@ -363,22 +363,22 @@ static void do_loiter_turns()
     // set nav mode to CIRCLE
     set_nav_mode(NAV_CIRCLE);
 
-    // set horizontal location target
+    // override default horizontal location target
     if( command_nav_queue.lat != 0 || command_nav_queue.lng != 0) {
-        set_next_WP_latlon(command_nav_queue.lat, command_nav_queue.lng);
+        circle_set_center(pv_latlon_to_vector(command_nav_queue.lat, command_nav_queue.lng), ahrs.yaw);
     }
+
+    // set yaw to point to center of circle
     circle_WP = next_WP;
     yaw_look_at_WP = circle_WP;
-    // set yaw to point to center of circle
     set_yaw_mode(CIRCLE_YAW);
 
-    loiter_total = command_nav_queue.p1 * 360;
-    loiter_sum       = 0;
-    old_wp_bearing = wp_bearing;
+    // set angle travelled so far to zero
+    circle_angle_total = 0;
 
-    circle_angle = wp_bearing + 18000;
-    circle_angle = wrap_360(circle_angle);
-    circle_angle *= RADX100;
+    // record number of desired rotations from mission command
+    circle_desired_rotations = command_nav_queue.p1;
+
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -502,20 +502,11 @@ static bool verify_loiter_time()
     return false;
 }
 
-// verify_loiter_turns - check if we have circled the point enough
-static bool verify_loiter_turns()
+// verify_circle - check if we have circled the point enough
+static bool verify_circle()
 {
-    //cliSerial->printf("loiter_sum: %d \n", loiter_sum);
     // have we rotated around the center enough times?
-    // -----------------------------------------------
-    if(abs(loiter_sum) > loiter_total) {
-        loiter_total    = 0;
-        loiter_sum              = 0;
-        //gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER orbits complete"));
-        // clear the command queue;
-        return true;
-    }
-    return false;
+    return fabs(circle_desired_rotations/M_PI) > circle_desired_rotations;
 }
 
 // verify_RTL - handles any state changes required to implement RTL
@@ -588,9 +579,8 @@ static bool verify_RTL()
             if(current_loc.alt <= g.rtl_alt_final || alt_change_flag == REACHED_ALT) {
                 // switch to regular loiter mode
                 set_mode(LOITER);
-                // override location and altitude
-                // To-Do: ensure this target location is being sent to loiter controller
-                set_next_WP(&home);
+                // set loiter target to home position
+                loiter_set_target(0,0);
                 // override altitude to RTL altitude
                 set_new_altitude(g.rtl_alt_final);
                 retval = true;

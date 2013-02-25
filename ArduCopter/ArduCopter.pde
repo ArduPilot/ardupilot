@@ -571,18 +571,15 @@ AverageFilterInt32_Size5 baro_filter;
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
 ////////////////////////////////////////////////////////////////////////////////
-// used to determin the desired location in Circle mode
-// increments at circle_rate / second
-static float circle_angle;
-// used to control the speed of Circle mode
-// units are in radians, default is 5° per second
+// used to control the speed of Circle mode in radians/second, default is 5° per second
 static const float circle_rate = 0.0872664625;
-// used to track the delat in Circle Mode
-static int32_t old_wp_bearing;
-// deg : how many times to circle * 360 for Loiter/Circle Mission command
-static int16_t loiter_total;
-// deg : how far we have turned around a waypoint
-static int16_t loiter_sum;
+Vector2f circle_center;     // circle position expressed in cm from home location.  x = lat, y = lon
+// angle from the circle center to the copter's desired location.  Incremented at circle_rate / second
+static float circle_angle;
+// the total angle (in radians) travelled
+static float circle_angle_total;
+// deg : how many times to circle as specified by mission command
+static uint8_t circle_desired_rotations;
 // How long we should stay in Loiter Mode for mission scripting
 static uint16_t loiter_time_max;
 // How long have we been loitering - The start time in millis
