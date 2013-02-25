@@ -604,9 +604,9 @@ static void Log_Write_Compass()
         mag_x       : compass.mag_x,
         mag_y       : compass.mag_y,
         mag_z       : compass.mag_z,
-        offset_x    : mag_offsets.x,
-        offset_y    : mag_offsets.y,
-        offset_z    : mag_offsets.z,
+        offset_x    : (int16_t)mag_offsets.x,
+        offset_y    : (int16_t)mag_offsets.y,
+        offset_z    : (int16_t)mag_offsets.z,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
