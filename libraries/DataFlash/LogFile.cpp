@@ -234,8 +234,11 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
   Read the DataFlash log memory
   Call the callback() function on each log message found in the page
   range. Return the number of log messages found
+
+  Note that for the block oriented backend the log_num is ignored
 */
-uint16_t DataFlash_Block::log_read_process(uint16_t start_page, uint16_t end_page, 
+uint16_t DataFlash_Block::log_read_process(uint8_t log_num,
+                                           uint16_t start_page, uint16_t end_page, 
                                            void (*callback)(uint8_t msgid))
 {
     uint8_t log_step = 0;

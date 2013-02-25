@@ -39,8 +39,9 @@ public:
     virtual void get_log_boundaries(uint8_t log_num, uint16_t & start_page, uint16_t & end_page) = 0;
     virtual uint8_t get_num_logs(void) = 0;
     virtual void start_new_log(void) = 0;
-    virtual uint16_t log_read_process(uint16_t start_page, uint16_t end_page, 
-                              void (*callback)(uint8_t msgid)) = 0;
+    virtual uint16_t log_read_process(uint8_t log_num,
+                                      uint16_t start_page, uint16_t end_page, 
+                                      void (*callback)(uint8_t msgid)) = 0;
     virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
 

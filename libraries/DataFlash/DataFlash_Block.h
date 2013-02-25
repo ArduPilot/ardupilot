@@ -40,7 +40,8 @@ public:
     void get_log_boundaries(uint8_t log_num, uint16_t & start_page, uint16_t & end_page);
     uint8_t get_num_logs(void);
     void start_new_log(void);
-    uint16_t log_read_process(uint16_t start_page, uint16_t end_page, 
+    uint16_t log_read_process(uint8_t log_num,
+                              uint16_t start_page, uint16_t end_page, 
                               void (*callback)(uint8_t msgid));
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
