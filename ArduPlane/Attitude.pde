@@ -341,7 +341,7 @@ static void calc_nav_roll()
                         reverse = -1; // Do the oposite of the normal
                         turn_step ++;
 #if DEBUG_NAV == ENABLED                        
-                        Serial3.print("***acute angle trig L****  next hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+                        hal.uartC->printf("***acute angle trig L****  next hdg : %d\n", (reverse_turn_cd*.01));
 #endif                        
                     }
                 break;             
@@ -351,7 +351,7 @@ static void calc_nav_roll()
                         reverse = 1;  //Return to normal turn
                         turn_step ++;
 #if DEBUG_NAV == ENABLED                        
-                        Serial3.print("*** turn around *** next hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+                        hal.uartC->printf("*** turn around *** next hdg : %d\n", (reverse_turn_cd*.01));
 #endif                        
                     }                                                                                          
                 break;
@@ -360,7 +360,7 @@ static void calc_nav_roll()
                         reverse = -1;
                         turn_step ++;
 #if DEBUG_NAV == ENABLED                        
-                        Serial3.println("*** turn back ***");
+                        hal.uartC->printf("*** turn back ***\n");
 #endif                        
                     }
                 break;
@@ -385,7 +385,7 @@ static void calc_nav_roll()
                         reverse_turn_cd = wrap_360_cd(last_wp_bearing_cd - g.turn_back_angle_cd + g.turn_back_angle_comp_cd);                                   
                         reverse = -1; // Do the oposite of the normal
 #if DEBUG_NAV == ENABLED                        
-                        Serial3.print("***acute angle trig R****  hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+                        hal.uartC->printf("***acute angle trig R****  hdg : %d\n", (reverse_turn_cd*.01));
 #endif                        
                     }            
                 break;             
@@ -395,7 +395,7 @@ static void calc_nav_roll()
                         reverse_turn_cd = wrap_360_cd(current_wp_bearing_cd + g.turn_back_angle_cd - g.turn_back_angle_comp_cd);                        
                         reverse = 1;  //Return to normal turn
 #if DEBUG_NAV == ENABLED                        
-                        Serial3.print("*** turn around *** next hdg : ");Serial3.println(reverse_turn_cd*.01,1);
+                        hal.uartC->printf("*** turn around *** next hdg : %d\n",(reverse_turn_cd*.01));
 #endif                        
                     }                                                                                                             
                 break;
@@ -404,7 +404,7 @@ static void calc_nav_roll()
                         turn_step ++;
                         reverse = -1;
 #if DEBUG_NAV == ENABLED                        
-    Serial3.println("*** turn back ***");
+                        hal.uartC->printf("*** turn back ***\n");
 #endif    
                     }              
                 break;
@@ -420,7 +420,8 @@ static void calc_nav_roll()
              }                                                
         }
         // Loiter
-        else if(loiter_trig){                     
+        else if(loiter_trig){
+            turn_radius = g.loiter_radius;         
             switch (turn_step){
                 case 1:    // Set up for loiter entry
                     turn_step ++;
@@ -438,14 +439,20 @@ static void calc_nav_roll()
                     loiter_error = wp_distance - g.loiter_radius;
                     if(lock == 1){                   
                         nav_bearing_cd -= 9000;
-                        nav_bearing_cd += ((g.nav_data_latency * 5.73 * g_gps->ground_speed) / g.loiter_radius);                  
-                        nav_bearing_cd += constrain(((loiter_error) / float(g.loiter_radius) * g.loiter_P * 100),-1500, 9000);                         
+                       // nav_bearing_cd += (g.nav_data_latency * 0.360 * g_gps->ground_speed) / (6.283 * g.loiter_radius);
+                        nav_bearing_cd += (g.nav_data_latency * 0.075 * g_gps->ground_speed) / g.loiter_radius;
+                        nav_bearing_cd += constrain(((loiter_error) * g.loiter_P * 100),-1500, 9000);
+                        
+                        
                     }
                     // Left turn
                     if(lock == -1){    
                         nav_bearing_cd += 9000;
-                        nav_bearing_cd -= ((g.nav_data_latency * 5.73 * g_gps->ground_speed) / g.loiter_radius);                  
-                        nav_bearing_cd -= constrain(((loiter_error) / float(g.loiter_radius) * g.loiter_P * 100),-9000, 1500);                        
+                        //nav_bearing_cd -= (g.nav_data_latency * 0.360 * g_gps->ground_speed) / (6.283 * g.loiter_radius);
+                        nav_bearing_cd -= (g.nav_data_latency * 0.075 * g_gps->ground_speed) / g.loiter_radius;
+                        nav_bearing_cd -= constrain(((loiter_error) * g.loiter_P * 100),-9000, 1500);
+                       
+                        
                     }                        
                     nav_bearing_cd = wrap_360_cd(nav_bearing_cd);                    
                     calc_bearing_error();
@@ -459,7 +466,7 @@ static void calc_nav_roll()
                 return;
             }
 #if DEBUG_NAV == ENABLED            
-            if(once_a){Serial3.println("*** loiter trigered 2 ***"); once_a = false;}
+            if(once_a){hal.uartC->printf("*** loiter trigered 2 ***");hal.uartC->printf("\n"); once_a = false;}
 #endif            
         }
         else{          // Be sure to always fall thru to here!
@@ -477,9 +484,9 @@ static void calc_nav_roll()
                 navigate();
                 calc_bearing_error();
 #if DEBUG_NAV == ENABLED              
-                Serial3.print("** current bearing : ");Serial3.println(g_gps->ground_course);
-                Serial3.println("*** current loc set as from WP ***");
-                Serial3.print("bearing_error : ");Serial3.println(bearing_error_cd);
+                hal.uartC->printf("** current bearing : %d\n", g_gps->ground_course);
+                hal.uartC->printf("*** current loc set as from WP ***\n");
+                hal.uartC->printf("bearing_error : %d\n", bearing_error_cd);
 #endif                
             }            
          }                 
@@ -487,13 +494,13 @@ static void calc_nav_roll()
          count_a ++;
          if(once_a){
              once_a = false;
-             Serial3.print("****** nav fixed ****** : "); Serial3.println(raw_nav_roll);
-             //Serial3.print(", next_WP.id : "); Serial3.println(next_WP.id);
+             hal.uartC->printf("****** nav fixed ****** : %d\n",raw_nav_roll);
+             //hal.uartC->printf(", next_WP.id : "); hal.uartC->printf(next_WP.id);
          }
          if(count_a > 49){
              count_a = 0;
-             Serial3.print("nav fixed : ");Serial3.print(raw_nav_roll);Serial3.print(", rad : ");Serial3.println(g.waypoint_radius);Serial3.print(", next_WP.id : "); Serial3.println(next_WP.id);Serial3.print(", bender : "); Serial3.println(nav_bender,2);
-             Serial3.print(", turn step : ");Serial3.print(turn_step);Serial3.print(" L : ");Serial3.println(loiter_trig); 
+             hal.uartC->printf("nav fixed : %d", raw_nav_roll);hal.uartC->printf(", rad : %d", g.waypoint_radius);hal.uartC->printf(", next_WP.id : %d\n", next_WP.id);hal.uartC->printf(", bender : %f\n", nav_bender);
+             hal.uartC->printf(", turn step : %i", turn_step);hal.uartC->printf("    L:%i\n", loiter_trig); 
          }                  
 #endif
 
@@ -508,7 +515,7 @@ static void calc_nav_roll()
     else{        
 #if DEBUG_NAV == ENABLED          // For debug printing only 88888888888
          if(once_b){          
-             Serial3.println("***** nav pid until futher notice *****");                        
+             hal.uartC->printf("***** nav pid until futher notice *****\n");                        
              once_a = true;
              once_b = false;
          }    
@@ -520,8 +527,8 @@ static void calc_nav_roll()
          count_b ++;
          if(count_b > 49){
              count_b = 0;             
-             Serial3.print(", nav pid : ");Serial3.println(raw_nav_roll); Serial3.print(", bender : "); Serial3.println(nav_bender,2);
-             Serial3.print(", mode : ");Serial3.print(control_mode);Serial3.print(", turn step : ");Serial3.println(turn_step);
+             hal.uartC->printf(", nav pid : %d", raw_nav_roll);hal.uartC->printf(", bender : %d\n", nav_bender);
+             hal.uartC->printf(", mode : %d", control_mode);hal.uartC->printf(", turn step : %d\n", turn_step);
          
          }
 #endif         
@@ -541,8 +548,11 @@ static void calc_nav_roll()
         nav_bender = float(g.bender_angle_cd - abs(bearing_error_cd))/float(g.bender_angle_cd) - 1; 
         nav_bender = constrain(fabs(nav_bender),0,1);                        
     }
-    else if(loiter_trig && turn_step < 3) {
+    else if(loiter_trig && turn_step < 3){
         nav_bender = 1;
+    }
+    else if(loiter_trig && turn_step == 3){
+        nav_bender = constrain(1 - (abs(loiter_error) / 8),0,0.67);
     }
     else nav_bender = 0;   
     raw_nav_roll = (1 - nav_bender) * raw_nav_roll_pid + nav_bender * raw_nav_roll_fixed;                      
