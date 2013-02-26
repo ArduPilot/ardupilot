@@ -1577,7 +1577,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // make any new wp uploaded instant (in case we are already in Guided mode)
             set_guided_WP();
 #if DEBUG_NAV == ENABLED            
-Serial3.println("**** RECIEVED GUIDED WP COM ******");
+hal.console->printf("**** RECIEVED GUIDED WP COM ******");
 #endif
             // verify we recevied the command
             mavlink_msg_mission_ack_send(

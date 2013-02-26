@@ -74,6 +74,7 @@
 #include <AP_HAL_Empty.h>
 
 AP_HAL::BetterStream* cliSerial;
+//AP_HAL::BetterStream* debug;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -721,7 +722,7 @@ AP_Param param_loader(var_info, WP_START_BYTE);
 
 void setup() {
     cliSerial = hal.console;
-
+   // debug     = hal.console;
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 

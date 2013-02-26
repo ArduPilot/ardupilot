@@ -223,8 +223,8 @@ static void get_wind()      //GF  // Need to add GPS  validation check to the ca
     gnd_vel_v2f.x = g_gps->velocity_east();   
     gnd_vel_v2f.y = g_gps->velocity_north();
     wind_vel_v2f = gnd_vel_v2f - air_vel_v2f;
-   // wind_speed = sqrt(sq(wind_vel_v2f.x) + sq(wind_vel_v2f.y));
-   // wind_direction_cd = wrap_360_cd(degrees(atan2(wind_vel_v2f.x, wind_vel_v2f.y))*100);                
+    wind_speed = sqrt(sq(wind_vel_v2f.x) + sq(wind_vel_v2f.y));
+    wind_direction_cd = wrap_360_cd(degrees(atan2(wind_vel_v2f.x, wind_vel_v2f.y))*100);                
     calc_bearing_v2f = air_vel_v2f + wind_vel_v2f;
     calc_bearing_cd = wrap_360_cd(degrees(atan2(calc_bearing_v2f.x, calc_bearing_v2f.y))*100);             
 }

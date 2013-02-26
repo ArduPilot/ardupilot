@@ -126,13 +126,13 @@ static void init_ardupilot()
         // baud rate
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
-#else
+#else // I am an APM1
     // we have a 2nd serial port for telemetry
-  #if DEBUG_NAV == ENABLED    
-    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, SERIAL_BUFSIZE);
+  #if(DEBUG_NAV == ENABLED || DEBUG_NAV_A == ENABLED)   
+    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, SERIAL_BUFSIZE);
+    //debug.init(hal.uartC);
   #else	
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
-            128, SERIAL_BUFSIZE);
+    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, SERIAL_BUFSIZE);
     gcs3.init(hal.uartC);
   #endif
 #endif

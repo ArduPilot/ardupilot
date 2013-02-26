@@ -8,6 +8,10 @@
 // longer valid! You should switch to using CONFIG_HAL_BOARD via the HAL_BOARD
 // flag in your local config.mk instead.
 
+//Ya bla,bla,bla.. HAL, open the pod bay door.... Sorry Dave, I am afraid cannot do that.
+#define CONFIG_HAL_BOARD  HAL_BOARD_APM1
+////////////////////////////////////////
+
 // The following are the recommended settings for Xplane
 // simulation. Remove the leading "/* and trailing "*/" to enable:
 
@@ -22,4 +26,12 @@
  *  //#define HIL_MODE            HIL_MODE_ATTITUDE
  *
  */
+#define HIL_MODE            HIL_MODE_ATTITUDE
+//#define HIL_MODE  HIL_MODE_SENSORS
 
+# define CLI_ENABLED  DISABLED
+# define MOUNT	DISABLED
+# define LOGGING_ENABLED  DISABLED
+//**************these are on uart3, DO NOT USE FOR FLIGHT! WILL HOSE YOUR TELEM
+# define DEBUG_NAV  DISABLED  
+# define DEBUG_NAV_A ENABLED

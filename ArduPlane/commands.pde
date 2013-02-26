@@ -227,7 +227,7 @@ static void set_next_WP(struct Location *wp)
     if(prev_WP.id != MAV_CMD_NAV_LOITER_TURNS && prev_WP.id != MAV_CMD_NAV_LOITER_TIME && !jump){    
         if(last_turn_point >= g.waypoint_radius * 1.6){
             turn_around = true;
-          //  Serial3.println("*** turn around trigger set ***");        
+          //  hal.uartC->printfln("*** turn around trigger set ***");        
         }
     }
     if(turn_point_m >= g.waypoint_radius * 1.6 || turn_point_m <= 0){ 
@@ -237,22 +237,16 @@ static void set_next_WP(struct Location *wp)
     if(jump){
        jump = false;
 #if DEBUG_NAV == ENABLED       
-       Serial3.println("*** JUMP DETECTED ***");
+      // hal.uartC->("*** JUMP DETECTED ***");
 #endif       
     }  
-#if DEBUG_NAV == ENABLED 
-    Serial3.print("      next wp # : ");
-    Serial3.print(nav_command_index);
-    Serial3.print("    current bearing : ");
-    Serial3.println(current_wp_bearing_cd*.01,1);
-    Serial3.print("after next wp # : ");
-    Serial3.print(after_next_nav_cmd_index);
-    Serial3.print("       next bearing : ");
-    Serial3.println(next_wp_bearing_cd*.01,1);     
-    Serial3.print("last turn point distance : ");
-    Serial3.println(last_turn_point);
-    Serial3.print("next turn point distance : ");
-    Serial3.println(turn_point_m);
+#if DEBUG_NAV_A == ENABLED
+    hal.uartC->printf("      next wp # : %d\n",nav_command_index);
+    hal.uartC->printf("    current bearing : %d\n",current_wp_bearing_cd*.01);
+    hal.uartC->printf("after next wp # : %d\n",after_next_nav_cmd_index);
+    hal.uartC->printf("       next bearing : %d\n",next_wp_bearing_cd*.01);    
+    hal.uartC->printf("last turn point distance : %d\n",last_turn_point);
+    hal.uartC->printf("next turn point distance : %d\n",turn_point_m);
 #endif    
 }
 
@@ -298,7 +292,7 @@ static void set_guided_WP(void)
     // ----------------------------
     reset_crosstrack();
     
-  //  Serial3.print("** guided wp id # : ");Serial3.println(next_WP.id);
+  //  Serial3.print("** guided wp id # : ");hal.uartC->(next_WP.id);
 }
 
 // run this at setup on the ground
