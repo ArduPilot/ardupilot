@@ -804,7 +804,7 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
     if( ppm_timeout[ ppm_out_channel ] > PPM_TIMEOUT_VALUE )
     {
          // Channel 1-4?
-        if( ppm_out_channel & 7 )
+        if( ppm_out_channel < 8 )
         {
             // Channel 1-4 - Use fail-safe value
             cli();
