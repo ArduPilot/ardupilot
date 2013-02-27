@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// ArduPPM (PPM Encoder) V2.3.17pre
+// ArduPPM (PPM Encoder) V2.3.18pre
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2.x (ATmega32u2)
@@ -147,6 +147,9 @@
 // V2.3.17pre - set channel 1,2 and 4 to center, 3 to low and leave 5-8 at last value
 //            - LED indication is only triggered when throttle is set low
 
+// 27-02-2013
+// V2.3.18pre - Small optimization
+
 // -------------------------------------------------------------
 
 #ifndef _PPM_ENCODER_H_
@@ -188,7 +191,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.17pre"; 
+const char ver[15] = "ArduPPMv2.3.18"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -800,29 +803,29 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
     // Update timing for next compare toggle with either current ppm input value, or fail-safe value if there is a channel timeout.
     if( ppm_timeout[ ppm_out_channel ] > PPM_TIMEOUT_VALUE )
     {
-        // Use the ppm fail-safe value for throttle
-        if( ppm_out_channel == 5 )
+         // Channel 1-4?
+        if( ppm_out_channel < 8 )
         {
+            // Channel 1-4 - Use fail-safe value
             cli();
             PPM_COMPARE += failsafe_ppm[ ppm_out_channel ];
             sei();
-            // report this to the LED indication
-            servo_input_missing = true;
+
+            // Channel 3
+            if( ppm_out_channel == 5 )
+            {
+                // report this to the LED indication
+                servo_input_missing = true;
+            }
         }
-        // also use the fail-safe value for roll, pitch and yaw (but don't notify LED)
-        else if( ppm_out_channel == 1 || ppm_out_channel == 3 || ppm_out_channel == 7 )
+        else 
         {
-            cli();
-            PPM_COMPARE += failsafe_ppm[ ppm_out_channel ];
-            sei();
-        }
-        else
-        {
+            // Channel 5-8 - Use last known value
             cli();
             PPM_COMPARE += ppm[ ppm_out_channel ];
             sei();
         }
-        
+       
     #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && defined _THROTTLE_LOW_FAILSAFE_INDICATION
         // Count the channel that we have lost
         disconnected_channels++;
