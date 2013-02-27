@@ -758,6 +758,9 @@ void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
         // clear angle_boost for logging purposes
         angle_boost = 0;
     }
+
+    // update compass with throttle value
+    compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
 }
 
 // set_throttle_accel_target - to be called by upper throttle controllers to set desired vertical acceleration in earth frame

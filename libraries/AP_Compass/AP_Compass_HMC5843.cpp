@@ -330,6 +330,17 @@ bool AP_Compass_HMC5843::read()
     rot_mag.rotate(_board_orientation);
 
     rot_mag += _offset.get();
+
+    // add in motor compensation
+    if( _throttle_pct != 0 ) {
+        _motor_offset = _motor_compensation.get() * _throttle_pct;
+        rot_mag += _motor_offset;
+    }else{
+        _motor_offset.x = 0;
+        _motor_offset.y = 0;
+        _motor_offset.z = 0;
+    }
+
     mag_x = rot_mag.x;
     mag_y = rot_mag.y;
     mag_z = rot_mag.z;

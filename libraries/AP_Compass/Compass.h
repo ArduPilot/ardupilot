@@ -121,12 +121,46 @@ public:
     virtual void set_declination(float radians);
     float get_declination();
 
-    static const struct AP_Param::GroupInfo var_info[];
-
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation) {
         _board_orientation = orientation;
     }
+
+    /// Set the motor compensation factor x/y/z values.
+    ///
+    /// @param  offsets             Offsets multiplied by the throttle value and added to the raw mag_ values.
+    ///
+    virtual void set_motor_compensation(const Vector3f &motor_comp_factor);
+
+    /// Set new motor compensation factors as a vector
+    ///
+    /// @param  x                   multiplied by throttle value and added to the raw mag_x value.
+    /// @param  y                   multiplied by throttle value and added to the raw mag_y value.
+    /// @param  z                   multiplied by throttle value and added to the raw mag_z value.
+    ///
+    void set_motor_compensation(float x, float y, float z) {
+        set_motor_compensation(Vector3f(x, y, z));
+    }
+
+    /// Saves the current motor compensation x/y/z values.
+    ///
+    /// This should be invoked periodically to save the offset values calculated by the motor compensation auto learning
+    ///
+    virtual void save_motor_compensation();
+
+    /// Returns the current motor compensation offset values
+    ///
+    /// @returns                    The current compass offsets.
+    ///
+    virtual Vector3f &get_motor_offsets() { return _motor_offset; }
+
+    /// Set the throttle as a percentage from 0.0 to 1.0
+    /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
+    void set_throttle(float thr_pct) {
+        _throttle_pct = thr_pct;
+    }
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     enum Rotation _orientation;
@@ -142,6 +176,11 @@ protected:
     static const uint8_t _mag_history_size = 20;
     uint8_t _mag_history_index;
     Vector3i _mag_history[_mag_history_size];
+
+    // motor compensation
+    AP_Vector3f _motor_compensation;            // factors multiplied by throttle and added to compass outputs
+    Vector3f _motor_offset;                     // latest compensation added to compass
+    float _throttle_pct;                        // throttle expressed as a percentage from 0.0 ~ 1.0
 
     // board orientation from AHRS
     enum Rotation _board_orientation;
