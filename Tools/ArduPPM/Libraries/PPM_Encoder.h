@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// ArduPPM (PPM Encoder) V2.3.16
+// ArduPPM (PPM Encoder) V2.3.17pre
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2.x (ATmega32u2)
@@ -143,6 +143,10 @@
 // 26-02-2013
 // V2.3.16 - when a channel is lost don't set it to a fail-safe value but retain its last value (except throttle)
 
+// 26-02-2013
+// V2.3.17pre - set channel 1,2 and 4 to center, 3 to low and leave 5-8 at last value
+//            - LED indication is only triggered when throttle is set low
+
 // -------------------------------------------------------------
 
 #ifndef _PPM_ENCODER_H_
@@ -184,7 +188,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.16"; 
+const char ver[15] = "ArduPPMv2.3.17pre"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -797,12 +801,19 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
     if( ppm_timeout[ ppm_out_channel ] > PPM_TIMEOUT_VALUE )
     {
         // Use the ppm fail-safe value for throttle
-        if (ppm_out_channel == 5)
+        if( ppm_out_channel == 5 )
         {
             cli();
             PPM_COMPARE += failsafe_ppm[ ppm_out_channel ];
-			// report this to the LED indication
+            sei();
+            // report this to the LED indication
             servo_input_missing = true;
+        }
+        // also use the fail-safe value for roll, pitch and yaw (but don't notify LED)
+        else if( ppm_out_channel == 1 || ppm_out_channel == 3 || ppm_out_channel == 7 )
+        {
+            cli();
+            PPM_COMPARE += failsafe_ppm[ ppm_out_channel ];
             sei();
         }
         else
