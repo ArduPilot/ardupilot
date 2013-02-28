@@ -34,8 +34,8 @@ AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL( FilterInt16 *filter 
     healthy(true),
     _addr(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)
 {
-    max_distance = AP_RANGE_FINDER_MAXSONARI2CXL_MIN_DISTANCE;
-    min_distance = AP_RANGE_FINDER_MAXSONARI2CXL_MAX_DISTANCE;
+    min_distance = AP_RANGE_FINDER_MAXSONARI2CXL_MIN_DISTANCE;
+    max_distance = AP_RANGE_FINDER_MAXSONARI2CXL_MAX_DISTANCE;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -69,6 +69,11 @@ int AP_RangeFinder_MaxsonarI2CXL::read()
         ret_value = buff[0] << 8 | buff[1];
         healthy = true;
     }
-
+    
+    // ensure distance is within min and max
+    ret_value = constrain(ret_value, min_distance, max_distance);
+    
+    ret_value = _mode_filter->apply(ret_value);
+    
     return ret_value;
 }
