@@ -6,16 +6,45 @@
 static void ReadSCP1000(void) {
 }
 
- #if CONFIG_SONAR == ENABLED
+#if CONFIG_SONAR == ENABLED
+
+static ModeFilterInt16_Size3 sonar_mode_filter(1);
+static RangeFinder *sonar;
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
+static bool requestedSonarReading = false;
+static int16_t lastSuccessfullSonarReading = 0;
+#endif
+
 static void init_sonar(void)
 {
-  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar->calculate_scaler(g.sonar_type, 3.3f);
-  #else
-    sonar->calculate_scaler(g.sonar_type, 5.0f);
-  #endif
-}
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC || CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+    AP_HAL::AnalogSource *sonar_analog_source;
  #endif
+ #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+    sonar_analog_source = new AP_ADC_AnalogSource(
+            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
+ #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+    sonar_analog_source = hal.analogin->channel(
+            CONFIG_SONAR_SOURCE_ANALOG_PIN);
+ #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
+    AP_RangeFinder_MaxsonarI2CXL* tmp_sonar = new AP_RangeFinder_MaxsonarI2CXL(&sonar_mode_filter);
+ #else
+  #warning "Invalid CONFIG_SONAR_SOURCE"
+ #endif
+ #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC || CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+   AP_RangeFinder_MaxsonarXL* tmp_sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
+            &sonar_mode_filter);
+  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+   tmp_sonar->calculate_scaler(g.sonar_type, 3.3f);
+  #else
+   tmp_sonar->calculate_scaler(g.sonar_type, 5.0f);
+  #endif
+
+ #endif
+   sonar = tmp_sonar;
+}
+#endif
 
 static void init_barometer(void)
 {
@@ -41,7 +70,23 @@ static int16_t read_sonar(void)
         return 0;
     }
 
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
+    if(!requestedSonarReading){
+    	((AP_RangeFinder_MaxsonarI2CXL*)sonar)->take_reading();
+    	requestedSonarReading = true;
+    	return lastSuccessfullSonarReading;
+    }
+#endif
+
     int16_t temp_alt = sonar->read();
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
+    if(temp_alt==0){
+    	temp_alt = lastSuccessfullSonarReading;
+    }else{
+    	requestedSonarReading = false;
+    }
+#endif
 
     if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * 0.70f) {
         if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
@@ -57,6 +102,10 @@ static int16_t read_sonar(void)
     temp = max(temp, 0.707f);
     temp_alt = (float)temp_alt * temp;
  #endif
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
+    lastSuccessfullSonarReading = temp_alt;
+#endif
 
     return temp_alt;
 #else

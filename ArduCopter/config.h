@@ -301,6 +301,7 @@
  # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
   #  define CONFIG_SONAR_SOURCE_ANALOG_PIN 0
  # endif
+#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
 #else
  # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
  # undef SONAR_ENABLED

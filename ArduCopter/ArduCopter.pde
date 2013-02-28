@@ -312,15 +312,6 @@ static int32_t gps_base_alt;
 GCS_MAVLINK gcs0;
 GCS_MAVLINK gcs3;
 
-////////////////////////////////////////////////////////////////////////////////
-// SONAR selection
-////////////////////////////////////////////////////////////////////////////////
-//
-ModeFilterInt16_Size3 sonar_mode_filter(1);
-#if CONFIG_SONAR == ENABLED
-AP_HAL::AnalogSource *sonar_analog_source;
-AP_RangeFinder_MaxsonarXL *sonar;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // User variables
@@ -914,19 +905,6 @@ void setup() {
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
-#if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-            CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-            &sonar_mode_filter);
-#endif
 
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin, 0.25);
     batt_volt_analog_source = hal.analogin->channel(g.battery_volt_pin);
