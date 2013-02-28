@@ -669,7 +669,7 @@ static void fast_loop()
 	// ----------
 	if (g.sonar_enabled) {
 		sonar_dist_cm = sonar->read();
-        if (sonar_dist_cm <= g.sonar_trigger)  {
+        if (sonar_dist_cm <= g.sonar_trigger_cm)  {
             // obstacle detected in front 
             obstacle = true;
         } else  { 
