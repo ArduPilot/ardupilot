@@ -97,7 +97,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
         return(-1);
     } else if (dump_log <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
-        Log_Read(1, 0);
+        Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2)
                || ((uint16_t)dump_log > last_log_num))
@@ -112,7 +112,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
                         (unsigned)dump_log_start,
                         (unsigned)dump_log_end);
 
-    Log_Read(dump_log_start, dump_log_end);
+    Log_Read((uint8_t)dump_log, dump_log_start, dump_log_end);
     cliSerial->printf_P(PSTR("Done\n"));
     return 0;
 }
@@ -600,13 +600,13 @@ static void Log_Read_Current()
 }
 
 // Read the DataFlash.log memory : Packet Parser
-static void Log_Read(int16_t start_page, int16_t end_page)
+static void Log_Read(uint8_t log_num, int16_t start_page, int16_t end_page)
 {
     cliSerial->printf_P(PSTR("\n" THISFIRMWARE
                              "\nFree RAM: %u\n"),
                         memcheck_available_memory());
 
-    DataFlash.log_read_process(start_page, end_page, log_callback);
+    DataFlash.log_read_process(log_num, start_page, end_page, log_callback);
 }
 
 // Read the DataFlash.log memory : Packet Parser
