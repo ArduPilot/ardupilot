@@ -402,7 +402,7 @@ static uint8_t receiver_rssi;
 static uint32_t last_heartbeat_ms;
 
 // The distance as reported by Sonar in cm – Values are 20 to 700 generally.
-static int16_t		sonar_dist;
+static int16_t sonar_dist_cm;
 static bool obstacle = false;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -667,14 +667,14 @@ static void fast_loop()
 
 	// Read Sonar
 	// ----------
-	if(g.sonar_enabled){
-		sonar_dist = sonar->read();
-
-	if(sonar_dist <= g.sonar_trigger)  {  // obstacle detected in front 
+	if (g.sonar_enabled) {
+		sonar_dist_cm = sonar->read();
+        if (sonar_dist_cm <= g.sonar_trigger)  {
+            // obstacle detected in front 
             obstacle = true;
-      } else  { 
+        } else  { 
             obstacle = false;
-            }
+        }
 	}
 
 	// uses the yaw from the DCM to give more accurate turns

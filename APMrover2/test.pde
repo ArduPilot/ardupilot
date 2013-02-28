@@ -557,8 +557,8 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
 	while (true) {
         delay(20);
-        sonar_dist = sonar->read();
-        cliSerial->printf_P(PSTR("sonar distance = %d cm\n"), (int)sonar_dist);
+        sonar_dist_cm = sonar->read();
+        cliSerial->printf_P(PSTR("sonar distance = %u cm\n"), (unsigned)sonar_dist_cm);
         if (cliSerial->available() > 0) {
             break;
 	    }
