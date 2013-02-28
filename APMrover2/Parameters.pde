@@ -248,16 +248,43 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
 
-#if CONFIG_SONAR == ENABLED     
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(sonar_trigger,      "SONAR_TRIGGER",    SONAR_TRIGGER),
 	GSCALAR(sonar_enabled,	    "SONAR_ENABLE",     SONAR_ENABLED),
+
+	// @Param: SONAR_TRIGGER_CM
+	// @DisplayName: Sonar trigger distance
+	// @Description: The distance from an obstacle at which the sonar triggers a turn to avoid the obstacle
+	// @Units: centimeters
+    // @Range: 0 1000
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_trigger_cm,   "SONAR_TRIGGER_CM",    100),
+
+	// @Param: SONAR_TURN_ANGLE
+	// @DisplayName: Sonar trigger angle
+	// @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the sonar. A positive number means to turn right, and a negative angle means to turn left.
+	// @Units: centimeters
+    // @Range: 0 90
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_turn_angle,   "SONAR_TURN_ANGLE",    45),
+
+	// @Param: SONAR_TURN_TIME
+	// @DisplayName: Sonar turn time
+	// @Description: The amount of time in seconds to apply the SONAR_TURN_ANGLE after detecting an obstacle.
+	// @Units: seconds
+    // @Range: 0 100
+    // @Increment: 0.1
+	// @User: Standard
+	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     2.0f),
+
+
+	// add sonar scaling, min, max params
 	GSCALAR(sonar_type,	        "SONAR_TYPE",       AP_RANGEFINDER_MAXSONARXL),
-#endif	
 
 
     // @Param: MODE_CH
