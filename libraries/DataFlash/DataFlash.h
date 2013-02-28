@@ -30,7 +30,7 @@ public:
     virtual void WriteBlock(const void *pBuffer, uint16_t size) = 0;
 
     /*
-      read a packet, stripping off the header bytes
+      read a packet. The header byte have already been read.
     */
     virtual void ReadPacket(void *pkt, uint16_t size) = 0;
 
@@ -66,5 +66,6 @@ public:
 #define HEAD_BYTE2  0x95    // Decimal 149
 
 #include "DataFlash_Block.h"
+#include "DataFlash_File.h"
 
 #endif

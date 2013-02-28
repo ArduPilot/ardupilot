@@ -31,7 +31,7 @@ public:
     void WriteBlock(const void *pBuffer, uint16_t size);
 
     /*
-      read a packet, stripping off the header bytes
+      read a packet. The header byte have already been read.
     */
     void ReadPacket(void *pkt, uint16_t size);
 
