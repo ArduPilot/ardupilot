@@ -97,7 +97,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
         return(-1);
     } else if (dump_log <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
-        Log_Read(1, 0);
+        Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
         cliSerial->printf_P(PSTR("bad log number\n"));
@@ -110,7 +110,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
      *                         dump_log_start,
      *                         dump_log_end);
      */
-    Log_Read(dump_log_start, dump_log_end);
+    Log_Read((uint8_t)dump_log, dump_log_start, dump_log_end);
     //cliSerial->printf_P(PSTR("Done\n"));
     return (0);
 }
@@ -1212,7 +1212,7 @@ static void Log_Read_Error()
 }
 
 // Read the DataFlash log memory
-static void Log_Read(int16_t start_page, int16_t end_page)
+static void Log_Read(uint8_t log_num, int16_t start_page, int16_t end_page)
 {
  #ifdef AIRFRAME_NAME
     cliSerial->printf_P(PSTR((AIRFRAME_NAME)));
@@ -1228,7 +1228,7 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 	setup_show(0, NULL);
 #endif
 
-    DataFlash.log_read_process(start_page, end_page, log_callback);
+    DataFlash.log_read_process(log_num, start_page, end_page, log_callback);
 }
 
 // read one packet from the dataflash
