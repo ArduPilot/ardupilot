@@ -259,6 +259,7 @@ enum ap_message {
     MSG_AHRS,
     MSG_SIMSTATE,
     MSG_HWSTATUS,
+    MSG_ALT_SENSOR_RAW,
     MSG_RETRY_DEFERRED // this must be last
 };
 

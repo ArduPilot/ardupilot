@@ -1180,6 +1180,51 @@ static void mavlink_test_data96(uint8_t system_id, uint8_t component_id, mavlink
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_alt_sensor_raw(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_alt_sensor_raw_t packet_in = {
+		963497464,
+	17443,
+	};
+	mavlink_alt_sensor_raw_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.baro_alt = packet_in.baro_alt;
+        	packet1.sonar_alt = packet_in.sonar_alt;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_alt_sensor_raw_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_alt_sensor_raw_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_alt_sensor_raw_pack(system_id, component_id, &msg , packet1.baro_alt , packet1.sonar_alt );
+	mavlink_msg_alt_sensor_raw_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_alt_sensor_raw_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.baro_alt , packet1.sonar_alt );
+	mavlink_msg_alt_sensor_raw_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_alt_sensor_raw_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_alt_sensor_raw_send(MAVLINK_COMM_1 , packet1.baro_alt , packet1.sonar_alt );
+	mavlink_msg_alt_sensor_raw_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_test_sensor_offsets(system_id, component_id, last_msg);
@@ -1204,6 +1249,7 @@ static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, 
 	mavlink_test_data32(system_id, component_id, last_msg);
 	mavlink_test_data64(system_id, component_id, last_msg);
 	mavlink_test_data96(system_id, component_id, last_msg);
+	mavlink_test_alt_sensor_raw(system_id, component_id, last_msg);
 }
 
 #ifdef __cplusplus

@@ -338,6 +338,12 @@
 	    <field type="uint8_t" name="len">data length</field>
 	    <field type="uint8_t[96]" name="data">raw data</field>
 	  </message>
+	  
+	  <message name="ALT_SENSOR_RAW" id="173" >
+        <description>Raw readings from altitude sensors</description>
+        <field type="int32_t" name="baro_alt">barometer altitude</field>
+        <field type="int16_t" name="sonar_alt">sonar altitude</field>
+      </message>
 	 
      </messages>
 </mavlink>
