@@ -621,12 +621,10 @@ void loop()
 
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
-  #if LITE == DISABLED
 				if (g.log_bitmask & MASK_LOG_PM)
 					#if HIL_MODE != HIL_MODE_ATTITUDE
 					Log_Write_Performance();
 					#endif
- #endif
 				resetPerfData();
 			}
 		}
@@ -665,9 +663,8 @@ static void fast_loop()
 		gcs_update();
 	#endif
 
-#if LITE == DISABLED
 	ahrs.update();
-#endif 
+
 	// Read Sonar
 	// ----------
 	if(g.sonar_enabled){
@@ -683,7 +680,6 @@ static void fast_loop()
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
 
-#if LITE == DISABLED
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 			Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
@@ -691,7 +687,7 @@ static void fast_loop()
 		if (g.log_bitmask & MASK_LOG_IMU)
 			Log_Write_IMU();
 	#endif
-#endif
+
 	// inertial navigation
 	// ------------------
 	#if INERTIAL_NAVIGATION == ENABLED
@@ -735,7 +731,6 @@ static void medium_loop()
 			medium_loopCounter++;
             update_GPS();
             
-//#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
                 ahrs.set_compass(&compass);
@@ -745,17 +740,6 @@ static void medium_loop()
                 ahrs.set_compass(NULL);
             }
 			#endif
-//#endif
-/*{
-cliSerial->print(ahrs.roll_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->print(ahrs.pitch_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->print(ahrs.yaw_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
-Vector3f tempaccel = ins.get_accel();
-cliSerial->print(tempaccel.x, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->print(tempaccel.y, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->println(tempaccel.z, DEC);
-}*/
-
 			break;
 
 		// This case performs some navigation computations
@@ -779,7 +763,6 @@ cliSerial->println(tempaccel.z, DEC);
 		//-------------------------------------------------
 		case 3:
 			medium_loopCounter++;
-#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
 					Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
@@ -793,7 +776,6 @@ cliSerial->println(tempaccel.z, DEC);
 
 			if (g.log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
-#endif
 			break;
 
 		// This case controls the slow loop
@@ -824,13 +806,11 @@ static void slow_loop()
 			check_long_failsafe();
 			superslow_loopCounter++;
 			if(superslow_loopCounter >=200) {				//	200 = Execute every minute
-#if LITE == DISABLED
 				#if HIL_MODE != HIL_MODE_ATTITUDE
 					if(g.compass_enabled) {
 						compass.save_offsets();
 					}
 				#endif
-#endif
 				superslow_loopCounter = 0;
 			}
 			break;
@@ -866,10 +846,8 @@ static void slow_loop()
 
 static void one_second_loop()
 {
-#if LITE == DISABLED
 	if (g.log_bitmask & MASK_LOG_CURRENT)
 		Log_Write_Current();
-#endif
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
 }

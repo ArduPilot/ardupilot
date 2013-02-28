@@ -994,9 +994,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (packet.param1 == 1 ||
                     packet.param2 == 1 ||
                     packet.param3 == 1) {
-            #if LITE == DISABLED                      
                     startup_INS_ground(true);
-            #endif
                 }
                 if (packet.param4 == 1) {
                     trim_radio();

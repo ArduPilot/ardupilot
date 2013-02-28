@@ -1,6 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if LITE == DISABLED
 #if LOGGING_ENABLED == ENABLED
 
 // Code to Write and Read packets from DataFlash log memory
@@ -672,4 +671,4 @@ static void Log_Write_IMU() {}
 
 
 #endif // LOGGING_ENABLED
-#endif
+

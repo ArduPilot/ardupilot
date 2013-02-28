@@ -45,7 +45,7 @@ static void calc_nav_steer()
 	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
 
     if (obstacle) {  // obstacle avoidance 
-	    nav_steer += 9000;    // if obstacle in front turn 90° right	
+	    nav_steer += g.sonar_turn_angle;
     }
 }
 
