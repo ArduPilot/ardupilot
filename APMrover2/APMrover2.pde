@@ -269,10 +269,8 @@ AP_HAL::AnalogSource * batt_curr_pin;
 ////////////////////////////////////////////////////////////////////////////////
 //
 ModeFilterInt16_Size5 sonar_mode_filter(2);
-#if CONFIG_SONAR == ENABLED
-    AP_HAL::AnalogSource *sonar_analog_source;
-    AP_RangeFinder_MaxsonarXL *sonar;
-#endif
+AP_HAL::AnalogSource *sonar_analog_source;
+AP_RangeFinder_MaxsonarXL *sonar;
 
 // relay support
 AP_Relay relay;
@@ -582,19 +580,15 @@ void setup() {
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
 
-#if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
     sonar_analog_source = new AP_ADC_AnalogSource(
         &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
  #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
     sonar_analog_source = hal.analogin->channel(
         CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
     sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
                                           &sonar_mode_filter);
-#endif
+ #endif
 
 	init_ardupilot();
 }
@@ -676,7 +670,6 @@ static void fast_loop()
 #endif 
 	// Read Sonar
 	// ----------
-#if CONFIG_SONAR == ENABLED
 	if(g.sonar_enabled){
 		sonar_dist = sonar->read();
 
@@ -686,7 +679,6 @@ static void fast_loop()
             obstacle = false;
             }
 	}
-#endif
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();

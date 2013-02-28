@@ -16,9 +16,7 @@ static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
-#if CONFIG_SONAR == ENABLED
 static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
-#endif
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
@@ -45,9 +43,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
 	{"gps",			test_gps},
 	{"ins",			test_ins},
-#if CONFIG_SONAR == ENABLED
 	{"sonartest",	test_sonar},
-#endif
 	{"compass",		test_mag},
 #elif HIL_MODE == HIL_MODE_SENSORS
 	{"adc", 		test_adc},
@@ -546,28 +542,28 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here
 
-#if CONFIG_SONAR == ENABLED
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
-  print_hit_enter();
+    if (!g.sonar_enabled) {
+        cliSerial->println_P(PSTR("Sonar is not enabled"));
+        return 0;
+    }
+
+    print_hit_enter();
 	delay(1000);
 	init_sonar();
 	delay(1000);
 
-	while(1){
-	  delay(20);
-	  if(g.sonar_enabled){
-		sonar_dist = sonar->read();
-	  }
-    	  cliSerial->printf_P(PSTR("sonar_dist = %d\n"), (int)sonar_dist);
-
-          if(cliSerial->available() > 0){
-  		break;
+	while (true) {
+        delay(20);
+        sonar_dist = sonar->read();
+        cliSerial->printf_P(PSTR("sonar distance = %d cm\n"), (int)sonar_dist);
+        if (cliSerial->available() > 0) {
+            break;
 	    }
-  }
-  return (0);
+    }
+    return (0);
 }
-#endif // SONAR == ENABLED
 
 #endif // CLI_ENABLED

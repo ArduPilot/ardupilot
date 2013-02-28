@@ -221,10 +221,7 @@ static void init_ardupilot()
 
 #endif
 	// initialise sonar
-	#if CONFIG_SONAR == ENABLED
 	init_sonar();
-	#endif
-
 #endif
 	// Do GPS init
 	g_gps = &g_gps_driver;

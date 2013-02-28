@@ -1,5 +1,4 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#if CONFIG_SONAR == ENABLED
 static void init_sonar(void)
 {
   /*
@@ -10,7 +9,6 @@ static void init_sonar(void)
 	#endif
 */
 }
-#endif
 
 #if LITE == DISABLED
 // Sensors are not available in HIL_MODE_ATTITUDE
