@@ -348,10 +348,3 @@ bool AP_Compass_HMC5843::read()
 
     return true;
 }
-
-// set orientation
-void
-AP_Compass_HMC5843::set_orientation(enum Rotation rotation)
-{
-    _orientation = rotation;
-}

@@ -51,7 +51,7 @@ public:
     ///
     /// @returns heading in radians
     ///
-    virtual float calculate_heading(float roll, float pitch);
+    float calculate_heading(float roll, float pitch);
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -59,7 +59,7 @@ public:
     ///
     /// @returns heading in radians
     ///
-    virtual float calculate_heading(const Matrix3f &dcm_matrix);
+    float calculate_heading(const Matrix3f &dcm_matrix);
 
     /// Set the compass orientation matrix, used to correct for
     /// various compass mounting positions.
@@ -67,26 +67,26 @@ public:
     /// @param  rotation_matrix     Rotation matrix to transform magnetometer readings
     ///                             to the body frame.
     ///
-    virtual void set_orientation(enum Rotation rotation);
+    void set_orientation(enum Rotation rotation);
 
     /// Sets the compass offset x/y/z values.
     ///
     /// @param  offsets             Offsets to the raw mag_ values.
     ///
-    virtual void set_offsets(const Vector3f &offsets);
+    void set_offsets(const Vector3f &offsets);
 
     /// Saves the current compass offset x/y/z values.
     ///
     /// This should be invoked periodically to save the offset values maintained by
     /// ::null_offsets.
     ///
-    virtual void save_offsets();
+    void save_offsets();
 
     /// Returns the current offset values
     ///
     /// @returns                    The current compass offsets.
     ///
-    virtual Vector3f &get_offsets();
+    Vector3f &get_offsets();
 
     /// Sets the initial location used to get declination
     ///
@@ -118,7 +118,7 @@ public:
     ///
     /// @param  radians             Local field declination.
     ///
-    virtual void set_declination(float radians);
+    void set_declination(float radians);
     float get_declination();
 
     // set overall board orientation
@@ -130,7 +130,7 @@ public:
     ///
     /// @param  offsets             Offsets multiplied by the throttle value and added to the raw mag_ values.
     ///
-    virtual void set_motor_compensation(const Vector3f &motor_comp_factor);
+    void set_motor_compensation(const Vector3f &motor_comp_factor);
 
     /// Set new motor compensation factors as a vector
     ///
@@ -146,13 +146,13 @@ public:
     ///
     /// This should be invoked periodically to save the offset values calculated by the motor compensation auto learning
     ///
-    virtual void save_motor_compensation();
+    void save_motor_compensation();
 
     /// Returns the current motor compensation offset values
     ///
     /// @returns                    The current compass offsets.
     ///
-    virtual Vector3f &get_motor_offsets() { return _motor_offset; }
+    Vector3f &get_motor_offsets() { return _motor_offset; }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
