@@ -1,13 +1,12 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 static void init_sonar(void)
 {
-  /*
-    #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-	    sonar.calculate_scaler(g.sonar_type, 3.3);
-	#else
-        sonar.calculate_scaler(g.sonar_type, 5.0);
-	#endif
-*/
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    sonar.Init(&adc);
+#else
+    sonar.Init(NULL);
+#endif
 }
 
 // Sensors are not available in HIL_MODE_ATTITUDE

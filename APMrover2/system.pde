@@ -180,8 +180,10 @@ static void init_ardupilot()
             //compass.get_offsets();						// load offsets to account for airframe magnetic interference
         }
 	}
+
 	// initialise sonar
-	init_sonar();
+    init_sonar();
+
 #endif
 	// Do GPS init
 	g_gps = &g_gps_driver;

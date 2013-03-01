@@ -356,6 +356,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
 
+    // @Group: SONAR_
+    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
+    GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
+
 #if HIL_MODE == HIL_MODE_DISABLED
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp

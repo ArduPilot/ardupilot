@@ -420,6 +420,14 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         hal.i2c->lockup_count());
 }
 
+static void NOINLINE send_rangefinder(mavlink_channel_t chan)
+{
+    mavlink_msg_rangefinder_send(
+        chan,
+        sonar.distance_cm() * 0.01,
+        sonar.voltage());
+}
+
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(
@@ -582,6 +590,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
+        break;
+
+    case MSG_RANGEFINDER:
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_rangefinder(chan);
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -862,6 +875,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
+        send_message(MSG_RANGEFINDER);
     }
 }
 

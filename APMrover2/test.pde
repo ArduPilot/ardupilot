@@ -551,14 +551,14 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
     }
 
     print_hit_enter();
-	delay(1000);
-	init_sonar();
-	delay(1000);
+    init_sonar();
 
 	while (true) {
-        delay(20);
-        sonar_dist_cm = sonar->read();
-        cliSerial->printf_P(PSTR("sonar distance = %u cm\n"), (unsigned)sonar_dist_cm);
+        delay(200);
+        float sonar_dist_cm = sonar.distance_cm();
+        float voltage = sonar.voltage();
+        cliSerial->printf_P(PSTR("sonar distance=%5.1fcm  voltage=%5.2f\n"), 
+                            sonar_dist_cm, voltage);
         if (cliSerial->available() > 0) {
             break;
 	    }

@@ -268,9 +268,7 @@ AP_HAL::AnalogSource * batt_curr_pin;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size5 sonar_mode_filter(2);
-AP_HAL::AnalogSource *sonar_analog_source;
-AP_RangeFinder_MaxsonarXL *sonar;
+static AP_RangeFinder_analog sonar;
 
 // relay support
 AP_Relay relay;
@@ -401,8 +399,7 @@ static uint8_t receiver_rssi;
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
 
-// The distance as reported by Sonar in cm – Values are 20 to 700 generally.
-static int16_t sonar_dist_cm;
+// Set to true when an obstacle is detected
 static bool obstacle = false;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -580,16 +577,6 @@ void setup() {
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
 
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-        &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-        CONFIG_SONAR_SOURCE_ANALOG_PIN);
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-                                          &sonar_mode_filter);
- #endif
-
 	init_ardupilot();
 }
 
@@ -668,7 +655,7 @@ static void fast_loop()
 	// Read Sonar
 	// ----------
 	if (g.sonar_enabled) {
-		sonar_dist_cm = sonar->read();
+		float sonar_dist_cm = sonar.distance_cm();
         if (sonar_dist_cm <= g.sonar_trigger_cm)  {
             // obstacle detected in front 
             obstacle = true;

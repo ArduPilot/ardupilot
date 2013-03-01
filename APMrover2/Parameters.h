@@ -98,6 +98,7 @@ public:
 
         // obstacle control
         k_param_sonar_enabled = 190,
+        k_param_sonar, // sonar object
         k_param_sonar_type,
         k_param_sonar_trigger_cm,
         k_param_sonar_turn_angle,
