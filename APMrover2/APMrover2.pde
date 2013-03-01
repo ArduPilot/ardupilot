@@ -2,8 +2,13 @@
 
 #define THISFIRMWARE "ArduRover v2.30"
 
-// This is the APMrover firmware derived from the Arduplane v2.32 by Jean-Louis Naudin (JLN) 
-/*
+/* 
+This is the APMrover2 firmware. It was originally derived from
+ArduPlane by Jean-Louis Naudin (JLN), and then rewritten after the
+AP_HAL merge by Andrew Tridgell
+
+Maintainer: Andrew Tridgell
+
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin
 Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
 Please contribute your ideas!
@@ -13,56 +18,23 @@ This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
-//
-// JLN updates: last update 2012-06-21
-// DOLIST:
-//-------------------------------------------------------------------------------------------------------------------------
-// Dev Startup : 2012-04-21
-//
-//  2012-06-21: Update for HIL mode with mavlink 1.0 (new lib)
-//  2012-06-13: use RangeFinder optical SharpGP2Y instead of ultrasonic sonar
-//  2012-06-13: added Test sonar
-//  2012-05-17: added speed_boost during straight line
-//  2012-05-17: New update about the throttle rate control based on the field test done by Franco Borasio (Thanks Franco..)
-//  2012-05-15: The Throttle rate can be controlled by the THROTTLE_SLEW_LIMIT (the value give the step increase, 1 = 0.1)
-//  2012-05-14: Update about mavlink library (now compatible with the latest version of mavlink)
-//  2012-05-14: Added option (hold roll to full right + SW7 ON/OFF) to init_home during the wp_list reset
-//  2012-05-13: Add ROV_SONAR_TRIG (default = 200 cm)
-//  2012-05-13: Restart_nav() added and heading bug correction, tested OK in the field
-//  2012-05-12: RTL then stop update - Tested in the field
-//  2012-05-11: The rover now STOP after the RTL... (special update for Franco...)
-//  2012-05-11: Added SONAR detection for obstacle avoidance (alpha version for SONAR testing)
-//  2012-05-04: Added #define LITE ENABLED  for the APM1280 or APM2560 CPU IMUless version
-//  2012-05-03: Successful missions tests with a full APM2560 kit (GPS MT3329 + magnetometer HMC5883L)
-//  2012-05-03: removing stick mixing in auto mode
-//  2012-05-01: special update for rover about ground_course if compass is enabled
-//  2012-04-30: Successfully tested in autonomous nav with a waypoints list recorded in live mode
-//  2012-04-30: Now a full version for APM v1 or APM v2 with magnetometer
-//  2012-04-27: Cosmetic changes
-//  2012-04-26: Only one PID (pidNavRoll) for steering the wheel with nav_steer
-//  2012-04-26: Added ground_speed and ground_course variables in Update_GPS
-//  2012-04-26: Set GPS to 10 Hz (updated in the AP_GPS lib)
-//  2012-04-22: Tested on Traxxas Monster Jam Grinder XL-5 3602
-//  2012-04-21: Roll set to wheels control and Throttle neutral to 50% (0 -100)  - Forward>50, Backward<50
-//
+
 // Radio setup:
 // APM INPUT (Rec = receiver)
-// Rec ch1: Roll 
-// Rec ch2: Throttle
-// Rec ch3: Pitch
-// Rec ch4: Yaw
+// Rec ch1: Steering
+// Rec ch2: not used
+// Rec ch3: Throttle
+// Rec ch4: not used
 // Rec ch5: not used
 // Rec ch6: not used
-// Rec ch7: Option channel to 2 positions switch
-// Rec ch8: Mode channel to 3 positions switch
+// Rec ch7: Option channel to 2 position switch
+// Rec ch8: Mode channel to 6 position switch
 // APM OUTPUT
 // Ch1: Wheel servo (direction)
 // Ch2: not used
 // Ch3: to the motor ESC
 // Ch4: not used
 //
-// more infos about this experimental version: http://diydrones.com/profile/JeanLouisNaudin
-// =======================================================================================================
 */
 
 ////////////////////////////////////////////////////////////////////////////////
