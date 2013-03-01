@@ -268,7 +268,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @DisplayName: Sonar trigger angle
 	// @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the sonar. A positive number means to turn right, and a negative angle means to turn left.
 	// @Units: centimeters
-    // @Range: 0 90
+    // @Range: -90 90
     // @Increment: 1
 	// @User: Standard
 	GSCALAR(sonar_turn_angle,   "SONAR_TURN_ANGLE",    45),
@@ -280,7 +280,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 0.1
 	// @User: Standard
-	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     2.0f),
+	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     1.0f),
 
     // @Param: MODE_CH
     // @DisplayName: Mode channel

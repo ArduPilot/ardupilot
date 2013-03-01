@@ -374,6 +374,10 @@ static uint32_t last_heartbeat_ms;
 // Set to true when an obstacle is detected
 static bool obstacle = false;
 
+// time when we last detected an obstacle, in milliseconds
+static uint32_t obstacle_detected_time_ms;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
 ////////////////////////////////////////////////////////////////////////////////
@@ -627,7 +631,9 @@ static void fast_loop()
         if (sonar_dist_cm <= g.sonar_trigger_cm)  {
             // obstacle detected in front 
             obstacle = true;
-        } else  { 
+            obstacle_detected_time_ms = hal.scheduler->millis();
+        } else if (obstacle == true && 
+                   hal.scheduler->millis() > obstacle_detected_time_ms + g.sonar_turn_time*1000) { 
             obstacle = false;
         }
 	} else {
