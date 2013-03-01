@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// ArduPPM (PPM Encoder) V2.3.16rc2
+// ArduPPM (PPM Encoder) V2.3.16
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2.x (ATmega32u2)
@@ -141,10 +141,10 @@
 // V2.3.15 - very small bug fix: speedup
 
 // 27-02-2013
-// V2.3.16rc2 - if channel 1, 2 or 4 is disconnected: set it to center (1500us)
-//            - if channel 3 (throttle) is disconnected: set it to low (900us)
-//            - if channel 5-8 are disconnected: set it to last value
-//            - permanent LED error condition indication is only triggered when throttle is set low (or all channels are disconnected)
+// V2.3.16 - if channel 1, 2 or 4 is disconnected: set it to center (1500us)
+//         - if channel 3 (throttle) is disconnected: set it to low (900us)
+//         - if channel 5-8 are disconnected: set it to last value
+//         - permanent LED error condition indication is only triggered when throttle is set low (or all channels are disconnected)
 
 
 // -------------------------------------------------------------
@@ -188,7 +188,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[18] = "ArduPPMv2.3.16rc2"; 
+const char ver[15] = "ArduPPMv2.3.16"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
