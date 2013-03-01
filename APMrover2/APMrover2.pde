@@ -442,10 +442,6 @@ static float	current_amps1;
 // Totalized current (Amp-hours) from battery 1
 static float	current_total1;									
 
-// To Do - Add support for second battery pack
-//static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery 2 Voltage, initialized above threshold for filter
-//static float	current_amps2;									// Current (Amperes) draw from battery 2
-//static float	current_total2;									// Totalized current (Amp-hours) from battery 2
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
@@ -662,7 +658,10 @@ static void fast_loop()
         } else  { 
             obstacle = false;
         }
-	}
+	} else {
+        // this makes it possible to disable sonar at runtime
+        obstacle = false;
+    }
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
@@ -673,13 +672,6 @@ static void fast_loop()
 
 		if (g.log_bitmask & MASK_LOG_IMU)
 			Log_Write_IMU();
-	#endif
-
-	// inertial navigation
-	// ------------------
-	#if INERTIAL_NAVIGATION == ENABLED
-		// TODO: implement inertial nav function
-		inertialNavigation();
 	#endif
 
 	// custom code/exceptions for flight modes
@@ -694,9 +686,6 @@ static void fast_loop()
 	// write out the servo PWM values
 	// ------------------------------
 	set_servos();
-
-
-	// XXX is it appropriate to be doing the comms below on the fast loop?
 
     gcs_update();
     gcs_data_stream_send();
