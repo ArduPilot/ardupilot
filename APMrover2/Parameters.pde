@@ -282,11 +282,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     2.0f),
 
-
-	// add sonar scaling, min, max params
-	GSCALAR(sonar_type,	        "SONAR_TYPE",       AP_RANGEFINDER_MAXSONARXL),
-
-
     // @Param: MODE_CH
     // @DisplayName: Mode channel
     // @Description: RC Channel to use for driving mode control

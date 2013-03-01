@@ -99,7 +99,6 @@ public:
         // obstacle control
         k_param_sonar_enabled = 190,
         k_param_sonar, // sonar object
-        k_param_sonar_type,
         k_param_sonar_trigger_cm,
         k_param_sonar_turn_angle,
         k_param_sonar_turn_time,
@@ -204,8 +203,6 @@ public:
 
     // obstacle control
     AP_Int8	    sonar_enabled;
-	AP_Int8	    sonar_type;   // 0 = XL, 1 = LV, 2 = XLL (XL with 10m
-                              // range), // 3 = HRLV 
     AP_Int16    sonar_trigger_cm;
     AP_Float    sonar_turn_angle;
     AP_Float    sonar_turn_time;
