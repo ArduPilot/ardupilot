@@ -33,12 +33,12 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
         break;
     case RATE_100HZ:
         _sample_divider = 2;
-        _default_filter_hz = 42;
+        _default_filter_hz = 20;
         break;
     case RATE_200HZ:
     default:
         _sample_divider = 1;
-        _default_filter_hz = 42;
+        _default_filter_hz = 20;
         break;
     }
 
