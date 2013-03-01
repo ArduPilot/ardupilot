@@ -546,8 +546,7 @@ static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
     if (!g.sonar_enabled) {
-        cliSerial->println_P(PSTR("Sonar is not enabled"));
-        return 0;
+        cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
     }
 
     print_hit_enter();
