@@ -54,26 +54,26 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
+#endif
 
     // @Param: MOT_X
     // @DisplayName: Motor interference compensation for body frame X axis
     // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference
-    // @Range: -400 400
+    // @Range: -1000 1000
     // @Increment: 1
 
     // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
     // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference
-    // @Range: -400 400
+    // @Range: -1000 1000
     // @Increment: 1
 
     // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
     // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference
-    // @Range: -400 400
+    // @Range: -1000 1000
     // @Increment: 1
     AP_GROUPINFO("MOT",    6, Compass, _motor_compensation, 0),
-#endif
 
     AP_GROUPEND
 };
