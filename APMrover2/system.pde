@@ -311,6 +311,7 @@ static void set_mode(enum mode mode)
 	{
 		case MANUAL:
 		case LEARNING:
+		case STEERING:
 			break;
 
 		case AUTO:
@@ -362,7 +363,7 @@ static void startup_INS_ground(bool force_accel_level)
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
 	demo_servos(2);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
+    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move vehicle"));
 	mavlink_delay(1000);
 
     ahrs.init();
@@ -492,6 +493,9 @@ print_mode(uint8_t mode)
         break;
     case LEARNING:
         cliSerial->println_P(PSTR("Learning"));
+        break;
+    case STEERING:
+        cliSerial->println_P(PSTR("Stearing"));
         break;
     case AUTO:
         cliSerial->println_P(PSTR("AUTO"));

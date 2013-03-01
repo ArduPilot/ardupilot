@@ -231,6 +231,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 			while (
 				mode != MANUAL &&
 				mode != LEARNING &&
+				mode != STEERING &&
 				mode != AUTO &&
 				mode != RTL) 
 			{

@@ -70,6 +70,7 @@ enum ch7_option {
 enum mode {
     MANUAL=0,
 	LEARNING=2,
+    STEERING=3,
     AUTO=10,
     RTL=11,
     GUIDED=15,

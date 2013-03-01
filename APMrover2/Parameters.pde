@@ -268,7 +268,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @DisplayName: Sonar trigger angle
 	// @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the sonar. A positive number means to turn right, and a negative angle means to turn left.
 	// @Units: centimeters
-    // @Range: -90 90
+    // @Range: -45 45
     // @Increment: 1
 	// @User: Standard
 	GSCALAR(sonar_turn_angle,   "SONAR_TURN_ANGLE",    45),
@@ -290,7 +290,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: MODE1
     // @DisplayName: Mode1
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
 	GSCALAR(mode1,           "MODE1",         MODE_1),
@@ -298,35 +298,35 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: MODE2
     // @DisplayName: Mode2
     // @Description: Driving mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode2,           "MODE2",         MODE_2),
 
     // @Param: MODE3
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode3,           "MODE3",         MODE_3),
 
     // @Param: MODE4
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode4,           "MODE4",         MODE_4),
 
     // @Param: MODE5
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode5,           "MODE5",         MODE_5),
 
     // @Param: MODE6
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode6,           "MODE6",         MODE_6),
 

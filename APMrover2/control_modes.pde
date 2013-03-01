@@ -79,7 +79,7 @@ static void read_trim_switch()
                     }
                     CH7_wp_index = 1;     
 					return;
-				} else if (control_mode == LEARNING) {    
+				} else if (control_mode == LEARNING || control_mode == STEERING) {    
                     // if SW7 is ON in LEARNING = record the Wp
                     // set the next_WP (home is stored at 0)
 

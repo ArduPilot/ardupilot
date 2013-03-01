@@ -11,6 +11,7 @@ static void failsafe_long_on_event(int fstype)
 	{
 		case MANUAL: 
 		case LEARNING:
+		case STEERING:
 			set_mode(RTL);
 			break;
 
