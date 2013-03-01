@@ -176,8 +176,7 @@ private:
     uint16_t        waypoint_send_timeout; // milliseconds
     uint16_t        waypoint_receive_timeout; // milliseconds
 
-    // data stream rates. The code assumes that
-    // streamRateRawSensors is the first
+    // data stream rates
     AP_Int16        streamRateRawSensors;
     AP_Int16        streamRateExtendedStatus;
     AP_Int16        streamRateRCChannels;

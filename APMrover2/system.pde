@@ -9,11 +9,10 @@ The init_ardupilot function processes everything we need for an in - air restart
 #if CLI_ENABLED == ENABLED
 
 // Functions called from the top-level menu
-#if LITE == DISABLED
 static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
-#endif
 static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
 static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
+static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -34,16 +33,21 @@ static int8_t	main_menu_help(uint8_t argc, const Menu::arg *argv)
 static const struct Menu::command main_menu_commands[] PROGMEM = {
 //   command		function called
 //   =======        ===============
-#if LITE == DISABLED
 	{"logs",		process_logs},
-#endif
 	{"setup",		setup_mode},
 	{"test",		test_mode},
+    {"reboot",      reboot_board},
 	{"help",		main_menu_help}
 };
 
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
+
+static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
+{
+    reboot_apm();
+    return 0;
+}
 
 // the user wants the CLI. It never exits
 static void run_cli(AP_HAL::UARTDriver *port)
@@ -146,7 +150,6 @@ static void init_ardupilot()
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
-#if LITE == DISABLED
 #if LOGGING_ENABLED == ENABLED
 	DataFlash.Init(); 	// DataFlash log initialization
     if (!DataFlash.CardInserted()) {
@@ -160,7 +163,6 @@ static void init_ardupilot()
 		DataFlash.start_new_log();
 	}
 #endif
-#endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
@@ -168,7 +170,6 @@ static void init_ardupilot()
     adc.Init();      // APM ADC library initialization
 #endif
 
-#if LITE == DISABLED
 	if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
 		if (!compass.init()|| !compass.read()) {
@@ -179,44 +180,9 @@ static void init_ardupilot()
             //compass.get_offsets();						// load offsets to account for airframe magnetic interference
         }
 	}
-#else
-  I2c.begin();
-  I2c.timeOut(20);
 
-  // I2c.setSpeed(true);
-
-  if (!compass.init()) {
-	  cliSerial->println("compass initialisation failed!");
-	  while (1) ;
-  }
-
-  compass.set_orientation(MAG_ORIENTATION);  // set compass's orientation on aircraft.
-  compass.set_offsets(0,0,0);  // set offsets to account for surrounding interference
-  compass.set_declination(ToRad(0.0));  // set local difference between magnetic north and true north
-
-  cliSerial->print("Compass auto-detected as: ");
-  switch( compass.product_id ) {
-      case AP_COMPASS_TYPE_HIL:
-	      cliSerial->println("HIL");
-		  break;
-      case AP_COMPASS_TYPE_HMC5843:
-	      cliSerial->println("HMC5843");
-		  break;
-      case AP_COMPASS_TYPE_HMC5883L:
-	      cliSerial->println("HMC5883L");
-		  break;
-      default:
-	      cliSerial->println("unknown");
-		  break;
-  }
-  
-  delay(3000);
-
-#endif
 	// initialise sonar
-	#if CONFIG_SONAR == ENABLED
-	init_sonar();
-	#endif
+    init_sonar();
 
 #endif
 	// Do GPS init
@@ -280,10 +246,8 @@ static void init_ardupilot()
 
 	startup_ground();
 
-#if LITE == DISABLED
 	if (g.log_bitmask & MASK_LOG_CMD)
 			Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-#endif
 
     set_mode(MANUAL);
 
@@ -311,13 +275,11 @@ static void startup_ground(void)
 	// -----------------------
 	demo_servos(1);
 
-#if LITE == DISABLED
 	//IMU ground start
 	//------------------------
     //
 
 	startup_INS_ground(false);
-#endif
 
 	// read the radio to set trims
 	// ---------------------------
@@ -334,16 +296,13 @@ static void startup_ground(void)
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
-static void set_mode(uint8_t mode)
+static void set_mode(enum mode mode)
 {       
 
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
-	if(g.auto_trim > 0 && control_mode == MANUAL)
-		trim_control_surfaces();
-
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
@@ -352,7 +311,6 @@ static void set_mode(uint8_t mode)
 	{
 		case MANUAL:
 		case LEARNING:
-		case CIRCLE:
 			break;
 
 		case AUTO:
@@ -369,11 +327,8 @@ static void set_mode(uint8_t mode)
 			break;
 	}
 
-#if LITE == DISABLED
 	if (g.log_bitmask & MASK_LOG_MODE)
 		Log_Write_Mode(control_mode);
-#endif
-
 }
 
 static void check_long_failsafe()
@@ -387,7 +342,7 @@ static void check_long_failsafe()
 		if(! rc_override_active && failsafe == FAILSAFE_SHORT && millis() - ch3_failsafe_timer > FAILSAFE_LONG_TIME) {
 			failsafe_long_on_event(FAILSAFE_LONG);
 		}
-		if(g.gcs_heartbeat_fs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
+		if (g.fs_gcs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
 			failsafe_long_on_event(FAILSAFE_GCS);
 		}
 	} else {
@@ -398,24 +353,6 @@ static void check_long_failsafe()
 	}
 }
 
-static void check_short_failsafe()
-{
-	// only act on changes
-	// -------------------
-	if(failsafe == FAILSAFE_NONE){
-		if(ch3_failsafe) {					// The condition is checked and the flag ch3_failsafe is set in radio.pde
-			failsafe_short_on_event(FAILSAFE_SHORT);
-		}
-	}
-
-	if(failsafe == FAILSAFE_SHORT){
-		if(!ch3_failsafe) {
-			failsafe_short_off_event();
-		}
-	}
-}
-
-#if LITE == DISABLED
 static void startup_INS_ground(bool force_accel_level)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -433,11 +370,12 @@ static void startup_INS_ground(bool force_accel_level)
 	ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate, 
              flash_leds);
-    if (force_accel_level || g.manual_level == 0) {
+    if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	
         ins.init_accel(flash_leds);
+        ahrs.set_trim(Vector3f(0, 0, 0));
 	}
     ahrs.reset();
 
@@ -447,7 +385,6 @@ static void startup_INS_ground(bool force_accel_level)
 	digitalWrite(A_LED_PIN, LED_OFF);
 	digitalWrite(C_LED_PIN, LED_OFF);
 }
-#endif
 
 static void update_GPS_light(void)
 {
@@ -547,7 +484,7 @@ uint16_t board_voltage(void)
 }
 
 static void
-print_flight_mode(uint8_t mode)
+print_mode(uint8_t mode)
 {
     switch (mode) {
     case MANUAL:

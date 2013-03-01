@@ -38,18 +38,12 @@ static void navigate()
 }
 
 
-static void calc_gndspeed_undershoot()
-{
-    if (g_gps->status() == GPS::GPS_OK) {
-        // Function is overkill, but here in case we want to add filtering later
-        groundspeed_undershoot = (g.min_gndspeed > 0) ? (g.min_gndspeed - ground_speed) : 0;
-    }
-}
-
 static void calc_bearing_error()
 {    
-	bearing_error = nav_bearing - ahrs.yaw_sensor;
-	bearing_error = wrap_180(bearing_error);
+    static butter10hz1_6 butter;
+
+	bearing_error_cd = wrap_180(nav_bearing - ahrs.yaw_sensor);
+    bearing_error_cd = butter.filter(bearing_error_cd);
 }
 
 static long wrap_360(long error)
@@ -71,7 +65,7 @@ static void update_crosstrack(void)
 	// Crosstrack Error
 	// ----------------
 	if (abs(wrap_180(target_bearing - crosstrack_bearing)) < 4500) {	 // If we are too far off or too close we don't do track following
-		crosstrack_error = sinf(radians((target_bearing - crosstrack_bearing) / (float)100)) * (float)wp_distance;	 // Meters we are off track line
+		crosstrack_error = sinf(radians((target_bearing - crosstrack_bearing) / (float)100)) * wp_distance;	 // Meters we are off track line
 		nav_bearing += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 		nav_bearing = wrap_360(nav_bearing);
 	}

@@ -64,7 +64,9 @@ public:
     // perform accelerometer calibration including providing user instructions
     // and feedback
     virtual bool calibrate_accel(void (*flash_leds_cb)(bool on),
-                                 AP_InertialSensor_UserInteract *interact);
+                                 AP_InertialSensor_UserInteract *interact,
+                                 float& trim_roll,
+                                 float& trim_pitch);
 #endif
 
     /// Perform cold-start initialisation for just the gyros.
@@ -103,12 +105,6 @@ public:
      * Returns a bool of whether data was updated or not.
      */
     virtual bool update() = 0;
-
-    // check if the sensors have new data
-    virtual bool new_data_available(void) = 0;
-
-    /* Temperature, in degrees celsius, of the gyro. */
-    virtual float temperature() = 0;
 
     /* get_delta_time returns the time period in seconds
      * overwhich the sensor data was collected
@@ -150,6 +146,7 @@ protected:
     virtual void            _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
     virtual void            _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     virtual void            _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
+    virtual void            _calculate_trim(Vector3f accel_sample, float& trim_roll, float& trim_pitch);
 #endif
 
     // save parameters to eeprom

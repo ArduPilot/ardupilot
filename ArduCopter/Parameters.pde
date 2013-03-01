@@ -334,6 +334,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
 
+    // @Param: THR_MID
+    // @DisplayName: Throttle Mid Position
+    // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
+    // @User: Standard
+    // @Range: 300 700
+    // @Increment: 1
+    GSCALAR(throttle_mid,        "THR_MID",    THR_MID),
+
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
@@ -436,7 +444,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Auto Slew Rate
     // @Description: This restricts the rate of change of the roll and pitch attitude commanded by the auto pilot
     // @Units: Degrees/Second
-	// @Range: 1 45
+	// @Range: 1 90
     // @Increment: 1
     // @User: Advanced
     GSCALAR(auto_slew_rate, "AUTO_SLEW",            AUTO_SLEW_RATE),
@@ -969,11 +977,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(ins,            "INS_", AP_InertialSensor),
 #endif
 
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     // @Group: INAV_
     // @Path: ../libraries/AP_InertialNav/AP_InertialNav.cpp
     GOBJECT(inertial_nav,           "INAV_",    AP_InertialNav),
-#endif
 
     // @Group: SR0_
     // @Path: ./GCS_Mavlink.pde

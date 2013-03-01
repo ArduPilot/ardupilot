@@ -43,8 +43,7 @@
  */
 
 // Inertia based contollers
-//#define INERTIAL_NAV_XY ENABLED
-#define INERTIAL_NAV_Z ENABLED
+#define RTL_YAW YAW_HOLD
 
 //#define MOTORS_JD880
 //#define MOTORS_JD850

@@ -29,8 +29,6 @@ public:
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool                update();
-    bool                new_data_available();
-    float               temperature();
     float               get_gyro_drift_rate();
 
     // push_gyro_offsets_to_dmp - updates gyro offsets in mpu6000 registers
@@ -66,7 +64,6 @@ private:
     static AP_HAL::SPIDeviceDriver *_spi;
     static AP_HAL::Semaphore *_spi_sem;
 
-    uint8_t 					_msec_per_sample;
     uint16_t					_num_samples;
 
     float                       _temp;
@@ -90,6 +87,14 @@ private:
     // dmp related methods and parameters
     static void                 dmp_register_write(uint8_t bank, uint8_t address, uint8_t num_bytes, uint8_t data[]); // Method to write multiple bytes into dmp registers.  Requires a "bank"
     static void                 dmp_set_rate(uint8_t rate); // set DMP output rate (see constants)
+
+    // how many hardware samples before we report a sample to the caller
+    uint8_t _sample_shift;
+
+    // support for updating filter at runtime
+    uint8_t _last_filter_hz;
+
+    void _set_filter_register(uint8_t filter_hz, uint8_t default_filter);
 
 public:
     static Quaternion           quaternion;             // holds the 4 quaternions representing attitude taken directly from the DMP

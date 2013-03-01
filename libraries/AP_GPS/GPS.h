@@ -16,6 +16,7 @@
 class GPS
 {
 public:
+	GPS();
 
     /// Update GPS state based on possible bytes received from the module.
     ///

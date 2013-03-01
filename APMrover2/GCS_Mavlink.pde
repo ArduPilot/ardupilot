@@ -27,6 +27,10 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
+    
+    if (failsafe != FAILSAFE_NONE) {
+        system_status = MAV_STATE_CRITICAL;
+    }
 
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
@@ -46,7 +50,6 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case AUTO:
     case RTL:
     case GUIDED:
-    case CIRCLE:
         base_mode = MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
@@ -142,6 +145,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
     case AUTO:
     case RTL:
+    case GUIDED:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
         control_sensors_enabled |= (1<<12); // yaw position
@@ -235,7 +239,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
     int16_t bearing = nav_bearing / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
-        nav_roll / 1.0e2,
+        nav_steer / 1.0e2,
         0,
         bearing,
         target_bearing / 100,
@@ -275,10 +279,10 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port 0
-        10000 * g.channel_roll.norm_output(),
-        10000 * g.channel_pitch.norm_output(),
+        10000 * g.channel_steer.norm_output(),
+        0,
         10000 * g.channel_throttle.norm_output(),
-        10000 * g.channel_rudder.norm_output(),
+        0,
         0,
         0,
         0,
@@ -414,6 +418,14 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         chan,
         board_voltage(),
         hal.i2c->lockup_count());
+}
+
+static void NOINLINE send_rangefinder(mavlink_channel_t chan)
+{
+    mavlink_msg_rangefinder_send(
+        chan,
+        sonar.distance_cm() * 0.01,
+        sonar.voltage());
 }
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
@@ -578,6 +590,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
+        break;
+
+    case MSG_RANGEFINDER:
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_rangefinder(chan);
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -858,6 +875,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
+        send_message(MSG_RANGEFINDER);
     }
 }
 
@@ -990,9 +1008,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (packet.param1 == 1 ||
                     packet.param2 == 1 ||
                     packet.param3 == 1) {
-            #if LITE == DISABLED                      
                     startup_INS_ground(true);
-            #endif
                 }
                 if (packet.param4 == 1) {
                     trim_radio();
@@ -1068,7 +1084,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case LEARNING:
             case AUTO:
             case RTL:
-                set_mode(packet.custom_mode);
+                set_mode((enum mode)packet.custom_mode);
                 break;
             }
 

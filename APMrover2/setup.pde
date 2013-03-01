@@ -8,12 +8,13 @@ static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_factory		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes	(uint8_t argc, const Menu::arg *argv);
 #if !defined( __AVR_ATmega1280__ )
-static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_accel_scale   (uint8_t argc, const Menu::arg *argv);
 #endif
+static int8_t   setup_level         (uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_batt_monitor			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_compass		(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_declination	(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_batt_monitor	(uint8_t argc, const Menu::arg *argv);
 
 // Command/function table for the setup menu
 static const struct Menu::command setup_menu_commands[] PROGMEM = {
@@ -22,6 +23,7 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"reset", 			setup_factory},
 	{"radio",			setup_radio},
 	{"modes",			setup_flightmodes},
+	{"level",			setup_level},
 #if !defined( __AVR_ATmega1280__ )
     {"accel",           setup_accel_scale},
 #endif
@@ -65,7 +67,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_gains();
 	report_xtrack();
 	report_throttle();
-	report_flight_modes();
+	report_modes();
 	report_compass();
 
 	cliSerial->printf_P(PSTR("Raw Values\n"));
@@ -94,8 +96,6 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	AP_Param::erase_all();
 	cliSerial->printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
 
-	//default_flight_modes();   // This will not work here.  Replacement code located in init_ardupilot()
-
 	for (;;) {
 	}
 	// note, cannot actually return here
@@ -117,7 +117,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 	}
 
 
-	if(g.channel_roll.radio_in < 500){
+	if(g.channel_steer.radio_in < 500){
 		while(1){
 			cliSerial->printf_P(PSTR("\nNo radio; Check connectors."));
 			delay(1000);
@@ -125,27 +125,27 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 
-	g.channel_roll.radio_min 		= g.channel_roll.radio_in;
-	g.channel_pitch.radio_min 		= g.channel_pitch.radio_in;
+	g.channel_steer.radio_min 		= g.channel_steer.radio_in;
 	g.channel_throttle.radio_min 	= g.channel_throttle.radio_in;
-	g.channel_rudder.radio_min 		= g.channel_rudder.radio_in;
+	g.rc_2.radio_min = g.rc_2.radio_in;
+	g.rc_4.radio_min = g.rc_4.radio_in;
 	g.rc_5.radio_min = g.rc_5.radio_in;
 	g.rc_6.radio_min = g.rc_6.radio_in;
 	g.rc_7.radio_min = g.rc_7.radio_in;
 	g.rc_8.radio_min = g.rc_8.radio_in;
 
-	g.channel_roll.radio_max 		= g.channel_roll.radio_in;
-	g.channel_pitch.radio_max 		= g.channel_pitch.radio_in;
+	g.channel_steer.radio_max 		= g.channel_steer.radio_in;
 	g.channel_throttle.radio_max 	= g.channel_throttle.radio_in;
-	g.channel_rudder.radio_max 		= g.channel_rudder.radio_in;
+	g.rc_2.radio_max = g.rc_2.radio_in;
+	g.rc_4.radio_max = g.rc_4.radio_in;
 	g.rc_5.radio_max = g.rc_5.radio_in;
 	g.rc_6.radio_max = g.rc_6.radio_in;
 	g.rc_7.radio_max = g.rc_7.radio_in;
 	g.rc_8.radio_max = g.rc_8.radio_in;
 
-	g.channel_roll.radio_trim 		= g.channel_roll.radio_in;
-	g.channel_pitch.radio_trim 		= g.channel_pitch.radio_in;
-	g.channel_rudder.radio_trim 	= g.channel_rudder.radio_in;
+	g.channel_steer.radio_trim 		= g.channel_steer.radio_in;
+	g.rc_2.radio_trim = 1500;
+	g.rc_4.radio_trim = 1500;
 	g.rc_5.radio_trim = 1500;
 	g.rc_6.radio_trim = 1500;
 	g.rc_7.radio_trim = 1500;
@@ -159,10 +159,10 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		// ----------------------------------------------------------
 		read_radio();
 
-		g.channel_roll.update_min_max();
-		g.channel_pitch.update_min_max();
+		g.channel_steer.update_min_max();
 		g.channel_throttle.update_min_max();
-		g.channel_rudder.update_min_max();
+		g.rc_2.update_min_max();
+		g.rc_4.update_min_max();
 		g.rc_5.update_min_max();
 		g.rc_6.update_min_max();
 		g.rc_7.update_min_max();
@@ -172,10 +172,10 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
             while (cliSerial->available() > 0) {
                 cliSerial->read();
             }
-			g.channel_roll.save_eeprom();
-			g.channel_pitch.save_eeprom();
+			g.channel_steer.save_eeprom();
 			g.channel_throttle.save_eeprom();
-			g.channel_rudder.save_eeprom();
+			g.rc_2.save_eeprom();
+			g.rc_4.save_eeprom();
 			g.rc_5.save_eeprom();
 			g.rc_6.save_eeprom();
 			g.rc_7.save_eeprom();
@@ -209,10 +209,10 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		if (oldSwitchPosition != switchPosition){
 			// force position 5 to MANUAL
 			if (switchPosition > 4) {
-				flight_modes[switchPosition] = MANUAL;
+				modes[switchPosition] = MANUAL;
 			}
 			// update our current mode
-			mode = flight_modes[switchPosition];
+			mode = modes[switchPosition];
 
 			// update the user
 			print_switch(switchPosition, mode);
@@ -230,7 +230,6 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 
 			while (
 				mode != MANUAL &&
-				mode != CIRCLE &&
 				mode != LEARNING &&
 				mode != AUTO &&
 				mode != RTL) 
@@ -248,7 +247,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode = MANUAL;
 
 			// save new mode
-			flight_modes[switchPosition] = mode;
+			modes[switchPosition] = mode;
 
 			// print new mode
 			print_switch(switchPosition, mode);
@@ -258,8 +257,8 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		if(cliSerial->available() > 0){
 		    // save changes
             for (mode=0; mode<6; mode++)
-                flight_modes[mode].save();
-			report_flight_modes();
+                modes[mode].save();
+			report_modes();
 			print_done();
 			return (0);
 		}
@@ -299,22 +298,33 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
+    float trim_roll, trim_pitch;
     cliSerial->println_P(PSTR("Initialising gyros"));
     ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    bool success = ins.calibrate_accel(flash_leds, &interact);
-    if (success) {
-        if (g.manual_level == 0) {
-            cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
-            g.manual_level.set_and_save(1);
-        }
+    if(ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch)) {
+        // reset ahrs's trim to suggested values from calibration routine
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
     return(0);
 }
 #endif
+
+static int8_t
+setup_level(uint8_t argc, const Menu::arg *argv)
+{
+    cliSerial->println_P(PSTR("Initialising gyros"));
+    ahrs.init();
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             flash_leds);
+    ins.init_accel(flash_leds);
+    ahrs.set_trim(Vector3f(0, 0, 0));
+    return(0);
+}
 
 static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
@@ -388,26 +398,14 @@ static void report_gains()
 	cliSerial->printf_P(PSTR("Gains\n"));
 	print_divider();
 
-	cliSerial->printf_P(PSTR("servo roll:\n"));
-	print_PID(&g.pidServoRoll);
+	cliSerial->printf_P(PSTR("servo steer:\n"));
+	print_PID(&g.pidServoSteer);
 
-	cliSerial->printf_P(PSTR("servo pitch:\n"));
-	print_PID(&g.pidServoPitch);
+	cliSerial->printf_P(PSTR("nav steer:\n"));
+	print_PID(&g.pidNavSteer);
 
-	cliSerial->printf_P(PSTR("servo rudder:\n"));
-	print_PID(&g.pidServoRudder);
-
-	cliSerial->printf_P(PSTR("nav roll:\n"));
-	print_PID(&g.pidNavRoll);
-
-	cliSerial->printf_P(PSTR("nav pitch airspeed:\n"));
-	print_PID(&g.pidNavPitchAirspeed);
-
-	cliSerial->printf_P(PSTR("energry throttle:\n"));
-	print_PID(&g.pidTeThrottle);
-
-	cliSerial->printf_P(PSTR("nav pitch alt:\n"));
-	print_PID(&g.pidNavPitchAltitude);
+	cliSerial->printf_P(PSTR("speed throttle:\n"));
+	print_PID(&g.pidSpeedThrottle);
 
 	print_blanks(2);
 }
@@ -431,16 +429,16 @@ static void report_throttle()
 	cliSerial->printf_P(PSTR("Throttle\n"));
 	print_divider();
 
-	cliSerial->printf_P(PSTR("min: %d\n"
-						 "max: %d\n"
-						 "cruise: %d\n"
-						 "failsafe_enabled: %d\n"
-						 "failsafe_value: %d\n"),
-						 (int)g.throttle_min,
-						 (int)g.throttle_max,
-						 (int)g.throttle_cruise,
-						 (int)g.throttle_fs_enabled,
-						 (int)g.throttle_fs_value);
+	cliSerial->printf_P(PSTR("min: %u\n"
+                             "max: %u\n"
+                             "cruise: %u\n"
+                             "failsafe_enabled: %u\n"
+                             "failsafe_value: %u\n"),
+						 (unsigned)g.throttle_min,
+						 (unsigned)g.throttle_max,
+						 (unsigned)g.throttle_cruise,
+						 (unsigned)g.fs_throttle_enabled,
+						 (unsigned)g.fs_throttle_value);
 	print_blanks(2);
 }
 
@@ -482,14 +480,14 @@ static void report_compass()
 	print_blanks(2);
 }
 
-static void report_flight_modes()
+static void report_modes()
 {
 	//print_blanks(2);
 	cliSerial->printf_P(PSTR("Flight modes\n"));
 	print_divider();
 
 	for(int i = 0; i < 6; i++ ){
-		print_switch(i, flight_modes[i]);
+		print_switch(i, modes[i]);
 	}
 	print_blanks(2);
 }
@@ -511,10 +509,10 @@ print_PID(PID * pid)
 static void
 print_radio_values()
 {
-	cliSerial->printf_P(PSTR("CH1: %d | %d | %d\n"), (int)g.channel_roll.radio_min, (int)g.channel_roll.radio_trim, (int)g.channel_roll.radio_max);
-	cliSerial->printf_P(PSTR("CH2: %d | %d | %d\n"), (int)g.channel_pitch.radio_min, (int)g.channel_pitch.radio_trim, (int)g.channel_pitch.radio_max);
+	cliSerial->printf_P(PSTR("CH1: %d | %d | %d\n"), (int)g.channel_steer.radio_min, (int)g.channel_steer.radio_trim, (int)g.channel_steer.radio_max);
+	cliSerial->printf_P(PSTR("CH2: %d | %d | %d\n"), (int)g.rc_2.radio_min, (int)g.rc_2.radio_trim, (int)g.rc_2.radio_max);
 	cliSerial->printf_P(PSTR("CH3: %d | %d | %d\n"), (int)g.channel_throttle.radio_min, (int)g.channel_throttle.radio_trim, (int)g.channel_throttle.radio_max);
-	cliSerial->printf_P(PSTR("CH4: %d | %d | %d\n"), (int)g.channel_rudder.radio_min, (int)g.channel_rudder.radio_trim, (int)g.channel_rudder.radio_max);
+	cliSerial->printf_P(PSTR("CH4: %d | %d | %d\n"), (int)g.rc_4.radio_min, (int)g.rc_4.radio_trim, (int)g.rc_4.radio_max);
 	cliSerial->printf_P(PSTR("CH5: %d | %d | %d\n"), (int)g.rc_5.radio_min, (int)g.rc_5.radio_trim, (int)g.rc_5.radio_max);
 	cliSerial->printf_P(PSTR("CH6: %d | %d | %d\n"), (int)g.rc_6.radio_min, (int)g.rc_6.radio_trim, (int)g.rc_6.radio_max);
 	cliSerial->printf_P(PSTR("CH7: %d | %d | %d\n"), (int)g.rc_7.radio_min, (int)g.rc_7.radio_trim, (int)g.rc_7.radio_max);
@@ -526,7 +524,7 @@ static void
 print_switch(uint8_t p, uint8_t m)
 {
 	cliSerial->printf_P(PSTR("Pos %d: "),p);
-    print_flight_mode(m);
+    print_mode(m);
 }
 
 static void
@@ -559,10 +557,10 @@ radio_input_switch(void)
 	static int8_t bouncer = 0;
 
 
-	if (int16_t(g.channel_roll.radio_in - g.channel_roll.radio_trim) > 100) {
+	if (int16_t(g.channel_steer.radio_in - g.channel_steer.radio_trim) > 100) {
 	    bouncer = 10;
 	}
-	if (int16_t(g.channel_roll.radio_in - g.channel_roll.radio_trim) < -100) {
+	if (int16_t(g.channel_steer.radio_in - g.channel_steer.radio_trim) < -100) {
 	    bouncer = -10;
 	}
 	if (bouncer >0) {

@@ -67,7 +67,11 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
-
+    
+    if (ap.failsafe == true)  {
+        system_status = MAV_STATE_CRITICAL;
+    }
+    
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
@@ -937,8 +941,38 @@ GCS_MAVLINK::update(void)
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
-    AP_Int16 *stream_rates = &streamRateRawSensors;
-    uint8_t rate = (uint8_t)stream_rates[stream_num].get();
+    uint8_t rate;
+    switch (stream_num) {
+        case STREAM_RAW_SENSORS:
+            rate = streamRateRawSensors.get();
+            break;
+        case STREAM_EXTENDED_STATUS:
+            rate = streamRateExtendedStatus.get();
+            break;
+        case STREAM_RC_CHANNELS:
+            rate = streamRateRCChannels.get();
+            break;
+        case STREAM_RAW_CONTROLLER:
+            rate = streamRateRawController.get();
+            break;
+        case STREAM_POSITION:
+            rate = streamRatePosition.get();
+            break;
+        case STREAM_EXTRA1:
+            rate = streamRateExtra1.get();
+            break;
+        case STREAM_EXTRA2:
+            rate = streamRateExtra2.get();
+            break;
+        case STREAM_EXTRA3:
+            rate = streamRateExtra3.get();
+            break;
+        case STREAM_PARAMS:
+            rate = streamRateParams.get();
+            break;
+        default:
+            rate = 0;
+    }
 
     if (rate == 0) {
         return false;
@@ -1193,9 +1227,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 trim_radio();
             }
             if (packet.param5 == 1) {
+                float trim_roll, trim_pitch;
                 // this blocks
                 AP_InertialSensor_UserInteractStream interact(hal.console);
-                ins.calibrate_accel(flash_leds, &interact);
+                if(ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch)) {
+                    // reset ahrs's trim to suggested values from calibration routine
+                    ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                }
             }
             result = MAV_RESULT_ACCEPTED;
             break;

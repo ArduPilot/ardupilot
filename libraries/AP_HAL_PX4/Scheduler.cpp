@@ -210,6 +210,7 @@ void *PX4Scheduler::_io_thread(void)
         // process any pending serial bytes
         ((PX4UARTDriver *)hal.uartA)->_timer_tick();
         ((PX4UARTDriver *)hal.uartB)->_timer_tick();
+        ((PX4UARTDriver *)hal.uartC)->_timer_tick();
 
         // process any pending storage writes
         ((PX4Storage *)hal.storage)->_timer_tick();

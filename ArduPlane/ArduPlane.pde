@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.68"
+#define THISFIRMWARE "ArduPlane V2.70"
 /*
  *  Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher
  *  Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
@@ -471,6 +471,9 @@ static int32_t old_target_bearing_cd;
 
 // Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
 static int32_t loiter_total;
+
+// Direction for loiter. 1 for clockwise, -1 for counter-clockwise
+static int8_t loiter_direction = 1;
 
 // The amount in degrees we have turned since recording old_target_bearing
 static int16_t loiter_delta;
@@ -1191,14 +1194,12 @@ static void update_current_flight_mode(void)
 
         case CIRCLE:
             // we have no GPS installed and have lost radio contact
-            // or we just want to fly around in a gentle circle w/o GPS
-            // ----------------------------------------------------
+            // or we just want to fly around in a gentle circle w/o GPS,
+            // holding altitude at the altitude we set when we
+            // switched into the mode
             nav_roll_cd  = g.roll_limit_cd / 3;
-            nav_pitch_cd = 0;
-
-            if (failsafe != FAILSAFE_NONE) {
-                g.channel_throttle.servo_out = g.throttle_cruise;
-            }
+            calc_nav_pitch();
+            calc_throttle();
             break;
 
         case MANUAL:

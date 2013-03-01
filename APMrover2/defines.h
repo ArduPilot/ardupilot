@@ -33,9 +33,10 @@
 #define SONAR_SOURCE_ANALOG_PIN 2
 
 // CH 7 control
-#define CH7_DO_NOTHING   0
-#define CH7_SAVE_WP      1
-#define CH7_RTL          6
+enum ch7_option {
+    CH7_DO_NOTHING=0,
+    CH7_SAVE_WP=1
+};
 
 #define T6 1000000
 #define T7 10000000
@@ -66,15 +67,14 @@
 
 // Auto Pilot modes
 // ----------------
-#define MANUAL 0
-#define CIRCLE 1			 // When flying sans GPS, and we loose the radio, just circle
-#define LEARNING 2
-
-#define AUTO 10
-#define RTL 11
-#define GUIDED 15
-#define INITIALISING 16     // in startup routines
-#define HEADALT      17   // Lock the current heading and altitude
+enum mode {
+    MANUAL=0,
+	LEARNING=2,
+    AUTO=10,
+    RTL=11,
+    GUIDED=15,
+    INITIALISING=16
+};
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested
@@ -122,6 +122,7 @@ enum ap_message {
     MSG_AHRS,
     MSG_SIMSTATE,
     MSG_HWSTATUS,
+    MSG_RANGEFINDER,
     MSG_RETRY_DEFERRED // this must be last
 };
 

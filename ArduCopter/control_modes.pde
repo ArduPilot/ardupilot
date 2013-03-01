@@ -192,7 +192,7 @@ static void auto_trim()
         led_mode = SAVE_TRIM_LEDS;
 
         // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)-g.rc_1.control_in / 4000.0f);
+        float roll_trim_adjustment = ToRad((float)g.rc_1.control_in / 4000.0f);
 
         // calculate pitch trim adjustment
         float pitch_trim_adjustment = ToRad((float)g.rc_2.control_in / 4000.0f);

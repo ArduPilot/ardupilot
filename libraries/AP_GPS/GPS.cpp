@@ -17,6 +17,22 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)
 #endif
 
+GPS::GPS(void) :
+	// ensure all the inherited fields are zeroed
+	num_sats(0),
+	new_data(false),
+	fix(false),
+	valid_read(false),
+	last_fix_time(0),
+	_have_raw_velocity(false),
+	_status(GPS::NO_FIX),
+	_last_ground_speed_cm(0),
+	_velocity_north(0),
+	_velocity_east(0),
+	_velocity_down(0)	
+{
+}
+
 void
 GPS::update(void)
 {

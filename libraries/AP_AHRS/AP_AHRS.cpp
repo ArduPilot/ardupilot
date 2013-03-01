@@ -115,14 +115,23 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 	return false;
 }
 
+// set_trim
+void AP_AHRS::set_trim(Vector3f new_trim)
+{
+    Vector3f trim;
+    trim.x = constrain(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    _trim.set_and_save(trim);
+}
+
 // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
 void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom)
 {
     Vector3f trim = _trim.get();
 
     // add new trim
-    trim.x = constrain(trim.x + roll_in_radians, ToRad(-10.0f), ToRad(10.0f));
-    trim.y = constrain(trim.y + pitch_in_radians, ToRad(-10.0f), ToRad(10.0f));
+    trim.x = constrain(trim.x + roll_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain(trim.y + pitch_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
 
     // set new trim values
     _trim.set(trim);

@@ -8,21 +8,12 @@ static uint8_t failsafeCounter = 0;		// we wait a second to take over the thrott
 static void init_rc_in()
 {
 	// set rc channel ranges
-	g.channel_roll.set_angle(SERVO_MAX);
-	g.channel_pitch.set_angle(SERVO_MAX);
-	g.channel_rudder.set_angle(SERVO_MAX);
+	g.channel_steer.set_angle(SERVO_MAX);
 	g.channel_throttle.set_angle(100);
 
 	// set rc dead zones
-	g.channel_roll.set_dead_zone(60);
-	g.channel_pitch.set_dead_zone(60);
-	g.channel_rudder.set_dead_zone(60);
+	g.channel_steer.set_dead_zone(60);
 	g.channel_throttle.set_dead_zone(6);
-
-	//g.channel_roll.dead_zone 	= 60;
-	//g.channel_pitch.dead_zone 	= 60;
-	//g.channel_rudder.dead_zone 	= 60;
-	//g.channel_throttle.dead_zone = 6;
 
 	//set auxiliary ranges
 	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
@@ -40,10 +31,8 @@ static void init_rc_out()
     hal.rcout->enable_ch(CH_8);
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
-	hal.rcout->write(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
-	hal.rcout->write(CH_2, 	g.channel_pitch.radio_trim);
+	hal.rcout->write(CH_1, 	g.channel_steer.radio_trim);					// Initialization of servo outputs
 	hal.rcout->write(CH_3, 	g.channel_throttle.radio_trim);
-	hal.rcout->write(CH_4, 	g.channel_rudder.radio_trim);
 
 	hal.rcout->write(CH_5, 	g.rc_5.radio_trim);
 	hal.rcout->write(CH_6, 	g.rc_6.radio_trim);
@@ -65,11 +54,9 @@ static void init_rc_out()
 
 static void read_radio()
 {
-    g.channel_roll.set_pwm(hal.rcin->read(CH_ROLL));
-    g.channel_pitch.set_pwm(hal.rcin->read(CH_PITCH));
+    g.channel_steer.set_pwm(hal.rcin->read(CH_ROLL));
 
 	g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
-	g.channel_rudder.set_pwm(hal.rcin->read(CH_4));
   	g.rc_5.set_pwm(hal.rcin->read(CH_5));
  	g.rc_6.set_pwm(hal.rcin->read(CH_6));        
 	g.rc_7.set_pwm(hal.rcin->read(CH_7));
@@ -96,8 +83,10 @@ static void read_radio()
 
 static void control_failsafe(uint16_t pwm)
 {
-	if(g.throttle_fs_enabled == 0)
+	if (!g.fs_throttle_enabled) {
+        // no throttle failsafe
 		return;
+    }
 
 	// Check for failsafe condition based on loss of GCS control
 	if (rc_override_active) {
@@ -108,8 +97,8 @@ static void control_failsafe(uint16_t pwm)
 		}
 
 	//Check for failsafe and debounce funky reads
-	} else if (g.throttle_fs_enabled) {
-		if (pwm < (unsigned)g.throttle_fs_value){
+	} else if (g.fs_throttle_enabled) {
+		if (pwm < (unsigned)g.fs_throttle_value){
 			// we detect a failsafe from radio
 			// throttle has dropped below the mark
 			failsafeCounter++;
@@ -144,22 +133,11 @@ static void trim_control_surfaces()
 	read_radio();
 	// Store control surface trim values
 	// ---------------------------------
-    if ((g.channel_roll.radio_in > 1400) && (g.channel_pitch.radio_trim > 1400)) {
-		g.channel_roll.radio_trim = g.channel_roll.radio_max + g.channel_roll.radio_min - g.channel_roll.radio_in;
-		g.channel_pitch.radio_trim = g.channel_pitch.radio_max + g.channel_pitch.radio_min - g.channel_pitch.radio_in;
-		g.channel_rudder.radio_trim = g.channel_rudder.radio_max + g.channel_rudder.radio_min - g.channel_rudder.radio_in;
-        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron);
-    } else {
-		g.channel_roll.radio_trim 		= 1500;    // case of HIL test without receiver active
-		g.channel_pitch.radio_trim 		= 1500;
-        g.channel_rudder.radio_trim             = 1500;
-        g.channel_throttle.radio_trim 	        = 1000;
+    if (g.channel_steer.radio_in > 1400) {
+		g.channel_steer.radio_trim = g.channel_steer.radio_in;
+        // save to eeprom
+        g.channel_steer.save_eeprom();
     }
-
-	// save to eeprom
-	g.channel_roll.save_eeprom();
-	g.channel_pitch.save_eeprom();
-	g.channel_rudder.save_eeprom();
 }
 
 static void trim_radio()

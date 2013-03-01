@@ -20,6 +20,11 @@ public:
     virtual int vsnprintf_P(char* str, size_t size,
             const prog_char_t *format, va_list ap) = 0;
 
+    // run a debug shall on the given stream if possible. This is used
+    // to support dropping into a debug shell to run firmware upgrade
+    // commands
+    virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
+
 };
 
 #endif // __AP_HAL_UTIL_H__

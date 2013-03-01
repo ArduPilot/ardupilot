@@ -102,13 +102,12 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
     i = constrain_int16(i, 0, g.command_total.get());
     uint16_t mem = WP_START_BYTE + (i * WP_SIZE);
 
-    // Set altitude options bitmask
-    // XXX What is this trying to do?
-    if ((temp.options & MASK_OPTIONS_RELATIVE_ALT) && i != 0) {
-        temp.options = MASK_OPTIONS_RELATIVE_ALT;
-    } else {
-        temp.options = 0;
+    // force home wp to absolute height
+    if (i == 0) {
+        temp.options &= ~(MASK_OPTIONS_RELATIVE_ALT);
     }
+    // zero unused bits
+    temp.options &= (MASK_OPTIONS_RELATIVE_ALT | MASK_OPTIONS_LOITER_DIRECTION);
 
     hal.storage->write_byte(mem, temp.id);
 
@@ -185,10 +184,13 @@ static void set_next_WP(struct Location *wp)
     // -----------------------------------------------
     target_altitude_cm = current_loc.alt;
 
-    if(prev_WP.id != MAV_CMD_NAV_TAKEOFF && prev_WP.alt != home.alt && (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND))
+    if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
+        prev_WP.alt != home.alt && 
+        (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
         offset_altitude_cm = next_WP.alt - prev_WP.alt;
-    else
-        offset_altitude_cm = 0;
+    } else {
+        offset_altitude_cm = 0;        
+    }
 
     // zero out our loiter vals to watch for missed waypoints
     loiter_delta            = 0;

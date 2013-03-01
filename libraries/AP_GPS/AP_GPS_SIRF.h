@@ -18,6 +18,15 @@
 
 class AP_GPS_SIRF : public GPS {
 public:
+	AP_GPS_SIRF() : 
+		GPS(),
+		_step(0),
+		_gather(false),
+		_payload_length(0),
+		_payload_counter(0),
+		_msg_id(0)
+		{}
+
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read();
 	static bool         _detect(uint8_t data);

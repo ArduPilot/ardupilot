@@ -16,11 +16,49 @@
 const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(format_version,         "FORMAT_VERSION",   1),
 	GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
+
+	// misc
+	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
+	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
+	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
+
+    // @Param: RSSI_PIN
+    // @DisplayName: Receiver RSSI sensing pin
+    // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @User: Standard
+    GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
+
+    // @Param: BATT_VOLT_PIN
+    // @DisplayName: Battery Voltage sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @User: Standard
+    GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    1),
+
+    // @Param: BATT_CURR_PIN
+    // @DisplayName: Battery Current sensing pin
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
+    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12
+    // @User: Standard
+    GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    2),
+
+
+
+    // @Param: SYSID_THIS_MAV
+    // @DisplayName: MAVLink system ID
+    // @Description: ID used in MAVLink protocol to identify this vehicle
+    // @User: Advanced
 	GSCALAR(sysid_this_mav,         "SYSID_THISMAV",    MAV_SYSTEM_ID),
+
+    // @Param: SYSID_MYGCS
+    // @DisplayName: MAVLink ground station ID
+    // @Description: ID used in MAVLink protocol to identify the controlling ground station
+    // @User: Advanced
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
 
     // @Param: SERIAL0_BAUD
-    // @DisplayName: Telemetry Baud Rate
+    // @DisplayName: USB Console Baud Rate
     // @Description: The baud rate used on the first serial port
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
     // @User: Standard
@@ -42,16 +80,47 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
-    // @Param: MANUAL_LEVEL
-    // @DisplayName: Manual Level
-    // @Description: Setting this to Disabled(0) will enable autolevel on every boot. Setting it to Enabled(1) will do a calibration only when you tell it to
+    // @Param: MAG_ENABLED
+    // @DisplayName: Magnetometer (compass) enabled
+    // @Description: This should be set to 1 if a compass is installed
+    // @User: Standard
     // @Values: 0:Disabled,1:Enabled
+	GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
+
+    // @Param: BATT_MONITOR
+    // @DisplayName: Battery monitoring
+    // @Description: Controls enabling monitoring of the battery's voltage and current
+    // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
+    // @User: Standard
+	GSCALAR(battery_monitoring,     "BATT_MONITOR",     DISABLED),
+
+    // @Param: VOLT_DIVIDER
+    // @DisplayName: Voltage Divider
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)
     // @User: Advanced
-	GSCALAR(manual_level,           "MANUAL_LEVEL",     0),
-	
+	GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",     VOLT_DIV_RATIO),
+
+    // @Param: AMP_PER_VOLT
+    // @DisplayName: Current Amps per volt
+    // @Description: Used to convert the voltage on the current sensing pin (BATT_CURR_PIN) to the actual current being consumed in amps (curr pin voltage * INPUT_VOLTS/1024 * AMP_PER_VOLT )
+    // @User: Advanced
+	GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",     CURR_AMP_PER_VOLT),
+
+    // @Param: INPUT_VOLTS
+    // @DisplayName: Max internal voltage of the battery voltage and current sensing pins
+    // @Description: Used to convert the voltage read in on the voltage and current pins for battery monitoring.  Normally 5 meaning 5 volts.
+    // @User: Advanced
+	GSCALAR(input_voltage,          "INPUT_VOLTS",      INPUT_VOLTAGE),
+
+    // @Param: BATT_CAPACITY
+    // @DisplayName: Battery Capacity
+    // @Description: Battery capacity in milliamp-hours (mAh)
+    // @Units: mAh
+	GSCALAR(pack_capacity,          "BATT_CAPACITY",    HIGH_DISCHARGE),
+
     // @Param: XTRK_GAIN_SC
     // @DisplayName: Crosstrack Gain
-    // @Description: The scale between distance off the line and angle to meet the line (in Degrees * 100)
+    // @Description: This controls how hard the Rover tries to follow the lines between waypoints, as opposed to driving directly to the next waypoint. The value is the scale between distance off the line and angle to meet the line (in Degrees * 100)
     // @Range: 0 2000
     // @Increment: 1
     // @User: Standard
@@ -66,13 +135,52 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
-	GSCALAR(command_total,          "CMD_TOTAL",        0),
-	GSCALAR(command_index,          "CMD_INDEX",        0),
-	GSCALAR(waypoint_radius,        "WP_RADIUS",        WP_RADIUS_DEFAULT),
+    // @Param: CRUISE_SPEED
+    // @DisplayName: Target cruise speed in auto modes
+    // @Description: The target speed in auto missions.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+	GSCALAR(speed_cruise,        "CRUISE_SPEED",    5),
+
+    // @Param: SPEED_TURN_GAIN
+    // @DisplayName: Target speed reduction while turning
+    // @Description: The percentage to reduce the throttle while turning. If this is 100% then the target speed is not reduced while turning. If this is 50% then the target speed is reduced in proportion to the turn rate, with a reduction of 50% when the steering is maximally deflected.
+    // @Units: percent
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+	GSCALAR(speed_turn_gain,    "SPEED_TURN_GAIN",  50),
+
+    // @Param: SPEED_TURN_DIST
+    // @DisplayName: Distance to turn to start reducing speed
+    // @Description: The distance to the next turn at which the rover reduces its target speed by the SPEED_TURN_GAIN
+    // @Units: meters
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+	GSCALAR(speed_turn_dist,    "SPEED_TURN_DIST",  2.0f),
+
+    // @Param: CH7_OPTION
+    // @DisplayName: Channel 7 option
+    // @Description: What to do use channel 7 for
+    // @Values: 0:Nothing,1:LearnWaypoint
+    // @User: Standard
+	GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
+
+	GGROUP(channel_steer,           "RC1_", RC_Channel),
+	GGROUP(rc_2,                    "RC2_", RC_Channel_aux),
+	GGROUP(channel_throttle,        "RC3_", RC_Channel),
+	GGROUP(rc_4,                    "RC4_", RC_Channel_aux),
+	GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
+	GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
+	GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
+	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting to which the autopilot will apply.
+    // @Description: The minimum throttle setting to which the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
@@ -81,197 +189,171 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
-    // @Description: The maximum throttle setting to which the autopilot will apply.
+    // @Description: The maximum throttle setting to which the autopilot will apply. This can be used to prevent overheating a ESC or motor on an electric rover.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
 	GSCALAR(throttle_max,           "THR_MAX",          THROTTLE_MAX),
 
+    // @Param: CRUISE_THROTTLE
+    // @DisplayName: Base throttle percentage in auto
+    // @Description: The base throttle percentage to use in auto mode. The CRUISE_SPEED parameter controls the target speed, but the rover starts with the CRUISE_THROTTLE setting as the initial estimate for how much throttle is needed to achieve that speed. It then adjusts the throttle based on how fast the rover is actually going.
+    // @Units: Percent
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+	GSCALAR(throttle_cruise,        "CRUISE_THROTTLE",    50),
+
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second
+    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     THROTTLE_SLEW_LIMIT),
+	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     0),
 
-    // @Param: THR_FAILSAFE
+    // @Param: FS_ACTION
+    // @DisplayName: Failsafe Action
+    // @Description: What to do on a failsafe event
+    // @Values: 0:Nothing,1:RTL,2:STOP
+    // @User: Standard
+	GSCALAR(fs_action,    "FS_ACTION",     0),
+
+    // @Param: FS_TIMEOUT
+    // @DisplayName: Failsafe timeout
+    // @Description: How long a failsafe event need to happen for before we trigger the failsafe action
+	// @Units: seconds
+    // @User: Standard
+	GSCALAR(fs_timeout,    "FS_TIMEOUT",     10),
+
+    // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
+    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-	GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE",     THROTTLE_FAILSAFE),
+	GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     0),
 
-    // @Param: THR_FS_VALUE
+    // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers.
     // @User: Standard
-	GSCALAR(throttle_fs_value,      "THR_FS_VALUE",     THROTTLE_FS_VALUE),
+	GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     900),
 
-    // @Param: TRIM_THROTTLE
-    // @DisplayName: Throttle cruise percentage
-    // @Description: The target percentage of throttle to apply for normal flight
-    // @Units: Percent
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-	GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
-
-    // @Param: FS_SHORT_ACTN
-    // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (1 second) failsafe event
-    // @Values: 0:None,1:ReturnToLaunch
-    // @User: Standard
-	GSCALAR(short_fs_action,        "FS_SHORT_ACTN",    SHORT_FAILSAFE_ACTION),
-
-    // @Param: FS_LONG_ACTN
-    // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (20 second) failsafe event
-    // @Values: 0:None,1:ReturnToLaunch
-    // @User: Standard
-	GSCALAR(long_fs_action,         "FS_LONG_ACTN",     LONG_FAILSAFE_ACTION),
-
-    // @Param: FS_GCS_ENABL
+    // @Param: FS_GCS_ENABLE
     // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after 20 seconds of no MAVLink heartbeat messages
+    // @Description: Enable ground control station telemetry failsafe
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-	GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL",   GCS_HEARTBEAT_FAILSAFE),
+	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
-    // @User: Advanced
-	GSCALAR(flight_mode_channel,    "FLTMODE_CH",       FLIGHT_MODE_CHANNEL),
-
-    // @Param: FLTMODE1
-    // @DisplayName: FlightMode1
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
-    // @User: Standard
-    // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-	GSCALAR(flight_mode1,           "FLTMODE1",         FLIGHT_MODE_1),
-
-    // @Param: FLTMODE2
-    // @DisplayName: FlightMode2
-    // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
-    // @User: Standard
-	GSCALAR(flight_mode2,           "FLTMODE2",         FLIGHT_MODE_2),
-
-    // @Param: FLTMODE3
-    // @DisplayName: FlightMode3
-    // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
-    // @User: Standard
-	GSCALAR(flight_mode3,           "FLTMODE3",         FLIGHT_MODE_3),
-
-    // @Param: FLTMODE4
-    // @DisplayName: FlightMode4
-    // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
-    // @User: Standard
-	GSCALAR(flight_mode4,           "FLTMODE4",         FLIGHT_MODE_4),
-
-    // @Param: FLTMODE5
-    // @DisplayName: FlightMode5
-    // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
-    // @User: Standard
-	GSCALAR(flight_mode5,           "FLTMODE5",         FLIGHT_MODE_5),
-
-    // @Param: FLTMODE6
-    // @DisplayName: FlightMode6
-    // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,5:FBWA,6:FBWB,10:Auto,11:RTL,12:Loiter,15:Guided
-    // @User: Standard
-	GSCALAR(flight_mode6,           "FLTMODE6",         FLIGHT_MODE_6),
-
-	GSCALAR(roll_limit,             "LIM_ROLL_CD",      HEAD_MAX_CENTIDEGREE),
-	GSCALAR(pitch_limit_max,        "LIM_PITCH_MAX",    PITCH_MAX_CENTIDEGREE),
-	GSCALAR(pitch_limit_min,        "LIM_PITCH_MIN",    PITCH_MIN_CENTIDEGREE),
-
-	GSCALAR(auto_trim,              "TRIM_AUTO",        AUTO_TRIM),
-	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
-	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
-	GSCALAR(log_last_filenumber,    "LOG_LASTFILE",     0),
-	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
-	GSCALAR(airspeed_cruise,        "TRIM_ARSPD_CM",    AIRSPEED_CRUISE_CM),
-	GSCALAR(min_gndspeed,           "MIN_GNDSPD_CM",    MIN_GNDSPEED_CM),
-	GSCALAR(ch7_option,             "CH7_OPT",          CH7_OPTION),
-
-	GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
-
-	GSCALAR(battery_monitoring,     "BATT_MONITOR",     DISABLED),
-	GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",     VOLT_DIV_RATIO),
-	GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",     CURR_AMP_PER_VOLT),
-	GSCALAR(input_voltage,          "INPUT_VOLTS",      INPUT_VOLTAGE),
-	GSCALAR(pack_capacity,          "BATT_CAPACITY",    HIGH_DISCHARGE),
-
-    // @Param: BATT_VOLT_PIN
-    // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
-    // @User: Standard
-    GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    1),
-
-    // @Param: BATT_CURR_PIN
-    // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12
-    // @User: Standard
-    GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    2),
-
-    // @Param: RSSI_PIN
-    // @DisplayName: Receiver RSSI sensing pin
-    // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum
-    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
-    // @User: Standard
-    GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
-
-#if HIL_MODE != HIL_MODE_ATTITUDE
-#if CONFIG_SONAR == ENABLED     
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(sonar_enabled,	        "SONAR_ENABLE",     SONAR_ENABLED),
-	GSCALAR(sonar_type,	        "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
-#endif	
-#endif
+	GSCALAR(sonar_enabled,	    "SONAR_ENABLE",     SONAR_ENABLED),
 
- // ************************************************************
-        // APMrover parameters - JLN update
-	GSCALAR(auto_wp_radius,         "ROV_AWPR_NAV",     AUTO_WP_RADIUS),
-	GSCALAR(sonar_trigger,          "ROV_SONAR_TRIG",   SONAR_TRIGGER),
-	GSCALAR(turn_gain,              "ROV_GAIN",         TURN_GAIN),
-	GSCALAR(booster,                 "ROV_BOOSTER",     BOOSTER),
-        
-// ************************************************************
+	// @Param: SONAR_TRIGGER_CM
+	// @DisplayName: Sonar trigger distance
+	// @Description: The distance from an obstacle at which the sonar triggers a turn to avoid the obstacle
+	// @Units: centimeters
+    // @Range: 0 1000
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_trigger_cm,   "SONAR_TRIGGER_CM",    100),
 
-	GGROUP(channel_roll,            "RC1_", RC_Channel),
-	GGROUP(channel_pitch,           "RC2_", RC_Channel),
-	GGROUP(channel_throttle,        "RC3_", RC_Channel),
-	GGROUP(channel_rudder,          "RC4_", RC_Channel),
-	GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
-	GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
-	GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
-	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
+	// @Param: SONAR_TURN_ANGLE
+	// @DisplayName: Sonar trigger angle
+	// @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the sonar. A positive number means to turn right, and a negative angle means to turn left.
+	// @Units: centimeters
+    // @Range: 0 90
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_turn_angle,   "SONAR_TURN_ANGLE",    45),
 
-	GGROUP(pidNavRoll,              "HDNG2RLL_",  PID),
-	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
-	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
-	GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
-	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
-	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
-	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
+	// @Param: SONAR_TURN_TIME
+	// @DisplayName: Sonar turn time
+	// @Description: The amount of time in seconds to apply the SONAR_TURN_ANGLE after detecting an obstacle.
+	// @Units: seconds
+    // @Range: 0 100
+    // @Increment: 0.1
+	// @User: Standard
+	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     2.0f),
+
+    // @Param: MODE_CH
+    // @DisplayName: Mode channel
+    // @Description: RC Channel to use for driving mode control
+    // @User: Advanced
+	GSCALAR(mode_channel,    "MODE_CH",       MODE_CHANNEL),
+
+    // @Param: MODE1
+    // @DisplayName: Mode1
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @User: Standard
+    // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
+	GSCALAR(mode1,           "MODE1",         MODE_1),
+
+    // @Param: MODE2
+    // @DisplayName: Mode2
+    // @Description: Driving mode for switch position 2 (1231 to 1360)
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @User: Standard
+	GSCALAR(mode2,           "MODE2",         MODE_2),
+
+    // @Param: MODE3
+    // @DisplayName: Mode3
+    // @Description: Driving mode for switch position 3 (1361 to 1490)
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @User: Standard
+	GSCALAR(mode3,           "MODE3",         MODE_3),
+
+    // @Param: MODE4
+    // @DisplayName: Mode4
+    // @Description: Driving mode for switch position 4 (1491 to 1620)
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @User: Standard
+	GSCALAR(mode4,           "MODE4",         MODE_4),
+
+    // @Param: MODE5
+    // @DisplayName: Mode5
+    // @Description: Driving mode for switch position 5 (1621 to 1749)
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @User: Standard
+	GSCALAR(mode5,           "MODE5",         MODE_5),
+
+    // @Param: MODE6
+    // @DisplayName: Mode6
+    // @Description: Driving mode for switch position 6 (1750 to 2049)
+    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @User: Standard
+	GSCALAR(mode6,           "MODE6",         MODE_6),
+
+	GSCALAR(command_total,          "CMD_TOTAL",        0),
+	GSCALAR(command_index,          "CMD_INDEX",        0),
+
+    // @Param: WP_RADIUS
+    // @DisplayName: Waypoint radius
+    // @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
+    // @Units: meters
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @User: Standard
+	GSCALAR(waypoint_radius,        "WP_RADIUS",        2.0f),
+
+	GGROUP(pidNavSteer,             "HDNG2STEER_",  PID),
+	GGROUP(pidServoSteer,           "STEER2SRV_",   PID),
+	GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
 	// variables not in the g class which contain EEPROM saved variables
 	GOBJECT(compass,                "COMPASS_",	Compass),
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
+
+    // @Group: SONAR_
+    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
+    GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
 
 #if HIL_MODE == HIL_MODE_DISABLED
     // @Group: INS_

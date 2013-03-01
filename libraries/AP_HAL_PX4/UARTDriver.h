@@ -44,6 +44,10 @@ public:
 
     void _timer_tick(void);
 
+    int _get_fd(void) {
+	    return _fd;
+    }
+
 private:
     const char *_devpath;
     int _fd;
@@ -67,6 +71,9 @@ private:
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
     perf_counter_t  _perf_uart;
+
+    int _write_fd(const uint8_t *buf, uint16_t n);
+    uint64_t _last_write_time;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__

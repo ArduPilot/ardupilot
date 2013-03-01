@@ -29,10 +29,10 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-    int16_t log_start;
-    int16_t log_end;
-    int16_t temp;
-    int16_t last_log_num = DataFlash.find_last_log();
+    uint16_t log_start;
+    uint16_t log_end;
+    uint16_t temp;
+    uint16_t last_log_num = DataFlash.find_last_log();
 
     uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -53,7 +53,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_MOTORS) cliSerial->printf_P(PSTR(" MOTORS"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
-        if (g.log_bitmask & MASK_LOG_ITERM) cliSerial->printf_P(PSTR(" ITERM"));
+        if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
         if (g.log_bitmask & MASK_LOG_INAV) cliSerial->printf_P(PSTR(" INAV"));
         if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
     }
@@ -66,7 +66,7 @@ print_log_menu(void)
         cliSerial->printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
 
         for(int16_t i=num_logs; i>=1; i--) {
-            int16_t last_log_start = log_start, last_log_end = log_end;
+            uint16_t last_log_start = log_start, last_log_end = log_end;
             temp = last_log_num-i+1;
             DataFlash.get_log_boundaries(temp, log_start, log_end);
             cliSerial->printf_P(PSTR("Log %d,    start %d,   end %d\n"), (int)temp, (int)log_start, (int)log_end);
@@ -84,25 +84,20 @@ static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
     int16_t dump_log;
-    int16_t dump_log_start;
-    int16_t dump_log_end;
-    int16_t last_log_num;
+    uint16_t dump_log_start;
+    uint16_t dump_log_end;
+    uint16_t last_log_num;
 
     // check that the requested log number can be read
     dump_log = argv[1].i;
     last_log_num = DataFlash.find_last_log();
 
     if (dump_log == -2) {
-        for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
-            DataFlash.StartRead(count);
-            cliSerial->printf_P(PSTR("DF page, log file #, log page: %d,\t"), (int)count);
-            cliSerial->printf_P(PSTR("%d,\t"), (int)DataFlash.GetFileNumber());
-            cliSerial->printf_P(PSTR("%d\n"), (int)DataFlash.GetFilePage());
-        }
+        DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
-        Log_Read(1, DataFlash.df_NumPages);
+        Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
         cliSerial->printf_P(PSTR("bad log number\n"));
@@ -115,7 +110,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
      *                         dump_log_start,
      *                         dump_log_end);
      */
-    Log_Read(dump_log_start, dump_log_end);
+    Log_Read((uint8_t)dump_log, dump_log_start, dump_log_end);
     //cliSerial->printf_P(PSTR("Done\n"));
     return (0);
 }
@@ -171,7 +166,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(MOTORS);
         TARG(OPTFLOW);
         TARG(PID);
-        TARG(ITERM);
+        TARG(COMPASS);
         TARG(INAV);
         TARG(CAMERA);
  #undef TARG
@@ -489,13 +484,13 @@ static void Log_Read_Optflow()
 struct log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint32_t wp_distance;
-    int16_t wp_bearing;
-    int16_t lat_error;
-    int16_t lon_error;
-    int16_t nav_pitch;
-    int16_t nav_roll;
-    int16_t lat_speed;
-    int16_t lon_speed;
+    int16_t  wp_bearing;
+    float    lat_error;
+    float    lon_error;
+    int16_t  nav_pitch;
+    int16_t  nav_roll;
+    int16_t  lat_speed;
+    int16_t  lon_speed;
 };
 
 // Write an Nav Tuning packet. Total length : 24 bytes
@@ -505,12 +500,12 @@ static void Log_Write_Nav_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
         wp_distance : wp_distance,
         wp_bearing  : (int16_t) (wp_bearing/100),
-        lat_error   : (int16_t) lat_error,
-        lon_error   : (int16_t) long_error,
+        lat_error   : lat_error,
+        lon_error   : lon_error,
         nav_pitch   : (int16_t) nav_pitch,
         nav_roll    : (int16_t) nav_roll,
-        lat_speed   : lat_speed,
-        lon_speed   : lon_speed
+        lat_speed   : (int16_t) inertial_nav.get_latitude_velocity(),
+        lon_speed   : (int16_t) inertial_nav.get_longitude_velocity()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -521,12 +516,12 @@ static void Log_Read_Nav_Tuning()
     struct log_Nav_Tuning pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                               1   2   3   4   5   6   7   8
-    cliSerial->printf_P(PSTR("NTUN, %lu, %d, %d, %d, %d, %d, %d, %d\n"),
+    //                                1   2     3     4   5   6   7   8
+    cliSerial->printf_P(PSTR("NTUN, %lu, %d, %.0f, %.0f, %d, %d, %d, %d\n"),
         (unsigned long)pkt.wp_distance,
         (int)pkt.wp_bearing,
-        (int)pkt.lat_error,
-        (int)pkt.lon_error,
+        (float)pkt.lat_error,
+        (float)pkt.lon_error,
         (int)pkt.nav_pitch,
         (int)pkt.nav_roll,
         (int)pkt.lat_speed,
@@ -585,55 +580,45 @@ static void Log_Read_Control_Tuning()
     );
 }
 
-struct log_Iterm {
+struct log_Compass {
     LOG_PACKET_HEADER;
-    int16_t rate_roll;
-    int16_t rate_pitch;
-    int16_t rate_yaw;
-    int16_t accel_throttle;
-    int16_t nav_lat;
-    int16_t nav_lon;
-    int16_t loiter_rate_lat;
-    int16_t loiter_rate_lon;
-    int16_t throttle_cruise;
+    int16_t mag_x;
+    int16_t mag_y;
+    int16_t mag_z;
+    int16_t offset_x;
+    int16_t offset_y;
+    int16_t offset_z;
 };
 
-static void Log_Write_Iterm()
+// Write a Compass packet. Total length : 15 bytes
+static void Log_Write_Compass()
 {
-    struct log_Iterm pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-        rate_roll       : (int16_t) g.pid_rate_roll.get_integrator(),
-        rate_pitch      : (int16_t) g.pid_rate_pitch.get_integrator(),
-        rate_yaw        : (int16_t) g.pid_rate_yaw.get_integrator(),
-        accel_throttle  : (int16_t) g.pid_throttle_accel.get_integrator(),
-        nav_lat         : (int16_t) g.pid_nav_lat.get_integrator(),
-        nav_lon         : (int16_t) g.pid_nav_lon.get_integrator(),
-        loiter_rate_lat : (int16_t) g.pid_loiter_rate_lat.get_integrator(),
-        loiter_rate_lon : (int16_t) g.pid_loiter_rate_lon.get_integrator(),
-        throttle_cruise : (int16_t) g.throttle_cruise
+    Vector3f mag_offsets = compass.get_offsets();
+    struct log_Compass pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
+        mag_x       : compass.mag_x,
+        mag_y       : compass.mag_y,
+        mag_z       : compass.mag_z,
+        offset_x    : (int16_t)mag_offsets.x,
+        offset_y    : (int16_t)mag_offsets.y,
+        offset_z    : (int16_t)mag_offsets.z,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Read an control tuning packet
-static void Log_Read_Iterm()
+// Read a camera packet
+static void Log_Read_Compass()
 {
-    struct log_Iterm pkt;
+    struct log_Compass pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
-
-    //                                1   2   3   4   5   6   7   8   9
-    cliSerial->printf_P(PSTR("ITERM, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
-        (int)pkt.rate_roll,
-        (int)pkt.rate_pitch,
-        (int)pkt.rate_yaw,
-        (int)pkt.accel_throttle,
-        (int)pkt.nav_lat,
-        (int)pkt.nav_lon,
-        (int)pkt.loiter_rate_lat,
-        (int)pkt.loiter_rate_lon,
-        (int)pkt.throttle_cruise
-    );
-    cliSerial->printf_P(PSTR("ITERM, "));
+                                     // 1   2   3   4   5   6
+    cliSerial->printf_P(PSTR("COMPASS, %d, %d, %d, %d, %d, %d\n"),
+                    (int)pkt.mag_x,
+                    (int)pkt.mag_y,
+                    (int)pkt.mag_z,
+                    (int)pkt.offset_x,
+                    (int)pkt.offset_y,
+                    (int)pkt.offset_z);
 }
 
 struct log_Performance {
@@ -772,7 +757,6 @@ struct log_INAV {
     LOG_PACKET_HEADER;
     int16_t baro_alt;
     int16_t inav_alt;
-    int16_t baro_climb_rate;
     int16_t inav_climb_rate;
     float   accel_corr_x;
     float   accel_corr_y;
@@ -789,28 +773,25 @@ struct log_INAV {
 // Write an INAV packet. Total length : 52 Bytes
 static void Log_Write_INAV()
 {
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     Vector3f accel_corr = inertial_nav.accel_correction_ef;
 
     struct log_INAV pkt = {
         LOG_PACKET_HEADER_INIT(LOG_INAV_MSG),
         baro_alt            : (int16_t)baro_alt,                        // 1 barometer altitude
         inav_alt            : (int16_t)inertial_nav.get_altitude(),     // 2 accel + baro filtered altitude
-        baro_climb_rate     : baro_rate,                                // 3 barometer based climb rate
-        inav_climb_rate     : (int16_t)inertial_nav.get_velocity_z(),   // 4 accel + baro based climb rate
-        accel_corr_x        : accel_corr.x,                             // 5 accel correction x-axis
-        accel_corr_y        : accel_corr.y,                             // 6 accel correction y-axis
-        accel_corr_z        : accel_corr.z,                             // 7 accel correction z-axis
-        accel_corr_ef_z     : inertial_nav.accel_correction_ef.z,       // 8 accel correction earth frame
-        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 9 lat from home
-        gps_lon_from_home   : g_gps->longitude-home.lng,                // 10 lon from home
-        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 11 accel based lat from home
-        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 12 accel based lon from home
-        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 13 accel based lat velocity
-        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 14 accel based lon velocity
+        inav_climb_rate     : (int16_t)inertial_nav.get_velocity_z(),   // 3 accel + baro based climb rate
+        accel_corr_x        : accel_corr.x,                             // 4 accel correction x-axis
+        accel_corr_y        : accel_corr.y,                             // 5 accel correction y-axis
+        accel_corr_z        : accel_corr.z,                             // 6 accel correction z-axis
+        accel_corr_ef_z     : inertial_nav.accel_correction_ef.z,       // 7 accel correction earth frame
+        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 8 lat from home
+        gps_lon_from_home   : g_gps->longitude-home.lng,                // 9 lon from home
+        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 10 accel based lat from home
+        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 11 accel based lon from home
+        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 12 accel based lat velocity
+        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 13 accel based lon velocity
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif
 }
 
 // Read an INAV packet
@@ -819,11 +800,10 @@ static void Log_Read_INAV()
     struct log_INAV pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-                                  // 1   2   3   4      5      6      7      8    9   10     11     12     13     14
-    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
+                                  // 1   2   3   4      5      6      7      8    9   10     11     12     13
+    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
                     (int)pkt.baro_alt,                  // 1 barometer altitude
                     (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
-                    (int)pkt.baro_climb_rate,           // 3 barometer based climb rate
                     (int)pkt.inav_climb_rate,           // 4 accel + baro based climb rate
                     (float)pkt.accel_corr_x,            // 5 accel correction x-axis
                     (float)pkt.accel_corr_y,            // 6 accel correction y-axis
@@ -871,7 +851,6 @@ struct log_Startup {
 // Write Startup packet. Total length : 4 bytes
 static void Log_Write_Startup()
 {
-    DataFlash.WriteByte(LOG_STARTUP_MSG);
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG)
     };
@@ -1232,9 +1211,8 @@ static void Log_Read_Error()
     cliSerial->printf_P(PSTR(", %u\n"),(unsigned)pkt.error_code);
 }
 
-
 // Read the DataFlash log memory
-static void Log_Read(int16_t start_page, int16_t end_page)
+static void Log_Read(uint8_t log_num, int16_t start_page, int16_t end_page)
 {
  #ifdef AIRFRAME_NAME
     cliSerial->printf_P(PSTR((AIRFRAME_NAME)));
@@ -1244,17 +1222,13 @@ static void Log_Read(int16_t start_page, int16_t end_page)
                              "\nFree RAM: %u\n"),
                         (unsigned) memcheck_available_memory());
 
- #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    cliSerial->printf_P(PSTR("APM 1\n"));
- #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    cliSerial->printf_P(PSTR("APM 2\n"));
- #endif
+    cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
 #if CLI_ENABLED == ENABLED
 	setup_show(0, NULL);
 #endif
 
-    DataFlash.log_read_process(start_page, end_page, log_callback);
+    DataFlash.log_read_process(log_num, start_page, end_page, log_callback);
 }
 
 // read one packet from the dataflash
@@ -1317,8 +1291,8 @@ static void log_callback(uint8_t msgid)
         Log_Read_PID();
         break;
         
-    case LOG_ITERM_MSG:
-        Log_Read_Iterm();
+    case LOG_COMPASS_MSG:
+        Log_Read_Compass();
         break;
         
     case LOG_DMP_MSG:
@@ -1369,7 +1343,7 @@ static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_IMU() {}
 static void Log_Write_GPS() {}
 static void Log_Write_Current() {}
-static void Log_Write_Iterm() {}
+static void Log_Write_Compass() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_INAV() {}
 static void Log_Write_Data(uint8_t id, int16_t value){}

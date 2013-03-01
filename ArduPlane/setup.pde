@@ -312,6 +312,7 @@ setup_level(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {
+    float trim_roll, trim_pitch;
     cliSerial->println_P(PSTR("Initialising gyros"));
 
     ahrs.init();
@@ -321,8 +322,10 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
              ins_sample_rate,
              flash_leds);
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    bool success = ins.calibrate_accel(flash_leds, &interact);
+    bool success = ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch);
     if (success) {
+        // reset ahrs's trim to suggested values from calibration routine
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
         if (g.manual_level == 0) {
             cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
             g.manual_level.set_and_save(1);

@@ -113,9 +113,9 @@ static void calc_bearing_error()
 
 static void calc_altitude_error()
 {
-    if(control_mode == AUTO && offset_altitude_cm != 0) {
+    if (control_mode == AUTO && offset_altitude_cm != 0) {
         // limit climb rates
-        target_altitude_cm = next_WP.alt - ((float)((wp_distance -30) * offset_altitude_cm) / (float)(wp_totalDistance - 30));
+        target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 
         // stay within a certain range
         if(prev_WP.alt > next_WP.alt) {
@@ -151,11 +151,11 @@ static void update_loiter()
     if(wp_distance <= (uint32_t)max(g.loiter_radius,0)) {
         power = float(wp_distance) / float(g.loiter_radius);
         power = constrain(power, 0.5, 1);
-        nav_bearing_cd += 9000.0 * (2.0 + power);
+        nav_bearing_cd += 9000.0 * (2.0 + power) * loiter_direction;
     } else if(wp_distance < (uint32_t)max((g.loiter_radius + LOITER_RANGE),0)) {
         power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
         power = constrain(power, 0.5, 1);                               //power = constrain(power, 0, 1);
-        nav_bearing_cd -= power * 9000;
+        nav_bearing_cd -= power * 9000 * loiter_direction;
     } else{
         update_crosstrack();
         loiter_time_ms = millis();                              // keep start time for loiter updating till we get within LOITER_RANGE of orbit

@@ -102,6 +102,7 @@ void loop(void)
 
 void run_calibration()
 {
+    float roll_trim, pitch_trim;
     // clear off any other characters (like line feeds,etc)
     while( hal.console->available() ) {
         hal.console->read();
@@ -110,7 +111,7 @@ void run_calibration()
 
 #if !defined( __AVR_ATmega1280__ )
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    ins.calibrate_accel(NULL, &interact);
+    ins.calibrate_accel(NULL, &interact, roll_trim, pitch_trim);
 #else
 	hal.console->println_P(PSTR("calibrate_accel not available on 1280"));
 #endif
@@ -169,7 +170,6 @@ void run_test()
 {
     Vector3f accel;
     Vector3f gyro;
-    float temperature;
     float length;
 	uint8_t counter = 0;
 
@@ -191,14 +191,13 @@ void run_test()
         ins.update();
         accel = ins.get_accel();
         gyro = ins.get_gyro();
-        temperature = ins.temperature();
 
         length = accel.length();
 
 		if (counter++ % 50 == 0) {
 			// display results
-			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f \t Temp:%4.2f\n"), 
-								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z, temperature);
+			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n"), 
+								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
 		}
     }
 

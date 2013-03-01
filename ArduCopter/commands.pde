@@ -8,9 +8,6 @@ static void init_commands()
     prev_nav_index          = NO_COMMAND;
     command_cond_queue.id   = NO_COMMAND;
     command_nav_queue.id    = NO_COMMAND;
-
-    ap.fast_corner          = false;
-	reset_desired_speed();
 }
 
 // Getters
@@ -150,19 +147,28 @@ static void set_next_WP(struct Location *wp)
     // To-Do: remove the restriction on negative altitude targets (after testing)
     set_new_altitude(max(wp->alt,100));
 
-    // this is handy for the groundstation
-    // -----------------------------------
+    // recalculate waypoint distance and bearing
     wp_distance             = get_distance_cm(&current_loc, &next_WP);
     wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
-
-    // calc the location error:
-    calc_location_error(&next_WP);
-
-    // to check if we have missed the WP
-    // ---------------------------------
-    original_wp_bearing = wp_bearing;
+    original_wp_bearing     = wp_bearing;       // to check if we have missed the WP
 }
 
+// set_next_WP_latlon - update just lat and lon targets for nav controllers
+static void set_next_WP_latlon(uint32_t lat, uint32_t lon)
+{
+    // save current location as previous location
+    prev_WP = current_loc;
+
+    // Load the next_WP slot
+    next_WP.lat = lat;
+    next_WP.lng = lon;
+
+    // recalculate waypoint distance and bearing
+    // To-Do: these functions are too expensive to be called every time we update the next_WP
+    wp_distance             = get_distance_cm(&current_loc, &next_WP);
+    wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
+    original_wp_bearing     = wp_bearing;       // to check if we have missed the WP
+}
 
 // run this at setup on the ground
 // -------------------------------
@@ -179,10 +185,8 @@ static void init_home()
     // no need to save this to EPROM
     set_cmd_with_index(home, 0);
 
-#if INERTIAL_NAV_XY == ENABLED
     // set inertial nav's home position
     inertial_nav.set_current_position(g_gps->longitude, g_gps->latitude);
-#endif
 
     if (g.log_bitmask & MASK_LOG_CMD)
         Log_Write_Cmd(0, &home);

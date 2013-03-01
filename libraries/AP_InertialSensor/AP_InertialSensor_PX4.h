@@ -21,8 +21,6 @@ public:
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
-    bool            new_data_available();
-    float           temperature();
     float        	get_delta_time();
     uint32_t        get_last_sample_time_micros();
     float           get_gyro_drift_rate();
@@ -42,6 +40,12 @@ private:
     static uint64_t _last_accel_timestamp;
     static uint64_t _last_gyro_timestamp;
     uint8_t  _sample_divider;
+
+    // support for updating filter at runtime
+    uint8_t _last_filter_hz;
+    uint8_t _default_filter_hz;
+
+    void _set_filter_frequency(uint8_t filter_hz);
 
     // accelerometer and gyro driver handles
     static int _accel_fd;

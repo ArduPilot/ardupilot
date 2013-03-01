@@ -447,10 +447,17 @@ static void set_servos(void)
         int16_t aileron_in = g.channel_roll.pwm_to_angle_dz(0);
         RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, aileron_in);
 
+        // setup extra elevator channel following the same logic
+        int16_t elevator_in = g.channel_pitch.pwm_to_angle_dz(0);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, elevator_in);
+
         // this aileron variant assumes you have the corresponding
         // input channel setup in your transmitter for manual control
         // of the 2nd aileron
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input);
+
+        // do the same for the corresponding elevator variant
+        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input);
 
         // copy flap control from transmitter
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
@@ -466,6 +473,10 @@ static void set_servos(void)
             // both types of secondary aileron are slaved to the roll servo out
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, g.channel_roll.servo_out);
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron_with_input, g.channel_roll.servo_out);
+
+            // both types of secondary elevator are slaved to the pitch servo out
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, g.channel_pitch.servo_out);
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator_with_input, g.channel_pitch.servo_out);
         }else{
             /*Elevon mode*/
             float ch1;

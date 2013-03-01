@@ -76,13 +76,13 @@
 # define CONFIG_RELAY     ENABLED
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
 # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
-# define MAGNETOMETER ENABLED
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25
@@ -128,11 +128,6 @@
 # define BATTERY_PIN_1	  -1
 # define CURRENT_PIN_1	  -1
 # define MAG_ORIENTATION   ROTATION_NONE
-# define SERIAL0_BAUD 57600
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#define CONFIG_SONAR DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -186,14 +181,6 @@
 # define SONAR_ENABLED DISABLED
 #endif
 
-#ifndef CONFIG_SONAR
-# define CONFIG_SONAR ENABLED
-#endif
-
-#ifndef SONAR_TRIGGER
-# define SONAR_TRIGGER       60        // trigger distance in cm
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
 
@@ -226,7 +213,7 @@
 #endif
 
 #ifndef CH7_OPTION
-# define CH7_OPTION		          CH7_DO_NOTHING
+# define CH7_OPTION		          CH7_SAVE_WP
 #endif
 
 #ifndef TUNING_OPTION
@@ -267,128 +254,58 @@
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
-# define MAGNETOMETER			DISABLED
+# define MAGNETOMETER			ENABLED
 #endif
 #ifndef MAG_ORIENTATION
 # define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// RADIO CONFIGURATION
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Radio channel limits
+// MODE
+// MODE_CHANNEL
 //
-// Note that these are not called out in APM_Config.h.reference.
-//
-#ifndef CH5_MIN
-# define CH5_MIN	1000
+#ifndef MODE_CHANNEL
+# define MODE_CHANNEL	8
 #endif
-#ifndef CH5_MAX
-# define CH5_MAX	2000
-#endif
-#ifndef CH6_MIN
-# define CH6_MIN	1000
-#endif
-#ifndef CH6_MAX
-# define CH6_MAX	2000
-#endif
-#ifndef CH7_MIN
-# define CH7_MIN	1000
-#endif
-#ifndef CH7_MAX
-# define CH7_MAX	2000
-#endif
-#ifndef CH8_MIN
-# define CH8_MIN	1000
-#endif
-#ifndef CH8_MAX
-# define CH8_MAX	2000
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// FLIGHT_MODE
-// FLIGHT_MODE_CHANNEL
-//
-#ifndef FLIGHT_MODE_CHANNEL
-# define FLIGHT_MODE_CHANNEL	8
-#endif
-#if (FLIGHT_MODE_CHANNEL != 5) && (FLIGHT_MODE_CHANNEL != 6) && (FLIGHT_MODE_CHANNEL != 7) && (FLIGHT_MODE_CHANNEL != 8)
+#if (MODE_CHANNEL != 5) && (MODE_CHANNEL != 6) && (MODE_CHANNEL != 7) && (MODE_CHANNEL != 8)
 # error XXX
-# error XXX You must set FLIGHT_MODE_CHANNEL to 5, 6, 7 or 8
+# error XXX You must set MODE_CHANNEL to 5, 6, 7 or 8
 # error XXX
 #endif
 
-#if !defined(FLIGHT_MODE_1)
-# define FLIGHT_MODE_1			LEARNING
+#if !defined(MODE_1)
+# define MODE_1			LEARNING
 #endif
-#if !defined(FLIGHT_MODE_2)
-# define FLIGHT_MODE_2			LEARNING
+#if !defined(MODE_2)
+# define MODE_2			LEARNING
 #endif
-#if !defined(FLIGHT_MODE_3)
-# define FLIGHT_MODE_3			LEARNING
+#if !defined(MODE_3)
+# define MODE_3			LEARNING
 #endif
-#if !defined(FLIGHT_MODE_4)
-# define FLIGHT_MODE_4			LEARNING
+#if !defined(MODE_4)
+# define MODE_4			LEARNING
 #endif
-#if !defined(FLIGHT_MODE_5)
-# define FLIGHT_MODE_5			LEARNING
+#if !defined(MODE_5)
+# define MODE_5			LEARNING
 #endif
-#if !defined(FLIGHT_MODE_6)
-# define FLIGHT_MODE_6			MANUAL
+#if !defined(MODE_6)
+# define MODE_6			MANUAL
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////
-// THROTTLE_FAILSAFE
-// THROTTLE_FS_VALUE
-// SHORT_FAILSAFE_ACTION
-// LONG_FAILSAFE_ACTION
-// GCS_HEARTBEAT_FAILSAFE
-//
+// failsafe defaults
 #ifndef THROTTLE_FAILSAFE
 # define THROTTLE_FAILSAFE		ENABLED
 #endif
 #ifndef THROTTLE_FS_VALUE
 # define THROTTLE_FS_VALUE		950
 #endif
-#ifndef SHORT_FAILSAFE_ACTION
-# define SHORT_FAILSAFE_ACTION		0
-#endif
 #ifndef LONG_FAILSAFE_ACTION
 # define LONG_FAILSAFE_ACTION		0
 #endif
 #ifndef GCS_HEARTBEAT_FAILSAFE
 # define GCS_HEARTBEAT_FAILSAFE		DISABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// AUTO_TRIM
-//
-#ifndef AUTO_TRIM
-# define AUTO_TRIM				DISABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// MANUAL_LEVEL
-//
-#ifndef MANUAL_LEVEL
-# define MANUAL_LEVEL			DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// ENABLE_STICK_MIXING
-//
-#ifndef ENABLE_STICK_MIXING
-# define ENABLE_STICK_MIXING	ENABLED
 #endif
 
 
@@ -423,10 +340,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_CRUISE
 //
-#ifndef AIRSPEED_CRUISE
-# define AIRSPEED_CRUISE		3 // 12 m/s
+#ifndef SPEED_CRUISE
+# define SPEED_CRUISE		3 // 3 m/s
 #endif
-#define AIRSPEED_CRUISE_CM AIRSPEED_CRUISE*100
 
 #ifndef GSBOOST
 # define GSBOOST		0
@@ -447,14 +363,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// MIN_GNDSPEED
-//
-#ifndef MIN_GNDSPEED
-# define MIN_GNDSPEED			0 // m/s (0 disables)
-#endif
-#define MIN_GNDSPEED_CM MIN_GNDSPEED*100
-
-//////////////////////////////////////////////////////////////////////////////
 // Servo Mapping
 //
 #ifndef THROTTLE_MIN
@@ -464,148 +372,26 @@
 # define THROTTLE_CRUISE		45
 #endif
 #ifndef THROTTLE_MAX
-# define THROTTLE_MAX			75
+# define THROTTLE_MAX			100
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Autopilot control limits
-//
-#ifndef HEAD_MAX
-# define HEAD_MAX				45
-#endif
-#ifndef PITCH_MAX
-# define PITCH_MAX				15
-#endif
-#ifndef PITCH_MIN
-# define PITCH_MIN				-25
-#endif
-#define HEAD_MAX_CENTIDEGREE HEAD_MAX * 100
-#define PITCH_MAX_CENTIDEGREE PITCH_MAX * 100
-#define PITCH_MIN_CENTIDEGREE PITCH_MIN * 100
 
 //////////////////////////////////////////////////////////////////////////////
 // Attitude control gains
 //
-#ifndef SERVO_ROLL_P
-# define SERVO_ROLL_P         0.4
+#ifndef SERVO_STEER_P
+# define SERVO_STEER_P         0.4
 #endif
-#ifndef SERVO_ROLL_I
-# define SERVO_ROLL_I         0.0
+#ifndef SERVO_STEER_I
+# define SERVO_STEER_I         0.0
 #endif
-#ifndef SERVO_ROLL_D
-# define SERVO_ROLL_D         0.0
+#ifndef SERVO_STEER_D
+# define SERVO_STEER_D         0.0
 #endif
-#ifndef SERVO_ROLL_INT_MAX
-# define SERVO_ROLL_INT_MAX   5
+#ifndef SERVO_STEER_INT_MAX
+# define SERVO_STEER_INT_MAX   5
 #endif
-#define SERVO_ROLL_INT_MAX_CENTIDEGREE SERVO_ROLL_INT_MAX*100
-#ifndef ROLL_SLEW_LIMIT
-# define ROLL_SLEW_LIMIT      0
-#endif
-#ifndef SERVO_PITCH_P
-# define SERVO_PITCH_P        0.6
-#endif
-#ifndef SERVO_PITCH_I
-# define SERVO_PITCH_I        0.0
-#endif
-#ifndef SERVO_PITCH_D
-# define SERVO_PITCH_D        0.0
-#endif
-#ifndef SERVO_PITCH_INT_MAX
-# define SERVO_PITCH_INT_MAX  5
-#endif
-#define SERVO_PITCH_INT_MAX_CENTIDEGREE SERVO_PITCH_INT_MAX*100
-#ifndef PITCH_COMP
-# define PITCH_COMP           0.2
-#endif
-#ifndef SERVO_YAW_P
-# define SERVO_YAW_P          0.0
-#endif
-#ifndef SERVO_YAW_I
-# define SERVO_YAW_I          0.0
-#endif
-#ifndef SERVO_YAW_D
-# define SERVO_YAW_D          0.0
-#endif
-#ifndef SERVO_YAW_INT_MAX
-# define SERVO_YAW_INT_MAX    0
-#endif
-#ifndef RUDDER_MIX
-# define RUDDER_MIX           0.5
-#endif
+#define SERVO_STEER_INT_MAX_CENTIDEGREE SERVO_STEER_INT_MAX*100
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Navigation control gains
-//
-#ifndef NAV_ROLL_P
-# define NAV_ROLL_P           0.7
-#endif
-#ifndef NAV_ROLL_I
-# define NAV_ROLL_I           0.0
-#endif
-#ifndef NAV_ROLL_D
-# define NAV_ROLL_D           0.02
-#endif
-#ifndef NAV_ROLL_INT_MAX
-# define NAV_ROLL_INT_MAX     5
-#endif
-#define NAV_ROLL_INT_MAX_CENTIDEGREE NAV_ROLL_INT_MAX*100
-#ifndef NAV_PITCH_ASP_P
-# define NAV_PITCH_ASP_P      0.65
-#endif
-#ifndef NAV_PITCH_ASP_I
-# define NAV_PITCH_ASP_I      0.0
-#endif
-#ifndef NAV_PITCH_ASP_D
-# define NAV_PITCH_ASP_D      0.0
-#endif
-#ifndef NAV_PITCH_ASP_INT_MAX
-# define NAV_PITCH_ASP_INT_MAX 5
-#endif
-#define NAV_PITCH_ASP_INT_MAX_CMSEC NAV_PITCH_ASP_INT_MAX*100
-#ifndef NAV_PITCH_ALT_P
-# define NAV_PITCH_ALT_P      0.65
-#endif
-#ifndef NAV_PITCH_ALT_I
-# define NAV_PITCH_ALT_I      0.0
-#endif
-#ifndef NAV_PITCH_ALT_D
-# define NAV_PITCH_ALT_D      0.0
-#endif
-#ifndef NAV_PITCH_ALT_INT_MAX
-# define NAV_PITCH_ALT_INT_MAX 5
-#endif
-#define NAV_PITCH_ALT_INT_MAX_CM NAV_PITCH_ALT_INT_MAX*100
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Energy/Altitude control gains
-//
-#ifndef THROTTLE_TE_P
-# define THROTTLE_TE_P        0.50
-#endif
-#ifndef THROTTLE_TE_I
-# define THROTTLE_TE_I        0.0
-#endif
-#ifndef THROTTLE_TE_D
-# define THROTTLE_TE_D        0.0
-#endif
-#ifndef THROTTLE_TE_INT_MAX
-# define THROTTLE_TE_INT_MAX  20
-#endif
-#ifndef THROTTLE_SLEW_LIMIT
-# define THROTTLE_SLEW_LIMIT  0
-#endif
-#ifndef P_TO_T
-# define P_TO_T               0
-#endif
-#ifndef T_TO_P
-# define T_TO_P               0
-#endif
-#ifndef PITCH_TARGET
-# define PITCH_TARGET         0
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Crosstrack compensation
@@ -614,25 +400,17 @@
 # define XTRACK_GAIN          1 // deg/m
 #endif
 #ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   20 // deg
+# define XTRACK_ENTRY_ANGLE   50 // deg
 #endif
 # define XTRACK_GAIN_SCALED XTRACK_GAIN*100
 # define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE*100
 
 //////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// DEBUGGING
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
-
 #ifndef LOGGING_ENABLED
 # define LOGGING_ENABLED		ENABLED
 #endif
-
 
 #ifndef LOG_ATTITUDE_FAST
 # define LOG_ATTITUDE_FAST		DISABLED
@@ -682,13 +460,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Navigation defaults
-//
-#ifndef WP_RADIUS_DEFAULT
-# define WP_RADIUS_DEFAULT		2
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
 
@@ -703,18 +474,9 @@
 # define HIL_SERVOS DISABLED
 #endif
 
-#ifndef TRACE
-# define TRACE DISABLED
-#endif
-
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
 # define CLI_ENABLED ENABLED
-#endif
-
-// use this to disable the CLI slider switch
-#ifndef CLI_SLIDER_ENABLED
-# define CLI_SLIDER_ENABLED ENABLED
 #endif
 
 // if RESET_SWITCH_CH is not zero, then this is the PWM value on

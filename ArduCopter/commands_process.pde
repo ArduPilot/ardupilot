@@ -75,20 +75,6 @@ static void update_commands()
             }else{
                 // we have at least one more cmd left
                 Location tmp_loc = get_cmd_with_index(tmp_index);
-
-                if(tmp_loc.lat == 0) {
-                    ap.fast_corner = false;
-                }else{
-                    int32_t temp = get_bearing_cd(&next_WP, &tmp_loc) - original_wp_bearing;
-                    temp = wrap_180(temp);
-                    ap.fast_corner = labs(temp) < 6000;
-                }
-
-                // If we try and stop at a corner, lets reset our desired speed to prevent
-                // too much jerkyness.
-				if(false == ap.fast_corner){
-					reset_desired_speed();
-				}
             }
 
         }else{

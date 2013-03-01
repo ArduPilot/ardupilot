@@ -80,7 +80,6 @@
  # define MAG_ORIENTATION   ROTATION_NONE
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
- # define SERIAL0_BAUD 57600
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
  # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
  # define CONFIG_BARO       AP_BARO_MS5611
@@ -378,7 +377,7 @@
 // Battery monitoring
 //
 #ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    9.6f
+ # define LOW_VOLTAGE                    10.5f
 #endif
 #ifndef VOLT_DIV_RATIO
  # define VOLT_DIV_RATIO                 3.56f
@@ -608,6 +607,7 @@
 #define EARTH_FRAME     0
 #define BODY_FRAME      1
 
+
 // Flight mode roll, pitch, yaw, throttle and navigation definitions
 
 // Acro Mode
@@ -623,10 +623,6 @@
  # define ACRO_THR           	    THROTTLE_MANUAL
 #endif
 
-#ifndef ACRO_NAV
- # define ACRO_NAV           	    NAV_NONE
-#endif
-
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
  # define ALT_HOLD_YAW           	YAW_HOLD
@@ -638,10 +634,6 @@
 
 #ifndef ALT_HOLD_THR
  # define ALT_HOLD_THR           	THROTTLE_HOLD
-#endif
-
-#ifndef ALT_HOLD_NAV
- # define ALT_HOLD_NAV           	NAV_NONE
 #endif
 
 // AUTO Mode
@@ -697,7 +689,7 @@
 #endif
 
 #ifndef LOITER_RP
- # define LOITER_RP                 ROLL_PITCH_AUTO
+ # define LOITER_RP                 ROLL_PITCH_LOITER
 #endif
 
 #ifndef LOITER_THR
@@ -931,10 +923,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Loiter control gains
+// Loiter position control gains
 //
 #ifndef LOITER_P
- # define LOITER_P             		.20f
+ # define LOITER_P             		2.0f
 #endif
 #ifndef LOITER_I
  # define LOITER_I             		0.0f
@@ -944,16 +936,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Loiter Navigation control gains
+// Loiter rate control gains
 //
 #ifndef LOITER_RATE_P
- # define LOITER_RATE_P          	5.0f            //
+ # define LOITER_RATE_P          	2.0f
 #endif
 #ifndef LOITER_RATE_I
- # define LOITER_RATE_I          	0.04f           // Wind control
+ # define LOITER_RATE_I          	1.0f
 #endif
 #ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.40f           // try 2 or 3 for LOITER_RATE 1
+ # define LOITER_RATE_D          	0.50f
 #endif
 #ifndef LOITER_RATE_IMAX
  # define LOITER_RATE_IMAX       	30                     // degrees
@@ -976,7 +968,7 @@
 #endif
 
 #ifndef AUTO_SLEW_RATE
- # define AUTO_SLEW_RATE         	30                     // degrees/sec
+ # define AUTO_SLEW_RATE         	45                     // degrees/sec
 #endif
 
 #ifndef AUTO_YAW_SLEW_RATE
@@ -1003,6 +995,10 @@
 //
 #ifndef THROTTLE_CRUISE
  # define THROTTLE_CRUISE       450            //
+#endif
+
+#ifndef THR_MID
+ # define THR_MID        500                            // Throttle output (0 ~ 1000) when throttle stick is in mid position
 #endif
 
 #ifndef ALT_HOLD_P
@@ -1147,8 +1143,8 @@
 #ifndef LOG_PID
  # define LOG_PID                       DISABLED
 #endif
-#ifndef LOG_ITERM
- # define LOG_ITERM                     DISABLED
+#ifndef LOG_COMPASS
+ # define LOG_COMPASS                   DISABLED
 #endif
 #ifndef LOG_INAV
  # define LOG_INAV                      DISABLED
@@ -1174,7 +1170,7 @@
     LOGBIT(MOTORS)          | \
     LOGBIT(OPTFLOW)         | \
     LOGBIT(PID)             | \
-    LOGBIT(ITERM)           | \
+    LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
 
 // if we are using fast, Disable Medium
@@ -1263,14 +1259,6 @@
 // experimental mpu6000 DMP code
 #ifndef SECONDARY_DMP_ENABLED
  # define SECONDARY_DMP_ENABLED DISABLED
-#endif
-
-// Inertia based contollers.
-#ifndef INERTIAL_NAV_XY
- # define INERTIAL_NAV_XY DISABLED
-#endif
-#ifndef INERTIAL_NAV_Z
- # define INERTIAL_NAV_Z ENABLED
 #endif
 
 #endif // __ARDUCOPTER_CONFIG_H__

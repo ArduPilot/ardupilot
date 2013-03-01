@@ -27,14 +27,7 @@ bool AP_InertialSensor_Stub::update( void ) {
     _last_update_ms = now;
     return true;
 }
-bool AP_InertialSensor_Stub::new_data_available( void ) {
-    return num_samples_available() > 0;
-}
 
-
-float AP_InertialSensor_Stub::temperature() {
-    return 0.0;
-}
 float AP_InertialSensor_Stub::get_delta_time() {
     return _delta_time_usec * 1.0e-6;
 }

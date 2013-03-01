@@ -25,12 +25,12 @@
 #define YAW_TOY                         7       // THOR This is the Yaw mode
 
 
-#define ROLL_PITCH_STABLE           0
-#define ROLL_PITCH_ACRO             1
-#define ROLL_PITCH_AUTO             2
-#define ROLL_PITCH_STABLE_OF        3
+#define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
+#define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates
+#define ROLL_PITCH_AUTO             2       // no pilot input.  autopilot roll, pitch is sent to stabilize controller inputs
+#define ROLL_PITCH_STABLE_OF        3       // pilot inputs roll, pitch angles which are mixed with optical flow based position controller lean anbles
 #define ROLL_PITCH_TOY              4       // THOR This is the Roll and Pitch mode
-#define ROLL_PITCH_LOITER_INAV      5       // pilot inputs the desired horizontal velocities
+#define ROLL_PITCH_LOITER           5       // pilot inputs the desired horizontal velocities
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation
@@ -199,7 +199,7 @@
 #define NAV_CIRCLE      1
 #define NAV_LOITER      2
 #define NAV_WP          3
-#define NAV_LOITER_INAV 4
+#define NAV_WP_INAV     5
 
 // Yaw override behaviours - used for setting yaw_override_behaviour
 #define YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT     0   // auto pilot takes back yaw control at next waypoint
@@ -286,7 +286,7 @@ enum gcs_severity {
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E
-#define LOG_ITERM_MSG                   0x0F
+#define LOG_COMPASS_MSG                 0x0F
 #define LOG_DMP_MSG                     0x10
 #define LOG_INAV_MSG                    0x11
 #define LOG_CAMERA_MSG                  0x12
@@ -312,7 +312,7 @@ enum gcs_severity {
 #define MASK_LOG_MOTORS                 (1<<10)
 #define MASK_LOG_OPTFLOW                (1<<11)
 #define MASK_LOG_PID                    (1<<12)
-#define MASK_LOG_ITERM                  (1<<13)
+#define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14)
 #define MASK_LOG_CAMERA                 (1<<15)
 

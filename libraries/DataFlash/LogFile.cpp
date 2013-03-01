@@ -5,7 +5,7 @@
 
 // This function determines the number of whole or partial log files in the DataFlash
 // Wholly overwritten files are (of course) lost.
-uint8_t DataFlash_Class::get_num_logs(void)
+uint8_t DataFlash_Block::get_num_logs(void)
 {
     uint16_t lastpage;
     uint16_t last;
@@ -17,7 +17,7 @@ uint8_t DataFlash_Class::get_num_logs(void)
 
     StartRead(1);
 
-    if (GetFileNumber() == 0XFFFF) {
+    if (GetFileNumber() == 0xFFFF) {
         return 0;
     }
 
@@ -40,7 +40,7 @@ uint8_t DataFlash_Class::get_num_logs(void)
 
 
 // This function starts a new log file in the DataFlash
-void DataFlash_Class::start_new_log(void)
+void DataFlash_Block::start_new_log(void)
 {
     uint16_t last_page = find_last_page();
 
@@ -71,15 +71,15 @@ void DataFlash_Class::start_new_log(void)
 
 // This function finds the first and last pages of a log file
 // The first page may be greater than the last page if the DataFlash has been filled and partially overwritten.
-void DataFlash_Class::get_log_boundaries(uint8_t log_num, int16_t & start_page, int16_t & end_page)
+void DataFlash_Block::get_log_boundaries(uint8_t log_num, uint16_t & start_page, uint16_t & end_page)
 {
-    int16_t num = get_num_logs();
-    int16_t look;
+    uint16_t num = get_num_logs();
+    uint16_t look;
 
     if(num == 1)
     {
         StartRead(df_NumPages);
-        if(GetFileNumber() == 0xFFFF)
+        if (GetFileNumber() == 0xFFFF)
         {
             start_page = 1;
             end_page = find_last_page_of_log((uint16_t)log_num);
@@ -108,12 +108,16 @@ void DataFlash_Class::get_log_boundaries(uint8_t log_num, int16_t & start_page, 
             }
         }
     }
-    if(start_page == (int16_t)df_NumPages+1 || start_page == 0) start_page=1;
-    end_page = find_last_page_of_log((uint16_t)log_num);
-    if(end_page <= 0) end_page = start_page;
+    if (start_page == df_NumPages+1 || start_page == 0) {
+        start_page = 1;
+    }
+    end_page = find_last_page_of_log(log_num);
+    if (end_page == 0) {
+        end_page = start_page;
+    }
 }
 
-bool DataFlash_Class::check_wrapped(void)
+bool DataFlash_Block::check_wrapped(void)
 {
     StartRead(df_NumPages);
     if(GetFileNumber() == 0xFFFF)
@@ -124,15 +128,15 @@ bool DataFlash_Class::check_wrapped(void)
 
 
 // This funciton finds the last log number
-int16_t DataFlash_Class::find_last_log(void)
+uint16_t DataFlash_Block::find_last_log(void)
 {
-    int16_t last_page = find_last_page();
+    uint16_t last_page = find_last_page();
     StartRead(last_page);
     return GetFileNumber();
 }
 
 // This function finds the last page of the last file
-int16_t DataFlash_Class::find_last_page(void)
+uint16_t DataFlash_Block::find_last_page(void)
 {
     uint16_t look;
     uint16_t bottom = 1;
@@ -173,7 +177,7 @@ int16_t DataFlash_Class::find_last_page(void)
 }
 
 // This function finds the last page of a particular log file
-int16_t DataFlash_Class::find_last_page_of_log(uint16_t log_number)
+uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 {
     uint16_t look;
     uint16_t bottom;
@@ -226,10 +230,15 @@ int16_t DataFlash_Class::find_last_page_of_log(uint16_t log_number)
 }
 
 
-// Read the DataFlash log memory : Packet Parser. Call the callback() 
-// function on each log message found in the page range. Return the
-// number of log messages found
-uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_page, 
+/*
+  Read the DataFlash log memory
+  Call the callback() function on each log message found in the page
+  range. Return the number of log messages found
+
+  Note that for the block oriented backend the log_num is ignored
+*/
+uint16_t DataFlash_Block::log_read_process(uint8_t log_num,
+                                           uint16_t start_page, uint16_t end_page, 
                                            void (*callback)(uint8_t msgid))
 {
     uint8_t log_step = 0;
@@ -239,7 +248,8 @@ uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_pag
     StartRead(start_page);
 
 	while (true) {
-		uint8_t data = ReadByte();
+		uint8_t data;
+        ReadBlock(&data, 1);
 
 		// This is a state machine to read the packets
 		switch(log_step) {
@@ -265,10 +275,43 @@ uint16_t DataFlash_Class::log_read_process(uint16_t start_page, uint16_t end_pag
 		}
         uint16_t new_page = GetPage();
         if (new_page != page) {
-            if (new_page == end_page) break;
+            if (new_page == end_page || new_page == start_page) {
+                return packet_count;
+            }
             page = new_page;
         }
 	}
 
 	return packet_count;
+}
+
+/*
+  dump header information from all log pages
+ */
+void DataFlash_Block::DumpPageInfo(AP_HAL::BetterStream *port)
+{
+    for (uint16_t count=1; count<=df_NumPages; count++) {
+        StartRead(count);
+        port->printf_P(PSTR("DF page, log file #, log page: %u,\t"), (unsigned)count);
+        port->printf_P(PSTR("%u,\t"), (unsigned)GetFileNumber());
+        port->printf_P(PSTR("%u\n"), (unsigned)GetFilePage());
+    }
+}
+
+/*
+  show information about the device
+ */
+void DataFlash_Block::ShowDeviceInfo(AP_HAL::BetterStream *port)
+{
+    if (!CardInserted()) {
+        port->println_P(PSTR("No dataflash inserted"));
+        return;
+    }
+    ReadManufacturerID();
+    port->printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
+                    (unsigned)df_manufacturer,
+                    (unsigned)df_device);
+    port->printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
+                   (unsigned)df_NumPages+1,
+                   (unsigned)df_PageSize);
 }

@@ -107,15 +107,6 @@ bool AP_InertialSensor_Oilpan::update()
     return true;
 }
 
-bool AP_InertialSensor_Oilpan::new_data_available( void )
-{
-    return _adc->new_data_available(_sensors);
-}
-
-float AP_InertialSensor_Oilpan::temperature() {
-    return _temp;
-}
-
 float AP_InertialSensor_Oilpan::get_delta_time() {
     return _delta_time_micros * 1.0e-6;
 }

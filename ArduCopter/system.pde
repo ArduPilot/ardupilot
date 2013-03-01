@@ -227,10 +227,8 @@ static void init_ardupilot()
         init_optflow();
     }
 
-#if INERTIAL_NAV_XY == ENABLED || INERTIAL_NAV_Z == ENABLED
     // initialise inertial nav
     inertial_nav.init();
-#endif
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
@@ -389,11 +387,6 @@ static void set_mode(uint8_t mode)
     // if we change modes, we must clear landed flag
     set_land_complete(false);
 
-    // debug to Serial terminal
-    //cliSerial->println(flight_mode_strings[control_mode]);
-
-    ap.loiter_override  = false;
-
     // report the GPS and Motor arming status
     led_mode = NORMAL_LEDS;
 
@@ -405,7 +398,7 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(ACRO_YAW);
         set_roll_pitch_mode(ACRO_RP);
         set_throttle_mode(ACRO_THR);
-        set_nav_mode(ACRO_NAV);
+        set_nav_mode(NAV_NONE);
         // reset acro axis targets to current attitude
 		if(g.axis_enabled){
             roll_axis 	= ahrs.roll_sensor;
@@ -429,7 +422,7 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(ALT_HOLD_YAW);
         set_roll_pitch_mode(ALT_HOLD_RP);
         set_throttle_mode(ALT_HOLD_THR);
-        set_nav_mode(ALT_HOLD_NAV);
+        set_nav_mode(NAV_NONE);
         break;
 
     case AUTO:
@@ -486,16 +479,13 @@ static void set_mode(uint8_t mode)
         break;
 
     case LAND:
+        // To-Do: it is messy to set manual_attitude here because the do_land function is reponsible for setting the roll_pitch_mode
         if( ap.home_is_set ) {
             // switch to loiter if we have gps
             ap.manual_attitude = false;
-            set_yaw_mode(LOITER_YAW);
-            set_roll_pitch_mode(LOITER_RP);
         }else{
             // otherwise remain with stabilize roll and pitch
             ap.manual_attitude = true;
-            set_yaw_mode(YAW_HOLD);
-            set_roll_pitch_mode(ROLL_PITCH_STABLE);
         }
     	ap.manual_throttle = false;
         do_land();

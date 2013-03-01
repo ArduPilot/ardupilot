@@ -9,7 +9,7 @@
 #include <AP_HAL.h>
 #include "DataFlash.h"
 
-class DataFlash_APM2 : public DataFlash_Class
+class DataFlash_APM2 : public DataFlash_Block
 {
 private:
     //Methods
@@ -40,9 +40,8 @@ private:
 
     AP_HAL::SPIDeviceDriver* _spi;
     AP_HAL::Semaphore* _spi_sem;
-public:
-    DataFlash_APM2() {}
 
+public:
     void        Init();
     void        ReadManufacturerID();
     bool        CardInserted();

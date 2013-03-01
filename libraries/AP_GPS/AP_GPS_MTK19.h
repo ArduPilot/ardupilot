@@ -22,7 +22,13 @@
 
 class AP_GPS_MTK19 : public GPS {
 public:
-    AP_GPS_MTK19();
+    AP_GPS_MTK19() :
+		GPS(),
+		_step(0),
+		_payload_counter(0),
+		_mtk_revision(0)
+		{}
+
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
     static bool 		_detect(uint8_t );
