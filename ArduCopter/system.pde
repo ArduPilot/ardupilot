@@ -57,6 +57,9 @@ static void run_cli(AP_HAL::UARTDriver *port)
     // disable the mavlink delay callback
     hal.scheduler->register_delay_callback(NULL, 5);
 
+    // disable main_loop failsafe
+    failsafe_disable();
+
     while (1) {
         main_menu.run();
     }
