@@ -64,6 +64,16 @@ extern const AP_HAL::HAL& hal;
 #define DF_CHIP_ERASE_2   0x80
 #define DF_CHIP_ERASE_3   0x9A
 
+/*
+  try to take a semaphore safely from both in a timer and outside
+ */
+bool DataFlash_APM1::_sem_take(uint8_t timeout)
+{
+    if (hal.scheduler->in_timerprocess()) {
+        return _spi_sem->take_nonblocking();
+    }
+    return _spi_sem->take(timeout);
+}
 
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -102,7 +112,7 @@ void DataFlash_APM1::Init(void)
 // This function is mainly to test the device
 void DataFlash_APM1::ReadManufacturerID()
 {
-    if (!_spi_sem->take(5))
+    if (!_sem_take(5))
         return;
     // activate dataflash command decoder
     _spi->cs_assert();
@@ -157,7 +167,7 @@ uint8_t DataFlash_APM1::ReadStatus()
 inline
 uint16_t DataFlash_APM1::PageSize()
 {
-    if (!_spi_sem->take(5))
+    if (!_sem_take(5))
         return 0;
     
     uint16_t ret = 528-((ReadStatusReg()&0x01) << 4); // if first bit 1 trhen 512 else 528 bytes
@@ -175,7 +185,7 @@ void DataFlash_APM1::WaitReady()
 
 void DataFlash_APM1::PageToBuffer(uint8_t BufferNum, uint16_t PageAdr)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
 
     // activate dataflash command decoder
@@ -202,7 +212,7 @@ void DataFlash_APM1::PageToBuffer(uint8_t BufferNum, uint16_t PageAdr)
 
 void DataFlash_APM1::BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
 
     // activate dataflash command decoder
@@ -234,7 +244,7 @@ void DataFlash_APM1::BlockWrite (uint8_t BufferNum, uint16_t IntPageAdr,
                                  const void *pHeader, uint8_t hdr_size,
                                  const void *pBuffer, uint16_t size)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
     
     // activate dataflash command decoder
@@ -262,7 +272,7 @@ void DataFlash_APM1::BlockWrite (uint8_t BufferNum, uint16_t IntPageAdr,
 
 bool DataFlash_APM1::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return false;
 
     // activate dataflash command decoder
@@ -292,7 +302,7 @@ bool DataFlash_APM1::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBu
 
 void DataFlash_APM1::PageErase (uint16_t PageAdr)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
 
     // activate dataflash command decoder
@@ -320,7 +330,7 @@ void DataFlash_APM1::PageErase (uint16_t PageAdr)
 
 void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
 
     // activate dataflash command decoder
@@ -358,7 +368,7 @@ void DataFlash_APM1::BlockErase (uint16_t BlockAdr)
 
 void DataFlash_APM1::ChipErase()
 {
-    if (!_spi_sem->take(5))
+    if (!_sem_take(5))
         return;
 
     // activate dataflash command decoder

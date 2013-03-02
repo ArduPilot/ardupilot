@@ -38,6 +38,9 @@ private:
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase();
 
+    // take a semaphore safely
+    bool		            _sem_take(uint8_t timeout);
+
     AP_HAL::SPIDeviceDriver* _spi;
     AP_HAL::Semaphore* _spi_sem;
 
