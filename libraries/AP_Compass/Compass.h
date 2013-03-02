@@ -132,14 +132,9 @@ public:
     ///
     void set_motor_compensation(const Vector3f &motor_comp_factor);
 
-    /// Set new motor compensation factors as a vector
-    ///
-    /// @param  x                   multiplied by throttle value and added to the raw mag_x value.
-    /// @param  y                   multiplied by throttle value and added to the raw mag_y value.
-    /// @param  z                   multiplied by throttle value and added to the raw mag_z value.
-    ///
-    void set_motor_compensation(float x, float y, float z) {
-        set_motor_compensation(Vector3f(x, y, z));
+    /// get motor compensation factors as a vector
+    Vector3f& get_motor_compensation() {
+        return _motor_compensation;
     }
 
     /// Saves the current motor compensation x/y/z values.
