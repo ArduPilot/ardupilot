@@ -348,7 +348,7 @@ static int32_t target_bearing;
 // deg * 100 : 0 to 360
 static int32_t crosstrack_bearing;
 // A gain scaler to account for ground speed/headwind/tailwind
-static float	nav_gain_scaler 		= 1;		
+static float	nav_gain_scaler 		= 1.0f;		
 static bool rtl_complete = false;
 
 // There may be two active commands in Auto mode.  
