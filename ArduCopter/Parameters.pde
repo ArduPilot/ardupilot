@@ -82,7 +82,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Controls enabling monitoring of the battery's voltage and current
     // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
     // @User: Standard
-    GSCALAR(battery_monitoring, "BATT_MONITOR", DISABLED),
+    GSCALAR(battery_monitoring, "BATT_MONITOR", BATT_MONITOR_DISABLED),
 
     // @Param: FS_BATT_ENABLE
     // @DisplayName: Battery Failsafe Enable

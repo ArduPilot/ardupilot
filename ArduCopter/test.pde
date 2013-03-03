@@ -680,7 +680,7 @@ test_battery(uint8_t argc, const Menu::arg *argv)
         delay(100);
         read_radio();
         read_battery();
-        if (g.battery_monitoring == 3) {
+        if (g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY) {
             cliSerial->printf_P(PSTR("V: %4.4f\n"),
                             battery_voltage1,
                             current_amps1,
