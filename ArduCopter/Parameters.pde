@@ -103,12 +103,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT", CURR_AMP_PER_VOLT),
 
-    // @Param: INPUT_VOLTS
-    // @DisplayName: Max internal voltage of the battery voltage and current sensing pins
-    // @Description: Used to convert the voltage read in on the voltage and current pins for battery monitoring.  Normally 5 meaning 5 volts.
-    // @User: Advanced
-    GSCALAR(input_voltage,  "INPUT_VOLTS",      INPUT_VOLTAGE),
-
     // @Param: BATT_CAPACITY
     // @DisplayName: Battery Capacity
     // @Description: Battery capacity in milliamp-hours (mAh)
