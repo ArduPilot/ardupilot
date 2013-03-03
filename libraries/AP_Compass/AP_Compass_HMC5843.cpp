@@ -331,9 +331,9 @@ bool AP_Compass_HMC5843::read()
 
     rot_mag += _offset.get();
 
-    // add in motor compensation
-    if( _throttle_pct != 0 ) {
-        _motor_offset = _motor_compensation.get() * _throttle_pct;
+    // apply motor compensation
+    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
+        _motor_offset = _motor_compensation.get() * _thr_or_curr;
         rot_mag += _motor_offset;
     }else{
         _motor_offset.x = 0;

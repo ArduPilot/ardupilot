@@ -15,6 +15,11 @@
 #define AP_COMPASS_TYPE_HMC5883L 0x03
 #define AP_COMPASS_TYPE_PX4      0x04
 
+// motor compensation types (for use with motor_comp_enabled)
+#define AP_COMPASS_MOT_COMP_DISABLED    0x00
+#define AP_COMPASS_MOT_COMP_THROTTLE    0x01
+#define AP_COMPASS_MOT_COMP_CURRENT     0x02
+
 class Compass
 {
 public:
@@ -126,6 +131,23 @@ public:
         _board_orientation = orientation;
     }
 
+    /// Set the motor compensation type
+    ///
+    /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
+    ///
+    void motor_compensation_type(const uint8_t comp_type) {
+        if( comp_type >= AP_COMPASS_MOT_COMP_DISABLED && _motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
+            _motor_comp_type = (int8_t)comp_type;
+            _thr_or_curr = 0;                               // set current current or throttle to zero
+            set_motor_compensation(Vector3f(0,0,0));        // clear out invalid compensation vector
+        }
+    }
+
+    /// get the motor compensation value.
+    uint8_t motor_compensation_type() {
+        return _motor_comp_type;
+    }
+
     /// Set the motor compensation factor x/y/z values.
     ///
     /// @param  offsets             Offsets multiplied by the throttle value and added to the raw mag_ values.
@@ -152,7 +174,17 @@ public:
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
     void set_throttle(float thr_pct) {
-        _throttle_pct = thr_pct;
+        if(_motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+            _thr_or_curr = thr_pct;
+        }
+    }
+
+    /// Set the current used by system in amps
+    /// @param amps                 current flowing to the motors expressed in amps
+    void set_current(float amps) {
+        if(_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+            _thr_or_curr = amps;
+        }
     }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -173,9 +205,10 @@ protected:
     Vector3i _mag_history[_mag_history_size];
 
     // motor compensation
+    AP_Int8     _motor_comp_type;               // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
     AP_Vector3f _motor_compensation;            // factors multiplied by throttle and added to compass outputs
-    Vector3f _motor_offset;                     // latest compensation added to compass
-    float _throttle_pct;                        // throttle expressed as a percentage from 0.0 ~ 1.0
+    Vector3f    _motor_offset;                  // latest compensation added to compass
+    float       _thr_or_curr;                   // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
 
     // board orientation from AHRS
     enum Rotation _board_orientation;

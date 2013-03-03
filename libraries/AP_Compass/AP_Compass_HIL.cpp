@@ -21,8 +21,14 @@ bool AP_Compass_HIL::read()
     // get offsets
     Vector3f ofs = _offset.get();
 
-    // get motor compensation
-    _motor_offset = _motor_compensation.get() * _throttle_pct;
+    // apply motor compensation
+    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
+        _motor_offset = _motor_compensation.get() * _thr_or_curr;
+    }else{
+        _motor_offset.x = 0;
+        _motor_offset.y = 0;
+        _motor_offset.z = 0;
+    }
 
     // return last values provided by setHIL function
     mag_x = _hil_mag.x + ofs.x + _motor_offset.x;

@@ -67,9 +67,9 @@ bool AP_Compass_PX4::read(void)
     _sum.rotate(_board_orientation);
     _sum += _offset.get();
 
-    // add in motor compensation
-    if( _throttle_pct != 0 ) {
-        _motor_offset = _motor_compensation.get() * _throttle_pct;
+    // apply motor compensation
+    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
+        _motor_offset = _motor_compensation.get() * _thr_or_curr;
         _sum += _motor_offset;
     }else{
         _motor_offset.x = 0;
