@@ -118,11 +118,11 @@ static void read_battery(void)
 
     if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
         batt_volt_analog_source->set_pin(g.battery_volt_pin);
-        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source->read_average());
+        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source);
     }
     if(g.battery_monitoring == 4) {
         batt_curr_analog_source->set_pin(g.battery_curr_pin);
-        current_amps1    = CURRENT_AMPS(batt_curr_analog_source->read_average());
+        current_amps1    = CURRENT_AMPS(batt_curr_analog_source);
         current_total1   += current_amps1 * 0.02778f;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
     }
 
