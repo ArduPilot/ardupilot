@@ -21,6 +21,10 @@ float ADCSource::read_average() {
 	return read_latest();
 }
 
+float ADCSource::voltage_average() {
+	return (5.0/1024.0) * read_average();
+}
+
 float ADCSource::read_latest() {
     switch (_pin) {
     case ANALOG_INPUT_BOARD_VCC:
