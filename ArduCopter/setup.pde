@@ -1245,7 +1245,7 @@ print_accel_offsets_and_scaling(void)
 {
     Vector3f accel_offsets = ins.get_accel_offsets();
     Vector3f accel_scale = ins.get_accel_scale();
-    cliSerial->printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\tA_scale: %4.2f, %4.2f, %4.2f\n"),
+    cliSerial->printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\nA_scale: %4.2f, %4.2f, %4.2f\n"),
                     (float)accel_offsets.x,                           // Pitch
                     (float)accel_offsets.y,                           // Roll
                     (float)accel_offsets.z,                           // YAW
