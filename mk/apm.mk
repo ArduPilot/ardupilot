@@ -1,6 +1,12 @@
 # find the mk/ directory, which is where this makefile fragment
 # lives. (patsubst strips the trailing slash.)
-MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+SYSTYPE			:=	$(shell uname)
+
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+  MK_DIR := $(shell cygpath -m ../mk)
+else
+  MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+endif
 
 include $(MK_DIR)/environ.mk
 
