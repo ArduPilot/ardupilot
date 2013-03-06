@@ -81,7 +81,7 @@ static int16_t read_sonar(void)
     int16_t temp_alt = sonar->read();
 
 #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
-    if(temp_alt==0){
+    if(!sonar->healthy){
     	temp_alt = lastSuccessfullSonarReading;
     }else{
     	requestedSonarReading = false;
