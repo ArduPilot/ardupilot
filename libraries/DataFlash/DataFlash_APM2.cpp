@@ -18,15 +18,9 @@
  *       Methods:
  *               Init() : Library initialization (SPI initialization)
  *               StartWrite(page) : Start a write session. page=start page.
- *               WriteByte(data) : Write a byte
- *               WriteInt(data) :  Write an integer (2 bytes)
- *               WriteLong(data) : Write a long (4 bytes)
  *               StartRead(page) : Start a read on (page)
  *               GetWritePage() : Returns the last page written to
  *               GetPage() : Returns the last page read
- *               ReadByte()
- *               ReadInt()
- *               ReadLong()
  *
  *       Properties:
  *
@@ -70,6 +64,17 @@ extern const AP_HAL::HAL& hal;
 #define DF_CHIP_ERASE_3   0x9A
 
 
+/*
+  try to take a semaphore safely from both in a timer and outside
+ */
+bool DataFlash_APM2::_sem_take(uint8_t timeout)
+{
+    if (hal.scheduler->in_timerprocess()) {
+        return _spi_sem->take_nonblocking();
+    }
+    return _spi_sem->take(timeout);
+}
+
 
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_APM2::Init(void)
@@ -98,7 +103,7 @@ void DataFlash_APM2::Init(void)
         return; /* never reached */
     }
 
-    if (!_spi_sem->take(5))
+    if (!_sem_take(5))
         return;
     // get page size: 512 or 528  (by default: 528)
     df_PageSize=PageSize();
@@ -188,7 +193,7 @@ void DataFlash_APM2::WaitReady()
 
 void DataFlash_APM2::PageToBuffer(uint8_t BufferNum, uint16_t PageAdr)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
 
     // activate dataflash command decoder
@@ -219,7 +224,7 @@ void DataFlash_APM2::PageToBuffer(uint8_t BufferNum, uint16_t PageAdr)
 
 void DataFlash_APM2::BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
     // activate dataflash command decoder
     _spi->cs_assert();
@@ -251,7 +256,7 @@ void DataFlash_APM2::BlockWrite (uint8_t BufferNum, uint16_t IntPageAdr,
                                  const void *pHeader, uint8_t hdr_size,
                                  const void *pBuffer, uint16_t size)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
     // activate dataflash command decoder
     _spi->cs_assert();
@@ -279,7 +284,7 @@ void DataFlash_APM2::BlockWrite (uint8_t BufferNum, uint16_t IntPageAdr,
 
 bool DataFlash_APM2::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return false;
 
     // activate dataflash command decoder
@@ -321,7 +326,7 @@ uint8_t DataFlash_APM2::BufferRead (uint8_t BufferNum, uint16_t IntPageAdr)
 
 void DataFlash_APM2::PageErase (uint16_t PageAdr)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
     // activate dataflash command decoder
     _spi->cs_assert();
@@ -350,7 +355,7 @@ void DataFlash_APM2::PageErase (uint16_t PageAdr)
 // erase a block of 8 pages.
 void DataFlash_APM2::BlockErase(uint16_t BlockAdr)
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
     // activate dataflash command decoder
     _spi->cs_assert();
@@ -379,7 +384,7 @@ void DataFlash_APM2::BlockErase(uint16_t BlockAdr)
 
 void DataFlash_APM2::ChipErase()
 {
-    if (!_spi_sem->take(1))
+    if (!_sem_take(1))
         return;
     //serialDebug("Chip Erase\n");
 

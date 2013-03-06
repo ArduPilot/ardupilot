@@ -82,7 +82,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Controls enabling monitoring of the battery's voltage and current
     // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
     // @User: Standard
-    GSCALAR(battery_monitoring, "BATT_MONITOR", DISABLED),
+    GSCALAR(battery_monitoring, "BATT_MONITOR", BATT_MONITOR_DISABLED),
 
     // @Param: FS_BATT_ENABLE
     // @DisplayName: Battery Failsafe Enable
@@ -102,12 +102,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Used to convert the voltage on the current sensing pin (BATT_CURR_PIN) to the actual current being consumed in amps (curr pin voltage * INPUT_VOLTS/1024 * AMP_PER_VOLT )
     // @User: Advanced
     GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT", CURR_AMP_PER_VOLT),
-
-    // @Param: INPUT_VOLTS
-    // @DisplayName: Max internal voltage of the battery voltage and current sensing pins
-    // @Description: Used to convert the voltage read in on the voltage and current pins for battery monitoring.  Normally 5 meaning 5 volts.
-    // @User: Advanced
-    GSCALAR(input_voltage,  "INPUT_VOLTS",      INPUT_VOLTAGE),
 
     // @Param: BATT_CAPACITY
     // @DisplayName: Battery Capacity

@@ -18,6 +18,7 @@ public:
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
+    float voltage_average();
 
 private:
     /* prescale scales the raw measurments for read()*/

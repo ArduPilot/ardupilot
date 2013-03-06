@@ -208,7 +208,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         battery_current = current_amps1 * 100;
     }
 
-    if (g.battery_monitoring == 3) {
+    if (g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY) {
         /*setting a out-of-range value.
          *  It informs to external devices that
          *  it cannot be calculated properly just by voltage*/
@@ -1241,9 +1241,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 trim_radio();
             }
             if (packet.param5 == 1) {
-                // this blocks
+            	float trim_roll, trim_pitch;
+            	// this blocks
                 AP_InertialSensor_UserInteractStream interact(hal.console);
-                ins.calibrate_accel(flash_leds, &interact);
+                if(ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch)) {
+                	// reset ahrs's trim to suggested values from calibration routine
+                	ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                }
             }
             result = MAV_RESULT_ACCEPTED;
             break;

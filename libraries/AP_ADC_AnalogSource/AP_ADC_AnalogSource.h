@@ -14,6 +14,7 @@ public:
     float           read_average(void);
     float           read_latest(void);
     void            set_pin(uint8_t);
+    float	    voltage_average();
 
 private:
     AP_ADC *        _adc;

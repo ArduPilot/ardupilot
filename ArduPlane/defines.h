@@ -191,8 +191,8 @@ enum log_messages {
                                         // regress a climb rate from
 
 
-#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
-#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-g.curr_amp_offset)*g.curr_amp_per_volt
+#define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
+#define CURRENT_AMPS(x) (x->voltage_average()-g.curr_amp_offset)*g.curr_amp_per_volt
 
 #define AN4                     4
 #define AN5                     5

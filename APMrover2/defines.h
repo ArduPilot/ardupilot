@@ -70,6 +70,7 @@ enum ch7_option {
 enum mode {
     MANUAL=0,
 	LEARNING=2,
+    STEERING=3,
     AUTO=10,
     RTL=11,
     GUIDED=15,
@@ -122,6 +123,7 @@ enum ap_message {
     MSG_AHRS,
     MSG_SIMSTATE,
     MSG_HWSTATUS,
+    MSG_RANGEFINDER,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -181,8 +183,8 @@ enum gcs_severity {
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
 
-#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
-#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
+#define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
+#define CURRENT_AMPS(x) (x->voltage_average()-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
 
 #define RELAY_PIN 47
 

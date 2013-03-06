@@ -14,6 +14,7 @@ static int8_t   setup_flightmodes       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_batt_monitor      (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_sonar             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass           (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_compassmot        (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_tune              (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_range             (uint8_t argc, const Menu::arg *argv);
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
@@ -41,6 +42,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"battery",                     setup_batt_monitor},
     {"sonar",                       setup_sonar},
     {"compass",                     setup_compass},
+    {"compassmot",                  setup_compassmot},
     {"tune",                        setup_tune},
     {"range",                       setup_range},
 //	{"offsets",			setup_mag_offset},
@@ -457,6 +459,219 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
+// setup_compassmot - sets compass's motor interference parameters
+static int8_t
+setup_compassmot(uint8_t argc, const Menu::arg *argv)
+{
+    int8_t   comp_type;             // throttle or current based compensation
+    Vector3f compass_base;          // compass vector when throttle is zero
+    Vector3f motor_impact;          // impact of motors on compass vector
+    Vector3f motor_impact_scaled;   // impact of motors on compass vector scaled with throttle
+    Vector3f motor_compensation;    // final compensation to be stored to eeprom
+    float    throttle_pct;          // throttle as a percentage 0.0 ~ 1.0
+    uint32_t last_run_time;
+    uint8_t  print_counter = 49;
+    bool     updated = false;       // have we updated the compensation vector at least once
+
+    // default compensation type to use current if possible
+    if( g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT ) {
+        comp_type = AP_COMPASS_MOT_COMP_CURRENT;
+    }else{
+        comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
+    }
+
+    // check if user wants throttle compensation
+    if( !strcmp_P(argv[1].str, PSTR("t")) || !strcmp_P(argv[1].str, PSTR("T")) ) {
+        comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
+    }
+
+    // check if user wants current compensation
+    if( !strcmp_P(argv[1].str, PSTR("c")) || !strcmp_P(argv[1].str, PSTR("C")) ) {
+        comp_type = AP_COMPASS_MOT_COMP_CURRENT;
+    }
+
+    // check compass is enabled
+    if( !g.compass_enabled ) {
+        cliSerial->print_P(PSTR("compass disabled, exiting"));
+        return 0;
+    }
+
+    // check if we have a current monitor
+    if( comp_type == AP_COMPASS_MOT_COMP_CURRENT && g.battery_monitoring != BATT_MONITOR_VOLTAGE_AND_CURRENT ) {
+        cliSerial->print_P(PSTR("current monitor disabled, exiting"));
+        return 0;
+    }
+
+    // initialise compass
+    init_compass();
+
+    // disable motor compensation
+    compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
+    compass.set_motor_compensation(Vector3f(0,0,0));
+
+    // print warning that motors will spin
+    // ask user to raise throttle
+    // inform how to stop test
+    cliSerial->print_P(PSTR("This setup records the impact on the compass of spinning up the motors.  The motors will spin!\nHold throttle low, then raise as high as safely possible for 10 sec.\nAt any time you may press any key to exit.\nmeasuring compass vs "));
+
+    // inform what type of compensation we are attempting
+    if( comp_type == AP_COMPASS_MOT_COMP_CURRENT ) {
+        cliSerial->print_P(PSTR("CURRENT\n"));
+    }else{
+        cliSerial->print_P(PSTR("THROTTLE\n"));
+    }
+
+    // clear out user input
+    while( cliSerial->available() ) {
+        cliSerial->read();
+    }
+
+    // disable throttle and battery failsafe
+    g.failsafe_throttle = FS_THR_DISABLED;
+    g.failsafe_battery_enabled = false;
+
+    // read radio
+    read_radio();
+
+    // exit immediately if throttle is not zero
+    if( g.rc_3.control_in != 0 ) {
+        cliSerial->print_P(PSTR("throttle not zero, exiting"));
+        return 0;
+    }
+
+    // get some initial compass readings
+    last_run_time = millis();
+    while( millis() - last_run_time < 2000 ) {
+        compass.accumulate();
+    }
+    compass.read();
+
+    // exit immediately if the compass is not healthy
+    if( !compass.healthy ) {
+        cliSerial->print_P(PSTR("compass not healthy, exiting"));
+        return 0;
+    }
+
+    // store initial x,y,z compass values
+    compass_base.x = compass.mag_x;
+    compass_base.y = compass.mag_y;
+    compass_base.z = compass.mag_z;
+
+    // initialise motor compensation
+    motor_compensation = Vector3f(0,0,0);
+
+    // clear out any user input
+    while( cliSerial->available() ) {
+        cliSerial->read();
+    }
+
+    // enable motors and pass through throttle
+    motors.enable();
+    motors.armed(true);
+    motors.output_min();
+
+    // initialise run time
+    last_run_time = millis();
+
+    // main run while there is no user input and the compass is healthy
+    while(!cliSerial->available() && compass.healthy) {
+
+        // 50hz loop
+        if( millis() - last_run_time > 20 ) {
+            last_run_time = millis();
+
+            // read radio input
+            read_radio();
+
+            // pass through throttle to motors
+            motors.throttle_pass_through();
+
+            // read some compass values
+            compass.read();
+
+            // read current
+            read_battery();
+
+            // calculate scaling for throttle
+            throttle_pct = (float)g.rc_3.control_in / 1000.0f;
+            throttle_pct = constrain(throttle_pct,0.0f,1.0f);
+
+            // if throttle is zero, update base x,y,z values
+            if( throttle_pct == 0.0f ) {
+                compass_base.x = compass_base.x * 0.99f + (float)compass.mag_x * 0.01f;
+                compass_base.y = compass_base.y * 0.99f + (float)compass.mag_y * 0.01f;
+                compass_base.z = compass_base.z * 0.99f + (float)compass.mag_z * 0.01f;
+
+                // causing printing to happen as soon as throttle is lifted
+                print_counter = 49;
+            }else{
+
+                // calculate diff from compass base and scale with throttle
+                motor_impact.x = compass.mag_x - compass_base.x;
+                motor_impact.y = compass.mag_y - compass_base.y;
+                motor_impact.z = compass.mag_z - compass_base.z;
+
+                // throttle based compensation
+                if( comp_type == AP_COMPASS_MOT_COMP_THROTTLE ) {
+                    // scale by throttle
+                    motor_impact_scaled = motor_impact / throttle_pct;
+
+                    // adjust the motor compensation to negate the impact
+                    motor_compensation = motor_compensation * 0.99f - motor_impact_scaled * 0.01f;
+                    updated = true;
+                }else{
+                    // current based compensation if more than 3amps being drawn
+                    motor_impact_scaled = motor_impact / current_amps1;
+
+                    // adjust the motor compensation to negate the impact if drawing over 3amps
+                    if( current_amps1 >= 3.0f ) {
+                        motor_compensation = motor_compensation * 0.99f - motor_impact_scaled * 0.01f;
+                        updated = true;
+                    }
+                }
+
+                // display output at 1hz if throttle is above zero
+                print_counter++;
+                if(print_counter >= 50) {
+                    print_counter = 0;
+                    cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)current_amps1, (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
+                }
+            }
+        }else{
+            // grab some compass values
+            compass.accumulate();
+        }
+    }
+
+    // stop motors
+    motors.output_min();
+    motors.armed(false);
+
+    // clear out any user input
+    while( cliSerial->available() ) {
+        cliSerial->read();
+    }
+
+    // print one more time so the last thing printed matches what appears in the report_compass
+    cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)current_amps1, (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
+
+    // set and save motor compensation
+    if( updated ) {
+        compass.motor_compensation_type(comp_type);
+        compass.set_motor_compensation(motor_compensation);
+        compass.save_motor_compensation();
+    }else{
+        // compensation vector never updated, report failure
+        cliSerial->printf_P(PSTR("Failed! Compensation disabled.  Did you forget to raise the throttle high enough?"));
+        compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
+    }
+
+    // display new motor offsets and save
+    report_compass();
+
+    return 0;
+}
+
 static int8_t
 setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
 {
@@ -786,9 +1001,9 @@ static void report_batt_monitor()
 {
     cliSerial->printf_P(PSTR("\nBatt Mon:\n"));
     print_divider();
-    if(g.battery_monitoring == 0) print_enabled(false);
-    if(g.battery_monitoring == 3) cliSerial->printf_P(PSTR("volts"));
-    if(g.battery_monitoring == 4) cliSerial->printf_P(PSTR("volts and cur"));
+    if(g.battery_monitoring == BATT_MONITOR_DISABLED) print_enabled(false);
+    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("volts"));
+    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("volts and cur"));
     print_blanks(2);
 }
 
@@ -878,11 +1093,29 @@ static void report_compass()
     Vector3f offsets = compass.get_offsets();
 
     // mag offsets
-    cliSerial->printf_P(PSTR("Mag off: %4.4f, %4.4f, %4.4f"),
+    cliSerial->printf_P(PSTR("Mag off: %4.4f, %4.4f, %4.4f\n"),
                     offsets.x,
                     offsets.y,
                     offsets.z);
-    print_blanks(2);
+
+    // motor compensation
+    cliSerial->print_P(PSTR("Motor Comp: "));
+    if( compass.motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED ) {
+        cliSerial->print_P(PSTR("Off\n"));
+    }else{
+        if( compass.motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE ) {
+            cliSerial->print_P(PSTR("Throttle"));
+        }
+        if( compass.motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT ) {
+            cliSerial->print_P(PSTR("Current"));
+        }
+        Vector3f motor_compensation = compass.get_motor_compensation();
+        cliSerial->printf_P(PSTR("\nComp Vec: %4.2f, %4.2f, %4.2f\n"),
+                        motor_compensation.x,
+                        motor_compensation.y,
+                        motor_compensation.z);
+    }
+    print_blanks(1);
 }
 
 static void report_flight_modes()
@@ -1012,7 +1245,7 @@ print_accel_offsets_and_scaling(void)
 {
     Vector3f accel_offsets = ins.get_accel_offsets();
     Vector3f accel_scale = ins.get_accel_scale();
-    cliSerial->printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\tA_scale: %4.2f, %4.2f, %4.2f\n"),
+    cliSerial->printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\nA_scale: %4.2f, %4.2f, %4.2f\n"),
                     (float)accel_offsets.x,                           // Pitch
                     (float)accel_offsets.y,                           // Roll
                     (float)accel_offsets.z,                           // YAW

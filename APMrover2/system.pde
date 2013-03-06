@@ -9,9 +9,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 #if CLI_ENABLED == ENABLED
 
 // Functions called from the top-level menu
-#if LITE == DISABLED
 static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
-#endif
 static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
 static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
 static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
@@ -35,9 +33,7 @@ static int8_t	main_menu_help(uint8_t argc, const Menu::arg *argv)
 static const struct Menu::command main_menu_commands[] PROGMEM = {
 //   command		function called
 //   =======        ===============
-#if LITE == DISABLED
 	{"logs",		process_logs},
-#endif
 	{"setup",		setup_mode},
 	{"test",		test_mode},
     {"reboot",      reboot_board},
@@ -154,7 +150,6 @@ static void init_ardupilot()
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
-#if LITE == DISABLED
 #if LOGGING_ENABLED == ENABLED
 	DataFlash.Init(); 	// DataFlash log initialization
     if (!DataFlash.CardInserted()) {
@@ -168,7 +163,6 @@ static void init_ardupilot()
 		DataFlash.start_new_log();
 	}
 #endif
-#endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
@@ -176,7 +170,6 @@ static void init_ardupilot()
     adc.Init();      // APM ADC library initialization
 #endif
 
-#if LITE == DISABLED
 	if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
 		if (!compass.init()|| !compass.read()) {
@@ -187,43 +180,9 @@ static void init_ardupilot()
             //compass.get_offsets();						// load offsets to account for airframe magnetic interference
         }
 	}
-#else
-  I2c.begin();
-  I2c.timeOut(20);
 
-  // I2c.setSpeed(true);
-
-  if (!compass.init()) {
-	  cliSerial->println("compass initialisation failed!");
-	  while (1) ;
-  }
-
-  compass.set_orientation(MAG_ORIENTATION);  // set compass's orientation on aircraft.
-  compass.set_offsets(0,0,0);  // set offsets to account for surrounding interference
-
-  cliSerial->print("Compass auto-detected as: ");
-  switch( compass.product_id ) {
-      case AP_COMPASS_TYPE_HIL:
-	      cliSerial->println("HIL");
-		  break;
-      case AP_COMPASS_TYPE_HMC5843:
-	      cliSerial->println("HMC5843");
-		  break;
-      case AP_COMPASS_TYPE_HMC5883L:
-	      cliSerial->println("HMC5883L");
-		  break;
-      default:
-	      cliSerial->println("unknown");
-		  break;
-  }
-  
-  delay(3000);
-
-#endif
 	// initialise sonar
-	#if CONFIG_SONAR == ENABLED
-	init_sonar();
-	#endif
+    init_sonar();
 
 #endif
 	// Do GPS init
@@ -287,10 +246,8 @@ static void init_ardupilot()
 
 	startup_ground();
 
-#if LITE == DISABLED
 	if (g.log_bitmask & MASK_LOG_CMD)
 			Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-#endif
 
     set_mode(MANUAL);
 
@@ -318,13 +275,11 @@ static void startup_ground(void)
 	// -----------------------
 	demo_servos(1);
 
-#if LITE == DISABLED
 	//IMU ground start
 	//------------------------
     //
 
 	startup_INS_ground(false);
-#endif
 
 	// read the radio to set trims
 	// ---------------------------
@@ -356,6 +311,7 @@ static void set_mode(enum mode mode)
 	{
 		case MANUAL:
 		case LEARNING:
+		case STEERING:
 			break;
 
 		case AUTO:
@@ -372,11 +328,8 @@ static void set_mode(enum mode mode)
 			break;
 	}
 
-#if LITE == DISABLED
 	if (g.log_bitmask & MASK_LOG_MODE)
 		Log_Write_Mode(control_mode);
-#endif
-
 }
 
 static void check_long_failsafe()
@@ -401,7 +354,6 @@ static void check_long_failsafe()
 	}
 }
 
-#if LITE == DISABLED
 static void startup_INS_ground(bool force_accel_level)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -411,7 +363,7 @@ static void startup_INS_ground(bool force_accel_level)
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
 	demo_servos(2);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
+    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move vehicle"));
 	mavlink_delay(1000);
 
     ahrs.init();
@@ -434,7 +386,6 @@ static void startup_INS_ground(bool force_accel_level)
 	digitalWrite(A_LED_PIN, LED_OFF);
 	digitalWrite(C_LED_PIN, LED_OFF);
 }
-#endif
 
 static void update_GPS_light(void)
 {
@@ -542,6 +493,9 @@ print_mode(uint8_t mode)
         break;
     case LEARNING:
         cliSerial->println_P(PSTR("Learning"));
+        break;
+    case STEERING:
+        cliSerial->println_P(PSTR("Stearing"));
         break;
     case AUTO:
         cliSerial->println_P(PSTR("AUTO"));

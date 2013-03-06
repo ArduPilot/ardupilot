@@ -1,25 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#if CONFIG_SONAR == ENABLED
+
 static void init_sonar(void)
 {
-  /*
-    #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-	    sonar.calculate_scaler(g.sonar_type, 3.3);
-	#else
-        sonar.calculate_scaler(g.sonar_type, 5.0);
-	#endif
-*/
-}
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    sonar.Init(&adc);
+#else
+    sonar.Init(NULL);
 #endif
+}
 
-#if LITE == DISABLED
 // Sensors are not available in HIL_MODE_ATTITUDE
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
 void ReadSCP1000(void) {}
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
-#endif
 
 static void read_battery(void)
 {
@@ -31,12 +26,12 @@ static void read_battery(void)
     if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
         // this copes with changing the pin at runtime
         batt_volt_pin->set_pin(g.battery_volt_pin);
-        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_pin->read_average());
+        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_pin);
     }
     if(g.battery_monitoring == 4) {
         // this copes with changing the pin at runtime
         batt_curr_pin->set_pin(g.battery_curr_pin);
-        current_amps1    = CURRENT_AMPS(batt_curr_pin->read_average());
+        current_amps1    = CURRENT_AMPS(batt_curr_pin);
         current_total1   += current_amps1 * (float)delta_ms_medium_loop * 0.0002778;                                    // .0002778 is 1/3600 (conversion to hours)
     }
 }

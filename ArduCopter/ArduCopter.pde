@@ -1057,6 +1057,11 @@ static void medium_loop()
     case 0:
         medium_loopCounter++;
 
+        // read battery before compass because it may be used for motor interference compensation
+        if (g.battery_monitoring != 0) {
+            read_battery();
+        }
+
 #if HIL_MODE != HIL_MODE_ATTITUDE                                                               // don't execute in HIL mode
         if(g.compass_enabled) {
             if (compass.read()) {
@@ -1131,10 +1136,6 @@ static void medium_loop()
     //---------------------------------
     case 4:
         medium_loopCounter = 0;
-
-        if (g.battery_monitoring != 0) {
-            read_battery();
-        }
 
         // Accel trims      = hold > 2 seconds
         // Throttle cruise  = switch less than 1 second
@@ -1305,6 +1306,7 @@ static void super_slow_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
+    // log battery info to the dataflash
     if (g.log_bitmask & MASK_LOG_CURRENT && motors.armed())
         Log_Write_Current();
 

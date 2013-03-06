@@ -55,6 +55,33 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
 #endif
+
+    // @Param: MOTCT
+    // @DisplayName: Motor interference compensation type
+    // @Description: Set motor interference compensation type to disabled, throttle or current
+    // @Values: 0:Disabled,1:Use Throttle,2:Use Current
+    // @Increment: 1
+    AP_GROUPINFO("MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
+
+    // @Param: MOT_X
+    // @DisplayName: Motor interference compensation for body frame X axis
+    // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Increment: 1
+
+    // @Param: MOT_Y
+    // @DisplayName: Motor interference compensation for body frame Y axis
+    // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Increment: 1
+
+    // @Param: MOT_Z
+    // @DisplayName: Motor interference compensation for body frame Z axis
+    // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference
+    // @Range: -1000 1000
+    // @Increment: 1
+    AP_GROUPINFO("MOT",    7, Compass, _motor_compensation, 0),
+
     AP_GROUPEND
 };
 
@@ -100,6 +127,19 @@ Vector3f &
 Compass::get_offsets()
 {
     return _offset;
+}
+
+void
+Compass::set_motor_compensation(const Vector3f &motor_comp_factor)
+{
+    _motor_compensation.set(motor_comp_factor);
+}
+
+void
+Compass::save_motor_compensation()
+{
+    _motor_comp_type.save();
+    _motor_compensation.save();
 }
 
 void

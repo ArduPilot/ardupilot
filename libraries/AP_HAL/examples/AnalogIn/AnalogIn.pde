@@ -51,7 +51,7 @@ void loop (void) {
 			  meas_ch12, 
 			  meas_ch13, 
 			  meas_vcc);
-    hal.scheduler->delay(10);
+    hal.scheduler->delay(200);
 }
 
 AP_HAL_MAIN();

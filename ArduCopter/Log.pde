@@ -29,10 +29,10 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-    int16_t log_start;
-    int16_t log_end;
-    int16_t temp;
-    int16_t last_log_num = DataFlash.find_last_log();
+    uint16_t log_start;
+    uint16_t log_end;
+    uint16_t temp;
+    uint16_t last_log_num = DataFlash.find_last_log();
 
     uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -66,7 +66,7 @@ print_log_menu(void)
         cliSerial->printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
 
         for(int16_t i=num_logs; i>=1; i--) {
-            int16_t last_log_start = log_start, last_log_end = log_end;
+            uint16_t last_log_start = log_start, last_log_end = log_end;
             temp = last_log_num-i+1;
             DataFlash.get_log_boundaries(temp, log_start, log_end);
             cliSerial->printf_P(PSTR("Log %d,    start %d,   end %d\n"), (int)temp, (int)log_start, (int)log_end);
@@ -84,25 +84,20 @@ static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
     int16_t dump_log;
-    int16_t dump_log_start;
-    int16_t dump_log_end;
-    int16_t last_log_num;
+    uint16_t dump_log_start;
+    uint16_t dump_log_end;
+    uint16_t last_log_num;
 
     // check that the requested log number can be read
     dump_log = argv[1].i;
     last_log_num = DataFlash.find_last_log();
 
     if (dump_log == -2) {
-        for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
-            DataFlash.StartRead(count);
-            cliSerial->printf_P(PSTR("DF page, log file #, log page: %d,\t"), (int)count);
-            cliSerial->printf_P(PSTR("%d,\t"), (int)DataFlash.GetFileNumber());
-            cliSerial->printf_P(PSTR("%d\n"), (int)DataFlash.GetFilePage());
-        }
+        DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
-        Log_Read(1, DataFlash.df_NumPages);
+        Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
         cliSerial->printf_P(PSTR("bad log number\n"));
@@ -115,7 +110,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
      *                         dump_log_start,
      *                         dump_log_end);
      */
-    Log_Read(dump_log_start, dump_log_end);
+    Log_Read((uint8_t)dump_log, dump_log_start, dump_log_end);
     //cliSerial->printf_P(PSTR("Done\n"));
     return (0);
 }
@@ -250,8 +245,8 @@ static void Log_Read_GPS()
 
     // need to fix printf formatting
 
-    cliSerial->printf_P(PSTR("GPS, %ld, %u, "),
-                        (long)pkt.gps_time,
+    cliSerial->printf_P(PSTR("GPS, %lu, %u, "),
+                        (unsigned long)pkt.gps_time,
                         (unsigned)pkt.num_sats);
     print_latlon(cliSerial, pkt.latitude);
     cliSerial->print_P(PSTR(", "));
@@ -593,20 +588,27 @@ struct log_Compass {
     int16_t offset_x;
     int16_t offset_y;
     int16_t offset_z;
+    int16_t motor_offset_x;
+    int16_t motor_offset_y;
+    int16_t motor_offset_z;
 };
 
 // Write a Compass packet. Total length : 15 bytes
 static void Log_Write_Compass()
 {
     Vector3f mag_offsets = compass.get_offsets();
+    Vector3f mag_motor_offsets = compass.get_motor_offsets();
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
-        mag_x       : compass.mag_x,
-        mag_y       : compass.mag_y,
-        mag_z       : compass.mag_z,
-        offset_x    : (int16_t)mag_offsets.x,
-        offset_y    : (int16_t)mag_offsets.y,
-        offset_z    : (int16_t)mag_offsets.z,
+        mag_x           : compass.mag_x,
+        mag_y           : compass.mag_y,
+        mag_z           : compass.mag_z,
+        offset_x        : (int16_t)mag_offsets.x,
+        offset_y        : (int16_t)mag_offsets.y,
+        offset_z        : (int16_t)mag_offsets.z,
+        motor_offset_x  : (int16_t)mag_motor_offsets.x,
+        motor_offset_y  : (int16_t)mag_motor_offsets.y,
+        motor_offset_z  : (int16_t)mag_motor_offsets.z
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -616,14 +618,17 @@ static void Log_Read_Compass()
 {
     struct log_Compass pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
-                                     // 1   2   3   4   5   6
-    cliSerial->printf_P(PSTR("COMPASS, %d, %d, %d, %d, %d, %d\n"),
+                                     // 1   2   3   4   5   6   7   8   9
+    cliSerial->printf_P(PSTR("COMPASS, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
                     (int)pkt.mag_x,
                     (int)pkt.mag_y,
                     (int)pkt.mag_z,
                     (int)pkt.offset_x,
                     (int)pkt.offset_y,
-                    (int)pkt.offset_z);
+                    (int)pkt.offset_z,
+                    (int)pkt.motor_offset_x,
+                    (int)pkt.motor_offset_y,
+                    (int)pkt.motor_offset_z);
 }
 
 struct log_Performance {
@@ -747,7 +752,7 @@ static void Log_Read_Attitude()
     struct log_Attitude pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                              1   2   3    4   5   6  7
+    //                              1   2   3   4   5   6   7
     cliSerial->printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
                     (int)pkt.roll_in,
                     (int)pkt.roll,
@@ -805,21 +810,21 @@ static void Log_Read_INAV()
     struct log_INAV pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-                                  // 1   2   3   4      5      6      7      8    9   10     11     12     13
+                                  // 1   2   3      4      5      6      7    8    9     10     11     12     13
     cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
                     (int)pkt.baro_alt,                  // 1 barometer altitude
                     (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
-                    (int)pkt.inav_climb_rate,           // 4 accel + baro based climb rate
-                    (float)pkt.accel_corr_x,            // 5 accel correction x-axis
-                    (float)pkt.accel_corr_y,            // 6 accel correction y-axis
-                    (float)pkt.accel_corr_z,            // 7 accel correction z-axis
-                    (float)pkt.accel_corr_ef_z,         // 8 accel correction earth frame
-                    (long)pkt.gps_lat_from_home,        // 9 lat from home
-                    (long)pkt.gps_lon_from_home,        // 10 lon from home
-                    (float)pkt.inav_lat_from_home,      // 11 accel based lat from home
-                    (float)pkt.inav_lon_from_home,      // 12 accel based lon from home
-                    (float)pkt.inav_lat_speed,          // 13 accel based lat velocity
-                    (float)pkt.inav_lon_speed);         // 14 accel based lon velocity
+                    (int)pkt.inav_climb_rate,           // 3 accel + baro based climb rate
+                    (float)pkt.accel_corr_x,            // 4 accel correction x-axis
+                    (float)pkt.accel_corr_y,            // 5 accel correction y-axis
+                    (float)pkt.accel_corr_z,            // 6 accel correction z-axis
+                    (float)pkt.accel_corr_ef_z,         // 7 accel correction earth frame
+                    (long)pkt.gps_lat_from_home,        // 8 lat from home
+                    (long)pkt.gps_lon_from_home,        // 9 lon from home
+                    (float)pkt.inav_lat_from_home,      // 10 accel based lat from home
+                    (float)pkt.inav_lon_from_home,      // 11 accel based lon from home
+                    (float)pkt.inav_lat_speed,          // 12 accel based lat velocity
+                    (float)pkt.inav_lon_speed);         // 13 accel based lon velocity
 }
 
 struct log_Mode {
@@ -856,7 +861,6 @@ struct log_Startup {
 // Write Startup packet. Total length : 4 bytes
 static void Log_Write_Startup()
 {
-    DataFlash.WriteByte(LOG_STARTUP_MSG);
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG)
     };
@@ -1218,7 +1222,7 @@ static void Log_Read_Error()
 }
 
 // Read the DataFlash log memory
-static void Log_Read(int16_t start_page, int16_t end_page)
+static void Log_Read(uint8_t log_num, int16_t start_page, int16_t end_page)
 {
  #ifdef AIRFRAME_NAME
     cliSerial->printf_P(PSTR((AIRFRAME_NAME)));
@@ -1228,17 +1232,13 @@ static void Log_Read(int16_t start_page, int16_t end_page)
                              "\nFree RAM: %u\n"),
                         (unsigned) memcheck_available_memory());
 
- #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    cliSerial->printf_P(PSTR("APM 1\n"));
- #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    cliSerial->printf_P(PSTR("APM 2\n"));
- #endif
+    cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
 #if CLI_ENABLED == ENABLED
 	setup_show(0, NULL);
 #endif
 
-    DataFlash.log_read_process(start_page, end_page, log_callback);
+    DataFlash.log_read_process(log_num, start_page, end_page, log_callback);
 }
 
 // read one packet from the dataflash

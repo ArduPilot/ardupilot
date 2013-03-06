@@ -42,9 +42,8 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     // ArduPlane documentation
     switch (control_mode) {
     case MANUAL:
-        base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
-        break;
     case LEARNING:
+    case STEERING:
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case AUTO:
@@ -139,6 +138,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         break;
 
     case LEARNING:
+    case STEERING:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
         break;
@@ -244,7 +244,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         bearing,
         target_bearing / 100,
         wp_distance,
-        altitude_error / 1.0e2,
+        0,
         groundspeed_error,
         crosstrack_error);
 }
@@ -420,6 +420,14 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         hal.i2c->lockup_count());
 }
 
+static void NOINLINE send_rangefinder(mavlink_channel_t chan)
+{
+    mavlink_msg_rangefinder_send(
+        chan,
+        sonar.distance_cm() * 0.01,
+        sonar.voltage());
+}
+
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(
@@ -582,6 +590,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
+        break;
+
+    case MSG_RANGEFINDER:
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_rangefinder(chan);
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -862,6 +875,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
+        send_message(MSG_RANGEFINDER);
     }
 }
 
@@ -994,9 +1008,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (packet.param1 == 1 ||
                     packet.param2 == 1 ||
                     packet.param3 == 1) {
-            #if LITE == DISABLED                      
                     startup_INS_ground(true);
-            #endif
                 }
                 if (packet.param4 == 1) {
                     trim_radio();
@@ -1070,6 +1082,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             switch (packet.custom_mode) {
             case MANUAL:
             case LEARNING:
+            case STEERING:
             case AUTO:
             case RTL:
                 set_mode((enum mode)packet.custom_mode);

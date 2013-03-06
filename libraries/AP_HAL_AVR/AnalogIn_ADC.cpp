@@ -7,6 +7,8 @@
 #include "AnalogIn.h"
 using namespace AP_HAL_AVR;
 
+extern const AP_HAL::HAL& hal;
+
 ADCSource::ADCSource(uint8_t pin, float prescale) :
     _pin(pin),
     _sum_count(0),
@@ -35,6 +37,16 @@ float ADCSource::read_latest() {
     }
 }
 
+/*
+  return voltage from 0.0 to 5.0V, scaled to Vcc
+ */
+float ADCSource::voltage_average(void)
+{
+	float vcc_mV = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC)->read_average();
+	float v = read_average();
+	return v * vcc_mV * 9.765625e-7; // 9.765625e-7 = 1.0/(1024*1000)
+}
+
 void ADCSource::set_pin(uint8_t pin) {
     _pin = pin;
 }
@@ -44,11 +56,10 @@ float ADCSource::_read_average() {
     uint16_t sum;
     uint8_t sum_count;
 
-    /* Block until there is a new sample. Will only happen if you
-     * call read_average very frequently.
-     * I don't like the idea of blocking like this but we don't
-     * have a way to bubble control upwards at the moment. -pch */
-    while( _sum_count == 0 );
+    if (_sum_count == 0) {
+	    // avoid blocking waiting for new samples
+	    return _last_average;
+    }
 
     /* Read and clear in a critical section */
     uint8_t sreg = SREG;
@@ -62,8 +73,9 @@ float ADCSource::_read_average() {
     SREG = sreg;
 
     float avg = sum / (float) sum_count;
-    return avg;
 
+    _last_average = avg;
+    return avg;
 }
 
 void ADCSource::setup_read() {

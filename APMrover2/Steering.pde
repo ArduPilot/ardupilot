@@ -17,14 +17,47 @@ static void throttle_slew_limit(int16_t last_throttle)
     }
 }
 
-static void calc_throttle()
+/*
+  calculate the throtte for auto-throttle modes
+ */
+static void calc_throttle(float target_speed)
 {  
-   int throttle_target = g.throttle_cruise + throttle_nudge;  
-   
-   groundspeed_error = g.speed_cruise - ground_speed; 
-        
-   throttle = throttle_target + (g.pidSpeedThrottle.get_pid(groundspeed_error * 100) / 100);
-   g.channel_throttle.servo_out = constrain_int16(throttle, g.throttle_min.get(), g.throttle_max.get());
+    if (target_speed <= 0) {
+        // cope with zero requested speed
+        g.channel_throttle.servo_out = g.throttle_min.get();
+        return;
+    }
+
+    int throttle_target = g.throttle_cruise + throttle_nudge;  
+
+    /*
+      reduce target speed in proportion to turning rate, up to the
+      SPEED_TURN_GAIN percentage.
+    */
+    float steer_rate = fabsf((nav_steer/nav_gain_scaler) / (float)SERVO_MAX);
+    steer_rate = constrain(steer_rate, 0.0, 1.0);
+    float reduction = 1.0 - steer_rate*(100 - g.speed_turn_gain)*0.01;
+    
+    if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
+        // in auto-modes we reduce speed when approaching waypoints
+        float reduction2 = 1.0 - (100-g.speed_turn_gain)*0.01*((g.speed_turn_dist - wp_distance)/g.speed_turn_dist);
+        if (reduction2 < reduction) {
+            reduction = reduction2;
+        }
+    }
+    
+    // reduce the target speed by the reduction factor
+    target_speed *= reduction;
+
+    groundspeed_error = target_speed - ground_speed; 
+    
+    throttle = throttle_target + (g.pidSpeedThrottle.get_pid(groundspeed_error * 100) / 100);
+
+    // also reduce the throttle by the reduction factor. This gives a
+    // much faster response in turns
+    throttle *= reduction;
+
+    g.channel_throttle.servo_out = constrain_int16(throttle, g.throttle_min.get(), g.throttle_max.get());
 }
 
 /*****************************************
@@ -45,8 +78,10 @@ static void calc_nav_steer()
 	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
 
     if (obstacle) {  // obstacle avoidance 
-	    nav_steer += 9000;    // if obstacle in front turn 90° right	
+	    nav_steer += g.sonar_turn_angle*100;
     }
+
+    g.channel_steer.servo_out = nav_steer;
 }
 
 /*****************************************
@@ -56,23 +91,15 @@ static void set_servos(void)
 {
     int16_t last_throttle = g.channel_throttle.radio_out;
 
-	if ((control_mode == MANUAL) || (control_mode == LEARNING)) {
+	if (control_mode == MANUAL || control_mode == LEARNING) {
 		// do a direct pass through of radio values
 		g.channel_steer.radio_out 		= g.channel_steer.radio_in;
-
-        if (obstacle)    // obstacle in front, turn right in Stabilize mode
-            g.channel_steer.radio_out -= 500;
-
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
 	} else {       
         g.channel_steer.calc_pwm();
-		g.channel_throttle.radio_out = g.channel_throttle.radio_in;
 		g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
                                                        g.throttle_min.get(), 
                                                        g.throttle_max.get());
-    }
-                
-    if (control_mode >= AUTO) {
         // convert 0 to 100% into PWM
         g.channel_throttle.calc_pwm();
 

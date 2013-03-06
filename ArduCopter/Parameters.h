@@ -125,7 +125,7 @@ public:
         k_param_battery_monitoring = 141,
         k_param_volt_div_ratio,
         k_param_curr_amp_per_volt,
-        k_param_input_voltage,
+        k_param_input_voltage,  // deprecated - can be deleted
         k_param_pack_capacity,
         k_param_compass_enabled,
         k_param_compass,
@@ -263,7 +263,6 @@ public:
                                                 // 4=voltage and current
     AP_Float        volt_div_ratio;
     AP_Float        curr_amp_per_volt;
-    AP_Float        input_voltage;
     AP_Int16        pack_capacity;              // Battery pack capacity less reserve
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
 

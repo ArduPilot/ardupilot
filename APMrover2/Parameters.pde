@@ -248,17 +248,39 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
 
-#if CONFIG_SONAR == ENABLED     
 	// @Param: SONAR_ENABLE
 	// @DisplayName: Enable Sonar
 	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
 	// @Values: 0:Disabled,1:Enabled
 	// @User: Standard
-	GSCALAR(sonar_trigger,      "SONAR_TRIGGER",    SONAR_TRIGGER),
 	GSCALAR(sonar_enabled,	    "SONAR_ENABLE",     SONAR_ENABLED),
-	GSCALAR(sonar_type,	        "SONAR_TYPE",       AP_RANGEFINDER_MAXSONARXL),
-#endif	
 
+	// @Param: SONAR_TRIGGER_CM
+	// @DisplayName: Sonar trigger distance
+	// @Description: The distance from an obstacle at which the sonar triggers a turn to avoid the obstacle
+	// @Units: centimeters
+    // @Range: 0 1000
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_trigger_cm,   "SONAR_TRIGGER_CM",    100),
+
+	// @Param: SONAR_TURN_ANGLE
+	// @DisplayName: Sonar trigger angle
+	// @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the sonar. A positive number means to turn right, and a negative angle means to turn left.
+	// @Units: centimeters
+    // @Range: -45 45
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_turn_angle,   "SONAR_TURN_ANGLE",    45),
+
+	// @Param: SONAR_TURN_TIME
+	// @DisplayName: Sonar turn time
+	// @Description: The amount of time in seconds to apply the SONAR_TURN_ANGLE after detecting an obstacle.
+	// @Units: seconds
+    // @Range: 0 100
+    // @Increment: 0.1
+	// @User: Standard
+	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     1.0f),
 
     // @Param: MODE_CH
     // @DisplayName: Mode channel
@@ -268,7 +290,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: MODE1
     // @DisplayName: Mode1
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
 	GSCALAR(mode1,           "MODE1",         MODE_1),
@@ -276,35 +298,35 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: MODE2
     // @DisplayName: Mode2
     // @Description: Driving mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode2,           "MODE2",         MODE_2),
 
     // @Param: MODE3
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode3,           "MODE3",         MODE_3),
 
     // @Param: MODE4
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode4,           "MODE4",         MODE_4),
 
     // @Param: MODE5
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode5,           "MODE5",         MODE_5),
 
     // @Param: MODE6
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,2:LEARNING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode6,           "MODE6",         MODE_6),
 
@@ -328,6 +350,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GOBJECT(compass,                "COMPASS_",	Compass),
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
+
+    // @Group: SONAR_
+    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
+    GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
 
 #if HIL_MODE == HIL_MODE_DISABLED
     // @Group: INS_

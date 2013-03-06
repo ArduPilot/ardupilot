@@ -680,7 +680,7 @@ test_battery(uint8_t argc, const Menu::arg *argv)
         delay(100);
         read_radio();
         read_battery();
-        if (g.battery_monitoring == 3) {
+        if (g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY) {
             cliSerial->printf_P(PSTR("V: %4.4f\n"),
                             battery_voltage1,
                             current_amps1,
@@ -997,20 +997,7 @@ test_logging(uint8_t argc, const Menu::arg *argv)
     return (0);
 #else
     cliSerial->println_P(PSTR("Testing dataflash logging"));
-    if (!DataFlash.CardInserted()) {
-        cliSerial->println_P(PSTR("ERR: No dataflash inserted"));
-        return 0;
-    }
-    DataFlash.ReadManufacturerID();
-    cliSerial->printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
-                    (unsigned)DataFlash.df_manufacturer,
-                    (unsigned)DataFlash.df_device);
-    cliSerial->printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
-                    (unsigned)DataFlash.df_NumPages+1,
-                    (unsigned)DataFlash.df_PageSize);
-    DataFlash.StartRead(DataFlash.df_NumPages+1);
-    cliSerial->printf_P(PSTR("Format version: %lx  Expected format version: %lx\n"),
-                    (unsigned long)DataFlash.ReadLong(), (unsigned long)DF_LOGGING_FORMAT);
+    DataFlash.ShowDeviceInfo(cliSerial);
     return 0;
 #endif
 }

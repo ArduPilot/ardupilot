@@ -9,7 +9,7 @@
 #include <AP_HAL.h>
 #include "DataFlash.h"
 
-class DataFlash_APM2 : public DataFlash_Class
+class DataFlash_APM2 : public DataFlash_Block
 {
 private:
     //Methods
@@ -38,11 +38,13 @@ private:
     void                    BlockErase (uint16_t BlockAdr);
     void                    ChipErase();
 
+    // take a semaphore safely
+    bool		            _sem_take(uint8_t timeout);
+
     AP_HAL::SPIDeviceDriver* _spi;
     AP_HAL::Semaphore* _spi_sem;
-public:
-    DataFlash_APM2() {}
 
+public:
     void        Init();
     void        ReadManufacturerID();
     bool        CardInserted();

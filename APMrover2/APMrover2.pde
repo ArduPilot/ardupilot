@@ -2,8 +2,13 @@
 
 #define THISFIRMWARE "ArduRover v2.30"
 
-// This is the APMrover firmware derived from the Arduplane v2.32 by Jean-Louis Naudin (JLN) 
-/*
+/* 
+This is the APMrover2 firmware. It was originally derived from
+ArduPlane by Jean-Louis Naudin (JLN), and then rewritten after the
+AP_HAL merge by Andrew Tridgell
+
+Maintainer: Andrew Tridgell
+
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin
 Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
 Please contribute your ideas!
@@ -13,56 +18,23 @@ This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
-//
-// JLN updates: last update 2012-06-21
-// DOLIST:
-//-------------------------------------------------------------------------------------------------------------------------
-// Dev Startup : 2012-04-21
-//
-//  2012-06-21: Update for HIL mode with mavlink 1.0 (new lib)
-//  2012-06-13: use RangeFinder optical SharpGP2Y instead of ultrasonic sonar
-//  2012-06-13: added Test sonar
-//  2012-05-17: added speed_boost during straight line
-//  2012-05-17: New update about the throttle rate control based on the field test done by Franco Borasio (Thanks Franco..)
-//  2012-05-15: The Throttle rate can be controlled by the THROTTLE_SLEW_LIMIT (the value give the step increase, 1 = 0.1)
-//  2012-05-14: Update about mavlink library (now compatible with the latest version of mavlink)
-//  2012-05-14: Added option (hold roll to full right + SW7 ON/OFF) to init_home during the wp_list reset
-//  2012-05-13: Add ROV_SONAR_TRIG (default = 200 cm)
-//  2012-05-13: Restart_nav() added and heading bug correction, tested OK in the field
-//  2012-05-12: RTL then stop update - Tested in the field
-//  2012-05-11: The rover now STOP after the RTL... (special update for Franco...)
-//  2012-05-11: Added SONAR detection for obstacle avoidance (alpha version for SONAR testing)
-//  2012-05-04: Added #define LITE ENABLED  for the APM1280 or APM2560 CPU IMUless version
-//  2012-05-03: Successful missions tests with a full APM2560 kit (GPS MT3329 + magnetometer HMC5883L)
-//  2012-05-03: removing stick mixing in auto mode
-//  2012-05-01: special update for rover about ground_course if compass is enabled
-//  2012-04-30: Successfully tested in autonomous nav with a waypoints list recorded in live mode
-//  2012-04-30: Now a full version for APM v1 or APM v2 with magnetometer
-//  2012-04-27: Cosmetic changes
-//  2012-04-26: Only one PID (pidNavRoll) for steering the wheel with nav_steer
-//  2012-04-26: Added ground_speed and ground_course variables in Update_GPS
-//  2012-04-26: Set GPS to 10 Hz (updated in the AP_GPS lib)
-//  2012-04-22: Tested on Traxxas Monster Jam Grinder XL-5 3602
-//  2012-04-21: Roll set to wheels control and Throttle neutral to 50% (0 -100)  - Forward>50, Backward<50
-//
+
 // Radio setup:
 // APM INPUT (Rec = receiver)
-// Rec ch1: Roll 
-// Rec ch2: Throttle
-// Rec ch3: Pitch
-// Rec ch4: Yaw
+// Rec ch1: Steering
+// Rec ch2: not used
+// Rec ch3: Throttle
+// Rec ch4: not used
 // Rec ch5: not used
 // Rec ch6: not used
-// Rec ch7: Option channel to 2 positions switch
-// Rec ch8: Mode channel to 3 positions switch
+// Rec ch7: Option channel to 2 position switch
+// Rec ch8: Mode channel to 6 position switch
 // APM OUTPUT
 // Ch1: Wheel servo (direction)
 // Ch2: not used
 // Ch3: to the motor ESC
 // Ch4: not used
 //
-// more infos about this experimental version: http://diydrones.com/profile/JeanLouisNaudin
-// =======================================================================================================
 */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -268,11 +240,7 @@ AP_HAL::AnalogSource * batt_curr_pin;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size5 sonar_mode_filter(2);
-#if CONFIG_SONAR == ENABLED
-    AP_HAL::AnalogSource *sonar_analog_source;
-    AP_RangeFinder_MaxsonarXL *sonar;
-#endif
+static AP_RangeFinder_analog sonar;
 
 // relay support
 AP_Relay relay;
@@ -380,7 +348,7 @@ static int32_t target_bearing;
 // deg * 100 : 0 to 360
 static int32_t crosstrack_bearing;
 // A gain scaler to account for ground speed/headwind/tailwind
-static float	nav_gain_scaler 		= 1;		
+static float	nav_gain_scaler 		= 1.0f;		
 static bool rtl_complete = false;
 
 // There may be two active commands in Auto mode.  
@@ -403,9 +371,12 @@ static uint8_t receiver_rssi;
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
 
-// The distance as reported by Sonar in cm – Values are 20 to 700 generally.
-static int16_t		sonar_dist;
+// Set to true when an obstacle is detected
 static bool obstacle = false;
+
+// time when we last detected an obstacle, in milliseconds
+static uint32_t obstacle_detected_time_ms;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
@@ -419,8 +390,7 @@ static int16_t throttle_last = 0, throttle = 500;
 ////////////////////////////////////////////////////////////////////////////////
 // Difference between current bearing and desired bearing.  in centi-degrees
 static int32_t bearing_error_cd;
-// Difference between current altitude and desired altitude.  Centimeters
-static int32_t altitude_error;
+
 // Distance perpandicular to the course line that we are off trackline.  Meters 
 static float	crosstrack_error;
 
@@ -447,21 +417,17 @@ static float	current_amps1;
 // Totalized current (Amp-hours) from battery 1
 static float	current_total1;									
 
-// To Do - Add support for second battery pack
-//static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery 2 Voltage, initialized above threshold for filter
-//static float	current_amps2;									// Current (Amperes) draw from battery 2
-//static float	current_total2;									// Totalized current (Amp-hours) from battery 2
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
-// The instantaneous desired bank angle.  Hundredths of a degree
+// The instantaneous desired steering angle.  Hundredths of a degree
 static int32_t nav_steer;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
-// Distance between plane and next waypoint.  Meters
+// Distance between rover and next waypoint.  Meters
 static float wp_distance;
 // Distance between previous and next waypoint.  Meters
 static int32_t wp_totalDistance;
@@ -504,7 +470,7 @@ static struct 	Location home;
 static bool	home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
 static struct 	Location prev_WP;
-// The plane's current location
+// The rover's current location
 static struct 	Location current_loc;
 // The location of the current/active waypoint.  Used for track following
 static struct 	Location next_WP;
@@ -582,20 +548,6 @@ void setup() {
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
 
-#if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-        &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-        CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-                                          &sonar_mode_filter);
-#endif
-
 	init_ardupilot();
 }
 
@@ -627,12 +579,10 @@ void loop()
 
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
-  #if LITE == DISABLED
 				if (g.log_bitmask & MASK_LOG_PM)
 					#if HIL_MODE != HIL_MODE_ATTITUDE
 					Log_Write_Performance();
 					#endif
- #endif
 				resetPerfData();
 			}
 		}
@@ -671,27 +621,28 @@ static void fast_loop()
 		gcs_update();
 	#endif
 
-#if LITE == DISABLED
 	ahrs.update();
-#endif 
+
 	// Read Sonar
 	// ----------
-#if CONFIG_SONAR == ENABLED
-	if(g.sonar_enabled){
-		sonar_dist = sonar->read();
-
-	if(sonar_dist <= g.sonar_trigger)  {  // obstacle detected in front 
+	if (g.sonar_enabled) {
+		float sonar_dist_cm = sonar.distance_cm();
+        if (sonar_dist_cm <= g.sonar_trigger_cm)  {
+            // obstacle detected in front 
             obstacle = true;
-      } else  { 
+            obstacle_detected_time_ms = hal.scheduler->millis();
+        } else if (obstacle == true && 
+                   hal.scheduler->millis() > obstacle_detected_time_ms + g.sonar_turn_time*1000) { 
             obstacle = false;
-            }
-	}
-#endif
+        }
+	} else {
+        // this makes it possible to disable sonar at runtime
+        obstacle = false;
+    }
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
 
-#if LITE == DISABLED
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 			Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
@@ -699,29 +650,14 @@ static void fast_loop()
 		if (g.log_bitmask & MASK_LOG_IMU)
 			Log_Write_IMU();
 	#endif
-#endif
-	// inertial navigation
-	// ------------------
-	#if INERTIAL_NAVIGATION == ENABLED
-		// TODO: implement inertial nav function
-		inertialNavigation();
-	#endif
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_current_mode();
 
-	// apply desired steering if in an auto mode
-	if (control_mode >= AUTO) {
-        g.channel_steer.servo_out = nav_steer;
-    }
-
 	// write out the servo PWM values
 	// ------------------------------
 	set_servos();
-
-
-	// XXX is it appropriate to be doing the comms below on the fast loop?
 
     gcs_update();
     gcs_data_stream_send();
@@ -743,7 +679,6 @@ static void medium_loop()
 			medium_loopCounter++;
             update_GPS();
             
-//#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
             if (g.compass_enabled && compass.read()) {
                 ahrs.set_compass(&compass);
@@ -753,17 +688,6 @@ static void medium_loop()
                 ahrs.set_compass(NULL);
             }
 			#endif
-//#endif
-/*{
-cliSerial->print(ahrs.roll_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->print(ahrs.pitch_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->print(ahrs.yaw_sensor, DEC);	cliSerial->printf_P(PSTR("\t"));
-Vector3f tempaccel = ins.get_accel();
-cliSerial->print(tempaccel.x, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->print(tempaccel.y, DEC);	cliSerial->printf_P(PSTR("\t"));
-cliSerial->println(tempaccel.z, DEC);
-}*/
-
 			break;
 
 		// This case performs some navigation computations
@@ -787,7 +711,6 @@ cliSerial->println(tempaccel.z, DEC);
 		//-------------------------------------------------
 		case 3:
 			medium_loopCounter++;
-#if LITE == DISABLED
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
 					Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
@@ -801,7 +724,6 @@ cliSerial->println(tempaccel.z, DEC);
 
 			if (g.log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
-#endif
 			break;
 
 		// This case controls the slow loop
@@ -832,13 +754,11 @@ static void slow_loop()
 			check_long_failsafe();
 			superslow_loopCounter++;
 			if(superslow_loopCounter >=200) {				//	200 = Execute every minute
-#if LITE == DISABLED
 				#if HIL_MODE != HIL_MODE_ATTITUDE
 					if(g.compass_enabled) {
 						compass.save_offsets();
 					}
 				#endif
-#endif
 				superslow_loopCounter = 0;
 			}
 			break;
@@ -874,10 +794,8 @@ static void slow_loop()
 
 static void one_second_loop()
 {
-#if LITE == DISABLED
 	if (g.log_bitmask & MASK_LOG_CURRENT)
 		Log_Write_Current();
-#endif
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
 }
@@ -923,12 +841,32 @@ static void update_current_mode(void)
     case RTL:
     case GUIDED:
         calc_nav_steer();
-        calc_throttle();
+        calc_throttle(g.speed_cruise);
+        break;
+
+    case STEERING:
+        /*
+          in steering mode we control the bearing error, which gives
+          the same type of steering control as auto mode. The throttle
+          controls the target speed, in proportion to the throttle
+         */
+        bearing_error_cd = g.channel_steer.pwm_to_angle();
+        calc_nav_steer();
+
+        /* we need to reset the I term or it will build up */
+        g.pidNavSteer.reset_I();
+        calc_throttle(g.channel_throttle.pwm_to_angle() * 0.01 * g.speed_cruise);
         break;
 
     case LEARNING:
     case MANUAL:
-        nav_steer        = 0;
+        /*
+          in both MANUAL and LEARNING we pass through the
+          controls. Setting servo_out here actually doesn't matter, as
+          we set the exact value in set_servos(), but it helps for
+          logging
+         */
+        g.channel_throttle.servo_out = g.channel_throttle.radio_in;
         g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
         break;
 
@@ -942,6 +880,7 @@ static void update_navigation()
     switch (control_mode) {
     case MANUAL:
     case LEARNING:
+    case STEERING:
     case INITIALISING:
         break;
 

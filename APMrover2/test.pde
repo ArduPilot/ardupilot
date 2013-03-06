@@ -16,9 +16,7 @@ static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
-#if CONFIG_SONAR == ENABLED
 static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
-#endif
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
@@ -45,9 +43,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
 	{"gps",			test_gps},
 	{"ins",			test_ins},
-#if CONFIG_SONAR == ENABLED
 	{"sonartest",	test_sonar},
-#endif
 	{"compass",		test_mag},
 #elif HIL_MODE == HIL_MODE_SENSORS
 	{"adc", 		test_adc},
@@ -345,20 +341,7 @@ static int8_t
 test_logging(uint8_t argc, const Menu::arg *argv)
 {
 	cliSerial->println_P(PSTR("Testing dataflash logging"));
-    if (!DataFlash.CardInserted()) {
-        cliSerial->println_P(PSTR("ERR: No dataflash inserted"));
-        return 0;
-    }
-    DataFlash.ReadManufacturerID();
-    cliSerial->printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
-                    (unsigned)DataFlash.df_manufacturer,
-                    (unsigned)DataFlash.df_device);
-    cliSerial->printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
-                    (unsigned)DataFlash.df_NumPages+1,
-                    (unsigned)DataFlash.df_PageSize);
-    DataFlash.StartRead(DataFlash.df_NumPages+1);
-    cliSerial->printf_P(PSTR("Format version: %lx  Expected format version: %lx\n"),
-                    (unsigned long)DataFlash.ReadLong(), (unsigned long)DF_LOGGING_FORMAT);
+    DataFlash.ShowDeviceInfo(cliSerial);
     return 0;
 }
 
@@ -559,28 +542,27 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here
 
-#if CONFIG_SONAR == ENABLED
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
-  print_hit_enter();
-	delay(1000);
-	init_sonar();
-	delay(1000);
+    if (!g.sonar_enabled) {
+        cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
+    }
 
-	while(1){
-	  delay(20);
-	  if(g.sonar_enabled){
-		sonar_dist = sonar->read();
-	  }
-    	  cliSerial->printf_P(PSTR("sonar_dist = %d\n"), (int)sonar_dist);
+    print_hit_enter();
+    init_sonar();
 
-          if(cliSerial->available() > 0){
-  		break;
+	while (true) {
+        delay(200);
+        float sonar_dist_cm = sonar.distance_cm();
+        float voltage = sonar.voltage();
+        cliSerial->printf_P(PSTR("sonar distance=%5.1fcm  voltage=%5.2f\n"), 
+                            sonar_dist_cm, voltage);
+        if (cliSerial->available() > 0) {
+            break;
 	    }
-  }
-  return (0);
+    }
+    return (0);
 }
-#endif // SONAR == ENABLED
 
 #endif // CLI_ENABLED

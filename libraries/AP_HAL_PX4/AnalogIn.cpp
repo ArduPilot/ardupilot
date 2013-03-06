@@ -55,6 +55,14 @@ float PX4AnalogSource::read_latest()
     return _latest_value;
 }
 
+/*
+  return voltage in Volts
+ */
+float PX4AnalogSource::voltage_average()
+{
+    return (5.0f/1024.0f) * read_average();
+}
+
 void PX4AnalogSource::set_pin(uint8_t pin)
 {
     _pin = pin;

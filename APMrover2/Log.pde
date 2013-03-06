@@ -1,6 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if LITE == DISABLED
 #if LOGGING_ENABLED == ENABLED
 
 // Code to Write and Read packets from DataFlash log memory
@@ -29,10 +28,10 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-	int16_t log_start;
-	int16_t log_end;
-	int16_t temp;	
-	int16_t last_log_num = DataFlash.find_last_log();
+	uint16_t log_start;
+	uint16_t log_end;
+	uint16_t temp;	
+	uint16_t last_log_num = DataFlash.find_last_log();
 	
 	uint16_t num_logs = DataFlash.get_num_logs();
 
@@ -67,7 +66,7 @@ print_log_menu(void)
 		cliSerial->printf_P(PSTR("\n%d logs\n"), num_logs);
 
 		for(int i=num_logs;i>=1;i--) {
-            int last_log_start = log_start, last_log_end = log_end;
+            uint16_t last_log_start = log_start, last_log_end = log_end;
 			temp = last_log_num-i+1;
 			DataFlash.get_log_boundaries(temp, log_start, log_end);
 			cliSerial->printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
@@ -85,8 +84,8 @@ static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
 	int16_t dump_log;
-	int16_t dump_log_start;
-	int16_t dump_log_end;
+	uint16_t dump_log_start;
+	uint16_t dump_log_end;
 	uint8_t last_log_num;
 
 	// check that the requested log number can be read
@@ -94,16 +93,11 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	last_log_num = DataFlash.find_last_log();
 	
 	if (dump_log == -2) {
-		for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
-			DataFlash.StartRead(count);
-			cliSerial->printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
-			cliSerial->printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
-			cliSerial->printf_P(PSTR("%d\n"), DataFlash.GetFilePage());
-		}
+        DataFlash.DumpPageInfo(cliSerial);
 		return(-1);
 	} else if (dump_log <= 0) {
 		cliSerial->printf_P(PSTR("dumping all\n"));
-		Log_Read(1, DataFlash.df_NumPages);
+		Log_Read(0, 1, 0);
 		return(-1);
 	} else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
 		cliSerial->printf_P(PSTR("bad log number\n"));
@@ -116,18 +110,11 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 				  dump_log_start,
 				  dump_log_end);
 
-	Log_Read(dump_log_start, dump_log_end);
+	Log_Read((uint8_t)dump_log, dump_log_start, dump_log_end);
 	cliSerial->printf_P(PSTR("Done\n"));
     return 0;
 }
 
-
-void erase_callback(unsigned long t) {
-    mavlink_delay(t);
-    if (DataFlash.GetWritePage() % 128 == 0) {
-        cliSerial->printf_P(PSTR("+"));
-    }
-}
 
 static void do_erase_logs(void)
 {
@@ -433,10 +420,9 @@ static void Log_Read_Control_Tuning()
 struct log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint16_t yaw;
-    uint32_t wp_distance;
+    float    wp_distance;
     uint16_t target_bearing_cd;
     uint16_t nav_bearing_cd;
-    int16_t altitude_error_cm;
     int16_t nav_gain_scheduler;
 };
 
@@ -446,10 +432,9 @@ static void Log_Write_Nav_Tuning()
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
-        wp_distance         : (uint32_t)wp_distance,
+        wp_distance         : wp_distance,
         target_bearing_cd   : (uint16_t)target_bearing,
         nav_bearing_cd      : (uint16_t)nav_bearing,
-        altitude_error_cm   : (int16_t)altitude_error,
         nav_gain_scheduler  : (int16_t)(nav_gain_scaler*1000)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -461,12 +446,11 @@ static void Log_Read_Nav_Tuning()
     struct log_Nav_Tuning pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    cliSerial->printf_P(PSTR("NTUN, %4.4f, %lu, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+    cliSerial->printf_P(PSTR("NTUN, %4.4f, %4.2f, %4.4f, %4.4f, %4.4f\n"),
                     (float)pkt.yaw/100.0f,
-                    (unsigned long)pkt.wp_distance,
+                    pkt.wp_distance,
                     (float)(pkt.target_bearing_cd/100.0f),
                     (float)(pkt.nav_bearing_cd/100.0f),
-                    (float)(pkt.altitude_error_cm/100.0f),
                     (float)(pkt.nav_gain_scheduler/100.0f));
 }
 
@@ -611,13 +595,13 @@ static void Log_Read_Current()
 }
 
 // Read the DataFlash log memory : Packet Parser
-static void Log_Read(int16_t start_page, int16_t end_page)
+static void Log_Read(uint8_t log_num, int16_t start_page, int16_t end_page)
 {
 	cliSerial->printf_P(PSTR("\n" THISFIRMWARE
                              "\nFree RAM: %u\n"),
                         memcheck_available_memory());
 
-	DataFlash.log_read_process(start_page, end_page, log_callback);
+	DataFlash.log_read_process(log_num, start_page, end_page, log_callback);
 }
 
 // Read the DataFlash log memory : Packet Parser
@@ -684,4 +668,4 @@ static void Log_Write_IMU() {}
 
 
 #endif // LOGGING_ENABLED
-#endif
+

@@ -76,6 +76,7 @@
 # define CONFIG_RELAY     ENABLED
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
@@ -129,10 +130,6 @@
 # define MAG_ORIENTATION   ROTATION_NONE
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#define CONFIG_SONAR DISABLED
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // IMU Selection
 //
@@ -182,14 +179,6 @@
 # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
 # undef SONAR_ENABLED
 # define SONAR_ENABLED DISABLED
-#endif
-
-#ifndef CONFIG_SONAR
-# define CONFIG_SONAR ENABLED
-#endif
-
-#ifndef SONAR_TRIGGER
-# define SONAR_TRIGGER       60        // trigger distance in cm
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

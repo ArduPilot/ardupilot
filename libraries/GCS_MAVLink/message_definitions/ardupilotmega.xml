@@ -344,6 +344,12 @@
         <field type="int32_t" name="baro_alt">barometer altitude</field>
         <field type="int16_t" name="sonar_alt">sonar altitude</field>
       </message>
+
+	  <message name="RANGEFINDER" id="174">
+	    <description>Rangefinder reporting</description>
+	    <field type="float" name="distance">distance in meters</field>
+	    <field type="float" name="voltage">raw voltage if available, zero otherwise</field>
+	  </message>
 	 
      </messages>
 </mavlink>

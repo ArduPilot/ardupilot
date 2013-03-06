@@ -53,9 +53,7 @@ void failsafe_check(uint32_t tnow)
         failsafe_last_timestamp = tnow;
         if(motors.armed()) {
             motors.armed(false);
-        	set_armed(true);
             motors.output();
-            Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_WATCHDOG);
         }
     }
 }
