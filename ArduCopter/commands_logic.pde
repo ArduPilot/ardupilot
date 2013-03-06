@@ -284,11 +284,15 @@ static void do_nav_wp()
         wp_verify_byte |= NAV_ALTITUDE;
     }
 
-    // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_time     = 0;
-
-    // this is the delay, stored in seconds and expanded to millis
-    loiter_time_max = command_nav_queue.p1 * 1000;
+    // if not delay requirement, set the delay achieved bit of wp_verify_byte
+    if( command_nav_queue.p1 == 0 ) {
+        wp_verify_byte |= NAV_DELAY;
+    }else{
+        // this will be used to remember the time in millis after we reach or pass the WP.
+        loiter_time     = 0;
+        // this is the delay, stored in seconds and expanded to millis
+        loiter_time_max = command_nav_queue.p1 * 1000;
+    }
 
     // reset control of yaw to default
     if( g.yaw_override_behaviour == YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT ) {
@@ -436,39 +440,36 @@ static bool verify_land()
 // verify_nav_wp - check if we have reached the next way point
 static bool verify_nav_wp()
 {
-    // Altitude checking
-    if(next_WP.options & WP_OPTION_ALT_REQUIRED) {
-        // we desire a certain minimum altitude
+    // altitude checking
+    if( !(wp_verify_byte & NAV_ALTITUDE) ) {
         if(alt_change_flag == REACHED_ALT) {
-
             // we have reached that altitude
             wp_verify_byte |= NAV_ALTITUDE;
         }
     }
 
-    // Did we pass the WP?	// Distance checking
-    if((wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0)) || check_missed_wp()) {
-        wp_verify_byte |= NAV_LOCATION;
-        if(loiter_time == 0) {
-            loiter_time = millis();
+    // distance checking
+    if( !(wp_verify_byte & NAV_LOCATION) ) {
+        if(wp_distance <= (uint32_t)max((g.waypoint_radius * 100),0) || check_missed_wp()) {
+            wp_verify_byte |= NAV_LOCATION;
         }
     }
 
-    // Hold at Waypoint checking, we cant move on until this is OK
-    if(wp_verify_byte & NAV_LOCATION) {
-        // we have reached our goal
+    // delay checking once we've reached the location
+    if( !(wp_verify_byte & NAV_DELAY) && (wp_verify_byte & (NAV_LOCATION | NAV_ALTITUDE)) ) {
+        // start timer if necessary
+        if(loiter_time == 0) {
+            loiter_time = millis();
+        }
 
-        // loiter at the WP
-        set_nav_mode(NAV_LOITER);
-
-        if ((millis() - loiter_time) > loiter_time_max) {
+        // check if timer has run out
+        if ((millis() - loiter_time) >= loiter_time_max) {
             wp_verify_byte |= NAV_DELAY;
         }
     }
 
     if( wp_verify_byte == (NAV_LOCATION | NAV_ALTITUDE | NAV_DELAY) ) {
         gcs_send_text_fmt(PSTR("Reached Command #%i"),command_nav_index);
-        wp_verify_byte = 0;
         copter_leds_nav_blink = 15;             // Cause the CopterLEDs to blink three times to indicate waypoint reached
         return true;
     }else{
