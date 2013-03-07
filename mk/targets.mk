@@ -87,9 +87,5 @@ etags:
 	cd .. && etags -f APMrover2/TAGS --lang=c++ $$(git ls-files APMrover2 libraries)
 
 clean:
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
-	@del /S $(BUILDROOT)
-else
 	@rm -fr $(BUILDROOT)
-endif
 

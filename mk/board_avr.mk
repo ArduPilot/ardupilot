@@ -85,7 +85,12 @@ HARDWARE_CORE :=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
 UPLOAD_SPEED :=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
 
 # User can define USERAVRDUDEFLAGS = -V in their config.mk to skip verification
-USERAVRDUDEFLAGS ?= 
+#make sure the avrdude conf file is referenced correctly in cygwin
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+  USERAVRDUDEFLAGS := -C $(ARDUINO)/hardware/tools/avr/etc/avrdude.conf
+else
+  USERAVRDUDEFLAGS ?= 
+endif
 
 ifeq ($(UPLOAD_PROTOCOL),)
   UPLOAD_PROTOCOL	:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
@@ -97,6 +102,11 @@ ifeq ($(BOARD),mega)
   UPLOAD_PROTOCOL	:=	arduino
 endif
 
+#On Cygwin, the wiring programmer will perform the DTR reset for us
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+  UPLOAD_PROTOCOL	:=	wiring
+endif
+ 
 ifeq ($(MCU),)
 $(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE))
 endif
