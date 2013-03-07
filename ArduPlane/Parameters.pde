@@ -556,8 +556,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(curr_amp_offset,        "AMP_OFFSET",     0),
 
-    GSCALAR(input_voltage,          "INPUT_VOLTS",    INPUT_VOLTAGE),
-
     // @Param: BATT_CAPACITY
     // @DisplayName: Battery capacity
     // @Description: Capacity of the battery in mAh when full

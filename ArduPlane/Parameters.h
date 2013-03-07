@@ -108,7 +108,7 @@ public:
         k_param_battery_monitoring,
         k_param_volt_div_ratio,
         k_param_curr_amp_per_volt,
-        k_param_input_voltage,
+        k_param_input_voltage, // deprecated, can be deleted
         k_param_pack_capacity,
         k_param_sonar_enabled,
         k_param_ahrs,  // AHRS group
@@ -347,7 +347,6 @@ public:
     AP_Float volt_div_ratio;
     AP_Float curr_amp_per_volt;
     AP_Float curr_amp_offset;
-    AP_Float input_voltage;
     AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
     AP_Int8 rssi_pin;
     AP_Int8 battery_volt_pin;
