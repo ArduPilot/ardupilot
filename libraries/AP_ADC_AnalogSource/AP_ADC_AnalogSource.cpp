@@ -24,7 +24,8 @@ float AP_ADC_AnalogSource::voltage_average()
 {
     float vcc_mV = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC)->read_average();
     float fullscale = _adc->Ch(_ch);
-    return fullscale * vcc_mV * 2.44140625e-10f; // 1.0/(4096*1000)
+    // note that the Ch6 ADC on APM1 has a 3.3V range
+    return fullscale * vcc_mV * (3.3/5.0) * 2.44140625e-7f; // 1.0/(4096*1000)
 }
 
 
