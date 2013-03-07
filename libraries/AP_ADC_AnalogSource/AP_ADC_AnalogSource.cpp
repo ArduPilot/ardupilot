@@ -5,6 +5,8 @@
  * only have access to the average from the ADC driver. Not really a big deal
  * in our application currently. */
 
+extern const AP_HAL::HAL& hal;
+
 float AP_ADC_AnalogSource::read_latest() {
     return read_average();
 }
@@ -15,6 +17,15 @@ float AP_ADC_AnalogSource::read_average() {
     return scaled;
 }
 
+/*
+  return voltage in Volts
+ */
+float AP_ADC_AnalogSource::voltage_average()
+{
+    float vcc_mV = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC)->read_average();
+    float fullscale = _adc->Ch(_ch);
+    return fullscale * vcc_mV * 2.44140625e-10f; // 1.0/(4096*1000)
+}
 
 
 void AP_ADC_AnalogSource::set_pin(uint8_t machtnichts) {

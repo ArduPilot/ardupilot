@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// ArduPPM (PPM Encoder) V2.3.15
+// ArduPPM (PPM Encoder) V2.3.16
 // -------------------------------------------------------------
 // Improved servo to ppm for ArduPilot MEGA v1.x (ATmega328p),
 // PhoneDrone and APM2.x (ATmega32u2)
@@ -140,6 +140,13 @@
 // 13-01-2013
 // V2.3.15 - very small bug fix: speedup
 
+// 27-02-2013
+// V2.3.16 - if channel 1, 2 or 4 is disconnected: set it to center (1500us)
+//         - if channel 3 (throttle) is disconnected: set it to low (900us)
+//         - if channel 5-8 are disconnected: set it to last value
+//         - permanent LED error condition indication is only triggered when throttle is set low (or all channels are disconnected)
+
+
 // -------------------------------------------------------------
 
 #ifndef _PPM_ENCODER_H_
@@ -181,7 +188,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.15"; 
+const char ver[15] = "ArduPPMv2.3.16"; 
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -532,10 +539,13 @@ ISR( WDT_vect ) // If watchdog is triggered then enable missing signal flag and 
     if ( ppm_generator_active || brownout_reset )
     {
         // Copy failsafe values to ppm[..]
-        for( uint8_t i = 0; i < PPM_ARRAY_MAX; i++ )
-        {
-			ppm[ i ] = failsafe_ppm[ i ];
-        }
+        //for( uint8_t i = 0; i < PPM_ARRAY_MAX; i++ )
+        //{
+        //  ppm[ i ] = failsafe_ppm[ i ];
+        //}
+        
+        // Set Throttle Low & leave other channels at last value
+        ppm[5] = failsafe_ppm[ 5 ];
     }
 
     // If we are in PPM passtrough mode and a input signal has been detected, or if chip has been reset from a brown_out then start the PPM generator.
@@ -790,11 +800,29 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
     // Update timing for next compare toggle with either current ppm input value, or fail-safe value if there is a channel timeout.
     if( ppm_timeout[ ppm_out_channel ] > PPM_TIMEOUT_VALUE )
     {
-        // Use ppm fail-safe value
-        cli();
-        PPM_COMPARE += failsafe_ppm[ ppm_out_channel ];
-        sei();
+         // Channel 1-4?
+        if( ppm_out_channel < 8 )
+        {
+            // Channel 1-4 - Use fail-safe value
+            cli();
+            PPM_COMPARE += failsafe_ppm[ ppm_out_channel ];
+            sei();
 
+            // Channel 3
+            if( ppm_out_channel == 5 )
+            {
+                // report this to the LED indication
+                servo_input_missing = true;
+            }
+        }
+        else 
+        {
+            // Channel 5-8 - Use last known value
+            cli();
+            PPM_COMPARE += ppm[ ppm_out_channel ];
+            sei();
+        }
+       
     #if defined _THROTTLE_LOW_RECOVERY_POSSIBLE && defined _THROTTLE_LOW_FAILSAFE_INDICATION
         // Count the channel that we have lost
         disconnected_channels++;
@@ -812,7 +840,7 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
         // Use latest ppm input value   
         cli();
         PPM_COMPARE += ppm[ ppm_out_channel ];
-		sei();
+        sei();
         
         // Increment active channel timeout (reset to zero in input interrupt each time a valid signal is detected)
         if( servo_input_connected[ ppm_out_channel ] >= SERVO_INPUT_CONNECTED_VALUE )
@@ -825,7 +853,7 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
     {
         ppm_out_channel = 0;
 
-	#ifdef _THROTTLE_LOW_RECOVERY_POSSIBLE
+    #ifdef _THROTTLE_LOW_RECOVERY_POSSIBLE
         // Did we lose one or more active servo input channel? If so force throttle fail-safe (RTL)
         if( disconnected_channels > 0 )
         {

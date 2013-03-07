@@ -111,23 +111,26 @@ static void read_battery(void)
 {
     static uint8_t low_battery_counter = 0;
 
-    if(g.battery_monitoring == 0) {
+    if(g.battery_monitoring == BATT_MONITOR_DISABLED) {
         battery_voltage1 = 0;
         return;
     }
 
-    if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
+    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY || g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) {
         batt_volt_analog_source->set_pin(g.battery_volt_pin);
-        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source->read_average());
+        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source);
     }
-    if(g.battery_monitoring == 4) {
+    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) {
         batt_curr_analog_source->set_pin(g.battery_curr_pin);
-        current_amps1    = CURRENT_AMPS(batt_curr_analog_source->read_average());
+        current_amps1    = CURRENT_AMPS(batt_curr_analog_source);
         current_total1   += current_amps1 * 0.02778f;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
+
+        // update compass with current value
+        compass.set_current(current_amps1);
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
-    if (!ap.low_battery && ( battery_voltage1 < g.low_voltage || (g.battery_monitoring == 4 && current_total1 > g.pack_capacity))) {
+    if (!ap.low_battery && ( battery_voltage1 < g.low_voltage || (g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT && current_total1 > g.pack_capacity))) {
         low_battery_counter++;
         if( low_battery_counter >= BATTERY_FS_COUNTER ) {
             low_battery_counter = BATTERY_FS_COUNTER;   // ensure counter does not overflow

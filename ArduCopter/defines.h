@@ -347,8 +347,12 @@ enum gcs_severity {
 #define DATA_RTL_REACHED_ALT            31
 
 // battery monitoring macros
-#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0f))*g.volt_div_ratio
-#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0f))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
+#define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
+#define CURRENT_AMPS(x) (x->voltage_average()-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
+
+#define BATT_MONITOR_DISABLED               0
+#define BATT_MONITOR_VOLTAGE_ONLY           3
+#define BATT_MONITOR_VOLTAGE_AND_CURRENT    4
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */

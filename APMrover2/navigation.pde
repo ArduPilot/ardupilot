@@ -15,7 +15,7 @@ static void navigate()
 		return;
 	}
 
-	// waypoint distance from plane
+	// waypoint distance from rover
 	// ----------------------------
 	wp_distance = get_distance(&current_loc, &next_WP);
 

@@ -18,6 +18,8 @@ public:
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
+    float voltage_average();
+    
 
     /* implementation specific interface: */
 
@@ -38,6 +40,7 @@ private:
     volatile uint8_t _sum_count;
     volatile uint16_t _sum;
     volatile uint16_t _latest;
+    float _last_average;
 
     /* _pin designates the ADC input mux for the sample */
     uint8_t _pin;

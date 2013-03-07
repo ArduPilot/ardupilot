@@ -330,17 +330,21 @@ bool AP_Compass_HMC5843::read()
     rot_mag.rotate(_board_orientation);
 
     rot_mag += _offset.get();
+
+    // apply motor compensation
+    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
+        _motor_offset = _motor_compensation.get() * _thr_or_curr;
+        rot_mag += _motor_offset;
+    }else{
+        _motor_offset.x = 0;
+        _motor_offset.y = 0;
+        _motor_offset.z = 0;
+    }
+
     mag_x = rot_mag.x;
     mag_y = rot_mag.y;
     mag_z = rot_mag.z;
     healthy = true;
 
     return true;
-}
-
-// set orientation
-void
-AP_Compass_HMC5843::set_orientation(enum Rotation rotation)
-{
-    _orientation = rotation;
 }

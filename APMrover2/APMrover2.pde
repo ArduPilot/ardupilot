@@ -348,7 +348,7 @@ static int32_t target_bearing;
 // deg * 100 : 0 to 360
 static int32_t crosstrack_bearing;
 // A gain scaler to account for ground speed/headwind/tailwind
-static float	nav_gain_scaler 		= 1;		
+static float	nav_gain_scaler 		= 1.0f;		
 static bool rtl_complete = false;
 
 // There may be two active commands in Auto mode.  
@@ -374,6 +374,10 @@ static uint32_t last_heartbeat_ms;
 // Set to true when an obstacle is detected
 static bool obstacle = false;
 
+// time when we last detected an obstacle, in milliseconds
+static uint32_t obstacle_detected_time_ms;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
 ////////////////////////////////////////////////////////////////////////////////
@@ -386,8 +390,7 @@ static int16_t throttle_last = 0, throttle = 500;
 ////////////////////////////////////////////////////////////////////////////////
 // Difference between current bearing and desired bearing.  in centi-degrees
 static int32_t bearing_error_cd;
-// Difference between current altitude and desired altitude.  Centimeters
-static int32_t altitude_error;
+
 // Distance perpandicular to the course line that we are off trackline.  Meters 
 static float	crosstrack_error;
 
@@ -418,13 +421,13 @@ static float	current_total1;
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
-// The instantaneous desired bank angle.  Hundredths of a degree
+// The instantaneous desired steering angle.  Hundredths of a degree
 static int32_t nav_steer;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
-// Distance between plane and next waypoint.  Meters
+// Distance between rover and next waypoint.  Meters
 static float wp_distance;
 // Distance between previous and next waypoint.  Meters
 static int32_t wp_totalDistance;
@@ -467,7 +470,7 @@ static struct 	Location home;
 static bool	home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
 static struct 	Location prev_WP;
-// The plane's current location
+// The rover's current location
 static struct 	Location current_loc;
 // The location of the current/active waypoint.  Used for track following
 static struct 	Location next_WP;
@@ -627,7 +630,9 @@ static void fast_loop()
         if (sonar_dist_cm <= g.sonar_trigger_cm)  {
             // obstacle detected in front 
             obstacle = true;
-        } else  { 
+            obstacle_detected_time_ms = hal.scheduler->millis();
+        } else if (obstacle == true && 
+                   hal.scheduler->millis() > obstacle_detected_time_ms + g.sonar_turn_time*1000) { 
             obstacle = false;
         }
 	} else {
@@ -649,11 +654,6 @@ static void fast_loop()
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_current_mode();
-
-	// apply desired steering if in an auto mode
-	if (control_mode >= AUTO) {
-        g.channel_steer.servo_out = nav_steer;
-    }
 
 	// write out the servo PWM values
 	// ------------------------------
@@ -841,12 +841,32 @@ static void update_current_mode(void)
     case RTL:
     case GUIDED:
         calc_nav_steer();
-        calc_throttle();
+        calc_throttle(g.speed_cruise);
+        break;
+
+    case STEERING:
+        /*
+          in steering mode we control the bearing error, which gives
+          the same type of steering control as auto mode. The throttle
+          controls the target speed, in proportion to the throttle
+         */
+        bearing_error_cd = g.channel_steer.pwm_to_angle();
+        calc_nav_steer();
+
+        /* we need to reset the I term or it will build up */
+        g.pidNavSteer.reset_I();
+        calc_throttle(g.channel_throttle.pwm_to_angle() * 0.01 * g.speed_cruise);
         break;
 
     case LEARNING:
     case MANUAL:
-        nav_steer        = 0;
+        /*
+          in both MANUAL and LEARNING we pass through the
+          controls. Setting servo_out here actually doesn't matter, as
+          we set the exact value in set_servos(), but it helps for
+          logging
+         */
+        g.channel_throttle.servo_out = g.channel_throttle.radio_in;
         g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
         break;
 
@@ -860,6 +880,7 @@ static void update_navigation()
     switch (control_mode) {
     case MANUAL:
     case LEARNING:
+    case STEERING:
     case INITIALISING:
         break;
 

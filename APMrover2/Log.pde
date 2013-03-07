@@ -420,10 +420,9 @@ static void Log_Read_Control_Tuning()
 struct log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint16_t yaw;
-    uint32_t wp_distance;
+    float    wp_distance;
     uint16_t target_bearing_cd;
     uint16_t nav_bearing_cd;
-    int16_t altitude_error_cm;
     int16_t nav_gain_scheduler;
 };
 
@@ -433,10 +432,9 @@ static void Log_Write_Nav_Tuning()
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
-        wp_distance         : (uint32_t)wp_distance,
+        wp_distance         : wp_distance,
         target_bearing_cd   : (uint16_t)target_bearing,
         nav_bearing_cd      : (uint16_t)nav_bearing,
-        altitude_error_cm   : (int16_t)altitude_error,
         nav_gain_scheduler  : (int16_t)(nav_gain_scaler*1000)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -448,12 +446,11 @@ static void Log_Read_Nav_Tuning()
     struct log_Nav_Tuning pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    cliSerial->printf_P(PSTR("NTUN, %4.4f, %lu, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+    cliSerial->printf_P(PSTR("NTUN, %4.4f, %4.2f, %4.4f, %4.4f, %4.4f\n"),
                     (float)pkt.yaw/100.0f,
-                    (unsigned long)pkt.wp_distance,
+                    pkt.wp_distance,
                     (float)(pkt.target_bearing_cd/100.0f),
                     (float)(pkt.nav_bearing_cd/100.0f),
-                    (float)(pkt.altitude_error_cm/100.0f),
                     (float)(pkt.nav_gain_scheduler/100.0f));
 }
 

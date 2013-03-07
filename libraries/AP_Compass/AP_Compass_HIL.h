@@ -13,6 +13,8 @@ public:
     bool        read(void);
     void        accumulate(void);
     void        setHIL(float Mag_X, float Mag_Y, float Mag_Z);
+private:
+    Vector3f    _hil_mag;
 };
 
 #endif

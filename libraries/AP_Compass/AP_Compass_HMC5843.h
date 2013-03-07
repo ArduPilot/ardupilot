@@ -73,7 +73,6 @@ public:
     bool        init(void);
     bool        read(void);
     void        accumulate(void);
-    void        set_orientation(enum Rotation rotation);
 
 };
 #endif

@@ -245,8 +245,8 @@ static void Log_Read_GPS()
 
     // need to fix printf formatting
 
-    cliSerial->printf_P(PSTR("GPS, %ld, %u, "),
-                        (long)pkt.gps_time,
+    cliSerial->printf_P(PSTR("GPS, %lu, %u, "),
+                        (unsigned long)pkt.gps_time,
                         (unsigned)pkt.num_sats);
     print_latlon(cliSerial, pkt.latitude);
     cliSerial->print_P(PSTR(", "));
@@ -588,20 +588,27 @@ struct log_Compass {
     int16_t offset_x;
     int16_t offset_y;
     int16_t offset_z;
+    int16_t motor_offset_x;
+    int16_t motor_offset_y;
+    int16_t motor_offset_z;
 };
 
 // Write a Compass packet. Total length : 15 bytes
 static void Log_Write_Compass()
 {
     Vector3f mag_offsets = compass.get_offsets();
+    Vector3f mag_motor_offsets = compass.get_motor_offsets();
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
-        mag_x       : compass.mag_x,
-        mag_y       : compass.mag_y,
-        mag_z       : compass.mag_z,
-        offset_x    : (int16_t)mag_offsets.x,
-        offset_y    : (int16_t)mag_offsets.y,
-        offset_z    : (int16_t)mag_offsets.z,
+        mag_x           : compass.mag_x,
+        mag_y           : compass.mag_y,
+        mag_z           : compass.mag_z,
+        offset_x        : (int16_t)mag_offsets.x,
+        offset_y        : (int16_t)mag_offsets.y,
+        offset_z        : (int16_t)mag_offsets.z,
+        motor_offset_x  : (int16_t)mag_motor_offsets.x,
+        motor_offset_y  : (int16_t)mag_motor_offsets.y,
+        motor_offset_z  : (int16_t)mag_motor_offsets.z
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -611,14 +618,17 @@ static void Log_Read_Compass()
 {
     struct log_Compass pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
-                                     // 1   2   3   4   5   6
-    cliSerial->printf_P(PSTR("COMPASS, %d, %d, %d, %d, %d, %d\n"),
+                                     // 1   2   3   4   5   6   7   8   9
+    cliSerial->printf_P(PSTR("COMPASS, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
                     (int)pkt.mag_x,
                     (int)pkt.mag_y,
                     (int)pkt.mag_z,
                     (int)pkt.offset_x,
                     (int)pkt.offset_y,
-                    (int)pkt.offset_z);
+                    (int)pkt.offset_z,
+                    (int)pkt.motor_offset_x,
+                    (int)pkt.motor_offset_y,
+                    (int)pkt.motor_offset_z);
 }
 
 struct log_Performance {
@@ -742,7 +752,7 @@ static void Log_Read_Attitude()
     struct log_Attitude pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                              1   2   3    4   5   6  7
+    //                              1   2   3   4   5   6   7
     cliSerial->printf_P(PSTR("ATT, %d, %d, %d, %d, %d, %u, %u\n"),
                     (int)pkt.roll_in,
                     (int)pkt.roll,
@@ -800,21 +810,21 @@ static void Log_Read_INAV()
     struct log_INAV pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-                                  // 1   2   3   4      5      6      7      8    9   10     11     12     13
+                                  // 1   2   3      4      5      6      7    8    9     10     11     12     13
     cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
                     (int)pkt.baro_alt,                  // 1 barometer altitude
                     (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
-                    (int)pkt.inav_climb_rate,           // 4 accel + baro based climb rate
-                    (float)pkt.accel_corr_x,            // 5 accel correction x-axis
-                    (float)pkt.accel_corr_y,            // 6 accel correction y-axis
-                    (float)pkt.accel_corr_z,            // 7 accel correction z-axis
-                    (float)pkt.accel_corr_ef_z,         // 8 accel correction earth frame
-                    (long)pkt.gps_lat_from_home,        // 9 lat from home
-                    (long)pkt.gps_lon_from_home,        // 10 lon from home
-                    (float)pkt.inav_lat_from_home,      // 11 accel based lat from home
-                    (float)pkt.inav_lon_from_home,      // 12 accel based lon from home
-                    (float)pkt.inav_lat_speed,          // 13 accel based lat velocity
-                    (float)pkt.inav_lon_speed);         // 14 accel based lon velocity
+                    (int)pkt.inav_climb_rate,           // 3 accel + baro based climb rate
+                    (float)pkt.accel_corr_x,            // 4 accel correction x-axis
+                    (float)pkt.accel_corr_y,            // 5 accel correction y-axis
+                    (float)pkt.accel_corr_z,            // 6 accel correction z-axis
+                    (float)pkt.accel_corr_ef_z,         // 7 accel correction earth frame
+                    (long)pkt.gps_lat_from_home,        // 8 lat from home
+                    (long)pkt.gps_lon_from_home,        // 9 lon from home
+                    (float)pkt.inav_lat_from_home,      // 10 accel based lat from home
+                    (float)pkt.inav_lon_from_home,      // 11 accel based lon from home
+                    (float)pkt.inav_lat_speed,          // 12 accel based lat velocity
+                    (float)pkt.inav_lon_speed);         // 13 accel based lon velocity
 }
 
 struct log_Mode {

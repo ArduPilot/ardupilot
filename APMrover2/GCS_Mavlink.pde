@@ -42,9 +42,8 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     // ArduPlane documentation
     switch (control_mode) {
     case MANUAL:
-        base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
-        break;
     case LEARNING:
+    case STEERING:
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case AUTO:
@@ -139,6 +138,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         break;
 
     case LEARNING:
+    case STEERING:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
         break;
@@ -244,7 +244,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         bearing,
         target_bearing / 100,
         wp_distance,
-        altitude_error / 1.0e2,
+        0,
         groundspeed_error,
         crosstrack_error);
 }
@@ -1082,6 +1082,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             switch (packet.custom_mode) {
             case MANUAL:
             case LEARNING:
+            case STEERING:
             case AUTO:
             case RTL:
                 set_mode((enum mode)packet.custom_mode);

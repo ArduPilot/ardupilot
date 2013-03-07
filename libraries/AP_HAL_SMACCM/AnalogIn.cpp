@@ -11,6 +11,11 @@ float SMACCMAnalogSource::read_average() {
     return _v;
 }
 
+float SMACCMAnalogSource::voltage_average() {
+    // this assumes 5.0V scaling and 1024 range
+    return (5.0/1024.0) * read_average();
+}
+
 float SMACCMAnalogSource::read_latest() {
     return _v;
 }

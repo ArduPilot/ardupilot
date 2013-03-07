@@ -120,7 +120,6 @@
   # define HELI_PITCH_FF				0
   # define HELI_ROLL_FF					0
   # define HELI_YAW_FF					0  
-  # define RC_FAST_SPEED 				125
   # define STABILIZE_THROTTLE			THROTTLE_MANUAL
   # define MPU6K_FILTER                 10
 #endif
@@ -396,15 +395,6 @@
 // Battery failsafe
 #ifndef FS_BATTERY
  # define FS_BATTERY              DISABLED
-#endif
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-// INPUT_VOLTAGE
-//
-#ifndef INPUT_VOLTAGE
- # define INPUT_VOLTAGE                  5.0f
 #endif
 
 
