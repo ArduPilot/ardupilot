@@ -45,6 +45,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+/*
+  this scaling factor converts from the old system where we used a 
+  0 to 1023 raw ADC value for 0-5V to the new system which gets the
+  voltage in volts directly from the ADC driver
+ */
+#define SCALING_OLD_CALIBRATION 204.8f // 1024/5
+
 // calibrate the airspeed. This must be called at least once before
 // the get_airspeed() interface can be used
 void AP_Airspeed::calibrate()
@@ -54,13 +61,13 @@ void AP_Airspeed::calibrate()
     if (!_enable) {
         return;
     }
-    _source->read_average();
+    _source->voltage_average();
     for (c = 0; c < 10; c++) {
         hal.scheduler->delay(100);
-        sum += _source->read_average();
+        sum += _source->voltage_average() * SCALING_OLD_CALIBRATION;
     }
-    _airspeed_raw = sum/c;
-    _offset.set_and_save(_airspeed_raw);
+    float raw = sum/c;
+    _offset.set_and_save(raw);
     _airspeed = 0;
 }
 
@@ -71,8 +78,8 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
-    _airspeed_raw           = _source->read_average();
-    airspeed_pressure       = max(_airspeed_raw - _offset, 0);
-    _airspeed               = 0.7f * _airspeed +
-                              0.3f * sqrtf(airspeed_pressure * _ratio);
+    float raw               = _source->voltage_average() * SCALING_OLD_CALIBRATION;
+    airspeed_pressure       = max(raw - _offset, 0);
+    float new_airspeed      = sqrtf(airspeed_pressure * _ratio);
+    _airspeed               = 0.7f * _airspeed  +  0.3f * new_airspeed;
 }
