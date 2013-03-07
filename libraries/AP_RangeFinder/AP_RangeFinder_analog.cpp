@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_RangeFinder_analog::var_info[] PROGMEM = {
 
     // @Param: FUNCTION
     // @DisplayName: Sonar function
-    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is ((5.0-voltage)-offset)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
+    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
     // @Values: 0:Linear,1:Inverted,2:Hyperbolic
     AP_GROUPINFO("FUNCTION",  3, AP_RangeFinder_analog, _function, 0),
 
@@ -86,7 +86,7 @@ void AP_RangeFinder_analog::Init(void *adc)
    }
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
    if (_pin == 127) {
-	  _source = new AP_ADC_AnalogSource((AP_ADC*)adc, 7, 0.25);
+	  _source = new AP_ADC_AnalogSource((AP_ADC*)adc, 7, 1.0);
 	  _last_pin = 127;
 	  return;
    }
@@ -94,8 +94,6 @@ void AP_RangeFinder_analog::Init(void *adc)
    _source = hal.analogin->channel(_pin);
    _last_pin = _pin;
 }
-
-#define REFERENCE_VOLTAGE 5.0
 
 /*
   return raw voltage
@@ -110,14 +108,7 @@ float AP_RangeFinder_analog::voltage(void)
 	  _source->set_pin(_pin);
 	  _last_pin = _pin;
    }
-
-   /* first convert to volts */
-   float v = _source->read_average() * (REFERENCE_VOLTAGE / 1024.0);
-
-   // constrain to max range of ADC
-   v = constrain(v, 0.0, REFERENCE_VOLTAGE);
-
-   return v; 
+   return _source->voltage_average();
 }
 
 /*
@@ -135,7 +126,7 @@ float AP_RangeFinder_analog::distance_cm(void)
 	  break;
 	  
    case FUNCTION_INVERTED:
-	  dist_m = ((REFERENCE_VOLTAGE-v) - _offset) * _scaling;
+	  dist_m = (_offset - v) * _scaling;
 	  break;
 
    case FUNCTION_HYPERBOLA:
