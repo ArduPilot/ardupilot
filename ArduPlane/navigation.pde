@@ -24,6 +24,15 @@ static void navigate()
         return;
     }
 
+//BTAK
+    #if AIRCRAFT_TYPE_ORBIT_FOLLOWER == ENABLED
+      if(control_mode == GUIDED){
+        set_orbit_parameters();
+        follow_orbit();
+        return;
+      }
+    #endif
+
     // target_bearing is where we should be heading
     // --------------------------------------------
     target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);

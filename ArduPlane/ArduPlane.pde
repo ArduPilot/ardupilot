@@ -57,6 +57,10 @@
 #include <APM_Control.h>
 #endif
 
+#if COOPERATIVE_MISSION == ENABLED
+#include <APM_Xbee.h>
+#endif
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -650,6 +654,20 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Cooperative Flight Data structures
+////////////////////////////////////////////////////////////////////////////////
+//BTAK edited
+#if COOPERATIVE_MISSION == ENABLED
+static struct  	Location p_guided_WP;
+static struct  	Location orbit_center;
+static struct  	Location recevied_WP;
+static int  orbit_radius;
+static float orbit_gain_factor;
+static float orbit_distance;
+#endif
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -912,10 +930,33 @@ static void medium_loop()
     }
 }
 
+
+		/* If cooperative flight is enabled, this function is modified so that all 
+		// interaircraft data is sent from this loop. Also, all interaircraft data
+		// that is recieved and stored is used (for setting waypoint etc) from this loop.
+		*/
 static void slow_loop()
 {
     // This is the slow (3 1/3 Hz) loop pieces
     //----------------------------------------
+    //This part contains all cooperative mission part:Btak
+    #if COOPERATIVE_MISSION == ENABLED
+        #if AIRCRAFT_TYPE_LEADER == ENABLED  
+            XBee_sendFollower(1,&current_loc, 0);
+        #endif
+        if(control_mode == GUIDED){
+            #if AIRCRAFT_TYPE_FOLLOWER == ENABLED
+                set_leader_wp(WPpacket);
+            #endif 
+            #if AIRCRAFT_TYPE_ORBIT_FOLLOWER ==ENABLED
+                //XBee_sendFollower(1,&current_loc, 0);       
+                store_recevied_wp(WPpacket);          
+                set_new_orbit_center();    
+            #endif
+        } 
+    #endif
+
+    
     switch (slow_loopCounter) {
     case 0:
         slow_loopCounter++;
