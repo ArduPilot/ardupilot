@@ -231,6 +231,14 @@ static void crash_checker()
 
 static void calc_throttle()
 {
+    if (g.throttle_cruise <= 1) {
+        // user has asked for zero throttle - this may be done by a
+        // mission which wants to turn off the engine for a parachute
+        // landing
+        g.channel_throttle.servo_out = 0;
+        return;
+    }
+
     if (!alt_control_airspeed()) {
         int16_t throttle_target = g.throttle_cruise + throttle_nudge;
 
