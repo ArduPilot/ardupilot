@@ -206,8 +206,8 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 #if MNT_JSTICK_SPD_OPTION == ENABLED
     // @Param: JSTICK_SPD
     // @DisplayName: mount joystick speed
-    // @Description: 0 for position control, small for low speeds, 10 for max speed
-    // @Range: 0 10
+    // @Description: 0 for position control, small for low speeds, 100 for max speed. A good general value is 10 which gives a movement speed of 3 degrees per second.
+    // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
@@ -345,20 +345,17 @@ void AP_Mount::update_mount_position()
         if (_joystick_speed) {                  // for spring loaded joysticks
             // allow pilot speed position input to come directly from an RC_Channel
             if (_roll_rc_in && (rc_ch[_roll_rc_in-1])) {
-                //_roll_control_angle += angle_input(rc_ch[_roll_rc_in-1], _roll_angle_min, _roll_angle_max) * 0.00001 * _joystick_speed;
-                _roll_control_angle += rc_ch[_roll_rc_in-1]->norm_input() * 0.00001f * _joystick_speed;
+                _roll_control_angle += rc_ch[_roll_rc_in-1]->norm_input() * 0.0001f * _joystick_speed;
                 if (_roll_control_angle < radians(_roll_angle_min*0.01f)) _roll_control_angle = radians(_roll_angle_min*0.01f);
                 if (_roll_control_angle > radians(_roll_angle_max*0.01f)) _roll_control_angle = radians(_roll_angle_max*0.01f);
             }
             if (_tilt_rc_in && (rc_ch[_tilt_rc_in-1])) {
-                //_tilt_control_angle += angle_input(rc_ch[_tilt_rc_in-1], _tilt_angle_min, _tilt_angle_max) * 0.00001 * _joystick_speed;
-                _tilt_control_angle += rc_ch[_tilt_rc_in-1]->norm_input() * 0.00001f * _joystick_speed;
+                _tilt_control_angle += rc_ch[_tilt_rc_in-1]->norm_input() * 0.0001f * _joystick_speed;
                 if (_tilt_control_angle < radians(_tilt_angle_min*0.01f)) _tilt_control_angle = radians(_tilt_angle_min*0.01f);
                 if (_tilt_control_angle > radians(_tilt_angle_max*0.01f)) _tilt_control_angle = radians(_tilt_angle_max*0.01f);
             }
             if (_pan_rc_in && (rc_ch[_pan_rc_in-1])) {
-                //_pan_control_angle += angle_input(rc_ch[_pan_rc_in-1], _pan_angle_min, _pan_angle_max) * 0.00001 * _joystick_speed;
-                _pan_control_angle += rc_ch[_pan_rc_in-1]->norm_input() * 0.00001f * _joystick_speed;
+                _pan_control_angle += rc_ch[_pan_rc_in-1]->norm_input() * 0.0001f * _joystick_speed;
                 if (_pan_control_angle < radians(_pan_angle_min*0.01f)) _pan_control_angle = radians(_pan_angle_min*0.01f);
                 if (_pan_control_angle > radians(_pan_angle_max*0.01f)) _pan_control_angle = radians(_pan_angle_max*0.01f);
             }
