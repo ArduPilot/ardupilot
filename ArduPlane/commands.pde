@@ -99,7 +99,8 @@ static struct Location get_cmd_with_index(int16_t i)
 // -------
 static void set_cmd_with_index(struct Location temp, int16_t i)
 {
-    i = constrain_int16(i, 0, g.command_total.get());
+    // Constrain adding so there is no empty commands on the mission
+    i = constrain_int16(i, 0, g.command_total.get()+1); 
     uint16_t mem = WP_START_BYTE + (i * WP_SIZE);
 
     // force home wp to absolute height
@@ -125,6 +126,10 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
 
     mem += 4;
     hal.storage->write_dword(mem, temp.lng);
+
+    // Make sure our WP_total
+    if(g.command_total < (i))
+        g.command_total.set_and_save(i);
 }
 
 static void decrement_cmd_index()
