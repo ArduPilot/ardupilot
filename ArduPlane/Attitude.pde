@@ -379,7 +379,7 @@ static void throttle_slew_limit(int16_t last_throttle)
    *       AND
    *       2 - Our reported altitude is within 10 meters of the home altitude.
    *       3 - Our reported speed is under 5 meters per second.
-   *       4 - We are not performing a takeoff in Auto mode
+   *       4 - We are not performing a takeoff in Auto mode or takeoff speed not yet reached
    *       OR
    *       5 - Home location is not set
 */
@@ -395,7 +395,11 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && takeoff_complete == false) {
+    if (control_mode==AUTO &&
+        takeoff_complete == false &&
+        g_gps != NULL &&
+        g_gps->status() == GPS::GPS_OK &&
+        g_gps->ground_speed >= g.takeoff_throttle_min_speed*100) {
         // we're in auto takeoff 
         throttle_suppressed = false;
         return false;

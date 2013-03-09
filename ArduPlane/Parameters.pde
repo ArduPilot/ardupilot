@@ -88,6 +88,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   1),
 
+    // @Param: TKOFF_THR_MINSPD
+    // @DisplayName: Takeoff throttle min speed
+    // @Description: Min speed in m/s before un-suppressing throttle in auto-takeoff
+    // @Units: m/s
+    // @User: User
+    GSCALAR(takeoff_throttle_min_speed,     "TKOFF_THR_MINSPD",  0),
+
     // @Param: RUDDER_STEER
     // @DisplayName: Rudder steering on takeoff and landing
     // @Description: When enabled, only rudder will be used for steering during takeoff and landing, with the ailerons used to hold the plane level
