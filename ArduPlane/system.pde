@@ -393,6 +393,7 @@ static void check_long_failsafe()
             failsafe_long_on_event(FAILSAFE_LONG);
         }
         if (g.gcs_heartbeat_fs_enabled && 
+            last_heartbeat_ms != 0 &&
             (tnow - last_heartbeat_ms) > FAILSAFE_LONG_TIME) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
