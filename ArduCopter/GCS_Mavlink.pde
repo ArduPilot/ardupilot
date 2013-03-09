@@ -1726,7 +1726,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 guided_WP.alt += home.alt;
             }
 
-            set_mode(GUIDED);
+            if (!(guided_WP.options & WP_OPTION_NO_MODE_CHANGE)) {
+                set_mode(GUIDED);
+            }
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(

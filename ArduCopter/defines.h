@@ -217,7 +217,7 @@
 #define WP_OPTION_YAW                           4
 #define WP_OPTION_ALT_REQUIRED                  8
 #define WP_OPTION_RELATIVE                      16
-//#define WP_OPTION_					32
+#define WP_OPTION_NO_MODE_CHANGE                32
 //#define WP_OPTION_					64
 #define WP_OPTION_NEXT_CMD                      128
 
