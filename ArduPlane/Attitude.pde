@@ -379,6 +379,32 @@ static void throttle_slew_limit(int16_t last_throttle)
     }
 }
 
+/*
+  check for automatic takeoff conditions being met
+ */
+static bool auto_takeoff_check(void)
+{
+    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK) {
+        // no auto takeoff without GPS lock
+        return false;
+    }
+    if (g_gps->ground_speed < g.takeoff_throttle_min_speed*100.0f) {
+        // we haven't reached the minimum ground speed
+        return false;
+    }
+    if (g.takeoff_throttle_min_accel > 0.0f &&
+        (ins.get_accel().x < g.takeoff_throttle_min_accel) &&
+        ahrs.pitch_sensor > -3000 && ahrs.pitch_sensor < 4500 &&
+        abs(ahrs.roll_sensor) < 3000) {
+        // we haven't reached the minimum acceleration or we are not
+        // anywhere near flat. Thanks to Chris Miser for this
+        // suggestion
+        return false;
+    }
+    // we're good for takeoff
+    return true;
+}
+
 
 /* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 
@@ -387,7 +413,7 @@ static void throttle_slew_limit(int16_t last_throttle)
    *       AND
    *       2 - Our reported altitude is within 10 meters of the home altitude.
    *       3 - Our reported speed is under 5 meters per second.
-   *       4 - We are not performing a takeoff in Auto mode or takeoff speed not yet reached
+   *       4 - We are not performing a takeoff in Auto mode or takeoff speed/accel not yet reached
    *       OR
    *       5 - Home location is not set
 */
@@ -403,11 +429,7 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO &&
-        takeoff_complete == false &&
-        g_gps != NULL &&
-        g_gps->status() == GPS::GPS_OK &&
-        g_gps->ground_speed >= g.takeoff_throttle_min_speed*100) {
+    if (control_mode==AUTO && takeoff_complete == false && auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
         return false;

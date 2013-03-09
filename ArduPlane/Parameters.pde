@@ -97,6 +97,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(takeoff_throttle_min_speed,     "TKOFF_THR_MINSPD",  0),
 
+    // @Param: TKOFF_THR_MINACC
+    // @DisplayName: Takeoff throttle min acceleration
+    // @Description: Minimum forward acceleration in m/s/s before un-suppressing throttle in auto-takeoff. This is meant to be used for hand launches with a tractor style (front engine) plane. If this is set then the auto takeoff will only trigger if the pitch of the plane is between -30 and +45 degrees, and the roll is less than 30 degrees. This makes it less likely it will trigger due to carrying the plane with the nose down.
+    // @Units: m/s/s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: User
+    GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
+
     // @Param: RUDDER_STEER
     // @DisplayName: Rudder steering on takeoff and landing
     // @Description: When enabled, only rudder will be used for steering during takeoff and landing, with the ailerons used to hold the plane level
