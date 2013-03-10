@@ -4,6 +4,7 @@ import re
 from param import *
 from emit import Emit
 
+# Emit docs in a form acceptable to the APM wiki site
 class WikiEmit(Emit):
     
     def __init__(self):

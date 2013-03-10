@@ -5,6 +5,7 @@ from xml.sax.saxutils import escape, quoteattr
 from param import *
 from emit import Emit
 
+# Emit APM documentation in an machine readable XML format
 class XmlEmit(Emit):
     
     def __init__(self):
