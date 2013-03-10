@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import re
 from xml.sax.saxutils import escape, quoteattr
 
 from param import *
