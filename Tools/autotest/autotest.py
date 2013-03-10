@@ -76,6 +76,14 @@ def build_all():
         return False
     return True
 
+def build_binaries():
+    '''run the build_binaries.sh script'''
+    print("Running build_binaries.sh")
+    if util.run_cmd(util.reltopdir('Tools/scripts/build_binaries.sh'), dir=util.reltopdir('.')) != 0:
+        print("Failed build_binaries.sh")
+        return False
+    return True
+
 def build_examples():
     '''run the build_examples.sh script'''
     print("Running build_examples.sh")
@@ -142,6 +150,7 @@ import  arducopter, arduplane, apmrover2
 steps = [
     'prerequesites',
     'build.All',
+    'build.Binaries',
     'build.Examples',
 
     'build1280.ArduPlane',
@@ -246,6 +255,9 @@ def run_step(step):
 
     if step == 'build.All':
         return build_all()
+
+    if step == 'build.Binaries':
+        return build_binaries()
 
     if step == 'build.Examples':
         return build_examples()
