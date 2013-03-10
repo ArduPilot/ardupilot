@@ -22,7 +22,7 @@ copyit() {
     file="$1"
     dir="$2"
     bname=$(basename $dir)
-    ldir=$(dirname $(dirname $dir))/latest/$bname
+    ldir=$(dirname $(dirname $(dirname $dir)))/latest/$bname
     mkdir -p "$dir"
     /bin/cp "$file" "$dir"
     mkdir -p "$ldir"
