@@ -5,14 +5,18 @@
  */
 
 // Libraries
+#include <AP_HAL.h>
+#include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
+#include <AP_HAL_PX4.h>
+
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_Progmem.h>
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <DataFlash.h>
 
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
 
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -42,11 +46,7 @@ void setup()
     hal.scheduler->delay(20);
     DataFlash.ReadManufacturerID();
     hal.scheduler->delay(10);
-    hal.console->printf("Manufacturer: 0x%x Device: 0x%x PageSize: %u NumPages: %u\n",
-			(unsigned)DataFlash.df_manufacturer,
-			(unsigned)DataFlash.df_device,
-			(unsigned)DataFlash.df_PageSize,
-			(unsigned)DataFlash.df_NumPages);
+    DataFlash.ShowDeviceInfo(hal.console);
 
     if (DataFlash.NeedErase()) {
         hal.console->println("Erasing...");
