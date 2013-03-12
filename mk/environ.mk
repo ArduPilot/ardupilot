@@ -126,5 +126,9 @@ ifeq ($(BOARD),)
 BOARD = mega2560
 endif
 
+ifneq ($(findstring apm1-1280, $(MAKECMDGOALS)),)
+BOARD = mega
+endif
+
 endif
 
