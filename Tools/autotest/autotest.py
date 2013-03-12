@@ -142,7 +142,7 @@ parser.add_option("--skip", type='string', default='', help='list of steps to sk
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
 parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
-parser.add_option("--timeout", default=2400, type='int', help='maximum runtime in seconds')
+parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
 
 opts, args = parser.parse_args()
 
