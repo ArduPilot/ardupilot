@@ -1687,7 +1687,7 @@ mission_failed:
             send_text_P(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
             Vector2l point = get_fence_point_with_index(packet.idx);
-            mavlink_msg_fence_point_send(chan, 0, 0, packet.idx, g.fence_total,
+            mavlink_msg_fence_point_send(chan, msg->sysid, msg->compid, packet.idx, g.fence_total,
                                          point.x*1.0e-7, point.y*1.0e-7);
         }
         break;
