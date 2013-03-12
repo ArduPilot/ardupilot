@@ -31,7 +31,7 @@ copyit() {
 
 echo "Building ArduPlane binaries"
 pushd ArduPlane
-for b in apm1 apm2 apm1-hilsensors apm2-hilsensors; do
+for b in apm1 apm2 apm1-hilsensors apm2-hilsensors apm1-1280; do
     pwd
     make clean
     make $b -j4
@@ -51,7 +51,7 @@ popd
 
 echo "Building APMRover2 binaries"
 pushd APMrover2
-for b in apm1 apm2; do
+for b in apm1 apm2 apm1-1280; do
     pwd
     make clean
     make $b -j4
