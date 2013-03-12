@@ -90,7 +90,7 @@ def convert_gpx():
     import glob
     mavlog = glob.glob(util.reltopdir("../buildlogs/*.mavlog"))
     for m in mavlog:
-        util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
+        util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
@@ -263,7 +263,7 @@ class TestResults(object):
 
 def write_XMLresults(atype, results):
     '''write XML JUnit results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../pymavlink/generator")))
+    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
     import mavtemplate
     t = mavtemplate.MAVTemplate()
     for x in glob.glob(util.reltopdir('Tools/autotest/junit.xml')):
@@ -274,7 +274,7 @@ def write_XMLresults(atype, results):
 
 def write_webresults(results):
     '''write webpage results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../pymavlink/generator")))
+    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
     import mavtemplate
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
