@@ -9,6 +9,18 @@
 #define MAVLINK_HELPER
 #endif
 
+#define API 1
+
+#if API
+//Groundstation Xbee address
+#define GCS_ADDR_HIGH 0x10  
+#define GCS_ADDR_LOW  0x01 
+
+//Stores the grounstation Xbee header and footer
+static    uint8_t xbee_api_hdr[8] = {0};
+static    uint8_t xbee_chksum[1] = {0};
+#endif
+
 /*
  * Internal function to give access to the channel status for each channel
  */
@@ -120,6 +132,12 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 #endif
 {
 	uint16_t checksum;
+	
+	uint16_t xbee_sum;
+	uint8_t pkt_ctr;
+	pkt_ctr=0;xbee_sum=0;xbee_chksum[0]=0;
+		
+	
 	uint8_t buf[MAVLINK_NUM_HEADER_BYTES];
 	uint8_t ck[2];
 	mavlink_status_t *status = mavlink_get_channel_status(chan);
@@ -138,11 +156,48 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	ck[0] = (uint8_t)(checksum & 0xFF);
 	ck[1] = (uint8_t)(checksum >> 8);
 
+#if API           
+     
+     while(pkt_ctr < MAVLINK_NUM_HEADER_BYTES)
+     {
+                   xbee_sum+=buf[pkt_ctr];
+                   pkt_ctr++;
+     }
+     pkt_ctr=0;
+     while(pkt_ctr < length)
+     {
+        xbee_sum+=(uint8_t)packet[pkt_ctr];
+        pkt_ctr++;
+     }
+      xbee_sum=xbee_sum+ck[0]+ck[1];
+        
+     xbee_api_hdr[0] = 0x7E;
+     xbee_api_hdr[1] = 0x00;
+     xbee_api_hdr[2] = (length+MAVLINK_NUM_HEADER_BYTES+0x02+0x05);
+     xbee_api_hdr[3] = 0x01;
+     xbee_api_hdr[4] = 0x01;
+     xbee_api_hdr[5] = GCS_ADDR_HIGH;
+     xbee_api_hdr[6] = GCS_ADDR_LOW;
+     xbee_api_hdr[7] = 0x00;
+  
+     xbee_sum+=xbee_api_hdr[3]+xbee_api_hdr[4]+xbee_api_hdr[5]+xbee_api_hdr[6]+xbee_api_hdr[7];
+     xbee_chksum[0]=(0xFF-xbee_sum) & 0x000000FF;
+
+     
+    _mavlink_send_uart(chan,(const char *)xbee_api_hdr,8); 
+
+#endif 
+
+
 	MAVLINK_START_UART_SEND(chan, MAVLINK_NUM_NON_PAYLOAD_BYTES + (uint16_t)length);
 	_mavlink_send_uart(chan, (const char *)buf, MAVLINK_NUM_HEADER_BYTES);
 	_mavlink_send_uart(chan, packet, length);
 	_mavlink_send_uart(chan, (const char *)ck, 2);
 	MAVLINK_END_UART_SEND(chan, MAVLINK_NUM_NON_PAYLOAD_BYTES + (uint16_t)length);
+#if API 
+    _mavlink_send_uart(chan, (const char *) xbee_chksum,1); 
+#endif
+
 }
 
 /**
@@ -156,11 +211,17 @@ MAVLINK_HELPER void _mavlink_resend_uart(mavlink_channel_t chan, const mavlink_m
 	ck[0] = (uint8_t)(msg->checksum & 0xFF);
 	ck[1] = (uint8_t)(msg->checksum >> 8);
 
+#if API 
+     _mavlink_send_uart(chan,(const char *)xbee_api_hdr,8);  
+#endif
 	MAVLINK_START_UART_SEND(chan, MAVLINK_NUM_NON_PAYLOAD_BYTES + msg->len);
 	_mavlink_send_uart(chan, (const char *)&msg->magic, MAVLINK_NUM_HEADER_BYTES);
 	_mavlink_send_uart(chan, _MAV_PAYLOAD(msg), msg->len);
 	_mavlink_send_uart(chan, (const char *)ck, 2);
 	MAVLINK_END_UART_SEND(chan, MAVLINK_NUM_NON_PAYLOAD_BYTES + msg->len);
+#if API 
+    _mavlink_send_uart(chan, (const char *) xbee_chksum,1); 
+#endif
 }
 #endif // MAVLINK_USE_CONVENIENCE_FUNCTIONS
 

@@ -1,3 +1,8 @@
+# Cooperative Flight Using ArduPilot
+Following is a brief set of instructions for setting up a cooperative flight framework using ArduPilot code. It has been 
+tested in HIL and in flight. The code is tested to work on APM2, APM2.5, PX4fmu standalone and PX4IO. A brief change 
+change-log from standard APM repo is also provided on the wiki. 
+
 # ArduPilot Project
 
 ## Getting the source
@@ -59,3 +64,11 @@ mailing lists are NOT for user tech support, and are moderated for new users to
 prevent off-topic discussion.
 
 [2]: https://groups.google.com/forum/?fromgroups#!forum/drones-discuss
+
+
+
+
+
+
+
+

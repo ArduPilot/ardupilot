@@ -69,6 +69,59 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 /// @param chan		Channel to receive on
 /// @returns		Byte read
 ///
+
+#define COOPERATIVE 1
+
+#if COOPERATIVE
+#define FOLLOWER_WP_CRC 0xAA
+#define ORBIT_CENTER_CRC 0xBB
+
+static    uint8_t o_packet[14] = {0};//temp
+static    uint8_t W_packet[13] = {0}; //temp
+
+static    uint8_t flag1 = 0;//flags for interrupt handlers
+static    uint8_t flag2 = 0;//flags for interrupt handlers
+static    uint8_t ctr = 0;//flags for interrupt handlers
+
+static    uint8_t ourpacket[13] = {0};
+static    uint8_t WPpacket[12] = {0};  //IMPORTANT: Stores the most recent correct interaircraft data
+static    uint8_t PWPpacket[12] = {0}; //IMPORTANT: Stores the previous most recent correct interaircraft data
+
+static    uint8_t xbee_flag = 0;
+
+static    uint8_t evnt_WPpacket[12] = {0};  //IMPORTANT: Stores the most recent correct interaircraft data for orbit center
+static    uint8_t evnt_PWPpacket[12] = {0}; //IMPORTANT: Stores the previous most recent correct interaircraft data for orbit center
+
+
+	/* Function calculates the interaircraft data crc and checks it against
+	// the one in the packet. Then appropriately stores the data.
+	*/
+static inline void check_recieved_packet(void)
+{
+uint16_t data_sum=0;
+int i;
+for(i=0;i<12;i++){
+	data_sum = data_sum + W_packet[i];
+	}
+if(W_packet[12] == ((0xFF - data_sum + FOLLOWER_WP_CRC) & 0x000000FF)){
+	for(int k = 0; k< 12; k++){ 
+        WPpacket[k] = W_packet[k]; 
+        }
+	
+	}
+if(W_packet[12] == ((0xFF - data_sum + ORBIT_CENTER_CRC) & 0x000000FF)){
+	for(int k = 0; k< 12; k++){ 
+        evnt_WPpacket[k] = W_packet[k]; 
+        }
+	}
+
+}
+
+#endif
+	/* Modified it to look for interaircraft xbee data start tag 0xAF 0xFB
+	// and when found, store the next 13 bytes in a temp array, check for data 
+	// crc using check_recieved_packet() and store the data prmanently 	
+	*/
 static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
 {
     uint8_t data = 0;
@@ -79,6 +132,30 @@ static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
 		break;
 	case MAVLINK_COMM_1:
 		data = mavlink_comm_1_port->read();
+
+#if COOPERATIVE
+ 		 if(data == 0xAF) { //changed from A0, B0 (make sure LDR Xbee.pde sends these packets only!)
+                   flag1 =1;
+                    }
+         if(flag1 == 1 && data ==0xFB){
+                   flag1=0;flag2=1;
+                    }
+         if(flag2==1 && ctr <14) { // since we have 12 actual non-api packets:: STUPID : old code would include B0 in ourpacket!
+                   o_packet[ctr]=data;
+                   ctr++;
+                    }
+         if (ctr == 14){
+              ctr = 0;
+              flag2 = 0;
+              for(int k = 1; k< 14; k++){ //k=1 to skip including 0xb0
+                      W_packet[k-1] = o_packet[k];  //BTAK 2nd edit to debug, replace with ourpacket     
+                          }
+              for (int p=0;p<14;p++){
+                       o_packet[p] = 0;
+                       }
+              check_recieved_packet();
+              }
+#endif
 		break;
 	default:
 		break;
