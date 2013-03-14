@@ -702,6 +702,8 @@ static void medium_loop()
 		case 2:
 			medium_loopCounter++;
 
+            read_receiver_rssi();
+
 			// perform next command
 			// --------------------
 			update_commands();
