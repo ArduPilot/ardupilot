@@ -25,6 +25,7 @@ copyit() {
     ldir=$(dirname $(dirname $(dirname $dir)))/latest/$bname
     mkdir -p "$dir"
     /bin/cp "$file" "$dir"
+    echo "$githash" > "$dir/git-version.txt"
     mkdir -p "$ldir"
     rsync "$file" "$ldir"
 }
