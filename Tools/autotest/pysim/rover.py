@@ -13,14 +13,27 @@ class Rover(Aircraft):
     def __init__(self,
                  max_speed=10,
                  max_accel=10,
-                 max_turn_rate=45):
+                 max_turn_rate=45,
+                 skid_steering=False):
         Aircraft.__init__(self)
         self.max_speed = max_speed
         self.max_accel = max_accel
         self.max_turn_rate = max_turn_rate
         self.last_time = time.time()
+        self.skid_steering = skid_steering
 
     def update(self, state):
+
+        # if in skid steering mode the steering and throttle values are used for motor1 and motor2
+        if self.skid_steering:
+            motor1 = state.steering
+            motor2 = state.throttle
+            steering = motor2 - motor1
+            throttle = 0.5*(motor1 + motor2)
+        else:
+            steering = state.steering
+            throttle = state.throttle
+
         # how much time has passed?
         t = time.time()
         delta_time = t - self.last_time
@@ -33,10 +46,10 @@ class Rover(Aircraft):
         speed = velocity_body.x
 
         # yaw rate in degrees/s
-        yaw_rate = self.max_turn_rate * state.steering * (speed / self.max_speed)
+        yaw_rate = self.max_turn_rate * steering * (speed / self.max_speed)
 
         # target speed with current throttle
-        target_speed = state.throttle * self.max_speed
+        target_speed = throttle * self.max_speed
 
         # linear acceleration in m/s/s - very crude model
         accel = self.max_accel * (target_speed - speed) / self.max_speed
@@ -76,3 +89,4 @@ class Rover(Aircraft):
 
         # update lat/lon/altitude
         self.update_position(delta_time)
+
