@@ -40,7 +40,7 @@ uint8_t DataFlash_Block::get_num_logs(void)
 
 
 // This function starts a new log file in the DataFlash
-void DataFlash_Block::start_new_log(void)
+uint16_t DataFlash_Block::start_new_log(void)
 {
     uint16_t last_page = find_last_page();
 
@@ -53,20 +53,27 @@ void DataFlash_Block::start_new_log(void)
         SetFileNumber(1);
         StartWrite(1);
         //Serial.println("start log from 0");
-        return;
+        return 1;
     }
+
+    uint16_t new_log_num;
 
     // Check for log of length 1 page and suppress
     if(GetFilePage() <= 1) {
-        SetFileNumber(GetFileNumber());                 // Last log too short, reuse its number
-        StartWrite(last_page);                                          // and overwrite it
-        //Serial.println("start log from short");
+        new_log_num = GetFileNumber();
+        // Last log too short, reuse its number
+        // and overwrite it
+        SetFileNumber(new_log_num);
+        StartWrite(last_page);
     } else {
-        if(last_page == 0xFFFF) last_page=0;
-        SetFileNumber(GetFileNumber()+1);
+        new_log_num = GetFileNumber()+1;
+        if (last_page == 0xFFFF) {
+            last_page=0;
+        }
+        SetFileNumber(new_log_num);
         StartWrite(last_page + 1);
-        //Serial.println("start log normal");
     }
+    return new_log_num;
 }
 
 // This function finds the first and last pages of a log file
@@ -75,6 +82,10 @@ void DataFlash_Block::get_log_boundaries(uint8_t log_num, uint16_t & start_page,
 {
     uint16_t num = get_num_logs();
     uint16_t look;
+
+    if (df_BufferIdx != 0) {
+        FinishWrite();
+    }
 
     if(num == 1)
     {
@@ -244,6 +255,10 @@ uint16_t DataFlash_Block::log_read_process(uint8_t log_num,
     uint8_t log_step = 0;
     uint16_t page = start_page;
     uint16_t packet_count = 0;
+
+    if (df_BufferIdx != 0) {
+        FinishWrite();
+    }
 
     StartRead(start_page);
 
