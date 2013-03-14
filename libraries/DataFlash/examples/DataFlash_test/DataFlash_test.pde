@@ -25,7 +25,10 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
 DataFlash_APM1 DataFlash;
+#else
+DataFlash_Empty DataFlash;
 #endif
+
 
 struct test_packet {
     LOG_PACKET_HEADER;
@@ -35,6 +38,8 @@ struct test_packet {
 };
 
 #define NUM_PACKETS 20
+
+static uint16_t log_num;
 
 void setup()
 {
@@ -55,7 +60,8 @@ void setup()
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    DataFlash.StartWrite(1);
+    log_num = DataFlash.start_new_log();
+    hal.console->printf("Using log number %u\n", log_num);
     hal.console->println("After testing perform erase before using DataFlash for logging!");
     hal.console->println("");
     hal.console->println("Writing to flash... wait...");
@@ -84,34 +90,31 @@ void setup()
     hal.console->printf("Average write time %.1f usec/byte\n", 
                         (double)total_micros/((float)i*sizeof(struct test_packet)));
 
-    // ensure last page is written
-    DataFlash.FinishWrite();
-
     hal.scheduler->delay(100);
+}
+
+static void callback(uint8_t msgid)
+{
+    struct test_packet pkt;
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
+    hal.console->printf("PACKET: %02x,%u,%u,%u,%u,%ld,%ld\n",
+                        (unsigned)msgid,
+                        (unsigned)pkt.v1,
+                        (unsigned)pkt.v2,
+                        (unsigned)pkt.v3,
+                        (unsigned)pkt.v4,
+                        (long)pkt.l1,
+                        (long)pkt.l2);
 }
 
 void loop()
 {
-    uint16_t i;
+    uint16_t start, end;
 
-    hal.console->println("Start reading page 1...");
+    hal.console->printf("Start read of log %u\n", log_num);
 
-    DataFlash.StartRead(1);      // We start reading from page 1
-
-    for (i = 0; i < NUM_PACKETS; i++) {
-        struct test_packet pkt;
-        DataFlash.ReadBlock(&pkt, sizeof(pkt));
-        hal.console->printf("PACKET: %02x,%02x,%02x,%u,%u,%u,%u,%ld,%ld\n",
-                            (unsigned)pkt.head1,
-                            (unsigned)pkt.head2,
-                            (unsigned)pkt.msgid,
-                            (unsigned)pkt.v1,
-                            (unsigned)pkt.v2,
-                            (unsigned)pkt.v3,
-                            (unsigned)pkt.v4,
-                            (long)pkt.l1,
-                            (long)pkt.l2);
-    }
+    DataFlash.get_log_boundaries(log_num, start, end); 
+    DataFlash.log_read_process(log_num, start, end, callback);
     hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");
     hal.scheduler->delay(20000);
 }
