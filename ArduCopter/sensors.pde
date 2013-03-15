@@ -28,7 +28,7 @@ static void init_barometer(void)
 static int32_t read_barometer(void)
 {
     barometer.read();
-    return baro_filter.apply(barometer.get_altitude() * 100.0f);
+    return barometer.get_altitude() * 100.0f;
 }
 
 // return sonar altitude in centimeters
