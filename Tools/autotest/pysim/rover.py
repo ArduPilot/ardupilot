@@ -26,9 +26,9 @@ class Rover(Aircraft):
 
         # if in skid steering mode the steering and throttle values are used for motor1 and motor2
         if self.skid_steering:
-            motor1 = state.steering
-            motor2 = state.throttle
-            steering = motor2 - motor1
+            motor1 = state.steering # left motor
+            motor2 = state.throttle # right motor
+            steering = motor1 - motor2
             throttle = 0.5*(motor1 + motor2)
         else:
             steering = state.steering
