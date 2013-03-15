@@ -91,10 +91,11 @@ static void set_servos(void)
 {
     int16_t last_throttle = g.channel_throttle.radio_out;
 
-	if (control_mode == MANUAL || control_mode == LEARNING) {
-		// do a direct pass through of radio values
-		g.channel_steer.radio_out 		= g.channel_steer.radio_in;
-		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
+	if ((control_mode == MANUAL || control_mode == LEARNING) &&
+        (g.skid_steer_out == g.skid_steer_in)) {
+        // do a direct pass through of radio values
+        g.channel_steer.radio_out       = hal.rcin->read(CH_STEER);
+        g.channel_throttle.radio_out    = hal.rcin->read(CH_THROTTLE);
 	} else {       
         g.channel_steer.calc_pwm();
 		g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
@@ -105,6 +106,25 @@ static void set_servos(void)
 
         // limit throttle movement speed
         throttle_slew_limit(last_throttle);
+
+        if (g.skid_steer_out) {
+            // convert the two radio_out values to skid steering values
+            /*
+              mixing rule:
+              steering = motor1 - motor2
+              throttle = 0.5*(motor1 + motor2)
+              motor1 = throttle + 0.5*steering
+              motor2 = throttle - 0.5*steering
+            */          
+            float steering_scaled = g.channel_steer.norm_output();
+            float throttle_scaled = g.channel_throttle.norm_output();
+            float motor1 = throttle_scaled + 0.5*steering_scaled;
+            float motor2 = throttle_scaled - 0.5*steering_scaled;
+            g.channel_steer.servo_out = 4500*motor1;
+            g.channel_throttle.servo_out = 100*motor2;
+            g.channel_steer.calc_pwm();
+            g.channel_throttle.calc_pwm();
+        }
     }
 
 
