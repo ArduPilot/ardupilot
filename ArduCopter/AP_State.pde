@@ -84,6 +84,13 @@ void set_low_battery(bool b)
     ap.low_battery = b;
 }
 
+
+// ---------------------------------------------
+static void set_failsafe_gps(bool mode)
+{
+    ap.failsafe_gps = mode;
+}
+
 // ---------------------------------------------
 void set_takeoff_complete(bool b)
 {

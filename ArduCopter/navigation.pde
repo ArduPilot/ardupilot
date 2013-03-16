@@ -24,15 +24,6 @@ static void update_navigation()
             Log_Write_Nav_Tuning();
         }
     }
-
-    // To-Do: replace below with proper GPS failsafe
-    // reduce nav outputs to zero if we have not seen a position update in 2 seconds
-    if( millis() - nav_last_update > 2000 ) {
-        // after 12 reads we guess we may have lost GPS signal, stop navigating
-        // we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-        auto_roll  >>= 1;
-        auto_pitch >>= 1;
-    }
 }
 
 // run_nav_updates - top level call for the autopilot

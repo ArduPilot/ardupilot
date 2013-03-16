@@ -1428,6 +1428,9 @@ static void update_GPS(void)
         // save GPS time so we don't get duplicate reads
         last_gps_time = g_gps->time;
     }
+
+    // check for loss of gps
+    failsafe_gps_check();
 }
 
 // set_yaw_mode - update yaw mode and initialise any variables required

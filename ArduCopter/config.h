@@ -397,6 +397,13 @@
  # define FS_BATTERY              DISABLED
 #endif
 
+// GPS failsafe
+#ifndef FS_GPS
+ # define FS_GPS                        DISABLED
+#endif
+#ifndef FAILSAFE_GPS_TIMEOUT_MS
+ # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER

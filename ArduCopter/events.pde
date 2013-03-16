@@ -104,6 +104,73 @@ static void low_battery_event(void)
 #endif // COPTER_LEDS
 }
 
+// failsafe_gps_check - check for gps failsafe
+static void failsafe_gps_check()
+{
+    uint32_t last_gps_update_ms;
+
+    // return immediately if gps failsafe is disabled
+    if( !g.failsafe_gps_enabled ) {
+        return;
+    }
+
+    // calc time since last gps update
+    last_gps_update_ms = millis() - g_gps->last_fix_time;
+
+    // check if all is well
+    if( last_gps_update_ms < FAILSAFE_GPS_TIMEOUT_MS) {
+        // check for recovery from gps failsafe
+        if( ap.failsafe_gps ) {
+            failsafe_gps_off_event();
+            set_failsafe_gps(false);
+        }
+        return;
+    }
+
+    // do nothing if gps failsafe already triggered or motors disarmed
+    if( ap.failsafe_gps || !motors.armed()) {
+        return;
+    }
+
+    // GPS failsafe event has occured
+    // update state, warn the ground station and log to dataflash
+    set_failsafe_gps(true);
+    gcs_send_text_P(SEVERITY_LOW,PSTR("Lost GPS!"));
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GPS, ERROR_CODE_FAILSAFE_OCCURRED);
+
+    // take action based on flight mode
+    switch(control_mode) {
+        // for modes that do not require gps, do nothing
+        case STABILIZE:
+        case ACRO:
+        case ALT_HOLD:
+        case OF_LOITER:
+            // do nothing
+            break;
+
+        // modes requiring GPS force a land
+        case AUTO:
+        case GUIDED:
+        case LOITER:
+        case RTL:
+        case CIRCLE:
+        case POSITION:
+            // We have no GPS or are very close to home so we will land
+            set_mode(LAND);
+            break;
+
+        case LAND:
+            // if we're already landing do nothing
+            break;
+    }
+}
+
+// failsafe_gps_off_event - actions to take when GPS contact is restored
+static void failsafe_gps_off_event(void)
+{
+    // log recovery of GPS in logs?
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GPS, ERROR_CODE_FAILSAFE_RESOLVED);
+}
 
 static void update_events()     // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
 {

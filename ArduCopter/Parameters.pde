@@ -91,6 +91,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATTERY),
 
+    // @Param: FS_GPS_ENABLE
+    // @DisplayName: GPS Failsafe Enable
+    // @Description: Controls whether failsafe will be invoked when gps signal is lost
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(failsafe_gps_enabled, "FS_GPS_ENABLE", FS_GPS),
+
     // @Param: VOLT_DIVIDER
     // @DisplayName: Voltage Divider
     // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)

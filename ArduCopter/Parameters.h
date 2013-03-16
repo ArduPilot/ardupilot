@@ -189,7 +189,8 @@ public:
         k_param_radio_tuning_low,
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled,
-        k_param_throttle_mid, // 194
+        k_param_throttle_mid,
+        k_param_failsafe_gps_enabled,  // 195
 
         //
         // 200: flight modes
@@ -265,6 +266,7 @@ public:
     AP_Float        curr_amp_per_volt;
     AP_Int16        pack_capacity;              // Battery pack capacity less reserve
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
+    AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
 
     AP_Int8         compass_enabled;
     AP_Int8         optflow_enabled;
