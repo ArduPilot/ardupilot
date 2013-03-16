@@ -14,7 +14,7 @@ static void read_control_switch()
             switch_counter          = 0;
 
             // ignore flight mode changes if in failsafe
-            if( !ap.failsafe ) {
+            if( !ap.failsafe_radio ) {
                 set_mode(flight_modes[switchPosition]);
 
                 if(g.ch7_option != CH7_SIMPLE_MODE) {

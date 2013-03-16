@@ -68,7 +68,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
     
-    if (ap.failsafe == true)  {
+    if (ap.failsafe_radio == true)  {
         system_status = MAV_STATE_CRITICAL;
     }
     

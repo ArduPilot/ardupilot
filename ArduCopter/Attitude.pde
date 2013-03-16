@@ -138,7 +138,7 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
     }
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe)) {
+    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
         angle_error = 0;
     }
 
@@ -174,7 +174,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
     }
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe)) {
+    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
         angle_error = 0;
     }
 
@@ -205,7 +205,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     // limit the maximum overshoot
     angle_error	= constrain(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe)) {
+    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
     	angle_error = 0;
     }
 
@@ -883,7 +883,7 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     int16_t desired_rate = 0;
 
     // throttle failsafe check
-    if( ap.failsafe ) {
+    if( ap.failsafe_radio ) {
         return 0;
     }
 
@@ -916,7 +916,7 @@ static int16_t get_pilot_desired_acceleration(int16_t throttle_control)
     int32_t desired_accel = 0;
 
     // throttle failsafe check
-    if( ap.failsafe ) {
+    if( ap.failsafe_radio ) {
         return 0;
     }
 
@@ -944,8 +944,8 @@ static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
 {
     int32_t desired_alt = 0;
 
-    // throttle failsafe check
-    if( ap.failsafe ) {
+    // radio failsafe check
+    if( ap.failsafe_radio ) {
         return 0;
     }
 
@@ -1104,7 +1104,7 @@ get_throttle_land()
                 land_detector++;
             }else{
                 set_land_complete(true);
-                if( g.rc_3.control_in == 0 || ap.failsafe ) {
+                if( g.rc_3.control_in == 0 || ap.failsafe_radio ) {
                     init_disarm_motors();
                 }
             }

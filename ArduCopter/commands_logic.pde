@@ -556,7 +556,7 @@ static bool verify_RTL()
             // check if we've loitered long enough
             if( millis() - rtl_loiter_start_time > (uint32_t)g.rtl_loiter_time.get() ) {
                 // initiate landing or descent
-                if(g.rtl_alt_final == 0 || ap.failsafe) {
+                if(g.rtl_alt_final == 0 || ap.failsafe_radio) {
                     // land
                     do_land();
                     // override landing location (do_land defaults to current location)

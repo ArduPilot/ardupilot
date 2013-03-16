@@ -358,12 +358,14 @@ static union {
         uint8_t armed              : 1; // 6
         uint8_t auto_armed         : 1; // 7
 
-        uint8_t failsafe           : 1; // 8    // A status flag for the failsafe state
-        uint8_t do_flip            : 1; // 9    // Used to enable flip code
-        uint8_t takeoff_complete   : 1; // 10
-        uint8_t land_complete      : 1; // 11
-        uint8_t compass_status     : 1; // 12
-        uint8_t gps_status         : 1; // 13
+        uint8_t failsafe_radio     : 1; // 8    // A status flag for the radio failsafe
+        uint8_t failsafe_batt      : 1; // 9    // A status flag for the battery failsafe
+        uint8_t failsafe_gps       : 1; // 10   // A status flag for the gps failsafe
+        uint8_t do_flip            : 1; // 11   // Used to enable flip code
+        uint8_t takeoff_complete   : 1; // 12
+        uint8_t land_complete      : 1; // 13
+        uint8_t compass_status     : 1; // 14
+        uint8_t gps_status         : 1; // 15
     };
     uint16_t value;
 } ap;

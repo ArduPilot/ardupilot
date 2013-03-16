@@ -4,7 +4,7 @@
  *       This event will be called when the failsafe changes
  *       boolean failsafe reflects the current state
  */
-static void failsafe_on_event()
+static void failsafe_radio_on_event()
 {
     // if motors are not armed there is nothing to do
     if( !motors.armed() ) {
@@ -48,18 +48,18 @@ static void failsafe_on_event()
     }
 
     // log the error to the dataflash
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_THROTTLE);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
 
 // failsafe_off_event - respond to radio contact being regained
 // we must be in AUTO, LAND or RTL modes
 // or Stabilize or ACRO mode but with motors disarmed
-static void failsafe_off_event()
+static void failsafe_radio_off_event()
 {
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_ERROR_RESOLVED);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
 static void low_battery_event(void)
@@ -95,7 +95,7 @@ static void low_battery_event(void)
 
     // warn the ground station and log to dataflash
     gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE, ERROR_CODE_FAILSAFE_BATTERY);
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 #if COPTER_LEDS == ENABLED
     if ( bitRead(g.copter_leds_mode, 3) ) {         // Only Activate if a battery is connected to avoid alarm on USB only

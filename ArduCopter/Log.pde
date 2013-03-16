@@ -1208,8 +1208,14 @@ static void Log_Read_Error()
         case ERROR_SUBSYSTEM_OPTFLOW:
             cliSerial->print_P(PSTR("OF"));
             break;
-        case ERROR_SUBSYSTEM_FAILSAFE:
-            cliSerial->print_P(PSTR("FS"));
+        case ERROR_SUBSYSTEM_FAILSAFE_RADIO:
+            cliSerial->print_P(PSTR("FSRADIO"));
+            break;
+        case ERROR_SUBSYSTEM_FAILSAFE_BATT:
+            cliSerial->print_P(PSTR("FSBATT"));
+            break;
+        case ERROR_SUBSYSTEM_FAILSAFE_GPS:
+            cliSerial->print_P(PSTR("FSGPS"));
             break;
         default:
             // if undefined print subsytem as a number

@@ -384,8 +384,8 @@ static void set_mode(uint8_t mode)
 
     // used to stop fly_aways
     // set to false if we have low throttle
-    motors.auto_armed(g.rc_3.control_in > 0 || ap.failsafe);
-    set_auto_armed(g.rc_3.control_in > 0 || ap.failsafe);
+    motors.auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
+    set_auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
 
     // if we change modes, we must clear landed flag
     set_land_complete(false);
