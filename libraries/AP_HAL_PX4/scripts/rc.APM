@@ -41,6 +41,10 @@ fi
 
 if [ $sketch != NONE ]
 then
+	if mkdir /fs/microsd/APM
+	then
+	     echo "Created APM directory"
+	fi
 	if [ -f /fs/microsd/px4io.bin ]
 	then
 	   echo "Checking for new px4io firmware"
