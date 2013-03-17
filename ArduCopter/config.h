@@ -1038,6 +1038,15 @@
 #endif
 #define ACCELERATION_MAX_Z  750     // maximum veritcal acceleration in cm/s/s
 
+// max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
+#ifndef ALT_HOLD_INIT_MAX_OVERSHOOT
+ # define ALT_HOLD_INIT_MAX_OVERSHOOT 200
+#endif
+// the acceleration used to define the distance-velocity curve
+#ifndef ALT_HOLD_ACCEL_MAX
+ # define ALT_HOLD_ACCEL_MAX 250
+#endif
+
 // Throttle Accel control
 #ifndef THROTTLE_ACCEL_P
  # define THROTTLE_ACCEL_P  0.75f

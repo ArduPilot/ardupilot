@@ -1800,13 +1800,13 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 
         case THROTTLE_STABILIZED_RATE:
         case THROTTLE_DIRECT_ALT:
-            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             throttle_initialised = true;
             break;
 
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
-            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
             if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
@@ -1818,7 +1818,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_LAND:
             set_land_complete(false);   // mark landing as incomplete
             land_detector = 0;          // A counter that goes up if our climb rate stalls out.
-            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             // Set target altitude to LAND_START_ALT if we are high, below this altitude the get_throttle_rate_stabilized will take care of setting the next_WP.alt
             if (current_loc.alt >= LAND_START_ALT) {
                 set_new_altitude(LAND_START_ALT);

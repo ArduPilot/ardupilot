@@ -957,6 +957,29 @@ static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
     return desired_alt;
 }
 
+// get_initial_alt_hold - get new target altitude based on current altitude and climb rate
+static int32_t
+get_initial_alt_hold( int32_t alt_cm, int16_t climb_rate_cms)
+{
+    int32_t target_alt;
+    int32_t linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
+    int32_t linear_velocity;      // the velocity we swap between linear and sqrt.
+
+    linear_velocity = ALT_HOLD_ACCEL_MAX/g.pi_alt_hold.kP();
+
+    if (abs(climb_rate_cms) < linear_velocity) {
+        target_alt = alt_cm + climb_rate_cms/g.pi_alt_hold.kP();
+    } else {
+        linear_distance = ALT_HOLD_ACCEL_MAX/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
+        if (climb_rate_cms > 0){
+            target_alt = alt_cm + linear_distance + (int32_t)climb_rate_cms*(int32_t)climb_rate_cms/(2*ALT_HOLD_ACCEL_MAX);
+        } else {
+            target_alt = alt_cm - ( linear_distance + (int32_t)climb_rate_cms*(int32_t)climb_rate_cms/(2*ALT_HOLD_ACCEL_MAX) );
+        }
+    }
+    return constrain(target_alt, alt_cm - ALT_HOLD_INIT_MAX_OVERSHOOT, alt_cm + ALT_HOLD_INIT_MAX_OVERSHOOT);
+}
+
 // get_throttle_rate - calculates desired accel required to achieve desired z_target_speed
 // sets accel based throttle controller target
 static void
@@ -1025,19 +1048,19 @@ static void
 get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
     int32_t alt_error;
-    int16_t desired_rate;
-    int32_t linear_distance;      // the distace we swap between linear and sqrt.
+    float desired_rate;
+    int32_t linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
 
     // calculate altitude error
     alt_error    = target_alt - current_loc.alt;
 
     // check kP to avoid division by zero
     if( g.pi_alt_hold.kP() != 0 ) {
-        linear_distance = 250/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
+        linear_distance = ALT_HOLD_ACCEL_MAX/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
         if( alt_error > 2*linear_distance ) {
-            desired_rate = safe_sqrt(2*250*(alt_error-linear_distance));
+            desired_rate = safe_sqrt(2*ALT_HOLD_ACCEL_MAX*(alt_error-linear_distance));
         }else if( alt_error < -2*linear_distance ) {
-            desired_rate = -safe_sqrt(2*250*(-alt_error-linear_distance));
+            desired_rate = -safe_sqrt(2*ALT_HOLD_ACCEL_MAX*(-alt_error-linear_distance));
         }else{
             desired_rate = g.pi_alt_hold.get_p(alt_error);
         }
