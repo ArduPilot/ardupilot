@@ -160,6 +160,7 @@ void GPS::_update_progstr(void)
 	if (nbytes > 16) {
 		nbytes = 16;
 	}
+	//hal.console->printf_P(PSTR("writing %u bytes\n"), (unsigned)nbytes);
 	_write_progstr_block(progstr_state.fs, q->pstr+q->ofs, nbytes);
 	q->ofs += nbytes;
 	if (q->ofs == q->size) {

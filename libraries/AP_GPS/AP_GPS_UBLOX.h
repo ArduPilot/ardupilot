@@ -15,14 +15,18 @@
 #include "GPS.h"
 
 /*
- *  try to put a UBlox into binary mode. This is in two parts. First we
- *  send a PUBX asking the UBlox to receive NMEA and UBX, and send UBX,
- *  with a baudrate of 38400. Then we send a UBX message setting rate 1
- *  for the NAV_SOL message. The setup of NAV_SOL is to cope with
- *  configurations where all UBX binary message types are disabled.
+ *  try to put a UBlox into binary mode. This is in two parts. 
+ *
+ * First we send a ubx binary message that enables the NAV_SOL message
+ * at rate 1. Then we send a NMEA message to set the baud rate to our
+ * desired rate. The reason for doing the NMEA message second is if we
+ * send it first the second message will be ignored for a baud rate
+ * change.
+ * The reason we need the NAV_SOL rate message at all is some uBlox
+ * modules are configured with all ubx binary messages off, which
+ * would mean we would never detect it.
  */
-
-#define UBLOX_SET_BINARY "$PUBX,41,1,0003,0001,38400,0*26\n\265\142\006\001\003\000\001\006\001\022\117"
+#define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
 
 class AP_GPS_UBLOX : public GPS
 {

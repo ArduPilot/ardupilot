@@ -49,7 +49,9 @@ AP_GPS_Auto::read(void)
 	if (now - last_baud_change_ms > 1200) {
 		// its been more than 1.2 seconds without detection on this
 		// GPS - switch to another baud rate
-		_port->begin(pgm_read_dword(&baudrates[last_baud]), 256, 16);		
+		_baudrate = pgm_read_dword(&baudrates[last_baud]);
+		//hal.console->printf_P(PSTR("Setting GPS baudrate %u\n"), (unsigned)_baudrate);
+		_port->begin(_baudrate, 256, 16);		
 		last_baud++;
 		last_baud_change_ms = now;
 		if (last_baud == sizeof(baudrates) / sizeof(baudrates[0])) {
@@ -88,7 +90,14 @@ AP_GPS_Auto::_detect(void)
 
 	while (_port->available() > 0 && new_gps == NULL) {
 		uint8_t data = _port->read();
-		if (AP_GPS_UBLOX::_detect(data)) {
+		/*
+		  running a uBlox at less than 38400 will lead to packet
+		  corruption, as we can't receive the packets in the 200ms
+		  window for 5Hz fixes. The NMEA startup message should force
+		  the uBlox into 38400 no matter what rate it is configured
+		  for.
+		 */
+		if (_baudrate >= 38400 && AP_GPS_UBLOX::_detect(data)) {
 			hal.console->print_P(PSTR(" ublox "));
 			new_gps = new AP_GPS_UBLOX();
 		} 
