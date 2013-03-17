@@ -75,7 +75,7 @@ public:
                                                         // Yaw Rate 1 = fast,
                                                         // 2 = med, 3 = slow
 
-        k_param_crosstrack_min_distance,
+        k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,
         k_param_yaw_override_behaviour,
@@ -145,7 +145,7 @@ public:
         // 160: Navigation parameters
         //
         k_param_rtl_altitude = 160,
-        k_param_crosstrack_gain,
+        k_param_crosstrack_gain,	// deprecated - remove with next eeprom number change
         k_param_rtl_loiter_time,
         k_param_rtl_alt_final,
         k_param_tilt_comp, //164
@@ -291,8 +291,6 @@ public:
     AP_Int16        waypoint_radius;
     AP_Int16        circle_radius;
     AP_Int16        waypoint_speed_max;
-    AP_Float        crosstrack_gain;
-    AP_Int16 		crosstrack_min_distance;
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        auto_velocity_z_min;         // minimum vertical velocity (i.e. maximum descent) the autopilot may request

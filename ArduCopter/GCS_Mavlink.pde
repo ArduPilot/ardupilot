@@ -275,7 +275,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         wp_distance / 1.0e2f,
         altitude_error / 1.0e2f,
         0,
-        crosstrack_error);      // was 0
+        0);
 }
 
 static void NOINLINE send_ahrs(mavlink_channel_t chan)

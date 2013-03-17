@@ -235,22 +235,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(waypoint_speed_max,     "WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
 
-	// @Param: XTRK_GAIN_SC
-    // @DisplayName: Cross-Track Gain
-    // @Description: This controls the rate that the Auto Controller will attempt to return original track
-    // @Units: Dimensionless
-	// @User: Standard
-    GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC", CROSSTRACK_GAIN),
-
-    // @Param: XTRK_MIN_DIST
-    // @DisplayName: Crosstrack mininum distance
-    // @Description: Minimum distance in meters between waypoints to do crosstrack correction.
-    // @Units: Meters
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(crosstrack_min_distance, "XTRK_MIN_DIST",  CROSSTRACK_MIN_DISTANCE),
-
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
     // @Description: Time (in milliseconds) to loiter above home before begining final descent

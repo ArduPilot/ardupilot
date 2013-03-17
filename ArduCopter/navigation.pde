@@ -262,9 +262,6 @@ static void verify_altitude()
 // Keeps old data out of our calculation / logs
 static void reset_nav_params(void)
 {
-    // We must be heading to a new WP, so XTrack must be 0
-    crosstrack_error                = 0;
-
     // Will be set by new command
     wp_bearing                      = 0;
 

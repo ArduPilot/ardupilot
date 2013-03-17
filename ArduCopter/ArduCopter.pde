@@ -692,8 +692,6 @@ static struct   Location guided_WP;
 // deg * 100, The original angle to the next_WP when the next_WP was set
 // Also used to check when we pass a WP
 static int32_t original_wp_bearing;
-// The amount of angle correction applied to wp_bearing to bring the copter back on its optimum path
-static int16_t crosstrack_error;
 
 
 ////////////////////////////////////////////////////////////////////////////////
