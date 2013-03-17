@@ -154,14 +154,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
-	// @Param: TILT
-    // @DisplayName: Auto Tilt Compensation
-    // @Description: This is a feed-forward compensation which helps the aircraft achieve target waypoint speed.
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Advanced
-	GSCALAR(tilt_comp,      "TILT",     TILT_COMPENSATION),
-
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.

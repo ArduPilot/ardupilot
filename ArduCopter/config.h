@@ -113,7 +113,6 @@
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED 				125
   # define RTL_YAW                  	YAW_LOOK_AT_HOME
-  # define TILT_COMPENSATION 			5
   # define RATE_INTEGRATOR_LEAK_RATE 	0.02f
   # define RATE_ROLL_D    				0
   # define RATE_PITCH_D       			0
@@ -979,10 +978,6 @@
 
 #ifndef WAYPOINT_SPEED_MIN
  # define WAYPOINT_SPEED_MIN        150                    // 1m/s
-#endif
-
-#ifndef TILT_COMPENSATION
-  #   define TILT_COMPENSATION 54
 #endif
 
 

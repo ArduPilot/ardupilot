@@ -148,7 +148,7 @@ public:
         k_param_crosstrack_gain,	// deprecated - remove with next eeprom number change
         k_param_rtl_loiter_time,
         k_param_rtl_alt_final,
-        k_param_tilt_comp, //164
+        k_param_tilt_comp, 	//164	deprecated - remove with next eeprom number change
 
 
         //
@@ -273,7 +273,6 @@ public:
     AP_Float        low_voltage;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
-    AP_Int8         tilt_comp;
     AP_Int8         axis_enabled;
     AP_Int8         copter_leds_mode;           // Operating mode of LED
                                                 // lighting system
