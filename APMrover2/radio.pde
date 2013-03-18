@@ -16,7 +16,7 @@ static void init_rc_in()
 	g.channel_throttle.set_dead_zone(6);
 
 	//set auxiliary ranges
-	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+    update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 }
 
 static void init_rc_out()
@@ -34,6 +34,8 @@ static void init_rc_out()
 	hal.rcout->write(CH_1, 	g.channel_steer.radio_trim);					// Initialization of servo outputs
 	hal.rcout->write(CH_3, 	g.channel_throttle.radio_trim);
 
+	hal.rcout->write(CH_2, 	g.rc_2.radio_trim);
+	hal.rcout->write(CH_4, 	g.rc_4.radio_trim);
 	hal.rcout->write(CH_5, 	g.rc_5.radio_trim);
 	hal.rcout->write(CH_6, 	g.rc_6.radio_trim);
 	hal.rcout->write(CH_7,   g.rc_7.radio_trim);
@@ -57,6 +59,9 @@ static void read_radio()
     g.channel_steer.set_pwm(hal.rcin->read(CH_STEER));
 
 	g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
+
+  	g.rc_2.set_pwm(hal.rcin->read(CH_2));
+  	g.rc_4.set_pwm(hal.rcin->read(CH_4));
   	g.rc_5.set_pwm(hal.rcin->read(CH_5));
  	g.rc_6.set_pwm(hal.rcin->read(CH_6));        
 	g.rc_7.set_pwm(hal.rcin->read(CH_7));

@@ -371,6 +371,12 @@ static void do_repeat_servo()
 		event_value 	= next_nonnav_command.alt;
 
 		switch(next_nonnav_command.p1) {
+			case CH_2:
+				event_undo_value = g.rc_2.radio_trim;
+				break;
+			case CH_4:
+				event_undo_value = g.rc_4.radio_trim;
+				break;
 			case CH_5:
 				event_undo_value = g.rc_5.radio_trim;
 				break;
