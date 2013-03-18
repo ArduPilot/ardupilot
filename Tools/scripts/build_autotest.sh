@@ -102,7 +102,7 @@ for d in ArduPlane ArduCopter APMrover2; do
 	report $d $oldhash $newhash
     fi
     popd
-    Tools/scripts/frame_sizes.py buildlogs/$d.build > buildlogs/$d.framesizes.txt
+    APM/Tools/scripts/frame_sizes.py buildlogs/$d.build > buildlogs/$d.framesizes.txt
     (
 	avr-size buildlogs/$d.build/$d.elf 
 	avr-nm --size-sort --print-size -C buildlogs/$d.build/$d.elf 
