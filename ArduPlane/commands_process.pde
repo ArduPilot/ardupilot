@@ -10,19 +10,15 @@ void change_command(uint8_t cmd_index)
         init_commands();
         gcs_send_text_fmt(PSTR("Received Request - reset mission"));
         return;
-    }
-
+    }    
     temp = get_cmd_with_index(cmd_index);
-
     if (temp.id > MAV_CMD_NAV_LAST ) {
         gcs_send_text_fmt(PSTR("Cannot change to non-Nav cmd %u"), (unsigned)cmd_index);
     } else {
         gcs_send_text_fmt(PSTR("Received Request - jump to command #%i"),cmd_index);
-
         nav_command_ID          = NO_COMMAND;
-        next_nav_command.id = NO_COMMAND;
+        next_nav_command.id     = NO_COMMAND;
         non_nav_command_ID      = NO_COMMAND;
-
         nav_command_index       = cmd_index - 1;
         g.command_index.set_and_save(cmd_index);
         update_commands();

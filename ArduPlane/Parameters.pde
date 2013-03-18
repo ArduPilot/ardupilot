@@ -188,7 +188,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(nav_pid_angle_cd,       "NAV_PID_ANGLE",   NAV_PID_ANGLE),
     GSCALAR(bender_angle_cd,        "NAV_BLNDR_ANGL",  NAV_BLENDER_ANGLE),
     GSCALAR(loiter_P,               "NAV_LOITER_P",    NAV_LOITER_P),
-    GSCALAR(nav_data_latency,       "NAV_DATA_LAG",   7000),
+    //
+    GSCALAR(nav_data_latency,       "NAV_DATA_LAG",    3000),
+    //
+    GSCALAR(loiter_B,               "NAV_LOITER_B",    10),
+    //
+    GSCALAR(loiter_C,               "NAV_LOITER_C",    1),
+    // Flag to stop loiter calbration. User can set back to 1 in MP to recalibrate
+    GSCALAR(loiter_set,             "NAV_CAL LOITER",  1),
+    
     // @Param: WP_LOITER_RAD
     // @DisplayName: Waypoint Loiter Radius
     // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter

@@ -282,8 +282,8 @@ static void set_guided_WP(void)
     // this is handy for the groundstation
     wp_totalDistance        = get_distance(&current_loc, &next_WP);
     wp_distance             = wp_totalDistance;
-    target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);
-
+    target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);    
+    
     // to check if we have missed the WP
     // ----------------------------
     old_target_bearing_cd = target_bearing_cd;

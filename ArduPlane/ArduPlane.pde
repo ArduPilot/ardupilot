@@ -525,7 +525,7 @@ static bool throttle_suppressed;
 // Previous target bearing.  Used to calculate loiter rotations.  Hundredths of a degree
 static int32_t old_target_bearing_cd;
 
-//Loiter entery angle
+//Loiter entry angle
 static int32_t loiter_entry_bearing_cd;
 
 //Loiter exit bearing
@@ -561,10 +561,14 @@ static int32_t nav_pitch_cd;
 // Distance between plane and next waypoint.  Meters
 // is not static because AP_Camera uses it
 int32_t wp_distance;
-//
-float  turn_point_m;
-float  last_turn_point;
-
+// distance from the next_WP to start the turn to the after_next_wp in meters
+static float  turn_point_m;
+// distance from the next_WP to start the loiter entry turn in meters
+static float  loiter_turn_point_m;
+// loiter entry/exit angle in radians
+static float  loiter_angle;
+//  we can get rid of this i think. it was for debugging
+static float  last_turn_point;
 // Distance between previous and next waypoint.  Meters
 static int32_t wp_totalDistance;
 
@@ -818,11 +822,12 @@ static void fast_loop()
 
     ahrs.update();
 	// Increasing the rate these functions are executed during turns
+ //GAF:loiter jitter       
     if(nav_wp_sw || loiter_trig){
        get_wind();
        navigate();    
     }	
-
+    update_GPS();  //GAF:loiter jitter  
     // uses the yaw from the DCM to give more accurate turns
     calc_bearing_error();
 
@@ -878,7 +883,8 @@ static void medium_loop()
     //-------------------------------
     case 0:
         medium_loopCounter++;
-        update_GPS();
+ //GAF:loiter jitter
+      update_GPS();
         calc_gndspeed_undershoot();
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -900,7 +906,7 @@ static void medium_loop()
         // Read 6-position switch on radio
         // -------------------------------
         read_control_switch();
-
+ //GAF:loiter jitter 
         // calculate the plane's desired bearing
         // -------------------------------------
         if(!nav_wp_sw && !loiter_trig){
@@ -1038,6 +1044,11 @@ static void one_second_loop()
 
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
+    // Update loiter turnpoint incase the user has changed a loiter or wp radius.
+    update_loiter_TP();
+#if DEBUG_NAV_A == ENABLED    
+   // hal.uartC->printf(" nav data lag = %d\n",g.nav_data_latency);
+#endif    
 }
 
 static void update_GPS(void)
@@ -1050,7 +1061,15 @@ static void update_GPS(void)
 
     if (g_gps->new_data && g_gps->fix) {
         g_gps->new_data = false;
-
+   //Put gps dependant functions here and call this function in the 50 Hz loop. GAF:loiter jitter
+   
+                // calculate the plane's desired bearing
+        // -------------------------------------
+     /*   if(!nav_wp_sw && !loiter_trig){
+            get_wind();
+            navigate();
+        }*/
+        // GAF:loiter jitter
         // for performance
         // ---------------
         gps_fix_count++;

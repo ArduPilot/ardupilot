@@ -377,8 +377,7 @@ static bool verify_nav_wp()
     if (loiter_sum > 300) {
         gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
         
- // Serial3.println("*****did a loop******");               
- //Serial3.print("predictor = ");Serial3.println(predictor);                       
+                       
         return true;
     }
 
@@ -423,32 +422,33 @@ static bool verify_loiter_turns()
     }
     return false;
 }
-// This initiates a loiter sequnce at the proper time
+// This initiates a loiter sequence at the proper time
 static bool check_loiter_trig()
 {
     predictor = g.predict_k * (g_gps->ground_speed - airspeed.get_airspeed_cm()) + g.predict_t * g_gps->ground_speed;
-    if(wp_distance < (g.loiter_radius + g.waypoint_radius + predictor) * 0.93){
+    if(wp_distance < (loiter_turn_point_m + predictor)){
+    //if(wp_distance < loiter_turn_point_m){  
         turn_step = 1; 
         loiter_trig = true;
+        
         // Decide left or right loiter and set what's needed.
         
         if(wrap_180_cd(next_wp_bearing_cd - current_wp_bearing_cd) >= 0 && lock != -1) {
             lock = 1;
-            loiter_entry_bearing_cd = wrap_360_cd(calc_bearing_cd - g.turn_back_angle_cd);
-            loiter_exit_bearing_cd = wrap_360_cd(next_wp_bearing_cd + 5600);
+            loiter_entry_bearing_cd = wrap_360_cd(current_wp_bearing_cd - (g.loiter_B - degrees(loiter_angle) * 100));
+            loiter_exit_bearing_cd = wrap_360_cd(next_wp_bearing_cd + (g.loiter_B - degrees(loiter_angle) * 100));
         }  
         else if(wrap_180_cd(next_wp_bearing_cd - current_wp_bearing_cd) < 0 && lock != 1) {
             lock = -1; 
-            loiter_entry_bearing_cd = wrap_360_cd(calc_bearing_cd + g.turn_back_angle_cd);
-            loiter_exit_bearing_cd = wrap_360_cd(next_wp_bearing_cd - 5600);
-        }        
-        
-       // Serial3.println("*** loiter trigered 1 ***");
+            loiter_entry_bearing_cd = wrap_360_cd(current_wp_bearing_cd + (g.loiter_B - degrees(loiter_angle) * 100));
+            loiter_exit_bearing_cd = wrap_360_cd(next_wp_bearing_cd - (g.loiter_B - degrees(loiter_angle) * 100));
+        }
+        else {lock = 1;}        
         return true;
     }
     return false;    
 }
-// This will ultimately triger a set_next_WP() and the normal turn controler will complete the turn to the next WP.
+// This will ultimately trigger a set_next_WP() and the normal turn controler will complete the turn to the next WP.
 static bool check_loiter_exit()
 {    
     if(lock == 1 && wrap_360_cd(loiter_exit_bearing_cd - calc_bearing_cd) < 500){     

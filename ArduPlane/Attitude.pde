@@ -317,10 +317,10 @@ static void calc_nav_roll()
     //   air_speed = aspeed * 100;
     //}
     static float nav_bender = 0;
-    static float turn_radius;
+    //static float turn_radius;
     static int32_t reverse_turn_cd = 0;
     static int8_t reverse = 1;
-    static int16_t loiter_error;
+    static float loiter_error;
 #if DEBUG_NAV == ENABLED    // For debug printing only      
     static bool once_a = 1;
     static bool once_b = 1; 
@@ -329,7 +329,7 @@ static void calc_nav_roll()
 #if DEBUG_NAV == ENABLED      
         once_b = true;
 #endif        
-        turn_radius = float(g.waypoint_radius);
+        //turn_radius = float(g.waypoint_radius);
         if(prev_control_mode != control_mode) turn_around = false;
         // Normal Left turn
         if((bearing_error_cd < -g.nav_pid_angle_cd || turn_step > 1) && lock != 1 && !loiter_trig){  
@@ -406,7 +406,7 @@ static void calc_nav_roll()
 #if DEBUG_NAV == ENABLED                        
                         hal.uartC->printf("*** turn back ***\n");
 #endif    
-                    }              
+                    }
                 break;
                 case 4:
                     if(bearing_error_cd > -g.nav_pid_angle_cd){
@@ -417,47 +417,53 @@ static void calc_nav_roll()
                 default:                                                                                   
                     lock = 1;                 
                 break;
-             }                                                
-        }
+             }
         // Loiter
-        else if(loiter_trig){
-            turn_radius = g.loiter_radius;         
+        }else if(loiter_trig){                     
             switch (turn_step){
                 case 1:    // Set up for loiter entry
                     turn_step ++;
                     turn_around = false;
                     reverse = -1;                                                        
                 break;
-                case 2:    // Start loitering turn                
-                    if(wrap_360_cd(calc_bearing_cd - loiter_entry_bearing_cd) < 500){                        
-                        turn_step ++;
-                        reverse = 1;                        
+                case 2:    // Start loitering turn
+                   //Left 
+                    if(lock == -1){
+                        if(wrap_360_cd(calc_bearing_cd - loiter_entry_bearing_cd) < 500){
+                            turn_step ++;
+                            reverse = 1;                            
+                        }
                     }
+                   //Right 
+                    if(lock == 1){
+                       if(wrap_360_cd(loiter_entry_bearing_cd - calc_bearing_cd) < 500){
+                            turn_step ++;
+                            reverse = 1;                            
+                        }                      
+                    } 
                 break;
                 case 3:    
-                   // This is the NAV loiter controler right turn
+                    // neccesary stuf, very important for loitering circles.                    
                     loiter_error = wp_distance - g.loiter_radius;
-                    if(lock == 1){                   
-                        nav_bearing_cd -= 9000;
-                       // nav_bearing_cd += (g.nav_data_latency * 0.360 * g_gps->ground_speed) / (6.283 * g.loiter_radius);
+                    // located in navigation.pde
+                    tune_loiter(loiter_error);  
+                    // This is the NAV loiter controler right turn
+                    if(lock == 1){                    
+                        nav_bearing_cd -= 9000; 
                         nav_bearing_cd += (g.nav_data_latency * 0.075 * g_gps->ground_speed) / g.loiter_radius;
-                        nav_bearing_cd += constrain(((loiter_error) * g.loiter_P * 100),-1500, 9000);
-                        
-                        
+                        nav_bearing_cd += constrain(((loiter_error) * g.loiter_P * 100),-1500, 2000);                                                
                     }
                     // Left turn
                     if(lock == -1){    
                         nav_bearing_cd += 9000;
-                        //nav_bearing_cd -= (g.nav_data_latency * 0.360 * g_gps->ground_speed) / (6.283 * g.loiter_radius);
                         nav_bearing_cd -= (g.nav_data_latency * 0.075 * g_gps->ground_speed) / g.loiter_radius;
-                        nav_bearing_cd -= constrain(((loiter_error) * g.loiter_P * 100),-9000, 1500);
-                       
-                        
+                        nav_bearing_cd -= constrain(((loiter_error) * g.loiter_P * 100),-2000, 1500);                                               
                     }                        
                     nav_bearing_cd = wrap_360_cd(nav_bearing_cd);                    
                     calc_bearing_error();
                 break;
             }
+            
          // If we have a waypoint switch while loitering, then stop loiter and turn to new wp.
             if(nav_wp_sw){  
                 turn_step = 1;
@@ -479,7 +485,8 @@ static void calc_nav_roll()
 
             if(prev_control_mode != control_mode || control_mode == GUIDED || prev_nav_cmd_index != nav_command_index || jump){  
                 prev_WP = current_loc;
-                prev_control_mode = control_mode;
+                current_wp_bearing_cd   = get_bearing_cd(&prev_WP, &next_WP);
+                prev_control_mode = control_mode;                
                 reset_crosstrack();
                 navigate();
                 calc_bearing_error();
@@ -494,7 +501,7 @@ static void calc_nav_roll()
          count_a ++;
          if(once_a){
              once_a = false;
-             hal.uartC->printf("****** nav fixed ****** : %d\n",raw_nav_roll);
+             hal.uartC->printf("****** nav fixed ****** : %d\n", raw_nav_roll);
              //hal.uartC->printf(", next_WP.id : "); hal.uartC->printf(next_WP.id);
          }
          if(count_a > 49){
@@ -508,7 +515,7 @@ static void calc_nav_roll()
      // Air speed is not used in this method. Inputs are gps speed(2d) and turn radius and left/right. 
      // Roll angle = atan((Vg^2/(r*g)), where Vg is ground speed, r is turn radius, and g is gravity.        
          
-         raw_nav_roll_fixed = degrees(atan(sq(g_gps->ground_speed*.01)/(turn_radius * gravity))) * 100 * lock * reverse;             
+         raw_nav_roll_fixed = degrees(atan(sq(g_gps->ground_speed*.01)/(g.waypoint_radius * gravity))) * 100 * lock * reverse;             
                
     }
      // Normal PID
@@ -551,12 +558,12 @@ static void calc_nav_roll()
     else if(loiter_trig && turn_step < 3){
         nav_bender = 1;
     }
-    else if(loiter_trig && turn_step == 3){
-        nav_bender = constrain(1 - (abs(loiter_error) / 8),0,0.67);
+    else if(loiter_trig && turn_step >= 3){
+        nav_bender = 0;        
     }
     else nav_bender = 0;   
     raw_nav_roll = (1 - nav_bender) * raw_nav_roll_pid + nav_bender * raw_nav_roll_fixed;                      
-    nav_roll_cd = 0.6 * nav_roll_cd + 0.4 * raw_nav_roll;    // a little filtering?
+    nav_roll_cd = 0.9 * nav_roll_cd + 0.1 * raw_nav_roll;    // a little filtering?
     nav_roll_cd = raw_nav_roll; 
     if(control_mode == GUIDED || control_mode == RTL) nav_roll_cd = constrain(nav_roll_cd, (0.78 * -g.roll_limit_cd.get()), (0.78 * g.roll_limit_cd.get())); // Had to put a tighter leash on these modes as you can get there rairly, if you have a loiter as the last command.   
     else nav_roll_cd = constrain(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());     

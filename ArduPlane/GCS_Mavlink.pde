@@ -1389,7 +1389,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // set current command
         change_command(packet.seq);
-
+// GAF missing wp # change here?
         mavlink_msg_mission_current_send(chan, g.command_index);
         break;
     }

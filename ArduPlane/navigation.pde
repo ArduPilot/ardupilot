@@ -198,9 +198,37 @@ static void update_crosstrack(void)
         nav_bearing_cd += constrain_int32(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
         nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
     }
-
 }
-
+// This is the loiter auto tune
+///// WIP 19:42 cst ////////////////////////////
+static void tune_loiter(float error)
+{  
+    static uint8_t count;
+    static uint8_t error_count;
+    static float last_error;
+    // This will automatically triger a loiter calibration if error is steady and radius is off.
+    if(last_error - error < 1){
+        error_count ++;
+        if(error_count > 25 && error > 3){
+            error_count = 0;
+            g.loiter_set = 1;    
+        }
+    }    
+    last_error = error;
+    // This will calibrate the nav latency param and save it if steady.
+    if(g.loiter_set != 0 && fabs(error) < 0.5 * g.loiter_radius){      
+        g.nav_data_latency += constrain(error * g.loiter_C, -5, 5);           
+        if(fabs(error) < 1){ 
+            count ++;
+            if(count > 250){            
+                g.loiter_set.set_and_save_ifchanged(0);
+                g.nav_data_latency.set_and_save_ifchanged(g.nav_data_latency);                          
+            }                
+        }else if(fabs(error) <= 8 && fabs(error) >= 1 && count > 1){
+             count --;
+        }else if(fabs(error) > 8) count = 0;
+    }
+}
 static void reset_crosstrack()
 {
     crosstrack_bearing_cd   = get_bearing_cd(&prev_WP, &next_WP);       // Used for track following
@@ -228,7 +256,7 @@ static void get_wind()      //GF  // Need to add GPS  validation check to the ca
     calc_bearing_v2f = air_vel_v2f + wind_vel_v2f;
     calc_bearing_cd = wrap_360_cd(degrees(atan2(calc_bearing_v2f.x, calc_bearing_v2f.y))*100);             
 }
-//
+// This is called when a new wp is set, in commands tab, set_next_WP()
 static long calc_turn_pt(int32_t first_bearing, int32_t second_bearing)
 {
     float angle = (18000 - (second_bearing - first_bearing))/2;
@@ -237,4 +265,11 @@ static long calc_turn_pt(int32_t first_bearing, int32_t second_bearing)
     constrain (turn_pt_m,10.0,(g.waypoint_radius*1.5));
     return (int32_t)turn_pt_m;
 }
+// For now this is called in the one Hz loop. It realy only needs to be done if the WP or loiter radius changes
+// TODO Need to check for changes to loiter %|| wp radius and then call. Trade 32 bits ram for less computation time.
+void update_loiter_TP()
+{
+    loiter_angle = asin((float)g.waypoint_radius / (float)(g.loiter_radius + g.waypoint_radius));
+    loiter_turn_point_m = cos(loiter_angle) * (g.loiter_radius + g.waypoint_radius);         
+}  
 

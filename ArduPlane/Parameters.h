@@ -101,7 +101,6 @@ public:
         //
         k_param_imu = 130,  // unused
         k_param_altitude_mix,
-
         k_param_compass_enabled,
         k_param_compass,
         k_param_battery_monitoring,
@@ -113,7 +112,14 @@ public:
         k_param_ahrs,  // AHRS group
         k_param_barometer,   // barometer ground calibration
         k_param_airspeed,  // AP_Airspeed parameters
-        k_param_curr_amp_offset,
+        k_param_curr_amp_offset,  //
+        // nav parameters
+        k_param_nav_pid_angle_cd,
+        k_param_bender_angle_cd,
+        k_param_loiter_P,
+        k_param_loiter_B,
+        k_param_loiter_C,
+        k_param_loiter_set,
 
         //
         // 150: Navigation parameters
@@ -141,9 +147,6 @@ public:
         k_param_predict_t,
         k_param_turn_back_angle_cd,
         k_param_turn_back_angle_comp_cd,
-        k_param_nav_pid_angle_cd,
-        k_param_bender_angle_cd,
-        k_param_loiter_P,
         //
         // Battery monitoring parameters
         //
@@ -331,6 +334,9 @@ public:
     AP_Int32 bender_angle_cd;
     AP_Float loiter_P;
     AP_Int32 nav_data_latency;
+    AP_Int32 loiter_B;
+    AP_Float loiter_C;
+    AP_Int8  loiter_set;    
     // Misc
     //
     AP_Int8 auto_trim;

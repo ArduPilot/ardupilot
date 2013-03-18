@@ -34,4 +34,4 @@
 # define LOGGING_ENABLED  DISABLED
 //**************these are on uart3, DO NOT USE FOR FLIGHT! WILL HOSE YOUR TELEM
 # define DEBUG_NAV  DISABLED  
-# define DEBUG_NAV_A ENABLED
+# define DEBUG_NAV_A DISABLED
