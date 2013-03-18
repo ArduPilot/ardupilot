@@ -8,6 +8,14 @@
 set deviceA /dev/ttyACM0
 set deviceC /dev/ttyS1
 
+# check for an old file called APM, caused by 
+# a bug in an earlier firmware release
+if [ -f /fs/microsd/APM ]
+then
+   echo "APM file found - renaming"
+   mv /fs/microsd/APM /fs/microsd/APM.old
+fi
+
 if [ -f /fs/microsd/APM/nostart ]
 then
    echo "APM/nostart found - skipping"
