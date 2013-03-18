@@ -43,11 +43,7 @@
 #define THROTTLE_LAND                       8   // landing throttle controller
 
 
-// active altitude sensor
-// ----------------------
-#define SONAR 0
-#define BARO 1
-
+// sonar - for use with CONFIG_SONAR_SOURCE
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
 

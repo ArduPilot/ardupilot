@@ -24,7 +24,7 @@ static int8_t   test_wp_nav(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_tuning(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
 static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 #endif
@@ -75,7 +75,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"relay",               test_relay},
     {"wp",                  test_wp},
 //	{"toy",			test_toy},
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
     {"altitude",    test_baro},
     {"sonar",               test_sonar},
 #endif
@@ -794,7 +794,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
  *  }
  */
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
@@ -902,13 +902,14 @@ test_mag(uint8_t argc, const Menu::arg *argv)
  *       }
  *  }*/
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 /*
  *  test the sonar
  */
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
+#if CONFIG_SONAR == ENABLED
     if(g.sonar_enabled == false) {
         cliSerial->printf_P(PSTR("Sonar disabled\n"));
         return (0);
@@ -922,13 +923,12 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
         delay(100);
 
         cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar->read());
-        //cliSerial->printf_P(PSTR("Sonar, %d, %d\n"), sonar.read(), sonar.raw_value);
 
         if(cliSerial->available() > 0) {
             return (0);
         }
     }
-
+#endif
     return (0);
 }
 #endif

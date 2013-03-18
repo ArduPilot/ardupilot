@@ -60,9 +60,9 @@ apm_option("PITOT_ENABLED" TYPE BOOL
     DESCRIPTION "Enable pitot static system?"
     DEFAULT OFF)
 
-apm_option("SONAR_ENABLED" TYPE BOOL
+apm_option("CONFIG_SONAR" TYPE BOOL
     DESCRIPTION "Enable sonar?"
-    DEFAULT OFF)
+    DEFAULT ON)
 
 apm_option("AIRSPEED_RATIO" TYPE STRING ADVANCED
     DESCRIPTION "Airspeed ratio?"

@@ -1939,9 +1939,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         ins.set_accel_offsets(accels);
 
 
+ #if HIL_MODE == HIL_MODE_ATTITUDE
         // set AHRS hil sensor
         ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
                     packet.pitchspeed,packet.yawspeed);
+ #endif
 
 
 

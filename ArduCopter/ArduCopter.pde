@@ -229,12 +229,6 @@ AP_Compass_HMC5843 compass;
  #endif
  #endif
 
- #if OPTFLOW == ENABLED
-AP_OpticalFlow_ADNS3080 optflow;
- #else
-AP_OpticalFlow optflow;
- #endif
-
 // real GPS selection
  #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
 AP_GPS_Auto     g_gps_driver(&g_gps);
@@ -292,18 +286,19 @@ AP_GPS_HIL              g_gps_driver;
 AP_Compass_HIL          compass;                  // never used
 AP_Baro_BMP085_HIL      barometer;
 
- #if OPTFLOW == ENABLED
-  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_OpticalFlow_ADNS3080 optflow;
-  #else
-AP_OpticalFlow_ADNS3080 optflow;
-  #endif    // CONFIG_HAL_BOARD == HAL_BOARD_APM2
- #endif     // OPTFLOW == ENABLED
-
 static int32_t gps_base_alt;
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
+
+////////////////////////////////////////////////////////////////////////////////
+// Optical flow sensor
+////////////////////////////////////////////////////////////////////////////////
+ #if OPTFLOW == ENABLED
+AP_OpticalFlow_ADNS3080 optflow;
+ #else
+AP_OpticalFlow optflow;
+ #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection

@@ -301,8 +301,7 @@
  # endif
 #else
  # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
- # undef SONAR_ENABLED
- # define SONAR_ENABLED DISABLED
+ # define CONFIG_SONAR DISABLED
 #endif
 
 #ifndef CONFIG_SONAR
