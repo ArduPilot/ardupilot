@@ -74,9 +74,11 @@ test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
 
     echo "Building ArduCopter PX4 binaries"
     pushd ArduCopter
-    make px4-clean
-    make px4
-    copyit $PX4_ROOT/Images/px4fmu.px4 $binaries/Copter/$hdate/PX4
+    for f in quad tri hexa y6 octa octa-quad heli quad-hil heli-hil; do
+      make px4-clean
+      make px4-$f
+      copyit $PX4_ROOT/Images/px4fmu.px4 "$binaries/Copter/$hdate/PX4-$f"
+    done
     popd
 
     echo "Building APMrover2 PX4 binaries"
