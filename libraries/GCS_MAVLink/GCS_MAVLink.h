@@ -147,9 +147,6 @@ static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
 
 uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
 
-// return a MAVLink variable type given a AP_Param type
-uint8_t mav_var_type(enum ap_var_type t);
-
 /**
  * converts an AP_Param according to its type to an (u)int32_t / float and stores the resulting 4-byte variable into the 4-bytes of a float.
  * the chosen MAV_PARAM_TYPE_* (MAV_PARAM_TYPE_INT32, MAV_PARAM_TYPE_UINT32, MAV_PARAM_TYPE_REAL32) is set in the result's type field.

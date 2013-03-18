@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <limits.h> // needed for SCHAR_MIN, SCHAR_MAX, SHRT_MIN, SHRT_MAX
-
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
