@@ -27,6 +27,7 @@ copyit() {
     /bin/cp "$file" "$dir"
     echo "$githash" > "$dir/git-version.txt"
     mkdir -p "$ldir"
+    echo "$githash" > "$ldir/git-version.txt"
     rsync "$file" "$ldir"
 }
 
@@ -42,11 +43,13 @@ popd
 
 echo "Building ArduCopter binaries"
 pushd ArduCopter
-for b in apm1 apm2 apm1-hil apm2-hil; do
+for b in apm1 apm2; do
+for f in quad tri hexa y6 octa octa-quad heli quad-hil heli-hil; do
     pwd
     make clean
-    make $b -j4
-    copyit $TMPDIR/ArduCopter.build/ArduCopter.hex $binaries/Copter/$hdate/$b
+    make "$b-$f" -j4
+    copyit $TMPDIR/ArduCopter.build/ArduCopter.hex "$binaries/Copter/$hdate/$b-$f"
+done
 done
 popd
 
