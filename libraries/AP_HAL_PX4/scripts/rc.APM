@@ -82,7 +82,7 @@ then
 	if [ -f /fs/microsd/APM/fmu_only ]
 	then
 		echo "Setting up PX4FMU direct mode"
-		fmu start mode_pwm
+		fmu mode_pwm
 		if [ $deviceC == /dev/ttyS1 ]
 		then
 			# ttyS1 is used for PWM output when there
