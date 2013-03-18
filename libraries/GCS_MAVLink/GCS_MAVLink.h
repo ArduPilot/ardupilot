@@ -159,6 +159,9 @@ uint8_t mav_var_type(enum ap_var_type t);
  */
 mavlink_param_union_t store_AP_Param_in_float(const AP_Param *ptr, enum ap_var_type type);
 
+
+bool update_AP_Param(AP_Param *ptr, enum ap_var_type ptr_type, float new_val, enum MAV_PARAM_TYPE new_val_type);
+
 // return CRC byte for a mavlink message ID
 uint8_t mavlink_get_message_crc(uint8_t msgid);
 

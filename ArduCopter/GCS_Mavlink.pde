@@ -1812,58 +1812,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         vp = AP_Param::find(key, &var_type);
         if ( vp != NULL ) {
 
-        	bool set_value = false;
+        	if (update_AP_Param(vp, var_type,
+        			packet.param_value, static_cast<enum MAV_PARAM_TYPE>(packet.param_type)) ) {
 
-        	// handle the three valid param_value types (uint32_t, int32_t, float) as described in the parameter protocol "documentation":
-        	// http://qgroundcontrol.org/mavlink/parameter_protocol#supported_data_types
-        	switch (packet.param_type) {
-
-        		// since all integer AP-Params are signed, unsigned parameters are ignored
-				case MAV_PARAM_TYPE_UINT32:
-					break;
-
-				// signed int: must be converted to int8/16/32 according to var_type
-				case MAV_PARAM_TYPE_INT32: {
-
-					mavlink_param_union_t value;
-					value.param_float = packet.param_value;
-
-					switch (var_type) {
-						case AP_PARAM_INT8 : {
-							static_cast<AP_Int8*>(vp)->set_and_save( constrain(value.param_int32, SCHAR_MIN, SCHAR_MAX) );
-							set_value = true;
-							break;
-						}
-						case AP_PARAM_INT16 : {
-							static_cast<AP_Int16*>(vp)->set_and_save( constrain(value.param_int32, SHRT_MIN, SHRT_MAX) );
-							set_value = true;
-							break;
-						}
-						case AP_PARAM_INT32 : {
-							static_cast<AP_Int32*>(vp)->set_and_save( value.param_int32 );
-							set_value = true;
-							break;
-						}
-						// *vp isn't an integer --> discard the received integer parameter
-						default:
-							break;
-					}
-					break;
-				} // END case MAV_PARAM_TYPE_INT32
-
-				case MAV_PARAM_TYPE_REAL32: {
-					if ( !isnan(packet.param_value) && !isinf(packet.param_value) ) {
-						static_cast<AP_Float*>(vp)->set_and_save( packet.param_value );
-						set_value = true;
-					}
-					break;
-				}
-
-				// invalid packet.param_type
-				default:
-					break;
-        	}
-        	if ( set_value ) {
                 // Report back the new value if we accepted the change
                   // we send the value we actually set, which could be
                   // different from the value sent, in case someone sent
