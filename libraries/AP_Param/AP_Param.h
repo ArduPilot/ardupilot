@@ -364,7 +364,7 @@ public:
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator T () const {
         return _value;
     }
 
@@ -377,6 +377,16 @@ public:
     ///
     AP_ParamT<T,PT>& operator= (T v) {
         _value = v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator|= (T v) {
+        _value |= v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator&= (T v) {
+        _value &= v;
         return *this;
     }
 
