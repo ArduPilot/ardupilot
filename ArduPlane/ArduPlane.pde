@@ -52,6 +52,8 @@
 #include <DataFlash.h>
 #include <SITL.h>
 
+#include <MobileDriver.h>
+
 // optional new controller library
 #if APM_CONTROL == ENABLED
 #include <APM_Control.h>
@@ -228,6 +230,10 @@ static bool training_manual_pitch; // user has manual pitch control
 ////////////////////////////////////////////////////////////////////////////////
 GCS_MAVLINK gcs0;
 GCS_MAVLINK gcs3;
+
+#if SERIAL3_MODE == MOBILE
+SIM900Driver mobile;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs

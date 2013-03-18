@@ -22,4 +22,8 @@
  *  //#define HIL_MODE            HIL_MODE_ATTITUDE
  *
  */
-
+// 0:Off. 1:Raw MAVLink. 2:Mobile.
+#define MOBILE 2
+#ifndef SERIAL3_MODE
+ # define SERIAL3_MODE MOBILE
+#endif

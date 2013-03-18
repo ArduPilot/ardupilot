@@ -30,6 +30,7 @@ public:
     int16_t available();
     int16_t txspace();
     int16_t read();
+    int16_t peek();
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -39,4 +40,3 @@ private:
 };
 
 #endif // __AP_HAL_AVR_CONSOLE_DRIVER_H__
-

@@ -778,7 +778,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
 }
 
 void
-GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
+GCS_MAVLINK::init(AP_HAL::BetterStream *port)
 {
     GCS_Class::init(port);
     if (port == (AP_HAL::BetterStream*)hal.uartA) {
@@ -2074,6 +2074,9 @@ static void gcs_data_stream_send(void)
  */
 static void gcs_update(void)
 {
+#if SERIAL3_MODE == MOBILE
+	mobile.task();
+#endif
     gcs0.update();
     if (gcs3.initialised) {
         gcs3.update();

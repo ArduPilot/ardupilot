@@ -9,7 +9,7 @@
 #define LOW 0
 
 /* Forward declarations to avoid broken auto-prototyper (coughs on '::'?) */
-static void run_cli(AP_HAL::UARTDriver *port);
+static void run_cli(AP_HAL::BetterStream *port);
 
 #endif // __COMPAT_H__
 

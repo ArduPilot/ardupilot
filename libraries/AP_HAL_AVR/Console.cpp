@@ -77,6 +77,10 @@ int16_t AVRConsoleDriver::read() {
     return _base_uart->read();
 }
 
+int16_t AVRConsoleDriver::peek() {
+    return _base_uart->peek();
+}
+
 // Print method implementations /////////////////////////////////////////
 
 size_t AVRConsoleDriver::write(uint8_t c) {
