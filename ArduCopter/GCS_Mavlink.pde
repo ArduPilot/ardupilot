@@ -527,7 +527,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     // if we don't have at least 1ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (scheduler.time_available_usec() < 800) {
+    if (scheduler.time_available_usec() < 800 && motors.armed()) {
         gcs_out_of_time = true;
         return false;
     }
@@ -1917,6 +1917,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         ins.set_accel_offsets(accels);
 
+        // approximate a barometer
+        float y;
+        const float Temp = 312;
+
+        y = (packet.alt - 584000.0) / 29271.267;
+        y /= (Temp / 10.0) + 273.15;
+        y = 1.0/exp(y);
+        y *= 95446.0;
+
+        barometer.setHIL(Temp, y);
 
  #if HIL_MODE == HIL_MODE_ATTITUDE
         // set AHRS hil sensor
