@@ -21,27 +21,6 @@ static bool	gcs_out_of_time;
 // prototype this for use inside the GCS class
 static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 
-
-
-// gcs_check_delay - keep GCS communications going
-// in our delay callback
-static void gcs_check_delay()
-{
-    static uint32_t last_1hz, last_50hz;
-
-    uint32_t tnow = millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs_send_heartbeat();
-    }
-    if (tnow - last_50hz > 20) {
-        last_50hz = tnow;
-        gcs_check_input();
-        gcs_data_stream_send();
-        gcs_send_deferred();
-    }
-    }
-
 static void gcs_send_heartbeat(void)
 {
     gcs_send_message(MSG_HEARTBEAT);
