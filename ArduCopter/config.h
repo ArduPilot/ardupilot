@@ -167,10 +167,8 @@
  # define C_LED_PIN        35
  # define LED_ON           HIGH
  # define LED_OFF          LOW
- # define SLIDE_SWITCH_PIN 40
  # define PUSHBUTTON_PIN   41
  # define USB_MUX_PIN      -1
- # define CLI_SLIDER_ENABLED DISABLED
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -179,9 +177,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      23
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
@@ -191,9 +187,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      -1
  # define BATTERY_VOLT_PIN 1      // Battery voltage on A1
  # define BATTERY_CURR_PIN 2      // Battery current on A2
@@ -203,9 +197,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      -1
  # define BATTERY_VOLT_PIN -1
  # define BATTERY_CURR_PIN -1
@@ -216,9 +208,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      -1
  # define BATTERY_VOLT_PIN -1
  # define BATTERY_CURR_PIN -1
@@ -1231,11 +1221,6 @@
  # else
   #  define CLI_ENABLED           ENABLED
  # endif
-#endif
-
-// use this to disable the CLI slider switch
-#ifndef CLI_SLIDER_ENABLED
- # define CLI_SLIDER_ENABLED DISABLED
 #endif
 
 // experimental mpu6000 DMP code

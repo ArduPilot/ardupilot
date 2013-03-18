@@ -30,10 +30,6 @@ apm_option("APM_PROCESSOR" TYPE STRING
     DEFAULT "mega2560"
     OPTIONS "mega" "mega2560")
 
-#apm_option("CLI_SLIDER_ENABLED" TYPE BOOL
-    #DESCRIPTION "Enable command line interface switch?" 
-    #DEFAULT OFF)
-
 apm_option("LOGGING_ENABLED" TYPE BOOL
     DESCRIPTION "Enable logging?" 
     DEFAULT OFF)
