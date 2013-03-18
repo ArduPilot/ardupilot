@@ -50,6 +50,40 @@ uint8_t mav_var_type(enum ap_var_type t)
     return MAVLINK_TYPE_FLOAT;
 }
 
+mavlink_param_union_t store_AP_Param_in_float(const AP_Param *ptr, enum ap_var_type type)
+{
+     mavlink_param_union_t result;
+     switch (type) {
+
+     	// signed integers
+     	case AP_PARAM_INT8:
+     		result.param_int32 = static_cast<const AP_Int8*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_INT32;
+     		break;
+     	case AP_PARAM_INT16:
+     		result.param_int32 = static_cast<const AP_Int16*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_INT32;
+     		break;
+     	case AP_PARAM_INT32:
+     		result.param_int32 = static_cast<const AP_Int32*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_INT32;
+     		break;
+
+     	// float
+     	case AP_PARAM_FLOAT:
+     		result.param_float = static_cast<const AP_Float*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_REAL32;
+     		break;
+
+     	// other parameters are treated as float
+     	default:
+		// const_cast is needed because AP_Param::cast_to_float isn't const-correct
+     		result.param_float = const_cast<AP_Param*>(ptr)->cast_to_float(type);
+     		result.type = MAV_PARAM_TYPE_REAL32;
+     		break;
+     }
+     return result;
+}
 
 /*
   send a buffer out a MAVLink channel
