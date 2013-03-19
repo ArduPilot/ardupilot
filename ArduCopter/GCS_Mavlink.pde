@@ -1907,11 +1907,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         gyros.x = packet.rollspeed;
         gyros.y = packet.pitchspeed;
         gyros.z = packet.yawspeed;
+
         // m/s/s
         Vector3f accels;
-        accels.x = (float)packet.xacc / 1000.0;
-        accels.y = (float)packet.yacc / 1000.0;
-        accels.z = (float)packet.zacc / 1000.0;
+        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
+        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
+        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
 
         ins.set_gyro(gyros);
 
@@ -1985,11 +1986,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         gyros.x = (float)packet.xgyro / 1000.0;
         gyros.y = (float)packet.ygyro / 1000.0;
         gyros.z = (float)packet.zgyro / 1000.0;
+
         // m/s/s
         Vector3f accels;
-        accels.x = (float)packet.xacc / 1000.0;
-        accels.y = (float)packet.yacc / 1000.0;
-        accels.z = (float)packet.zacc / 1000.0;
+        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
+        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
+        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
 
         ins.set_gyro(gyros);
 
