@@ -1913,9 +1913,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         accels.y = (float)packet.yacc / 1000.0;
         accels.z = (float)packet.zacc / 1000.0;
 
-        ins.set_gyro_offsets(gyros);
+        ins.set_gyro(gyros);
 
-        ins.set_accel_offsets(accels);
+        ins.set_accel(accels);
 
         // approximate a barometer
         float y;
@@ -1991,9 +1991,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         accels.y = (float)packet.yacc / 1000.0;
         accels.z = (float)packet.zacc / 1000.0;
 
-        ins.set_gyro_offsets(gyros);
+        ins.set_gyro(gyros);
 
-        ins.set_accel_offsets(accels);
+        ins.set_accel(accels);
 
         compass.setHIL(packet.xmag,packet.ymag,packet.zmag);
         break;
