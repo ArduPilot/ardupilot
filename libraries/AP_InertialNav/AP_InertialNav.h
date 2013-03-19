@@ -43,71 +43,68 @@ public:
         }
 
     // Initialisation
-    virtual void        init();
-
-    // save_params - save all parameters to eeprom
-    virtual void        save_params();
+    void        init();
 
     // update - updates velocities and positions using latest info from accelerometers;
-    virtual void        update(float dt);
+    void        update(float dt);
 
     //
     // XY Axis specific methods
     //
 
     // set time constant - set timeconstant used by complementary filter
-    virtual void        set_time_constant_xy( float time_constant_in_seconds );
+    void        set_time_constant_xy( float time_constant_in_seconds );
 
     // altitude_ok, position_ok - true if inertial based altitude and position can be trusted
-    virtual bool        position_ok();
+    bool        position_ok();
 
     // check_gps - check if new gps readings have arrived and use them to correct position estimates
-    virtual void        check_gps();
+    void        check_gps();
 
     // correct_with_gps - modifies accelerometer offsets using gps.  dt is time since last gps update
-    virtual void        correct_with_gps(int32_t lon, int32_t lat, float dt);
+    void        correct_with_gps(int32_t lon, int32_t lat, float dt);
 
     // get latitude & longitude positions
-    virtual int32_t     get_latitude();
-    virtual int32_t     get_longitude();
+    int32_t     get_latitude();
+    int32_t     get_longitude();
 
     // set_current_position - all internal calculations are recorded as the distances from this point
-    virtual void        set_current_position(int32_t lon, int32_t lat);
+    void        set_current_position(int32_t lon, int32_t lat);
 
     // get latitude & longitude positions from base location (in cm)
-    virtual float       get_latitude_diff();
-    virtual float       get_longitude_diff();
+    float       get_latitude_diff();
+    float       get_longitude_diff();
     
     // get velocity in latitude & longitude directions (in cm/s)
-    virtual float       get_latitude_velocity();
-    virtual float       get_longitude_velocity();
+    float       get_latitude_velocity();
+    float       get_longitude_velocity();
 
     // set velocity in latitude & longitude directions (in cm/s)
-    virtual void        set_velocity_xy(float x, float y);
+    void        set_velocity_xy(float x, float y);
 
     //
     // Z Axis methods
     //
 
     // set time constant - set timeconstant used by complementary filter
-    virtual void        set_time_constant_z( float time_constant_in_seconds );
+    void        set_time_constant_z( float time_constant_in_seconds );
 
     // altitude_ok, position_ok - true if inertial based altitude and position can be trusted
-    virtual bool        altitude_ok() { return true; }
+    bool        altitude_ok() { return true; }
 
     // check_baro - check if new baro readings have arrived and use them to correct vertical accelerometer offsets
-    virtual void        check_baro();
+    void        check_baro();
 
     // correct_with_baro - modifies accelerometer offsets using barometer.  dt is time since last baro reading
-    virtual void        correct_with_baro(float baro_alt, float dt);
+    void        correct_with_baro(float baro_alt, float dt);
 
     // get_altitude - get latest altitude estimate in cm
-    virtual float       get_altitude() { return _position_base.z + _position_correction.z; }
-    virtual void        set_altitude( float new_altitude);
+    float       get_altitude() { return _position_base.z + _position_correction.z; }
+    void        set_altitude( float new_altitude);
 
     // get_velocity_z - get latest climb rate (in cm/s)
-    virtual float       get_velocity_z() { return _velocity.z; }
-    virtual void        set_velocity_z( float new_velocity );
+    float       get_velocity_z() { return _velocity.z; }
+    void        set_velocity_z( float new_velocity );
 
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -117,7 +114,7 @@ public:
 
 protected:
 
-    virtual void            update_gains();             // update_gains - update gains from time constant (given in seconds)
+    void                    update_gains();             // update_gains - update gains from time constant (given in seconds)
 
     AP_AHRS*                _ahrs;                      // pointer to ahrs object
     AP_InertialSensor*      _ins;                       // pointer to inertial sensor

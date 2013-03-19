@@ -31,10 +31,6 @@ void AP_InertialNav::init()
     update_gains();
 }
 
-// save_params - save all parameters to eeprom
-void AP_InertialNav::save_params()
-{}
-
 // update - updates velocities and positions using latest info from ahrs, ins and barometer if new data is available;
 void AP_InertialNav::update(float dt)
 {
