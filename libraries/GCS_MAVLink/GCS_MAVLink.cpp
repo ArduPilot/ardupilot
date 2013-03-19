@@ -93,11 +93,11 @@ bool update_AP_Param(AP_Param *ptr, enum ap_var_type ptr_type, float new_val, en
 
 			switch (ptr_type) {
 				case AP_PARAM_INT8 : {
-					static_cast<AP_Int8*>(ptr)->set_and_save( constrain_int32(value.param_int32, SCHAR_MIN, SCHAR_MAX) );
+					static_cast<AP_Int8*>(ptr)->set_and_save( constrain<int32_t>(value.param_int32, SCHAR_MIN, SCHAR_MAX) );
 					return true;
 				}
 				case AP_PARAM_INT16 : {
-					static_cast<AP_Int16*>(ptr)->set_and_save( constrain_int32(value.param_int32, SHRT_MIN, SHRT_MAX) );
+					static_cast<AP_Int16*>(ptr)->set_and_save( constrain<int32_t>(value.param_int32, SHRT_MIN, SHRT_MAX) );
 					return true;
 				}
 				case AP_PARAM_INT32 : {

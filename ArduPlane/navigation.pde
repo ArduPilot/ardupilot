@@ -119,9 +119,9 @@ static void calc_altitude_error()
 
         // stay within a certain range
         if(prev_WP.alt > next_WP.alt) {
-            target_altitude_cm = constrain_int32(target_altitude_cm, next_WP.alt, prev_WP.alt);
+            target_altitude_cm = constrain<int32_t>(target_altitude_cm, next_WP.alt, prev_WP.alt);
         }else{
-            target_altitude_cm = constrain_int32(target_altitude_cm, prev_WP.alt, next_WP.alt);
+            target_altitude_cm = constrain<int32_t>(target_altitude_cm, prev_WP.alt, next_WP.alt);
         }
     } else if (non_nav_command_ID != MAV_CMD_CONDITION_CHANGE_ALT) {
         target_altitude_cm = next_WP.alt;
@@ -150,11 +150,11 @@ static void update_loiter()
 
     if(wp_distance <= (uint32_t)max(g.loiter_radius,0)) {
         power = float(wp_distance) / float(g.loiter_radius);
-        power = constrain(power, 0.5, 1);
+        power = constrain<float>(power, 0.5, 1);
         nav_bearing_cd += 9000.0 * (2.0 + power) * loiter_direction;
     } else if(wp_distance < (uint32_t)max((g.loiter_radius + LOITER_RANGE),0)) {
         power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
-        power = constrain(power, 0.5, 1);                               //power = constrain(power, 0, 1);
+        power = constrain<float>(power, 0.5, 1);                               //power = constrain<float>(power, 0, 1);
         nav_bearing_cd -= power * 9000 * loiter_direction;
     } else{
         update_crosstrack();
@@ -195,7 +195,7 @@ static void update_crosstrack(void)
         abs(wrap_180_cd(target_bearing_cd - crosstrack_bearing_cd)) < 4500) {
         // Meters we are off track line
         crosstrack_error = sinf(radians((target_bearing_cd - crosstrack_bearing_cd) * 0.01)) * wp_distance;               
-        nav_bearing_cd += constrain_int32(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
+        nav_bearing_cd += constrain<int32_t>(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
         nav_bearing_cd = wrap_360_cd(nav_bearing_cd);
     }
 

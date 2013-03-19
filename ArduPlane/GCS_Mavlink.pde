@@ -385,7 +385,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         aspeed = 0;
     }
     float throttle_norm = g.channel_throttle.norm_output() * 100;
-    throttle_norm = constrain_int16(throttle_norm, -100, 100);
+    throttle_norm = constrain<int16_t>(throttle_norm, -100, 100);
     uint16_t throttle = ((uint16_t)(throttle_norm + 100)) / 2;
     mavlink_msg_vfr_hud_send(
         chan,

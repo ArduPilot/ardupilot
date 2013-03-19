@@ -106,7 +106,7 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 		if (_wind_max > 0 && _gps && _gps->status() == GPS::GPS_OK) {
 			// constrain the airspeed by the ground speed
 			// and AHRS_WIND_MAX
-			*airspeed_ret = constrain(*airspeed_ret, 
+			*airspeed_ret = constrain<float>(*airspeed_ret,
 						  _gps->ground_speed*0.01f - _wind_max, 
 						  _gps->ground_speed*0.01f + _wind_max);
 		}
@@ -119,8 +119,8 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 void AP_AHRS::set_trim(Vector3f new_trim)
 {
     Vector3f trim;
-    trim.x = constrain(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.x = constrain<float>(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain<float>(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
     _trim.set_and_save(trim);
 }
 
@@ -130,8 +130,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     Vector3f trim = _trim.get();
 
     // add new trim
-    trim.x = constrain(trim.x + roll_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain(trim.y + pitch_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.x = constrain<float>(trim.x + roll_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    trim.y = constrain<float>(trim.y + pitch_in_radians, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
 
     // set new trim values
     _trim.set(trim);

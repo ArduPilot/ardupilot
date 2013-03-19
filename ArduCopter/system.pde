@@ -380,7 +380,7 @@ static void set_mode(uint8_t mode)
     }
 
     control_mode 	= mode;
-    control_mode    = constrain(control_mode, 0, NUM_MODES - 1);
+    control_mode    = constrain<int8_t>(control_mode, 0, NUM_MODES - 1);
 
     // used to stop fly_aways
     // set to false if we have low throttle

@@ -309,7 +309,7 @@ static int32_t wrap_180(int32_t error)
 // assumes it is called at 100hz so centi-degrees and update rate cancel each other out
 static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
 {
-    return wrap_360(current_yaw + constrain(wrap_180(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
+    return wrap_360(current_yaw + constrain<int32_t>(wrap_180(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
 }
 
 // valid_waypoint - checks if a waypoint has been initialised or not
@@ -333,8 +333,8 @@ get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
     float z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;    // gravity in cm/s/s
 
     // update angle targets that will be passed to stabilize controller
-    auto_roll = constrain((accel_req_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
-    auto_pitch = constrain((-accel_req_forward/(-z_accel_meas*cos_roll_x))*(18000/M_PI), -4500, 4500);
+    auto_roll = constrain<float>((accel_req_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
+    auto_pitch = constrain<float>((-accel_req_forward/(-z_accel_meas*cos_roll_x))*(18000/M_PI), -4500, 4500);
 }
 
 
@@ -422,7 +422,7 @@ get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_hom
 
     dist_error_total = safe_sqrt(dist_error_lat*dist_error_lat + dist_error_lon*dist_error_lon);
     if( dist_error_total > 2*linear_distance ) {
-        vel_sqrt = constrain(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
+        vel_sqrt = constrain<float>(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
         desired_vel_lat = vel_sqrt * dist_error_lat/dist_error_total;
         desired_vel_lon = vel_sqrt * dist_error_lon/dist_error_total;
     }else{

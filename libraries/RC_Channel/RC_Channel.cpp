@@ -188,7 +188,7 @@ RC_Channel::calc_pwm(void)
         radio_out       = pwm_out + radio_trim;
     }
 
-    radio_out = constrain_int16(radio_out, radio_min.get(), radio_max.get());
+    radio_out = constrain<int16_t>(radio_out, radio_min.get(), radio_max.get());
 }
 
 // ------------------------------------------
@@ -277,7 +277,7 @@ RC_Channel::angle_to_pwm()
 int16_t
 RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
 {
-    int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
+    int16_t r_in = constrain<int16_t>(radio_in, radio_min.get(), radio_max.get());
 
     if (_reverse == -1) {
 	    r_in = radio_max.get() - (r_in - radio_min.get());

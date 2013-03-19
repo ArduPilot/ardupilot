@@ -13,7 +13,7 @@ static void throttle_slew_limit(int16_t last_throttle)
         if (temp < 1) {
             temp = 1;
         }
-        g.channel_throttle.radio_out = constrain_int16(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
+        g.channel_throttle.radio_out = constrain<int16_t>(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
     }
 }
 
@@ -35,7 +35,7 @@ static void calc_throttle(float target_speed)
       SPEED_TURN_GAIN percentage.
     */
     float steer_rate = fabsf((nav_steer/nav_gain_scaler) / (float)SERVO_MAX);
-    steer_rate = constrain(steer_rate, 0.0, 1.0);
+    steer_rate = constrain<float>(steer_rate, 0.0, 1.0);
     float reduction = 1.0 - steer_rate*(100 - g.speed_turn_gain)*0.01;
     
     if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
@@ -57,7 +57,7 @@ static void calc_throttle(float target_speed)
     // much faster response in turns
     throttle *= reduction;
 
-    g.channel_throttle.servo_out = constrain_int16(throttle, g.throttle_min.get(), g.throttle_max.get());
+    g.channel_throttle.servo_out = constrain<int16_t>(throttle, g.throttle_min.get(), g.throttle_max.get());
 }
 
 /*****************************************
@@ -68,7 +68,7 @@ static void calc_nav_steer()
 {
 	// Adjust gain based on ground speed
 	nav_gain_scaler = (float)ground_speed / g.speed_cruise;
-	nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
+	nav_gain_scaler = constrain<float>(nav_gain_scaler, 0.2, 1.4);
 
 	// Calculate the required turn of the wheels rover
 	// ----------------------------------------
@@ -98,7 +98,7 @@ static void set_servos(void)
         g.channel_throttle.radio_out    = hal.rcin->read(CH_THROTTLE);
 	} else {       
         g.channel_steer.calc_pwm();
-		g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
+		g.channel_throttle.servo_out = constrain<int16_t>(g.channel_throttle.servo_out, 
                                                        g.throttle_min.get(), 
                                                        g.throttle_max.get());
         // convert 0 to 100% into PWM
