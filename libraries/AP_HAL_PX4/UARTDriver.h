@@ -73,6 +73,7 @@ private:
     perf_counter_t  _perf_uart;
 
     int _write_fd(const uint8_t *buf, uint16_t n);
+    int _read_fd(uint8_t *buf, uint16_t n);
     uint64_t _last_write_time;
 };
 
