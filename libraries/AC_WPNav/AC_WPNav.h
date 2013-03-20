@@ -20,11 +20,6 @@
 #define WPINAV_MAX_POS_ERROR            2000.0f     // maximum distance (in cm) that the desired track can stray from our current location.
 #define WP_SPEED                        500         // default horizontal speed betwen waypoints in cm/s
 
-// possible states
-#define WPNAV_STATE_INACTIVE    0
-#define WPNAV_STATE_LOITER 	    1
-#define WPNAV_STATE_WPNAV       2
-
 class AC_WPNav
 {
 public:
@@ -36,31 +31,49 @@ public:
     /// simple loiter controller
     ///
 
+    /// get_loiter_target - get loiter target as position vector (from home in cm)
+    Vector3f get_loiter_target() { return _target; }
+
     /// set_loiter_target in cm from home
-    void set_loiter_target(const Vector3f& position);
+    void set_loiter_target(const Vector3f& position) { _target = position; }
 
     /// move_loiter_target - move destination using forward and right velocities in cm/s
     void move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt);
+
+    /// get_distance_to_target - get horizontal distance to loiter target in cm
+    float get_distance_to_target();
+
+    /// get_bearing_to_target - get bearing to loiter target in centi-degrees
+    int32_t get_bearing_to_target();
+
+    /// update_loiter - run the loiter controller - should be called at 10hz
+    void update_loiter();
 
     ///
     /// waypoint navigation
     ///
 
-    /// set_destination with distance from home in cm
+    /// set_destination waypoint using position vector (distance from home in cm)
     void set_destination(const Vector3f& destination);
 
-    /// set_origin_and_destination - set origin and destination using lat/lon coordinates
+    /// set_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
     void set_origin_and_destination(const Vector3f& origin, const Vector3f& destination);
 
     /// advance_target_along_track - move target location along track from origin to destination
     void advance_target_along_track(float velocity_cms, float dt);
 
+    /// get_distance_to_destination - get horizontal distance to destination in cm
+    float get_distance_to_destination();
+
+    /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
+    int32_t get_bearing_to_destination();
+
+    /// update_wp - update waypoint controller
+    void update_wpnav();
+
     ///
     /// shared methods
     ///
-
-    /// update - run the loiter and wpnav controllers - should be called at 10hz
-    void update(void);
 
     /// get desired roll, pitch and altitude which should be fed into stabilize controllers
     int32_t get_desired_roll() { return _desired_roll; };
@@ -92,9 +105,11 @@ protected:
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
     void get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon);
 
-    /// waypoint controller
-    /// get_wpinav_pos - wpinav position controller with desired position held in wpinav_destination
-    void get_wpinav_pos(float dt);
+    /// get_bearing_cd - return bearing in centi-degrees between two positions
+    float get_bearing_cd(const Vector3f origin, const Vector3f destination);
+
+    /// reset_I - clears I terms from loiter PID controller
+    void reset_I();
 
     // pointers to inertial nav library
     AP_InertialNav*	_inav;
@@ -107,23 +122,31 @@ protected:
 
     // parameters
     AP_Float    _speed_cms;         // default horizontal speed in cm/s
-    uint8_t		_state;				// records whether we are loitering or navigating towards a waypoint
     uint32_t	_last_update;		// time of last update call
     float       _cos_yaw;           // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
     float       _cos_roll;
 
     // output from controller
-    int32_t     _desired_roll;
-    int32_t     _desired_pitch;
-    int32_t     _desired_altitude;
+    int32_t     _desired_roll;          // fed to stabilize controllers at 50hz
+    int32_t     _desired_pitch;         // fed to stabilize controllers at 50hz
+    int32_t     _desired_altitude;      // fed to alt hold controller at 50hz
 
+    // internal variables
     Vector3f    _target;   		        // loiter's target location in cm from home
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
     Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
-    Vector3f    _wpinav_target;         // the intermediate target location in cm from home
     Vector3f    _pos_delta;             // position difference between origin and destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
+    float       _distance_to_target;    // distance to loiter target
+
+    // To-Do: add split of fast (100hz for accel->angle) and slow (10hz for navigation)
+    //float       _desired_accel_fwd;     // updated from loiter controller at 10hz, consumed by accel->angle controller at 50hz
+    //float       _desired_accel_rgt;
+    /// update - run the loiter and wpnav controllers - should be called at 100hz
+    //void update_100hz(void);
+    /// update - run the loiter and wpnav controllers - should be called at 10hz
+    //void update_10hz(void);
 };
 #endif	// AC_WPNAV_H

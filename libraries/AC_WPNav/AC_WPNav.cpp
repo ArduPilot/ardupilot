@@ -35,14 +35,6 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
 /// simple loiter controller
 ///
 
-/// set_loiter_target in cm from home
-void AC_WPNav::set_loiter_target(const Vector3f& position)
-{
-    _state = WPNAV_STATE_LOITER;
-    _target = position;
-}
-
-
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
 void AC_WPNav::move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt)
 {
@@ -65,6 +57,35 @@ void AC_WPNav::move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms
     _target.y += vel_lon * dt;
 }
 
+/// get_distance_to_target - get horizontal distance to loiter target in cm
+float AC_WPNav::get_distance_to_target()
+{
+    return _distance_to_target;
+}
+
+/// get_bearing_to_target - get bearing to loiter target in centi-degrees
+int32_t AC_WPNav::get_bearing_to_target()
+{
+    return get_bearing_cd(_inav->get_position(), _target);
+}
+
+/// update_loiter - run the loiter controller - should be called at 10hz
+void AC_WPNav::update_loiter()
+{
+    uint32_t now = hal.scheduler->millis();
+    float dt = now - _last_update;
+    _last_update = now;
+
+    // catch if we've just been started
+    if( dt >= 1.0 ) {
+        dt = 0.0;
+        reset_I();
+    }
+
+    // run loiter position controller
+    get_loiter_pos_lat_lon(_target.x, _target.y, dt);
+}
+
 ///
 /// waypoint navigation
 ///
@@ -78,7 +99,6 @@ void AC_WPNav::set_destination(const Vector3f& destination)
 /// set_origin_and_destination - set origin and destination using lat/lon coordinates
 void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f& destination)
 {
-    _state = WPNAV_STATE_WPNAV;
     _origin = origin;
     _destination = destination;
     _pos_delta = _destination - _origin;
@@ -148,26 +168,43 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     _target.y = _origin.y + _pos_delta.y * track_length_pct;
 }
 
-///
-/// shared methods
-///
-
-/// update - run the loiter and wpnav controllers - should be called at 10hz
-void AC_WPNav::update()
+/// get_distance_to_destination - get horizontal distance to destination in cm
+float AC_WPNav::get_distance_to_destination()
 {
-    float dt = hal.scheduler->millis() - _last_update;
+    // get current location
+    Vector3f curr = _inav->get_position();
+    return pythagorous2(_destination.x-curr.x,_destination.y-curr.y);
+}
 
-    // prevent run up in dt value
-    dt = min(dt, 1.0f);
+/// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
+int32_t AC_WPNav::get_bearing_to_destination()
+{
+    return get_bearing_cd(_inav->get_position(), _destination);
+}
 
-    // advance the target if necessary
-    if( _state == WPNAV_STATE_WPNAV ) {
+/// update_wpnav - run the wp controller - should be called at 10hz
+void AC_WPNav::update_wpnav()
+{
+    uint32_t now = hal.scheduler->millis();
+    float dt = now - _last_update;
+    _last_update = now;
+
+    // catch if we've just been started
+    if( dt >= 1.0 ) {
+        dt = 0.0;
+        reset_I();
+    }else{
+        // advance the target if necessary
         advance_target_along_track(_speed_cms, dt);
     }
 
     // run loiter position controller
     get_loiter_pos_lat_lon(_target.x, _target.y, dt);
 }
+
+///
+/// shared methods
+///
 
 // get_loiter_pos_lat_lon - loiter position controller
 //     converts desired position provided as distance from home in lat/lon directions to desired velocity
@@ -191,6 +228,7 @@ void AC_WPNav::get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t targ
     dist_error_lon = target_lon_from_home - _inav->get_longitude_diff();
 
     linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
+    _distance_to_target = linear_distance;      // for reporting purposes
 
     dist_error_total = safe_sqrt(dist_error_lat*dist_error_lat + dist_error_lon*dist_error_lon);
     if( dist_error_total > 2*linear_distance ) {
@@ -261,6 +299,8 @@ void AC_WPNav::get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
     float accel_forward;
     float accel_right;
 
+    // To-Do: add 1hz filter to accel_lat, accel_lon
+
     // rotate accelerations into body forward-right frame
     accel_forward = accel_lat*_cos_yaw + accel_lon*_sin_yaw;
     accel_right = -accel_lat*_sin_yaw + accel_lon*_cos_yaw;
@@ -268,4 +308,24 @@ void AC_WPNav::get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
     // update angle targets that will be passed to stabilize controller
     _desired_roll = constrain((accel_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
     _desired_pitch = constrain((-accel_forward/(-z_accel_meas*_cos_roll))*(18000/M_PI), -4500, 4500);
+}
+
+// get_bearing_cd - return bearing in centi-degrees between two positions
+// To-Do: move this to math library
+float AC_WPNav::get_bearing_cd(const Vector3f origin, const Vector3f destination)
+{
+    float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * 5729.57795f;
+    if (bearing < 0) {
+        bearing += 36000;
+    }
+    return bearing;
+}
+
+/// reset_I - clears I terms from loiter PID controller
+void AC_WPNav::reset_I()
+{
+    _pid_pos_lon->reset_I();
+    _pid_pos_lat->reset_I();
+    _pid_rate_lon->reset_I();
+    _pid_rate_lat->reset_I();
 }
