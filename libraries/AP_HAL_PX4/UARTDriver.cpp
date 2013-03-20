@@ -44,9 +44,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		}
 
         // always set it non-blocking for the low level IO
-        unsigned v;
-        v = fcntl(_fd, F_GETFL, 0);
-        fcntl(_fd, F_SETFL, v | O_NONBLOCK);
+        fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK);
 
         if (rxS == 0) {
             rxS = 128;
@@ -333,13 +331,36 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     }
 
     if (hrt_absolute_time() - _last_write_time > 2000) {
-        // we haven't done a successful write for 3ms, which means the 
+#if 0
+        // this trick is disabled for now, as it sometimes blocks on
+        // re-opening the ttyACM0 port, which would cause a crash
+        if (hrt_absolute_time() - _last_write_time > 2000000) {
+            // we haven't done a successful write for 2 seconds - try
+            // reopening the port        
+            _initialised = false;
+            ::close(_fd);
+            _fd = ::open(_devpath, O_RDWR | O_NONBLOCK);
+            if (_fd == -1) {
+                fprintf(stdout, "Failed to reopen UART device %s - %s\n",
+                        _devpath, strerror(errno));
+                // leave it uninitialised
+                return n;
+            }
+            
+            // always set it non-blocking for the low level IO
+            fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK);
+            _last_write_time = hrt_absolute_time();
+            _initialised = true;
+        }
+#else
+        _last_write_time = hrt_absolute_time();
+#endif
+        // we haven't done a successful write for 2ms, which means the 
         // port is running at less than 500 bytes/sec. Start
         // discarding bytes, even if this is a blocking port. This
         // prevents the ttyACM0 port blocking startup if the endpoint
         // is not connected
         BUF_ADVANCEHEAD(_writebuf, n);
-        _last_write_time = hrt_absolute_time();
         return n;
     }
     return ret;
