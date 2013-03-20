@@ -427,7 +427,6 @@ static void set_mode(uint8_t mode)
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
         // set yaw to point to center of circle
-        yaw_look_at_WP = circle_WP;
         set_yaw_mode(CIRCLE_YAW);
         set_roll_pitch_mode(CIRCLE_RP);
         set_throttle_mode(CIRCLE_THR);
@@ -527,8 +526,6 @@ static void set_mode(uint8_t mode)
         // We are under manual attitude control
         // remove the navigation from roll and pitch command
         reset_nav_params();
-        // remove the wind compenstaion
-        reset_wind_I();
     }
 
     Log_Write_Mode(control_mode);

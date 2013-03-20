@@ -97,6 +97,7 @@
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
+#include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AP_Limits.h>
 #include <memcheck.h>           // memory limit checker
@@ -572,7 +573,7 @@ LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 ////////////////////////////////////////////////////////////////////////////////
 // used to control the speed of Circle mode in radians/second, default is 5° per second
 static const float circle_rate = 0.0872664625;
-Vector2f circle_center;     // circle position expressed in cm from home location.  x = lat, y = lon
+Vector3f circle_center;     // circle position expressed in cm from home location.  x = lat, y = lon
 // angle from the circle center to the copter's desired location.  Incremented at circle_rate / second
 static float circle_angle;
 // the total angle (in radians) travelled
@@ -583,11 +584,6 @@ static uint8_t circle_desired_rotations;
 static uint16_t loiter_time_max;
 // How long have we been loitering - The start time in millis
 static uint32_t loiter_time;
-// The synthetic location created to make the copter do circles around a WP
-static struct   Location circle_WP;
-// inertial nav loiter variables
-static float loiter_lat_from_home_cm;   // loiter's target latitude in cm from home
-static float loiter_lon_from_home_cm;   // loiter's target longitude in cm from home
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -660,13 +656,6 @@ static int32_t home_distance;
 // distance between plane and next_WP in cm
 // is not static because AP_Camera uses it
 uint32_t wp_distance;
-// wpinav variables
-Vector2f wpinav_origin;         // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
-Vector2f wpinav_destination;    // target destination in cm from home (equivalent to next_WP)
-Vector2f wpinav_target;         // the intermediate target location in cm from home
-Vector2f wpinav_pos_delta;      // position difference between origin and destination
-float wpinav_track_length;      // distance in cm between origin and destination
-float wpinav_track_desired;     // the desired distance along the track in cm
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -705,14 +694,7 @@ static int32_t original_wp_bearing;
 static int32_t nav_roll;
 // The Commanded pitch from the autopilot. negative Pitch means go forward.
 static int32_t nav_pitch;
-// The desired bank towards North (Positive) or South (Negative)
-static int32_t auto_roll;
-static int32_t auto_pitch;
 
-// Don't be fooled by the fact that Pitch is reversed from Roll in its sign!
-static int16_t nav_lat;
-// The desired bank towards East (Positive) or West (Negative)
-static int16_t nav_lon;
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
@@ -742,7 +724,7 @@ static int8_t alt_change_flag;
 static int32_t nav_yaw;
 static uint8_t yaw_timer;
 // Yaw will point at this location if yaw_mode is set to YAW_LOOK_AT_LOCATION
-static struct Location yaw_look_at_WP;
+static Vector3f yaw_look_at_WP;
 // bearing from current location to the yaw_look_at_WP
 static int32_t yaw_look_at_WP_bearing;
 // yaw used for YAW_LOOK_AT_HEADING yaw_mode
@@ -786,6 +768,12 @@ static float G_Dt = 0.02;
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
 AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
+
+////////////////////////////////////////////////////////////////////////////////
+// Waypoint navigation object
+// To-Do: move inertial nav up or other navigation variables down here
+////////////////////////////////////////////////////////////////////////////////
+AC_WPNav wp_nav(&inertial_nav, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid_loiter_rate_lat, &g.pid_loiter_rate_lon);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
@@ -1454,7 +1442,7 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
         case YAW_LOOK_AT_LOCATION:
             if( ap.home_is_set ) {
                 // update bearing - assumes yaw_look_at_WP has been intialised before set_yaw_mode was called
-                yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
+                yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
                 yaw_initialised = true;
             }
             break;
@@ -1654,8 +1642,8 @@ void update_roll_pitch_mode(void)
         control_pitch = g.rc_2.control_in;
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(wp_nav.get_desired_roll()  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(wp_nav.get_desired_pitch() - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1695,12 +1683,12 @@ void update_roll_pitch_mode(void)
 
         // update loiter target from user controls - max velocity is 5.0 m/s
         if( control_roll != 0 || control_pitch != 0 ) {
-            loiter_set_pos_from_velocity(-control_pitch/(2*4.5), control_roll/(2*4.5),0.01f);
+            wp_nav.move_loiter_target(-control_pitch/(2*4.5), control_roll/(2*4.5),0.01f);
         }
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(wp_nav.get_desired_roll()  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(wp_nav.get_desired_pitch() - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
@@ -2031,6 +2019,9 @@ static void update_trig(void){
     // added to convert earth frame to body frame for rate controllers
     sin_pitch       = -temp.c.x;
     sin_roll        = temp.c.y / cos_pitch_x;
+
+    // update wp_nav controller with trig values
+    wp_nav.set_cos_sin_yaw(cos_yaw, sin_yaw, cos_roll_x);
 
     //flat:
     // 0 ° = cos_yaw:  1.00, sin_yaw:  0.00,

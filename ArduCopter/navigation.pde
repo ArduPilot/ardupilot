@@ -56,39 +56,24 @@ static void calc_position(){
 // calc_distance_and_bearing - calculate distance and direction to waypoints for reporting and autopilot decisions
 static void calc_distance_and_bearing()
 {
-    // get current position
-    Vector2f curr_pos(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff());
-    Vector2f dest;
-
+    Vector3f curr = inertial_nav.get_position();
+    
     // get target from loiter or wpinav controller
     if( nav_mode == NAV_LOITER || nav_mode == NAV_CIRCLE ) {
-        dest.x = loiter_lat_from_home_cm;
-        dest.y = loiter_lon_from_home_cm;
+        wp_distance = wp_nav.get_distance_to_target();
+        wp_bearing = wp_nav.get_bearing_to_target();
     }else if( nav_mode == NAV_WP ) {
-        dest.x = wpinav_destination.x;
-        dest.y = wpinav_destination.y;
+        wp_distance = wp_nav.get_distance_to_destination();
+        wp_bearing = wp_nav.get_bearing_to_destination();
     }else{
-        dest = curr_pos;
-    }
-
-    // calculate distance to target
-    lat_error = dest.x - curr_pos.x;
-    lon_error = dest.y - curr_pos.y;
-    wp_distance = safe_sqrt(lat_error*lat_error+lon_error*lon_error);
-
-    // calculate waypoint bearing
-    // To-Do: change this to more efficient calculation
-    if( waypoint_valid(next_WP) ) {
-        wp_bearing  = get_bearing_cd(&current_loc, &next_WP);
-    }else{
+        wp_distance = 0;
         wp_bearing = 0;
     }
 
     // calculate home distance and bearing
     if( ap.home_is_set ) {
-        home_distance = safe_sqrt(curr_pos.x*curr_pos.x + curr_pos.y*curr_pos.y);
-        // To-Do: change this to more efficient calculation
-        home_bearing = get_bearing_cd(&current_loc, &home);
+        home_distance = pythagorous2(curr.x, curr.y);
+        home_bearing = pv_get_bearing_cd(curr,Vector3f(0,0,0));
 
         // update super simple bearing (if required) because it relies on home_bearing
         update_super_simple_bearing();
@@ -99,8 +84,8 @@ static void calc_distance_and_bearing()
 
     // calculate bearing to target (used when yaw_mode = YAW_LOOK_AT_LOCATION)
     // To-Do: move this to the look-at-waypoint yaw controller
-    if( waypoint_valid(yaw_look_at_WP) ) {
-        yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
+    if( yaw_mode == YAW_LOOK_AT_LOCATION ) {
+        yaw_look_at_WP_bearing = pv_get_bearing_cd(curr, yaw_look_at_WP);
     }
 }
 
@@ -143,13 +128,13 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_CIRCLE:
             // set center of circle to current position
-            circle_set_center(Vector2f(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff()), ahrs.yaw);
+            circle_set_center(inertial_nav.get_position(), ahrs.yaw);
             nav_initialised = true;
             break;
 
         case NAV_LOITER:
             // set target to current position
-            loiter_set_target(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff());
+            wp_nav.set_loiter_target(inertial_nav.get_position());
             nav_initialised = true;
             break;
 
@@ -178,19 +163,17 @@ static void update_nav_mode()
 
         case NAV_CIRCLE:
             // call circle controller which in turn calls loiter controller
-            circle_get_pos(dTnav);
+            update_circle(dTnav);
             break;
 
         case NAV_LOITER:
-            get_loiter_pos_lat_lon(loiter_lat_from_home_cm, loiter_lon_from_home_cm, 0.1f);
+            // call loiter controller
+            wp_nav.update_loiter();
             break;
 
         case NAV_WP:
-            // move forward on the waypoint
-            // To-Do: slew up the speed to the max waypoint speed instead of immediately jumping to max
-            wpinav_advance_track_desired(g.waypoint_speed_max, dTnav);
-            // run the navigation controller
-            get_wpinav_pos(dTnav);
+            // call waypoint controller
+            wp_nav.update_wpnav();
             break;
     }
 
@@ -271,12 +254,8 @@ static void reset_nav_params(void)
     // Will be set by nav or loiter controllers
     lon_error                       = 0;
     lat_error                       = 0;
-    nav_lon 						= 0;
-    nav_lat 						= 0;
     nav_roll 						= 0;
     nav_pitch 						= 0;
-    auto_roll 						= 0;
-    auto_pitch 						= 0;
 }
 
 // get_yaw_slew - reduces rate of change of yaw to a maximum
@@ -296,267 +275,6 @@ static bool waypoint_valid(Location &wp)
      }
 }
 
-////////////////////////////////////////////////////
-// Loiter controller using inertial nav
-////////////////////////////////////////////////////
-
-// get_loiter_accel - loiter acceration controllers with desired accelerations provided in forward/right directions in cm/s/s
-static void
-get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
-{
-    float z_accel_meas = -GRAVITY_MSS * 100;    // gravity in cm/s/s
-
-    // update angle targets that will be passed to stabilize controller
-    auto_roll = constrain((accel_req_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
-    auto_pitch = constrain((-accel_req_forward/(-z_accel_meas*cos_roll_x))*(18000/M_PI), -4500, 4500);
-}
-
-
-// get_loiter_accel_lat_lon - loiter acceration controller with desired accelerations provided in lat/lon directions in cm/s/s
-static void
-get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
-{
-    float accel_forward;
-    float accel_right;
-
-    accel_forward = accel_lat*cos_yaw + accel_lon*sin_yaw;
-    accel_right = -accel_lat*sin_yaw + accel_lon*cos_yaw;
-
-    get_loiter_accel(accel_forward, accel_right);
-}
-
-
-// get_loiter_vel_lat_lon - loiter velocity controller with desired velocity provided in lat/lon directions in cm/s
-#define MAX_LOITER_VEL_ACCEL 400        // should be 1.5 times larger than MAX_LOITER_POS_ACCEL
-static void
-get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon, float dt)
-{
-    float speed_error_lat = 0;     // The velocity in cm/s.
-    float speed_error_lon = 0;     // The velocity in cm/s.
-
-    float speed_lat = inertial_nav.get_latitude_velocity();
-    float speed_lon = inertial_nav.get_longitude_velocity();
-
-    int32_t accel_lat;
-    int32_t accel_lon;
-    int32_t accel_total;
-
-    int16_t lat_p,lat_i,lat_d;
-    int16_t lon_p,lon_i,lon_d;
-
-    // calculate vel error
-    speed_error_lat = vel_lat - speed_lat;
-    speed_error_lon = vel_lon - speed_lon;
-
-    lat_p   = g.pid_loiter_rate_lat.get_p(speed_error_lat);
-    lat_i   = g.pid_loiter_rate_lat.get_i(speed_error_lat, dt);
-    lat_d   = g.pid_loiter_rate_lat.get_d(speed_error_lat, dt);
-
-    lon_p   = g.pid_loiter_rate_lon.get_p(speed_error_lon);
-    lon_i   = g.pid_loiter_rate_lon.get_i(speed_error_lon, dt);
-    lon_d   = g.pid_loiter_rate_lon.get_d(speed_error_lon, dt);
-
-    accel_lat = (lat_p+lat_i+lat_d);
-    accel_lon = (lon_p+lon_i+lon_d);
-
-    accel_total = safe_sqrt(accel_lat*accel_lat + accel_lon*accel_lon);
-
-    if( accel_total > MAX_LOITER_VEL_ACCEL ) {
-        accel_lat = MAX_LOITER_VEL_ACCEL * accel_lat/accel_total;
-        accel_lon = MAX_LOITER_VEL_ACCEL * accel_lon/accel_total;
-    }
-
-    get_loiter_accel_lat_lon(accel_lat, accel_lon);
-}
-
-// get_loiter_pos_lat_lon - loiter position controller with desired position provided as distance from home in lat/lon directions in cm
-#define MAX_LOITER_POS_VELOCITY 750     // should be 1.5 ~ 2.0 times the pilot input's max velocity
-#define MAX_LOITER_POS_ACCEL 250
-static void
-get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_home, float dt)
-{
-    float dist_error_lat;
-    int32_t desired_vel_lat;
-
-    float dist_error_lon;
-    int32_t desired_vel_lon;
-
-    int32_t dist_error_total;
-
-    int16_t vel_sqrt;
-    int32_t vel_total;
-
-    int16_t linear_distance;      // the distace we swap between linear and sqrt.
-
-    // calculate distance error
-    Vector3f curr = inertial_nav.get_position();
-    dist_error_lat = target_lat_from_home - curr.x;
-    dist_error_lon = target_lon_from_home - curr.y;
-
-    linear_distance = MAX_LOITER_POS_ACCEL/(2*g.pi_loiter_lat.kP()*g.pi_loiter_lat.kP());
-
-    dist_error_total = safe_sqrt(dist_error_lat*dist_error_lat + dist_error_lon*dist_error_lon);
-    if( dist_error_total > 2*linear_distance ) {
-        vel_sqrt = constrain(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
-        desired_vel_lat = vel_sqrt * dist_error_lat/dist_error_total;
-        desired_vel_lon = vel_sqrt * dist_error_lon/dist_error_total;
-    }else{
-        desired_vel_lat = g.pi_loiter_lat.get_p(dist_error_lat);
-        desired_vel_lon = g.pi_loiter_lon.get_p(dist_error_lon);
-    }
-
-    vel_total = safe_sqrt(desired_vel_lat*desired_vel_lat + desired_vel_lon*desired_vel_lon);
-    if( vel_total > MAX_LOITER_POS_VELOCITY ) {
-        desired_vel_lat = MAX_LOITER_POS_VELOCITY * desired_vel_lat/vel_total;
-        desired_vel_lon = MAX_LOITER_POS_VELOCITY * desired_vel_lon/vel_total;
-    }
-
-    get_loiter_vel_lat_lon(desired_vel_lat, desired_vel_lon, dt);
-}
-
-
-#define MAX_LOITER_POS_VEL_VELOCITY 1000
-// loiter_set_pos_from_velocity - loiter velocity controller with desired velocity provided in front/right directions in cm/s
-static void
-loiter_set_pos_from_velocity(int16_t vel_forward_cms, int16_t vel_right_cms, float dt)
-{
-    int32_t vel_lat;
-    int32_t vel_lon;
-    int32_t vel_total;
-
-    vel_lat = vel_forward_cms*cos_yaw - vel_right_cms*sin_yaw;
-    vel_lon = vel_forward_cms*sin_yaw + vel_right_cms*cos_yaw;
-
-    // constrain the velocity vector and scale if necessary
-    vel_total = safe_sqrt(vel_lat*vel_lat + vel_lon*vel_lon);
-    if( vel_total > MAX_LOITER_POS_VEL_VELOCITY ) {
-        vel_lat = MAX_LOITER_POS_VEL_VELOCITY * vel_lat/vel_total;
-        vel_lon = MAX_LOITER_POS_VEL_VELOCITY * vel_lon/vel_total;
-    }
-
-    // update loiter target position
-    loiter_lat_from_home_cm += vel_lat * dt;
-    loiter_lon_from_home_cm += vel_lon * dt;
-
-    // update next_WP location for reporting purposes
-    set_next_WP_latlon(
-        home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
-        home.lng + loiter_lon_from_home_cm / LATLON_TO_CM * scaleLongUp);
-}
-
-// loiter_set_target - set loiter's target position from home in cm
-// To-Do: change this function to accept a target in lat/lon format (and remove setting of next_WP?)
-static void
-loiter_set_target(float lat_from_home_cm, float lon_from_home_cm)
-{
-    loiter_lat_from_home_cm = lat_from_home_cm;
-    loiter_lon_from_home_cm = lon_from_home_cm;
-
-    // update next_WP location for reporting purposes
-    set_next_WP_latlon(
-        home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
-        home.lng + loiter_lon_from_home_cm / LATLON_TO_CM * scaleLongUp);
-}
-
-//////////////////////////////////////////////////////////
-// waypoint inertial navigation controller
-//////////////////////////////////////////////////////////
-// Waypoint navigation is accomplished by moving the target location up to a maximum of 10m from the current location
-
-// get_wpinav_pos - wpinav position controller with desired position held in wpinav_destination
-static void
-get_wpinav_pos(float dt)
-{
-    // re-use loiter position controller
-    get_loiter_pos_lat_lon(wpinav_target.x, wpinav_target.y, dt);
-}
-
-// wpinav_set_destination - set destination using lat/lon coordinates
-void wpinav_set_destination(const Location& destination)
-{
-    wpinav_set_origin_and_destination(current_loc, destination);
-}
-
-// wpinav_set_origin_and_destination - set origin and destination using lat/lon coordinates
-void wpinav_set_origin_and_destination(const Location& origin, const Location& destination)
-{
-    wpinav_origin.x = (origin.lat-home.lat) * LATLON_TO_CM;
-    wpinav_origin.y = (origin.lng-home.lng) * LATLON_TO_CM * scaleLongDown;
-    wpinav_destination.x = (destination.lat-home.lat) * LATLON_TO_CM;
-    wpinav_destination.y = (destination.lng-home.lng) * LATLON_TO_CM * scaleLongDown;
-    wpinav_pos_delta = wpinav_destination - wpinav_origin;
-    wpinav_track_length = wpinav_pos_delta.length();
-    wpinav_track_desired = 0;
-
-    // set next_WP, prev_WP for reporting purposes
-    // To-Do: move calcs below to a function
-    set_next_WP_latlon(
-        home.lat + wpinav_destination.x / LATLON_TO_CM,
-        home.lng + wpinav_destination.y / LATLON_TO_CM * scaleLongUp);
-}
-
-#define WPINAV_MAX_POS_ERROR 2000.0f        // maximum distance (in cm) that the desired track can stray from our current location.
-void
-wpinav_advance_track_desired(float velocity_cms, float dt)
-{
-    float cross_track_dist;
-    float track_covered;
-    float track_desired_max;
-    float line_a, line_b, line_c, line_m;
-
-    // get current location
-    Vector2f curr(inertial_nav.get_latitude_diff(), inertial_nav.get_longitude_diff());
-
-    // check for zero length segment
-    if( wpinav_pos_delta.x == 0 && wpinav_pos_delta.y == 0) {
-        wpinav_target = wpinav_destination;
-        return;
-    }
-
-    if( wpinav_pos_delta.x == 0 ) {
-        // x is zero
-        cross_track_dist = fabs(curr.x - wpinav_destination.x);
-        track_covered = fabs(curr.y - wpinav_origin.y);
-    }else if(wpinav_pos_delta.y == 0) {
-        // y is zero
-        cross_track_dist = fabs(curr.y - wpinav_destination.y);
-        track_covered = fabs(curr.x - wpinav_origin.x);
-    }else{
-        // both x and y non zero
-        line_a = wpinav_pos_delta.y;
-        line_b = -wpinav_pos_delta.x;
-        line_c = wpinav_pos_delta.x * wpinav_origin.y - wpinav_pos_delta.y * wpinav_origin.x;
-        line_m = line_a / line_b;
-        cross_track_dist = abs(line_a * curr.x + line_b * curr.y + line_c ) / wpinav_track_length;
-
-        line_m = 1/line_m;
-        line_a = line_m;
-        line_b = -1;
-        line_c = curr.y - line_m * curr.x;
-
-        // calculate the distance to the closest point along the track and it's distance from the origin
-        track_covered = abs(line_a*wpinav_origin.x + line_b*wpinav_origin.y + line_c) / safe_sqrt(line_a*line_a+line_b*line_b);
-    }
-
-    // maximum distance along the track that we will allow (stops target point from getting too far from the current position)
-    track_desired_max = track_covered + safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR-cross_track_dist*cross_track_dist);
-
-    // advance the current target
-    wpinav_track_desired += velocity_cms * dt;
-
-    // constrain the target from moving too far
-    if( wpinav_track_desired > track_desired_max ) {
-        wpinav_track_desired = track_desired_max;
-    }
-    if( wpinav_track_desired > wpinav_track_length ) {
-        wpinav_track_desired = wpinav_track_length;
-    }
-
-    // recalculate the desired position
-    float track_length_pct = wpinav_track_desired/wpinav_track_length;
-    wpinav_target.x = wpinav_origin.x + wpinav_pos_delta.x * track_length_pct;
-    wpinav_target.y = wpinav_origin.y + wpinav_pos_delta.y * track_length_pct;
-}
 
 //////////////////////////////////////////////////////////
 // circle navigation controller
@@ -564,7 +282,7 @@ wpinav_advance_track_desired(float velocity_cms, float dt)
 
 // circle_set_center -- set circle controller's center position and starting angle
 static void
-circle_set_center(const Vector2f pos_vec, float heading_in_radians)
+circle_set_center(const Vector3f pos_vec, float heading_in_radians)
 {
     // set circle center
     circle_center = pos_vec;
@@ -584,11 +302,11 @@ circle_set_center(const Vector2f pos_vec, float heading_in_radians)
 
 // circle_get_pos - circle position controller's main call which in turn calls loiter controller with updated target position
 static void
-circle_get_pos(float dt)
+update_circle(float dt)
 {
     float angle_delta = circle_rate * dt;
     float cir_radius = g.circle_radius * 100;
-    Vector2f circle_target;
+    Vector3f circle_target;
 
     // update the target angle
     circle_angle += angle_delta;
@@ -607,5 +325,8 @@ circle_get_pos(float dt)
     circle_target.y = circle_center.y + cir_radius * cosf(1.57f - circle_angle);
 
     // re-use loiter position controller
-    get_loiter_pos_lat_lon(circle_target.x, circle_target.y, dt);
+    wp_nav.set_loiter_target(circle_target);
+
+    // call loiter controller
+    wp_nav.update_loiter();
 }

@@ -273,8 +273,8 @@ static void do_nav_wp()
     // set nav mode
     set_nav_mode(NAV_WP);
 
-    // Set inav navigation target
-    wpinav_set_destination(command_nav_queue);
+    // Set wp navigation target
+    wp_nav.set_destination(pv_location_to_vector(command_nav_queue));
 
     // this is our bitmask to verify we have met all conditions to move on
     wp_verify_byte  = 0;
@@ -340,7 +340,7 @@ static void do_loiter_unlimited()
         // location specified so fly to the target location
         set_nav_mode(NAV_WP);
         // Set inav navigation target
-        wpinav_set_destination(command_nav_queue);
+        wp_nav.set_destination(pv_location_to_vector(command_nav_queue));
     }
 
 }
@@ -364,12 +364,11 @@ static void do_circle()
 
     // override default horizontal location target
     if( command_nav_queue.lat != 0 || command_nav_queue.lng != 0) {
-        circle_set_center(pv_latlon_to_vector(command_nav_queue.lat, command_nav_queue.lng), ahrs.yaw);
+        circle_set_center(pv_location_to_vector(command_nav_queue), ahrs.yaw);
     }
 
     // set yaw to point to center of circle
-    circle_WP = next_WP;
-    yaw_look_at_WP = circle_WP;
+    yaw_look_at_WP = circle_center;
     set_yaw_mode(CIRCLE_YAW);
 
     // set angle travelled so far to zero
@@ -401,8 +400,8 @@ static void do_loiter_time()
     }else{
         // location specified so fly to the target location
         set_nav_mode(NAV_WP);
-        // Set inav navigation target
-        wpinav_set_destination(command_nav_queue);
+        // Set wp navigation target
+        wp_nav.set_destination(pv_location_to_vector(command_nav_queue));
     }
 
     loiter_time_max = command_nav_queue.p1 * 1000;     // units are (seconds)
@@ -518,12 +517,13 @@ static bool verify_RTL()
             // rely on verify_altitude function to update alt_change_flag when we've reached the target
             if(alt_change_flag == REACHED_ALT || alt_change_flag == DESCENDING) {
                 // override target altitude to RTL altitude
+                // To-Do: figure out if we want wp_nav to be responsible for altitude
                 set_new_altitude(get_RTL_alt());
 
                 // set navigation mode
                 set_nav_mode(NAV_WP);
-                // Set inav navigation target to home
-                wpinav_set_destination(home);
+                // Set wp navigation target to above home
+                wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
 
                 // set yaw mode
                 set_yaw_mode(RTL_YAW);
@@ -575,8 +575,8 @@ static bool verify_RTL()
             if(current_loc.alt <= g.rtl_alt_final || alt_change_flag == REACHED_ALT) {
                 // switch to regular loiter mode
                 set_mode(LOITER);
-                // set loiter target to home position
-                loiter_set_target(0,0);
+                // set loiter target to home position (note altitude is actually ignored)
+                wp_nav.set_loiter_target(Vector3f(0,0,g.rtl_alt_final));
                 // override altitude to RTL altitude
                 set_new_altitude(g.rtl_alt_final);
                 retval = true;
@@ -889,7 +889,7 @@ static void do_nav_roi()
 
     // check if mount type requires us to rotate the quad
     if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
-        yaw_look_at_WP = command_nav_queue;
+        yaw_look_at_WP = pv_location_to_vector(command_nav_queue);
         set_yaw_mode(YAW_LOOK_AT_LOCATION);
     }
     // send the command to the camera mount
@@ -903,7 +903,7 @@ static void do_nav_roi()
     //		4: point at a target given a target id (can't be implmented)
 #else
     // if we have no camera mount aim the quad at the location
-    yaw_look_at_WP = command_nav_queue;
+    yaw_look_at_WP = pv_location_to_vector(command_nav_queue);
     set_yaw_mode(YAW_LOOK_AT_LOCATION);
 #endif
 }
