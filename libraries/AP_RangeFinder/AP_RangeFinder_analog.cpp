@@ -63,6 +63,12 @@ const AP_Param::GroupInfo AP_RangeFinder_analog::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("MAX_CM",  5, AP_RangeFinder_analog, _max_distance_cm, 700),
 
+    // @Param: ENABLE
+    // @DisplayName: Sonar enabled
+    // @Description: set to 1 to enable this sonar
+	// @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("ENABLE",  6, AP_RangeFinder_analog, _enabled, 0),
+
     AP_GROUPEND
 };
 
@@ -81,6 +87,9 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(void)
 */
 void AP_RangeFinder_analog::Init(void *adc)
 {
+   if (!_enabled) {
+	  return;
+   }
    if (_source != NULL) {
 	  return;
    }
@@ -100,8 +109,11 @@ void AP_RangeFinder_analog::Init(void *adc)
  */
 float AP_RangeFinder_analog::voltage(void)
 {
+   if (!_enabled) {
+	  return 0.0f;
+   }
    if (_source == NULL) {
-	  return 0.0;
+	  return 0.0f;
    }
    // check for pin changes
    if (_last_pin != 127 && _last_pin != _pin) {
@@ -116,6 +128,10 @@ float AP_RangeFinder_analog::voltage(void)
  */
 float AP_RangeFinder_analog::distance_cm(void)
 {
+   if (!_enabled) {
+	  return 0.0f;
+   }
+
    /* first convert to volts */
    float v = voltage();
    float dist_m = 0;
@@ -150,6 +166,9 @@ float AP_RangeFinder_analog::distance_cm(void)
  */
 bool AP_RangeFinder_analog::in_range(void)
 {
+   if (!_enabled) {
+	  return false;
+   }
    float dist_cm = distance_cm();
    if (dist_cm >= _max_distance_cm) {
 	  return false;
