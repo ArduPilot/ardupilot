@@ -25,7 +25,7 @@ class AC_WPNav
 public:
 
     /// Constructor
-    AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_lat_rate, AC_PID* pid_lon_rate);
+    AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon);
 
     ///
     /// simple loiter controller

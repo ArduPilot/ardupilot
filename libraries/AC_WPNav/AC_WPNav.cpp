@@ -21,12 +21,12 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_lat_rate, AC_PID* pid_lon_rate) :
+AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon) :
     _inav(inav),
     _pid_pos_lat(pid_pos_lat),
     _pid_pos_lon(pid_pos_lon),
-    _pid_rate_lat(pid_lat_rate),
-    _pid_rate_lon(pid_lon_rate)
+    _pid_rate_lat(pid_rate_lat),
+    _pid_rate_lon(pid_rate_lon)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -73,7 +73,7 @@ int32_t AC_WPNav::get_bearing_to_target()
 void AC_WPNav::update_loiter()
 {
     uint32_t now = hal.scheduler->millis();
-    float dt = now - _last_update;
+    float dt = (now - _last_update) / 1000.0f;
     _last_update = now;
 
     // catch if we've just been started
@@ -186,7 +186,7 @@ int32_t AC_WPNav::get_bearing_to_destination()
 void AC_WPNav::update_wpnav()
 {
     uint32_t now = hal.scheduler->millis();
-    float dt = now - _last_update;
+    float dt = (now - _last_update) / 1000.0f;
     _last_update = now;
 
     // catch if we've just been started
