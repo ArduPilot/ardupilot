@@ -60,6 +60,12 @@ static void run_cli(AP_HAL::UARTDriver *port)
     // disable main_loop failsafe
     failsafe_disable();
 
+    // cut the engines
+    if(motors.armed()) {
+        motors.armed(false);
+        motors.output();
+    }
+    
     while (1) {
         main_menu.run();
     }
