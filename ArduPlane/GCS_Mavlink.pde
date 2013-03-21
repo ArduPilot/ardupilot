@@ -809,7 +809,7 @@ GCS_MAVLINK::update(void)
 #if CLI_ENABLED == ENABLED
         /* allow CLI to be started by hitting enter 3 times, if no
          *  heartbeat packets have been received */
-        if (mavlink_active == 0 && (millis() - _cli_timeout) < 30000) {
+        if (mavlink_active == 0 && (millis() - _cli_timeout) < 20000) {
             if (c == '\n' || c == '\r') {
                 crlf_count++;
             } else {
