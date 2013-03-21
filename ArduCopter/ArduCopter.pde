@@ -668,14 +668,10 @@ static struct   Location home;
 static struct   Location current_loc;
 // Next WP is the desired location of the copter - the next waypoint or loiter location
 static struct   Location next_WP;
-// Prev WP is used to get the optimum path from one WP to the next
-static struct   Location prev_WP;
 // Holds the current loaded command from the EEPROM for navigation
 static struct   Location command_nav_queue;
 // Holds the current loaded command from the EEPROM for conditional scripts
 static struct   Location command_cond_queue;
-// Holds the current loaded command from the EEPROM for guided mode
-static struct   Location guided_WP;
 
 
 ////////////////////////////////////////////////////////////////////////////////

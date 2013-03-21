@@ -113,63 +113,6 @@ static int32_t get_RTL_alt()
     }
 }
 
-
-//********************************************************************************
-// This function sets the waypoint and modes for Return to Launch
-// It's not currently used
-//********************************************************************************
-
-/*
- *  This function sets the next waypoint command
- *  It precalculates all the necessary stuff.
- */
-
-static void set_next_WP(const struct Location *wp)
-{
-    // copy the current WP into the OldWP slot
-    // ---------------------------------------
-    if (next_WP.lat == 0 || command_nav_index <= 1) {
-        prev_WP = current_loc;
-    }else{
-        if (get_distance_cm(&current_loc, &next_WP) < 500)
-            prev_WP = next_WP;
-        else
-            prev_WP = current_loc;
-    }
-
-    // Load the next_WP slot
-    // ---------------------
-    next_WP.options = wp->options;
-    next_WP.lat = wp->lat;
-    next_WP.lng = wp->lng;
-
-    // Set new target altitude so we can track it for climb_rate
-    // To-Do: remove the restriction on negative altitude targets (after testing)
-    set_new_altitude(max(wp->alt,100));
-
-    // recalculate waypoint distance and bearing
-    wp_distance             = get_distance_cm(&current_loc, &next_WP);
-    wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
-    original_wp_bearing     = wp_bearing;       // to check if we have missed the WP
-}
-
-// set_next_WP_latlon - update just lat and lon targets for nav controllers
-static void set_next_WP_latlon(uint32_t lat, uint32_t lon)
-{
-    // save current location as previous location
-    prev_WP = current_loc;
-
-    // Load the next_WP slot
-    next_WP.lat = lat;
-    next_WP.lng = lon;
-
-    // recalculate waypoint distance and bearing
-    // To-Do: these functions are too expensive to be called every time we update the next_WP
-    wp_distance             = get_distance_cm(&current_loc, &next_WP);
-    wp_bearing              = get_bearing_cd(&prev_WP, &next_WP);
-    original_wp_bearing     = wp_bearing;       // to check if we have missed the WP
-}
-
 // run this at setup on the ground
 // -------------------------------
 static void init_home()
@@ -194,14 +137,6 @@ static void init_home()
     // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
     scaleLongDown = longitude_scale(&home);
     scaleLongUp   = 1.0f/scaleLongDown;
-
-    // Save prev loc this makes the calcs look better before commands are loaded
-    prev_WP = home;
-
-    // Load home for a default guided_WP
-    // -------------
-    guided_WP = home;
-    guided_WP.alt += g.rtl_altitude;
 }
 
 

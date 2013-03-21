@@ -98,11 +98,8 @@ static void run_autopilot()
             verify_commands();
             break;
         case GUIDED:
-            // switch to loiter once we've reached the target location and altitude
-            // To-Do: this incorrectly checks verify_nav_wp even though the nav mode may be NAV_LOITER
-            if(verify_nav_wp()) {
-                set_nav_mode(NAV_LOITER);
-            }
+            // no need to do anything - wp_nav should take care of getting us to the desired location
+            break;
         case RTL:
             verify_RTL();
             break;

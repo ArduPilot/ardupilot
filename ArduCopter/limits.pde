@@ -30,12 +30,13 @@ void set_recovery_home_alt() {
     if ((return_altitude_cm_ahl - (uint32_t) home.alt) < 400) {
         return_altitude_cm_ahl = home.alt + 400;
     }
-    guided_WP.id = 0;
-    guided_WP.p1 = 0;
-    guided_WP.options = 0;
-    guided_WP.lat = home.lat;
-    guided_WP.lng = home.lng;
-    guided_WP.alt = return_altitude_cm_ahl;
+    // To-Do: ensure target is fed into wp_nav controller.  Note this function is currently not called
+    //guided_WP.id = 0;
+    //guided_WP.p1 = 0;
+    //guided_WP.options = 0;
+    //guided_WP.lat = home.lat;
+    //guided_WP.lng = home.lng;
+    //guided_WP.alt = return_altitude_cm_ahl;
 }
 
 static void limits_loop() {

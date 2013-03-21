@@ -1695,14 +1695,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         if(packet.current == 2) {                                               //current = 2 is a flag to tell us this is a "guided mode" waypoint and not for the mission
-            guided_WP = tell_command;
-
-            // add home alt if needed
-            if (guided_WP.options & MASK_OPTIONS_RELATIVE_ALT) {
-                guided_WP.alt += home.alt;
-            }
-
+            // switch to guided mode
             set_mode(GUIDED);
+
+            // set wp_nav's destination
+            wp_nav.set_destination(pv_location_to_vector(tell_command));
+
+            // set altitude target
+            set_new_altitude(tell_command.alt);
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(

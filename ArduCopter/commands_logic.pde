@@ -276,6 +276,10 @@ static void do_nav_wp()
     // Set wp navigation target
     wp_nav.set_destination(pv_location_to_vector(command_nav_queue));
 
+    // initialise original_wp_bearing which is used to check if we have missed the waypoint
+    wp_bearing = wp_nav.get_bearing_to_destination();
+    original_wp_bearing = wp_bearing;
+
     // this is our bitmask to verify we have met all conditions to move on
     wp_verify_byte  = 0;
 
@@ -555,8 +559,7 @@ static bool verify_RTL()
                     // land
                     do_land();
                     // override landing location (do_land defaults to current location)
-                    // To-do: ensure this location override is being sent to inav loiter controller
-                    set_next_WP_latlon(home.lat, home.lng);
+                    wp_nav.set_loiter_target(Vector3f(0,0,0));
                     // update RTL state
                     rtl_state = RTL_STATE_LAND;
                 }else{

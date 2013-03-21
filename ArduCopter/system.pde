@@ -439,7 +439,6 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(LOITER_YAW);
         set_roll_pitch_mode(LOITER_RP);
         set_throttle_mode(LOITER_THR);
-        set_next_WP(&current_loc);
         set_nav_mode(LOITER_NAV);
         break;
 
@@ -449,7 +448,6 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(POSITION_YAW);
         set_roll_pitch_mode(POSITION_RP);
         set_throttle_mode(POSITION_THR);
-        set_next_WP(&current_loc);
         set_nav_mode(POSITION_NAV);
         break;
 
@@ -460,9 +458,6 @@ static void set_mode(uint8_t mode)
         set_roll_pitch_mode(GUIDED_RP);
         set_throttle_mode(GUIDED_THR);
         set_nav_mode(GUIDED_NAV);
-        wp_verify_byte = 0;
-        guided_WP = current_loc;
-        set_next_WP(&guided_WP);
         break;
 
     case LAND:
@@ -491,7 +486,6 @@ static void set_mode(uint8_t mode)
         set_roll_pitch_mode(OF_LOITER_RP);
         set_throttle_mode(OF_LOITER_THR);
         set_nav_mode(OF_LOITER_NAV);
-        set_next_WP(&current_loc);
         break;
 
     // THOR
