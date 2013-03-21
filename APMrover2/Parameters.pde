@@ -256,13 +256,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
 
-	// @Param: SONAR_ENABLE
-	// @DisplayName: Enable Sonar
-	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Standard
-	GSCALAR(sonar_enabled,	    "SONAR_ENABLE",     SONAR_ENABLED),
-
 	// @Param: SONAR_TRIGGER_CM
 	// @DisplayName: Sonar trigger distance
 	// @Description: The distance from an obstacle at which the sonar triggers a turn to avoid the obstacle

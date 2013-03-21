@@ -99,7 +99,7 @@ public:
         k_param_fs_gcs_enabled,
 
         // obstacle control
-        k_param_sonar_enabled = 190,
+        k_param_sonar_enabled = 190, // deprecated, can be removed
         k_param_sonar, // sonar object
         k_param_sonar_trigger_cm,
         k_param_sonar_turn_angle,
@@ -205,7 +205,6 @@ public:
 	AP_Int8	    fs_gcs_enabled;
 
     // obstacle control
-    AP_Int8	    sonar_enabled;
     AP_Int16    sonar_trigger_cm;
     AP_Float    sonar_turn_angle;
     AP_Float    sonar_turn_time;

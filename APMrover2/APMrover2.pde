@@ -624,7 +624,7 @@ static void fast_loop()
 
 	// Read Sonar
 	// ----------
-	if (g.sonar_enabled) {
+	if (sonar.enabled()) {
 		float sonar_dist_cm = sonar.distance_cm();
         if (sonar_dist_cm <= g.sonar_trigger_cm)  {
             // obstacle detected in front 

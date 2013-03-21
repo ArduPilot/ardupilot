@@ -550,7 +550,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
-    if (!g.sonar_enabled) {
+    if (!sonar.enabled()) {
         cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
     }
 
