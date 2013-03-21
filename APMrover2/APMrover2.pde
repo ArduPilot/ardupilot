@@ -369,12 +369,13 @@ static uint8_t receiver_rssi;
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
 
-// Set to true when an obstacle is detected
-static bool obstacle = false;
-
-// time when we last detected an obstacle, in milliseconds
-static uint32_t obstacle_detected_time_ms;
-
+// obstacle detection information
+static struct {
+    // have we detected an obstacle?
+    bool detected;
+    // time when we last detected an obstacle, in milliseconds
+    uint32_t detected_time_ms;
+} obstacle;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
@@ -627,15 +628,15 @@ static void fast_loop()
 		float sonar_dist_cm = sonar.distance_cm();
         if (sonar_dist_cm <= g.sonar_trigger_cm)  {
             // obstacle detected in front 
-            obstacle = true;
-            obstacle_detected_time_ms = hal.scheduler->millis();
-        } else if (obstacle == true && 
-                   hal.scheduler->millis() > obstacle_detected_time_ms + g.sonar_turn_time*1000) { 
-            obstacle = false;
+            obstacle.detected = true;
+            obstacle.detected_time_ms = hal.scheduler->millis();
+        } else if (obstacle.detected == true && 
+                   hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+            obstacle.detected = false;
         }
 	} else {
         // this makes it possible to disable sonar at runtime
-        obstacle = false;
+        obstacle.detected = false;
     }
 
 	// uses the yaw from the DCM to give more accurate turns
