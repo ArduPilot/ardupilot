@@ -3,7 +3,6 @@
 # APM startup script for NuttX on PX4
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
-# To disable use of a PX4IO board add a file /fs/microsd/APM/fmu_only
 
 set deviceA /dev/ttyACM0
 set deviceC /dev/ttyS1
@@ -53,6 +52,7 @@ then
 	then
 	     echo "Created APM directory"
 	fi
+
 	if [ -f /fs/microsd/px4io.bin ]
 	then
 	   echo "Checking for new px4io firmware"
@@ -79,8 +79,16 @@ then
 	hmc5883 start
 	adc start
 
-	if [ -f /fs/microsd/APM/fmu_only ]
+	echo "Trying PX4IO board"
+	if px4io start
 	then
+		echo "PX4IO board OK"
+		echo "Loading FMU_pass mixer"
+		mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
+		echo "Setting FMU mode_serial"
+		fmu mode_serial
+	else
+		echo "No PX4IO board found"
 		echo "Setting up PX4FMU direct mode"
 		fmu mode_pwm
 		if [ $deviceC == /dev/ttyS1 ]
@@ -89,13 +97,6 @@ then
 			# is no IO board
 			set deviceC /dev/ttyS2
 		fi
-	else
-		echo "Setting up PX4IO board"
-		px4io start
-		echo "Loading FMU_pass mixer"
-		mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
-		echo "Setting FMU mode_serial"
-		fmu mode_serial
 	fi
 
 	echo Starting $sketch
