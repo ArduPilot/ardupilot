@@ -505,7 +505,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while(1) {
-        delay(333);
+        delay(100);
 
         // Blink GPS LED if we don't have a fix
         // ------------------------------------
