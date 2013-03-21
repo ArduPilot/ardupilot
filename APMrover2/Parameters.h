@@ -104,6 +104,7 @@ public:
         k_param_sonar_trigger_cm,
         k_param_sonar_turn_angle,
         k_param_sonar_turn_time,
+        k_param_sonar2, // sonar2 object
         
         //
         // 210: driving modes

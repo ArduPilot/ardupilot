@@ -239,6 +239,7 @@ AP_HAL::AnalogSource * batt_curr_pin;
 ////////////////////////////////////////////////////////////////////////////////
 //
 static AP_RangeFinder_analog sonar;
+static AP_RangeFinder_analog sonar2;
 
 // relay support
 AP_Relay relay;
@@ -373,6 +374,8 @@ static uint32_t last_heartbeat_ms;
 static struct {
     // have we detected an obstacle?
     bool detected;
+    float turn_angle;
+
     // time when we last detected an obstacle, in milliseconds
     uint32_t detected_time_ms;
 } obstacle;
@@ -622,22 +625,7 @@ static void fast_loop()
 
 	ahrs.update();
 
-	// Read Sonar
-	// ----------
-	if (sonar.enabled()) {
-		float sonar_dist_cm = sonar.distance_cm();
-        if (sonar_dist_cm <= g.sonar_trigger_cm)  {
-            // obstacle detected in front 
-            obstacle.detected = true;
-            obstacle.detected_time_ms = hal.scheduler->millis();
-        } else if (obstacle.detected == true && 
-                   hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
-            obstacle.detected = false;
-        }
-	} else {
-        // this makes it possible to disable sonar at runtime
-        obstacle.detected = false;
-    }
+    read_sonars();
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();

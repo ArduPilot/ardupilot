@@ -78,7 +78,7 @@ static void calc_nav_steer()
 	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
 
     if (obstacle.detected) {  // obstacle avoidance 
-	    nav_steer += g.sonar_turn_angle*100;
+	    nav_steer += obstacle.turn_angle*100;
     }
 
     g.channel_steer.servo_out = nav_steer;
