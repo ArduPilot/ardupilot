@@ -69,6 +69,8 @@ public:
         k_param_speed_turn_gain,
         k_param_speed_turn_dist,
         k_param_ch7_option,
+        k_param_auto_trigger_pin,
+        k_param_auto_kickstart,
 
         //
         // 160: Radio settings
@@ -178,6 +180,8 @@ public:
     AP_Int8     speed_turn_gain;
     AP_Float    speed_turn_dist;    
     AP_Int8	    ch7_option;
+    AP_Int8     auto_trigger_pin;
+    AP_Float    auto_kickstart;
 
     // RC channels
     RC_Channel      channel_steer;

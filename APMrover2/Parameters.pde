@@ -129,6 +129,22 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
+	// @Param: AUTO_TRIGGER_PIN
+	// @DisplayName: Auto mode trigger pin
+	// @Description: pin number to use to trigger start of auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will start the motor.
+	// @Values: -1:Disabled,0-9:TiggerPin
+	// @User: standard
+	GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
+
+	// @Param: AUTO_KICKSTART
+	// @DisplayName: Auto mode trigger kickstart acceleration
+	// @Description: X acceleration in meters/second/second to use to trigger start of auto mode. If set to zero then auto starts immediately, otherwise the rover waits for the X acceleration to go above this value before it will start the motor
+	// Units: m/s/s
+	// @Range: 0 20
+	// Increment: 0.1
+	// @User: standard
+	GSCALAR(auto_kickstart,          "AUTO_KICKSTART", 0.0f),
+
     // @Param: CRUISE_SPEED
     // @DisplayName: Target cruise speed in auto modes
     // @Description: The target speed in auto missions.

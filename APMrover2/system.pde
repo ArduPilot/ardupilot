@@ -306,6 +306,10 @@ static void set_mode(enum mode mode)
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
+
+    if (control_mode != AUTO) {
+        auto_triggered = false;
+    }
         
 	switch(control_mode)
 	{

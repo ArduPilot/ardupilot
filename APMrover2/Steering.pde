@@ -18,10 +18,56 @@ static void throttle_slew_limit(int16_t last_throttle)
 }
 
 /*
+  check for triggering of start of auto mode
+ */
+static bool auto_check_trigger(void)
+{
+    // only applies to AUTO mode
+    if (control_mode != AUTO) {
+        return true;
+    }
+
+    // if already triggered, then return true, so you don't
+    // need to hold the switch down
+    if (auto_triggered) {
+        return true;
+    }
+
+    if (g.auto_trigger_pin == -1 && g.auto_kickstart == 0.0f) {
+        // no trigger configured - let's go!
+        auto_triggered = true;
+        return true;
+    }
+ 
+    if (g.auto_trigger_pin != -1) {
+        hal.gpio->pinMode(g.auto_trigger_pin, GPIO_INPUT);
+        if (hal.gpio->read(g.auto_trigger_pin) == 0) {
+            auto_triggered = true;
+            return true;            
+        }
+    }
+
+    if (g.auto_kickstart != 0.0f) {
+        if (ins.get_accel().x >= g.auto_kickstart) {
+            auto_triggered = true;
+            return true;            
+        }
+    }
+
+    return false;   
+}
+
+
+/*
   calculate the throtte for auto-throttle modes
  */
 static void calc_throttle(float target_speed)
 {  
+    if (!auto_check_trigger()) {
+        g.channel_throttle.servo_out = g.throttle_min.get();
+        return;
+    }
+
     if (target_speed <= 0) {
         // cope with zero requested speed
         g.channel_throttle.servo_out = g.throttle_min.get();
