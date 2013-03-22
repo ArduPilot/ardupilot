@@ -943,8 +943,7 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
     current_loc.lat = 389539260;
     current_loc.lng = -1199540200;
 
-    next_WP.lat = 389538528;
-    next_WP.lng = -1199541248;
+    wp_nav.set_destination(pv_latlon_to_vector(389538528,-1199541248,0));
 
     // got 23506;, should be 22800
     update_navigation();

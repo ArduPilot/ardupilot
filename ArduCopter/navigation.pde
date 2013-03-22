@@ -187,27 +187,28 @@ static bool check_missed_wp()
     return (labs(temp) > 9000);         // we passed the waypoint by 90 degrees
 }
 
-static void force_new_altitude(int32_t new_alt)
+static void force_new_altitude(float new_alt)
 {
-    next_WP.alt     = new_alt;
+    // update new target altitude
+    wp_nav.set_target_alt(new_alt);
     set_alt_change(REACHED_ALT);
 }
 
-static void set_new_altitude(int32_t new_alt)
+static void set_new_altitude(float new_alt)
 {
     // if no change exit immediately
-    if(new_alt == next_WP.alt) {
+    if(new_alt == wp_nav.get_target_alt()) {
         return;
     }
 
     // update new target altitude
-    next_WP.alt     = new_alt;
+    wp_nav.set_target_alt(new_alt);
 
-    if(next_WP.alt > (current_loc.alt + 80)) {
+    if(new_alt > (current_loc.alt + 80)) {
         // we are below, going up
         set_alt_change(ASCENDING);
 
-    }else if(next_WP.alt < (current_loc.alt - 80)) {
+    }else if(new_alt < (current_loc.alt - 80)) {
         // we are above, going down
         set_alt_change(DESCENDING);
 
@@ -222,12 +223,12 @@ static void verify_altitude()
 {
     if(alt_change_flag == ASCENDING) {
         // we are below, going up
-        if(current_loc.alt >  next_WP.alt - 50) {
+        if(current_loc.alt >  wp_nav.get_target_alt() - 50) {
         	set_alt_change(REACHED_ALT);
         }
     }else if (alt_change_flag == DESCENDING) {
         // we are above, going down
-        if(current_loc.alt <=  next_WP.alt + 50){
+        if(current_loc.alt <=  wp_nav.get_target_alt() + 50){
         	set_alt_change(REACHED_ALT);
         }
     }

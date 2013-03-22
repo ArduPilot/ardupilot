@@ -533,8 +533,8 @@ struct log_Control_Tuning {
     LOG_PACKET_HEADER;
     int16_t throttle_in;
     int16_t sonar_alt;
-    int16_t baro_alt;
-    int16_t next_wp_alt;
+    int32_t baro_alt;
+    float   next_wp_alt;
     int16_t nav_throttle;
     int16_t angle_boost;
     int16_t climb_rate;
@@ -549,8 +549,8 @@ static void Log_Write_Control_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         throttle_in         : g.rc_3.control_in,
         sonar_alt           : sonar_alt,
-        baro_alt            : (int16_t) baro_alt,
-        next_wp_alt         : (int16_t) next_WP.alt,
+        baro_alt            : baro_alt,
+        next_wp_alt         : wp_nav.get_target_alt(),
         nav_throttle        : nav_throttle,
         angle_boost         : angle_boost,
         climb_rate          : climb_rate,
@@ -566,12 +566,12 @@ static void Log_Read_Control_Tuning()
     struct log_Control_Tuning pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                               1   2   3   4   5   6   7   8   9
-    cliSerial->printf_P(PSTR("CTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+    //                               1   2    3      4   5   6   7   8   9
+    cliSerial->printf_P(PSTR("CTUN, %d, %d, %ld, %4.0f, %d, %d, %d, %d, %d\n"),
         (int)pkt.throttle_in,
         (int)pkt.sonar_alt,
-        (int)pkt.baro_alt,
-        (int)pkt.next_wp_alt,
+        (long)pkt.baro_alt,
+        (float)pkt.next_wp_alt,
         (int)pkt.nav_throttle,
         (int)pkt.angle_boost,
         (int)pkt.climb_rate,

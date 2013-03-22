@@ -491,8 +491,16 @@ union float_int {
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
-// This is the angle from the copter to the "next_WP" location in degrees * 100
+// This is the angle from the copter to the next waypoint in centi-degrees
 static int32_t wp_bearing;
+// The original bearing to the next waypoint.  used to check if we've passed the waypoint
+static int32_t original_wp_bearing;
+// The location of home in relation to the copter in centi-degrees
+static int32_t home_bearing;
+// distance between plane and home in cm
+static int32_t home_distance;
+// distance between plane and next waypoint in cm.  is not static because AP_Camera uses it
+uint32_t wp_distance;
 // navigation mode - options include NAV_NONE, NAV_LOITER, NAV_CIRCLE, NAV_WP
 static uint8_t nav_mode;
 // Register containing the index of the current navigation command in the mission script
@@ -647,18 +655,6 @@ static uint16_t land_detector;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Navigation general
-////////////////////////////////////////////////////////////////////////////////
-// The location of home in relation to the copter, updated every GPS read
-static int32_t home_bearing;
-// distance between plane and home in cm
-static int32_t home_distance;
-// distance between plane and next_WP in cm
-// is not static because AP_Camera uses it
-uint32_t wp_distance;
-
-
-////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
 ////////////////////////////////////////////////////////////////////////////////
 // home location is stored when we have a good GPS lock and arm the copter
@@ -666,20 +662,10 @@ uint32_t wp_distance;
 static struct   Location home;
 // Current location of the copter
 static struct   Location current_loc;
-// Next WP is the desired location of the copter - the next waypoint or loiter location
-static struct   Location next_WP;
 // Holds the current loaded command from the EEPROM for navigation
 static struct   Location command_nav_queue;
 // Holds the current loaded command from the EEPROM for conditional scripts
 static struct   Location command_cond_queue;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Crosstrack
-////////////////////////////////////////////////////////////////////////////////
-// deg * 100, The original angle to the next_WP when the next_WP was set
-// Also used to check when we pass a WP
-static int32_t original_wp_bearing;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1806,7 +1792,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
-            set_new_altitude(current_loc.alt);          // by default hold the current altitude
+            set_new_altitude(controller_desired_alt);          // by default hold the current altitude
             if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
                 set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
@@ -1819,7 +1805,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             land_detector = 0;          // A counter that goes up if our climb rate stalls out.
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             // Set target altitude to LAND_START_ALT if we are high, below this altitude the get_throttle_rate_stabilized will take care of setting the next_WP.alt
-            if (current_loc.alt >= LAND_START_ALT) {
+            if (controller_desired_alt >= LAND_START_ALT) {
                 set_new_altitude(LAND_START_ALT);
             }
             throttle_initialised = true;
@@ -1983,7 +1969,7 @@ void update_throttle_mode(void)
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in next_WP.alt
         if(motors.auto_armed() == true) {
-            get_throttle_althold_with_slew(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
+            get_throttle_althold_with_slew(wp_nav.get_target_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
         break;
 
