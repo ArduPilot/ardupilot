@@ -42,13 +42,16 @@ static bool auto_check_trigger(void)
     if (g.auto_trigger_pin != -1) {
         hal.gpio->pinMode(g.auto_trigger_pin, GPIO_INPUT);
         if (hal.gpio->read(g.auto_trigger_pin) == 0) {
+            gcs_send_text_P(SEVERITY_LOW, PSTR("Triggered AUTO with pin"));
             auto_triggered = true;
             return true;            
         }
     }
 
     if (g.auto_kickstart != 0.0f) {
-        if (ins.get_accel().x >= g.auto_kickstart) {
+        float xaccel = ins.get_accel().x;
+        if (xaccel >= g.auto_kickstart) {
+            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), xaccel);
             auto_triggered = true;
             return true;            
         }
