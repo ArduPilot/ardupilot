@@ -81,12 +81,6 @@ static void calc_distance_and_bearing()
         home_distance = 0;
         home_bearing = 0;
     }
-
-    // calculate bearing to target (used when yaw_mode = YAW_LOOK_AT_LOCATION)
-    // To-Do: move this to the look-at-waypoint yaw controller
-    if( yaw_mode == YAW_LOOK_AT_LOCATION ) {
-        yaw_look_at_WP_bearing = pv_get_bearing_cd(curr, yaw_look_at_WP);
-    }
 }
 
 // run_autopilot - highest level call to process mission commands
@@ -279,25 +273,31 @@ static bool waypoint_valid(Location &wp)
 
 // circle_set_center -- set circle controller's center position and starting angle
 static void
-circle_set_center(const Vector3f pos_vec, float heading_in_radians)
+circle_set_center(const Vector3f current_position, float heading_in_radians)
 {
-    // set circle center
-    circle_center = pos_vec;
+    // set circle center to circle_radius ahead of current position
+    circle_center.x = current_position.x + (float)g.circle_radius * 100 * sin_yaw_y;
+    circle_center.y = current_position.y + (float)g.circle_radius * 100 * cos_yaw_x;
 
-    // set starting angle to current heading - 180 degrees
-    circle_angle = heading_in_radians-ToRad(180);
-    if( circle_angle > 180 ) {
-        circle_angle -= 180;
-    }
-    if( circle_angle < -180 ) {
-        circle_angle -= 180;
+    // if we are doing a panorama set the circle_angle to the current heading
+    if( g.circle_radius == 0 ) {
+        circle_angle = heading_in_radians;
+    }else{
+        // set starting angle to current heading - 180 degrees
+        circle_angle = heading_in_radians-ToRad(180);
+        if( circle_angle > 180 ) {
+            circle_angle -= 180;
+        }
+        if( circle_angle < -180 ) {
+            circle_angle -= 180;
+        }
     }
 
     // initialise other variables
     circle_angle_total = 0;
 }
 
-// circle_get_pos - circle position controller's main call which in turn calls loiter controller with updated target position
+// update_circle - circle position controller's main call which in turn calls loiter controller with updated target position
 static void
 update_circle(float dt)
 {
@@ -317,12 +317,15 @@ update_circle(float dt)
     // update the total angle travelled
     circle_angle_total += angle_delta;
 
-    // calculate target position
-    circle_target.x = circle_center.x + cir_radius * sinf(1.57f - circle_angle);
-    circle_target.y = circle_center.y + cir_radius * cosf(1.57f - circle_angle);
+    // if the circle_radius is zero we are doing panorama so no need to update loiter target
+    if( g.circle_radius != 0.0 ) {
+        // calculate target position
+        circle_target.x = circle_center.x + cir_radius * sinf(1.57f - circle_angle);
+        circle_target.y = circle_center.y + cir_radius * cosf(1.57f - circle_angle);
 
-    // re-use loiter position controller
-    wp_nav.set_loiter_target(circle_target);
+        // re-use loiter position controller
+        wp_nav.set_loiter_target(circle_target);
+    }
 
     // call loiter controller
     wp_nav.update_loiter();

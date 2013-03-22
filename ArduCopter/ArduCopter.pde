@@ -1442,6 +1442,15 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
                 yaw_initialised = true;
             }
             break;
+        case YAW_CIRCLE:
+            if( ap.home_is_set ) {
+                // set yaw to point to center of circle
+                yaw_look_at_WP = circle_center;
+                // initialise bearing to current heading
+                yaw_look_at_WP_bearing = ahrs.yaw_sensor;
+                yaw_initialised = true;
+            }
+            break;
         case YAW_LOOK_AT_HEADING:
             yaw_initialised = true;
             break;
@@ -1502,9 +1511,18 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_LOCATION:
-        // point towards a location held in yaw_look_at_WP (no pilot input accepted)
-        nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
-        get_stabilize_yaw(nav_yaw);
+        // point towards a location held in yaw_look_at_WP
+        get_look_at_yaw();
+
+        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
+        if( g.rc_4.control_in != 0 ) {
+            set_yaw_mode(YAW_HOLD);
+        }
+        break;
+
+    case YAW_CIRCLE:
+        // points toward the center of the circle or does a panorama
+        get_circle_yaw();
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
         if( g.rc_4.control_in != 0 ) {

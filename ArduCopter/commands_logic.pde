@@ -372,7 +372,6 @@ static void do_circle()
     }
 
     // set yaw to point to center of circle
-    yaw_look_at_WP = circle_center;
     set_yaw_mode(CIRCLE_YAW);
 
     // set angle travelled so far to zero

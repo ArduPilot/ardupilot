@@ -19,10 +19,11 @@
 #define YAW_ACRO                        1       // pilot controlled yaw using rate controller
 #define YAW_LOOK_AT_NEXT_WP             2       // point towards next waypoint (no pilot input accepted)
 #define YAW_LOOK_AT_LOCATION            3       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
-#define YAW_LOOK_AT_HOME    		    4       // point towards home (no pilot input accepted)
-#define YAW_LOOK_AT_HEADING    		    5       // point towards a particular angle (not pilot input accepted)
-#define YAW_LOOK_AHEAD					6		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
-#define YAW_TOY                         7       // THOR This is the Yaw mode
+#define YAW_CIRCLE                      4       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
+#define YAW_LOOK_AT_HOME    		    5       // point towards home (no pilot input accepted)
+#define YAW_LOOK_AT_HEADING    		    6       // point towards a particular angle (not pilot input accepted)
+#define YAW_LOOK_AHEAD					7		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
+#define YAW_TOY                         8       // THOR This is the Yaw mode
 
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles

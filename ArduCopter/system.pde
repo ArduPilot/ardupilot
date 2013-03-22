@@ -426,11 +426,10 @@ static void set_mode(uint8_t mode)
     case CIRCLE:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        // set yaw to point to center of circle
-        set_yaw_mode(CIRCLE_YAW);
         set_roll_pitch_mode(CIRCLE_RP);
         set_throttle_mode(CIRCLE_THR);
         set_nav_mode(CIRCLE_NAV);
+        set_yaw_mode(CIRCLE_YAW);
         break;
 
     case LOITER:

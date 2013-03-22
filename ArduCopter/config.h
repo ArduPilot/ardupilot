@@ -593,7 +593,7 @@
 
 // CIRCLE Mode
 #ifndef CIRCLE_YAW
- # define CIRCLE_YAW             	YAW_LOOK_AT_LOCATION
+ # define CIRCLE_YAW             	YAW_CIRCLE
 #endif
 
 #ifndef CIRCLE_RP

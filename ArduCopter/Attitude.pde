@@ -682,6 +682,47 @@ get_of_pitch(int32_t input_pitch)
  * yaw controllers
  *************************************************************/
 
+ // get_look_at_yaw - updates bearing to look at center of circle or do a panorama
+// should be called at 100hz
+static void get_circle_yaw()
+{
+    static uint8_t look_at_yaw_counter = 0;     // used to reduce update rate to 10hz
+
+    // if circle radius is zero do panorama
+    if( g.circle_radius == 0 ) {
+        // slew yaw towards circle angle
+        nav_yaw = get_yaw_slew(nav_yaw, ToDeg(circle_angle)*100, AUTO_YAW_SLEW_RATE);
+    }else{
+        look_at_yaw_counter++;
+        if( look_at_yaw_counter >= 10 ) {
+            look_at_yaw_counter = 0;
+            yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
+        }
+        // slew yaw
+        nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
+    }
+
+    // call stabilize yaw controller
+    get_stabilize_yaw(nav_yaw);
+}
+
+// get_look_at_yaw - updates bearing to location held in look_at_yaw_WP and calls stabilize yaw controller
+// should be called at 100hz
+static void get_look_at_yaw()
+{
+    static uint8_t look_at_yaw_counter = 0;     // used to reduce update rate to 10hz
+
+    look_at_yaw_counter++;
+    if( look_at_yaw_counter >= 10 ) {
+        look_at_yaw_counter = 0;
+        yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
+    }
+
+    // slew yaw and call stabilize controller
+    nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
+    get_stabilize_yaw(nav_yaw);
+}
+
 static void get_look_ahead_yaw(int16_t pilot_yaw)
 {
     // Commanded Yaw to automatically look ahead.
