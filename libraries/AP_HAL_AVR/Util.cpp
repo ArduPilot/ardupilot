@@ -54,6 +54,10 @@ int AVRUtil::vsnprintf_P(char* str, size_t size, const prog_char_t *format,
 {
     BufferPrinter buf(str, size);
     print_vprintf(&buf, 1,(const char*) format, ap);
+    if (buf._offs < size) {
+	// null terminate if possible
+	str[buf._offs] = 0;
+    }
     return (int) buf._offs;
 }
 
