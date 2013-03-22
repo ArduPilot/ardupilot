@@ -166,6 +166,7 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     float track_length_pct = _track_desired/_track_length;
     _target.x = _origin.x + _pos_delta.x * track_length_pct;
     _target.y = _origin.y + _pos_delta.y * track_length_pct;
+    _target.z = _destination.z;
 }
 
 /// get_distance_to_destination - get horizontal distance to destination in cm

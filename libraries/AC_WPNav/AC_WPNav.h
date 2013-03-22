@@ -34,6 +34,9 @@ public:
     /// get_loiter_target - get loiter target as position vector (from home in cm)
     Vector3f get_loiter_target() { return _target; }
 
+    /// get_target_alt - get target altitude from home in cm
+    float get_target_alt() { return _target.z; }
+
     /// set_loiter_target in cm from home
     void set_loiter_target(const Vector3f& position) { _target = position; }
 
