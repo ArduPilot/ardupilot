@@ -138,10 +138,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: AUTO_KICKSTART
 	// @DisplayName: Auto mode trigger kickstart acceleration
-	// @Description: X acceleration in meters/second/second to use to trigger start of auto mode. If set to zero then auto starts immediately, otherwise the rover waits for the X acceleration to go above this value before it will start the motor
-	// Units: m/s/s
+	// @Description: X acceleration in meters/second/second to use to trigger the motor start in auto mode. If set to zero then auto throttle starts immediately when the mode switch happens, otherwise the rover waits for the X acceleration to go above this value before it will start the motor
+	// @Units: m/s/s
 	// @Range: 0 20
-	// Increment: 0.1
+	// @Increment: 0.1
 	// @User: standard
 	GSCALAR(auto_kickstart,          "AUTO_KICKSTART", 0.0f),
 
