@@ -40,11 +40,19 @@ static bool auto_check_trigger(void)
     }
  
     if (g.auto_trigger_pin != -1) {
-        hal.gpio->pinMode(g.auto_trigger_pin, GPIO_INPUT);
-        if (hal.gpio->read(g.auto_trigger_pin) == 0) {
-            gcs_send_text_P(SEVERITY_LOW, PSTR("Triggered AUTO with pin"));
-            auto_triggered = true;
-            return true;            
+        int8_t pin = hal.gpio->analogPinToDigitalPin(g.auto_trigger_pin);
+        if (pin != -1) {
+            // ensure we are in input mode
+            hal.gpio->pinMode(pin, GPIO_INPUT);
+
+            // enable pullup
+            hal.gpio->write(pin, 1);
+
+            if (hal.gpio->read(pin) == 0) {
+                gcs_send_text_P(SEVERITY_LOW, PSTR("Triggered AUTO with pin"));
+                auto_triggered = true;
+                return true;            
+            }
         }
     }
 
