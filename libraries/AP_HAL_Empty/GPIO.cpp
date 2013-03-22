@@ -12,6 +12,11 @@ void EmptyGPIO::init()
 void EmptyGPIO::pinMode(uint8_t pin, uint8_t output)
 {}
 
+int8_t EmptyGPIO::analogPinToDigitalPin(uint8_t pin)
+{
+	return -1;
+}
+
 
 uint8_t EmptyGPIO::read(uint8_t pin) {
     return 0;
