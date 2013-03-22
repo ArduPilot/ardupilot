@@ -34,14 +34,17 @@ public:
     /// get_loiter_target - get loiter target as position vector (from home in cm)
     Vector3f get_loiter_target() { return _target; }
 
-    /// get_target_alt - get target altitude from home in cm
-    float get_target_alt() { return _target.z; }
-
     /// set_loiter_target in cm from home
     void set_loiter_target(const Vector3f& position) { _target = position; }
 
     /// move_loiter_target - move destination using forward and right velocities in cm/s
     void move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt);
+
+    /// get_target_alt - get target altitude ab0ve home in cm
+    float get_target_alt() { return _target.z; }
+
+    /// set_target_alt - set target altitude above home in cm
+    void set_target_alt(float altitude_in_cm) { _target.z = altitude_in_cm; }
 
     /// get_distance_to_target - get horizontal distance to loiter target in cm
     float get_distance_to_target();
