@@ -190,19 +190,19 @@ static bool check_missed_wp()
 static void force_new_altitude(float new_alt)
 {
     // update new target altitude
-    wp_nav.set_target_alt(new_alt);
+    wp_nav.set_destination_alt(new_alt);
     set_alt_change(REACHED_ALT);
 }
 
 static void set_new_altitude(float new_alt)
 {
     // if no change exit immediately
-    if(new_alt == wp_nav.get_target_alt()) {
+    if(new_alt == wp_nav.get_destination_alt()) {
         return;
     }
 
     // update new target altitude
-    wp_nav.set_target_alt(new_alt);
+    wp_nav.set_destination_alt(new_alt);
 
     if(new_alt > (current_loc.alt + 80)) {
         // we are below, going up
@@ -223,12 +223,12 @@ static void verify_altitude()
 {
     if(alt_change_flag == ASCENDING) {
         // we are below, going up
-        if(current_loc.alt >  wp_nav.get_target_alt() - 50) {
+        if(current_loc.alt >  wp_nav.get_destination_alt() - 50) {
         	set_alt_change(REACHED_ALT);
         }
     }else if (alt_change_flag == DESCENDING) {
         // we are above, going down
-        if(current_loc.alt <=  wp_nav.get_target_alt() + 50){
+        if(current_loc.alt <=  wp_nav.get_destination_alt() + 50){
         	set_alt_change(REACHED_ALT);
         }
     }
