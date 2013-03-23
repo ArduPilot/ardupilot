@@ -63,20 +63,6 @@ static void update_commands()
                 command_nav_queue = get_cmd_with_index(command_nav_index);
                 execute_nav_command();
             }
-
-            // try to load the next nav for better speed control
-            // find_next_nav_index takes the next guess to start the search
-            tmp_index = find_next_nav_index(command_nav_index + 1);
-
-            // Fast corner management
-            // ----------------------
-            if(tmp_index == -1) {
-                // there are no more commands left
-            }else{
-                // we have at least one more cmd left
-                Location tmp_loc = get_cmd_with_index(tmp_index);
-            }
-
         }else{
             // we are out of commands
             exit_mission();
