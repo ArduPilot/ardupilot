@@ -79,6 +79,8 @@ git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
 cp ../config.mk .
 popd
 
+rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
+
 pushd px4/PX4Firmware
 git fetch origin
 git reset --hard origin/master
