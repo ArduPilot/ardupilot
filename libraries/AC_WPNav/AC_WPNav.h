@@ -40,12 +40,6 @@ public:
     /// move_loiter_target - move destination using forward and right velocities in cm/s
     void move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt);
 
-    /// get_target_alt - get target altitude ab0ve home in cm
-    float get_target_alt() { return _target.z; }
-
-    /// set_target_alt - set target altitude above home in cm
-    void set_target_alt(float altitude_in_cm) { _target.z = altitude_in_cm; }
-
     /// get_distance_to_target - get horizontal distance to loiter target in cm
     float get_distance_to_target();
 
@@ -67,6 +61,12 @@ public:
 
     /// advance_target_along_track - move target location along track from origin to destination
     void advance_target_along_track(float velocity_cms, float dt);
+
+    /// get_destination_alt - get target altitude above home in cm
+    float get_destination_alt() { return _destination.z; }
+
+    /// set_destination_alt - set target altitude above home in cm
+    void set_destination_alt(float altitude_in_cm) { _destination.z = altitude_in_cm; }
 
     /// get_distance_to_destination - get horizontal distance to destination in cm
     float get_distance_to_destination();
