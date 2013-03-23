@@ -80,7 +80,13 @@ def build_all():
 def build_binaries():
     '''run the build_binaries.sh script'''
     print("Running build_binaries.sh")
-    if util.run_cmd(util.reltopdir('Tools/scripts/build_binaries.sh'), dir=util.reltopdir('.')) != 0:
+    import shutil
+    # copy the script as it changes git branch, which can change the script while running
+    orig=util.reltopdir('Tools/scripts/build_binaries.sh')
+    copy=util.reltopdir('./build_binaries.sh')
+    shutil.copyfile(orig, copy)
+    shutil.copymode(orig, copy)
+    if util.run_cmd(copy, dir=util.reltopdir('.')) != 0:
         print("Failed build_binaries.sh")
         return False
     return True
