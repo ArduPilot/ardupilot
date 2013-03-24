@@ -279,11 +279,6 @@ static void do_nav_wp()
     // this is our bitmask to verify we have met all conditions to move on
     wp_verify_byte  = 0;
 
-    // if no alt requirement in the waypoint, set the altitude achieved bit of wp_verify_byte
-    if((next_WP.options & WP_OPTION_ALT_REQUIRED) == false) {
-        wp_verify_byte |= NAV_ALTITUDE;
-    }
-
     // if not delay requirement, set the delay achieved bit of wp_verify_byte
     if( command_nav_queue.p1 == 0 ) {
         wp_verify_byte |= NAV_DELAY;
@@ -556,7 +551,7 @@ static bool verify_RTL()
             // check if we've loitered long enough
             if( millis() - rtl_loiter_start_time > (uint32_t)g.rtl_loiter_time.get() ) {
                 // initiate landing or descent
-                if(g.rtl_alt_final == 0 || ap.failsafe) {
+                if(g.rtl_alt_final == 0 || ap.failsafe_radio) {
                     // land
                     do_land();
                     // override landing location (do_land defaults to current location)

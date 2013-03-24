@@ -60,6 +60,12 @@ static void run_cli(AP_HAL::UARTDriver *port)
     // disable main_loop failsafe
     failsafe_disable();
 
+    // cut the engines
+    if(motors.armed()) {
+        motors.armed(false);
+        motors.output();
+    }
+    
     while (1) {
         main_menu.run();
     }
@@ -127,13 +133,6 @@ static void init_ardupilot()
     pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
     digitalWrite(C_LED_PIN, LED_OFF);
 
-#if SLIDE_SWITCH_PIN > 0
-    pinMode(SLIDE_SWITCH_PIN, INPUT);           // To enter interactive mode
-#endif
-#if CONFIG_PUSHBUTTON == ENABLED
-    pinMode(PUSHBUTTON_PIN, INPUT);                     // unused
-#endif
-
     relay.init(); 
 
 #if COPTER_LEDS == ENABLED
@@ -188,6 +187,7 @@ static void init_ardupilot()
     } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
         do_erase_logs();
+        gcs0.reset_cli_timeout();
     }
     if (g.log_bitmask != 0) {
         DataFlash.start_new_log();
@@ -237,25 +237,22 @@ static void init_ardupilot()
     USERHOOK_INIT
 #endif
 
-#if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
-    // If the switch is in 'menu' mode, run the main menu.
-    //
-    // Since we can't be sure that the setup or test mode won't leave
-    // the system in an odd state, we don't let the user exit the top
-    // menu; they must reset in order to fly.
-    //
-    if (check_startup_for_CLI()) {
-        digitalWrite(A_LED_PIN, LED_ON);                        // turn on setup-mode LED
-        cliSerial->printf_P(PSTR("\nCLI:\n\n"));
-        run_cli(cliSerial);
-    }
-#else
+#if CLI_ENABLED == ENABLED
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
 #if USB_MUX_PIN == 0
     hal.uartC->println_P(msg);
 #endif
 #endif // CLI_ENABLED
+
+#if HIL_MODE != HIL_MODE_DISABLED
+    while (!barometer.healthy) {
+        // the barometer becomes healthy when we get the first
+        // HIL_STATE message
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
+        delay(1000);
+    }
+#endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
     // read Baro pressure at ground
@@ -384,8 +381,8 @@ static void set_mode(uint8_t mode)
 
     // used to stop fly_aways
     // set to false if we have low throttle
-    motors.auto_armed(g.rc_3.control_in > 0 || ap.failsafe);
-    set_auto_armed(g.rc_3.control_in > 0 || ap.failsafe);
+    motors.auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
+    set_auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
 
     // if we change modes, we must clear landed flag
     set_land_complete(false);
@@ -557,13 +554,6 @@ init_simple_bearing()
         Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
     }
 }
-
-#if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED
-static bool check_startup_for_CLI()
-{
-    return (digitalReadFast(SLIDE_SWITCH_PIN) == 0);
-}
-#endif // CLI_ENABLED
 
 /*
  *  map from a 8 bit EEPROM baud rate to a real baud rate

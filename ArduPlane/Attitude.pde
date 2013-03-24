@@ -392,15 +392,21 @@ static bool auto_takeoff_check(void)
         // we haven't reached the minimum ground speed
         return false;
     }
-    if (g.takeoff_throttle_min_accel > 0.0f &&
-        (ins.get_accel().x < g.takeoff_throttle_min_accel) &&
-        ahrs.pitch_sensor > -3000 && ahrs.pitch_sensor < 4500 &&
-        abs(ahrs.roll_sensor) < 3000) {
-        // we haven't reached the minimum acceleration or we are not
-        // anywhere near flat. Thanks to Chris Miser for this
-        // suggestion
+
+    if (g.takeoff_throttle_min_accel > 0.0f) {
+        float xaccel = ins.get_accel().x;
+        if (ahrs.pitch_sensor > -3000 && 
+            ahrs.pitch_sensor < 4500 &&
+            abs(ahrs.roll_sensor) < 3000 && 
+            xaccel >= g.takeoff_throttle_min_accel) {
+            // trigger with minimum acceleration when flat
+            // Thanks to Chris Miser for this suggestion
+            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), xaccel);
+            return true;
+        }
         return false;
     }
+
     // we're good for takeoff
     return true;
 }

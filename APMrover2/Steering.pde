@@ -18,10 +18,67 @@ static void throttle_slew_limit(int16_t last_throttle)
 }
 
 /*
+  check for triggering of start of auto mode
+ */
+static bool auto_check_trigger(void)
+{
+    // only applies to AUTO mode
+    if (control_mode != AUTO) {
+        return true;
+    }
+
+    // if already triggered, then return true, so you don't
+    // need to hold the switch down
+    if (auto_triggered) {
+        return true;
+    }
+
+    if (g.auto_trigger_pin == -1 && g.auto_kickstart == 0.0f) {
+        // no trigger configured - let's go!
+        auto_triggered = true;
+        return true;
+    }
+ 
+    if (g.auto_trigger_pin != -1) {
+        int8_t pin = hal.gpio->analogPinToDigitalPin(g.auto_trigger_pin);
+        if (pin != -1) {
+            // ensure we are in input mode
+            hal.gpio->pinMode(pin, GPIO_INPUT);
+
+            // enable pullup
+            hal.gpio->write(pin, 1);
+
+            if (hal.gpio->read(pin) == 0) {
+                gcs_send_text_P(SEVERITY_LOW, PSTR("Triggered AUTO with pin"));
+                auto_triggered = true;
+                return true;            
+            }
+        }
+    }
+
+    if (g.auto_kickstart != 0.0f) {
+        float xaccel = ins.get_accel().x;
+        if (xaccel >= g.auto_kickstart) {
+            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), xaccel);
+            auto_triggered = true;
+            return true;            
+        }
+    }
+
+    return false;   
+}
+
+
+/*
   calculate the throtte for auto-throttle modes
  */
 static void calc_throttle(float target_speed)
 {  
+    if (!auto_check_trigger()) {
+        g.channel_throttle.servo_out = g.throttle_min.get();
+        return;
+    }
+
     if (target_speed <= 0) {
         // cope with zero requested speed
         g.channel_throttle.servo_out = g.throttle_min.get();
@@ -77,8 +134,8 @@ static void calc_nav_steer()
 	// positive error = right turn
 	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
 
-    if (obstacle) {  // obstacle avoidance 
-	    nav_steer += g.sonar_turn_angle*100;
+    if (obstacle.detected) {  // obstacle avoidance 
+	    nav_steer += obstacle.turn_angle*100;
     }
 
     g.channel_steer.servo_out = nav_steer;
@@ -91,10 +148,11 @@ static void set_servos(void)
 {
     int16_t last_throttle = g.channel_throttle.radio_out;
 
-	if (control_mode == MANUAL || control_mode == LEARNING) {
-		// do a direct pass through of radio values
-		g.channel_steer.radio_out 		= g.channel_steer.radio_in;
-		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
+	if ((control_mode == MANUAL || control_mode == LEARNING) &&
+        (g.skid_steer_out == g.skid_steer_in)) {
+        // do a direct pass through of radio values
+        g.channel_steer.radio_out       = hal.rcin->read(CH_STEER);
+        g.channel_throttle.radio_out    = hal.rcin->read(CH_THROTTLE);
 	} else {       
         g.channel_steer.calc_pwm();
 		g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
@@ -105,6 +163,25 @@ static void set_servos(void)
 
         // limit throttle movement speed
         throttle_slew_limit(last_throttle);
+
+        if (g.skid_steer_out) {
+            // convert the two radio_out values to skid steering values
+            /*
+              mixing rule:
+              steering = motor1 - motor2
+              throttle = 0.5*(motor1 + motor2)
+              motor1 = throttle + 0.5*steering
+              motor2 = throttle - 0.5*steering
+            */          
+            float steering_scaled = g.channel_steer.norm_output();
+            float throttle_scaled = g.channel_throttle.norm_output();
+            float motor1 = throttle_scaled + 0.5*steering_scaled;
+            float motor2 = throttle_scaled - 0.5*steering_scaled;
+            g.channel_steer.servo_out = 4500*motor1;
+            g.channel_throttle.servo_out = 100*motor2;
+            g.channel_steer.calc_pwm();
+            g.channel_throttle.calc_pwm();
+        }
     }
 
 

@@ -30,10 +30,6 @@ apm_option("APM_PROCESSOR" TYPE STRING
     DEFAULT "mega2560"
     OPTIONS "mega" "mega2560")
 
-#apm_option("CLI_SLIDER_ENABLED" TYPE BOOL
-    #DESCRIPTION "Enable command line interface switch?" 
-    #DEFAULT OFF)
-
 apm_option("LOGGING_ENABLED" TYPE BOOL
     DESCRIPTION "Enable logging?" 
     DEFAULT OFF)
@@ -60,9 +56,9 @@ apm_option("PITOT_ENABLED" TYPE BOOL
     DESCRIPTION "Enable pitot static system?"
     DEFAULT OFF)
 
-apm_option("SONAR_ENABLED" TYPE BOOL
+apm_option("CONFIG_SONAR" TYPE BOOL
     DESCRIPTION "Enable sonar?"
-    DEFAULT OFF)
+    DEFAULT ON)
 
 apm_option("AIRSPEED_RATIO" TYPE STRING ADVANCED
     DESCRIPTION "Airspeed ratio?"

@@ -187,8 +187,6 @@ static void init_disarm_motors()
 
     g.throttle_cruise.save();
 
-    inertial_nav.save_params();
-
     // we are not in the air
     set_takeoff_complete(false);
 

@@ -43,11 +43,7 @@
 #define THROTTLE_LAND                       8   // landing throttle controller
 
 
-// active altitude sensor
-// ----------------------
-#define SONAR 0
-#define BARO 1
-
+// sonar - for use with CONFIG_SONAR_SOURCE
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
 
@@ -442,16 +438,17 @@ enum gcs_severity {
 #define ERROR_SUBSYSTEM_RADIO               2
 #define ERROR_SUBSYSTEM_COMPASS             3
 #define ERROR_SUBSYSTEM_OPTFLOW             4
-#define ERROR_SUBSYSTEM_FAILSAFE            5
+#define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
+#define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
+#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
 // subsystem specific error codes -- radio
 #define ERROR_CODE_RADIO_LATE_FRAME         2
-// subsystem specific error codes -- failsafe
-#define ERROR_CODE_FAILSAFE_THROTTLE  2
-#define ERROR_CODE_FAILSAFE_BATTERY   3
-#define ERROR_CODE_FAILSAFE_WATCHDOG  4
+// subsystem specific error codes -- failsafe_thr, batt, gps
+#define ERROR_CODE_FAILSAFE_RESOLVED        0
+#define ERROR_CODE_FAILSAFE_OCCURRED        1
 
 
 

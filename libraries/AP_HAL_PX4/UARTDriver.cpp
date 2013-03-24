@@ -36,17 +36,12 @@ extern const AP_HAL::HAL& hal;
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
 	if (!_initialised) {
-		_fd = open(_devpath, O_RDWR | O_NONBLOCK);
+		_fd = open(_devpath, O_RDWR);
 		if (_fd == -1) {
 			fprintf(stdout, "Failed to open UART device %s - %s\n",
 				_devpath, strerror(errno));
 			return;
 		}
-
-        // always set it non-blocking for the low level IO
-        unsigned v;
-        v = fcntl(_fd, F_GETFL, 0);
-        fcntl(_fd, F_SETFL, v | O_NONBLOCK);
 
         if (rxS == 0) {
             rxS = 128;
@@ -275,6 +270,19 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
         // not allowed from timers
         return 0;
     }
+
+    if (!_nonblocking_writes) {
+        /*
+          use the per-byte delay loop in write() above for blocking writes
+         */
+        size_t ret = 0;
+        while (size--) {
+            if (write(*buffer++) != 1) break;
+            ret++;
+        }
+        return ret;
+    }
+
     uint16_t _head, space;
     space = BUF_SPACE(_writebuf);
     if (space == 0) {
@@ -333,17 +341,63 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     }
 
     if (hrt_absolute_time() - _last_write_time > 2000) {
-        // we haven't done a successful write for 3ms, which means the 
+#if 0
+        // this trick is disabled for now, as it sometimes blocks on
+        // re-opening the ttyACM0 port, which would cause a crash
+        if (hrt_absolute_time() - _last_write_time > 2000000) {
+            // we haven't done a successful write for 2 seconds - try
+            // reopening the port        
+            _initialised = false;
+            ::close(_fd);
+            _fd = ::open(_devpath, O_RDWR);
+            if (_fd == -1) {
+                fprintf(stdout, "Failed to reopen UART device %s - %s\n",
+                        _devpath, strerror(errno));
+                // leave it uninitialised
+                return n;
+            }
+            
+            _last_write_time = hrt_absolute_time();
+            _initialised = true;
+        }
+#else
+        _last_write_time = hrt_absolute_time();
+#endif
+        // we haven't done a successful write for 2ms, which means the 
         // port is running at less than 500 bytes/sec. Start
         // discarding bytes, even if this is a blocking port. This
         // prevents the ttyACM0 port blocking startup if the endpoint
         // is not connected
         BUF_ADVANCEHEAD(_writebuf, n);
-        _last_write_time = hrt_absolute_time();
         return n;
     }
     return ret;
 }
+
+/*
+  try reading n bytes, handling an unresponsive port
+ */
+int PX4UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
+{
+    int ret = 0;
+
+    // the FIONREAD check is to cope with broken O_NONBLOCK behaviour
+    // in NuttX on ttyACM0
+    int nread = 0;
+    if (ioctl(_fd, FIONREAD, (unsigned long)&nread) == 0) {
+        if (nread > n) {
+            nread = n;
+        }
+        if (nread > 0) {
+            ret = ::read(_fd, buf, nread);
+        }
+    }
+    if (ret > 0) {
+        BUF_ADVANCETAIL(_readbuf, ret);
+    }
+    return ret;
+}
+
 
 /*
   push any pending bytes to/from the serial port. This is called at
@@ -385,23 +439,14 @@ void PX4UARTDriver::_timer_tick(void)
         if (_readbuf_tail < _head) {
             // one read will do
             assert(_readbuf_tail+n <= _readbuf_size);
-            int ret = ::read(_fd, &_readbuf[_readbuf_tail], n);
-            if (ret > 0) {
-                BUF_ADVANCETAIL(_readbuf, ret);
-            }
+            _read_fd(&_readbuf[_readbuf_tail], n);
         } else {
             uint16_t n1 = _readbuf_size - _readbuf_tail;
             assert(_readbuf_tail+n1 <= _readbuf_size);
-            int ret = ::read(_fd, &_readbuf[_readbuf_tail], n1);
-            if (ret > 0) {
-                BUF_ADVANCETAIL(_readbuf, ret);
-            }
+            int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
             if (ret == n1 && n != n1) {
                 assert(_readbuf_tail+(n-n1) <= _readbuf_size);
-                ret = ::read(_fd, &_readbuf[_readbuf_tail], n - n1);                
-                if (ret > 0) {
-                    BUF_ADVANCETAIL(_readbuf, ret);
-                }
+                _read_fd(&_readbuf[_readbuf_tail], n - n1);                
             }
         }
         perf_end(_perf_uart);

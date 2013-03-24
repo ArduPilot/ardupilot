@@ -61,6 +61,11 @@ void AVRGPIO::pinMode(uint8_t pin, uint8_t mode) {
     }
 }
 
+int8_t AVRGPIO::analogPinToDigitalPin(uint8_t pin)
+{
+	return analogInputToDigitalPin(pin);
+}
+
 uint8_t AVRGPIO::read(uint8_t pin) {
     uint8_t bit = digitalPinToBitMask(pin);
     uint8_t port = digitalPinToPort(pin);

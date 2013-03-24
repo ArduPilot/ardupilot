@@ -31,10 +31,6 @@ void AP_InertialNav::init()
     update_gains();
 }
 
-// save_params - save all parameters to eeprom
-void AP_InertialNav::save_params()
-{}
-
 // update - updates velocities and positions using latest info from ahrs, ins and barometer if new data is available;
 void AP_InertialNav::update(float dt)
 {
@@ -117,7 +113,7 @@ void AP_InertialNav::set_time_constant_xy( float time_constant_in_seconds )
 // position_ok - return true if position has been initialised and have received gps data within 3 seconds
 bool AP_InertialNav::position_ok()
 {
-    return _xy_enabled && (hal.scheduler->millis() - _gps_last_update < 3000);
+    return _xy_enabled;
 }
 
 // check_gps - check if new gps readings have arrived and use them to correct position estimates

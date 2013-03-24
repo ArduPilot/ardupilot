@@ -129,6 +129,22 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
 
+	// @Param: AUTO_TRIGGER_PIN
+	// @DisplayName: Auto mode trigger pin
+	// @Description: pin number to use to trigger start of auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will start the motor.
+	// @Values: -1:Disabled,0-9:TiggerPin
+	// @User: standard
+	GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
+
+	// @Param: AUTO_KICKSTART
+	// @DisplayName: Auto mode trigger kickstart acceleration
+	// @Description: X acceleration in meters/second/second to use to trigger the motor start in auto mode. If set to zero then auto throttle starts immediately when the mode switch happens, otherwise the rover waits for the X acceleration to go above this value before it will start the motor
+	// @Units: m/s/s
+	// @Range: 0 20
+	// @Increment: 0.1
+	// @User: standard
+	GSCALAR(auto_kickstart,          "AUTO_KICKSTART", 0.0f),
+
     // @Param: CRUISE_SPEED
     // @DisplayName: Target cruise speed in auto modes
     // @Description: The target speed in auto missions.
@@ -208,6 +224,20 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     0),
 
+    // @Param: SKID_STEER_OUT
+    // @DisplayName: Skid steering output
+    // @Description: Set this to 1 for skid steering controlled rovers (tank track style). When enabled, servo1 is used for the left track control, servo3 is used for right track control
+    // @Values: 0:Disabled, 1:SkidSteeringOutput
+    // @User: Standard
+	GSCALAR(skid_steer_out,          "SKID_STEER_OUT",     0),
+
+    // @Param: SKID_STEER_IN
+    // @DisplayName: Skid steering input
+    // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
+    // @Values: 0:Disabled, 1:SkidSteeringOutput
+    // @User: Standard
+	GSCALAR(skid_steer_in,           "SKID_STEER_IN",     0),
+
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
@@ -241,13 +271,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
 	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
-
-	// @Param: SONAR_ENABLE
-	// @DisplayName: Enable Sonar
-	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Standard
-	GSCALAR(sonar_enabled,	    "SONAR_ENABLE",     SONAR_ENABLED),
 
 	// @Param: SONAR_TRIGGER_CM
 	// @DisplayName: Sonar trigger distance
@@ -348,6 +371,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: SONAR_
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
     GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
+    GOBJECT(sonar2,                 "SONAR2_", AP_RangeFinder_analog),
 
 #if HIL_MODE == HIL_MODE_DISABLED
     // @Group: INS_

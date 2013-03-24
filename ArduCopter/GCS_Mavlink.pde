@@ -21,27 +21,6 @@ static bool	gcs_out_of_time;
 // prototype this for use inside the GCS class
 static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 
-
-
-// gcs_check_delay - keep GCS communications going
-// in our delay callback
-static void gcs_check_delay()
-{
-    static uint32_t last_1hz, last_50hz;
-
-    uint32_t tnow = millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs_send_heartbeat();
-    }
-    if (tnow - last_50hz > 20) {
-        last_50hz = tnow;
-        gcs_check_input();
-        gcs_data_stream_send();
-        gcs_send_deferred();
-    }
-    }
-
 static void gcs_send_heartbeat(void)
 {
     gcs_send_message(MSG_HEARTBEAT);
@@ -68,7 +47,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
     
-    if (ap.failsafe == true)  {
+    if (ap.failsafe_radio == true)  {
         system_status = MAV_STATE_CRITICAL;
     }
     
@@ -275,7 +254,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         wp_distance / 1.0e2f,
         altitude_error / 1.0e2f,
         0,
-        crosstrack_error);      // was 0
+        0);
 }
 
 static void NOINLINE send_ahrs(mavlink_channel_t chan)
@@ -548,7 +527,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     // if we don't have at least 1ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (scheduler.time_available_usec() < 800) {
+    if (scheduler.time_available_usec() < 800 && motors.armed()) {
         gcs_out_of_time = true;
         return false;
     }
@@ -870,6 +849,7 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver* port)
         chan = MAVLINK_COMM_1;
     }
     _queued_parameter = NULL;
+    reset_cli_timeout();
 }
 
 void
@@ -888,7 +868,8 @@ GCS_MAVLINK::update(void)
 #if CLI_ENABLED == ENABLED
         /* allow CLI to be started by hitting enter 3 times, if no
          *  heartbeat packets have been received */
-        if (mavlink_active == false) {
+        if (mavlink_active == 0 && (millis() - _cli_timeout) < 20000 && 
+            !motors.armed() && comm_is_idle(chan)) {
             if (c == '\n' || c == '\r') {
                 crlf_count++;
             } else {
@@ -1928,20 +1909,33 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         gyros.x = packet.rollspeed;
         gyros.y = packet.pitchspeed;
         gyros.z = packet.yawspeed;
+
         // m/s/s
         Vector3f accels;
-        accels.x = (float)packet.xacc / 1000.0;
-        accels.y = (float)packet.yacc / 1000.0;
-        accels.z = (float)packet.zacc / 1000.0;
+        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
+        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
+        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
 
-        ins.set_gyro_offsets(gyros);
+        ins.set_gyro(gyros);
 
-        ins.set_accel_offsets(accels);
+        ins.set_accel(accels);
 
+        // approximate a barometer
+        float y;
+        const float Temp = 312;
 
+        y = (packet.alt - 584000.0) / 29271.267;
+        y /= (Temp / 10.0) + 273.15;
+        y = 1.0/exp(y);
+        y *= 95446.0;
+
+        barometer.setHIL(Temp, y);
+
+ #if HIL_MODE == HIL_MODE_ATTITUDE
         // set AHRS hil sensor
         ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
                     packet.pitchspeed,packet.yawspeed);
+ #endif
 
 
 
@@ -1994,15 +1988,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         gyros.x = (float)packet.xgyro / 1000.0;
         gyros.y = (float)packet.ygyro / 1000.0;
         gyros.z = (float)packet.zgyro / 1000.0;
+
         // m/s/s
         Vector3f accels;
-        accels.x = (float)packet.xacc / 1000.0;
-        accels.y = (float)packet.yacc / 1000.0;
-        accels.z = (float)packet.zacc / 1000.0;
+        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
+        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
+        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
 
-        ins.set_gyro_offsets(gyros);
+        ins.set_gyro(gyros);
 
-        ins.set_accel_offsets(accels);
+        ins.set_accel(accels);
 
         compass.setHIL(packet.xmag,packet.ymag,packet.zmag);
         break;
@@ -2183,6 +2178,10 @@ GCS_MAVLINK::queued_waypoint_send()
             waypoint_dest_compid,
             waypoint_request_i);
     }
+}
+
+void GCS_MAVLINK::reset_cli_timeout() {
+      _cli_timeout = millis();
 }
 
 /*

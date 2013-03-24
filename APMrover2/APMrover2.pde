@@ -119,6 +119,7 @@ static Parameters      g;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 static void update_events(void);
+void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
@@ -153,72 +154,70 @@ static GPS         *g_gps;
 // flight modes convenience array
 static AP_Int8		*modes = &g.mode1;
 
-#if HIL_MODE == HIL_MODE_DISABLED
-
-// real sensors
 #if CONFIG_ADC == ENABLED
-static AP_ADC_ADS7844          adc;
+static AP_ADC_ADS7844 adc;
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_COMPASS == AP_COMPASS_PX4
+static AP_Compass_PX4 compass;
+#elif CONFIG_COMPASS == AP_COMPASS_HMC5843
+static AP_Compass_HMC5843 compass;
+#elif CONFIG_COMPASS == AP_COMPASS_HIL
 static AP_Compass_HIL compass;
-static SITL sitl;
 #else
-static AP_Compass_HMC5843      compass;
+ #error Unrecognized CONFIG_COMPASS setting
 #endif
 
-// real GPS selection
+// GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
 AP_GPS_Auto     g_gps_driver(&g_gps);
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver();
+AP_GPS_NMEA     g_gps_driver;
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver();
+AP_GPS_SIRF     g_gps_driver;
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver();
+AP_GPS_UBLOX    g_gps_driver;
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver();
+AP_GPS_MTK      g_gps_driver;
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK19
-AP_GPS_MTK19    g_gps_driver();
+AP_GPS_MTK19    g_gps_driver;
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     g_gps_driver();
+AP_GPS_None     g_gps_driver;
+
+#elif GPS_PROTOCOL == GPS_PROTOCOL_HIL
+AP_GPS_HIL      g_gps_driver;
 
 #else
- #error Unrecognised GPS_PROTOCOL setting.
+  #error Unrecognised GPS_PROTOCOL setting.
 #endif // GPS PROTOCOL
 
-# if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
-  AP_InertialSensor_MPU6000 ins;
-# elif CONFIG_INS_TYPE == CONFIG_INS_SITL
-  AP_InertialSensor_Stub ins;
+#if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
+AP_InertialSensor_MPU6000 ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_PX4
+AP_InertialSensor_PX4 ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_STUB
+AP_InertialSensor_Stub ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
+AP_InertialSensor_Oilpan ins( &adc );
 #else
-  AP_InertialSensor_Oilpan ins( &adc );
+  #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM  ahrs(&ins, g_gps);
-
-#elif HIL_MODE == HIL_MODE_SENSORS
-// sensor emulators
-AP_ADC_HIL              adc;
-AP_Compass_HIL          compass;
-AP_GPS_HIL              g_gps_driver(NULL);
-AP_InertialSensor_Oilpan ins( &adc );
-AP_AHRS_DCM  ahrs(&ins, g_gps);
-
-#elif HIL_MODE == HIL_MODE_ATTITUDE
-AP_ADC_HIL              adc;
-AP_AHRS_HIL             ahrs(&ins, g_gps);
-AP_GPS_HIL              g_gps_driver(NULL);
-AP_Compass_HIL          compass; // never used
+#if HIL_MODE == HIL_MODE_ATTITUDE
+AP_AHRS_HIL ahrs(&ins, g_gps);
 #else
- #error Unrecognised HIL_MODE setting.
-#endif // HIL MODE
+AP_AHRS_DCM ahrs(&ins, g_gps);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+SITL sitl;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -241,6 +240,7 @@ AP_HAL::AnalogSource * batt_curr_pin;
 ////////////////////////////////////////////////////////////////////////////////
 //
 static AP_RangeFinder_analog sonar;
+static AP_RangeFinder_analog sonar2;
 
 // relay support
 AP_Relay relay;
@@ -371,12 +371,18 @@ static uint8_t receiver_rssi;
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
 
-// Set to true when an obstacle is detected
-static bool obstacle = false;
+// obstacle detection information
+static struct {
+    // have we detected an obstacle?
+    bool detected;
+    float turn_angle;
 
-// time when we last detected an obstacle, in milliseconds
-static uint32_t obstacle_detected_time_ms;
+    // time when we last detected an obstacle, in milliseconds
+    uint32_t detected_time_ms;
+} obstacle;
 
+// this is set to true when auto has been triggered to start
+static bool auto_triggered;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Ground speed
@@ -543,7 +549,7 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
+    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 1.0);
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
@@ -623,22 +629,7 @@ static void fast_loop()
 
 	ahrs.update();
 
-	// Read Sonar
-	// ----------
-	if (g.sonar_enabled) {
-		float sonar_dist_cm = sonar.distance_cm();
-        if (sonar_dist_cm <= g.sonar_trigger_cm)  {
-            // obstacle detected in front 
-            obstacle = true;
-            obstacle_detected_time_ms = hal.scheduler->millis();
-        } else if (obstacle == true && 
-                   hal.scheduler->millis() > obstacle_detected_time_ms + g.sonar_turn_time*1000) { 
-            obstacle = false;
-        }
-	} else {
-        // this makes it possible to disable sonar at runtime
-        obstacle = false;
-    }
+    read_sonars();
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
@@ -701,6 +692,8 @@ static void medium_loop()
 		//------------------------------
 		case 2:
 			medium_loopCounter++;
+
+            read_receiver_rssi();
 
 			// perform next command
 			// --------------------
@@ -770,7 +763,7 @@ static void slow_loop()
 			// -------------------------------
 			read_control_switch();
 
-			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+			update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 
 #if MOUNT == ENABLED
 			camera_mount.update_mount_type();

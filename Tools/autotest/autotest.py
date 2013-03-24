@@ -80,7 +80,13 @@ def build_all():
 def build_binaries():
     '''run the build_binaries.sh script'''
     print("Running build_binaries.sh")
-    if util.run_cmd(util.reltopdir('Tools/scripts/build_binaries.sh'), dir=util.reltopdir('.')) != 0:
+    import shutil
+    # copy the script as it changes git branch, which can change the script while running
+    orig=util.reltopdir('Tools/scripts/build_binaries.sh')
+    copy=util.reltopdir('./build_binaries.sh')
+    shutil.copyfile(orig, copy)
+    shutil.copymode(orig, copy)
+    if util.run_cmd(copy, dir=util.reltopdir('.')) != 0:
         print("Failed build_binaries.sh")
         return False
     return True
@@ -142,7 +148,7 @@ parser.add_option("--skip", type='string', default='', help='list of steps to sk
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
 parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
-parser.add_option("--timeout", default=2400, type='int', help='maximum runtime in seconds')
+parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
 
 opts, args = parser.parse_args()
 

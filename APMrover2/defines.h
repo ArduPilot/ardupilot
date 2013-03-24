@@ -52,13 +52,8 @@ enum ch7_option {
 #define GPS_PROTOCOL_MTK19	6
 #define GPS_PROTOCOL_AUTO	7
 
-#define CH_ROLL CH_1
-#define CH_PITCH CH_2
+#define CH_STEER    CH_1
 #define CH_THROTTLE CH_3
-#define CH_RUDDER CH_4
-#define CH_YAW CH_4
-#define CH_AIL1 CH_5
-#define CH_AIL2 CH_6
 
 // HIL enumerations
 #define HIL_MODE_DISABLED			0
@@ -213,10 +208,15 @@ enum gcs_severity {
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
 
-#define CONFIG_INS_OILPAN 1
+// InertialSensor driver types
+#define CONFIG_INS_OILPAN  1
 #define CONFIG_INS_MPU6000 2
+#define CONFIG_INS_STUB    3
+#define CONFIG_INS_PX4     4
 
-#define AP_BARO_BMP085   1
-#define AP_BARO_MS5611   2
+// compass driver types
+#define AP_COMPASS_HMC5843   1
+#define AP_COMPASS_PX4       2
+#define AP_COMPASS_HIL       3
 
 #endif // _DEFINES_H

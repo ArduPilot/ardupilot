@@ -91,6 +91,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATTERY),
 
+    // @Param: FS_GPS_ENABLE
+    // @DisplayName: GPS Failsafe Enable
+    // @Description: Controls whether failsafe will be invoked when gps signal is lost
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(failsafe_gps_enabled, "FS_GPS_ENABLE", FS_GPS),
+
     // @Param: VOLT_DIVIDER
     // @DisplayName: Voltage Divider
     // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)
@@ -146,14 +153,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
-
-	// @Param: TILT
-    // @DisplayName: Auto Tilt Compensation
-    // @Description: This is a feed-forward compensation which helps the aircraft achieve target waypoint speed.
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Advanced
-	GSCALAR(tilt_comp,      "TILT",     TILT_COMPENSATION),
 
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
@@ -227,22 +226,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 100
     // @User: Standard
     GSCALAR(waypoint_speed_max,     "WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
-
-	// @Param: XTRK_GAIN_SC
-    // @DisplayName: Cross-Track Gain
-    // @Description: This controls the rate that the Auto Controller will attempt to return original track
-    // @Units: Dimensionless
-	// @User: Standard
-    GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC", CROSSTRACK_GAIN),
-
-    // @Param: XTRK_MIN_DIST
-    // @DisplayName: Crosstrack mininum distance
-    // @Description: Minimum distance in meters between waypoints to do crosstrack correction.
-    // @Units: Meters
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(crosstrack_min_distance, "XTRK_MIN_DIST",  CROSSTRACK_MIN_DISTANCE),
 
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time

@@ -9,6 +9,7 @@ public:
     EmptyGPIO();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
+    int8_t  analogPinToDigitalPin(uint8_t pin);
     uint8_t read(uint8_t pin);
     void    write(uint8_t pin, uint8_t value);
 

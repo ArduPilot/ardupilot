@@ -92,7 +92,6 @@
 #include <AP_OpticalFlow.h>     // Optical Flow library
 #include <Filter.h>             // Filter library
 #include <AP_Buffer.h>          // APM FIFO Buffer
-#include <AP_LeadFilter.h>      // GPS Lead filter
 #include <AP_Relay.h>           // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
@@ -230,12 +229,6 @@ AP_Compass_HMC5843 compass;
  #endif
  #endif
 
- #if OPTFLOW == ENABLED
-AP_OpticalFlow_ADNS3080 optflow;
- #else
-AP_OpticalFlow optflow;
- #endif
-
 // real GPS selection
  #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
 AP_GPS_Auto     g_gps_driver(&g_gps);
@@ -293,18 +286,19 @@ AP_GPS_HIL              g_gps_driver;
 AP_Compass_HIL          compass;                  // never used
 AP_Baro_BMP085_HIL      barometer;
 
- #if OPTFLOW == ENABLED
-  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_OpticalFlow_ADNS3080 optflow;
-  #else
-AP_OpticalFlow_ADNS3080 optflow;
-  #endif    // CONFIG_HAL_BOARD == HAL_BOARD_APM2
- #endif     // OPTFLOW == ENABLED
-
 static int32_t gps_base_alt;
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
+
+////////////////////////////////////////////////////////////////////////////////
+// Optical flow sensor
+////////////////////////////////////////////////////////////////////////////////
+ #if OPTFLOW == ENABLED
+AP_OpticalFlow_ADNS3080 optflow;
+ #else
+AP_OpticalFlow optflow;
+ #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -359,12 +353,14 @@ static union {
         uint8_t armed              : 1; // 6
         uint8_t auto_armed         : 1; // 7
 
-        uint8_t failsafe           : 1; // 8    // A status flag for the failsafe state
-        uint8_t do_flip            : 1; // 9    // Used to enable flip code
-        uint8_t takeoff_complete   : 1; // 10
-        uint8_t land_complete      : 1; // 11
-        uint8_t compass_status     : 1; // 12
-        uint8_t gps_status         : 1; // 13
+        uint8_t failsafe_radio     : 1; // 8    // A status flag for the radio failsafe
+        uint8_t failsafe_batt      : 1; // 9    // A status flag for the battery failsafe
+        uint8_t failsafe_gps       : 1; // 10   // A status flag for the gps failsafe
+        uint8_t do_flip            : 1; // 11   // Used to enable flip code
+        uint8_t takeoff_complete   : 1; // 12
+        uint8_t land_complete      : 1; // 13
+        uint8_t compass_status     : 1; // 14
+        uint8_t gps_status         : 1; // 15
     };
     uint16_t value;
 } ap;
@@ -557,16 +553,11 @@ int32_t roll_axis;
 int32_t pitch_axis;
 
 // Filters
-AP_LeadFilter xLeadFilter;      // Long GPS lag filter
-AP_LeadFilter yLeadFilter;      // Lat  GPS lag filter
 #if FRAME_CONFIG == HELI_FRAME
 LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
 LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 // LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter
 #endif // HELI_FRAME
-
-// Barometer filter
-AverageFilterInt32_Size5 baro_filter;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
@@ -696,8 +687,6 @@ static struct   Location guided_WP;
 // deg * 100, The original angle to the next_WP when the next_WP was set
 // Also used to check when we pass a WP
 static int32_t original_wp_bearing;
-// The amount of angle correction applied to wp_bearing to bring the copter back on its optimum path
-static int16_t crosstrack_error;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1432,6 +1421,9 @@ static void update_GPS(void)
         // save GPS time so we don't get duplicate reads
         last_gps_time = g_gps->time;
     }
+
+    // check for loss of gps
+    failsafe_gps_check();
 }
 
 // set_yaw_mode - update yaw mode and initialise any variables required
@@ -1801,13 +1793,13 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 
         case THROTTLE_STABILIZED_RATE:
         case THROTTLE_DIRECT_ALT:
-            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             throttle_initialised = true;
             break;
 
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
-            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             set_new_altitude(current_loc.alt);          // by default hold the current altitude
             if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
@@ -1819,7 +1811,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_LAND:
             set_land_complete(false);   // mark landing as incomplete
             land_detector = 0;          // A counter that goes up if our climb rate stalls out.
-            controller_desired_alt = current_loc.alt;   // reset controller desired altitude to current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             // Set target altitude to LAND_START_ALT if we are high, below this altitude the get_throttle_rate_stabilized will take care of setting the next_WP.alt
             if (current_loc.alt >= LAND_START_ALT) {
                 set_new_altitude(LAND_START_ALT);

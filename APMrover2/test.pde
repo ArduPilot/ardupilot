@@ -20,6 +20,9 @@ static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
+#endif
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -53,7 +56,9 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
 	{"logging",		test_logging},
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    {"shell", 				test_shell},
+#endif
 };
 
 // A Macro to create the Menu
@@ -379,7 +384,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		delay(333);
+		delay(100);
 
 		// Blink GPS LED if we don't have a fix
 		// ------------------------------------
@@ -545,7 +550,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
-    if (!g.sonar_enabled) {
+    if (!sonar.enabled()) {
         cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
     }
 
@@ -556,13 +561,28 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
         delay(200);
         float sonar_dist_cm = sonar.distance_cm();
         float voltage = sonar.voltage();
-        cliSerial->printf_P(PSTR("sonar distance=%5.1fcm  voltage=%5.2f\n"), 
-                            sonar_dist_cm, voltage);
+        float sonar2_dist_cm = sonar2.distance_cm();
+        float voltage2 = sonar2.voltage();
+        cliSerial->printf_P(PSTR("sonar1 dist=%5.1fcm volt1=%5.2f   sonar2 dist=%5.1fcm volt2=%5.2f\n"), 
+                            sonar_dist_cm, voltage,
+                            sonar2_dist_cm, voltage2);
         if (cliSerial->available() > 0) {
             break;
 	    }
     }
     return (0);
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+/*
+ *  run a debug shell
+ */
+static int8_t
+test_shell(uint8_t argc, const Menu::arg *argv)
+{
+    hal.util->run_debug_shell(cliSerial);
+    return 0;
+}
+#endif
 
 #endif // CLI_ENABLED

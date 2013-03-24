@@ -206,6 +206,9 @@ protected:
     // does this GPS support raw velocity numbers?
     bool _have_raw_velocity;
 
+	// detected baudrate
+	uint16_t _baudrate;
+
 private:
 
 

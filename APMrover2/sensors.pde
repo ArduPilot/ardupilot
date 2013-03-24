@@ -4,8 +4,10 @@ static void init_sonar(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     sonar.Init(&adc);
+    sonar2.Init(&adc);
 #else
     sonar.Init(NULL);
+    sonar2.Init(NULL);
 #endif
 }
 
@@ -36,3 +38,53 @@ static void read_battery(void)
     }
 }
 
+
+// read the receiver RSSI as an 8 bit number for MAVLink
+// RC_CHANNELS_SCALED message
+void read_receiver_rssi(void)
+{
+    rssi_analog_source->set_pin(g.rssi_pin);
+    float ret = rssi_analog_source->read_average();
+    receiver_rssi = constrain_int16(ret, 0, 255);
+}
+
+// read the sonars
+static void read_sonars(void)
+{
+    if (!sonar.enabled()) {
+        // this makes it possible to disable sonar at runtime
+        return;
+    }
+
+    if (sonar2.enabled()) {
+        // we have two sonars
+        float sonar1_dist_cm = sonar.distance_cm();
+        float sonar2_dist_cm = sonar2.distance_cm();
+        if (sonar1_dist_cm <= g.sonar_trigger_cm &&
+            sonar1_dist_cm <= sonar2_dist_cm)  {
+            // we have an object on the left
+            obstacle.detected = true;
+            obstacle.turn_angle = g.sonar_turn_angle;
+        } else if (sonar2_dist_cm <= g.sonar_trigger_cm) {
+            // we have an object on the right
+            obstacle.detected = true;
+            obstacle.turn_angle = -g.sonar_turn_angle;
+        }
+        return;
+    }
+
+    // we have a single sonar
+    float sonar_dist_cm = sonar.distance_cm();
+    if (sonar_dist_cm <= g.sonar_trigger_cm)  {
+        // obstacle detected in front 
+        obstacle.detected = true;
+        obstacle.detected_time_ms = hal.scheduler->millis();
+        obstacle.turn_angle = g.sonar_turn_angle;
+        return;
+    }
+
+    // no object detected - reset after the turn time
+    if (hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+        obstacle.detected = false;
+    }
+}

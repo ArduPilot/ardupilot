@@ -24,7 +24,7 @@ static int8_t   test_wp_nav(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_tuning(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
 static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 #endif
@@ -35,6 +35,9 @@ static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_rawgps(uint8_t argc,               const Menu::arg *argv);
 //static int8_t	test_mission(uint8_t argc,      const Menu::arg *argv);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
+#endif
 
 // this is declared here to remove compiler errors
 extern void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);      // in Log.pde
@@ -75,7 +78,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"relay",               test_relay},
     {"wp",                  test_wp},
 //	{"toy",			test_toy},
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
     {"altitude",    test_baro},
     {"sonar",               test_sonar},
 #endif
@@ -88,6 +91,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 //	{"mission",		test_mission},
     //{"reverse",		test_reverse},
     {"nav",                 test_wp_nav},
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    {"shell", 				test_shell},
+#endif
 };
 
 // A Macro to create the Menu
@@ -499,7 +505,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while(1) {
-        delay(333);
+        delay(100);
 
         // Blink GPS LED if we don't have a fix
         // ------------------------------------
@@ -794,7 +800,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
  *  }
  */
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
@@ -902,13 +908,14 @@ test_mag(uint8_t argc, const Menu::arg *argv)
  *       }
  *  }*/
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 /*
  *  test the sonar
  */
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
+#if CONFIG_SONAR == ENABLED
     if(g.sonar_enabled == false) {
         cliSerial->printf_P(PSTR("Sonar disabled\n"));
         return (0);
@@ -922,13 +929,12 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
         delay(100);
 
         cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar->read());
-        //cliSerial->printf_P(PSTR("Sonar, %d, %d\n"), sonar.read(), sonar.raw_value);
 
         if(cliSerial->available() > 0) {
             return (0);
         }
     }
-
+#endif
     return (0);
 }
 #endif
@@ -1063,6 +1069,19 @@ test_logging(uint8_t argc, const Menu::arg *argv)
  *       return (0);
  *  }
  */
+
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+/*
+ *  run a debug shell
+ */
+static int8_t
+test_shell(uint8_t argc, const Menu::arg *argv)
+{
+    hal.util->run_debug_shell(cliSerial);
+    return 0;
+}
+#endif
 
 static void print_hit_enter()
 {

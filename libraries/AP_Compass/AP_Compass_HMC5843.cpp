@@ -21,7 +21,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define COMPASS_ADDRESS       0x1E
+#define COMPASS_ADDRESS      0x1E
 #define ConfigRegA           0x00
 #define ConfigRegB           0x01
 #define magGain              0x20

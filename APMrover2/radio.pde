@@ -16,7 +16,7 @@ static void init_rc_in()
 	g.channel_throttle.set_dead_zone(6);
 
 	//set auxiliary ranges
-	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+    update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 }
 
 static void init_rc_out()
@@ -34,6 +34,8 @@ static void init_rc_out()
 	hal.rcout->write(CH_1, 	g.channel_steer.radio_trim);					// Initialization of servo outputs
 	hal.rcout->write(CH_3, 	g.channel_throttle.radio_trim);
 
+	hal.rcout->write(CH_2, 	g.rc_2.radio_trim);
+	hal.rcout->write(CH_4, 	g.rc_4.radio_trim);
 	hal.rcout->write(CH_5, 	g.rc_5.radio_trim);
 	hal.rcout->write(CH_6, 	g.rc_6.radio_trim);
 	hal.rcout->write(CH_7,   g.rc_7.radio_trim);
@@ -54,9 +56,12 @@ static void init_rc_out()
 
 static void read_radio()
 {
-    g.channel_steer.set_pwm(hal.rcin->read(CH_ROLL));
+    g.channel_steer.set_pwm(hal.rcin->read(CH_STEER));
 
 	g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
+
+  	g.rc_2.set_pwm(hal.rcin->read(CH_2));
+  	g.rc_4.set_pwm(hal.rcin->read(CH_4));
   	g.rc_5.set_pwm(hal.rcin->read(CH_5));
  	g.rc_6.set_pwm(hal.rcin->read(CH_6));        
 	g.rc_7.set_pwm(hal.rcin->read(CH_7));
@@ -72,13 +77,35 @@ static void read_radio()
 		throttle_nudge = 0;
 	}
 
-	/*
-	cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
-				g.rc_1.control_in,
-				g.rc_2.control_in,
-				g.rc_3.control_in,
-				g.rc_4.control_in);
-	*/
+    if (g.skid_steer_in) {
+        // convert the two radio_in values from skid steering values
+        /*
+          mixing rule:
+          steering = motor1 - motor2
+          throttle = 0.5*(motor1 + motor2)
+          motor1 = throttle + 0.5*steering
+          motor2 = throttle - 0.5*steering
+        */          
+
+        float motor1 = g.channel_steer.norm_input();
+        float motor2 = g.channel_throttle.norm_input();
+        float steering_scaled = motor2 - motor1;
+        float throttle_scaled = 0.5f*(motor1 + motor2);
+        int16_t steer = g.channel_steer.radio_trim;
+        int16_t thr   = g.channel_throttle.radio_trim;
+        if (steering_scaled > 0.0f) {
+            steer += steering_scaled*(g.channel_steer.radio_max-g.channel_steer.radio_trim);
+        } else {
+            steer += steering_scaled*(g.channel_steer.radio_trim-g.channel_steer.radio_min);
+        }
+        if (throttle_scaled > 0.0f) {
+            thr += throttle_scaled*(g.channel_throttle.radio_max-g.channel_throttle.radio_trim);
+        } else {
+            thr += throttle_scaled*(g.channel_throttle.radio_trim-g.channel_throttle.radio_min);
+        }
+        g.channel_steer.set_pwm(steer);
+        g.channel_throttle.set_pwm(thr);
+    }
 }
 
 static void control_failsafe(uint16_t pwm)
