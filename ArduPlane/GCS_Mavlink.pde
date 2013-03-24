@@ -771,8 +771,8 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 
 GCS_MAVLINK::GCS_MAVLINK() :
     packet_drops(0),
-    waypoint_send_timeout(1000), // 1 second
-    waypoint_receive_timeout(1000) // 1 second
+    waypoint_send_timeout(8000), // 8 seconds
+    waypoint_receive_timeout(8000) // 8 seconds
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -843,7 +843,7 @@ GCS_MAVLINK::update(void)
 
     if (waypoint_receiving &&
         waypoint_request_i <= waypoint_request_last &&
-        tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
+        tnow > waypoint_timelast_request + 200 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
