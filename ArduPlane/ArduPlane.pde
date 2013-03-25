@@ -980,7 +980,7 @@ static void update_GPS(void)
     // get position from AHRS
     have_position = ahrs.get_position(&current_loc);
 
-    if (g_gps->new_data && g_gps->fix) {
+    if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;
 
         // for performance
@@ -1262,7 +1262,7 @@ static void update_alt()
     if (barometer.healthy) {
         current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;                       // alt_MSL centimeters (meters * 100)
         current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
-    } else if (g_gps->fix) {
+    } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         current_loc.alt = g_gps->altitude;     // alt_MSL centimeters (meters * 100)
     }
 #endif
