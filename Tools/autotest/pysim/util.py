@@ -202,8 +202,15 @@ def lock_file(fname):
         return None
     return f
 
-def check_parent(parent_pid=os.getppid()):
+def check_parent(parent_pid=None):
     '''check our parent process is still alive'''
+    if parent_pid is None:
+        try:
+            parent_pid = os.getppid()
+        except Exception:
+            pass
+    if parent_pid is None:
+        return
     try:
         os.kill(parent_pid, 0)
     except Exception:
