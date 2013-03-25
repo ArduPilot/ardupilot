@@ -19,30 +19,31 @@ static void update_GPS_light(void)
     // GPS LED on if we have a fix or Blink GPS LED if we are receiving data
     // ---------------------------------------------------------------------
     switch (g_gps->status()) {
-
-    case (2):
-        if(ap.home_is_set) {                                      // JLN update
-            digitalWriteFast(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix AND home is set.
-        } else {
-            digitalWriteFast(C_LED_PIN, LED_OFF);
-        }
-        break;
-
-    case (1):
-        if (g_gps->valid_read == true) {
-            ap_system.GPS_light = !ap_system.GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-            if (ap_system.GPS_light) {
-                digitalWriteFast(C_LED_PIN, LED_OFF);
-            }else{
-                digitalWriteFast(C_LED_PIN, LED_ON);
+        case GPS::NO_FIX:
+        case GPS::GPS_OK_FIX_2D:
+            // check if we've blinked since the last gps update
+            if (g_gps->valid_read) {
+                g_gps->valid_read = false;
+                ap_system.GPS_light = !ap_system.GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
+                if (ap_system.GPS_light) {
+                    digitalWriteFast(C_LED_PIN, LED_OFF);
+                }else{
+                    digitalWriteFast(C_LED_PIN, LED_ON);
+                }
             }
-            g_gps->valid_read = false;
-        }
-        break;
+            break;
 
-    default:
-        digitalWriteFast(C_LED_PIN, LED_OFF);
-        break;
+        case GPS::GPS_OK_FIX_3D:
+            if(ap.home_is_set) {
+                digitalWriteFast(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix AND home is set.
+            } else {
+                digitalWriteFast(C_LED_PIN, LED_OFF);
+            }
+            break;
+
+        default:
+            digitalWriteFast(C_LED_PIN, LED_OFF);
+            break;
     }
 }
 

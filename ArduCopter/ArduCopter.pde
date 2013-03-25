@@ -1374,52 +1374,48 @@ static void update_GPS(void)
     g_gps->update();
     update_GPS_light();
 
-    set_gps_healthy(g_gps->status() == g_gps->GPS_OK);
+    set_gps_healthy(g_gps->status() >= GPS::GPS_OK_FIX_3D);
 
-    if (g_gps->new_data && g_gps->fix) {
+    if (g_gps->new_data && last_gps_time != g_gps->time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         // clear new data flag
         g_gps->new_data = false;
 
-        // check for duiplicate GPS messages
-        if(last_gps_time != g_gps->time) {
+        // save GPS time so we don't get duplicate reads
+        last_gps_time = g_gps->time;
 
-            // for performance monitoring
-            // --------------------------
-            gps_fix_count++;
+        // log location if we have at least a 2D fix
+        if (g.log_bitmask & MASK_LOG_GPS && motors.armed()) {
+            Log_Write_GPS();
+        }
 
-            if(ground_start_count > 1) {
-                ground_start_count--;
+        // for performance monitoring
+        gps_fix_count++;
 
-            } else if (ground_start_count == 1) {
-
-                // We countdown N number of good GPS fixes
-                // so that the altitude is more accurate
-                // -------------------------------------
-                if (g_gps->latitude == 0) {
-                    ground_start_count = 5;
-
+        // check if we can initialise home yet
+        if (!ap.home_is_set) {
+            // if we have a 3d lock and valid location
+            if(g_gps->status() >= GPS::GPS_OK_FIX_3D && g_gps->latitude != 0) {
+                if( ground_start_count > 0 ) {
+                    ground_start_count--;
                 }else{
+                    // after 10 successful reads store home location
+                    // ap.home_is_set will be true so this will only happen once
+                    ground_start_count = 0;
+                    init_home();
                     if (g.compass_enabled) {
                         // Set compass declination automatically
                         compass.set_initial_location(g_gps->latitude, g_gps->longitude);
                     }
-                    // save home to eeprom (we must have a good fix to have reached this point)
-                    init_home();
-                    ground_start_count = 0;
                 }
-            }
-
-            if (g.log_bitmask & MASK_LOG_GPS && motors.armed()) {
-                Log_Write_GPS();
+            }else{
+                // start again if we lose 3d lock
+                ground_start_count = 10;
             }
 
 #if HIL_MODE == HIL_MODE_ATTITUDE                                                               // only execute in HIL mode
             ap_system.alt_sensor_flag = true;
 #endif
         }
-
-        // save GPS time so we don't get duplicate reads
-        last_gps_time = g_gps->time;
     }
 
     // check for loss of gps
