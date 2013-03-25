@@ -999,6 +999,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(motors, "MOT_",         AP_Motors),
 #endif
 
+    // @Group: RCMAP_
+    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
+    GOBJECT(rcmap, "RCMAP_",        RCMapper),
+
     AP_VAREND
 };
 

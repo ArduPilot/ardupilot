@@ -103,6 +103,7 @@
 #include <memcheck.h>           // memory limit checker
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
+#include <AP_RCMapper.h>        // RC input mapping library
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -405,6 +406,7 @@ static int8_t control_mode = STABILIZE;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 static uint8_t oldSwitchPosition;
+static RCMapper rcmap;
 
 // receiver RSSI
 static uint8_t receiver_rssi;
