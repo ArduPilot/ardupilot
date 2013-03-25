@@ -21,7 +21,7 @@ GPS::GPS(void) :
 	// ensure all the inherited fields are zeroed
 	num_sats(0),
 	new_data(false),
-	fix(false),
+	fix(FIX_NONE),
 	valid_read(false),
 	last_fix_time(0),
 	_have_raw_velocity(false),
@@ -56,7 +56,13 @@ GPS::update(void)
         }
     } else {
         // we got a message, update our status correspondingly
-        _status = fix ? GPS_OK : NO_FIX;
+        if (fix == FIX_3D) {
+            _status = GPS_OK_FIX_3D;
+        }else if (fix == FIX_2D) {
+            _status = GPS_OK_FIX_2D;
+        }else{
+            _status = NO_FIX;
+        }
 
         valid_read = true;
         new_data = true;
@@ -64,7 +70,7 @@ GPS::update(void)
         // reset the idle timer
         _idleTimer = tnow;
 
-        if (_status == GPS_OK) {
+        if (_status >= GPS_OK_FIX_2D) {
             last_fix_time = _idleTimer;
             _last_ground_speed_cm = ground_speed;
 

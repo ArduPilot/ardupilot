@@ -34,7 +34,16 @@ public:
     enum GPS_Status {
         NO_GPS = 0,             ///< No GPS connected/detected
         NO_FIX = 1,             ///< Receiving valid GPS messages but no lock
-        GPS_OK = 2              ///< Receiving valid messages and locked
+        GPS_OK_FIX_2D = 2,      ///< Receiving valid messages and 2D lock
+        GPS_OK_FIX_3D = 3       ///< Receiving valid messages and 3D lock
+    };
+
+    /// Fix status codes
+    ///
+    enum Fix_Status {
+        FIX_NONE = 0,           ///< No fix
+        FIX_2D = 2,             ///< 2d fix
+        FIX_3D = 3,             ///< 3d fix
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -106,8 +115,7 @@ public:
     /// already seen.
     bool new_data;
 
-    // Deprecated properties
-    bool fix;                           ///< true if we have a position fix (use ::status instead)
+    Fix_Status fix;                        ///< 0 if we have no fix, 2 for 2D fix, 3 for 3D fix
     bool valid_read;                    ///< true if we have seen data from the GPS (use ::status instead)
 
     // Debug support
@@ -127,13 +135,13 @@ public:
 
     // components of velocity in 2D, in m/s
     float velocity_north(void) {
-        return _status == GPS_OK ? _velocity_north : 0;
+        return _status >= GPS_OK_FIX_2D ? _velocity_north : 0;
     }
     float velocity_east(void)  {
-        return _status == GPS_OK ? _velocity_east  : 0;
+        return _status >= GPS_OK_FIX_2D ? _velocity_east  : 0;
     }
     float velocity_down(void)  {
-        return _status == GPS_OK ? _velocity_down  : 0;
+        return _status >= GPS_OK_FIX_2D ? _velocity_down  : 0;
     }
 
     // last ground speed in m/s. This can be used when we have no GPS
