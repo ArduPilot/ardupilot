@@ -281,7 +281,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void)
 {
-    if (!_gps || _gps->status() != GPS::GPS_OK || !_gps_use) {
+    if (!_gps || _gps->status() <= GPS::NO_FIX || !_gps_use) {
         return false;
     }
     return true;
@@ -730,7 +730,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 		ret = true;
 	}
 
-	if (ret && _wind_max > 0 && _gps && _gps->status() == GPS::GPS_OK) {
+	if (ret && _wind_max > 0 && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
 		// constrain the airspeed by the ground speed
 		// and AHRS_WIND_MAX
 		*airspeed_ret = constrain(*airspeed_ret, 

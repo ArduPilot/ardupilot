@@ -103,7 +103,7 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 {
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();
-		if (_wind_max > 0 && _gps && _gps->status() == GPS::GPS_OK) {
+		if (_wind_max > 0 && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
 			// constrain the airspeed by the ground speed
 			// and AHRS_WIND_MAX
 			*airspeed_ret = constrain(*airspeed_ret, 

@@ -120,7 +120,7 @@ public:
     // otherwise false. This only updates the lat and lng fields
     // of the Location
     bool get_position(struct Location *loc) {
-        if (!_gps || _gps->status() != GPS::GPS_OK) {
+        if (!_gps || _gps->status() <= GPS::NO_FIX) {
             return false;
         }
         loc->lat = _gps->latitude;
