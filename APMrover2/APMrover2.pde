@@ -800,7 +800,7 @@ static void update_GPS(void)
 
     have_position = ahrs.get_position(&current_loc);
 
-	if (g_gps->new_data && g_gps->status() == GPS::GPS_OK) {
+	if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
 		gps_fix_count++;
 
 		if(ground_start_count > 1){
