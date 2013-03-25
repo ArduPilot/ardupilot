@@ -174,7 +174,7 @@ AP_GPS_SIRF::_parse_gps(void)
         // parse fix type
         if (_buffer.nav.fix_invalid) {
             fix = GPS::FIX_NONE;
-        }else if (_buffer.nav.fix_type & FIX_MASK == FIX_3D) {
+        }else if ((_buffer.nav.fix_type & FIX_MASK) == FIX_3D) {
             fix = GPS::FIX_3D;
         }else{
             fix = GPS::FIX_2D;

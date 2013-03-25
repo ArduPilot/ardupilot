@@ -141,7 +141,7 @@ public:
         return _status >= GPS_OK_FIX_2D ? _velocity_east  : 0;
     }
     float velocity_down(void)  {
-        return _status >= GPS_OK_FIX_2D ? _velocity_down  : 0;
+        return _status >= GPS_OK_FIX_3D ? _velocity_down  : 0;
     }
 
     // last ground speed in m/s. This can be used when we have no GPS
