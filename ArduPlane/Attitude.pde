@@ -384,7 +384,7 @@ static void throttle_slew_limit(int16_t last_throttle)
  */
 static bool auto_takeoff_check(void)
 {
-    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK) {
+    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK_FIX_3D) {
         // no auto takeoff without GPS lock
         return false;
     }
@@ -448,7 +448,7 @@ static bool suppress_throttle(void)
     }
 
     if (g_gps != NULL && 
-        g_gps->status() == GPS::GPS_OK && 
+        g_gps->status() >= GPS::GPS_OK_FIX_2D && 
         g_gps->ground_speed >= 500) {
         // we're moving at more than 5 m/s
         throttle_suppressed = false;

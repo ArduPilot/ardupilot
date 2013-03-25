@@ -100,7 +100,7 @@ static void calc_gndspeed_undershoot()
 {
     // Function is overkill, but here in case we want to add filtering
     // later
-    if (g_gps && g_gps->status() == GPS::GPS_OK) {
+    if (g_gps && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - g_gps->ground_speed) : 0;
     }
 }
