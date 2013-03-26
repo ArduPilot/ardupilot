@@ -46,7 +46,7 @@ public:
     void                    configure_msg(mavlink_message_t* msg);
     void                    control_msg(mavlink_message_t* msg);
     void                    status_msg(mavlink_message_t* msg);
-    void                    set_roi_cmd(struct Location *target_loc);
+    void                    set_roi_cmd(const struct Location *target_loc);
     void                    configure_cmd();
     void                    control_cmd();
 
@@ -72,7 +72,7 @@ private:
     void                            set_GPS_target_location(Location targetGPSLocation); ///< used to tell the mount to track GPS location
 
     // internal methods
-    void                            calc_GPS_target_angle(struct Location *target);
+    void                            calc_GPS_target_angle(const struct Location *target);
     void                            stabilize();
     int16_t                         closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max);
     void                            move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);

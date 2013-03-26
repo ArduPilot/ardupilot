@@ -70,9 +70,9 @@ int32_t                 get_bearing_cd(const struct Location *loc1, const struct
 // our previous waypoint and point2 is our target waypoint
 // then this function returns true if we have flown past
 // the target waypoint
-bool        location_passed_point(struct Location & location,
-                                  struct Location & point1,
-                                  struct Location & point2);
+bool        location_passed_point(const struct Location & location,
+                                  const struct Location & point1,
+                                  const struct Location & point2);
 
 //  extrapolate latitude/longitude given bearing and distance
 void        location_update(struct Location *loc, float bearing, float distance);

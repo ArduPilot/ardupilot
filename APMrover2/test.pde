@@ -299,7 +299,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 
 static void
-test_wp_print(struct Location *cmd, uint8_t wp_index)
+test_wp_print(const struct Location *cmd, uint8_t wp_index)
 {
 	cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
 		(int)wp_index,

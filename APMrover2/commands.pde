@@ -100,7 +100,7 @@ static void set_cmd_with_index(struct Location temp, int i)
 This function stores waypoint commands
 It looks to see what the next command type is and finds the last command.
 */
-static void set_next_WP(struct Location *wp)
+static void set_next_WP(const struct Location *wp)
 {
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
