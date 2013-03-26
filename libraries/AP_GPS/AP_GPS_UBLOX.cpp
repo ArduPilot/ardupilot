@@ -246,10 +246,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_SOL fix_status=%u fix_type=%u",
               _buffer.solution.fix_status,
               _buffer.solution.fix_type);
-        if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
-            if( _buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) {
+        if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
+            if( _buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) {
                 next_fix = GPS::FIX_3D;
-            }else if (_buffer.status.fix_type == AP_GPS_UBLOX::FIX_2D) {
+            }else if (_buffer.solution.fix_type == AP_GPS_UBLOX::FIX_2D) {
                 next_fix = GPS::FIX_2D;
             }else{
                 next_fix = GPS::FIX_NONE;
