@@ -263,7 +263,7 @@ static void do_land()
     set_next_WP(&next_nav_command);
 }
 
-static void loiter_set_direction_wp(struct Location *nav_command) 
+static void loiter_set_direction_wp(const struct Location *nav_command)
 {
     if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
         loiter_direction = -1;

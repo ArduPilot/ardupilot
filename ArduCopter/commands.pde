@@ -124,7 +124,7 @@ static int32_t get_RTL_alt()
  *  It precalculates all the necessary stuff.
  */
 
-static void set_next_WP(struct Location *wp)
+static void set_next_WP(const struct Location *wp)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------
