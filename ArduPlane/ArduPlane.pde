@@ -1030,7 +1030,7 @@ static void update_current_flight_mode(void)
 
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
-            if (hold_course != -1 && g.rudder_steer == 0) {
+            if (hold_course != -1 && g.rudder_steer == 0 && g.takeoff_heading_hold != 0) {
                 calc_nav_roll();
             } else {
                 nav_roll_cd = 0;

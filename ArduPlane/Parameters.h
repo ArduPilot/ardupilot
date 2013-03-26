@@ -80,6 +80,7 @@ public:
         k_param_ins,                // libraries/AP_InertialSensor variables
         k_param_takeoff_throttle_min_speed,
         k_param_takeoff_throttle_min_accel,
+        k_param_takeoff_heading_hold,
 
         // 110: Telemetry control
         //
@@ -358,6 +359,7 @@ public:
     AP_Int8 rudder_steer;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
+    AP_Int8 takeoff_heading_hold;
 
     // RC channels
     RC_Channel channel_roll;
