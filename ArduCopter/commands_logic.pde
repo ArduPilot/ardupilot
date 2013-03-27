@@ -290,7 +290,7 @@ static void do_nav_wp()
         // this will be used to remember the time in millis after we reach or pass the WP.
         loiter_time     = 0;
         // this is the delay, stored in seconds and expanded to millis
-        loiter_time_max = command_nav_queue.p1 * 1000;
+        loiter_time_max = command_nav_queue.p1;
     }
 
     // reset control of yaw to default
@@ -407,7 +407,7 @@ static void do_loiter_time()
         wp_nav.set_destination(pv_location_to_vector(command_nav_queue));
     }
 
-    loiter_time_max = command_nav_queue.p1 * 1000;     // units are (seconds)
+    loiter_time_max = command_nav_queue.p1;     // units are (seconds)
 }
 
 /********************************************************************************/
@@ -453,14 +453,14 @@ static bool verify_nav_wp()
     }
 
     // delay checking once we've reached the location
-    if( !(wp_verify_byte & NAV_DELAY) && (wp_verify_byte & (NAV_LOCATION | NAV_ALTITUDE)) ) {
+    if( !(wp_verify_byte & NAV_DELAY) && (wp_verify_byte & NAV_LOCATION) && (wp_verify_byte & NAV_ALTITUDE) ) {
         // start timer if necessary
         if(loiter_time == 0) {
             loiter_time = millis();
         }
 
         // check if timer has run out
-        if ((millis() - loiter_time) >= loiter_time_max) {
+        if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
             wp_verify_byte |= NAV_DELAY;
         }
     }
