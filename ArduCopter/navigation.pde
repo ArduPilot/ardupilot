@@ -125,7 +125,7 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_LOITER:
             // set target to current position
-            wp_nav.set_loiter_target(inertial_nav.get_position());
+            wp_nav.set_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
             nav_initialised = true;
             break;
 
