@@ -101,13 +101,14 @@ def process_jsb_input(buf):
             if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
-    simbuf = struct.pack('<16dI',
+    simbuf = struct.pack('<17dI',
                          fdm.get('latitude', units='degrees'),
                          fdm.get('longitude', units='degrees'),
                          fdm.get('altitude', units='meters'),
                          fdm.get('psi', units='degrees'),
                          fdm.get('v_north', units='mps'),
                          fdm.get('v_east', units='mps'),
+                         fdm.get('v_down', units='mps'),
                          fdm.get('A_X_pilot', units='mpss'),
                          fdm.get('A_Y_pilot', units='mpss'),
                          fdm.get('A_Z_pilot', units='mpss'),
@@ -118,7 +119,7 @@ def process_jsb_input(buf):
                          fdm.get('theta', units='degrees'),
                          fdm.get('psi', units='degrees'),
                          fdm.get('vcas', units='mps'),
-                         0x4c56414e)
+                         0x4c56414f)
     try:
         sim_out.send(simbuf)
     except socket.error as e:

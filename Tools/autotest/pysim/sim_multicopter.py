@@ -38,14 +38,14 @@ def sim_send(m, a):
         if not e.errno in [ errno.ECONNREFUSED ]:
             raise
 
-    buf = struct.pack('<16dI',
+    buf = struct.pack('<17dI',
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
-                      a.velocity.x, a.velocity.y,
+                      a.velocity.x, a.velocity.y, a.velocity.z,
                       a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
                       degrees(earth_rates.x), degrees(earth_rates.y), degrees(earth_rates.z),
                       degrees(roll), degrees(pitch), degrees(yaw),
                       math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),
-                      0x4c56414e)
+                      0x4c56414f)
     try:
         sim_out.send(buf)
     except socket.error as e:

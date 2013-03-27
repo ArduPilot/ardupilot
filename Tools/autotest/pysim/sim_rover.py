@@ -17,14 +17,14 @@ def sim_send(a):
     earth_rates = util.BodyRatesToEarthRates(a.dcm, a.gyro)
     (roll, pitch, yaw) = a.dcm.to_euler()
 
-    buf = struct.pack('<16dI',
+    buf = struct.pack('<17dI',
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
-                      a.velocity.x, a.velocity.y,
+                      a.velocity.x, a.velocity.y, a.velocity.z,
                       a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
                       degrees(earth_rates.x), degrees(earth_rates.y), degrees(earth_rates.z),
                       degrees(roll), degrees(pitch), degrees(yaw),
                       math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),
-                      0x4c56414e)
+                      0x4c56414f)
     try:
         sim_out.send(buf)
     except socket.error as e:
