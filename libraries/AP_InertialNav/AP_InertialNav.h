@@ -79,6 +79,9 @@ public:
     float       get_latitude_velocity();
     float       get_longitude_velocity();
 
+    // get_velocity - returns current velocity in cm/s
+    Vector3f    get_velocity() { return _velocity; }
+
     // set velocity in latitude & longitude directions (in cm/s)
     void        set_velocity_xy(float x, float y);
 
