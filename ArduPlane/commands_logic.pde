@@ -299,7 +299,7 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
     if (ahrs.yaw_initialised()) {
-        if (hold_course == -1) {
+        if (hold_course == -1 && g.takeoff_heading_hold != 0) {
             // save our current course to take off
             hold_course = ahrs.yaw_sensor;
             gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course);
