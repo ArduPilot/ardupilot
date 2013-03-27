@@ -17,6 +17,7 @@
 #define MAX_LOITER_POS_ACCEL            250
 #define MAX_LOITER_VEL_ACCEL            400         // should be 1.5 times larger than MAX_LOITER_POS_ACCEL
 #define MAX_LOITER_POS_VEL_VELOCITY     1000
+#define MAX_LOITER_OVERSHOOT            1000        // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
 #define WPINAV_MAX_POS_ERROR            2000.0f     // maximum distance (in cm) that the desired track can stray from our current location.
 #define WP_SPEED                        500         // default horizontal speed betwen waypoints in cm/s
 
@@ -36,6 +37,9 @@ public:
 
     /// set_loiter_target in cm from home
     void set_loiter_target(const Vector3f& position) { _target = position; }
+
+    /// set_loiter_target - set initial loiter target based on current position and velocity
+    void set_loiter_target(const Vector3f& position, const Vector3f& velocity);
 
     /// move_loiter_target - move destination using forward and right velocities in cm/s
     void move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt);

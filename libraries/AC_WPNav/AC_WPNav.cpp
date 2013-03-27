@@ -35,6 +35,39 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
 /// simple loiter controller
 ///
 
+/// set_loiter_target - set initial loiter target based on current position and velocity
+void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& velocity)
+{
+    float linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
+    float linear_velocity;      // the velocity we swap between linear and sqrt.
+    float vel_total;
+    float target_dist;
+
+    // avoid divide by zero
+    if( _pid_pos_lat->kP() <= 0.1 ) {
+        set_loiter_target(position);
+        return;
+    }
+
+    // calculate point at which velocity switches from linear to sqrt
+    linear_velocity = MAX_LOITER_POS_ACCEL/_pid_pos_lat->kP();
+
+    // calculate total current velocity
+    vel_total = safe_sqrt(velocity.x*velocity.x + velocity.y*velocity.y);
+
+    // calculate distance within which we can stop
+    if (vel_total < linear_velocity) {
+        target_dist = vel_total/_pid_pos_lat->kP();
+    } else {
+        linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
+        target_dist = linear_distance + (vel_total*vel_total)/(2*MAX_LOITER_POS_ACCEL);
+    }
+    target_dist = constrain(target_dist, 0, MAX_LOITER_OVERSHOOT);
+
+    _target.x = position.x + (target_dist * velocity.x / vel_total);
+    _target.y = position.y + (target_dist * velocity.y / vel_total);
+}
+
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
 void AC_WPNav::move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt)
 {
