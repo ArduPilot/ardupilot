@@ -340,7 +340,10 @@ static void set_mode(enum FlightMode mode)
     case STABILIZE:
     case TRAINING:
     case FLY_BY_WIRE_A:
+        break;
+
     case FLY_BY_WIRE_B:
+        target_altitude_cm = current_loc.alt;
         break;
 
     case CIRCLE:

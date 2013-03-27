@@ -99,6 +99,7 @@ public:
         k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm,
+        k_param_flybywire_climb_rate,
 
         //
         // 130: Sensor parameters
@@ -285,6 +286,7 @@ public:
     AP_Int16 flybywire_airspeed_min;
     AP_Int16 flybywire_airspeed_max;
     AP_Int8 flybywire_elev_reverse;
+    AP_Int8 flybywire_climb_rate;
 
     // Throttle
     //

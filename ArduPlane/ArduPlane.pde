@@ -1160,7 +1160,8 @@ static void update_current_flight_mode(void)
             break;
         }
 
-        case FLY_BY_WIRE_B:
+        case FLY_BY_WIRE_B: {
+            static float last_elevator_input;
             // Substitute stick inputs for Navigation control output
             // We use g.pitch_limit_min because its magnitude is
             // normally greater than g.pitch_limit_max
@@ -1175,16 +1176,26 @@ static void update_current_flight_mode(void)
             if (g.flybywire_elev_reverse) {
                 elevator_input = -elevator_input;
             }
-            if ((adjusted_altitude_cm() >= home.alt+g.FBWB_min_altitude_cm) || (g.FBWB_min_altitude_cm == 0)) {
-                altitude_error_cm = elevator_input * g.pitch_limit_min_cd;
-            } else {
-                altitude_error_cm = (home.alt + g.FBWB_min_altitude_cm) - adjusted_altitude_cm();
-                if (elevator_input < 0) {
-                    altitude_error_cm += elevator_input * g.pitch_limit_min_cd;
-                }
+
+            target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_ms_fast_loop * 0.1f;
+
+            if (elevator_input == 0.0f && last_elevator_input != 0.0f) {
+                // the user has just released the elevator, lock in
+                // the current altitude
+                target_altitude_cm = current_loc.alt;
             }
+
+            // check for FBWB altitude limit
+            if (g.FBWB_min_altitude_cm != 0 && target_altitude_cm < home.alt + g.FBWB_min_altitude_cm) {
+                target_altitude_cm = home.alt + g.FBWB_min_altitude_cm;
+            }
+            altitude_error_cm = target_altitude_cm - adjusted_altitude_cm();
+
+            last_elevator_input = elevator_input;
+
             calc_throttle();
             calc_nav_pitch();
+        }
             break;
 
         case STABILIZE:
