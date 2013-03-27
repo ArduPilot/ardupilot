@@ -219,9 +219,9 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	velned.time = status.time;
 	velned.ned_north = 100.0 * d->speedN;
 	velned.ned_east  = 100.0 * d->speedE;
-	velned.ned_down  = 0;
+	velned.ned_down  = 100.0 * d->speedD;
 	velned.speed_2d = pythagorous2(d->speedN, d->speedE) * 100;
-	velned.speed_3d = velned.speed_2d;
+	velned.speed_3d = pythagorous3(d->speedN, d->speedE, d->speedD) * 100;
 	velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0;
 	if (velned.heading_2d < 0.0) {
 		velned.heading_2d += 360.0 * 100000.0;
@@ -437,7 +437,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
   possibly send a new GPS packet
  */
 void SITL_State::_update_gps(double latitude, double longitude, float altitude,
-			     double speedN, double speedE, bool have_lock)
+							 double speedN, double speedE, double speedD, bool have_lock)
 {
 	struct gps_data d;
 	char c;
@@ -459,6 +459,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	d.altitude = altitude;
 	d.speedN = speedN;
 	d.speedE = speedE;
+	d.speedD = speedD;
 	d.have_lock = have_lock;
 
 	// add in some GPS lag

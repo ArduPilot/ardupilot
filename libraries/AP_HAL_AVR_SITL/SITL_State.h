@@ -62,6 +62,7 @@ private:
 	    float altitude;
 	    double speedN;
 	    double speedE;
+	    double speedD;
 	    bool have_lock;
     };
 
@@ -76,7 +77,7 @@ private:
     static void _update_gps_mtk19(const struct gps_data *d);
 
     static void _update_gps(double latitude, double longitude, float altitude,
-			    double speedN, double speedE, bool have_lock);
+			    double speedN, double speedE, double speedD, bool have_lock);
 
     static void _update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
 			    double rollRate, 	double pitchRate,double yawRate,	// Local to plane
