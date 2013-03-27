@@ -57,6 +57,9 @@ public:
     /// waypoint navigation
     ///
 
+    /// get_destination waypoint using position vector (distance from home in cm)
+    Vector3f get_destination() { return _destination; }
+
     /// set_destination waypoint using position vector (distance from home in cm)
     void set_destination(const Vector3f& destination);
 

@@ -135,7 +135,7 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     _origin = origin;
     _destination = destination;
     _pos_delta = _destination - _origin;
-    _track_length = _pos_delta.length();
+    _track_length = safe_sqrt(_pos_delta.x * _pos_delta.x + _pos_delta.y * _pos_delta.y);  
     _track_desired = 0;
 }
 
@@ -158,19 +158,19 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
 
     if( _pos_delta.x == 0 ) {
         // x is zero
-        cross_track_dist = fabs(curr.x - _destination.x);
-        track_covered = fabs(curr.y - _origin.y);
+        cross_track_dist = fabsf(curr.x - _destination.x);
+        track_covered = fabsf(curr.y - _origin.y);
     }else if(_pos_delta.y == 0) {
         // y is zero
-        cross_track_dist = fabs(curr.y - _destination.y);
-        track_covered = fabs(curr.x - _origin.x);
+        cross_track_dist = fabsf(curr.y - _destination.y);
+        track_covered = fabsf(curr.x - _origin.x);
     }else{
         // both x and y non zero
         line_a = _pos_delta.y;
         line_b = -_pos_delta.x;
         line_c = _pos_delta.x * _origin.y - _pos_delta.y * _origin.x;
         line_m = line_a / line_b;
-        cross_track_dist = abs(line_a * curr.x + line_b * curr.y + line_c ) / _track_length;
+        cross_track_dist = fabsf(line_a * curr.x + line_b * curr.y + line_c ) / _track_length;
 
         line_m = 1/line_m;
         line_a = line_m;
@@ -178,7 +178,7 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
         line_c = curr.y - line_m * curr.x;
 
         // calculate the distance to the closest point along the track and it's distance from the origin
-        track_covered = abs(line_a*_origin.x + line_b*_origin.y + line_c) / safe_sqrt(line_a*line_a+line_b*line_b);
+        track_covered = fabsf(line_a*_origin.x + line_b*_origin.y + line_c) / safe_sqrt(line_a*line_a+line_b*line_b);
     }
 
     // maximum distance along the track that we will allow (stops target point from getting too far from the current position)
