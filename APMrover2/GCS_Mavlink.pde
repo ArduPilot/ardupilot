@@ -78,7 +78,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 
     mavlink_msg_heartbeat_send(
         chan,
-        MAV_TYPE_FIXED_WING,
+        MAV_TYPE_GROUND_ROVER,
         MAV_AUTOPILOT_ARDUPILOTMEGA,
         base_mode,
         custom_mode,
