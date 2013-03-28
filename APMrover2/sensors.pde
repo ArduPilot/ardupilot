@@ -63,10 +63,18 @@ static void read_sonars(void)
         if (sonar1_dist_cm <= g.sonar_trigger_cm &&
             sonar1_dist_cm <= sonar2_dist_cm)  {
             // we have an object on the left
+            if (!obstacle.detected) {
+                gcs_send_text_fmt(PSTR("Sonar1 obstacle %.0fcm"),
+                                  sonar1_dist_cm);
+            }
             obstacle.detected = true;
             obstacle.turn_angle = g.sonar_turn_angle;
         } else if (sonar2_dist_cm <= g.sonar_trigger_cm) {
             // we have an object on the right
+            if (!obstacle.detected) {
+                gcs_send_text_fmt(PSTR("Sonar2 obstacle %.0fcm"),
+                                  sonar2_dist_cm);
+            }
             obstacle.detected = true;
             obstacle.turn_angle = -g.sonar_turn_angle;
         }
@@ -75,6 +83,10 @@ static void read_sonars(void)
         float sonar_dist_cm = sonar.distance_cm();
         if (sonar_dist_cm <= g.sonar_trigger_cm)  {
             // obstacle detected in front 
+            if (!obstacle.detected) {
+                gcs_send_text_fmt(PSTR("Sonar obstacle %.0fcm"),
+                                  sonar_dist_cm);
+            }
             obstacle.detected = true;
             obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = g.sonar_turn_angle;
@@ -82,7 +94,9 @@ static void read_sonars(void)
     }
 
     // no object detected - reset after the turn time
-    if (hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+    if (obstacle.detected &&
+        hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+        gcs_send_text_fmt(PSTR("Obstacle passed"));
         obstacle.detected = false;
     }
 }
