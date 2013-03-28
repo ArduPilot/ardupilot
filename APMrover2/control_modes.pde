@@ -97,7 +97,7 @@ static void read_trim_switch()
                                   
                     // increment index
                     CH7_wp_index++; 
-                    CH7_wp_index = constrain_int16(CH7_wp_index, 1, MAX_WAYPOINTS);
+                    CH7_wp_index = constrain<int16_t>(CH7_wp_index, 1, MAX_WAYPOINTS);
 
                 } else if (control_mode == AUTO) {    
                     // if SW7 is ON in AUTO = set to RTL  

@@ -19,7 +19,7 @@ static float get_speed_scaler(void)
         } else {
             speed_scaler = 2.0;
         }
-        speed_scaler = constrain(speed_scaler, 0.5, 2.0);
+        speed_scaler = constrain<float>(speed_scaler, 0.5, 2.0);
     } else {
         if (g.channel_throttle.servo_out > 0) {
             speed_scaler = 0.5 + ((float)THROTTLE_CRUISE / g.channel_throttle.servo_out / 2.0);                 // First order taylor expansion of square root
@@ -28,7 +28,7 @@ static float get_speed_scaler(void)
             speed_scaler = 1.67;
         }
         // This case is constrained tighter as we don't have real speed info
-        speed_scaler = constrain(speed_scaler, 0.6, 1.67);
+        speed_scaler = constrain<float>(speed_scaler, 0.6, 1.67);
     }
     return speed_scaler;
 }
@@ -255,7 +255,7 @@ static void calc_throttle()
             g.channel_throttle.servo_out = throttle_target - (throttle_target - g.throttle_min) * nav_pitch_cd / g.pitch_limit_min_cd;
         }
 
-        g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
+        g.channel_throttle.servo_out = constrain<int16_t>(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
     } else {
         // throttle control with airspeed compensation
         // -------------------------------------------
@@ -265,7 +265,7 @@ static void calc_throttle()
         g.channel_throttle.servo_out = g.throttle_cruise + g.pidTeThrottle.get_pid(energy_error);
         g.channel_throttle.servo_out += (g.channel_pitch.servo_out * g.kff_pitch_to_throttle);
 
-        g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out,
+        g.channel_throttle.servo_out = constrain<int16_t>(g.channel_throttle.servo_out,
                                                        g.throttle_min.get(), g.throttle_max.get());
     }
 
@@ -311,7 +311,7 @@ static void calc_nav_pitch()
     } else {
         nav_pitch_cd = g.pidNavPitchAltitude.get_pid(altitude_error_cm);
     }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain<int32_t>(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
 }
 
 
@@ -342,11 +342,11 @@ static void calc_nav_roll()
     // this is the old nav_roll calculation. We will use this for 2.50
     // then remove for a future release
     float nav_gain_scaler = 0.01 * g_gps->ground_speed / g.scaling_speed;
-    nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
+    nav_gain_scaler = constrain<float>(nav_gain_scaler, 0.2, 1.4);
     nav_roll_cd = g.pidNavRoll.get_pid(bearing_error_cd, nav_gain_scaler); //returns desired bank angle in degrees*100
 #endif
 
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    nav_roll_cd = constrain<int32_t>(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
 }
 
 
@@ -357,7 +357,7 @@ static void calc_nav_roll()
  *  float roll_slew_limit(float servo)
  *  {
  *       static float last;
- *       float temp = constrain(servo, last-ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f, last + ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f);
+ *       float temp = constrain<float>(servo, last-ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f, last + ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f);
  *       last = servo;
  *       return temp;
  *  }*/
@@ -375,7 +375,7 @@ static void throttle_slew_limit(int16_t last_throttle)
         if (temp < 1) {
             temp = 1;
         }
-        g.channel_throttle.radio_out = constrain_int16(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
+        g.channel_throttle.radio_out = constrain<int16_t>(g.channel_throttle.radio_out, last_throttle - temp, last_throttle + temp);
     }
 }
 
@@ -573,7 +573,7 @@ static void set_servos(void)
         g.channel_throttle.servo_out = 0;
 #else
         // convert 0 to 100% into PWM
-        g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
+        g.channel_throttle.servo_out = constrain<int16_t>(g.channel_throttle.servo_out, 
                                                        g.throttle_min.get(), 
                                                        g.throttle_max.get());
 

@@ -364,14 +364,13 @@ public:
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator T () const {
         return _value;
     }
 
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamT<T,PT>& operator= (AP_ParamT<T,PT>& v) {
-        return v;
+    AP_ParamT<T,PT>& operator= (const AP_ParamT<T,PT>& v) {
+    	_value = v._value;
+        return *this;
     }
 
     /// Copy assignment from T is equivalent to ::set.
@@ -381,9 +380,19 @@ public:
         return *this;
     }
 
+    AP_ParamT<T,PT>& operator|= (T v) {
+        _value |= v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator&= (T v) {
+        _value &= v;
+        return *this;
+    }
+
     /// AP_ParamT types can implement AP_Param::cast_to_float
     ///
-    float cast_to_float(void) {
+    float cast_to_float(void) const {
         return (float)_value;
     }
 
@@ -434,10 +443,9 @@ public:
         return _value;
     }
 
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamV<T,PT>& operator        =(AP_ParamV<T,PT>& v) {
-        return v;
+    AP_ParamV<T,PT>& operator        =(const AP_ParamV<T,PT>& v) {
+    	_value = v._value;
+        return *this;
     }
 
     /// Copy assignment from T is equivalent to ::set.
@@ -504,8 +512,11 @@ public:
 
     /// Copy assignment from self does nothing.
     ///
-    AP_ParamA<T,N,PT>& operator= (AP_ParamA<T,N,PT>& v) {
-        return v;
+    AP_ParamA<T,N,PT>& operator= (const AP_ParamA<T,N,PT>& v) {
+    	for(uint8_t i = 0; i < N; ++i) {
+    		_value[i] = v._value[i];
+    	}
+        return *this;
     }
 
 protected:

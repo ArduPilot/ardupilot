@@ -70,9 +70,9 @@ int32_t                 get_bearing_cd(const struct Location *loc1, const struct
 // our previous waypoint and point2 is our target waypoint
 // then this function returns true if we have flown past
 // the target waypoint
-bool        location_passed_point(struct Location & location,
-                                  struct Location & point1,
-                                  struct Location & point2);
+bool        location_passed_point(const struct Location & location,
+                                  const struct Location & point1,
+                                  const struct Location & point2);
 
 //  extrapolate latitude/longitude given bearing and distance
 void        location_update(struct Location *loc, float bearing, float distance);
@@ -80,10 +80,33 @@ void        location_update(struct Location *loc, float bearing, float distance)
 // extrapolate latitude/longitude given distances north and east
 void        location_offset(struct Location *loc, float ofs_north, float ofs_east);
 
-// constrain a value
-float   constrain(float amt, float low, float high);
-int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
-int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
+/**
+ * Constrains a Value.
+ * If amt isn't in the range [low, high], it's set to either low or high.
+ *
+ * correct usage:
+ * If amt, low, high have different types, the type that can hold the largest
+ * range has to be chosen for T.
+ * Otherwise a value might wrap around and lead to unexpected results.
+ *
+ * Wrong Usage example:
+ * 	int32_t tmp = 65437;
+ * 	int16_t i = constrain<int16_t>(tmp, -1000, 1000);
+ *
+ * 	One could expect that i is set to 1000, since tmp > 1000.
+ * 	Instead the conversion from temp to an int16_t (that cant't hold 65437)
+ * 	sets the value to -99.
+ * 	Since -99 is in the range [-1000, 1000] that's the value i is set to.
+ *
+ * @param amt value to be constrained
+ * @param low lower bound
+ * @param high upper bound
+ * @return constrained value
+ */
+template<typename T>
+T constrain(T amt, T low, T high) {
+	return amt < low ? low : ( amt > high ? high : amt);
+}
 
 // degrees -> radians
 float radians(float deg);

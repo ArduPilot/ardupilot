@@ -64,7 +64,7 @@ static void test_passed_waypoint(void)
     hal.console->println("waypoint tests OK");
 }
 
-static void test_one_offset(struct Location &loc,
+static void test_one_offset(const struct Location &loc,
                             float ofs_north, float ofs_east,
                             float dist, float bearing)
 {

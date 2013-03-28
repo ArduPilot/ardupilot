@@ -533,7 +533,7 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
 }
 
 /// Set mount point/region of interest, triggered by mission script commands
-void AP_Mount::set_roi_cmd(struct Location *target_loc)
+void AP_Mount::set_roi_cmd(const struct Location *target_loc)
 {
 #if MNT_GPSPOINT_OPTION == ENABLED
     // set the target gps location
@@ -571,7 +571,7 @@ AP_Mount::angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max)
 }
 
 void
-AP_Mount::calc_GPS_target_angle(struct Location *target)
+AP_Mount::calc_GPS_target_angle(const struct Location *target)
 {
     float GPS_vector_x = (target->lng-_current_loc->lng)*cosf(ToRad((_current_loc->lat+target->lat)*0.00000005f))*0.01113195f;
     float GPS_vector_y = (target->lat-_current_loc->lat)*0.01113195f;

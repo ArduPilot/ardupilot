@@ -68,7 +68,7 @@ static struct Location get_cmd_with_index(int i)
 static void set_cmd_with_index(struct Location temp, int i)
 {
 
-    i = constrain(i, 0, g.command_total.get());
+    i = constrain<int>(i, 0, g.command_total.get());
     //cliSerial->printf("set_command: %d with id: %d\n", i, temp.id);
 
     // store home as 0 altitude!!!
@@ -124,7 +124,7 @@ static int32_t get_RTL_alt()
  *  It precalculates all the necessary stuff.
  */
 
-static void set_next_WP(struct Location *wp)
+static void set_next_WP(const struct Location *wp)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------

@@ -52,7 +52,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	(delta_time / (RC + delta_time)) * (rate - _last_rate);
 	_last_rate = rate;
 	
-	float roll_scaler = 1/constrain(cosf(_ahrs->roll),0.33f,1);
+	float roll_scaler = 1/constrain<float>(cosf(_ahrs->roll),0.33f,1);
 	
 	int32_t desired_rate = angle_err * _kp_angle;
 	
@@ -76,7 +76,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	else if(roll_ff < 0)
 		roll_ff = 0;
 	
-	float out = constrain(((rate_error * _kp_rate) + (desired_rate * _kp_ff) + roll_ff) * scaler,-4500,4500);
+	float out = constrain<float>(((rate_error * _kp_rate) + (desired_rate * _kp_ff) + roll_ff) * scaler,-4500,4500);
 	
 	//rate integrator
 	if (!stabilize) {

@@ -1646,8 +1646,8 @@ void update_roll_pitch_mode(void)
         control_pitch = g.rc_2.control_in;
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain<int32_t>(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain<int32_t>(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1691,8 +1691,8 @@ void update_roll_pitch_mode(void)
         }
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain<int32_t>(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain<int32_t>(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
@@ -2012,10 +2012,10 @@ static void update_trig(void){
     cos_pitch_x     = safe_sqrt(1 - (temp.c.x * temp.c.x));     // level = 1
     cos_roll_x      = temp.c.z / cos_pitch_x;                       // level = 1
 
-    cos_pitch_x     = constrain(cos_pitch_x, 0, 1.0);
-    // this relies on constrain() of infinity doing the right thing,
+    cos_pitch_x     = constrain<float>(cos_pitch_x, 0, 1.0);
+    // this relies on constrain<float>() of infinity doing the right thing,
     // which it does do in avr-libc
-    cos_roll_x      = constrain(cos_roll_x, -1.0, 1.0);
+    cos_roll_x      = constrain<float>(cos_roll_x, -1.0, 1.0);
 
     sin_yaw_y       = yawvector.x;                                              // 1y = north
     cos_yaw_x       = yawvector.y;                                              // 0x = north
@@ -2024,8 +2024,8 @@ static void update_trig(void){
     sin_pitch       = -temp.c.x;
     sin_roll        = temp.c.y / cos_pitch_x;
 
-    sin_yaw               = constrain(temp.b.x/cos_pitch_x, -1.0, 1.0);
-    cos_yaw               = constrain(temp.a.x/cos_pitch_x, -1.0, 1.0);
+    sin_yaw               = constrain<float>(temp.b.x/cos_pitch_x, -1.0, 1.0);
+    cos_yaw               = constrain<float>(temp.a.x/cos_pitch_x, -1.0, 1.0);
 
     //flat:
     // 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,

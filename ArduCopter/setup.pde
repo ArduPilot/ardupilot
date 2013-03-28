@@ -386,7 +386,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
         if (_oldSwitchPosition != _switchPosition) {
 
             mode = flight_modes[_switchPosition];
-            mode = constrain(mode, 0, NUM_MODES-1);
+            mode = constrain<int8_t>(mode, 0, NUM_MODES-1);
 
             // update the user
             print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
@@ -633,7 +633,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
             // calculate scaling for throttle
             throttle_pct = (float)g.rc_3.control_in / 1000.0f;
-            throttle_pct = constrain(throttle_pct,0.0f,1.0f);
+            throttle_pct = constrain<float>(throttle_pct,0.0f,1.0f);
 
             // if throttle is zero, update base x,y,z values
             if( throttle_pct == 0.0f ) {
@@ -1441,7 +1441,7 @@ init_esc()
     }
 }
 
-static void print_wp(struct Location *cmd, uint8_t index)
+static void print_wp(const struct Location *cmd, uint8_t index)
 {
    	//float t1 = (float)cmd->lat / t7;
     //float t2 = (float)cmd->lng / t7;

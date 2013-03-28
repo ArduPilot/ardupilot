@@ -154,7 +154,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		// ------------------------------
 		set_servos();
 
-        tuning_value = constrain(((float)(g.rc_7.radio_in - g.rc_7.radio_min) / (float)(g.rc_7.radio_max - g.rc_7.radio_min)),0,1);
+        tuning_value = constrain<float>( static_cast<float>(g.rc_7.radio_in - g.rc_7.radio_min) / static_cast<float>(g.rc_7.radio_max - g.rc_7.radio_min), 0, 1);
                 
 		cliSerial->printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d  Tuning = %2.3f\n"),
 							g.channel_steer.control_in,
@@ -304,7 +304,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 
 static void
-test_wp_print(struct Location *cmd, uint8_t wp_index)
+test_wp_print(const struct Location *cmd, uint8_t wp_index)
 {
 	cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
 		(int)wp_index,
