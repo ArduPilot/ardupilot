@@ -111,12 +111,20 @@ bool update_AP_Param(AP_Param *ptr, enum ap_var_type ptr_type, float new_val, en
 		} // END case MAV_PARAM_TYPE_INT32
 
 		case MAV_PARAM_TYPE_REAL32: {
-			if ( !isnan(new_val) && !isinf(new_val) ) {
-				static_cast<AP_Float*>(ptr)->set_and_save( new_val );
-				return true;
+
+			switch (ptr_type) {
+				case AP_PARAM_FLOAT : {
+					if ( !isnan(new_val) && !isinf(new_val) ) {
+						static_cast<AP_Float*>(ptr)->set_and_save( new_val );
+						return true;
+					}
+					return false;
+				}
+				// *vp isn't a float --> discard the received float parameter
+				default:
+					return false;
 			}
-			return false;
-		}
+		} // END case MAV_PARAM_TYPE_REAL32
 
 		// invalid packet.param_type
 		default:
