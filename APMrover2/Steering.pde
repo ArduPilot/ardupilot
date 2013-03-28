@@ -124,8 +124,12 @@ static void calc_throttle(float target_speed)
 static void calc_nav_steer()
 {
 	// Adjust gain based on ground speed
-	nav_gain_scaler = (float)ground_speed / g.speed_cruise;
-	nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
+    if (ground_speed < 0.01) {
+        nav_gain_scaler = 1.4f;
+    } else {
+        nav_gain_scaler = g.speed_cruise / ground_speed;
+    }
+	nav_gain_scaler = constrain(nav_gain_scaler, 0.2f, 1.4f);
 
 	// Calculate the required turn of the wheels rover
 	// ----------------------------------------
