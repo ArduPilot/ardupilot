@@ -70,17 +70,15 @@ static void read_sonars(void)
             obstacle.detected = true;
             obstacle.turn_angle = -g.sonar_turn_angle;
         }
-        return;
-    }
-
-    // we have a single sonar
-    float sonar_dist_cm = sonar.distance_cm();
-    if (sonar_dist_cm <= g.sonar_trigger_cm)  {
-        // obstacle detected in front 
-        obstacle.detected = true;
-        obstacle.detected_time_ms = hal.scheduler->millis();
-        obstacle.turn_angle = g.sonar_turn_angle;
-        return;
+    } else {
+        // we have a single sonar
+        float sonar_dist_cm = sonar.distance_cm();
+        if (sonar_dist_cm <= g.sonar_trigger_cm)  {
+            // obstacle detected in front 
+            obstacle.detected = true;
+            obstacle.detected_time_ms = hal.scheduler->millis();
+            obstacle.turn_angle = g.sonar_turn_angle;
+        }
     }
 
     // no object detected - reset after the turn time
