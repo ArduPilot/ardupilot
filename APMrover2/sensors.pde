@@ -68,6 +68,7 @@ static void read_sonars(void)
                                   sonar1_dist_cm);
             }
             obstacle.detected = true;
+            obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = g.sonar_turn_angle;
         } else if (sonar2_dist_cm <= g.sonar_trigger_cm) {
             // we have an object on the right
@@ -76,6 +77,7 @@ static void read_sonars(void)
                                   sonar2_dist_cm);
             }
             obstacle.detected = true;
+            obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = -g.sonar_turn_angle;
         }
     } else {
