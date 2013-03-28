@@ -157,11 +157,21 @@ static void set_servos(void)
         // do a direct pass through of radio values
         g.channel_steer.radio_out       = hal.rcin->read(CH_STEER);
         g.channel_throttle.radio_out    = hal.rcin->read(CH_THROTTLE);
+        if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+            // suppress throttle if in failsafe and manual
+            g.channel_throttle.radio_out = g.channel_throttle.radio_trim;
+        }
 	} else {       
         g.channel_steer.calc_pwm();
 		g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
                                                        g.throttle_min.get(), 
                                                        g.throttle_max.get());
+
+        if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
+            // suppress throttle if in failsafe
+            g.channel_throttle.servo_out = 0;
+        }
+
         // convert 0 to 100% into PWM
         g.channel_throttle.calc_pwm();
 

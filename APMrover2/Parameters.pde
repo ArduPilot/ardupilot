@@ -241,16 +241,16 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:STOP
+    // @Values: 0:Nothing,1:RTL,2:HOLD
     // @User: Standard
-	GSCALAR(fs_action,    "FS_ACTION",     0),
+	GSCALAR(fs_action,    "FS_ACTION",     1),
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
     // @Description: How long a failsafe event need to happen for before we trigger the failsafe action
 	// @Units: seconds
     // @User: Standard
-	GSCALAR(fs_timeout,    "FS_TIMEOUT",     10),
+	GSCALAR(fs_timeout,    "FS_TIMEOUT",     5),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable

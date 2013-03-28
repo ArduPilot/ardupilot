@@ -337,26 +337,46 @@ static void set_mode(enum mode mode)
 		Log_Write_Mode(control_mode);
 }
 
-static void check_long_failsafe()
+/*
+  called to set/unset a failsafe event. 
+ */
+static void failsafe_trigger(uint8_t failsafe_type, bool on)
 {
-	// only act on changes
-	// -------------------
-	if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS){
-		if(rc_override_active && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
-			failsafe_long_on_event(FAILSAFE_LONG);
-		}
-		if(! rc_override_active && failsafe == FAILSAFE_SHORT && millis() - ch3_failsafe_timer > FAILSAFE_LONG_TIME) {
-			failsafe_long_on_event(FAILSAFE_LONG);
-		}
-		if (g.fs_gcs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
-			failsafe_long_on_event(FAILSAFE_GCS);
-		}
-	} else {
-		// We do not change state but allow for user to change mode
-		if(failsafe == FAILSAFE_GCS && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
-		if(failsafe == FAILSAFE_LONG && rc_override_active && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
-		if(failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) failsafe = FAILSAFE_NONE;
-	}
+    uint8_t old_bits = failsafe.bits;
+    if (on) {
+        failsafe.bits |= failsafe_type;
+    } else {
+        failsafe.bits &= ~failsafe_type;
+    }
+    if (old_bits == 0 && failsafe.bits != 0) {
+        // a failsafe event has started
+        failsafe.start_time = millis();
+    }
+    if (failsafe.triggered != 0 && failsafe.bits == 0) {
+        // a failsafe event has ended
+        gcs_send_text_fmt(PSTR("Failsafe ended"));
+    }
+
+    failsafe.triggered &= failsafe.bits;
+
+    if (failsafe.triggered == 0 && 
+        failsafe.bits != 0 && 
+        millis() - failsafe.start_time > g.fs_timeout*1000 &&
+        control_mode != RTL &&
+        control_mode != HOLD) {
+        failsafe.triggered = failsafe.bits;
+        gcs_send_text_fmt(PSTR("Failsafe trigger 0x%x"), (unsigned)failsafe.triggered);
+        switch (g.fs_action) {
+        case 0:
+            break;
+        case 1:
+            set_mode(RTL);
+            break;
+        case 2:
+            set_mode(HOLD);
+            break;
+        }
+    }
 }
 
 static void startup_INS_ground(bool force_accel_level)

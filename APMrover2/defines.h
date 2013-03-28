@@ -14,16 +14,6 @@
 #define DEBUG 0
 #define SERVO_MAX 4500	// This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-// failsafe
-// ----------------------
-#define FAILSAFE_NONE	0
-#define FAILSAFE_SHORT	1
-#define FAILSAFE_LONG	2
-#define FAILSAFE_GCS	3
-#define	FAILSAFE_SHORT_TIME 1500	// Miliiseconds
-#define	FAILSAFE_LONG_TIME  20000	// Miliiseconds
-
-
 // active altitude sensor
 // ----------------------
 #define SONAR 0
@@ -72,6 +62,11 @@ enum mode {
     GUIDED=15,
     INITIALISING=16
 };
+
+// types of failsafe events
+#define FAILSAFE_EVENT_THROTTLE (1<<0)
+#define FAILSAFE_EVENT_GCS      (1<<1)
+#define FAILSAFE_EVENT_RC       (1<<2)
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested

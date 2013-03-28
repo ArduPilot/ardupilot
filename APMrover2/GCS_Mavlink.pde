@@ -25,7 +25,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
     
-    if (failsafe != FAILSAFE_NONE) {
+    if (failsafe.triggered != 0) {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -1631,7 +1631,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         hal.rcin->set_overrides(v, 8);
 
-        rc_override_fs_timer = millis();
+        failsafe.rc_override_timer = millis();
+        failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
 
@@ -1639,7 +1640,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         {
             // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
 			if(msg->sysid != g.sysid_my_gcs) break;
-            last_heartbeat_ms = rc_override_fs_timer = millis();
+            last_heartbeat_ms = failsafe.rc_override_timer = millis();
+            failsafe_trigger(FAILSAFE_EVENT_GCS, false);
 			pmTest1++;
             break;
         }

@@ -293,16 +293,14 @@ static bool rc_override_active = false;
 // Failsafe
 ////////////////////////////////////////////////////////////////////////////////
 // A tracking variable for type of failsafe active
-// Used for failsafe based on loss of RC signal or GCS signal
-static int16_t 	failsafe;					
-// Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
-// RC receiver should be set up to output a low throttle value when signal is lost
-static bool 	ch3_failsafe;
-
-// A timer used to track how long since we have received the last GCS heartbeat or rc override message
-static uint32_t rc_override_fs_timer = 0;
-// A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-static uint32_t ch3_failsafe_timer = 0;
+// Used for failsafe based on loss of RC signal or GCS signal. See 
+// FAILSAFE_EVENT_*
+static struct {
+    uint8_t bits;
+    uint32_t rc_override_timer;
+    uint32_t start_time;
+    uint8_t triggered;
+} failsafe;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -667,6 +665,7 @@ static void medium_loop()
 		// This case deals with the GPS
 		//-------------------------------
 		case 0:
+            failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
 			medium_loopCounter++;
             update_GPS();
             
@@ -744,7 +743,6 @@ static void slow_loop()
 	switch (slow_loopCounter){
 		case 0:
 			slow_loopCounter++;
-			check_long_failsafe();
 			superslow_loopCounter++;
 			if(superslow_loopCounter >=200) {				//	200 = Execute every minute
 				#if HIL_MODE != HIL_MODE_ATTITUDE
