@@ -10,7 +10,7 @@
 
 #define AP_INTERTIALNAV_GRAVITY 9.80665
 #define AP_INTERTIALNAV_TC_XY   3.0 // default time constant for complementary filter's X & Y axis
-#define AP_INTERTIALNAV_TC_Z    7.0 // default time constant for complementary filter's Z axis
+#define AP_INTERTIALNAV_TC_Z    5.0 // default time constant for complementary filter's Z axis
 
 #define AP_INTERTIALNAV_ACCEL_CORR_MAX 300.0    // max allowed accelerometer offset correction
 
