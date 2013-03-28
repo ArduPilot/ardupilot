@@ -372,7 +372,7 @@ static uint32_t last_heartbeat_ms;
 // obstacle detection information
 static struct {
     // have we detected an obstacle?
-    bool detected;
+    uint8_t detected_count;
     float turn_angle;
 
     // time when we last detected an obstacle, in milliseconds

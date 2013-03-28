@@ -138,9 +138,8 @@ static void calc_nav_steer()
 	// positive error = right turn
 	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
 
-    if (obstacle.detected) {  // obstacle avoidance 
-	    nav_steer += obstacle.turn_angle*100;
-    }
+    // avoid obstacles, if any
+    nav_steer += obstacle.turn_angle*100;
 
     g.channel_steer.servo_out = nav_steer;
 }

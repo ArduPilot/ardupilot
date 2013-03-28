@@ -299,6 +299,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     1.0f),
 
+	// @Param: SONAR_DEBOUNCE
+	// @DisplayName: Sonar debounce count
+	// @Description: The number of 50Hz sonar hits needed to trigger an obstacle avoidance event. If you get a lot of false sonar events then raise this number
+    // @Range: 1 100
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_debounce,   "SONAR_DEBOUNCE",    2),
+
     // @Param: MODE_CH
     // @DisplayName: Mode channel
     // @Description: RC Channel to use for driving mode control
