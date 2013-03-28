@@ -21,6 +21,7 @@ static void failsafe_long_on_event(int fstype)
 			break;
 			
 		case RTL: 
+        case HOLD: 
 		default:
 			break;
 	}

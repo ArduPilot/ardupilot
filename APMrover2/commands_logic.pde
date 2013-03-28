@@ -109,8 +109,8 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {      
-	gcs_send_text_fmt(PSTR("No commands - setting MANUAL"));
-    set_mode(MANUAL);
+	gcs_send_text_fmt(PSTR("No commands - setting HOLD"));
+    set_mode(HOLD);
 }
 
 /********************************************************************************/

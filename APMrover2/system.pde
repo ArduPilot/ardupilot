@@ -314,6 +314,7 @@ static void set_mode(enum mode mode)
 	switch(control_mode)
 	{
 		case MANUAL:
+		case HOLD:
 		case LEARNING:
 		case STEERING:
 			break;
@@ -494,6 +495,9 @@ print_mode(uint8_t mode)
     switch (mode) {
     case MANUAL:
         cliSerial->println_P(PSTR("Manual"));
+        break;
+    case HOLD:
+        cliSerial->println_P(PSTR("HOLD"));
         break;
     case LEARNING:
         cliSerial->println_P(PSTR("Learning"));

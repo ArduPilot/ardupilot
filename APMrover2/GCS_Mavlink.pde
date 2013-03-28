@@ -54,6 +54,9 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case INITIALISING:
         system_status = MAV_STATE_CALIBRATING;
         break;
+    case HOLD:
+        system_status = 0;
+        break;
     }
 
 #if ENABLE_STICK_MIXING==ENABLED
@@ -132,6 +135,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
     switch (control_mode) {
     case MANUAL:
+    case HOLD:
         break;
 
     case LEARNING:
@@ -1074,6 +1078,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             switch (packet.custom_mode) {
             case MANUAL:
+            case HOLD:
             case LEARNING:
             case STEERING:
             case AUTO:

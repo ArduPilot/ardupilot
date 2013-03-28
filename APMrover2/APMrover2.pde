@@ -863,6 +863,12 @@ static void update_current_mode(void)
         g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
         break;
 
+    case HOLD:
+        // hold position - stop motors and center steering
+        g.channel_throttle.servo_out = 0;
+        g.channel_steer.servo_out = 0;
+        break;
+
     case INITIALISING:
         break;
 	}
@@ -872,6 +878,7 @@ static void update_navigation()
 {
     switch (control_mode) {
     case MANUAL:
+    case HOLD:
     case LEARNING:
     case STEERING:
     case INITIALISING:
@@ -888,7 +895,7 @@ static void update_navigation()
         calc_bearing_error();
         if (verify_RTL()) {  
             g.channel_throttle.servo_out = g.throttle_min.get();
-            set_mode(MANUAL);
+            set_mode(HOLD);
         }
         break;
 	}
