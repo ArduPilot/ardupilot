@@ -12,7 +12,7 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
-	// index 0 and 1 are for old parameters that are no longer used
+	// index 0 and 1 are for old parameters that are no longer not used
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
@@ -81,6 +81,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw135,19:Roll270,20:Roll270Yaw45,21:Roll270Yaw90,22:Roll270Yaw136,23:Pitch90,24:Pitch270
     // @User: Advanced
     AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
+
+    // @Param: COMP_BETA
+    // @DisplayName: AHRS Velocity Complmentary Filter Beta Coefficient
+    // @Description: This controls the time constant for the cross-over frequency used to fuse AHRS (airspeed and heading) and GPS data to estimate ground velocity. Time constant is 0.1/beta. A larger time constant will use GPS data less and a small time constant will use air data less.
+    // @Range: 0.001 0.5
+    // @Increment: .01
+    AP_GROUPINFO("COMP_BETA",  10, AP_AHRS, beta, 0.1f),
 
     AP_GROUPEND
 };
@@ -166,21 +173,55 @@ void AP_AHRS::wind_correct_bearing(int32_t &nav_bearing_cd)
 // return a ground speed estimate in m/s
 Vector2f AP_AHRS::groundspeed_vector(void)
 {
-	if (_gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
-		Vector2f v;
-		float cog = radians(_gps->ground_course*0.01f);
-		return Vector2f(cos(cog), sin(cog)) * _gps->ground_speed * 0.01f;
-	}
-	// we don't have ground speed - see if we can estimate from
-	// airspeed and the wind estimate
-	float airspeed;
-	if (!airspeed_estimate(&airspeed)) {
-		// we have no idea what our ground vector is!
-		return Vector2f(0.0f, 0.0f);
-	}
-	Vector3f wind = wind_estimate();
-	Vector2f wind2d = Vector2f(wind.x, wind.y);
-	Vector2f airspeed_vector = Vector2f(cos(yaw), sin(yaw)) * airspeed;
-	Vector2f adjusted = airspeed_vector - wind2d;
-	return adjusted;	
+    // Generate estimate of ground speed vector using air data system
+    Vector2f gndVelADS;
+    Vector2f gndVelGPS;
+    float airspeed;
+    bool gotAirspeed = airspeed_estimate(&airspeed);
+    bool gotGPS = (_gps && _gps->status() >= GPS::GPS_OK_FIX_2D);
+    if (gotAirspeed) {
+	    Vector3f wind = wind_estimate();
+	    Vector2f wind2d = Vector2f(wind.x, wind.y);
+	    Vector2f airspeed_vector = Vector2f(cos(yaw), sin(yaw)) * airspeed;
+	    gndVelADS = airspeed_vector - wind2d;
+    }
+    
+    // Generate estimate of ground speed vector using GPS
+    if (gotGPS) {
+	    Vector2f v;
+	    float cog = radians(_gps->ground_course*0.01f);
+	    gndVelGPS = Vector2f(cos(cog), sin(cog)) * _gps->ground_speed * 0.01f;
+    }
+    // If both ADS and GPS data is available, apply a complementary filter
+    if (gotAirspeed && gotGPS) {
+	    // The LPF is applied to the GPS and the HPF is applied to the air data estimate
+	    // before the two are summed
+	    //Define filter coefficients
+	    // alpha and beta must sum to one
+	    // beta = dt/Tau, where
+	    // dt = filter time step (0.1 sec if called by nav loop)
+	    // Tau = cross-over time constant (nominal 2 seconds)
+	    // More lag on GPS requires Tau to be bigger, less lag allows it to be smaller
+	    // To-Do - set Tau as a function of GPS lag.
+	    const float alpha = 1.0f - beta; 
+	    // Run LP filters
+	    _xlp = beta*gndVelGPS.x + alpha*_xlp;
+	    _ylp = beta*gndVelGPS.y + alpha*_ylp;
+	    // Run HP filters
+	    _xhp = gndVelADS.x - _lastGndVelADS.x + alpha*_xhp;
+	    _yhp = gndVelADS.y - _lastGndVelADS.y + alpha*_yhp;
+	    // Save the current ADS ground vector for the next time step
+	    _lastGndVelADS = gndVelADS;
+	    // Sum the HP and LP filter outputs
+	    return Vector2f(_xhp + _xlp, _yhp + _ylp);
+    }
+    // Only ADS data is available return ADS estimate
+    if (gotAirspeed && !gotGPS) {
+	    return gndVelADS;
+    }
+    // Only GPS data is available so return GPS estimate
+    if (!gotAirspeed && gotGPS) {
+	    return gndVelGPS;
+    }
+    return Vector2f(0.0f, 0.0f);
 }
