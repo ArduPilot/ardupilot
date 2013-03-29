@@ -8,9 +8,10 @@ cd $HOME/APM || exit 1
 
 test -n "$FORCEBUILD" || {
 (cd APM && git fetch > /dev/null 2>&1)
+newtags=$(cd APM && git fetch --tags | wc -l)
 oldhash=$(cd APM && git rev-parse origin/master)
 newhash=$(cd APM && git rev-parse HEAD)
-if [ "$oldhash" = "$newhash" ]; then
+if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
     echo "no change $oldhash $newhash `date`" >> build.log
     exit 0
 fi
