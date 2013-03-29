@@ -517,7 +517,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                 if (compass.healthy) {
                     Vector3f maggy = compass.get_offsets();
                     cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                    (wrap_360(ToDeg(heading) * 100)) /100,
+                                    (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (int)compass.mag_x,
                                     (int)compass.mag_y,
                                     (int)compass.mag_z,
