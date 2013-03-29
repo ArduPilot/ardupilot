@@ -163,7 +163,7 @@ void AP_AHRS::wind_correct_bearing(int32_t &nav_bearing_cd)
 	}
 }
 
-// return a ground speed estimate
+// return a ground speed estimate in m/s
 Vector2f AP_AHRS::groundspeed_vector(void)
 {
 	if (_gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
