@@ -134,7 +134,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->status() >= GPS::NO_FIX) {
+    if (g_gps != NULL && g_gps->status() >= GPS::NO_GPS) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -195,11 +195,12 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     // at the moment all sensors/controllers are assumed healthy
     control_sensors_health = control_sensors_present;
 
-    if (!compass.healthy) {
-        control_sensors_health &= ~(1<<2); // compass
+    if (!ahrs.use_compass()) {
+        control_sensors_health &= ~(1<<2); // compass not being used
     }
-    if (!compass.use_for_yaw()) {
-        control_sensors_enabled &= ~(1<<2); // compass
+
+    if (g_gps != NULL && g_gps->status() <= GPS::NO_FIX) {
+        control_sensors_health &= ~(1<<5); // GPS unhealthy
     }
 
     uint16_t battery_current = -1;
