@@ -86,7 +86,7 @@ git fetch origin
 git reset --hard origin/master
 popd
 
-for d in MAVProxy pymavlink; do
+for d in MAVProxy mavlink; do
     pushd $d
     git pr
     popd
