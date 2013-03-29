@@ -209,7 +209,7 @@ static bool check_missed_wp()
 {
     int32_t temp;
     temp = wp_bearing - original_wp_bearing;
-    temp = wrap_180(temp);
+    temp = wrap_180_cd(temp);
     return (labs(temp) > 9000);         // we passed the waypoint by 90 degrees
 }
 
@@ -279,25 +279,11 @@ static void reset_nav_params(void)
     auto_pitch 						= 0;
 }
 
-static int32_t wrap_360(int32_t error)
-{
-    if (error > 36000) error -= 36000;
-    if (error < 0) error += 36000;
-    return error;
-}
-
-static int32_t wrap_180(int32_t error)
-{
-    if (error > 18000) error -= 36000;
-    if (error < -18000) error += 36000;
-    return error;
-}
-
 // get_yaw_slew - reduces rate of change of yaw to a maximum
 // assumes it is called at 100hz so centi-degrees and update rate cancel each other out
 static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
 {
-    return wrap_360(current_yaw + constrain(wrap_180(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
+    return wrap_360_cd(current_yaw + constrain(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
 }
 
 // valid_waypoint - checks if a waypoint has been initialised or not

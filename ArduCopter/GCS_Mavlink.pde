@@ -1881,7 +1881,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_hil_state_decode(msg, &packet);
 
         float vel = pythagorous2(packet.vx, packet.vy);
-        float cog = wrap_360(ToDeg(atan2f(packet.vx, packet.vy)) * 100);
+        float cog = wrap_360_cd(ToDeg(atan2f(packet.vx, packet.vy)) * 100);
 
         // set gps hil sensor
         g_gps->setHIL(packet.time_usec/1000,

@@ -1646,8 +1646,8 @@ void update_roll_pitch_mode(void)
         control_pitch = g.rc_2.control_in;
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1691,8 +1691,8 @@ void update_roll_pitch_mode(void)
         }
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
@@ -1721,7 +1721,7 @@ void update_simple_mode(void)
     // which improves speed of function
     simple_counter++;
 
-    int16_t delta = wrap_360(ahrs.yaw_sensor - initial_simple_bearing)/100;
+    int16_t delta = wrap_360_cd(ahrs.yaw_sensor - initial_simple_bearing)/100;
 
     if (simple_counter == 1) {
         // roll
@@ -1750,7 +1750,7 @@ void update_super_simple_bearing()
         // get distance to home
         if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
             // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = wrap_360(home_bearing+18000);
+            initial_simple_bearing = wrap_360_cd(home_bearing+18000);
         }
     }
 }
