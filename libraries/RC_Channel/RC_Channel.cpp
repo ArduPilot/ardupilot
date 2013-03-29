@@ -176,15 +176,15 @@ void
 RC_Channel::calc_pwm(void)
 {
     if(_type == RC_CHANNEL_TYPE_RANGE) {
-        int16_t pwm_out         = range_to_pwm();
+        pwm_out         = range_to_pwm();
         radio_out       = (_reverse >= 0) ? (radio_min + pwm_out) : (radio_max - pwm_out);
 
     }else if(_type == RC_CHANNEL_TYPE_ANGLE_RAW) {
-        int16_t pwm_out         = (float)servo_out * 0.1f;
+        pwm_out         = (float)servo_out * 0.1f;
         radio_out       = (pwm_out * _reverse) + radio_trim;
 
     }else{     // RC_CHANNEL_TYPE_ANGLE
-        int16_t pwm_out         = angle_to_pwm();
+        pwm_out         = angle_to_pwm();
         radio_out       = pwm_out + radio_trim;
     }
 

@@ -75,6 +75,7 @@ public:
     void        calc_pwm(void);
 
     // PWM is without the offset from radio_min
+    int16_t         pwm_out;
     int16_t         radio_out;
 
     AP_Int16        radio_min;
