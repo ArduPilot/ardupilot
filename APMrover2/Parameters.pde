@@ -243,7 +243,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: What to do on a failsafe event
     // @Values: 0:Nothing,1:RTL,2:HOLD
     // @User: Standard
-	GSCALAR(fs_action,    "FS_ACTION",     1),
+	GSCALAR(fs_action,    "FS_ACTION",     2),
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
@@ -257,13 +257,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-	GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     0),
+	GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     1),
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle sailsafe triggers.
     // @User: Standard
-	GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     900),
+	GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     910),
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: GCS failsafe enable
