@@ -234,7 +234,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SKID_STEER_IN
     // @DisplayName: Skid steering input
     // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
-    // @Values: 0:Disabled, 1:SkidSteeringOutput
+    // @Values: 0:Disabled, 1:SkidSteeringInput
     // @User: Standard
 	GSCALAR(skid_steer_in,           "SKID_STEER_IN",     0),
 
@@ -254,7 +254,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range.
+    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range. Failsafe will be triggered when the throttle channel goes below the FS_THR_VALUE for FS_TIMEOUT seconds.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
 	GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     1),
@@ -267,14 +267,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe
+    // @Description: Enable ground control station telemetry failsafe. When enabled the Rover will execute the FS_ACTION when it fails to receive MAVLink heartbeat packets for FS_TIMEOUT seconds.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
 	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
 
 	// @Param: SONAR_TRIGGER_CM
 	// @DisplayName: Sonar trigger distance
-	// @Description: The distance from an obstacle at which the sonar triggers a turn to avoid the obstacle
+	// @Description: The distance from an obstacle in centimeters at which the sonar triggers a turn to avoid the obstacle
 	// @Units: centimeters
     // @Range: 0 1000
     // @Increment: 1
@@ -301,7 +301,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: SONAR_DEBOUNCE
 	// @DisplayName: Sonar debounce count
-	// @Description: The number of 50Hz sonar hits needed to trigger an obstacle avoidance event. If you get a lot of false sonar events then raise this number
+	// @Description: The number of 50Hz sonar hits needed to trigger an obstacle avoidance event. If you get a lot of false sonar events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
     // @Range: 1 100
     // @Increment: 1
 	// @User: Standard
