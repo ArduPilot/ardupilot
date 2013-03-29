@@ -84,7 +84,7 @@ static void read_radio()
 
         float motor1 = g.channel_steer.norm_input();
         float motor2 = g.channel_throttle.norm_input();
-        float steering_scaled = motor2 - motor1;
+        float steering_scaled = motor1 - motor2;
         float throttle_scaled = 0.5f*(motor1 + motor2);
         int16_t steer = g.channel_steer.radio_trim;
         int16_t thr   = g.channel_throttle.radio_trim;

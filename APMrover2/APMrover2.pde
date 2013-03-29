@@ -857,7 +857,7 @@ static void update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
-        g.channel_throttle.servo_out = g.channel_throttle.radio_in;
+        g.channel_throttle.servo_out = g.channel_throttle.control_in;
         g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
         break;
 
