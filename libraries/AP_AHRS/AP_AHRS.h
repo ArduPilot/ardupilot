@@ -137,8 +137,14 @@ public:
     // if we have an estimate
     virtual bool airspeed_estimate(float *airspeed_ret);
 
+    // return a ground vector estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector(void);
+
     // return true if we will use compass for yaw
     virtual bool use_compass(void) { return _compass && _compass->use_for_yaw(); }
+
+    // correct a bearing in centi-degrees for wind
+    void wind_correct_bearing(int32_t &nav_bearing_cd);
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) {

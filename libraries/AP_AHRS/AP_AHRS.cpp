@@ -141,3 +141,46 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
         _trim.save();
     }
 }
+
+// correct a bearing in centi-degrees for wind
+void AP_AHRS::wind_correct_bearing(int32_t &nav_bearing_cd)
+{
+	if (!use_compass()) {
+		// we are not using the compass - no wind correction,
+		// as GPS gives course over ground already
+		return;
+	}
+
+	// if we are using a compass for navigation, then adjust the
+	// heading to account for wind	
+	Vector3f wind = wind_estimate();
+	Vector2f wind2d = Vector2f(wind.x, wind.y);
+	float speed;
+	if (airspeed_estimate(&speed)) {
+		Vector2f nav_vector = Vector2f(cos(radians(nav_bearing_cd*0.01)), sin(radians(nav_bearing_cd*0.01))) * speed;
+		Vector2f nav_adjusted = nav_vector - wind2d;
+		nav_bearing_cd = degrees(atan2(nav_adjusted.y, nav_adjusted.x)) * 100;
+	}
+}
+
+// return a ground speed estimate
+Vector2f AP_AHRS::groundspeed_vector(void)
+{
+	if (_gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
+		Vector2f v;
+		float cog = radians(_gps->ground_course*0.01f);
+		return Vector2f(cos(cog), sin(cog)) * _gps->ground_speed * 0.01f;
+	}
+	// we don't have ground speed - see if we can estimate from
+	// airspeed and the wind estimate
+	float airspeed;
+	if (!airspeed_estimate(&airspeed)) {
+		// we have no idea what our ground vector is!
+		return Vector2f(0.0f, 0.0f);
+	}
+	Vector3f wind = wind_estimate();
+	Vector2f wind2d = Vector2f(wind.x, wind.y);
+	Vector2f airspeed_vector = Vector2f(cos(yaw), sin(yaw)) * airspeed;
+	Vector2f adjusted = airspeed_vector - wind2d;
+	return adjusted;	
+}
