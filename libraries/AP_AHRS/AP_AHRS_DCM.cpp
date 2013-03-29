@@ -287,6 +287,36 @@ bool AP_AHRS_DCM::have_gps(void)
     return true;
 }
 
+// return true if we should use the compass for yaw correction
+bool AP_AHRS_DCM::use_compass(void)
+{
+    if (!_compass || !_compass->use_for_yaw()) {
+        // no compass available
+        return false;
+    }
+    if (!_fly_forward || !have_gps()) {
+        // we don't have any alterative to the compass
+        return true;
+    }
+    if (_gps->ground_speed < GPS_SPEED_MIN) {
+        // we are not going fast enough to use the GPS
+        return true;
+    }
+
+    // if the current yaw differs from the GPS yaw by more than 45
+    // degrees and the estimated wind speed is less than 80% of the
+    // ground speed, then switch to GPS navigation. This will help
+    // prevent flyaways with very bad compass offsets
+    int32_t error = abs(wrap_180_cd(yaw_sensor - _gps->ground_course));
+    if (error > 4500 && _wind.length() < _gps->ground_speed*0.008f) {
+        // start using the GPS for heading
+        return false;
+    }
+
+    // use the compass
+    return true;    
+}
+
 // yaw drift correction using the compass or GPS
 // this function prodoces the _omega_yaw_P vector, and also
 // contributes to the _omega_I.z long term yaw drift estimate
@@ -297,7 +327,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     float yaw_error;
     float yaw_deltat;
 
-    if (_compass && _compass->use_for_yaw()) {
+    if (use_compass()) {
         if (_compass->last_update != _compass_last_update) {
             yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6f;
             _compass_last_update = _compass->last_update;
@@ -532,7 +562,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // reduce the impact of the gps/accelerometers on yaw when we are
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
-    if (_compass && _compass->use_for_yaw()) {
+    if (use_compass()) {
         if (have_gps() && gps_gain == 1.0f) {
             error.z *= sinf(fabsf(roll));
         } else {
