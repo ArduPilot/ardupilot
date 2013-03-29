@@ -170,6 +170,12 @@ struct Vector2
         return (T)acosf((v1*v2) / (v1.length()*v2.length()));
     }
 
+    // computes the angle in radians between the origin and this vector
+    T   angle(void)
+    {
+        return (T)atan2f(y, x);
+    }
+
     // computes the angle between this vector and another vector
     T   angle(const Vector2<T> &v2)
     {
