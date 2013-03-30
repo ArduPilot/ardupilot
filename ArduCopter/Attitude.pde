@@ -1053,7 +1053,7 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
 // get_throttle_althold_with_slew - altitude controller with slew to avoid step changes in altitude target
 // calls normal althold controller which updates accel based throttle controller targets
 static void
-get_throttle_althold_with_slew(int16_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
+get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
     // limit target altitude change
     controller_desired_alt += constrain(target_alt-controller_desired_alt, min_climb_rate*0.02, max_climb_rate*0.02);
