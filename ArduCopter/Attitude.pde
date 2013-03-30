@@ -737,9 +737,12 @@ static int16_t get_angle_boost(int16_t throttle)
     int16_t throttle_out;
 
     temp = constrain(temp, .5, 1.0);
-    temp = constrain(9000-max(labs(roll_axis),labs(pitch_axis)), 0, 3000) / (3000 * temp);
+
+    // reduce throttle if we go inverted
+    temp = constrain(9000-max(labs(ahrs.roll_sensor),labs(ahrs.pitch_sensor)), 0, 3000) / (3000 * temp);
+
+    // apply scale and constrain throttle
     throttle_out = constrain((float)(throttle-g.throttle_min) * temp + g.throttle_min, g.throttle_min, 1000);
-    //Serial.printf("Thin:%4.2f  sincos:%4.2f  temp:%4.2f  roll_axis:%4.2f  Out:%4.2f   \n", 1.0*throttle, 1.0*cos_pitch_x * cos_roll_x, 1.0*temp, 1.0*roll_axis, 1.0*constrain((float)value * temp, 0, 1000));
 
     // to allow logging of angle boost
     angle_boost = throttle_out - throttle;
