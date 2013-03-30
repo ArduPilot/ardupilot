@@ -794,11 +794,6 @@
  # define SCALING_SPEED          15.0
 #endif
 
-// use this to enable servos in HIL mode
-#ifndef HIL_SERVOS
- # define HIL_SERVOS DISABLED
-#endif
-
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
  # define CLI_ENABLED ENABLED

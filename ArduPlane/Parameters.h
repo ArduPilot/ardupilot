@@ -81,6 +81,7 @@ public:
         k_param_takeoff_throttle_min_speed,
         k_param_takeoff_throttle_min_accel,
         k_param_takeoff_heading_hold,
+        k_param_hil_servos,
 
         // 110: Telemetry control
         //
@@ -342,6 +343,9 @@ public:
     AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
+#if HIL_MODE != HIL_MODE_DISABLED
+    AP_Int8  hil_servos;
+#endif
 
     AP_Int8 compass_enabled;
     AP_Int8 battery_monitoring;                 // 0=disabled, 3=voltage only, 4=voltage and current

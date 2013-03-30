@@ -339,7 +339,24 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
+#if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
+        extern RC_Channel* rc_ch[8];
+        mavlink_msg_servo_output_raw_send(
+            chan,
+            micros(),
+            0,     // port
+            rc_ch[0]->radio_out,
+            rc_ch[1]->radio_out,
+            rc_ch[2]->radio_out,
+            rc_ch[3]->radio_out,
+            rc_ch[4]->radio_out,
+            rc_ch[5]->radio_out,
+            rc_ch[6]->radio_out,
+            rc_ch[7]->radio_out);
+        return;
+    }
+#endif
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
@@ -352,21 +369,6 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
         hal.rcout->read(5),
         hal.rcout->read(6),
         hal.rcout->read(7));
-#else
-    extern RC_Channel* rc_ch[8];
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        micros(),
-        0,     // port
-        rc_ch[0]->radio_out,
-        rc_ch[1]->radio_out,
-        rc_ch[2]->radio_out,
-        rc_ch[3]->radio_out,
-        rc_ch[4]->radio_out,
-        rc_ch[5]->radio_out,
-        rc_ch[6]->radio_out,
-        rc_ch[7]->radio_out);
-#endif
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
@@ -1103,8 +1105,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_SET_SERVO:
-            hal.rcout->enable_ch(packet.param1 - 1);
-            hal.rcout->write(packet.param1 - 1, packet.param2);
+            servo_write(packet.param1 - 1, packet.param2);
             result = MAV_RESULT_ACCEPTED;
             break;
 

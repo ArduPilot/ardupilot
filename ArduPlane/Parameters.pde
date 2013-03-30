@@ -624,6 +624,15 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
+#if HIL_MODE != HIL_MODE_DISABLED
+    // @Param: HIL_SERVOS
+    // @DisplayName: HIL Servos enable
+    // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(hil_servos,            "HIL_SERVOS",      0),
+#endif
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     GOBJECT(barometer, "GND_", AP_Baro),

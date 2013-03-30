@@ -629,7 +629,12 @@ static void set_servos(void)
         throttle_slew_limit(last_throttle);
     }
 
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
+#if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
+        return;
+    }
+#endif
+
     // send values to the PWM timers for output
     // ----------------------------------------
     hal.rcout->write(CH_1, g.channel_roll.radio_out);     // send to Servos
@@ -646,7 +651,6 @@ static void set_servos(void)
     g.rc_10.output_ch(CH_10);
     g.rc_11.output_ch(CH_11);
  # endif
-#endif
 }
 
 static bool demoing_servos;
@@ -656,13 +660,11 @@ static void demo_servos(uint8_t i) {
     while(i > 0) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
         demoing_servos = true;
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-        hal.rcout->write(1, 1400);
+        servo_write(1, 1400);
         mavlink_delay(400);
-        hal.rcout->write(1, 1600);
+        servo_write(1, 1600);
         mavlink_delay(200);
-        hal.rcout->write(1, 1500);
-#endif
+        servo_write(1, 1500);
         demoing_servos = false;
         mavlink_delay(400);
         i--;

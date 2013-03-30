@@ -52,20 +52,20 @@ static void init_rc_out()
     enable_aux_servos();
 
     // Initialization of servo outputs
-    hal.rcout->write(CH_1,   g.channel_roll.radio_trim);
-    hal.rcout->write(CH_2,   g.channel_pitch.radio_trim);
-    hal.rcout->write(CH_3,   g.channel_throttle.radio_min);
-    hal.rcout->write(CH_4,   g.channel_rudder.radio_trim);
+    servo_write(CH_1, g.channel_roll.radio_trim);
+    servo_write(CH_2,   g.channel_pitch.radio_trim);
+    servo_write(CH_3,   g.channel_throttle.radio_min);
+    servo_write(CH_4,   g.channel_rudder.radio_trim);
 
-    hal.rcout->write(CH_5,   g.rc_5.radio_trim);
-    hal.rcout->write(CH_6,   g.rc_6.radio_trim);
-    hal.rcout->write(CH_7,   g.rc_7.radio_trim);
-    hal.rcout->write(CH_8,   g.rc_8.radio_trim);
+    servo_write(CH_5,   g.rc_5.radio_trim);
+    servo_write(CH_6,   g.rc_6.radio_trim);
+    servo_write(CH_7,   g.rc_7.radio_trim);
+    servo_write(CH_8,   g.rc_8.radio_trim);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    hal.rcout->write(CH_9,   g.rc_9.radio_trim);
-    hal.rcout->write(CH_10,  g.rc_10.radio_trim);
-    hal.rcout->write(CH_11,  g.rc_11.radio_trim);
+    servo_write(CH_9,   g.rc_9.radio_trim);
+    servo_write(CH_10,  g.rc_10.radio_trim);
+    servo_write(CH_11,  g.rc_11.radio_trim);
 #endif
 }
 

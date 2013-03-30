@@ -641,3 +641,20 @@ static void print_comma(void)
 }
 
 
+/*
+  write to a servo
+ */
+static void servo_write(uint8_t ch, uint16_t pwm)
+{
+#if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
+        extern RC_Channel *rc_ch[8];
+        if (ch < 8) {
+            rc_ch[ch]->radio_out = pwm;
+        }
+        return;
+    }
+#endif
+    hal.rcout->enable_ch(ch);
+    hal.rcout->write(ch, pwm);
+}

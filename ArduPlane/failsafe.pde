@@ -44,7 +44,7 @@ void failsafe_check(uint32_t tnow)
             start_ch = 1;
         }
         for (uint8_t ch=start_ch; ch<4; ch++) {
-            hal.rcout->write(ch, hal.rcin->read(ch));
+            servo_write(ch, hal.rcin->read(ch));
         }
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input, true);
