@@ -622,6 +622,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
+    // @Param: INVERTEDFLT_CH
+    // @DisplayName: Inverted flight channel
+    // @Description: A RC input channel number to enable inverted flight. If this is non-zero then the APM will monitor the correcponding RC input channel and will enable inverted flight when the channel goes above 1750.
+    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    // @User: Standard
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
 #if HIL_MODE != HIL_MODE_DISABLED
