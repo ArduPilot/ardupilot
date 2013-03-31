@@ -1890,10 +1890,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         if (gps_base_alt == 0) {
             gps_base_alt = g_gps->altitude;
+            current_loc.alt = 0;
         }
-        current_loc.lng = g_gps->longitude;
-        current_loc.lat = g_gps->latitude;
-        current_loc.alt = g_gps->altitude - gps_base_alt;
+      //  current_loc.lng = g_gps->longitude;
+      //  current_loc.lat = g_gps->latitude;
+      //  current_loc.alt = g_gps->altitude - gps_base_alt;
         if (!ap.home_is_set) {
             init_home();
         }
@@ -1916,15 +1917,32 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         ins.set_accel(accels);
 
         // approximate a barometer
-        float y;
         const float Temp = 312;
 
-        y = (packet.alt - 584000.0) / 29271.267;
+        float y = (packet.alt - 584000.0) / 29271.267;
         y /= (Temp / 10.0) + 273.15;
         y = 1.0/exp(y);
         y *= 95446.0;
 
         barometer.setHIL(Temp, y);
+  
+        Vector3f Bearth, m;
+        Matrix3f R;
+
+        // Bearth is the magnetic field in Canberra. We need to adjust
+        // it for inclination and declination
+        Bearth(400, 0, 0);
+        R.from_euler(0, 0, 0);
+        Bearth = R * Bearth;
+
+        // create a rotation matrix for the given attitude
+        R.from_euler(packet.roll, packet.pitch, packet.yaw);
+
+        // convert the earth frame magnetic vector to body frame, and
+        // apply the offsets
+        m = R.transposed() * Bearth - Vector3f(0, 0, 0);
+       
+        compass.setHIL(m.x,m.y,m.z);
 
  #if HIL_MODE == HIL_MODE_ATTITUDE
         // set AHRS hil sensor
