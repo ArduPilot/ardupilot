@@ -32,9 +32,10 @@
 #define AP_MOTORS_APM2  2
 
 // frame definitions
-#define AP_MOTORS_PLUS_FRAME 0
-#define AP_MOTORS_X_FRAME 1
-#define AP_MOTORS_V_FRAME 2
+#define AP_MOTORS_PLUS_FRAME        0
+#define AP_MOTORS_X_FRAME           1
+#define AP_MOTORS_V_FRAME           2
+#define AP_MOTORS_TRAPEZOID_FRAME   3
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT 490
