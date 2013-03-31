@@ -8,6 +8,7 @@ Improvements over 2.9.1:
 4) bug fix for alt_hold being passed as int16_t to get_throttle_althold_with_slew
 5) bug fix for throttle after acro flip (was being kept at min throttle if pilot switched out of ACRO mode while inverted)
 6) reduce yaw_rate P default to 0.20 (was 0.25)
+7) fix to prevent cli from being entered more than 20seconds after reboot
 
 ------------------------------------------------------------------
 ArduCopter 2.9.1 & 2.9.1-rc2 01-Feb-2013

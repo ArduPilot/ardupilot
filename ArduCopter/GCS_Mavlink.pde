@@ -781,6 +781,7 @@ GCS_MAVLINK::init(FastSerial * port)
         chan = MAVLINK_COMM_1;
     }
     _queued_parameter = NULL;
+    reset_cli_timeout();
 }
 
 void
@@ -799,7 +800,7 @@ GCS_MAVLINK::update(void)
 #if CLI_ENABLED == ENABLED
         /* allow CLI to be started by hitting enter 3 times, if no
          *  heartbeat packets have been received */
-        if (mavlink_active == false) {
+        if (mavlink_active == false && (millis() - _cli_timeout) < 20000 && !motors.armed()) {
             if (c == '\n' || c == '\r') {
                 crlf_count++;
             } else {
@@ -2043,6 +2044,10 @@ GCS_MAVLINK::queued_waypoint_send()
             waypoint_dest_compid,
             waypoint_request_i);
     }
+}
+
+void GCS_MAVLINK::reset_cli_timeout() {
+      _cli_timeout = millis();
 }
 
 /*

@@ -199,6 +199,7 @@ static void init_ardupilot()
     } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
         do_erase_logs();
+        gcs0.reset_cli_timeout();
     }
     if (g.log_bitmask != 0) {
         DataFlash.start_new_log();
