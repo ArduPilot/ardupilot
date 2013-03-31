@@ -39,9 +39,6 @@ AP_ADC_HIL::AP_ADC_HIL()
     // set diff press and temp to zero
     setGyroTemp(0);
     setPressure(0);
-
-    //segfault here
-    //last_hil_time = hal.scheduler->millis();
 }
 
 void AP_ADC_HIL::Init()

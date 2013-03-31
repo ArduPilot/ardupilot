@@ -1892,9 +1892,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             gps_base_alt = g_gps->altitude;
             current_loc.alt = 0;
         }
-      //  current_loc.lng = g_gps->longitude;
-      //  current_loc.lat = g_gps->latitude;
-      //  current_loc.alt = g_gps->altitude - gps_base_alt;
+
         if (!ap.home_is_set) {
             init_home();
         }
