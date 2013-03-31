@@ -275,8 +275,12 @@ AP_GPS_HIL              g_gps_driver;
 AP_InertialSensor_Stub  ins;
 AP_AHRS_DCM             ahrs(&ins, g_gps);
 
-
 static int32_t gps_base_alt;
+
+ #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // When building for SITL we use the HIL barometer and compass drivers
+SITL sitl;
+#endif
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL              adc;
@@ -287,6 +291,12 @@ AP_Compass_HIL          compass;                  // never used
 AP_Baro_BMP085_HIL      barometer;
 
 static int32_t gps_base_alt;
+
+ #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // When building for SITL we use the HIL barometer and compass drivers
+SITL sitl;
+#endif
+
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
