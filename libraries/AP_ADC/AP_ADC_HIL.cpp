@@ -40,7 +40,8 @@ AP_ADC_HIL::AP_ADC_HIL()
     setGyroTemp(0);
     setPressure(0);
 
-    last_hil_time = hal.scheduler->millis();
+    //segfault here
+    //last_hil_time = hal.scheduler->millis();
 }
 
 void AP_ADC_HIL::Init()
