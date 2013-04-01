@@ -14,7 +14,7 @@
 
 // loiter maximum velocities and accelerations
 #define MAX_LOITER_POS_VELOCITY         750         // should be 1.5 ~ 2.0 times the pilot input's max velocity
-#define MAX_LOITER_POS_ACCEL            250
+#define MAX_LOITER_POS_ACCEL            250         // maximum acceleration in cm/s
 #define MAX_LOITER_VEL_ACCEL            400         // should be 1.5 times larger than MAX_LOITER_POS_ACCEL
 #define MAX_LOITER_POS_VEL_VELOCITY     1000
 #define MAX_LOITER_OVERSHOOT            1000        // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
@@ -43,7 +43,7 @@ public:
     void set_loiter_target(const Vector3f& position, const Vector3f& velocity);
 
     /// move_loiter_target - move destination using forward and right velocities in cm/s
-    void move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt);
+    void move_loiter_target(float vel_forward_cms, float vel_right_cms, float dt);
 
     /// get_distance_to_target - get horizontal distance to loiter target in cm
     float get_distance_to_target();
@@ -116,6 +116,9 @@ public:
 
 protected:
 
+    /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
+    void translate_loiter_target_movements(float nav_dt);
+
     /// get_loiter_pos_lat_lon - loiter position controller
     ///     converts desired position provided as distance from home in lat/lon directions to desired velocity
     void get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_home, float dt);
@@ -159,12 +162,17 @@ protected:
 
     // internal variables
     Vector3f    _target;   		        // loiter's target location in cm from home
+    Vector3f    _target_vel;            // loiter
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
     Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
     Vector3f    _pos_delta;             // position difference between origin and destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
+
+    // pilot inputs for loiter
+    int16_t     _pilot_vel_forward_cms;
+    int16_t     _pilot_vel_right_cms;
 
     // To-Do: add split of fast (100hz for accel->angle) and slow (10hz for navigation)
     //float       _desired_accel_fwd;     // updated from loiter controller at 10hz, consumed by accel->angle controller at 50hz

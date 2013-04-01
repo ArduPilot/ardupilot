@@ -70,25 +70,51 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
 }
 
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
-void AC_WPNav::move_loiter_target(int16_t vel_forward_cms, int16_t vel_right_cms, float dt)
+void AC_WPNav::move_loiter_target(float vel_forward_cms, float vel_right_cms, float dt)
 {
-    int32_t vel_lat;
-    int32_t vel_lon;
-    int32_t vel_total;
+    _pilot_vel_forward_cms = vel_forward_cms;
+    _pilot_vel_right_cms = vel_right_cms;
+}
 
-    vel_lat = vel_forward_cms*_cos_yaw - vel_right_cms*_sin_yaw;
-    vel_lon = vel_forward_cms*_sin_yaw + vel_right_cms*_cos_yaw;
+/// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
+void AC_WPNav::translate_loiter_target_movements(float nav_dt)
+{
+    Vector2f target_vel_adj;    // make 2d vector?
+    float vel_delta_total;
+    float vel_max;
+    float vel_total;
+
+    // range check nav_dt
+    if( nav_dt < 0 ) {
+        return;
+    }
+
+    // rotate pilot input to lat/lon frame
+    target_vel_adj.x = (_pilot_vel_forward_cms*_cos_yaw - _pilot_vel_right_cms*_sin_yaw) - _target_vel.x;
+    target_vel_adj.y = (_pilot_vel_forward_cms*_sin_yaw + _pilot_vel_right_cms*_cos_yaw) - _target_vel.y;
 
     // constrain the velocity vector and scale if necessary
-    vel_total = safe_sqrt(vel_lat*vel_lat + vel_lon*vel_lon);
+    vel_delta_total = safe_sqrt(target_vel_adj.x*target_vel_adj.x + target_vel_adj.y*target_vel_adj.y);
+    vel_max = MAX_LOITER_POS_ACCEL*nav_dt;
+    if( vel_delta_total >  vel_max) {
+        target_vel_adj.x = vel_max * target_vel_adj.x/vel_delta_total;
+        target_vel_adj.y = vel_max * target_vel_adj.y/vel_delta_total;
+    }
+
+    // add desired change in velocity to current target velocity
+    _target_vel.x += target_vel_adj.x;
+    _target_vel.y += target_vel_adj.y;
+
+    // constrain the velocity vector and scale if necessary
+    vel_total = safe_sqrt(_target_vel.x*_target_vel.x + _target_vel.y*_target_vel.y);
     if( vel_total > MAX_LOITER_POS_VEL_VELOCITY ) {
-        vel_lat = MAX_LOITER_POS_VEL_VELOCITY * vel_lat/vel_total;
-        vel_lon = MAX_LOITER_POS_VEL_VELOCITY * vel_lon/vel_total;
+        _target_vel.x = MAX_LOITER_POS_VEL_VELOCITY * _target_vel.x/vel_total;
+        _target_vel.y = MAX_LOITER_POS_VEL_VELOCITY * _target_vel.y/vel_total;
     }
 
     // update target position
-    _target.x += vel_lat * dt;
-    _target.y += vel_lon * dt;
+    _target.x += _target_vel.x * nav_dt;
+    _target.y += _target_vel.y * nav_dt;
 }
 
 /// get_distance_to_target - get horizontal distance to loiter target in cm
@@ -114,7 +140,12 @@ void AC_WPNav::update_loiter()
     if( dt >= 1.0 ) {
         dt = 0.0;
         reset_I();
+        _target_vel.x = 0;
+        _target_vel.y = 0;
     }
+
+    // translate any adjustments from pilot to loiter target
+    translate_loiter_target_movements(dt);
 
     // run loiter position controller
     get_loiter_pos_lat_lon(_target.x, _target.y, dt);
