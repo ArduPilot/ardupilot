@@ -78,7 +78,7 @@ static void stabilize_roll(float speed_scaler)
 #if APM_CONTROL == DISABLED
 	// Calculate dersired servo output for the roll
 	// ---------------------------------------------
-    g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
+    g.channel_roll.servo_out = g.pidServoRoll.get_pid_4500((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
 #else // APM_CONTROL == ENABLED
     // calculate roll and pitch control using new APM_Control library
     g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE);
@@ -101,7 +101,7 @@ static void stabilize_pitch(float speed_scaler)
         // when flying upside down the elevator control is inverted
         tempcalc = -tempcalc;
     }
-    g.channel_pitch.servo_out = g.pidServoPitch.get_pid(tempcalc, speed_scaler);
+    g.channel_pitch.servo_out = g.pidServoPitch.get_pid_4500(tempcalc, speed_scaler);
 #else // APM_CONTROL == ENABLED
     g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, control_mode == STABILIZE);    
 #endif
@@ -281,8 +281,9 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
 {
     if (hold_course != -1) {
         // steering on or close to ground
-        g.channel_rudder.servo_out = g.pidWheelSteer.get_pid(bearing_error_cd, speed_scaler) + 
+        g.channel_rudder.servo_out = g.pidWheelSteer.get_pid_4500(bearing_error_cd, speed_scaler) + 
             g.kff_rudder_mix * g.channel_roll.servo_out;
+        g.channel_rudder.servo_out = constrain_int16(g.channel_rudder.servo_out, -4500, 4500);
         return;
     }
 
@@ -294,7 +295,7 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
     Vector3f temp = ins.get_accel();
     int32_t error = -temp.y*100.0;
 
-    g.channel_rudder.servo_out += g.pidServoRudder.get_pid(error, speed_scaler);
+    g.channel_rudder.servo_out += g.pidServoRudder.get_pid_4500(error, speed_scaler);
 #else // APM_CONTROL == ENABLED
     // use the new APM_Control library
 	g.channel_rudder.servo_out = g.yawController.get_servo_out(speed_scaler, ch4_inf < 0.25f) + g.channel_roll.servo_out * g.kff_rudder_mix;
