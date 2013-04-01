@@ -136,7 +136,7 @@ static void calc_nav_steer()
 
     // negative error = left turn
 	// positive error = right turn
-	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
+	nav_steer = g.pidNavSteer.get_pid_4500(bearing_error_cd, nav_gain_scaler);
 
     // avoid obstacles, if any
     nav_steer += obstacle.turn_angle*100;
