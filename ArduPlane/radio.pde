@@ -79,8 +79,8 @@ static void read_radio()
         pwm_roll = ch1_temp;
         pwm_pitch = ch2_temp;
     }else{
-        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500;
-        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500;
+        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(ch1_temp - elevon1_trim)) / 2 + 1500;
+        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(ch1_temp - elevon1_trim)) / 2 + 1500;
     }
     
     if (control_mode == TRAINING) {
