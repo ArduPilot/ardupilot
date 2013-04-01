@@ -73,6 +73,12 @@ enum FlightMode {
     INITIALISING  = 16
 };
 
+// type of stick mixing enabled
+enum StickMixing {
+    STICK_MIXING_DISABLED = 0,
+    STICK_MIXING_FBW      = 1,
+    STICK_MIXING_DIRECT   = 2
+};
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol
 // commands.  See enum MAV_CMD in the GCS_Mavlink library

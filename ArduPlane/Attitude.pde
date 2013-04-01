@@ -40,7 +40,7 @@ static bool stick_mixing_enabled(void)
 {
     if (control_mode == CIRCLE || control_mode > FLY_BY_WIRE_B) {
         // we're in an auto mode. Check the stick mixing flag
-        if (g.stick_mixing &&
+        if (g.stick_mixing != STICK_MIXING_DISABLED &&
             geofence_stickmixing() &&
             failsafe == FAILSAFE_NONE) {
             // we're in an auto mode, and haven't triggered failsafe
@@ -110,7 +110,7 @@ static void stabilize_pitch(float speed_scaler)
 /*
   this gives the user control of the aircraft in stabilization modes
  */
-static void stabilize_stick_mixing()
+static void stabilize_stick_mixing_direct()
 {
     if (!stick_mixing_enabled() ||
         control_mode == FLY_BY_WIRE_A ||
@@ -118,7 +118,7 @@ static void stabilize_stick_mixing()
         control_mode == TRAINING) {
         return;
     }
-    // do stick mixing on aileron/elevator
+    // do direct stick mixing on aileron/elevator
     float ch1_inf;
     float ch2_inf;
         
@@ -136,11 +136,51 @@ static void stabilize_stick_mixing()
     // -----------------------------------------------
     g.channel_roll.servo_out  *= ch1_inf;
     g.channel_pitch.servo_out *= ch2_inf;
-            
+    
     // Mix in stick inputs
     // -------------------
     g.channel_roll.servo_out  +=     g.channel_roll.pwm_to_angle();
     g.channel_pitch.servo_out +=    g.channel_pitch.pwm_to_angle();
+}
+
+/*
+  this gives the user control of the aircraft in stabilization modes
+  using FBW style controls
+ */
+static void stabilize_stick_mixing_fbw()
+{
+    if (!stick_mixing_enabled() ||
+        control_mode == FLY_BY_WIRE_A ||
+        control_mode == FLY_BY_WIRE_B ||
+        control_mode == TRAINING) {
+        return;
+    }
+    // do FBW style stick mixing. We don't treat it linearly
+    // however. For inputs up to half the maximum, we use linear
+    // addition to the nav_roll and nav_pitch. Above that it goes
+    // non-linear and ends up as 2x the maximum, to ensure that
+    // the user can direct the plane in any direction with stick
+    // mixing.
+    float roll_input = g.channel_roll.norm_input();
+    if (fabsf(roll_input) > 0.5f) {
+        roll_input = (3*roll_input - 1);
+    }
+    nav_roll_cd += roll_input * g.roll_limit_cd;
+    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    
+    float pitch_input = g.channel_pitch.norm_input();
+    if (fabsf(pitch_input) > 0.5f) {
+        pitch_input = (3*pitch_input - 1);
+    }
+    if (inverted_flight) {
+        pitch_input = -pitch_input;
+    }
+    if (pitch_input > 0) {
+        nav_pitch_cd += pitch_input * g.pitch_limit_max_cd;
+    } else {
+        nav_pitch_cd += -(pitch_input * g.pitch_limit_min_cd);
+    }
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
 }
 
 
@@ -196,7 +236,6 @@ static void stabilize_training(float speed_scaler)
         }
     }
 
-    stabilize_stick_mixing();
     stabilize_yaw(speed_scaler);
 }
 
@@ -211,9 +250,14 @@ static void stabilize()
     if (control_mode == TRAINING) {
         stabilize_training(speed_scaler);
     } else {
+        if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
+            stabilize_stick_mixing_fbw();
+        }
         stabilize_roll(speed_scaler);
         stabilize_pitch(speed_scaler);
-        stabilize_stick_mixing();
+        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == STABILIZE) {
+            stabilize_stick_mixing_direct();
+        }
         stabilize_yaw(speed_scaler);
     }
 }
