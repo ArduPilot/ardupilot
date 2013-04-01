@@ -20,6 +20,7 @@
 #define MAX_LOITER_OVERSHOOT            1000        // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
 #define WPINAV_MAX_POS_ERROR            2000.0f     // maximum distance (in cm) that the desired track can stray from our current location.
 #define WP_SPEED                        500         // default horizontal speed betwen waypoints in cm/s
+#define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
 
 class AC_WPNav
 {
@@ -52,6 +53,15 @@ public:
 
     /// update_loiter - run the loiter controller - should be called at 10hz
     void update_loiter();
+
+    /// set_angle_limit - limits maximum angle in centi-degrees the copter will lean
+    void set_angle_limit(int32_t lean_angle) { _lean_angle_max = lean_angle; }
+
+    /// clear_angle_limit - reset angle limits back to defaults
+    void clear_angle_limit() { _lean_angle_max = MAX_LEAN_ANGLE; }
+    
+    /// get_angle_limit - retrieve maximum angle in centi-degrees the copter will lean
+    int32_t get_angle_limit() { return _lean_angle_max; }
 
     ///
     /// waypoint navigation
@@ -144,6 +154,8 @@ protected:
     int32_t     _desired_roll;          // fed to stabilize controllers at 50hz
     int32_t     _desired_pitch;         // fed to stabilize controllers at 50hz
     int32_t     _desired_altitude;      // fed to alt hold controller at 50hz
+
+    int32_t     _lean_angle_max;        // maximum lean angle.  can we set from main code so that throttle controller can stop leans that cause copter to lose altitude
 
     // internal variables
     Vector3f    _target;   		        // loiter's target location in cm from home
