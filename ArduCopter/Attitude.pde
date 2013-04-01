@@ -1028,6 +1028,7 @@ get_throttle_rate(int16_t z_target_speed)
 {
     static uint32_t last_call_ms = 0;
     static float z_rate_error = 0;   // The velocity error in cm.
+    static float z_target_speed_last = 0;   // The requested speed from the previous iteration
     int32_t p,i,d;      // used to capture pid values for logging
     int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
     uint32_t now = millis();
@@ -1036,11 +1037,18 @@ get_throttle_rate(int16_t z_target_speed)
     if( now - last_call_ms > 100 ) {
         // Reset Filter
         z_rate_error    = 0;
+        output = 0;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
         z_rate_error    = z_rate_error + 0.20085f * ((z_target_speed - climb_rate) - z_rate_error);
+        // feed forward acceleration based on change in desired speed.
+        output = constrain(z_target_speed - z_target_speed_last, -300, 300);    // ensure we do not have integer overflow
+        output *= 50;   // To-Do: replace 50 with dt
     }
     last_call_ms = now;
+
+    // store target speed for next iteration
+    z_target_speed_last = z_target_speed;
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
@@ -1054,7 +1062,7 @@ get_throttle_rate(int16_t z_target_speed)
     d = g.pid_throttle.get_d(z_rate_error, .02);
 
     // consolidate target acceleration
-    output =  p+i+d;
+    output += p+i+d;
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
