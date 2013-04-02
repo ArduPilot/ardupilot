@@ -71,10 +71,11 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
 }
 
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
-void AC_WPNav::move_loiter_target(float vel_forward_cms, float vel_right_cms, float dt)
+void AC_WPNav::move_loiter_target(float control_roll, float control_pitch, float dt)
 {
-    _pilot_vel_forward_cms = vel_forward_cms;
-    _pilot_vel_right_cms = vel_right_cms;
+    // convert pilot input to desired velocity in cm/s
+    _pilot_vel_forward_cms = -control_pitch * MAX_LOITER_POS_VELOCITY / 4500.0f;
+    _pilot_vel_right_cms = control_roll * MAX_LOITER_POS_VELOCITY / 4500.0f;
 }
 
 /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
@@ -116,6 +117,15 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
     // update target position
     _target.x += _target_vel.x * nav_dt;
     _target.y += _target_vel.y * nav_dt;
+
+    // constrain target position to within reasonable distance of current location
+    Vector3f curr_pos = _inav->get_position();
+    Vector3f distance_err = _target - curr_pos;
+    float distance = safe_sqrt(distance_err.x*distance_err.x + distance_err.y*distance_err.y);
+    if( distance > MAX_LOITER_OVERSHOOT ) {
+        _target.x = curr_pos.x + MAX_LOITER_OVERSHOOT * distance_err.x/distance;
+        _target.y = curr_pos.y + MAX_LOITER_OVERSHOOT * distance_err.y/distance;
+    }
 }
 
 /// get_distance_to_target - get horizontal distance to loiter target in cm
@@ -147,7 +157,7 @@ void AC_WPNav::update_loiter()
 
     // translate any adjustments from pilot to loiter target
     translate_loiter_target_movements(dt);
-
+    
     // run loiter position controller
     get_loiter_pos_lat_lon(_target.x, _target.y, dt);
 }

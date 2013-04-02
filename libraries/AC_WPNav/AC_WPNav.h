@@ -13,9 +13,11 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 
 // loiter maximum velocities and accelerations
-#define MAX_LOITER_POS_VELOCITY         750         // should be 1.5 ~ 2.0 times the pilot input's max velocity
-#define MAX_LOITER_POS_ACCEL            250         // maximum acceleration in cm/s
-#define MAX_LOITER_VEL_ACCEL            400         // should be 1.5 times larger than MAX_LOITER_POS_ACCEL
+#define MAX_LOITER_POS_VELOCITY         500         // maximum velocity that our position controller will request.  should be 1.5 ~ 2.0 times the pilot input's max velocity.  To-Do: make consistent with maximum velocity requested by pilot input to loiter
+#define MAX_LOITER_POS_ACCEL            250         // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
+#define MAX_LOITER_VEL_ACCEL            400         // max acceleration in cm/s that the loiter velocity controller will ask from the lower accel controller.
+                                                    // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
+                                                    // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 #define MAX_LOITER_POS_VEL_VELOCITY     1000
 #define MAX_LOITER_OVERSHOOT            1000        // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
 #define WPINAV_MAX_POS_ERROR            2000.0f     // maximum distance (in cm) that the desired track can stray from our current location.
@@ -43,8 +45,8 @@ public:
     /// set_loiter_target - set initial loiter target based on current position and velocity
     void set_loiter_target(const Vector3f& position, const Vector3f& velocity);
 
-    /// move_loiter_target - move destination using forward and right velocities in cm/s
-    void move_loiter_target(float vel_forward_cms, float vel_right_cms, float dt);
+    /// move_loiter_target - move destination using pilot input
+    void move_loiter_target(float control_roll, float control_pitch, float dt);
 
     /// get_distance_to_target - get horizontal distance to loiter target in cm
     float get_distance_to_target();
