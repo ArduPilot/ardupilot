@@ -521,8 +521,6 @@ static uint8_t rtl_state;
 // The cos values are defaulted to 1 to get a decent initial value for a level state
 static float cos_roll_x         = 1;
 static float cos_pitch_x        = 1;
-static float cos_yaw_x          = 1;
-static float sin_yaw_y          = 1;
 static float cos_yaw            = 1;
 static float sin_yaw            = 1;
 static float sin_roll           = 1;
@@ -1361,7 +1359,7 @@ static void update_optical_flow(void)
     // if new data has arrived, process it
     if( optflow.last_update != last_of_update ) {
         last_of_update = optflow.last_update;
-        optflow.update_position(ahrs.roll, ahrs.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
+        optflow.update_position(ahrs.roll, ahrs.pitch, sin_yaw, cos_yaw, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
 
         // write to log at 5hz
         of_log_counter++;
@@ -2027,21 +2025,18 @@ static void update_trig(void){
     // which it does do in avr-libc
     cos_roll_x      = constrain(cos_roll_x, -1.0, 1.0);
 
-    sin_yaw_y       = yawvector.x;                                              // 1y = north
-    cos_yaw_x       = yawvector.y;                                              // 0x = north
+    sin_yaw         = constrain(yawvector.y, -1.0, 1.0);
+    cos_yaw         = constrain(yawvector.x, -1.0, 1.0);
 
     // added to convert earth frame to body frame for rate controllers
     sin_pitch       = -temp.c.x;
     sin_roll        = temp.c.y / cos_pitch_x;
 
-    sin_yaw               = constrain(temp.b.x/cos_pitch_x, -1.0, 1.0);
-    cos_yaw               = constrain(temp.a.x/cos_pitch_x, -1.0, 1.0);
-
     //flat:
-    // 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
-    // 90° = cos_yaw:  1.00, sin_yaw:  0.00,
-    // 180 = cos_yaw:  0.00, sin_yaw: -1.00,
-    // 270 = cos_yaw: -1.00, sin_yaw:  0.00,
+    // 0 ° = cos_yaw:  1.00, sin_yaw:  0.00,
+    // 90° = cos_yaw:  0.00, sin_yaw:  1.00,
+    // 180 = cos_yaw: -1.00, sin_yaw:  0.00,
+    // 270 = cos_yaw:  0.00, sin_yaw: -1.00,
 }
 
 // read baro and sonar altitude at 10hz
