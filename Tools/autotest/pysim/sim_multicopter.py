@@ -106,8 +106,6 @@ for m in [ 'home' ]:
         parser.print_help()
         sys.exit(1)
 
-parent_pid = os.getppid()
-
 # UDP socket addresses
 fg_out_address  = interpret_address(opts.fgout)
 sim_out_address = interpret_address(opts.simout)
