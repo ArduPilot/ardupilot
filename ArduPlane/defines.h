@@ -160,6 +160,7 @@ enum log_messages {
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
+    LOG_CAMERA_MSG,
     MAX_NUM_LOGS
 };
 

@@ -331,6 +331,53 @@ static void Log_Read_Cmd()
         (long)pkt.waypoint_longitude);
 }
 
+struct log_Camera {
+    LOG_PACKET_HEADER;
+    uint32_t gps_time;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  altitude;
+    int16_t  roll;
+    int16_t  pitch;
+    uint16_t yaw;
+};
+
+// Write a Camera packet. Total length : 26 bytes
+static void Log_Write_Camera()
+{
+#if CAMERA == ENABLED
+    struct log_Camera pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
+        gps_time    : g_gps->time,
+        latitude    : current_loc.lat,
+        longitude   : current_loc.lng,
+        altitude    : current_loc.alt,
+        roll        : (int16_t)ahrs.roll_sensor,
+        pitch       : (int16_t)ahrs.pitch_sensor,
+        yaw         : (uint16_t)ahrs.yaw_sensor
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+#endif
+}
+
+// Read a camera packet
+static void Log_Read_Camera()
+{
+    struct log_Camera pkt;
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
+                                     // 1
+    cliSerial->printf_P(PSTR("CAMERA, %lu, "),(unsigned long)pkt.gps_time); // 1 time
+    print_latlon(cliSerial, pkt.latitude);              // 2 lat
+    cliSerial->print_P(PSTR(", "));
+    print_latlon(cliSerial, pkt.longitude);             // 3 lon
+                               // 4   5   6   7
+    cliSerial->printf_P(PSTR(", %ld, %d, %d, %u\n"),
+                    (long)pkt.altitude,                 // 4 altitude
+                    (int)pkt.roll,                      // 5 roll in centidegrees
+                    (int)pkt.pitch,                     // 6 pitch in centidegrees
+                    (unsigned)pkt.yaw);                 // 7 yaw in centidegrees
+}
+
 struct log_Startup {
     LOG_PACKET_HEADER;
     uint8_t startup_type;
@@ -643,6 +690,9 @@ static void log_callback(uint8_t msgid)
     case LOG_GPS_MSG:
         Log_Read_GPS();
         break;
+    case LOG_CAMERA_MSG:
+        Log_Read_Camera();
+        break;
     }
 }
 
@@ -660,6 +710,7 @@ static void Log_Write_Performance() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_IMU() {}
+static void Log_Write_Camera() {}
 
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;
