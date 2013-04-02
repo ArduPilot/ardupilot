@@ -123,8 +123,8 @@ Compass::save_offsets()
     _offset.save();
 }
 
-Vector3f &
-Compass::get_offsets()
+const Vector3f &
+Compass::get_offsets() const
 {
     return _offset;
 }
@@ -165,14 +165,14 @@ Compass::set_declination(float radians)
 }
 
 float
-Compass::get_declination()
+Compass::get_declination() const
 {
     return _declination.get();
 }
 
 
 float
-Compass::calculate_heading(float roll, float pitch)
+Compass::calculate_heading(float roll, float pitch) const
 {
 //  Note - This function implementation is deprecated
 //  The alternate implementation of this function using the dcm matrix is preferred
@@ -211,7 +211,7 @@ Compass::calculate_heading(float roll, float pitch)
 
 
 float
-Compass::calculate_heading(const Matrix3f &dcm_matrix)
+Compass::calculate_heading(const Matrix3f &dcm_matrix) const
 {
     float headX;
     float headY;
