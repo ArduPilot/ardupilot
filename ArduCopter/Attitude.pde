@@ -1024,13 +1024,13 @@ get_initial_alt_hold( int32_t alt_cm, int16_t climb_rate_cms)
 // get_throttle_rate - calculates desired accel required to achieve desired z_target_speed
 // sets accel based throttle controller target
 static void
-get_throttle_rate(int16_t z_target_speed)
+get_throttle_rate(float z_target_speed)
 {
     static uint32_t last_call_ms = 0;
     static float z_rate_error = 0;   // The velocity error in cm.
     static float z_target_speed_last = 0;   // The requested speed from the previous iteration
     int32_t p,i,d;      // used to capture pid values for logging
-    int16_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
+    int32_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
@@ -1042,8 +1042,7 @@ get_throttle_rate(int16_t z_target_speed)
         // calculate rate error and filter with cut off frequency of 2 Hz
         z_rate_error    = z_rate_error + 0.20085f * ((z_target_speed - climb_rate) - z_rate_error);
         // feed forward acceleration based on change in desired speed.
-        output = constrain(z_target_speed - z_target_speed_last, -300, 300);    // ensure we do not have integer overflow
-        output *= 50;   // To-Do: replace 50 with dt
+        output = (z_target_speed - z_target_speed_last) * 50.0f;   // To-Do: replace 50 with dt
     }
     last_call_ms = now;
 
@@ -1061,8 +1060,9 @@ get_throttle_rate(int16_t z_target_speed)
     }
     d = g.pid_throttle.get_d(z_rate_error, .02);
 
-    // consolidate target acceleration
+    // consolidate and constrain target acceleration
     output += p+i+d;
+    output = constrain_int32(output, -32000, 32000);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
