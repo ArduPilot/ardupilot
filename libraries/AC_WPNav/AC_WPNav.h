@@ -125,7 +125,7 @@ protected:
 
     /// get_loiter_pos_lat_lon - loiter position controller
     ///     converts desired position provided as distance from home in lat/lon directions to desired velocity
-    void get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_home, float dt);
+    void get_loiter_pos_lat_lon(float target_lat_from_home, float target_lon_from_home, float dt);
 
     /// get_loiter_vel_lat_lon - loiter velocity controller
     ///    converts desired velocities in lat/lon frame to accelerations in lat/lon frame
@@ -133,7 +133,7 @@ protected:
 
     /// get_loiter_accel_lat_lon - loiter acceration controller
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon);
+    void get_loiter_accel_lat_lon(float accel_lat, float accel_lon);
 
     /// get_bearing_cd - return bearing in centi-degrees between two positions
     float get_bearing_cd(const Vector3f origin, const Vector3f destination);

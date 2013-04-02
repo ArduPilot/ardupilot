@@ -261,45 +261,41 @@ void AC_WPNav::update_wpnav()
 
 // get_loiter_pos_lat_lon - loiter position controller
 //     converts desired position provided as distance from home in lat/lon directions to desired velocity
-void AC_WPNav::get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_home, float dt)
+void AC_WPNav::get_loiter_pos_lat_lon(float target_lat_from_home, float target_lon_from_home, float dt)
 {
-    float dist_error_lat;
-    int32_t desired_vel_lat;
+    Vector2f dist_error;
+    Vector2f desired_vel;
+    float dist_error_total;
 
-    float dist_error_lon;
-    int32_t desired_vel_lon;
+    float vel_sqrt;
+    float vel_total;
 
-    int32_t dist_error_total;
-
-    int16_t vel_sqrt;
-    int32_t vel_total;
-
-    int16_t linear_distance;      // the distace we swap between linear and sqrt.
+    float linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate distance error
-    dist_error_lat = target_lat_from_home - _inav->get_latitude_diff();
-    dist_error_lon = target_lon_from_home - _inav->get_longitude_diff();
+    dist_error.x = target_lat_from_home - _inav->get_latitude_diff();
+    dist_error.y = target_lon_from_home - _inav->get_longitude_diff();
 
     linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
     _distance_to_target = linear_distance;      // for reporting purposes
 
-    dist_error_total = safe_sqrt(dist_error_lat*dist_error_lat + dist_error_lon*dist_error_lon);
+    dist_error_total = safe_sqrt(dist_error.x*dist_error.x + dist_error.y*dist_error.y);
     if( dist_error_total > 2*linear_distance ) {
         vel_sqrt = constrain(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
-        desired_vel_lat = vel_sqrt * dist_error_lat/dist_error_total;
-        desired_vel_lon = vel_sqrt * dist_error_lon/dist_error_total;
+        desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
+        desired_vel.y = vel_sqrt * dist_error.y/dist_error_total;
     }else{
-        desired_vel_lat = _pid_pos_lat->get_p(dist_error_lat);
-        desired_vel_lon = _pid_pos_lon->get_p(dist_error_lon);
+        desired_vel.x = _pid_pos_lat->get_p(dist_error.x);
+        desired_vel.y = _pid_pos_lon->get_p(dist_error.y);
     }
 
-    vel_total = safe_sqrt(desired_vel_lat*desired_vel_lat + desired_vel_lon*desired_vel_lon);
+    vel_total = safe_sqrt(desired_vel.x*desired_vel.x + desired_vel.y*desired_vel.y);
     if( vel_total > MAX_LOITER_POS_VELOCITY ) {
-        desired_vel_lat = MAX_LOITER_POS_VELOCITY * desired_vel_lat/vel_total;
-        desired_vel_lon = MAX_LOITER_POS_VELOCITY * desired_vel_lon/vel_total;
+        desired_vel.x = MAX_LOITER_POS_VELOCITY * desired_vel.x/vel_total;
+        desired_vel.y = MAX_LOITER_POS_VELOCITY * desired_vel.y/vel_total;
     }
 
-    get_loiter_vel_lat_lon(desired_vel_lat, desired_vel_lon, dt);
+    get_loiter_vel_lat_lon(desired_vel.x, desired_vel.y, dt);
 }
 
 // get_loiter_vel_lat_lon - loiter velocity controller
@@ -346,7 +342,7 @@ void AC_WPNav::get_loiter_vel_lat_lon(float vel_lat, float vel_lon, float dt)
 
 // get_loiter_accel_lat_lon - loiter acceration controller
 //    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_WPNav::get_loiter_accel_lat_lon(int16_t accel_lat, int16_t accel_lon)
+void AC_WPNav::get_loiter_accel_lat_lon(float accel_lat, float accel_lon)
 {
     float z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;    // gravity in cm/s/s
     float accel_forward;
