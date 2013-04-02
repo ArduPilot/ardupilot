@@ -60,7 +60,10 @@ uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, float *result)
     for (uint8_t i=0; i<6; i++) {
         result[i] = Ch(channel_numbers[i]);
     }
-    return ((hal.scheduler->millis() - last_hil_time)*2)/5;
+    uint32_t now = hal.scheduler->micros();
+    uint32_t ret = now - _last_ch6_time;
+    _last_ch6_time = now;
+    return ret;
 }
 
 // Set one channel value
