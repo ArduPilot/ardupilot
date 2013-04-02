@@ -91,6 +91,7 @@ endef
 
 # Link the final object
 $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
+	@echo "Building $(SKETCHELF)"
 	$(RULEHDR)
 	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 
