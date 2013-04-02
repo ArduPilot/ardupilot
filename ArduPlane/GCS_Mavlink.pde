@@ -1564,6 +1564,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             tell_command.p1 = packet.param1;
             break;
 
+        case MAV_CMD_DO_DIGICAM_CONTROL:
+            break;
+
         default:
             result = MAV_MISSION_UNSUPPORTED;
             break;
