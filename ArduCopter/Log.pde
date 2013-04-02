@@ -613,7 +613,7 @@ static void Log_Write_Compass()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Read a camera packet
+// Read a compass packet
 static void Log_Read_Compass()
 {
     struct log_Compass pkt;
