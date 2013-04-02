@@ -27,6 +27,7 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
     _pid_pos_lon(pid_pos_lon),
     _pid_rate_lat(pid_rate_lat),
     _pid_rate_lon(pid_rate_lon),
+    _speedz_cms(MAX_CLIMB_VELOCITY),
     _lean_angle_max(MAX_LEAN_ANGLE)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -166,8 +167,12 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 {
     _origin = origin;
     _destination = destination;
-    _pos_delta = _destination - _origin;
-    _track_length = safe_sqrt(_pos_delta.x * _pos_delta.x + _pos_delta.y * _pos_delta.y);  
+    _pos_delta_unit = _destination - _origin;
+    _track_length = _pos_delta_unit.length();
+    _pos_delta_unit = _pos_delta_unit/_track_length;
+
+    _hoz_track_ratio = _track_length / sqrt(_pos_delta_unit.x*_pos_delta_unit.x + _pos_delta_unit.y*_pos_delta_unit.y);
+    _vert_track_ratio = _track_length / _pos_delta_unit.z;
     _track_desired = 0;
 }
 
@@ -177,44 +182,27 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     float cross_track_dist;
     float track_covered;
     float track_desired_max;
-    float line_a, line_b, line_c, line_m;
+    float alt_error;
 
     // get current location
     Vector3f curr = _inav->get_position();
 
+    // limit velocity to maximum possible
+    velocity_cms = min(velocity_cms, _speed_cms) * _hoz_track_ratio;
+    velocity_cms = min(velocity_cms, _speedz_cms * _vert_track_ratio);
+
     // check for zero length segment
-    if( _pos_delta.x == 0 && _pos_delta.y == 0) {
+    if( _pos_delta_unit.x == 0 && _pos_delta_unit.y == 0 ) {
         _target = _destination;
         return;
     }
 
-    if( _pos_delta.x == 0 ) {
-        // x is zero
-        cross_track_dist = fabsf(curr.x - _destination.x);
-        track_covered = fabsf(curr.y - _origin.y);
-    }else if(_pos_delta.y == 0) {
-        // y is zero
-        cross_track_dist = fabsf(curr.y - _destination.y);
-        track_covered = fabsf(curr.x - _origin.x);
-    }else{
-        // both x and y non zero
-        line_a = _pos_delta.y;
-        line_b = -_pos_delta.x;
-        line_c = _pos_delta.x * _origin.y - _pos_delta.y * _origin.x;
-        line_m = line_a / line_b;
-        cross_track_dist = fabsf(line_a * curr.x + line_b * curr.y + line_c ) / _track_length;
-
-        line_m = 1/line_m;
-        line_a = line_m;
-        line_b = -1;
-        line_c = curr.y - line_m * curr.x;
-
-        // calculate the distance to the closest point along the track and it's distance from the origin
-        track_covered = fabsf(line_a*_origin.x + line_b*_origin.y + line_c) / safe_sqrt(line_a*line_a+line_b*line_b);
-    }
+    track_covered = (curr.x-_origin.x) * _pos_delta_unit.x + (curr.y-_origin.y) * _pos_delta_unit.y + (curr.z-_origin.z) * _pos_delta_unit.z;
+    cross_track_dist = -(curr.x-_origin.x) * _pos_delta_unit.y + (curr.y-_origin.y) * _pos_delta_unit.x;
+    alt_error = fabsf(_origin.z + _pos_delta_unit.z * track_covered - curr.z);
 
     // maximum distance along the track that we will allow (stops target point from getting too far from the current position)
-    track_desired_max = track_covered + safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR-cross_track_dist*cross_track_dist);
+    track_desired_max = track_covered + min( safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - cross_track_dist*cross_track_dist) * _hoz_track_ratio,  (750-alt_error) * _vert_track_ratio);
 
     // advance the current target
     _track_desired += velocity_cms * dt;
@@ -228,10 +216,9 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     }
 
     // recalculate the desired position
-    float track_length_pct = _track_desired/_track_length;
-    _target.x = _origin.x + _pos_delta.x * track_length_pct;
-    _target.y = _origin.y + _pos_delta.y * track_length_pct;
-    _target.z = _destination.z;
+    _target.x = _origin.x + _pos_delta_unit.x * _track_desired;
+    _target.y = _origin.y + _pos_delta_unit.y * _track_desired;
+    _target.z = _origin.z + _pos_delta_unit.z * _track_desired;
 }
 
 /// get_distance_to_destination - get horizontal distance to destination in cm
@@ -317,44 +304,44 @@ void AC_WPNav::get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t targ
 
 // get_loiter_vel_lat_lon - loiter velocity controller
 //    converts desired velocities in lat/lon frame to accelerations in lat/lon frame
-void AC_WPNav::get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon, float dt)
+void AC_WPNav::get_loiter_vel_lat_lon(float vel_lat, float vel_lon, float dt)
 {
-    float speed_error_lat = 0;     // The velocity in cm/s.
-    float speed_error_lon = 0;     // The velocity in cm/s.
+    Vector3f vel_curr = _inav->get_velocity();  // current velocity in cm/s
+    Vector3f vel_error;                         // The velocity error in cm/s.
+    Vector2f desired_accel;                     // the resulting desired acceleration
+    float accel_total;                          // total acceleration in cm/s/s
 
-    float speed_lat = _inav->get_latitude_velocity();
-    float speed_lon = _inav->get_longitude_velocity();
-
-    int32_t accel_lat;
-    int32_t accel_lon;
-    int32_t accel_total;
-
-    int16_t lat_p,lat_i,lat_d;
-    int16_t lon_p,lon_i,lon_d;
-
-    // calculate vel error
-    speed_error_lat = vel_lat - speed_lat;
-    speed_error_lon = vel_lon - speed_lon;
-
-    lat_p   = _pid_rate_lat->get_p(speed_error_lat);
-    lat_i   = _pid_rate_lat->get_i(speed_error_lat, dt);
-    lat_d   = _pid_rate_lat->get_d(speed_error_lat, dt);
-
-    lon_p   = _pid_rate_lon->get_p(speed_error_lon);
-    lon_i   = _pid_rate_lon->get_i(speed_error_lon, dt);
-    lon_d   = _pid_rate_lon->get_d(speed_error_lon, dt);
-
-    accel_lat = (lat_p+lat_i+lat_d);
-    accel_lon = (lon_p+lon_i+lon_d);
-
-    accel_total = safe_sqrt(accel_lat*accel_lat + accel_lon*accel_lon);
-
-    if( accel_total > MAX_LOITER_VEL_ACCEL ) {
-        accel_lat = MAX_LOITER_VEL_ACCEL * accel_lat/accel_total;
-        accel_lon = MAX_LOITER_VEL_ACCEL * accel_lon/accel_total;
+    // reset last velocity if this controller has just been engaged or dt is zero
+    if( dt == 0.0 ) {
+        desired_accel.x = 0;
+        desired_accel.y = 0;
+    } else {
+        // feed forward desired acceleration calculation
+        desired_accel.x = (vel_lat - _vel_last.x)/dt;
+        desired_accel.y = (vel_lon - _vel_last.y)/dt;
     }
 
-    get_loiter_accel_lat_lon(accel_lat, accel_lon);
+    // store this iteration's velocities for the next iteration
+    _vel_last.x = vel_lat;
+    _vel_last.y = vel_lon;
+
+    // calculate velocity error
+    vel_error.x = vel_lat - vel_curr.x;
+    vel_error.y = vel_lon - vel_curr.y;
+
+    // combine feed foward accel with PID outpu from velocity error
+    desired_accel.x += _pid_rate_lat->get_pid(vel_error.x, dt);
+    desired_accel.y += _pid_rate_lon->get_pid(vel_error.y, dt);
+
+    // scale desired acceleration if it's beyond acceptable limit
+    accel_total = safe_sqrt(desired_accel.x*desired_accel.x + desired_accel.y*desired_accel.y);
+    if( accel_total > MAX_LOITER_VEL_ACCEL ) {
+        desired_accel.x = MAX_LOITER_VEL_ACCEL * desired_accel.x/accel_total;
+        desired_accel.y = MAX_LOITER_VEL_ACCEL * desired_accel.y/accel_total;
+    }
+
+    // call accel based controller with desired acceleration
+    get_loiter_accel_lat_lon(desired_accel.x, desired_accel.y);
 }
 
 // get_loiter_accel_lat_lon - loiter acceration controller
@@ -394,4 +381,7 @@ void AC_WPNav::reset_I()
     _pid_pos_lat->reset_I();
     _pid_rate_lon->reset_I();
     _pid_rate_lat->reset_I();
+
+    // set last velocity to current velocity
+    _vel_last = _inav->get_velocity();
 }

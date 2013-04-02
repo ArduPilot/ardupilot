@@ -21,6 +21,7 @@
 #define WPINAV_MAX_POS_ERROR            2000.0f     // maximum distance (in cm) that the desired track can stray from our current location.
 #define WP_SPEED                        500         // default horizontal speed betwen waypoints in cm/s
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
+#define MAX_CLIMB_VELOCITY              125         // maximum climb velocity - ToDo: pull this in from main code
 
 class AC_WPNav
 {
@@ -112,6 +113,9 @@ public:
         _cos_roll = cos_roll;
     }
 
+    /// set_climb_velocity - allows main code to pass max climb velocity to wp navigation
+    void set_climb_velocity(float velocity_cms) { _speedz_cms = velocity_cms; };
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -125,7 +129,7 @@ protected:
 
     /// get_loiter_vel_lat_lon - loiter velocity controller
     ///    converts desired velocities in lat/lon frame to accelerations in lat/lon frame
-    void get_loiter_vel_lat_lon(int16_t vel_lat, int16_t vel_lon, float dt);
+    void get_loiter_vel_lat_lon(float vel_lat, float vel_lon, float dt);
 
     /// get_loiter_accel_lat_lon - loiter acceration controller
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
@@ -148,6 +152,7 @@ protected:
 
     // parameters
     AP_Float    _speed_cms;         // default horizontal speed in cm/s
+    float       _speedz_cms;        // max vertical climb rate in cm/s.  To-Do: rename or pull this from main code
     uint32_t	_last_update;		// time of last update call
     float       _cos_yaw;           // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
@@ -163,12 +168,15 @@ protected:
     // internal variables
     Vector3f    _target;   		        // loiter's target location in cm from home
     Vector3f    _target_vel;            // loiter
+    Vector3f    _vel_last;              // previous iterations velocity in cm/s
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
     Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
-    Vector3f    _pos_delta;             // position difference between origin and destination
+    Vector3f    _pos_delta_unit;        // position difference between origin and destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
+    float       _hoz_track_ratio;       // horizontal component of track to next waypoint
+    float       _vert_track_ratio;      // vertical component of track to next waypoint
 
     // pilot inputs for loiter
     int16_t     _pilot_vel_forward_cms;
