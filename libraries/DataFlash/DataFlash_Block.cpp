@@ -33,6 +33,9 @@ void DataFlash_Block::FinishWrite(void)
 
 void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
 {
+    if (!CardInserted()) {
+        return;
+    }
     while (size > 0) {
         uint16_t n = df_PageSize - df_BufferIdx;
         if (n > size) {
