@@ -462,6 +462,7 @@ static void set_mode(uint8_t mode)
         set_throttle_mode(GUIDED_THR);
         set_nav_mode(GUIDED_NAV);
         wp_verify_byte = 0;
+        guided_WP = current_loc;
         set_next_WP(&guided_WP);
         break;
 
