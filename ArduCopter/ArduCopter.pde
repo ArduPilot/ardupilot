@@ -1967,7 +1967,7 @@ void update_throttle_mode(void)
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in next_WP.alt
         if(motors.auto_armed() == true) {
-            get_throttle_althold_with_slew(wp_nav.get_destination_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
+            get_throttle_althold_with_slew(wp_nav.get_target_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
         }
         break;
 
