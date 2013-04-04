@@ -22,7 +22,7 @@ void AP_MotorsOctaQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_1,    0, AP_MOTORS_MATRIX_MOTOR_CCW, 1);
         add_motor(AP_MOTORS_MOT_2,  -90, AP_MOTORS_MATRIX_MOTOR_CW,  7);
         add_motor(AP_MOTORS_MOT_3,  180, AP_MOTORS_MATRIX_MOTOR_CCW, 5);
-        add_motor(AP_MOTORS_MOT_4,   90, AP_MOTORS_MATRIX_MOTOR_CW,  4);
+        add_motor(AP_MOTORS_MOT_4,   90, AP_MOTORS_MATRIX_MOTOR_CW,  3);
         add_motor(AP_MOTORS_MOT_5,  -90, AP_MOTORS_MATRIX_MOTOR_CCW, 8);
         add_motor(AP_MOTORS_MOT_6,    0, AP_MOTORS_MATRIX_MOTOR_CW,  2);
         add_motor(AP_MOTORS_MOT_7,   90, AP_MOTORS_MATRIX_MOTOR_CCW, 4);
@@ -32,7 +32,7 @@ void AP_MotorsOctaQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_MOTOR_CCW, 1);
         add_motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_MOTOR_CW,  7);
         add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_MOTOR_CCW, 5);
-        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_MOTOR_CW,  4);
+        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_MOTOR_CW,  3);
         add_motor(AP_MOTORS_MOT_5,  -45, AP_MOTORS_MATRIX_MOTOR_CCW, 8);
         add_motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_MOTOR_CW,  2);
         add_motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_MOTOR_CCW, 4);
