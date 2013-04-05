@@ -511,26 +511,15 @@ static bool suppress_throttle(void)
  */
 static void vtail_output_mixing(void)
 {
-    float elevator, rudder;
-    float v1, v2;
+    int16_t elevator, rudder;
+    int16_t v1, v2;
 
-    // first get desired elevator and rudder as -1..1 values
-    elevator = g.channel_pitch.radio_out - g.channel_pitch.radio_trim;
-    if (elevator > 0) {
-        elevator /= float(g.channel_pitch.radio_max - g.channel_pitch.radio_trim);
-    } else {
-        elevator /= float(g.channel_pitch.radio_trim - g.channel_pitch.radio_min);
-    }
+    // first get desired elevator and rudder as -500..500 values
+    elevator = g.channel_pitch.radio_out  - 1500;
+    rudder   = g.channel_rudder.radio_out - 1500;
 
-    rudder = g.channel_rudder.radio_out - g.channel_rudder.radio_trim;
-    if (rudder > 0) {
-        rudder /= float(g.channel_rudder.radio_max - g.channel_rudder.radio_trim);
-    } else {
-        rudder /= float(g.channel_rudder.radio_trim - g.channel_rudder.radio_min);
-    }
-
-    v1 = (elevator - rudder)*0.5f;
-    v2 = (elevator + rudder)*0.5f;
+    v1 = (elevator - rudder)/2;
+    v2 = (elevator + rudder)/2;
 
     // now map to vtail output
     switch (g.vtail_output) {
@@ -554,12 +543,12 @@ static void vtail_output_mixing(void)
         break;
     }
 
-    v1 = constrain(v1, -1.0f, 1.0f);
-    v2 = constrain(v2, -1.0f, 1.0f);
+    v1 = constrain_int16(v1, -500, 500);
+    v2 = constrain_int16(v2, -500, 500);
 
     // scale for a 1500 center and 1000..2000 range, symmetric
-    g.channel_pitch.radio_out  = 1500 + 500.0f*v1;
-    g.channel_rudder.radio_out = 1500 + 500.0f*v2;
+    g.channel_pitch.radio_out  = 1500 + v1;
+    g.channel_rudder.radio_out = 1500 + v2;
 }
 
 /*****************************************
