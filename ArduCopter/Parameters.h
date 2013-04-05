@@ -108,6 +108,7 @@ public:
         // 100: Inertial Nav
         //
         k_param_inertial_nav = 100,
+        k_param_wp_nav = 101,
 
         // 110: Telemetry control
         //
