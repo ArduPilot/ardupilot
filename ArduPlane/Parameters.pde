@@ -469,9 +469,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(auto_trim,              "TRIM_AUTO",      AUTO_TRIM),
 
-    // @Param: MIX_MODE
+    // @Param: ELEVON_MIXING
     // @DisplayName: Elevon mixing
-    // @Description: Enable elevon mixing
+    // @Description: Enable elevon mixing  on both input and output
     // @Values: 0:Disabled,1:Enabled
     // @User: User
     GSCALAR(mix_mode,               "ELEVON_MIXING",  ELEVON_MIXING),
@@ -497,6 +497,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: -1:Disabled,1:Enabled
     // @User: User
     GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV", ELEVON_CH2_REVERSE),
+
+    // @Param: VTAIL_OUTPUT
+    // @DisplayName: VTail output
+    // @Description: Enable VTail output in software. If enabled then the APM will provide software VTail mixing on the elevator and rudder channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two VTail servos. Note that you must not use VTail output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1.
+    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
+    // @User: User
+    GSCALAR(vtail_output,           "VTAIL_OUTPUT",  0),
 
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets

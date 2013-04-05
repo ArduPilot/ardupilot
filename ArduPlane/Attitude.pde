@@ -506,6 +506,62 @@ static bool suppress_throttle(void)
     return true;
 }
 
+/*
+  implement a software VTail mixer. There are 4 different mixing modes
+ */
+static void vtail_output_mixing(void)
+{
+    float elevator, rudder;
+    float v1, v2;
+
+    // first get desired elevator and rudder as -1..1 values
+    elevator = g.channel_pitch.radio_out - g.channel_pitch.radio_trim;
+    if (elevator > 0) {
+        elevator /= float(g.channel_pitch.radio_max - g.channel_pitch.radio_trim);
+    } else {
+        elevator /= float(g.channel_pitch.radio_trim - g.channel_pitch.radio_min);
+    }
+
+    rudder = g.channel_rudder.radio_out - g.channel_rudder.radio_trim;
+    if (rudder > 0) {
+        rudder /= float(g.channel_rudder.radio_max - g.channel_rudder.radio_trim);
+    } else {
+        rudder /= float(g.channel_rudder.radio_trim - g.channel_rudder.radio_min);
+    }
+
+    v1 = (elevator - rudder)*0.5f;
+    v2 = (elevator + rudder)*0.5f;
+
+    // now map to vtail output
+    switch (g.vtail_output) {
+    case VTAIL_DISABLED:
+        return;
+
+    case VTAIL_UPUP:
+        break;
+
+    case VTAIL_UPDN:
+        v2 = -v2;
+        break;
+
+    case VTAIL_DNUP:
+        v1 = -v1;
+        break;
+
+    case VTAIL_DNDN:
+        v1 = -v1;
+        v2 = -v2;
+        break;
+    }
+
+    v1 = constrain(v1, -1.0f, 1.0f);
+    v2 = constrain(v2, -1.0f, 1.0f);
+
+    // scale for a 1500 center and 1000..2000 range, symmetric
+    g.channel_pitch.radio_out  = 1500 + 500.0f*v1;
+    g.channel_rudder.radio_out = 1500 + 500.0f*v2;
+}
+
 /*****************************************
 * Set the flight control servos based on the current calculated values
 *****************************************/
@@ -681,6 +737,10 @@ static void set_servos(void)
         return;
     }
 #endif
+
+    if (g.vtail_output != VTAIL_DISABLED) {
+        vtail_output_mixing();
+    }
 
     // send values to the PWM timers for output
     // ----------------------------------------

@@ -80,6 +80,14 @@ enum StickMixing {
     STICK_MIXING_DIRECT   = 2
 };
 
+enum VTailMixing {
+    VTAIL_DISABLED = 0,
+    VTAIL_UPUP     = 1,
+    VTAIL_UPDN     = 2,
+    VTAIL_DNUP     = 3,
+    VTAIL_DNDN     = 4
+};
+
 // Commands - Note that APM now uses a subset of the MAVLink protocol
 // commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location
