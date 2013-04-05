@@ -440,7 +440,7 @@ loiter_set_pos_from_velocity(int16_t vel_forward_cms, int16_t vel_right_cms, flo
     // update next_WP location for reporting purposes
     set_next_WP_latlon(
         home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
-        home.lng + loiter_lat_from_home_cm / LATLON_TO_CM * scaleLongUp);
+        home.lng + loiter_lon_from_home_cm / LATLON_TO_CM * scaleLongUp);
 }
 
 // loiter_set_target - set loiter's target position from home in cm
@@ -454,7 +454,7 @@ loiter_set_target(float lat_from_home_cm, float lon_from_home_cm)
     // update next_WP location for reporting purposes
     set_next_WP_latlon(
         home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
-        home.lng + loiter_lat_from_home_cm / LATLON_TO_CM * scaleLongUp);
+        home.lng + loiter_lon_from_home_cm / LATLON_TO_CM * scaleLongUp);
 }
 
 //////////////////////////////////////////////////////////
