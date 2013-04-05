@@ -176,7 +176,7 @@ protected:
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
     Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
-    Vector3f    _pos_delta_unit;        // position difference between origin and destination
+    Vector3f    _pos_delta_pct;         // each axis's percentage of the total track from origin to destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target

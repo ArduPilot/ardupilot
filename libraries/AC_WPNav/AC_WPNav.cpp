@@ -175,14 +175,26 @@ void AC_WPNav::set_destination(const Vector3f& destination)
 /// set_origin_and_destination - set origin and destination using lat/lon coordinates
 void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f& destination)
 {
+    Vector3f pos_delta = destination - origin;
     _origin = origin;
     _destination = destination;
-    _pos_delta_unit = _destination - _origin;
-    _track_length = _pos_delta_unit.length();
-    _pos_delta_unit = _pos_delta_unit/_track_length;
+    _track_length = pos_delta.length();
+    _pos_delta_pct = pos_delta/_track_length;
 
-    _hoz_track_ratio = _track_length / sqrt(_pos_delta_unit.x*_pos_delta_unit.x + _pos_delta_unit.y*_pos_delta_unit.y);
-    _vert_track_ratio = _track_length / _pos_delta_unit.z;
+    // calculate proportion of track that is horizontal
+    if( pos_delta.x == 0 && pos_delta.y == 0 ) {
+        _hoz_track_ratio = 0;
+    }else{
+        _hoz_track_ratio = _track_length / safe_sqrt(pos_delta.x*pos_delta.x + pos_delta.y*pos_delta.y);
+    }
+
+    // calculate proportion of track that is horizontal
+    if( pos_delta.z == 0 ) {
+        _vert_track_ratio = 0;
+    }else{
+        _vert_track_ratio = _track_length / fabsf(pos_delta.z);
+    }
+
     _track_desired = 0;
 }
 
@@ -193,26 +205,46 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     float track_covered;
     float track_desired_max;
     float alt_error;
+    float hor_track_allowance, vert_track_allowance;
 
     // get current location
     Vector3f curr = _inav->get_position();
 
     // limit velocity to maximum possible
-    velocity_cms = min(velocity_cms, _speed_cms) * _hoz_track_ratio;
-    velocity_cms = min(velocity_cms, _speedz_cms * _vert_track_ratio);
-
-    // check for zero length segment
-    if( _pos_delta_unit.x == 0 && _pos_delta_unit.y == 0 ) {
-        _target = _destination;
-        return;
+    // to-do: assuming waypoint speed are not changed often we could move this to the set_origin_and_destination function
+    // no need to limit by horizontal speed if there is no horizontal component
+    if( _hoz_track_ratio >= 0 ) {
+        velocity_cms = min(velocity_cms, _speed_cms) * _hoz_track_ratio;
+    }
+    // no need to limit by vertical speed if there is no vertical component
+    if( _vert_track_ratio >= 0 ) {
+        velocity_cms = min(velocity_cms, _speedz_cms * _vert_track_ratio);
     }
 
-    track_covered = (curr.x-_origin.x) * _pos_delta_unit.x + (curr.y-_origin.y) * _pos_delta_unit.y + (curr.z-_origin.z) * _pos_delta_unit.z;
-    cross_track_dist = -(curr.x-_origin.x) * _pos_delta_unit.y + (curr.y-_origin.y) * _pos_delta_unit.x;
-    alt_error = fabsf(_origin.z + _pos_delta_unit.z * track_covered - curr.z);
+    track_covered = (curr.x-_origin.x) * _pos_delta_pct.x + (curr.y-_origin.y) * _pos_delta_pct.y + (curr.z-_origin.z) * _pos_delta_pct.z;
+    cross_track_dist = -(curr.x-_origin.x) * _pos_delta_pct.y + (curr.y-_origin.y) * _pos_delta_pct.x;
+    alt_error = fabsf(_origin.z + _pos_delta_pct.z * track_covered - curr.z);
 
-    // maximum distance along the track that we will allow (stops target point from getting too far from the current position)
-    track_desired_max = track_covered + min( safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - cross_track_dist*cross_track_dist) * _hoz_track_ratio,  (750-alt_error) * _vert_track_ratio);
+    // calculate maximum horizontal distance along the track that we will allow (stops target point from getting too far from the current position)
+    if( _hoz_track_ratio > 0 ) { 
+        hor_track_allowance = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - cross_track_dist*cross_track_dist) * _hoz_track_ratio;
+        hor_track_allowance = max(hor_track_allowance, 0);
+    }
+    // calculate maximum vertical distance along the track that we will allow
+    if( _vert_track_ratio > 0 ) { 
+        vert_track_allowance = (750-alt_error) * _vert_track_ratio;
+        vert_track_allowance = max(vert_track_allowance, 0);
+    }
+    if( _hoz_track_ratio > 0 && _vert_track_ratio ) {
+        // both vertical and horizontal components so pick minimum track allowed of the two
+        track_desired_max = track_covered + min(hor_track_allowance, vert_track_allowance);
+    }else if( _hoz_track_ratio > 0 ) {
+        // only horizontal component
+        track_desired_max = track_covered + hor_track_allowance;
+    }else{
+        // only vertical component
+        track_desired_max = track_covered + vert_track_allowance;
+    }
 
     // advance the current target
     _track_desired += velocity_cms * dt;
@@ -221,14 +253,13 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     if( _track_desired > track_desired_max ) {
         _track_desired = track_desired_max;
     }
-    if( _track_desired > _track_length ) {
-        _track_desired = _track_length;
-    }
+    // do not let desired point go past the end of the segment
+    _track_desired = constrain(_track_desired, 0, _track_length);
 
     // recalculate the desired position
-    _target.x = _origin.x + _pos_delta_unit.x * _track_desired;
-    _target.y = _origin.y + _pos_delta_unit.y * _track_desired;
-    _target.z = _origin.z + _pos_delta_unit.z * _track_desired;
+    _target.x = _origin.x + _pos_delta_pct.x * _track_desired;
+    _target.y = _origin.y + _pos_delta_pct.y * _track_desired;
+    _target.z = _origin.z + _pos_delta_pct.z * _track_desired;   
 }
 
 /// get_distance_to_destination - get horizontal distance to destination in cm
