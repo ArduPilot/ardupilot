@@ -6,7 +6,7 @@ const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Stub::AP_InertialSensor_Stub() {
         Vector3f accels;
-        accels.z = -9.808;
+        accels.z = -GRAVITY_MSS;
         set_accel(accels);
     }
 

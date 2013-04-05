@@ -304,7 +304,7 @@ static bool waypoint_valid(Location &wp)
 static void
 get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
 {
-    float z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;    // gravity in cm/s/s
+    float z_accel_meas = -GRAVITY_MSS * 100;    // gravity in cm/s/s
 
     // update angle targets that will be passed to stabilize controller
     auto_roll = constrain((accel_req_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
