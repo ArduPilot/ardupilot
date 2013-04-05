@@ -721,6 +721,11 @@ static void set_servos(void)
         throttle_slew_limit(last_throttle);
     }
 
+    if (control_mode == TRAINING) {
+        // copy rudder in training mode
+        g.channel_rudder.radio_out   = g.channel_rudder.radio_in;
+    }
+
 #if HIL_MODE != HIL_MODE_DISABLED
     if (!g.hil_servos) {
         return;
