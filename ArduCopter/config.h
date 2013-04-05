@@ -40,13 +40,16 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-
 #ifdef CONFIG_APM_HARDWARE
 #error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead
 #endif
 
 #ifndef CONFIG_HAL_BOARD
 #error CONFIG_HAL_BOARD must be defined to build ArduCopter
+#endif
+
+#ifdef __AVR_ATmega1280__
+#error ATmega1280 is not supported
 #endif
 //////////////////////////////////////////////////////////////////////////////
 // APM2 HARDWARE DEFAULTS
@@ -517,69 +520,23 @@
  # define GROUND_START_DELAY             3
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// FLIGHT AND NAVIGATION CONTROL
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Y6 Support
-
-#ifndef TOP_BOTTOM_RATIO
- # define TOP_BOTTOM_RATIO       1.00f
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
 #ifndef CAMERA
- # if defined( __AVR_ATmega1280__ )
-  #  define CAMERA        DISABLED
- # else
-  #  define CAMERA        ENABLED
- # endif
+ # define CAMERA        ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
- # if defined( __AVR_ATmega1280__ )
-  #  define MOUNT         DISABLED
- # else
-  #  define MOUNT         ENABLED
- # endif
+ # define MOUNT         ENABLED
 #endif
 
 #ifndef MOUNT2
  # define MOUNT2         DISABLED
-#endif
-
-#if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED || MOUNT2 == ENABLED)
- # warning "You choose to enable MOUNT on a small ATmega1280, CLI, CAMERA and AP_LIMITS will be disabled to free some space for it"
-
-// The small ATmega1280 chip does not have enough memory for mount support
-// so disable CLI, this will allow mount support and other improvements to fit.
-// This should almost have no side effects, because the APM planner can now do a complete board setup.
- # define CLI_ENABLED DISABLED
-
-// The small ATmega1280 chip does not have enough memory for mount support
-// so disable AUTO GPS support, this will allow mount support and other improvements to fit.
-// This should almost have no side effects, because the most users use MTK anyways.
-// If the user defined a GPS protocol, than we will NOT overwrite it
- # if GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-  #  undef GPS_PROTOCOL
-  #  define GPS_PROTOCOL GPS_PROTOCOL_MTK
- # endif
-
-// To save some more space
- # undef CAMERA
- # define CAMERA         DISABLED
- # define AP_LIMITS      DISABLED
-
 #endif
 
 
@@ -1062,18 +1019,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
-// Logging must be disabled for 1280 build.
-#if defined( __AVR_ATmega1280__ )
- # if LOGGING_ENABLED == ENABLED
-// If logging was enabled in APM_Config or command line, warn the user.
-  #  warning "Logging is not supported on ATmega1280"
-  #  undef LOGGING_ENABLED
- # endif
- # ifndef LOGGING_ENABLED
-  #  define LOGGING_ENABLED    DISABLED
- # endif
-#elif !defined(LOGGING_ENABLED)
-// Logging is enabled by default for all other builds.
+#ifndef LOGGING_ENABLED
  # define LOGGING_ENABLED                ENABLED
 #endif
 
@@ -1215,12 +1161,7 @@
 
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
-// Sorry the chip is just too small to let this fit
- # if defined( __AVR_ATmega1280__ )
-  #  define CLI_ENABLED           DISABLED
- # else
   #  define CLI_ENABLED           ENABLED
- # endif
 #endif
 
 // experimental mpu6000 DMP code
