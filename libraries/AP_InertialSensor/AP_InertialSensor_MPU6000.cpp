@@ -6,7 +6,7 @@
 extern const AP_HAL::HAL& hal;
 
 // MPU6000 accelerometer scaling
-#define MPU6000_ACCEL_SCALE_1G    (GRAVITY / 4096.0f)
+#define MPU6000_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
 
 // MPU 6000 registers
 #define MPUREG_XG_OFFS_TC                               0x00
