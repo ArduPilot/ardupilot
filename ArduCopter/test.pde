@@ -931,9 +931,7 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
         print_enabled(false);
     }
     return (0);
-
 #else
-    print_test_disabled();
     return (0);
 #endif      // OPTFLOW == ENABLED
 }
