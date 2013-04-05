@@ -1089,10 +1089,10 @@ struct log_DMP {
     uint16_t dmp_yaw;
 };
 
+#if SECONDARY_DMP_ENABLED == ENABLED
 // Write a DMP attitude packet. Total length : 16 bytes
 static void Log_Write_DMP()
 {
-#if SECONDARY_DMP_ENABLED == ENABLED
     struct log_DMP pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DMP_MSG),
         dcm_roll    : (int16_t)ahrs.roll_sensor,
@@ -1103,8 +1103,8 @@ static void Log_Write_DMP()
         dmp_yaw     : (uint16_t)ahrs2.yaw_sensor
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif
 }
+#endif
 
 // Read a DMP attitude packet
 static void Log_Read_DMP()
@@ -1374,7 +1374,9 @@ static void Log_Write_Control_Tuning() {}
 static void Log_Write_Motors() {}
 static void Log_Write_Performance() {}
 static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {}
+#if SECONDARY_DMP_ENABLED == ENABLED
 static void Log_Write_DMP() {}
+#endif
 static void Log_Write_Camera() {}
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {

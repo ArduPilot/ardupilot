@@ -33,7 +33,7 @@ static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
 //static int8_t	test_xbee(uint8_t argc,         const Menu::arg *argv);
 static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
-static int8_t   test_rawgps(uint8_t argc,               const Menu::arg *argv);
+//static int8_t   test_rawgps(uint8_t argc,               const Menu::arg *argv);
 //static int8_t	test_mission(uint8_t argc,      const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
@@ -1088,10 +1088,12 @@ static void print_hit_enter()
     cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
 
+#if defined( __AVR_ATmega1280__ )
 static void print_test_disabled()
 {
     cliSerial->printf_P(PSTR("Sorry, not 1280 compat.\n"));
 }
+#endif
 
 /*
  *  //static void fake_out_gps()

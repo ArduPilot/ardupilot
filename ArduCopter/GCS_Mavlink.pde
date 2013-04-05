@@ -271,13 +271,13 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_yaw());
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     sitl.simstate_send(chan);
-}
 #endif
+}
 
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {

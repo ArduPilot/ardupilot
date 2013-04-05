@@ -3,9 +3,6 @@
 // Sensors are not available in HIL_MODE_ATTITUDE
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
-static void ReadSCP1000(void) {
-}
-
  #if CONFIG_SONAR == ENABLED
 static void init_sonar(void)
 {
