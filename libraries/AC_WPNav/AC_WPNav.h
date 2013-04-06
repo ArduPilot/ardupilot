@@ -40,7 +40,7 @@
 // This should use the current waypoint max speed though rather than the default
 
 #define MAX_CLIMB_VELOCITY              125         // maximum climb velocity - ToDo: pull this in from main code
-#define WPINAV_MAX_ALT_ERROR            62.50f     // maximum distance (in cm) that the desired track can stray from our current location.
+#define WPINAV_MAX_ALT_ERROR            100.0f      // maximum distance (in cm) that the desired track can stray from our current location.
 // D0 = ALT_HOLD_ACCEL_MAX/(2*Pid_P^2);
 // if g.pilot_velocity_z_max > 2*D0*Pid_P
 //     WPINAV_MAX_ALT_ERROR = D0 + MAX_CLIMB_VELOCITY.^2 ./ (2*ALT_HOLD_ACCEL_MAX);

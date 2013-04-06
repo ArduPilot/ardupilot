@@ -126,6 +126,9 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
         _target.x = curr_pos.x + MAX_LOITER_OVERSHOOT * distance_err.x/distance;
         _target.y = curr_pos.y + MAX_LOITER_OVERSHOOT * distance_err.y/distance;
     }
+
+    // debug -- remove me!
+    //hal.console->printf_P(PSTR("\nLTarX:%4.2f Y:%4.2f Z:%4.2f\n"),_target.x, _target.y, _target.z);
 }
 
 /// get_distance_to_target - get horizontal distance to loiter target in cm
@@ -185,6 +188,11 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     _pos_delta_unit = pos_delta/_track_length;
 
     _track_desired = 0;
+
+    // debug -- remove me!
+    //hal.console->printf_P(PSTR("\nSOAD: Ox:%4.2f y:%4.2f z:%4.2f Dx:%4.2f y:%4.2f z:%4.2f\n"),_origin.x, _origin.y, _origin.z, _destination.x, _destination.y, _destination.z);
+    //hal.console->printf_P(PSTR("\nVTS:%4.2f TL:%4.2f\n"),_vert_track_scale, _track_length);
+    //hal.console->printf_P(PSTR("\nPDP: x:%4.2f y:%4.2f z:%4.2f\n"),_pos_delta_unit.x, _pos_delta_unit.y, _pos_delta_unit.z);
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
@@ -194,6 +202,7 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     float track_covered;
     float track_error;
     float track_desired_max;
+    float track_desired_temp = _track_desired;
     float track_extra_max;
     float curr_delta_length;
     //float alt_error;
@@ -211,6 +220,8 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     // alt_error = fabsf(_origin.z + _pos_delta_unit.z * track_covered - curr.z);
 
     track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - track_error*track_error);
+    // debug -- remove me!
+    //hal.console->printf_P(PSTR("\nvel_cms:%4.2f Tcov:%4.2f\n"),velocity_cms, track_covered); 
 
     // we could save a sqrt by doing the following and not assigning track_error
     // track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - (curr_delta_length*curr_delta_length - track_covered*track_covered));
@@ -218,20 +229,25 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     track_desired_max = track_covered + track_extra_max;
 
     // advance the current target
-    _track_desired += velocity_cms * dt;
+    track_desired_temp += velocity_cms * dt;
+
+    // debug -- remove me!
+    //hal.console->printf_P(PSTR("\nTdes:%4.2f TdesMx:%4.2f\n"),track_desired_temp, track_desired_max); 
 
     // constrain the target from moving too far
-    if( _track_desired > track_desired_max ) {
-        _track_desired = track_desired_max;
+    if( track_desired_temp > track_desired_max ) {
+        track_desired_temp = track_desired_max;
     }
     // do not let desired point go past the end of the segment
-    _track_desired = constrain(_track_desired, 0, _track_length);
+    track_desired_temp = constrain(track_desired_temp, 0, _track_length);
+    _track_desired = max(_track_desired, track_desired_temp);
 
     // recalculate the desired position
     _target.x = _origin.x + _pos_delta_unit.x * _track_desired;
     _target.y = _origin.y + _pos_delta_unit.y * _track_desired;
     _target.z = _origin.z + (_pos_delta_unit.z * _track_desired)/_vert_track_scale;
     // we could save a divide by having a variable for 1/_vert_track_scale
+    //hal.console->printf_P(PSTR("\nTarX:%4.2f Y:%4.2f Z:%4.2f\n"),_target.x, _target.y, _target.z);
 }
 
 /// get_distance_to_destination - get horizontal distance to destination in cm
