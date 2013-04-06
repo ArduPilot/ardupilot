@@ -63,3 +63,7 @@
 #define USERHOOK_VARIABLES "UserVariables.h"
 
 //#define LOGGING_ENABLED		DISABLED
+
+#define MOBILE 2
+// OFF is off. ON is raw MAVLink. MOBILE is cellular modem.
+#define SERIAL3_MODE MOBILE
