@@ -109,9 +109,9 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 
     // constrain the velocity vector and scale if necessary
     vel_total = safe_sqrt(_target_vel.x*_target_vel.x + _target_vel.y*_target_vel.y);
-    if( vel_total > MAX_LOITER_POS_VEL_VELOCITY ) {
-        _target_vel.x = MAX_LOITER_POS_VEL_VELOCITY * _target_vel.x/vel_total;
-        _target_vel.y = MAX_LOITER_POS_VEL_VELOCITY * _target_vel.y/vel_total;
+    if( vel_total > MAX_LOITER_POS_VELOCITY ) {
+        _target_vel.x = MAX_LOITER_POS_VELOCITY * _target_vel.x/vel_total;
+        _target_vel.y = MAX_LOITER_POS_VELOCITY * _target_vel.y/vel_total;
     }
 
     // update target position
@@ -157,7 +157,7 @@ void AC_WPNav::update_loiter()
 
     // translate any adjustments from pilot to loiter target
     translate_loiter_target_movements(dt);
-    
+
     // run loiter position controller
     get_loiter_pos_lat_lon(_target.x, _target.y, dt);
 }
@@ -175,25 +175,14 @@ void AC_WPNav::set_destination(const Vector3f& destination)
 /// set_origin_and_destination - set origin and destination using lat/lon coordinates
 void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f& destination)
 {
-    Vector3f pos_delta = destination - origin;
     _origin = origin;
     _destination = destination;
+
+    _vert_track_scale = WPINAV_MAX_POS_ERROR / WPINAV_MAX_ALT_ERROR;
+    Vector3f pos_delta = _destination - _origin;
+    pos_delta.z = pos_delta.z * _vert_track_scale;
     _track_length = pos_delta.length();
-    _pos_delta_pct = pos_delta/_track_length;
-
-    // calculate proportion of track that is horizontal
-    if( pos_delta.x == 0 && pos_delta.y == 0 ) {
-        _hoz_track_ratio = 0;
-    }else{
-        _hoz_track_ratio = _track_length / safe_sqrt(pos_delta.x*pos_delta.x + pos_delta.y*pos_delta.y);
-    }
-
-    // calculate proportion of track that is horizontal
-    if( pos_delta.z == 0 ) {
-        _vert_track_ratio = 0;
-    }else{
-        _vert_track_ratio = _track_length / fabsf(pos_delta.z);
-    }
+    _pos_delta_unit = pos_delta/_track_length;
 
     _track_desired = 0;
 }
@@ -201,50 +190,32 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 /// advance_target_along_track - move target location along track from origin to destination
 void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
 {
-    float cross_track_dist;
+    //float cross_track_dist;
     float track_covered;
+    float track_error;
     float track_desired_max;
-    float alt_error;
-    float hor_track_allowance, vert_track_allowance;
+    float track_extra_max;
+    float curr_delta_length;
+    //float alt_error;
 
     // get current location
-    Vector3f curr = _inav->get_position();
+    Vector3f curr_delta = _inav->get_position() - _origin;
+    curr_delta.z = curr_delta.z * _vert_track_scale;
+    curr_delta_length = curr_delta.length();
 
-    // limit velocity to maximum possible
-    // to-do: assuming waypoint speed are not changed often we could move this to the set_origin_and_destination function
-    // no need to limit by horizontal speed if there is no horizontal component
-    if( _hoz_track_ratio >= 0 ) {
-        velocity_cms = min(velocity_cms, _speed_cms) * _hoz_track_ratio;
-    }
-    // no need to limit by vertical speed if there is no vertical component
-    if( _vert_track_ratio >= 0 ) {
-        velocity_cms = min(velocity_cms, _speedz_cms * _vert_track_ratio);
-    }
+    track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
+    track_error = safe_sqrt(curr_delta_length*curr_delta_length - track_covered*track_covered);
 
-    track_covered = (curr.x-_origin.x) * _pos_delta_pct.x + (curr.y-_origin.y) * _pos_delta_pct.y + (curr.z-_origin.z) * _pos_delta_pct.z;
-    cross_track_dist = -(curr.x-_origin.x) * _pos_delta_pct.y + (curr.y-_origin.y) * _pos_delta_pct.x;
-    alt_error = fabsf(_origin.z + _pos_delta_pct.z * track_covered - curr.z);
+    // we don't need the following but we may want to log them to see how we are going.
+    // cross_track_dist = -(curr.x-_origin.x) * _pos_delta_unit.y + (curr.y-_origin.y) * _pos_delta_unit.x;
+    // alt_error = fabsf(_origin.z + _pos_delta_unit.z * track_covered - curr.z);
 
-    // calculate maximum horizontal distance along the track that we will allow (stops target point from getting too far from the current position)
-    if( _hoz_track_ratio > 0 ) { 
-        hor_track_allowance = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - cross_track_dist*cross_track_dist) * _hoz_track_ratio;
-        hor_track_allowance = max(hor_track_allowance, 0);
-    }
-    // calculate maximum vertical distance along the track that we will allow
-    if( _vert_track_ratio > 0 ) { 
-        vert_track_allowance = (750-alt_error) * _vert_track_ratio;
-        vert_track_allowance = max(vert_track_allowance, 0);
-    }
-    if( _hoz_track_ratio > 0 && _vert_track_ratio ) {
-        // both vertical and horizontal components so pick minimum track allowed of the two
-        track_desired_max = track_covered + min(hor_track_allowance, vert_track_allowance);
-    }else if( _hoz_track_ratio > 0 ) {
-        // only horizontal component
-        track_desired_max = track_covered + hor_track_allowance;
-    }else{
-        // only vertical component
-        track_desired_max = track_covered + vert_track_allowance;
-    }
+    track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - track_error*track_error);
+
+    // we could save a sqrt by doing the following and not assigning track_error
+    // track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - (curr_delta_length*curr_delta_length - track_covered*track_covered));
+
+    track_desired_max = track_covered + track_extra_max;
 
     // advance the current target
     _track_desired += velocity_cms * dt;
@@ -257,9 +228,10 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     _track_desired = constrain(_track_desired, 0, _track_length);
 
     // recalculate the desired position
-    _target.x = _origin.x + _pos_delta_pct.x * _track_desired;
-    _target.y = _origin.y + _pos_delta_pct.y * _track_desired;
-    _target.z = _origin.z + _pos_delta_pct.z * _track_desired;   
+    _target.x = _origin.x + _pos_delta_unit.x * _track_desired;
+    _target.y = _origin.y + _pos_delta_unit.y * _track_desired;
+    _target.z = _origin.z + (_pos_delta_unit.z * _track_desired)/_vert_track_scale;
+    // we could save a divide by having a variable for 1/_vert_track_scale
 }
 
 /// get_distance_to_destination - get horizontal distance to destination in cm

@@ -18,13 +18,35 @@
 #define MAX_LOITER_VEL_ACCEL            400         // max acceleration in cm/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
-#define MAX_LOITER_POS_VEL_VELOCITY     1000
-#define MAX_LOITER_OVERSHOOT            1000        // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
-#define WPINAV_MAX_POS_ERROR            2000.0f     // maximum distance (in cm) that the desired track can stray from our current location.
-#define WP_SPEED                        500         // default horizontal speed betwen waypoints in cm/s
-#define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
-#define MAX_CLIMB_VELOCITY              125         // maximum climb velocity - ToDo: pull this in from main code
 
+#define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
+
+#define MAX_LOITER_OVERSHOOT            531        // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
+// D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
+// if MAX_LOITER_POS_VELOCITY > 2*D0*Pid_P
+//     MAX_LOITER_OVERSHOOT = D0 + MAX_LOITER_POS_VELOCITY.^2 ./ (2*MAX_LOITER_POS_ACCEL);
+// else
+//     MAX_LOITER_OVERSHOOT = min(200, MAX_LOITER_POS_VELOCITY/Pid_P); // to stop it being over sensitive to error
+// end
+
+#define WP_SPEED                        500         // default horizontal speed betwen waypoints in cm/s
+#define WPINAV_MAX_POS_ERROR            531.25f     // maximum distance (in cm) that the desired track can stray from our current location.
+// D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
+// if WP_SPEED > 2*D0*Pid_P
+//     WPINAV_MAX_POS_ERROR = D0 + WP_SPEED.^2 ./ (2*MAX_LOITER_POS_ACCEL);
+// else
+//     WPINAV_MAX_POS_ERROR = min(200, WP_SPEED/Pid_P); // to stop it being over sensitive to error
+// end
+// This should use the current waypoint max speed though rather than the default
+
+#define MAX_CLIMB_VELOCITY              125         // maximum climb velocity - ToDo: pull this in from main code
+#define WPINAV_MAX_ALT_ERROR            62.50f     // maximum distance (in cm) that the desired track can stray from our current location.
+// D0 = ALT_HOLD_ACCEL_MAX/(2*Pid_P^2);
+// if g.pilot_velocity_z_max > 2*D0*Pid_P
+//     WPINAV_MAX_ALT_ERROR = D0 + MAX_CLIMB_VELOCITY.^2 ./ (2*ALT_HOLD_ACCEL_MAX);
+// else
+//     WPINAV_MAX_ALT_ERROR = min(100, MAX_CLIMB_VELOCITY/Pid_P); // to stop it being over sensitive to error
+// end
 class AC_WPNav
 {
 public:
@@ -65,7 +87,7 @@ public:
 
     /// clear_angle_limit - reset angle limits back to defaults
     void clear_angle_limit() { _lean_angle_max = MAX_LEAN_ANGLE; }
-    
+
     /// get_angle_limit - retrieve maximum angle in centi-degrees the copter will lean
     int32_t get_angle_limit() { return _lean_angle_max; }
 
@@ -176,12 +198,11 @@ protected:
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
     Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
-    Vector3f    _pos_delta_pct;         // each axis's percentage of the total track from origin to destination
+    Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
-    float       _hoz_track_ratio;       // horizontal component of track to next waypoint
-    float       _vert_track_ratio;      // vertical component of track to next waypoint
+    float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to position
 
     // pilot inputs for loiter
     int16_t     _pilot_vel_forward_cms;
