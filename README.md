@@ -35,12 +35,13 @@ You need to use a patched Arduino IDE to build ArduPilot.
 ## Building using make 
 
  1. Before you build the project for the first time, you'll need to run
-    `make configure` from a  sketch directory. This will create a `config.mk`
-    file at the top level of the repository. You can set some defaults in
-    `config.mk`
+    `make configure` from a  sketch directory (i.e. ArduPlane, ArduCopter, etc...).
+    This will create a `config.mk` file at the top level of the repository. You can
+    set some defaults in `config.mk`
 
  2. In the sketch directory, type `make` to build for APM2. Alternatively,
-    `make apm1` will build for the APM1.
+    `make apm1` will build for the APM1.  The binaries will generated in
+    `/tmp/<i>sketchname</i>.build`.
 
  3. Type `make upload` to upload. You may need to set the correct default
     serial port in your `config.mk`.
