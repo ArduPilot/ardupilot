@@ -161,3 +161,12 @@ apm_option("CH7_OPTION" TYPE STRING
 apm_option("ACCEL_ALT_HOLD" TYPE BOOL ADVANCED
     DESCRIPTION "Disabled by default, work in progress."
     DEFAULT OFF)
+
+apm_option("SERIAL3_MODE" TYPE STRING
+    DESCRIPTION "Telemetry format on 2nd UART" 
+    DEFAULT "OFF"
+    OPTIONS 
+ 	"OFF" 
+	"RAW_MAVLINK" 
+	"MOBILE")
+
