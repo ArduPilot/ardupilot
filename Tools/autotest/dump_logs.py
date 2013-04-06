@@ -12,8 +12,6 @@ import util
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-os.putenv('TMPDIR', util.reltopdir('tmp'))
-
 def dump_logs(atype):
     '''dump DataFlash logs'''
     logfile = '%s.flashlog' % atype
