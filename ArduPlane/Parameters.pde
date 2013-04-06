@@ -287,7 +287,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(flybywire_elev_reverse, "FBWB_ELEV_REV",  0),
 
     // @Param: FBWB_CLIMB_RATE
-    // @DisplayName: Fly By Wire B alttitude change rate
+    // @DisplayName: Fly By Wire B altitude change rate
     // @Description: This sets the rate in m/s at which FBWB will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
     // @Range: 1-10
 	// @Increment: 0.1
