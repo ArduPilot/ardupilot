@@ -103,6 +103,8 @@
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
 
+#include <MobileDriver.h>
+
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
 // Configuration
@@ -306,6 +308,9 @@ AP_OpticalFlow optflow;
 GCS_MAVLINK gcs0;
 GCS_MAVLINK gcs3;
 
+#if SERIAL3_MODE == MOBILE
+SIM900Driver mobile;
+#endif
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
