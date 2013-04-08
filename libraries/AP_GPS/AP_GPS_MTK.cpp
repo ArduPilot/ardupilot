@@ -139,7 +139,14 @@ restart:
                 break;
             }
 
-            fix                 = _buffer.msg.fix_type == FIX_3D;
+            // set fix type
+            if (_buffer.msg.fix_type == FIX_3D) {
+                fix = GPS::FIX_3D;
+            }else if (_buffer.msg.fix_type == FIX_2D) {
+                fix = GPS::FIX_2D;
+            }else{
+                fix = GPS::FIX_NONE;
+            }
             latitude            = _swapl(&_buffer.msg.latitude)  * 10;
             longitude           = _swapl(&_buffer.msg.longitude) * 10;
             altitude            = _swapl(&_buffer.msg.altitude);

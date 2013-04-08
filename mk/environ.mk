@@ -47,7 +47,7 @@ else
 endif
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
     # Convert cygwin path into a windows normal path
-    SKETCHBOOK	:=	$(shell cygpath -m ${SKETCHBOOK})
+    SKETCHBOOK	:= $(shell cygpath ${SKETCHBOOK})
 endif
 
 #

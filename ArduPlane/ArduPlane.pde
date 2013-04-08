@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.70"
+#define THISFIRMWARE "ArduPlane V2.71"
 /*
  *  Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher
  *  Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
@@ -986,7 +986,7 @@ static void update_GPS(void)
     // get position from AHRS
     have_position = ahrs.get_position(&current_loc);
 
-    if (g_gps->new_data && g_gps->fix) {
+    if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;
 
         // for performance
@@ -1036,7 +1036,7 @@ static void update_current_flight_mode(void)
 
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
-            if (hold_course != -1 && g.rudder_steer == 0) {
+            if (hold_course != -1 && g.rudder_steer == 0 && g.takeoff_heading_hold != 0) {
                 calc_nav_roll();
             } else {
                 nav_roll_cd = 0;
@@ -1166,7 +1166,8 @@ static void update_current_flight_mode(void)
             break;
         }
 
-        case FLY_BY_WIRE_B:
+        case FLY_BY_WIRE_B: {
+            static float last_elevator_input;
             // Substitute stick inputs for Navigation control output
             // We use g.pitch_limit_min because its magnitude is
             // normally greater than g.pitch_limit_max
@@ -1181,16 +1182,26 @@ static void update_current_flight_mode(void)
             if (g.flybywire_elev_reverse) {
                 elevator_input = -elevator_input;
             }
-            if ((adjusted_altitude_cm() >= home.alt+g.FBWB_min_altitude_cm) || (g.FBWB_min_altitude_cm == 0)) {
-                altitude_error_cm = elevator_input * g.pitch_limit_min_cd;
-            } else {
-                altitude_error_cm = (home.alt + g.FBWB_min_altitude_cm) - adjusted_altitude_cm();
-                if (elevator_input < 0) {
-                    altitude_error_cm += elevator_input * g.pitch_limit_min_cd;
-                }
+
+            target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_ms_fast_loop * 0.1f;
+
+            if (elevator_input == 0.0f && last_elevator_input != 0.0f) {
+                // the user has just released the elevator, lock in
+                // the current altitude
+                target_altitude_cm = current_loc.alt;
             }
+
+            // check for FBWB altitude limit
+            if (g.FBWB_min_altitude_cm != 0 && target_altitude_cm < home.alt + g.FBWB_min_altitude_cm) {
+                target_altitude_cm = home.alt + g.FBWB_min_altitude_cm;
+            }
+            altitude_error_cm = target_altitude_cm - adjusted_altitude_cm();
+
+            last_elevator_input = elevator_input;
+
             calc_throttle();
             calc_nav_pitch();
+        }
             break;
 
         case STABILIZE:
@@ -1268,7 +1279,7 @@ static void update_alt()
     if (barometer.healthy) {
         current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;                       // alt_MSL centimeters (meters * 100)
         current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
-    } else if (g_gps->fix) {
+    } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         current_loc.alt = g_gps->altitude;     // alt_MSL centimeters (meters * 100)
     }
 #endif

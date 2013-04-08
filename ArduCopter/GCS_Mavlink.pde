@@ -132,7 +132,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->status() == GPS::GPS_OK) {
+    if (g_gps != NULL && g_gps->status() >= GPS::NO_FIX) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -225,7 +225,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     // positions.
     // If we don't have a GPS fix then we are dead reckoning, and will
     // use the current boot time as the fix time.    
-    if (g_gps->status() == GPS::GPS_OK) {
+    if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         fix_time = g_gps->last_fix_time;
     } else {
         fix_time = millis();
@@ -271,13 +271,13 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_yaw());
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     sitl.simstate_send(chan);
-}
 #endif
+}
 
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {
@@ -289,15 +289,10 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
-    uint8_t fix = g_gps->status();
-    if (fix == GPS::GPS_OK) {
-        fix = 3;
-    }
-
     mavlink_msg_gps_raw_int_send(
         chan,
         g_gps->last_fix_time*(uint64_t)1000,
-        fix,
+        g_gps->status(),
         g_gps->latitude,      // in 1E7 degrees
         g_gps->longitude,     // in 1E7 degrees
         g_gps->altitude * 10, // in mm
@@ -1886,7 +1881,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_hil_state_decode(msg, &packet);
 
         float vel = pythagorous2(packet.vx, packet.vy);
-        float cog = wrap_360(ToDeg(atan2f(packet.vx, packet.vy)) * 100);
+        float cog = wrap_360_cd(ToDeg(atan2f(packet.vx, packet.vy)) * 100);
 
         // set gps hil sensor
         g_gps->setHIL(packet.time_usec/1000,
@@ -1895,10 +1890,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         if (gps_base_alt == 0) {
             gps_base_alt = g_gps->altitude;
+            current_loc.alt = 0;
         }
-        current_loc.lng = g_gps->longitude;
-        current_loc.lat = g_gps->latitude;
-        current_loc.alt = g_gps->altitude - gps_base_alt;
+
         if (!ap.home_is_set) {
             init_home();
         }
@@ -1921,15 +1915,32 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         ins.set_accel(accels);
 
         // approximate a barometer
-        float y;
         const float Temp = 312;
 
-        y = (packet.alt - 584000.0) / 29271.267;
+        float y = (packet.alt - 584000.0) / 29271.267;
         y /= (Temp / 10.0) + 273.15;
         y = 1.0/exp(y);
         y *= 95446.0;
 
         barometer.setHIL(Temp, y);
+  
+        Vector3f Bearth, m;
+        Matrix3f R;
+
+        // Bearth is the magnetic field in Canberra. We need to adjust
+        // it for inclination and declination
+        Bearth(400, 0, 0);
+        R.from_euler(0, 0, 0);
+        Bearth = R * Bearth;
+
+        // create a rotation matrix for the given attitude
+        R.from_euler(packet.roll, packet.pitch, packet.yaw);
+
+        // convert the earth frame magnetic vector to body frame, and
+        // apply the offsets
+        m = R.transposed() * Bearth - Vector3f(0, 0, 0);
+       
+        compass.setHIL(m.x,m.y,m.z);
 
  #if HIL_MODE == HIL_MODE_ATTITUDE
         // set AHRS hil sensor

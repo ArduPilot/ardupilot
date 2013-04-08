@@ -301,31 +301,6 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
     return(0);
 }
 
-/*
-  handle full accelerometer calibration via user dialog
- */
-
-static void setup_printf_P(const prog_char_t *fmt, ...)
-{
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    cliSerial->printf_P(fmt, arg_list);
-    va_end(arg_list);
-}
-
-static void setup_wait_key(void)
-{
-    // wait for user input
-    while (!cliSerial->available()) {
-        delay(20);
-    }
-    // clear input buffer
-    while( cliSerial->available() ) {
-        cliSerial->read();
-    }
-}
-
-
 static int8_t
 setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 {

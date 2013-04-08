@@ -4,7 +4,7 @@ static void
 get_stabilize_roll(int32_t target_angle)
 {
     // angle error
-    target_angle            = wrap_180(target_angle - ahrs.roll_sensor);
+    target_angle            = wrap_180_cd(target_angle - ahrs.roll_sensor);
 
     // limit the error we're feeding to the PID
     target_angle            = constrain(target_angle, -4500, 4500);
@@ -28,7 +28,7 @@ static void
 get_stabilize_pitch(int32_t target_angle)
 {
     // angle error
-    target_angle            = wrap_180(target_angle - ahrs.pitch_sensor);
+    target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
 
     // limit the error we're feeding to the PID
     target_angle            = constrain(target_angle, -4500, 4500);
@@ -56,7 +56,7 @@ get_stabilize_yaw(int32_t target_angle)
     int32_t output = 0;
 
     // angle error
-    angle_error             = wrap_180(target_angle - ahrs.yaw_sensor);
+    angle_error             = wrap_180_cd(target_angle - ahrs.yaw_sensor);
 
     // limit the error we're feeding to the PID
 
@@ -126,15 +126,15 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
 
     // convert the input to the desired roll rate
     roll_axis += target_rate * G_Dt;
-    roll_axis = wrap_180(roll_axis);
+    roll_axis = wrap_180_cd(roll_axis);
 
     // ensure that we don't reach gimbal lock
-    if (labs(roll_axis > 4500) && g.acro_trainer_enabled) {
+    if (labs(roll_axis) > 4500 && g.acro_trainer_enabled) {
         roll_axis	= constrain(roll_axis, -4500, 4500);
-        angle_error = wrap_180(roll_axis - ahrs.roll_sensor);
+        angle_error = wrap_180_cd(roll_axis - ahrs.roll_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
-        angle_error = wrap_180(roll_axis - ahrs.roll_sensor);
+        angle_error = wrap_180_cd(roll_axis - ahrs.roll_sensor);
         angle_error	= constrain(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
     }
 
@@ -143,7 +143,7 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     }
 
     // update roll_axis to be within max_angle_overshoot of our current heading
-    roll_axis = wrap_180(angle_error + ahrs.roll_sensor);
+    roll_axis = wrap_180_cd(angle_error + ahrs.roll_sensor);
 
     // set earth frame targets for rate controller
 
@@ -162,15 +162,15 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
 
     // convert the input to the desired pitch rate
     pitch_axis += target_rate * G_Dt;
-    pitch_axis = wrap_180(pitch_axis);
+    pitch_axis = wrap_180_cd(pitch_axis);
 
     // ensure that we don't reach gimbal lock
     if (labs(pitch_axis) > 4500) {
         pitch_axis	= constrain(pitch_axis, -4500, 4500);
-        angle_error = wrap_180(pitch_axis - ahrs.pitch_sensor);
+        angle_error = wrap_180_cd(pitch_axis - ahrs.pitch_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
-        angle_error = wrap_180(pitch_axis - ahrs.pitch_sensor);
+        angle_error = wrap_180_cd(pitch_axis - ahrs.pitch_sensor);
         angle_error	= constrain(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
     }
 
@@ -179,7 +179,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     }
 
     // update pitch_axis to be within max_angle_overshoot of our current heading
-    pitch_axis = wrap_180(angle_error + ahrs.pitch_sensor);
+    pitch_axis = wrap_180_cd(angle_error + ahrs.pitch_sensor);
 
     // set earth frame targets for rate controller
 	set_pitch_rate_target(g.pi_stabilize_pitch.get_p(angle_error) + target_rate, EARTH_FRAME);
@@ -197,10 +197,10 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
 
     // convert the input to the desired yaw rate
     nav_yaw += target_rate * G_Dt;
-    nav_yaw = wrap_360(nav_yaw);
+    nav_yaw = wrap_360_cd(nav_yaw);
 
     // calculate difference between desired heading and current heading
-    angle_error = wrap_180(nav_yaw - ahrs.yaw_sensor);
+    angle_error = wrap_180_cd(nav_yaw - ahrs.yaw_sensor);
 
     // limit the maximum overshoot
     angle_error	= constrain(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
@@ -210,7 +210,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     }
 
     // update nav_yaw to be within max_angle_overshoot of our current heading
-    nav_yaw = wrap_360(angle_error + ahrs.yaw_sensor);
+    nav_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
 
     // set earth frame targets for rate controller
 	set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
@@ -687,10 +687,10 @@ static void get_look_ahead_yaw(int16_t pilot_yaw)
     // Commanded Yaw to automatically look ahead.
     if (g_gps->fix && g_gps->ground_course > YAW_LOOK_AHEAD_MIN_SPEED) {
         nav_yaw = get_yaw_slew(nav_yaw, g_gps->ground_course, AUTO_YAW_SLEW_RATE);
-        get_stabilize_yaw(wrap_360(nav_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
+        get_stabilize_yaw(wrap_360_cd(nav_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
     }else{
         nav_yaw += pilot_yaw * g.acro_p * G_Dt;
-        nav_yaw = wrap_360(nav_yaw);
+        nav_yaw = wrap_360_cd(nav_yaw);
         get_stabilize_yaw(nav_yaw);
     }
 }

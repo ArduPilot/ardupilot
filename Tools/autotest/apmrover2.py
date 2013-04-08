@@ -63,7 +63,7 @@ def drive_mission(mavproxy, mav, filename):
     wait_mode(mav, 'AUTO')
     if not wait_waypoint(mav, 1, 4, max_dist=5):
         return False
-    wait_mode(mav, 'MANUAL')
+    wait_mode(mav, 'HOLD')
     print("Mission OK")
     return True
 

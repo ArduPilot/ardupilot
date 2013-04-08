@@ -359,7 +359,10 @@ static void set_mode(enum FlightMode mode)
     case STABILIZE:
     case TRAINING:
     case FLY_BY_WIRE_A:
+        break;
+
     case FLY_BY_WIRE_B:
+        target_altitude_cm = current_loc.alt;
         break;
 
     case CIRCLE:
@@ -509,25 +512,27 @@ static void update_GPS_light(void)
     // GPS LED on if we have a fix or Blink GPS LED if we are receiving data
     // ---------------------------------------------------------------------
     switch (g_gps->status()) {
-    case (2):
-        digitalWrite(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix.
-        break;
-
-    case (1):
-        if (g_gps->valid_read == true) {
-            GPS_light = !GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-            if (GPS_light) {
-                digitalWrite(C_LED_PIN, LED_OFF);
-            } else {
-                digitalWrite(C_LED_PIN, LED_ON);
+        case GPS::NO_FIX:
+        case GPS::GPS_OK_FIX_2D:
+            // check if we've blinked since the last gps update
+            if (g_gps->valid_read) {
+                g_gps->valid_read = false;
+                GPS_light = !GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
+                if (GPS_light) {
+                    digitalWrite(C_LED_PIN, LED_OFF);
+                }else{
+                    digitalWrite(C_LED_PIN, LED_ON);
+                }
             }
-            g_gps->valid_read = false;
-        }
-        break;
+            break;
 
-    default:
-        digitalWrite(C_LED_PIN, LED_OFF);
-        break;
+        case GPS::GPS_OK_FIX_3D:
+            digitalWrite(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix AND home is set.
+            break;
+
+        default:
+            digitalWrite(C_LED_PIN, LED_OFF);
+            break;
     }
 }
 
@@ -655,3 +660,20 @@ static void print_comma(void)
 }
 
 
+/*
+  write to a servo
+ */
+static void servo_write(uint8_t ch, uint16_t pwm)
+{
+#if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
+        extern RC_Channel *rc_ch[8];
+        if (ch < 8) {
+            rc_ch[ch]->radio_out = pwm;
+        }
+        return;
+    }
+#endif
+    hal.rcout->enable_ch(ch);
+    hal.rcout->write(ch, pwm);
+}

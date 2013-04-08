@@ -51,7 +51,7 @@ void AP_InertialNav::update(float dt)
     accel_ef = _ahrs->get_accel_ef();
 
     // remove influence of gravity
-    accel_ef.z += AP_INTERTIALNAV_GRAVITY;
+    accel_ef.z += GRAVITY_MSS;
     accel_ef *= 100;
 
     // remove xy if not enabled

@@ -72,7 +72,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-    if (g.stick_mixing && control_mode != INITIALISING) {
+    if (g.stick_mixing != STICK_MIXING_DISABLED && control_mode != INITIALISING) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
@@ -134,7 +134,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->status() == GPS::GPS_OK) {
+    if (g_gps != NULL && g_gps->status() >= GPS::NO_GPS) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -195,11 +195,12 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     // at the moment all sensors/controllers are assumed healthy
     control_sensors_health = control_sensors_present;
 
-    if (!compass.healthy) {
-        control_sensors_health &= ~(1<<2); // compass
+    if (!ahrs.use_compass()) {
+        control_sensors_health &= ~(1<<2); // compass not being used
     }
-    if (!compass.use_for_yaw()) {
-        control_sensors_enabled &= ~(1<<2); // compass
+
+    if (g_gps != NULL && g_gps->status() <= GPS::NO_FIX) {
+        control_sensors_health &= ~(1<<5); // GPS unhealthy
     }
 
     uint16_t battery_current = -1;
@@ -250,7 +251,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     // positions.
     // If we don't have a GPS fix then we are dead reckoning, and will
     // use the current boot time as the fix time.    
-    if (g_gps->status() == GPS::GPS_OK) {
+    if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         fix_time = g_gps->last_fix_time;
     } else {
         fix_time = millis();
@@ -285,15 +286,10 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
-    uint8_t fix = g_gps->status();
-    if (fix == GPS::GPS_OK) {
-        fix = 3;
-    }
-
     mavlink_msg_gps_raw_int_send(
         chan,
         g_gps->last_fix_time*(uint64_t)1000,
-        fix,
+        g_gps->status(),
         g_gps->latitude,      // in 1E7 degrees
         g_gps->longitude,     // in 1E7 degrees
         g_gps->altitude * 10, // in mm
@@ -343,7 +339,24 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
 
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
+#if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
+        extern RC_Channel* rc_ch[8];
+        mavlink_msg_servo_output_raw_send(
+            chan,
+            micros(),
+            0,     // port
+            rc_ch[0]->radio_out,
+            rc_ch[1]->radio_out,
+            rc_ch[2]->radio_out,
+            rc_ch[3]->radio_out,
+            rc_ch[4]->radio_out,
+            rc_ch[5]->radio_out,
+            rc_ch[6]->radio_out,
+            rc_ch[7]->radio_out);
+        return;
+    }
+#endif
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
@@ -356,21 +369,6 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
         hal.rcout->read(5),
         hal.rcout->read(6),
         hal.rcout->read(7));
-#else
-    extern RC_Channel* rc_ch[8];
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        micros(),
-        0,     // port
-        rc_ch[0]->radio_out,
-        rc_ch[1]->radio_out,
-        rc_ch[2]->radio_out,
-        rc_ch[3]->radio_out,
-        rc_ch[4]->radio_out,
-        rc_ch[5]->radio_out,
-        rc_ch[6]->radio_out,
-        rc_ch[7]->radio_out);
-#endif
 }
 
 static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
@@ -753,14 +751,85 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
   default stream rates to 1Hz
  */
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+    // @Param: RAW_SENS
+    // @DisplayName: Raw sensor stream rate
+    // @Description: Raw sensor stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  1),
+
+    // @Param: EXT_STAT
+    // @DisplayName: Extended status stream rate to ground station
+    // @Description: Extended status stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  1),
+
+    // @Param: RC_CHAN
+    // @DisplayName: RC Channel stream rate to ground station
+    // @Description: RC Channel stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  1),
+
+    // @Param: RAW_CTRL
+    // @DisplayName: Raw Control stream rate to ground station
+    // @Description: Raw Control stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  1),
+
+    // @Param: POSITION
+    // @DisplayName: Position stream rate to ground station
+    // @Description: Position stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  1),
+
+    // @Param: EXTRA1
+    // @DisplayName: Extra data type 1 stream rate to ground station
+    // @Description: Extra data type 1 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  1),
+
+    // @Param: EXTRA2
+    // @DisplayName: Extra data type 2 stream rate to ground station
+    // @Description: Extra data type 2 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  1),
+
+    // @Param: EXTRA3
+    // @DisplayName: Extra data type 3 stream rate to ground station
+    // @Description: Extra data type 3 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  1),
+
+    // @Param: PARAMS
+    // @DisplayName: Parameter stream rate to ground station
+    // @Description: Parameter stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  50),
     AP_GROUPEND
 };
@@ -1107,8 +1176,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_SET_SERVO:
-            hal.rcout->enable_ch(packet.param1 - 1);
-            hal.rcout->write(packet.param1 - 1, packet.param2);
+            servo_write(packet.param1 - 1, packet.param2);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1565,6 +1633,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_SET_SERVO:
             tell_command.alt = packet.param2;
             tell_command.p1 = packet.param1;
+            break;
+
+        case MAV_CMD_DO_DIGICAM_CONTROL:
             break;
 
         default:

@@ -107,6 +107,7 @@ public:
         k_param_sonar_turn_angle,
         k_param_sonar_turn_time,
         k_param_sonar2, // sonar2 object
+        k_param_sonar_debounce,
         
         //
         // 210: driving modes
@@ -213,6 +214,7 @@ public:
     AP_Int16    sonar_trigger_cm;
     AP_Float    sonar_turn_angle;
     AP_Float    sonar_turn_time;
+    AP_Int8     sonar_debounce;
     
 
     // driving modes

@@ -8,6 +8,7 @@
 //	License as published by the Free Software Foundation; either
 //	version 2.1 of the License, or (at your option) any later version.
 //
+//  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
 #ifndef __AP_GPS_UBLOX_H__
 #define __AP_GPS_UBLOX_H__
 
@@ -39,7 +40,7 @@ public:
 		_payload_counter(0),
 		_fix_count(0),
 		_disable_counter(0),
-		next_fix(false)
+		next_fix(GPS::FIX_NONE)
 		{}
 
     // Methods
@@ -207,7 +208,7 @@ private:
     bool        _parse_gps();
 
     // used to update fix between status and position packets
-    bool        next_fix;
+    Fix_Status  next_fix;
 
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_gps(void);

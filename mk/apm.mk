@@ -20,6 +20,7 @@ else
 include $(MK_DIR)/targets.mk
 include $(MK_DIR)/sketch_sources.mk
 
+ifneq ($(MAKECMDGOALS),clean)
 # board specific includes
 ifeq ($(HAL_BOARD),HAL_BOARD_APM1)
 include $(MK_DIR)/board_avr.mk
@@ -35,6 +36,7 @@ endif
 
 ifeq ($(HAL_BOARD),HAL_BOARD_PX4)
 include $(MK_DIR)/board_px4.mk
+endif
 endif
 
 endif

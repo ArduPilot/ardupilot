@@ -57,6 +57,8 @@ public:
     // if we have an estimate
     bool airspeed_estimate(float *airspeed_ret);
 
+    bool            use_compass(void);
+
 private:
     float _ki;
     float _ki_yaw;

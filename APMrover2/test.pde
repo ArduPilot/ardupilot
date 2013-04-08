@@ -517,7 +517,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                 if (compass.healthy) {
                     Vector3f maggy = compass.get_offsets();
                     cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                    (wrap_360(ToDeg(heading) * 100)) /100,
+                                    (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (int)compass.mag_x,
                                     (int)compass.mag_y,
                                     (int)compass.mag_z,
@@ -556,16 +556,57 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
     print_hit_enter();
     init_sonar();
+    
+    float sonar_dist_cm_min = 0.0f;
+    float sonar_dist_cm_max = 0.0f;
+    float voltage_min=0.0f, voltage_max = 0.0f;
+    float sonar2_dist_cm_min = 0.0f;
+    float sonar2_dist_cm_max = 0.0f;
+    float voltage2_min=0.0f, voltage2_max = 0.0f;
+    uint32_t last_print = 0;
 
 	while (true) {
-        delay(200);
-        float sonar_dist_cm = sonar.distance_cm();
+        delay(20);
+        uint32_t now = millis();
+
+        float dist_cm = sonar.distance_cm();
         float voltage = sonar.voltage();
-        float sonar2_dist_cm = sonar2.distance_cm();
-        float voltage2 = sonar2.voltage();
-        cliSerial->printf_P(PSTR("sonar1 dist=%5.1fcm volt1=%5.2f   sonar2 dist=%5.1fcm volt2=%5.2f\n"), 
-                            sonar_dist_cm, voltage,
-                            sonar2_dist_cm, voltage2);
+        if (sonar_dist_cm_min == 0.0f) {
+            sonar_dist_cm_min = dist_cm;
+            voltage_min = voltage;
+        }
+        sonar_dist_cm_max = max(sonar_dist_cm_max, dist_cm);
+        sonar_dist_cm_min = min(sonar_dist_cm_min, dist_cm);
+        voltage_min = min(voltage_min, voltage);
+        voltage_max = max(voltage_max, voltage);
+
+        dist_cm = sonar2.distance_cm();
+        voltage = sonar2.voltage();
+        if (sonar2_dist_cm_min == 0.0f) {
+            sonar2_dist_cm_min = dist_cm;
+            voltage2_min = voltage;
+        }
+        sonar2_dist_cm_max = max(sonar2_dist_cm_max, dist_cm);
+        sonar2_dist_cm_min = min(sonar2_dist_cm_min, dist_cm);
+        voltage2_min = min(voltage2_min, voltage);
+        voltage2_max = max(voltage2_max, voltage);
+
+        if (now - last_print >= 200) {
+            cliSerial->printf_P(PSTR("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n"), 
+                                sonar_dist_cm_min, 
+                                sonar_dist_cm_max, 
+                                voltage_min,
+                                voltage_max,
+                                sonar2_dist_cm_min, 
+                                sonar2_dist_cm_max, 
+                                voltage2_min,
+                                voltage2_max);
+            voltage_min = voltage_max = 0.0f;
+            voltage2_min = voltage2_max = 0.0f;
+            sonar_dist_cm_min = sonar_dist_cm_max = 0.0f;
+            sonar2_dist_cm_min = sonar2_dist_cm_max = 0.0f;
+            last_print = now;
+        }
         if (cliSerial->available() > 0) {
             break;
 	    }

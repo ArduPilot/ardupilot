@@ -124,19 +124,22 @@ static void calc_throttle(float target_speed)
 static void calc_nav_steer()
 {
 	// Adjust gain based on ground speed
-	nav_gain_scaler = (float)ground_speed / g.speed_cruise;
-	nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
+    if (ground_speed < 0.01) {
+        nav_gain_scaler = 1.4f;
+    } else {
+        nav_gain_scaler = g.speed_cruise / ground_speed;
+    }
+	nav_gain_scaler = constrain(nav_gain_scaler, 0.2f, 1.4f);
 
 	// Calculate the required turn of the wheels rover
 	// ----------------------------------------
 
     // negative error = left turn
 	// positive error = right turn
-	nav_steer = g.pidNavSteer.get_pid(bearing_error_cd, nav_gain_scaler);
+	nav_steer = g.pidNavSteer.get_pid_4500(bearing_error_cd, nav_gain_scaler);
 
-    if (obstacle.detected) {  // obstacle avoidance 
-	    nav_steer += obstacle.turn_angle*100;
-    }
+    // avoid obstacles, if any
+    nav_steer += obstacle.turn_angle*100;
 
     g.channel_steer.servo_out = nav_steer;
 }
@@ -153,11 +156,21 @@ static void set_servos(void)
         // do a direct pass through of radio values
         g.channel_steer.radio_out       = hal.rcin->read(CH_STEER);
         g.channel_throttle.radio_out    = hal.rcin->read(CH_THROTTLE);
+        if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+            // suppress throttle if in failsafe and manual
+            g.channel_throttle.radio_out = g.channel_throttle.radio_trim;
+        }
 	} else {       
         g.channel_steer.calc_pwm();
 		g.channel_throttle.servo_out = constrain_int16(g.channel_throttle.servo_out, 
                                                        g.throttle_min.get(), 
                                                        g.throttle_max.get());
+
+        if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
+            // suppress throttle if in failsafe
+            g.channel_throttle.servo_out = 0;
+        }
+
         // convert 0 to 100% into PWM
         g.channel_throttle.calc_pwm();
 

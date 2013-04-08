@@ -100,7 +100,7 @@ static void calc_gndspeed_undershoot()
 {
     // Function is overkill, but here in case we want to add filtering
     // later
-    if (g_gps && g_gps->status() == GPS::GPS_OK) {
+    if (g_gps && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - g_gps->ground_speed) : 0;
     }
 }
@@ -128,20 +128,6 @@ static void calc_altitude_error()
     }
 
     altitude_error_cm       = target_altitude_cm - adjusted_altitude_cm();
-}
-
-static int32_t wrap_360_cd(int32_t error)
-{
-    if (error > 36000) error -= 36000;
-    if (error < 0) error += 36000;
-    return error;
-}
-
-static int32_t wrap_180_cd(int32_t error)
-{
-    if (error > 18000) error -= 36000;
-    if (error < -18000) error += 36000;
-    return error;
 }
 
 static void update_loiter()

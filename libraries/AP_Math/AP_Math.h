@@ -80,6 +80,12 @@ void        location_update(struct Location *loc, float bearing, float distance)
 // extrapolate latitude/longitude given distances north and east
 void        location_offset(struct Location *loc, float ofs_north, float ofs_east);
 
+/*
+  wrap an angle in centi-degrees
+ */
+int32_t wrap_360_cd(int32_t error);
+int32_t wrap_180_cd(int32_t error);
+
 // constrain a value
 float   constrain(float amt, float low, float high);
 int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);

@@ -1,10 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-//Function that will read the radio data, limit servos and trigger a failsafe
-// ----------------------------------------------------------------------------
-static uint8_t failsafeCounter = 0;		// we wait a second to take over the throttle and send the rover circling
-
-
 static void init_rc_in()
 {
 	// set rc channel ranges
@@ -89,7 +84,7 @@ static void read_radio()
 
         float motor1 = g.channel_steer.norm_input();
         float motor2 = g.channel_throttle.norm_input();
-        float steering_scaled = motor2 - motor1;
+        float steering_scaled = motor1 - motor2;
         float throttle_scaled = 0.5f*(motor1 + motor2);
         int16_t steer = g.channel_steer.radio_trim;
         int16_t thr   = g.channel_throttle.radio_trim;
@@ -117,41 +112,9 @@ static void control_failsafe(uint16_t pwm)
 
 	// Check for failsafe condition based on loss of GCS control
 	if (rc_override_active) {
-		if(millis() - rc_override_fs_timer > FAILSAFE_SHORT_TIME) {
-			ch3_failsafe = true;
-		} else {
-			ch3_failsafe = false;
-		}
-
-	//Check for failsafe and debounce funky reads
+        failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
 	} else if (g.fs_throttle_enabled) {
-		if (pwm < (unsigned)g.fs_throttle_value){
-			// we detect a failsafe from radio
-			// throttle has dropped below the mark
-			failsafeCounter++;
-			if (failsafeCounter == 9){
-				gcs_send_text_fmt(PSTR("MSG FS ON %u"), (unsigned)pwm);
-			}else if(failsafeCounter == 10) {
-				ch3_failsafe = true;
-			}else if (failsafeCounter > 10){
-				failsafeCounter = 11;
-			}
-
-		}else if(failsafeCounter > 0){
-			// we are no longer in failsafe condition
-			// but we need to recover quickly
-			failsafeCounter--;
-			if (failsafeCounter > 3){
-				failsafeCounter = 3;
-			}
-			if (failsafeCounter == 1){
-				gcs_send_text_fmt(PSTR("MSG FS OFF %u"), (unsigned)pwm);
-			}else if(failsafeCounter == 0) {
-				ch3_failsafe = false;
-			}else if (failsafeCounter <0){
-				failsafeCounter = -1;
-			}
-		}
+        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, pwm < (uint16_t)g.fs_throttle_value);
 	}
 }
 

@@ -221,25 +221,43 @@ AP_GPS_UBLOX::_parse_gps(void)
         longitude       = _buffer.posllh.longitude;
         latitude        = _buffer.posllh.latitude;
         altitude        = _buffer.posllh.altitude_msl / 10;
-        fix                     = next_fix;
+        fix             = next_fix;
         _new_position = true;
         break;
     case MSG_STATUS:
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
               _buffer.status.fix_status,
               _buffer.status.fix_type);
-        next_fix        = (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.status.fix_type == FIX_3D);
-        if (!next_fix) {
-            fix = false;
+        if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
+            if( _buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) {
+                next_fix = GPS::FIX_3D;
+            }else if (_buffer.status.fix_type == AP_GPS_UBLOX::FIX_2D) {
+                next_fix = GPS::FIX_2D;
+            }else{
+                next_fix = GPS::FIX_NONE;
+                fix = GPS::FIX_NONE;
+            }
+        }else{
+            next_fix = GPS::FIX_NONE;
+            fix = GPS::FIX_NONE;
         }
         break;
     case MSG_SOL:
         Debug("MSG_SOL fix_status=%u fix_type=%u",
               _buffer.solution.fix_status,
               _buffer.solution.fix_type);
-        next_fix        = (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.solution.fix_type == FIX_3D);
-        if (!next_fix) {
-            fix = false;
+        if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
+            if( _buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) {
+                next_fix = GPS::FIX_3D;
+            }else if (_buffer.solution.fix_type == AP_GPS_UBLOX::FIX_2D) {
+                next_fix = GPS::FIX_2D;
+            }else{
+                next_fix = GPS::FIX_NONE;
+                fix = GPS::FIX_NONE;
+            }
+        }else{
+            next_fix = GPS::FIX_NONE;
+            fix = GPS::FIX_NONE;
         }
         num_sats        = _buffer.solution.satellites;
         hdop            = _buffer.solution.position_DOP;

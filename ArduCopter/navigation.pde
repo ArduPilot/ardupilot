@@ -209,7 +209,7 @@ static bool check_missed_wp()
 {
     int32_t temp;
     temp = wp_bearing - original_wp_bearing;
-    temp = wrap_180(temp);
+    temp = wrap_180_cd(temp);
     return (labs(temp) > 9000);         // we passed the waypoint by 90 degrees
 }
 
@@ -279,25 +279,11 @@ static void reset_nav_params(void)
     auto_pitch 						= 0;
 }
 
-static int32_t wrap_360(int32_t error)
-{
-    if (error > 36000) error -= 36000;
-    if (error < 0) error += 36000;
-    return error;
-}
-
-static int32_t wrap_180(int32_t error)
-{
-    if (error > 18000) error -= 36000;
-    if (error < -18000) error += 36000;
-    return error;
-}
-
 // get_yaw_slew - reduces rate of change of yaw to a maximum
 // assumes it is called at 100hz so centi-degrees and update rate cancel each other out
 static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
 {
-    return wrap_360(current_yaw + constrain(wrap_180(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
+    return wrap_360_cd(current_yaw + constrain(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
 }
 
 // valid_waypoint - checks if a waypoint has been initialised or not
@@ -318,7 +304,7 @@ static bool waypoint_valid(Location &wp)
 static void
 get_loiter_accel(int16_t accel_req_forward, int16_t accel_req_right)
 {
-    float z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;    // gravity in cm/s/s
+    float z_accel_meas = -GRAVITY_MSS * 100;    // gravity in cm/s/s
 
     // update angle targets that will be passed to stabilize controller
     auto_roll = constrain((accel_req_right/(-z_accel_meas))*(18000/M_PI), -4500, 4500);
@@ -454,7 +440,7 @@ loiter_set_pos_from_velocity(int16_t vel_forward_cms, int16_t vel_right_cms, flo
     // update next_WP location for reporting purposes
     set_next_WP_latlon(
         home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
-        home.lng + loiter_lat_from_home_cm / LATLON_TO_CM * scaleLongUp);
+        home.lng + loiter_lon_from_home_cm / LATLON_TO_CM * scaleLongUp);
 }
 
 // loiter_set_target - set loiter's target position from home in cm
@@ -468,7 +454,7 @@ loiter_set_target(float lat_from_home_cm, float lon_from_home_cm)
     // update next_WP location for reporting purposes
     set_next_WP_latlon(
         home.lat + loiter_lat_from_home_cm / LATLON_TO_CM,
-        home.lng + loiter_lat_from_home_cm / LATLON_TO_CM * scaleLongUp);
+        home.lng + loiter_lon_from_home_cm / LATLON_TO_CM * scaleLongUp);
 }
 
 //////////////////////////////////////////////////////////

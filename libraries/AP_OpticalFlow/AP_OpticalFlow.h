@@ -79,7 +79,7 @@ public:
     virtual void    update(uint32_t now);
     // updates internal lon and lat with estimation based on optical flow
     virtual void    update_position(float roll,
-            float pitch, float cos_yaw_x, float sin_yaw_y, float altitude);
+            float pitch, float sin_yaw, float cos_yaw, float altitude);
 
 protected:
     // pointer to the last instantiated optical flow sensor.  Will be turned

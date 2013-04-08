@@ -145,7 +145,7 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
             for(int16_t i = 0; i < 8; i++) {
                 cliSerial->print(hal.rcin->read(i));        // Print channel values
                 print_comma();
-                hal.rcout->write(i, hal.rcin->read(i)); // Copy input to Servos
+                servo_write(i, hal.rcin->read(i)); // Copy input to Servos
             }
             cliSerial->println();
         }

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.30"
+#define THISFIRMWARE "ArduRover v2.40"
 
 /* 
 This is the APMrover2 firmware. It was originally derived from
@@ -293,16 +293,14 @@ static bool rc_override_active = false;
 // Failsafe
 ////////////////////////////////////////////////////////////////////////////////
 // A tracking variable for type of failsafe active
-// Used for failsafe based on loss of RC signal or GCS signal
-static int16_t 	failsafe;					
-// Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
-// RC receiver should be set up to output a low throttle value when signal is lost
-static bool 	ch3_failsafe;
-
-// A timer used to track how long since we have received the last GCS heartbeat or rc override message
-static uint32_t rc_override_fs_timer = 0;
-// A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-static uint32_t ch3_failsafe_timer = 0;
+// Used for failsafe based on loss of RC signal or GCS signal. See 
+// FAILSAFE_EVENT_*
+static struct {
+    uint8_t bits;
+    uint32_t rc_override_timer;
+    uint32_t start_time;
+    uint8_t triggered;
+} failsafe;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -374,7 +372,7 @@ static uint32_t last_heartbeat_ms;
 // obstacle detection information
 static struct {
     // have we detected an obstacle?
-    bool detected;
+    uint8_t detected_count;
     float turn_angle;
 
     // time when we last detected an obstacle, in milliseconds
@@ -667,6 +665,7 @@ static void medium_loop()
 		// This case deals with the GPS
 		//-------------------------------
 		case 0:
+            failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
 			medium_loopCounter++;
             update_GPS();
             
@@ -744,7 +743,6 @@ static void slow_loop()
 	switch (slow_loopCounter){
 		case 0:
 			slow_loopCounter++;
-			check_long_failsafe();
 			superslow_loopCounter++;
 			if(superslow_loopCounter >=200) {				//	200 = Execute every minute
 				#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -800,7 +798,7 @@ static void update_GPS(void)
 
     have_position = ahrs.get_position(&current_loc);
 
-	if (g_gps->new_data && g_gps->status() == GPS::GPS_OK) {
+	if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
 		gps_fix_count++;
 
 		if(ground_start_count > 1){
@@ -859,8 +857,14 @@ static void update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
-        g.channel_throttle.servo_out = g.channel_throttle.radio_in;
+        g.channel_throttle.servo_out = g.channel_throttle.control_in;
         g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
+        break;
+
+    case HOLD:
+        // hold position - stop motors and center steering
+        g.channel_throttle.servo_out = 0;
+        g.channel_steer.servo_out = 0;
         break;
 
     case INITIALISING:
@@ -872,6 +876,7 @@ static void update_navigation()
 {
     switch (control_mode) {
     case MANUAL:
+    case HOLD:
     case LEARNING:
     case STEERING:
     case INITIALISING:
@@ -888,7 +893,7 @@ static void update_navigation()
         calc_bearing_error();
         if (verify_RTL()) {  
             g.channel_throttle.servo_out = g.throttle_min.get();
-            set_mode(MANUAL);
+            set_mode(HOLD);
         }
         break;
 	}

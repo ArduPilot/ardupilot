@@ -33,7 +33,7 @@ static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
 //static int8_t	test_xbee(uint8_t argc,         const Menu::arg *argv);
 static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
-static int8_t   test_rawgps(uint8_t argc,               const Menu::arg *argv);
+//static int8_t   test_rawgps(uint8_t argc,               const Menu::arg *argv);
 //static int8_t	test_mission(uint8_t argc,      const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
@@ -127,10 +127,6 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
-#if defined( __AVR_ATmega1280__ )          // test disabled to save code size for 1280
-    print_test_disabled();
-    return (0);
-#else
     print_hit_enter();
     delay(1000);
 
@@ -158,7 +154,6 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-#endif
 }
 
 /*
@@ -457,10 +452,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
-#if defined( __AVR_ATmega1280__ )          // test disabled to save code size for 1280
-    print_test_disabled();
-    return (0);
-#else
     Vector3f gyro, accel;
     print_hit_enter();
     cliSerial->printf_P(PSTR("INS\n"));
@@ -490,17 +481,11 @@ test_ins(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-#endif
 }
 
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
 {
-    // test disabled to save code size for 1280
-#if defined( __AVR_ATmega1280__ ) || HIL_MODE != HIL_MODE_DISABLED
-    print_test_disabled();
-    return (0);
-#else
     print_hit_enter();
     delay(1000);
 
@@ -530,7 +515,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
         }
     }
     return 0;
-#endif
 }
 
 /*
@@ -666,10 +650,6 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_battery(uint8_t argc, const Menu::arg *argv)
 {
-#if defined( __AVR_ATmega1280__ )          // disable this test if we are using 1280
-    print_test_disabled();
-    return (0);
-#else
     cliSerial->printf_P(PSTR("\nCareful! Motors will spin! Press Enter to start.\n"));
     while (cliSerial->read() != -1); /* flush */
     while(!cliSerial->available()) { /* wait for input */
@@ -706,16 +686,10 @@ test_battery(uint8_t argc, const Menu::arg *argv)
     }
     motors.armed(false);
     return (0);
-#endif
 }
 
 static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
 {
-#if defined( __AVR_ATmega1280__ )          // test disabled to save code size for 1280
-    print_test_disabled();
-    return (0);
-#else
-
     print_hit_enter();
     delay(1000);
 
@@ -734,7 +708,6 @@ static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-#endif
 }
 
 
@@ -804,10 +777,6 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
- #if defined( __AVR_ATmega1280__ )         // test disabled to save code size for 1280
-    print_test_disabled();
-    return (0);
- #else
     print_hit_enter();
     init_barometer();
 
@@ -827,7 +796,6 @@ test_baro(uint8_t argc, const Menu::arg *argv)
         }
     }
     return 0;
- #endif
 }
 #endif
 
@@ -835,10 +803,6 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
-#if defined( __AVR_ATmega1280__ )          // test disabled to save code size for 1280
-    print_test_disabled();
-    return (0);
-#else
     if(g.compass_enabled) {
         print_hit_enter();
 
@@ -847,7 +811,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
             if (compass.read()) {
                 float heading = compass.calculate_heading(ahrs.get_dcm_matrix());
                 cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d\n"),
-                                (wrap_360(ToDeg(heading) * 100)) /100,
+                                (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                 compass.mag_x,
                                 compass.mag_y,
                                 compass.mag_z);
@@ -865,7 +829,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
         return (0);
     }
     return (0);
-#endif
 }
 
 /*
@@ -968,9 +931,7 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
         print_enabled(false);
     }
     return (0);
-
 #else
-    print_test_disabled();
     return (0);
 #endif      // OPTFLOW == ENABLED
 }
@@ -998,14 +959,9 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_logging(uint8_t argc, const Menu::arg *argv)
 {
-#if defined( __AVR_ATmega1280__ )          // test disabled to save code size for 1280
-    print_test_disabled();
-    return (0);
-#else
     cliSerial->println_P(PSTR("Testing dataflash logging"));
     DataFlash.ShowDeviceInfo(cliSerial);
     return 0;
-#endif
 }
 
 
@@ -1086,11 +1042,6 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 static void print_hit_enter()
 {
     cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
-}
-
-static void print_test_disabled()
-{
-    cliSerial->printf_P(PSTR("Sorry, not 1280 compat.\n"));
 }
 
 /*

@@ -83,10 +83,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
-    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode.
+    // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing
     // @User: Advanced
-    GSCALAR(stick_mixing,           "STICK_MIXING",   1),
+    GSCALAR(stick_mixing,           "STICK_MIXING",   STICK_MIXING_FBW),
 
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
@@ -105,6 +105,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: User
     GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
+
+    // @Param: TKOFF_HEAD_HOLD
+    // @DisplayName: Auto takeoff heading hold
+    // @Description: This controls whether APM tries to hold a constant heading during automatic takeoff. The default is 1, which means that it remembers the heading when auto takeoff is triggered, and tries to hold that heading until the target altitude is reached. This is the correct setting for wheeled takeoff. For a hand launch, it may be better to set this to 0, which will tell APM to hold the wings level, but not attempt to hold a particular heading. That can prevent the aircraft from rolling too much on takeoff, which can cause a stall.
+	// @Values: 0:NoHeadingHold,1:HeadingHold
+    // @User: User
+    GSCALAR(takeoff_heading_hold,          "TKOFF_HEAD_HOLD",    1),
 
     // @Param: RUDDER_STEER
     // @DisplayName: Rudder steering on takeoff and landing
@@ -278,6 +285,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(flybywire_elev_reverse, "FBWB_ELEV_REV",  0),
+
+    // @Param: FBWB_CLIMB_RATE
+    // @DisplayName: Fly By Wire B altitude change rate
+    // @Description: This sets the rate in m/s at which FBWB will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
+    // @Range: 1-10
+	// @Increment: 0.1
+    // @User: Standard
+    GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  2.0f),
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
@@ -454,9 +469,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(auto_trim,              "TRIM_AUTO",      AUTO_TRIM),
 
-    // @Param: MIX_MODE
+    // @Param: ELEVON_MIXING
     // @DisplayName: Elevon mixing
-    // @Description: Enable elevon mixing
+    // @Description: Enable elevon mixing  on both input and output
     // @Values: 0:Disabled,1:Enabled
     // @User: User
     GSCALAR(mix_mode,               "ELEVON_MIXING",  ELEVON_MIXING),
@@ -482,6 +497,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: -1:Disabled,1:Enabled
     // @User: User
     GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV", ELEVON_CH2_REVERSE),
+
+    // @Param: VTAIL_OUTPUT
+    // @DisplayName: VTail output
+    // @Description: Enable VTail output in software. If enabled then the APM will provide software VTail mixing on the elevator and rudder channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two VTail servos. Note that you must not use VTail output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable VTAIL_OUTPUT.
+    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
+    // @User: User
+    GSCALAR(vtail_output,           "VTAIL_OUTPUT",  0),
 
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
@@ -542,6 +564,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
 
+    // @Param: ALT_HOLD_FBWCM
+    // @DisplayName: Minimum altitude for FBWB mode
+    // @Description: This is the minimum altitude in centimeters that FBWB will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.
+    // @Units: centimeters
+    // @User: User
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
     // @Param: MAG_ENABLE
@@ -602,7 +629,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
+    // @Param: INVERTEDFLT_CH
+    // @DisplayName: Inverted flight channel
+    // @Description: A RC input channel number to enable inverted flight. If this is non-zero then the APM will monitor the correcponding RC input channel and will enable inverted flight when the channel goes above 1750.
+    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    // @User: Standard
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
+
+#if HIL_MODE != HIL_MODE_DISABLED
+    // @Param: HIL_SERVOS
+    // @DisplayName: HIL Servos enable
+    // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(hil_servos,            "HIL_SERVOS",      0),
+#endif
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane

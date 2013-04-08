@@ -286,8 +286,7 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
         }
 
         // null gravity from the Z accel
-        // TO-DO: replace with gravity #define form location.cpp
-        accel_offset.z += GRAVITY;
+        accel_offset.z += GRAVITY_MSS;
 
         total_change = fabsf(prev.x - accel_offset.x) + fabsf(prev.y - accel_offset.y) + fabsf(prev.z - accel_offset.z);
         max_offset = (accel_offset.x > accel_offset.y) ? accel_offset.x : accel_offset.y;
@@ -422,7 +421,7 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
 
     // reset
     beta[0] = beta[1] = beta[2] = 0;
-    beta[3] = beta[4] = beta[5] = 1.0f/GRAVITY;
+    beta[3] = beta[4] = beta[5] = 1.0f/GRAVITY_MSS;
     
     while( num_iterations < 20 && change > eps ) {
         num_iterations++;
@@ -452,9 +451,9 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
     }
 
     // copy results out
-    accel_scale.x = beta[3] * GRAVITY;
-    accel_scale.y = beta[4] * GRAVITY;
-    accel_scale.z = beta[5] * GRAVITY;
+    accel_scale.x = beta[3] * GRAVITY_MSS;
+    accel_scale.y = beta[4] * GRAVITY_MSS;
+    accel_scale.z = beta[5] * GRAVITY_MSS;
     accel_offsets.x = beta[0] * accel_scale.x;
     accel_offsets.y = beta[1] * accel_scale.y;
     accel_offsets.z = beta[2] * accel_scale.z;

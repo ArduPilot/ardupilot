@@ -119,8 +119,8 @@ public:
     // dead-reckoning. Return true if a position is available,
     // otherwise false. This only updates the lat and lng fields
     // of the Location
-    bool get_position(struct Location *loc) {
-        if (!_gps || _gps->status() != GPS::GPS_OK) {
+    virtual bool get_position(struct Location *loc) {
+        if (!_gps || _gps->status() <= GPS::NO_FIX) {
             return false;
         }
         loc->lat = _gps->latitude;
@@ -129,13 +129,16 @@ public:
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate(void) {
+    virtual Vector3f wind_estimate(void) {
         return Vector3f(0,0,0);
     }
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret);
+    virtual bool airspeed_estimate(float *airspeed_ret);
+
+    // return true if we will use compass for yaw
+    virtual bool use_compass(void) { return _compass && _compass->use_for_yaw(); }
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) {

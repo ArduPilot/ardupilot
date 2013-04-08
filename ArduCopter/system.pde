@@ -138,21 +138,8 @@ static void init_ardupilot()
     relay.init(); 
 
 #if COPTER_LEDS == ENABLED
-    pinMode(COPTER_LED_1, OUTPUT);              //Motor LED
-    pinMode(COPTER_LED_2, OUTPUT);              //Motor LED
-    pinMode(COPTER_LED_3, OUTPUT);              //Motor LED
-    pinMode(COPTER_LED_4, OUTPUT);              //Motor LED
-    pinMode(COPTER_LED_5, OUTPUT);              //Motor or Aux LED
-    pinMode(COPTER_LED_6, OUTPUT);              //Motor or Aux LED
-    pinMode(COPTER_LED_7, OUTPUT);              //Motor or GPS LED
-    pinMode(COPTER_LED_8, OUTPUT);              //Motor or GPS LED
-
-    if ( !bitRead(g.copter_leds_mode, 3) ) {
-        piezo_beep();
-    }
-
+    copter_leds_init();
 #endif
-
 
     // load parameters from EEPROM
     load_parameters();
@@ -494,6 +481,7 @@ static void set_mode(uint8_t mode)
         set_throttle_mode(GUIDED_THR);
         set_nav_mode(GUIDED_NAV);
         wp_verify_byte = 0;
+        guided_WP = current_loc;
         set_next_WP(&guided_WP);
         break;
 

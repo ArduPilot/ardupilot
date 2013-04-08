@@ -245,7 +245,7 @@ bool AP_GPS_NMEA::_term_complete()
                     longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
                     ground_speed        = _new_speed;
                     ground_course       = _new_course;
-                    fix                         = true;
+                    fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
                     break;
                 case _GPS_SENTENCE_GPGGA:
                     altitude            = _new_altitude;
@@ -254,7 +254,7 @@ bool AP_GPS_NMEA::_term_complete()
                     longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
                     num_sats            = _new_satellite_count;
                     hdop                        = _new_hdop;
-                    fix                         = true;
+                    fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
                     break;
                 case _GPS_SENTENCE_GPVTG:
                     ground_speed        = _new_speed;
@@ -268,7 +268,7 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GPGGA:
                     // Only these sentences give us information about
                     // fix status.
-                    fix = false;
+                    fix = GPS::FIX_NONE;
                 }
             }
             // we got a good message

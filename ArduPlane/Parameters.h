@@ -80,6 +80,9 @@ public:
         k_param_ins,                // libraries/AP_InertialSensor variables
         k_param_takeoff_throttle_min_speed,
         k_param_takeoff_throttle_min_accel,
+        k_param_takeoff_heading_hold,
+        k_param_hil_servos,
+        k_param_vtail_output,
 
         // 110: Telemetry control
         //
@@ -98,6 +101,7 @@ public:
         k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm,
+        k_param_flybywire_climb_rate,
 
         //
         // 130: Sensor parameters
@@ -284,6 +288,7 @@ public:
     AP_Int16 flybywire_airspeed_min;
     AP_Int16 flybywire_airspeed_max;
     AP_Int8 flybywire_elev_reverse;
+    AP_Int8 flybywire_climb_rate;
 
     // Throttle
     //
@@ -323,6 +328,7 @@ public:
     //
     AP_Int8 auto_trim;
     AP_Int8 mix_mode;
+    AP_Int8 vtail_output;
     AP_Int8 reverse_elevons;
     AP_Int8 reverse_ch1_elevon;
     AP_Int8 reverse_ch2_elevon;
@@ -339,6 +345,9 @@ public:
     AP_Int32 min_gndspeed_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
+#if HIL_MODE != HIL_MODE_DISABLED
+    AP_Int8  hil_servos;
+#endif
 
     AP_Int8 compass_enabled;
     AP_Int8 battery_monitoring;                 // 0=disabled, 3=voltage only, 4=voltage and current
@@ -358,6 +367,7 @@ public:
     AP_Int8 rudder_steer;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
+    AP_Int8 takeoff_heading_hold;
 
     // RC channels
     RC_Channel channel_roll;

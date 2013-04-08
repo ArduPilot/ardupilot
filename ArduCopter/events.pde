@@ -98,9 +98,8 @@ static void low_battery_event(void)
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 #if COPTER_LEDS == ENABLED
-    if ( bitRead(g.copter_leds_mode, 3) ) {         // Only Activate if a battery is connected to avoid alarm on USB only
-        piezo_on();
-    }
+    // Only Activate if a battery is connected to avoid alarm on USB only
+    piezo_on();
 #endif // COPTER_LEDS
 }
 

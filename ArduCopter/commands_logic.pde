@@ -630,10 +630,10 @@ static void do_yaw()
     // get final angle, 1 = Relative, 0 = Absolute
     if( command_cond_queue.lng == 0 ) {
         // absolute angle
-        yaw_look_at_heading = wrap_360(command_cond_queue.alt * 100);
+        yaw_look_at_heading = wrap_360_cd(command_cond_queue.alt * 100);
     }else{
         // relative angle
-        yaw_look_at_heading = wrap_360(nav_yaw + command_cond_queue.alt * 100);
+        yaw_look_at_heading = wrap_360_cd(nav_yaw + command_cond_queue.alt * 100);
     }
 
     // get turn speed
@@ -641,7 +641,7 @@ static void do_yaw()
         // default to regular auto slew rate
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
     }else{
-        int32_t turn_rate = (wrap_180(yaw_look_at_heading - nav_yaw) / 100) / command_cond_queue.lat;
+        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - nav_yaw) / 100) / command_cond_queue.lat;
         yaw_look_at_heading_slew = constrain(turn_rate, 1, 360);    // deg / sec
     }
 
@@ -688,7 +688,7 @@ static bool verify_within_distance()
 // verify_yaw - return true if we have reached the desired heading
 static bool verify_yaw()
 {
-    if( labs(wrap_180(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200 ) {
+    if( labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200 ) {
         return true;
     }else{
         return false;
@@ -706,7 +706,7 @@ static bool verify_nav_roi()
     // check if mount type requires us to rotate the quad
     if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
         // ensure yaw has gotten to within 2 degrees of the target
-        if( labs(wrap_180(ahrs.yaw_sensor-yaw_look_at_WP_bearing)) <= 200 ) {
+        if( labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_WP_bearing)) <= 200 ) {
             return true;
         }else{
             return false;
@@ -718,7 +718,7 @@ static bool verify_nav_roi()
 #else
     // if we have no camera mount simply check we've reached the desired yaw
     // ensure yaw has gotten to within 2 degrees of the target
-    if( labs(wrap_180(ahrs.yaw_sensor-yaw_look_at_WP_bearing)) <= 200 ) {
+    if( labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_WP_bearing)) <= 200 ) {
         return true;
     }else{
         return false;

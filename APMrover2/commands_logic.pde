@@ -109,8 +109,8 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {      
-	gcs_send_text_fmt(PSTR("No commands - setting MANUAL"));
-    set_mode(MANUAL);
+	gcs_send_text_fmt(PSTR("No commands - setting HOLD"));
+    set_mode(HOLD);
 }
 
 /********************************************************************************/
@@ -222,9 +222,16 @@ static bool verify_RTL()
 		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
                 rtl_complete = true;
 		return true;
-	}else{
-		return false;
 	}
+
+    // have we gone past the waypoint?
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        gcs_send_text_fmt(PSTR("Reached Home dist %um"),
+                          (unsigned)get_distance(&current_loc, &next_WP));
+        return true;
+    }
+
+    return false;
 }
 
 /********************************************************************************/

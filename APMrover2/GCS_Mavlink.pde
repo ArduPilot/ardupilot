@@ -25,7 +25,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
     
-    if (failsafe != FAILSAFE_NONE) {
+    if (failsafe.triggered != 0) {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -54,6 +54,9 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     case INITIALISING:
         system_status = MAV_STATE_CALIBRATING;
         break;
+    case HOLD:
+        system_status = 0;
+        break;
     }
 
 #if ENABLE_STICK_MIXING==ENABLED
@@ -78,7 +81,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 
     mavlink_msg_heartbeat_send(
         chan,
-        MAV_TYPE_FIXED_WING,
+        MAV_TYPE_GROUND_ROVER,
         MAV_AUTOPILOT_ARDUPILOTMEGA,
         base_mode,
         custom_mode,
@@ -112,7 +115,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->status() == GPS::GPS_OK) {
+    if (g_gps != NULL && g_gps->status() >= GPS::NO_FIX) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -132,6 +135,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
     switch (control_mode) {
     case MANUAL:
+    case HOLD:
         break;
 
     case LEARNING:
@@ -213,7 +217,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     // positions.
     // If we don't have a GPS fix then we are dead reckoning, and will
     // use the current boot time as the fix time.    
-    if (g_gps->status() == GPS::GPS_OK) {
+    if (g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         fix_time = g_gps->last_fix_time;
     } else {
         fix_time = millis();
@@ -248,15 +252,10 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
-    uint8_t fix = g_gps->status();
-    if (fix == GPS::GPS_OK) {
-        fix = 3;
-    }
-
     mavlink_msg_gps_raw_int_send(
         chan,
         g_gps->last_fix_time*(uint64_t)1000,
-        fix,
+        g_gps->status(),
         g_gps->latitude,      // in 1E7 degrees
         g_gps->longitude,     // in 1E7 degrees
         g_gps->altitude * 10, // in mm
@@ -419,10 +418,33 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 
 static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 {
+    if (!sonar.enabled()) {
+        // no sonar to report
+        return;
+    }
+
+    /*
+      report smaller distance of two sonars if more than one enabled
+     */
+    float distance_cm, voltage;
+    if (!sonar2.enabled()) {
+        distance_cm = sonar.distance_cm();
+        voltage = sonar.voltage();
+    } else {
+        float dist1 = sonar.distance_cm();
+        float dist2 = sonar2.distance_cm();
+        if (dist1 <= dist2) {
+            distance_cm = dist1;
+            voltage = sonar.voltage();
+        } else {
+            distance_cm = dist2;
+            voltage = sonar2.voltage();
+        }
+    }
     mavlink_msg_rangefinder_send(
         chan,
-        sonar.distance_cm() * 0.01,
-        sonar.voltage());
+        distance_cm * 0.01f,
+        voltage);
 }
 
 static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
@@ -1079,6 +1101,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             switch (packet.custom_mode) {
             case MANUAL:
+            case HOLD:
             case LEARNING:
             case STEERING:
             case AUTO:
@@ -1631,7 +1654,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         hal.rcin->set_overrides(v, 8);
 
-        rc_override_fs_timer = millis();
+        failsafe.rc_override_timer = millis();
+        failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
 
@@ -1639,7 +1663,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         {
             // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
 			if(msg->sysid != g.sysid_my_gcs) break;
-            last_heartbeat_ms = rc_override_fs_timer = millis();
+            last_heartbeat_ms = failsafe.rc_override_timer = millis();
+            failsafe_trigger(FAILSAFE_EVENT_GCS, false);
 			pmTest1++;
             break;
         }

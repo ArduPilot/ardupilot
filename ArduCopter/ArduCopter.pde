@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.9.1-dev"
+#define THISFIRMWARE "ArduCopter V2.9.1b-dev"
 /*
  *  ArduCopter Version 2.9
  *  Lead author:	Jason Short
@@ -277,8 +277,12 @@ AP_GPS_HIL              g_gps_driver;
 AP_InertialSensor_Stub  ins;
 AP_AHRS_DCM             ahrs(&ins, g_gps);
 
-
 static int32_t gps_base_alt;
+
+ #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // When building for SITL we use the HIL barometer and compass drivers
+SITL sitl;
+#endif
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL              adc;
@@ -289,6 +293,12 @@ AP_Compass_HIL          compass;                  // never used
 AP_Baro_BMP085_HIL      barometer;
 
 static int32_t gps_base_alt;
+
+ #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ // When building for SITL we use the HIL barometer and compass drivers
+SITL sitl;
+#endif
+
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
@@ -516,8 +526,6 @@ static uint8_t rtl_state;
 // The cos values are defaulted to 1 to get a decent initial value for a level state
 static float cos_roll_x         = 1;
 static float cos_pitch_x        = 1;
-static float cos_yaw_x          = 1;
-static float sin_yaw_y          = 1;
 static float cos_yaw            = 1;
 static float sin_yaw            = 1;
 static float sin_roll           = 1;
@@ -1356,7 +1364,7 @@ static void update_optical_flow(void)
     // if new data has arrived, process it
     if( optflow.last_update != last_of_update ) {
         last_of_update = optflow.last_update;
-        optflow.update_position(ahrs.roll, ahrs.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
+        optflow.update_position(ahrs.roll, ahrs.pitch, sin_yaw, cos_yaw, current_loc.alt);      // updates internal lon and lat with estimation based on optical flow
 
         // write to log at 5hz
         of_log_counter++;
@@ -1379,52 +1387,48 @@ static void update_GPS(void)
     g_gps->update();
     update_GPS_light();
 
-    set_gps_healthy(g_gps->status() == g_gps->GPS_OK);
+    set_gps_healthy(g_gps->status() >= GPS::GPS_OK_FIX_3D);
 
-    if (g_gps->new_data && g_gps->fix) {
+    if (g_gps->new_data && last_gps_time != g_gps->time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         // clear new data flag
         g_gps->new_data = false;
 
-        // check for duiplicate GPS messages
-        if(last_gps_time != g_gps->time) {
+        // save GPS time so we don't get duplicate reads
+        last_gps_time = g_gps->time;
 
-            // for performance monitoring
-            // --------------------------
-            gps_fix_count++;
+        // log location if we have at least a 2D fix
+        if (g.log_bitmask & MASK_LOG_GPS && motors.armed()) {
+            Log_Write_GPS();
+        }
 
-            if(ground_start_count > 1) {
-                ground_start_count--;
+        // for performance monitoring
+        gps_fix_count++;
 
-            } else if (ground_start_count == 1) {
-
-                // We countdown N number of good GPS fixes
-                // so that the altitude is more accurate
-                // -------------------------------------
-                if (g_gps->latitude == 0) {
-                    ground_start_count = 5;
-
+        // check if we can initialise home yet
+        if (!ap.home_is_set) {
+            // if we have a 3d lock and valid location
+            if(g_gps->status() >= GPS::GPS_OK_FIX_3D && g_gps->latitude != 0) {
+                if( ground_start_count > 0 ) {
+                    ground_start_count--;
                 }else{
+                    // after 10 successful reads store home location
+                    // ap.home_is_set will be true so this will only happen once
+                    ground_start_count = 0;
+                    init_home();
                     if (g.compass_enabled) {
                         // Set compass declination automatically
                         compass.set_initial_location(g_gps->latitude, g_gps->longitude);
                     }
-                    // save home to eeprom (we must have a good fix to have reached this point)
-                    init_home();
-                    ground_start_count = 0;
                 }
-            }
-
-            if (g.log_bitmask & MASK_LOG_GPS && motors.armed()) {
-                Log_Write_GPS();
+            }else{
+                // start again if we lose 3d lock
+                ground_start_count = 10;
             }
 
 #if HIL_MODE == HIL_MODE_ATTITUDE                                                               // only execute in HIL mode
             ap_system.alt_sensor_flag = true;
 #endif
         }
-
-        // save GPS time so we don't get duplicate reads
-        last_gps_time = g_gps->time;
     }
 
     // check for loss of gps
@@ -1655,8 +1659,8 @@ void update_roll_pitch_mode(void)
         control_pitch = g.rc_2.control_in;
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1700,8 +1704,8 @@ void update_roll_pitch_mode(void)
         }
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
@@ -1730,7 +1734,7 @@ void update_simple_mode(void)
     // which improves speed of function
     simple_counter++;
 
-    int16_t delta = wrap_360(ahrs.yaw_sensor - initial_simple_bearing)/100;
+    int16_t delta = wrap_360_cd(ahrs.yaw_sensor - initial_simple_bearing)/100;
 
     if (simple_counter == 1) {
         // roll
@@ -1759,7 +1763,7 @@ void update_super_simple_bearing()
         // get distance to home
         if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
             // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = wrap_360(home_bearing+18000);
+            initial_simple_bearing = wrap_360_cd(home_bearing+18000);
         }
     }
 }
@@ -2026,21 +2030,18 @@ static void update_trig(void){
     // which it does do in avr-libc
     cos_roll_x      = constrain(cos_roll_x, -1.0, 1.0);
 
-    sin_yaw_y       = yawvector.x;                                              // 1y = north
-    cos_yaw_x       = yawvector.y;                                              // 0x = north
+    sin_yaw         = constrain(yawvector.y, -1.0, 1.0);
+    cos_yaw         = constrain(yawvector.x, -1.0, 1.0);
 
     // added to convert earth frame to body frame for rate controllers
     sin_pitch       = -temp.c.x;
     sin_roll        = temp.c.y / cos_pitch_x;
 
-    sin_yaw               = constrain(temp.b.x/cos_pitch_x, -1.0, 1.0);
-    cos_yaw               = constrain(temp.a.x/cos_pitch_x, -1.0, 1.0);
-
     //flat:
-    // 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
-    // 90° = cos_yaw:  1.00, sin_yaw:  0.00,
-    // 180 = cos_yaw:  0.00, sin_yaw: -1.00,
-    // 270 = cos_yaw: -1.00, sin_yaw:  0.00,
+    // 0 ° = cos_yaw:  1.00, sin_yaw:  0.00,
+    // 90° = cos_yaw:  0.00, sin_yaw:  1.00,
+    // 180 = cos_yaw: -1.00, sin_yaw:  0.00,
+    // 270 = cos_yaw:  0.00, sin_yaw: -1.00,
 }
 
 // read baro and sonar altitude at 10hz

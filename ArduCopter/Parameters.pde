@@ -878,7 +878,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: THR_ALT_P
     // @DisplayName: Altitude controller P gain
     // @Description: Altitude controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
-    // @Range: 3.000 6.000
+    // @Range: 1.000 3.000
     // @User: Standard
 
     // @Param: THR_ALT_I

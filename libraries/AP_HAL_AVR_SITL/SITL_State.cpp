@@ -142,7 +142,7 @@ void SITL_State::_sitl_setup(void)
         _update_barometer(_initial_height);
         _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0);
         _update_compass(0, 0, 0);
-        _update_gps(0, 0, 0, 0, 0, false);
+        _update_gps(0, 0, 0, 0, 0, 0, false);
     }
 }
 
@@ -231,7 +231,7 @@ void SITL_State::_timer_handler(int signum)
 	_simulator_output();
 
 	if (_update_count == 0 && _sitl != NULL) {
-		_update_gps(0, 0, 0, 0, 0, false);
+		_update_gps(0, 0, 0, 0, 0, 0, false);
 		_scheduler->timer_event();
         _scheduler->sitl_end_atomic();
 		in_timer = false;
@@ -249,7 +249,8 @@ void SITL_State::_timer_handler(int signum)
     if (_sitl != NULL) {
         _update_gps(_sitl->state.latitude, _sitl->state.longitude,
                     _sitl->state.altitude,
-                    _sitl->state.speedN, _sitl->state.speedE, !_sitl->gps_disable);
+                    _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
+                    !_sitl->gps_disable);
         _update_ins(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg,
                     _sitl->state.rollRate, _sitl->state.pitchRate, _sitl->state.yawRate,
                     _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
@@ -283,11 +284,11 @@ void SITL_State::_fdm_input(void)
 
 	size = recv(_sitl_fd, &d, sizeof(d), MSG_DONTWAIT);
 	switch (size) {
-	case 132:
+	case 140:
 		static uint32_t last_report;
 		static uint32_t count;
 
-		if (d.fg_pkt.magic != 0x4c56414e) {
+		if (d.fg_pkt.magic != 0x4c56414f) {
 			fprintf(stdout, "Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
 			return;
 		}

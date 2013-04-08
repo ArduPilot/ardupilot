@@ -140,3 +140,24 @@ void location_offset(struct Location *loc, float ofs_north, float ofs_east)
         loc->lng += dlng;
     }
 }
+
+/*
+  wrap an angle in centi-degrees to 0..36000
+ */
+int32_t wrap_360_cd(int32_t error)
+{
+    while (error > 36000) error -= 36000;
+    while (error < 0) error += 36000;
+    return error;
+}
+
+/*
+  wrap an angle in centi-degrees to -18000..18000
+ */
+int32_t wrap_180_cd(int32_t error)
+{
+    while (error > 18000) error -= 36000;
+    while (error < -18000) error += 36000;
+    return error;
+}
+

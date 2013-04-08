@@ -114,7 +114,7 @@ static void handle_process_do_command()
         break;
 
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
-        camera.trigger_pic();
+        do_take_picture();
         break;
 #endif
 
@@ -299,7 +299,7 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
     if (ahrs.yaw_initialised()) {
-        if (hold_course == -1) {
+        if (hold_course == -1 && g.takeoff_heading_hold != 0) {
             // save our current course to take off
             hold_course = ahrs.yaw_sensor;
             gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course);
@@ -583,7 +583,7 @@ static void do_change_speed()
 
 static void do_set_home()
 {
-    if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK) {
+    if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
         home.id         = MAV_CMD_NAV_WAYPOINT;
@@ -596,8 +596,7 @@ static void do_set_home()
 
 static void do_set_servo()
 {
-    hal.rcout->enable_ch(next_nonnav_command.p1 - 1);
-    hal.rcout->write(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
+    servo_write(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
 }
 
 static void do_set_relay()
@@ -641,4 +640,13 @@ static void do_repeat_relay()
     event_state.delay_ms        = next_nonnav_command.lat * 500.0;
     event_state.repeat          = next_nonnav_command.alt * 2;
     update_events();
+}
+
+// do_take_picture - take a picture with the camera library
+static void do_take_picture()
+{
+#if CAMERA == ENABLED
+    camera.trigger_pic();
+    Log_Write_Camera();
+#endif
 }
