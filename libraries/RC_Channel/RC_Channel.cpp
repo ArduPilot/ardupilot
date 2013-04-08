@@ -327,10 +327,12 @@ RC_Channel::norm_output()
     int16_t mid = (radio_max + radio_min) / 2;
     float ret;
     if(radio_out < mid)
+    	// Negative value in the range [-1..0[
         ret = (float)(radio_out - mid) / (float)(mid - radio_min);
     else
+    	// Positive value in the range [0..1]
         ret = (float)(radio_out - mid) / (float)(radio_max  - mid);
-    if (_reverse == -1) {
+    if (_reverse == -1) { // Shit.. reverse back to internal sign.
 	    ret = -ret;
     }
     return ret;

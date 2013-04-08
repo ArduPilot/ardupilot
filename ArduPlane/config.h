@@ -429,6 +429,14 @@
  # define ENABLE_AIR_START               DISABLED
 #endif
 
+#ifndef AIR_START_FIX_COUNT
+ # define AIR_START_FIX_COUNT               5
+#endif
+
+#ifndef GROUND_START_FIX_COUNT
+ # define GROUND_START_FIX_COUNT               100
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // ENABLE ELEVON_MIXING
 //

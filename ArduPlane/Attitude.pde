@@ -738,9 +738,9 @@ static void set_servos(void)
 
     // send values to the PWM timers for output
     // ----------------------------------------
-    hal.rcout->write(CH_1, g.channel_roll.radio_out);     // send to Servos
-    hal.rcout->write(CH_2, g.channel_pitch.radio_out);     // send to Servos
-    hal.rcout->write(CH_3, g.channel_throttle.radio_out);     // send to Servos
+    hal.rcout->write(CH_1, g.channel_roll.radio_out);       // send to Servos
+    hal.rcout->write(CH_2, g.channel_pitch.radio_out);      // send to Servos
+    hal.rcout->write(CH_3, g.channel_throttle.radio_out);   // send to Servos
     hal.rcout->write(CH_4, g.channel_rudder.radio_out);     // send to Servos
     // Route configurable aux. functions to their respective servos
     g.rc_5.output_ch(CH_5);

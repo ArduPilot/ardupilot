@@ -9,10 +9,6 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 
-#define RC_CHANNEL_TYPE_ANGLE 0
-#define RC_CHANNEL_TYPE_RANGE 1
-#define RC_CHANNEL_TYPE_ANGLE_RAW 2
-
 #define RC_CHANNEL_TYPE_ANGLE       0
 #define RC_CHANNEL_TYPE_RANGE       1
 #define RC_CHANNEL_TYPE_ANGLE_RAW   2

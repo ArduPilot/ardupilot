@@ -16,10 +16,10 @@ static void init_rc_in()
     g.channel_throttle.set_range(0, 100);
 
     // set rc dead zones
-    g.channel_roll.set_dead_zone(60);
-    g.channel_pitch.set_dead_zone(60);
-    g.channel_rudder.set_dead_zone(60);
-    g.channel_throttle.set_dead_zone(6);
+    g.channel_roll.set_dead_zone(20);
+    g.channel_pitch.set_dead_zone(20);
+    g.channel_rudder.set_dead_zone(20);
+    g.channel_throttle.set_dead_zone(4);
 
     //g.channel_roll.dead_zone  = 60;
     //g.channel_pitch.dead_zone     = 60;
