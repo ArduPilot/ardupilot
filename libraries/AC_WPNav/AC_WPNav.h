@@ -29,7 +29,8 @@
 //     MAX_LOITER_OVERSHOOT = min(200, MAX_LOITER_POS_VELOCITY/Pid_P); // to stop it being over sensitive to error
 // end
 
-#define WP_SPEED                        500         // default horizontal speed betwen waypoints in cm/s
+#define WPNAV_WP_SPEED                  500         // default horizontal speed betwen waypoints in cm/s
+#define WPNAV_WP_RADIUS                 200         // default waypoint radius in cm
 #define WPINAV_MAX_POS_ERROR            531.25f     // maximum distance (in cm) that the desired track can stray from our current location.
 // D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
 // if WP_SPEED > 2*D0*Pid_P
@@ -61,9 +62,6 @@ public:
     /// get_loiter_target - get loiter target as position vector (from home in cm)
     Vector3f get_loiter_target() { return _target; }
 
-    /// get_target_alt - get loiter's target altitude
-    float get_target_alt() { return _target.z; }
-
     /// set_loiter_target in cm from home
     void set_loiter_target(const Vector3f& position) { _target = position; }
 
@@ -92,7 +90,7 @@ public:
     int32_t get_angle_limit() { return _lean_angle_max; }
 
     ///
-    /// waypoint navigation
+    /// waypoint controller
     ///
 
     /// get_destination waypoint using position vector (distance from home in cm)
@@ -107,17 +105,14 @@ public:
     /// advance_target_along_track - move target location along track from origin to destination
     void advance_target_along_track(float velocity_cms, float dt);
 
-    /// get_destination_alt - get target altitude above home in cm
-    float get_destination_alt() { return _destination.z; }
-
-    /// set_destination_alt - set target altitude above home in cm
-    void set_destination_alt(float altitude_in_cm) { _destination.z = altitude_in_cm; }
-
     /// get_distance_to_destination - get horizontal distance to destination in cm
     float get_distance_to_destination();
 
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
     int32_t get_bearing_to_destination();
+
+    /// reached_destination - true when we have come within RADIUS cm of the waypoint
+    bool reached_destination() { return _reached_destination; }
 
     /// update_wp - update waypoint controller
     void update_wpnav();
@@ -126,12 +121,15 @@ public:
     /// shared methods
     ///
 
-    /// get desired roll, pitch and altitude which should be fed into stabilize controllers
+    /// get desired roll, pitch which should be fed into stabilize controllers
     int32_t get_desired_roll() { return _desired_roll; };
     int32_t get_desired_pitch() { return _desired_pitch; };
 
-    /// desired altitude (in cm) that should be fed into altitude hold controller.  only valid when navigating between waypoints
-    int32_t get_desired_altitude() { return _desired_altitude; };
+    /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
+    float get_desired_alt() { return _target.z; }
+
+    /// set_desired_alt - set desired altitude (in cm above home)
+    float set_desired_alt(float desired_alt) { _target.z = desired_alt; }
 
     /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
     void set_cos_sin_yaw(float cos_yaw, float sin_yaw, float cos_roll) {
@@ -180,6 +178,7 @@ protected:
     // parameters
     AP_Float    _speed_cms;         // default horizontal speed in cm/s
     float       _speedz_cms;        // max vertical climb rate in cm/s.  To-Do: rename or pull this from main code
+    AP_Float    _wp_radius_cm;      // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     uint32_t	_last_update;		// time of last update call
     float       _cos_yaw;           // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
@@ -188,7 +187,6 @@ protected:
     // output from controller
     int32_t     _desired_roll;          // fed to stabilize controllers at 50hz
     int32_t     _desired_pitch;         // fed to stabilize controllers at 50hz
-    int32_t     _desired_altitude;      // fed to alt hold controller at 50hz
 
     int32_t     _lean_angle_max;        // maximum lean angle.  can we set from main code so that throttle controller can stop leans that cause copter to lose altitude
 
@@ -203,6 +201,7 @@ protected:
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
     float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to position
+    bool        _reached_destination;   // true if we have reached the destination
 
     // pilot inputs for loiter
     int16_t     _pilot_vel_forward_cms;

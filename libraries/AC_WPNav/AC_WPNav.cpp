@@ -12,7 +12,16 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Description: The desired horizontal speed in cm/s while travelling between waypoints
     // @Range: 0 1000
     // @Increment: 50
-    AP_GROUPINFO("SPEED",    0, AC_WPNav, _speed_cms, WP_SPEED),
+    AP_GROUPINFO("SPEED",    0, AC_WPNav, _speed_cms, WPNAV_WP_SPEED),
+
+    // @Param: RADIUS
+    // @DisplayName: Waypoint Radius
+    // @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
+    // @Units: Centimeters
+    // @Range: 100 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RADIUS",    1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
 
     AP_GROUPEND
 };
@@ -126,9 +135,6 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
         _target.x = curr_pos.x + MAX_LOITER_OVERSHOOT * distance_err.x/distance;
         _target.y = curr_pos.y + MAX_LOITER_OVERSHOOT * distance_err.y/distance;
     }
-
-    // debug -- remove me!
-    //hal.console->printf_P(PSTR("\nLTarX:%4.2f Y:%4.2f Z:%4.2f\n"),_target.x, _target.y, _target.z);
 }
 
 /// get_distance_to_target - get horizontal distance to loiter target in cm
@@ -172,6 +178,7 @@ void AC_WPNav::update_loiter()
 /// set_destination - set destination using cm from home
 void AC_WPNav::set_destination(const Vector3f& destination)
 {
+    // To-Do: use projection of current position & velocity to set origin
     set_origin_and_destination(_inav->get_position(), destination);
 }
 
@@ -188,40 +195,29 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     _pos_delta_unit = pos_delta/_track_length;
 
     _track_desired = 0;
-
-    // debug -- remove me!
-    //hal.console->printf_P(PSTR("\nSOAD: Ox:%4.2f y:%4.2f z:%4.2f Dx:%4.2f y:%4.2f z:%4.2f\n"),_origin.x, _origin.y, _origin.z, _destination.x, _destination.y, _destination.z);
-    //hal.console->printf_P(PSTR("\nVTS:%4.2f TL:%4.2f\n"),_vert_track_scale, _track_length);
-    //hal.console->printf_P(PSTR("\nPDP: x:%4.2f y:%4.2f z:%4.2f\n"),_pos_delta_unit.x, _pos_delta_unit.y, _pos_delta_unit.z);
+    _reached_destination = false;
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
 void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
 {
-    //float cross_track_dist;
     float track_covered;
     float track_error;
     float track_desired_max;
     float track_desired_temp = _track_desired;
     float track_extra_max;
     float curr_delta_length;
-    //float alt_error;
 
     // get current location
-    Vector3f curr_delta = _inav->get_position() - _origin;
+    Vector3f curr_pos = _inav->get_position();
+    Vector3f curr_delta = curr_pos - _origin;
     curr_delta.z = curr_delta.z * _vert_track_scale;
     curr_delta_length = curr_delta.length();
 
     track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
     track_error = safe_sqrt(curr_delta_length*curr_delta_length - track_covered*track_covered);
 
-    // we don't need the following but we may want to log them to see how we are going.
-    // cross_track_dist = -(curr.x-_origin.x) * _pos_delta_unit.y + (curr.y-_origin.y) * _pos_delta_unit.x;
-    // alt_error = fabsf(_origin.z + _pos_delta_unit.z * track_covered - curr.z);
-
     track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - track_error*track_error);
-    // debug -- remove me!
-    //hal.console->printf_P(PSTR("\nvel_cms:%4.2f Tcov:%4.2f\n"),velocity_cms, track_covered); 
 
     // we could save a sqrt by doing the following and not assigning track_error
     // track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - (curr_delta_length*curr_delta_length - track_covered*track_covered));
@@ -230,9 +226,6 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
 
     // advance the current target
     track_desired_temp += velocity_cms * dt;
-
-    // debug -- remove me!
-    //hal.console->printf_P(PSTR("\nTdes:%4.2f TdesMx:%4.2f\n"),track_desired_temp, track_desired_max); 
 
     // constrain the target from moving too far
     if( track_desired_temp > track_desired_max ) {
@@ -246,8 +239,17 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     _target.x = _origin.x + _pos_delta_unit.x * _track_desired;
     _target.y = _origin.y + _pos_delta_unit.y * _track_desired;
     _target.z = _origin.z + (_pos_delta_unit.z * _track_desired)/_vert_track_scale;
-    // we could save a divide by having a variable for 1/_vert_track_scale
-    //hal.console->printf_P(PSTR("\nTarX:%4.2f Y:%4.2f Z:%4.2f\n"),_target.x, _target.y, _target.z);
+
+    // check if we've reached the waypoint
+    if( !_reached_destination ) {
+        if( _track_desired >= _track_length ) {
+            Vector3f dist_to_dest = curr_pos - _destination;
+            dist_to_dest.z *=_vert_track_scale;
+            if( dist_to_dest.length() <= _wp_radius_cm ) {
+                _reached_destination = true;
+            }
+        }
+    }
 }
 
 /// get_distance_to_destination - get horizontal distance to destination in cm
@@ -294,6 +296,7 @@ void AC_WPNav::get_loiter_pos_lat_lon(float target_lat_from_home, float target_l
 {
     Vector2f dist_error;
     Vector2f desired_vel;
+    Vector3f curr = _inav->get_position();
     float dist_error_total;
 
     float vel_sqrt;
@@ -302,8 +305,8 @@ void AC_WPNav::get_loiter_pos_lat_lon(float target_lat_from_home, float target_l
     float linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate distance error
-    dist_error.x = target_lat_from_home - _inav->get_latitude_diff();
-    dist_error.y = target_lon_from_home - _inav->get_longitude_diff();
+    dist_error.x = target_lat_from_home - curr.x;
+    dist_error.y = target_lon_from_home - curr.y;
 
     linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
     _distance_to_target = linear_distance;      // for reporting purposes
