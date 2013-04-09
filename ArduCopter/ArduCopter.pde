@@ -515,7 +515,6 @@ static uint8_t command_cond_index;
 // NAV_ALTITUDE - have we reached the desired altitude?
 // NAV_LOCATION - have we reached the desired location?
 // NAV_DELAY    - have we waited at the waypoint the desired time?
-static uint8_t wp_verify_byte;                                                  // used for tracking state of navigating waypoints
 static float lon_error, lat_error;      // Used to report how many cm we are from the next waypoint or loiter target position
 static int16_t control_roll;
 static int16_t control_pitch;
@@ -560,6 +559,7 @@ static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration
 static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
+static float target_alt_for_reporting;      // target altitude for reporting (logs and ground station)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -692,12 +692,6 @@ static int16_t nav_throttle;    // 0-1000 for throttle control
 // This could be useful later in determining and debuging current usage and predicting battery life
 static uint32_t throttle_integrator;
 
-////////////////////////////////////////////////////////////////////////////////
-// Climb rate control
-////////////////////////////////////////////////////////////////////////////////
-// Time when we intiated command in millis - used for controlling decent rate
-// Used to track the altitude offset for climbrate control
-static int8_t alt_change_flag;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Yaw control
@@ -1789,8 +1783,8 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
-            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
-            set_new_altitude(controller_desired_alt);          // by default hold the current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
+            wp_nav.set_desired_alt(controller_desired_alt);                                 // same as above but for loiter controller
             if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
                 set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
@@ -1802,10 +1796,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             set_land_complete(false);   // mark landing as incomplete
             land_detector = 0;          // A counter that goes up if our climb rate stalls out.
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
-            // Set target altitude to LAND_START_ALT if we are high, below this altitude the get_throttle_rate_stabilized will take care of setting the next_WP.alt
-            if (controller_desired_alt >= LAND_START_ALT) {
-                set_new_altitude(LAND_START_ALT);
-            }
             throttle_initialised = true;
             break;
 
@@ -1842,6 +1832,7 @@ void update_throttle_mode(void)
     if( !motors.armed() ) {
         set_throttle_out(0, false);
         throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
+        set_target_alt_for_reporting(0);
         return;
     }
 
@@ -1880,6 +1871,7 @@ void update_throttle_mode(void)
                 }
             }
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_MANUAL_TILT_COMPENSATED:
@@ -1904,6 +1896,7 @@ void update_throttle_mode(void)
                 }
             }
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_ACCELERATION:
@@ -1915,6 +1908,7 @@ void update_throttle_mode(void)
             int16_t desired_acceleration = get_pilot_desired_acceleration(g.rc_3.control_in);
             set_throttle_accel_target(desired_acceleration);
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_RATE:
@@ -1926,6 +1920,7 @@ void update_throttle_mode(void)
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
             get_throttle_rate(pilot_climb_rate);
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_STABILIZED_RATE:
@@ -1934,9 +1929,10 @@ void update_throttle_mode(void)
             set_throttle_out(0, false);
             throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
             altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
+            set_target_alt_for_reporting(0);
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-            get_throttle_rate_stabilized(pilot_climb_rate);
+            get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
         }
         break;
 
@@ -1946,9 +1942,11 @@ void update_throttle_mode(void)
             set_throttle_out(0, false);
             throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
             altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
+            set_target_alt_for_reporting(0);
         }else{
             int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
             get_throttle_althold_with_slew(desired_alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
+            set_target_alt_for_reporting(desired_alt);
         }
         break;
 
@@ -1957,25 +1955,39 @@ void update_throttle_mode(void)
         pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
         if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
             // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(pilot_climb_rate);
+            get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
         }else{
             // if no sonar fall back stabilize rate controller
-            get_throttle_rate_stabilized(pilot_climb_rate);
+            get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
         }
         break;
 
     case THROTTLE_AUTO:
-        // auto pilot altitude controller with target altitude held in next_WP.alt
+        // auto pilot altitude controller with target altitude held in wp_nav.get_desired_alt()
         if(motors.auto_armed() == true) {
-            get_throttle_althold_with_slew(wp_nav.get_target_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
+            get_throttle_althold_with_slew(wp_nav.get_desired_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
+            set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
         }
         break;
 
     case THROTTLE_LAND:
         // landing throttle controller
         get_throttle_land();
+        set_target_alt_for_reporting(0);
         break;
     }
+}
+
+// set_target_alt_for_reporting - set target altitude for reporting purposes (logs and gcs)
+static void set_target_alt_for_reporting(float alt)
+{
+    target_alt_for_reporting = alt;
+}
+
+// get_target_alt_for_reporting - returns target altitude for reporting purposes (logs and gcs)
+static float get_target_alt_for_reporting()
+{
+    return target_alt_for_reporting;
 }
 
 static void read_AHRS(void)

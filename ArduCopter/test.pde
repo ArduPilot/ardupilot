@@ -189,7 +189,6 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 //static int8_t
 //test_toy(uint8_t argc, const Menu::arg *argv)
 {
-	set_alt_change(ASCENDING)
 
  	for(altitude_error = 2000; altitude_error > -100; altitude_error--){
  		int16_t temp = get_desired_climb_rate();

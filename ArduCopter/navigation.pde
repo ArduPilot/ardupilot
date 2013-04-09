@@ -34,9 +34,6 @@ static void run_nav_updates(void)
     // fetch position from inertial navigation
     calc_position();
 
-    // check altitude vs target
-    verify_altitude();
-
     // calculate distance and bearing for reporting and autopilot decisions
     calc_distance_and_bearing();
 
@@ -185,53 +182,6 @@ static bool check_missed_wp()
     temp = wp_bearing - original_wp_bearing;
     temp = wrap_180_cd(temp);
     return (labs(temp) > 9000);         // we passed the waypoint by 90 degrees
-}
-
-static void force_new_altitude(float new_alt)
-{
-    // update new target altitude
-    wp_nav.set_destination_alt(new_alt);
-    set_alt_change(REACHED_ALT);
-}
-
-static void set_new_altitude(float new_alt)
-{
-    // if no change exit immediately
-    if(new_alt == wp_nav.get_destination_alt()) {
-        return;
-    }
-
-    // update new target altitude
-    wp_nav.set_destination_alt(new_alt);
-
-    if(new_alt > (current_loc.alt + 80)) {
-        // we are below, going up
-        set_alt_change(ASCENDING);
-
-    }else if(new_alt < (current_loc.alt - 80)) {
-        // we are above, going down
-        set_alt_change(DESCENDING);
-
-    }else{
-        // No Change
-        set_alt_change(REACHED_ALT);
-    }
-}
-
-// verify_altitude - check if we have reached the target altitude
-static void verify_altitude()
-{
-    if(alt_change_flag == ASCENDING) {
-        // we are below, going up
-        if(current_loc.alt >  wp_nav.get_destination_alt() - 50) {
-        	set_alt_change(REACHED_ALT);
-        }
-    }else if (alt_change_flag == DESCENDING) {
-        // we are above, going down
-        if(current_loc.alt <=  wp_nav.get_destination_alt() + 50){
-        	set_alt_change(REACHED_ALT);
-        }
-    }
 }
 
 // Keeps old data out of our calculation / logs

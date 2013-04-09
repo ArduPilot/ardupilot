@@ -195,7 +195,7 @@ static void exit_mission()
             set_mode(LAND);
         }else{
             set_mode(LOITER);
-            set_new_altitude(g.rtl_alt_final);
+            wp_nav.set_desired_alt(g.rtl_alt_final);
         }
     }
 

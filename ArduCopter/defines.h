@@ -177,12 +177,6 @@
 #define CH6_AHRS_KP         31          // accelerometer effect on roll/pitch angle (0=low)
 #define CH6_INAV_TC         32          // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
 
-// nav byte mask used with wp_verify_byte variable
-// -----------------------------------------------
-#define NAV_LOCATION 1
-#define NAV_ALTITUDE 2
-#define NAV_DELAY    4
-
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol
 // commands.  See enum MAV_CMD in the GCS_Mavlink library
@@ -219,11 +213,12 @@
 #define WP_OPTION_NEXT_CMD                      128
 
 // RTL state
-#define RTL_STATE_INITIAL_CLIMB     0
-#define RTL_STATE_RETURNING_HOME    1
-#define RTL_STATE_LOITERING_AT_HOME 2
-#define RTL_STATE_FINAL_DESCENT     3
-#define RTL_STATE_LAND              4
+#define RTL_STATE_START             0
+#define RTL_STATE_INITIAL_CLIMB     1
+#define RTL_STATE_RETURNING_HOME    2
+#define RTL_STATE_LOITERING_AT_HOME 3
+#define RTL_STATE_FINAL_DESCENT     4
+#define RTL_STATE_LAND              5
 
 //repeating events
 #define RELAY_TOGGLE 5

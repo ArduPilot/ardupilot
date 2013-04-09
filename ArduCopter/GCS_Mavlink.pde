@@ -1701,9 +1701,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set wp_nav's destination
             wp_nav.set_destination(pv_location_to_vector(tell_command));
 
-            // set altitude target
-            set_new_altitude(tell_command.alt);
-
             // verify we recevied the command
             mavlink_msg_mission_ack_send(
                 chan,
@@ -1718,7 +1715,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 tell_command.alt += home.alt;
             }
 
-            set_new_altitude(tell_command.alt);
+            // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
+            // similar to how do_change_alt works
+            wp_nav.set_desired_alt(tell_command.alt);
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(

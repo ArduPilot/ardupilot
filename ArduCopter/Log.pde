@@ -550,7 +550,7 @@ static void Log_Write_Control_Tuning()
         throttle_in         : g.rc_3.control_in,
         sonar_alt           : sonar_alt,
         baro_alt            : baro_alt,
-        next_wp_alt         : wp_nav.get_destination_alt(),
+        next_wp_alt         : target_alt_for_reporting,
         nav_throttle        : nav_throttle,
         angle_boost         : angle_boost,
         climb_rate          : climb_rate,

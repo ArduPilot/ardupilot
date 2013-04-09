@@ -1157,7 +1157,8 @@ get_throttle_rate_stabilized(int16_t target_rate)
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 
-    set_new_altitude(controller_desired_alt);
+    // update target altitude for reporting purposes
+    set_target_alt_for_reporting(controller_desired_alt);
 
     get_throttle_althold(controller_desired_alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
 }
@@ -1220,7 +1221,9 @@ get_throttle_surface_tracking(int16_t target_rate)
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
     target_sonar_alt = constrain(target_sonar_alt,sonar_alt-750,sonar_alt+750);
     controller_desired_alt = current_loc.alt+(target_sonar_alt-sonar_alt);
-    set_new_altitude(controller_desired_alt);
+
+    // update target altitude for reporting purposes
+    set_target_alt_for_reporting(controller_desired_alt);
 
     get_throttle_althold_with_slew(controller_desired_alt, target_rate-sonar_induced_slew_rate, target_rate+sonar_induced_slew_rate);   // VELZ_MAX limits how quickly we react
 }
