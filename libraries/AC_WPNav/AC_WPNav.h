@@ -129,7 +129,7 @@ public:
     float get_desired_alt() { return _target.z; }
 
     /// set_desired_alt - set desired altitude (in cm above home)
-    float set_desired_alt(float desired_alt) { _target.z = desired_alt; }
+    void set_desired_alt(float desired_alt) { _target.z = desired_alt; }
 
     /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
     void set_cos_sin_yaw(float cos_yaw, float sin_yaw, float cos_roll) {
