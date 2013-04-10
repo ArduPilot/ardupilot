@@ -1416,7 +1416,7 @@ init_esc()
     }
 }
 
-static void print_wp(struct Location *cmd, uint8_t index)
+static void print_wp(const struct Location *cmd, uint8_t index)
 {
    	//float t1 = (float)cmd->lat / t7;
     //float t2 = (float)cmd->lng / t7;

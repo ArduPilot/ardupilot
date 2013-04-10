@@ -298,7 +298,7 @@ struct log_Cmd {
 };
 
 // Write a command processing packet. Total length : 19 bytes
-static void Log_Write_Cmd(uint8_t num, struct Location *wp)
+static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
@@ -702,7 +702,7 @@ static void log_callback(uint8_t msgid)
 // dummy functions
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_Startup(uint8_t type) {}
-static void Log_Write_Cmd(uint8_t num, struct Location *wp) {}
+static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
 static void Log_Write_Current() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_GPS() {}

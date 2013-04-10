@@ -147,7 +147,7 @@ static int32_t read_alt_to_hold()
  *  This function stores waypoint commands
  *  It looks to see what the next command type is and finds the last command.
  */
-static void set_next_WP(struct Location *wp)
+static void set_next_WP(const struct Location *wp)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------

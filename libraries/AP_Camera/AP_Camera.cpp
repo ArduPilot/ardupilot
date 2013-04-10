@@ -137,11 +137,9 @@ AP_Camera::trigger_pic_cleanup()
             case AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE:
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
                 break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
                 _apm_relay->off();
                 break;
-#endif
             case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
                 hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN, 0);
                 break;
