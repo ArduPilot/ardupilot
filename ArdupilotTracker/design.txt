@@ -1,0 +1,12 @@
+dongfang Ardupilot antenna tracker
+
+Manual mode: R/S sticks integrate over time to output values. "Driving a crane"
+
+MAVLink mode: MAVLink is fed into aux. serial (the non-USB port).
+Using own lat/lon and target lat/lon, an azimuth and an elevation are calculated. This goes into servos.
+Manual mode is still usable for aligning the physical tracker gimbal with north/up or with the target.
+A pair of "This is North" and a "This is direction to target" would be nice to have.
+
+Groundstation modes: Tracker data (ArduTracker or other format) is fed into the USB serial interface.
+Azimuth is corrected: (initial magnetic bearing - current magnetic bearing) is added modulo 2pi.
+
