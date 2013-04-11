@@ -385,6 +385,11 @@ static void calc_nav_roll()
     // Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
     nav_roll = ToDeg(atanf(speed*turn_rate/GRAVITY_MSS)*100);
 
+#elif L1_CONTROL 
+    //Bank angle command based on angle between aircraft velocity vector and reference vector to path.
+    //S. Park, J. Deyst, and J. P. How, "A New Nonlinear Guidance Logic for Trajectory Tracking," 
+    //Proceedings of the AIAA Guidance, Navigation and Control Conference, Aug 2004. AIAA-2004-4900.
+    nav_roll_cd=degrees( (2*sq(g_gps->ground_speed*0.01) / L1) * sin( radians(nu_cd*0.01))  * 10.1972); //10.1972 = (1/9.81)*100
 #else
     // this is the old nav_roll calculation. We will use this for 2.50
     // then remove for a future release
