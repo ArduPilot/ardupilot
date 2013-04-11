@@ -43,7 +43,7 @@ float longitude_scale(const struct Location *loc)
 
 
 
-// return distance in meters to between two locations
+// return distance in meters between two locations
 float get_distance(const struct Location *loc1, const struct Location *loc2)
 {
     float dlat              = (float)(loc2->lat - loc1->lat);
