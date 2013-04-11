@@ -61,6 +61,9 @@ public:
     // correct_with_gps - modifies accelerometer offsets using gps.  dt is time since last gps update
     void        correct_with_gps(int32_t lon, int32_t lat, float dt);
 
+    // get_position - returns current position from home in cm
+    Vector3f    get_position() { return _position_base + _position_correction; }
+
     // get latitude & longitude positions
     int32_t     get_latitude();
     int32_t     get_longitude();

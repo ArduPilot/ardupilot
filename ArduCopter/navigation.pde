@@ -389,8 +389,9 @@ get_loiter_pos_lat_lon(int32_t target_lat_from_home, int32_t target_lon_from_hom
     int16_t linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate distance error
-    dist_error_lat = target_lat_from_home - inertial_nav.get_latitude_diff();
-    dist_error_lon = target_lon_from_home - inertial_nav.get_longitude_diff();
+    Vector3f curr = inertial_nav.get_position();
+    dist_error_lat = target_lat_from_home - curr.x;
+    dist_error_lon = target_lon_from_home - curr.y;
 
     linear_distance = MAX_LOITER_POS_ACCEL/(2*g.pi_loiter_lat.kP()*g.pi_loiter_lat.kP());
 
