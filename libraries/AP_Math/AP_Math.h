@@ -25,8 +25,13 @@
 #define DEG_TO_RAD 0.017453292519943295769236907684886f
 #define RAD_TO_DEG 57.295779513082320876798154814105f
 
+#define RadiansToCentiDegrees(x) ((x) * 5729.578f)
+
 // acceleration due to gravity in m/s/s
 #define GRAVITY_MSS 9.80665f
+
+// radius of earth in meters
+#define RADIUS_OF_EARTH 6378100
 
 #define ROTATION_COMBINATION_SUPPORT 0
 
