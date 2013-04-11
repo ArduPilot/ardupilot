@@ -17,7 +17,6 @@ static int8_t   setup_compass           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compassmot        (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_tune              (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_range             (uint8_t argc, const Menu::arg *argv);
-//static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_declination       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_optflow           (uint8_t argc, const Menu::arg *argv);
 
@@ -46,7 +45,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"compassmot",                  setup_compassmot},
     {"tune",                        setup_tune},
     {"range",                       setup_range},
-//	{"offsets",			setup_mag_offset},
     {"declination",         setup_declination},
     {"optflow",                     setup_optflow},
  #if FRAME_CONFIG == HELI_FRAME
@@ -66,11 +64,6 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 {
     // Give the user some guidance
     cliSerial->printf_P(PSTR("Setup Mode\n\n\n"));
-    //"\n"
-    //"IMPORTANT: if you have not previously set this system up, use the\n"
-    //"'reset' command to initialize the EEPROM to sensible default values\n"
-    //"and then the 'radio' command to configure for your radio.\n"
-    //"\n"));
 
     if(g.rc_1.radio_min >= 1300) {
         delay(1000);
@@ -134,9 +127,6 @@ setup_show(uint8_t argc, const Menu::arg *argv)
     report_frame();
     report_batt_monitor();
     report_sonar();
-    //report_gains();
-    //report_xtrack();
-    //report_throttle();
     report_flight_modes();
     report_ins();
     report_compass();
@@ -172,7 +162,6 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
     cliSerial->printf_P(PSTR("\nReboot APM"));
 
     delay(1000);
-    //default_gains();
 
     for (;; ) {
     }
@@ -425,8 +414,6 @@ static int8_t
 setup_tune(uint8_t argc, const Menu::arg *argv)
 {
     g.radio_tuning.set_and_save(argv[1].i);
-    //g.radio_tuning_high.set_and_save(1000);
-    //g.radio_tuning_low.set_and_save(0);
     report_tuning();
     return 0;
 }
@@ -1208,10 +1195,6 @@ void report_optflow()
 
     print_enabled(g.optflow_enabled);
 
-    // field of view
-    //cliSerial->printf_P(PSTR("FOV: %4.0f\n"),
-    //						degrees(g.optflow_fov));
-
     print_blanks(2);
  #endif     // OPTFLOW == ENABLED
 }
@@ -1418,9 +1401,6 @@ init_esc()
 
 static void print_wp(const struct Location *cmd, uint8_t index)
 {
-   	//float t1 = (float)cmd->lat / t7;
-    //float t2 = (float)cmd->lng / t7;
-
     cliSerial->printf_P(PSTR("cmd#: %d | %d, %d, %d, %ld, %ld, %ld\n"),
                     index,
                     cmd->id,
@@ -1429,17 +1409,6 @@ static void print_wp(const struct Location *cmd, uint8_t index)
                     cmd->alt,
                     cmd->lat,
                     cmd->lng);
-
-	/*
-    cliSerial->printf_P(PSTR("cmd#: %d id:%d op:%d p1:%d p2:%ld p3:%4.7f p4:%4.7f \n"),
-                    (int)index,
-                    (int)cmd->id,
-                    (int)cmd->options,
-                    (int)cmd->p1,
-                    (long)cmd->alt,
-                    t1,
-                    t2);
-	*/
 }
 
 static void report_version()
