@@ -281,7 +281,7 @@ static void do_loiter_unlimited()
 static void do_loiter_turns()
 {
     set_next_WP(&next_nav_command);
-    loiter_total = next_nav_command.p1 * 360;
+    loiter.loiter_total_cd = next_nav_command.p1 * 36000UL;
     loiter_set_direction_wp(&next_nav_command);
 }
 
@@ -299,24 +299,24 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
     if (ahrs.yaw_initialised()) {
-        if (hold_course == -1 && g.takeoff_heading_hold != 0) {
+        if (hold_course_cd == -1) {
             // save our current course to take off
-            hold_course = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course);
+            hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course_cd);
         }
     }
 
-    if (hold_course != -1) {
-        // recalc bearing error with hold_course;
-        nav_bearing_cd = hold_course;
-        // recalc bearing error
-        calc_bearing_error();
+    if (hold_course_cd != -1) {
+        // call navigation controller for heading hold
+        nav_controller->update_heading_hold(hold_course_cd);
+    } else {
+        nav_controller->update_level_flight();        
     }
 
     if (adjusted_altitude_cm() > takeoff_altitude)  {
-        hold_course = -1;
+        hold_course_cd = -1;
         takeoff_complete = true;
-        next_WP = current_loc;
+        next_WP = prev_WP = current_loc;
         return true;
     } else {
         return false;
@@ -337,18 +337,18 @@ static bool verify_land()
 
         land_complete = true;
 
-        if (hold_course == -1) {
+        if (hold_course_cd == -1) {
             // we have just reached the threshold of to flare for landing.
             // We now don't want to do any radical
             // turns, as rolling could put the wings into the runway.
-            // To prevent further turns we set hold_course to the
+            // To prevent further turns we set hold_course_cd to the
             // current heading. Previously we set this to
             // crosstrack_bearing, but the xtrack bearing can easily
             // be quite large at this point, and that could induce a
             // sudden large roll correction which is very nasty at
             // this point in the landing.
-            hold_course = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), hold_course);
+            hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), hold_course_cd);
         }
 
         if (g_gps->ground_speed*0.01 < 3.0) {
@@ -362,30 +362,30 @@ static bool verify_land()
         }
     }
 
-    if (hold_course != -1) {
+    if (hold_course_cd != -1) {
         // recalc bearing error with hold_course;
-        nav_bearing_cd = hold_course;
-        // recalc bearing error
-        calc_bearing_error();
+        nav_controller->update_heading_hold(hold_course_cd);
     } else {
-        update_crosstrack();
+        nav_controller->update_waypoint(prev_WP, next_WP);
     }
     return false;
 }
 
 static bool verify_nav_wp()
 {
-    hold_course = -1;
-    update_crosstrack();
-    if (wp_distance <= (uint32_t)max(g.waypoint_radius,0)) {
+    hold_course_cd = -1;
+
+    nav_controller->update_waypoint(prev_WP, next_WP);
+    
+    if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
                           (unsigned)get_distance(&current_loc, &next_WP));
         return true;
-    }
+	}
 
     // have we circled around the waypoint?
-    if (loiter_sum > 300) {
+    if (loiter.loiter_sum_cd > 30000) {
         gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
         return true;
     }
@@ -404,14 +404,12 @@ static bool verify_nav_wp()
 static bool verify_loiter_unlim()
 {
     update_loiter();
-    calc_bearing_error();
     return false;
 }
 
 static bool verify_loiter_time()
 {
     update_loiter();
-    calc_bearing_error();
     if ((millis() - loiter_time_ms) > loiter_time_max_ms) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
         return true;
@@ -422,9 +420,8 @@ static bool verify_loiter_time()
 static bool verify_loiter_turns()
 {
     update_loiter();
-    calc_bearing_error();
-    if(loiter_sum > loiter_total) {
-        loiter_total = 0;
+    if (loiter.loiter_sum_cd > loiter.loiter_total_cd) {
+        loiter.loiter_total_cd = 0;
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
         // clear the command queue;
         return true;
@@ -434,12 +431,14 @@ static bool verify_loiter_turns()
 
 static bool verify_RTL()
 {
-    if (wp_distance <= (uint32_t)max(g.waypoint_radius,0)) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
-        return true;
-    }else{
+    update_loiter();
+	if (wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
+        nav_controller->reached_loiter_target()) {
+			gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+			return true;
+    } else {
         return false;
-    }
+	}
 }
 
 /********************************************************************************/

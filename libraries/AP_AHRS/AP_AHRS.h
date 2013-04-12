@@ -137,8 +137,14 @@ public:
     // if we have an estimate
     virtual bool airspeed_estimate(float *airspeed_ret);
 
+    // return a ground vector estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector(void);
+
     // return true if we will use compass for yaw
     virtual bool use_compass(void) { return _compass && _compass->use_for_yaw(); }
+
+    // correct a bearing in centi-degrees for wind
+    void wind_correct_bearing(int32_t &nav_bearing_cd);
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) {
@@ -160,7 +166,8 @@ public:
     virtual void            add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
 
     // settable parameters
-    AP_Float _kp_yaw;
+    AP_Float beta;
+	AP_Float _kp_yaw;
     AP_Float _kp;
     AP_Float gps_gain;
     AP_Int8 _gps_use;
@@ -208,7 +215,15 @@ protected:
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef;
 
-};
+	// Declare filter states for HPF and LPF used by complementary
+	// filter in AP_AHRS::groundspeed_vector
+	float _xlp; // x component low-pass filter
+	float _ylp; // y component low-pass filter
+	float _xhp; // x component high-pass filter
+	float _yhp; // y component high-pass filter
+    Vector2f _lastGndVelADS; // previous HPF input
+		
+	};
 
 #include <AP_AHRS_DCM.h>
 #include <AP_AHRS_MPU6000.h>

@@ -56,11 +56,10 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"airspeed",    test_airspeed},
     {"airpressure", test_pressure},
     {"compass",             test_mag},
-#elif HIL_MODE == HIL_MODE_SENSORS
+#else
     {"gps",                 test_gps},
     {"ins",                 test_ins},
     {"compass",             test_mag},
-#elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
     {"logging",             test_logging},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -413,8 +412,6 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
 
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
-
  #if CONFIG_ADC == ENABLED
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
@@ -601,8 +598,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     compass.save_offsets();
     return (0);
 }
-
-#endif // HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
 
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here

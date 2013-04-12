@@ -215,7 +215,7 @@ AP_HAL::Semaphore* AP_InertialSensor_MPU6000::_spi_sem = NULL;
  *  variants however
  */
 
-AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000()
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000() : AP_InertialSensor()
 {
     _temp = 0;
     _initialised = false;

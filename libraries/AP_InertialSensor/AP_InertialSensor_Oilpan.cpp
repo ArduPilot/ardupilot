@@ -38,7 +38,8 @@ const float AP_InertialSensor_Oilpan::_gyro_gain_z = ToRad(0.41f);
 
 /* ------ Public functions -------------------------------------------*/
 
-AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
+AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) : 
+    AP_InertialSensor(),
     _adc(adc)
 {
 }

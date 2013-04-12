@@ -173,6 +173,19 @@ static void control_failsafe(uint16_t pwm)
 static void trim_control_surfaces()
 {
     read_radio();
+    int16_t trim_roll_range = (g.channel_roll.radio_max - g.channel_roll.radio_min)/5;
+    int16_t trim_pitch_range = (g.channel_pitch.radio_max - g.channel_pitch.radio_min)/5;
+    if (g.channel_roll.radio_in < g.channel_roll.radio_min+trim_roll_range ||
+        g.channel_roll.radio_in > g.channel_roll.radio_max-trim_roll_range ||
+        g.channel_pitch.radio_in < g.channel_pitch.radio_min+trim_pitch_range ||
+        g.channel_pitch.radio_in > g.channel_pitch.radio_max-trim_pitch_range) {
+        // don't trim for extreme values - if we attempt to trim so
+        // there is less than 20 percent range left then assume the
+        // sticks are not properly centered. This also prevents
+        // problems with starting APM with the TX off
+        return;
+    }
+
     // Store control surface trim values
     // ---------------------------------
     if(g.mix_mode == 0) {

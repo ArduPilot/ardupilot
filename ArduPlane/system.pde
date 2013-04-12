@@ -172,8 +172,6 @@ static void init_ardupilot()
     }
 #endif
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-
  #if CONFIG_ADC == ENABLED
     adc.Init();      // APM ADC library initialization
  #endif
@@ -189,7 +187,6 @@ static void init_ardupilot()
             ahrs.set_compass(&compass);
         }
     }
-#endif
 
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
@@ -245,15 +242,12 @@ static void init_ardupilot()
         // Get necessary data from EEPROM
         //----------------
         //read_EEPROM_airstart_critical();
-#if HIL_MODE != HIL_MODE_ATTITUDE
         ahrs.init();
         ahrs.set_fly_forward(true);
 
         ins.init(AP_InertialSensor::WARM_START, 
                  ins_sample_rate,
                  flash_leds);
-
-#endif
 
         // This delay is important for the APM_RC library to work.
         // We need some time for the comm between the 328 and 1280 to be established.
@@ -277,6 +271,9 @@ static void init_ardupilot()
         if (g.log_bitmask & MASK_LOG_CMD)
             Log_Write_Startup(TYPE_GROUNDSTART_MSG);
     }
+
+    // choose the nav controller
+    set_nav_controller();
 
     set_mode(MANUAL);
 
@@ -371,10 +368,12 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case AUTO:
+        prev_WP = current_loc;
         update_auto();
         break;
 
     case RTL:
+        prev_WP = current_loc;
         do_RTL();
         break;
 
@@ -387,6 +386,7 @@ static void set_mode(enum FlightMode mode)
         break;
 
     default:
+        prev_WP = current_loc;
         do_RTL();
         break;
     }
@@ -487,7 +487,6 @@ static void startup_INS_ground(bool force_accel_level)
 #endif
     ahrs.reset();
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     // read Baro pressure at ground
     //-----------------------------
     init_barometer();
@@ -500,7 +499,6 @@ static void startup_INS_ground(bool force_accel_level)
         gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
     }
 
-#endif
     digitalWrite(B_LED_PIN, LED_ON);                    // Set LED B high to indicate INS ready
     digitalWrite(A_LED_PIN, LED_OFF);
     digitalWrite(C_LED_PIN, LED_OFF);

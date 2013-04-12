@@ -12,7 +12,7 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
-	// index 0 and 1 are for old parameters that are no longer used
+	// index 0 and 1 are for old parameters that are no longer not used
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
@@ -82,6 +82,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
 
+    // @Param: COMP_BETA
+    // @DisplayName: AHRS Velocity Complmentary Filter Beta Coefficient
+    // @Description: This controls the time constant for the cross-over frequency used to fuse AHRS (airspeed and heading) and GPS data to estimate ground velocity. Time constant is 0.1/beta. A larger time constant will use GPS data less and a small time constant will use air data less.
+    // @Range: 0.001 0.5
+    // @Increment: .01
+    AP_GROUPINFO("COMP_BETA",  10, AP_AHRS, beta, 0.1f),
+
     AP_GROUPEND
 };
 
@@ -140,4 +147,81 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     if( save_to_eeprom ) {
         _trim.save();
     }
+}
+
+// correct a bearing in centi-degrees for wind
+void AP_AHRS::wind_correct_bearing(int32_t &nav_bearing_cd)
+{
+	if (!use_compass()) {
+		// we are not using the compass - no wind correction,
+		// as GPS gives course over ground already
+		return;
+	}
+
+	// if we are using a compass for navigation, then adjust the
+	// heading to account for wind	
+	Vector3f wind = wind_estimate();
+	Vector2f wind2d = Vector2f(wind.x, wind.y);
+	float speed;
+	if (airspeed_estimate(&speed)) {
+		Vector2f nav_vector = Vector2f(cos(radians(nav_bearing_cd*0.01)), sin(radians(nav_bearing_cd*0.01))) * speed;
+		Vector2f nav_adjusted = nav_vector - wind2d;
+		nav_bearing_cd = degrees(atan2(nav_adjusted.y, nav_adjusted.x)) * 100;
+	}
+}
+
+// return a ground speed estimate in m/s
+Vector2f AP_AHRS::groundspeed_vector(void)
+{
+    // Generate estimate of ground speed vector using air data system
+    Vector2f gndVelADS;
+    Vector2f gndVelGPS;
+    float airspeed;
+    bool gotAirspeed = airspeed_estimate(&airspeed);
+    bool gotGPS = (_gps && _gps->status() >= GPS::GPS_OK_FIX_2D);
+    if (gotAirspeed) {
+	    Vector3f wind = wind_estimate();
+	    Vector2f wind2d = Vector2f(wind.x, wind.y);
+	    Vector2f airspeed_vector = Vector2f(cos(yaw), sin(yaw)) * airspeed;
+	    gndVelADS = airspeed_vector - wind2d;
+    }
+    
+    // Generate estimate of ground speed vector using GPS
+    if (gotGPS) {
+	    Vector2f v;
+	    float cog = radians(_gps->ground_course*0.01f);
+	    gndVelGPS = Vector2f(cos(cog), sin(cog)) * _gps->ground_speed * 0.01f;
+    }
+    // If both ADS and GPS data is available, apply a complementary filter
+    if (gotAirspeed && gotGPS) {
+	    // The LPF is applied to the GPS and the HPF is applied to the air data estimate
+	    // before the two are summed
+	    //Define filter coefficients
+	    // alpha and beta must sum to one
+	    // beta = dt/Tau, where
+	    // dt = filter time step (0.1 sec if called by nav loop)
+	    // Tau = cross-over time constant (nominal 2 seconds)
+	    // More lag on GPS requires Tau to be bigger, less lag allows it to be smaller
+	    // To-Do - set Tau as a function of GPS lag.
+	    const float alpha = 1.0f - beta; 
+	    // Run LP filters
+	    _xlp = beta*gndVelGPS.x + alpha*_xlp;
+	    _ylp = beta*gndVelGPS.y + alpha*_ylp;
+	    // Run HP filters
+	    _xhp = gndVelADS.x - _lastGndVelADS.x + alpha*_xhp;
+	    _yhp = gndVelADS.y - _lastGndVelADS.y + alpha*_yhp;
+	    // Save the current ADS ground vector for the next time step
+	    _lastGndVelADS = gndVelADS;
+	    // Sum the HP and LP filter outputs
+	    return Vector2f(_xhp + _xlp, _yhp + _ylp);
+    }
+    // Only ADS data is available return ADS estimate
+    if (gotAirspeed && !gotGPS) {
+	    return gndVelADS;
+    }
+    // Only GPS data is available so return GPS estimate
+    if (!gotAirspeed && gotGPS) {
+	    return gndVelGPS;
+    }
+    return Vector2f(0.0f, 0.0f);
 }

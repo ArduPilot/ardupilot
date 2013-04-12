@@ -54,7 +54,9 @@
 #define CH_RUDDER CH_4
 #define CH_YAW CH_4
 
-// HIL enumerations
+// HIL enumerations. Note that HIL_MODE_ATTITUDE and HIL_MODE_SENSORS
+// are now the same thing, and are sensors based. The old define is
+// kept to allow old APM_Config.h headers to keep working
 #define HIL_MODE_DISABLED                       0
 #define HIL_MODE_ATTITUDE                       1
 #define HIL_MODE_SENSORS                        2

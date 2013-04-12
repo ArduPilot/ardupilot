@@ -271,17 +271,16 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
-    int16_t bearing = (hold_course==-1 ? nav_bearing_cd : hold_course) / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
         nav_roll_cd * 0.01,
         nav_pitch_cd * 0.01,
-        bearing,
-        target_bearing_cd * 0.01,
+        nav_controller->nav_bearing_cd() * 0.01f,
+        nav_controller->target_bearing_cd() * 0.01f,
         wp_distance,
         altitude_error_cm * 0.01,
         airspeed_error_cm,
-        crosstrack_error);
+        nav_controller->crosstrack_error());
 }
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
@@ -1912,15 +1911,6 @@ mission_failed:
         y *= 95446.0;
 
         barometer.setHIL(Temp, y);
-
- #if HIL_MODE == HIL_MODE_ATTITUDE
-        // set AHRS hil sensor. We don't do this in sensors mode, as
-        // in that case the attitude is computed via DCM
-        ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
-                    packet.pitchspeed,packet.yawspeed);
-
- #endif
-
         break;
     }
 #endif // HIL_MODE

@@ -92,7 +92,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_InertialSensor::AP_InertialSensor() {
+AP_InertialSensor::AP_InertialSensor() :
+    _accel(),
+    _gyro()
+{
     AP_Param::setup_object_defaults(this, var_info);        
 }
 

@@ -73,16 +73,18 @@ public:
         k_param_reset_mission_chan,
         k_param_land_flare_alt,
         k_param_land_flare_sec,
-        k_param_crosstrack_min_distance,
-        k_param_rudder_steer,
+        k_param_crosstrack_min_distance, // unused
+        k_param_rudder_steer, // unused
         k_param_throttle_nudge,
         k_param_alt_offset,
         k_param_ins,                // libraries/AP_InertialSensor variables
         k_param_takeoff_throttle_min_speed,
         k_param_takeoff_throttle_min_accel,
-        k_param_takeoff_heading_hold,
+        k_param_takeoff_heading_hold, // unused
+        k_param_level_roll_limit,
         k_param_hil_servos,
         k_param_vtail_output,
+        k_param_nav_controller,
 
         // 110: Telemetry control
         //
@@ -125,8 +127,8 @@ public:
         //
         // 150: Navigation parameters
         //
-        k_param_crosstrack_gain = 150,
-        k_param_crosstrack_entry_angle,
+        k_param_crosstrack_gain = 150, // unused
+        k_param_crosstrack_entry_angle, // unused
         k_param_roll_limit_cd,
         k_param_pitch_limit_max_cd,
         k_param_pitch_limit_min_cd,
@@ -134,7 +136,7 @@ public:
         k_param_RTL_altitude_cm,
         k_param_inverted_flight_ch,
         k_param_min_gndspeed_cm,
-        k_param_crosstrack_use_wind,
+        k_param_crosstrack_use_wind, // unused
 
 
         //
@@ -219,6 +221,7 @@ public:
         k_param_rollController,
         k_param_pitchController,
         k_param_yawController,
+        k_param_L1_controller,
 
         //
         // 240: PID Controllers
@@ -255,12 +258,8 @@ public:
     // speed used for speed scaling
     AP_Float scaling_speed;
 
-    // Crosstrack navigation
-    //
-    AP_Float crosstrack_gain;
-    AP_Int16 crosstrack_entry_angle;
-    AP_Int8  crosstrack_use_wind;
-    AP_Int16 crosstrack_min_distance;
+    // navigation controller type. See AP_Navigation::ControllerType
+    AP_Int8  nav_controller;
 
     // Estimation
     //
@@ -364,10 +363,9 @@ public:
     AP_Int8 battery_curr_pin;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
-    AP_Int8 rudder_steer;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
-    AP_Int8 takeoff_heading_hold;
+    AP_Int8 level_roll_limit;
 
     // RC channels
     RC_Channel channel_roll;
