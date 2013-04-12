@@ -128,9 +128,12 @@ static void init_ardupilot()
     mavlink0.init(hal.uartA);
     mavlink1.init(hal.uartC);
 
+    ardutracker1.init(hal.uartC);
+    
     datacomm0.addInterpreter(&mavlink0);
     datacomm1.addInterpreter(&mavlink1);
-    
+
+    datacomm1.addInterpreter(&ardutracker1);
     
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -142,7 +145,7 @@ static void init_ardupilot()
 
     barometer.init();
 
-    if (g.compass_enabled==true) {
+    if (g.compass_enabled) {
         compass.set_orientation(MAG_ORIENTATION);                                                       // set compass's orientation on aircraft
         if (!compass.init() || !compass.read()) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
@@ -168,9 +171,9 @@ static void init_ardupilot()
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
 
-    pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
     pinMode(A_LED_PIN, OUTPUT);                         // GPS status LED
     pinMode(B_LED_PIN, OUTPUT);                         // GPS status LED
+    pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
     relay.init();
 
     /*
@@ -220,9 +223,6 @@ static void init_ardupilot()
 
     set_mode(MANUAL);
     
-    // TODO: Here?
-    neutral_bearing_cd = ahrs.yaw_sensor;
-
     // set the correct flight mode
     // ---------------------------
     reset_control_switch();
@@ -281,7 +281,10 @@ static void startup_ground(void)
         hal.uartC->set_blocking_writes(false);
     }
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
+    // TODO: Here?
+    neutral_bearing_cd = ahrs.yaw_sensor;
+
+    gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to track."));
 }
 
 static void set_mode(enum FlightMode mode)
@@ -366,8 +369,8 @@ static void update_GPS_light(void)
 
     case (1):
         if (g_gps->valid_read == true) {
-            GPS_light = !GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-            if (GPS_light) {
+            GPS_light++;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
+            if (GPS_light & 4) {
                 digitalWrite(C_LED_PIN, LED_OFF);
             } else {
                 digitalWrite(C_LED_PIN, LED_ON);
@@ -438,17 +441,14 @@ static void check_usb_mux(void)
  *  called by gyro/accel init to flash LEDs so user
  *  has some mesmerising lights to watch while waiting
  */
-void flash_leds(bool on)
-{
-    digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
+void flash_leds(bool on) {
     digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
 /*
  * Read Vcc vs 1.1v internal reference
  */
-uint16_t board_voltage(void)
-{
+uint16_t board_voltage(void) {
     return vcc_pin->read_latest();
 }
 
@@ -456,8 +456,7 @@ uint16_t board_voltage(void)
 /*
   force a software reset of the APM
  */
-static void reboot_apm(void)
-{
+static void reboot_apm(void) {
     hal.scheduler->reboot();
     while (1);
 }

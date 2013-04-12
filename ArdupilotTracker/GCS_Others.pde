@@ -1,4 +1,5 @@
 #include "GCS.h"
+#include "tracking.h"
 
 /*
  *  look for incoming commands on the GCS links
@@ -23,6 +24,7 @@ void Datacomm_Class_Multiple::update(void) {
 
         if (c == '\n' || c == '\r') {
             crlf_count++;
+            digitalWrite(A_LED_PIN, crlf_count ? LED_ON : LED_OFF);
         } else {
             crlf_count = 0;
         }
@@ -62,6 +64,10 @@ const prog_char ArduTrackerDataInterpreter::TLT[] PROGMEM = "TLT";
 ArduTrackerDataInterpreter::ArduTrackerDataInterpreter() {
 }
 
+void ArduTrackerDataInterpreter::init(AP_HAL::BetterStream *port) {
+	Datacomm_Class::init(port);
+}
+
 void ArduTrackerDataInterpreter::update(void) {
 
 }
@@ -72,6 +78,16 @@ void ArduTrackerDataInterpreter::fail() {
 
 // Format is :
 // !!!PAN:XXXX,TLT:YYYY
+
+static int32_t BDC2Number(uint8_t* bcd) {
+	int32_t result = 0;
+	for (uint8_t i=0; i<4; i++) {
+		result *= 10;
+		result += bcd[i];
+	}
+	return result;
+}
+
 void ArduTrackerDataInterpreter::receive(uint8_t c) {
 	switch (parseState) {
 	case PANTTILT_PARSE_EXC0: {
@@ -132,7 +148,7 @@ void ArduTrackerDataInterpreter::receive(uint8_t c) {
 			fail();
 			return;
 		}
-		panBCD[parseState - PANTTILT_PARSE_PAN0] = c - '0';
+		aziBCD[parseState - PANTTILT_PARSE_PAN0] = c - '0';
 		break;
 	}
 
@@ -144,12 +160,26 @@ void ArduTrackerDataInterpreter::receive(uint8_t c) {
 			fail();
 			return;
 		}
-		tltBCD[parseState - PANTTILT_PARSE_TLT0] = c - '0';
+		eleBCD[parseState - PANTTILT_PARSE_TLT0] = c - '0';
 		break;
 	}
 	case PANTTILT_PARSE_END: {
 		// success!
 		parseState = PANTTILT_PARSE_EXC0;
+		
+		struct AzimuthElevation result;
+		/*
+		 * Here we could have used an RC_Channel object to do the conversion between
+		 * PWM values and centidegrees, and even have configurable end points, trim,
+		 * direction etc. However all the configuration can also be done in MP so
+		 * there is no reason to repeat it here. We just do a simple calculation.
+		 */
+		result.azimuth_cd = (BDC2Number(aziBCD) - 1500) * SERVO_MAX / 500;
+		result.elevation_cd = (BDC2Number(eleBCD) - 1500) * SERVO_MAX / 500;
+		result.timestamp = millis();
+		
+		incomingAzimuthElevation = result;
+		
 		detected = true;
 		return;
 	}

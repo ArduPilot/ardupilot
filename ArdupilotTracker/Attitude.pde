@@ -7,8 +7,11 @@ static void set_servos(void) {
 	g.channel_azimuth.servo_out = // g.channel_azimuth.radio_in;
 			bearing_error_cd;
 	g.channel_azimuth.calc_pwm();
-	g.channel_elevation.radio_out = g.channel_elevation.radio_in;
-	
+
+	g.channel_elevation.servo_out = // g.channel_elevation.radio_in;
+			incomingAzimuthElevation.elevation_cd;
+	g.channel_elevation.calc_pwm();
+		
     // hal.rcout->write(CH_1, g.channel_azimuth.radio_out);       // send to Servos
     // hal.rcout->write(CH_2, g.channel_elevation.radio_out);      // send to Servos
     

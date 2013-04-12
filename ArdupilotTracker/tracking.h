@@ -1,3 +1,6 @@
+#ifndef __TRACKING_H_
+#define __TRACKING_H_
+
 /*
  * We may add other formats such as polulu binary format or even a raw GPS
  * format to use for tracking a (FPV?) UAV that has a GPS connected to a
@@ -19,3 +22,5 @@ struct TargetPosition {
 	uint32_t timestamp;
 	struct Location position;
 };
+
+#endif

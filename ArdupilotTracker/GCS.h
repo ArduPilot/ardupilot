@@ -70,7 +70,6 @@ protected:
 
 class Datacomm_Interpreter: public Datacomm_Class {
 public:
-//    void        init(AP_HAL::BetterStream *port);
 	virtual void update(void) = 0;
 	virtual void receive(uint8_t c) = 0;
 	virtual bool isReceivingMessage();
@@ -224,14 +223,16 @@ public:
 	};
 
 	ArduTrackerDataInterpreter();
-	void update(void);
-	void receive(uint8_t c);
-	bool isReceivingMessage();
+    void        init(AP_HAL::BetterStream *port);
+	void 		update(void);
+	void 		receive(uint8_t c);
+	bool 		isReceivingMessage();
 private:
 	void fail();
+
 	uint8_t parseState;
-	uint8_t panBCD[4];
-	uint8_t tltBCD[4];
+	uint8_t aziBCD[4];
+	uint8_t eleBCD[4];
 	static const prog_char PAN[];
 	static const prog_char TLT[];
 };

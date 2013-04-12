@@ -68,6 +68,7 @@
 #include "defines.h"
 #include "Parameters.h"
 #include "GCS.h"
+#include "tracking.h"
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
@@ -221,6 +222,8 @@ Datacomm_Class_Multiple datacomm1;
 GCS_MAVLINK mavlink0;
 GCS_MAVLINK mavlink1;
 
+ArduTrackerDataInterpreter ardutracker1;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
@@ -292,7 +295,7 @@ static uint32_t last_heartbeat_ms;
 // LED output
 ////////////////////////////////////////////////////////////////////////////////
 // state of the GPS light (on/off)
-static bool GPS_light;
+static uint8_t GPS_light;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
@@ -325,18 +328,13 @@ static int32_t neutral_bearing_cd;
 // deg * 100 : 0 to 360
 static int32_t target_bearing_cd;
 
-// receiver RSSI
-// static uint8_t receiver_rssi;
-
+static struct AzimuthElevation incomingAzimuthElevation;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Location Errors
 ////////////////////////////////////////////////////////////////////////////////
 // Difference between current bearing and desired bearing.  Hundredths of a degree
 static int32_t bearing_error_cd;
-
-// Difference between current altitude and desired altitude.  Centimeters
-// static int32_t altitude_error_cm;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
@@ -482,10 +480,6 @@ AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
 AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 #endif
 
-#if CAMERA == ENABLED
-//pinMode(camtrig, OUTPUT);			// these are free pins PE3(5), PH3(15), PH6(18), PB4(23), PB5(24), PL1(36), PL3(38), PA6(72), PA7(71), PK0(89), PK1(88), PK2(87), PK3(86), PK4(83), PK5(84), PK6(83), PK7(82)
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
@@ -582,20 +576,12 @@ static void fast_loop()
     // ------------------------------
     set_servos();
     
-    /*
-    if ((mainLoop_count % 50) == 0) {
+    if ((mainLoop_count % 20) == 0) {
     	char blah[40];
-    	hal.util->snprintf_P(blah, 40, PSTR("RC1: %d"), g.channel_azimuth.radio_in);
+    	hal.util->snprintf_P(blah, 40, PSTR("Yaw: %d"), ahrs.yaw_sensor/100);
     	mavlink_send_text(MAVLINK_COMM_0, SEVERITY_LOW, blah);
     }
-    
-    if ((mainLoop_count % 50) == 25) {
-    	char blah[40];
-    	hal.util->snprintf_P(blah, 40, PSTR("RC1: %d"), g.channel_azimuth.radio_out);
-    	mavlink_send_text(MAVLINK_COMM_0, SEVERITY_LOW, blah);
-    }
-    */
-   
+
     datacomm_update();
     gcs_data_stream_send();
 }
