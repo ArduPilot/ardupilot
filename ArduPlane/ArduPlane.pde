@@ -57,6 +57,9 @@
 #include <APM_Control.h>
 #endif
 
+#include <AP_Navigation.h>
+#include <AP_L1_Control.h>
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -216,6 +219,8 @@ AP_AHRS_HIL ahrs(&ins, g_gps);
 AP_AHRS_DCM ahrs(&ins, g_gps);
 #endif
 
+static AP_L1_Control L1_controller(&ahrs);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
 #endif
@@ -229,6 +234,9 @@ static bool training_manual_pitch; // user has manual pitch control
 ////////////////////////////////////////////////////////////////////////////////
 GCS_MAVLINK gcs0;
 GCS_MAVLINK gcs3;
+
+// selected navigation controller
+static AP_Navigation *nav_controller = &L1_controller;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs
@@ -352,21 +360,10 @@ static bool have_position;
 // Constants
 const float radius_of_earth   = 6378100;        // meters
 
-// This is the currently calculated direction to fly.
-// deg * 100 : 0 to 360
-static int32_t nav_bearing_cd;
-
-// This is the direction to the next waypoint or loiter center
-// deg * 100 : 0 to 360
-static int32_t target_bearing_cd;
-
-//This is the direction from the last waypoint to the next waypoint
-// deg * 100 : 0 to 360
-static int32_t crosstrack_bearing_cd;
-
 // Direction held during phases of takeoff and landing
 // deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
-static int32_t hold_course                   = -1;              // deg * 100 dir of plane
+// this is a 0..36000 value, or -1 for disabled
+static int32_t hold_course_cd                 = -1;              // deg * 100 dir of plane
 
 // There may be two active commands in Auto mode.
 // This indicates the active navigation command by index number
@@ -412,17 +409,8 @@ static uint8_t receiver_rssi;
 // The amount current ground speed is below min ground speed.  Centimeters per second
 static int32_t groundspeed_undershoot = 0;
 
-////////////////////////////////////////////////////////////////////////////////
-// Location Errors
-////////////////////////////////////////////////////////////////////////////////
-// Difference between current bearing and desired bearing.  Hundredths of a degree
-static int32_t bearing_error_cd;
-
 // Difference between current altitude and desired altitude.  Centimeters
 static int32_t altitude_error_cm;
-
-// Distance perpandicular to the course line that we are off trackline.  Meters
-static float crosstrack_error;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
@@ -467,20 +455,9 @@ static bool throttle_suppressed;
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
-// Previous target bearing.  Used to calculate loiter rotations.  Hundredths of a degree
-static int32_t old_target_bearing_cd;
-
-// Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
-static int32_t loiter_total;
 
 // Direction for loiter. 1 for clockwise, -1 for counter-clockwise
 static int8_t loiter_direction = 1;
-
-// The amount in degrees we have turned since recording old_target_bearing
-static int16_t loiter_delta;
-
-// Total rotation in a loiter.  Used for Loiter Turns commands and to check for missed waypoints.  Degrees
-static int32_t loiter_sum;
 
 // The amount of time we have been in a Loiter.  Used for the Loiter Time command.  Milliseconds.
 static uint32_t loiter_time_ms;
@@ -506,6 +483,18 @@ uint32_t wp_distance;
 
 // Distance between previous and next waypoint.  Meters
 static uint32_t wp_totalDistance;
+
+/*
+  meta data to support counting the number of circles in a loiter
+ */
+static struct {
+    int32_t old_target_bearing_cd;
+    int32_t loiter_sum_cd;
+
+    // Total desired rotation in a loiter.  Used for Loiter Turns commands. 
+    int32_t loiter_total_cd;
+} loiter;
+
 
 // event control state
 enum event_type { 
@@ -757,9 +746,6 @@ static void fast_loop()
 #endif
 
     ahrs.update();
-
-    // uses the yaw from the DCM to give more accurate turns
-    calc_bearing_error();
 
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
         Log_Write_Attitude();
@@ -1030,7 +1016,7 @@ static void update_current_flight_mode(void)
 
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
-            if (hold_course != -1 && g.rudder_steer == 0 && g.takeoff_heading_hold != 0) {
+            if (hold_course_cd != -1 && g.rudder_steer == 0 && g.takeoff_heading_hold != 0) {
                 calc_nav_roll();
             } else {
                 nav_roll_cd = 0;
@@ -1092,7 +1078,7 @@ static void update_current_flight_mode(void)
         default:
             // we are doing normal AUTO flight, the special cases
             // are for takeoff and landing
-            hold_course = -1;
+            hold_course_cd = -1;
             land_complete = false;
             calc_nav_roll();
             calc_nav_pitch();
@@ -1101,7 +1087,7 @@ static void update_current_flight_mode(void)
         }
     }else{
         // hold_course is only used in takeoff and landing
-        hold_course = -1;
+        hold_course_cd = -1;
 
         switch(control_mode) {
         case RTL:
@@ -1246,7 +1232,6 @@ static void update_navigation()
     case RTL:
     case GUIDED:
         update_loiter();
-        calc_bearing_error();
         break;
 
     case MANUAL:

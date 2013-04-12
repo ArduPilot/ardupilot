@@ -259,6 +259,9 @@ static void init_ardupilot()
             Log_Write_Startup(TYPE_GROUNDSTART_MSG);
     }
 
+    // choose the nav controller
+    set_nav_controller();
+
     set_mode(MANUAL);
 
     // set the correct flight mode
@@ -352,10 +355,12 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case AUTO:
+        prev_WP = current_loc;
         update_auto();
         break;
 
     case RTL:
+        prev_WP = current_loc;
         do_RTL();
         break;
 
@@ -368,6 +373,7 @@ static void set_mode(enum FlightMode mode)
         break;
 
     default:
+        prev_WP = current_loc;
         do_RTL();
         break;
     }

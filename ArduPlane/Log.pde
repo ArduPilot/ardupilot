@@ -489,8 +489,8 @@ static void Log_Write_Nav_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
         wp_distance         : wp_distance,
-        target_bearing_cd   : (uint16_t)target_bearing_cd,
-        nav_bearing_cd      : (uint16_t)nav_bearing_cd,
+        target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
+        nav_bearing_cd      : (uint16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)altitude_error_cm,
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm()
     };

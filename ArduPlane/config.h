@@ -834,6 +834,6 @@
 #endif
 
 #ifndef SERIAL_BUFSIZE
-# define SERIAL_BUFSIZE 256
+ # define SERIAL_BUFSIZE 256
 #endif
 

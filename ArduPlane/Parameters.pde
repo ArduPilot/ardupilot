@@ -143,38 +143,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
 
-    // @Param: XTRK_GAIN_SC
-    // @DisplayName: Crosstrack Gain
-    // @Description: The scale between distance off the line and angle to meet the line (in Degrees * 100)
-    // @Range: 0 2000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC",   XTRACK_GAIN_SCALED),
-
-    // @Param: XTRK_ANGLE_CD
-    // @DisplayName: Crosstrack Entry Angle
-    // @Description: Maximum angle used to correct for track following.
-    // @Units: centi-Degrees
-    // @Range: 0 9000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",  XTRACK_ENTRY_ANGLE_CENTIDEGREE),
-
-    // @Param: XTRK_USE_WIND
-    // @DisplayName: Crosstrack Wind correction
-    // @Description: If enabled, use wind estimation for navigation crosstrack when using a compass for yaw
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(crosstrack_use_wind, "XTRK_USE_WIND",     1),
-
-    // @Param: XTRK_MIN_DIST
-    // @DisplayName: Crosstrack mininum distance
-    // @Description: Minimum distance in meters between waypoints to do crosstrack correction.
-    // @Units: Meters
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(crosstrack_min_distance, "XTRK_MIN_DIST",  50),
+	// @Param: NAV_CONTROLLER
+	// @DisplayName: Navigation controller selection
+	// @Description: Which navigation controller to enable
+	// @Values: 0:Legacy,1:L1Controller
+	// @User: Standard
+	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
     // @Param: ALT_MIX
     // @DisplayName: Gps to Baro Mix
@@ -208,7 +182,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Waypoint Radius
     // @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
     // @Units: Meters
-    // @Range: 1 127
+    // @Range: 1 32767
     // @Increment: 1
     // @User: Standard
     GSCALAR(waypoint_radius,        "WP_RADIUS",      WP_RADIUS_DEFAULT),
@@ -735,6 +709,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: ARSPD_
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
     GOBJECT(airspeed,                               "ARSPD_",   AP_Airspeed),
+
+    // @Group: NAVL1_
+    // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
+    GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
 
 #if MOUNT == ENABLED
     // @Group: MNT_

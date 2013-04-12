@@ -325,8 +325,9 @@ static void calc_throttle()
 // ----------------------------------------------------------------------
 static void calc_nav_yaw(float speed_scaler, float ch4_inf)
 {
-    if (hold_course != -1) {
+    if (hold_course_cd != -1) {
         // steering on or close to ground
+        int32_t bearing_error_cd = nav_controller->bearing_error_cd();
         g.channel_rudder.servo_out = g.pidWheelSteer.get_pid_4500(bearing_error_cd, speed_scaler) + 
             g.kff_rudder_mix * g.channel_roll.servo_out;
         g.channel_rudder.servo_out = constrain_int16(g.channel_rudder.servo_out, -4500, 4500);
@@ -364,35 +365,7 @@ static void calc_nav_pitch()
 
 static void calc_nav_roll()
 {
-#define NAV_ROLL_BY_RATE 0
-#if NAV_ROLL_BY_RATE
-    // Scale from centidegrees (PID input) to radians per second. A P gain of 1.0 should result in a
-    // desired rate of 1 degree per second per degree of error - if you're 15 degrees off, you'll try
-    // to turn at 15 degrees per second.
-    float turn_rate = ToRad(g.pidNavRoll.get_pid(bearing_error_cd) * .01);
-
-    // Use airspeed_cruise as an analogue for airspeed if we don't have airspeed.
-    float speed;
-    if (!ahrs.airspeed_estimate(&speed)) {
-        speed = g.airspeed_cruise_cm*0.01;
-
-        // Floor the speed so that the user can't enter a bad value
-        if(speed < 6) {
-            speed = 6;
-        }
-    }
-
-    // Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
-    nav_roll = ToDeg(atanf(speed*turn_rate/GRAVITY_MSS)*100);
-
-#else
-    // this is the old nav_roll calculation. We will use this for 2.50
-    // then remove for a future release
-    float nav_gain_scaler = 0.01 * g_gps->ground_speed / g.scaling_speed;
-    nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
-    nav_roll_cd = g.pidNavRoll.get_pid(bearing_error_cd, nav_gain_scaler); //returns desired bank angle in degrees*100
-#endif
-
+    nav_roll_cd = nav_controller->nav_roll_cd();
     nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
 }
 
