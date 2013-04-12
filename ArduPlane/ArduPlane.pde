@@ -757,7 +757,8 @@ static void fast_loop()
 #endif
 
     // custom code/exceptions for flight modes
-    // ---------------------------------------
+    // calculates roll, pitch and yaw demands from navigation demands
+    // --------------------------------------------------------------
     update_current_flight_mode();
 
     // apply desired roll, pitch and yaw to the plane
@@ -1007,10 +1008,15 @@ static void update_current_flight_mode(void)
 
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
-            if (hold_course_cd != -1 && g.rudder_steer == 0 && g.takeoff_heading_hold != 0) {
-                calc_nav_roll();
-            } else {
+            if (hold_course_cd == -1) {
+                // we don't yet have a heading to hold - just level
+                // the wings until we get up enough speed to get a GPS heading
                 nav_roll_cd = 0;
+            } else {
+                calc_nav_roll();
+                // during takeoff use the level flight roll limit to
+                // prevent large course corrections
+				nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
             }
 
             if (alt_control_airspeed()) {
@@ -1040,13 +1046,13 @@ static void update_current_flight_mode(void)
             break;
 
         case MAV_CMD_NAV_LAND:
-            if (g.rudder_steer == 0 || !land_complete) {
-                calc_nav_roll();
-            } else {
-                nav_roll_cd = 0;
-            }
+            calc_nav_roll();
 
             if (land_complete) {
+                // during final approach constrain roll to the range
+                // allowed for level flight
+                nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+
                 // hold pitch constant in final approach
                 nav_pitch_cd = g.land_pitch_cd;
             } else {

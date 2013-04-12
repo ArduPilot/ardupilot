@@ -69,8 +69,8 @@ static void navigate()
     // update total loiter angle
     loiter_angle_update();
 
-    // control mode specific updates to nav_bearing
-    // --------------------------------------------
+    // control mode specific updates to navigation demands
+    // ---------------------------------------------------
     update_navigation();
 }
 

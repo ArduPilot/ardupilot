@@ -106,19 +106,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
 
-    // @Param: TKOFF_HEAD_HOLD
-    // @DisplayName: Auto takeoff heading hold
-    // @Description: This controls whether APM tries to hold a constant heading during automatic takeoff. The default is 1, which means that it remembers the heading when auto takeoff is triggered, and tries to hold that heading until the target altitude is reached. This is the correct setting for wheeled takeoff. For a hand launch, it may be better to set this to 0, which will tell APM to hold the wings level, but not attempt to hold a particular heading. That can prevent the aircraft from rolling too much on takeoff, which can cause a stall.
-	// @Values: 0:NoHeadingHold,1:HeadingHold
+    // @Param: LEVEL_ROLL_LIMIT
+    // @DisplayName: Level flight roll limit
+    // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
+    // @Units: degrees
+    // @Range: 0 45
+    // @Increment: 1
     // @User: User
-    GSCALAR(takeoff_heading_hold,          "TKOFF_HEAD_HOLD",    1),
-
-    // @Param: RUDDER_STEER
-    // @DisplayName: Rudder steering on takeoff and landing
-    // @Description: When enabled, only rudder will be used for steering during takeoff and landing, with the ailerons used to hold the plane level
-    // @Values: 0:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(rudder_steer,           "RUDDER_STEER",   0),
+    GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
     // @Param: land_pitch_cd
     // @DisplayName: Landing Pitch

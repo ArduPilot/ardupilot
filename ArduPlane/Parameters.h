@@ -74,13 +74,14 @@ public:
         k_param_land_flare_alt,
         k_param_land_flare_sec,
         k_param_crosstrack_min_distance, // unused
-        k_param_rudder_steer,
+        k_param_rudder_steer, // unused
         k_param_throttle_nudge,
         k_param_alt_offset,
         k_param_ins,                // libraries/AP_InertialSensor variables
         k_param_takeoff_throttle_min_speed,
         k_param_takeoff_throttle_min_accel,
-        k_param_takeoff_heading_hold,
+        k_param_takeoff_heading_hold, // unused
+        k_param_level_roll_limit,
         k_param_hil_servos,
         k_param_vtail_output,
         k_param_nav_controller,
@@ -362,10 +363,9 @@ public:
     AP_Int8 battery_curr_pin;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
-    AP_Int8 rudder_steer;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
-    AP_Int8 takeoff_heading_hold;
+    AP_Int8 level_roll_limit;
 
     // RC channels
     RC_Channel channel_roll;
