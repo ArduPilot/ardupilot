@@ -17,7 +17,7 @@ class AP_InertialSensor_PX4 : public AP_InertialSensor
 {
 public:
 
-    AP_InertialSensor_PX4() {}
+    AP_InertialSensor_PX4() : AP_InertialSensor() {}
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
