@@ -73,6 +73,7 @@ float AP_L1_Control::crosstrack_error(void)
 }
 
 // update L1 control for waypoint navigation
+// this function costs about 3.5 milliseconds on a AVR2560
 void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP)
 {
 
