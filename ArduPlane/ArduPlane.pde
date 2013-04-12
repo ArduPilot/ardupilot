@@ -213,11 +213,7 @@ AP_InertialSensor_Oilpan ins( &adc );
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-#if HIL_MODE == HIL_MODE_ATTITUDE
-AP_AHRS_HIL ahrs(&ins, g_gps);
-#else
 AP_AHRS_DCM ahrs(&ins, g_gps);
-#endif
 
 static AP_L1_Control L1_controller(&ahrs);
 
@@ -740,7 +736,7 @@ static void fast_loop()
     // ------------------------------------
     check_short_failsafe();
 
-#if HIL_MODE == HIL_MODE_SENSORS
+#if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
     gcs_update();
 #endif
@@ -802,14 +798,12 @@ static void medium_loop()
         update_GPS();
         calc_gndspeed_undershoot();
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
         if (g.compass_enabled && compass.read()) {
             ahrs.set_compass(&compass);
             compass.null_offsets();
         } else {
             ahrs.set_compass(NULL);
         }
-#endif
 
         break;
 
@@ -835,11 +829,9 @@ static void medium_loop()
 
         // Read Airspeed
         // -------------
-#if HIL_MODE != HIL_MODE_ATTITUDE
         if (airspeed.enabled()) {
             read_airspeed();
         }
-#endif
 
         read_receiver_rssi();
 
@@ -908,12 +900,11 @@ static void slow_loop()
         slow_loopCounter++;
         check_long_failsafe();
         superslow_loopCounter++;
-        if(superslow_loopCounter >=200) {                                               //	200 = Execute every minute
-#if HIL_MODE != HIL_MODE_ATTITUDE
+        if(superslow_loopCounter >=200) {                                               
+            //	200 = Execute every minute
             if(g.compass_enabled) {
                 compass.save_offsets();
             }
-#endif
 
             superslow_loopCounter = 0;
         }
@@ -1249,9 +1240,6 @@ static void update_navigation()
 
 static void update_alt()
 {
-#if HIL_MODE == HIL_MODE_ATTITUDE
-    current_loc.alt = g_gps->altitude;
-#else
     // this function is in place to potentially add a sonar sensor in the future
     //altitude_sensor = BARO;
 
@@ -1261,7 +1249,6 @@ static void update_alt()
     } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         current_loc.alt = g_gps->altitude;     // alt_MSL centimeters (meters * 100)
     }
-#endif
 
     geofence_check(true);
 

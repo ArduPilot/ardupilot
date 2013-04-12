@@ -1911,15 +1911,6 @@ mission_failed:
         y *= 95446.0;
 
         barometer.setHIL(Temp, y);
-
- #if HIL_MODE == HIL_MODE_ATTITUDE
-        // set AHRS hil sensor. We don't do this in sensors mode, as
-        // in that case the attitude is computed via DCM
-        ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
-                    packet.pitchspeed,packet.yawspeed);
-
- #endif
-
         break;
     }
 #endif // HIL_MODE
