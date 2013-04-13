@@ -227,8 +227,8 @@ static void
 circle_set_center(const Vector3f current_position, float heading_in_radians)
 {
     // set circle center to circle_radius ahead of current position
-    circle_center.x = current_position.x + (float)g.circle_radius * 100 * sin_yaw_y;
-    circle_center.y = current_position.y + (float)g.circle_radius * 100 * cos_yaw_x;
+    circle_center.x = current_position.x + (float)g.circle_radius * 100 * sin_yaw;
+    circle_center.y = current_position.y + (float)g.circle_radius * 100 * cos_yaw;
 
     // if we are doing a panorama set the circle_angle to the current heading
     if( g.circle_radius == 0 ) {
