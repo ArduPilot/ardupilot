@@ -376,7 +376,7 @@ void AC_WPNav::get_loiter_vel_lat_lon(float vel_lat, float vel_lon, float dt)
 //    converts desired accelerations provided in lat/lon frame to roll/pitch angles
 void AC_WPNav::get_loiter_accel_lat_lon(float accel_lat, float accel_lon)
 {
-    float z_accel_meas = -AP_INTERTIALNAV_GRAVITY * 100;    // gravity in cm/s/s
+    float z_accel_meas = -GRAVITY_MSS * 100;    // gravity in cm/s/s
     float accel_forward;
     float accel_right;
 
