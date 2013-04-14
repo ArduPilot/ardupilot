@@ -754,7 +754,7 @@ static bool verify_nav_roi()
 
 static void do_change_speed()
 {
-    g.waypoint_speed_max = command_cond_queue.p1 * 100;
+    wp_nav.set_horizontal_velocity(command_cond_queue.p1 * 100);
 }
 
 static void do_jump()

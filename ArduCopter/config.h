@@ -1105,10 +1105,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Navigation defaults
 //
-#ifndef WP_RADIUS_DEFAULT
- # define WP_RADIUS_DEFAULT      2
-#endif
-
 #ifndef CIRCLE_RADIUS
  # define CIRCLE_RADIUS 10              // meters for circle mode
 #endif

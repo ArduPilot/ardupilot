@@ -211,9 +211,9 @@ public:
         k_param_command_total,
         k_param_command_index,
         k_param_command_nav_index,   // remove
-        k_param_waypoint_radius,
+        k_param_waypoint_radius,     // remove
         k_param_circle_radius,
-        k_param_waypoint_speed_max,
+        k_param_waypoint_speed_max,  // remove
         k_param_land_speed,
         k_param_auto_velocity_z_min,
         k_param_auto_velocity_z_max, // 219
@@ -288,9 +288,7 @@ public:
     //
     AP_Int8         command_total;
     AP_Int8         command_index;
-    AP_Int16        waypoint_radius;
     AP_Int16        circle_radius;
-    AP_Int16        waypoint_speed_max;
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        auto_velocity_z_min;         // minimum vertical velocity (i.e. maximum descent) the autopilot may request

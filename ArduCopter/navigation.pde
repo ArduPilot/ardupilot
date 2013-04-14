@@ -176,14 +176,6 @@ static void update_nav_mode()
     */
 }
 
-static bool check_missed_wp()
-{
-    int32_t temp;
-    temp = wp_bearing - original_wp_bearing;
-    temp = wrap_180_cd(temp);
-    return (labs(temp) > 9000);         // we passed the waypoint by 90 degrees
-}
-
 // Keeps old data out of our calculation / logs
 static void reset_nav_params(void)
 {

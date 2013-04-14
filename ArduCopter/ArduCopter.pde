@@ -2136,8 +2136,9 @@ static void tuning(){
         if (g.rc_6.control_in < 475) relay.off();
         break;
 
-    case CH6_TRAVERSE_SPEED:
-        g.waypoint_speed_max = g.rc_6.control_in;
+    case CH6_WP_SPEED:
+        // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
+        wp_nav.set_horizontal_velocity(g.rc_6.control_in);
         break;
 
     case CH6_LOITER_KP:
