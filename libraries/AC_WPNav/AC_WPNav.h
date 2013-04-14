@@ -149,6 +149,9 @@ public:
 
 protected:
 
+    /// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
+    Vector3f project_stopping_point(const Vector3f& position, const Vector3f& velocity);
+
     /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
     void translate_loiter_target_movements(float nav_dt);
 
@@ -183,7 +186,8 @@ protected:
     AP_Float    _speed_cms;         // default horizontal speed in cm/s
     float       _speedz_cms;        // max vertical climb rate in cm/s.  To-Do: rename or pull this from main code
     AP_Float    _wp_radius_cm;      // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
-    uint32_t	_last_update;		// time of last update call
+    uint32_t	_loiter_last_update;    // time of last update_loiter call
+    uint32_t	_wpnav_last_update;     // time of last update_wpnav call
     float       _cos_yaw;           // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
     float       _cos_roll;

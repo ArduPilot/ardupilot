@@ -48,18 +48,18 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
 /// simple loiter controller
 ///
 
-/// set_loiter_target - set initial loiter target based on current position and velocity
-void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& velocity)
+/// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
+Vector3f AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& velocity)
 {
     float linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
     float linear_velocity;      // the velocity we swap between linear and sqrt.
     float vel_total;
     float target_dist;
+    Vector3f target;
 
     // avoid divide by zero
     if( _pid_pos_lat->kP() <= 0.1 ) {
-        set_loiter_target(position);
-        return;
+        return(position);
     }
 
     // calculate point at which velocity switches from linear to sqrt
@@ -77,8 +77,18 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
     }
     target_dist = constrain(target_dist, 0, MAX_LOITER_OVERSHOOT);
 
-    _target.x = position.x + (target_dist * velocity.x / vel_total);
-    _target.y = position.y + (target_dist * velocity.y / vel_total);
+    target.x = position.x + (target_dist * velocity.x / vel_total);
+    target.y = position.y + (target_dist * velocity.y / vel_total);
+    target.z = position.z;
+    return target;
+}
+
+/// set_loiter_target - set initial loiter target based on current position and velocity
+void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& velocity)
+{
+    Vector3f target = project_stopping_point(position, velocity);
+    _target.x = target.x;
+    _target.y = target.y;
 }
 
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
@@ -155,15 +165,13 @@ int32_t AC_WPNav::get_bearing_to_target()
 void AC_WPNav::update_loiter()
 {
     uint32_t now = hal.scheduler->millis();
-    float dt = (now - _last_update) / 1000.0f;
-    _last_update = now;
+    float dt = (now - _loiter_last_update) / 1000.0f;
+    _loiter_last_update = now;
 
     // catch if we've just been started
     if( dt >= 1.0 ) {
         dt = 0.0;
         reset_I();
-        _target_vel.x = 0;
-        _target_vel.y = 0;
     }
 
     // translate any adjustments from pilot to loiter target
@@ -180,8 +188,18 @@ void AC_WPNav::update_loiter()
 /// set_destination - set destination using cm from home
 void AC_WPNav::set_destination(const Vector3f& destination)
 {
-    // To-Do: use projection of current position & velocity to set origin
-    set_origin_and_destination(_inav->get_position(), destination);
+    Vector3f origin;
+
+    // if waypoint controlls is active and copter has reached the previous waypoint use it for the origin
+    if( _reached_destination && ((hal.scheduler->millis() - _wpnav_last_update) < 1000) ) {
+        origin = _destination;
+    }else{
+        // otherwise calculate origin from the current position and velocity
+        origin = project_stopping_point(_inav->get_position(), _inav->get_velocity());
+    }
+
+    // set origin and destination
+    set_origin_and_destination(origin, destination);
 }
 
 /// set_origin_and_destination - set origin and destination using lat/lon coordinates
@@ -272,8 +290,8 @@ int32_t AC_WPNav::get_bearing_to_destination()
 void AC_WPNav::update_wpnav()
 {
     uint32_t now = hal.scheduler->millis();
-    float dt = (now - _last_update) / 1000.0f;
-    _last_update = now;
+    float dt = (now - _wpnav_last_update) / 1000.0f;
+    _wpnav_last_update = now;
 
     // catch if we've just been started
     if( dt >= 1.0 ) {
@@ -414,4 +432,8 @@ void AC_WPNav::reset_I()
 
     // set last velocity to current velocity
     _vel_last = _inav->get_velocity();
+
+    // reset target velocity - only used by loiter controller's interpretation of pilot input
+    _target_vel.x = 0;
+    _target_vel.y = 0;
 }
