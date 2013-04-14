@@ -162,8 +162,6 @@
 #define CH6_TOP_BOTTOM_RATIO 8          // upper/lower motor ratio (not used)
 #define CH6_RELAY           9           // switch relay on if ch6 high, off if low
 #define CH6_TRAVERSE_SPEED  10          // maximum speed to next way point (0 to 10m/s)
-#define CH6_NAV_KP          11          // navigation rate controller's P term (speed error to tilt angle)
-#define CH6_NAV_KI          20          // navigation rate controller's I term (speed error to tilt angle)
 #define CH6_LOITER_KP       12          // loiter distance controller's P term (position error to speed)
 #define CH6_LOITER_KI       27          // loiter distance controller's I term (position error to speed)
 #define CH6_HELI_EXTERNAL_GYRO 13       // TradHeli specific external tail gyro gain

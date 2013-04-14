@@ -2150,11 +2150,6 @@ static void tuning(){
         g.pi_loiter_lon.kI(tuning_value);
         break;
 
-    case CH6_NAV_KP:
-        g.pid_nav_lat.kP(tuning_value);
-        g.pid_nav_lon.kP(tuning_value);
-        break;
-
     case CH6_LOITER_RATE_KP:
         g.pid_loiter_rate_lon.kP(tuning_value);
         g.pid_loiter_rate_lat.kP(tuning_value);
@@ -2168,11 +2163,6 @@ static void tuning(){
     case CH6_LOITER_RATE_KD:
         g.pid_loiter_rate_lon.kD(tuning_value);
         g.pid_loiter_rate_lat.kD(tuning_value);
-        break;
-
-    case CH6_NAV_KI:
-        g.pid_nav_lat.kI(tuning_value);
-        g.pid_nav_lon.kI(tuning_value);
         break;
 
 #if FRAME_CONFIG == HELI_FRAME
