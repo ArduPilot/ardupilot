@@ -17,7 +17,6 @@ static void init_sonar(void)
 static void init_barometer(void)
 {
     barometer.calibrate();
-    ahrs.set_barometer(&barometer);
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
