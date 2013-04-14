@@ -59,7 +59,7 @@ int32_t AP_L1_Control::target_bearing_cd(void)
 
 float AP_L1_Control::turn_distance(float wp_radius)
 {
-	return max(wp_radius, _L1_dist);
+	return min(wp_radius, _L1_dist);
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
