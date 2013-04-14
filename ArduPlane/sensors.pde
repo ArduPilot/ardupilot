@@ -12,7 +12,6 @@ static void init_barometer(void)
     // filter at 100ms sampling, with 0.7Hz cutoff frequency
     altitude_filter.set_cutoff_frequency(0.1, 0.7);
 
-    ahrs.set_barometer(&barometer);
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
