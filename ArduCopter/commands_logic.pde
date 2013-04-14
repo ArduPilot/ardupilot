@@ -514,8 +514,6 @@ static bool verify_RTL()
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_INITIAL_CLIMB;
-
-                cliSerial->printf_P(PSTR("\nRTL: initial climb to %4.2f"),target_pos.z);
             }else{
                 // point nose towards home
                 // To-Do: make this user configurable whether RTL points towards home or not
