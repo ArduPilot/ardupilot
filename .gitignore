@@ -35,3 +35,9 @@ status.txt
 /Tools/ArdupilotMegaPlanner/3DRRadio/bin
 /Tools/ArdupilotMegaPlanner/3DRRadio/obj
 /Tools/ArdupilotMegaPlanner/bin
+ArduCopter/ArduCopter.opensdf
+ArduCopter/ArduCopter.sdf
+ArduCopter/ArduCopter.sln
+ArduCopter/ArduCopter.vcxproj
+ArduCopter/ArduCopter.vcxproj.filters
+ArduCopter/Visual Micro/
