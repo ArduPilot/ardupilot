@@ -49,12 +49,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0f),
 
-    // @Param: BARO_USE
-    // @DisplayName: AHRS Use Barometer
-    // @Description: This controls the use of the barometer for vertical acceleration compensation in AHRS. It is currently recommended that you set this value to zero unless you are a developer experimenting with the AHRS system.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 0),
+    // NOTE: 7 was BARO_USE
 
     // @Param: TRIM_X
     // @DisplayName: AHRS Trim Roll

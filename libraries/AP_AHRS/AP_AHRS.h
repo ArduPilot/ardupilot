@@ -28,8 +28,7 @@ public:
     // Constructor
     AP_AHRS(AP_InertialSensor *ins, GPS *&gps) :
         _ins(ins),
-        _gps(gps),
-        _barometer(NULL)
+        _gps(gps)
     {
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
@@ -56,9 +55,6 @@ public:
         if (_compass != NULL) {
             _compass->set_board_orientation((enum Rotation)_board_orientation.get());
         }
-    }
-    void set_barometer(AP_Baro *barometer) {
-        _barometer = barometer;
     }
     void set_airspeed(AP_Airspeed *airspeed) {
         _airspeed = airspeed;
@@ -171,7 +167,6 @@ public:
     AP_Float _kp;
     AP_Float gps_gain;
     AP_Int8 _gps_use;
-    AP_Int8 _baro_use;
     AP_Int8 _wind_max;
     AP_Int8 _board_orientation;
 
@@ -195,7 +190,6 @@ protected:
     //       IMU under us without our noticing.
     AP_InertialSensor   *_ins;
     GPS                 *&_gps;
-    AP_Baro             *_barometer;
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
