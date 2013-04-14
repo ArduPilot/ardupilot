@@ -223,22 +223,30 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	//Calculate PD control correction to circle waypoint
 	float latAccDemCircPD = (xtrackErrCirc * Kx + xtrackVelCirc * Kv);
 	
-	//Calculate centripetal acceleration to circle waypoint
-	float velTangent = _maxf((xtrackVelCap * float(loiter_direction)) , 0.0f);
-	float latAccDemCircCtr = velTangent * velTangent / _maxf((0.5f * radius) , (radius + xtrackErrCirc));
+	//Calculate tangential velocity
+	float velTangent = xtrackVelCap * float(loiter_direction);
 	
+    //Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
+    if ( velTangent < 0.0f ) {
+        latAccDemCircPD =  _maxf(latAccDemCircPD , 0.0f);
+	}
+	
+	// Calculate centripetal acceleration demand
+	float latAccDemCircCtr = velTangent * velTangent / _maxf((0.5f * radius) , (radius + xtrackErrCirc));
+
 	//Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
 	float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
 	
-	//Perform switchover between 'capture' and 'circle' modes at the point where the commands cross over to achieve a seamless transfer
-	if ((latAccDemCap < latAccDemCirc && loiter_direction > 0) | (latAccDemCap > latAccDemCirc && loiter_direction < 0)) {
+	// Perform switchover between 'capture' and 'circle' modes at the point where the commands cross over to achieve a seamless transfer
+	// Only fly 'capture' mode if outside the circle
+	if ((latAccDemCap < latAccDemCirc && loiter_direction > 0 && xtrackErrCirc > 0.0f) | (latAccDemCap > latAccDemCirc && loiter_direction < 0 && xtrackErrCirc > 0.0f)) {
 		_latAccDem = latAccDemCap;
-		_WPcircle = true;
+		_WPcircle = false;
 		_bearing_error = Nu; // angle between demanded and achieved velocity vector, +ve to left of track
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
 	} else {
 		_latAccDem = latAccDemCirc;
-		_WPcircle = false;
+		_WPcircle = true;
 		_bearing_error = 0.0f; // bearing error (radians), +ve to left of track
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians)from AC to L1 point
 	}
