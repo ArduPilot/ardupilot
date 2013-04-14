@@ -8,11 +8,13 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
 
     // @Param: SPEED
-    // @DisplayName: Speed in cm/s to travel between waypoints
-    // @Description: The desired horizontal speed in cm/s while travelling between waypoints
+    // @DisplayName: Waypoint Speed Target
+    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain during a WP mission
+    // @Units: Centimeters/Second
     // @Range: 0 1000
-    // @Increment: 50
-    AP_GROUPINFO("SPEED",    0, AC_WPNav, _speed_cms, WPNAV_WP_SPEED),
+    // @Increment: 100
+    // @User: Standard
+    AP_GROUPINFO("SPEED",   0, AC_WPNav, _speed_cms, WPNAV_WP_SPEED),
 
     // @Param: RADIUS
     // @DisplayName: Waypoint Radius
@@ -21,7 +23,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Range: 100 1000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RADIUS",    1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
+    AP_GROUPINFO("RADIUS",      1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
 
     AP_GROUPEND
 };

@@ -6,8 +6,6 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
-#include <AP_GPS.h>             // ArduPilot GPS library
-#include <AP_Baro.h>            // ArduPilot Mega Barometer Library
 #include <AC_PID.h>             // PID library
 #include <APM_PI.h>             // PID library
 #include <AP_InertialNav.h>     // Inertial Navigation library
@@ -138,8 +136,14 @@ public:
         _cos_roll = cos_roll;
     }
 
+    /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
+    void set_horizontal_velocity(float velocity_cms) { _speed_cms = velocity_cms; };
+
     /// set_climb_velocity - allows main code to pass max climb velocity to wp navigation
     void set_climb_velocity(float velocity_cms) { _speedz_cms = velocity_cms; };
+
+    /// get_waypoint_radius - access for waypoint radius in cm
+    float get_waypoint_radius() { return _wp_radius_cm; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
