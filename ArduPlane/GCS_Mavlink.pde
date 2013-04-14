@@ -1301,9 +1301,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_NAV_LOITER_TIME:
         case MAV_CMD_NAV_LOITER_TURNS:
             if (tell_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
-                param3 = -g.loiter_radius;
+                param3 = -abs(g.loiter_radius);
             } else {
-                param3 = g.loiter_radius;
+                param3 = abs(g.loiter_radius);
             }
         case MAV_CMD_NAV_TAKEOFF:
         case MAV_CMD_DO_SET_HOME:
@@ -1312,9 +1312,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_NAV_LOITER_UNLIM:
             if (tell_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
-                param3 = -g.loiter_radius;;
+                param3 = -abs(g.loiter_radius);
             } else {
-                param3 = g.loiter_radius;
+                param3 = abs(g.loiter_radius);
             }
             break;
         case MAV_CMD_CONDITION_CHANGE_ALT:

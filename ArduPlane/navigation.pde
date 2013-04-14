@@ -142,6 +142,6 @@ static void calc_altitude_error()
 
 static void update_loiter()
 {
-    nav_controller->update_loiter(next_WP, g.loiter_radius, loiter_direction);
+    nav_controller->update_loiter(next_WP, abs(g.loiter_radius), loiter_direction);
 }
 

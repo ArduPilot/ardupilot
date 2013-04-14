@@ -230,7 +230,12 @@ static void do_RTL(void)
     control_mode    = RTL;
     crash_timer     = 0;
     next_WP                 = home;
-    loiter_direction = 1;
+
+    if (g.loiter_radius < 0) {
+        loiter_direction = -1;
+    } else {
+        loiter_direction = 1;
+    }
 
     // Altitude to hold over home
     // Set by configuration tool
@@ -268,7 +273,7 @@ static void loiter_set_direction_wp(const struct Location *nav_command)
     if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
         loiter_direction = -1;
     } else {
-        loiter_direction=1;
+        loiter_direction = 1;
     }
 }
 
@@ -507,7 +512,11 @@ static bool verify_within_distance()
 
 static void do_loiter_at_location()
 {
-    loiter_direction = 1;
+    if (g.loiter_radius < 0) {
+        loiter_direction = -1;
+    } else {
+        loiter_direction = 1;
+    }
     next_WP = current_loc;
 }
 
