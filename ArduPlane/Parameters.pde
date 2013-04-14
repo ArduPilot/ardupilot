@@ -669,7 +669,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
-	GGROUP(pidNavRoll,              "HDNG2RLL_",  PID),
 	GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
 	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
