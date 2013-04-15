@@ -475,7 +475,7 @@ static bool verify_loiter_time()
     }
 
     // check if loiter timer has run out
-    return ((millis() - loiter_time) > loiter_time_max);
+    return (((millis() - loiter_time) / 1000) >= loiter_time_max);
 }
 
 // verify_circle - check if we have circled the point enough
