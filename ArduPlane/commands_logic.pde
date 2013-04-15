@@ -389,12 +389,6 @@ static bool verify_nav_wp()
         return true;
 	}
 
-    // have we circled around the waypoint?
-    if (loiter.loiter_sum_cd > 30000) {
-        gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
-        return true;
-    }
-
     // have we flown past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
