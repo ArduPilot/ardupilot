@@ -156,9 +156,13 @@ static void handle_no_commands()
 
 }
 
-/********************************************************************************/
-// Verify command Handlers
-/********************************************************************************/
+/*******************************************************************************
+Verify command Handlers
+
+Each type of mission element has a "verify" operation. The verify
+operation returns true when the mission element has completed and we
+should move onto the next mission element.
+*******************************************************************************/
 
 static bool verify_nav_command()        // Returns true if command complete
 {
