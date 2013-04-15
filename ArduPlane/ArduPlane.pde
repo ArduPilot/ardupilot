@@ -295,13 +295,22 @@ enum FlightMode control_mode  = INITIALISING;
 uint8_t oldSwitchPosition;
 // This is used to enable the inverted flight feature
 bool inverted_flight     = false;
-// These are trim values used for elevon control
-// For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are equivalent aileron and elevator, not left and right elevon
-static uint16_t elevon1_trim  = 1500;
-static uint16_t elevon2_trim  = 1500;
-// These are used in the calculation of elevon1_trim and elevon2_trim
-static uint16_t ch1_temp      = 1500;
-static uint16_t ch2_temp        = 1500;
+
+static struct {
+    // These are trim values used for elevon control
+    // For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are
+    // equivalent aileron and elevator, not left and right elevon
+    uint16_t trim1;
+    uint16_t trim2;
+    // These are used in the calculation of elevon1_trim and elevon2_trim
+    uint16_t ch1_temp;
+    uint16_t ch2_temp;
+} elevon = {
+    .trim1 = 1500,
+    .trim2 = 1500,
+    .ch1_temp = 1500,
+    .ch2_temp = 1500
+};
 
 // A flag if GCS joystick control is in use
 static bool rc_override_active = false;

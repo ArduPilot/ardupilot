@@ -71,16 +71,16 @@ static void init_rc_out()
 
 static void read_radio()
 {
-    ch1_temp = hal.rcin->read(CH_ROLL);
-    ch2_temp = hal.rcin->read(CH_PITCH);
+    elevon.ch1_temp = hal.rcin->read(CH_ROLL);
+    elevon.ch2_temp = hal.rcin->read(CH_PITCH);
     uint16_t pwm_roll, pwm_pitch;
 
     if (g.mix_mode == 0) {
-        pwm_roll = ch1_temp;
-        pwm_pitch = ch2_temp;
+        pwm_roll = elevon.ch1_temp;
+        pwm_pitch = elevon.ch2_temp;
     }else{
-        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(ch1_temp - elevon1_trim)) / 2 + 1500;
-        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(ch1_temp - elevon1_trim)) / 2 + 1500;
+        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
+        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
     }
     
     if (control_mode == TRAINING) {
@@ -202,11 +202,11 @@ static void trim_control_surfaces()
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron_with_input);
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_elevator_with_input);
     } else{
-        if (ch1_temp != 0) {
-            elevon1_trim = ch1_temp;
+        if (elevon.ch1_temp != 0) {
+            elevon.trim1 = elevon.ch1_temp;
         }
-        if (ch2_temp != 0) {
-            elevon2_trim = ch2_temp;
+        if (elevon.ch2_temp != 0) {
+            elevon.trim2 = elevon.ch2_temp;
         }
         //Recompute values here using new values for elevon1_trim and elevon2_trim
         //We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed
