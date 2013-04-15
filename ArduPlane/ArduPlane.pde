@@ -230,8 +230,8 @@ static bool training_manual_pitch; // user has manual pitch control
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-GCS_MAVLINK gcs0;
-GCS_MAVLINK gcs3;
+static GCS_MAVLINK gcs0;
+static GCS_MAVLINK gcs3;
 
 // selected navigation controller
 static AP_Navigation *nav_controller = &L1_controller;
@@ -240,25 +240,25 @@ static AP_Navigation *nav_controller = &L1_controller;
 // Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
 
-AP_HAL::AnalogSource *pitot_analog_source;
+static AP_HAL::AnalogSource *pitot_analog_source;
 
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
-AP_HAL::AnalogSource *rssi_analog_source;
+static AP_HAL::AnalogSource *rssi_analog_source;
 
-AP_HAL::AnalogSource *vcc_pin;
+static AP_HAL::AnalogSource *vcc_pin;
 
-AP_HAL::AnalogSource * batt_volt_pin;
-AP_HAL::AnalogSource * batt_curr_pin;
+static AP_HAL::AnalogSource * batt_volt_pin;
+static AP_HAL::AnalogSource * batt_curr_pin;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Relay
 ////////////////////////////////////////////////////////////////////////////////
-AP_Relay relay;
+static AP_Relay relay;
 
 // Camera
 #if CAMERA == ENABLED
-AP_Camera camera(&relay);
+static AP_Camera camera(&relay);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -302,9 +302,7 @@ static uint16_t elevon2_trim  = 1500;
 // These are used in the calculation of elevon1_trim and elevon2_trim
 static uint16_t ch1_temp      = 1500;
 static uint16_t ch2_temp        = 1500;
-// These are values received from the GCS if the user is using GCS joystick
-// control and are substituted for the values coming from the RC radio
-static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
+
 // A flag if GCS joystick control is in use
 static bool rc_override_active = false;
 

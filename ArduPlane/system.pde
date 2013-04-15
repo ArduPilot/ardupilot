@@ -188,9 +188,6 @@ static void init_ardupilot()
     mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
     mavlink_system.type = MAV_TYPE_FIXED_WING;
 
-    // Set initial values for no override
-    rc_override_active = hal.rcin->set_overrides(rc_override, 8);
-
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
 
