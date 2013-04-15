@@ -306,10 +306,10 @@ static struct {
     uint16_t ch1_temp;
     uint16_t ch2_temp;
 } elevon = {
-    .trim1 = 1500,
-    .trim2 = 1500,
-    .ch1_temp = 1500,
-    .ch2_temp = 1500
+	trim1 : 1500,
+    trim2 : 1500,
+    ch1_temp : 1500,
+    ch2_temp : 1500
 };
 
 // A flag if GCS joystick control is in use
