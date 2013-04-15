@@ -56,8 +56,6 @@ private:
 	// reference to the AHRS object
     AP_AHRS *_ahrs;
 
-	struct Location _current_loc;
-
 	// lateral acceration in m/s required to fly to the 
 	// L1 reference point (+ve to right)
     float _latAccDem;
@@ -84,25 +82,16 @@ private:
 	AP_Float _L1_period;
 	// L1 tracking loop damping ratio
 	AP_Float _L1_damping;
-	// L1 control loop enable
-	AP_Int8  _enable;
 	
     // Convert a 2D vector from latitude and longitude to planar
     // coordinates based on a reference point
-	Vector2f _geo2planar(const Vector2f &ref, const Vector2f &wp);
+	Vector2f _geo2planar(const Vector2f &ref, const Vector2f &wp) const;
 
     //Calculate the cross product of two 2D vectors
 	float _cross2D(const Vector2f &v1, const Vector2f &v2);
 
-    //Calculate the dot product of two 2D vectors
-	float _dot2D(const Vector2f &v1, const Vector2f &v2);
-	
-    // Convert a 2D vector from planar coordinates to latitude and
-    // longitude based on a reference point
-	Vector2f _planar2geo(const Vector2f &ref, const Vector2f &wp);
-
 	//Calculate the maximum of two floating point numbers
-	float _maxf(const float &num1, const float &num2);
+	float _maxf(const float &num1, const float &num2) const;
 
 };
 

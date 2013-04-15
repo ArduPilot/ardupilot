@@ -81,10 +81,10 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	const float omegaA = 4.4428f/_L1_period; // sqrt(2)*pi/period
 	// Calculate additional damping gain
 	const float Kv = omegaA * 2.8284f * (_L1_damping - 0.7071f); // omegaA * 2*sqrt(2) * (dampingRatio - 1/sqrt(2))
-
 	float Nu;
 	float dampingWeight;
 	float xtrackVel;
+	struct Location _current_loc;
 	
 	// Get current position and velocity
     _ahrs->get_position(&_current_loc);
@@ -178,6 +178,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float omega = (6.2832f / _L1_period);
 	float Kx = omega * omega;
 	float Kv = 2.0f * _L1_damping * omega;
+	struct Location _current_loc;
 
 	//Get current position and velocity
     _ahrs->get_position(&_current_loc);
@@ -308,7 +309,7 @@ void AP_L1_Control::update_level_flight(void)
 }
 
 
-Vector2f AP_L1_Control::_geo2planar(const Vector2f &ref, const Vector2f &wp)
+Vector2f AP_L1_Control::_geo2planar(const Vector2f &ref, const Vector2f &wp) const
 {
     Vector2f out;
 
@@ -327,17 +328,7 @@ float AP_L1_Control::_cross2D(const Vector2f &v1, const Vector2f &v2)
     return out;
 }
 
-Vector2f  AP_L1_Control::_planar2geo(const Vector2f &ref, const Vector2f &wp)
-{
-    Vector2f out;
-
-    out.x=degrees(wp.x)+ref.x;
-    out.y=degrees(wp.y*(1/cosf(radians(ref.x))))+ref.y;
-
-    return out;
-}
-
-float AP_L1_Control::_maxf(const float &num1, const float &num2)
+float AP_L1_Control::_maxf(const float &num1, const float &num2) const
 {
     float result;
 
