@@ -2040,7 +2040,7 @@ static void update_trig(void){
     // 270 = cos_yaw:  0.00, sin_yaw: -1.00,
 }
 
-// read baro and sonar altitude at 10hz
+// read baro and sonar altitude at 20hz
 static void update_altitude()
 {
 #if HIL_MODE == HIL_MODE_ATTITUDE
@@ -2217,6 +2217,11 @@ static void tuning(){
 
     case CH6_THR_ACCEL_KD:
         g.pid_throttle_accel.kD(tuning_value);
+        break;
+
+    case CH6_DECLINATION:
+        // set declination to +-20degrees
+        compass.set_declination(ToRad(20-g.rc_6.control_in/25), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
     }
 }

@@ -122,8 +122,9 @@ public:
     /// Sets the local magnetic field declination.
     ///
     /// @param  radians             Local field declination.
+    /// @param save_to_eeprom       true to save to eeprom (false saves only to memory)
     ///
-    void set_declination(float radians);
+    void set_declination(float radians, bool save_to_eeprom = true);
     float get_declination();
 
     // set overall board orientation
