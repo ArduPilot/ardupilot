@@ -97,6 +97,7 @@
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
+#include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AP_Limits.h>
 #include <memcheck.h>           // memory limit checker
@@ -495,8 +496,16 @@ union float_int {
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
-// This is the angle from the copter to the "next_WP" location in degrees * 100
+// This is the angle from the copter to the next waypoint in centi-degrees
 static int32_t wp_bearing;
+// The original bearing to the next waypoint.  used to check if we've passed the waypoint
+static int32_t original_wp_bearing;
+// The location of home in relation to the copter in centi-degrees
+static int32_t home_bearing;
+// distance between plane and home in cm
+static int32_t home_distance;
+// distance between plane and next waypoint in cm.  is not static because AP_Camera uses it
+uint32_t wp_distance;
 // navigation mode - options include NAV_NONE, NAV_LOITER, NAV_CIRCLE, NAV_WP
 static uint8_t nav_mode;
 // Register containing the index of the current navigation command in the mission script
@@ -511,7 +520,6 @@ static uint8_t command_cond_index;
 // NAV_ALTITUDE - have we reached the desired altitude?
 // NAV_LOCATION - have we reached the desired location?
 // NAV_DELAY    - have we waited at the waypoint the desired time?
-static uint8_t wp_verify_byte;                                                  // used for tracking state of navigating waypoints
 static float lon_error, lat_error;      // Used to report how many cm we are from the next waypoint or loiter target position
 static int16_t control_roll;
 static int16_t control_pitch;
@@ -556,6 +564,7 @@ static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration
 static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
+static float target_alt_for_reporting;      // target altitude for reporting (logs and ground station)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -577,22 +586,17 @@ LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 ////////////////////////////////////////////////////////////////////////////////
 // used to control the speed of Circle mode in radians/second, default is 5° per second
 static const float circle_rate = 0.0872664625;
-Vector2f circle_center;     // circle position expressed in cm from home location.  x = lat, y = lon
+Vector3f circle_center;     // circle position expressed in cm from home location.  x = lat, y = lon
 // angle from the circle center to the copter's desired location.  Incremented at circle_rate / second
 static float circle_angle;
 // the total angle (in radians) travelled
 static float circle_angle_total;
 // deg : how many times to circle as specified by mission command
 static uint8_t circle_desired_rotations;
-// How long we should stay in Loiter Mode for mission scripting
+// How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint16_t loiter_time_max;
 // How long have we been loitering - The start time in millis
 static uint32_t loiter_time;
-// The synthetic location created to make the copter do circles around a WP
-static struct   Location circle_WP;
-// inertial nav loiter variables
-static float loiter_lat_from_home_cm;   // loiter's target latitude in cm from home
-static float loiter_lon_from_home_cm;   // loiter's target longitude in cm from home
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -656,25 +660,6 @@ static uint16_t land_detector;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Navigation general
-////////////////////////////////////////////////////////////////////////////////
-// The location of home in relation to the copter, updated every GPS read
-static int32_t home_bearing;
-// distance between plane and home in cm
-static int32_t home_distance;
-// distance between plane and next_WP in cm
-// is not static because AP_Camera uses it
-uint32_t wp_distance;
-// wpinav variables
-Vector2f wpinav_origin;         // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
-Vector2f wpinav_destination;    // target destination in cm from home (equivalent to next_WP)
-Vector2f wpinav_target;         // the intermediate target location in cm from home
-Vector2f wpinav_pos_delta;      // position difference between origin and destination
-float wpinav_track_length;      // distance in cm between origin and destination
-float wpinav_track_desired;     // the desired distance along the track in cm
-
-
-////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
 ////////////////////////////////////////////////////////////////////////////////
 // home location is stored when we have a good GPS lock and arm the copter
@@ -682,24 +667,10 @@ float wpinav_track_desired;     // the desired distance along the track in cm
 static struct   Location home;
 // Current location of the copter
 static struct   Location current_loc;
-// Next WP is the desired location of the copter - the next waypoint or loiter location
-static struct   Location next_WP;
-// Prev WP is used to get the optimum path from one WP to the next
-static struct   Location prev_WP;
 // Holds the current loaded command from the EEPROM for navigation
 static struct   Location command_nav_queue;
 // Holds the current loaded command from the EEPROM for conditional scripts
 static struct   Location command_cond_queue;
-// Holds the current loaded command from the EEPROM for guided mode
-static struct   Location guided_WP;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Crosstrack
-////////////////////////////////////////////////////////////////////////////////
-// deg * 100, The original angle to the next_WP when the next_WP was set
-// Also used to check when we pass a WP
-static int32_t original_wp_bearing;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -710,14 +681,7 @@ static int32_t original_wp_bearing;
 static int32_t nav_roll;
 // The Commanded pitch from the autopilot. negative Pitch means go forward.
 static int32_t nav_pitch;
-// The desired bank towards North (Positive) or South (Negative)
-static int32_t auto_roll;
-static int32_t auto_pitch;
 
-// Don't be fooled by the fact that Pitch is reversed from Roll in its sign!
-static int16_t nav_lat;
-// The desired bank towards East (Positive) or West (Negative)
-static int16_t nav_lon;
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
@@ -733,12 +697,6 @@ static int16_t nav_throttle;    // 0-1000 for throttle control
 // This could be useful later in determining and debuging current usage and predicting battery life
 static uint32_t throttle_integrator;
 
-////////////////////////////////////////////////////////////////////////////////
-// Climb rate control
-////////////////////////////////////////////////////////////////////////////////
-// Time when we intiated command in millis - used for controlling decent rate
-// Used to track the altitude offset for climbrate control
-static int8_t alt_change_flag;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Yaw control
@@ -747,7 +705,7 @@ static int8_t alt_change_flag;
 static int32_t nav_yaw;
 static uint8_t yaw_timer;
 // Yaw will point at this location if yaw_mode is set to YAW_LOOK_AT_LOCATION
-static struct Location yaw_look_at_WP;
+static Vector3f yaw_look_at_WP;
 // bearing from current location to the yaw_look_at_WP
 static int32_t yaw_look_at_WP_bearing;
 // yaw used for YAW_LOOK_AT_HEADING yaw_mode
@@ -791,6 +749,12 @@ static float G_Dt = 0.02;
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
 AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
+
+////////////////////////////////////////////////////////////////////////////////
+// Waypoint navigation object
+// To-Do: move inertial nav up or other navigation variables down here
+////////////////////////////////////////////////////////////////////////////////
+AC_WPNav wp_nav(&inertial_nav, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid_loiter_rate_lat, &g.pid_loiter_rate_lon);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
@@ -1336,7 +1300,7 @@ static void super_slow_loop()
 
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
     // but only of the control mode is manual
-    if((control_mode <= ACRO) && (g.rc_3.control_in == 0)) {
+    if((control_mode <= ACRO) && (g.rc_3.control_in == 0) && motors.armed()) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter == AUTO_DISARMING_DELAY) {
@@ -1459,7 +1423,16 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
         case YAW_LOOK_AT_LOCATION:
             if( ap.home_is_set ) {
                 // update bearing - assumes yaw_look_at_WP has been intialised before set_yaw_mode was called
-                yaw_look_at_WP_bearing = get_bearing_cd(&current_loc, &yaw_look_at_WP);
+                yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
+                yaw_initialised = true;
+            }
+            break;
+        case YAW_CIRCLE:
+            if( ap.home_is_set ) {
+                // set yaw to point to center of circle
+                yaw_look_at_WP = circle_center;
+                // initialise bearing to current heading
+                yaw_look_at_WP_bearing = ahrs.yaw_sensor;
                 yaw_initialised = true;
             }
             break;
@@ -1523,9 +1496,18 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_LOCATION:
-        // point towards a location held in yaw_look_at_WP (no pilot input accepted)
-        nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
-        get_stabilize_yaw(nav_yaw);
+        // point towards a location held in yaw_look_at_WP
+        get_look_at_yaw();
+
+        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
+        if( g.rc_4.control_in != 0 ) {
+            set_yaw_mode(YAW_HOLD);
+        }
+        break;
+
+    case YAW_CIRCLE:
+        // points toward the center of the circle or does a panorama
+        get_circle_yaw();
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
         if( g.rc_4.control_in != 0 ) {
@@ -1659,8 +1641,8 @@ void update_roll_pitch_mode(void)
         control_pitch = g.rc_2.control_in;
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(wp_nav.get_desired_roll()  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(wp_nav.get_desired_pitch() - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1699,13 +1681,11 @@ void update_roll_pitch_mode(void)
         control_pitch           = g.rc_2.control_in;
 
         // update loiter target from user controls - max velocity is 5.0 m/s
-        if( control_roll != 0 || control_pitch != 0 ) {
-            loiter_set_pos_from_velocity(-control_pitch/(2*4.5), control_roll/(2*4.5),0.01f);
-        }
+        wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180_cd(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180_cd(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll    += constrain_int32(wrap_180_cd(wp_nav.get_desired_roll()  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_pitch   += constrain_int32(wrap_180_cd(wp_nav.get_desired_pitch() - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
@@ -1808,8 +1788,8 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
-            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
-            set_new_altitude(current_loc.alt);          // by default hold the current altitude
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
+            wp_nav.set_desired_alt(controller_desired_alt);                                 // same as above but for loiter controller
             if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
                 set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
@@ -1821,10 +1801,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             set_land_complete(false);   // mark landing as incomplete
             land_detector = 0;          // A counter that goes up if our climb rate stalls out.
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
-            // Set target altitude to LAND_START_ALT if we are high, below this altitude the get_throttle_rate_stabilized will take care of setting the next_WP.alt
-            if (current_loc.alt >= LAND_START_ALT) {
-                set_new_altitude(LAND_START_ALT);
-            }
             throttle_initialised = true;
             break;
 
@@ -1861,6 +1837,7 @@ void update_throttle_mode(void)
     if( !motors.armed() ) {
         set_throttle_out(0, false);
         throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
+        set_target_alt_for_reporting(0);
         return;
     }
 
@@ -1899,6 +1876,7 @@ void update_throttle_mode(void)
                 }
             }
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_MANUAL_TILT_COMPENSATED:
@@ -1923,6 +1901,7 @@ void update_throttle_mode(void)
                 }
             }
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_ACCELERATION:
@@ -1934,6 +1913,7 @@ void update_throttle_mode(void)
             int16_t desired_acceleration = get_pilot_desired_acceleration(g.rc_3.control_in);
             set_throttle_accel_target(desired_acceleration);
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_RATE:
@@ -1945,6 +1925,7 @@ void update_throttle_mode(void)
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
             get_throttle_rate(pilot_climb_rate);
         }
+        set_target_alt_for_reporting(0);
         break;
 
     case THROTTLE_STABILIZED_RATE:
@@ -1953,9 +1934,10 @@ void update_throttle_mode(void)
             set_throttle_out(0, false);
             throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
             altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
+            set_target_alt_for_reporting(0);
         }else{
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-            get_throttle_rate_stabilized(pilot_climb_rate);
+            get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
         }
         break;
 
@@ -1965,9 +1947,11 @@ void update_throttle_mode(void)
             set_throttle_out(0, false);
             throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
             altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
+            set_target_alt_for_reporting(0);
         }else{
             int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
             get_throttle_althold_with_slew(desired_alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
+            set_target_alt_for_reporting(desired_alt);
         }
         break;
 
@@ -1976,25 +1960,39 @@ void update_throttle_mode(void)
         pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
         if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
             // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(pilot_climb_rate);
+            get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
         }else{
             // if no sonar fall back stabilize rate controller
-            get_throttle_rate_stabilized(pilot_climb_rate);
+            get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
         }
         break;
 
     case THROTTLE_AUTO:
-        // auto pilot altitude controller with target altitude held in next_WP.alt
+        // auto pilot altitude controller with target altitude held in wp_nav.get_desired_alt()
         if(motors.auto_armed() == true) {
-            get_throttle_althold_with_slew(next_WP.alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
+            get_throttle_althold_with_slew(wp_nav.get_desired_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
+            set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
         }
         break;
 
     case THROTTLE_LAND:
         // landing throttle controller
         get_throttle_land();
+        set_target_alt_for_reporting(0);
         break;
     }
+}
+
+// set_target_alt_for_reporting - set target altitude for reporting purposes (logs and gcs)
+static void set_target_alt_for_reporting(float alt)
+{
+    target_alt_for_reporting = alt;
+}
+
+// get_target_alt_for_reporting - returns target altitude for reporting purposes (logs and gcs)
+static float get_target_alt_for_reporting()
+{
+    return target_alt_for_reporting;
 }
 
 static void read_AHRS(void)
@@ -2037,6 +2035,9 @@ static void update_trig(void){
     sin_pitch       = -temp.c.x;
     sin_roll        = temp.c.y / cos_pitch_x;
 
+    // update wp_nav controller with trig values
+    wp_nav.set_cos_sin_yaw(cos_yaw, sin_yaw, cos_roll_x);
+
     //flat:
     // 0 ° = cos_yaw:  1.00, sin_yaw:  0.00,
     // 90° = cos_yaw:  0.00, sin_yaw:  1.00,
@@ -2044,7 +2045,7 @@ static void update_trig(void){
     // 270 = cos_yaw:  0.00, sin_yaw: -1.00,
 }
 
-// read baro and sonar altitude at 10hz
+// read baro and sonar altitude at 20hz
 static void update_altitude()
 {
 #if HIL_MODE == HIL_MODE_ATTITUDE
@@ -2140,8 +2141,9 @@ static void tuning(){
         if (g.rc_6.control_in < 475) relay.off();
         break;
 
-    case CH6_TRAVERSE_SPEED:
-        g.waypoint_speed_max = g.rc_6.control_in;
+    case CH6_WP_SPEED:
+        // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
+        wp_nav.set_horizontal_velocity(g.rc_6.control_in);
         break;
 
     case CH6_LOITER_KP:
@@ -2152,11 +2154,6 @@ static void tuning(){
     case CH6_LOITER_KI:
         g.pi_loiter_lat.kI(tuning_value);
         g.pi_loiter_lon.kI(tuning_value);
-        break;
-
-    case CH6_NAV_KP:
-        g.pid_nav_lat.kP(tuning_value);
-        g.pid_nav_lon.kP(tuning_value);
         break;
 
     case CH6_LOITER_RATE_KP:
@@ -2172,11 +2169,6 @@ static void tuning(){
     case CH6_LOITER_RATE_KD:
         g.pid_loiter_rate_lon.kD(tuning_value);
         g.pid_loiter_rate_lat.kD(tuning_value);
-        break;
-
-    case CH6_NAV_KI:
-        g.pid_nav_lat.kI(tuning_value);
-        g.pid_nav_lon.kI(tuning_value);
         break;
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -2230,6 +2222,11 @@ static void tuning(){
 
     case CH6_THR_ACCEL_KD:
         g.pid_throttle_accel.kD(tuning_value);
+        break;
+
+    case CH6_DECLINATION:
+        // set declination to +-20degrees
+        compass.set_declination(ToRad(20-g.rc_6.control_in/25), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
     }
 }

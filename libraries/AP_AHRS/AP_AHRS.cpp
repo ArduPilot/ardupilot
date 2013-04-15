@@ -32,14 +32,14 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Description: This controls the weight the compass or GPS has on the heading. A higher value means the heading will track the yaw source (GPS or compass) more rapidly.
     // @Range: 0.1 0.4
     // @Increment: .01
-    AP_GROUPINFO("YAW_P", 4,    AP_AHRS, _kp_yaw, 0.4f),
+    AP_GROUPINFO("YAW_P", 4,    AP_AHRS, _kp_yaw, 0.3f),
 
     // @Param: RP_P
     // @DisplayName: AHRS RP_P
     // @Description: This controls how fast the accelerometers correct the attitude
     // @Range: 0.1 0.4
     // @Increment: .01
-    AP_GROUPINFO("RP_P",  5,    AP_AHRS, _kp, 0.4f),
+    AP_GROUPINFO("RP_P",  5,    AP_AHRS, _kp, 0.3f),
 
     // @Param: WIND_MAX
     // @DisplayName: Maximum wind
@@ -49,12 +49,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("WIND_MAX",  6,    AP_AHRS, _wind_max, 0.0f),
 
-    // @Param: BARO_USE
-    // @DisplayName: AHRS Use Barometer
-    // @Description: This controls the use of the barometer for vertical acceleration compensation in AHRS. It is currently recommended that you set this value to zero unless you are a developer experimenting with the AHRS system.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("BARO_USE",  7,    AP_AHRS, _baro_use, 0),
+    // NOTE: 7 was BARO_USE
 
     // @Param: TRIM_X
     // @DisplayName: AHRS Trim Roll

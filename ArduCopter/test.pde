@@ -189,7 +189,6 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 //static int8_t
 //test_toy(uint8_t argc, const Menu::arg *argv)
 {
-	set_alt_change(ASCENDING)
 
  	for(altitude_error = 2000; altitude_error > -100; altitude_error--){
  		int16_t temp = get_desired_climb_rate();
@@ -201,9 +200,9 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 	int16_t max_speed = 0;
 
  	for(int16_t i = 0; i < 200; i++){
-	 	int32_t temp = 2 * 100 * (wp_distance - g.waypoint_radius * 100);
+	 	int32_t temp = 2 * 100 * (wp_distance - wp_nav.get_waypoint_radius());
 		max_speed = sqrtf((float)temp);
-		max_speed = min(max_speed, g.waypoint_speed_max);
+		max_speed = min(max_speed, wp_nav.get_horizontal_speed());
 		cliSerial->printf("Zspeed: %ld, %d, %ld\n", temp, max_speed, wp_distance);
 	 	wp_distance += 100;
 	}
@@ -725,8 +724,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
     }
 
     cliSerial->printf_P(PSTR("%d wp\n"), (int)g.command_total);
-    cliSerial->printf_P(PSTR("Hit rad: %dm\n"), (int)g.waypoint_radius);
-    //cliSerial->printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
+    cliSerial->printf_P(PSTR("Hit rad: %dm\n"), (int)wp_nav.get_waypoint_radius());
 
     report_wp();
 
@@ -943,8 +941,7 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
     current_loc.lat = 389539260;
     current_loc.lng = -1199540200;
 
-    next_WP.lat = 389538528;
-    next_WP.lng = -1199541248;
+    wp_nav.set_destination(pv_latlon_to_vector(389538528,-1199541248,0));
 
     // got 23506;, should be 22800
     update_navigation();
@@ -1019,7 +1016,7 @@ test_logging(uint8_t argc, const Menu::arg *argv)
  *
  *       g.rtl_altitude.set_and_save(300);
  *       g.command_total.set_and_save(4);
- *       g.waypoint_radius.set_and_save(3);
+ *       wp_nav.set_waypoint_radius(300);
  *
  *       test_wp(NULL, NULL);
  *       return (0);

@@ -156,9 +156,13 @@ static void handle_no_commands()
 
 }
 
-/********************************************************************************/
-// Verify command Handlers
-/********************************************************************************/
+/*******************************************************************************
+Verify command Handlers
+
+Each type of mission element has a "verify" operation. The verify
+operation returns true when the mission element has completed and we
+should move onto the next mission element.
+*******************************************************************************/
 
 static bool verify_nav_command()        // Returns true if command complete
 {
@@ -230,7 +234,12 @@ static void do_RTL(void)
     control_mode    = RTL;
     crash_timer     = 0;
     next_WP                 = home;
-    loiter_direction = 1;
+
+    if (g.loiter_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
 
     // Altitude to hold over home
     // Set by configuration tool
@@ -266,9 +275,9 @@ static void do_land()
 static void loiter_set_direction_wp(const struct Location *nav_command)
 {
     if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
-        loiter_direction = -1;
+        loiter.direction = -1;
     } else {
-        loiter_direction=1;
+        loiter.direction = 1;
     }
 }
 
@@ -281,15 +290,16 @@ static void do_loiter_unlimited()
 static void do_loiter_turns()
 {
     set_next_WP(&next_nav_command);
-    loiter.loiter_total_cd = next_nav_command.p1 * 36000UL;
+    loiter.total_cd = next_nav_command.p1 * 36000UL;
     loiter_set_direction_wp(&next_nav_command);
 }
 
 static void do_loiter_time()
 {
     set_next_WP(&next_nav_command);
-    loiter_time_ms = millis();
-    loiter_time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
+    // we set start_time_ms when we reach the waypoint
+    loiter.start_time_ms = 0;
+    loiter.time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
     loiter_set_direction_wp(&next_nav_command);
 }
 
@@ -384,12 +394,6 @@ static bool verify_nav_wp()
         return true;
 	}
 
-    // have we circled around the waypoint?
-    if (loiter.loiter_sum_cd > 30000) {
-        gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
-        return true;
-    }
-
     // have we flown past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
@@ -410,7 +414,12 @@ static bool verify_loiter_unlim()
 static bool verify_loiter_time()
 {
     update_loiter();
-    if ((millis() - loiter_time_ms) > loiter_time_max_ms) {
+    if (loiter.start_time_ms == 0) {
+        if (nav_controller->reached_loiter_target()) {
+            // we've reached the target, start the timer
+            loiter.start_time_ms = millis();
+        }
+    } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
         return true;
     }
@@ -420,8 +429,8 @@ static bool verify_loiter_time()
 static bool verify_loiter_turns()
 {
     update_loiter();
-    if (loiter.loiter_sum_cd > loiter.loiter_total_cd) {
-        loiter.loiter_total_cd = 0;
+    if (loiter.sum_cd > loiter.total_cd) {
+        loiter.total_cd = 0;
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
         // clear the command queue;
         return true;
@@ -507,7 +516,11 @@ static bool verify_within_distance()
 
 static void do_loiter_at_location()
 {
-    loiter_direction = 1;
+    if (g.loiter_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
     next_WP = current_loc;
 }
 

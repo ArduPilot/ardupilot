@@ -184,7 +184,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: WP_LOITER_RAD
     // @DisplayName: Waypoint Loiter Radius
-    // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter
+    // @Description: Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.
     // @Units: Meters
     // @Range: 1 32767
     // @Increment: 1
@@ -669,7 +669,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
-	GGROUP(pidNavRoll,              "HDNG2RLL_",  PID),
 	GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
 	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),

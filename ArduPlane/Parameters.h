@@ -225,7 +225,7 @@ public:
 
         //
         // 240: PID Controllers
-        k_param_pidNavRoll = 240,
+        k_param_pidNavRoll = 240, // unused
         k_param_pidServoRoll,
         k_param_pidServoPitch,
         k_param_pidNavPitchAirspeed,
@@ -394,7 +394,6 @@ public:
     AP_YawController   yawController;
 #endif
 
-    PID         pidNavRoll;
     PID         pidNavPitchAirspeed;
     PID         pidTeThrottle;
     PID         pidNavPitchAltitude;
@@ -426,7 +425,6 @@ public:
         pidServoRudder      (SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
 #endif
 
-        pidNavRoll          (NAV_ROLL_P,      NAV_ROLL_I,      NAV_ROLL_D,      NAV_ROLL_INT_MAX_CENTIDEGREE),
         pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
         pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
         pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),

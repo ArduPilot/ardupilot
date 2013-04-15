@@ -232,8 +232,8 @@ static bool training_manual_pitch; // user has manual pitch control
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-GCS_MAVLINK gcs0;
-GCS_MAVLINK gcs3;
+static GCS_MAVLINK gcs0;
+static GCS_MAVLINK gcs3;
 
 #if SERIAL3_MODE == MOBILE
 SIM900Driver mobile;
@@ -246,25 +246,25 @@ static AP_Navigation *nav_controller = &L1_controller;
 // Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
 
-AP_HAL::AnalogSource *pitot_analog_source;
+static AP_HAL::AnalogSource *pitot_analog_source;
 
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
-AP_HAL::AnalogSource *rssi_analog_source;
+static AP_HAL::AnalogSource *rssi_analog_source;
 
-AP_HAL::AnalogSource *vcc_pin;
+static AP_HAL::AnalogSource *vcc_pin;
 
-AP_HAL::AnalogSource * batt_volt_pin;
-AP_HAL::AnalogSource * batt_curr_pin;
+static AP_HAL::AnalogSource * batt_volt_pin;
+static AP_HAL::AnalogSource * batt_curr_pin;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Relay
 ////////////////////////////////////////////////////////////////////////////////
-AP_Relay relay;
+static AP_Relay relay;
 
 // Camera
 #if CAMERA == ENABLED
-AP_Camera camera(&relay);
+static AP_Camera camera(&relay);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -301,16 +301,23 @@ enum FlightMode control_mode  = INITIALISING;
 uint8_t oldSwitchPosition;
 // This is used to enable the inverted flight feature
 bool inverted_flight     = false;
-// These are trim values used for elevon control
-// For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are equivalent aileron and elevator, not left and right elevon
-static uint16_t elevon1_trim  = 1500;
-static uint16_t elevon2_trim  = 1500;
-// These are used in the calculation of elevon1_trim and elevon2_trim
-static uint16_t ch1_temp      = 1500;
-static uint16_t ch2_temp        = 1500;
-// These are values received from the GCS if the user is using GCS joystick
-// control and are substituted for the values coming from the RC radio
-static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
+
+static struct {
+    // These are trim values used for elevon control
+    // For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are
+    // equivalent aileron and elevator, not left and right elevon
+    uint16_t trim1;
+    uint16_t trim2;
+    // These are used in the calculation of elevon1_trim and elevon2_trim
+    uint16_t ch1_temp;
+    uint16_t ch2_temp;
+} elevon = {
+	trim1 : 1500,
+    trim2 : 1500,
+    ch1_temp : 1500,
+    ch2_temp : 1500
+};
+
 // A flag if GCS joystick control is in use
 static bool rc_override_active = false;
 
@@ -361,8 +368,6 @@ static bool have_position;
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
-// Constants
-const float radius_of_earth   = 6378100;        // meters
 
 // Direction held during phases of takeoff and landing
 // deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
@@ -460,15 +465,6 @@ static bool throttle_suppressed;
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
 
-// Direction for loiter. 1 for clockwise, -1 for counter-clockwise
-static int8_t loiter_direction = 1;
-
-// The amount of time we have been in a Loiter.  Used for the Loiter Time command.  Milliseconds.
-static uint32_t loiter_time_ms;
-
-// The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
-static uint32_t loiter_time_max_ms;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
@@ -492,11 +488,23 @@ static uint32_t wp_totalDistance;
   meta data to support counting the number of circles in a loiter
  */
 static struct {
+    // previous target bearing, used to update sum_cd
     int32_t old_target_bearing_cd;
-    int32_t loiter_sum_cd;
 
     // Total desired rotation in a loiter.  Used for Loiter Turns commands. 
-    int32_t loiter_total_cd;
+    int32_t total_cd;
+
+    // total angle completed in the loiter so far
+    int32_t sum_cd;
+
+	// Direction for loiter. 1 for clockwise, -1 for counter-clockwise
+    int8_t direction;
+
+	// start time of the loiter.  Milliseconds.
+    uint32_t start_time_ms;
+
+	// The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
+    uint32_t time_max_ms;
 } loiter;
 
 

@@ -528,9 +528,6 @@ static void report_gains()
 	print_PID(&g.pidServoRudder);
 #endif
 
-    cliSerial->printf_P(PSTR("nav roll:\n"));
-    print_PID(&g.pidNavRoll);
-
     cliSerial->printf_P(PSTR("nav pitch airspeed:\n"));
     print_PID(&g.pidNavPitchAirspeed);
 

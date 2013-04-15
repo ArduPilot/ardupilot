@@ -108,6 +108,7 @@ public:
         // 100: Inertial Nav
         //
         k_param_inertial_nav = 100,
+        k_param_wp_nav = 101,
 
         // 110: Telemetry control
         //
@@ -210,9 +211,9 @@ public:
         k_param_command_total,
         k_param_command_index,
         k_param_command_nav_index,   // remove
-        k_param_waypoint_radius,
+        k_param_waypoint_radius,     // remove
         k_param_circle_radius,
-        k_param_waypoint_speed_max,
+        k_param_waypoint_speed_max,  // remove
         k_param_land_speed,
         k_param_auto_velocity_z_min,
         k_param_auto_velocity_z_max, // 219
@@ -232,8 +233,8 @@ public:
         k_param_pi_loiter_lon,
         k_param_pid_loiter_rate_lat,
         k_param_pid_loiter_rate_lon,
-        k_param_pid_nav_lat,
-        k_param_pid_nav_lon,
+        k_param_pid_nav_lat,        // 233 - remove
+        k_param_pid_nav_lon,        // 234 - remove
         k_param_pi_alt_hold,
         k_param_pid_throttle,
         k_param_pid_optflow_roll,
@@ -287,9 +288,7 @@ public:
     //
     AP_Int8         command_total;
     AP_Int8         command_index;
-    AP_Int16        waypoint_radius;
     AP_Int16        circle_radius;
-    AP_Int16        waypoint_speed_max;
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        auto_velocity_z_min;         // minimum vertical velocity (i.e. maximum descent) the autopilot may request
@@ -369,8 +368,6 @@ public:
     AC_PID                  pid_rate_yaw;
     AC_PID                  pid_loiter_rate_lat;
     AC_PID                  pid_loiter_rate_lon;
-    AC_PID                  pid_nav_lat;
-    AC_PID                  pid_nav_lon;
 
     AC_PID                  pid_throttle;
     AC_PID                  pid_throttle_accel;
@@ -417,9 +414,6 @@ public:
 
         pid_loiter_rate_lat     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX * 100),
         pid_loiter_rate_lon     (LOITER_RATE_P,         LOITER_RATE_I,          LOITER_RATE_D,          LOITER_RATE_IMAX * 100),
-
-        pid_nav_lat             (NAV_P,                 NAV_I,                  NAV_D,                  NAV_IMAX * 100),
-        pid_nav_lon             (NAV_P,                 NAV_I,                  NAV_D,                  NAV_IMAX * 100),
 
         pid_throttle            (THROTTLE_P,            THROTTLE_I,             THROTTLE_D,             THROTTLE_IMAX),
         pid_throttle_accel      (THROTTLE_ACCEL_P,      THROTTLE_ACCEL_I,       THROTTLE_ACCEL_D,       THROTTLE_ACCEL_IMAX),

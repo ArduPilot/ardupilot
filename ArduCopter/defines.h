@@ -19,10 +19,11 @@
 #define YAW_ACRO                        1       // pilot controlled yaw using rate controller
 #define YAW_LOOK_AT_NEXT_WP             2       // point towards next waypoint (no pilot input accepted)
 #define YAW_LOOK_AT_LOCATION            3       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
-#define YAW_LOOK_AT_HOME    		    4       // point towards home (no pilot input accepted)
-#define YAW_LOOK_AT_HEADING    		    5       // point towards a particular angle (not pilot input accepted)
-#define YAW_LOOK_AHEAD					6		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
-#define YAW_TOY                         7       // THOR This is the Yaw mode
+#define YAW_CIRCLE                      4       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
+#define YAW_LOOK_AT_HOME    		    5       // point towards home (no pilot input accepted)
+#define YAW_LOOK_AT_HEADING    		    6       // point towards a particular angle (not pilot input accepted)
+#define YAW_LOOK_AHEAD					7		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
+#define YAW_TOY                         8       // THOR This is the Yaw mode
 
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
@@ -160,9 +161,7 @@
 #define CH6_THR_ACCEL_KD    36          // accel based throttle controller's D term
 #define CH6_TOP_BOTTOM_RATIO 8          // upper/lower motor ratio (not used)
 #define CH6_RELAY           9           // switch relay on if ch6 high, off if low
-#define CH6_TRAVERSE_SPEED  10          // maximum speed to next way point (0 to 10m/s)
-#define CH6_NAV_KP          11          // navigation rate controller's P term (speed error to tilt angle)
-#define CH6_NAV_KI          20          // navigation rate controller's I term (speed error to tilt angle)
+#define CH6_WP_SPEED        10          // maximum speed to next way point (0 to 10m/s)
 #define CH6_LOITER_KP       12          // loiter distance controller's P term (position error to speed)
 #define CH6_LOITER_KI       27          // loiter distance controller's I term (position error to speed)
 #define CH6_HELI_EXTERNAL_GYRO 13       // TradHeli specific external tail gyro gain
@@ -175,12 +174,7 @@
 #define CH6_AHRS_YAW_KP     30          // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
 #define CH6_AHRS_KP         31          // accelerometer effect on roll/pitch angle (0=low)
 #define CH6_INAV_TC         32          // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
-
-// nav byte mask used with wp_verify_byte variable
-// -----------------------------------------------
-#define NAV_LOCATION 1
-#define NAV_ALTITUDE 2
-#define NAV_DELAY    4
+#define CH6_DECLINATION     38          // compass declination in radians
 
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol
@@ -218,11 +212,12 @@
 #define WP_OPTION_NEXT_CMD                      128
 
 // RTL state
-#define RTL_STATE_INITIAL_CLIMB     0
-#define RTL_STATE_RETURNING_HOME    1
-#define RTL_STATE_LOITERING_AT_HOME 2
-#define RTL_STATE_FINAL_DESCENT     3
-#define RTL_STATE_LAND              4
+#define RTL_STATE_START             0
+#define RTL_STATE_INITIAL_CLIMB     1
+#define RTL_STATE_RETURNING_HOME    2
+#define RTL_STATE_LOITERING_AT_HOME 3
+#define RTL_STATE_FINAL_DESCENT     4
+#define RTL_STATE_LAND              5
 
 //repeating events
 #define RELAY_TOGGLE 5
@@ -292,6 +287,7 @@ enum gcs_severity {
 #define LOG_DATA_INT32_MSG              0x16
 #define LOG_DATA_UINT32_MSG             0x17
 #define LOG_DATA_FLOAT_MSG              0x18
+#define LOG_WPNAV_MSG                   0x19
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 

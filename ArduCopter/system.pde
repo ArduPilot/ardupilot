@@ -445,12 +445,10 @@ static void set_mode(uint8_t mode)
     case CIRCLE:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        // set yaw to point to center of circle
-        yaw_look_at_WP = circle_WP;
-        set_yaw_mode(CIRCLE_YAW);
         set_roll_pitch_mode(CIRCLE_RP);
         set_throttle_mode(CIRCLE_THR);
         set_nav_mode(CIRCLE_NAV);
+        set_yaw_mode(CIRCLE_YAW);
         break;
 
     case LOITER:
@@ -459,7 +457,6 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(LOITER_YAW);
         set_roll_pitch_mode(LOITER_RP);
         set_throttle_mode(LOITER_THR);
-        set_next_WP(&current_loc);
         set_nav_mode(LOITER_NAV);
         break;
 
@@ -469,8 +466,8 @@ static void set_mode(uint8_t mode)
         set_yaw_mode(POSITION_YAW);
         set_roll_pitch_mode(POSITION_RP);
         set_throttle_mode(POSITION_THR);
-        set_next_WP(&current_loc);
         set_nav_mode(POSITION_NAV);
+        wp_nav.clear_angle_limit();     // ensure there are no left over angle limits from throttle controller.  To-Do: move this to the exit routine of throttle controller
         break;
 
     case GUIDED:
@@ -480,9 +477,6 @@ static void set_mode(uint8_t mode)
         set_roll_pitch_mode(GUIDED_RP);
         set_throttle_mode(GUIDED_THR);
         set_nav_mode(GUIDED_NAV);
-        wp_verify_byte = 0;
-        guided_WP = current_loc;
-        set_next_WP(&guided_WP);
         break;
 
     case LAND:
@@ -511,7 +505,6 @@ static void set_mode(uint8_t mode)
         set_roll_pitch_mode(OF_LOITER_RP);
         set_throttle_mode(OF_LOITER_THR);
         set_nav_mode(OF_LOITER_NAV);
-        set_next_WP(&current_loc);
         break;
 
     // THOR
@@ -546,8 +539,6 @@ static void set_mode(uint8_t mode)
         // We are under manual attitude control
         // remove the navigation from roll and pitch command
         reset_nav_params();
-        // remove the wind compenstaion
-        reset_wind_I();
     }
 
     Log_Write_Mode(control_mode);

@@ -593,7 +593,7 @@
 
 // CIRCLE Mode
 #ifndef CIRCLE_YAW
- # define CIRCLE_YAW             	YAW_LOOK_AT_LOCATION
+ # define CIRCLE_YAW             	YAW_CIRCLE
 #endif
 
 #ifndef CIRCLE_RP
@@ -868,7 +868,7 @@
 // Loiter position control gains
 //
 #ifndef LOITER_P
- # define LOITER_P             		2.0f
+ # define LOITER_P             		1.0f
 #endif
 #ifndef LOITER_I
  # define LOITER_I             		0.0f
@@ -881,13 +881,13 @@
 // Loiter rate control gains
 //
 #ifndef LOITER_RATE_P
- # define LOITER_RATE_P          	2.0f
+ # define LOITER_RATE_P          	1.0f
 #endif
 #ifndef LOITER_RATE_I
- # define LOITER_RATE_I          	1.0f
+ # define LOITER_RATE_I          	0.5f
 #endif
 #ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.50f
+ # define LOITER_RATE_D          	0.25f
 #endif
 #ifndef LOITER_RATE_IMAX
  # define LOITER_RATE_IMAX       	30                     // degrees
@@ -1105,10 +1105,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Navigation defaults
 //
-#ifndef WP_RADIUS_DEFAULT
- # define WP_RADIUS_DEFAULT      2
-#endif
-
 #ifndef CIRCLE_RADIUS
  # define CIRCLE_RADIUS 10              // meters for circle mode
 #endif

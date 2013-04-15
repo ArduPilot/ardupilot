@@ -201,15 +201,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(command_index,  "WP_INDEX",         0),
 
-    // @Param: WP_RADIUS
-    // @DisplayName: Waypoint Radius
-    // @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
-    // @Units: Meters
-    // @Range: 1 127
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(waypoint_radius,        "WP_RADIUS",    WP_RADIUS_DEFAULT),
-
     // @Param: CIRCLE_RADIUS
     // @DisplayName: Circle radius
     // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
@@ -218,14 +209,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(circle_radius,  "CIRCLE_RADIUS",    CIRCLE_RADIUS),
-
-	// @Param: WP_SPEED_MAX
-    // @DisplayName: Waypoint Max Speed Target
-    // @Description: Defines the speed which the aircraft will attempt to maintain during a WP mission.
-    // @Units: Centimeters/Second
-    // @Increment: 100
-    // @User: Standard
-    GSCALAR(waypoint_speed_max,     "WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
 
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
@@ -385,7 +368,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,8:CH6_TOP_BOTTOM_RATIO,9:CH6_RELAY,10:CH6_TRAVERSE_SPEED,11:CH6_NAV_KP,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,20:CH6_NAV_KI,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD
+    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,8:CH6_TOP_BOTTOM_RATIO,9:CH6_RELAY,10:CH6_WP_SPEED,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD,38:CH6_DECLINATION
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -657,58 +640,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
 
-    // @Param: NAV_LAT_P
-    // @DisplayName: Navigation latitude rate controller P gain
-    // @Description: Navigation latitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
-    // @Range: 2.000 2.800
-    // @User: Standard
-
-    // @Param: NAV_LAT_I
-    // @DisplayName: Navigation latitude rate controller I gain
-    // @Description: Navigation latitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
-    // @Range: 0.140 0.200
-    // @User: Standard
-
-    // @Param: NAV_LAT_IMAX
-    // @DisplayName: Navigation rate controller I gain maximum
-    // @Description: Navigation rate controller I gain maximum.  Constrains the lean angle that the I gain will output
-    // @Range: 0 4500
-    // @Unit: Centi-Degrees
-    // @User: Standard
-
-    // @Param: NAV_LAT_D
-    // @DisplayName: Navigation latitude rate controller D gain
-    // @Description: Navigation latitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.000 0.100
-    // @User: Standard
-    GGROUP(pid_nav_lat,             "NAV_LAT_",  AC_PID),
-
-    // @Param: NAV_LON_P
-    // @DisplayName: Navigation longitude rate controller P gain
-    // @Description: Navigation longitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the longitude direction
-    // @Range: 2.000 2.800
-    // @User: Standard
-
-    // @Param: NAV_LON_I
-    // @DisplayName: Navigation longitude rate controller I gain
-    // @Description: Navigation longitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the longitude direction
-    // @Range: 0.140 0.200
-    // @User: Standard
-
-    // @Param: NAV_LON_IMAX
-    // @DisplayName: Navigation longitude rate controller I gain maximum
-    // @Description: Navigation longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will generate
-    // @Range: 0 4500
-    // @Unit: Centi-Degrees
-    // @User: Standard
-
-    // @Param: NAV_LON_D
-    // @DisplayName: Navigation longituderate controller D gain
-    // @Description: Navigation longitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.000 0.100
-    // @User: Standard
-    GGROUP(pid_nav_lon,             "NAV_LON_",  AC_PID),
-
     // @Param: THR_RATE_P
     // @DisplayName: Throttle rate controller P gain
     // @Description: Throttle rate controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
@@ -957,6 +888,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: INAV_
     // @Path: ../libraries/AP_InertialNav/AP_InertialNav.cpp
     GOBJECT(inertial_nav,           "INAV_",    AP_InertialNav),
+
+    //@Group: WPNAV_
+    //@Path: ../libraries/AC_WPNav/AC_WPNav.cpp
+    GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
     // @Group: SR0_
     // @Path: ./GCS_Mavlink.pde

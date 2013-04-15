@@ -16,6 +16,7 @@ static void default_dead_zones()
     g.rc_3.set_dead_zone(60);
     g.rc_4.set_dead_zone(80);
 #endif
+    g.rc_6.set_dead_zone(0);
 }
 
 static void init_rc_in()

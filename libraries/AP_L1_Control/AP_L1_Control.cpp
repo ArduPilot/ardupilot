@@ -37,8 +37,9 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
  */
 int32_t AP_L1_Control::nav_roll_cd(void)
 {
-	int32_t ret;	
+	float ret;	
 	ret = degrees(atanf(_latAccDem * 0.101972f) * 100.0f); // 0.101972 = 1/9.81
+	ret = constrain(ret, -9000, 9000);
 	return ret;
 }
 
@@ -59,7 +60,7 @@ int32_t AP_L1_Control::target_bearing_cd(void)
 
 float AP_L1_Control::turn_distance(float wp_radius)
 {
-	return max(wp_radius, _L1_dist);
+	return min(wp_radius, _L1_dist);
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
@@ -81,10 +82,10 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	const float omegaA = 4.4428f/_L1_period; // sqrt(2)*pi/period
 	// Calculate additional damping gain
 	const float Kv = omegaA * 2.8284f * (_L1_damping - 0.7071f); // omegaA * 2*sqrt(2) * (dampingRatio - 1/sqrt(2))
-
 	float Nu;
 	float dampingWeight;
 	float xtrackVel;
+	struct Location _current_loc;
 	
 	// Get current position and velocity
     _ahrs->get_position(&_current_loc);
@@ -140,7 +141,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		
 		//Calculate Nu1 angle (Angle to L1 reference point)
 		float xtrackErr = _cross2D(A_air, AB_unit);
-		float sine_Nu1 = xtrackErr/_L1_dist;
+		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
 		sine_Nu1 = constrain(sine_Nu1, -0.7854f, 0.7854f);
 		float Nu1 = asinf(sine_Nu1);
@@ -178,6 +179,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float omega = (6.2832f / _L1_period);
 	float Kx = omega * omega;
 	float Kv = 2.0f * _L1_damping * omega;
+	struct Location _current_loc;
 
 	//Get current position and velocity
     _ahrs->get_position(&_current_loc);
@@ -223,22 +225,30 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	//Calculate PD control correction to circle waypoint
 	float latAccDemCircPD = (xtrackErrCirc * Kx + xtrackVelCirc * Kv);
 	
-	//Calculate centripetal acceleration to circle waypoint
-	float velTangent = _maxf((xtrackVelCap * float(loiter_direction)) , 0.0f);
-	float latAccDemCircCtr = velTangent * velTangent / _maxf((0.5f * radius) , (radius + xtrackErrCirc));
+	//Calculate tangential velocity
+	float velTangent = xtrackVelCap * float(loiter_direction);
 	
+    //Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
+    if ( velTangent < 0.0f ) {
+        latAccDemCircPD =  _maxf(latAccDemCircPD , 0.0f);
+	}
+	
+	// Calculate centripetal acceleration demand
+	float latAccDemCircCtr = velTangent * velTangent / _maxf((0.5f * radius) , (radius + xtrackErrCirc));
+
 	//Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
 	float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
 	
-	//Perform switchover between 'capture' and 'circle' modes at the point where the commands cross over to achieve a seamless transfer
-	if ((latAccDemCap < latAccDemCirc && loiter_direction > 0) | (latAccDemCap > latAccDemCirc && loiter_direction < 0)) {
+	// Perform switchover between 'capture' and 'circle' modes at the point where the commands cross over to achieve a seamless transfer
+	// Only fly 'capture' mode if outside the circle
+	if ((latAccDemCap < latAccDemCirc && loiter_direction > 0 && xtrackErrCirc > 0.0f) | (latAccDemCap > latAccDemCirc && loiter_direction < 0 && xtrackErrCirc > 0.0f)) {
 		_latAccDem = latAccDemCap;
-		_WPcircle = true;
+		_WPcircle = false;
 		_bearing_error = Nu; // angle between demanded and achieved velocity vector, +ve to left of track
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
 	} else {
 		_latAccDem = latAccDemCirc;
-		_WPcircle = false;
+		_WPcircle = true;
 		_bearing_error = 0.0f; // bearing error (radians), +ve to left of track
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians)from AC to L1 point
 	}
@@ -300,7 +310,7 @@ void AP_L1_Control::update_level_flight(void)
 }
 
 
-Vector2f AP_L1_Control::_geo2planar(const Vector2f &ref, const Vector2f &wp)
+Vector2f AP_L1_Control::_geo2planar(const Vector2f &ref, const Vector2f &wp) const
 {
     Vector2f out;
 
@@ -319,17 +329,7 @@ float AP_L1_Control::_cross2D(const Vector2f &v1, const Vector2f &v2)
     return out;
 }
 
-Vector2f  AP_L1_Control::_planar2geo(const Vector2f &ref, const Vector2f &wp)
-{
-    Vector2f out;
-
-    out.x=degrees(wp.x)+ref.x;
-    out.y=degrees(wp.y*(1/cosf(radians(ref.x))))+ref.y;
-
-    return out;
-}
-
-float AP_L1_Control::_maxf(const float &num1, const float &num2)
+float AP_L1_Control::_maxf(const float &num1, const float &num2) const
 {
     float result;
 

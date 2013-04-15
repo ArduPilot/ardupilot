@@ -533,8 +533,8 @@ struct log_Control_Tuning {
     LOG_PACKET_HEADER;
     int16_t throttle_in;
     int16_t sonar_alt;
-    int16_t baro_alt;
-    int16_t next_wp_alt;
+    int32_t baro_alt;
+    float   next_wp_alt;
     int16_t nav_throttle;
     int16_t angle_boost;
     int16_t climb_rate;
@@ -549,8 +549,8 @@ static void Log_Write_Control_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         throttle_in         : g.rc_3.control_in,
         sonar_alt           : sonar_alt,
-        baro_alt            : (int16_t) baro_alt,
-        next_wp_alt         : (int16_t) next_WP.alt,
+        baro_alt            : baro_alt,
+        next_wp_alt         : target_alt_for_reporting,
         nav_throttle        : nav_throttle,
         angle_boost         : angle_boost,
         climb_rate          : climb_rate,
@@ -566,12 +566,12 @@ static void Log_Read_Control_Tuning()
     struct log_Control_Tuning pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                               1   2   3   4   5   6   7   8   9
-    cliSerial->printf_P(PSTR("CTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+    //                               1   2    3      4   5   6   7   8   9
+    cliSerial->printf_P(PSTR("CTUN, %d, %d, %ld, %4.0f, %d, %d, %d, %d, %d\n"),
         (int)pkt.throttle_in,
         (int)pkt.sonar_alt,
-        (int)pkt.baro_alt,
-        (int)pkt.next_wp_alt,
+        (long)pkt.baro_alt,
+        (float)pkt.next_wp_alt,
         (int)pkt.nav_throttle,
         (int)pkt.angle_boost,
         (int)pkt.climb_rate,
@@ -771,7 +771,6 @@ struct log_INAV {
     float   accel_corr_x;
     float   accel_corr_y;
     float   accel_corr_z;
-    float   accel_corr_ef_z;
     int32_t gps_lat_from_home;
     int32_t gps_lon_from_home;
     float   inav_lat_from_home;
@@ -793,13 +792,12 @@ static void Log_Write_INAV()
         accel_corr_x        : accel_corr.x,                             // 4 accel correction x-axis
         accel_corr_y        : accel_corr.y,                             // 5 accel correction y-axis
         accel_corr_z        : accel_corr.z,                             // 6 accel correction z-axis
-        accel_corr_ef_z     : inertial_nav.accel_correction_ef.z,       // 7 accel correction earth frame
-        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 8 lat from home
-        gps_lon_from_home   : g_gps->longitude-home.lng,                // 9 lon from home
-        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 10 accel based lat from home
-        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 11 accel based lon from home
-        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 12 accel based lat velocity
-        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 13 accel based lon velocity
+        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 7 lat from home
+        gps_lon_from_home   : g_gps->longitude-home.lng,                // 8 lon from home
+        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 9 accel based lat from home
+        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 10 accel based lon from home
+        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 11 accel based lat velocity
+        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 12 accel based lon velocity
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -810,21 +808,20 @@ static void Log_Read_INAV()
     struct log_INAV pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-                                  // 1   2   3      4      5      6      7    8    9     10     11     12     13
-    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
+                                  // 1   2   3      4      5      6    7    8    9     10     11     12
+    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
                     (int)pkt.baro_alt,                  // 1 barometer altitude
                     (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
                     (int)pkt.inav_climb_rate,           // 3 accel + baro based climb rate
                     (float)pkt.accel_corr_x,            // 4 accel correction x-axis
                     (float)pkt.accel_corr_y,            // 5 accel correction y-axis
                     (float)pkt.accel_corr_z,            // 6 accel correction z-axis
-                    (float)pkt.accel_corr_ef_z,         // 7 accel correction earth frame
-                    (long)pkt.gps_lat_from_home,        // 8 lat from home
-                    (long)pkt.gps_lon_from_home,        // 9 lon from home
-                    (float)pkt.inav_lat_from_home,      // 10 accel based lat from home
-                    (float)pkt.inav_lon_from_home,      // 11 accel based lon from home
-                    (float)pkt.inav_lat_speed,          // 12 accel based lat velocity
-                    (float)pkt.inav_lon_speed);         // 13 accel based lon velocity
+                    (long)pkt.gps_lat_from_home,        // 7 lat from home
+                    (long)pkt.gps_lon_from_home,        // 8 lon from home
+                    (float)pkt.inav_lat_from_home,      // 9 accel based lat from home
+                    (float)pkt.inav_lon_from_home,      // 10 accel based lon from home
+                    (float)pkt.inav_lat_speed,          // 11 accel based lat velocity
+                    (float)pkt.inav_lon_speed);         // 12 accel based lon velocity
 }
 
 struct log_Mode {
@@ -1227,6 +1224,61 @@ static void Log_Read_Error()
     cliSerial->printf_P(PSTR(", %u\n"),(unsigned)pkt.error_code);
 }
 
+struct log_WPNAV {
+    LOG_PACKET_HEADER;
+    float   pos_error_x;
+    float   pos_error_y;
+    float   desired_velocity_x;
+    float   desired_velocity_y;
+    float   velocity_x;
+    float   velocity_y;
+    float   desired_accel_x;
+    float   desired_accel_y;
+    int32_t desired_roll;
+    int32_t desired_pitch;
+};
+
+// Write an INAV packet. Total length : 52 Bytes
+static void Log_Write_WPNAV()
+{
+    Vector3f velocity = inertial_nav.get_velocity();
+
+    struct log_WPNAV pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_WPNAV_MSG),
+        pos_error_x         : wp_nav.dist_error.x,
+        pos_error_y         : wp_nav.dist_error.y,
+        desired_velocity_x  : wp_nav.desired_vel.x,
+        desired_velocity_y  : wp_nav.desired_vel.y,
+        velocity_x          : velocity.x,
+        velocity_y          : velocity.y,
+        desired_accel_x     : wp_nav.desired_accel.x,
+        desired_accel_y     : wp_nav.desired_accel.y,
+        desired_roll        : wp_nav.get_desired_roll(),
+        desired_pitch       : wp_nav.get_desired_pitch()
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Read an WPNAV packet
+static void Log_Read_WPNav()
+{
+    struct log_WPNAV pkt;
+    DataFlash.ReadPacket(&pkt, sizeof(pkt));
+
+                                      // 1      2      3      4      5      6      7      8    9   10
+    cliSerial->printf_P(PSTR("WPNAV, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %ld, %ld\n"),
+                    (float)pkt.pos_error_x,         // 1 position error in cm in lat direction
+                    (float)pkt.pos_error_y,         // 2 position error in cm in lon direction
+                    (float)pkt.desired_velocity_x,  // 3 desired velocity in cm/s in lat direction
+                    (float)pkt.desired_velocity_y,  // 4 desired velocity in cm/s in lon direction
+                    (float)pkt.velocity_x,          // 5 velocity in cm/s in lat direction
+                    (float)pkt.velocity_y,          // 6 velocity in cm/s in lon direction
+                    (float)pkt.desired_accel_x,     // 7 desired acceleration in cm/s/s in lat direction
+                    (float)pkt.desired_accel_y,     // 8 desired acceleration in cm/s/s in lon direction
+                    (long)pkt.desired_roll,         // 9 accel based lat from home
+                    (long)pkt.desired_pitch);         // 12 accel based lon velocity
+}
+
 // Read the DataFlash log memory
 static void Log_Read(uint8_t log_num, int16_t start_page, int16_t end_page)
 {
@@ -1345,6 +1397,10 @@ static void log_callback(uint8_t msgid)
         
     case LOG_DATA_FLOAT_MSG:
         Log_Read_Float();
+        break;
+
+    case LOG_WPNAV_MSG:
+        Log_Read_WPNav();
         break;
     }
 }

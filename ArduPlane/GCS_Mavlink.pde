@@ -1301,9 +1301,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_NAV_LOITER_TIME:
         case MAV_CMD_NAV_LOITER_TURNS:
             if (tell_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
-                param3 = -g.loiter_radius;
+                param3 = -abs(g.loiter_radius);
             } else {
-                param3 = g.loiter_radius;
+                param3 = abs(g.loiter_radius);
             }
         case MAV_CMD_NAV_TAKEOFF:
         case MAV_CMD_DO_SET_HOME:
@@ -1312,9 +1312,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_NAV_LOITER_UNLIM:
             if (tell_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
-                param3 = -g.loiter_radius;;
+                param3 = -abs(g.loiter_radius);
             } else {
-                param3 = g.loiter_radius;
+                param3 = abs(g.loiter_radius);
             }
             break;
         case MAV_CMD_CONDITION_CHANGE_ALT:
@@ -1546,8 +1546,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
         {
             tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
+                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
             tell_command.alt = -packet.z*1.0e2f;
             tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
             break;
@@ -1558,8 +1558,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_FRAME_LOCAL:                         // local (relative to home position)
         {
             tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (radius_of_earth*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/radius_of_earth) + home.lng;
+                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
+            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
             tell_command.alt = packet.z*1.0e2f;
             tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
             break;

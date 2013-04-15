@@ -119,27 +119,6 @@ void set_land_complete(bool b)
 
 // ---------------------------------------------
 
-void set_alt_change(uint8_t flag){
-
-    // if no change, exit immediately
-    if( alt_change_flag == flag ) {
-        return;
-    }
-
-    // update flag
-    alt_change_flag = flag;
-
-    if(flag == REACHED_ALT){
-        Log_Write_Event(DATA_REACHED_ALT);
-
-    }else if(flag == ASCENDING){
-        Log_Write_Event(DATA_ASCENDING);
-
-    }else if(flag == DESCENDING){
-        Log_Write_Event(DATA_DESCENDING);
-    }
-}
-
 void set_compass_healthy(bool b)
 {
     if(ap.compass_status != b){
