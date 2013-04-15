@@ -1295,7 +1295,7 @@ static void super_slow_loop()
 
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
     // but only of the control mode is manual
-    if((control_mode <= ACRO) && (g.rc_3.control_in == 0)) {
+    if((control_mode <= ACRO) && (g.rc_3.control_in == 0) && motors.armed()) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter == AUTO_DISARMING_DELAY) {
