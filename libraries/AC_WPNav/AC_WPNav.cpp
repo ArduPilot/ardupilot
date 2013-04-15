@@ -178,7 +178,7 @@ void AC_WPNav::update_loiter()
     translate_loiter_target_movements(dt);
 
     // run loiter position controller
-    get_loiter_pos_lat_lon(_target.x, _target.y, dt);
+    get_loiter_position_to_velocity(dt);
 }
 
 ///
@@ -303,19 +303,17 @@ void AC_WPNav::update_wpnav()
     }
 
     // run loiter position controller
-    get_loiter_pos_lat_lon(_target.x, _target.y, dt);
+    get_loiter_position_to_velocity(dt);
 }
 
 ///
 /// shared methods
 ///
 
-// get_loiter_pos_lat_lon - loiter position controller
-//     converts desired position provided as distance from home in lat/lon directions to desired velocity
-void AC_WPNav::get_loiter_pos_lat_lon(float target_lat_from_home, float target_lon_from_home, float dt)
+/// get_loiter_position_to_velocity - loiter position controller
+///     converts desired position held in _target vector to desired velocity
+void AC_WPNav::get_loiter_position_to_velocity(float dt)
 {
-    Vector2f dist_error;
-    Vector2f desired_vel;
     Vector3f curr = _inav->get_position();
     float dist_error_total;
 
@@ -325,8 +323,8 @@ void AC_WPNav::get_loiter_pos_lat_lon(float target_lat_from_home, float target_l
     float linear_distance;      // the distace we swap between linear and sqrt.
 
     // calculate distance error
-    dist_error.x = target_lat_from_home - curr.x;
-    dist_error.y = target_lon_from_home - curr.y;
+    dist_error.x = _target.x - curr.x;
+    dist_error.y = _target.y - curr.y;
 
     linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
     _distance_to_target = linear_distance;      // for reporting purposes
@@ -347,16 +345,16 @@ void AC_WPNav::get_loiter_pos_lat_lon(float target_lat_from_home, float target_l
         desired_vel.y = MAX_LOITER_POS_VELOCITY * desired_vel.y/vel_total;
     }
 
-    get_loiter_vel_lat_lon(desired_vel.x, desired_vel.y, dt);
+    // call velocity to acceleration controller
+    get_loiter_velocity_to_acceleration(desired_vel.x, desired_vel.y, dt);
 }
 
-// get_loiter_vel_lat_lon - loiter velocity controller
-//    converts desired velocities in lat/lon frame to accelerations in lat/lon frame
-void AC_WPNav::get_loiter_vel_lat_lon(float vel_lat, float vel_lon, float dt)
+/// get_loiter_velocity_to_acceleration - loiter velocity controller
+///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
+void AC_WPNav::get_loiter_velocity_to_acceleration(float vel_lat, float vel_lon, float dt)
 {
     Vector3f vel_curr = _inav->get_velocity();  // current velocity in cm/s
     Vector3f vel_error;                         // The velocity error in cm/s.
-    Vector2f desired_accel;                     // the resulting desired acceleration
     float accel_total;                          // total acceleration in cm/s/s
 
     // reset last velocity if this controller has just been engaged or dt is zero
@@ -389,12 +387,12 @@ void AC_WPNav::get_loiter_vel_lat_lon(float vel_lat, float vel_lon, float dt)
     }
 
     // call accel based controller with desired acceleration
-    get_loiter_accel_lat_lon(desired_accel.x, desired_accel.y);
+    get_loiter_acceleration_to_lean_angles(desired_accel.x, desired_accel.y);
 }
 
-// get_loiter_accel_lat_lon - loiter acceration controller
-//    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_WPNav::get_loiter_accel_lat_lon(float accel_lat, float accel_lon)
+/// get_loiter_acceleration_to_lean_angles - loiter acceleration controller
+///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
+void AC_WPNav::get_loiter_acceleration_to_lean_angles(float accel_lat, float accel_lon)
 {
     float z_accel_meas = -GRAVITY_MSS * 100;    // gravity in cm/s/s
     float accel_forward;

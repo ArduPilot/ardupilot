@@ -155,17 +155,17 @@ protected:
     /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
     void translate_loiter_target_movements(float nav_dt);
 
-    /// get_loiter_pos_lat_lon - loiter position controller
-    ///     converts desired position provided as distance from home in lat/lon directions to desired velocity
-    void get_loiter_pos_lat_lon(float target_lat_from_home, float target_lon_from_home, float dt);
+    /// get_loiter_position_to_velocity - loiter position controller
+    ///     converts desired position held in _target vector to desired velocity
+    void get_loiter_position_to_velocity(float dt);
 
-    /// get_loiter_vel_lat_lon - loiter velocity controller
-    ///    converts desired velocities in lat/lon frame to accelerations in lat/lon frame
-    void get_loiter_vel_lat_lon(float vel_lat, float vel_lon, float dt);
+    /// get_loiter_velocity_to_acceleration - loiter velocity controller
+    ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
+    void get_loiter_velocity_to_acceleration(float vel_lat_cms, float vel_lon_cms, float dt);
 
-    /// get_loiter_accel_lat_lon - loiter acceration controller
+    /// get_loiter_acceleration_to_lean_angles - loiter acceleration controller
     ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void get_loiter_accel_lat_lon(float accel_lat, float accel_lon);
+    void get_loiter_acceleration_to_lean_angles(float accel_lat_cmss, float accel_lon_cmss);
 
     /// get_bearing_cd - return bearing in centi-degrees between two positions
     float get_bearing_cd(const Vector3f origin, const Vector3f destination);
@@ -215,9 +215,13 @@ protected:
     int16_t     _pilot_vel_forward_cms;
     int16_t     _pilot_vel_right_cms;
 
+public:
+    // for logging purposes
+    Vector2f dist_error;                // distance error calculated by loiter controller
+    Vector2f desired_vel;               // loiter controller desired velocity
+    Vector2f desired_accel;             // the resulting desired acceleration
+    
     // To-Do: add split of fast (100hz for accel->angle) and slow (10hz for navigation)
-    //float       _desired_accel_fwd;     // updated from loiter controller at 10hz, consumed by accel->angle controller at 50hz
-    //float       _desired_accel_rgt;
     /// update - run the loiter and wpnav controllers - should be called at 100hz
     //void update_100hz(void);
     /// update - run the loiter and wpnav controllers - should be called at 10hz

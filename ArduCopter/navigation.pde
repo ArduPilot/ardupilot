@@ -157,11 +157,15 @@ static void update_nav_mode()
         case NAV_LOITER:
             // call loiter controller
             wp_nav.update_loiter();
+            // log to dataflash
+            Log_Write_WPNAV();
             break;
 
         case NAV_WP:
             // call waypoint controller
             wp_nav.update_wpnav();
+            // log to dataflash
+            Log_Write_WPNAV();
             break;
     }
 
