@@ -297,7 +297,8 @@ static void do_loiter_turns()
 static void do_loiter_time()
 {
     set_next_WP(&next_nav_command);
-    loiter.start_time_ms = millis();
+    // we set start_time_ms when we reach the waypoint
+    loiter.start_time_ms = 0;
     loiter.time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
     loiter_set_direction_wp(&next_nav_command);
 }
@@ -413,7 +414,12 @@ static bool verify_loiter_unlim()
 static bool verify_loiter_time()
 {
     update_loiter();
-    if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
+    if (loiter.start_time_ms == 0) {
+        if (nav_controller->reached_loiter_target()) {
+            // we've reached the target, start the timer
+            loiter.start_time_ms = millis();
+        }
+    } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
         return true;
     }
