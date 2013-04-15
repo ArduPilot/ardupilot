@@ -16,8 +16,8 @@ static void set_nav_controller(void)
  */
 static void loiter_angle_reset(void)
 {
-    loiter.loiter_sum_cd = 0;
-    loiter.loiter_total_cd = 0;
+    loiter.sum_cd = 0;
+    loiter.total_cd = 0;
 }
 
 /*
@@ -28,15 +28,16 @@ static void loiter_angle_update(void)
 {
     int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
-    if (loiter.loiter_sum_cd == 0) {
-        loiter_delta_cd = 0;
+    if (loiter.sum_cd == 0) {
+        // use 1 cd for initial delta
+        loiter_delta_cd = 1;
     } else {
         loiter_delta_cd = target_bearing_cd - loiter.old_target_bearing_cd;
     }
     loiter.old_target_bearing_cd = target_bearing_cd;
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
 
-    loiter.loiter_sum_cd += loiter_delta_cd;
+    loiter.sum_cd += loiter_delta_cd;
 }
 
 //****************************************************************
@@ -142,6 +143,6 @@ static void calc_altitude_error()
 
 static void update_loiter()
 {
-    nav_controller->update_loiter(next_WP, abs(g.loiter_radius), loiter_direction);
+    nav_controller->update_loiter(next_WP, abs(g.loiter_radius), loiter.direction);
 }
 

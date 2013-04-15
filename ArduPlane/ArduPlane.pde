@@ -459,15 +459,6 @@ static bool throttle_suppressed;
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
 
-// Direction for loiter. 1 for clockwise, -1 for counter-clockwise
-static int8_t loiter_direction = 1;
-
-// The amount of time we have been in a Loiter.  Used for the Loiter Time command.  Milliseconds.
-static uint32_t loiter_time_ms;
-
-// The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
-static uint32_t loiter_time_max_ms;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
@@ -491,11 +482,23 @@ static uint32_t wp_totalDistance;
   meta data to support counting the number of circles in a loiter
  */
 static struct {
+    // previous target bearing, used to update sum_cd
     int32_t old_target_bearing_cd;
-    int32_t loiter_sum_cd;
 
     // Total desired rotation in a loiter.  Used for Loiter Turns commands. 
-    int32_t loiter_total_cd;
+    int32_t total_cd;
+
+    // total angle completed in the loiter so far
+    int32_t sum_cd;
+
+	// Direction for loiter. 1 for clockwise, -1 for counter-clockwise
+    int8_t direction;
+
+	// start time of the loiter.  Milliseconds.
+    uint32_t start_time_ms;
+
+	// The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
+    uint32_t time_max_ms;
 } loiter;
 
 

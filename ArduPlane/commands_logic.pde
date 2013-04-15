@@ -236,9 +236,9 @@ static void do_RTL(void)
     next_WP                 = home;
 
     if (g.loiter_radius < 0) {
-        loiter_direction = -1;
+        loiter.direction = -1;
     } else {
-        loiter_direction = 1;
+        loiter.direction = 1;
     }
 
     // Altitude to hold over home
@@ -275,9 +275,9 @@ static void do_land()
 static void loiter_set_direction_wp(const struct Location *nav_command)
 {
     if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
-        loiter_direction = -1;
+        loiter.direction = -1;
     } else {
-        loiter_direction = 1;
+        loiter.direction = 1;
     }
 }
 
@@ -290,15 +290,15 @@ static void do_loiter_unlimited()
 static void do_loiter_turns()
 {
     set_next_WP(&next_nav_command);
-    loiter.loiter_total_cd = next_nav_command.p1 * 36000UL;
+    loiter.total_cd = next_nav_command.p1 * 36000UL;
     loiter_set_direction_wp(&next_nav_command);
 }
 
 static void do_loiter_time()
 {
     set_next_WP(&next_nav_command);
-    loiter_time_ms = millis();
-    loiter_time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
+    loiter.start_time_ms = millis();
+    loiter.time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
     loiter_set_direction_wp(&next_nav_command);
 }
 
@@ -413,7 +413,7 @@ static bool verify_loiter_unlim()
 static bool verify_loiter_time()
 {
     update_loiter();
-    if ((millis() - loiter_time_ms) > loiter_time_max_ms) {
+    if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
         return true;
     }
@@ -423,8 +423,8 @@ static bool verify_loiter_time()
 static bool verify_loiter_turns()
 {
     update_loiter();
-    if (loiter.loiter_sum_cd > loiter.loiter_total_cd) {
-        loiter.loiter_total_cd = 0;
+    if (loiter.sum_cd > loiter.total_cd) {
+        loiter.total_cd = 0;
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
         // clear the command queue;
         return true;
@@ -511,9 +511,9 @@ static bool verify_within_distance()
 static void do_loiter_at_location()
 {
     if (g.loiter_radius < 0) {
-        loiter_direction = -1;
+        loiter.direction = -1;
     } else {
-        loiter_direction = 1;
+        loiter.direction = 1;
     }
     next_WP = current_loc;
 }
