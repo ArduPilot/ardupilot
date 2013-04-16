@@ -887,10 +887,10 @@
  # define LOITER_RATE_I          	0.5f
 #endif
 #ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.25f
+ # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX       	30                     // degrees
+ # define LOITER_RATE_IMAX       	4               // maximum acceleration from I term build-up in m/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
