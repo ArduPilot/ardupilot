@@ -894,21 +894,8 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// WP Navigation control gains
+// Autopilot rotate rate limits
 //
-#ifndef NAV_P
- # define NAV_P                     2.4f                    //
-#endif
-#ifndef NAV_I
- # define NAV_I                     0.17f           // Wind control
-#endif
-#ifndef NAV_D
- # define NAV_D                     0.00f           // .95
-#endif
-#ifndef NAV_IMAX
- # define NAV_IMAX                  18                     // degrees
-#endif
-
 #ifndef AUTO_SLEW_RATE
  # define AUTO_SLEW_RATE         	45                     // degrees/sec
 #endif
@@ -916,16 +903,6 @@
 #ifndef AUTO_YAW_SLEW_RATE
  # define AUTO_YAW_SLEW_RATE        60                     // degrees/sec
 #endif
-
-
-#ifndef WAYPOINT_SPEED_MAX
- # define WAYPOINT_SPEED_MAX        500                    // 6m/s error = 13mph
-#endif
-
-#ifndef WAYPOINT_SPEED_MIN
- # define WAYPOINT_SPEED_MIN        150                    // 1m/s
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1002,19 +979,6 @@
  # define THROTTLE_ACCEL_IMAX 500
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// DEBUGGING
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// DEBUG_LEVEL
-//
-#ifndef DEBUG_LEVEL
- # define DEBUG_LEVEL SEVERITY_LOW
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
@@ -1096,27 +1060,16 @@
     LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
 
-// if we are using fast, Disable Medium
-//#if LOG_ATTITUDE_FAST == ENABLED
-//	#undef LOG_ATTITUDE_MED
-//	#define LOG_ATTITUDE_MED        DISABLED
-//#endif
-
 //////////////////////////////////////////////////////////////////////////////
-// Navigation defaults
+// Circle navigation defaults
 //
 #ifndef CIRCLE_RADIUS
  # define CIRCLE_RADIUS 10              // meters for circle mode
 #endif
 
-#ifndef USE_CURRENT_ALT
- # define USE_CURRENT_ALT FALSE
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // AP_Limits Defaults
 //
-
 
 // Enable/disable AP_Limits
 #ifndef AP_LIMITS
