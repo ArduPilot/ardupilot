@@ -190,11 +190,13 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // settable parameters
+    AP_Int8 _learn;                             ///<enable calibration learning
+
 protected:
     enum Rotation _orientation;
     AP_Vector3f _offset;
     AP_Float _declination;
-    AP_Int8 _learn;                             ///<enable calibration learning
     AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
 
