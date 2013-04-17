@@ -39,7 +39,7 @@ Menu::run(void)
     uint8_t len, i;
     uint8_t argc;
     int c;
-    char *s;
+    char *s = NULL;
 
 	if (_port == NULL) {
 		// default to main serial port
@@ -87,6 +87,7 @@ Menu::run(void)
 
         // split the input line into tokens
         argc = 0;
+		s = NULL;
         _argv[argc++].str = strtok_r(_inbuf, " ", &s);
         // XXX should an empty line by itself back out of the current menu?
         while (argc <= MENU_ARGS_MAX) {
