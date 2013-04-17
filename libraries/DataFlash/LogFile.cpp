@@ -5,7 +5,7 @@
 
 // This function determines the number of whole or partial log files in the DataFlash
 // Wholly overwritten files are (of course) lost.
-uint8_t DataFlash_Block::get_num_logs(void)
+uint16_t DataFlash_Block::get_num_logs(void)
 {
     uint16_t lastpage;
     uint16_t last;
@@ -78,7 +78,7 @@ uint16_t DataFlash_Block::start_new_log(void)
 
 // This function finds the first and last pages of a log file
 // The first page may be greater than the last page if the DataFlash has been filled and partially overwritten.
-void DataFlash_Block::get_log_boundaries(uint8_t log_num, uint16_t & start_page, uint16_t & end_page)
+void DataFlash_Block::get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page)
 {
     uint16_t num = get_num_logs();
     uint16_t look;
@@ -248,13 +248,12 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 
   Note that for the block oriented backend the log_num is ignored
 */
-uint16_t DataFlash_Block::log_read_process(uint8_t log_num,
-                                           uint16_t start_page, uint16_t end_page, 
-                                           void (*callback)(uint8_t msgid))
+void DataFlash_Block::log_read_process(uint16_t log_num,
+                                       uint16_t start_page, uint16_t end_page, 
+                                       void (*callback)(uint8_t msgid))
 {
     uint8_t log_step = 0;
     uint16_t page = start_page;
-    uint16_t packet_count = 0;
 
     if (df_BufferIdx != 0) {
         FinishWrite();
@@ -285,19 +284,16 @@ uint16_t DataFlash_Block::log_read_process(uint8_t log_num,
 			case 2:
 				log_step = 0;
                 callback(data);
-                packet_count++;
                 break;
 		}
         uint16_t new_page = GetPage();
         if (new_page != page) {
             if (new_page == end_page || new_page == start_page) {
-                return packet_count;
+                return;
             }
             page = new_page;
         }
 	}
-
-	return packet_count;
 }
 
 /*
@@ -329,4 +325,36 @@ void DataFlash_Block::ShowDeviceInfo(AP_HAL::BetterStream *port)
     port->printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
                    (unsigned)df_NumPages+1,
                    (unsigned)df_PageSize);
+}
+
+/*
+  list available log numbers
+ */
+void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
+{
+    uint16_t num_logs = get_num_logs();
+    int16_t last_log_num = find_last_log();
+    uint16_t log_start = 0;
+    uint16_t log_end = 0;
+
+    if (num_logs == 0) {
+        port->printf_P(PSTR("\nNo logs\n\n"));
+        return;
+    }
+    port->printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
+
+    for (uint16_t i=num_logs; i>=1; i--) {
+        uint16_t last_log_start = log_start, last_log_end = log_end;
+        uint16_t temp = last_log_num - i + 1;
+        get_log_boundaries(temp, log_start, log_end);
+        port->printf_P(PSTR("Log %u,    start %u,   end %u\n"), 
+                       (unsigned)temp, 
+                       (unsigned)log_start, 
+                       (unsigned)log_end);
+        if (last_log_start == log_start && last_log_end == log_end) {
+            // we are printing bogus logs
+            break;
+        }
+    }
+    port->println();
 }
