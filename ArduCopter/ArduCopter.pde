@@ -384,11 +384,9 @@ static struct AP_System{
     uint8_t GPS_light               : 1; // 1   // Solid indicates we have full 3D lock and can navigate, flash = read
     uint8_t motor_light             : 1; // 2   // Solid indicates Armed state
     uint8_t new_radio_frame         : 1; // 3   // Set true if we have new PWM data to act on from the Radio
-    uint8_t nav_ok                  : 1; // 4   // deprecated
-    uint8_t CH7_flag                : 1; // 5   // manages state of the ch7 toggle switch
-    uint8_t usb_connected           : 1; // 6   // true if APM is powered from USB connection
-    uint8_t alt_sensor_flag         : 1; // 7   // used to track when to read sensors vs estimate alt
-    uint8_t yaw_stopped             : 1; // 8   // Used to manage the Yaw hold capabilities
+    uint8_t CH7_flag                : 1; // 4   // manages state of the ch7 toggle switch
+    uint8_t usb_connected           : 1; // 5   // true if APM is powered from USB connection
+    uint8_t yaw_stopped             : 1; // 6   // Used to manage the Yaw hold capabilities
 
 } ap_system;
 
@@ -1089,7 +1087,6 @@ static void medium_loop()
             }
         }
 
-        ap_system.alt_sensor_flag = true;
         break;
 
     // This case deals with sending high rate telemetry
@@ -1389,10 +1386,6 @@ static void update_GPS(void)
                 // start again if we lose 3d lock
                 ground_start_count = 10;
             }
-
-#if HIL_MODE == HIL_MODE_ATTITUDE                                                               // only execute in HIL mode
-            ap_system.alt_sensor_flag = true;
-#endif
         }
     }
 
