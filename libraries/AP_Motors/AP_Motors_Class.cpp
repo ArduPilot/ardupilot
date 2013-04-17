@@ -48,7 +48,6 @@ AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_
     _rc_yaw(rc_yaw),
     _speed_hz(speed_hz),
     _armed(false),
-    _auto_armed(false),
     _frame_orientation(0),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE)

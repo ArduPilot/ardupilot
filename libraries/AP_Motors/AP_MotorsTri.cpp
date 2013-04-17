@@ -149,12 +149,6 @@ void AP_MotorsTri::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsTri::output_disarmed()
 {
-    if(_rc_throttle->control_in > 0) {
-        // we have pushed up the throttle
-        // remove safety
-        _auto_armed = true;
-    }
-
     // fill the motor_out[] array for HIL use
     for (unsigned char i = AP_MOTORS_MOT_1; i < AP_MOTORS_MOT_4; i++) {
         motor_out[i] = _rc_throttle->radio_min;
