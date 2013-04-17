@@ -35,13 +35,9 @@
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation
-#define THROTTLE_ACCELERATION               2   // pilot inputs the desired acceleration
-#define THROTTLE_RATE                       3   // pilot inputs the desired climb rate.  Note: this uses the unstabilized rate controller
-#define THROTTLE_STABILIZED_RATE            4   // pilot inputs the desired climb rate.  Uses stabilized rate controller
-#define THROTTLE_DIRECT_ALT                 5   // pilot inputs a desired altitude from 0 ~ 10 meters
-#define THROTTLE_HOLD                       6   // alt hold plus pilot input of climb rate
-#define THROTTLE_AUTO                       7   // auto pilot altitude controller with target altitude held in next_WP.alt
-#define THROTTLE_LAND                       8   // landing throttle controller
+#define THROTTLE_HOLD                       2   // alt hold plus pilot input of climb rate
+#define THROTTLE_AUTO                       3   // auto pilot altitude controller with target altitude held in next_WP.alt
+#define THROTTLE_LAND                       4   // landing throttle controller
 
 
 // sonar - for use with CONFIG_SONAR_SOURCE

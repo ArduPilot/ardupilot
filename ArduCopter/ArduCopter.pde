@@ -1762,24 +1762,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             throttle_initialised = true;
             break;
 
-        case THROTTLE_ACCELERATION:                     // pilot inputs the desired acceleration
-            if( g.throttle_accel_enabled ) {            // this throttle mode requires use of the accel based throttle controller
-                altitude_error = 0;                     // clear altitude error reported to GCS
-                throttle_initialised = true;
-            }
-            break;
-
-        case THROTTLE_RATE:
-            altitude_error = 0;                         // clear altitude error reported to GCS
-            throttle_initialised = true;
-            break;
-
-        case THROTTLE_STABILIZED_RATE:
-        case THROTTLE_DIRECT_ALT:
-            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
-            throttle_initialised = true;
-            break;
-
         case THROTTLE_HOLD:
         case THROTTLE_AUTO:
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
@@ -1896,57 +1878,6 @@ void update_throttle_mode(void)
             }
         }
         set_target_alt_for_reporting(0);
-        break;
-
-    case THROTTLE_ACCELERATION:
-        // pilot inputs the desired acceleration
-        if(g.rc_3.control_in <= 0){
-            set_throttle_out(0, false);
-            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
-        }else{
-            int16_t desired_acceleration = get_pilot_desired_acceleration(g.rc_3.control_in);
-            set_throttle_accel_target(desired_acceleration);
-        }
-        set_target_alt_for_reporting(0);
-        break;
-
-    case THROTTLE_RATE:
-        // pilot inputs the desired climb rate.  Note this is the unstabilized rate controller
-        if(g.rc_3.control_in <= 0){
-            set_throttle_out(0, false);
-            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
-        }else{
-            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-            get_throttle_rate(pilot_climb_rate);
-        }
-        set_target_alt_for_reporting(0);
-        break;
-
-    case THROTTLE_STABILIZED_RATE:
-        // pilot inputs the desired climb rate.  Note this is the stabilized rate controller
-        if(g.rc_3.control_in <= 0){
-            set_throttle_out(0, false);
-            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
-            altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
-            set_target_alt_for_reporting(0);
-        }else{
-            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-            get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
-        }
-        break;
-
-    case THROTTLE_DIRECT_ALT:
-        // pilot inputs a desired altitude from 0 ~ 10 meters
-        if(g.rc_3.control_in <= 0){
-            set_throttle_out(0, false);
-            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
-            altitude_error = 0;             // clear altitude error reported to GCS - normally underlying alt hold controller updates altitude error reported to GCS
-            set_target_alt_for_reporting(0);
-        }else{
-            int32_t desired_alt = get_pilot_desired_direct_alt(g.rc_3.control_in);
-            get_throttle_althold_with_slew(desired_alt, g.auto_velocity_z_min, g.auto_velocity_z_max);
-            set_target_alt_for_reporting(desired_alt);
-        }
         break;
 
     case THROTTLE_HOLD:
