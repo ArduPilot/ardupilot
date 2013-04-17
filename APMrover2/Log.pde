@@ -28,13 +28,6 @@ MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 static bool
 print_log_menu(void)
 {
-	uint16_t log_start;
-	uint16_t log_end;
-	uint16_t temp;	
-	uint16_t last_log_num = DataFlash.find_last_log();
-	
-	uint16_t num_logs = DataFlash.get_num_logs();
-
 	cliSerial->printf_P(PSTR("logs enabled: "));
 
 	if (0 == g.log_bitmask) {
@@ -60,23 +53,7 @@ print_log_menu(void)
 
 	cliSerial->println();
 
-	if (num_logs == 0) {
-		cliSerial->printf_P(PSTR("\nNo logs\n\n"));
-	}else{
-		cliSerial->printf_P(PSTR("\n%d logs\n"), num_logs);
-
-		for(int i=num_logs;i>=1;i--) {
-            uint16_t last_log_start = log_start, last_log_end = log_end;
-			temp = last_log_num-i+1;
-			DataFlash.get_log_boundaries(temp, log_start, log_end);
-			cliSerial->printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
-            if (last_log_start == log_start && last_log_end == log_end) {
-                // we are printing bogus logs
-                break;
-            }
-		}
-		cliSerial->println();
-	}
+    DataFlash.ListAvailableLogs(cliSerial);
 	return(true);
 }
 
@@ -86,7 +63,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	int16_t dump_log;
 	uint16_t dump_log_start;
 	uint16_t dump_log_end;
-	uint8_t last_log_num;
+	uint16_t last_log_num;
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
@@ -105,13 +82,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	}
 
 	DataFlash.get_log_boundaries(dump_log, dump_log_start, dump_log_end);
-	cliSerial->printf_P(PSTR("Dumping Log %d,    start pg %d,   end pg %d\n"),
-				  dump_log,
-				  dump_log_start,
-				  dump_log_end);
-
-	Log_Read((uint8_t)dump_log, dump_log_start, dump_log_end);
-	cliSerial->printf_P(PSTR("Done\n"));
+	Log_Read((uint16_t)dump_log, dump_log_start, dump_log_end);
     return 0;
 }
 
@@ -595,7 +566,7 @@ static void Log_Read_Current()
 }
 
 // Read the DataFlash log memory : Packet Parser
-static void Log_Read(uint8_t log_num, int16_t start_page, int16_t end_page)
+static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
 	cliSerial->printf_P(PSTR("\n" THISFIRMWARE
                              "\nFree RAM: %u\n"),
