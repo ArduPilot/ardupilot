@@ -125,14 +125,6 @@ public:
     virtual void setHIL(uint32_t time, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
-    /// Time in milliseconds after which we will assume the GPS is no longer
-    /// sending us updates and attempt a re-init.
-    ///
-    /// 1200ms allows a small amount of slack over the worst-case 1Hz update
-    /// rate.
-    ///
-    uint32_t idleTimeout;
-
     // components of velocity in 2D, in m/s
     float velocity_north(void) {
         return _status >= GPS_OK_FIX_2D ? _velocity_north : 0;

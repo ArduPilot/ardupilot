@@ -19,17 +19,19 @@ extern const AP_HAL::HAL& hal;
 
 GPS::GPS(void) :
 	// ensure all the inherited fields are zeroed
+	time(0),
 	num_sats(0),
 	new_data(false),
 	fix(FIX_NONE),
 	valid_read(false),
 	last_fix_time(0),
 	_have_raw_velocity(false),
+	_idleTimer(0),
 	_status(GPS::NO_FIX),
 	_last_ground_speed_cm(0),
 	_velocity_north(0),
 	_velocity_east(0),
-	_velocity_down(0)	
+	_velocity_down(0)
 {
 }
 
@@ -44,9 +46,9 @@ GPS::update(void)
 
     tnow = hal.scheduler->millis();
 
-    // if we did not get a message, and the idle timer has expired, re-init
+    // if we did not get a message, and the idle timer of 1.2 seconds has expired, re-init
     if (!result) {
-        if ((tnow - _idleTimer) > idleTimeout) {
+        if ((tnow - _idleTimer) > 1200) {
             Debug("gps read timeout %lu %lu", (unsigned long)tnow, (unsigned long)_idleTimer);
             _status = NO_GPS;
 

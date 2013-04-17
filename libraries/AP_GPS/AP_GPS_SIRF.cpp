@@ -37,7 +37,6 @@ AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     // send SiRF binary setup messages
     _write_progstr_block(_port, (const prog_char *)init_messages, sizeof(init_messages));
-    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream

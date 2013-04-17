@@ -44,7 +44,6 @@ AP_GPS_MTK19::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
     _epoch = TIME_OF_DAY;
     _time_offset = 0;
     _offset_calculated = false;
-    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream

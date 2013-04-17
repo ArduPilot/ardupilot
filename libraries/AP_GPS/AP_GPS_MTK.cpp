@@ -43,8 +43,6 @@ AP_GPS_MTK::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     // set initial epoch code
     _epoch = TIME_OF_DAY;
-
-    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
