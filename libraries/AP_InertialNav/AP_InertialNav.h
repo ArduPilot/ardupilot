@@ -34,6 +34,7 @@ public:
         _gps_ptr(gps_ptr),
         _xy_enabled(false),
         _gps_last_update(0),
+        _gps_last_time(0),
         _baro_last_update(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
