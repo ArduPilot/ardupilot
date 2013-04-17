@@ -120,7 +120,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // cliSerial isn't strictly necessary - it is an alias for hal.console. It may
 // be deprecated in favor of hal.console in later releases.
-AP_HAL::BetterStream* cliSerial;
+static AP_HAL::BetterStream* cliSerial;
 
 // N.B. we need to keep a static declaration which isn't guarded by macros
 // at the top to cooperate with the prototype mangler. 
@@ -141,7 +141,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 static Parameters g;
 
 // main loop scheduler
-AP_Scheduler scheduler;
+static AP_Scheduler scheduler;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -152,13 +152,16 @@ static void update_events(void);
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-DataFlash_APM2 DataFlash;
+static DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-DataFlash_APM1 DataFlash;
+static DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-DataFlash_SITL DataFlash;
+//static DataFlash_File DataFlash("/tmp/APMlogs");
+static DataFlash_SITL DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static DataFlash_File DataFlash("/fs/microsd/APM/logs");
 #else
-DataFlash_Empty DataFlash;
+static DataFlash_Empty DataFlash;
 #endif
 
 
@@ -189,44 +192,44 @@ static AP_Int8 *flight_modes = &g.flight_mode1;
 #if HIL_MODE == HIL_MODE_DISABLED
 
  #if CONFIG_ADC == ENABLED
-AP_ADC_ADS7844 adc;
+static AP_ADC_ADS7844 adc;
  #endif
 
  #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
-AP_InertialSensor_MPU6000 ins;
+static AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
-AP_InertialSensor_Oilpan ins(&adc);
+static AP_InertialSensor_Oilpan ins(&adc);
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
-AP_InertialSensor_Stub ins;
+static AP_InertialSensor_Stub ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
-AP_InertialSensor_PX4 ins;
+static AP_InertialSensor_PX4 ins;
  #endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
-AP_Baro_BMP085_HIL barometer;
-AP_Compass_HIL compass;
-SITL sitl;
+static AP_Baro_BMP085_HIL barometer;
+static AP_Compass_HIL compass;
+static SITL sitl;
  #else
 // Otherwise, instantiate a real barometer and compass driver
   #if CONFIG_BARO == AP_BARO_BMP085
-AP_Baro_BMP085 barometer;
+static AP_Baro_BMP085 barometer;
   #elif CONFIG_BARO == AP_BARO_PX4
-AP_Baro_PX4 barometer;
+static AP_Baro_PX4 barometer;
   #elif CONFIG_BARO == AP_BARO_MS5611
    #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
-AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
+static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
    #elif CONFIG_MS5611_SERIAL == AP_BARO_MS5611_I2C
-AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
+static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
    #else
     #error Unrecognized CONFIG_MS5611_SERIAL setting.
    #endif
   #endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-AP_Compass_PX4 compass;
+static AP_Compass_PX4 compass;
  #else
-AP_Compass_HMC5843 compass;
+static AP_Compass_HMC5843 compass;
  #endif
  #endif
 
@@ -257,45 +260,45 @@ AP_GPS_None     g_gps_driver();
  #endif // GPS PROTOCOL
 
  #if DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
+static AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
  #else
-AP_AHRS_DCM ahrs(&ins, g_gps);
+static AP_AHRS_DCM ahrs(&ins, g_gps);
  #endif
 
 // ahrs2 object is the secondary ahrs to allow running DMP in parallel with DCM
   #if SECONDARY_DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
-AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
+static AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
   #endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
-AP_ADC_HIL              adc;
-AP_Baro_BMP085_HIL      barometer;
-AP_Compass_HIL          compass;
-AP_GPS_HIL              g_gps_driver;
-AP_InertialSensor_Stub  ins;
-AP_AHRS_DCM             ahrs(&ins, g_gps);
+static AP_ADC_HIL              adc;
+static AP_Baro_BMP085_HIL      barometer;
+static AP_Compass_HIL          compass;
+static AP_GPS_HIL              g_gps_driver;
+static AP_InertialSensor_Stub  ins;
+static AP_AHRS_DCM             ahrs(&ins, g_gps);
 
 static int32_t gps_base_alt;
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
-SITL sitl;
+static SITL sitl;
 #endif
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
-AP_ADC_HIL              adc;
-AP_InertialSensor_Stub  ins;
-AP_AHRS_HIL             ahrs(&ins, g_gps);
-AP_GPS_HIL              g_gps_driver;
-AP_Compass_HIL          compass;                  // never used
-AP_Baro_BMP085_HIL      barometer;
+static AP_ADC_HIL              adc;
+static AP_InertialSensor_Stub  ins;
+static AP_AHRS_HIL             ahrs(&ins, g_gps);
+static AP_GPS_HIL              g_gps_driver;
+static AP_Compass_HIL          compass;                  // never used
+static AP_Baro_BMP085_HIL      barometer;
 
 static int32_t gps_base_alt;
 
- #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
-SITL sitl;
+static SITL sitl;
 #endif
 
 #else
@@ -306,16 +309,16 @@ SITL sitl;
 // Optical flow sensor
 ////////////////////////////////////////////////////////////////////////////////
  #if OPTFLOW == ENABLED
-AP_OpticalFlow_ADNS3080 optflow;
+static AP_OpticalFlow_ADNS3080 optflow;
  #else
-AP_OpticalFlow optflow;
+static AP_OpticalFlow optflow;
  #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
-GCS_MAVLINK gcs0;
-GCS_MAVLINK gcs3;
+static GCS_MAVLINK gcs0;
+static GCS_MAVLINK gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
@@ -323,8 +326,8 @@ GCS_MAVLINK gcs3;
 //
 ModeFilterInt16_Size3 sonar_mode_filter(1);
 #if CONFIG_SONAR == ENABLED
-AP_HAL::AnalogSource *sonar_analog_source;
-AP_RangeFinder_MaxsonarXL *sonar;
+static AP_HAL::AnalogSource *sonar_analog_source;
+static AP_RangeFinder_MaxsonarXL *sonar;
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -429,11 +432,11 @@ static uint8_t receiver_rssi;
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
+static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_8, &g.heli_servo_1, &g.heli_servo_2, &g.heli_servo_3, &g.heli_servo_4);
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
-MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
+static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.rc_7);
 #else
-MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
+static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -482,7 +485,7 @@ static float scaleLongDown = 1;
 static const float radius_of_earth = 6378100;   // meters
 
 // Unions for getting byte values
-union float_int {
+static union float_int {
     int32_t int_value;
     float float_value;
 } float_int;
@@ -566,13 +569,13 @@ static float target_alt_for_reporting;      // target altitude for reporting (lo
 // ACRO Mode
 ////////////////////////////////////////////////////////////////////////////////
 // Used to control Axis lock
-int32_t roll_axis;
-int32_t pitch_axis;
+static int32_t roll_axis;
+static int32_t pitch_axis;
 
 // Filters
 #if FRAME_CONFIG == HELI_FRAME
-LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
-LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
+static LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
+static LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 // LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter
 #endif // HELI_FRAME
 
@@ -743,13 +746,13 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
+static AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint navigation object
 // To-Do: move inertial nav up or other navigation variables down here
 ////////////////////////////////////////////////////////////////////////////////
-AC_WPNav wp_nav(&inertial_nav, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid_loiter_rate_lat, &g.pid_loiter_rate_lon);
+static AC_WPNav wp_nav(&inertial_nav, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid_loiter_rate_lat, &g.pid_loiter_rate_lon);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
@@ -782,22 +785,22 @@ static uint32_t last_gps_time;
 static uint8_t auto_trim_counter;
 
 // Reference to the relay object (APM1 -> PORTL 2) (APM2 -> PORTB 7)
-AP_Relay relay;
+static AP_Relay relay;
 
 //Reference to the camera object (it uses the relay object inside it)
 #if CAMERA == ENABLED
-  AP_Camera camera(&relay);
+  static AP_Camera camera(&relay);
 #endif
 
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
-AP_HAL::AnalogSource* rssi_analog_source;
+static AP_HAL::AnalogSource* rssi_analog_source;
 
 
 // Input sources for battery voltage, battery current, board vcc
-AP_HAL::AnalogSource* batt_volt_analog_source;
-AP_HAL::AnalogSource* batt_curr_analog_source;
-AP_HAL::AnalogSource* board_vcc_analog_source;
+static AP_HAL::AnalogSource* batt_volt_analog_source;
+static AP_HAL::AnalogSource* batt_curr_analog_source;
+static AP_HAL::AnalogSource* board_vcc_analog_source;
 
 
 #if CLI_ENABLED == ENABLED
@@ -809,13 +812,13 @@ AP_HAL::AnalogSource* board_vcc_analog_source;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
+static AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
 #endif
 
 #if MOUNT2 == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
+static AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 #endif
 
 
