@@ -348,7 +348,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
  *       cliSerial->printf_P(PSTR("g.pi_stabilize_roll.kP: %4.4f\n"), g.pi_stabilize_roll.kP());
  *       cliSerial->printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
  *
- *       motors.auto_armed(false);
+ *       set_auto_armed(false);
  *       motors.armed(true);
  *
  *       while(1){

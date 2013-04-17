@@ -327,7 +327,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
 #else
  #if X_PLANE == ENABLED
     /* update by JLN for X-Plane HIL */
-    if(motors.armed() && motors.auto_armed()) {
+    if(motors.armed() && ap.auto_armed) {
         mavlink_msg_rc_channels_scaled_send(
             chan,
             millis(),

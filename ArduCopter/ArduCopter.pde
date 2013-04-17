@@ -365,7 +365,7 @@ static union {
 
         uint8_t low_battery        : 1; // 5    // Used to track if the battery is low - LED output flashes when the batt is low
         uint8_t armed              : 1; // 6
-        uint8_t auto_armed         : 1; // 7
+        uint8_t auto_armed         : 1; // 7    // stops auto missions from beginning until throttle is raised
 
         uint8_t failsafe_radio     : 1; // 8    // A status flag for the radio failsafe
         uint8_t failsafe_batt      : 1; // 9    // A status flag for the battery failsafe
@@ -1164,6 +1164,9 @@ static void fifty_hz_loop()
 #if TOY_EDF == ENABLED
     edf_toy();
 #endif
+
+    // check auto_armed status
+    update_auto_armed();
 
 #ifdef USERHOOK_50HZLOOP
     USERHOOK_50HZLOOP
@@ -1967,7 +1970,7 @@ void update_throttle_mode(void)
 
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in wp_nav.get_desired_alt()
-        if(motors.auto_armed() == true) {
+        if(ap.auto_armed) {
             get_throttle_althold_with_slew(wp_nav.get_desired_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
             set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
         }

@@ -366,11 +366,6 @@ static void set_mode(uint8_t mode)
     control_mode 	= mode;
     control_mode    = constrain(control_mode, 0, NUM_MODES - 1);
 
-    // used to stop fly_aways
-    // set to false if we have low throttle
-    motors.auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
-    set_auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
-
     // if we change modes, we must clear landed flag
     set_land_complete(false);
 
@@ -531,6 +526,29 @@ init_simple_bearing()
     initial_simple_bearing = ahrs.yaw_sensor;
     if (g.log_bitmask != 0) {
         Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
+    }
+}
+
+// update_auto_armed - update status of auto_armed flag
+static void update_auto_armed()
+{
+    // disarm checks
+    if(ap.auto_armed){
+        // if motors are disarmed, auto_armed should also be false
+        if(!motors.armed()) {
+            set_auto_armed(false);
+            return;
+        }
+        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
+        if(control_mode <= ACRO && g.rc_3.control_in == 0 && !ap.failsafe_radio) {
+            set_auto_armed(false);
+        }
+    }else{
+        // arm checks
+        // if motors are armed and throttle is above zero auto_armed should be true
+        if(motors.armed() && g.rc_3.control_in != 0) {
+            set_auto_armed(true);
+        }
     }
 }
 
