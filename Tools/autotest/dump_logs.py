@@ -10,6 +10,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink', 'generator'))
 import util
 
+############## main program #############
+parser = optparse.OptionParser(sys.argv[0])
+
+parser.add_option("--cli", action='store_true', default=False, help='put us in the CLI menu in logs')
+
+opts, args = parser.parse_args()
+
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 def dump_logs(atype):
@@ -23,6 +30,9 @@ def dump_logs(atype):
     print("navigating menus")
     mavproxy.expect(']')
     mavproxy.send("logs\n")
+    if opts.cli:
+        mavproxy.interact()
+        return
     mavproxy.expect("logs enabled:")
     lognums = []
     i = mavproxy.expect(["No logs", "(\d+) logs"])
@@ -31,7 +41,7 @@ def dump_logs(atype):
     else:
         numlogs = int(mavproxy.match.group(1))
     for i in range(numlogs):
-        mavproxy.expect("Log (\d+),")
+        mavproxy.expect("Log (\d+)")
         lognums.append(int(mavproxy.match.group(1)))
     mavproxy.expect("Log]")
     for i in range(numlogs):
