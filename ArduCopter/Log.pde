@@ -255,12 +255,12 @@ static void Log_Read_IMU()
 
     //                                 1      2      3      4      5      6
     cliSerial->printf_P(PSTR("IMU, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
-        (float)pkt.gyro.x,
-        (float)pkt.gyro.y,
-        (float)pkt.gyro.z,
-        (float)pkt.accel.x,
-        (float)pkt.accel.y,
-        (float)pkt.accel.z);
+        pkt.gyro.x,
+        pkt.gyro.y,
+        pkt.gyro.z,
+        pkt.accel.x,
+        pkt.accel.y,
+        pkt.accel.z);
 }
 
 struct log_Current {
@@ -447,8 +447,8 @@ static void Log_Read_Optflow()
                     (int)pkt.surface_quality,
                     (int)pkt.x_cm,
                     (int)pkt.y_cm,
-                    (float)pkt.latitude,
-                    (float)pkt.longitude,
+                    pkt.latitude,
+                    pkt.longitude,
                     (long)pkt.roll,
                     (long)pkt.pitch);
 }
@@ -492,8 +492,8 @@ static void Log_Read_Nav_Tuning()
     cliSerial->printf_P(PSTR("NTUN, %lu, %d, %.0f, %.0f, %d, %d, %d, %d\n"),
         (unsigned long)pkt.wp_distance,
         (int)pkt.wp_bearing,
-        (float)pkt.lat_error,
-        (float)pkt.lon_error,
+        pkt.lat_error,
+        pkt.lon_error,
         (int)pkt.nav_pitch,
         (int)pkt.nav_roll,
         (int)pkt.lat_speed,
@@ -543,7 +543,7 @@ static void Log_Read_Control_Tuning()
         (int)pkt.throttle_in,
         (int)pkt.sonar_alt,
         (long)pkt.baro_alt,
-        (float)pkt.next_wp_alt,
+        pkt.next_wp_alt,
         (int)pkt.nav_throttle,
         (int)pkt.angle_boost,
         (int)pkt.climb_rate,
@@ -785,15 +785,15 @@ static void Log_Read_INAV()
                     (int)pkt.baro_alt,                  // 1 barometer altitude
                     (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
                     (int)pkt.inav_climb_rate,           // 3 accel + baro based climb rate
-                    (float)pkt.accel_corr_x,            // 4 accel correction x-axis
-                    (float)pkt.accel_corr_y,            // 5 accel correction y-axis
-                    (float)pkt.accel_corr_z,            // 6 accel correction z-axis
+                    pkt.accel_corr_x,                   // 4 accel correction x-axis
+                    pkt.accel_corr_y,                   // 5 accel correction y-axis
+                    pkt.accel_corr_z,                   // 6 accel correction z-axis
                     (long)pkt.gps_lat_from_home,        // 7 lat from home
                     (long)pkt.gps_lon_from_home,        // 8 lon from home
-                    (float)pkt.inav_lat_from_home,      // 9 accel based lat from home
-                    (float)pkt.inav_lon_from_home,      // 10 accel based lon from home
-                    (float)pkt.inav_lat_speed,          // 11 accel based lat velocity
-                    (float)pkt.inav_lon_speed);         // 12 accel based lon velocity
+                    pkt.inav_lat_from_home,             // 9 accel based lat from home
+                    pkt.inav_lon_from_home,             // 10 accel based lon from home
+                    pkt.inav_lat_speed,                 // 11 accel based lat velocity
+                    pkt.inav_lon_speed);                // 12 accel based lon velocity
 }
 
 struct log_Mode {
@@ -1045,7 +1045,7 @@ static void Log_Read_PID()
                     (long)pkt.i,
                     (long)pkt.d,
                     (long)pkt.output,
-                    (float)pkt.gain);
+                    pkt.gain);
 }
 
 struct log_DMP {
