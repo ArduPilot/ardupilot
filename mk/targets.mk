@@ -121,8 +121,7 @@ apm2-heli-hil: apm2
 px4-quad: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME "
 px4-quad: px4
 
-px4-quad-hil: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME "
-px4-quad-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+px4-quad-hil: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME -DHIL_MODE=HIL_MODE_ATTITUDE "
 px4-quad-hil: px4
 
 px4-tri: EXTRAFLAGS += "-DFRAME_CONFIG=TRI_FRAME "
@@ -143,10 +142,14 @@ px4-octa-quad: px4
 px4-heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
 px4-heli: px4
 
-px4-heli-hil: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
-px4-heli-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+px4-heli-hil: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME -DHIL_MODE=HIL_MODE_ATTITUDE "
 px4-heli-hil: px4
 
+px4-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+px4-hil: px4
+
+px4-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
+px4-hilsensors: px4
 
 apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
 apm2beta: apm2
