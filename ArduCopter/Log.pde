@@ -747,11 +747,9 @@ struct log_INAV {
     int32_t gps_lon_from_home;
     float   inav_lat_from_home;
     float   inav_lon_from_home;
-    float   inav_lat_speed;
-    float   inav_lon_speed;
 };
 
-// Write an INAV packet. Total length : 52 Bytes
+// Write an INAV packet. Total length : 37 Bytes
 static void Log_Write_INAV()
 {
     Vector3f accel_corr = inertial_nav.accel_correction_ef;
@@ -767,9 +765,7 @@ static void Log_Write_INAV()
         gps_lat_from_home   : g_gps->latitude-home.lat,                 // 7 lat from home
         gps_lon_from_home   : g_gps->longitude-home.lng,                // 8 lon from home
         inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 9 accel based lat from home
-        inav_lon_from_home  : inertial_nav.get_longitude_diff(),        // 10 accel based lon from home
-        inav_lat_speed      : inertial_nav.get_latitude_velocity(),     // 11 accel based lat velocity
-        inav_lon_speed      : inertial_nav.get_longitude_velocity()     // 12 accel based lon velocity
+        inav_lon_from_home  : inertial_nav.get_longitude_diff()        // 10 accel based lon from home
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -780,8 +776,8 @@ static void Log_Read_INAV()
     struct log_INAV pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-                                  // 1   2   3      4      5      6    7    8    9     10     11     12
-    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f, %6.4f, %6.4f\n"),
+                                  // 1   2   3      4      5      6    7    8      9     10
+    cliSerial->printf_P(PSTR("INAV, %d, %d, %d, %6.4f, %6.4f, %6.4f, %ld, %ld, %6.4f, %6.4f\n"),
                     (int)pkt.baro_alt,                  // 1 barometer altitude
                     (int)pkt.inav_alt,                  // 2 accel + baro filtered altitude
                     (int)pkt.inav_climb_rate,           // 3 accel + baro based climb rate
@@ -791,9 +787,7 @@ static void Log_Read_INAV()
                     (long)pkt.gps_lat_from_home,        // 7 lat from home
                     (long)pkt.gps_lon_from_home,        // 8 lon from home
                     pkt.inav_lat_from_home,             // 9 accel based lat from home
-                    pkt.inav_lon_from_home,             // 10 accel based lon from home
-                    pkt.inav_lat_speed,                 // 11 accel based lat velocity
-                    pkt.inav_lon_speed);                // 12 accel based lon velocity
+                    pkt.inav_lon_from_home);            // 10 accel based lon from home
 }
 
 struct log_Mode {
@@ -1210,7 +1204,7 @@ struct log_WPNAV {
     int32_t desired_pitch;
 };
 
-// Write an INAV packet. Total length : 52 Bytes
+// Write an WPNAV packet. Total length : 43 Bytes
 static void Log_Write_WPNAV()
 {
     Vector3f velocity = inertial_nav.get_velocity();
