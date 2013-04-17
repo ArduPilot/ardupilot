@@ -31,6 +31,7 @@ public:
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
     void     register_timer_process(AP_HAL::TimedProc);
+    void     register_io_process(AP_HAL::TimedProc);
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     suspend_timer_procs();
     void     resume_timer_procs();
@@ -50,9 +51,15 @@ private:
     uint64_t _sketch_start_time;
 
     volatile bool _timer_suspended;
+
     AP_HAL::TimedProc _timer_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
     volatile bool _in_timer_proc;
+
+    AP_HAL::TimedProc _io_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
+    uint8_t _num_io_procs;
+    volatile bool _in_io_proc;
+
     volatile bool _timer_event_missed;
 
     pthread_t _timer_thread_ctx;
@@ -62,8 +69,10 @@ private:
     void *_io_thread(void);
 
     void _run_timers(bool called_from_timer_thread);
+    void _run_io(void);
 
     perf_counter_t  _perf_timers;
+    perf_counter_t  _perf_io_timers;
     perf_counter_t  _perf_delay;
 };
 #endif

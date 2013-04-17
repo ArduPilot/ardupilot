@@ -108,6 +108,11 @@ void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc) {
 
 }
 
+void AVRScheduler::register_io_process(AP_HAL::TimedProc proc) 
+{
+    // IO processes not supported on AVR
+}
+
 void AVRScheduler::register_timer_failsafe(
         AP_HAL::TimedProc failsafe, uint32_t period_us) {
     /* XXX Assert period_us == 1000 */
