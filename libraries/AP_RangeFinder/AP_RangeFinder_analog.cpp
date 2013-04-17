@@ -158,7 +158,7 @@ float AP_RangeFinder_analog::distance_cm(void)
    if (dist_m < 0) {
 	  dist_m = 0;
    }
-   return dist_m * 100.0;  
+   return dist_m * 100.0f;  
 }
 
 /*
