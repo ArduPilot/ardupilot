@@ -203,16 +203,6 @@ static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t de
     return wrap_360_cd(current_yaw + constrain(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
 }
 
-// valid_waypoint - checks if a waypoint has been initialised or not
-static bool waypoint_valid(Location &wp)
-{
-     if( wp.lat != 0 || wp.lng != 0 ) {
-         return true;
-     }else{
-         return false;
-     }
-}
-
 
 //////////////////////////////////////////////////////////
 // circle navigation controller
