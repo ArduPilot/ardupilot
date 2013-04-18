@@ -29,22 +29,22 @@
 
 #define WPNAV_WP_SPEED                  500         // default horizontal speed betwen waypoints in cm/s
 #define WPNAV_WP_RADIUS                 200         // default waypoint radius in cm
-#define WPINAV_MAX_POS_ERROR            531.25f     // maximum distance (in cm) that the desired track can stray from our current location.
+#define WPNAV_LEASH_XY                  531.25f     // maximum distance (in cm) that the desired track can stray from our current location.
 // D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
 // if WP_SPEED > 2*D0*Pid_P
-//     WPINAV_MAX_POS_ERROR = D0 + WP_SPEED.^2 ./ (2*MAX_LOITER_POS_ACCEL);
+//     WPNAV_LEASH_XY = D0 + WP_SPEED.^2 ./ (2*MAX_LOITER_POS_ACCEL);
 // else
-//     WPINAV_MAX_POS_ERROR = min(200, WP_SPEED/Pid_P); // to stop it being over sensitive to error
+//     WPNAV_LEASH_XY = min(200, WP_SPEED/Pid_P); // to stop it being over sensitive to error
 // end
 // This should use the current waypoint max speed though rather than the default
 
-#define MAX_CLIMB_VELOCITY              125         // maximum climb velocity - ToDo: pull this in from main code
-#define WPINAV_MAX_ALT_ERROR            100.0f      // maximum distance (in cm) that the desired track can stray from our current location.
+#define WPNAV_WP_SPEEDZ                 125         // maximum climb velocity - ToDo: pull this in from main code
+#define WPNAV_LEASH_Z                   100.0f      // maximum distance (in cm) that the desired track can stray from our current location.
 // D0 = ALT_HOLD_ACCEL_MAX/(2*Pid_P^2);
 // if g.pilot_velocity_z_max > 2*D0*Pid_P
-//     WPINAV_MAX_ALT_ERROR = D0 + MAX_CLIMB_VELOCITY.^2 ./ (2*ALT_HOLD_ACCEL_MAX);
+//     WPNAV_LEASH_Z = D0 + WPNAV_WP_SPEEDZ.^2 ./ (2*ALT_HOLD_ACCEL_MAX);
 // else
-//     WPINAV_MAX_ALT_ERROR = min(100, MAX_CLIMB_VELOCITY/Pid_P); // to stop it being over sensitive to error
+//     WPNAV_LEASH_Z = min(100, WPNAV_WP_SPEEDZ/Pid_P); // to stop it being over sensitive to error
 // end
 class AC_WPNav
 {
@@ -183,8 +183,8 @@ protected:
     AC_PID*		_pid_rate_lon;
 
     // parameters
-    AP_Float    _speed_cms;         // default horizontal speed in cm/s
-    float       _speedz_cms;        // max vertical climb rate in cm/s.  To-Do: rename or pull this from main code
+    AP_Float    _speed_cms;         // horizontal speed target in cm/s
+    AP_Float    _speedz_cms;        // vertical speed target in cm/s
     AP_Float    _wp_radius_cm;      // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     uint32_t	_loiter_last_update;    // time of last update_loiter call
     uint32_t	_wpnav_last_update;     // time of last update_wpnav call
@@ -196,24 +196,23 @@ protected:
     int32_t     _desired_roll;          // fed to stabilize controllers at 50hz
     int32_t     _desired_pitch;         // fed to stabilize controllers at 50hz
 
-    int32_t     _lean_angle_max;        // maximum lean angle.  can we set from main code so that throttle controller can stop leans that cause copter to lose altitude
-
-    // internal variables
+    // loiter controller internal variables
     Vector3f    _target;   		        // loiter's target location in cm from home
-    Vector3f    _target_vel;            // loiter
+    int16_t     _pilot_vel_forward_cms; // pilot's desired velocity forward (body-frame)
+    int16_t     _pilot_vel_right_cms;   // pilot's desired velocity right (body-frame)
+    Vector3f    _target_vel;            // pilot's latest desired velocity in earth-frame
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
+    int32_t     _lean_angle_max;        // maximum lean angle.  can be set from main code so that throttle controller can stop leans that cause copter to lose altitude
+
+    // waypoint controller internal variables
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
     Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
-    float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to position
+    float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
     bool        _reached_destination;   // true if we have reached the destination
-
-    // pilot inputs for loiter
-    int16_t     _pilot_vel_forward_cms;
-    int16_t     _pilot_vel_right_cms;
 
 public:
     // for logging purposes

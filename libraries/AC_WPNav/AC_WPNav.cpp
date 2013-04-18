@@ -8,11 +8,11 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
 
     // @Param: SPEED
-    // @DisplayName: Waypoint Speed Target
-    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain during a WP mission
+    // @DisplayName: Waypoint Horizontal Speed Target
+    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally during a WP mission
     // @Units: Centimeters/Second
     // @Range: 0 1000
-    // @Increment: 100
+    // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("SPEED",   0, AC_WPNav, _speed_cms, WPNAV_WP_SPEED),
 
@@ -23,8 +23,18 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Range: 100 1000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RADIUS",      1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
+    AP_GROUPINFO("RADIUS",  1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
 
+    // @Param: SPEEDZ
+    // @DisplayName: Waypoint Vertical Speed Target
+    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain vertically during a WP mission
+    // @Units: Centimeters/Second
+    // @Range: 0 1000
+    // @Increment: 50
+    // @User: Standard
+    AP_GROUPINFO("SPEEDZ",  2, AC_WPNav, _speedz_cms, WPNAV_WP_SPEEDZ),
+
+    
     AP_GROUPEND
 };
 
@@ -38,7 +48,6 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
     _pid_pos_lon(pid_pos_lon),
     _pid_rate_lat(pid_rate_lat),
     _pid_rate_lon(pid_rate_lon),
-    _speedz_cms(MAX_CLIMB_VELOCITY),
     _lean_angle_max(MAX_LEAN_ANGLE)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -102,7 +111,7 @@ void AC_WPNav::move_loiter_target(float control_roll, float control_pitch, float
 /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
 void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 {
-    Vector2f target_vel_adj;    // make 2d vector?
+    Vector2f target_vel_adj;
     float vel_delta_total;
     float vel_max;
     float vel_total;
@@ -208,7 +217,7 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     _origin = origin;
     _destination = destination;
 
-    _vert_track_scale = WPINAV_MAX_POS_ERROR / WPINAV_MAX_ALT_ERROR;
+    _vert_track_scale = WPNAV_LEASH_XY / WPNAV_LEASH_Z;
     Vector3f pos_delta = _destination - _origin;
     pos_delta.z = pos_delta.z * _vert_track_scale;
     _track_length = pos_delta.length();
@@ -237,10 +246,10 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
     track_error = safe_sqrt(curr_delta_length*curr_delta_length - track_covered*track_covered);
 
-    track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - track_error*track_error);
+    track_extra_max = safe_sqrt(WPNAV_LEASH_XY*WPNAV_LEASH_XY - track_error*track_error);
 
     // we could save a sqrt by doing the following and not assigning track_error
-    // track_extra_max = safe_sqrt(WPINAV_MAX_POS_ERROR*WPINAV_MAX_POS_ERROR - (curr_delta_length*curr_delta_length - track_covered*track_covered));
+    // track_extra_max = safe_sqrt(WPNAV_LEASH_XY*WPNAV_LEASH_XY - (curr_delta_length*curr_delta_length - track_covered*track_covered));
 
     track_desired_max = track_covered + track_extra_max;
 
