@@ -78,7 +78,7 @@ public:
         k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,
-        k_param_yaw_override_behaviour,
+        k_param_wp_yaw_behavior,
         k_param_acro_trainer_enabled,
         k_param_pilot_velocity_z_max,   // 28
 
@@ -282,7 +282,7 @@ public:
     AP_Int8         battery_curr_pin;
     AP_Int8         rssi_pin;
     AP_Int8         throttle_accel_enabled;      // enable/disable accel based throttle controller
-    AP_Int8         yaw_override_behaviour;     // controls when autopilot takes back normal control of yaw after pilot overrides
+    AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
 
     // Waypoints
     //

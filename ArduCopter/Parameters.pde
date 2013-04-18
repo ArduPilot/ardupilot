@@ -182,12 +182,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_accel_enabled,  "THR_ACC_ENABLE",   1),
 
-    // @Param: YAW_OVR_BEHAVE
-    // @DisplayName: Yaw override behaviour
-    // @Description: Controls when autopilot takes back normal control of yaw after pilot overrides
-    // @Values: 0:At Next WP, 1:On Mission Restart
+    // @Param: WP_YAW_BEHAVIOR
+    // @DisplayName: Yaw behaviour during missions
+    // @Description: Determines how the autopilot controls the yaw during missions and RTL
+    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL
     // @User: Advanced
-    GSCALAR(yaw_override_behaviour,  "YAW_OVR_BEHAVE",   YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT),
+    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP),
 
     // @Param: WP_TOTAL
     // @DisplayName: Waypoint Total

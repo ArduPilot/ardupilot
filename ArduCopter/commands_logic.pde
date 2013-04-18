@@ -279,7 +279,7 @@ static void do_nav_wp()
     loiter_time_max = command_nav_queue.p1;
 
     // reset control of yaw to default
-    if( g.yaw_override_behaviour == YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT ) {
+    if( g.wp_yaw_behavior == WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP || g.wp_yaw_behavior == WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL) {
         set_yaw_mode(AUTO_YAW);
     }
 }
@@ -516,8 +516,9 @@ static bool verify_RTL()
                 rtl_state = RTL_STATE_INITIAL_CLIMB;
             }else{
                 // point nose towards home
-                // To-Do: make this user configurable whether RTL points towards home or not
-                set_yaw_mode(RTL_YAW);
+                if(g.wp_yaw_behavior == WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP) {
+                    set_yaw_mode(RTL_YAW);
+                }
 
                 // Set wp navigation target to above home
                 wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
