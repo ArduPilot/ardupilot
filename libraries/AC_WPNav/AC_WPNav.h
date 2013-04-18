@@ -31,7 +31,7 @@
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
 
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
-#define WPNAV_WP_SPEED_DOWN             125.0f      // default maximum descent velocity
+#define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
 
 #define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
