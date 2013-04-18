@@ -461,9 +461,6 @@ void AC_WPNav::calculate_leash_length(bool climb)
 
     // get loiter position P
     float kP = _pid_pos_lat->kP();
-    if(kP <= 0.51) {
-        kP = 0.51;
-    }
 
     // calculate horiztonal leash length
     if(_speed_xy_cms <= MAX_LOITER_POS_ACCEL / kP) {
