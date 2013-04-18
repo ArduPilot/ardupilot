@@ -27,25 +27,15 @@
 //     MAX_LOITER_OVERSHOOT = min(200, MAX_LOITER_POS_VELOCITY/Pid_P); // to stop it being over sensitive to error
 // end
 
-#define WPNAV_WP_SPEED                  500         // default horizontal speed betwen waypoints in cm/s
-#define WPNAV_WP_RADIUS                 200         // default waypoint radius in cm
-#define WPNAV_LEASH_XY                  531.25f     // maximum distance (in cm) that the desired track can stray from our current location.
-// D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
-// if WP_SPEED > 2*D0*Pid_P
-//     WPNAV_LEASH_XY = D0 + WP_SPEED.^2 ./ (2*MAX_LOITER_POS_ACCEL);
-// else
-//     WPNAV_LEASH_XY = min(200, WP_SPEED/Pid_P); // to stop it being over sensitive to error
-// end
-// This should use the current waypoint max speed though rather than the default
+#define WPNAV_WP_SPEED                  500.0f      // default horizontal speed betwen waypoints in cm/s
+#define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
 
-#define WPNAV_WP_SPEEDZ                 125         // maximum climb velocity - ToDo: pull this in from main code
-#define WPNAV_LEASH_Z                   100.0f      // maximum distance (in cm) that the desired track can stray from our current location.
-// D0 = ALT_HOLD_ACCEL_MAX/(2*Pid_P^2);
-// if g.pilot_velocity_z_max > 2*D0*Pid_P
-//     WPNAV_LEASH_Z = D0 + WPNAV_WP_SPEEDZ.^2 ./ (2*ALT_HOLD_ACCEL_MAX);
-// else
-//     WPNAV_LEASH_Z = min(100, WPNAV_WP_SPEEDZ/Pid_P); // to stop it being over sensitive to error
-// end
+#define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
+#define WPNAV_WP_SPEED_DOWN             125.0f      // default maximum descent velocity
+
+#define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
+#define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
+
 class AC_WPNav
 {
 public:
@@ -137,10 +127,13 @@ public:
     }
 
     /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
-    void set_horizontal_velocity(float velocity_cms) { _speed_cms = velocity_cms; };
+    void set_horizontal_velocity(float velocity_cms) { _speed_xy_cms = velocity_cms; };
 
-    /// set_climb_velocity - allows main code to pass max climb velocity to wp navigation
-    void set_climb_velocity(float velocity_cms) { _speedz_cms = velocity_cms; };
+    /// get_climb_velocity - returns target climb speed in cm/s during missions
+    float get_climb_velocity() { return _speed_up_cms; };
+
+    /// get_descent_velocity - returns target descent speed in cm/s during missions.  Note: always positive
+    float get_descent_velocity() { return _speed_down_cms; };
 
     /// get_waypoint_radius - access for waypoint radius in cm
     float get_waypoint_radius() { return _wp_radius_cm; }
@@ -173,6 +166,10 @@ protected:
     /// reset_I - clears I terms from loiter PID controller
     void reset_I();
 
+    /// calculate_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
+    ///    set climb param to true if track climbs vertically, false if descending
+    void calculate_leash_length(bool climb);
+
     // pointers to inertial nav library
     AP_InertialNav*	_inav;
 
@@ -183,12 +180,13 @@ protected:
     AC_PID*		_pid_rate_lon;
 
     // parameters
-    AP_Float    _speed_cms;         // horizontal speed target in cm/s
-    AP_Float    _speedz_cms;        // vertical speed target in cm/s
-    AP_Float    _wp_radius_cm;      // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
+    AP_Float    _speed_xy_cms;          // horizontal speed target in cm/s
+    AP_Float    _speed_up_cms;          // climb speed target in cm/s
+    AP_Float    _speed_down_cms;        // descent speed target in cm/s
+    AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     uint32_t	_loiter_last_update;    // time of last update_loiter call
     uint32_t	_wpnav_last_update;     // time of last update_wpnav call
-    float       _cos_yaw;           // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
+    float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
     float       _cos_roll;
 
@@ -211,8 +209,9 @@ protected:
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
-    float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
     bool        _reached_destination;   // true if we have reached the destination
+    float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
+    float       _leash_xy;              // horizontal leash length in cm
 
 public:
     // for logging purposes
