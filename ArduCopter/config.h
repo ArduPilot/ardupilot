@@ -941,15 +941,6 @@
  # define THROTTLE_IMAX         300
 #endif
 
-
-// default minimum and maximum vertical velocity the autopilot may request
-#ifndef AUTO_VELZ_MIN
- # define AUTO_VELZ_MIN -125
-#endif
-#ifndef AUTO_VELZ_MAX
- # define AUTO_VELZ_MAX 125
-#endif
-
 // default maximum vertical velocity the pilot may request
 #ifndef PILOT_VELZ_MAX
  # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
