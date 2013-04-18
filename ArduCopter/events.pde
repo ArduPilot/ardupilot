@@ -21,7 +21,7 @@ static void failsafe_on_event()
             // if throttle is zero disarm motors
             if (g.rc_3.control_in == 0) {
                 init_disarm_motors();
-            }else if(ap.home_is_set == true && home_distance > g.waypoint_radius) {
+            }else if(g.failsafe_throttle != FS_THR_ENABLED_ALWAYS_LAND && ap.home_is_set == true && home_distance > g.waypoint_radius) {
                 set_mode(RTL);
             }else{
                 // We have no GPS or are very close to home so we will land
@@ -37,11 +37,13 @@ static void failsafe_on_event()
                     // We are very close to home so we will land
                     set_mode(LAND);
                 }
-            }
+            } else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
+				set_mode(LAND);
+			}
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
             break;
         default:
-            if(ap.home_is_set == true && home_distance > g.waypoint_radius) {
+            if(g.failsafe_throttle != FS_THR_ENABLED_ALWAYS_LAND && ap.home_is_set == true && home_distance > g.waypoint_radius) {
                 set_mode(RTL);
             }else{
                 // We have no GPS or are very close to home so we will land
@@ -77,7 +79,7 @@ static void low_battery_event(void)
                 }
                 break;
             case AUTO:
-                if(ap.home_is_set == true && home_distance > g.waypoint_radius) {
+                if(g.failsafe_throttle != FS_THR_ENABLED_ALWAYS_LAND && ap.home_is_set == true && home_distance > g.waypoint_radius) {
                     set_mode(RTL);
                 }else{
                     // We have no GPS or are very close to home so we will land

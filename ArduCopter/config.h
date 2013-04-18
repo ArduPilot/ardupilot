@@ -436,6 +436,7 @@
 #define FS_THR_DISABLED                    0
 #define FS_THR_ENABLED_ALWAYS_RTL          1
 #define FS_THR_ENABLED_CONTINUE_MISSION    2
+#define FS_THR_ENABLED_ALWAYS_LAND         3
 
 #ifndef FS_THR_VALUE_DEFAULT
  # define FS_THR_VALUE_DEFAULT             975
