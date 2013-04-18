@@ -1171,7 +1171,7 @@ get_throttle_land()
 {
     // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
     if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-        get_throttle_althold_with_slew(LAND_START_ALT, g.auto_velocity_z_min, -abs(g.land_speed));
+        get_throttle_althold_with_slew(LAND_START_ALT, -wp_nav.get_descent_velocity(), -abs(g.land_speed));
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 

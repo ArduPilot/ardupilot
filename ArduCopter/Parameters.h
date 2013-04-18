@@ -215,8 +215,8 @@ public:
         k_param_circle_radius,
         k_param_waypoint_speed_max,  // remove
         k_param_land_speed,
-        k_param_auto_velocity_z_min,
-        k_param_auto_velocity_z_max, // 219
+        k_param_auto_velocity_z_min, // remove
+        k_param_auto_velocity_z_max, // remove - 219
 
         //
         // 220: PI/D Controllers
@@ -291,8 +291,6 @@ public:
     AP_Int16        circle_radius;
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
-    AP_Int16        auto_velocity_z_min;         // minimum vertical velocity (i.e. maximum descent) the autopilot may request
-    AP_Int16        auto_velocity_z_max;         // maximum vertical velocity the autopilot may request
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
 
 

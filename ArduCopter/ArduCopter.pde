@@ -1895,7 +1895,7 @@ void update_throttle_mode(void)
     case THROTTLE_AUTO:
         // auto pilot altitude controller with target altitude held in wp_nav.get_desired_alt()
         if(ap.auto_armed) {
-            get_throttle_althold_with_slew(wp_nav.get_desired_alt(), g.auto_velocity_z_min, g.auto_velocity_z_max);
+            get_throttle_althold_with_slew(wp_nav.get_desired_alt(), -wp_nav.get_descent_velocity(), wp_nav.get_climb_velocity());
             set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
         }
         break;
