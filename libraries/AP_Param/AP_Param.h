@@ -330,19 +330,19 @@ public:
 
     /// Value getter
     ///
-    T get(void) const {
+    const T &get(void) const {
         return _value;
     }
 
     /// Value setter
     ///
-    void set(T v) {
+    void set(const T &v) {
         _value = v;
     }
 
     /// Combined set and save
     ///
-    bool set_and_save(T v) {
+    bool set_and_save(const T &v) {
         set(v);
         return save();
     }
@@ -364,19 +364,13 @@ public:
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator const T &() const {
         return _value;
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamT<T,PT>& operator= (AP_ParamT<T,PT>& v) {
-        return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamT<T,PT>& operator= (T v) {
+    AP_ParamT<T,PT>& operator= (const T &v) {
         _value = v;
         return *this;
     }
