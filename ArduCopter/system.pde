@@ -177,7 +177,7 @@ static void init_ardupilot()
         gcs0.reset_cli_timeout();
     }
     if (g.log_bitmask != 0) {
-        DataFlash.start_new_log();
+		start_logging();
     }
 #endif
 
