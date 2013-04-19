@@ -180,35 +180,6 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
     s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
 }
 
-struct log_GPS {
-    LOG_PACKET_HEADER;
-    uint32_t gps_time;
-    uint8_t  num_sats;
-    int32_t  latitude;
-    int32_t  longitude;
-    int32_t  rel_altitude;
-    int32_t  altitude;
-    uint32_t ground_speed;
-    int32_t  ground_course;
-};
-
-// Write an GPS packet. Total length : 31 bytes
-static void Log_Write_GPS()
-{
-    struct log_GPS pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
-    	gps_time      : g_gps->time,
-        num_sats      : g_gps->num_sats,
-        latitude      : g_gps->latitude,
-        longitude     : g_gps->longitude,
-        rel_altitude  : current_loc.alt,
-        altitude      : g_gps->altitude,
-        ground_speed  : g_gps->ground_speed,
-        ground_course : g_gps->ground_course
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 // Read a GPS packet
 static void Log_Read_GPS()
 {
@@ -230,23 +201,6 @@ static void Log_Read_GPS()
                         (long)pkt.ground_course);
 }
 
-struct log_IMU {
-    LOG_PACKET_HEADER;
-    Vector3f gyro;
-    Vector3f accel;
-};
-
-// Write an imu accel/gyro packet. Total length : 27 bytes
-static void Log_Write_IMU()
-{
-    struct log_IMU pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-        gyro      : ins.get_gyro(),
-        accel     : ins.get_accel()
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 // Read a raw accel/gyro packet
 static void Log_Read_IMU()
 {
@@ -255,12 +209,12 @@ static void Log_Read_IMU()
 
     //                                 1      2      3      4      5      6
     cliSerial->printf_P(PSTR("IMU, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
-        pkt.gyro.x,
-        pkt.gyro.y,
-        pkt.gyro.z,
-        pkt.accel.x,
-        pkt.accel.y,
-        pkt.accel.z);
+        pkt.gyro_x,
+        pkt.gyro_y,
+        pkt.gyro_z,
+        pkt.accel_x,
+        pkt.accel_y,
+        pkt.accel_z);
 }
 
 struct log_Current {
