@@ -759,7 +759,7 @@ static void fast_loop()
         Log_Write_Attitude();
 
     if (g.log_bitmask & MASK_LOG_IMU)
-        Log_Write_IMU();
+        DataFlash.Log_Write_IMU(&ins);
 
     // inertial navigation
     // ------------------
@@ -877,7 +877,7 @@ static void medium_loop()
             Log_Write_Nav_Tuning();
 
         if (g.log_bitmask & MASK_LOG_GPS)
-            Log_Write_GPS();
+            DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
         break;
 
     // This case controls the slow loop

@@ -158,19 +158,17 @@ enum gcs_severity {
 // mark unused ones as 'deprecated', but leave them in
 enum log_messages {
     LOG_INDEX_MSG,
-    LOG_ATTITUDE_MSG,
-    LOG_GPS_MSG,
-    LOG_MODE_MSG,
     LOG_CONTROL_TUNING_MSG,
     LOG_NAV_TUNING_MSG,
     LOG_PERFORMANCE_MSG,
-    LOG_IMU_MSG,
     LOG_CMD_MSG,
     LOG_CURRENT_MSG,
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
     LOG_CAMERA_MSG,
+    LOG_ATTITUDE_MSG,
+    LOG_MODE_MSG,
     MAX_NUM_LOGS
 };
 
