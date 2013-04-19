@@ -306,7 +306,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
                                                            uint8_t                  group_shift,
                                                            uint32_t *               group_element,
                                                            const struct GroupInfo **group_ret,
-                                                           uint8_t *                idx)
+                                                           uint8_t *                idx) const
 {
     uintptr_t base = PGM_POINTER(&_var_info[vindex].ptr);
     uint8_t type;
@@ -390,12 +390,12 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 
 
 
 // find the info structure for a variable
-const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken *token,
+const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &token,
                                                            uint32_t *                 group_element,
                                                            const struct GroupInfo **  group_ret,
-                                                           uint8_t *                  idx)
+                                                           uint8_t *                  idx) const
 {
-    uint8_t i = token->key;
+    uint8_t i = token.key;
     uint8_t type = PGM_UINT8(&_var_info[i].type);
     uintptr_t base = PGM_POINTER(&_var_info[i].ptr);
     if (type == AP_PARAM_GROUP) {
@@ -483,7 +483,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 }
 
 // add a X,Y,Z suffix to the name of a Vector3f element
-void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx)
+void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx) const
 {
     uint8_t len = strnlen(buffer, buffer_size);
     if ((size_t)(len+2) > buffer_size) {
@@ -507,7 +507,7 @@ void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx
 //
 // If the variable is a group member, prepend the group name.
 //
-void AP_Param::copy_name_token(const ParamToken *token, char *buffer, size_t buffer_size, bool force_scalar)
+void AP_Param::copy_name_token(const ParamToken &token, char *buffer, size_t buffer_size, bool force_scalar) const
 {
     uint32_t group_element;
     const struct GroupInfo *ginfo;
@@ -991,7 +991,7 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
 
 
 /// cast a variable to a float given its type
-float AP_Param::cast_to_float(enum ap_var_type type)
+float AP_Param::cast_to_float(enum ap_var_type type) const
 {
     switch (type) {
     case AP_PARAM_INT8:
@@ -1009,7 +1009,39 @@ float AP_Param::cast_to_float(enum ap_var_type type)
 
 
 // print the value of all variables
-void AP_Param::show_all(void)
+void AP_Param::show(const AP_Param *ap, const char *s,
+                    enum ap_var_type type, AP_HAL::BetterStream *port)
+{
+    switch (type) {
+    case AP_PARAM_INT8:
+        port->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int8 *)ap)->get());
+        break;
+    case AP_PARAM_INT16:
+        port->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int16 *)ap)->get());
+        break;
+    case AP_PARAM_INT32:
+        port->printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
+        break;
+    case AP_PARAM_FLOAT:
+        port->printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
+        break;
+    default:
+        break;
+    }
+}
+
+// print the value of all variables
+void AP_Param::show(const AP_Param *ap, const ParamToken &token,
+                    enum ap_var_type type, AP_HAL::BetterStream *port)
+{
+    char s[AP_MAX_NAME_SIZE+1];
+    ap->copy_name_token(token, s, sizeof(s), true);
+    s[AP_MAX_NAME_SIZE] = 0;
+    show(ap, s, type, port);
+}
+
+// print the value of all variables
+void AP_Param::show_all(AP_HAL::BetterStream *port)
 {
     ParamToken token;
     AP_Param *ap;
@@ -1018,26 +1050,7 @@ void AP_Param::show_all(void)
     for (ap=AP_Param::first(&token, &type);
          ap;
          ap=AP_Param::next_scalar(&token, &type)) {
-        char s[AP_MAX_NAME_SIZE+1];
-        ap->copy_name_token(&token, s, sizeof(s), true);
-        s[AP_MAX_NAME_SIZE] = 0;
-
-        switch (type) {
-        case AP_PARAM_INT8:
-            hal.console->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int8 *)ap)->get());
-            break;
-        case AP_PARAM_INT16:
-            hal.console->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int16 *)ap)->get());
-            break;
-        case AP_PARAM_INT32:
-            hal.console->printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
-            break;
-        case AP_PARAM_FLOAT:
-            hal.console->printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
-            break;
-        default:
-            break;
-        }
+        show(ap, token, type, port);
     }
 }
 
