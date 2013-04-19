@@ -79,7 +79,7 @@ public:
     ///
     /// @returns	vector of rotational rates in radians/sec
     ///
-    Vector3f            get_gyro(void) { return _gyro; }
+    Vector3f            get_gyro(void) const { return _gyro; }
     void                set_gyro(Vector3f gyro) { _gyro = gyro; }
 
     // set gyro offsets in radians/sec
@@ -90,7 +90,7 @@ public:
     ///
     /// @returns	vector of current accelerations in m/s/s
     ///
-    Vector3f            get_accel(void) { return _accel; }
+    Vector3f            get_accel(void) const { return _accel; }
     void                set_accel(Vector3f accel) { _accel = accel; }
 
     // get accel offsets in m/s/s
