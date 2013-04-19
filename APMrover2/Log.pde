@@ -448,7 +448,7 @@ static void Log_Write_Sonar()
 {
     uint16_t turn_time = 0;
     if (obstacle.turn_angle != 0) {
-        turn_time = hal.scheduler->millis() - (obstacle.detected_time_ms + g.sonar_turn_time*1000);
+        turn_time = hal.scheduler->millis() - obstacle.detected_time_ms;
     }
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
