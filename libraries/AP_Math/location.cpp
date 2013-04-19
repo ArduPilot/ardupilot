@@ -161,3 +161,24 @@ int32_t wrap_180_cd(int32_t error)
     return error;
 }
 
+
+/*
+  print a int32_t lat/long in decimal degrees
+ */
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
+{
+    int32_t dec_portion, frac_portion;
+    int32_t abs_lat_or_lon = labs(lat_or_lon);
+
+    // extract decimal portion (special handling of negative numbers to ensure we round towards zero)
+    dec_portion = abs_lat_or_lon / 10000000UL;
+
+    // extract fractional portion
+    frac_portion = abs_lat_or_lon - dec_portion*10000000UL;
+
+    // print output including the minus sign
+    if( lat_or_lon < 0 ) {
+        s->printf_P(PSTR("-"));
+    }
+    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
+}

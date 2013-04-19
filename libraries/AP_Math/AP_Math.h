@@ -91,6 +91,11 @@ void        location_offset(struct Location *loc, float ofs_north, float ofs_eas
 int32_t wrap_360_cd(int32_t error);
 int32_t wrap_180_cd(int32_t error);
 
+/*
+  print a int32_t lat/long in decimal degrees
+ */
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
+
 // constrain a value
 float   constrain(float amt, float low, float high);
 int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
