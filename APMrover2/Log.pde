@@ -373,6 +373,7 @@ struct PACKED log_Current {
     int16_t throttle_in;
     int16_t battery_voltage;
     int16_t current_amps;
+    uint16_t board_voltage;
     float   current_total;
 };
 
@@ -383,6 +384,7 @@ static void Log_Write_Current()
         throttle_in             : g.channel_throttle.control_in,
         battery_voltage         : (int16_t)(battery_voltage1 * 100.0),
         current_amps            : (int16_t)(current_amps1 * 100.0),
+        board_voltage           : board_voltage(),
         current_total           : current_total1
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -439,9 +441,11 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "hHHHbHCb",   "NavStr,S1Dist,S2Dist,DCnt,TAng,TTim,Spd,Thr" },
     { LOG_CURRENT_MSG, sizeof(log_Current),             
-      "CURR", "hhhf",       "Thr,Volt,Curr,CurrTot" },
+      "CURR", "hhhHf",      "Thr,Volt,Curr,Vcc,CurrTot" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
       "MODE", "B",          "Mode" },
+    { LOG_COMPASS_MSG, sizeof(log_Compass),             
+      "MAG", "hhhhhhhhh",   "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
 };
 
 
