@@ -596,6 +596,7 @@ struct log_Current {
     int16_t battery_voltage;
     int16_t current_amps;
     int16_t current_total;
+    int16_t board_vcc;
 };
 
 static void Log_Write_Current()
@@ -605,7 +606,8 @@ static void Log_Write_Current()
         throttle_in             : g.channel_throttle.control_in,
         battery_voltage         : (int16_t)(battery_voltage1 * 100.0),
         current_amps            : (int16_t)(current_amps1 * 100.0),
-        current_total           : (int16_t)current_total1
+        current_total           : (int16_t)current_total1,
+        board_vcc               : (int16_t)(board_voltage() * 100.0f)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -615,11 +617,12 @@ static void Log_Read_Current()
 {
     struct log_Current pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
-    cliSerial->printf_P(PSTR("CURRENT, %d, %4.4f, %4.4f, %d\n"),
+    cliSerial->printf_P(PSTR("CURRENT, %d, %4.4f, %4.4f, %d, %4.4f\n"),
                     (int)pkt.throttle_in,
                     ((float)pkt.battery_voltage / 100.f),
                     ((float)pkt.current_amps / 100.f),
-                    (int)pkt.current_total);
+                    (int)pkt.current_total,
+                    ((float)pkt.board_vcc));
 }
 
 static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
