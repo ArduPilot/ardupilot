@@ -169,6 +169,7 @@ enum log_messages {
     LOG_CAMERA_MSG,
     LOG_ATTITUDE_MSG,
     LOG_MODE_MSG,
+    LOG_COMPASS_MSG,
     MAX_NUM_LOGS
 };
 
@@ -182,6 +183,7 @@ enum log_messages {
 #define MASK_LOG_IMU                    (1<<7)
 #define MASK_LOG_CMD                    (1<<8)
 #define MASK_LOG_CURRENT                (1<<9)
+#define MASK_LOG_COMPASS                (1<<10)
 
 // Waypoint Modes
 // ----------------

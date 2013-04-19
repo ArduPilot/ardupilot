@@ -814,6 +814,9 @@ static void medium_loop()
         if (g.compass_enabled && compass.read()) {
             ahrs.set_compass(&compass);
             compass.null_offsets();
+            if (g.log_bitmask & MASK_LOG_COMPASS) {
+                Log_Write_Compass();
+            }
         } else {
             ahrs.set_compass(NULL);
         }
