@@ -743,7 +743,7 @@
  # define LOG_CMD                                ENABLED
 #endif
 #ifndef LOG_CURRENT
- # define LOG_CURRENT                            DISABLED
+ # define LOG_CURRENT                            ENABLED
 #endif
 
 // calculate the default log_bitmask
