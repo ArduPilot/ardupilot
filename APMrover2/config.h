@@ -443,7 +443,7 @@
 # define LOG_CTUN				ENABLED
 #endif
 #ifndef LOG_NTUN
-# define LOG_NTUN				DISABLED
+# define LOG_NTUN				ENABLED
 #endif
 #ifndef LOG_MODE
 # define LOG_MODE				ENABLED
@@ -456,6 +456,9 @@
 #endif
 #ifndef LOG_CURRENT
 # define LOG_CURRENT			DISABLED
+#endif
+#ifndef LOG_SONAR
+# define LOG_SONAR			    ENABLED
 #endif
 
 // calculate the default log_bitmask
@@ -471,6 +474,7 @@
 		LOGBIT(MODE)			| \
 		LOGBIT(IMU)				| \
 		LOGBIT(CMD)				| \
+		LOGBIT(SONAR)			| \
 		LOGBIT(CURRENT)
 
 

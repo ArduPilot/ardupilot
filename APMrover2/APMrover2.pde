@@ -376,6 +376,8 @@ static struct {
     // have we detected an obstacle?
     uint8_t detected_count;
     float turn_angle;
+    uint16_t sonar1_distance_cm;
+    uint16_t sonar2_distance_cm;
 
     // time when we last detected an obstacle, in milliseconds
     uint32_t detected_time_ms;
@@ -428,7 +430,7 @@ static float	current_total1;
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
 // The instantaneous desired steering angle.  Hundredths of a degree
-static int32_t nav_steer;
+static int32_t nav_steer_cd;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
@@ -636,7 +638,7 @@ static void fast_loop()
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-			Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
+			Log_Write_Attitude();
 
 		if (g.log_bitmask & MASK_LOG_IMU)
 			Log_Write_IMU();
@@ -707,7 +709,7 @@ static void medium_loop()
 			medium_loopCounter++;
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-					Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
+					Log_Write_Attitude();
 
 				if (g.log_bitmask & MASK_LOG_CTUN)
 					Log_Write_Control_Tuning();
@@ -717,7 +719,7 @@ static void medium_loop()
 				Log_Write_Nav_Tuning();
 
 			if (g.log_bitmask & MASK_LOG_GPS)
-				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
+				Log_Write_GPS();
 			break;
 
 		// This case controls the slow loop

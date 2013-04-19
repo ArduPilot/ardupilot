@@ -129,14 +129,16 @@ enum gcs_severity {
 #define LOG_INDEX_MSG			0xF0
 #define LOG_ATTITUDE_MSG		0x01
 #define LOG_GPS_MSG			    0x02
-#define LOG_MODE_MSG			0X03
-#define LOG_CONTROL_TUNING_MSG	0X04
-#define LOG_NAV_TUNING_MSG		0X05
-#define LOG_PERFORMANCE_MSG		0X06
+#define LOG_MODE_MSG			0x03
+#define LOG_CONTROL_TUNING_MSG	0x04
+#define LOG_NAV_TUNING_MSG		0x05
+#define LOG_PERFORMANCE_MSG		0x06
 #define LOG_IMU_MSG			    0x07
 #define LOG_CMD_MSG			    0x08
 #define LOG_CURRENT_MSG 		0x09
 #define LOG_STARTUP_MSG 		0x0A
+#define LOG_SONAR_MSG 		    0x0B
+
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
 #define MAX_NUM_LOGS			100
@@ -151,6 +153,7 @@ enum gcs_severity {
 #define MASK_LOG_IMU			(1<<7)
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CURRENT		(1<<9)
+#define MASK_LOG_SONAR   		(1<<10)
 
 // Waypoint Modes
 // ----------------

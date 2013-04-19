@@ -240,7 +240,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
     int16_t bearing = nav_bearing / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
-        nav_steer / 1.0e2,
+        nav_steer_cd / 1.0e2,
         0,
         bearing,
         target_bearing / 100,
