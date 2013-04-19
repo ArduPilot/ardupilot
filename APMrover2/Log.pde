@@ -62,29 +62,31 @@ print_log_menu(void)
 static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
-	int16_t dump_log;
-	uint16_t dump_log_start;
-	uint16_t dump_log_end;
-	uint16_t last_log_num;
+    int16_t dump_log;
+    uint16_t dump_log_start;
+    uint16_t dump_log_end;
+    uint16_t last_log_num;
 
-	// check that the requested log number can be read
-	dump_log = argv[1].i;
-	last_log_num = DataFlash.find_last_log();
-	
-	if (dump_log == -2) {
+    // check that the requested log number can be read
+    dump_log = argv[1].i;
+    last_log_num = DataFlash.find_last_log();
+
+    if (dump_log == -2) {
         DataFlash.DumpPageInfo(cliSerial);
-		return(-1);
-	} else if (dump_log <= 0) {
-		cliSerial->printf_P(PSTR("dumping all\n"));
-		Log_Read(0, 1, 0);
-		return(-1);
-	} else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
-		cliSerial->printf_P(PSTR("bad log number\n"));
-		return(-1);
-	}
+        return(-1);
+    } else if (dump_log <= 0) {
+        cliSerial->printf_P(PSTR("dumping all\n"));
+        Log_Read(0, 1, 0);
+        return(-1);
+    } else if ((argc != 2)
+               || ((uint16_t)dump_log > last_log_num))
+    {
+        cliSerial->printf_P(PSTR("bad log number\n"));
+        return(-1);
+    }
 
-	DataFlash.get_log_boundaries(dump_log, dump_log_start, dump_log_end);
-	Log_Read((uint16_t)dump_log, dump_log_start, dump_log_end);
+    DataFlash.get_log_boundaries(dump_log, dump_log_start, dump_log_end);
+    Log_Read((uint16_t)dump_log, dump_log_start, dump_log_end);
     return 0;
 }
 
@@ -155,26 +157,6 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 {
 	log_menu.run();
 	return 0;
-}
-
-// print_latlon - prints an latitude or longitude value held in an int32_t
-// probably this should be moved to AP_Common
-void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
-{
-    int32_t dec_portion, frac_portion;
-    int32_t abs_lat_or_lon = labs(lat_or_lon);
-
-    // extract decimal portion (special handling of negative numbers to ensure we round towards zero)
-    dec_portion = abs_lat_or_lon / T7;
-
-    // extract fractional portion
-    frac_portion = abs_lat_or_lon - dec_portion*T7;
-
-    // print output including the minus sign
-    if( lat_or_lon < 0 ) {
-        s->printf_P(PSTR("-"));
-    }
-    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
 }
 
 struct PACKED log_Performance {
@@ -324,7 +306,7 @@ struct PACKED log_Attitude {
 
 
 // Write an attitude packet
-void Log_Write_Attitude()
+static void Log_Write_Attitude()
 {
     struct log_Attitude pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
@@ -494,6 +476,9 @@ static void Log_Write_Performance() {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Sonar() {}
+static void Log_Write_Mode() {}
+static void Log_Write_Attitude() {}
+static void Log_Write_Compass() {}
 static void start_logging() {}
 
 #endif // LOGGING_ENABLED
