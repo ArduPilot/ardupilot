@@ -119,7 +119,7 @@ Format characters in the format string for binary log messages
   C   : uint16_t * 100
   e   : int32_t * 100
   E   : uint32_t * 100
-  L   : uint32_t latitude/longitude
+  L   : int32_t latitude/longitude
  */
 
 // structure used to define logging format

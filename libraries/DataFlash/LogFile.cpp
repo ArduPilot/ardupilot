@@ -4,6 +4,7 @@
 #include "DataFlash.h"
 #include <stdlib.h>
 #include <AP_Param.h>
+#include <AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -364,20 +365,7 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
         case 'L': {
             int32_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            int32_t dec_portion, frac_portion;
-            int32_t abs_lat_or_lon = labs(v);
-
-            // extract decimal portion (special handling of negative numbers to ensure we round towards zero)
-            dec_portion = abs_lat_or_lon / 10000000UL;
-
-            // extract fractional portion
-            frac_portion = abs_lat_or_lon - dec_portion*10000000UL;
-
-            // print output including the minus sign
-            if (v < 0) {
-                port->printf_P(PSTR("-"));
-            }
-            port->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
+            print_latlon(port, v);
             ofs += sizeof(v);
             break;
         }
