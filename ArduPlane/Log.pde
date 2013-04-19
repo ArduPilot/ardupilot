@@ -516,6 +516,7 @@ static void Log_Read_Mode()
 struct log_GPS {
     LOG_PACKET_HEADER;
     uint32_t gps_time;
+    uint8_t  status;
     uint8_t  num_sats;
     int32_t  latitude;
     int32_t  longitude;
@@ -531,6 +532,7 @@ static void Log_Write_GPS(void)
     struct log_GPS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
     	gps_time      : g_gps->time,
+    	status        : g_gps->status(),
         num_sats      : g_gps->num_sats,
         latitude      : g_gps->latitude,
         longitude     : g_gps->longitude,
@@ -628,9 +630,15 @@ static void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
 {
     cliSerial->printf_P(PSTR("\n" THISFIRMWARE
                              "\nFree RAM: %u\n"),
-                        memcheck_available_memory());
+                        (unsigned) memcheck_available_memory());
 
-    DataFlash.log_read_process(log_num, start_page, end_page, log_callback);
+    cliSerial->println_P(PSTR(HAL_BOARD_NAME));
+
+#if CLI_ENABLED == ENABLED
+	setup_show(0, NULL);
+#endif
+
+	DataFlash.log_read_process(log_num, start_page, end_page, log_callback);
 }
 
 // Read the DataFlash.log memory : Packet Parser
