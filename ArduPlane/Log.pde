@@ -411,6 +411,16 @@ static void Log_Write_Compass()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+static void Log_Write_GPS(void)
+{
+    DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
+}
+
+static void Log_Write_IMU() 
+{
+    DataFlash.Log_Write_IMU(&ins);
+}
+
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
@@ -464,6 +474,10 @@ static void Log_Write_Performance() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Camera() {}
+static void Log_Write_Mode(uint8_t mode) {}
+static void Log_Write_Compass() {}
+static void Log_Write_GPS() {}
+static void Log_Write_IMU() {}
 
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;

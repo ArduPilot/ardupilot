@@ -112,6 +112,7 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
+#if LOGGING_ENABLED == ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -123,6 +124,7 @@ static DataFlash_File DataFlash("/fs/microsd/APM/logs");
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -759,7 +761,7 @@ static void fast_loop()
         Log_Write_Attitude();
 
     if (g.log_bitmask & MASK_LOG_IMU)
-        DataFlash.Log_Write_IMU(&ins);
+        Log_Write_IMU();
 
     // inertial navigation
     // ------------------
@@ -880,7 +882,7 @@ static void medium_loop()
             Log_Write_Nav_Tuning();
 
         if (g.log_bitmask & MASK_LOG_GPS)
-            DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
+            Log_Write_GPS();
         break;
 
     // This case controls the slow loop
