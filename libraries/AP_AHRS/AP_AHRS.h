@@ -85,7 +85,7 @@ public:
     float get_roll_rate_earth(void);
 
     // return a smoothed and corrected gyro vector
-    virtual Vector3f get_gyro(void) = 0;
+    virtual const Vector3f get_gyro(void) const = 0;
 
     // return the current estimate of the gyro drift
     virtual Vector3f get_gyro_drift(void) = 0;
@@ -109,7 +109,7 @@ public:
 
     // return a DCM rotation matrix representing our current
     // attitude
-    virtual Matrix3f get_dcm_matrix(void) = 0;
+    virtual const Matrix3f get_dcm_matrix(void) const = 0;
 
     // get our current position, either from GPS or via
     // dead-reckoning. Return true if a position is available,

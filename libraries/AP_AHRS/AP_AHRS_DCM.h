@@ -25,10 +25,10 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    Vector3f        get_gyro(void) {
+    const Vector3f get_gyro(void) const {
         return _omega + _omega_P + _omega_yaw_P;
     }
-    Matrix3f        get_dcm_matrix(void) {
+    const Matrix3f        get_dcm_matrix(void) const {
         return _dcm_matrix;
     }
 
