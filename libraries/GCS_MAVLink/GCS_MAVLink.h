@@ -153,8 +153,39 @@ bool comm_is_idle(mavlink_channel_t chan);
 
 uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
 
-// return a MAVLink variable type given a AP_Param type
-uint8_t mav_var_type(enum ap_var_type t);
+/**
+ * converts an AP_Param according to its type to an (u)int32_t / float and stores the resulting 4-byte variable into the 4-bytes of a float.
+ * the chosen MAV_PARAM_TYPE_* (MAV_PARAM_TYPE_INT32, MAV_PARAM_TYPE_UINT32, MAV_PARAM_TYPE_REAL32) is set in the result's type field.
+ * @param ptr
+ * @param type
+ * @return
+ */
+mavlink_param_union_t store_AP_Param_in_float(const AP_Param *ptr, enum ap_var_type type);
+
+/**
+ * Trys to update an AP_Param with a mavlink parameter given by a float and returns true on success.
+ *
+ * The mavlink messages PARAM_VALUE and PARAM_SET can transmit an (u)int32_t or float.
+ * The 4 bytes of these values are packet into the 4 bytes auf a float.
+ * This functions unpacks the bytes of the float new_val according to new_val_type and trys to store
+ * the value in the AP_Param given by ptr.
+ *
+ * 1. ap_var_type == MAV_PARAM_TYPE_UINT32:
+ * 		discard the value since all integer AP_Params are signed
+ * 2. ap_var_type == MAV_PARAM_TYPE_INT32:
+ * 		if the AP_Param is an integer, the value is bounded and set
+ * 		otherwise it's discarded
+ * 3. ap_var_type == MAV_PARAM_TYPE_REAL32:
+ * 		if AP_Param is a float, the value is set (if it's not nan or inf)
+ * 		otherwise it's discarded
+ *
+ * @param ptr			AP_Param to be updated
+ * @param ptr_type		type of the AP_Param
+ * @param new_val		new value stored in a float
+ * @param new_val_type	how to interpret the float
+ * @return				true iff AP_Param has been set
+ */
+bool update_AP_Param(AP_Param *ptr, enum ap_var_type ptr_type, float new_val, enum MAV_PARAM_TYPE new_val_type);
 
 // return CRC byte for a mavlink message ID
 uint8_t mavlink_get_message_crc(uint8_t msgid);

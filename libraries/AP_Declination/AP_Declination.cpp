@@ -115,8 +115,8 @@ AP_Declination::get_declination(float lat, float lon)
     float decmin, decmax;
 
     // Constrain to valid inputs
-    lat = constrain(lat, -90, 90);
-    lon = constrain(lon, -180, 180);
+    lat = constrain_float(lat, -90, 90);
+    lon = constrain_float(lon, -180, 180);
 
     latmin = floorf(lat/5)*5;
     lonmin = floorf(lon/5)*5;

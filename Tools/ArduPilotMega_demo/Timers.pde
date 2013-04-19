@@ -1,7 +1,7 @@
 
 void OutputCh(byte ch, int pwm)
 {
-  pwm=constrain(pwm,900,2100);
+  pwm=constrain_int(pwm,900,2100);
   pwm*=2;
  
  switch(ch)

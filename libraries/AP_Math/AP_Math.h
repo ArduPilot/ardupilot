@@ -41,8 +41,10 @@
 #define LATLON_TO_CM 1.113195f
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
-AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
-AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
+//AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
+//AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
+typedef AP_ParamV<Matrix3f, AP_PARAM_MATRIX3F> AP_Matrix3f;
+typedef AP_ParamV<Vector3f, AP_PARAM_VECTOR3F> AP_Vector3f;
 
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);
@@ -85,16 +87,51 @@ void        location_update(struct Location *loc, float bearing, float distance)
 // extrapolate latitude/longitude given distances north and east
 void        location_offset(struct Location *loc, float ofs_north, float ofs_east);
 
+/**
+ * Constrains a Value.
+ * If amt isn't in the range [low, high], it's set to either low or high.
+ *
+ * correct usage:
+ * If amt, low, high have different types, the type that can hold the largest
+ * range has to be chosen for T.
+ * Otherwise a value might wrap around and lead to unexpected results.
+ *
+ * Wrong Usage example:
+ * 	int32_t tmp = 65437;
+ * 	int16_t i = constrain_int16(tmp, -1000, 1000);
+ *
+ * 	One could expect that i is set to 1000, since tmp > 1000.
+ * 	Instead the conversion from temp to an int16_t (that cant't hold 65437)
+ * 	sets the value to -99.
+ * 	Since -99 is in the range [-1000, 1000] that's the value i is set to.
+ *
+ * @param amt value to be constrained
+ * @param low lower bound
+ * @param high upper bound
+ * @return constrained value
+ */
+template<typename T>
+T constrain__(T amt, T low, T high) {
+	return amt < low ? low : ( amt > high ? high : amt);
+}
+
+// constrain a value
+inline float constrain_float(float amt, float low, float high) {
+	if (isnan(amt)) {
+		return (low+high)*0.5f;
+	}
+	return constrain__<float>(amt, low, high);
+}
+#define constrain_int8  constrain__<int8_t>
+#define constrain_int16 constrain__<int16_t>
+#define constrain_int32 constrain__<int32_t>
+#define constrain_int   constrain__<int>
+
 /*
   wrap an angle in centi-degrees
  */
 int32_t wrap_360_cd(int32_t error);
 int32_t wrap_180_cd(int32_t error);
-
-// constrain a value
-float   constrain(float amt, float low, float high);
-int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
-int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
 
 // degrees -> radians
 float radians(float deg);

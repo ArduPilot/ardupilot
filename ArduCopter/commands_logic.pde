@@ -663,7 +663,7 @@ static void do_yaw()
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
     }else{
         int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - nav_yaw) / 100) / command_cond_queue.lat;
-        yaw_look_at_heading_slew = constrain(turn_rate, 1, 360);    // deg / sec
+        yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
 
     // set yaw mode

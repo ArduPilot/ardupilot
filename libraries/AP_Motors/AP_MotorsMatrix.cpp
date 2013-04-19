@@ -104,7 +104,7 @@ void AP_MotorsMatrix::output_armed()
     _reached_limit = AP_MOTOR_NO_LIMITS_REACHED;
 
     // Throttle is 0 to 1000 only
-    _rc_throttle->servo_out = constrain(_rc_throttle->servo_out, 0, _max_throttle);
+    _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
 
     // capture desired roll, pitch, yaw and throttle from receiver
     _rc_roll->calc_pwm();
@@ -256,7 +256,7 @@ void AP_MotorsMatrix::output_armed()
         // clip motor output if required (shouldn't be)
         for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
             if( motor_enabled[i] ) {
-                motor_out[i] = constrain(motor_out[i], out_min, out_max);
+                motor_out[i] = constrain_int16(motor_out[i], out_min, out_max);
             }
         }
     }

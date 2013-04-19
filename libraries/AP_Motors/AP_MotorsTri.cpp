@@ -69,7 +69,7 @@ void AP_MotorsTri::output_armed()
     int16_t out_max = _rc_throttle->radio_max;
 
     // Throttle is 0 to 1000 only
-    _rc_throttle->servo_out = constrain(_rc_throttle->servo_out, 0, _max_throttle);
+    _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
 
     if(_rc_throttle->servo_out > 0)
         out_min = _rc_throttle->radio_min + _min_throttle;

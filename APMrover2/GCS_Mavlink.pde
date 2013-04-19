@@ -1286,12 +1286,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
         }
 
-        float value = vp->cast_to_float(p_type);
+        const mavlink_param_union_t &value = store_AP_Param_in_float(vp, p_type);
         mavlink_msg_param_value_send(
             chan,
             param_name,
-            value,
-            mav_var_type(p_type),
+            value.param_float,
+            value.type,
             _count_parameters(),
             packet.param_index);
         break;
@@ -1582,51 +1582,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // find the requested parameter
             vp = AP_Param::find(key, &var_type);
-            if ((NULL != vp) &&                             // exists
-                    !isnan(packet.param_value) &&               // not nan
-                    !isinf(packet.param_value)) {               // not inf
+            if (NULL != vp) {
 
-                // add a small amount before casting parameter values
-                // from float to integer to avoid truncating to the
-                // next lower integer value.
-				float rounding_addition = 0.01;
+            	if (update_AP_Param(vp, var_type,
+            			packet.param_value, static_cast<enum MAV_PARAM_TYPE>(packet.param_type)) ) {
 
-                // handle variables with standard type IDs
-                if (var_type == AP_PARAM_FLOAT) {
-                    ((AP_Float *)vp)->set_and_save(packet.param_value);
-                } else if (var_type == AP_PARAM_INT32) {
-                    if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                    float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -2147483648.0f, 2147483647.0f);
-					((AP_Int32 *)vp)->set_and_save(v);
-                } else if (var_type == AP_PARAM_INT16) {
-                    if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                    float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -32768, 32767);
-					((AP_Int16 *)vp)->set_and_save(v);
-                } else if (var_type == AP_PARAM_INT8) {
-                    if (packet.param_value < 0) rounding_addition = -rounding_addition;
-                    float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -128, 127);
-					((AP_Int8 *)vp)->set_and_save(v);
-                } else {
-                    // we don't support mavlink set on this parameter
-                    break;
-                }
-
-                // Report back the new value if we accepted the change
-                // we send the value we actually set, which could be
-                // different from the value sent, in case someone sent
-                // a fractional value to an integer type
-                mavlink_msg_param_value_send(
-                    chan,
-                    key,
-                    vp->cast_to_float(var_type),
-                    mav_var_type(var_type),
-                    _count_parameters(),
-                    -1); // XXX we don't actually know what its index is...
-            }
-
+                    // Report back the new value if we accepted the change
+                      // we send the value we actually set, which could be
+                      // different from the value sent, in case someone sent
+                      // a value that is out of range of the ap-integer type
+            		const mavlink_param_union_t &value = store_AP_Param_in_float(vp, var_type);
+                    mavlink_msg_param_value_send(chan,
+                    		key,
+                    		value.param_float,
+                    		value.type,
+                    		_count_parameters(),
+                    		-1); // XXX we don't actually know what its index is... this doesn't conform to the protocol ... :(
+            	}
+            } // END IF vp != NULL
             break;
         } // end case
 
@@ -1808,22 +1781,19 @@ GCS_MAVLINK::queued_param_send()
 
     while (_queued_parameter != NULL && count--) {
     AP_Param      *vp;
-    float       value;
 
     // copy the current parameter and prepare to move to the next
     vp = _queued_parameter;
 
-    // if the parameter can be cast to float, report it here and break out of the loop
-    value = vp->cast_to_float(_queued_parameter_type);
-
     char param_name[AP_MAX_NAME_SIZE];
     vp->copy_name_token(&_queued_parameter_token, param_name, sizeof(param_name), true);
 
+    const mavlink_param_union_t &value = store_AP_Param_in_float(vp, _queued_parameter_type);
     mavlink_msg_param_value_send(
         chan,
         param_name,
-        value,
-        mav_var_type(_queued_parameter_type),
+        value.param_float,
+        value.type,
         _queued_parameter_count,
         _queued_parameter_index);
 

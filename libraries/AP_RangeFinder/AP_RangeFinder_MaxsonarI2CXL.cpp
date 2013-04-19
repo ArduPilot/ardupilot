@@ -71,7 +71,7 @@ int AP_RangeFinder_MaxsonarI2CXL::read()
     }
     
     // ensure distance is within min and max
-    ret_value = constrain(ret_value, min_distance, max_distance);
+    ret_value = constrain_int(ret_value, min_distance, max_distance);
     
     ret_value = _mode_filter->apply(ret_value);
     

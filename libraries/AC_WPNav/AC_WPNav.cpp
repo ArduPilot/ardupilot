@@ -92,7 +92,7 @@ Vector3f AC_WPNav::project_stopping_point(const Vector3f& position, const Vector
         linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
         target_dist = linear_distance + (vel_total*vel_total)/(2*MAX_LOITER_POS_ACCEL);
     }
-    target_dist = constrain(target_dist, 0, MAX_LOITER_OVERSHOOT);
+    target_dist = constrain_float(target_dist, 0, MAX_LOITER_OVERSHOOT);
 
     target.x = position.x + (target_dist * velocity.x / vel_total);
     target.y = position.y + (target_dist * velocity.y / vel_total);
@@ -271,7 +271,7 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
         track_desired_temp = track_desired_max;
     }
     // do not let desired point go past the end of the segment
-    track_desired_temp = constrain(track_desired_temp, 0, _track_length);
+    track_desired_temp = constrain_float(track_desired_temp, 0, _track_length);
     _track_desired = max(_track_desired, track_desired_temp);
 
     // recalculate the desired position
@@ -350,7 +350,7 @@ void AC_WPNav::get_loiter_position_to_velocity(float dt)
 
     dist_error_total = safe_sqrt(dist_error.x*dist_error.x + dist_error.y*dist_error.y);
     if( dist_error_total > 2*linear_distance ) {
-        vel_sqrt = constrain(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
+        vel_sqrt = constrain_float(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
         desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
         desired_vel.y = vel_sqrt * dist_error.y/dist_error_total;
     }else{
@@ -424,8 +424,8 @@ void AC_WPNav::get_loiter_acceleration_to_lean_angles(float accel_lat, float acc
     accel_right = -accel_lat*_sin_yaw + accel_lon*_cos_yaw;
 
     // update angle targets that will be passed to stabilize controller
-    _desired_roll = constrain((accel_right/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
-    _desired_pitch = constrain((-accel_forward/(-z_accel_meas*_cos_roll))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
+    _desired_roll = constrain_float((accel_right/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
+    _desired_pitch = constrain_float((-accel_forward/(-z_accel_meas*_cos_roll))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
 }
 
 // get_bearing_cd - return bearing in centi-degrees between two positions

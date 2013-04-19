@@ -91,7 +91,7 @@ float PID::get_pid(float error, float scaler)
 int16_t PID::get_pid_4500(float error, float scaler)
 {
 	float v = get_pid(error, scaler);
-	return constrain(v, -4500, 4500);
+	return constrain_float(v, -4500, 4500);
 }
 
 void

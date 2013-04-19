@@ -364,7 +364,7 @@ static void set_mode(uint8_t mode)
     }
 
     control_mode 	= mode;
-    control_mode    = constrain(control_mode, 0, NUM_MODES - 1);
+    control_mode    = constrain_int8(control_mode, 0, NUM_MODES - 1);
 
     // if we change modes, we must clear landed flag
     set_land_complete(false);

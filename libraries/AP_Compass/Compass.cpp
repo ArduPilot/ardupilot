@@ -123,8 +123,8 @@ Compass::save_offsets()
     _offset.save();
 }
 
-Vector3f &
-Compass::get_offsets()
+const Vector3f &
+Compass::get_offsets() const
 {
     return _offset;
 }
@@ -169,14 +169,14 @@ Compass::set_declination(float radians, bool save_to_eeprom)
 }
 
 float
-Compass::get_declination()
+Compass::get_declination() const
 {
     return _declination.get();
 }
 
 
 float
-Compass::calculate_heading(float roll, float pitch)
+Compass::calculate_heading(float roll, float pitch) const
 {
 //  Note - This function implementation is deprecated
 //  The alternate implementation of this function using the dcm matrix is preferred
@@ -215,7 +215,7 @@ Compass::calculate_heading(float roll, float pitch)
 
 
 float
-Compass::calculate_heading(const Matrix3f &dcm_matrix)
+Compass::calculate_heading(const Matrix3f &dcm_matrix) const
 {
     float headX;
     float headY;
@@ -239,7 +239,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
     headY = mag_y*dcm_matrix.c.z/cos_pitch - mag_z*dcm_matrix.c.y/cos_pitch;
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    heading = constrain(atan2f(-headY,headX), -3.15f, 3.15f);
+    heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
 
     // Declination correction (if supplied)
     if( fabsf(_declination) > 0.0f )

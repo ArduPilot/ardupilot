@@ -15,6 +15,11 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 
+#include <math.h>		// needed for isnan, isinf
+#include <AP_Math.h>	// needed for constrain_
+#include <limits.h> 	// needed for SCHAR_MIN, SCHAR_MAX, SHRT_MIN, SHRT_MAX
+
+
 #ifdef MAVLINK_SEPARATE_HELPERS
 #include "include/mavlink/v1.0/mavlink_helpers.h"
 #endif
@@ -34,22 +39,98 @@ uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
     return 0; // no error
 }
 
-// return a MAVLink variable type given a AP_Param type
-uint8_t mav_var_type(enum ap_var_type t)
+mavlink_param_union_t store_AP_Param_in_float(const AP_Param *ptr, enum ap_var_type type)
 {
-    if (t == AP_PARAM_INT8) {
-	    return MAVLINK_TYPE_INT8_T;
-    }
-    if (t == AP_PARAM_INT16) {
-	    return MAVLINK_TYPE_INT16_T;
-    }
-    if (t == AP_PARAM_INT32) {
-	    return MAVLINK_TYPE_INT32_T;
-    }
-    // treat any others as float
-    return MAVLINK_TYPE_FLOAT;
+     mavlink_param_union_t result;
+     switch (type) {
+
+     	// signed integers
+     	case AP_PARAM_INT8:
+     		result.param_int32 = static_cast<const AP_Int8*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_INT32;
+     		break;
+     	case AP_PARAM_INT16:
+     		result.param_int32 = static_cast<const AP_Int16*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_INT32;
+     		break;
+     	case AP_PARAM_INT32:
+     		result.param_int32 = static_cast<const AP_Int32*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_INT32;
+     		break;
+
+     	// float
+     	case AP_PARAM_FLOAT:
+     		result.param_float = static_cast<const AP_Float*>(ptr)->get();
+     		result.type = MAV_PARAM_TYPE_REAL32;
+     		break;
+
+     	// other parameters are treated as float
+     	default:
+		// const_cast is needed because AP_Param::cast_to_float isn't const-correct
+     		result.param_float = const_cast<AP_Param*>(ptr)->cast_to_float(type);
+     		result.type = MAV_PARAM_TYPE_REAL32;
+     		break;
+     }
+     return result;
 }
 
+bool update_AP_Param(AP_Param *ptr, enum ap_var_type ptr_type, float new_val, enum MAV_PARAM_TYPE new_val_type)
+{
+
+	// handle the three valid param_value types (uint32_t, int32_t, float) as described in the mavlink parameter protocol "documentation":
+	// http://qgroundcontrol.org/mavlink/parameter_protocol#supported_data_types
+	switch (new_val_type) {
+
+		// since all integer AP-Params are signed, unsigned parameters are ignored
+		case MAV_PARAM_TYPE_UINT32:
+			return false;
+
+		// signed int: must be converted to int8/16/32 according to var_type
+		case MAV_PARAM_TYPE_INT32: {
+
+			mavlink_param_union_t value;
+			value.param_float = new_val;
+
+			switch (ptr_type) {
+				case AP_PARAM_INT8 : {
+					static_cast<AP_Int8*>(ptr)->set_and_save( constrain_int32(value.param_int32, SCHAR_MIN, SCHAR_MAX) );
+					return true;
+				}
+				case AP_PARAM_INT16 : {
+					static_cast<AP_Int16*>(ptr)->set_and_save( constrain_int32(value.param_int32, SHRT_MIN, SHRT_MAX) );
+					return true;
+				}
+				case AP_PARAM_INT32 : {
+					static_cast<AP_Int32*>(ptr)->set_and_save( value.param_int32 );
+					return true;
+				}
+				// *vp isn't an integer --> discard the received integer parameter
+				default:
+					return false;
+			}
+		} // END case MAV_PARAM_TYPE_INT32
+
+		case MAV_PARAM_TYPE_REAL32: {
+
+			switch (ptr_type) {
+				case AP_PARAM_FLOAT : {
+					if ( !isnan(new_val) && !isinf(new_val) ) {
+						static_cast<AP_Float*>(ptr)->set_and_save( new_val );
+						return true;
+					}
+					return false;
+				}
+				// *vp isn't a float --> discard the received float parameter
+				default:
+					return false;
+			}
+		} // END case MAV_PARAM_TYPE_REAL32
+
+		// invalid packet.param_type
+		default:
+			return false;
+	}
+}
 
 /*
   send a buffer out a MAVLink channel
