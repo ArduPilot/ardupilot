@@ -158,8 +158,8 @@ enum gcs_severity {
 // mark unused ones as 'deprecated', but leave them in
 enum log_messages {
     LOG_INDEX_MSG,
-    LOG_CONTROL_TUNING_MSG,
-    LOG_NAV_TUNING_MSG,
+    LOG_CTUN_MSG,
+    LOG_NTUN_MSG,
     LOG_PERFORMANCE_MSG,
     LOG_CMD_MSG,
     LOG_CURRENT_MSG,
