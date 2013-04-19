@@ -288,7 +288,80 @@ uint16_t DataFlash_File::start_new_log(void)
     fprintf(f, "%u\n", (unsigned)log_num);
     fclose(f);    
     free(fname);
+
+    Log_Write_Parameters();
+
     return log_num;
+}
+
+/*
+  Read the log and print it on port
+*/
+void DataFlash_File::LogReadProcess(uint16_t log_num,
+                                    uint16_t start_page, uint16_t end_page, 
+                                    uint8_t num_types,
+                                    const struct LogStructure *structure,
+                                    AP_HAL::BetterStream *port)
+{
+    uint8_t log_step = 0;
+    if (!_initialised) {
+        return;
+    }
+    if (_read_fd != -1) {
+        ::close(_read_fd);
+    }
+    char *fname = _log_file_name(log_num);
+    if (fname == NULL) {
+        return;
+    }
+    _read_fd = ::open(fname, O_RDONLY);
+    free(fname);
+    if (_read_fd == -1) {
+        return;
+    }
+    _read_offset = 0;
+    if (start_page != 0) {
+        ::lseek(_read_fd, start_page * DATAFLASH_PAGE_SIZE, SEEK_SET);
+    }
+
+    _print_format_headers(num_types, structure, port);
+
+    while (true) {
+        uint8_t data;
+        if (::read(_read_fd, &data, 1) != 1) {
+            // reached end of file
+            break;
+        }
+        _read_offset++;
+
+        // This is a state machine to read the packets
+        switch(log_step) {
+            case 0:
+                if (data == HEAD_BYTE1) {
+                    log_step++;
+                }
+                break;
+
+            case 1:
+                if (data == HEAD_BYTE2) {
+                    log_step++;
+                } else {
+                    log_step = 0;
+                }
+                break;
+
+            case 2:
+                log_step = 0;
+                _print_log_entry(data, num_types, structure, port);
+                break;
+        }
+        if (_read_offset >= (end_page+1) * DATAFLASH_PAGE_SIZE) {
+            break;
+        }
+    }
+
+    ::close(_read_fd);
+    _read_fd = -1;
 }
 
 /*

@@ -10,7 +10,7 @@
 #ifndef DataFlash_File_h
 #define DataFlash_File_h
 
-class DataFlash_File : DataFlash_Class
+class DataFlash_File : public DataFlash_Class
 {
 public:
     // constructor
@@ -40,6 +40,11 @@ public:
     void log_read_process(uint16_t log_num,
                           uint16_t start_page, uint16_t end_page, 
                           void (*callback)(uint8_t msgid));
+    void LogReadProcess(uint16_t log_num,
+                        uint16_t start_page, uint16_t end_page, 
+                        uint8_t num_types,
+                        const struct LogStructure *structure,
+                        AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);

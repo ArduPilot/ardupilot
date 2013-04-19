@@ -6,6 +6,11 @@
 #ifndef DataFlash_h
 #define DataFlash_h
 
+#include <AP_Common.h>
+#include <AP_Param.h>
+#include <AP_GPS.h>
+#include <AP_InertialSensor.h>
+#include <AP_AHRS.h>
 #include <stdint.h>
 
 // the last page holds the log format in first 4 bytes. Please change
@@ -39,12 +44,22 @@ public:
     virtual void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) = 0;
     virtual uint16_t get_num_logs(void) = 0;
     virtual uint16_t start_new_log(void) = 0;
-    virtual void log_read_process(uint16_t log_num,
-                                  uint16_t start_page, uint16_t end_page, 
-                                  void (*callback)(uint8_t msgid)) = 0;
+    void log_read_process(uint16_t log_num,
+                          uint16_t start_page, uint16_t end_page, 
+                          void (*callback)(uint8_t msgid));
+    virtual void LogReadProcess(uint16_t log_num,
+                                uint16_t start_page, uint16_t end_page, 
+                                uint8_t num_types,
+                                const struct LogStructure *structure,
+                                AP_HAL::BetterStream *port) = 0;
     virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
+
+    /* logging methods common to all vehicles */
+    void Log_Write_Parameter(const char *name, float value);
+    void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
+    void Log_Write_IMU(const AP_InertialSensor *ins);
 
 	/*
       every logged packet starts with 3 bytes
@@ -52,6 +67,26 @@ public:
     struct log_Header {
         uint8_t head1, head2, msgid;
     };
+
+protected:
+    /*
+    print column headers
+    */
+    void _print_format_headers(uint8_t num_types, 
+                               const struct LogStructure *structure,
+                               AP_HAL::BetterStream *port);
+    
+    /*
+    read and print a log entry using the format strings from the given structure
+    */
+    void _print_log_entry(uint8_t msg_type, 
+                          uint8_t num_types, 
+                          const struct LogStructure *structure,
+                          AP_HAL::BetterStream *port);
+    
+    void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
+                             enum ap_var_type type);
+    void Log_Write_Parameters(void);
 };
 
 /*
@@ -65,6 +100,74 @@ public:
 // this header
 #define HEAD_BYTE1  0xA3    // Decimal 163
 #define HEAD_BYTE2  0x95    // Decimal 149
+
+/*
+Format characters in the format string for binary log messages
+  b   : int8_t
+  B   : uint8_t
+  h   : int16_t
+  H   : uint16_t
+  i   : int32_t
+  I   : uint32_t
+  f   : float
+  N   : char[16]
+  c   : int16_t * 100
+  C   : uint16_t * 100
+  e   : int32_t * 100
+  E   : uint32_t * 100
+  L   : uint32_t latitude/longitude
+ */
+
+// structure used to define logging format
+struct LogStructure {
+    uint8_t msg_type;
+    uint8_t msg_len;
+    const char name[5];
+    const char format[16];
+    const char labels[64];
+};
+
+/*
+  log structures common to all vehicle types
+ */
+struct PACKED log_Parameter {
+    LOG_PACKET_HEADER;
+    char name[16];
+    float value;
+};
+
+struct PACKED log_GPS {
+    LOG_PACKET_HEADER;
+    uint8_t  status;
+    uint32_t gps_time;
+    uint8_t  num_sats;
+    int16_t  hdop;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  rel_altitude;
+    int32_t  altitude;
+    uint32_t ground_speed;
+    int32_t  ground_course;
+};
+
+struct PACKED log_IMU {
+    LOG_PACKET_HEADER;
+    float gyro_x, gyro_y, gyro_z;
+    float accel_x, accel_y, accel_z;
+};
+
+#define LOG_COMMON_STRUCTURES \
+    { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
+      "PARM", "Nf",        "Name,Value" },    \
+    { LOG_GPS_MSG, sizeof(log_GPS), \
+      "GPS",  "BIBcLLeeEe", "Status,Time,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs" }, \
+    { LOG_IMU_MSG, sizeof(log_IMU), \
+      "IMU",  "ffffff",     "GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }
+
+// message types for common messages
+#define LOG_PARAMETER_MSG 128
+#define LOG_GPS_MSG		  129
+#define LOG_IMU_MSG		  130
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

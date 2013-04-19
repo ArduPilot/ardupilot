@@ -16,7 +16,7 @@
 // we use an invalie logging format to test the chip erase
 #define DF_LOGGING_FORMAT_INVALID   0x28122012
 
-class DataFlash_Block : DataFlash_Class
+class DataFlash_Block : public DataFlash_Class
 {
 public:
     // initialisation
@@ -43,6 +43,11 @@ public:
     void log_read_process(uint16_t log_num,
                           uint16_t start_page, uint16_t end_page, 
                           void (*callback)(uint8_t msgid));
+    void LogReadProcess(uint16_t log_num,
+                        uint16_t start_page, uint16_t end_page, 
+                        uint8_t num_types,
+                        const struct LogStructure *structure,
+                        AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
