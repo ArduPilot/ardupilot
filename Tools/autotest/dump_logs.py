@@ -21,7 +21,7 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 
 def dump_logs(atype):
     '''dump DataFlash logs'''
-    logfile = '%s.flashlog' % atype
+    logfile = '%s.log' % atype
     print("Dumping logs for %s to %s" % (atype, logfile))
     sil = util.start_SIL(atype)
     log = open(logfile, mode='w')
@@ -55,5 +55,6 @@ def dump_logs(atype):
     print("Saved log for %s to %s" % (atype, logfile))
     return True
 
-dump_logs('ArduCopter')
+vehicle = os.path.basename(os.getcwd())
+dump_logs(vehicle)
 
