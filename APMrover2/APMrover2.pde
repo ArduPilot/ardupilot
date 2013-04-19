@@ -679,6 +679,9 @@ static void medium_loop()
                 ahrs.set_compass(&compass);
                 // Calculate heading
                 compass.null_offsets();
+                if (g.log_bitmask & MASK_LOG_COMPASS) {
+                    Log_Write_Compass();
+                }
             } else {
                 ahrs.set_compass(NULL);
             }

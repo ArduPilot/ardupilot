@@ -49,6 +49,7 @@ print_log_menu(void)
 		PLOG(CMD);
 		PLOG(CURRENT);
 		PLOG(SONAR);
+		PLOG(COMPASS);
 		#undef PLOG
 	}
 
@@ -137,6 +138,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(CMD);
 		TARG(CURRENT);
 		TARG(SONAR);
+		TARG(COMPASS);
 		#undef TARG
 	}
 
@@ -403,6 +405,40 @@ static void Log_Write_Current()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
+
+struct PACKED log_Compass {
+    LOG_PACKET_HEADER;
+    int16_t mag_x;
+    int16_t mag_y;
+    int16_t mag_z;
+    int16_t offset_x;
+    int16_t offset_y;
+    int16_t offset_z;
+    int16_t motor_offset_x;
+    int16_t motor_offset_y;
+    int16_t motor_offset_z;
+};
+
+// Write a Compass packet. Total length : 15 bytes
+static void Log_Write_Compass()
+{
+    Vector3f mag_offsets = compass.get_offsets();
+    Vector3f mag_motor_offsets = compass.get_motor_offsets();
+    struct log_Compass pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
+        mag_x           : compass.mag_x,
+        mag_y           : compass.mag_y,
+        mag_z           : compass.mag_z,
+        offset_x        : (int16_t)mag_offsets.x,
+        offset_y        : (int16_t)mag_offsets.y,
+        offset_z        : (int16_t)mag_offsets.z,
+        motor_offset_x  : (int16_t)mag_motor_offsets.x,
+        motor_offset_y  : (int16_t)mag_motor_offsets.y,
+        motor_offset_z  : (int16_t)mag_motor_offsets.z
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,

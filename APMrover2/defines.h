@@ -135,6 +135,7 @@ enum gcs_severity {
 #define LOG_SONAR_MSG 		    0x07
 #define LOG_ATTITUDE_MSG        0x08
 #define LOG_MODE_MSG            0x09
+#define LOG_COMPASS_MSG         0x0A
 
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
@@ -151,6 +152,7 @@ enum gcs_severity {
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CURRENT		(1<<9)
 #define MASK_LOG_SONAR   		(1<<10)
+#define MASK_LOG_COMPASS   		(1<<11)
 
 // Waypoint Modes
 // ----------------
