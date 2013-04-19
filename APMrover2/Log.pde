@@ -427,8 +427,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
 };
 
 
-static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
-
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
@@ -443,6 +441,12 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
                              log_structure, cliSerial);
 }
 
+// start a new log
+static void start_logging() 
+{
+    DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
+}
+
 #else // LOGGING_ENABLED
 
 // dummy functions
@@ -454,7 +458,7 @@ static void Log_Write_Performance() {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Sonar() {}
-
+static void start_logging() {}
 
 #endif // LOGGING_ENABLED
 

@@ -160,7 +160,7 @@ static void init_ardupilot()
 		do_erase_logs();
     }
 	if (g.log_bitmask != 0) {
-		DataFlash.start_new_log();
+		start_logging();
 	}
 #endif
 
