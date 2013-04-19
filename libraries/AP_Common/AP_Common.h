@@ -24,6 +24,9 @@
 #pragma GCC diagnostic warning "-Wlogical-op"
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 
+// used to pack structures
+#define PACKED __attribute__((__packed__))
+
 // Make some dire warnings into errors
 //
 // Some warnings indicate questionable code; rather than let
