@@ -57,7 +57,6 @@ uint16_t DataFlash_Block::start_new_log(void)
         SetFileNumber(1);
         StartWrite(1);
         //Serial.println("start log from 0");
-        Log_Write_Parameters();
         return 1;
     }
 
@@ -78,7 +77,6 @@ uint16_t DataFlash_Block::start_new_log(void)
         SetFileNumber(new_log_num);
         StartWrite(last_page + 1);
     }
-    Log_Write_Parameters();
     return new_log_num;
 }
 
@@ -257,7 +255,7 @@ void DataFlash_Class::_print_format_headers(uint8_t num_types,
 {
     uint8_t i;
     for (i=0; i<num_types; i++) {
-        port->printf_P(PSTR("FMT, %S, %u, %S, %S\n"),
+        port->printf_P(PSTR("LABL, %S, %u, %S, %S\n"),
                        structure[i].name,
                        (unsigned)PGM_UINT8(&structure[i].msg_type),
                        structure[i].format,
@@ -383,12 +381,20 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
             ofs += sizeof(v);
             break;
         }
+        case 'n': {
+            char v[5];
+            memcpy(&v, &pkt[ofs], sizeof(v));
+            v[sizeof(v)-1] = 0;
+            port->printf_P(PSTR("%s"), v);
+            ofs += sizeof(v)-1;
+            break;
+        }
         case 'N': {
             char v[17];
             memcpy(&v, &pkt[ofs], sizeof(v));
-            v[16] = 0;
+            v[sizeof(v)-1] = 0;
             port->printf_P(PSTR("%s"), v);
-            ofs += 16;
+            ofs += sizeof(v)-1;
             break;
         }
         default:
@@ -571,6 +577,40 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
         }
     }
     port->println();
+}
+
+// This function starts a new log file in the DataFlash, and writes
+// the format of supported messages in the log, plus all parameters
+uint16_t DataFlash_Class::StartNewLog(uint8_t num_types, const struct LogStructure *structures)
+{
+    uint16_t ret;
+    ret = start_new_log();
+
+    // write log formats so the log is self-describing
+    for (uint8_t i=0; i<num_types; i++) {
+        Log_Write_Format(&structures[i]);
+    }
+
+    // and all current parameters
+    Log_Write_Parameters();
+    return ret;
+}
+
+/*
+  write a structure format to the log
+ */
+void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
+{
+    struct log_Format pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_FORMAT_MSG),
+        type   : PGM_UINT8(&s->msg_type),
+        length : PGM_UINT8(&s->msg_len),
+        name   : {},
+        format : {}
+    };
+    strncpy_P(pkt.name, s->name, sizeof(pkt.name));
+    strncpy_P(pkt.format, s->format, sizeof(pkt.format));
+    WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*

@@ -289,8 +289,6 @@ uint16_t DataFlash_File::start_new_log(void)
     fclose(f);    
     free(fname);
 
-    Log_Write_Parameters();
-
     return log_num;
 }
 

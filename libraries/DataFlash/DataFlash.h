@@ -57,6 +57,9 @@ public:
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
     /* logging methods common to all vehicles */
+    uint16_t StartNewLog(uint8_t num_types,
+                         const struct LogStructure *structure);
+    void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor *ins);
@@ -110,6 +113,7 @@ Format characters in the format string for binary log messages
   i   : int32_t
   I   : uint32_t
   f   : float
+  n   : char[4]
   N   : char[16]
   c   : int16_t * 100
   C   : uint16_t * 100
@@ -130,6 +134,14 @@ struct LogStructure {
 /*
   log structures common to all vehicle types
  */
+struct PACKED log_Format {
+    LOG_PACKET_HEADER;
+    uint8_t type;
+    uint8_t length;
+    char name[4];
+    char format[16];
+};
+
 struct PACKED log_Parameter {
     LOG_PACKET_HEADER;
     char name[16];
@@ -157,6 +169,8 @@ struct PACKED log_IMU {
 };
 
 #define LOG_COMMON_STRUCTURES \
+    { LOG_FORMAT_MSG, sizeof(log_Parameter), \
+      "FMT", "BBnN",        "Type,Length,Name,Format" },    \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
@@ -165,9 +179,10 @@ struct PACKED log_IMU {
       "IMU",  "ffffff",     "GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }
 
 // message types for common messages
-#define LOG_PARAMETER_MSG 128
-#define LOG_GPS_MSG		  129
-#define LOG_IMU_MSG		  130
+#define LOG_FORMAT_MSG	  128
+#define LOG_PARAMETER_MSG 129
+#define LOG_GPS_MSG		  130
+#define LOG_IMU_MSG		  131
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
