@@ -1825,6 +1825,7 @@ mission_failed:
                 mav_var_type(var_type),
                 _count_parameters(),
                 -1);     // XXX we don't actually know what its index is...
+            DataFlash.Log_Write_Parameter(key, vp->cast_to_float(var_type));
         }
 
         break;
