@@ -67,7 +67,7 @@ public:
     ///
     /// @returns			Current GPS status
     ///
-    GPS_Status          status(void) {
+    GPS_Status          status(void) const {
         return _status;
     }
 
