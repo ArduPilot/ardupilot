@@ -125,11 +125,12 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-DataFlash_APM1 DataFlash;
+static DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-DataFlash_APM2 DataFlash;
+static DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-DataFlash_SITL DataFlash;
+//static DataFlash_File DataFlash("/tmp/APMlogs");
+static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static DataFlash_File DataFlash("/fs/microsd/APM/logs");
 #else
@@ -641,7 +642,7 @@ static void fast_loop()
 			Log_Write_Attitude();
 
 		if (g.log_bitmask & MASK_LOG_IMU)
-			Log_Write_IMU();
+			DataFlash.Log_Write_IMU(&ins);
 	#endif
 
 	// custom code/exceptions for flight modes
@@ -719,7 +720,7 @@ static void medium_loop()
 				Log_Write_Nav_Tuning();
 
 			if (g.log_bitmask & MASK_LOG_GPS)
-				Log_Write_GPS();
+				DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
 			break;
 
 		// This case controls the slow loop
@@ -779,10 +780,7 @@ static void slow_loop()
 
             mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
 
-#if USB_MUX_PIN > 0
             check_usb_mux();
-#endif
-
 			break;
 	}
 }

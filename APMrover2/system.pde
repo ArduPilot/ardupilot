@@ -334,7 +334,7 @@ static void set_mode(enum mode mode)
 	}
 
 	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
+		Log_Write_Mode();
 }
 
 /*
@@ -472,9 +472,9 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 }
 
 
-#if USB_MUX_PIN > 0
 static void check_usb_mux(void)
 {
+#if USB_MUX_PIN > 0
     bool usb_check = !digitalRead(USB_MUX_PIN);
     if (usb_check == usb_connected) {
         return;
@@ -487,8 +487,9 @@ static void check_usb_mux(void)
     } else {
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
     }
-}
 #endif
+}
+
 
 
 /*

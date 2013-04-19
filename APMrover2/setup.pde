@@ -117,7 +117,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	cliSerial->printf_P(PSTR("Raw Values\n"));
 	print_divider();
 
-    AP_Param::show_all();
+    AP_Param::show_all(cliSerial);
 
 	return(0);
 }
