@@ -264,7 +264,7 @@ uint16_t DataFlash_File::start_new_log(void)
 
     uint16_t log_num = find_last_log();
     // re-use empty logs if possible
-    if (_get_log_size(log_num) > 0) {
+    if (_get_log_size(log_num) > 0 || log_num == 0) {
         log_num++;
     }
     if (log_num > MAX_LOG_FILES) {
