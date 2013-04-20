@@ -849,7 +849,6 @@ static void start_logging()
 
 #else // LOGGING_ENABLED
 
-void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon) {}
 static void Log_Write_Startup() {}
 static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
 static void Log_Write_Mode(uint8_t mode) {}
