@@ -721,7 +721,9 @@
     MASK_LOG_NTUN | \
     MASK_LOG_MODE | \
     MASK_LOG_CMD | \
-    MASK_LOG_COMPASS
+    MASK_LOG_COMPASS | \
+    MASK_LOG_CURRENT
+
 
 
 //////////////////////////////////////////////////////////////////////////////
