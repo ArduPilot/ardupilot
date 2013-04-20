@@ -1215,7 +1215,7 @@ get_throttle_surface_tracking(int16_t target_rate)
     target_sonar_alt += target_rate * 0.02f;
 
     distance_error = (target_sonar_alt-sonar_alt);
-    sonar_induced_slew_rate = constrain(fabs(THR_SURFACE_TRACKING_P * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
+    sonar_induced_slew_rate = constrain(fabsf(THR_SURFACE_TRACKING_P * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
