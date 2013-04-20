@@ -166,7 +166,8 @@ struct PACKED log_Current {
     uint32_t throttle_integrator;
     int16_t battery_voltage;
     int16_t current_amps;
-    int16_t current_total;
+    uint16_t board_voltage;
+    float current_total;
 };
 
 // Write an Current data packet. Total length : 16 bytes
@@ -178,7 +179,8 @@ static void Log_Write_Current()
         throttle_integrator : throttle_integrator,
         battery_voltage     : (int16_t) (battery_voltage1 * 100.0f),
         current_amps        : (int16_t) (current_amps1 * 100.0f),
-        current_total       : (int16_t) current_total1
+        board_voltage       : board_voltage(),
+        current_total       : current_total1
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -761,7 +763,7 @@ static void Log_Write_WPNAV()
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_CURRENT_MSG, sizeof(log_Current),             
-      "CURR", "hIhhh",       "Thr,ThrInt,Volt,Curr,CurrTot" },
+      "CURR", "hIhhhf",      "Thr,ThrInt,Volt,Curr,Vcc,CurrTot" },
 
 #if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
     { LOG_MOTORS_MSG, sizeof(log_Motors),       
