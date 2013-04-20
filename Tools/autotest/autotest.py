@@ -54,7 +54,7 @@ def dump_logs(atype):
     else:
         numlogs = int(mavproxy.match.group(1))
     for i in range(numlogs):
-        mavproxy.expect("Log (\d+),")
+        mavproxy.expect("Log (\d+)")
         lognums.append(int(mavproxy.match.group(1)))
     mavproxy.expect("Log]")
     for i in range(numlogs):
