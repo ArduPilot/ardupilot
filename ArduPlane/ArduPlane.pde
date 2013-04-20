@@ -107,6 +107,7 @@ static Parameters g;
 // prototypes
 static void update_events(void);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
 
 ////////////////////////////////////////////////////////////////////////////////

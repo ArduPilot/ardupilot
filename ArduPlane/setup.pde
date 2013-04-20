@@ -561,7 +561,8 @@ static void
 print_switch(uint8_t p, uint8_t m)
 {
     cliSerial->printf_P(PSTR("Pos %d: "),p);
-    print_flight_mode(m);
+    print_flight_mode(cliSerial, m);
+    cliSerial->println();
 }
 
 static void
