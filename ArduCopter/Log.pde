@@ -283,7 +283,7 @@ static void Log_Write_Current()
         battery_voltage     : (int16_t) (battery_voltage1 * 100.0f),
         current_amps        : (int16_t) (current_amps1 * 100.0f),
         current_total       : (int16_t) current_total1,
-        board_vcc           : (int16_t) (board_voltage() * 100.0f)
+        board_vcc           : (int16_t) board_voltage()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -301,7 +301,7 @@ static void Log_Read_Current()
                     (float)pkt.battery_voltage/100.0f,
                     (float)pkt.current_amps/100.0f,
                     (int)pkt.current_total,
-                    (float)pkt.board_vcc/100.0f);
+                    (float)pkt.board_vcc/1000.0f);
 }
 
 struct log_Motors {
