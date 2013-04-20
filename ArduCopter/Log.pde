@@ -170,7 +170,7 @@ struct PACKED log_Current {
     float current_total;
 };
 
-// Write an Current data packet. Total length : 16 bytes
+// Write an Current data packet
 static void Log_Write_Current()
 {
     struct log_Current pkt = {
@@ -199,7 +199,7 @@ struct PACKED log_Motors {
 #endif
 };
 
-// Write an Motors packet. Total length : 12 ~ 20 bytes
+// Write an Motors packet
 static void Log_Write_Motors()
 {
     struct log_Motors pkt = {
@@ -254,7 +254,7 @@ struct PACKED log_Optflow {
     int32_t pitch;
 };
 
-// Write an optical flow packet. Total length : 30 bytes
+// Write an optical flow packet
 static void Log_Write_Optflow()
 {
  #if OPTFLOW == ENABLED
@@ -286,7 +286,7 @@ struct PACKED log_Nav_Tuning {
     int16_t  lon_speed;
 };
 
-// Write an Nav Tuning packet. Total length : 24 bytes
+// Write an Nav Tuning packet
 static void Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
@@ -316,7 +316,7 @@ struct PACKED log_Control_Tuning {
     int16_t desired_climb_rate;
 };
 
-// Write a control tuning packet. Total length : 26 bytes
+// Write a control tuning packet
 static void Log_Write_Control_Tuning()
 {
     struct log_Control_Tuning pkt = {
@@ -347,7 +347,7 @@ struct PACKED log_Compass {
     int16_t motor_offset_z;
 };
 
-// Write a Compass packet. Total length : 15 bytes
+// Write a Compass packet
 static void Log_Write_Compass()
 {
     Vector3f mag_offsets = compass.get_offsets();
@@ -377,7 +377,7 @@ struct PACKED log_Performance {
     uint32_t max_time;
 };
 
-// Write a performance monitoring packet. Total length : 11 bytes
+// Write a performance monitoring packet
 static void Log_Write_Performance()
 {
     struct log_Performance pkt = {
@@ -404,7 +404,7 @@ struct PACKED log_Cmd {
     int32_t waypoint_longitude;
 };
 
-// Write a command processing packet.  Total length : 21 bytes
+// Write a command processing packet
 static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
 {
     struct log_Cmd pkt = {
@@ -432,7 +432,7 @@ struct PACKED log_Attitude {
     uint16_t nav_yaw;
 };
 
-// Write an attitude packet. Total length : 16 bytes
+// Write an attitude packet
 static void Log_Write_Attitude()
 {
     struct log_Attitude pkt = {
@@ -462,7 +462,7 @@ struct PACKED log_INAV {
     float   inav_lon_from_home;
 };
 
-// Write an INAV packet. Total length : 37 Bytes
+// Write an INAV packet
 static void Log_Write_INAV()
 {
     Vector3f accel_corr = inertial_nav.accel_correction_ef;
@@ -489,7 +489,7 @@ struct PACKED log_Mode {
     int16_t throttle_cruise;
 };
 
-// Write a mode packet. Total length : 7 bytes
+// Write a mode packet
 static void Log_Write_Mode(uint8_t mode)
 {
     struct log_Mode pkt = {
@@ -504,7 +504,7 @@ struct PACKED log_Startup {
     LOG_PACKET_HEADER;
 };
 
-// Write Startup packet. Total length : 4 bytes
+// Write Startup packet
 static void Log_Write_Startup()
 {
     struct log_Startup pkt = {
@@ -636,7 +636,7 @@ struct PACKED log_PID {
     float  gain;
 };
 
-// Write an PID packet. Total length : 28 bytes
+// Write an PID packet
 static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain)
 {
     struct log_PID pkt = {
@@ -663,7 +663,7 @@ struct PACKED log_DMP {
 };
 
 #if SECONDARY_DMP_ENABLED == ENABLED
-// Write a DMP attitude packet. Total length : 16 bytes
+// Write a DMP attitude packet
 static void Log_Write_DMP()
 {
     struct log_DMP pkt = {
@@ -690,7 +690,7 @@ struct PACKED log_Camera {
     uint16_t yaw;
 };
 
-// Write a Camera packet. Total length : 26 bytes
+// Write a Camera packet
 static void Log_Write_Camera()
 {
 #if CAMERA == ENABLED
@@ -714,7 +714,7 @@ struct PACKED log_Error {
     uint8_t error_code;
 };
 
-// Write an error packet. Total length : 5 bytes
+// Write an error packet
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 {
     struct log_Error pkt = {
@@ -739,7 +739,7 @@ struct PACKED log_WPNAV {
     int32_t desired_pitch;
 };
 
-// Write an WPNAV packet. Total length : 43 Bytes
+// Write an WPNAV packet
 static void Log_Write_WPNAV()
 {
     Vector3f velocity = inertial_nav.get_velocity();
@@ -795,8 +795,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ATT", "cccccCC",      "RollIn,Roll,PitchIn,Pitch,YawIn,Yaw,NavYaw" },
     { LOG_INAV_MSG, sizeof(log_INAV),       
       "INAV", "cccfffiiff",  "BAlt,IAlt,IClb,ACorrX,ACorrY,ACorrZ,GLat,GLng,ILat,ILng" },
-    { LOG_MODE_MSG, sizeof(log_Mode),             
-      "MODE", "Bh",          "Mode,ThrCrs" },
+    { LOG_MODE_MSG, sizeof(log_Mode),
+      "MODE", "Mh",          "Mode,ThrCrs" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "",            "" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
@@ -838,7 +838,9 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 
 	DataFlash.LogReadProcess(log_num, start_page, end_page, 
                              sizeof(log_structure)/sizeof(log_structure[0]),
-                             log_structure, cliSerial);
+                             log_structure, 
+                             print_flight_mode,
+                             cliSerial);
 }
 
 // start a new log

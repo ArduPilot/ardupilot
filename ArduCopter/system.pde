@@ -619,50 +619,50 @@ static void reboot_apm(void) {
 // print_flight_mode - prints flight mode to serial port.
 //
 static void
-print_flight_mode(uint8_t mode)
+print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case STABILIZE:
-        cliSerial->print_P(PSTR("STABILIZE"));
+        port->print_P(PSTR("STABILIZE"));
         break;
     case ACRO:
-        cliSerial->print_P(PSTR("ACRO"));
+        port->print_P(PSTR("ACRO"));
         break;
     case ALT_HOLD:
-        cliSerial->print_P(PSTR("ALT_HOLD"));
+        port->print_P(PSTR("ALT_HOLD"));
         break;
     case AUTO:
-        cliSerial->print_P(PSTR("AUTO"));
+        port->print_P(PSTR("AUTO"));
         break;
     case GUIDED:
-        cliSerial->print_P(PSTR("GUIDED"));
+        port->print_P(PSTR("GUIDED"));
         break;
     case LOITER:
-        cliSerial->print_P(PSTR("LOITER"));
+        port->print_P(PSTR("LOITER"));
         break;
     case RTL:
-        cliSerial->print_P(PSTR("RTL"));
+        port->print_P(PSTR("RTL"));
         break;
     case CIRCLE:
-        cliSerial->print_P(PSTR("CIRCLE"));
+        port->print_P(PSTR("CIRCLE"));
         break;
     case POSITION:
-        cliSerial->print_P(PSTR("POSITION"));
+        port->print_P(PSTR("POSITION"));
         break;
     case LAND:
-        cliSerial->print_P(PSTR("LAND"));
+        port->print_P(PSTR("LAND"));
         break;
     case OF_LOITER:
-        cliSerial->print_P(PSTR("OF_LOITER"));
+        port->print_P(PSTR("OF_LOITER"));
         break;
     case TOY_M:
-        cliSerial->print_P(PSTR("TOY_M"));
+        port->print_P(PSTR("TOY_M"));
         break;
     case TOY_A:
-        cliSerial->print_P(PSTR("TOY_A"));
+        port->print_P(PSTR("TOY_A"));
         break;
     default:
-        cliSerial->print_P(PSTR("---"));
+        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
 }

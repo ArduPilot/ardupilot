@@ -1249,7 +1249,7 @@ static void
 print_switch(uint8_t p, uint8_t m, bool b)
 {
     cliSerial->printf_P(PSTR("Pos %d:\t"),p);
-    print_flight_mode(m);
+    print_flight_mode(cliSerial, m);
     cliSerial->printf_P(PSTR(",\t\tSimple: "));
     if(b)
         cliSerial->printf_P(PSTR("ON\n"));
