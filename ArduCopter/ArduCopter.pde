@@ -1292,7 +1292,7 @@ static void super_slow_loop()
     }
 
     // log battery info to the dataflash
-    if (g.log_bitmask & MASK_LOG_CURRENT && motors.armed())
+    if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
 
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
