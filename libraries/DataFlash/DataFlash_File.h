@@ -27,19 +27,11 @@ public:
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
 
-    /*
-      read a packet. The header byte have already been read.
-    */
-    void ReadPacket(void *pkt, uint16_t size);
-
     // high level interface
     uint16_t find_last_log(void);
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     uint16_t get_num_logs(void);
     uint16_t start_new_log(void);
-    void log_read_process(uint16_t log_num,
-                          uint16_t start_page, uint16_t end_page, 
-                          void (*callback)(uint8_t msgid));
     void LogReadProcess(uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
                         uint8_t num_types,
@@ -55,6 +47,11 @@ private:
     uint32_t _read_offset;
     static volatile bool _initialised;
     const char *_log_directory;
+
+    /*
+      read a block
+    */
+    void ReadBlock(void *pkt, uint16_t size);
 
     // write buffer
     static uint8_t *_writebuf;

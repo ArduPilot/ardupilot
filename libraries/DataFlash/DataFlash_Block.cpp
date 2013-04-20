@@ -131,11 +131,6 @@ void DataFlash_Block::ReadBlock(void *pBuffer, uint16_t size)
     }
 }
 
-void DataFlash_Block::ReadPacket(void *pkt, uint16_t size)
-{
-    ReadBlock((void *)(sizeof(struct log_Header)+(uintptr_t)pkt), size - sizeof(struct log_Header));
-}
-
 void DataFlash_Block::SetFileNumber(uint16_t FileNumber)
 {
     df_FileNumber = FileNumber;

@@ -172,15 +172,11 @@ void DataFlash_File::WriteBlock(const void *pBuffer, uint16_t size)
 /*
   read a packet. The header bytes have already been read.
 */
-void DataFlash_File::ReadPacket(void *pkt, uint16_t size)
+void DataFlash_File::ReadBlock(void *pkt, uint16_t size)
 {
     if (_read_fd == -1 || !_initialised || size <= 3) {
         return;
     }
-
-    // we don't read the 3 header bytes. That happens in log_read_process()
-    pkt = (void *)(3+(char *)pkt);
-    size -= 3;
 
     memset(pkt, 0, size);
     ::read(_read_fd, pkt, size);
@@ -351,72 +347,6 @@ void DataFlash_File::LogReadProcess(uint16_t log_num,
             case 2:
                 log_step = 0;
                 _print_log_entry(data, num_types, structure, port);
-                break;
-        }
-        if (_read_offset >= (end_page+1) * DATAFLASH_PAGE_SIZE) {
-            break;
-        }
-    }
-
-    ::close(_read_fd);
-    _read_fd = -1;
-}
-
-/*
-  start processing a log, called by CLI to display logs
- */
-void DataFlash_File::log_read_process(uint16_t log_num,
-                                      uint16_t start_page, uint16_t end_page, 
-                                      void (*callback)(uint8_t msgid))
-{
-    uint8_t log_step = 0;
-    if (!_initialised) {
-        return;
-    }
-    if (_read_fd != -1) {
-        ::close(_read_fd);
-    }
-    char *fname = _log_file_name(log_num);
-    if (fname == NULL) {
-        return;
-    }
-    _read_fd = ::open(fname, O_RDONLY);
-    free(fname);
-    if (_read_fd == -1) {
-        return;
-    }
-    _read_offset = 0;
-    if (start_page != 0) {
-        ::lseek(_read_fd, start_page * DATAFLASH_PAGE_SIZE, SEEK_SET);
-    }
-
-    while (true) {
-        uint8_t data;
-        if (::read(_read_fd, &data, 1) != 1) {
-            // reached end of file
-            break;
-        }
-        _read_offset++;
-
-        // This is a state machine to read the packets
-        switch(log_step) {
-            case 0:
-                if (data == HEAD_BYTE1) {
-                    log_step++;
-                }
-                break;
-
-            case 1:
-                if (data == HEAD_BYTE2) {
-                    log_step++;
-                } else {
-                    log_step = 0;
-                }
-                break;
-
-            case 2:
-                log_step = 0;
-                callback(data);
                 break;
         }
         if (_read_offset >= (end_page+1) * DATAFLASH_PAGE_SIZE) {

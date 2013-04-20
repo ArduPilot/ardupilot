@@ -34,19 +34,10 @@ public:
     /* Write a block of data at current offset */
     virtual void WriteBlock(const void *pBuffer, uint16_t size) = 0;
 
-    /*
-      read a packet. The header byte have already been read.
-    */
-    virtual void ReadPacket(void *pkt, uint16_t size) = 0;
-
     // high level interface
     virtual uint16_t find_last_log(void) = 0;
     virtual void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) = 0;
     virtual uint16_t get_num_logs(void) = 0;
-    virtual uint16_t start_new_log(void) = 0;
-    void log_read_process(uint16_t log_num,
-                          uint16_t start_page, uint16_t end_page, 
-                          void (*callback)(uint8_t msgid));
     virtual void LogReadProcess(uint16_t log_num,
                                 uint16_t start_page, uint16_t end_page, 
                                 uint8_t num_types,
@@ -90,6 +81,13 @@ protected:
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
                              enum ap_var_type type);
     void Log_Write_Parameters(void);
+    virtual uint16_t start_new_log(void) = 0;
+
+    /*
+      read a block
+    */
+    virtual void ReadBlock(void *pkt, uint16_t size) = 0;
+
 };
 
 /*

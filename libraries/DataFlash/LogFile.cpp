@@ -282,11 +282,11 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
         port->printf_P(PSTR("UNKN, %u\n"), (unsigned)msg_type);
         return;
     }
-    uint8_t msg_len = PGM_UINT8(&structure[i].msg_len);
+    uint8_t msg_len = PGM_UINT8(&structure[i].msg_len) - 3;
     uint8_t pkt[msg_len];
-    ReadPacket(pkt, msg_len);
+    ReadBlock(pkt, msg_len);
     port->printf_P(PSTR("%S, "), structure[i].name);
-    for (uint8_t ofs=3, fmt_ofs=0; ofs<msg_len; fmt_ofs++) {
+    for (uint8_t ofs=0, fmt_ofs=0; ofs<msg_len; fmt_ofs++) {
         char fmt = PGM_UINT8(&structure[i].format[fmt_ofs]);
         switch (fmt) {
         case 'b': {
@@ -439,59 +439,6 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
 			case 2:
 				log_step = 0;
                 _print_log_entry(data, num_types, structure, port);
-                break;
-		}
-        uint16_t new_page = GetPage();
-        if (new_page != page) {
-            if (new_page == end_page || new_page == start_page) {
-                return;
-            }
-            page = new_page;
-        }
-	}
-}
-
-/*
-  Read the DataFlash log memory
-  This is obsolete and will be removed when plane and copter are
-  converted to LogReadProcess()
-*/
-void DataFlash_Block::log_read_process(uint16_t log_num,
-                                       uint16_t start_page, uint16_t end_page, 
-                                       void (*callback)(uint8_t msgid))
-{
-    uint8_t log_step = 0;
-    uint16_t page = start_page;
-
-    if (df_BufferIdx != 0) {
-        FinishWrite();
-    }
-
-    StartRead(start_page);
-
-	while (true) {
-		uint8_t data;
-        ReadBlock(&data, 1);
-
-		// This is a state machine to read the packets
-		switch(log_step) {
-			case 0:
-				if (data == HEAD_BYTE1) {
-					log_step++;
-                }
-				break;
-
-			case 1:
-				if (data == HEAD_BYTE2) {
-					log_step++;
-                } else {
-					log_step = 0;
-				}
-				break;
-
-			case 2:
-				log_step = 0;
-                callback(data);
                 break;
 		}
         uint16_t new_page = GetPage();
