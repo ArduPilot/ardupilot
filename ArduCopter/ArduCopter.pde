@@ -580,8 +580,6 @@ static LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
 ////////////////////////////////////////////////////////////////////////////////
-// used to control the speed of Circle mode in radians/second, default is 5° per second
-static const float circle_rate = 0.0872664625;
 Vector3f circle_center;     // circle position expressed in cm from home location.  x = lat, y = lon
 // angle from the circle center to the copter's desired location.  Incremented at circle_rate / second
 static float circle_angle;
@@ -2152,6 +2150,12 @@ static void tuning(){
     case CH6_DECLINATION:
         // set declination to +-20degrees
         compass.set_declination(ToRad(20-g.rc_6.control_in/25), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
+        break;
+
+    case CH6_CIRCLE_RATE:
+        // set circle rate
+        g.circle_rate.set(g.rc_6.control_in/25-20);     // allow approximately 45 degree turn rate in either direction
+        //cliSerial->printf_P(PSTR("\nRate:%4.2f"),(float)g.circle_rate);
         break;
     }
 }

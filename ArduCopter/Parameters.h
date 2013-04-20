@@ -80,7 +80,8 @@ public:
         k_param_throttle_accel_enabled,
         k_param_wp_yaw_behavior,
         k_param_acro_trainer_enabled,
-        k_param_pilot_velocity_z_max,   // 28
+        k_param_pilot_velocity_z_max,
+        k_param_circle_rate,           // 29
 
         // 65: AP_Limits Library
         k_param_limits = 65,
@@ -289,6 +290,7 @@ public:
     AP_Int8         command_total;
     AP_Int8         command_index;
     AP_Int16        circle_radius;
+    AP_Float        circle_rate;                // Circle mode's turn rate in deg/s.  positive to rotate clockwise, negative for counter clockwise
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request

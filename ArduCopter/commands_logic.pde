@@ -482,7 +482,7 @@ static bool verify_loiter_time()
 static bool verify_circle()
 {
     // have we rotated around the center enough times?
-    return fabs(circle_desired_rotations/M_PI) > circle_desired_rotations;
+    return fabsf(circle_angle_total/(2*M_PI)) >= circle_desired_rotations;
 }
 
 // verify_RTL - handles any state changes required to implement RTL

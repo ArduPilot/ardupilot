@@ -608,6 +608,10 @@
  # define CIRCLE_NAV           	    NAV_CIRCLE
 #endif
 
+#ifndef CIRCLE_RATE
+ # define CIRCLE_RATE               5.0f        // degrees per second turn rate
+#endif
+
 // Guided Mode
 #ifndef GUIDED_YAW
  # define GUIDED_YAW                YAW_LOOK_AT_NEXT_WP

@@ -238,7 +238,7 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
 static void
 update_circle(float dt)
 {
-    float angle_delta = circle_rate * dt;
+    float angle_delta = ToRad(g.circle_rate) * dt;
     float cir_radius = g.circle_radius * 100;
     Vector3f circle_target;
 
