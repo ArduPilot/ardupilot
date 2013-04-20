@@ -460,7 +460,9 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 
 	DataFlash.LogReadProcess(log_num, start_page, end_page, 
                              sizeof(log_structure)/sizeof(log_structure[0]),
-                             log_structure, cliSerial);
+                             log_structure, 
+                             print_mode,
+                             cliSerial);
 }
 
 // start a new log

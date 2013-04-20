@@ -634,7 +634,8 @@ static void
 print_switch(uint8_t p, uint8_t m)
 {
 	cliSerial->printf_P(PSTR("Pos %d: "),p);
-    print_mode(m);
+    print_mode(cliSerial, m);
+    cliSerial->println();
 }
 
 static void

@@ -511,29 +511,29 @@ uint16_t board_voltage(void)
 }
 
 static void
-print_mode(uint8_t mode)
+print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        cliSerial->println_P(PSTR("Manual"));
+        port->print_P(PSTR("Manual"));
         break;
     case HOLD:
-        cliSerial->println_P(PSTR("HOLD"));
+        port->print_P(PSTR("HOLD"));
         break;
     case LEARNING:
-        cliSerial->println_P(PSTR("Learning"));
+        port->print_P(PSTR("Learning"));
         break;
     case STEERING:
-        cliSerial->println_P(PSTR("Stearing"));
+        port->print_P(PSTR("Stearing"));
         break;
     case AUTO:
-        cliSerial->println_P(PSTR("AUTO"));
+        port->print_P(PSTR("AUTO"));
         break;
     case RTL:
-        cliSerial->println_P(PSTR("RTL"));
+        port->print_P(PSTR("RTL"));
         break;
     default:
-        cliSerial->println_P(PSTR("---"));
+        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
 }
