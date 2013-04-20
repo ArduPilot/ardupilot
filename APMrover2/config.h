@@ -455,7 +455,7 @@
 # define LOG_CMD				ENABLED
 #endif
 #ifndef LOG_CURRENT
-# define LOG_CURRENT			DISABLED
+# define LOG_CURRENT			ENABLED
 #endif
 #ifndef LOG_SONAR
 # define LOG_SONAR			    ENABLED

@@ -270,6 +270,7 @@ struct log_Current {
     int16_t battery_voltage;
     int16_t current_amps;
     int16_t current_total;
+    int16_t board_vcc;
 };
 
 // Write an Current data packet. Total length : 16 bytes
@@ -281,7 +282,8 @@ static void Log_Write_Current()
         throttle_integrator : throttle_integrator,
         battery_voltage     : (int16_t) (battery_voltage1 * 100.0f),
         current_amps        : (int16_t) (current_amps1 * 100.0f),
-        current_total       : (int16_t) current_total1
+        current_total       : (int16_t) current_total1,
+        board_vcc           : (int16_t) board_voltage()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -292,13 +294,14 @@ static void Log_Read_Current()
     struct log_Current pkt;
     DataFlash.ReadPacket(&pkt, sizeof(pkt));
 
-    //                                  1    2      3      4   5
-    cliSerial->printf_P(PSTR("CURRENT, %d, %lu, %4.4f, %4.4f, %d\n"),
+    //                                  1    2      3      4   5      6
+    cliSerial->printf_P(PSTR("CURRENT, %d, %lu, %4.4f, %4.4f, %d, %4.4f\n"),
                     (int)pkt.throttle_in,
                     (unsigned long)pkt.throttle_integrator,
                     (float)pkt.battery_voltage/100.0f,
                     (float)pkt.current_amps/100.0f,
-                    (int)pkt.current_total);
+                    (int)pkt.current_total,
+                    (float)pkt.board_vcc/1000.0f);
 }
 
 struct log_Motors {
