@@ -1007,7 +1007,7 @@
 #endif
 // current
 #ifndef LOG_CURRENT
- # define LOG_CURRENT                   DISABLED
+ # define LOG_CURRENT                   ENABLED
 #endif
 // quad motor PWMs
 #ifndef LOG_MOTORS
