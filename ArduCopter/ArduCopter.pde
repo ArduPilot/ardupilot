@@ -1541,6 +1541,33 @@ void update_yaw_mode(void)
     }
 }
 
+// get yaw mode based on WP_YAW_BEHAVIOR parameter
+// set rtl parameter to true if this is during an RTL
+uint8_t get_wp_yaw_mode(bool rtl)
+{
+    switch (g.wp_yaw_behavior) {
+        case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
+            return YAW_LOOK_AT_NEXT_WP;
+            break;
+
+        case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
+            if( rtl ) {
+                return YAW_HOLD;
+            }else{
+                return YAW_LOOK_AT_NEXT_WP; 
+            }
+            break;
+
+        case WP_YAW_BEHAVIOR_LOOK_AHEAD:
+            return YAW_LOOK_AHEAD;
+            break;
+
+        default:
+            return YAW_HOLD;
+            break;
+    }
+}
+
 // set_roll_pitch_mode - update roll/pitch mode and initialise any variables as required
 bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 {

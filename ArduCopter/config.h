@@ -115,7 +115,7 @@
 // Bulk defines for TradHeli
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED 				125
-  # define RTL_YAW                  	YAW_LOOK_AT_HOME
+  # define WP_YAW_BEHAVIOR_DEFAULT      YAW_LOOK_AT_HOME
   # define RATE_INTEGRATOR_LEAK_RATE 	0.02f
   # define RATE_ROLL_D    				0
   # define RATE_PITCH_D       			0
@@ -579,8 +579,9 @@
 #endif
 
 // AUTO Mode
-#ifndef AUTO_YAW
- # define AUTO_YAW                  YAW_LOOK_AT_NEXT_WP
+// Note: Auto mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
+#ifndef WP_YAW_BEHAVIOR_DEFAULT
+ # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP     
 #endif
 
 #ifndef AUTO_RP
@@ -613,10 +614,7 @@
 #endif
 
 // Guided Mode
-#ifndef GUIDED_YAW
- # define GUIDED_YAW                YAW_LOOK_AT_NEXT_WP
-#endif
-
+// Note: Guided mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef GUIDED_RP
  # define GUIDED_RP                 ROLL_PITCH_AUTO
 #endif
@@ -665,10 +663,7 @@
 
 
 // RTL Mode
-#ifndef RTL_YAW
- # define RTL_YAW                   YAW_LOOK_AT_NEXT_WP
-#endif
-
+// Note: RTL Yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef RTL_RP
  # define RTL_RP                    ROLL_PITCH_AUTO
 #endif

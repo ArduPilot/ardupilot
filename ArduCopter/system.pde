@@ -410,7 +410,7 @@ static void set_mode(uint8_t mode)
     case AUTO:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        set_yaw_mode(AUTO_YAW);
+        set_yaw_mode(YAW_HOLD);     // yaw mode will be set by mission command
         set_roll_pitch_mode(AUTO_RP);
         set_throttle_mode(AUTO_THR);
         // we do not set nav mode for auto because it will be overwritten when first command runs
@@ -449,7 +449,7 @@ static void set_mode(uint8_t mode)
     case GUIDED:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        set_yaw_mode(GUIDED_YAW);
+        set_yaw_mode(get_wp_yaw_mode(false));
         set_roll_pitch_mode(GUIDED_RP);
         set_throttle_mode(GUIDED_THR);
         set_nav_mode(GUIDED_NAV);

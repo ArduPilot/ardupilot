@@ -42,8 +42,8 @@
  *  CH7_CAMERA_TRIGGER
  */
 
-// Inertia based contollers
-#define RTL_YAW YAW_HOLD
+// uncomment the line below to disable control of yaw during missions (or set YAW_BEHAVIOR parameter to 0)
+// #define WP_YAW_BEHAVIOR_DEFAULT  WP_YAW_BEHAVIOR_NONE
 
 //#define MOTORS_JD880
 //#define MOTORS_JD850

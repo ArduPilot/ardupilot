@@ -187,7 +187,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Determines how the autopilot controls the yaw during missions and RTL
     // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL
     // @User: Advanced
-    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP),
+    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
     // @Param: WP_TOTAL
     // @DisplayName: Waypoint Total
