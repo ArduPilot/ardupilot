@@ -77,6 +77,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(sonar_type,     "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
 
+    // @Param: SONAR_GAIN
+    // @DisplayName: Sonar gain
+    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
+    // @Range: 0.01 0.5
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(sonar_gain,     "SONAR_GAIN",           SONAR_GAIN_DEFAULT),
+
     // @Param: BATT_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current

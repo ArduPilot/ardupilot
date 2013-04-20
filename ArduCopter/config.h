@@ -305,12 +305,12 @@
  # define SONAR_ALT_HEALTH_MAX 3            // number of good reads that indicates a healthy sonar
 #endif
 
-#ifndef THR_SURFACE_TRACKING_P
- # define THR_SURFACE_TRACKING_P 0.2        // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
+#ifndef SONAR_GAIN_DEFAULT
+ # define SONAR_GAIN_DEFAULT 0.2            // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
 #endif
 
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
- # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max speed number of good reads that indicates a healthy sonar
+ # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max vertical speed change while surface tracking with sonar
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

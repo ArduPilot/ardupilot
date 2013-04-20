@@ -81,7 +81,8 @@ public:
         k_param_wp_yaw_behavior,
         k_param_acro_trainer_enabled,
         k_param_pilot_velocity_z_max,
-        k_param_circle_rate,           // 29
+        k_param_circle_rate,
+        k_param_sonar_gain,             // 30
 
         // 65: AP_Limits Library
         k_param_limits = 65,
@@ -262,6 +263,7 @@ public:
     AP_Int8         sonar_type;       // 0 = XL, 1 = LV,
                                       // 2 = XLL (XL with 10m range)
                                       // 3 = HRLV
+    AP_Float        sonar_gain;
     AP_Int8         battery_monitoring;         // 0=disabled, 3=voltage only,
                                                 // 4=voltage and current
     AP_Float        volt_div_ratio;
