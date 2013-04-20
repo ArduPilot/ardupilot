@@ -14,7 +14,16 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_Progmem.h>
-#include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Math.h>
+#include <AP_Compass.h>
+#include <Filter.h>
+#include <AP_Declination.h>
+#include <AP_Airspeed.h>
+#include <AP_Baro.h>
+#include <AP_AHRS.h>
+#include <AP_ADC.h>
+#include <AP_InertialSensor.h>
+#include <AP_GPS.h>
 #include <DataFlash.h>
 
 
@@ -29,15 +38,21 @@ DataFlash_APM1 DataFlash;
 DataFlash_Empty DataFlash;
 #endif
 
+#define LOG_TEST_MSG 1
 
-struct test_packet {
+struct PACKED log_Test {
     LOG_PACKET_HEADER;
     uint16_t v1, v2, v3, v4;
     int32_t  l1, l2;
-    uint8_t dummy[80];
 };
 
-#define NUM_PACKETS 20
+static const struct LogStructure log_structure[] PROGMEM = {
+    LOG_COMMON_STRUCTURES,
+    { LOG_TEST_MSG, sizeof(log_Test),       
+      "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }
+};
+
+#define NUM_PACKETS 500
 
 static uint16_t log_num;
 
@@ -60,7 +75,7 @@ void setup()
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    log_num = DataFlash.start_new_log();
+    log_num = DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->println("After testing perform erase before using DataFlash for logging!");
     hal.console->println("");
@@ -73,8 +88,8 @@ void setup()
         uint32_t start = hal.scheduler->micros();
         // note that we use g++ style initialisers to make larger
         // structures easier to follow        
-        struct test_packet pkt = {
-            LOG_PACKET_HEADER_INIT(7),
+        struct log_Test pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_TEST_MSG),
             v1    : 2000 + i,
             v2    : 2001 + i,
             v3    : 2002 + i,
@@ -88,23 +103,9 @@ void setup()
     }
 
     hal.console->printf("Average write time %.1f usec/byte\n", 
-                        (double)total_micros/((float)i*sizeof(struct test_packet)));
+                        (double)total_micros/((float)i*sizeof(struct log_Test)));
 
     hal.scheduler->delay(100);
-}
-
-static void callback(uint8_t msgid)
-{
-    struct test_packet pkt;
-    DataFlash.ReadPacket(&pkt, sizeof(pkt));
-    hal.console->printf("PACKET: %02x,%u,%u,%u,%u,%ld,%ld\n",
-                        (unsigned)msgid,
-                        (unsigned)pkt.v1,
-                        (unsigned)pkt.v2,
-                        (unsigned)pkt.v3,
-                        (unsigned)pkt.v4,
-                        (long)pkt.l1,
-                        (long)pkt.l2);
 }
 
 void loop()
@@ -114,7 +115,9 @@ void loop()
     hal.console->printf("Start read of log %u\n", log_num);
 
     DataFlash.get_log_boundaries(log_num, start, end); 
-    DataFlash.log_read_process(log_num, start, end, callback);
+	DataFlash.LogReadProcess(log_num, start, end, 
+                             sizeof(log_structure)/sizeof(log_structure[0]),
+                             log_structure, hal.console);
     hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");
     hal.scheduler->delay(20000);
 }
