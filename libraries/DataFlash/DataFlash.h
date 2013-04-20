@@ -42,6 +42,7 @@ public:
                                 uint16_t start_page, uint16_t end_page, 
                                 uint8_t num_types,
                                 const struct LogStructure *structure,
+                                void (*printMode)(AP_HAL::BetterStream *port, uint8_t mode),
                                 AP_HAL::BetterStream *port) = 0;
     virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
@@ -76,6 +77,7 @@ protected:
     void _print_log_entry(uint8_t msg_type, 
                           uint8_t num_types, 
                           const struct LogStructure *structure,
+                          void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                           AP_HAL::BetterStream *port);
     
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
@@ -118,6 +120,7 @@ Format characters in the format string for binary log messages
   e   : int32_t * 100
   E   : uint32_t * 100
   L   : int32_t latitude/longitude
+  M   : uint8_t flight mode
  */
 
 // structure used to define logging format

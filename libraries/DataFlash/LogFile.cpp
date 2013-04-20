@@ -270,6 +270,7 @@ void DataFlash_Class::_print_format_headers(uint8_t num_types,
 void DataFlash_Class::_print_log_entry(uint8_t msg_type, 
                                        uint8_t num_types, 
                                        const struct LogStructure *structure,
+                                       void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                                        AP_HAL::BetterStream *port)
 {
     uint8_t i;
@@ -385,6 +386,11 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
             ofs += sizeof(v)-1;
             break;
         }
+        case 'M': {
+            print_mode(port, pkt[ofs]);
+            ofs += 1;
+            break;
+        }
         default:
             ofs = msg_len;
             break;
@@ -403,6 +409,7 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
                                      uint16_t start_page, uint16_t end_page, 
                                      uint8_t num_types,
                                      const struct LogStructure *structure,
+                                     void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                                      AP_HAL::BetterStream *port)
 {
     uint8_t log_step = 0;
@@ -438,7 +445,7 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
 
 			case 2:
 				log_step = 0;
-                _print_log_entry(data, num_types, structure, port);
+                _print_log_entry(data, num_types, structure, print_mode, port);
                 break;
 		}
         uint16_t new_page = GetPage();
@@ -632,4 +639,3 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor *ins)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
-

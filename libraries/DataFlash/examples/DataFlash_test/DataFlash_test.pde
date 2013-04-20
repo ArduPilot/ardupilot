@@ -108,6 +108,12 @@ void setup()
     hal.scheduler->delay(100);
 }
 
+static void
+print_mode(AP_HAL::BetterStream *port, uint8_t mode)
+{
+    port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+}
+
 void loop()
 {
     uint16_t start, end;
@@ -117,7 +123,9 @@ void loop()
     DataFlash.get_log_boundaries(log_num, start, end); 
 	DataFlash.LogReadProcess(log_num, start, end, 
                              sizeof(log_structure)/sizeof(log_structure[0]),
-                             log_structure, hal.console);
+                             log_structure, 
+                             print_mode,
+                             hal.console);
     hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");
     hal.scheduler->delay(20000);
 }
