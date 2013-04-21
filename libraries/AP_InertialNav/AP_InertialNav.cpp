@@ -111,7 +111,7 @@ void AP_InertialNav::set_time_constant_xy( float time_constant_in_seconds )
 }
 
 // position_ok - return true if position has been initialised and have received gps data within 3 seconds
-bool AP_InertialNav::position_ok()
+bool AP_InertialNav::position_ok() const
 {
     return _xy_enabled;
 }
@@ -180,7 +180,7 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
 }
 
 // get accel based latitude
-int32_t AP_InertialNav::get_latitude()
+int32_t AP_InertialNav::get_latitude() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -191,7 +191,7 @@ int32_t AP_InertialNav::get_latitude()
 }
 
 // get accel based longitude
-int32_t AP_InertialNav::get_longitude()
+int32_t AP_InertialNav::get_longitude() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -227,7 +227,7 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
 }
 
 // get accel based latitude
-float AP_InertialNav::get_latitude_diff()
+float AP_InertialNav::get_latitude_diff() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -238,7 +238,7 @@ float AP_InertialNav::get_latitude_diff()
 }
 
 // get accel based longitude
-float AP_InertialNav::get_longitude_diff()
+float AP_InertialNav::get_longitude_diff() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -249,7 +249,7 @@ float AP_InertialNav::get_longitude_diff()
 }
 
 // get velocity in latitude & longitude directions
-float AP_InertialNav::get_latitude_velocity()
+float AP_InertialNav::get_latitude_velocity() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -260,7 +260,7 @@ float AP_InertialNav::get_latitude_velocity()
     // Note: is +_velocity.x the output velocity in logs is in reverse direction from accel lat
 }
 
-float AP_InertialNav::get_longitude_velocity()
+float AP_InertialNav::get_longitude_velocity() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {

@@ -54,7 +54,7 @@ public:
     void        set_time_constant_xy( float time_constant_in_seconds );
 
     // altitude_ok, position_ok - true if inertial based altitude and position can be trusted
-    bool        position_ok();
+    bool        position_ok() const;
 
     // check_gps - check if new gps readings have arrived and use them to correct position estimates
     void        check_gps();
@@ -63,25 +63,25 @@ public:
     void        correct_with_gps(int32_t lon, int32_t lat, float dt);
 
     // get_position - returns current position from home in cm
-    Vector3f    get_position() { return _position_base + _position_correction; }
+    Vector3f    get_position() const { return _position_base + _position_correction; }
 
     // get latitude & longitude positions
-    int32_t     get_latitude();
-    int32_t     get_longitude();
+    int32_t     get_latitude() const;
+    int32_t     get_longitude() const;
 
     // set_current_position - all internal calculations are recorded as the distances from this point
     void        set_current_position(int32_t lon, int32_t lat);
 
     // get latitude & longitude positions from base location (in cm)
-    float       get_latitude_diff();
-    float       get_longitude_diff();
+    float       get_latitude_diff() const;
+    float       get_longitude_diff() const;
     
     // get velocity in latitude & longitude directions (in cm/s)
-    float       get_latitude_velocity();
-    float       get_longitude_velocity();
+    float       get_latitude_velocity() const;
+    float       get_longitude_velocity() const;
 
     // get_velocity - returns current velocity in cm/s
-    Vector3f    get_velocity() { return _velocity; }
+    Vector3f    get_velocity() const { return _velocity; }
 
     // set velocity in latitude & longitude directions (in cm/s)
     void        set_velocity_xy(float x, float y);
@@ -94,7 +94,7 @@ public:
     void        set_time_constant_z( float time_constant_in_seconds );
 
     // altitude_ok, position_ok - true if inertial based altitude and position can be trusted
-    bool        altitude_ok() { return true; }
+    bool        altitude_ok() const { return true; }
 
     // check_baro - check if new baro readings have arrived and use them to correct vertical accelerometer offsets
     void        check_baro();
@@ -103,11 +103,11 @@ public:
     void        correct_with_baro(float baro_alt, float dt);
 
     // get_altitude - get latest altitude estimate in cm
-    float       get_altitude() { return _position_base.z + _position_correction.z; }
+    float       get_altitude() const { return _position_base.z + _position_correction.z; }
     void        set_altitude( float new_altitude);
 
     // get_velocity_z - get latest climb rate (in cm/s)
-    float       get_velocity_z() { return _velocity.z; }
+    float       get_velocity_z() const { return _velocity.z; }
     void        set_velocity_z( float new_velocity );
 
     // class level parameters
