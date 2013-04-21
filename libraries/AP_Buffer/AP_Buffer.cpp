@@ -25,7 +25,7 @@ void AP_Buffer<T,SIZE>::clear() {
 
 // add - adds an item to the buffer.  returns TRUE if successfully added
 template <class T, uint8_t SIZE>
-bool AP_Buffer<T,SIZE>::add( T item )
+void AP_Buffer<T,SIZE>::add( T item )
 {
     // determine position of new item
     uint8_t tail = _head + _num_items;
@@ -46,9 +46,6 @@ bool AP_Buffer<T,SIZE>::add( T item )
             _head = 0;
         }
     }
-
-    // indicate success
-    return true;
 }
 
 // get - returns the next value in the buffer
@@ -99,9 +96,9 @@ T AP_Buffer<T,SIZE>::peek(uint8_t position) const
 template float AP_Buffer<float,5>::peek(uint8_t position) const;
 template AP_Buffer<float, 5>::AP_Buffer();
 template void AP_Buffer<float, 5>::clear();
-template bool AP_Buffer<float, 5>::add(float);
+template void AP_Buffer<float, 5>::add(float);
 
 template float AP_Buffer<float,15>::peek(uint8_t position) const;
 template AP_Buffer<float, 15>::AP_Buffer();
 template void AP_Buffer<float, 15>::clear();
-template bool AP_Buffer<float, 15>::add(float);
+template void AP_Buffer<float, 15>::add(float);

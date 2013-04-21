@@ -19,7 +19,7 @@ public:
     void clear();
 
     // add - adds an item to the buffer.  returns TRUE if successfully added
-    bool add( T item );
+    void add( T item );
 
     // get - returns the next value in the buffer
     T get();
