@@ -949,55 +949,6 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     return desired_rate;
 }
 
-// get_pilot_desired_acceleration - transform pilot's throttle input to a desired acceleration
-// default upper and lower bounds are 500 cm/s/s (roughly 1/2 a G)
-// returns acceleration in cm/s/s
-static int16_t get_pilot_desired_acceleration(int16_t throttle_control)
-{
-    int32_t desired_accel = 0;
-
-    // throttle failsafe check
-    if( ap.failsafe_radio ) {
-        return 0;
-    }
-
-    // ensure a reasonable throttle value
-    throttle_control = constrain(throttle_control,0,1000);
-
-    // check throttle is above, below or in the deadband
-    if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
-        // below the deadband
-        desired_accel = (int32_t)ACCELERATION_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
-    }else if(throttle_control > THROTTLE_IN_DEADBAND_TOP) {
-        // above the deadband
-        desired_accel = (int32_t)ACCELERATION_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
-    }else{
-        // must be in the deadband
-        desired_accel = 0;
-    }
-
-    return desired_accel;
-}
-
-// get_pilot_desired_direct_alt - transform pilot's throttle input to a desired altitude
-// return altitude in cm between 0 to 10m
-static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
-{
-    int32_t desired_alt = 0;
-
-    // radio failsafe check
-    if( ap.failsafe_radio ) {
-        return 0;
-    }
-
-    // ensure a reasonable throttle value
-    throttle_control = constrain(throttle_control,0,1000);
-
-    desired_alt = throttle_control;
-
-    return desired_alt;
-}
-
 // get_initial_alt_hold - get new target altitude based on current altitude and climb rate
 static int32_t
 get_initial_alt_hold( int32_t alt_cm, int16_t climb_rate_cms)
