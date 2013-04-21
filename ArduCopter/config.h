@@ -933,7 +933,7 @@
  # define THROTTLE_I            0.0f
 #endif
 #ifndef THROTTLE_D
- # define THROTTLE_D            0.2f
+ # define THROTTLE_D            0.0f
 #endif
 
 #ifndef THROTTLE_IMAX
