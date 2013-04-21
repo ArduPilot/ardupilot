@@ -331,7 +331,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
         if (_oldSwitchPosition != _switchPosition) {
 
             mode = flight_modes[_switchPosition];
-            mode = constrain(mode, 0, NUM_MODES-1);
+            mode = constrain_int16(mode, 0, NUM_MODES-1);
 
             // update the user
             print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));

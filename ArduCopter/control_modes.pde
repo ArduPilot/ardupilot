@@ -139,7 +139,7 @@ static void read_trim_switch()
 
                 // set the next_WP (home is stored at 0)
                 // max out at 100 since I think we need to stay under the EEPROM limit
-                CH7_wp_index = constrain(CH7_wp_index, 1, 100);
+                CH7_wp_index = constrain_int16(CH7_wp_index, 1, 100);
 
                 if(g.rc_3.control_in > 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
