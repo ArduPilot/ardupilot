@@ -788,7 +788,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "hhhhhhhhh",    "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "BBBHHIB",      "RenCnt,RenBlw,FixCnt,NLon,NLoop,MaxT,End" },
+      "PM",  "BBBHHI",       "RenCnt,RenBlw,FixCnt,NLon,NLoop,MaxT,End" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
