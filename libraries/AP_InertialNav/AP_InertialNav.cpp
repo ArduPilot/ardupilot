@@ -63,16 +63,19 @@ void AP_InertialNav::update(float dt)
     //Convert North-East-Down to North-East-Up
     accel_ef.z = -accel_ef.z;
 
-    accel_correction_ef.x += _position_error.x * _k3_xy * dt;
-    accel_correction_ef.y += _position_error.y * _k3_xy * dt;
+    float tmp = _k3_xy * dt;
+    accel_correction_ef.x += _position_error.x * tmp;
+    accel_correction_ef.y += _position_error.y * tmp;
     accel_correction_ef.z += _position_error.z * _k3_z  * dt;
 
-    _velocity.x += _position_error.x * _k2_xy * dt;
-    _velocity.y += _position_error.y * _k2_xy * dt;
+    tmp = _k2_xy * dt;
+    _velocity.x += _position_error.x * tmp;
+    _velocity.y += _position_error.y * tmp;
     _velocity.z += _position_error.z * _k2_z  * dt;
 
-    _position_correction.x += _position_error.x * _k1_xy * dt;
-    _position_correction.y += _position_error.y * _k1_xy * dt;
+    tmp = _k1_xy * dt;
+    _position_correction.x += _position_error.x * tmp;
+    _position_correction.y += _position_error.y * tmp;
     _position_correction.z += _position_error.z * _k1_z  * dt;
 
     // calculate velocity increase adding new acceleration from accelerometers
@@ -302,7 +305,7 @@ void AP_InertialNav::check_baro()
     // calculate time since last baro reading
     baro_update_time = _baro->get_last_update();
     if( baro_update_time != _baro_last_update ) {
-        float dt = (float)(baro_update_time - _baro_last_update) / 1000.0f;
+        float dt = (float)(baro_update_time - _baro_last_update) * 0.001f;
         // call correction method
         correct_with_baro(_baro->get_altitude()*100, dt);
         _baro_last_update = baro_update_time;
