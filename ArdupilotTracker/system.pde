@@ -161,19 +161,20 @@ static void init_ardupilot()
     // GPS Initialization
     g_gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G);
 
-    mavlink_system.sysid = MAV_TARGET_ID;				// Using g.sysid_this_mav
+    mavlink_system.sysid = MAV_SYSTEM_ID;					 // Using g.sysid_this_mav
     mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
     mavlink_system.type = MAV_TYPE_ANTENNA_TRACKER;
 
     // Set initial values for no override
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
+    // TODO: Will this not overwrite user settings at every bootup? Is that good?
     init_rc_in();               // sets up rc channels from radio
-    init_rc_out();              // sets up the timer libs
 
     pinMode(A_LED_PIN, OUTPUT);                         // GPS status LED
     pinMode(B_LED_PIN, OUTPUT);                         // GPS status LED
     pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
+
     relay.init();
 
     /*
@@ -184,6 +185,8 @@ static void init_ardupilot()
 
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
+
+// TODO: What does this have to do with that mux?    
 #if USB_MUX_PIN == 0
     hal.uartC->println_P(msg);
 #endif
@@ -199,10 +202,7 @@ static void init_ardupilot()
         ahrs.init();
         ahrs.set_fly_forward(true);
 
-        ins.init(AP_InertialSensor::WARM_START, 
-                 ins_sample_rate,
-                 flash_leds);
-
+        ins.init(AP_InertialSensor::WARM_START, ins_sample_rate, flash_leds);
 #endif
 
         // This delay is important for the APM_RC library to work.
@@ -242,15 +242,10 @@ static void startup_ground(void)
     delay(GROUND_START_DELAY * 1000);
 #endif
 
-    // Makes the servos wiggle
-    // step 1 = 1 wiggle
-    // -----------------------
-    demo_servos(1);
-
     //INS ground start
     //------------------------
     //
-    startup_INS_ground(false);
+    startup_INS_ground(g.manual_level);
 
     // read the radio to set trims
     // ---------------------------
@@ -259,12 +254,6 @@ static void startup_ground(void)
     // Save the settings for in-air restart
     // ------------------------------------
     //save_EEPROM_groundstart();
-
-    // initialize commands
-    // -------------------
-    // Makes the servos wiggle - 3 times signals ready to fly
-    // -----------------------
-    demo_servos(3);
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -281,13 +270,18 @@ static void startup_ground(void)
         hal.uartC->set_blocking_writes(false);
     }
 
-    // TODO: Here?
-    neutral_bearing_cd = ahrs.yaw_sensor;
-
+    /*
+     * This never works: Yaw never is initialized before init_ardupilot is finished anyway.
+     * So we don't even bother checking.
+    if(ahrs.yaw_initialised()) {
+        neutral_bearing_cd = ahrs.yaw_sensor;
+    }
+    */
+    
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to track."));
 }
 
-static void set_mode(enum FlightMode mode)
+static void set_mode(enum TrackingMode mode)
 {
     if(control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
@@ -310,7 +304,7 @@ static void set_mode(enum FlightMode mode)
     }
 }
 
-static void startup_INS_ground(bool force_accel_level)
+static void startup_INS_ground(bool force_sensor_calibration)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     while (!barometer.healthy) {
@@ -322,22 +316,24 @@ static void startup_INS_ground(bool force_accel_level)
 #endif
 
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
-    mavlink_delay(500);
+    mavlink_delay(200);
 
-    // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
-    // -----------------------
-    demo_servos(2);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
-    mavlink_delay(1000);
+    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move tracker"));
+    mavlink_delay(500);
 
     ahrs.init();
     ahrs.set_fly_forward(true);
 
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+    // Calibrate gyros if 
+    if (ins.get_gyro_offsets().length() < 0.01 || force_sensor_calibration) {
+    	ins.init(AP_InertialSensor::COLD_START, ins_sample_rate, flash_leds);
+        digitalWrite(A_LED_PIN, LED_ON);
+    } else {
+    	ins.init(AP_InertialSensor::WARM_START, ins_sample_rate, flash_leds);
+    }
+    
 #if HIL_MODE == HIL_MODE_DISABLED
-    if (force_accel_level || g.manual_level == 0) {
+    if (force_sensor_calibration) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station
@@ -354,8 +350,6 @@ static void startup_INS_ground(bool force_accel_level)
 
 #endif
     digitalWrite(B_LED_PIN, LED_ON);                    // Set LED B high to indicate INS ready
-    digitalWrite(A_LED_PIN, LED_OFF);
-    digitalWrite(C_LED_PIN, LED_OFF);
 }
 
 static void update_GPS_light(void)
@@ -469,8 +463,8 @@ print_flight_mode(uint8_t mode)
     case MANUAL:
         cliSerial->println_P(PSTR("Manual"));
         break;
-    case TELEMETRY:
-        cliSerial->println_P(PSTR("Telemetry"));
+    case MAVLINK:
+        cliSerial->println_P(PSTR("MAVLink"));
         break;
     case ARDUTRACKER:
         cliSerial->println_P(PSTR("ArduTracker"));
@@ -496,7 +490,7 @@ static void servo_write(uint8_t ch, uint16_t pwm)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     if (!g.hil_servos) {
-        extern RC_Channel *rc_ch[8];
+        extern RC_Channel *rc_ch[4];
         if (ch < 8) {
             rc_ch[ch]->radio_out = pwm;
         }

@@ -79,7 +79,7 @@
 // This is now independent of whether you have a mux or not.
 #define MOBILE 2
 #ifndef SERIAL3_MODE
- # define SERIAL3_MODE DISABLED
+ # define SERIAL3_MODE ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -391,7 +391,7 @@
 // Level with each startup = 0, level with MP/CLI only = 1
 //
 #ifndef MANUAL_LEVEL
- # define MANUAL_LEVEL        0
+ # define MANUAL_LEVEL        1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -405,7 +405,7 @@
 // ENABLE_AIR_START
 //
 #ifndef ENABLE_AIR_START
- # define ENABLE_AIR_START               DISABLED
+ # define ENABLE_AIR_START               ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

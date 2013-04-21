@@ -196,7 +196,7 @@ endforeach()
 
 #set(GROUND_START_DELAY "0" CACHE STRING "Delay between power-up and INS calibration (s)?")
 
-#set(ENABLE_AIR_START "DISABLED" CACHE STRING "Enable in-air restart?")
+#set(ENABLE_AIR_START "ENABLED" CACHE STRING "Enable in-air restart?")
 #set_property(CACHE ENABLE_AIR_START PROPERTY STRINGS ENABLED DISABLED) 
 
 

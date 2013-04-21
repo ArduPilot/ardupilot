@@ -23,8 +23,6 @@ void init_home()
     home.lat        = g_gps->latitude;                                  // Lat * 10**7
     home.alt        = max(g_gps->altitude, 0);
     
-    //neutral_bearing_cd = ahrs.yaw_sensor;
-    
     home_is_set = true;
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);

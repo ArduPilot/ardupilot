@@ -57,9 +57,9 @@
 #define HIL_MODE_ATTITUDE                       1
 #define HIL_MODE_SENSORS                        2
 
-enum FlightMode {
+enum TrackingMode {
     MANUAL        = 0,
-    TELEMETRY     = 1,			// Use telemetry received on MAVLink gcs3
+    MAVLINK       = 1,			// Use telemetry received on MAVLink gcs3
     ARDUTRACKER   = 2,			// Use ArduTracker messages received on UART0
     INITIALISING  = 16
 };

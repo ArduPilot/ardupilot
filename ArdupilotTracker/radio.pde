@@ -12,8 +12,8 @@ static void init_rc_in() {
 	g.channel_elevation.set_angle(SERVO_MAX);
 
 	// set rc dead zones
-	g.channel_azimuth.set_dead_zone(60);
-	g.channel_elevation.set_dead_zone(60);
+	g.channel_azimuth.set_dead_zone(100);
+	g.channel_elevation.set_dead_zone(100);
 
 	rc_ch[CH_1] = &g.channel_azimuth;
 	rc_ch[CH_2] = &g.channel_elevation;
@@ -28,46 +28,26 @@ static void init_rc_in() {
 	update_aux_servo_function(&g.rc_3, &g.rc_4);
 }
 
-static void init_rc_out() {
-	hal.rcout->enable_ch(CH_1);
-	hal.rcout->enable_ch(CH_2);
-	enable_aux_servos();
-
-	// Initialization of servo outputs
-	// OK so this is one initial value: The trim value.
-	hal.rcout->write(CH_1, g.channel_azimuth.radio_trim);
-	hal.rcout->write(CH_2, g.channel_elevation.radio_trim);
-	hal.rcout->write(CH_3, g.rc_3.radio_min);
-	hal.rcout->write(CH_4, g.rc_4.radio_trim);
-}
-
 /*
  * Update our channel objects from physical radio.
  * Called (as the first thing) from fast_loop.
  */
 static void read_radio() {
-	uint16_t pwm_azimuth = hal.rcin->read(CH_AZIMUTH);
-	uint16_t pwm_elevation = hal.rcin->read(CH_ELEVATION);
-
 	/*
 	 * Has same effect as RC_Channel::input() but (apart from setting the radio_in
 	 * property) also calculated angles or ranges.
 	 */
-	g.channel_azimuth.set_pwm(pwm_azimuth);
-	g.channel_elevation.set_pwm(pwm_elevation);
+	g.channel_azimuth.set_pwm( hal.rcin->read(CH_AZIMUTH));
+	g.channel_elevation.set_pwm( hal.rcin->read(CH_ELEVATION));
 	g.rc_3.set_pwm(hal.rcin->read(CH_3));
 	g.rc_4.set_pwm(hal.rcin->read(CH_4));
 
-	//  control_failsafe(g.channel_throttle.radio_in);
-	//  g.channel_throttle.servo_out = g.channel_throttle.control_in;
+	// Let's say 1 second at full stick should get us from zero to min/max.
+	azimuthRCIntegral += g.channel_azimuth.control_in;
+	constrain_int32(azimuthRCIntegral, SERVO_MAX*50L, SERVO_MAX*50L);
 
-	/*
-	 *  cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
-	 *                       (int)g.rc_1.control_in,
-	 *                       (int)g.rc_2.control_in,
-	 *                       (int)g.rc_3.control_in,
-	 *                       (int)g.rc_4.control_in);
-	 */
+	elevationRCIntegral += g.channel_elevation.control_in;
+	constrain_int32(elevationRCIntegral, SERVO_MAX*50L, SERVO_MAX*50L);
 }
 
 static void trim_tracker() {

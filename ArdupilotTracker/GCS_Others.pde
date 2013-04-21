@@ -24,7 +24,7 @@ void Datacomm_Class_Multiple::update(void) {
 
         if (c == '\n' || c == '\r') {
             crlf_count++;
-            digitalWrite(A_LED_PIN, crlf_count ? LED_ON : LED_OFF);
+//            digitalWrite(A_LED_PIN, crlf_count ? LED_ON : LED_OFF);
         } else {
             crlf_count = 0;
         }
@@ -179,7 +179,9 @@ void ArduTrackerDataInterpreter::receive(uint8_t c) {
 		result.timestamp = millis();
 		
 		incomingAzimuthElevation = result;
-		
+
+		// TODO: We might want to do this in a different way but ok for now.
+        control_mode = ARDUTRACKER;
 		detected = true;
 		return;
 	}

@@ -44,7 +44,32 @@ static void trackPosition(Location* here, Location* there, struct AzimuthElevati
 	result->elevation_cd = elevation * DEGX100;
 }
 
-static void track() {}
+static void track_mavlink() {
+	trackPosition(&current_loc, &target, &servoAzimuthElevation);
+	servoAzimuthElevation.azimuth_cd += neutral_bearing_cd - ahrs.yaw_sensor;
+	servoAzimuthElevation.azimuth_cd = wrap_180_cd(servoAzimuthElevation.azimuth_cd);
+	servoAzimuthElevation.elevation_cd -= ahrs.pitch_sensor;
+	servoAzimuthElevation.elevation_cd = wrap_180_cd(servoAzimuthElevation.elevation_cd);
+}
+
+static void track_ardutracker(){
+	servoAzimuthElevation.azimuth_cd = neutral_bearing_cd + incomingAzimuthElevation.azimuth_cd - ahrs.yaw_sensor;
+	servoAzimuthElevation.azimuth_cd = wrap_180_cd(servoAzimuthElevation.azimuth_cd);
+	servoAzimuthElevation.elevation_cd = incomingAzimuthElevation.elevation_cd - ahrs.pitch_sensor;
+	servoAzimuthElevation.elevation_cd = wrap_180_cd(servoAzimuthElevation.elevation_cd);
+}
+
+static void track() {
+	switch(control_mode) {
+	case ARDUTRACKER:
+		track_ardutracker();
+		break;
+	case MAVLINK:
+		track_mavlink();
+	default:
+		break;
+	}
+}
 
 static void navigate() {
     // do not navigate with corrupt data
@@ -56,32 +81,6 @@ static void navigate() {
     if(next_WP.lat == 0) {
         return;
     }
-
-    // waypoint distance from plane
-    // ----------------------------
-    wp_distance = get_distance(&current_loc, &next_WP);
-
-    if (wp_distance < 0) {
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("WP error - distance < 0"));
-        return;
-    }
-
-    // target_bearing is where we should be heading
-    // --------------------------------------------
-    target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);
-
-    // reset the old value
-    // old_target_bearing_cd = target_bearing_cd;
-
-    // control mode specific updates to nav_bearing
-    // --------------------------------------------
-    update_navigation();
-}
-
-static void calc_bearing_error()
-{
-    bearing_error_cd = neutral_bearing_cd - ahrs.yaw_sensor;
-    bearing_error_cd = wrap_180_cd(bearing_error_cd);
 }
 
 /*

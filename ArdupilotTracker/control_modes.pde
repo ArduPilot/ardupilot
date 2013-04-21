@@ -26,7 +26,7 @@ static void read_control_switch()
             return;
         }
 
-        set_mode((enum FlightMode)(flight_modes[switchPosition].get()));
+        set_mode((enum TrackingMode)(flight_modes[switchPosition].get()));
 
         oldSwitchPosition = switchPosition;
     }

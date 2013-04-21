@@ -23,5 +23,5 @@
 // 0:Off. 1:Raw MAVLink. 2:Mobile.
 #define MOBILE 2
 #ifndef SERIAL3_MODE
- # define SERIAL3_MODE MOBILE
+ # define SERIAL3_MODE 1
 #endif

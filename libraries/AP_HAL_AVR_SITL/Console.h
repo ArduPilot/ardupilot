@@ -31,6 +31,7 @@ public:
     /* Implementations of Stream virtual methods */
     int16_t available();
     int16_t txspace();
+    int16_t peek();
     int16_t read();
 
     /* Implementations of Print virtual methods */

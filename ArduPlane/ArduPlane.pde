@@ -379,6 +379,8 @@ static int32_t hold_course_cd                 = -1;              // deg * 100 di
 static uint8_t nav_command_index;
 // This indicates the active non-navigation command by index number
 static uint8_t non_nav_command_index;
+
+
 // This is the command type (eg navigate to waypoint) of the active navigation command
 static uint8_t nav_command_ID          = NO_COMMAND;
 static uint8_t non_nav_command_ID      = NO_COMMAND;
@@ -1233,6 +1235,9 @@ static void update_current_flight_mode(void)
     }
 }
 
+/*
+ * Called (only) from navigate() in navigation.pde (why not just move it to there)
+ */
 static void update_navigation()
 {
     // wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS

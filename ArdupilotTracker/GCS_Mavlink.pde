@@ -212,7 +212,7 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
-    extern RC_Channel* rc_ch[8];
+    extern RC_Channel* rc_ch[4];
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
@@ -221,10 +221,13 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
         rc_ch[1]->radio_out,
         rc_ch[2]->radio_out,
         rc_ch[3]->radio_out,
+        /*
         rc_ch[4]->radio_out,
         rc_ch[5]->radio_out,
         rc_ch[6]->radio_out,
-        rc_ch[7]->radio_out);
+        rc_ch[7]->radio_out
+        */
+        0,0,0,0);
     return;
     }
 #endif
@@ -1117,6 +1120,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         target.lat        = packet.lat;
         target.alt        = packet.alt/10;
         target_is_set = true;
+
+        // TODO: We might want to do this in a different way but ok for now.
+        control_mode = MAVLINK;
+        
     	break;
     }
     

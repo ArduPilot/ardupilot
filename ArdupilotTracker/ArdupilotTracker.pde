@@ -265,7 +265,7 @@ static bool usb_connected;
 ////////////////////////////////////////////////////////////////////////////////
 // This is the state of the flight control system
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
-enum FlightMode control_mode  = INITIALISING;
+enum TrackingMode control_mode  = INITIALISING;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 uint8_t oldSwitchPosition;
@@ -323,18 +323,23 @@ static bool have_position;
 const float radius_of_earth   = 6378100;        // meters
 
 static int32_t neutral_bearing_cd;
+static bool tracker_initialized;
+
+static int32_t azimuthRCIntegral;
+static int32_t elevationRCIntegral;
 
 // This is the direction to the next waypoint or loiter center
 // deg * 100 : 0 to 360
-static int32_t target_bearing_cd;
+// static int32_t target_bearing_cd;
 
-static struct AzimuthElevation incomingAzimuthElevation;
+static struct AzimuthElevation incomingAzimuthElevation = {0,0,0};
+static struct AzimuthElevation servoAzimuthElevation = {0,0,0};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Location Errors
 ////////////////////////////////////////////////////////////////////////////////
 // Difference between current bearing and desired bearing.  Hundredths of a degree
-static int32_t bearing_error_cd;
+// static int32_t bearing_error_cd;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
@@ -552,6 +557,17 @@ static void fast_loop()
     if (delta_ms_fast_loop > G_Dt_max)
         G_Dt_max = delta_ms_fast_loop;
 
+    // TODO: There must be a better way to capture the first valid bearing than this...
+    // but my attempts to do it in initialization always just captured zero.
+    if(!tracker_initialized && ahrs.yaw_initialised()) {
+        neutral_bearing_cd = ahrs.yaw_sensor;
+        // I don't like servos that get initialized to a default value, and shortly
+        // after jump to a different quiescent position. Better just leave them off
+        // until there first meaningful position for them is ready.
+        init_servos();
+        tracker_initialized = true;
+    }
+    
     // Read radio
     // ----------
     read_radio();
@@ -562,25 +578,25 @@ static void fast_loop()
 
     ahrs.update();
 
-    calc_bearing_error();
-
     // custom code/exceptions for flight modes
     // ---------------------------------------
     // update_current_flight_mode();
     // apply desired roll, pitch and yaw to the plane
     // ----------------------------------------------
-    if (control_mode > MANUAL)
-        track();
+     // if (control_mode > MANUAL)
+    track();
 
     // write out the servo PWM values
     // ------------------------------
     set_servos();
     
+    /*
     if ((mainLoop_count % 20) == 0) {
     	char blah[40];
     	hal.util->snprintf_P(blah, 40, PSTR("Yaw: %d"), ahrs.yaw_sensor/100);
     	mavlink_send_text(MAVLINK_COMM_0, SEVERITY_LOW, blah);
     }
+    */
 
     datacomm_update();
     gcs_data_stream_send();
@@ -761,6 +777,7 @@ static void update_GPS(void)
     }
 }
 
+/*
 static void update_navigation()
 {
     switch(control_mode) {
@@ -769,6 +786,7 @@ static void update_navigation()
         break;
     }
 }
+*/
 
 static void update_alt()
 {

@@ -42,6 +42,7 @@ static void loiter_angle_update(void)
 
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
+// Called from the medium loop.
 //****************************************************************
 static void navigate()
 {

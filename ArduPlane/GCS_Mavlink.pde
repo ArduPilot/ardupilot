@@ -1491,6 +1491,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // start waypoint receiving
+        // If start_index > g.command_total and end_index<= g.command_total then start_index > end_index.
+        // the 1st or the 3rd check is not necessary.
         if (packet.start_index > g.command_total ||
             packet.end_index > g.command_total ||
             packet.end_index < packet.start_index) {
