@@ -48,7 +48,7 @@ public:
     ///
 
     /// get_loiter_target - get loiter target as position vector (from home in cm)
-    Vector3f get_loiter_target() { return _target; }
+    const Vector3f &get_loiter_target() const { return _target; }
 
     /// set_loiter_target in cm from home
     void set_loiter_target(const Vector3f& position) { _target = position; }
@@ -60,10 +60,10 @@ public:
     void move_loiter_target(float control_roll, float control_pitch, float dt);
 
     /// get_distance_to_target - get horizontal distance to loiter target in cm
-    float get_distance_to_target();
+    float get_distance_to_target() const;
 
     /// get_bearing_to_target - get bearing to loiter target in centi-degrees
-    int32_t get_bearing_to_target();
+    int32_t get_bearing_to_target() const;
 
     /// update_loiter - run the loiter controller - should be called at 10hz
     void update_loiter();
@@ -75,14 +75,14 @@ public:
     void clear_angle_limit() { _lean_angle_max = MAX_LEAN_ANGLE; }
 
     /// get_angle_limit - retrieve maximum angle in centi-degrees the copter will lean
-    int32_t get_angle_limit() { return _lean_angle_max; }
+    int32_t get_angle_limit() const { return _lean_angle_max; }
 
     ///
     /// waypoint controller
     ///
 
     /// get_destination waypoint using position vector (distance from home in cm)
-    Vector3f get_destination() { return _destination; }
+    const Vector3f &get_destination() const { return _destination; }
 
     /// set_destination waypoint using position vector (distance from home in cm)
     void set_destination(const Vector3f& destination);
@@ -100,7 +100,7 @@ public:
     int32_t get_bearing_to_destination();
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_destination() { return _reached_destination; }
+    bool reached_destination() const { return _reached_destination; }
 
     /// update_wp - update waypoint controller
     void update_wpnav();
@@ -110,11 +110,11 @@ public:
     ///
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_desired_roll() { return _desired_roll; };
-    int32_t get_desired_pitch() { return _desired_pitch; };
+    int32_t get_desired_roll() const { return _desired_roll; };
+    int32_t get_desired_pitch() const { return _desired_pitch; };
 
     /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
-    float get_desired_alt() { return _target.z; }
+    float get_desired_alt() const { return _target.z; }
 
     /// set_desired_alt - set desired altitude (in cm above home)
     void set_desired_alt(float desired_alt) { _target.z = desired_alt; }
@@ -130,20 +130,20 @@ public:
     void set_horizontal_velocity(float velocity_cms) { _speed_xy_cms = velocity_cms; };
 
     /// get_climb_velocity - returns target climb speed in cm/s during missions
-    float get_climb_velocity() { return _speed_up_cms; };
+    float get_climb_velocity() const { return _speed_up_cms; };
 
     /// get_descent_velocity - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_descent_velocity() { return _speed_down_cms; };
+    float get_descent_velocity() const { return _speed_down_cms; };
 
     /// get_waypoint_radius - access for waypoint radius in cm
-    float get_waypoint_radius() { return _wp_radius_cm; }
+    float get_waypoint_radius() const { return _wp_radius_cm; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
     /// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
-    Vector3f project_stopping_point(const Vector3f& position, const Vector3f& velocity);
+    void project_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target);
 
     /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
     void translate_loiter_target_movements(float nav_dt);
@@ -161,7 +161,7 @@ protected:
     void get_loiter_acceleration_to_lean_angles(float accel_lat_cmss, float accel_lon_cmss);
 
     /// get_bearing_cd - return bearing in centi-degrees between two positions
-    float get_bearing_cd(const Vector3f origin, const Vector3f destination);
+    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
 
     /// reset_I - clears I terms from loiter PID controller
     void reset_I();

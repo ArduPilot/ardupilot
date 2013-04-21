@@ -66,17 +66,17 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
 ///
 
 /// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
-Vector3f AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& velocity)
+void AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target)
 {
     float linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
     float linear_velocity;      // the velocity we swap between linear and sqrt.
     float vel_total;
     float target_dist;
-    Vector3f target;
 
     // avoid divide by zero
     if( _pid_pos_lat->kP() <= 0.1 ) {
-        return(position);
+        target = position;
+        return;
     }
 
     // calculate point at which velocity switches from linear to sqrt
@@ -97,13 +97,13 @@ Vector3f AC_WPNav::project_stopping_point(const Vector3f& position, const Vector
     target.x = position.x + (target_dist * velocity.x / vel_total);
     target.y = position.y + (target_dist * velocity.y / vel_total);
     target.z = position.z;
-    return target;
 }
 
 /// set_loiter_target - set initial loiter target based on current position and velocity
 void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& velocity)
 {
-    Vector3f target = project_stopping_point(position, velocity);
+    Vector3f target;
+    project_stopping_point(position, velocity, target);
     _target.x = target.x;
     _target.y = target.y;
 }
@@ -167,13 +167,13 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 }
 
 /// get_distance_to_target - get horizontal distance to loiter target in cm
-float AC_WPNav::get_distance_to_target()
+float AC_WPNav::get_distance_to_target() const
 {
     return _distance_to_target;
 }
 
 /// get_bearing_to_target - get bearing to loiter target in centi-degrees
-int32_t AC_WPNav::get_bearing_to_target()
+int32_t AC_WPNav::get_bearing_to_target() const
 {
     return get_bearing_cd(_inav->get_position(), _target);
 }
@@ -205,18 +205,16 @@ void AC_WPNav::update_loiter()
 /// set_destination - set destination using cm from home
 void AC_WPNav::set_destination(const Vector3f& destination)
 {
-    Vector3f origin;
-
     // if waypoint controlls is active and copter has reached the previous waypoint use it for the origin
     if( _reached_destination && ((hal.scheduler->millis() - _wpnav_last_update) < 1000) ) {
-        origin = _destination;
+        _origin = _destination;
     }else{
         // otherwise calculate origin from the current position and velocity
-        origin = project_stopping_point(_inav->get_position(), _inav->get_velocity());
+        project_stopping_point(_inav->get_position(), _inav->get_velocity(), _origin);
     }
 
     // set origin and destination
-    set_origin_and_destination(origin, destination);
+    set_origin_and_destination(_origin, destination);
 }
 
 /// set_origin_and_destination - set origin and destination using lat/lon coordinates
@@ -430,7 +428,7 @@ void AC_WPNav::get_loiter_acceleration_to_lean_angles(float accel_lat, float acc
 
 // get_bearing_cd - return bearing in centi-degrees between two positions
 // To-Do: move this to math library
-float AC_WPNav::get_bearing_cd(const Vector3f origin, const Vector3f destination)
+float AC_WPNav::get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const
 {
     float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * 5729.57795f;
     if (bearing < 0) {
