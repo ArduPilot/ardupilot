@@ -1961,7 +1961,7 @@ static void read_AHRS(void)
 
 static void update_trig(void){
     Vector2f yawvector;
-    Matrix3f temp   = ahrs.get_dcm_matrix();
+    const Matrix3f &temp   = ahrs.get_dcm_matrix();
 
     yawvector.x     = temp.a.x;     // sin
     yawvector.y     = temp.b.x;         // cos
