@@ -132,7 +132,7 @@ void AP_InertialNav::check_gps()
     if( gps_time != _gps_last_time ) {
 
         // calculate time since last gps reading
-        float dt = (float)(now - _gps_last_update) / 1000.0f;
+        float dt = (float)(now - _gps_last_update) * 0.001f;
 
         // call position correction method
         correct_with_gps((*_gps_ptr)->longitude, (*_gps_ptr)->latitude, dt);
@@ -162,7 +162,7 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
 
     // calculate distance from base location
     x = (float)(lat - _base_lat) * AP_INERTIALNAV_LATLON_TO_CM;
-    y = (float)(lon - _base_lon) * _lon_to_m_scaling * AP_INERTIALNAV_LATLON_TO_CM;
+    y = (float)(lon - _base_lon) * _lon_to_m_scaling;
 
     // ublox gps positions are delayed by 400ms
     // we store historical position at 10hz so 4 iterations ago
@@ -198,7 +198,7 @@ int32_t AP_InertialNav::get_longitude()
         return 0;
     }
 
-    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM));
+    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / _lon_to_m_scaling);
 }
 
 // set_current_position - all internal calculations are recorded as the distances from this point
@@ -210,7 +210,7 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
 
     // set longitude->meters scaling
     // this is used to offset the shrinking longitude as we go towards the poles
-    _lon_to_m_scaling = cosf((fabsf((float)lat)/10000000.0f) * 0.0174532925f);
+    _lon_to_m_scaling = cosf((fabsf((float)lat)*1.0e-7f) * 0.0174532925f) * AP_INERTIALNAV_LATLON_TO_CM;
 
     // reset corrections to base position to zero
     _position_base.x = 0;
@@ -245,7 +245,7 @@ float AP_InertialNav::get_longitude_diff()
         return 0;
     }
 
-    return (_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM);
+    return (_position_base.y+_position_correction.y) / _lon_to_m_scaling;
 }
 
 // get velocity in latitude & longitude directions
