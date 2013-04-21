@@ -204,6 +204,12 @@ static void set_next_WP(const struct Location *wp)
 
 static void set_guided_WP(void)
 {
+    if (g.loiter_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+
     // copy the current location into the OldWP slot
     // ---------------------------------------
     prev_WP = current_loc;
