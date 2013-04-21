@@ -91,7 +91,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    Vector3f &get_offsets();
+    const Vector3f &get_offsets() const;
 
     /// Sets the initial location used to get declination
     ///
@@ -156,7 +156,7 @@ public:
     void set_motor_compensation(const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    Vector3f& get_motor_compensation() {
+    const Vector3f& get_motor_compensation() const {
         return _motor_compensation;
     }
 

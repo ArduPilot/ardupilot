@@ -123,8 +123,8 @@ Compass::save_offsets()
     _offset.save();
 }
 
-Vector3f &
-Compass::get_offsets()
+const Vector3f &
+Compass::get_offsets() const
 {
     return _offset;
 }
