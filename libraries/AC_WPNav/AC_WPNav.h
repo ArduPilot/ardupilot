@@ -12,7 +12,7 @@
 
 // loiter maximum velocities and accelerations
 #define MAX_LOITER_POS_VELOCITY         500         // maximum velocity that our position controller will request.  should be 1.5 ~ 2.0 times the pilot input's max velocity.  To-Do: make consistent with maximum velocity requested by pilot input to loiter
-#define MAX_LOITER_POS_ACCEL            250         // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
+#define MAX_LOITER_POS_ACCEL            500         // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
 #define MAX_LOITER_VEL_ACCEL            800         // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
@@ -120,10 +120,10 @@ public:
     void set_desired_alt(float desired_alt) { _target.z = desired_alt; }
 
     /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
-    void set_cos_sin_yaw(float cos_yaw, float sin_yaw, float cos_roll) {
+    void set_cos_sin_yaw(float cos_yaw, float sin_yaw, float cos_pitch) {
         _cos_yaw = cos_yaw;
         _sin_yaw = sin_yaw;
-        _cos_roll = cos_roll;
+        _cos_pitch = cos_pitch;
     }
 
     /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
@@ -188,7 +188,7 @@ protected:
     uint32_t	_wpnav_last_update;     // time of last update_wpnav call
     float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
-    float       _cos_roll;
+    float       _cos_pitch;
 
     // output from controller
     int32_t     _desired_roll;          // fed to stabilize controllers at 50hz

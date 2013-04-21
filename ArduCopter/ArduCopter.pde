@@ -1656,13 +1656,9 @@ void update_roll_pitch_mode(void)
         break;
 
     case ROLL_PITCH_AUTO:
-        // copy user input for reporting purposes
-        control_roll  = g.rc_1.control_in;
-        control_pitch = g.rc_2.control_in;
-
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180_cd(wp_nav.get_desired_roll()  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180_cd(wp_nav.get_desired_pitch() - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll = wp_nav.get_desired_roll();
+        nav_pitch = wp_nav.get_desired_pitch();
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1704,8 +1700,8 @@ void update_roll_pitch_mode(void)
         wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll    += constrain_int32(wrap_180_cd(wp_nav.get_desired_roll()  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
-        nav_pitch   += constrain_int32(wrap_180_cd(wp_nav.get_desired_pitch() - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+        nav_roll = wp_nav.get_desired_roll();
+        nav_pitch = wp_nav.get_desired_pitch();
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
@@ -1987,7 +1983,7 @@ static void update_trig(void){
     sin_roll        = temp.c.y / cos_pitch_x;
 
     // update wp_nav controller with trig values
-    wp_nav.set_cos_sin_yaw(cos_yaw, sin_yaw, cos_roll_x);
+    wp_nav.set_cos_sin_yaw(cos_yaw, sin_yaw, cos_pitch_x);
 
     //flat:
     // 0 ° = cos_yaw:  1.00, sin_yaw:  0.00,
