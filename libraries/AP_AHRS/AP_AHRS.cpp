@@ -88,14 +88,14 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 };
 
 // get pitch rate in earth frame, in radians/s
-float AP_AHRS::get_pitch_rate_earth(void) 
+float AP_AHRS::get_pitch_rate_earth(void) const
 {
 	Vector3f omega = get_gyro();
 	return cosf(roll) * omega.y - sinf(roll) * omega.z;
 }
 
 // get roll rate in earth frame, in radians/s
-float AP_AHRS::get_roll_rate_earth(void)  {
+float AP_AHRS::get_roll_rate_earth(void) const {
 	Vector3f omega = get_gyro();
 	return omega.x + tanf(pitch)*(omega.y*sinf(roll) + omega.z*cosf(roll));
 }

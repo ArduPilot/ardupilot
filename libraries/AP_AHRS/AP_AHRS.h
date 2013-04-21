@@ -60,12 +60,12 @@ public:
         _airspeed = airspeed;
     }
 
-    AP_InertialSensor* get_ins() {
+    AP_InertialSensor* get_ins() const {
 	    return _ins;
     }
 
     // accelerometer values in the earth frame in m/s/s
-    Vector3f        get_accel_ef(void) { return _accel_ef; }
+    const Vector3f &get_accel_ef(void) const { return _accel_ef; }
 
     // Methods
     virtual void update(void) = 0;
@@ -81,14 +81,14 @@ public:
     int32_t yaw_sensor;
 
     // roll and pitch rates in earth frame, in radians/s
-    float get_pitch_rate_earth(void);
-    float get_roll_rate_earth(void);
+    float get_pitch_rate_earth(void) const;
+    float get_roll_rate_earth(void) const;
 
     // return a smoothed and corrected gyro vector
     virtual const Vector3f get_gyro(void) const = 0;
 
     // return the current estimate of the gyro drift
-    virtual Vector3f get_gyro_drift(void) = 0;
+    virtual const Vector3f &get_gyro_drift(void) const = 0;
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset(bool recover_eulers=false) = 0;
@@ -109,7 +109,7 @@ public:
 
     // return a DCM rotation matrix representing our current
     // attitude
-    virtual const Matrix3f get_dcm_matrix(void) const = 0;
+    virtual const Matrix3f &get_dcm_matrix(void) const = 0;
 
     // get our current position, either from GPS or via
     // dead-reckoning. Return true if a position is available,
@@ -137,13 +137,13 @@ public:
     Vector2f groundspeed_vector(void);
 
     // return true if we will use compass for yaw
-    virtual bool use_compass(void) { return _compass && _compass->use_for_yaw(); }
+    virtual bool use_compass(void) const { return _compass && _compass->use_for_yaw(); }
 
     // correct a bearing in centi-degrees for wind
     void wind_correct_bearing(int32_t &nav_bearing_cd);
 
     // return true if yaw has been initialised
-    bool yaw_initialised(void) {
+    bool yaw_initialised(void) const {
         return _have_initial_yaw;
     }
 
@@ -153,7 +153,7 @@ public:
     }
 
     // get trim
-    Vector3f                get_trim() { return _trim; }
+    const Vector3f &get_trim() const { return _trim.get(); }
 
     // set trim
     virtual void            set_trim(Vector3f new_trim);

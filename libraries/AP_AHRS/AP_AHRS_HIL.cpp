@@ -26,4 +26,6 @@ AP_AHRS_HIL::setHil(float _roll, float _pitch, float _yaw,
     roll_sensor  = ToDeg(roll)*100;
     pitch_sensor = ToDeg(pitch)*100;
     yaw_sensor   = ToDeg(yaw)*100;
+
+    _dcm_matrix.from_euler(roll, pitch, yaw);
 }
