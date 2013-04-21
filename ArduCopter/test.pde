@@ -39,9 +39,6 @@ static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
 #endif
 
-// this is declared here to remove compiler errors
-extern void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);      // in Log.pde
-
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
 // printf_P is a version of printf that reads from flash memory
@@ -348,7 +345,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
  *       cliSerial->printf_P(PSTR("g.pi_stabilize_roll.kP: %4.4f\n"), g.pi_stabilize_roll.kP());
  *       cliSerial->printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
  *
- *       motors.auto_armed(false);
+ *       set_auto_armed(false);
  *       motors.armed(true);
  *
  *       while(1){

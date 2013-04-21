@@ -1408,7 +1408,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 gcs_send_text_fmt(PSTR("Unknown parameter index %d"), packet.param_index);
                 break;
             }
-            vp->copy_name_token(&token, param_name, AP_MAX_NAME_SIZE, true);
+            vp->copy_name_token(token, param_name, AP_MAX_NAME_SIZE, true);
             param_name[AP_MAX_NAME_SIZE] = 0;
         } else {
             strncpy(param_name, packet.param_id, AP_MAX_NAME_SIZE);
@@ -1827,6 +1827,9 @@ mission_failed:
                 mav_var_type(var_type),
                 _count_parameters(),
                 -1);     // XXX we don't actually know what its index is...
+#if LOGGING_ENABLED == ENABLED
+            DataFlash.Log_Write_Parameter(key, vp->cast_to_float(var_type));
+#endif
         }
 
         break;
@@ -2039,7 +2042,7 @@ GCS_MAVLINK::queued_param_send()
         value = vp->cast_to_float(_queued_parameter_type);
 
         char param_name[AP_MAX_NAME_SIZE];
-        vp->copy_name_token(&_queued_parameter_token, param_name, sizeof(param_name), true);
+        vp->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
         mavlink_msg_param_value_send(
             chan,

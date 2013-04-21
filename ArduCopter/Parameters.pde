@@ -77,6 +77,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(sonar_type,     "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
 
+    // @Param: SONAR_GAIN
+    // @DisplayName: Sonar gain
+    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
+    // @Range: 0.01 0.5
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(sonar_gain,     "SONAR_GAIN",           SONAR_GAIN_DEFAULT),
+
     // @Param: BATT_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
@@ -182,12 +190,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_accel_enabled,  "THR_ACC_ENABLE",   1),
 
-    // @Param: YAW_OVR_BEHAVE
-    // @DisplayName: Yaw override behaviour
-    // @Description: Controls when autopilot takes back normal control of yaw after pilot overrides
-    // @Values: 0:At Next WP, 1:On Mission Restart
+    // @Param: WP_YAW_BEHAVIOR
+    // @DisplayName: Yaw behaviour during missions
+    // @Description: Determines how the autopilot controls the yaw during missions and RTL
+    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL
     // @User: Advanced
-    GSCALAR(yaw_override_behaviour,  "YAW_OVR_BEHAVE",   YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT),
+    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
     // @Param: WP_TOTAL
     // @DisplayName: Waypoint Total
@@ -210,6 +218,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(circle_radius,  "CIRCLE_RADIUS",    CIRCLE_RADIUS),
 
+    // @Param: CIRCLE_RATE
+    // @DisplayName: Circle rate
+    // @Description: Circle mode's turn rate in degrees / second.  Positive to turn clockwise, negative for counter clockwise
+    // @Units: Degrees / second
+    // @Range: -90 90
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(circle_rate,  "CIRCLE_RATE",        CIRCLE_RATE),
+
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
     // @Description: Time (in milliseconds) to loiter above home before begining final descent
@@ -227,24 +244,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Standard
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
-
-    // @Param: AUTO_VELZ_MIN
-    // @DisplayName: Autopilot's min vertical speed (max descent) in cm/s
-    // @Description: The minimum vertical velocity (i.e. descent speed) the autopilot may request in cm/s
-    // @Units: Centimeters/Second
-    // @Range: -500 -50
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(auto_velocity_z_min,     "AUTO_VELZ_MIN",   AUTO_VELZ_MIN),
-
-    // @Param: AUTO_VELZ_MAX
-    // @DisplayName: Auto pilot's max vertical speed in cm/s
-    // @Description: The maximum vertical velocity the autopilot may request in cm/s
-    // @Units: Centimeters/Second
-    // @Range: 50 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(auto_velocity_z_max,     "AUTO_VELZ_MAX",   AUTO_VELZ_MAX),
 
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
@@ -368,7 +367,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,8:CH6_TOP_BOTTOM_RATIO,9:CH6_RELAY,10:CH6_WP_SPEED,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD,38:CH6_DECLINATION
+    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,8:CH6_TOP_BOTTOM_RATIO,9:CH6_RELAY,10:CH6_WP_SPEED,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD,38:CH6_DECLINATION,39:CH6_CIRCLE_RATE
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -973,6 +972,11 @@ static void load_parameters(void)
     }
 #endif
 
+    // setup different Compass learn setting for ArduCopter than the default
+    // but allow users to override in their config
+    if (!compass._learn.load()) {
+        compass._learn.set_and_save(0);
+    }
 
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {

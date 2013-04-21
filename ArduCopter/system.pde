@@ -196,7 +196,7 @@ static void init_ardupilot()
         gcs0.reset_cli_timeout();
     }
     if (g.log_bitmask != 0) {
-        DataFlash.start_new_log();
+		start_logging();
     }
 #endif
 
@@ -385,11 +385,6 @@ static void set_mode(uint8_t mode)
     control_mode 	= mode;
     control_mode    = constrain(control_mode, 0, NUM_MODES - 1);
 
-    // used to stop fly_aways
-    // set to false if we have low throttle
-    motors.auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
-    set_auto_armed(g.rc_3.control_in > 0 || ap.failsafe_radio);
-
     // if we change modes, we must clear landed flag
     set_land_complete(false);
 
@@ -434,7 +429,7 @@ static void set_mode(uint8_t mode)
     case AUTO:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        set_yaw_mode(AUTO_YAW);
+        set_yaw_mode(YAW_HOLD);     // yaw mode will be set by mission command
         set_roll_pitch_mode(AUTO_RP);
         set_throttle_mode(AUTO_THR);
         // we do not set nav mode for auto because it will be overwritten when first command runs
@@ -473,7 +468,7 @@ static void set_mode(uint8_t mode)
     case GUIDED:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        set_yaw_mode(GUIDED_YAW);
+        set_yaw_mode(get_wp_yaw_mode(false));
         set_roll_pitch_mode(GUIDED_RP);
         set_throttle_mode(GUIDED_THR);
         set_nav_mode(GUIDED_NAV);
@@ -553,6 +548,29 @@ init_simple_bearing()
     }
 }
 
+// update_auto_armed - update status of auto_armed flag
+static void update_auto_armed()
+{
+    // disarm checks
+    if(ap.auto_armed){
+        // if motors are disarmed, auto_armed should also be false
+        if(!motors.armed()) {
+            set_auto_armed(false);
+            return;
+        }
+        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
+        if(control_mode <= ACRO && g.rc_3.control_in == 0 && !ap.failsafe_radio) {
+            set_auto_armed(false);
+        }
+    }else{
+        // arm checks
+        // if motors are armed and throttle is above zero auto_armed should be true
+        if(motors.armed() && g.rc_3.control_in != 0) {
+            set_auto_armed(true);
+        }
+    }
+}
+
 /*
  *  map from a 8 bit EEPROM baud rate to a real baud rate
  */
@@ -620,50 +638,50 @@ static void reboot_apm(void) {
 // print_flight_mode - prints flight mode to serial port.
 //
 static void
-print_flight_mode(uint8_t mode)
+print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case STABILIZE:
-        cliSerial->print_P(PSTR("STABILIZE"));
+        port->print_P(PSTR("STABILIZE"));
         break;
     case ACRO:
-        cliSerial->print_P(PSTR("ACRO"));
+        port->print_P(PSTR("ACRO"));
         break;
     case ALT_HOLD:
-        cliSerial->print_P(PSTR("ALT_HOLD"));
+        port->print_P(PSTR("ALT_HOLD"));
         break;
     case AUTO:
-        cliSerial->print_P(PSTR("AUTO"));
+        port->print_P(PSTR("AUTO"));
         break;
     case GUIDED:
-        cliSerial->print_P(PSTR("GUIDED"));
+        port->print_P(PSTR("GUIDED"));
         break;
     case LOITER:
-        cliSerial->print_P(PSTR("LOITER"));
+        port->print_P(PSTR("LOITER"));
         break;
     case RTL:
-        cliSerial->print_P(PSTR("RTL"));
+        port->print_P(PSTR("RTL"));
         break;
     case CIRCLE:
-        cliSerial->print_P(PSTR("CIRCLE"));
+        port->print_P(PSTR("CIRCLE"));
         break;
     case POSITION:
-        cliSerial->print_P(PSTR("POSITION"));
+        port->print_P(PSTR("POSITION"));
         break;
     case LAND:
-        cliSerial->print_P(PSTR("LAND"));
+        port->print_P(PSTR("LAND"));
         break;
     case OF_LOITER:
-        cliSerial->print_P(PSTR("OF_LOITER"));
+        port->print_P(PSTR("OF_LOITER"));
         break;
     case TOY_M:
-        cliSerial->print_P(PSTR("TOY_M"));
+        port->print_P(PSTR("TOY_M"));
         break;
     case TOY_A:
-        cliSerial->print_P(PSTR("TOY_A"));
+        port->print_P(PSTR("TOY_A"));
         break;
     default:
-        cliSerial->print_P(PSTR("---"));
+        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
 }

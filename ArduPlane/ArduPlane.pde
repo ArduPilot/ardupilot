@@ -109,20 +109,25 @@ static Parameters g;
 // prototypes
 static void update_events(void);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
+#if LOGGING_ENABLED == ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 DataFlash_SITL DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static DataFlash_File DataFlash("/fs/microsd/APM/logs");
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -820,6 +825,9 @@ static void medium_loop()
         if (g.compass_enabled && compass.read()) {
             ahrs.set_compass(&compass);
             compass.null_offsets();
+            if (g.log_bitmask & MASK_LOG_COMPASS) {
+                Log_Write_Compass();
+            }
         } else {
             ahrs.set_compass(NULL);
         }

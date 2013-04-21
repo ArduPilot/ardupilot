@@ -206,13 +206,15 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 
 		if (oldSwitchPosition != readSwitch()){
 			cliSerial->printf_P(PSTR("CONTROL MODE CHANGED: "));
-            print_mode(readSwitch());
+            print_mode(cliSerial, readSwitch());
+            cliSerial->println();
 			fail_test++;
 		}
 
 		if (g.fs_throttle_enabled && g.channel_throttle.get_failsafe()){
 			cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.channel_throttle.radio_in);
-            print_mode(readSwitch());
+            print_mode(cliSerial, readSwitch());
+            cliSerial->println();
 			fail_test++;
 		}
 

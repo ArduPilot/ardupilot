@@ -37,6 +37,10 @@ static void show_sizes(void)
 	hal.console->printf("long long : %d\n", sizeof(long long));
 	hal.console->printf("bool      : %d\n", sizeof(bool));
 	hal.console->printf("void*     : %d\n", sizeof(void *));
+
+	hal.console->printf("printing NaN: %f\n", sqrt(-1.0f));
+	hal.console->printf("printing +Inf: %f\n", 1.0f/0.0f);
+	hal.console->printf("printing -Inf: %f\n", -1.0f/0.0f);
 }
 
 #define TENTIMES(x) do { x; x; x; x; x; x; x; x; x; x; } while (0)

@@ -67,7 +67,7 @@ public:
     ///
     /// @returns			Current GPS status
     ///
-    GPS_Status          status(void) {
+    GPS_Status          status(void) const {
         return _status;
     }
 
@@ -124,14 +124,6 @@ public:
     // HIL support
     virtual void setHIL(uint32_t time, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
-
-    /// Time in milliseconds after which we will assume the GPS is no longer
-    /// sending us updates and attempt a re-init.
-    ///
-    /// 1200ms allows a small amount of slack over the worst-case 1Hz update
-    /// rate.
-    ///
-    uint32_t idleTimeout;
 
     // components of velocity in 2D, in m/s
     float velocity_north(void) {

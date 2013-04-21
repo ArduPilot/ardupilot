@@ -168,7 +168,7 @@ static void init_ardupilot()
         gcs0.reset_cli_timeout();
     }
     if (g.log_bitmask != 0) {
-        DataFlash.start_new_log();
+        start_logging();
     }
 #endif
 
@@ -613,38 +613,38 @@ static void reboot_apm(void)
 
 
 static void
-print_flight_mode(uint8_t mode)
+print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        cliSerial->println_P(PSTR("Manual"));
+        port->print_P(PSTR("Manual"));
         break;
     case CIRCLE:
-        cliSerial->println_P(PSTR("Circle"));
+        port->print_P(PSTR("Circle"));
         break;
     case STABILIZE:
-        cliSerial->println_P(PSTR("Stabilize"));
+        port->print_P(PSTR("Stabilize"));
         break;
     case TRAINING:
-        cliSerial->println_P(PSTR("Training"));
+        port->print_P(PSTR("Training"));
         break;
     case FLY_BY_WIRE_A:
-        cliSerial->println_P(PSTR("FBW_A"));
+        port->print_P(PSTR("FBW_A"));
         break;
     case FLY_BY_WIRE_B:
-        cliSerial->println_P(PSTR("FBW_B"));
+        port->print_P(PSTR("FBW_B"));
         break;
     case AUTO:
-        cliSerial->println_P(PSTR("AUTO"));
+        port->print_P(PSTR("AUTO"));
         break;
     case RTL:
-        cliSerial->println_P(PSTR("RTL"));
+        port->print_P(PSTR("RTL"));
         break;
     case LOITER:
-        cliSerial->println_P(PSTR("Loiter"));
+        port->print_P(PSTR("Loiter"));
         break;
     default:
-        cliSerial->println_P(PSTR("---"));
+        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
 }

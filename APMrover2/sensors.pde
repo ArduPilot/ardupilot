@@ -58,48 +58,51 @@ static void read_sonars(void)
 
     if (sonar2.enabled()) {
         // we have two sonars
-        float sonar1_dist_cm = sonar.distance_cm();
-        float sonar2_dist_cm = sonar2.distance_cm();
-        if (sonar1_dist_cm <= g.sonar_trigger_cm &&
-            sonar1_dist_cm <= sonar2_dist_cm)  {
+        obstacle.sonar1_distance_cm = sonar.distance_cm();
+        obstacle.sonar2_distance_cm = sonar2.distance_cm();
+        if (obstacle.sonar1_distance_cm <= (uint16_t)g.sonar_trigger_cm &&
+            obstacle.sonar2_distance_cm <= (uint16_t)obstacle.sonar2_distance_cm)  {
             // we have an object on the left
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(PSTR("Sonar1 obstacle %.0fcm"),
-                                  sonar1_dist_cm);
+                                  obstacle.sonar1_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = g.sonar_turn_angle;
-        } else if (sonar2_dist_cm <= g.sonar_trigger_cm) {
+        } else if (obstacle.sonar2_distance_cm <= (uint16_t)g.sonar_trigger_cm) {
             // we have an object on the right
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(PSTR("Sonar2 obstacle %.0fcm"),
-                                  sonar2_dist_cm);
+                                  obstacle.sonar2_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = -g.sonar_turn_angle;
         }
     } else {
         // we have a single sonar
-        float sonar_dist_cm = sonar.distance_cm();
-        if (sonar_dist_cm <= g.sonar_trigger_cm)  {
+        obstacle.sonar1_distance_cm = sonar.distance_cm();
+        obstacle.sonar2_distance_cm = 0;
+        if (obstacle.sonar1_distance_cm <= (uint16_t)g.sonar_trigger_cm)  {
             // obstacle detected in front 
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(PSTR("Sonar obstacle %.0fcm"),
-                                  sonar_dist_cm);
+                                  obstacle.sonar1_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = g.sonar_turn_angle;
         }
     }
+
+    Log_Write_Sonar();
 
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.sonar_debounce &&

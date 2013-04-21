@@ -103,8 +103,6 @@ void AP_GPS_NMEA::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_settin
 
     // send the ublox init strings
     _port->print_P((const prog_char_t *)_ublox_init_string);
-
-    idleTimeout = 1200;
 }
 
 bool AP_GPS_NMEA::read(void)

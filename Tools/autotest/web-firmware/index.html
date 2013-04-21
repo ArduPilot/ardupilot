@@ -61,7 +61,7 @@ occur at any point of time and without warning.  As such, you should
 take the appropriate precautions to minimize danger in case of
 failure.</li>
 
-<li><b>Never use the software or hardware for manned vehicles</b>. 
+<li><b>Never use the software or hardware for manned vehicles</b>.
 The software and hardware we provide is only for use in unmanned
  vehicles.</li>
 </ul>
@@ -109,48 +109,14 @@ The meanings of the versions are
 For each vehicle type a firmware image is available for each type of
 autopilot board supported by that vehicle type
 
-<h2>Load your firmware using QUpgrade</h2>
-
-<p>QUpgrade is a standalone firmware upgrade tool. It can be used to download and flash the appropriate firmware for your autopilot.</p>
-
-<h3>Download QUpgrade</h3>
-<ul>
-<li><b>Windows: </b><a href="https://pixhawk.ethz.ch/px4/_media/downloads/qupgrade-v0.2.exe.zip">QUpgrade Installer (exe, zipped) v0.2 BETA</a></li>
-<li><b>Mac: </b><a href="https://pixhawk.ethz.ch/px4/_media/downloads/qupgrade-v0.2.dmg.zip">QUpgrade Installer (dmg, zipped) v0.2 BETA</a></li>
-<li><b>Linux: </b>Soon available, or build from <a href="https://github.com/LorenzMeier/qupgrade/">Source</a></li>
-</ul>
-
-
 <h2>Load your firmware using APM Mission Planner</h2>
 
-After downloading a firmware image from one of the links above you will
-need to load it into your board. If you are using
-the <a href="http://code.google.com/p/ardupilot-mega/wiki/MPInstallation">APM
-  Mission Planner</a> then you can load a hex file using the
-"Firmware" screen by clicking on the "Load custom firmware" button in
-the bottom right corner of the screen.
-
-<h3>Loading firmware to a PX4FMU board</h3>
-
-If you have
-a <a href="https://pixhawk.ethz.ch/px4/modules/px4fmu">PX4FMU
-board</a> then you can load firmware on Windows using the
-px4uploader.exe utility, which you will find in the "APM Planner"
-installation directory of your Windows machine. When you run that
-utility it will ask you for the location of a px4fmu.px4 file to
-load. It will then wait for your PX4 board to go into bootloader
-mode. The PX4 board enters bootloader mode when it powers on, or when
-the reset switch on the side of the PX4 is pressed. It may take a few
-seconds for Windows to recognise your PX4 board and upload to
-begin.<p>
-
-The PX4 will exit bootloader mode and start the flight firmware 5
-seconds after it boots, so if the firmware load hasn't started within
-5 seconds of booting your PX4 then you should press the PX4 reset
-switch and try again.<p>
-
-You will also need a <a href="PX4_Windows_Driver">Windows driver</a>
-for your PX4FMU board in order to connect over USB.
+<ul>
+<li>You can load the <b>stable</b> version of the firmware by selecting the appropriate icon for your airframe from the Firmware Tab.</li>
+<li>You can load the <b>beta</b>  version of the firmware by selecting the "BETA firmware" button in the bottom right corner of the screen and then the appropriate icon.</li>
+<li>You can load the <b>latest</b> version of the firmware by downloading a firmware image from one of the links and selecting the "Load custom firmware" button in
+the bottom right corner of the screen.</li>
+</ul>
 
 <h3>Loading firmware to a PX4IO board</h3>
 
@@ -171,6 +137,12 @@ directory of your microSD card every time it boots, and if it finds a
 new px4io.bin file it will attempt to load it to your PX4IO board. A
 log of the firmware load attempt is placed in the APM directory of
 your microSD card to aid with debugging.
+
+<h2>Load your firmware using QUpgrade</h2>
+
+<p>QUpgrade is a standalone firmware upgrade tool. It can be used to download and flash the appropriate firmware for your PX4 autopilot.  Instructions and downloads for Windows, Mac Os, and Linux are available here:</p>
+
+<b><a href="https://pixhawk.ethz.ch/px4/downloads">Download QUpgrade</a></b></li>
 
 <h2>Loading APM1 or APM2 firmware on Linux or MacOS</h2>
 

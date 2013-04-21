@@ -80,45 +80,12 @@ setup_show(uint8_t argc, const Menu::arg *argv)
             cliSerial->printf_P(PSTR("Parameter not found: '%s'\n"), argv[1]);
             return 0;
         }
-
-        //Print differently for different types, and include parameter type in output.
-        switch (type) {
-            case AP_PARAM_INT8:
-                cliSerial->printf_P(PSTR("INT8  %s: %d\n"), argv[1].str, (int)((AP_Int8 *)param)->get());
-                break;
-            case AP_PARAM_INT16:
-                cliSerial->printf_P(PSTR("INT16 %s: %d\n"), argv[1].str, (int)((AP_Int16 *)param)->get());
-                break;
-            case AP_PARAM_INT32:
-                cliSerial->printf_P(PSTR("INT32 %s: %ld\n"), argv[1].str, (long)((AP_Int32 *)param)->get());
-                break;
-            case AP_PARAM_FLOAT:
-                cliSerial->printf_P(PSTR("FLOAT %s: %f\n"), argv[1].str, ((AP_Float *)param)->get());
-                break;
-            default:
-                cliSerial->printf_P(PSTR("Unhandled parameter type for %s: %d.\n"), argv[1].str, type);
-                break;
-        }
-
+        AP_Param::show(param, argv[1].str, type, cliSerial);
         return 0;
     }
 #endif
 
-    // clear the area
-    print_blanks(8);
-
-    report_radio();
-    report_batt_monitor();
-    report_gains();
-    report_throttle();
-    report_flight_modes();
-    report_ins();
-    report_compass();
-
-    cliSerial->printf_P(PSTR("Raw Values\n"));
-    print_divider();
-
-    AP_Param::show_all();
+    AP_Param::show_all(cliSerial);
 
     return(0);
 }
@@ -511,54 +478,6 @@ static void report_radio()
     print_blanks(2);
 }
 
-static void report_gains()
-{
-    //print_blanks(2);
-    cliSerial->printf_P(PSTR("Gains\n"));
-    print_divider();
-
-#if APM_CONTROL == DISABLED
-	cliSerial->printf_P(PSTR("servo roll:\n"));
-	print_PID(&g.pidServoRoll);
-
-    cliSerial->printf_P(PSTR("servo pitch:\n"));
-    print_PID(&g.pidServoPitch);
-
-	cliSerial->printf_P(PSTR("servo rudder:\n"));
-	print_PID(&g.pidServoRudder);
-#endif
-
-    cliSerial->printf_P(PSTR("nav pitch airspeed:\n"));
-    print_PID(&g.pidNavPitchAirspeed);
-
-    cliSerial->printf_P(PSTR("energry throttle:\n"));
-    print_PID(&g.pidTeThrottle);
-
-    cliSerial->printf_P(PSTR("nav pitch alt:\n"));
-    print_PID(&g.pidNavPitchAltitude);
-
-    print_blanks(2);
-}
-
-static void report_throttle()
-{
-    //print_blanks(2);
-    cliSerial->printf_P(PSTR("Throttle\n"));
-    print_divider();
-
-    cliSerial->printf_P(PSTR("min: %d\n"
-                         "max: %d\n"
-                         "cruise: %d\n"
-                         "failsafe_enabled: %d\n"
-                         "failsafe_value: %d\n"),
-                    (int)g.throttle_min,
-                    (int)g.throttle_max,
-                    (int)g.throttle_cruise,
-                    (int)g.throttle_fs_enabled,
-                    (int)g.throttle_fs_value);
-    print_blanks(2);
-}
-
 static void report_ins()
 {
     //print_blanks(2);
@@ -625,16 +544,6 @@ static void report_flight_modes()
 /***************************************************************************/
 
 static void
-print_PID(PID * pid)
-{
-    cliSerial->printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"),
-                    pid->kP(),
-                    pid->kI(),
-                    pid->kD(),
-                    (long)pid->imax());
-}
-
-static void
 print_radio_values()
 {
     cliSerial->printf_P(PSTR("CH1: %d | %d | %d\n"), (int)g.channel_roll.radio_min, (int)g.channel_roll.radio_trim, (int)g.channel_roll.radio_max);
@@ -652,7 +561,8 @@ static void
 print_switch(uint8_t p, uint8_t m)
 {
     cliSerial->printf_P(PSTR("Pos %d: "),p);
-    print_flight_mode(m);
+    print_flight_mode(cliSerial, m);
+    cliSerial->println();
 }
 
 static void

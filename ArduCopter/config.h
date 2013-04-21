@@ -115,7 +115,7 @@
 // Bulk defines for TradHeli
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED 				125
-  # define RTL_YAW                  	YAW_LOOK_AT_HOME
+  # define WP_YAW_BEHAVIOR_DEFAULT      YAW_LOOK_AT_HOME
   # define RATE_INTEGRATOR_LEAK_RATE 	0.02f
   # define RATE_ROLL_D    				0
   # define RATE_PITCH_D       			0
@@ -305,12 +305,12 @@
  # define SONAR_ALT_HEALTH_MAX 3            // number of good reads that indicates a healthy sonar
 #endif
 
-#ifndef THR_SURFACE_TRACKING_P
- # define THR_SURFACE_TRACKING_P 0.2        // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
+#ifndef SONAR_GAIN_DEFAULT
+ # define SONAR_GAIN_DEFAULT 0.2            // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
 #endif
 
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
- # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max speed number of good reads that indicates a healthy sonar
+ # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max vertical speed change while surface tracking with sonar
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -579,8 +579,9 @@
 #endif
 
 // AUTO Mode
-#ifndef AUTO_YAW
- # define AUTO_YAW                  YAW_LOOK_AT_NEXT_WP
+// Note: Auto mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
+#ifndef WP_YAW_BEHAVIOR_DEFAULT
+ # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP     
 #endif
 
 #ifndef AUTO_RP
@@ -608,11 +609,12 @@
  # define CIRCLE_NAV           	    NAV_CIRCLE
 #endif
 
-// Guided Mode
-#ifndef GUIDED_YAW
- # define GUIDED_YAW                YAW_LOOK_AT_NEXT_WP
+#ifndef CIRCLE_RATE
+ # define CIRCLE_RATE               5.0f        // degrees per second turn rate
 #endif
 
+// Guided Mode
+// Note: Guided mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef GUIDED_RP
  # define GUIDED_RP                 ROLL_PITCH_AUTO
 #endif
@@ -661,10 +663,7 @@
 
 
 // RTL Mode
-#ifndef RTL_YAW
- # define RTL_YAW                   YAW_LOOK_AT_NEXT_WP
-#endif
-
+// Note: RTL Yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef RTL_RP
  # define RTL_RP                    ROLL_PITCH_AUTO
 #endif
@@ -887,28 +886,15 @@
  # define LOITER_RATE_I          	0.5f
 #endif
 #ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.25f
+ # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX       	30                     // degrees
+ # define LOITER_RATE_IMAX       	4               // maximum acceleration from I term build-up in m/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// WP Navigation control gains
+// Autopilot rotate rate limits
 //
-#ifndef NAV_P
- # define NAV_P                     2.4f                    //
-#endif
-#ifndef NAV_I
- # define NAV_I                     0.17f           // Wind control
-#endif
-#ifndef NAV_D
- # define NAV_D                     0.00f           // .95
-#endif
-#ifndef NAV_IMAX
- # define NAV_IMAX                  18                     // degrees
-#endif
-
 #ifndef AUTO_SLEW_RATE
  # define AUTO_SLEW_RATE         	45                     // degrees/sec
 #endif
@@ -916,16 +902,6 @@
 #ifndef AUTO_YAW_SLEW_RATE
  # define AUTO_YAW_SLEW_RATE        60                     // degrees/sec
 #endif
-
-
-#ifndef WAYPOINT_SPEED_MAX
- # define WAYPOINT_SPEED_MAX        500                    // 6m/s error = 13mph
-#endif
-
-#ifndef WAYPOINT_SPEED_MIN
- # define WAYPOINT_SPEED_MIN        150                    // 1m/s
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -957,20 +933,11 @@
  # define THROTTLE_I            0.0f
 #endif
 #ifndef THROTTLE_D
- # define THROTTLE_D            0.2f
+ # define THROTTLE_D            0.0f
 #endif
 
 #ifndef THROTTLE_IMAX
  # define THROTTLE_IMAX         300
-#endif
-
-
-// default minimum and maximum vertical velocity the autopilot may request
-#ifndef AUTO_VELZ_MIN
- # define AUTO_VELZ_MIN -125
-#endif
-#ifndef AUTO_VELZ_MAX
- # define AUTO_VELZ_MAX 125
 #endif
 
 // default maximum vertical velocity the pilot may request
@@ -1002,19 +969,6 @@
  # define THROTTLE_ACCEL_IMAX 500
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// DEBUGGING
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// DEBUG_LEVEL
-//
-#ifndef DEBUG_LEVEL
- # define DEBUG_LEVEL SEVERITY_LOW
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
@@ -1053,7 +1007,7 @@
 #endif
 // current
 #ifndef LOG_CURRENT
- # define LOG_CURRENT                   DISABLED
+ # define LOG_CURRENT                   ENABLED
 #endif
 // quad motor PWMs
 #ifndef LOG_MOTORS
@@ -1096,27 +1050,16 @@
     LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
 
-// if we are using fast, Disable Medium
-//#if LOG_ATTITUDE_FAST == ENABLED
-//	#undef LOG_ATTITUDE_MED
-//	#define LOG_ATTITUDE_MED        DISABLED
-//#endif
-
 //////////////////////////////////////////////////////////////////////////////
-// Navigation defaults
+// Circle navigation defaults
 //
 #ifndef CIRCLE_RADIUS
  # define CIRCLE_RADIUS 10              // meters for circle mode
 #endif
 
-#ifndef USE_CURRENT_ALT
- # define USE_CURRENT_ALT FALSE
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // AP_Limits Defaults
 //
-
 
 // Enable/disable AP_Limits
 #ifndef AP_LIMITS

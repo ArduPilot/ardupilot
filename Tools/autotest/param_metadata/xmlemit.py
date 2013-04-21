@@ -36,12 +36,14 @@ class XmlEmit(Emit):
         for param in g.params:
             # Begin our parameter node
             if hasattr(param, 'DisplayName'):   
-                t += '<param humanName=%s name=%s ' % (quoteattr(param.DisplayName),quoteattr(param.name)) # i.e. ArduPlane (ArduPlane:FOOPARM)
+                t += '<param humanName=%s name=%s' % (quoteattr(param.DisplayName),quoteattr(param.name)) # i.e. ArduPlane (ArduPlane:FOOPARM)
             else:
-                t += '<param name=%s ' % quoteattr(param.name)
+                t += '<param name=%s' % quoteattr(param.name)
                     
             if hasattr(param, 'Description'):   
-                t += 'documentation=%s' % quoteattr(param.Description) # i.w. parameter docs
+                t += ' documentation=%s' % quoteattr(param.Description) # i.e. parameter docs
+            if hasattr(param, 'User'):
+                t += ' user=%s' % quoteattr(param.User) # i.e. Standard or Advanced
             
             t += ">\n"
             

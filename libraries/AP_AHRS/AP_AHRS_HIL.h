@@ -8,11 +8,11 @@ public:
     AP_AHRS_HIL(AP_InertialSensor *ins, GPS *&gps) : AP_AHRS(ins, gps) {}
 
     // Accessors
-    Vector3f get_gyro(void) {
+    const Vector3f get_gyro(void) const {
         return _omega;
     }
 
-    Matrix3f get_dcm_matrix(void) {
+    const Matrix3f get_dcm_matrix(void) const {
         Matrix3f m;
         m.from_euler(roll, pitch, yaw);
         return m;

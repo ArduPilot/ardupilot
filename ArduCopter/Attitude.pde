@@ -1171,7 +1171,7 @@ get_throttle_land()
 {
     // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
     if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-        get_throttle_althold_with_slew(LAND_START_ALT, g.auto_velocity_z_min, -abs(g.land_speed));
+        get_throttle_althold_with_slew(LAND_START_ALT, -wp_nav.get_descent_velocity(), -abs(g.land_speed));
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
@@ -1215,7 +1215,7 @@ get_throttle_surface_tracking(int16_t target_rate)
     target_sonar_alt += target_rate * 0.02f;
 
     distance_error = (target_sonar_alt-sonar_alt);
-    sonar_induced_slew_rate = constrain(fabs(THR_SURFACE_TRACKING_P * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
+    sonar_induced_slew_rate = constrain(fabsf(g.sonar_gain * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition

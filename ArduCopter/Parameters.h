@@ -78,9 +78,11 @@ public:
         k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,
-        k_param_yaw_override_behaviour,
+        k_param_wp_yaw_behavior,
         k_param_acro_trainer_enabled,
-        k_param_pilot_velocity_z_max,   // 28
+        k_param_pilot_velocity_z_max,
+        k_param_circle_rate,
+        k_param_sonar_gain,             // 30
 
         // 65: AP_Limits Library
         k_param_limits = 65,
@@ -215,8 +217,8 @@ public:
         k_param_circle_radius,
         k_param_waypoint_speed_max,  // remove
         k_param_land_speed,
-        k_param_auto_velocity_z_min,
-        k_param_auto_velocity_z_max, // 219
+        k_param_auto_velocity_z_min, // remove
+        k_param_auto_velocity_z_max, // remove - 219
 
         //
         // 220: PI/D Controllers
@@ -261,6 +263,7 @@ public:
     AP_Int8         sonar_type;       // 0 = XL, 1 = LV,
                                       // 2 = XLL (XL with 10m range)
                                       // 3 = HRLV
+    AP_Float        sonar_gain;
     AP_Int8         battery_monitoring;         // 0=disabled, 3=voltage only,
                                                 // 4=voltage and current
     AP_Float        volt_div_ratio;
@@ -282,17 +285,16 @@ public:
     AP_Int8         battery_curr_pin;
     AP_Int8         rssi_pin;
     AP_Int8         throttle_accel_enabled;      // enable/disable accel based throttle controller
-    AP_Int8         yaw_override_behaviour;     // controls when autopilot takes back normal control of yaw after pilot overrides
+    AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
 
     // Waypoints
     //
     AP_Int8         command_total;
     AP_Int8         command_index;
     AP_Int16        circle_radius;
+    AP_Float        circle_rate;                // Circle mode's turn rate in deg/s.  positive to rotate clockwise, negative for counter clockwise
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
-    AP_Int16        auto_velocity_z_min;         // minimum vertical velocity (i.e. maximum descent) the autopilot may request
-    AP_Int16        auto_velocity_z_max;         // maximum vertical velocity the autopilot may request
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
 
 

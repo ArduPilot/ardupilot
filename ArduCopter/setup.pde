@@ -96,26 +96,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
             cliSerial->printf_P(PSTR("Parameter not found: '%s'\n"), argv[1]);
             return 0;
         }
-
-        //Print differently for different types, and include parameter type in output.
-        switch (type) {
-            case AP_PARAM_INT8:
-                cliSerial->printf_P(PSTR("INT8  %s: %d\n"), argv[1].str, (int)((AP_Int8 *)param)->get());
-                break;
-            case AP_PARAM_INT16:
-                cliSerial->printf_P(PSTR("INT16 %s: %d\n"), argv[1].str, (int)((AP_Int16 *)param)->get());
-                break;
-            case AP_PARAM_INT32:
-                cliSerial->printf_P(PSTR("INT32 %s: %ld\n"), argv[1].str, (long)((AP_Int32 *)param)->get());
-                break;
-            case AP_PARAM_FLOAT:
-                cliSerial->printf_P(PSTR("FLOAT %s: %f\n"), argv[1].str, ((AP_Float *)param)->get());
-                break;
-            default:
-                cliSerial->printf_P(PSTR("Unhandled parameter type for %s: %d.\n"), argv[1].str, type);
-                break;
-        }
-
+        AP_Param::show(param, argv[1].str, type, cliSerial);
         return 0;
     }
 
@@ -137,7 +118,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
     report_gyro();
  #endif
 
-    AP_Param::show_all();
+    AP_Param::show_all(cliSerial);
 
     return(0);
 }
@@ -1268,7 +1249,7 @@ static void
 print_switch(uint8_t p, uint8_t m, bool b)
 {
     cliSerial->printf_P(PSTR("Pos %d:\t"),p);
-    print_flight_mode(m);
+    print_flight_mode(cliSerial, m);
     cliSerial->printf_P(PSTR(",\t\tSimple: "));
     if(b)
         cliSerial->printf_P(PSTR("ON\n"));

@@ -16,9 +16,15 @@ extern const AP_HAL::HAL& hal;
 AP_HAL::TimedProc SITLScheduler::_failsafe = NULL;
 volatile bool SITLScheduler::_timer_suspended = false;
 volatile bool SITLScheduler::_timer_event_missed = false;
+
 AP_HAL::TimedProc SITLScheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t SITLScheduler::_num_timer_procs = 0;
 bool SITLScheduler::_in_timer_proc = false;
+
+AP_HAL::TimedProc SITLScheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+uint8_t SITLScheduler::_num_io_procs = 0;
+bool SITLScheduler::_in_io_proc = false;
+
 struct timeval SITLScheduler::_sketch_start_time;
 
 SITLScheduler::SITLScheduler()
@@ -100,6 +106,21 @@ void SITLScheduler::register_timer_process(AP_HAL::TimedProc proc)
 
 }
 
+void SITLScheduler::register_io_process(AP_HAL::TimedProc proc) 
+{
+    for (uint8_t i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i] == proc) {
+            return;
+        }
+    }
+
+    if (_num_io_procs < SITL_SCHEDULER_MAX_TIMER_PROCS) {
+        _io_proc[_num_io_procs] = proc;
+        _num_io_procs++;
+    }
+
+}
+
 void SITLScheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) 
 {
     _failsafe = failsafe;
@@ -118,7 +139,7 @@ void SITLScheduler::resume_timer_procs() {
 }
 
 bool SITLScheduler::in_timerprocess() {
-    return _in_timer_proc;
+    return _in_timer_proc || _in_io_proc;
 }
 
 bool SITLScheduler::system_initializing() {
@@ -183,6 +204,28 @@ void SITLScheduler::_run_timer_procs(bool called_from_isr)
     }
 
     _in_timer_proc = false;
+}
+
+void SITLScheduler::_run_io_procs(bool called_from_isr) 
+{
+    uint32_t tnow = _micros();
+    if (_in_io_proc) {
+        return;
+    }
+    _in_io_proc = true;
+
+    if (!_timer_suspended) {
+        // now call the IO based drivers
+        for (int i = 0; i < _num_io_procs; i++) {
+            if (_io_proc[i] != NULL) {
+                _io_proc[i](tnow);
+            }
+        }
+    } else if (called_from_isr) {
+        _timer_event_missed = true;
+    }
+
+    _in_io_proc = false;
 }
 
 void SITLScheduler::panic(const prog_char_t *errormsg) {

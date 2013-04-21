@@ -117,7 +117,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	cliSerial->printf_P(PSTR("Raw Values\n"));
 	print_divider();
 
-    AP_Param::show_all();
+    AP_Param::show_all(cliSerial);
 
 	return(0);
 }
@@ -634,7 +634,8 @@ static void
 print_switch(uint8_t p, uint8_t m)
 {
 	cliSerial->printf_P(PSTR("Pos %d: "),p);
-    print_mode(m);
+    print_mode(cliSerial, m);
+    cliSerial->println();
 }
 
 static void

@@ -240,7 +240,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
     int16_t bearing = nav_bearing / 100;
     mavlink_msg_nav_controller_output_send(
         chan,
-        nav_steer / 1.0e2,
+        nav_steer_cd / 1.0e2,
         0,
         bearing,
         target_bearing / 100,
@@ -400,13 +400,13 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_yaw());
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     sitl.simstate_send(chan);
-}
 #endif
+}
 
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {
@@ -600,10 +600,8 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_SIMSTATE:
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
-#endif
         break;
 
     case MSG_HWSTATUS:
@@ -1274,7 +1272,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 gcs_send_text_fmt(PSTR("Unknown parameter index %d"), packet.param_index);
                 break;
             }
-            vp->copy_name_token(&token, param_name, AP_MAX_NAME_SIZE, true);
+            vp->copy_name_token(token, param_name, AP_MAX_NAME_SIZE, true);
             param_name[AP_MAX_NAME_SIZE] = 0;
         } else {
             strncpy(param_name, packet.param_id, AP_MAX_NAME_SIZE);
@@ -1625,6 +1623,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     mav_var_type(var_type),
                     _count_parameters(),
                     -1); // XXX we don't actually know what its index is...
+                DataFlash.Log_Write_Parameter(key, vp->cast_to_float(var_type));
             }
 
             break;
@@ -1817,7 +1816,7 @@ GCS_MAVLINK::queued_param_send()
     value = vp->cast_to_float(_queued_parameter_type);
 
     char param_name[AP_MAX_NAME_SIZE];
-    vp->copy_name_token(&_queued_parameter_token, param_name, sizeof(param_name), true);
+    vp->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
     mavlink_msg_param_value_send(
         chan,
@@ -1881,9 +1880,7 @@ static void mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
     }
-#if USB_MUX_PIN > 0
     check_usb_mux();
-#endif
 
     in_mavlink_delay = false;
 }

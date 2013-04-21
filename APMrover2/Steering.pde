@@ -91,7 +91,7 @@ static void calc_throttle(float target_speed)
       reduce target speed in proportion to turning rate, up to the
       SPEED_TURN_GAIN percentage.
     */
-    float steer_rate = fabsf((nav_steer/nav_gain_scaler) / (float)SERVO_MAX);
+    float steer_rate = fabsf((nav_steer_cd/nav_gain_scaler) / (float)SERVO_MAX);
     steer_rate = constrain(steer_rate, 0.0, 1.0);
     float reduction = 1.0 - steer_rate*(100 - g.speed_turn_gain)*0.01;
     
@@ -136,12 +136,12 @@ static void calc_nav_steer()
 
     // negative error = left turn
 	// positive error = right turn
-	nav_steer = g.pidNavSteer.get_pid_4500(bearing_error_cd, nav_gain_scaler);
+	nav_steer_cd = g.pidNavSteer.get_pid_4500(bearing_error_cd, nav_gain_scaler);
 
     // avoid obstacles, if any
-    nav_steer += obstacle.turn_angle*100;
+    nav_steer_cd += obstacle.turn_angle*100;
 
-    g.channel_steer.servo_out = nav_steer;
+    g.channel_steer.servo_out = nav_steer_cd;
 }
 
 /*****************************************

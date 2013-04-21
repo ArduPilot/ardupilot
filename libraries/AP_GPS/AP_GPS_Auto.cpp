@@ -28,7 +28,6 @@ void
 AP_GPS_Auto::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
 	_port = s;
-    idleTimeout = 1200;
     _nav_setting = nav_setting;
 }
 

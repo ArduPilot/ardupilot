@@ -176,9 +176,6 @@ static void init_disarm_motors()
     motors.armed(false);
     set_armed(false);
 
-    motors.auto_armed(false);
-    set_auto_armed(false);
-
     compass.save_offsets();
 
     g.throttle_cruise.save();

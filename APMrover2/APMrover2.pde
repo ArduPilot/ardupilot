@@ -120,17 +120,21 @@ static Parameters      g;
 // prototypes
 static void update_events(void);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+static void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-DataFlash_APM1 DataFlash;
+static DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-DataFlash_APM2 DataFlash;
+static DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-DataFlash_SITL DataFlash;
+//static DataFlash_File DataFlash("/tmp/APMlogs");
+static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static DataFlash_File DataFlash("/fs/microsd/APM/logs");
+#else
 DataFlash_Empty DataFlash;
 #endif
 
@@ -374,6 +378,8 @@ static struct {
     // have we detected an obstacle?
     uint8_t detected_count;
     float turn_angle;
+    uint16_t sonar1_distance_cm;
+    uint16_t sonar2_distance_cm;
 
     // time when we last detected an obstacle, in milliseconds
     uint32_t detected_time_ms;
@@ -426,7 +432,7 @@ static float	current_total1;
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
 // The instantaneous desired steering angle.  Hundredths of a degree
-static int32_t nav_steer;
+static int32_t nav_steer_cd;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
@@ -634,10 +640,10 @@ static void fast_loop()
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-			Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
+			Log_Write_Attitude();
 
 		if (g.log_bitmask & MASK_LOG_IMU)
-			Log_Write_IMU();
+			DataFlash.Log_Write_IMU(&ins);
 	#endif
 
 	// custom code/exceptions for flight modes
@@ -674,6 +680,9 @@ static void medium_loop()
                 ahrs.set_compass(&compass);
                 // Calculate heading
                 compass.null_offsets();
+                if (g.log_bitmask & MASK_LOG_COMPASS) {
+                    Log_Write_Compass();
+                }
             } else {
                 ahrs.set_compass(NULL);
             }
@@ -705,7 +714,7 @@ static void medium_loop()
 			medium_loopCounter++;
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-					Log_Write_Attitude((int)ahrs.roll_sensor, (int)ahrs.pitch_sensor, (uint16_t)ahrs.yaw_sensor);
+					Log_Write_Attitude();
 
 				if (g.log_bitmask & MASK_LOG_CTUN)
 					Log_Write_Control_Tuning();
@@ -715,7 +724,7 @@ static void medium_loop()
 				Log_Write_Nav_Tuning();
 
 			if (g.log_bitmask & MASK_LOG_GPS)
-				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
+				DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
 			break;
 
 		// This case controls the slow loop
@@ -775,10 +784,7 @@ static void slow_loop()
 
             mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
 
-#if USB_MUX_PIN > 0
             check_usb_mux();
-#endif
-
 			break;
 	}
 }

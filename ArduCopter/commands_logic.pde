@@ -245,7 +245,7 @@ static void do_takeoff()
 
     // Set wp navigation target to safe altitude above current position
     Vector3f pos = inertial_nav.get_position();
-    pos.z = command_nav_queue.alt;
+    pos.z = max(pos.z, command_nav_queue.alt);
     wp_nav.set_destination(pos);
 
     // prevent flips
@@ -278,10 +278,8 @@ static void do_nav_wp()
     // this is the delay, stored in seconds and expanded to millis
     loiter_time_max = command_nav_queue.p1;
 
-    // reset control of yaw to default
-    if( g.yaw_override_behaviour == YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT ) {
-        set_yaw_mode(AUTO_YAW);
-    }
+    // set yaw_mode depending upon contents of WP_YAW_BEHAVIOR parameter
+    set_yaw_mode(get_wp_yaw_mode(false));
 }
 
 // do_land - initiate landing procedure
@@ -482,7 +480,7 @@ static bool verify_loiter_time()
 static bool verify_circle()
 {
     // have we rotated around the center enough times?
-    return fabs(circle_desired_rotations/M_PI) > circle_desired_rotations;
+    return fabsf(circle_angle_total/(2*M_PI)) >= circle_desired_rotations;
 }
 
 // verify_RTL - handles any state changes required to implement RTL
@@ -515,9 +513,8 @@ static bool verify_RTL()
                 // advance to next rtl state
                 rtl_state = RTL_STATE_INITIAL_CLIMB;
             }else{
-                // point nose towards home
-                // To-Do: make this user configurable whether RTL points towards home or not
-                set_yaw_mode(RTL_YAW);
+                // point nose towards home (maybe)
+                set_yaw_mode(get_wp_yaw_mode(true));
 
                 // Set wp navigation target to above home
                 wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
@@ -536,8 +533,7 @@ static bool verify_RTL()
                 wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
 
                 // set yaw mode
-                // To-Do: make this user configurable whether RTL points towards home or not
-                set_yaw_mode(RTL_YAW);
+                set_yaw_mode(YAW_HOLD);
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_RETURNING_HOME;

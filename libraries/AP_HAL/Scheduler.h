@@ -18,7 +18,13 @@ public:
     virtual void     register_delay_callback(AP_HAL::Proc,
                         uint16_t min_time_ms) = 0;
 
+    // register a high priority timer task
     virtual void     register_timer_process(AP_HAL::TimedProc) = 0;
+
+    // register a low priority IO task
+    virtual void     register_io_process(AP_HAL::TimedProc) = 0;
+
+    // suspend and resume both timer and IO processes
     virtual void     suspend_timer_procs() = 0;
     virtual void     resume_timer_procs() = 0;
 

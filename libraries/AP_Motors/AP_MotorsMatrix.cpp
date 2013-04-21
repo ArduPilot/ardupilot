@@ -272,12 +272,6 @@ void AP_MotorsMatrix::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsMatrix::output_disarmed()
 {
-    if(_rc_throttle->control_in > 0) {
-        // we have pushed up the throttle
-        // remove safety for auto pilot
-        _auto_armed = true;
-    }
-
     // Send minimum values to all motors
     output_min();
 }

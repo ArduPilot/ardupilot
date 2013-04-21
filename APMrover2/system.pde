@@ -160,7 +160,7 @@ static void init_ardupilot()
 		do_erase_logs();
     }
 	if (g.log_bitmask != 0) {
-		DataFlash.start_new_log();
+		start_logging();
 	}
 #endif
 
@@ -334,7 +334,7 @@ static void set_mode(enum mode mode)
 	}
 
 	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
+		Log_Write_Mode();
 }
 
 /*
@@ -472,9 +472,9 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 }
 
 
-#if USB_MUX_PIN > 0
 static void check_usb_mux(void)
 {
+#if USB_MUX_PIN > 0
     bool usb_check = !digitalRead(USB_MUX_PIN);
     if (usb_check == usb_connected) {
         return;
@@ -487,8 +487,9 @@ static void check_usb_mux(void)
     } else {
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
     }
-}
 #endif
+}
+
 
 
 /*
@@ -510,29 +511,29 @@ uint16_t board_voltage(void)
 }
 
 static void
-print_mode(uint8_t mode)
+print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        cliSerial->println_P(PSTR("Manual"));
+        port->print_P(PSTR("Manual"));
         break;
     case HOLD:
-        cliSerial->println_P(PSTR("HOLD"));
+        port->print_P(PSTR("HOLD"));
         break;
     case LEARNING:
-        cliSerial->println_P(PSTR("Learning"));
+        port->print_P(PSTR("Learning"));
         break;
     case STEERING:
-        cliSerial->println_P(PSTR("Stearing"));
+        port->print_P(PSTR("Stearing"));
         break;
     case AUTO:
-        cliSerial->println_P(PSTR("AUTO"));
+        port->print_P(PSTR("AUTO"));
         break;
     case RTL:
-        cliSerial->println_P(PSTR("RTL"));
+        port->print_P(PSTR("RTL"));
         break;
     default:
-        cliSerial->println_P(PSTR("---"));
+        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
 }

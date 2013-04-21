@@ -250,12 +250,6 @@ void AP_MotorsHeli::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    if(_rc_throttle->control_in > 0) {
-        // we have pushed up the throttle
-        // remove safety
-        _auto_armed = true;
-    }
-
     // for helis - armed or disarmed we allow servos to move
     output_armed();
 }
