@@ -662,9 +662,9 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
         wind.z = velocitySum.z - V * fuselageDirectionSum.z;
         wind *= 0.5f;
 
-	if (wind.length() < _wind.length() + 20) {
-		_wind = _wind * 0.95f + wind * 0.05f;
-	}
+        if (wind.length() < _wind.length() + 20) {
+            _wind = _wind * 0.95f + wind * 0.05f;
+        }
 
         _last_wind_time = now;
     } else if (now - _last_wind_time > 2000 && _airspeed && _airspeed->use()) {
