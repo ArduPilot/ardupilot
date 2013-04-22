@@ -68,6 +68,12 @@ public:
                                  float& trim_pitch);
 #endif
 
+    /// calibrated - returns true if the accelerometers have been calibrated
+    ///
+    /// @note this should not be called while flying because it reads from the eeprom which can be slow
+    ///
+    bool calibrated();
+
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
