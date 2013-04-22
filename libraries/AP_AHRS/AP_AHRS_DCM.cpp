@@ -741,7 +741,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 	bool ret = false;
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();
-		ret = true;
+		return true;
 	}
 
 	// estimate it via GPS speed and wind
