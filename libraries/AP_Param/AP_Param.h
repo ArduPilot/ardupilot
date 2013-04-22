@@ -18,6 +18,8 @@
 
 #include <AP_Progmem.h>
 
+#include "../Utility/NonCopyable.hpp"
+
 #define AP_MAX_NAME_SIZE 16
 #define AP_NESTED_GROUPS_ENABLED
 
@@ -56,7 +58,7 @@ enum ap_var_type {
 ///
 /// Provides naming and lookup services for variables.
 ///
-class AP_Param
+class AP_Param : NonCopyable
 {
 public:
     // the Info and GroupInfo structures are passed by the main
@@ -372,6 +374,11 @@ public:
     ///
     AP_ParamT<T,PT>& operator= (const T &v) {
         _value = v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator= (const AP_ParamT &v) {
+        _value = v._value;
         return *this;
     }
 
