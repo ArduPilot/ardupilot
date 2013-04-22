@@ -50,7 +50,6 @@ AP_Limit_Altitude::AP_Limit_Altitude(const struct Location *current_loc) :
     _current_loc(current_loc)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    //_current_loc = current_loc;
 }
 
 bool AP_Limit_Altitude::triggered()
@@ -71,11 +70,11 @@ bool AP_Limit_Altitude::triggered()
     return _triggered;
 }
 
-AP_Int32 AP_Limit_Altitude::max_alt() {
+const AP_Int32& AP_Limit_Altitude::max_alt() {
     return _max_alt;
 }
 
-AP_Int32 AP_Limit_Altitude::min_alt() {
+const AP_Int32& AP_Limit_Altitude::min_alt() {
     return _min_alt;
 }
 

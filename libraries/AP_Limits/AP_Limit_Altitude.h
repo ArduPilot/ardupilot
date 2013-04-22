@@ -18,8 +18,8 @@ class AP_Limit_Altitude : public AP_Limit_Module {
 public:
     AP_Limit_Altitude(const struct Location *current_loc);
 
-    AP_Int32        min_alt();
-    AP_Int32        max_alt();
+    const AP_Int32&        min_alt();
+    const AP_Int32&        max_alt();
 
     bool            init();
     bool            triggered();

@@ -182,11 +182,11 @@ bool AP_Limits::check_triggered(bool only_required) {
     }
 }
 
-AP_Int8 AP_Limits::state() {
+const AP_Int8& AP_Limits::state() {
     return _state;
 }
 
-AP_Int8 AP_Limits::safetime() {
+const AP_Int8& AP_Limits::safetime() {
     return _safetime;
 }
 
@@ -195,10 +195,10 @@ void AP_Limits::set_state(int s) {
 }
 
 
-AP_Int8 AP_Limits::channel() {
+const AP_Int8& AP_Limits::channel() {
     return _channel;
 }
 
-AP_Int8 AP_Limits::recmode() {
+const AP_Int8& AP_Limits::recmode() {
     return _recmode;
 }

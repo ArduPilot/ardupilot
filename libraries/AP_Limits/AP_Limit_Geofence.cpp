@@ -135,7 +135,7 @@ bool AP_Limit_Geofence::triggered() {
 
 
 
-AP_Int8 AP_Limit_Geofence::fence_total() {
+const AP_Int8& AP_Limit_Geofence::fence_total() {
     return _fence_total;
 }
 

@@ -24,7 +24,7 @@ public:
     bool        init();
     bool        triggered();
 
-    AP_Int8        fence_total();
+    const AP_Int8&        fence_total();
     void        set_fence_point_with_index(Vector2l &point, uint8_t i);
     Vector2l        get_fence_point_with_index(uint8_t i);
     void            update_boundary();
