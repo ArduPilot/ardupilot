@@ -293,7 +293,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	cliSerial->printf_P(PSTR("%u waypoints\n"), (unsigned)g.command_total);
-	cliSerial->printf_P(PSTR("Hit radius: %f\n"), g.waypoint_radius);
+	cliSerial->printf_P(PSTR("Hit radius: %f\n"), g.waypoint_radius.get() );
 
 	for(uint8_t i = 0; i <= g.command_total; i++){
 		struct Location temp = get_cmd_with_index(i);
