@@ -44,6 +44,13 @@ float ADCSource::voltage_average(void)
 {
 	float vcc_mV = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC)->read_average();
 	float v = read_average();
+	// constrain Vcc reading so that a bad Vcc doesn't throw off
+	// the reading of other sources too badly
+	if (vcc_mV < 4000) {
+		vcc_mV = 4000;
+	} else if (vcc_mV > 6000) {
+		vcc_mV = 6000;
+	}
 	return v * vcc_mV * 9.765625e-7; // 9.765625e-7 = 1.0/(1024*1000)
 }
 
