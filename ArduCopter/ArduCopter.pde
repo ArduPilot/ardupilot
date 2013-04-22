@@ -359,12 +359,13 @@ static AP_RangeFinder_MaxsonarXL *sonar;
 //Documentation of GLobals:
 static union {
     struct {
-        uint8_t home_is_set        : 1; // 1
-        uint8_t simple_mode        : 1; // 2    // This is the state of simple mode
-        uint8_t manual_attitude    : 1; // 3
-        uint8_t manual_throttle    : 1; // 4
+        uint8_t home_is_set        : 1; // 0
+        uint8_t simple_mode        : 1; // 1    // This is the state of simple mode
+        uint8_t manual_attitude    : 1; // 2
+        uint8_t manual_throttle    : 1; // 3
 
-        uint8_t low_battery        : 1; // 5    // Used to track if the battery is low - LED output flashes when the batt is low
+        uint8_t low_battery        : 1; // 4    // Used to track if the battery is low - LED output flashes when the batt is low
+        uint8_t pre_arm_check      : 1; // 5    // true if the radio and accel calibration have been performed
         uint8_t armed              : 1; // 6
         uint8_t auto_armed         : 1; // 7    // stops auto missions from beginning until throttle is raised
 
@@ -1294,6 +1295,9 @@ static void super_slow_loop()
     // log battery info to the dataflash
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
+
+    // perform pre-arm checks
+    pre_arm_checks();
 
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
     // but only of the control mode is manual

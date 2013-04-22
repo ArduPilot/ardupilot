@@ -17,6 +17,12 @@ static void arm_motors()
         return;
     }
 
+    // ensure pre-arm checks have been successful
+    if(!ap.pre_arm_check) {
+        return;
+    }
+
+    // ensure we are in Stabilize, Acro or TOY mode
     if ((control_mode > ACRO) && ((control_mode != TOY_A) && (control_mode != TOY_M))) {
         arming_counter = 0;
         return;
@@ -166,6 +172,27 @@ static void init_arm_motors()
     failsafe_enable();
 }
 
+// perform pre-arm checks and set 
+static void pre_arm_checks()
+{
+    // exit immediately if we've already successfully performed the pre-arm check
+    if( ap.pre_arm_check ) {
+        return;
+    }
+
+    // check if radio has been calibrated
+    if(!g.rc_3.radio_min.load()) {
+        return;
+    }
+
+    // check accelerometers have been calibrated
+    if(!ins.calibrated()) {
+        return;
+    }
+
+    // if we've gotten this far then pre arm checks have completed
+    ap.pre_arm_check = true;
+}
 
 static void init_disarm_motors()
 {
