@@ -20,7 +20,7 @@ static void update_navigation()
         update_nav_mode();
 
         // update log
-        if (g.log_bitmask & MASK_LOG_NTUN && motors.armed()) {
+        if ((g.log_bitmask & MASK_LOG_NTUN) && motors.armed()) {
             Log_Write_Nav_Tuning();
         }
     }

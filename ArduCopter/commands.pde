@@ -50,7 +50,7 @@ static struct Location get_cmd_with_index(int i)
     }
 
     // Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
-    //if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && temp.options & MASK_OPTIONS_RELATIVE_ALT){
+    //if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && (temp.options & MASK_OPTIONS_RELATIVE_ALT)){
     //temp.alt += home.alt;
     //}
 

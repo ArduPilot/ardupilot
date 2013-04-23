@@ -1075,7 +1075,7 @@ static void medium_loop()
         medium_loopCounter++;
 
         // log compass information
-        if (motors.armed() && g.log_bitmask & MASK_LOG_COMPASS) {
+        if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
             Log_Write_Compass();
         }
 
@@ -1097,7 +1097,7 @@ static void medium_loop()
         // perform next command
         // --------------------
         if(control_mode == AUTO) {
-            if(ap.home_is_set && g.command_total > 1) {
+            if(ap.home_is_set && (g.command_total > 1)) {
                 update_commands();
             }
         }
