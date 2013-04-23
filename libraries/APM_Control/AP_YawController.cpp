@@ -55,20 +55,9 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
     // Get body rate vector (radians/sec)
 	Vector3f omega = _ahrs->get_gyro();
 	
-	// Apply a first order lowpass filter with a 20Hz cut-off
-	// Coefficients derived using a first order hold discretisation method
-	// Use of FOH discretisation increases high frequency noise rejection 
-	// and reduces phase loss compared to other methods
-	float rate = 0.0810026f * _last_rate_out + 0.6343426f * omega.z + 0.2846549f * _last_rate_in;
-	_last_rate_out = rate;
-	_last_rate_in = omega.z;
-	
-	// Get the accln vector (m/s^2)
-	Vector3f accel = _ins->get_accel();
-
 	// Subtract the steady turn component of rate from the measured rate
 	// to calculate the rate relative to the turn requirement in degrees/sec
-	float rate_hp_in = ToDeg(rate - rate_offset);
+	float rate_hp_in = ToDeg(omega.z - rate_offset);
 	
 	// Apply a high-pass filter to the rate to washout any steady state error
 	// due to bias errors in rate_offset
@@ -78,7 +67,10 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	_last_rate_hp_out = rate_hp_out;
 	_last_rate_hp_in = rate_hp_in;
 
-	//Calculate input to integrator
+	// Get the accln vector (m/s^2)
+	Vector3f accel = _ins->get_accel();
+
+	// Calculate input to integrator
 	float integ_in = - _K_I * (_K_A * accel.y + rate_hp_out);
 	
 	// Apply integrator, but clamp input to prevent control saturation and freeze integrator below min FBW speed
