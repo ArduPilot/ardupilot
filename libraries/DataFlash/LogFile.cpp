@@ -248,23 +248,6 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 #define PGM_UINT8(addr) pgm_read_byte((const prog_char *)addr)
 
 /*
-  print the log column names
- */
-void DataFlash_Class::_print_format_headers(uint8_t num_types, 
-                                            const struct LogStructure *structure,
-                                            AP_HAL::BetterStream *port)
-{
-    uint8_t i;
-    for (i=0; i<num_types; i++) {
-        port->printf_P(PSTR("LABL, %S, %u, %S, %S\n"),
-                       structure[i].name,
-                       (unsigned)PGM_UINT8(&structure[i].msg_type),
-                       structure[i].format,
-                       structure[i].labels);
-    }
-}
-
-/*
   read and print a log entry using the format strings from the given structure
  */
 void DataFlash_Class::_print_log_entry(uint8_t msg_type, 
@@ -386,6 +369,14 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
             ofs += sizeof(v)-1;
             break;
         }
+        case 'Z': {
+            char v[65];
+            memcpy(&v, &pkt[ofs], sizeof(v));
+            v[sizeof(v)-1] = 0;
+            port->printf_P(PSTR("%s"), v);
+            ofs += sizeof(v)-1;
+            break;
+        }
         case 'M': {
             print_mode(port, pkt[ofs]);
             ofs += 1;
@@ -418,8 +409,6 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
     if (df_BufferIdx != 0) {
         FinishWrite();
     }
-
-    _print_format_headers(num_types, structure, port);
 
     StartRead(start_page);
 
@@ -531,6 +520,8 @@ uint16_t DataFlash_Class::StartNewLog(uint8_t num_types, const struct LogStructu
     // write log formats so the log is self-describing
     for (uint8_t i=0; i<num_types; i++) {
         Log_Write_Format(&structures[i]);
+        // avoid corrupting the APM1/APM2 dataflash by writing too fast
+        hal.scheduler->delay(10);
     }
 
     // and all current parameters
@@ -548,10 +539,12 @@ void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
         type   : PGM_UINT8(&s->msg_type),
         length : PGM_UINT8(&s->msg_len),
         name   : {},
-        format : {}
+        format : {},
+        labels : {}
     };
     strncpy_P(pkt.name, s->name, sizeof(pkt.name));
     strncpy_P(pkt.format, s->format, sizeof(pkt.format));
+    strncpy_P(pkt.labels, s->labels, sizeof(pkt.labels));
     WriteBlock(&pkt, sizeof(pkt));
 }
 

@@ -319,8 +319,6 @@ void DataFlash_File::LogReadProcess(uint16_t log_num,
         ::lseek(_read_fd, start_page * DATAFLASH_PAGE_SIZE, SEEK_SET);
     }
 
-    _print_format_headers(num_types, structure, port);
-
     while (true) {
         uint8_t data;
         if (::read(_read_fd, &data, 1) != 1) {

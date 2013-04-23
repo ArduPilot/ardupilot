@@ -65,13 +65,6 @@ public:
 
 protected:
     /*
-    print column headers
-    */
-    void _print_format_headers(uint8_t num_types, 
-                               const struct LogStructure *structure,
-                               AP_HAL::BetterStream *port);
-    
-    /*
     read and print a log entry using the format strings from the given structure
     */
     void _print_log_entry(uint8_t msg_type, 
@@ -115,6 +108,7 @@ Format characters in the format string for binary log messages
   f   : float
   n   : char[4]
   N   : char[16]
+  Z   : char[64]
   c   : int16_t * 100
   C   : uint16_t * 100
   e   : int32_t * 100
@@ -141,6 +135,7 @@ struct PACKED log_Format {
     uint8_t length;
     char name[4];
     char format[16];
+    char labels[64];
 };
 
 struct PACKED log_Parameter {
@@ -170,8 +165,8 @@ struct PACKED log_IMU {
 };
 
 #define LOG_COMMON_STRUCTURES \
-    { LOG_FORMAT_MSG, sizeof(log_Parameter), \
-      "FMT", "BBnN",        "Type,Length,Name,Format" },    \
+    { LOG_FORMAT_MSG, sizeof(log_Format), \
+      "FMT", "BBnNZ",      "Type,Length,Name,Format" },    \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
