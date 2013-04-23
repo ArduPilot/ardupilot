@@ -19,28 +19,31 @@ public:
 		_ins = _ahrs->get_ins();
 	}
 
-	int32_t get_servo_out(float scaler = 1.0, bool stick_movement = false);
+	int32_t get_servo_out(float scaler = 1.0, bool stabilize = false, int16_t aspd_min = 0, int16_t aspd_max = 0);
 
 	void reset_I();
 
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	AP_Float _kp;
-	AP_Float _ki;
-	AP_Int16 _imax;
+	AP_Float _K_A;
+	AP_Float _K_I;
+	AP_Float _K_D;
+	AP_Float _K_FF;
 	uint32_t _last_t;
 	float _last_error;
+	float _last_rate_in;
+	float _last_rate_out;
+	float _last_out;
+	float _last_rate_hp_out;
+	float _last_rate_hp_in;
+	float _K_D_last;
 
 	float _integrator;
-	bool _stick_movement;
-	uint32_t _stick_movement_begin;
-	uint32_t _freeze_start_time;
 
 	AP_AHRS *_ahrs;
 	AP_InertialSensor *_ins;
 
-	static const float _fCut;
 };
 
 #endif // __AP_YAW_CONTROLLER_H__
