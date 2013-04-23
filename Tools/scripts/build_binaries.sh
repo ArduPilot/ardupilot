@@ -84,6 +84,7 @@ build_arduplane() {
 	make clean || continue
 	make $b -j4 || continue
 	copyit $TMPDIR/ArduPlane.build/ArduPlane.hex $ddir $tag
+	touch $binaries/Plane/$tag
     done
     test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
 	echo "Building ArduPlane PX4 binaries"
@@ -112,6 +113,7 @@ build_arducopter() {
 	    make clean || continue
 	    make "$b-$f" -j4 || exit 1
 	    copyit $TMPDIR/ArduCopter.build/ArduCopter.hex "$ddir" "$tag"
+	    touch $binaries/Copter/$tag
 	done
     done
     test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
@@ -141,6 +143,7 @@ build_rover() {
 	make clean || continue
 	make $b -j4 || continue
 	copyit $TMPDIR/APMrover2.build/APMrover2.hex $ddir $tag
+	touch $binaries/Rover/$tag
     done
     test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
 	echo "Building APMrover2 PX4 binaries"
