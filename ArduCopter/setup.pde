@@ -334,7 +334,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
             mode = constrain_int16(mode, 0, NUM_MODES-1);
 
             // update the user
-            print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
+            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
 
             // Remember switch position
             _oldSwitchPosition = _switchPosition;
@@ -350,7 +350,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
             flight_modes[_switchPosition] = mode;
 
             // print new mode
-            print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
+            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
             delay(500);
         }
 
@@ -358,7 +358,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
         if (g.rc_4.control_in > 3000) {
             g.simple_modes |= (1<<_switchPosition);
             // print new mode
-            print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
+            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
             delay(500);
         }
 
@@ -366,7 +366,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
         if (g.rc_4.control_in < -3000) {
             g.simple_modes &= ~(1<<_switchPosition);
             // print new mode
-            print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
+            print_switch(_switchPosition, mode, BIT_IS_SET(g.simple_modes, _switchPosition));
             delay(500);
         }
 
@@ -1163,7 +1163,7 @@ static void report_flight_modes()
     print_divider();
 
     for(int16_t i = 0; i < 6; i++ ) {
-        print_switch(i, flight_modes[i], (g.simple_modes & (1<<i)));
+        print_switch(i, flight_modes[i], BIT_IS_SET(g.simple_modes, i));
     }
     print_blanks(2);
 }

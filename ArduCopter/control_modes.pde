@@ -20,7 +20,7 @@ static void read_control_switch()
                 if(g.ch7_option != CH7_SIMPLE_MODE) {
                     // set Simple mode using stored paramters from Mission planner
                     // rather than by the control switch
-                    set_simple_mode(g.simple_modes & (1 << switchPosition));
+                    set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
                 }
             }
         }
