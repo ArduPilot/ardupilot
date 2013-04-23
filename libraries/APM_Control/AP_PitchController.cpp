@@ -114,7 +114,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	float _last_out = ( (rate_error * _kp_rate) + _integrator + (desired_rate * _kp_ff) ) * scaler;
+	_last_out = ( (rate_error * _kp_rate) + _integrator + (desired_rate * _kp_ff) ) * scaler;
 	
 	// Convert to centi-degrees and constrain
 	float out = constrain(_last_out * 100, -4500, 4500);
