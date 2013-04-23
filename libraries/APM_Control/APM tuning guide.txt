@@ -1,0 +1,63 @@
+Pitch control parameters:
+
+Main Parameters:
+
+CTL_PTCH_K_P = 0.4
+This is the gain from demanded pitch rate to demanded elevator. Provided CTL_PTCH_OMEGA is set to 1.0, then this gain works the same way as the P term in the old PID and can be set to the same value.
+
+CTL_PTCH_K_I = 0.0
+This is the gain for integration of the pitch rate error. It has essentially the same effect as the I term in the old PID. This can be set to 0 as a default, however users can increment this to make the pitch angle tracking more acurate.
+
+CTL_PTCH_K_D= 0.0
+This is the gain from pitch rate error to demanded elevator. This adjusts the damping of the pitch control loop. It has the same effect as the D term in the old PID but without the large spikes in servo demands. this will be set to 0 as a default. Some aiframes such as flying wings that have poor pitch damping can benefit from a small value of up to 0.1 on this gain term. This should be increased in 0.01 increments as to high a value can lead to a high frequency pitch oscillation that could overstress the airframe.
+
+Advanced Parameters:
+
+CTL_PTCH_K_RLL = 1.0
+This is the gain term that is applied to the pitch rate offset calculated as required to keep the nose level during turns. The default value is 1 which will work for all models. Advanced users can use it to correct for height variation in turns. If height is lost initially in the turn this can be increased in small increments of 0.05 to compensate. If height is gained initially then it can be decreased. 
+
+CTL_PTCH_RMAX_D = 0
+This sets the maximum nose down pitch rate that the controller will demand in (degrees/sec). Setting it to zero disables the limit.
+
+CTL_PTCH_RMAX_U = 0
+This sets the maximum nose up pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
+
+CTL_PTCH_OMEGA = 1.0
+This is the gain from pitch angle error to demanded pitch rate. It controls the time constant from demanded to achieved pitch angle. For example if a time constant from demanded to achieved pitch of 0.5 sec was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is a good default and will work with nearly all models. Advanced users may want to increase this to obtain a faster response.
+
+Roll Control Parameters:
+
+Main Parameters:
+
+CTL_RLL_K_P = 0.4
+This is the gain from demanded roll rate to demanded aileron. Provided CTL_RLL_OMEGA is set to 1.0, then this gain works the same way as the P term in the old PID and can be set to the same value.
+
+CTL_RLL_K_I = 0.0
+This is the gain for integration of the roll rate error. It has essentially the same effect as the I term in the old PID. This can be set to 0 as a default, however users can increment this to enable the controller trim out any roll trim offset.
+
+CTL_RLL_K_D = 0.0
+This is the gain from pitch rate error to demanded elevator. This adjusts the damping of the roll control loop. It has the same effect as the D term in the old PID but without the large spikes in servo demands. This will be set to 0 as a default. This should be increased in 0.01 increments as too high a value can lead to high frequency roll oscillation.
+
+Advanced Parameters:
+
+CTL_RLL_OMEGA = 1.0
+This is the gain from roll angle error to demanded roll rate. It controls the time constant from demanded to achieved roll angle. For example if a time constant from demanded to achieved roll of 0.5 sec was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is a good default and will work with nearly all models. Advanced users may want to increase this to obtain a faster response.
+
+CTL_RLL_RMAX = 60;
+This sets the maximum roll rate that the controller will demand (degrees/sec). Setting it to zero disables the limit. If this value is set too low, then the roll can't keep up with the navigation demands and the plane will start weaving. If it is set too high (or disabled by setting to zero) then ailerons will get large inputs at the start of turns. A  limit of 60 degrees/sec is a good default. 
+
+Yaw Control Parameters:
+
+Advanced Parameters:
+
+CTL_YAW_K_A = 0.0
+This is the gain from measured lateral acceleration to demanded yaw rate. It should be set to zero unless active control of sideslip is desired. This will only work effectively if there is enough fuselage side area to generate a measureable lateral acceleration when the model sideslips. Flying wings and most gliders cannot use this term. This term should only be adjusted after the basic yaw damper gain K_D is tuned and the K_I integrator gain has been set. Set this gain to zero if only yaw damping is required.
+
+CTL_YAW_K_D = 0.0
+This is the gain from yaw rate to rudder. It acts as a damper on yaw motion. If a basic yaw damper is required, this gain term can be incremented, whilst leaving the K_A and K_I gains at zero.
+
+CTL_YAW_K_I = 0.0
+This is the integral gain from lateral acceleration error. This gain should only be non-zero if active control over sideslip is desired. If active control over sideslip is required then this can be set to 1.0 as a first try.
+
+CTL_YAW_K_RLL = 1.0
+This is the gain term that is applied to the yaw rate offset calculated as required to keep the yaw rate consistent with the turn rate for a coordinated turn. The default value is 1 which will work for all models. Advanced users can use it to correct for any tendency to yaw away from or into the turn once the turn is established. Increase to make the model yaw more initially and decrease to make the model yaw less initially. If values greater than 1.1 or less than 0.9 are required then it normally indicates a problem with the airspeed calibration.
