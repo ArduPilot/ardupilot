@@ -57,16 +57,8 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
     // Get body rate vector (radians/sec)
 	Vector3f omega = _ahrs->get_gyro();
 	
-	// Apply a first order lowpass filter with a 20Hz cut-off
-	// Coefficients derived using a first order hold discretisation method
-	// Use of FOH discretisation increases high frequency noise rejection 
-	// and reduces phase loss compared to other methods
-	float rate = 0.0810026f * _last_rate_out + 0.6343426f * omega.x + 0.2846549f * _last_rate_in;
-	_last_rate_out = rate;
-	_last_rate_in = omega.x;
-
 	// Calculate the roll rate error (deg/sec) and apply gain scaler
-	float rate_error = (desired_rate - ToDeg(rate)) * scaler;
+	float rate_error = (desired_rate - ToDeg(omega.x)) * scaler;
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;

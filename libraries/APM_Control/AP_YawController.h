@@ -32,8 +32,6 @@ private:
 	AP_Float _K_FF;
 	uint32_t _last_t;
 	float _last_error;
-	float _last_rate_in;
-	float _last_rate_out;
 	float _last_out;
 	float _last_rate_hp_out;
 	float _last_rate_hp_in;
