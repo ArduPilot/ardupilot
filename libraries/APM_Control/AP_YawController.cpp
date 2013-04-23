@@ -49,16 +49,28 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stick_movement)
 			}
 		}
 	}
-	_stick_movement = stick_movement;
+	rate_offset = (9.807f / constrain(aspeed , float(aspd_min), float(aspd_max))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
-	Vector3f accels = _ins->get_accel();
+    // Get body rate vector (radians/sec)
+	float omega_z = _ahrs->get_gyro().z;
 	
-	// I didn't pull 512 out of a hat - it is a (very) loose approximation of
-    // 100*ToDeg(asinf(-accels.y/9.81f))
-	// which, with a P of 1.0, would mean that your rudder angle would be
-    // equal to your roll angle when
-	// the plane is still. Thus we have an (approximate) unit to go by.
-	float error = 512 * -accels.y;
+	// Subtract the steady turn component of rate from the measured rate
+	// to calculate the rate relative to the turn requirement in degrees/sec
+	float rate_hp_in = ToDeg(omega_z - rate_offset);
+	
+	// Apply a high-pass filter to the rate to washout any steady state error
+	// due to bias errors in rate_offset
+	// Use a cut-off frequency of omega = 0.2 rad/sec
+	// Could make this adjustable by replacing 0.9960080 with (1 - omega * dt)
+	float rate_hp_out = 0.9960080f * _last_rate_hp_out + rate_hp_in - _last_rate_hp_in;
+	_last_rate_hp_out = rate_hp_out;
+	_last_rate_hp_in = rate_hp_in;
+
+	// Get the accln vector (m/s^2)
+	Vector3f accel = _ins->get_accel();
+
+	// Calculate input to integrator
+	float integ_in = - _K_I * (_K_A * accel.y + rate_hp_out);
 	
 	// strongly filter the error
 	float RC = 1/(2*PI*_fCut);

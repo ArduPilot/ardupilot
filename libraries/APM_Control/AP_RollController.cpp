@@ -50,11 +50,11 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	if (_max_rate && desired_rate < -_max_rate) desired_rate = -_max_rate;
 	else if (_max_rate && desired_rate > _max_rate) desired_rate = _max_rate;
 	
-	if(stabilize) {
-		desired_rate *= _stabilize_gain;
-	}
-
-	int32_t rate_error = desired_rate - ToDeg(rate)*100;
+    // Get body rate vector (radians/sec)
+	float omega_x = _ahrs->get_gyro().x;
+	
+	// Calculate the roll rate error (deg/sec) and apply gain scaler
+	float rate_error = (desired_rate - ToDeg(omega_x)) * scaler;
 	
 	float out = (rate_error * _kp_rate + desired_rate * _kp_ff) * scaler;
 	

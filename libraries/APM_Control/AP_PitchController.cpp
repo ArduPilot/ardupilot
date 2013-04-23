@@ -62,23 +62,17 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
         desired_rate = _max_rate_pos;
     }
 	
-	desired_rate *= roll_scaler;
+	// Apply the turn correction offset
+	desired_rate = desired_rate + rate_offset;
+
+	// Get body rate vector (radians/sec)
+	float omega_y = _ahrs->get_gyro().y;
 	
-	if(stabilize) {
-		desired_rate *= _stabilize_gain;
-	}
+	// Calculate the pitch rate error (deg/sec) and scale
+	float rate_error = (desired_rate - ToDeg(omega_y)) * scaler;
 	
-	int32_t rate_error = desired_rate - ToDeg(rate)*100;
-	
-	float roll_ff = _roll_ff * 1000 * (roll_scaler-1.0f);
-	if(roll_ff > 4500)
-		roll_ff = 4500;
-	else if(roll_ff < 0)
-		roll_ff = 0;
-	
-	float out = constrain_float(((rate_error * _kp_rate) + (desired_rate * _kp_ff) + roll_ff) * scaler,-4500,4500);
-	
-	//rate integrator
+	// Multiply pitch rate error by _ki_rate and integrate
+	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!stabilize) {
 		if ((fabsf(_ki_rate) > 0) && (dt > 0))
 		{
