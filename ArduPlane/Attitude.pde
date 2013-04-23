@@ -83,7 +83,7 @@ static void stabilize_roll(float speed_scaler)
     g.channel_roll.servo_out = g.pidServoRoll.get_pid_4500((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
 #else // APM_CONTROL == ENABLED
     // calculate roll and pitch control using new APM_Control library
-    g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE);
+    g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min);
 #endif
 }
 
@@ -105,7 +105,7 @@ static void stabilize_pitch(float speed_scaler)
     }
     g.channel_pitch.servo_out = g.pidServoPitch.get_pid_4500(tempcalc, speed_scaler);
 #else // APM_CONTROL == ENABLED
-    g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, control_mode == STABILIZE);    
+    g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min, g.flybywire_airspeed_max);    
 #endif
 }
 
@@ -345,7 +345,7 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
     g.channel_rudder.servo_out += g.pidServoRudder.get_pid_4500(error, speed_scaler);
 #else // APM_CONTROL == ENABLED
     // use the new APM_Control library
-	g.channel_rudder.servo_out = g.yawController.get_servo_out(speed_scaler, ch4_inf < 0.25f) + g.channel_roll.servo_out * g.kff_rudder_mix;
+	g.channel_rudder.servo_out = g.yawController.get_servo_out(speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min, g.flybywire_airspeed_max) + g.channel_roll.servo_out * g.kff_rudder_mix;
 #endif
 }
 
