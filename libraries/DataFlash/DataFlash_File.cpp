@@ -3,7 +3,7 @@
 /* 
    DataFlash logging - file oriented variant
 
-   This uses posix file IO to create log files called logs/NN.log in the
+   This uses posix file IO to create log files called logs/NN.bin in the
    given directory
  */
 
@@ -89,7 +89,7 @@ bool DataFlash_File::NeedErase(void)
 char *DataFlash_File::_log_file_name(uint16_t log_num)
 {
     char *buf = NULL;
-    asprintf(&buf, "%s/%u.log", _log_directory, (unsigned)log_num);
+    asprintf(&buf, "%s/%u.bin", _log_directory, (unsigned)log_num);
     return buf;
 }
 
