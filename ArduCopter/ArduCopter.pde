@@ -1094,14 +1094,6 @@ static void medium_loop()
     case 3:
         medium_loopCounter++;
 
-        // perform next command
-        // --------------------
-        if(control_mode == AUTO) {
-            if(ap.home_is_set && (g.command_total > 1)) {
-                update_commands();
-            }
-        }
-
         if(motors.armed()) {
             if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
                 Log_Write_Attitude();

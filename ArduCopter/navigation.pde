@@ -85,7 +85,10 @@ static void run_autopilot()
 {
     switch( control_mode ) {
         case AUTO:
-            // majority of command logic is in commands_logic.pde
+            // load the next command if the command queues are empty
+            update_commands();
+
+            // process the active navigation and conditional commands
             verify_commands();
             break;
         case GUIDED:
