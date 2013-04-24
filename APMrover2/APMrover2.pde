@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.40"
+#define THISFIRMWARE "ArduRover v2.41beta"
 
 /* 
 This is the APMrover2 firmware. It was originally derived from
