@@ -3,12 +3,15 @@ Tools/ArdupilotMegaPlanner/bin/Release/logs/
 ArduCopter/Debug/
 ArduCopter/dataflash.bin
 ArduCopter/eeprom.bin
+ArduCopter/test/*
 config.mk
 serialsent.raw
 CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
 build
+dataflash.bin
+eeprom.bin
 /Tools/ArdupilotMegaPlanner/3DRRadio/bin
 /Tools/ArdupilotMegaPlanner/3DRRadio/obj
 /Tools/ArdupilotMegaPlanner/APMPlannerXplanes/APMPlannerXplanes/Debug
@@ -27,6 +30,8 @@ build
 /Tools/ArdupilotMegaPlanner/wix/obj
 /Tools/autotest/ch7_mission.txt
 tags
+test.ArduCopter/*
+/tmp/*
 *.o
 .*.swp
 .*.swo
