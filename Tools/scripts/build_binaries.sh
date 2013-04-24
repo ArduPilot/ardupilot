@@ -53,6 +53,16 @@ skip_build() {
     return 1
 }
 
+addfwversion() {
+    destdir="$1"
+    git log -1 > "$destdir/git-version.txt"
+    [ -f APM_Config.h ] && {
+	version=$(grep 'define.THISFIRMWARE' *.pde 2> /dev/null | cut -d'"' -f2)
+	echo >> "$destdir/git-version.txt"
+	echo "APMVERSION: $version" >> "$destdir/git-version.txt"
+    }    
+}
+
 # copy the built firmware to the right directory
 copyit() {
     file="$1"
@@ -63,11 +73,12 @@ copyit() {
     if [ "$tag" = "latest" ]; then
 	mkdir -p "$dir"
 	/bin/cp "$file" "$dir"
-	git log -1 > "$dir/git-version.txt"
+	addfwversion "$dir"
     fi
     echo "Copying $file to $tdir"
     mkdir -p "$tdir"
-    git log -1 > "$tdir/git-version.txt"
+    addfwversion "$tdir"
+
     rsync "$file" "$tdir"
 }
 
