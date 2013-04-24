@@ -96,7 +96,7 @@ public:
 	AP_Int8 stab_col_min;						// collective pitch minimum in Stabilize Mode
 	AP_Int8 stab_col_max;						// collective pitch maximum in Stabilize Mode
 	bool stab_throttle;							// true if we are in Stabilize Mode for reduced Swash Range
-	AP_Int16 coll_out;							// returns the actual collective in use to the main code
+	int16_t coll_out;							// returns the actual collective in use to the main code
 
     // init
     void Init();
