@@ -445,7 +445,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hhhHf",      "Thr,Volt,Curr,Vcc,CurrTot" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
-      "MODE", "B",          "Mode" },
+      "MODE", "M",          "Mode" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "hhhhhhhhh",   "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
 };
