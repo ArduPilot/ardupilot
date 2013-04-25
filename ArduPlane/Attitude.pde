@@ -470,9 +470,14 @@ static bool suppress_throttle(void)
     if (g_gps != NULL && 
         g_gps->status() >= GPS::GPS_OK_FIX_2D && 
         g_gps->ground_speed >= 500) {
-        // we're moving at more than 5 m/s
-        throttle_suppressed = false;
-        return false;        
+        // if we have an airspeed sensor, then check it too, and
+        // require 5m/s. This prevents throttle up due to spiky GPS
+        // groundspeed with bad GPS reception
+        if (!airspeed.use() || airspeed.get_airspeed() >= 5) {
+            // we're moving at more than 5 m/s
+            throttle_suppressed = false;
+            return false;        
+        }
     }
 
     // throttle remains suppressed
