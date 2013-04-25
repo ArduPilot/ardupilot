@@ -88,7 +88,7 @@ public:
 void update_aux_servo_function(RC_Channel_aux* rc_a = NULL, RC_Channel_aux* rc_b = NULL, 
 							   RC_Channel_aux* rc_c = NULL, RC_Channel_aux* rc_d = NULL, 
 							   RC_Channel_aux* rc_e = NULL, RC_Channel_aux* rc_f = NULL, 
-							   RC_Channel_aux* rc_g = NULL);
+							   RC_Channel_aux* rc_g = NULL, RC_Channel_aux* rc_h = NULL);
 void enable_aux_servos();
 
 #endif /* RC_CHANNEL_AUX_H_ */
