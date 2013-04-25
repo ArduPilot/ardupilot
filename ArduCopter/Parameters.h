@@ -194,6 +194,8 @@ public:
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,
         k_param_failsafe_gps_enabled,  // 195
+        k_param_rc_9,
+        k_param_rc_12,
 
         //
         // 200: flight modes
@@ -356,6 +358,12 @@ public:
     RC_Channel_aux          rc_10;
     RC_Channel_aux          rc_11;
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    RC_Channel_aux          rc_9;
+    RC_Channel_aux          rc_12;
+#endif
+
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
     // Acro parameters
@@ -402,7 +410,12 @@ public:
         rc_6                (CH_6),
         rc_7                (CH_7),
         rc_8                (CH_8),
-#if MOUNT == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        rc_9                (CH_9),
+        rc_10               (CH_10),
+        rc_11               (CH_11),
+        rc_12               (CH_12),
+#elif MOUNT == ENABLED
         rc_10               (CH_10),
         rc_11               (CH_11),
 #endif

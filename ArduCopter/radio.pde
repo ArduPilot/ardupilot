@@ -54,7 +54,9 @@ static void init_rc_in()
     g.rc_7.set_range(0,1000);
     g.rc_8.set_range(0,1000);
 
-#if MOUNT == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif MOUNT == ENABLED
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
 #endif
 }
