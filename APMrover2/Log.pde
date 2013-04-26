@@ -171,6 +171,7 @@ struct PACKED log_Performance {
     int16_t  gyro_drift_y;
     int16_t  gyro_drift_z;
     int16_t  pm_test;
+    uint8_t  i2c_lockup_count;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -188,7 +189,8 @@ static void Log_Write_Performance()
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
-        pm_test         : pmTest1
+        pm_test         : pmTest1,
+        i2c_lockup_count: hal.i2c->lockup_count()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -429,7 +431,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "ccC",        "Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "IHhBBBhhhh", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,PMT" },
+      "PM",  "IHhBBBhhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,PMT,I2CErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
