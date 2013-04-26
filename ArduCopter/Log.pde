@@ -375,6 +375,7 @@ struct PACKED log_Performance {
     uint16_t num_long_running;
     uint16_t num_loops;
     uint32_t max_time;
+    uint8_t i2c_lockup_count;
 };
 
 // Write a performance monitoring packet
@@ -387,7 +388,8 @@ static void Log_Write_Performance()
         gps_fix_count    : gps_fix_count,
         num_long_running : perf_info_get_num_long_running(),
         num_loops        : perf_info_get_num_loops(),
-        max_time         : perf_info_get_max_time()
+        max_time         : perf_info_get_max_time(),
+        i2c_lockup_count : hal.i2c->lockup_count()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -788,7 +790,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "hhhhhhhhh",    "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "BBBHHI",       "RenCnt,RenBlw,FixCnt,NLon,NLoop,MaxT,End" },
+      "PM",  "BBBHHIB",       "RenCnt,RenBlw,FixCnt,NLon,NLoop,MaxT,I2CErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
