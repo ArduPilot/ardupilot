@@ -38,12 +38,13 @@ public:
 private:
     AP_HAL::AnalogSource *_source;
     AP_Int8  _pin;
+    AP_Int8  _stop_pin;
+    AP_Int16 _settle_time_ms;
     AP_Float _scaling;
     AP_Float _offset;
     AP_Int8  _function;
     AP_Int16 _min_distance_cm;
     AP_Int16 _max_distance_cm;
-    int8_t _last_pin;
     AP_Int8 _enabled;
 };
 #endif // __AP_RangeFinder_analog_H__
