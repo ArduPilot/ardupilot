@@ -85,7 +85,11 @@ public:
         k_param_sonar_gain,             // 30
 
         // 65: AP_Limits Library
-        k_param_fence = 65,
+        k_param_limits = 65,            // deprecated - remove
+        k_param_gpslock_limit,          // deprecated - remove
+        k_param_geofence_limit,         // deprecated - remove
+        k_param_altitude_limit,         // deprecated - remove
+        k_param_fence,                  // 69
 
         //
         // 80: Heli
