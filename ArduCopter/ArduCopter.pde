@@ -99,7 +99,7 @@
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AP_Limits.h>
+#include <AC_Fence.h>           // Arducopter Fence library
 #include <memcheck.h>           // memory limit checker
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
@@ -819,15 +819,11 @@ static AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
 static AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 #endif
 
-
 ////////////////////////////////////////////////////////////////////////////////
-// Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
+// AC_Fence library to reduce fly-aways
 ////////////////////////////////////////////////////////////////////////////////
-#if AP_LIMITS == ENABLED
-AP_Limits               limits;
-AP_Limit_GPSLock        gpslock_limit(g_gps);
-AP_Limit_Geofence       geofence_limit(FENCE_START_BYTE, FENCE_WP_SIZE, MAX_FENCEPOINTS, g_gps, &home, &current_loc);
-AP_Limit_Altitude       altitude_limit(&current_loc);
+#if AC_FENCE == ENABLED
+AC_Fence    fence(&inertial_nav, &g_gps);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1195,17 +1191,9 @@ static void fifty_hz_loop()
 
 }
 
-
+// slow_loop - 3.3hz loop
 static void slow_loop()
 {
-
-#if AP_LIMITS == ENABLED
-
-    // Run the AP_Limits main loop
-    limits_loop();
-
-#endif // AP_LIMITS_ENABLED
-
     // This is the slow (3 1/3 Hz) loop pieces
     //----------------------------------------
     switch (slow_loopCounter) {
@@ -1229,6 +1217,11 @@ static void slow_loop()
             // check the user hasn't updated the frame orientation
             motors.set_frame_orientation(g.frame_orientation);
         }
+
+#if AC_FENCE == ENABLED
+        // check if we have breached a fence
+        fence_check();
+#endif // AC_FENCE_ENABLED
 
         break;
 
