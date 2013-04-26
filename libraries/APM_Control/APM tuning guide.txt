@@ -38,10 +38,11 @@ This method is the simplest and is basically the same as tuning the old PID loop
 Basic Method 2:
 This method gives the best result, but requires more caution because step 2) can produce a high frequency instability that unless reversion back to manual is done quickly, could overstress the plane.
 
-1) Set CTL_RLL_K_D to [TBD] and CTL_RLL_K_P to 0.0
-2) Increase CTL_RLL_K_D in small amounts from the default value of [TBD] until it it starts to oscillate, then halve it.
-3) Increase CTL_RLL_OMEGA from the dfault value of 1.0 if necessary to give the desired responsiveness. If the roll starts to overshoot, reduce it.
-4) Increase CTL_RLL_K_P from the default value of 0 to improve the initial response.
+1) Set CTL_RLL_K_D to 0.04 and CTL_RLL_K_P to 0.0
+2) Increase CTL_RLL_K_D in increments of 0.01 until it it starts to oscillate, then halve it.
+3) Increase CTL_RLL_OMEGA from the default value of 1.0 if necessary to give the desired responsiveness. If the roll starts to overshoot, reduce it.
+4) Increase CTL_RLL_K_P from the default value of 0 to improve the initial response. If you go to far it will roll rapidly at first, but then have a noticeably delay to complete the last part of the roll, or you may get roll oscillation.
+5) At this stage you may be able to increase CTL_RLL_OMEGA slightly for some more performance.
 
 Advanced:
 1) Select the tuning box on the bottom of the Mission planers Flight Data page. You should get a scrolling black window above the map. Double click in the black window and you should get a list of parameters to plot. Change the selection until you have the roll and nav_roll plotted. Nav_roll is the demand and roll is the response. You can use this to look for overshoot and other behavior that isn't so obvious from the ground looking at the model.
@@ -61,10 +62,11 @@ This method is the simplest and is basically the same as tuning the old PID loop
 Basic Method 2:
 This method gives the best result, but requires more caution because step 2) can produce a high frequency instability that unless reversion back to manual is done quickly, could overstress the plane.
 
-1) Set CTL_PTCH_K_D to [TBD] and CTL_RLL_K_P to 0.0
-2) Increase CTL_PTCH_K_D in small amounts from the default value of [TBD] until it it starts to oscillate, then halve it.
-3) Increase CTL_PTCH_OMEGA from the dfault value of 1.0 if necessary to give the desired responsiveness. If the pitch starts to overshoot, reduce it.
-4) Increase CTL_PTCH_K_P from the default value of 0 to improve the initial response.
+1) Set CTL_PTCH_K_D to 0.04 and CTL_RLL_K_P to 0.0
+2) Increase CTL_PTCH_K_D in increments of 0.01 until it it starts to oscillate, then halve it.
+3) Increase CTL_PTCH_OMEGA from the default value of 1.0 if necessary to give the desired responsiveness. If the pitch starts to overshoot, reduce it.
+4) Increase CTL_PTCH_K_P from the default value of 0 to improve the initial response. If you go to far it will pitch rapidly at first, but then have a noticeably delay to complete the last part of the pitch, or you may get pitch oscillation.
+5) At this stage you may be able to increase CTL_PTCH_OMEGA slightly for some more performance.
 
 Advanced:
 1) The maximum nose down and nose up pitch rate in degrees/second can be constrained by setting the CTL_PTCH_RMAX_D and CTL_PTCH_RMAX_U parameters to a value other than 0. These parameters These can be used to limit the amount of g produced during a pull-up or push down.
