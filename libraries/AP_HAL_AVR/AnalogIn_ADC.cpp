@@ -16,6 +16,8 @@ ADCSource::ADCSource(uint8_t pin, float prescale) :
     _stop_pin(ANALOG_INPUT_NONE),
     _sum_count(0),
     _sum(0),
+    _settle_time_ms(0),
+    _last_average(0),
     _prescale(prescale)
 {}
 
