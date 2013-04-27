@@ -169,6 +169,13 @@ static void read_trim_switch()
             // enable or disable the sonar
             g.sonar_enabled = ap_system.CH7_flag;
             break;
+
+#if AC_FENCE == ENABLED
+        case CH7_FENCE:
+            // enable or disable the fence
+            fence.enable(ap_system.CH7_flag);
+            break;
+#endif
     }
 }
 

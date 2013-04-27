@@ -455,6 +455,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // @Group: RC9_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
+    // @Group: RC12_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_12,                   "RC12_", RC_Channel_aux),
+#endif
+
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
@@ -923,13 +932,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(barometer, "GND_", AP_Baro),
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
-#if AP_LIMITS == ENABLED
+#if AC_FENCE == ENABLED
     //@Group: LIM_
-    //@Path: ../libraries/AP_Limits/AP_Limits.cpp,../libraries/AP_Limits/AP_Limit_GPSLock.cpp,../libraries/AP_Limits/AP_Limit_Geofence.cpp,../libraries/AP_Limits/AP_Limit_Altitude.cpp,../libraries/AP_Limits/AP_Limit_Module.cpp
-    GOBJECT(limits,                 "LIM_",    AP_Limits),
-    GOBJECT(gpslock_limit,          "LIM_",    AP_Limit_GPSLock),
-    GOBJECT(geofence_limit,         "LIM_",    AP_Limit_Geofence),
-    GOBJECT(altitude_limit,         "LIM_",    AP_Limit_Altitude),
+    //@Path: ../libraries/AC_Fence/AC_Fence.cpp
+    GOBJECT(fence,      "FENCE_",   AC_Fence),
 #endif
 
 #if FRAME_CONFIG ==     HELI_FRAME

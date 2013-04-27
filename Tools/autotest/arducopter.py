@@ -111,7 +111,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
 
     print("turn")
     hover(mavproxy, mav)
-    mavproxy.send('rc 4 1700\n')
+    mavproxy.send('rc 4 1550\n')
     if not wait_heading(mav, 0):
         return False
     mavproxy.send('rc 4 1500\n')

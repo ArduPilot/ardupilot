@@ -51,29 +51,7 @@ static void arm_motors()
 
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors.armed()) {
-////////////////////////////////////////////////////////////////////////////////
-// Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
-////////////////////////////////////////////////////////////////////////////////
-#if AP_LIMITS == ENABLED
-            if (limits.enabled() && limits.required()) {
-                gcs_send_text_P(SEVERITY_LOW, PSTR("Limits - Running pre-arm checks"));
-
-                // check only pre-arm required modules
-                if (limits.check_required()) {
-                    gcs_send_text_P(SEVERITY_LOW, PSTR("ARMING PREVENTED - Limit Breached"));
-                    limits.set_state(LIMITS_TRIGGERED);
-                    gcs_send_message(MSG_LIMITS_STATUS);
-
-                    arming_counter++;                                 // restart timer by cycling
-                }else{
-                    init_arm_motors();
-                }
-            }else{
-                init_arm_motors();
-            }
-#else  // without AP_LIMITS, just arm motors
             init_arm_motors();
-#endif //AP_LIMITS_ENABLED
         }
 
         // arm the motors and configure for flight
@@ -189,6 +167,13 @@ static void pre_arm_checks()
     if(!ins.calibrated()) {
         return;
     }
+
+#if AC_FENCE == ENABLED
+    // check fence is initialised
+    if(!fence.pre_arm_check()) {
+        return;
+    }
+#endif
 
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;

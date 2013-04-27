@@ -470,9 +470,14 @@ static bool suppress_throttle(void)
     if (g_gps != NULL && 
         g_gps->status() >= GPS::GPS_OK_FIX_2D && 
         g_gps->ground_speed >= 500) {
-        // we're moving at more than 5 m/s
-        throttle_suppressed = false;
-        return false;        
+        // if we have an airspeed sensor, then check it too, and
+        // require 5m/s. This prevents throttle up due to spiky GPS
+        // groundspeed with bad GPS reception
+        if (!airspeed.use() || airspeed.get_airspeed() >= 5) {
+            // we're moving at more than 5 m/s
+            throttle_suppressed = false;
+            return false;        
+        }
     }
 
     // throttle remains suppressed
@@ -720,10 +725,13 @@ static void set_servos(void)
     g.rc_6.output_ch(CH_6);
     g.rc_7.output_ch(CH_7);
     g.rc_8.output_ch(CH_8);
- # if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ # if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
     g.rc_9.output_ch(CH_9);
     g.rc_10.output_ch(CH_10);
     g.rc_11.output_ch(CH_11);
+ # endif
+ # if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    g.rc_12.output_ch(CH_12);
  # endif
 }
 
