@@ -798,31 +798,84 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
-    if(g.compass_enabled) {
-        print_hit_enter();
+    uint8_t delta_ms_fast_loop;
 
-        while(1) {
-            delay(100);
-            if (compass.read()) {
-                float heading = compass.calculate_heading(ahrs.get_dcm_matrix());
-                cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d\n"),
-                                (wrap_360_cd(ToDeg(heading) * 100)) /100,
-                                compass.mag_x,
-                                compass.mag_y,
-                                compass.mag_z);
-            } else {
-                cliSerial->println_P(PSTR("not healthy"));
-            }
-
-            if(cliSerial->available() > 0) {
-                return (0);
-            }
-        }
-    } else {
+    if (!g.compass_enabled) {
         cliSerial->printf_P(PSTR("Compass: "));
         print_enabled(false);
         return (0);
     }
+
+    compass.set_orientation(MAG_ORIENTATION);
+    if (!compass.init()) {
+        cliSerial->println_P(PSTR("Compass initialisation failed!"));
+        return 0;
+    }
+
+    ahrs.init();
+    ahrs.set_fly_forward(true);
+    ahrs.set_compass(&compass);
+    report_compass();
+
+    // we need the AHRS initialised for this test
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             flash_leds);
+    ahrs.reset();
+    int16_t counter = 0;
+    float heading = 0;
+
+    print_hit_enter();
+
+    while(1) {
+        delay(20);
+        if (millis() - fast_loopTimer > 19) {
+            delta_ms_fast_loop      = millis() - fast_loopTimer;
+            G_Dt                    = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
+            fast_loopTimer          = millis();
+
+            // INS
+            // ---
+            ahrs.update();
+
+            medium_loopCounter++;
+            if(medium_loopCounter == 5) {
+                if (compass.read()) {
+                    // Calculate heading
+                    Matrix3f m = ahrs.get_dcm_matrix();
+                    heading = compass.calculate_heading(m);
+                    compass.null_offsets();
+                }
+                medium_loopCounter = 0;
+            }
+
+            counter++;
+            if (counter>20) {
+                if (compass.healthy) {
+                    Vector3f maggy = compass.get_offsets();
+                    cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+                                    (wrap_360_cd(ToDeg(heading) * 100)) /100,
+                                    (int)compass.mag_x,
+                                    (int)compass.mag_y,
+                                    (int)compass.mag_z,
+                                    maggy.x,
+                                    maggy.y,
+                                    maggy.z);
+                } else {
+                    cliSerial->println_P(PSTR("compass not healthy"));
+                }
+                counter=0;
+            }
+        }
+        if (cliSerial->available() > 0) {
+            break;
+        }
+    }
+
+    // save offsets. This allows you to get sane offset values using
+    // the CLI before you go flying.
+    cliSerial->println_P(PSTR("saving offsets"));
+    compass.save_offsets();
     return (0);
 }
 
