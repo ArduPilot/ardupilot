@@ -168,6 +168,11 @@ static void pre_arm_checks()
         return;
     }
 
+    // check the compass is healthy
+    if(!compass.healthy) {
+        return;
+    }
+
 #if AC_FENCE == ENABLED
     // check fence is initialised
     if(!fence.pre_arm_check()) {
