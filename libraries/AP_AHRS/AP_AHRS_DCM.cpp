@@ -583,6 +583,16 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _omega_P *= 8;
     }
 
+    if (_fly_forward && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D && 
+        _gps->ground_speed < GPS_SPEED_MIN && 
+        _accel_vector.x >= 7 &&
+	    pitch_sensor > -3000 && pitch_sensor < 3000) {
+            // assume we are in a launch acceleration, and reduce the
+            // rp gain by 50% to reduce the impact of GPS lag on
+            // takeoff attitude when using a catapult
+            _omega_P *= 0.5f;
+    }
+
     // accumulate some integrator error
     if (spin_rate < ToRad(SPIN_RATE_LIMIT)) {
         _omega_I_sum += error * _ki * _ra_deltat;
