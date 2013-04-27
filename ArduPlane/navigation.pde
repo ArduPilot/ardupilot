@@ -118,13 +118,7 @@ static void calc_gndspeed_undershoot()
     // Function is overkill, but here in case we want to add filtering
     // later
     if (g_gps && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
-	    // Calculate the component of ground speed in the forward direction
-	    Vector2f gndVel = ahrs.groundspeed_vector();
-		Matrix3f rotMat = ahrs.get_dcm_matrix();
-		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
-		yawVect = (yawVect).normalized();
-		float gndSpdFwd = yawVect * gndVel;
-        groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - gndSpdFwd*100) : 0;
+        groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - g_gps->ground_speed) : 0;
     }
 }
 
