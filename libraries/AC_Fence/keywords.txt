@@ -1,0 +1,14 @@
+AC_Fence            KEYWORD1
+enable              KEYWORD2
+enabled             KEYWORD2
+get_enabled_fences  KEYWORD2
+pre_arm_check       KEYWORD2
+check_fence         KEYWORD2
+get_breaches        KEYWORD2
+get_breach_time     KEYWORD2
+get_breach_count    KEYWORD2
+get_action          KEYWORD2
+set_home_distance   KEYWORD2
+
+
+

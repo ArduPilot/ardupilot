@@ -111,10 +111,10 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         omega.z);
 }
 
-#if AP_LIMITS == ENABLED
+#if AC_FENCE == ENABLED
 static NOINLINE void send_limits_status(mavlink_channel_t chan)
 {
-    limits_send_mavlink_status(chan);
+    fence_send_mavlink_status(chan);
 }
 #endif
 
@@ -626,13 +626,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_statustext(chan);
         break;
 
-#if AP_LIMITS == ENABLED
-
+#if AC_FENCE == ENABLED
     case MSG_LIMITS_STATUS:
         CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
         send_limits_status(chan);
         break;
-
 #endif
 
     case MSG_AHRS:
@@ -2084,8 +2082,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-#if AP_LIMITS == ENABLED
-
+/* To-Do: add back support for polygon type fence
+#if AC_FENCE == ENABLED
     // receive an AP_Limits fence point from GCS and store in EEPROM
     // receive a fence point from GCS and store in EEPROM
     case MAVLINK_MSG_ID_FENCE_POINT: {
@@ -2116,9 +2114,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
     }
-
-
-#endif // AP_LIMITS ENABLED
+#endif // AC_FENCE ENABLED
+*/
 
     }     // end switch
 } // end handle mavlink
