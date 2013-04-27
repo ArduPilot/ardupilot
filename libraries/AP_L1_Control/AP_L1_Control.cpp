@@ -78,15 +78,14 @@ float AP_L1_Control::crosstrack_error(void)
 void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP)
 {
 
-	// Calculate normalised frequency for tracking loop						   
-	const float omegaA = 4.4428f/_L1_period; // sqrt(2)*pi/period
-	// Calculate additional damping gain
-	const float Kv = omegaA * 2.8284f * (_L1_damping - 0.7071f); // omegaA * 2*sqrt(2) * (dampingRatio - 1/sqrt(2))
-	float Nu;
-	float dampingWeight;
-	float xtrackVel;
 	struct Location _current_loc;
+	float Nu;
+	float xtrackVel;
+	float ltrackVel;
 	
+	// Calculate L1 gain required for specified damping
+	float K_L1 = 4.0f * _L1_damping * _L1_damping;
+
 	// Get current position and velocity
     _ahrs->get_position(&_current_loc);
 
@@ -99,8 +98,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float groundSpeed = _groundspeed_vector.length();
 
 	// Calculate time varying control parameters
-	_L1_dist = groundSpeed / omegaA; // L1 distance is adjusted to maintain a constant tracking loop frequency
-	float VomegaA = groundSpeed * omegaA;
+	// Calculate the L1 length required for specified period
+	// 0.3183099 = 1/1/pipi
+	_L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
 	
 	//Convert current location and WP positions to 2D vectors in lat and long
     Vector2f A_air((_current_loc.lat/1.0e7f), (_current_loc.lng/1.0e7f));
@@ -123,44 +123,33 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float WP_A_dist = A_air.length();
 	float alongTrackDist = A_air * AB_unit;
 	if (WP_A_dist > _L1_dist && alongTrackDist/(WP_A_dist + 1.0f) < -0.7071f) {
-		//Calc Nu to fly To WP A
+
+        //Calc Nu to fly To WP A
 		Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
 		xtrackVel = _cross2D(_groundspeed_vector , -A_air_unit); // Velocity across line
-		float ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
+		ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
 		Nu = atan2f(xtrackVel,ltrackVel);
-		dampingWeight = 1.0f;
-		
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
 		
     } else { //Calc Nu to fly along AB line
 		
 		//Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
 		xtrackVel = _cross2D(_groundspeed_vector,AB_unit); // Velocity cross track
-		float ltrackVel = _groundspeed_vector * AB_unit; // Velocity along track
+		ltrackVel = _groundspeed_vector * AB_unit; // Velocity along track
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
-		
 		//Calculate Nu1 angle (Angle to L1 reference point)
 		float xtrackErr = _cross2D(A_air, AB_unit);
 		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
 		sine_Nu1 = constrain(sine_Nu1, -0.7854f, 0.7854f);
 		float Nu1 = asinf(sine_Nu1);
-		
-		//Calculate Nu
 		Nu = Nu1 + Nu2;
-		
-		//Calculate a weight to apply to the damping augmentation
-		// This is used to reduce damping away from track so as not to interfere
-		// with the track capture angle
-		dampingWeight = 1.0f - fabsf(sine_Nu1 * 1.4142f);
-		dampingWeight = dampingWeight*dampingWeight;
-
 		_nav_bearing = atan2f(AB_unit.y, AB_unit.x) + Nu1; // bearing (radians) from AC to L1 point		
 	}	
 		
 	//Limit Nu to +-pi
 	Nu = constrain(Nu, -1.5708f, +1.5708f);
-	_latAccDem = (xtrackVel*dampingWeight*Kv + 2.0f*sinf(Nu))*VomegaA;
+	_latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 	
 	// Waypoint capture status is always false during waypoint following
 	_WPcircle = false;
@@ -171,15 +160,15 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 // update L1 control for loitering
 void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction)
 {
-	// Calculate normalised frequency for tracking loop						   
-	const float omegaA = 4.4428f/_L1_period; // sqrt(2)*pi/period
-	// Calculate additional damping gain used  with L1 control (used during waypoint capture)
-	const float Kv_L1 = omegaA * 2.8284f * (_L1_damping - 0.7071f); // omegaA * 2*sqrt(2) * (dampingRatio - 1/sqrt(2))
+	struct Location _current_loc;
+
 	// Calculate guidance gains used by PD loop (used during circle tracking)
 	float omega = (6.2832f / _L1_period);
 	float Kx = omega * omega;
 	float Kv = 2.0f * _L1_damping * omega;
-	struct Location _current_loc;
+
+	// Calculate L1 gain required for specified damping (used during waypoint capture)
+	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	//Get current position and velocity
     _ahrs->get_position(&_current_loc);
@@ -193,8 +182,9 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float groundSpeed = _groundspeed_vector.length();
 
 	// Calculate time varying control parameters
-	_L1_dist = groundSpeed / omegaA; // L1 distance is adjusted to maintain a constant tracking loop frequency
-	float VomegaA = groundSpeed * omegaA;
+	// Calculate the L1 length required for specified period
+	// 0.3183099 = 1/pi
+	_L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
 
 	//Convert current location and WP positionsto 2D vectors in lat and long
     Vector2f A_air((_current_loc.lat/1.0e7f), (_current_loc.lng/1.0e7f));
@@ -213,7 +203,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	Nu = constrain(Nu, -1.5708f, +1.5708f); //Limit Nu to +- Pi/2
 
 	//Calculate lat accln demand to capture center_WP (use L1 guidance law)
-	float latAccDemCap = VomegaA * (xtrackVelCap * Kv_L1 + 2.0f * sinf(Nu));
+	float latAccDemCap = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 	
 	//Calculate radial position and velocity errors
 	float xtrackVelCirc = -ltrackVelCap; // Radial outbound velocity - reuse previous radial inbound velocity
