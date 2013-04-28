@@ -42,7 +42,7 @@ const float pv_get_horizontal_distance_cm(const Vector3f origin, const Vector3f 
 // pv_get_bearing_cd - return bearing in centi-degrees between two positions
 const float pv_get_bearing_cd(const Vector3f origin, const Vector3f destination)
 {
-    float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * 5729.57795f;
+    float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * DEGX100;
     if (bearing < 0) {
         bearing += 36000;
     }

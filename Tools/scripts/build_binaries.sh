@@ -53,6 +53,16 @@ skip_build() {
     return 1
 }
 
+addfwversion() {
+    destdir="$1"
+    git log -1 > "$destdir/git-version.txt"
+    [ -f APM_Config.h ] && {
+	version=$(grep 'define.THISFIRMWARE' *.pde 2> /dev/null | cut -d'"' -f2)
+	echo >> "$destdir/git-version.txt"
+	echo "APMVERSION: $version" >> "$destdir/git-version.txt"
+    }    
+}
+
 # copy the built firmware to the right directory
 copyit() {
     file="$1"
@@ -63,11 +73,12 @@ copyit() {
     if [ "$tag" = "latest" ]; then
 	mkdir -p "$dir"
 	/bin/cp "$file" "$dir"
-	git log -1 > "$dir/git-version.txt"
+	addfwversion "$dir"
     fi
     echo "Copying $file to $tdir"
     mkdir -p "$tdir"
-    git log -1 > "$tdir/git-version.txt"
+    addfwversion "$tdir"
+
     rsync "$file" "$tdir"
 }
 
@@ -84,6 +95,7 @@ build_arduplane() {
 	make clean || continue
 	make $b -j4 || continue
 	copyit $TMPDIR/ArduPlane.build/ArduPlane.hex $ddir $tag
+	touch $binaries/Plane/$tag
     done
     test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
 	echo "Building ArduPlane PX4 binaries"
@@ -112,6 +124,7 @@ build_arducopter() {
 	    make clean || continue
 	    make "$b-$f" -j4 || exit 1
 	    copyit $TMPDIR/ArduCopter.build/ArduCopter.hex "$ddir" "$tag"
+	    touch $binaries/Copter/$tag
 	done
     done
     test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
@@ -141,6 +154,7 @@ build_rover() {
 	make clean || continue
 	make $b -j4 || continue
 	copyit $TMPDIR/APMrover2.build/APMrover2.hex $ddir $tag
+	touch $binaries/Rover/$tag
     done
     test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
 	echo "Building APMrover2 PX4 binaries"

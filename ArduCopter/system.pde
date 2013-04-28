@@ -291,42 +291,7 @@ init_rate_controllers();
     Log_Write_Startup();
 #endif
 
-    init_ap_limits();
-
     cliSerial->print_P(PSTR("\nReady to FLY "));
-}
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-// Experimental AP_Limits library - set constraints, limits, fences, minima,
-// maxima on various parameters
-////////////////////////////////////////////////////////////////////////////////
-static void init_ap_limits() {
-#if AP_LIMITS == ENABLED
-    // The linked list looks (logically) like this [limits module] -> [first
-    // limit module] -> [second limit module] -> [third limit module] -> NULL
-
-
-    // The details of the linked list are handled by the methods
-    // modules_first, modules_current, modules_next, modules_last, modules_add
-    // in limits
-
-    limits.modules_add(&gpslock_limit);
-    limits.modules_add(&geofence_limit);
-    limits.modules_add(&altitude_limit);
-
-
-    if (limits.debug())  {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Limits Modules Loaded"));
-
-        AP_Limit_Module *m = limits.modules_first();
-        while (m) {
-            gcs_send_text_P(SEVERITY_LOW, get_module_name(m->get_module_id()));
-            m = limits.modules_next();
-        }
-    }
-#endif
 }
 
 
@@ -383,7 +348,7 @@ static void set_mode(uint8_t mode)
     }
 
     control_mode 	= mode;
-    control_mode    = constrain(control_mode, 0, NUM_MODES - 1);
+    control_mode    = constrain_int16(control_mode, 0, NUM_MODES - 1);
 
     // if we change modes, we must clear landed flag
     set_land_complete(false);

@@ -128,8 +128,8 @@ void roll_pitch_toy()
     yy      = abs(yaw_rate / 500);
 
     // constrain to lookup Array range
-    xx = constrain(xx, 0, 3);
-    yy = constrain(yy, 0, 8);
+    xx = constrain_int16(xx, 0, 3);
+    yy = constrain_int16(yy, 0, 8);
 
     roll_rate = toy_lookup[yy * 4 + xx];
 
@@ -140,12 +140,12 @@ void roll_pitch_toy()
     }
 
     int16_t roll_limit = 4500 / g.toy_yaw_rate;
-    roll_rate = constrain(roll_rate, -roll_limit, roll_limit);
+    roll_rate = constrain_int16(roll_rate, -roll_limit, roll_limit);
 
 #elif TOY_MIXER == TOY_LINEAR_MIXER
     roll_rate = -((int32_t)g.rc_2.control_in * (yaw_rate/100)) /30;
     //cliSerial->printf("roll_rate: %d\n",roll_rate);
-    roll_rate = constrain(roll_rate, -2000, 2000);
+    roll_rate = constrain_int32(roll_rate, -2000, 2000);
 
 #elif TOY_MIXER == TOY_EXTERNAL_MIXER
     // JKR update to allow external roll/yaw mixing

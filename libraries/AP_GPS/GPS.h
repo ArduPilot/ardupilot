@@ -148,6 +148,9 @@ public:
     // the time we got our last fix in system milliseconds
     uint32_t last_fix_time;
 
+	// the time we last processed a message in milliseconds
+	uint32_t last_message_time_ms(void) { return _idleTimer; }
+
 	// return true if the GPS supports raw velocity values
 
 
@@ -168,14 +171,14 @@ protected:
     ///						long in the wrong byte order
     /// @returns			endian-swapped value
     ///
-    int32_t                             _swapl(const void *bytes);
+    int32_t                             _swapl(const void *bytes) const;
 
     /// perform an endian swap on an int
     ///
     /// @param	bytes		pointer to a buffer containing bytes representing an
     ///						int in the wrong byte order
     ///	@returns			endian-swapped value
-    int16_t                             _swapi(const void *bytes);
+    int16_t                             _swapi(const void *bytes) const;
 
     /// emit an error message
     ///
@@ -227,37 +230,5 @@ private:
     float _velocity_east;
     float _velocity_down;
 };
-
-inline int32_t
-GPS::_swapl(const void *bytes)
-{
-    const uint8_t       *b = (const uint8_t *)bytes;
-    union {
-        int32_t v;
-        uint8_t b[4];
-    } u;
-
-    u.b[0] = b[3];
-    u.b[1] = b[2];
-    u.b[2] = b[1];
-    u.b[3] = b[0];
-
-    return(u.v);
-}
-
-inline int16_t
-GPS::_swapi(const void *bytes)
-{
-    const uint8_t       *b = (const uint8_t *)bytes;
-    union {
-        int16_t v;
-        uint8_t b[2];
-    } u;
-
-    u.b[0] = b[1];
-    u.b[1] = b[0];
-
-    return(u.v);
-}
 
 #endif // __GPS_H__

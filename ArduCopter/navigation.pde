@@ -20,7 +20,7 @@ static void update_navigation()
         update_nav_mode();
 
         // update log
-        if (g.log_bitmask & MASK_LOG_NTUN && motors.armed()) {
+        if ((g.log_bitmask & MASK_LOG_NTUN) && motors.armed()) {
             Log_Write_Nav_Tuning();
         }
     }
@@ -85,7 +85,10 @@ static void run_autopilot()
 {
     switch( control_mode ) {
         case AUTO:
-            // majority of command logic is in commands_logic.pde
+            // load the next command if the command queues are empty
+            update_commands();
+
+            // process the active navigation and conditional commands
             verify_commands();
             break;
         case GUIDED:
@@ -200,7 +203,7 @@ static void reset_nav_params(void)
 // assumes it is called at 100hz so centi-degrees and update rate cancel each other out
 static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
 {
-    return wrap_360_cd(current_yaw + constrain(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
+    return wrap_360_cd(current_yaw + constrain_int16(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
 }
 
 

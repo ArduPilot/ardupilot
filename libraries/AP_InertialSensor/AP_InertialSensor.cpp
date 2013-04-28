@@ -403,6 +403,13 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
     return false;
 }
 
+/// calibrated - returns true if the accelerometers have been calibrated
+/// @note this should not be called while flying because it reads from the eeprom which can be slow
+bool AP_InertialSensor::calibrated()
+{
+    return _accel_offset.load();
+}
+
 // _calibrate_model - perform low level accel calibration
 // accel_sample are accelerometer samples collected in 6 different positions
 // accel_offsets are output from the calibration routine

@@ -111,7 +111,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
 
     print("turn")
     hover(mavproxy, mav)
-    mavproxy.send('rc 4 1700\n')
+    mavproxy.send('rc 4 1550\n')
     if not wait_heading(mav, 0):
         return False
     mavproxy.send('rc 4 1500\n')
@@ -382,7 +382,7 @@ def fly_ArduCopter(viewerip=None):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/ArduCopter-test.mavlog")
+    buildlog = util.reltopdir("../buildlogs/ArduCopter-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)

@@ -101,9 +101,9 @@ def build_examples():
 
 
 def convert_gpx():
-    '''convert any mavlog files to GPX and KML'''
+    '''convert any tlog files to GPX and KML'''
     import glob
-    mavlog = glob.glob(util.reltopdir("../buildlogs/*.mavlog"))
+    mavlog = glob.glob(util.reltopdir("../buildlogs/*.tlog"))
     for m in mavlog:
         util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
@@ -129,7 +129,7 @@ def alarm_handler(signum, frame):
         results.addglob("Google Earth track", '*.kmz')
         results.addfile('Full Logs', 'autotest-output.txt')
         results.addglob('DataFlash Log', '*.flashlog')
-        results.addglob("MAVLink log", '*.mavlog')
+        results.addglob("MAVLink log", '*.tlog')
         results.addfile('ArduPlane build log', 'ArduPlane.txt')
         results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
         results.addfile('ArduCopter build log', 'ArduCopter.txt')
@@ -364,7 +364,7 @@ def run_tests(steps):
     results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
     results.addglob('DataFlash Log', '*.flashlog')
-    results.addglob("MAVLink log", '*.mavlog')
+    results.addglob("MAVLink log", '*.tlog')
     results.addglob("GPX track", '*.gpx')
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')

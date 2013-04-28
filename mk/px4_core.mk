@@ -168,8 +168,8 @@ include $(APPDIR)/Make.defs
 
 # this allows us to generate the main function
 SKETCHFLAGS     = -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME=\"$(SKETCH)\" -DSKETCH_MAIN=$(SKETCH)_main $(EXTRAFLAGS)
-CFLAGS		+= $(SKETCHFLAGS)
-CXXFLAGS	+= $(SKETCHFLAGS)
+CFLAGS		+= $(SKETCHFLAGS) -DCONFIG_C99_BOOL8
+CXXFLAGS	+= $(SKETCHFLAGS) -DCONFIG_C99_BOOL8
 
 ############################################################################
 # Sanity-check the information we've been given and set any defaults

@@ -7,21 +7,13 @@ get_stabilize_roll(int32_t target_angle)
     target_angle            = wrap_180_cd(target_angle - ahrs.roll_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle            = constrain(target_angle, -4500, 4500);
+    target_angle            = constrain_int32(target_angle, -4500, 4500);
 
-        // convert to desired Rate:
-    int32_t target_rate = g.pi_stabilize_roll.get_p(target_angle);
-
-    int16_t i_stab;
-    if(labs(ahrs.roll_sensor) < 500) {
-        target_angle            = constrain(target_angle, -500, 500);
-        i_stab                          = g.pi_stabilize_roll.get_i(target_angle, G_Dt);
-    }else{
-        i_stab                          = g.pi_stabilize_roll.get_integrator();
-    }
+    // convert to desired rate
+    int32_t target_rate = g.pi_stabilize_roll.get_pi(target_angle, G_Dt);
 
     // set targets for rate controller
-    set_roll_rate_target(target_rate+i_stab, EARTH_FRAME);
+    set_roll_rate_target(target_rate, EARTH_FRAME);
 }
 
 static void
@@ -31,21 +23,13 @@ get_stabilize_pitch(int32_t target_angle)
     target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle            = constrain(target_angle, -4500, 4500);
+    target_angle            = constrain_int32(target_angle, -4500, 4500);
 
-    // convert to desired Rate:
-    int32_t target_rate = g.pi_stabilize_pitch.get_p(target_angle);
-
-    int16_t i_stab;
-    if(labs(ahrs.pitch_sensor) < 500) {
-        target_angle            = constrain(target_angle, -500, 500);
-        i_stab                          = g.pi_stabilize_pitch.get_i(target_angle, G_Dt);
-    }else{
-        i_stab                          = g.pi_stabilize_pitch.get_integrator();
-    }
+    // convert to desired rate
+    int32_t target_rate = g.pi_stabilize_pitch.get_pi(target_angle, G_Dt);
 
     // set targets for rate controller
-    set_pitch_rate_target(target_rate + i_stab, EARTH_FRAME);
+    set_pitch_rate_target(target_rate, EARTH_FRAME);
 }
 
 static void
@@ -60,7 +44,7 @@ get_stabilize_yaw(int32_t target_angle)
 
     // limit the error we're feeding to the PID
 
-    angle_error             = constrain(angle_error, -4500, 4500);
+    angle_error             = constrain_int32(angle_error, -4500, 4500);
 
     // convert angle error to desired Rate:
     target_rate = g.pi_stabilize_yaw.get_p(angle_error);
@@ -69,7 +53,7 @@ get_stabilize_yaw(int32_t target_angle)
     // do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
     if(motors.ext_gyro_enabled) {
-        g.rc_4.servo_out = constrain((target_rate + i_term), -4500, 4500);
+        g.rc_4.servo_out = constrain_int32((target_rate + i_term), -4500, 4500);
     }
 #endif
 
@@ -130,12 +114,12 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
 
     // ensure that we don't reach gimbal lock
     if (labs(roll_axis) > 4500 && g.acro_trainer_enabled) {
-        roll_axis	= constrain(roll_axis, -4500, 4500);
+        roll_axis	= constrain_int32(roll_axis, -4500, 4500);
         angle_error = wrap_180_cd(roll_axis - ahrs.roll_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
         angle_error = wrap_180_cd(roll_axis - ahrs.roll_sensor);
-        angle_error	= constrain(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
+        angle_error	= constrain_int32(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
     }
 
     if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
@@ -166,12 +150,12 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
 
     // ensure that we don't reach gimbal lock
     if (labs(pitch_axis) > 4500) {
-        pitch_axis	= constrain(pitch_axis, -4500, 4500);
+        pitch_axis	= constrain_int32(pitch_axis, -4500, 4500);
         angle_error = wrap_180_cd(pitch_axis - ahrs.pitch_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
         angle_error = wrap_180_cd(pitch_axis - ahrs.pitch_sensor);
-        angle_error	= constrain(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
+        angle_error	= constrain_int32(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
     }
 
     if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
@@ -203,7 +187,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     angle_error = wrap_180_cd(nav_yaw - ahrs.yaw_sensor);
 
     // limit the maximum overshoot
-    angle_error	= constrain(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
+    angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
     if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
     	angle_error = 0;
@@ -329,7 +313,7 @@ get_heli_rate_roll(int32_t target_rate)
     output = p + i + d + ff;
 
     // constrain output
-    output = constrain(output, -4500, 4500);
+    output = constrain_int32(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -381,7 +365,7 @@ get_heli_rate_pitch(int32_t target_rate)
     output = p + i + d + ff;
 
     // constrain output
-    output = constrain(output, -4500, 4500);
+    output = constrain_int32(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -469,7 +453,7 @@ get_rate_roll(int32_t target_rate)
     output = p + i + d;
 
     // constrain output
-    output = constrain(output, -5000, 5000);
+    output = constrain_int32(output, -5000, 5000);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -510,7 +494,7 @@ get_rate_pitch(int32_t target_rate)
     output = p + i + d;
 
     // constrain output
-    output = constrain(output, -5000, 5000);
+    output = constrain_int32(output, -5000, 5000);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -546,7 +530,7 @@ get_rate_yaw(int32_t target_rate)
     d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
 
     output  = p+i+d;
-    output = constrain(output, -4500, 4500);
+    output = constrain_int32(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
@@ -567,7 +551,7 @@ get_rate_yaw(int32_t target_rate)
     int16_t yaw_limit = 2200 + abs(g.rc_4.control_in);
 
     // smoother Yaw control:
-    return constrain(output, -yaw_limit, yaw_limit);
+    return constrain_int32(output, -yaw_limit, yaw_limit);
 #endif // TRI_FRAME
 }
 #endif // !HELI_FRAME
@@ -603,7 +587,7 @@ get_of_roll(int32_t input_roll)
             d = 0;
         }
         // limit amount of change and maximum angle
-        of_roll = constrain(new_roll, (of_roll-20), (of_roll+20));
+        of_roll = constrain_int32(new_roll, (of_roll-20), (of_roll+20));
 
  #if LOGGING_ENABLED == ENABLED
         // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -618,7 +602,7 @@ get_of_roll(int32_t input_roll)
     }
 
     // limit max angle
-    of_roll = constrain(of_roll, -1000, 1000);
+    of_roll = constrain_int32(of_roll, -1000, 1000);
 
     return input_roll+of_roll;
 #else
@@ -657,7 +641,7 @@ get_of_pitch(int32_t input_pitch)
         }
 
         // limit amount of change
-        of_pitch = constrain(new_pitch, (of_pitch-20), (of_pitch+20));
+        of_pitch = constrain_int32(new_pitch, (of_pitch-20), (of_pitch+20));
 
  #if LOGGING_ENABLED == ENABLED
         // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -670,7 +654,7 @@ get_of_pitch(int32_t input_pitch)
     }
 
     // limit max angle
-    of_pitch = constrain(of_pitch, -1000, 1000);
+    of_pitch = constrain_int32(of_pitch, -1000, 1000);
 
     return input_pitch+of_pitch;
 #else
@@ -895,8 +879,8 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
     }
 
     // ensure reasonable throttle values
-    throttle_control = constrain(throttle_control,0,1000);
-    g.throttle_mid = constrain(g.throttle_mid,300,700);
+    throttle_control = constrain_int16(throttle_control,0,1000);
+    g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_MIDDLE) {
@@ -929,7 +913,7 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     }
 
     // ensure a reasonable throttle value
-    throttle_control = constrain(throttle_control,0,1000);
+    throttle_control = constrain_int16(throttle_control,0,1000);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
@@ -947,55 +931,6 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     desired_climb_rate = desired_rate;
 
     return desired_rate;
-}
-
-// get_pilot_desired_acceleration - transform pilot's throttle input to a desired acceleration
-// default upper and lower bounds are 500 cm/s/s (roughly 1/2 a G)
-// returns acceleration in cm/s/s
-static int16_t get_pilot_desired_acceleration(int16_t throttle_control)
-{
-    int32_t desired_accel = 0;
-
-    // throttle failsafe check
-    if( ap.failsafe_radio ) {
-        return 0;
-    }
-
-    // ensure a reasonable throttle value
-    throttle_control = constrain(throttle_control,0,1000);
-
-    // check throttle is above, below or in the deadband
-    if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
-        // below the deadband
-        desired_accel = (int32_t)ACCELERATION_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
-    }else if(throttle_control > THROTTLE_IN_DEADBAND_TOP) {
-        // above the deadband
-        desired_accel = (int32_t)ACCELERATION_MAX_Z * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - THROTTLE_IN_DEADBAND);
-    }else{
-        // must be in the deadband
-        desired_accel = 0;
-    }
-
-    return desired_accel;
-}
-
-// get_pilot_desired_direct_alt - transform pilot's throttle input to a desired altitude
-// return altitude in cm between 0 to 10m
-static int32_t get_pilot_desired_direct_alt(int16_t throttle_control)
-{
-    int32_t desired_alt = 0;
-
-    // radio failsafe check
-    if( ap.failsafe_radio ) {
-        return 0;
-    }
-
-    // ensure a reasonable throttle value
-    throttle_control = constrain(throttle_control,0,1000);
-
-    desired_alt = throttle_control;
-
-    return desired_alt;
 }
 
 // get_initial_alt_hold - get new target altitude based on current altitude and climb rate
@@ -1018,7 +953,7 @@ get_initial_alt_hold( int32_t alt_cm, int16_t climb_rate_cms)
             target_alt = alt_cm - ( linear_distance + (int32_t)climb_rate_cms*(int32_t)climb_rate_cms/(2*ALT_HOLD_ACCEL_MAX) );
         }
     }
-    return constrain(target_alt, alt_cm - ALT_HOLD_INIT_MAX_OVERSHOOT, alt_cm + ALT_HOLD_INIT_MAX_OVERSHOOT);
+    return constrain_int32(target_alt, alt_cm - ALT_HOLD_INIT_MAX_OVERSHOOT, alt_cm + ALT_HOLD_INIT_MAX_OVERSHOOT);
 }
 
 // get_throttle_rate - calculates desired accel required to achieve desired z_target_speed

@@ -44,12 +44,12 @@ public:
         return _ins->get_gyro();
     }
 
-    const Matrix3f get_dcm_matrix(void) const {
+    const Matrix3f &get_dcm_matrix(void) const {
         return _dcm_matrix;
     }
 
     // return the current drift correction integrator value
-    Vector3f get_gyro_drift(void) {
+    const Vector3f &get_gyro_drift(void) const {
         return _omega_I;
     }
 

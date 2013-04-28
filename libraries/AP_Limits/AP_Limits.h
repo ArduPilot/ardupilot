@@ -41,10 +41,10 @@ public:
     bool        enabled();
     bool        debug();
     bool        required();
-    AP_Int8     state();
-    AP_Int8     safetime();
-    AP_Int8     channel();
-    AP_Int8     recmode();
+    int8_t     state();
+    int8_t     safetime();
+    int8_t     channel();
+    int8_t     recmode();
 
     // module linked list management methods
     // pointer to the first module in linked list of modules

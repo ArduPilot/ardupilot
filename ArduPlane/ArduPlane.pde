@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.71"
+#define THISFIRMWARE "ArduPlane V2.72"
 /*
  *  Lead developer: Andrew Tridgell
  *
@@ -889,9 +889,6 @@ static void medium_loop()
 
         if (g.log_bitmask & MASK_LOG_NTUN)
             Log_Write_Nav_Tuning();
-
-        if (g.log_bitmask & MASK_LOG_GPS)
-            Log_Write_GPS();
         break;
 
     // This case controls the slow loop
@@ -940,7 +937,9 @@ static void slow_loop()
     case 1:
         slow_loopCounter++;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
 #else
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
@@ -978,8 +977,16 @@ static void one_second_loop()
 
 static void update_GPS(void)
 {
+    static uint32_t last_gps_reading;
     g_gps->update();
     update_GPS_light();
+
+    if (g_gps->last_message_time_ms() != last_gps_reading) {
+        last_gps_reading = g_gps->last_message_time_ms();
+        if (g.log_bitmask & MASK_LOG_GPS) {
+            Log_Write_GPS();
+        }
+    }
 
     // get position from AHRS
     have_position = ahrs.get_position(&current_loc);

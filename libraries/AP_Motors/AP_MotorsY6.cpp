@@ -17,10 +17,10 @@ void AP_MotorsY6::setup_motors()
     AP_MotorsMatrix::setup_motors();
 
     // MultiWii set-up
-    add_motor_raw(AP_MOTORS_MOT_1, -1.0,  0.666, AP_MOTORS_MATRIX_MOTOR_CCW, 2);
-    add_motor_raw(AP_MOTORS_MOT_2,  1.0,  0.666, AP_MOTORS_MATRIX_MOTOR_CW,  5);
-    add_motor_raw(AP_MOTORS_MOT_3,  1.0,  0.666, AP_MOTORS_MATRIX_MOTOR_CCW, 6);
-    add_motor_raw(AP_MOTORS_MOT_4,  0.0, -1.333, AP_MOTORS_MATRIX_MOTOR_CW,  4);
-    add_motor_raw(AP_MOTORS_MOT_5, -1.0,  0.666, AP_MOTORS_MATRIX_MOTOR_CW,  1);
-    add_motor_raw(AP_MOTORS_MOT_6,  0.0, -1.333, AP_MOTORS_MATRIX_MOTOR_CCW, 3);
+    add_motor_raw(AP_MOTORS_MOT_1, -1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+    add_motor_raw(AP_MOTORS_MOT_2,  1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
+    add_motor_raw(AP_MOTORS_MOT_3,  1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
+    add_motor_raw(AP_MOTORS_MOT_4,  0.0, -1.333, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+    add_motor_raw(AP_MOTORS_MOT_5, -1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
+    add_motor_raw(AP_MOTORS_MOT_6,  0.0, -1.333, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
 }

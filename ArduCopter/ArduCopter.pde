@@ -99,7 +99,7 @@
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AP_Limits.h>
+#include <AC_Fence.h>           // Arducopter Fence library
 #include <memcheck.h>           // memory limit checker
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
@@ -364,12 +364,13 @@ static AP_RangeFinder_MaxsonarXL *sonar;
 //Documentation of GLobals:
 static union {
     struct {
-        uint8_t home_is_set        : 1; // 1
-        uint8_t simple_mode        : 1; // 2    // This is the state of simple mode
-        uint8_t manual_attitude    : 1; // 3
-        uint8_t manual_throttle    : 1; // 4
+        uint8_t home_is_set        : 1; // 0
+        uint8_t simple_mode        : 1; // 1    // This is the state of simple mode
+        uint8_t manual_attitude    : 1; // 2
+        uint8_t manual_throttle    : 1; // 3
 
-        uint8_t low_battery        : 1; // 5    // Used to track if the battery is low - LED output flashes when the batt is low
+        uint8_t low_battery        : 1; // 4    // Used to track if the battery is low - LED output flashes when the batt is low
+        uint8_t pre_arm_check      : 1; // 5    // true if the radio and accel calibration have been performed
         uint8_t armed              : 1; // 6
         uint8_t auto_armed         : 1; // 7    // stops auto missions from beginning until throttle is raised
 
@@ -487,13 +488,6 @@ static float scaleLongDown = 1;
 ////////////////////////////////////////////////////////////////////////////////
 // Used by Mavlink for unknow reasons
 static const float radius_of_earth = 6378100;   // meters
-
-// Unions for getting byte values
-static union float_int {
-    int32_t int_value;
-    float float_value;
-} float_int;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
@@ -823,15 +817,11 @@ static AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
 static AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 #endif
 
-
 ////////////////////////////////////////////////////////////////////////////////
-// Experimental AP_Limits library - set constraints, limits, fences, minima, maxima on various parameters
+// AC_Fence library to reduce fly-aways
 ////////////////////////////////////////////////////////////////////////////////
-#if AP_LIMITS == ENABLED
-AP_Limits               limits;
-AP_Limit_GPSLock        gpslock_limit(g_gps);
-AP_Limit_Geofence       geofence_limit(FENCE_START_BYTE, FENCE_WP_SIZE, MAX_FENCEPOINTS, g_gps, &home, &current_loc);
-AP_Limit_Altitude       altitude_limit(&current_loc);
+#if AC_FENCE == ENABLED
+AC_Fence    fence(&inertial_nav, &g_gps);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -856,7 +846,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
     { update_navigation,     10,    500 },
     { medium_loop,           2,     700 },
-    { update_altitude,       5,    1000 },
+    { update_altitude,      10,    1000 },
     { fifty_hz_loop,         2,     950 },
     { run_nav_updates,      10,     800 },
     { slow_loop,            10,     500 },
@@ -1079,7 +1069,7 @@ static void medium_loop()
         medium_loopCounter++;
 
         // log compass information
-        if (motors.armed() && g.log_bitmask & MASK_LOG_COMPASS) {
+        if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
             Log_Write_Compass();
         }
 
@@ -1097,14 +1087,6 @@ static void medium_loop()
     //-------------------------------------------------
     case 3:
         medium_loopCounter++;
-
-        // perform next command
-        // --------------------
-        if(control_mode == AUTO) {
-            if(ap.home_is_set && g.command_total > 1) {
-                update_commands();
-            }
-        }
 
         if(motors.armed()) {
             if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
@@ -1207,17 +1189,9 @@ static void fifty_hz_loop()
 
 }
 
-
+// slow_loop - 3.3hz loop
 static void slow_loop()
 {
-
-#if AP_LIMITS == ENABLED
-
-    // Run the AP_Limits main loop
-    limits_loop();
-
-#endif // AP_LIMITS_ENABLED
-
     // This is the slow (3 1/3 Hz) loop pieces
     //----------------------------------------
     switch (slow_loopCounter) {
@@ -1242,12 +1216,19 @@ static void slow_loop()
             motors.set_frame_orientation(g.frame_orientation);
         }
 
+#if AC_FENCE == ENABLED
+        // check if we have breached a fence
+        fence_check();
+#endif // AC_FENCE_ENABLED
+
         break;
 
     case 1:
         slow_loopCounter++;
 
-#if MOUNT == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif MOUNT == ENABLED
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
 #endif
         enable_aux_servos();
@@ -1299,6 +1280,9 @@ static void super_slow_loop()
     // log battery info to the dataflash
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
+
+    // perform pre-arm checks
+    pre_arm_checks();
 
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
     // but only of the control mode is manual
@@ -1966,7 +1950,7 @@ static void read_AHRS(void)
 
 static void update_trig(void){
     Vector2f yawvector;
-    Matrix3f temp   = ahrs.get_dcm_matrix();
+    const Matrix3f &temp   = ahrs.get_dcm_matrix();
 
     yawvector.x     = temp.a.x;     // sin
     yawvector.y     = temp.b.x;         // cos

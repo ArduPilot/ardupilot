@@ -142,26 +142,24 @@ static void execute_nav_command(void)
 }
 
 // verify_commands - high level function to check if navigation and conditional commands have completed
-// called after GPS navigation update - not constantly
 static void verify_commands(void)
 {
+    // check if navigation command completed
     if(verify_must()) {
-        //cliSerial->printf("verified must cmd %d\n" , command_nav_index);
+        // clear navigation command queue so next command can be loaded
         command_nav_queue.id    = NO_COMMAND;
 
         // store our most recent executed nav command
-        prev_nav_index                  = command_nav_index;
+        prev_nav_index          = command_nav_index;
 
         // Wipe existing conditionals
-        command_cond_index              = NO_COMMAND;
+        command_cond_index      = NO_COMMAND;
         command_cond_queue.id   = NO_COMMAND;
-
-    }else{
-        //cliSerial->printf("verified must false %d\n" , command_nav_index);
     }
 
+    // check if conditional command completed
     if(verify_may()) {
-        //cliSerial->printf("verified may cmd %d\n" , command_cond_index);
+        // clear conditional command queue so next command can be loaded
         command_cond_queue.id = NO_COMMAND;
     }
 }
@@ -195,7 +193,6 @@ static void exit_mission()
             set_mode(LAND);
         }else{
             set_mode(LOITER);
-            wp_nav.set_desired_alt(g.rtl_alt_final);
         }
     }
 

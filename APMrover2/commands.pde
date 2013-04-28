@@ -72,7 +72,7 @@ static void set_cmd_with_index(struct Location temp, int i)
 
 	// Set altitude options bitmask
 	// XXX What is this trying to do?
-	if (temp.options & MASK_OPTIONS_RELATIVE_ALT && i != 0){
+	if ((temp.options & MASK_OPTIONS_RELATIVE_ALT) && i != 0){
 		temp.options = MASK_OPTIONS_RELATIVE_ALT;
 	} else {
 		temp.options = 0;

@@ -438,7 +438,7 @@ public:
 
     /// Value getter
     ///
-    T        get(void) const {
+    const T &get(void) const {
         return _value;
     }
 
@@ -459,14 +459,8 @@ public:
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator const T &() const {
         return _value;
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamV<T,PT>& operator        =(AP_ParamV<T,PT>& v) {
-        return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
@@ -529,12 +523,6 @@ public:
         if (i < N) {
             _value[i] = v;
         }
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamA<T,N,PT>& operator= (AP_ParamA<T,N,PT>& v) {
-        return v;
     }
 
 protected:

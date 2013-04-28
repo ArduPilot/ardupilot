@@ -49,17 +49,18 @@
 #define CH6_PWM_TRIGGER_HIGH 1800
 #define CH6_PWM_TRIGGER_LOW 1200
 
-#define CH7_DO_NOTHING 0
-#define CH7_SET_HOVER 1         // deprecated
-#define CH7_FLIP 2
-#define CH7_SIMPLE_MODE 3
-#define CH7_RTL 4
-#define CH7_SAVE_TRIM 5
-#define CH7_ADC_FILTER 6        // deprecated
-#define CH7_SAVE_WP 7
-#define CH7_MULTI_MODE 8
-#define CH7_CAMERA_TRIGGER 9
-#define CH7_SONAR 10            // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+#define CH7_DO_NOTHING      0
+#define CH7_SET_HOVER       1       // deprecated
+#define CH7_FLIP            2
+#define CH7_SIMPLE_MODE     3
+#define CH7_RTL             4
+#define CH7_SAVE_TRIM       5
+#define CH7_ADC_FILTER      6       // deprecated
+#define CH7_SAVE_WP         7
+#define CH7_MULTI_MODE      8
+#define CH7_CAMERA_TRIGGER  9
+#define CH7_SONAR           10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+#define CH7_FENCE           11      // allow enabling or disabling fence in flight
 
 
 
@@ -434,6 +435,7 @@ enum gcs_severity {
 #define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
 #define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
 #define ERROR_SUBSYSTEM_FAILSAFE_GPS        7
+#define ERROR_SUBSYSTEM_FAILSAFE_FENCE      8
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1

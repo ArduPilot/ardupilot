@@ -104,7 +104,7 @@ void AP_MotorsMatrix::output_armed()
     _reached_limit = AP_MOTOR_NO_LIMITS_REACHED;
 
     // Throttle is 0 to 1000 only
-    _rc_throttle->servo_out = constrain(_rc_throttle->servo_out, 0, _max_throttle);
+    _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
 
     // capture desired roll, pitch, yaw and throttle from receiver
     _rc_roll->calc_pwm();
@@ -255,7 +255,7 @@ void AP_MotorsMatrix::output_armed()
         // clip motor output if required (shouldn't be)
         for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
             if( motor_enabled[i] ) {
-                motor_out[i] = constrain(motor_out[i], out_min, out_max);
+                motor_out[i] = constrain_int16(motor_out[i], out_min, out_max);
             }
         }
     }
@@ -341,14 +341,14 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
 }
 
 // add_motor using just position and prop direction
-void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, int8_t direction, int8_t testing_order)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, int8_t testing_order)
 {
     // call raw motor set-up method
     add_motor_raw(
         motor_num,
         cosf(radians(angle_degrees + 90)),               // roll factor
         cosf(radians(angle_degrees)),                    // pitch factor
-        (float)direction,                                               // yaw factor
+        yaw_factor,                                      // yaw factor
         testing_order);
 
 }

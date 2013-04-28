@@ -20,7 +20,7 @@ static void read_control_switch()
                 if(g.ch7_option != CH7_SIMPLE_MODE) {
                     // set Simple mode using stored paramters from Mission planner
                     // rather than by the control switch
-                    set_simple_mode(g.simple_modes & (1 << switchPosition));
+                    set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
                 }
             }
         }
@@ -139,7 +139,7 @@ static void read_trim_switch()
 
                 // set the next_WP (home is stored at 0)
                 // max out at 100 since I think we need to stay under the EEPROM limit
-                CH7_wp_index = constrain(CH7_wp_index, 1, 100);
+                CH7_wp_index = constrain_int16(CH7_wp_index, 1, 100);
 
                 if(g.rc_3.control_in > 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
@@ -169,6 +169,13 @@ static void read_trim_switch()
             // enable or disable the sonar
             g.sonar_enabled = ap_system.CH7_flag;
             break;
+
+#if AC_FENCE == ENABLED
+        case CH7_FENCE:
+            // enable or disable the fence
+            fence.enable(ap_system.CH7_flag);
+            break;
+#endif
     }
 }
 

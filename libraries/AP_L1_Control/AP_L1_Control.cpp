@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Range: 1-60
 	// @Increment: 1
-    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 30),
+    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 25),
 	
     // @Param: DAMPING
     // @DisplayName: L1 control damping ratio
@@ -103,9 +103,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float VomegaA = groundSpeed * omegaA;
 	
 	//Convert current location and WP positions to 2D vectors in lat and long
-    Vector2f A_air((_current_loc.lat/1.0e7f), (_current_loc.lng/1.0e7f));
-    Vector2f A_v((prev_WP.lat/1.0e7f), (prev_WP.lng/1.0e7f));
-    Vector2f B_v((next_WP.lat/1.0e7f), (next_WP.lng/1.0e7f));
+    Vector2f A_air((_current_loc.lat*1.0e-7f), (_current_loc.lng*1.0e-7f));
+    Vector2f A_v((prev_WP.lat*1.0e-7f), (prev_WP.lng*1.0e-7f));
+    Vector2f B_v((next_WP.lat*1.0e-7f), (next_WP.lng*1.0e-7f));
 
 	//Calculate the NE position of the aircraft and WP B relative to WP A
     A_air = _geo2planar(A_v, A_air)*RADIUS_OF_EARTH;
@@ -197,8 +197,8 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float VomegaA = groundSpeed * omegaA;
 
 	//Convert current location and WP positionsto 2D vectors in lat and long
-    Vector2f A_air((_current_loc.lat/1.0e7f), (_current_loc.lng/1.0e7f));
-    Vector2f A_v((center_WP.lat/1.0e7f), (center_WP.lng/1.0e7f));
+    Vector2f A_air((_current_loc.lat*1.0e-7f), (_current_loc.lng*1.0e-7f));
+    Vector2f A_v((center_WP.lat*1.0e-7f), (center_WP.lng*1.0e-7f));
 
 	//Calculate the NE position of the aircraft relative to WP A
     A_air = _geo2planar(A_v, A_air)*RADIUS_OF_EARTH;

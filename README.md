@@ -1,5 +1,7 @@
 # ArduPilot Project
 
+You can find lots of development information at the [ArduPilot development site](http://dev.ardupilot.com)
+
 ## Getting the source
 
 You can either download the source using the "ZIP" button at the top
@@ -39,7 +41,7 @@ the instructions in the "Building using make" section.
 
 1. The patched ArduPilot Arduino IDE is available for Mac and Windows
    from the [downloads
-   page](http://code.google.com/p/ardupilot-mega/downloads/list).
+   page](http://firmware.diydrones.com).
 
 2. Unpack and launch the ArduPilot Arduino IDE. In the preferences
    menu, set your sketchbook location to your downloaded or cloned

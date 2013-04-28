@@ -63,16 +63,19 @@ void AP_InertialNav::update(float dt)
     //Convert North-East-Down to North-East-Up
     accel_ef.z = -accel_ef.z;
 
-    accel_correction_ef.x += _position_error.x * _k3_xy * dt;
-    accel_correction_ef.y += _position_error.y * _k3_xy * dt;
+    float tmp = _k3_xy * dt;
+    accel_correction_ef.x += _position_error.x * tmp;
+    accel_correction_ef.y += _position_error.y * tmp;
     accel_correction_ef.z += _position_error.z * _k3_z  * dt;
 
-    _velocity.x += _position_error.x * _k2_xy * dt;
-    _velocity.y += _position_error.y * _k2_xy * dt;
+    tmp = _k2_xy * dt;
+    _velocity.x += _position_error.x * tmp;
+    _velocity.y += _position_error.y * tmp;
     _velocity.z += _position_error.z * _k2_z  * dt;
 
-    _position_correction.x += _position_error.x * _k1_xy * dt;
-    _position_correction.y += _position_error.y * _k1_xy * dt;
+    tmp = _k1_xy * dt;
+    _position_correction.x += _position_error.x * tmp;
+    _position_correction.y += _position_error.y * tmp;
     _position_correction.z += _position_error.z * _k1_z  * dt;
 
     // calculate velocity increase adding new acceleration from accelerometers
@@ -111,7 +114,7 @@ void AP_InertialNav::set_time_constant_xy( float time_constant_in_seconds )
 }
 
 // position_ok - return true if position has been initialised and have received gps data within 3 seconds
-bool AP_InertialNav::position_ok()
+bool AP_InertialNav::position_ok() const
 {
     return _xy_enabled;
 }
@@ -132,7 +135,7 @@ void AP_InertialNav::check_gps()
     if( gps_time != _gps_last_time ) {
 
         // calculate time since last gps reading
-        float dt = (float)(now - _gps_last_update) / 1000.0f;
+        float dt = (float)(now - _gps_last_update) * 0.001f;
 
         // call position correction method
         correct_with_gps((*_gps_ptr)->longitude, (*_gps_ptr)->latitude, dt);
@@ -162,7 +165,7 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
 
     // calculate distance from base location
     x = (float)(lat - _base_lat) * AP_INERTIALNAV_LATLON_TO_CM;
-    y = (float)(lon - _base_lon) * _lon_to_m_scaling * AP_INERTIALNAV_LATLON_TO_CM;
+    y = (float)(lon - _base_lon) * _lon_to_m_scaling;
 
     // ublox gps positions are delayed by 400ms
     // we store historical position at 10hz so 4 iterations ago
@@ -180,7 +183,7 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
 }
 
 // get accel based latitude
-int32_t AP_InertialNav::get_latitude()
+int32_t AP_InertialNav::get_latitude() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -191,14 +194,14 @@ int32_t AP_InertialNav::get_latitude()
 }
 
 // get accel based longitude
-int32_t AP_InertialNav::get_longitude()
+int32_t AP_InertialNav::get_longitude() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
         return 0;
     }
 
-    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM));
+    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / _lon_to_m_scaling);
 }
 
 // set_current_position - all internal calculations are recorded as the distances from this point
@@ -210,7 +213,7 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
 
     // set longitude->meters scaling
     // this is used to offset the shrinking longitude as we go towards the poles
-    _lon_to_m_scaling = cosf((fabsf((float)lat)/10000000.0f) * 0.0174532925f);
+    _lon_to_m_scaling = cosf((fabsf((float)lat)*1.0e-7f) * 0.0174532925f) * AP_INERTIALNAV_LATLON_TO_CM;
 
     // reset corrections to base position to zero
     _position_base.x = 0;
@@ -227,7 +230,7 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
 }
 
 // get accel based latitude
-float AP_InertialNav::get_latitude_diff()
+float AP_InertialNav::get_latitude_diff() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -238,18 +241,18 @@ float AP_InertialNav::get_latitude_diff()
 }
 
 // get accel based longitude
-float AP_InertialNav::get_longitude_diff()
+float AP_InertialNav::get_longitude_diff() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
         return 0;
     }
 
-    return (_position_base.y+_position_correction.y) / (_lon_to_m_scaling*AP_INERTIALNAV_LATLON_TO_CM);
+    return (_position_base.y+_position_correction.y) / _lon_to_m_scaling;
 }
 
 // get velocity in latitude & longitude directions
-float AP_InertialNav::get_latitude_velocity()
+float AP_InertialNav::get_latitude_velocity() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -260,7 +263,7 @@ float AP_InertialNav::get_latitude_velocity()
     // Note: is +_velocity.x the output velocity in logs is in reverse direction from accel lat
 }
 
-float AP_InertialNav::get_longitude_velocity()
+float AP_InertialNav::get_longitude_velocity() const
 {
     // make sure we've been initialised
     if( !_xy_enabled ) {
@@ -302,7 +305,7 @@ void AP_InertialNav::check_baro()
     // calculate time since last baro reading
     baro_update_time = _baro->get_last_update();
     if( baro_update_time != _baro_last_update ) {
-        float dt = (float)(baro_update_time - _baro_last_update) / 1000.0f;
+        float dt = (float)(baro_update_time - _baro_last_update) * 0.001f;
         // call correction method
         correct_with_baro(_baro->get_altitude()*100, dt);
         _baro_last_update = baro_update_time;

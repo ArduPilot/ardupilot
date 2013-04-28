@@ -171,6 +171,7 @@ struct PACKED log_Performance {
     int16_t  gyro_drift_y;
     int16_t  gyro_drift_z;
     int16_t  pm_test;
+    uint8_t  i2c_lockup_count;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -188,7 +189,8 @@ static void Log_Write_Performance()
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
-        pm_test         : pmTest1
+        pm_test         : pmTest1,
+        i2c_lockup_count: hal.i2c->lockup_count()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -320,6 +322,7 @@ static void Log_Write_Attitude()
 struct log_Mode {
     LOG_PACKET_HEADER;
     uint8_t mode;
+    uint8_t mode_num;
 };
 
 // Write a mode packet. Total length : 7 bytes
@@ -327,7 +330,8 @@ static void Log_Write_Mode()
 {
     struct log_Mode pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
-        mode            : (uint8_t)control_mode
+        mode            : (uint8_t)control_mode,
+        mode_num        : (uint8_t)control_mode
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -429,7 +433,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "ccC",        "Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "IHhBBBhhhh", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,PMT" },
+      "PM",  "IHhBBBhhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,PMT,I2CErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
@@ -443,7 +447,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hhhHf",      "Thr,Volt,Curr,Vcc,CurrTot" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
-      "MODE", "B",          "Mode" },
+      "MODE", "MB",          "Mode,ModeNum" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "hhhhhhhhh",   "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
 };
