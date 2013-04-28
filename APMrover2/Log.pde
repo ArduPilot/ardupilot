@@ -322,6 +322,7 @@ static void Log_Write_Attitude()
 struct log_Mode {
     LOG_PACKET_HEADER;
     uint8_t mode;
+    uint8_t mode_num;
 };
 
 // Write a mode packet. Total length : 7 bytes
@@ -329,7 +330,8 @@ static void Log_Write_Mode()
 {
     struct log_Mode pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
-        mode            : (uint8_t)control_mode
+        mode            : (uint8_t)control_mode,
+        mode_num        : (uint8_t)control_mode
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -445,7 +447,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hhhHf",      "Thr,Volt,Curr,Vcc,CurrTot" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
-      "MODE", "M",          "Mode" },
+      "MODE", "MB",          "Mode,ModeNum" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "hhhhhhhhh",   "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
 };
