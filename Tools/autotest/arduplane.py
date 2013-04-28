@@ -257,7 +257,7 @@ def fly_ArduPlane(viewerip=None):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/ArduPlane-test.mavlog")
+    buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
