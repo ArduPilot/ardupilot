@@ -85,6 +85,7 @@ public:
         k_param_hil_servos,
         k_param_vtail_output,
         k_param_nav_controller,
+        k_param_elevon_output,
 
         // 110: Telemetry control
         //
@@ -329,6 +330,7 @@ public:
     AP_Int8 auto_trim;
     AP_Int8 mix_mode;
     AP_Int8 vtail_output;
+    AP_Int8 elevon_output;
     AP_Int8 reverse_elevons;
     AP_Int8 reverse_ch1_elevon;
     AP_Int8 reverse_ch2_elevon;
