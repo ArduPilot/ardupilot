@@ -484,13 +484,6 @@ static float scaleLongDown = 1;
 // Used by Mavlink for unknow reasons
 static const float radius_of_earth = 6378100;   // meters
 
-// Unions for getting byte values
-static union float_int {
-    int32_t int_value;
-    float float_value;
-} float_int;
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
