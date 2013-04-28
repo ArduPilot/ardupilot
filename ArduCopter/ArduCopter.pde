@@ -848,7 +848,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
     { update_navigation,     10,    500 },
     { medium_loop,           2,     700 },
-    { update_altitude,       5,    1000 },
+    { update_altitude,      10,    1000 },
     { fifty_hz_loop,         2,     950 },
     { run_nav_updates,      10,     800 },
     { slow_loop,            10,     500 },
