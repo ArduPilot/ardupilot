@@ -61,17 +61,10 @@ static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
 const struct Menu::command test_menu_commands[] PROGMEM = {
     {"pwm",                 test_radio_pwm},
     {"radio",               test_radio},
-//	{"failsafe",	test_failsafe},
-//	{"stabilize",	test_stabilize},
     {"gps",                 test_gps},
-//	{"adc",         test_adc},
     {"ins",                 test_ins},
-//	{"dcm",			test_dcm_eulers},
-    //{"omega",		test_omega},
-//	{"stab_d",		test_stab_d},
     {"battery",             test_battery},
     {"tune",                test_tuning},
-    //{"tri",			test_tri},
     {"relay",               test_relay},
     {"wp",                  test_wp},
 //	{"toy",			test_toy},
@@ -84,9 +77,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     //{"xbee",		test_xbee},
     {"eedump",              test_eedump},
     {"logging",             test_logging},
-//	{"rawgps",		test_rawgps},
-//	{"mission",		test_mission},
-    //{"reverse",		test_reverse},
     {"nav",                 test_wp_nav},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     {"shell", 				test_shell},
@@ -152,35 +142,6 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
         }
     }
 }
-
-/*
- *  //static int8_t
- *  //test_tri(uint8_t argc, const Menu::arg *argv)
- *  {
- *       print_hit_enter();
- *       delay(1000);
- *
- *       while(1){
- *               delay(20);
- *
- *               // Filters radio input - adjust filters in the radio.pde file
- *               // ----------------------------------------------------------
- *               read_radio();
- *               g.rc_4.servo_out = g.rc_4.control_in;
- *               g.rc_4.calc_pwm();
- *
- *               cliSerial->printf_P(PSTR("input: %d\toutput%d\n"),
- *                                                       g.rc_4.control_in,
- *                                                       g.rc_4.radio_out);
- *
- *               APM_RC.OutputCh(CH_TRI_YAW, g.rc_4.radio_out);
- *
- *               if(cliSerial->available() > 0){
- *                       return (0);
- *               }
- *       }
- *  }*/
-
 
 /*
 //static int8_t
@@ -271,180 +232,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-/*
- *  //static int8_t
- *  //test_failsafe(uint8_t argc, const Menu::arg *argv)
- *  {
- *
- * #if THROTTLE_FAILSAFE
- *       byte fail_test;
- *       print_hit_enter();
- *       for(int16_t i = 0; i < 50; i++){
- *               delay(20);
- *               read_radio();
- *       }
- *
- *       oldSwitchPosition = readSwitch();
- *
- *       cliSerial->printf_P(PSTR("Unplug battery, throttle in neutral, turn off radio.\n"));
- *       while(g.rc_3.control_in > 0){
- *               delay(20);
- *               read_radio();
- *       }
- *
- *       while(1){
- *               delay(20);
- *               read_radio();
- *
- *               if(g.rc_3.control_in > 0){
- *                       cliSerial->printf_P(PSTR("THROTTLE CHANGED %d \n"), g.rc_3.control_in);
- *                       fail_test++;
- *               }
- *
- *               if(oldSwitchPosition != readSwitch()){
- *                       cliSerial->printf_P(PSTR("CONTROL MODE CHANGED: "));
- *                       cliSerial->println(flight_mode_strings[readSwitch()]);
- *                       fail_test++;
- *               }
- *
- *               if(g.failsafe_throttle && g.rc_3.get_failsafe()){
- *                       cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.rc_3.radio_in);
- *                       cliSerial->println(flight_mode_strings[readSwitch()]);
- *                       fail_test++;
- *               }
- *
- *               if(fail_test > 0){
- *                       return (0);
- *               }
- *               if(cliSerial->available() > 0){
- *                       cliSerial->printf_P(PSTR("LOS caused no change in ACM.\n"));
- *                       return (0);
- *               }
- *       }
- * #else
- *               return (0);
- * #endif
- *  }
- */
-
-/*
- *  //static int8_t
- *  //test_stabilize(uint8_t argc, const Menu::arg *argv)
- *  {
- *       static byte ts_num;
- *
- *
- *       print_hit_enter();
- *       delay(1000);
- *
- *       // setup the radio
- *       // ---------------
- *       init_rc_in();
- *
- *       control_mode = STABILIZE;
- *       cliSerial->printf_P(PSTR("g.pi_stabilize_roll.kP: %4.4f\n"), g.pi_stabilize_roll.kP());
- *       cliSerial->printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
- *
- *       set_auto_armed(false);
- *       motors.armed(true);
- *
- *       while(1){
- *               // 50 hz
- *               if (millis() - fast_loopTimer > 19) {
- *                       delta_ms_fast_loop     = millis() - fast_loopTimer;
- *                       fast_loopTimer		= millis();
- *                       G_Dt               = (float)delta_ms_fast_loop / 1000.f;
- *
- *                       if(g.compass_enabled){
- *                               medium_loopCounter++;
- *                               if(medium_loopCounter == 5){
- *                   Matrix3f m = dcm.get_dcm_matrix();
- *                                       compass.read();		                // Read magnetometer
- *                   compass.null_offsets();
- *                                       medium_loopCounter = 0;
- *                               }
- *                       }
- *
- *                       // for trim features
- *                       read_trim_switch();
- *
- *                       // Filters radio input - adjust filters in the radio.pde file
- *                       // ----------------------------------------------------------
- *                       read_radio();
- *
- *                       // IMU
- *                       // ---
- *                       read_AHRS();
- *
- *                       // allow us to zero out sensors with control switches
- *                       if(g.rc_5.control_in < 600){
- *                               dcm.roll_sensor = dcm.pitch_sensor = 0;
- *                       }
- *
- *                       // custom code/exceptions for flight modes
- *                       // ---------------------------------------
- *                       update_current_flight_mode();
- *
- *                       // write out the servo PWM values
- *                       // ------------------------------
- *                       set_servos_4();
- *
- *                       ts_num++;
- *                       if (ts_num > 10){
- *                               ts_num = 0;
- *                               cliSerial->printf_P(PSTR("r: %d, p:%d, rc1:%d, "),
- *                                       (int)(dcm.roll_sensor/100),
- *                                       (int)(dcm.pitch_sensor/100),
- *                                       g.rc_1.pwm_out);
- *
- *                               print_motor_out();
- *                       }
- *                       // R: 1417,  L: 1453  F: 1453  B: 1417
- *
- *                       //cliSerial->printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
- *                       //cliSerial->printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
- *
- *                       if(cliSerial->available() > 0){
- *                               if(g.compass_enabled){
- *                                       compass.save_offsets();
- *                                       report_compass();
- *                               }
- *                               return (0);
- *                       }
- *
- *               }
- *       }
- *  }
- */
-
-
-/*
- * #if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_ADC == ENABLED
- *  //static int8_t
- *  //test_adc(uint8_t argc, const Menu::arg *argv)
- *  {
- *       print_hit_enter();
- *       cliSerial->printf_P(PSTR("ADC\n"));
- *       delay(1000);
- *
- *  adc.Init(&timer_scheduler);
- *
- *  delay(50);
- *
- *       while(1){
- *               for(int16_t i = 0; i < 9; i++){
- *                       cliSerial->printf_P(PSTR("%.1f,"),adc.Ch(i));
- *               }
- *               cliSerial->println();
- *               delay(20);
- *               if(cliSerial->available() > 0){
- *                       return (0);
- *               }
- *       }
- *  }
- * #endif
- */
-
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
@@ -512,119 +299,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     }
     return 0;
 }
-
-/*
- *  //static int8_t
- *  //test_dcm(uint8_t argc, const Menu::arg *argv)
- *  {
- *       print_hit_enter();
- *       delay(1000);
- *       cliSerial->printf_P(PSTR("Gyro | Accel\n"));
- *       Vector3f   _cam_vector;
- *       Vector3f   _out_vector;
- *
- *       G_Dt = .02;
- *
- *       while(1){
- *               for(byte i = 0; i <= 50; i++){
- *                       delay(20);
- *                       // IMU
- *                       // ---
- *                       read_AHRS();
- *               }
- *
- *               Matrix3f temp = dcm.get_dcm_matrix();
- *               Matrix3f temp_t = dcm.get_dcm_transposed();
- *
- *               cliSerial->printf_P(PSTR("dcm\n"
- *                                                        "%4.4f \t %4.4f \t %4.4f \n"
- *                                                        "%4.4f \t %4.4f \t %4.4f \n"
- *                                                        "%4.4f \t %4.4f \t %4.4f \n\n"),
- *                                                       temp.a.x, temp.a.y, temp.a.z,
- *                                                       temp.b.x, temp.b.y, temp.b.z,
- *                                                       temp.c.x, temp.c.y, temp.c.z);
- *
- *               int16_t _pitch         = degrees(-asin(temp.c.x));
- *               int16_t _roll      = degrees(atan2f(temp.c.y, temp.c.z));
- *               int16_t _yaw       = degrees(atan2f(temp.b.x, temp.a.x));
- *               cliSerial->printf_P(PSTR(	"angles\n"
- *                                                               "%d \t %d \t %d\n\n"),
- *                                                               _pitch,
- *                                                               _roll,
- *                                                               _yaw);
- *
- *               //_out_vector = _cam_vector * temp;
- *               //cliSerial->printf_P(PSTR(	"cam\n"
- *               //						"%d \t %d \t %d\n\n"),
- *               //						(int)temp.a.x * 100, (int)temp.a.y * 100, (int)temp.a.x * 100);
- *
- *               if(cliSerial->available() > 0){
- *                       return (0);
- *               }
- *       }
- *  }
- */
-/*
- *  //static int8_t
- *  //test_dcm(uint8_t argc, const Menu::arg *argv)
- *  {
- *       print_hit_enter();
- *       delay(1000);
- *       cliSerial->printf_P(PSTR("Gyro | Accel\n"));
- *       delay(1000);
- *
- *       while(1){
- *               Vector3f accels = dcm.get_accel();
- *               cliSerial->print("accels.z:");
- *               cliSerial->print(accels.z);
- *               cliSerial->print("omega.z:");
- *               cliSerial->print(omega.z);
- *               delay(100);
- *
- *               if(cliSerial->available() > 0){
- *                       return (0);
- *               }
- *       }
- *  }
- */
-
-/*static int8_t
- *  //test_omega(uint8_t argc, const Menu::arg *argv)
- *  {
- *       static byte ts_num;
- *       float old_yaw;
- *
- *       print_hit_enter();
- *       delay(1000);
- *       cliSerial->printf_P(PSTR("Omega"));
- *       delay(1000);
- *
- *       G_Dt = .02;
- *
- *       while(1){
- *               delay(20);
- *               // IMU
- *               // ---
- *               read_AHRS();
- *
- *               float my_oz = (dcm.yaw - old_yaw) * 50;
- *
- *               old_yaw = dcm.yaw;
- *
- *               ts_num++;
- *               if (ts_num > 2){
- *                       ts_num = 0;
- *                       //cliSerial->printf_P(PSTR("R: %4.4f\tP: %4.4f\tY: %4.4f\tY: %4.4f\n"), omega.x, omega.y, omega.z, my_oz);
- *                       cliSerial->printf_P(PSTR(" Yaw: %ld\tY: %4.4f\tY: %4.4f\n"), dcm.yaw_sensor, omega.z, my_oz);
- *               }
- *
- *               if(cliSerial->available() > 0){
- *                       return (0);
- *               }
- *       }
- *       return (0);
- *  }
- *  //*/
 
 static int8_t
 test_tuning(uint8_t argc, const Menu::arg *argv)
@@ -727,46 +401,6 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 
     return (0);
 }
-
-//static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
-/*
- *  print_hit_enter();
- *  delay(1000);
- *  while(1){
- *          if (Serial3.available()){
- *                          digitalWrite(B_LED_PIN, LED_ON); // Blink Yellow LED if we are sending data to GPS
- *                          Serial1.write(Serial3.read());
- *                          digitalWrite(B_LED_PIN, LED_OFF);
- *          }
- *          if (Serial1.available()){
- *                          digitalWrite(C_LED_PIN, LED_ON); // Blink Red LED if we are receiving data from GPS
- *                          Serial3.write(Serial1.read());
- *                          digitalWrite(C_LED_PIN, LED_OFF);
- *          }
- *          if(cliSerial->available() > 0){
- *                          return (0);
- *  }
- *  }
- */
-//}
-
-/*static int8_t
- *  //test_xbee(uint8_t argc, const Menu::arg *argv)
- *  {
- *       print_hit_enter();
- *       delay(1000);
- *       cliSerial->printf_P(PSTR("Begin XBee X-CTU Range and RSSI Test:\n"));
- *
- *       while(1){
- *               if (Serial3.available())
- *                       Serial3.write(Serial3.read());
- *
- *               if(cliSerial->available() > 0){
- *                       return (0);
- *               }
- *       }
- *  }
- */
 
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t
@@ -879,46 +513,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 
-/*
- *  //static int8_t
- *  //test_reverse(uint8_t argc,        const Menu::arg *argv)
- *  {
- *       print_hit_enter();
- *       delay(1000);
- *
- *       while(1){
- *               delay(20);
- *
- *               // Filters radio input - adjust filters in the radio.pde file
- *               // ----------------------------------------------------------
- *               g.rc_4.set_reverse(0);
- *               g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
- *               g.rc_4.servo_out = g.rc_4.control_in;
- *               g.rc_4.calc_pwm();
- *               cliSerial->printf_P(PSTR("PWM:%d input: %d\toutput%d "),
- *                                                       APM_RC.InputCh(CH_4),
- *                                                       g.rc_4.control_in,
- *                                                       g.rc_4.radio_out);
- *               APM_RC.OutputCh(CH_6, g.rc_4.radio_out);
- *
- *
- *               g.rc_4.set_reverse(1);
- *               g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
- *               g.rc_4.servo_out = g.rc_4.control_in;
- *               g.rc_4.calc_pwm();
- *               cliSerial->printf_P(PSTR("\trev input: %d\toutput%d\n"),
- *                                                       g.rc_4.control_in,
- *                                                       g.rc_4.radio_out);
- *
- *               APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
- *
- *               if(cliSerial->available() > 0){
- *                       g.rc_4.set_reverse(0);
- *                       return (0);
- *               }
- *       }
- *  }*/
-
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 /*
  *  test the sonar
@@ -1011,69 +605,6 @@ test_logging(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-
-/*
- *  static int8_t
- *  //test_mission(uint8_t argc, const Menu::arg *argv)
- *  {
- *       //write out a basic mission to the EEPROM
- *
- *  //{
- *  //	uint8_t		id;					///< command id
- *  //	uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
- *  //	uint8_t		p1;					///< param 1
- *  //	int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
- *  //	int32_t		lat;				///< param 3 - Lattitude * 10**7
- *  //	int32_t		lng;				///< param 4 - Longitude * 10**7
- *  //}
- *
- *       // clear home
- *       {Location t = {0,      0,	  0,        0,      0,          0};
- *       set_cmd_with_index(t,0);}
- *
- *       // CMD										opt						pitch       alt/cm
- *       {Location t = {MAV_CMD_NAV_TAKEOFF,        WP_OPTION_RELATIVE,	  0,        100,        0,          0};
- *       set_cmd_with_index(t,1);}
- *
- *       if (!strcmp_P(argv[1].str, PSTR("wp"))) {
- *
- *               // CMD											opt
- *               {Location t = {MAV_CMD_NAV_WAYPOINT,           WP_OPTION_RELATIVE,		15, 0, 0, 0};
- *               set_cmd_with_index(t,2);}
- *               // CMD											opt
- *               {Location t = {MAV_CMD_NAV_RETURN_TO_LAUNCH,       WP_OPTION_YAW,	  0,        0,      0,		0};
- *               set_cmd_with_index(t,3);}
- *
- *               // CMD											opt
- *               {Location t = {MAV_CMD_NAV_LAND,				0,	  0,        0,      0,		0};
- *               set_cmd_with_index(t,4);}
- *
- *       } else {
- *               //2250 = 25 meteres
- *               // CMD										opt		p1		//alt		//NS		//WE
- *               {Location t = {MAV_CMD_NAV_LOITER_TIME,    0,	  10,   0,          0,			0}; // 19
- *               set_cmd_with_index(t,2);}
- *
- *               // CMD										opt		dir		angle/deg	deg/s	relative
- *               {Location t = {MAV_CMD_CONDITION_YAW,		0,	  1,        360,        60,     1};
- *               set_cmd_with_index(t,3);}
- *
- *               // CMD										opt
- *               {Location t = {MAV_CMD_NAV_LAND,			0,	  0,        0,          0,      0};
- *               set_cmd_with_index(t,4);}
- *
- *       }
- *
- *       g.rtl_altitude.set_and_save(300);
- *       g.command_total.set_and_save(4);
- *       wp_nav.set_waypoint_radius(300);
- *
- *       test_wp(NULL, NULL);
- *       return (0);
- *  }
- */
-
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 /*
  *  run a debug shell
@@ -1091,36 +622,4 @@ static void print_hit_enter()
     cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
 
-/*
- *  //static void fake_out_gps()
- *  {
- *       static float rads;
- *       g_gps->new_data    = true;
- *       g_gps->fix	    = true;
- *
- *       //int length = g.rc_6.control_in;
- *       rads += .05;
- *
- *       if (rads > 6.28){
- *               rads = 0;
- *       }
- *
- *       g_gps->latitude	= 377696000;	// Y
- *       g_gps->longitude	= -1224319000;	// X
- *       g_gps->altitude	= 9000;			// meters * 100
- *
- *       //next_WP.lng	    = home.lng - length * sin(rads);   // X
- *       //next_WP.lat  = home.lat + length * cos(rads);   // Y
- *  }
- *
- */
-/*
- *  //static void print_motor_out(){
- *       cliSerial->printf("out: R: %d,  L: %d  F: %d  B: %d\n",
- *                               (motor_out[CH_1]   - g.rc_3.radio_min),
- *                               (motor_out[CH_2]   - g.rc_3.radio_min),
- *                               (motor_out[CH_3]   - g.rc_3.radio_min),
- *                               (motor_out[CH_4]   - g.rc_3.radio_min));
- *  }
- */
 #endif // CLI_ENABLED
