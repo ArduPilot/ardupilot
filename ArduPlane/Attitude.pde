@@ -485,37 +485,37 @@ static bool suppress_throttle(void)
 }
 
 /*
-  implement a software VTail mixer. There are 4 different mixing modes
+  implement a software VTail or elevon mixer. There are 4 different mixing modes
  */
-static void vtail_output_mixing(void)
+static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out)
 {
-    int16_t elevator, rudder;
+    int16_t c1, c2;
     int16_t v1, v2;
 
     // first get desired elevator and rudder as -500..500 values
-    elevator = g.channel_pitch.radio_out  - 1500;
-    rudder   = g.channel_rudder.radio_out - 1500;
+    c1 = chan1_out - 1500;
+    c2 = chan2_out - 1500;
 
-    v1 = (elevator - rudder)/2;
-    v2 = (elevator + rudder)/2;
+    v1 = (c1 - c2)/2;
+    v2 = (c1 + c2)/2;
 
-    // now map to vtail output
-    switch (g.vtail_output) {
-    case VTAIL_DISABLED:
+    // now map to mixed output
+    switch (mixing_type) {
+    case MIXING_DISABLED:
         return;
 
-    case VTAIL_UPUP:
+    case MIXING_UPUP:
         break;
 
-    case VTAIL_UPDN:
+    case MIXING_UPDN:
         v2 = -v2;
         break;
 
-    case VTAIL_DNUP:
+    case MIXING_DNUP:
         v1 = -v1;
         break;
 
-    case VTAIL_DNDN:
+    case MIXING_DNDN:
         v1 = -v1;
         v2 = -v2;
         break;
@@ -525,8 +525,8 @@ static void vtail_output_mixing(void)
     v2 = constrain_int16(v2, -500, 500);
 
     // scale for a 1500 center and 1000..2000 range, symmetric
-    g.channel_pitch.radio_out  = 1500 + v1;
-    g.channel_rudder.radio_out = 1500 + v2;
+    chan1_out = 1500 + v1;
+    chan2_out = 1500 + v2;
 }
 
 /*****************************************
@@ -538,7 +538,7 @@ static void set_servos(void)
 
     if (control_mode == MANUAL) {
         // do a direct pass through of radio values
-        if (g.mix_mode == 0) {
+        if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
             g.channel_roll.radio_out                = g.channel_roll.radio_in;
             g.channel_pitch.radio_out               = g.channel_pitch.radio_in;
         } else {
@@ -572,7 +572,7 @@ static void set_servos(void)
         // copy flap control from transmitter
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
 
-        if (g.mix_mode != 0) {
+        if (g.mix_mode == 0 && g.elevon_output == MIXING_DISABLED) {
             // set any differential spoilers to follow the elevons in
             // manual mode. 
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, g.channel_roll.radio_out);
@@ -710,8 +710,10 @@ static void set_servos(void)
     }
 #endif
 
-    if (g.vtail_output != VTAIL_DISABLED) {
-        vtail_output_mixing();
+    if (g.vtail_output != MIXING_DISABLED) {
+        channel_output_mixer(g.vtail_output, g.channel_pitch.radio_out, g.channel_rudder.radio_out);
+    } else if (g.elevon_output != MIXING_DISABLED) {
+        channel_output_mixer(g.elevon_output, g.channel_pitch.radio_out, g.channel_roll.radio_out);
     }
 
     // send values to the PWM timers for output

@@ -82,12 +82,12 @@ enum StickMixing {
     STICK_MIXING_DIRECT   = 2
 };
 
-enum VTailMixing {
-    VTAIL_DISABLED = 0,
-    VTAIL_UPUP     = 1,
-    VTAIL_UPDN     = 2,
-    VTAIL_DNUP     = 3,
-    VTAIL_DNDN     = 4
+enum ChannelMixing {
+    MIXING_DISABLED = 0,
+    MIXING_UPUP     = 1,
+    MIXING_UPDN     = 2,
+    MIXING_DNUP     = 3,
+    MIXING_DNDN     = 4
 };
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol

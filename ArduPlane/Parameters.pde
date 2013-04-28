@@ -474,6 +474,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(vtail_output,           "VTAIL_OUTPUT",  0),
 
+    // @Param: ELEVON_OUTPUT
+    // @DisplayName: Elevon output
+    // @Description: Enable software elevon output mixer. If enabled then the APM will provide software elevon mixing on the aileron and elevator channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two elevon servos. Note that you must not use elevon output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable ELEVON_OUTPUT.
+    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
+    // @User: User
+    GSCALAR(elevon_output,           "ELEVON_OUTPUT",  0),
+
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
     // @Description: Number of APM board resets
