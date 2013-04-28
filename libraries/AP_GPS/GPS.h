@@ -148,6 +148,9 @@ public:
     // the time we got our last fix in system milliseconds
     uint32_t last_fix_time;
 
+	// the time we last processed a message in milliseconds
+	uint32_t last_message_time_ms(void) { return _idleTimer; }
+
 	// return true if the GPS supports raw velocity values
 
 
