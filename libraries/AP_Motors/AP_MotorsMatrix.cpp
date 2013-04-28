@@ -116,7 +116,7 @@ void AP_MotorsMatrix::output_armed()
     if(_rc_throttle->servo_out == 0) {
         for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
             if( motor_enabled[i] ) {
-                motor_out[i]    = _rc_throttle->radio_min;
+                motor_out[i] = _rc_throttle->radio_min;
             }
         }
         // if we have any roll, pitch or yaw input then it's breaching the limit
@@ -127,7 +127,6 @@ void AP_MotorsMatrix::output_armed()
             _reached_limit |= AP_MOTOR_YAW_LIMIT;
         }
     } else {    // non-zero throttle
-
         out_min = _rc_throttle->radio_min + _min_throttle;
 
         // initialise rc_yaw_contrained_pwm that we will certainly output and rc_yaw_excess that we will do on best-efforts basis.

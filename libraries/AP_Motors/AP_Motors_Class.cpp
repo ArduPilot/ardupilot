@@ -79,6 +79,7 @@ void AP_Motors::Init()
 };
 
 // throttle_pass_through - passes throttle through to motors - dangerous but used for initialising ESCs
+// Used in compass motor impact calibration and test only.
 void AP_Motors::throttle_pass_through()
 {
     if( armed() ) {

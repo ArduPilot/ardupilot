@@ -1,10 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // 10 = 1 second
-#define ARM_DELAY 20
-#define DISARM_DELAY 20
-#define AUTO_TRIM_DELAY 100
-
+// dongfang: They were much, much too long for my taste.
+#define ARM_DELAY 10
+#define DISARM_DELAY 10
+#define AUTO_TRIM_DELAY 40
 
 // called at 10hz
 static void arm_motors()
@@ -12,6 +12,8 @@ static void arm_motors()
     static int16_t arming_counter;
 
     // don't allow arming/disarming in anything but manual
+    // dongfang: Hmmm above original comment is outdated?
+    // This means throttle at zero.
     if (g.rc_3.control_in > 0) {
         arming_counter = 0;
         return;
@@ -166,7 +168,6 @@ static void init_arm_motors()
     failsafe_enable();
 }
 
-
 static void init_disarm_motors()
 {
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -206,4 +207,3 @@ set_servos_4()
 #endif
     motors.output();
 }
-
