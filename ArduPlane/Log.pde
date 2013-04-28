@@ -347,6 +347,7 @@ static void Log_Write_Nav_Tuning()
 struct PACKED log_Mode {
     LOG_PACKET_HEADER;
     uint8_t mode;
+    uint8_t mode_num;
 };
 
 // Write a mode packet. Total length : 5 bytes
@@ -354,7 +355,8 @@ static void Log_Write_Mode(uint8_t mode)
 {
     struct log_Mode pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
-        mode : mode
+        mode     : mode,
+        mode_num : mode
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -442,7 +444,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "CICCcc",     "Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
-      "MODE", "M",          "Mode" },
+      "MODE", "MB",         "Mode" },
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hhhHf",      "Thr,Volt,Curr,Vcc,CurrTot" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
