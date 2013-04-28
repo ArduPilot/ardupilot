@@ -881,9 +881,6 @@ static void medium_loop()
 
         if (g.log_bitmask & MASK_LOG_NTUN)
             Log_Write_Nav_Tuning();
-
-        if (g.log_bitmask & MASK_LOG_GPS)
-            Log_Write_GPS();
         break;
 
     // This case controls the slow loop
@@ -972,8 +969,16 @@ static void one_second_loop()
 
 static void update_GPS(void)
 {
+    static uint32_t last_gps_reading;
     g_gps->update();
     update_GPS_light();
+
+    if (g_gps->last_message_time_ms() != last_gps_reading) {
+        last_gps_reading = g_gps->last_message_time_ms();
+        if (g.log_bitmask & MASK_LOG_GPS) {
+            Log_Write_GPS();
+        }
+    }
 
     // get position from AHRS
     have_position = ahrs.get_position(&current_loc);
