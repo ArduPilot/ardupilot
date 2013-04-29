@@ -130,7 +130,7 @@ void output_min()
 static void read_radio()
 {
     static uint32_t last_update = 0;
-    if (hal.rcin->valid() > 0) {
+    if (hal.rcin->valid_channels() > 0) {
         last_update = millis();
         ap_system.new_radio_frame = true;
         uint16_t periods[8];
