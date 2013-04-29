@@ -14,7 +14,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
 	
     // @Param: DAMPING
     // @DisplayName: L1 control damping ratio
-    // @Description: Damping ratio for L1 control. Increase this if you are getting overshoot in path tracking.
+    // @Description: Damping ratio for L1 control. Increase this in increments of 0.05 if you are getting overshoot in path tracking. You should not need a value below 0.7 or above 0.85.
 	// @Range: 0.6-1.0
 	// @Increment: 0.05
     AP_GROUPINFO("DAMPING",   1, AP_L1_Control, _L1_damping, 0.75f),
