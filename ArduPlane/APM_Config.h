@@ -21,3 +21,4 @@
  *
  */
 
+#define APM_CONTROL ENABLED
