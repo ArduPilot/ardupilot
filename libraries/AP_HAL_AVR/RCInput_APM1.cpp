@@ -32,7 +32,10 @@ void APM1RCInput::_timer4_capt_cb(void) {
     }
 
     if (pulse_width > 8000) {
-        /* sync pulse detected */
+        // sync pulse detected.  Pass through values if at least a minimum number of channels received
+        if( channel_ctr >= AVR_RC_INPUT_MIN_CHANNELS ) {
+            _valid = channel_ctr;
+        }
         channel_ctr = 0;
     } else {
         if (channel_ctr < AVR_RC_INPUT_NUM_CHANNELS) {
