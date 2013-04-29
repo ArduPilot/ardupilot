@@ -117,7 +117,7 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
-        if (hal.rcin->valid() > 0) {
+        if (hal.rcin->valid_channels() > 0) {
             cliSerial->print("CH:");
             for(int i = 0; i < 8; i++){
                 cliSerial->print(hal.rcin->read(i));	// Print channel values
