@@ -61,8 +61,8 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
 	}
-	rate_offset = fabsf(ToDeg((9.807f / constrain(aspeed , float(aspd_min), float(aspd_max))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
-	
+    rate_offset = fabsf(ToDeg((9.807f / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;	
+
 	//Calculate pitch angle error in centi-degrees
 	int32_t angle_err = angle - _ahrs->pitch_sensor;
 
