@@ -29,7 +29,7 @@ void SMACCMRCInput::init(void *unused)
   clear_overrides();
 }
 
-uint8_t SMACCMRCInput::valid()
+uint8_t SMACCMRCInput::valid_channels()
 {
   // If any of the overrides are positive, we have valid data.
   for (int i = 0; i < SMACCM_RCINPUT_CHANNELS; ++i)

@@ -15,7 +15,7 @@ extern const HAL& hal;
 
 /* private variables to communicate with input capture isr */
 volatile uint16_t APM1RCInput::_pulse_capt[AVR_RC_INPUT_NUM_CHANNELS] = {0};  
-volatile uint8_t  APM1RCInput::_valid = 0;
+volatile uint8_t  APM1RCInput::_valid_channels = 0;
 
 /* private callback for input capture ISR */
 void APM1RCInput::_timer4_capt_cb(void) {
@@ -34,7 +34,7 @@ void APM1RCInput::_timer4_capt_cb(void) {
     if (pulse_width > 8000) {
         // sync pulse detected.  Pass through values if at least a minimum number of channels received
         if( channel_ctr >= AVR_RC_INPUT_MIN_CHANNELS ) {
-            _valid = channel_ctr;
+            _valid_channels = channel_ctr;
         }
         channel_ctr = 0;
     } else {
@@ -42,7 +42,7 @@ void APM1RCInput::_timer4_capt_cb(void) {
             _pulse_capt[channel_ctr] = pulse_width;
             channel_ctr++;
             if (channel_ctr == AVR_RC_INPUT_NUM_CHANNELS) {
-                _valid = AVR_RC_INPUT_NUM_CHANNELS;
+                _valid_channels = AVR_RC_INPUT_NUM_CHANNELS;
             }
         }
     }
@@ -77,7 +77,7 @@ void APM1RCInput::init(void* _isrregistry) {
     TIMSK4 |= _BV(ICIE4);
 }
 
-uint8_t APM1RCInput::valid() { return _valid; }
+uint8_t APM1RCInput::valid_channels() { return _valid_channels; }
 
 
 /* constrain captured pulse to be between min and max pulsewidth. */
@@ -94,7 +94,7 @@ uint16_t APM1RCInput::read(uint8_t ch) {
     cli();
     uint16_t capt = _pulse_capt[ch];
     sei();
-    _valid = 0;
+    _valid_channels = 0;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
     /* Check for override */
@@ -121,8 +121,8 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
             periods[i] = _override[i];
         }
     }
-    uint8_t v = _valid;
-    _valid = 0;
+    uint8_t v = _valid_channels;
+    _valid_channels = 0;
     return v;
 }
 
@@ -139,7 +139,7 @@ bool APM1RCInput::set_override(uint8_t channel, int16_t override) {
     if (channel < AVR_RC_INPUT_NUM_CHANNELS) {
         _override[channel] = override;
         if (override != 0) {
-            _valid = 1;
+            _valid_channels = 1;
             return true;
         }
     }
