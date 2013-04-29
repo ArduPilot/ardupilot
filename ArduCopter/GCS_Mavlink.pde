@@ -1867,6 +1867,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
         hal.rcin->set_overrides(v, 8);
+
+        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
+        ap.rc_override_active = true;
+        // a RC override message is consiered to be a 'heartbeat' from the ground station for failsafe purposes
+        last_heartbeat_ms = millis();
         break;
     }
 
@@ -1951,15 +1956,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     }
 #endif //  HIL_MODE != HIL_MODE_DISABLED
 
+
+    case MAVLINK_MSG_ID_HEARTBEAT:
+    {
+        // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
+        if(msg->sysid != g.sysid_my_gcs) break;
+        last_heartbeat_ms = millis();
+        pmTest1++;
+        break;
+    }
 /*
- *       case MAVLINK_MSG_ID_HEARTBEAT:
- *               {
- *                       // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
- *                       if(msg->sysid != g.sysid_my_gcs) break;
- *                       rc_override_fs_timer = millis();
- *                       break;
- *               }
- *
  * #if HIL_MODE != HIL_MODE_DISABLED
  *               // This is used both as a sensor and to pass the location
  *               // in HIL_ATTITUDE mode.

@@ -372,11 +372,13 @@ static union {
         uint8_t failsafe_radio     : 1; // 8    // A status flag for the radio failsafe
         uint8_t failsafe_batt      : 1; // 9    // A status flag for the battery failsafe
         uint8_t failsafe_gps       : 1; // 10   // A status flag for the gps failsafe
-        uint8_t do_flip            : 1; // 11   // Used to enable flip code
-        uint8_t takeoff_complete   : 1; // 12
-        uint8_t land_complete      : 1; // 13
-        uint8_t compass_status     : 1; // 14
-        uint8_t gps_status         : 1; // 15
+        uint8_t failsafe_gcs       : 1; // 11   // A status flag for the ground station failsafe
+        uint8_t rc_override_active : 1; // 12   // true if rc control are overwritten by ground station
+        uint8_t do_flip            : 1; // 13   // Used to enable flip code
+        uint8_t takeoff_complete   : 1; // 14
+        uint8_t land_complete      : 1; // 15
+        uint8_t compass_status     : 1; // 16
+        uint8_t gps_status         : 1; // 17
     };
     uint16_t value;
 } ap;
@@ -750,6 +752,7 @@ static AC_WPNav wp_nav(&inertial_nav, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid
 ////////////////////////////////////////////////////////////////////////////////
 // The number of GPS fixes we have had
 static uint8_t gps_fix_count;
+static int16_t pmTest1;
 
 // System Timers
 // --------------
@@ -771,6 +774,8 @@ static uint32_t rtl_loiter_start_time;
 static uint8_t auto_disarming_counter;
 // prevents duplicate GPS messages from entering system
 static uint32_t last_gps_time;
+// the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+static uint32_t last_heartbeat_ms;
 
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
@@ -923,6 +928,7 @@ static void perf_update(void)
     }
     perf_info_reset();
     gps_fix_count = 0;
+    pmTest1 = 0;
 }
 
 void loop()
@@ -1193,6 +1199,9 @@ static void slow_loop()
     case 0:
         slow_loopCounter++;
         superslow_loopCounter++;
+
+        // check if we've lost contact with the ground station
+        failsafe_gcs_check();
 
         // record if the compass is healthy
         set_compass_healthy(compass.healthy);

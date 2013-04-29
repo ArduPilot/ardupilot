@@ -396,6 +396,18 @@
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
 #endif
 
+// GCS failsafe
+#ifndef FS_GCS
+ # define FS_GCS                        DISABLED
+#endif
+#ifndef FS_GCS_TIMEOUT_MS
+ # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
+#endif
+// possible values for FS_GCS parameter
+#define FS_GCS_DISABLED                     0
+#define FS_GCS_ENABLED_ALWAYS_RTL           1
+#define FS_GCS_ENABLED_CONTINUE_MISSION     2
+
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
