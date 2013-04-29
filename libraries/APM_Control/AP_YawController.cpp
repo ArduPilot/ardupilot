@@ -49,7 +49,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stick_movement)
 			}
 		}
 	}
-	rate_offset = (9.807f / constrain(aspeed , float(aspd_min), float(aspd_max))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
+    rate_offset = (9.807f / max(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
 	float omega_z = _ahrs->get_gyro().z;

@@ -39,9 +39,23 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	if(_ahrs == NULL) return 0;
 	float delta_time    = (float)dt / 1000.0f;
 	
-	int8_t inv = 1;
-	if(abs(_ahrs->roll_sensor)>9000) inv = -1;
-	
+	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
+	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
+	// Pitch rate offset is the component of turn rate about the pitch axis
+	float aspeed;
+	float rate_offset;
+	float bank_angle = _ahrs->roll;
+	// limit bank angle between +- 80 deg if right way up
+	if (fabsf(bank_angle) < 1.5707964f)	{
+	    bank_angle = constrain(bank_angle,-1.3962634,1.3962634f);
+	}
+	if (!_ahrs->airspeed_estimate(&aspeed)) {
+	    // If no airspeed available use average of min and max
+        aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
+	}
+    rate_offset = fabsf(ToDeg((9.807f / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;	
+
+	//Calculate pitch angle error in centi-degrees
 	int32_t angle_err = angle - _ahrs->pitch_sensor;
 	angle_err *= inv;
 	
