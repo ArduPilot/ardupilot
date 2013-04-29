@@ -74,13 +74,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   T_TO_P),
 
-    // @Param: MANUAL_LEVEL
-    // @DisplayName: Manual Level
-    // @Description: Setting this to Disabled(0) will enable autolevel on every boot. Setting it to Enabled(1) will do a calibration only when you tell it to
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(manual_level,           "MANUAL_LEVEL",   MANUAL_LEVEL),
-
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
     // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode.
@@ -528,7 +521,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: TRIM_PITCH_CD
     // @DisplayName: Pitch angle offset
-    // @Description: offset to add to pitch - used for trimming tail draggers
+    // @Description: offset to add to pitch - used for in-flight pitch trimming. It is recommended that instead of using this parameter you level your plane correctly on the ground for good flight attitude.
     // @Units: centi-Degrees
     // @User: Advanced
     GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),

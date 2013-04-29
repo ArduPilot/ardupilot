@@ -376,7 +376,7 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_level(uint8_t argc, const Menu::arg *argv)
 {
-    startup_INS_ground(true);
+    startup_INS_ground();
     return 0;
 }
 
@@ -402,10 +402,6 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     if (success) {
         // reset ahrs's trim to suggested values from calibration routine
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-        if (g.manual_level == 0) {
-            cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
-            g.manual_level.set_and_save(1);
-        }
     }
     report_ins();
     return(0);
