@@ -19,7 +19,7 @@
 
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
 
-#define MAX_LOITER_OVERSHOOT            625.0f      // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
+#define MAX_LOITER_OVERSHOOT            812.5f      // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
 // D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
 // if MAX_LOITER_POS_VELOCITY > 2*D0*Pid_P
 //     MAX_LOITER_OVERSHOOT = D0 + MAX_LOITER_POS_VELOCITY.^2 ./ (2*MAX_LOITER_POS_ACCEL);
