@@ -322,16 +322,6 @@ static GCS_MAVLINK gcs0;
 static GCS_MAVLINK gcs3;
 
 ////////////////////////////////////////////////////////////////////////////////
-// SONAR selection
-////////////////////////////////////////////////////////////////////////////////
-//
-ModeFilterInt16_Size3 sonar_mode_filter(1);
-#if CONFIG_SONAR == ENABLED
-static AP_HAL::AnalogSource *sonar_analog_source;
-static AP_RangeFinder_MaxsonarXL *sonar;
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
 // User variables
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef USERHOOK_VARIABLES
@@ -673,6 +663,10 @@ static int32_t nav_roll;
 // The Commanded pitch from the autopilot. negative Pitch means go forward.
 static int32_t nav_pitch;
 
+static int32_t avoid_pitch = 0;
+static int32_t avoid_roll = 0;
+static int16_t avoid_top_collision_depth = 0; //for top collision avoidance
+
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
@@ -846,7 +840,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
     { update_navigation,     10,    500 },
     { medium_loop,           2,     700 },
-    { update_altitude,      10,    1000 },
+    { update_altitude,       7,    1000 },
     { fifty_hz_loop,         2,     950 },
     { run_nav_updates,      10,     800 },
     { slow_loop,            10,     500 },
@@ -857,7 +851,10 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,    2,     700 },
     { barometer_accumulate,  2,     900 },
     { super_slow_loop,     100,    1100 },
-    { perf_update,        1000,     500 }
+    { perf_update,        1000,     500 },
+# if CONFIG_COLLISION_AVOIDANCE == ENABLED
+    { update_collision_avoidance,7,1000 },
+#endif
 };
 
 
@@ -870,19 +867,6 @@ void setup() {
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
-#if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-            CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-            &sonar_mode_filter);
-#endif
 
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin, 0.25);
     batt_volt_analog_source = hal.analogin->channel(g.battery_volt_pin);
@@ -1643,15 +1627,22 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
+        //avoid roll and pitch comes from collision avoidance
+        get_stabilize_roll(control_roll - avoid_roll);
+        get_stabilize_pitch(control_pitch - avoid_pitch);
 
         break;
 
     case ROLL_PITCH_AUTO:
         // copy latest output from nav controller to stabilize controller
+
         nav_roll = wp_nav.get_desired_roll();
         nav_pitch = wp_nav.get_desired_pitch();
+
+//influence of collision avoidance needs to be tested TODO
+//        nav_roll = wp_nav.get_desired_roll() - avoid_roll;
+//        nav_pitch = wp_nav.get_desired_pitch() - avoid_pitch;
+
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1689,6 +1680,10 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
+        //treat collision avoidance similar to manual input
+        control_roll -= avoid_roll;
+        control_pitch -= avoid_pitch;
+
         // update loiter target from user controls - max velocity is 5.0 m/s
         wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
 
@@ -1697,6 +1692,7 @@ void update_roll_pitch_mode(void)
         nav_pitch = wp_nav.get_desired_pitch();
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
+
         break;
     }
 
@@ -1999,6 +1995,10 @@ static void update_altitude()
     // read in baro altitude
     baro_alt            = read_barometer();
 
+# if CONFIG_COLLISION_AVOIDANCE == ENABLED
+    update_collision_sensors();
+#endif
+
     // read in sonar altitude
     sonar_alt           = read_sonar();
 #endif  // HIL_MODE == HIL_MODE_ATTITUDE
@@ -2163,6 +2163,38 @@ static void tuning(){
     case CH6_THR_ACCEL_KD:
         g.pid_throttle_accel.kD(tuning_value);
         break;
+
+# if CONFIG_COLLISION_AVOIDANCE == ENABLED
+    case CH6_AVOID_KP:
+        g.pid_avoid_forward.kP(tuning_value);
+        g.pid_avoid_right.kP(tuning_value);
+        break;
+
+    case CH6_AVOID_KI:
+        g.pid_avoid_forward.kI(tuning_value);
+        g.pid_avoid_right.kI(tuning_value);
+        break;
+
+    case CH6_AVOID_KD:
+        g.pid_avoid_forward.kD(tuning_value);
+        g.pid_avoid_right.kD(tuning_value);
+        break;
+
+    case CH6_AVOID_RATE_KP:
+        g.pid_avoid_rate_forward.kP(tuning_value);
+        g.pid_avoid_rate_right.kP(tuning_value);
+        break;
+
+    case CH6_AVOID_RATE_KI:
+        g.pid_avoid_rate_forward.kI(tuning_value);
+        g.pid_avoid_rate_right.kI(tuning_value);
+        break;
+
+    case CH6_AVOID_RATE_KD:
+        g.pid_avoid_rate_forward.kD(tuning_value);
+        g.pid_avoid_rate_right.kD(tuning_value);
+        break;
+# endif //CONFIG_COLLISION_AVOIDANCE
 
     case CH6_DECLINATION:
         // set declination to +-20degrees

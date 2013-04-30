@@ -77,3 +77,25 @@ int AP_RangeFinder_MaxsonarI2CXL::read()
     
     return ret_value;
 }
+
+// test if sensor is available and valid, return true if everything is ok
+// execution will take up to 100ms and should only be executed during setup
+bool AP_RangeFinder_MaxsonarI2CXL::test()
+{
+	//if the execution of the request reading and read takes to long, the connection is faulty or
+	//the sensor does not exist
+	long before = hal.scheduler->millis();
+	take_reading();
+	//give maximum time (from the datasheet) for getting the reading
+	hal.scheduler->delay(70);
+	//test read
+	read();
+	long after = hal.scheduler->millis();
+	if((after - before) > 80)
+	{
+		return false;
+	}else
+	{
+		return true;
+	}
+}

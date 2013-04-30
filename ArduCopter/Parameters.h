@@ -248,7 +248,11 @@ public:
         k_param_acro_balance_roll,      // scalar (not PID)
         k_param_acro_balance_pitch,     // scalar (not PID)
         k_param_pid_throttle_accel, // 241
-
+        k_param_pid_avoid_forward,
+        k_param_pid_avoid_right,
+        k_param_pid_avoid_rate_forward,
+        k_param_pid_avoid_rate_right, // 245
+        k_param_avoid_collision_threshold,
         // 254,255: reserved
     };
 
@@ -339,6 +343,8 @@ public:
     AP_Int8         ch7_option;
     AP_Int16        auto_slew_rate;
 
+    AP_Int16        avoid_collision_threshold;
+
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
     RC_Channel        heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;   // servos for swash plate and tail
@@ -386,6 +392,11 @@ public:
     AC_PID                  pid_throttle_accel;
     AC_PID                  pid_optflow_roll;
     AC_PID                  pid_optflow_pitch;
+
+    AC_PID                  pid_avoid_forward;
+    AC_PID                  pid_avoid_right;
+    AC_PID                  pid_avoid_rate_forward;
+    AC_PID                  pid_avoid_rate_right;
 
     APM_PI                  pi_loiter_lat;
     APM_PI                  pi_loiter_lon;
@@ -437,6 +448,11 @@ public:
         pid_throttle_accel      (THROTTLE_ACCEL_P,      THROTTLE_ACCEL_I,       THROTTLE_ACCEL_D,       THROTTLE_ACCEL_IMAX),
         pid_optflow_roll        (OPTFLOW_ROLL_P,        OPTFLOW_ROLL_I,         OPTFLOW_ROLL_D,         OPTFLOW_IMAX * 100),
         pid_optflow_pitch       (OPTFLOW_PITCH_P,       OPTFLOW_PITCH_I,        OPTFLOW_PITCH_D,        OPTFLOW_IMAX * 100),
+
+        pid_avoid_rate_forward  (AVOID_RATE_P,         	AVOID_RATE_I,          	AVOID_RATE_D,          	AVOID_RATE_IMAX * 100),
+        pid_avoid_rate_right    (AVOID_RATE_P,         	AVOID_RATE_I,          	AVOID_RATE_D,          	AVOID_RATE_IMAX * 100),
+        pid_avoid_forward  		(AVOID_P,         		AVOID_I,          		AVOID_D,          		AVOID_IMAX * 100),
+        pid_avoid_right    		(AVOID_P,         		AVOID_I,          		AVOID_D,          		AVOID_IMAX * 100),
 
         // PI controller	initial P			initial I			initial
         // imax

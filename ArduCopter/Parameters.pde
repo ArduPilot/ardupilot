@@ -415,6 +415,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(auto_slew_rate, "AUTO_SLEW",            AUTO_SLEW_RATE),
 
+	// @Param: AVOID_THRES
+    // @DisplayName: Collision Avoidance Threshold
+    // @Description: This defines the distance in cm from the vehicle or sensors were the collision will be tried to resolve
+    // @Units: cm
+	// @Range: 1 1000
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(avoid_collision_threshold, "AVOID_THRES",            AVOID_THRESHOLD),
+
 #if FRAME_CONFIG ==     HELI_FRAME
     GGROUP(heli_servo_1,    "HS1_", RC_Channel),
     GGROUP(heli_servo_2,    "HS2_", RC_Channel),
@@ -758,6 +767,110 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.100 0.140
     // @User: Standard
     GGROUP(pid_optflow_pitch, "OF_PIT_",   AC_PID),
+
+    // @Param: AVOID_FORWARD_P
+    // @DisplayName: Collision avoidance forward controller P gain
+    // @Description: Collision avoidance forward controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
+    // @Range: 2.000 6.000
+    // @User: Advanced
+
+    // @Param: AVOID_FORWARD_I
+    // @DisplayName: Collision avoidance forward controller I gain
+    // @Description: Collision avoidance forward controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
+    // @Range: 0.020 0.060
+    // @User: Advanced
+
+    // @Param: AVOID_FORWARD_IMAX
+    // @DisplayName: Collision avoidance forward controller I gain maximum
+    // @Description: Collision avoidance forward controller I gain maximum.  Constrains the lean angle that the I gain will output
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Advanced
+
+    // @Param: AVOID_FORWARD_D
+    // @DisplayName: Collision avoidance forward controller D gain
+    // @Description: Collision avoidance forward controller D gain.  Compensates for short-term change in desired speed vs actual speed
+    // @Range: 0.200 0.600
+    // @User: Advanced
+    GGROUP(pid_avoid_forward,      "AVOID_FORWARD_",  AC_PID),
+
+    // @Param: AVOID_RIGHT_P
+    // @DisplayName: Collision avoidance right controller P gain
+    // @Description: Collision avoidance right controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
+    // @Range: 2.000 6.000
+    // @User: Advanced
+
+    // @Param: AVOID_RIGHT_I
+    // @DisplayName: Collision avoidance right controller I gain
+    // @Description: Collision avoidance right controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
+    // @Range: 0.020 0.060
+    // @User: Advanced
+
+    // @Param: AVOID_RIGHT_IMAX
+    // @DisplayName: Collision avoidance right controller I gain maximum
+    // @Description: Collision avoidance right controller I gain maximum.  Constrains the lean angle that the I gain will output
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Advanced
+
+    // @Param: AVOID_RIGHT_D
+    // @DisplayName: Collision avoidance right controller D gain
+    // @Description: Collision avoidance right controller D gain.  Compensates for short-term change in desired speed vs actual speed
+    // @Range: 0.200 0.600
+    // @User: Advanced
+    GGROUP(pid_avoid_right,      "AVOID_RIGHT_",  AC_PID),
+
+    // @Param: AVOID_RATE_FOR_P
+    // @DisplayName: Collision avoidance forward rate controller P gain
+    // @Description: Collision avoidance forward rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
+    // @Range: 2.000 6.000
+    // @User: Advanced
+
+    // @Param: AVOID_RATE_FOR_I
+    // @DisplayName: Collision avoidance forward rate controller I gain
+    // @Description: Collision avoidance forward rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
+    // @Range: 0.020 0.060
+    // @User: Advanced
+
+    // @Param: AVOID_RATE_FOR_IMAX
+    // @DisplayName: Collision avoidance forward rate controller I gain maximum
+    // @Description: Collision avoidance forward rate controller I gain maximum.  Constrains the lean angle that the I gain will output
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Advanced
+
+    // @Param: AVOID_RATE_FOR_D
+    // @DisplayName: Collision avoidance forward rate controller D gain
+    // @Description: Collision avoidance forward rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
+    // @Range: 0.200 0.600
+    // @User: Advanced
+    GGROUP(pid_avoid_rate_forward,      "AVOID_RATE_FOR_",  AC_PID),
+
+    // @Param: AVOID_RATE_RT_P
+    // @DisplayName: Collision avoidance right rate controller P gain
+    // @Description: Collision avoidance right rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
+    // @Range: 2.000 6.000
+    // @User: Advanced
+
+    // @Param: AVOID_RATE_RT_I
+    // @DisplayName: Collision avoidance right rate controller I gain
+    // @Description: Collision avoidance right rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
+    // @Range: 0.020 0.060
+    // @User: Advanced
+
+    // @Param: AVOID_RATE_RT_IMAX
+    // @DisplayName: Collision avoidance right rate controller I gain maximum
+    // @Description: Collision avoidance right rate controller I gain maximum.  Constrains the lean angle that the I gain will output
+    // @Range: 0 4500
+    // @Unit: Centi-Degrees
+    // @User: Advanced
+
+    // @Param: AVOID_RATE_RT_D
+    // @DisplayName: Collision avoidance right rate controller D gain
+    // @Description: Collision avoidance right rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
+    // @Range: 0.200 0.600
+    // @User: Advanced
+    GGROUP(pid_avoid_rate_right,      "AVOID_RATE_RT_",  AC_PID),
 
     // PI controller
     //--------------

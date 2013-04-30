@@ -39,10 +39,14 @@
 #define THROTTLE_AUTO                       3   // auto pilot altitude controller with target altitude held in next_WP.alt
 #define THROTTLE_LAND                       4   // landing throttle controller
 
+// active altitude sensor
+// ----------------------
+#define SONAR 0
+#define BARO 1
 
 // sonar - for use with CONFIG_SONAR_SOURCE
-#define SONAR_SOURCE_ADC 1
-#define SONAR_SOURCE_ANALOG_PIN 2
+#define SONAR_SOURCE_ADC 					1
+#define SONAR_SOURCE_ANALOG_PIN 			2
 
 // CH 7 control
 #define CH7_PWM_TRIGGER 1800    // pwm value above which the channel 7 option will be invoked
@@ -173,6 +177,18 @@
 #define CH6_INAV_TC         32          // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
 #define CH6_DECLINATION     38          // compass declination in radians
 #define CH6_CIRCLE_RATE     39          // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
+#define CH6_AVOID_KP   		40          // collision avoid controller's P term (collision to velocity)
+#define CH6_AVOID_KI   		41          // collision avoid controller's I term (collision to velocity)
+#define CH6_AVOID_KD   		42          // collision avoid controller's D term (collision to velocity)
+#define CH6_AVOID_RATE_KP   43          // collision avoid rate controller's P term (speed error to tilt angle)
+#define CH6_AVOID_RATE_KI   44          // collision avoid rate controller's I term (speed error to tilt angle)
+#define CH6_AVOID_RATE_KD   45          // collision avoid rate controller's D term (speed error to tilt angle)
+
+// nav byte mask used with wp_verify_byte variable
+// -----------------------------------------------
+#define NAV_LOCATION 1
+#define NAV_ALTITUDE 2
+#define NAV_DELAY    4
 
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol
@@ -250,6 +266,8 @@ enum ap_message {
     MSG_AHRS,
     MSG_SIMSTATE,
     MSG_HWSTATUS,
+    MSG_ALT_SENSOR_RAW,
+    MSG_RAW_COLLISION,
     MSG_RETRY_DEFERRED // this must be last
 };
 

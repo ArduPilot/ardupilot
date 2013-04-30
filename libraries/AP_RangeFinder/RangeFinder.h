@@ -52,6 +52,12 @@ public:
      */
     virtual int read();
 
+    /**
+     * test:
+     * test if the sensor is working or existing and return true if everything ok
+     */
+    virtual bool test();
+
     AP_HAL::AnalogSource*       _analog_source;
     FilterInt16 *           _mode_filter;
 };

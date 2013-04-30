@@ -1,6 +1,6 @@
 // MESSAGE RANGEFINDER PACKING
 
-#define MAVLINK_MSG_ID_RANGEFINDER 173
+#define MAVLINK_MSG_ID_RANGEFINDER 174
 
 typedef struct __mavlink_rangefinder_t
 {
@@ -9,7 +9,7 @@ typedef struct __mavlink_rangefinder_t
 } mavlink_rangefinder_t;
 
 #define MAVLINK_MSG_ID_RANGEFINDER_LEN 8
-#define MAVLINK_MSG_ID_173_LEN 8
+#define MAVLINK_MSG_ID_174_LEN 8
 
 
 

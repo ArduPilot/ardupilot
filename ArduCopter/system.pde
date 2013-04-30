@@ -247,10 +247,16 @@ static void init_ardupilot()
     init_barometer();
 #endif
 
+// collision avoidance needs to be initialized before regular sonars
+#if CONFIG_COLLISION_AVOIDANCE == ENABLED
+    init_collision_avoidance();
+#endif
+
     // initialise sonar
 #if CONFIG_SONAR == ENABLED
     init_sonar();
 #endif
+
 
 #if FRAME_CONFIG == HELI_FRAME
 // initialise controller filters
