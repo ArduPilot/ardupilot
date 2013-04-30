@@ -703,6 +703,11 @@ static int32_t nav_pitch;
 static int32_t auto_roll;
 static int32_t auto_pitch;
 
+static int32_t avoid_pitch = 0;
+static int32_t avoid_roll = 0;
+static int16_t avoid_top_collision_depth = 0; //for top collision avoidance
+
+
 // Don't be fooled by the fact that Pitch is reversed from Roll in its sign!
 static int16_t nav_lat;
 // The desired bank towards East (Positive) or West (Negative)
@@ -881,7 +886,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
     { update_navigation,     10,    500 },
     { medium_loop,           2,     700 },
-    { update_altitude,       5,    1000 },
+    { update_altitude,       7,    1000 },
     { fifty_hz_loop,         2,     950 },
     { run_nav_updates,      10,     800 },
     { slow_loop,            10,     500 },
@@ -892,7 +897,10 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,    2,     700 },
     { barometer_accumulate,  2,     900 },
     { super_slow_loop,     100,    1100 },
-    { perf_update,        1000,     500 }
+    { perf_update,        1000,     500 },
+# if CONFIG_COLLISION_AVOIDANCE == ENABLED
+    { update_collision_avoidance,7,1000 },
+#endif
 };
 
 
@@ -1625,8 +1633,9 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
+        //avoid roll and pitch comes from collision avoidance
+        get_stabilize_roll(control_roll - avoid_roll);
+        get_stabilize_pitch(control_pitch - avoid_pitch);
 
         break;
 
@@ -1638,6 +1647,10 @@ void update_roll_pitch_mode(void)
         // copy latest output from nav controller to stabilize controller
         nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+
+//influence of collision avoidance needs to be tested TODO
+//        nav_roll    += constrain_int32(wrap_180(auto_roll  - nav_roll - avoid_roll),  -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
+//        nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch - avoid_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
@@ -1675,6 +1688,10 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
+        //treat collision avoidance similar to manual input
+        control_roll -= avoid_roll;
+        control_pitch -= avoid_pitch;
+
         // update loiter target from user controls - max velocity is 5.0 m/s
         if( control_roll != 0 || control_pitch != 0 ) {
             loiter_set_pos_from_velocity(-control_pitch/(2*4.5), control_roll/(2*4.5),0.01f);
@@ -1685,6 +1702,7 @@ void update_roll_pitch_mode(void)
         nav_pitch   += constrain_int32(wrap_180(auto_pitch - nav_pitch), -g.auto_slew_rate.get(), g.auto_slew_rate.get());  // 40 deg a second
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
+
         break;
     }
 
@@ -2038,6 +2056,10 @@ static void update_altitude()
     // read in baro altitude
     baro_alt            = read_barometer();
 
+# if CONFIG_COLLISION_AVOIDANCE == ENABLED
+    update_collision_sensors();
+#endif
+
     // read in sonar altitude
     sonar_alt           = read_sonar();
 #endif  // HIL_MODE == HIL_MODE_ATTITUDE
@@ -2211,6 +2233,39 @@ static void tuning(){
     case CH6_THR_ACCEL_KD:
         g.pid_throttle_accel.kD(tuning_value);
         break;
+
+# if CONFIG_COLLISION_AVOIDANCE == ENABLED
+    case CH6_AVOID_KP:
+        g.pid_avoid_forward.kP(tuning_value);
+        g.pid_avoid_right.kP(tuning_value);
+        break;
+
+    case CH6_AVOID_KI:
+        g.pid_avoid_forward.kI(tuning_value);
+        g.pid_avoid_right.kI(tuning_value);
+        break;
+
+    case CH6_AVOID_KD:
+        g.pid_avoid_forward.kD(tuning_value);
+        g.pid_avoid_right.kD(tuning_value);
+        break;
+
+    case CH6_AVOID_RATE_KP:
+        g.pid_avoid_rate_forward.kP(tuning_value);
+        g.pid_avoid_rate_right.kP(tuning_value);
+        break;
+
+    case CH6_AVOID_RATE_KI:
+        g.pid_avoid_rate_forward.kI(tuning_value);
+        g.pid_avoid_rate_right.kI(tuning_value);
+        break;
+
+    case CH6_AVOID_RATE_KD:
+        g.pid_avoid_rate_forward.kD(tuning_value);
+        g.pid_avoid_rate_right.kD(tuning_value);
+        break;
+# endif //CONFIG_COLLISION_AVOIDANCE
+
     }
 }
 

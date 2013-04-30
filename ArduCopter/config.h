@@ -58,6 +58,7 @@
  # define CONFIG_RELAY      DISABLED
  # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ # define CONFIG_COLLISION_AVOIDANCE ENABLED
  # define MAGNETOMETER ENABLED
  # ifdef APM2_BETA_HARDWARE
   #  define CONFIG_BARO     AP_BARO_BMP085
@@ -114,7 +115,7 @@
   # define RC_FAST_SPEED 				125
   # define RTL_YAW                  	YAW_LOOK_AT_HOME
   # define TILT_COMPENSATION 			5
-  # define RATE_INTEGRATOR_LEAK_RATE 	0.02f
+  # define RATE_INTEGRATOR_LEAK_RATE 	1f
   # define RATE_ROLL_D    				0
   # define RATE_PITCH_D       			0
   # define HELI_PITCH_FF				0
@@ -300,7 +301,6 @@
  # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
   #  define CONFIG_SONAR_SOURCE_ANALOG_PIN 0
  # endif
-#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_I2C
 #else
  # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
  # undef SONAR_ENABLED
@@ -321,6 +321,18 @@
 
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
  # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max speed number of good reads that indicates a healthy sonar
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Collision avoidance
+//
+#ifndef CONFIG_COLLISION_AVOIDANCE
+ # define CONFIG_COLLISION_AVOIDANCE DISABLED
+#endif
+
+#if CONFIG_COLLISION_AVOIDANCE == ENABLED
+ # undef SONAR_ENABLED
+ # define SONAR_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1044,6 +1056,44 @@
 #endif
 #ifndef THROTTLE_ACCEL_IMAX
  # define THROTTLE_ACCEL_IMAX 500
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Collision avoidance position control gains
+// TODO adjust
+#ifndef AVOID_P
+ # define AVOID_P          	10.0f
+#endif
+#ifndef AVOID_I
+ # define AVOID_I          	1.0f
+#endif
+#ifndef AVOID_D
+ # define AVOID_D          	0.48f
+#endif
+#ifndef AVOID_IMAX
+ # define AVOID_IMAX       	45                     // degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Collision avoidance rate control gains
+// TODO adjust
+#ifndef AVOID_RATE_P
+ # define AVOID_RATE_P          	2.0f
+#endif
+#ifndef AVOID_RATE_I
+ # define AVOID_RATE_I          	1.0f
+#endif
+#ifndef AVOID_RATE_D
+ # define AVOID_RATE_D          	0.0f
+#endif
+#ifndef AVOID_RATE_IMAX
+ # define AVOID_RATE_IMAX       	45                     // degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Collision avoidance threshold to detect a collision
+#ifndef AVOID_THRESHOLD
+ # define AVOID_THRESHOLD   		120                     // cm TODO
 #endif
 
 

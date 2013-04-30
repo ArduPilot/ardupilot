@@ -48,9 +48,8 @@
 #define SONAR 0
 #define BARO 1
 
-#define SONAR_SOURCE_ADC 1
-#define SONAR_SOURCE_ANALOG_PIN 2
-#define SONAR_SOURCE_I2C 3
+#define SONAR_SOURCE_ADC 					1
+#define SONAR_SOURCE_ANALOG_PIN 			2
 
 // CH 7 control
 #define CH7_PWM_TRIGGER 1800    // pwm value above which the channel 7 option will be invoked
@@ -180,6 +179,12 @@
 #define CH6_AHRS_YAW_KP     30          // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
 #define CH6_AHRS_KP         31          // accelerometer effect on roll/pitch angle (0=low)
 #define CH6_INAV_TC         32          // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
+#define CH6_AVOID_KP   		38          // collision avoid controller's P term (collision to velocity)
+#define CH6_AVOID_KI   		39          // collision avoid controller's I term (collision to velocity)
+#define CH6_AVOID_KD   		40          // collision avoid controller's D term (collision to velocity)
+#define CH6_AVOID_RATE_KP   41          // collision avoid rate controller's P term (speed error to tilt angle)
+#define CH6_AVOID_RATE_KI   42          // collision avoid rate controller's I term (speed error to tilt angle)
+#define CH6_AVOID_RATE_KD   43          // collision avoid rate controller's D term (speed error to tilt angle)
 
 // nav byte mask used with wp_verify_byte variable
 // -----------------------------------------------
@@ -261,6 +266,7 @@ enum ap_message {
     MSG_SIMSTATE,
     MSG_HWSTATUS,
     MSG_ALT_SENSOR_RAW,
+    MSG_RAW_COLLISION,
     MSG_RETRY_DEFERRED // this must be last
 };
 

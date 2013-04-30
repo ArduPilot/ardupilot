@@ -31,6 +31,9 @@ public:
     // read value from sensor and return distance in cm
     int             read();
 
+    //checks if the sensor is really available and connected
+    bool 			test();
+
     // heath
     bool            healthy;
 

@@ -1065,7 +1065,7 @@ get_throttle_althold_with_slew(int16_t target_alt, int16_t min_climb_rate, int16
     controller_desired_alt += constrain(target_alt-controller_desired_alt, min_climb_rate*0.02f, max_climb_rate*0.02f);
 
     // do not let target altitude get too far from current altitude
-    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
+    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,get_max_alt_constraint(current_loc.alt));
 
     get_throttle_althold(controller_desired_alt, min_climb_rate-250, max_climb_rate+250);   // 250 is added to give head room to alt hold controller
 }
@@ -1079,7 +1079,7 @@ get_throttle_rate_stabilized(int16_t target_rate)
     controller_desired_alt += target_rate * 0.02f;
 
     // do not let target altitude get too far from current altitude
-    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
+    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,get_max_alt_constraint(current_loc.alt));
 
     set_new_altitude(controller_desired_alt);
 
@@ -1142,11 +1142,26 @@ get_throttle_surface_tracking(int16_t target_rate)
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
-    target_sonar_alt = constrain(target_sonar_alt,sonar_alt-750,sonar_alt+750);
+    target_sonar_alt = constrain(target_sonar_alt,sonar_alt-750,get_max_alt_constraint(sonar_alt));
     controller_desired_alt = current_loc.alt+(target_sonar_alt-sonar_alt);
     set_new_altitude(controller_desired_alt);
 
     get_throttle_althold_with_slew(controller_desired_alt, target_rate-sonar_induced_slew_rate, target_rate+sonar_induced_slew_rate);   // VELZ_MAX limits how quickly we react
+}
+
+/*
+ * This function determines the maximum constraint for adjusting the altitude
+ * The function will take a top collision into account
+ * int16_t max_ref the reference value of current position we are using
+ */
+static int16_t get_max_alt_constraint(int16_t max_ref)
+{
+	if(avoid_top_collision_depth < 0){ //check if we have top collision
+		// limit max constraint to resolve collision
+		return max_ref + avoid_top_collision_depth;
+	}else{
+		return max_ref + 750;
+	}
 }
 
 /*

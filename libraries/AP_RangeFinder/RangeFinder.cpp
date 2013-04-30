@@ -38,3 +38,9 @@ int RangeFinder::read()
     return distance;
 }
 
+// test if the sensor is working or existing and return true if everything ok
+bool RangeFinder::test()
+{
+	return true; //default implementation
+}
+

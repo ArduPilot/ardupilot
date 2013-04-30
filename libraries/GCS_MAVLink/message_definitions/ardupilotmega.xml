@@ -350,6 +350,16 @@
 	    <field type="float" name="distance">distance in meters</field>
 	    <field type="float" name="voltage">raw voltage if available, zero otherwise</field>
 	  </message>
+
+          <message id="175" name="RAW_COLLISION">
+               <description>The raw collision avoidance sensor data</description>
+               <field type="int16_t" name="bottom">back distance in cm</field>
+               <field type="int16_t" name="front">front distance in cm</field>
+               <field type="int16_t" name="right">right distance in cm</field>
+               <field type="int16_t" name="left">left distance in cm</field>
+               <field type="int16_t" name="back">back distance in cm</field>
+               <field type="int16_t" name="top">top distance in cm</field>
+          </message>
 	 
      </messages>
 </mavlink>

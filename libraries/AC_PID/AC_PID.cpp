@@ -59,7 +59,9 @@ int32_t AC_PID::get_i(int32_t error, float dt)
 int32_t AC_PID::get_leaky_i(int32_t error, float dt, float leak_rate)
 {
 	if((_ki != 0) && (dt != 0)){
-		_integrator -= (float)_integrator * leak_rate;
+		if(error == 0){
+			_integrator -= (float)_integrator * leak_rate * dt;
+		}
 		_integrator += ((float)error * _ki) * dt;
 		if (_integrator < -_imax) {
 			_integrator = -_imax;

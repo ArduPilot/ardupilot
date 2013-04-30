@@ -121,11 +121,21 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 
 static NOINLINE void send_attitude(mavlink_channel_t chan)
 {
+	//TODO undo
+//    mavlink_msg_attitude_send(
+//        chan,
+//        millis(),
+//        ahrs.roll,
+//        ahrs.pitch,
+//        ahrs.yaw,
+//        omega.x,
+//        omega.y,
+//        omega.z);
     mavlink_msg_attitude_send(
         chan,
         millis(),
-        ahrs.roll,
-        ahrs.pitch,
+        avoid_roll,
+        avoid_pitch,
         ahrs.yaw,
         omega.x,
         omega.y,
@@ -314,6 +324,30 @@ static void NOINLINE send_altitude_sensor_raw(mavlink_channel_t chan)
         chan,
         baro_alt,
         sonar_alt);
+}
+
+static void NOINLINE send_raw_collision(mavlink_channel_t chan)
+{
+# if CONFIG_COLLISION_AVOIDANCE == ENABLED
+	if(is_collision_avoidance_enabled())
+	{
+	int16_t bottom = collision_sensor->get_collision_distance(CA_BOTTOM);
+	int16_t front = collision_sensor->get_collision_distance(CA_FRONT);
+	int16_t right = collision_sensor->get_collision_distance(CA_RIGHT);
+	int16_t left = collision_sensor->get_collision_distance(CA_LEFT);
+	int16_t back = collision_sensor->get_collision_distance(CA_BACK);
+	int16_t top = collision_sensor->get_collision_distance(CA_TOP);
+
+	mavlink_msg_raw_collision_send(
+        chan,
+        bottom,
+        front,
+        right,
+        left,
+        back,
+        top);
+	}
+#endif
 }
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
@@ -635,6 +669,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_ALT_SENSOR_RAW:
     	CHECK_PAYLOAD_SIZE(ALT_SENSOR_RAW);
     	send_altitude_sensor_raw(chan);
+    	break;
+
+    case MSG_RAW_COLLISION:
+    	CHECK_PAYLOAD_SIZE(RAW_COLLISION);
+    	send_raw_collision(chan);
     	break;
 
     case MSG_CURRENT_WAYPOINT:
@@ -1038,6 +1077,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_RAW_IMU2);
         send_message(MSG_RAW_IMU3);
         send_message(MSG_ALT_SENSOR_RAW);
+        send_message(MSG_RAW_COLLISION);
         //cliSerial->printf("mav1 %d\n", (int)streamRateRawSensors.get());
     }
 
