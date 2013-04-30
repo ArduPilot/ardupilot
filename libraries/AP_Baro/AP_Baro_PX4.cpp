@@ -12,8 +12,7 @@
 #include <unistd.h>
 
 #include <drivers/drv_baro.h>
-#include <uORB/uORB.h>
-#include <uORB/topics/sensor_combined.h>
+#include <drivers/drv_hrt.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -22,7 +21,6 @@ float AP_Baro_PX4::_temperature_sum;
 uint32_t AP_Baro_PX4::_sum_count;
 uint32_t AP_Baro_PX4::_last_timer;
 uint64_t AP_Baro_PX4::_last_timestamp;
-volatile bool AP_Baro_PX4::_in_accumulate;
 int AP_Baro_PX4::_baro_fd;
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -41,6 +39,9 @@ bool AP_Baro_PX4::init(void)
         ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
 
         hal.scheduler->register_timer_process(_baro_timer);
+
+        // give the timer a chance to run and gather one sample
+        hal.scheduler->delay(40);
     }
 
     return true;
@@ -49,11 +50,18 @@ bool AP_Baro_PX4::init(void)
 // Read the sensor
 uint8_t AP_Baro_PX4::read(void)
 {
-    accumulate();
-    if (_sum_count == 0) {
-        // no data available
-        return 0;
+    hal.scheduler->suspend_timer_procs();
+
+    // try to accumulate one more sample, so we have the latest data
+    _accumulate();
+
+    // consider the baro healthy if we got a reading in the last 0.2s
+    healthy = (hrt_absolute_time() - _last_timestamp < 200000);
+    if (!healthy || _sum_count == 0) {
+        hal.scheduler->resume_timer_procs();
+        return healthy;
     }
+
 
     _pressure    = (_pressure_sum / _sum_count) * 100.0f;
     _temperature = (_temperature_sum / _sum_count) * 10.0f;
@@ -63,7 +71,8 @@ uint8_t AP_Baro_PX4::read(void)
     _temperature_sum = 0;
     _sum_count = 0;
 
-    healthy = true;
+    hal.scheduler->resume_timer_procs();
+
     return 1;
 }
 
@@ -71,11 +80,6 @@ uint8_t AP_Baro_PX4::read(void)
 void AP_Baro_PX4::_accumulate(void)
 {
     struct baro_report baro_report;
-    if (_in_accumulate) {
-        return;
-    }
-    _in_accumulate = true;
-
     while (::read(_baro_fd, &baro_report, sizeof(baro_report)) == sizeof(baro_report) &&
            baro_report.timestamp != _last_timestamp) {
 		_pressure_sum += baro_report.pressure; // Pressure in mbar
@@ -83,19 +87,12 @@ void AP_Baro_PX4::_accumulate(void)
         _sum_count++;
         _last_timestamp = baro_report.timestamp;
     }
-    _in_accumulate = false;
-}
-
-// accumulate sensor values
-void AP_Baro_PX4::accumulate(void)
-{
-    _accumulate();
 }
 
 void AP_Baro_PX4::_baro_timer(uint32_t now)
 {
     // accumulate samples at 100Hz
-    if (now - _last_timer > 10000) {
+    if (now - _last_timer < 10000) {
         return;
     }
     _last_timer = hal.scheduler->micros();
