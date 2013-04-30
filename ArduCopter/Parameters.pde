@@ -940,7 +940,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
 #if AC_FENCE == ENABLED
-    //@Group: LIM_
+    //@Group: FENCE_
     //@Path: ../libraries/AC_Fence/AC_Fence.cpp
     GOBJECT(fence,      "FENCE_",   AC_Fence),
 #endif
