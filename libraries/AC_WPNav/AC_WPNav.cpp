@@ -236,7 +236,7 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
-void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
+void AC_WPNav::advance_target_along_track(float dt)
 {
     float track_covered;
     float track_error;
@@ -251,18 +251,24 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     curr_delta.z = curr_delta.z * _vert_track_scale;
     curr_delta_length = curr_delta.length();
 
+    // increase intermediate target point's velocity if not yet at target speed
+    if(dt > 0 && _limited_speed_xy_cms < _speed_xy_cms) {
+        _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
+    }
+    if(_limited_speed_xy_cms > _speed_xy_cms) {
+        _limited_speed_xy_cms = _speed_xy_cms;
+    }
+
+    // calculate how far along the track we are
     track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
     track_error = safe_sqrt(curr_delta_length*curr_delta_length - track_covered*track_covered);
 
+    // calculate how far along the track we could move the intermediate target before reaching the end of the leash
     track_extra_max = safe_sqrt(_leash_xy*_leash_xy - track_error*track_error);
-
-    // we could save a sqrt by doing the following and not assigning track_error
-    // track_extra_max = safe_sqrt(_leash_xy*_leash_xy - (curr_delta_length*curr_delta_length - track_covered*track_covered));
-
     track_desired_max = track_covered + track_extra_max;
 
     // advance the current target
-    track_desired_temp += velocity_cms * dt;
+    track_desired_temp += _limited_speed_xy_cms * dt;
 
     // constrain the target from moving too far
     if( track_desired_temp > track_desired_max ) {
@@ -316,7 +322,7 @@ void AC_WPNav::update_wpnav()
         reset_I();
     }else{
         // advance the target if necessary
-        advance_target_along_track(_speed_xy_cms, dt);
+        advance_target_along_track(dt);
     }
 
     // run loiter position controller
@@ -451,6 +457,9 @@ void AC_WPNav::reset_I()
     // reset target velocity - only used by loiter controller's interpretation of pilot input
     _target_vel.x = 0;
     _target_vel.y = 0;
+
+    // reset limited speed to zero to slow initial acceleration
+    _limited_speed_xy_cms = 0;
 }
 
 /// calculate_leash_length - calculates horizontal and vertical leash lengths for waypoint controller

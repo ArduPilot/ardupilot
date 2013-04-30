@@ -36,6 +36,8 @@
 #define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
 
+#define WPNAV_WP_ACCELERATION           200.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
+
 class AC_WPNav
 {
 public:
@@ -91,7 +93,7 @@ public:
     void set_origin_and_destination(const Vector3f& origin, const Vector3f& destination);
 
     /// advance_target_along_track - move target location along track from origin to destination
-    void advance_target_along_track(float velocity_cms, float dt);
+    void advance_target_along_track(float dt);
 
     /// get_distance_to_destination - get horizontal distance to destination in cm
     float get_distance_to_destination();
@@ -212,6 +214,7 @@ protected:
     bool        _reached_destination;   // true if we have reached the destination
     float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
     float       _leash_xy;              // horizontal leash length in cm
+    float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
 
 public:
     // for logging purposes
