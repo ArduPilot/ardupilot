@@ -20,19 +20,6 @@ static const int16_t toy_lookup[] = {
 //called at 10hz
 void update_toy_throttle()
 {
-    /*
-     *  // Disabled, now handled by TOY_A (Alt hold) and TOY_M (Manual throttle)
-     *  if (false == CH6_toy_flag && g.rc_6.radio_in >= CH_6_PWM_TRIGGER){
-     *       CH6_toy_flag = true;
-     *       throttle_mode  = THROTTLE_MANUAL;
-     *
-     *  }else if (CH6_toy_flag && g.rc_6.radio_in < CH_6_PWM_TRIGGER){
-     *       CH6_toy_flag = false;
-     *       throttle_mode  = THROTTLE_AUTO;
-     *       set_new_altitude(current_loc.alt);
-     *       saved_toy_throttle = g.rc_3.control_in;
-     *  }*/
-
     // look for a change in throttle position to exit throttle hold
     if(abs(g.rc_3.control_in - saved_toy_throttle) > 40) {
         throttle_mode   = THROTTLE_MANUAL;
@@ -46,28 +33,29 @@ void update_toy_throttle()
 void update_toy_altitude()
 {
     int16_t input = g.rc_3.radio_in;     // throttle
+    float current_target_alt = wp_nav.get_desired_alt();
     //int16_t input = g.rc_7.radio_in;
 
     // Trigger upward alt change
     if(false == CH7_toy_flag && input > 1666) {
         CH7_toy_flag = true;
         // go up
-        if(next_WP.alt >= 400) {
-            force_new_altitude(next_WP.alt + TOY_ALT_LARGE);
+        if(current_target_alt >= 400) {
+            wp_nav.set_desired_alt(current_target_alt + TOY_ALT_LARGE);
         }else{
-            force_new_altitude(next_WP.alt + TOY_ALT_SMALL);
+            wp_nav.set_desired_alt(current_target_alt + TOY_ALT_SMALL);
         }
 
         // Trigger downward alt change
     }else if(false == CH7_toy_flag && input < 1333) {
         CH7_toy_flag = true;
         // go down
-        if(next_WP.alt >= (400 + TOY_ALT_LARGE)) {
-            force_new_altitude(next_WP.alt - TOY_ALT_LARGE);
-        }else if(next_WP.alt >= TOY_ALT_SMALL) {
-            force_new_altitude(next_WP.alt - TOY_ALT_SMALL);
-        }else if(next_WP.alt < TOY_ALT_SMALL) {
-            force_new_altitude(0);
+        if(current_target_alt >= (400 + TOY_ALT_LARGE)) {
+            wp_nav.set_desired_alt(current_target_alt - TOY_ALT_LARGE);
+        }else if(current_target_alt >= TOY_ALT_SMALL) {
+            wp_nav.set_desired_alt(current_target_alt - TOY_ALT_SMALL);
+        }else if(current_target_alt < TOY_ALT_SMALL) {
+            wp_nav.set_desired_alt(0); 
         }
 
         // clear flag
@@ -140,8 +128,8 @@ void roll_pitch_toy()
     yy      = abs(yaw_rate / 500);
 
     // constrain to lookup Array range
-    xx = constrain(xx, 0, 3);
-    yy = constrain(yy, 0, 8);
+    xx = constrain_int16(xx, 0, 3);
+    yy = constrain_int16(yy, 0, 8);
 
     roll_rate = toy_lookup[yy * 4 + xx];
 
@@ -152,12 +140,12 @@ void roll_pitch_toy()
     }
 
     int16_t roll_limit = 4500 / g.toy_yaw_rate;
-    roll_rate = constrain(roll_rate, -roll_limit, roll_limit);
+    roll_rate = constrain_int16(roll_rate, -roll_limit, roll_limit);
 
 #elif TOY_MIXER == TOY_LINEAR_MIXER
     roll_rate = -((int32_t)g.rc_2.control_in * (yaw_rate/100)) /30;
     //cliSerial->printf("roll_rate: %d\n",roll_rate);
-    roll_rate = constrain(roll_rate, -2000, 2000);
+    roll_rate = constrain_int32(roll_rate, -2000, 2000);
 
 #elif TOY_MIXER == TOY_EXTERNAL_MIXER
     // JKR update to allow external roll/yaw mixing

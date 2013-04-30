@@ -29,6 +29,7 @@ extern bool _px4_thread_should_exit;
 
 PX4Scheduler::PX4Scheduler() :
     _perf_timers(perf_alloc(PC_ELAPSED, "APM_timers")),
+    _perf_io_timers(perf_alloc(PC_ELAPSED, "APM_IO_timers")),
 	_perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
 {}
 
@@ -132,6 +133,22 @@ void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc)
     }
 }
 
+void PX4Scheduler::register_io_process(AP_HAL::TimedProc proc) 
+{
+    for (uint8_t i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i] == proc) {
+            return;
+        }
+    }
+
+    if (_num_io_procs < PX4_SCHEDULER_MAX_TIMER_PROCS) {
+        _io_proc[_num_io_procs] = proc;
+        _num_io_procs++;
+    } else {
+        hal.console->printf("Out of IO processes\n");
+    }
+}
+
 void PX4Scheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) 
 {
     _failsafe = failsafe;
@@ -202,6 +219,26 @@ void *PX4Scheduler::_timer_thread(void)
     return NULL;
 }
 
+void PX4Scheduler::_run_io(void)
+{
+    uint32_t tnow = micros();
+    if (_in_io_proc) {
+        return;
+    }
+    _in_io_proc = true;
+
+    if (!_timer_suspended) {
+        // now call the IO based drivers
+        for (int i = 0; i < _num_io_procs; i++) {
+            if (_io_proc[i] != NULL) {
+                _io_proc[i](tnow);
+            }
+        }
+    }
+
+    _in_io_proc = false;
+}
+
 void *PX4Scheduler::_io_thread(void)
 {
     while (!_px4_thread_should_exit) {
@@ -214,6 +251,11 @@ void *PX4Scheduler::_io_thread(void)
 
         // process any pending storage writes
         ((PX4Storage *)hal.storage)->_timer_tick();
+
+        // run registered IO processes
+        perf_begin(_perf_io_timers);
+        _run_io();
+        perf_end(_perf_io_timers);
     }
     return NULL;
 }

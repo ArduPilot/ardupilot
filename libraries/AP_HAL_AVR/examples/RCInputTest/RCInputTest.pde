@@ -29,7 +29,7 @@ void individualread(AP_HAL::RCInput* in) {
     /* individual channel read method: */
     uint8_t valid;
     uint16_t channels[8];
-    valid = in->valid();
+    valid = in->valid_channels();
     for (int i = 0; i < 8; i++) {
         channels[i] = in->read(i);
     }

@@ -281,10 +281,40 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void)
 {
-    if (!_gps || _gps->status() != GPS::GPS_OK || !_gps_use) {
+    if (!_gps || _gps->status() <= GPS::NO_FIX || !_gps_use) {
         return false;
     }
     return true;
+}
+
+// return true if we should use the compass for yaw correction
+bool AP_AHRS_DCM::use_compass(void)
+{
+    if (!_compass || !_compass->use_for_yaw()) {
+        // no compass available
+        return false;
+    }
+    if (!_fly_forward || !have_gps()) {
+        // we don't have any alterative to the compass
+        return true;
+    }
+    if (_gps->ground_speed < GPS_SPEED_MIN) {
+        // we are not going fast enough to use the GPS
+        return true;
+    }
+
+    // if the current yaw differs from the GPS yaw by more than 45
+    // degrees and the estimated wind speed is less than 80% of the
+    // ground speed, then switch to GPS navigation. This will help
+    // prevent flyaways with very bad compass offsets
+    int32_t error = abs(wrap_180_cd(yaw_sensor - _gps->ground_course));
+    if (error > 4500 && _wind.length() < _gps->ground_speed*0.008f) {
+        // start using the GPS for heading
+        return false;
+    }
+
+    // use the compass
+    return true;    
 }
 
 // yaw drift correction using the compass or GPS
@@ -297,7 +327,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     float yaw_error;
     float yaw_deltat;
 
-    if (_compass && _compass->use_for_yaw()) {
+    if (use_compass()) {
         if (_compass->last_update != _compass_last_update) {
             yaw_deltat = (_compass->last_update - _compass_last_update) * 1.0e-6f;
             _compass_last_update = _compass->last_update;
@@ -464,16 +494,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _last_airspeed = airspeed.length();
     }
 
-    /*
-     *  The barometer for vertical velocity is only enabled if we got
-     *  at least 5 pressure samples for the reading. This ensures we
-     *  don't use very noisy climb rate data
-     */
-    if (_baro_use && _barometer != NULL && _barometer->get_pressure_samples() >= 5) {
-        // Z velocity is down
-        velocity.z = -_barometer->get_climb_rate();
-    }
-
     // see if this is our first time through - in which case we
     // just setup the start times and return
     if (_ra_sum_start == 0) {
@@ -532,7 +552,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // reduce the impact of the gps/accelerometers on yaw when we are
     // flat, but still allow for yaw correction using the
     // accelerometers at high roll angles as long as we have a GPS
-    if (_compass && _compass->use_for_yaw()) {
+    if (use_compass()) {
         if (have_gps() && gps_gain == 1.0f) {
             error.z *= sinf(fabsf(roll));
         } else {
@@ -561,6 +581,16 @@ AP_AHRS_DCM::drift_correction(float deltat)
     _omega_P = error * _P_gain(spin_rate) * _kp;
     if (_fast_ground_gains) {
         _omega_P *= 8;
+    }
+
+    if (_fly_forward && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D && 
+        _gps->ground_speed < GPS_SPEED_MIN && 
+        _accel_vector.x >= 7 &&
+	    pitch_sensor > -3000 && pitch_sensor < 3000) {
+            // assume we are in a launch acceleration, and reduce the
+            // rp gain by 50% to reduce the impact of GPS lag on
+            // takeoff attitude when using a catapult
+            _omega_P *= 0.5f;
     }
 
     // accumulate some integrator error
@@ -642,9 +672,9 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
         wind.z = velocitySum.z - V * fuselageDirectionSum.z;
         wind *= 0.5f;
 
-	if (wind.length() < _wind.length() + 20) {
-		_wind = _wind * 0.95f + wind * 0.05f;
-	}
+        if (wind.length() < _wind.length() + 20) {
+            _wind = _wind * 0.95f + wind * 0.05f;
+        }
 
         _last_wind_time = now;
     } else if (now - _last_wind_time > 2000 && _airspeed && _airspeed->use()) {
@@ -721,7 +751,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 	bool ret = false;
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();
-		ret = true;
+		return true;
 	}
 
 	// estimate it via GPS speed and wind
@@ -730,7 +760,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 		ret = true;
 	}
 
-	if (ret && _wind_max > 0 && _gps && _gps->status() == GPS::GPS_OK) {
+	if (ret && _wind_max > 0 && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
 		// constrain the airspeed by the ground speed
 		// and AHRS_WIND_MAX
 		*airspeed_ret = constrain(*airspeed_ret, 

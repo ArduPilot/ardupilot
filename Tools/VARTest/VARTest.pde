@@ -143,7 +143,7 @@ void setup() {
 		//test_variable(ap, type);
 	}
 
-	AP_Param::show_all();
+	AP_Param::show_all(cliSerial);
 
 	cliSerial->println_P(PSTR("All done."));
 }

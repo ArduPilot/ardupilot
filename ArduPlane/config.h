@@ -408,13 +408,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Level with each startup = 0, level with MP/CLI only = 1
-//
-#ifndef MANUAL_LEVEL
- # define MANUAL_LEVEL        0
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // GROUND_START_DELAY
 //
 #ifndef GROUND_START_DELAY
@@ -714,52 +707,16 @@
  # define LOGGING_ENABLED                ENABLED
 #endif
 
-
-#ifndef LOG_ATTITUDE_FAST
- # define LOG_ATTITUDE_FAST              DISABLED
-#endif
-#ifndef LOG_ATTITUDE_MED
- # define LOG_ATTITUDE_MED               ENABLED
-#endif
-#ifndef LOG_GPS
- # define LOG_GPS                                ENABLED
-#endif
-#ifndef LOG_PM
- # define LOG_PM                                 ENABLED
-#endif
-#ifndef LOG_CTUN
- # define LOG_CTUN                               DISABLED
-#endif
-#ifndef LOG_NTUN
- # define LOG_NTUN                               DISABLED
-#endif
-#ifndef LOG_MODE
- # define LOG_MODE                               ENABLED
-#endif
-#ifndef LOG_IMU
- # define LOG_IMU                                DISABLED
-#endif
-#ifndef LOG_CMD
- # define LOG_CMD                                ENABLED
-#endif
-#ifndef LOG_CURRENT
- # define LOG_CURRENT                            DISABLED
-#endif
-
-// calculate the default log_bitmask
-#define LOGBIT(_s)      (LOG_ ## _s ? MASK_LOG_ ## _s : 0)
-
 #define DEFAULT_LOG_BITMASK     \
-    LOGBIT(ATTITUDE_FAST)       | \
-    LOGBIT(ATTITUDE_MED)        | \
-    LOGBIT(GPS)                 | \
-    LOGBIT(PM)                  | \
-    LOGBIT(CTUN)                | \
-    LOGBIT(NTUN)                | \
-    LOGBIT(MODE)                | \
-    LOGBIT(IMU)                 | \
-    LOGBIT(CMD)                 | \
-    LOGBIT(CURRENT)
+    MASK_LOG_ATTITUDE_MED | \
+    MASK_LOG_GPS | \
+    MASK_LOG_PM | \
+    MASK_LOG_NTUN | \
+    MASK_LOG_MODE | \
+    MASK_LOG_CMD | \
+    MASK_LOG_COMPASS | \
+    MASK_LOG_CURRENT
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -792,11 +749,6 @@
 
 #ifndef SCALING_SPEED
  # define SCALING_SPEED          15.0
-#endif
-
-// use this to enable servos in HIL mode
-#ifndef HIL_SERVOS
- # define HIL_SERVOS DISABLED
 #endif
 
 // use this to completely disable the CLI
@@ -839,6 +791,6 @@
 #endif
 
 #ifndef SERIAL_BUFSIZE
-# define SERIAL_BUFSIZE 256
+ # define SERIAL_BUFSIZE 256
 #endif
 

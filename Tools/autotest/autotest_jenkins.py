@@ -86,11 +86,11 @@ def dump_logs(atype):
     return True
 
 def convert_gpx():
-    '''convert any mavlog files to GPX and KML'''
+    '''convert any tlog files to GPX and KML'''
     import glob
-    mavlog = glob.glob(util.reltopdir("../buildlogs/*.mavlog"))
+    mavlog = glob.glob(util.reltopdir("../buildlogs/*.tlog"))
     for m in mavlog:
-        util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
+        util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
@@ -113,7 +113,7 @@ def alarm_handler(signum, frame):
         util.pexpect_close_all()
         results.addfile('Full Logs', 'autotest-output.txt')
         results.addglob('DataFlash Log', '*.flashlog')
-        results.addglob("MAVLink log", '*.mavlog')
+        results.addglob("MAVLink log", '*.tlog')
         results.addfile('ArduPlane build log', 'ArduPlane.txt')
         results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
         results.addfile('ArduCopter build log', 'ArduCopter.txt')
@@ -170,7 +170,7 @@ def fly_ArduCopter_scripted(testname):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/ArduCopter-test.mavlog")
+    buildlog = util.reltopdir("../buildlogs/ArduCopter-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
@@ -263,7 +263,7 @@ class TestResults(object):
 
 def write_XMLresults(atype, results):
     '''write XML JUnit results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../pymavlink/generator")))
+    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
     import mavtemplate
     t = mavtemplate.MAVTemplate()
     for x in glob.glob(util.reltopdir('Tools/autotest/junit.xml')):
@@ -274,7 +274,7 @@ def write_XMLresults(atype, results):
 
 def write_webresults(results):
     '''write webpage results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../pymavlink/generator")))
+    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
     import mavtemplate
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
@@ -359,7 +359,7 @@ def run_tests(tests):
     results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
     results.addglob('DataFlash Log', '*.flashlog')
-    results.addglob("MAVLink log", '*.mavlog')
+    results.addglob("MAVLink log", '*.tlog')
     results.addglob("GPX track", '*.gpx')
     
     unit_test_results.num_tests = len(results.tests)

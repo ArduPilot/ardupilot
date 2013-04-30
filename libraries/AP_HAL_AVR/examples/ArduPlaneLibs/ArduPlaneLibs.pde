@@ -14,6 +14,7 @@
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
+#include <AP_ADC_AnalogSource.h>
 #include <AP_RangeFinder.h>     // Range finder library
 #include <Filter.h>                     // Filter library
 #include <AP_Buffer.h>      // APM FIFO Buffer

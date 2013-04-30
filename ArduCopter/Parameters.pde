@@ -77,6 +77,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(sonar_type,     "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
 
+    // @Param: SONAR_GAIN
+    // @DisplayName: Sonar gain
+    // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
+    // @Range: 0.01 0.5
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(sonar_gain,     "SONAR_GAIN",           SONAR_GAIN_DEFAULT),
+
     // @Param: BATT_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
@@ -90,6 +98,20 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATTERY),
+
+    // @Param: FS_GPS_ENABLE
+    // @DisplayName: GPS Failsafe Enable
+    // @Description: Controls whether failsafe will be invoked when gps signal is lost
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(failsafe_gps_enabled, "FS_GPS_ENABLE", FS_GPS),
+
+    // @Param: FS_GCS_ENABLE
+    // @DisplayName: Ground Station Failsafe Enable
+    // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds
+    // @Values: 0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode
+    // @User: Standard
+    GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISABLED),
 
     // @Param: VOLT_DIVIDER
     // @DisplayName: Voltage Divider
@@ -147,14 +169,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
-	// @Param: TILT
-    // @DisplayName: Auto Tilt Compensation
-    // @Description: This is a feed-forward compensation which helps the aircraft achieve target waypoint speed.
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Advanced
-	GSCALAR(tilt_comp,      "TILT",     TILT_COMPENSATION),
-
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
@@ -183,12 +197,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(throttle_accel_enabled,  "THR_ACC_ENABLE",   1),
 
-    // @Param: YAW_OVR_BEHAVE
-    // @DisplayName: Yaw override behaviour
-    // @Description: Controls when autopilot takes back normal control of yaw after pilot overrides
-    // @Values: 0:At Next WP, 1:On Mission Restart
+    // @Param: WP_YAW_BEHAVIOR
+    // @DisplayName: Yaw behaviour during missions
+    // @Description: Determines how the autopilot controls the yaw during missions and RTL
+    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL
     // @User: Advanced
-    GSCALAR(yaw_override_behaviour,  "YAW_OVR_BEHAVE",   YAW_OVERRIDE_BEHAVIOUR_AT_NEXT_WAYPOINT),
+    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
     // @Param: WP_TOTAL
     // @DisplayName: Waypoint Total
@@ -202,15 +216,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(command_index,  "WP_INDEX",         0),
 
-    // @Param: WP_RADIUS
-    // @DisplayName: Waypoint Radius
-    // @Description: Defines the distance from a waypoint, that when crossed indicates the wp has been hit.
-    // @Units: Meters
-    // @Range: 1 127
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(waypoint_radius,        "WP_RADIUS",    WP_RADIUS_DEFAULT),
-
     // @Param: CIRCLE_RADIUS
     // @DisplayName: Circle radius
     // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
@@ -220,29 +225,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(circle_radius,  "CIRCLE_RADIUS",    CIRCLE_RADIUS),
 
-	// @Param: WP_SPEED_MAX
-    // @DisplayName: Waypoint Max Speed Target
-    // @Description: Defines the speed which the aircraft will attempt to maintain during a WP mission.
-    // @Units: Centimeters/Second
-    // @Increment: 100
-    // @User: Standard
-    GSCALAR(waypoint_speed_max,     "WP_SPEED_MAX", WAYPOINT_SPEED_MAX),
-
-	// @Param: XTRK_GAIN_SC
-    // @DisplayName: Cross-Track Gain
-    // @Description: This controls the rate that the Auto Controller will attempt to return original track
-    // @Units: Dimensionless
-	// @User: Standard
-    GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC", CROSSTRACK_GAIN),
-
-    // @Param: XTRK_MIN_DIST
-    // @DisplayName: Crosstrack mininum distance
-    // @Description: Minimum distance in meters between waypoints to do crosstrack correction.
-    // @Units: Meters
-    // @Range: 0 32767
+    // @Param: CIRCLE_RATE
+    // @DisplayName: Circle rate
+    // @Description: Circle mode's turn rate in degrees / second.  Positive to turn clockwise, negative for counter clockwise
+    // @Units: Degrees / second
+    // @Range: -90 90
     // @Increment: 1
     // @User: Standard
-    GSCALAR(crosstrack_min_distance, "XTRK_MIN_DIST",  CROSSTRACK_MIN_DISTANCE),
+    GSCALAR(circle_rate,  "CIRCLE_RATE",        CIRCLE_RATE),
 
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
@@ -261,24 +251,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Standard
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
-
-    // @Param: AUTO_VELZ_MIN
-    // @DisplayName: Autopilot's min vertical speed (max descent) in cm/s
-    // @Description: The minimum vertical velocity (i.e. descent speed) the autopilot may request in cm/s
-    // @Units: Centimeters/Second
-    // @Range: -500 -50
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(auto_velocity_z_min,     "AUTO_VELZ_MIN",   AUTO_VELZ_MIN),
-
-    // @Param: AUTO_VELZ_MAX
-    // @DisplayName: Auto pilot's max vertical speed in cm/s
-    // @Description: The maximum vertical velocity the autopilot may request in cm/s
-    // @Units: Centimeters/Second
-    // @Range: 50 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(auto_velocity_z_max,     "AUTO_VELZ_MAX",   AUTO_VELZ_MAX),
 
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
@@ -402,7 +374,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,8:CH6_TOP_BOTTOM_RATIO,9:CH6_RELAY,10:CH6_TRAVERSE_SPEED,11:CH6_NAV_KP,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,20:CH6_NAV_KI,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD
+    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,8:CH6_TOP_BOTTOM_RATIO,9:CH6_RELAY,10:CH6_WP_SPEED,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD,38:CH6_DECLINATION,39:CH6_CIRCLE_RATE
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -497,6 +469,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: RC11_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // @Group: RC9_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
+    // @Group: RC12_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_12,                   "RC12_", RC_Channel_aux),
 #endif
 
     // @Param: RC_SPEED
@@ -682,58 +663,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0.200 0.600
     // @User: Standard
     GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
-
-    // @Param: NAV_LAT_P
-    // @DisplayName: Navigation latitude rate controller P gain
-    // @Description: Navigation latitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
-    // @Range: 2.000 2.800
-    // @User: Standard
-
-    // @Param: NAV_LAT_I
-    // @DisplayName: Navigation latitude rate controller I gain
-    // @Description: Navigation latitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
-    // @Range: 0.140 0.200
-    // @User: Standard
-
-    // @Param: NAV_LAT_IMAX
-    // @DisplayName: Navigation rate controller I gain maximum
-    // @Description: Navigation rate controller I gain maximum.  Constrains the lean angle that the I gain will output
-    // @Range: 0 4500
-    // @Unit: Centi-Degrees
-    // @User: Standard
-
-    // @Param: NAV_LAT_D
-    // @DisplayName: Navigation latitude rate controller D gain
-    // @Description: Navigation latitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.000 0.100
-    // @User: Standard
-    GGROUP(pid_nav_lat,             "NAV_LAT_",  AC_PID),
-
-    // @Param: NAV_LON_P
-    // @DisplayName: Navigation longitude rate controller P gain
-    // @Description: Navigation longitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the longitude direction
-    // @Range: 2.000 2.800
-    // @User: Standard
-
-    // @Param: NAV_LON_I
-    // @DisplayName: Navigation longitude rate controller I gain
-    // @Description: Navigation longitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the longitude direction
-    // @Range: 0.140 0.200
-    // @User: Standard
-
-    // @Param: NAV_LON_IMAX
-    // @DisplayName: Navigation longitude rate controller I gain maximum
-    // @Description: Navigation longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will generate
-    // @Range: 0 4500
-    // @Unit: Centi-Degrees
-    // @User: Standard
-
-    // @Param: NAV_LON_D
-    // @DisplayName: Navigation longituderate controller D gain
-    // @Description: Navigation longitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.000 0.100
-    // @User: Standard
-    GGROUP(pid_nav_lon,             "NAV_LON_",  AC_PID),
 
     // @Param: THR_RATE_P
     // @DisplayName: Throttle rate controller P gain
@@ -1008,7 +937,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: THR_ALT_P
     // @DisplayName: Altitude controller P gain
     // @Description: Altitude controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
-    // @Range: 3.000 6.000
+    // @Range: 1.000 3.000
     // @User: Standard
 
     // @Param: THR_ALT_I
@@ -1088,6 +1017,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_InertialNav/AP_InertialNav.cpp
     GOBJECT(inertial_nav,           "INAV_",    AP_InertialNav),
 
+    //@Group: WPNAV_
+    //@Path: ../libraries/AC_WPNav/AC_WPNav.cpp
+    GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
+
     // @Group: SR0_
     // @Path: ./GCS_Mavlink.pde
     GOBJECT(gcs0,                   "SR0_",     GCS_MAVLINK),
@@ -1119,13 +1052,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(barometer, "GND_", AP_Baro),
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
-#if AP_LIMITS == ENABLED
+#if AC_FENCE == ENABLED
     //@Group: LIM_
-    //@Path: ../libraries/AP_Limits/AP_Limits.cpp,../libraries/AP_Limits/AP_Limit_GPSLock.cpp,../libraries/AP_Limits/AP_Limit_Geofence.cpp,../libraries/AP_Limits/AP_Limit_Altitude.cpp,../libraries/AP_Limits/AP_Limit_Module.cpp
-    GOBJECT(limits,                 "LIM_",    AP_Limits),
-    GOBJECT(gpslock_limit,          "LIM_",    AP_Limit_GPSLock),
-    GOBJECT(geofence_limit,         "LIM_",    AP_Limit_Geofence),
-    GOBJECT(altitude_limit,         "LIM_",    AP_Limit_Altitude),
+    //@Path: ../libraries/AC_Fence/AC_Fence.cpp
+    GOBJECT(fence,      "FENCE_",   AC_Fence),
 #endif
 
 #if FRAME_CONFIG ==     HELI_FRAME
@@ -1168,6 +1098,11 @@ static void load_parameters(void)
     }
 #endif
 
+    // setup different Compass learn setting for ArduCopter than the default
+    // but allow users to override in their config
+    if (!compass._learn.load()) {
+        compass._learn.set_and_save(0);
+    }
 
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {

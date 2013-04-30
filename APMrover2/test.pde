@@ -20,6 +20,9 @@ static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
+#endif
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -53,7 +56,9 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
 	{"logging",		test_logging},
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    {"shell", 				test_shell},
+#endif
 };
 
 // A Macro to create the Menu
@@ -112,7 +117,7 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
-        if (hal.rcin->valid() > 0) {
+        if (hal.rcin->valid_channels() > 0) {
             cliSerial->print("CH:");
             for(int i = 0; i < 8; i++){
                 cliSerial->print(hal.rcin->read(i));	// Print channel values
@@ -201,13 +206,15 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 
 		if (oldSwitchPosition != readSwitch()){
 			cliSerial->printf_P(PSTR("CONTROL MODE CHANGED: "));
-            print_mode(readSwitch());
+            print_mode(cliSerial, readSwitch());
+            cliSerial->println();
 			fail_test++;
 		}
 
 		if (g.fs_throttle_enabled && g.channel_throttle.get_failsafe()){
 			cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.channel_throttle.radio_in);
-            print_mode(readSwitch());
+            print_mode(cliSerial, readSwitch());
+            cliSerial->println();
 			fail_test++;
 		}
 
@@ -299,7 +306,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 
 static void
-test_wp_print(struct Location *cmd, uint8_t wp_index)
+test_wp_print(const struct Location *cmd, uint8_t wp_index)
 {
 	cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
 		(int)wp_index,
@@ -379,7 +386,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		delay(333);
+		delay(100);
 
 		// Blink GPS LED if we don't have a fix
 		// ------------------------------------
@@ -512,7 +519,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                 if (compass.healthy) {
                     Vector3f maggy = compass.get_offsets();
                     cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                    (wrap_360(ToDeg(heading) * 100)) /100,
+                                    (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (int)compass.mag_x,
                                     (int)compass.mag_y,
                                     (int)compass.mag_z,
@@ -545,24 +552,80 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
-    if (!g.sonar_enabled) {
+    if (!sonar.enabled()) {
         cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
     }
 
     print_hit_enter();
     init_sonar();
+    
+    float sonar_dist_cm_min = 0.0f;
+    float sonar_dist_cm_max = 0.0f;
+    float voltage_min=0.0f, voltage_max = 0.0f;
+    float sonar2_dist_cm_min = 0.0f;
+    float sonar2_dist_cm_max = 0.0f;
+    float voltage2_min=0.0f, voltage2_max = 0.0f;
+    uint32_t last_print = 0;
 
 	while (true) {
-        delay(200);
-        float sonar_dist_cm = sonar.distance_cm();
+        delay(20);
+        uint32_t now = millis();
+
+        float dist_cm = sonar.distance_cm();
         float voltage = sonar.voltage();
-        cliSerial->printf_P(PSTR("sonar distance=%5.1fcm  voltage=%5.2f\n"), 
-                            sonar_dist_cm, voltage);
+        if (sonar_dist_cm_min == 0.0f) {
+            sonar_dist_cm_min = dist_cm;
+            voltage_min = voltage;
+        }
+        sonar_dist_cm_max = max(sonar_dist_cm_max, dist_cm);
+        sonar_dist_cm_min = min(sonar_dist_cm_min, dist_cm);
+        voltage_min = min(voltage_min, voltage);
+        voltage_max = max(voltage_max, voltage);
+
+        dist_cm = sonar2.distance_cm();
+        voltage = sonar2.voltage();
+        if (sonar2_dist_cm_min == 0.0f) {
+            sonar2_dist_cm_min = dist_cm;
+            voltage2_min = voltage;
+        }
+        sonar2_dist_cm_max = max(sonar2_dist_cm_max, dist_cm);
+        sonar2_dist_cm_min = min(sonar2_dist_cm_min, dist_cm);
+        voltage2_min = min(voltage2_min, voltage);
+        voltage2_max = max(voltage2_max, voltage);
+
+        if (now - last_print >= 200) {
+            cliSerial->printf_P(PSTR("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n"), 
+                                sonar_dist_cm_min, 
+                                sonar_dist_cm_max, 
+                                voltage_min,
+                                voltage_max,
+                                sonar2_dist_cm_min, 
+                                sonar2_dist_cm_max, 
+                                voltage2_min,
+                                voltage2_max);
+            voltage_min = voltage_max = 0.0f;
+            voltage2_min = voltage2_max = 0.0f;
+            sonar_dist_cm_min = sonar_dist_cm_max = 0.0f;
+            sonar2_dist_cm_min = sonar2_dist_cm_max = 0.0f;
+            last_print = now;
+        }
         if (cliSerial->available() > 0) {
             break;
 	    }
     }
     return (0);
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+/*
+ *  run a debug shell
+ */
+static int8_t
+test_shell(uint8_t argc, const Menu::arg *argv)
+{
+    hal.util->run_debug_shell(cliSerial);
+    return 0;
+}
+#endif
 
 #endif // CLI_ENABLED

@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
 
     // @Param: MPU6K_FILTER
     // @DisplayName: MPU6000 filter frequency
-    // @Description: Filter frequency to ask the MPU6000 to apply to samples. This can be set to a lower value to try to cope with very high vibration levels in aircraft. The default value on ArduPlane and APMrover2 is 20Hz. The default value on ArduCopter is 42Hz. This option takes effect on the next reboot or gyro initialisation
+    // @Description: Filter frequency to ask the MPU6000 to apply to samples. This can be set to a lower value to try to cope with very high vibration levels in aircraft. The default value on ArduPlane, APMrover2 and ArduCopter is 20Hz. This option takes effect on the next reboot or gyro initialisation
     // @Units: Hz
     // @Values: 0:Default,5:5Hz,10:10Hz,20:20Hz,42:42Hz,98:98Hz
     // @User: Advanced
@@ -92,7 +92,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_InertialSensor::AP_InertialSensor() {
+AP_InertialSensor::AP_InertialSensor() :
+    _accel(),
+    _gyro()
+{
     AP_Param::setup_object_defaults(this, var_info);        
 }
 
@@ -286,8 +289,7 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
         }
 
         // null gravity from the Z accel
-        // TO-DO: replace with gravity #define form location.cpp
-        accel_offset.z += GRAVITY;
+        accel_offset.z += GRAVITY_MSS;
 
         total_change = fabsf(prev.x - accel_offset.x) + fabsf(prev.y - accel_offset.y) + fabsf(prev.z - accel_offset.z);
         max_offset = (accel_offset.x > accel_offset.y) ? accel_offset.x : accel_offset.y;
@@ -401,6 +403,13 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
     return false;
 }
 
+/// calibrated - returns true if the accelerometers have been calibrated
+/// @note this should not be called while flying because it reads from the eeprom which can be slow
+bool AP_InertialSensor::calibrated()
+{
+    return _accel_offset.load();
+}
+
 // _calibrate_model - perform low level accel calibration
 // accel_sample are accelerometer samples collected in 6 different positions
 // accel_offsets are output from the calibration routine
@@ -422,7 +431,7 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
 
     // reset
     beta[0] = beta[1] = beta[2] = 0;
-    beta[3] = beta[4] = beta[5] = 1.0f/GRAVITY;
+    beta[3] = beta[4] = beta[5] = 1.0f/GRAVITY_MSS;
     
     while( num_iterations < 20 && change > eps ) {
         num_iterations++;
@@ -452,9 +461,9 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
     }
 
     // copy results out
-    accel_scale.x = beta[3] * GRAVITY;
-    accel_scale.y = beta[4] * GRAVITY;
-    accel_scale.z = beta[5] * GRAVITY;
+    accel_scale.x = beta[3] * GRAVITY_MSS;
+    accel_scale.y = beta[4] * GRAVITY_MSS;
+    accel_scale.z = beta[5] * GRAVITY_MSS;
     accel_offsets.x = beta[0] * accel_scale.x;
     accel_offsets.y = beta[1] * accel_scale.y;
     accel_offsets.z = beta[2] * accel_scale.z;

@@ -40,16 +40,16 @@ public:
     void init();
 
     // return the smoothed gyro vector corrected for drift
-    Vector3f get_gyro(void) {
+    const Vector3f get_gyro(void) const {
         return _ins->get_gyro();
     }
 
-    Matrix3f get_dcm_matrix(void) {
+    const Matrix3f &get_dcm_matrix(void) const {
         return _dcm_matrix;
     }
 
     // return the current drift correction integrator value
-    Vector3f get_gyro_drift(void) {
+    const Vector3f &get_gyro_drift(void) const {
         return _omega_I;
     }
 

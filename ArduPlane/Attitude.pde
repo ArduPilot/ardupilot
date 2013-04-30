@@ -40,9 +40,11 @@ static bool stick_mixing_enabled(void)
 {
     if (control_mode == CIRCLE || control_mode > FLY_BY_WIRE_B) {
         // we're in an auto mode. Check the stick mixing flag
-        if (g.stick_mixing &&
+        if (g.stick_mixing != STICK_MIXING_DISABLED &&
             geofence_stickmixing() &&
-            failsafe == FAILSAFE_NONE) {
+            failsafe == FAILSAFE_NONE &&
+            (g.throttle_fs_enabled == 0 || 
+             g.channel_throttle.radio_in >= g.throttle_fs_value)) {
             // we're in an auto mode, and haven't triggered failsafe
             return true;
         } else {
@@ -78,7 +80,7 @@ static void stabilize_roll(float speed_scaler)
 #if APM_CONTROL == DISABLED
 	// Calculate dersired servo output for the roll
 	// ---------------------------------------------
-    g.channel_roll.servo_out = g.pidServoRoll.get_pid((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
+    g.channel_roll.servo_out = g.pidServoRoll.get_pid_4500((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
 #else // APM_CONTROL == ENABLED
     // calculate roll and pitch control using new APM_Control library
     g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE);
@@ -101,7 +103,7 @@ static void stabilize_pitch(float speed_scaler)
         // when flying upside down the elevator control is inverted
         tempcalc = -tempcalc;
     }
-    g.channel_pitch.servo_out = g.pidServoPitch.get_pid(tempcalc, speed_scaler);
+    g.channel_pitch.servo_out = g.pidServoPitch.get_pid_4500(tempcalc, speed_scaler);
 #else // APM_CONTROL == ENABLED
     g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, control_mode == STABILIZE);    
 #endif
@@ -110,7 +112,7 @@ static void stabilize_pitch(float speed_scaler)
 /*
   this gives the user control of the aircraft in stabilization modes
  */
-static void stabilize_stick_mixing()
+static void stabilize_stick_mixing_direct()
 {
     if (!stick_mixing_enabled() ||
         control_mode == FLY_BY_WIRE_A ||
@@ -118,7 +120,7 @@ static void stabilize_stick_mixing()
         control_mode == TRAINING) {
         return;
     }
-    // do stick mixing on aileron/elevator
+    // do direct stick mixing on aileron/elevator
     float ch1_inf;
     float ch2_inf;
         
@@ -136,11 +138,51 @@ static void stabilize_stick_mixing()
     // -----------------------------------------------
     g.channel_roll.servo_out  *= ch1_inf;
     g.channel_pitch.servo_out *= ch2_inf;
-            
+    
     // Mix in stick inputs
     // -------------------
     g.channel_roll.servo_out  +=     g.channel_roll.pwm_to_angle();
     g.channel_pitch.servo_out +=    g.channel_pitch.pwm_to_angle();
+}
+
+/*
+  this gives the user control of the aircraft in stabilization modes
+  using FBW style controls
+ */
+static void stabilize_stick_mixing_fbw()
+{
+    if (!stick_mixing_enabled() ||
+        control_mode == FLY_BY_WIRE_A ||
+        control_mode == FLY_BY_WIRE_B ||
+        control_mode == TRAINING) {
+        return;
+    }
+    // do FBW style stick mixing. We don't treat it linearly
+    // however. For inputs up to half the maximum, we use linear
+    // addition to the nav_roll and nav_pitch. Above that it goes
+    // non-linear and ends up as 2x the maximum, to ensure that
+    // the user can direct the plane in any direction with stick
+    // mixing.
+    float roll_input = g.channel_roll.norm_input();
+    if (fabsf(roll_input) > 0.5f) {
+        roll_input = (3*roll_input - 1);
+    }
+    nav_roll_cd += roll_input * g.roll_limit_cd;
+    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    
+    float pitch_input = g.channel_pitch.norm_input();
+    if (fabsf(pitch_input) > 0.5f) {
+        pitch_input = (3*pitch_input - 1);
+    }
+    if (inverted_flight) {
+        pitch_input = -pitch_input;
+    }
+    if (pitch_input > 0) {
+        nav_pitch_cd += pitch_input * g.pitch_limit_max_cd;
+    } else {
+        nav_pitch_cd += -(pitch_input * g.pitch_limit_min_cd);
+    }
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
 }
 
 
@@ -196,7 +238,6 @@ static void stabilize_training(float speed_scaler)
         }
     }
 
-    stabilize_stick_mixing();
     stabilize_yaw(speed_scaler);
 }
 
@@ -211,9 +252,14 @@ static void stabilize()
     if (control_mode == TRAINING) {
         stabilize_training(speed_scaler);
     } else {
+        if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
+            stabilize_stick_mixing_fbw();
+        }
         stabilize_roll(speed_scaler);
         stabilize_pitch(speed_scaler);
-        stabilize_stick_mixing();
+        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == STABILIZE) {
+            stabilize_stick_mixing_direct();
+        }
         stabilize_yaw(speed_scaler);
     }
 }
@@ -231,6 +277,14 @@ static void crash_checker()
 
 static void calc_throttle()
 {
+    if (g.throttle_cruise <= 1) {
+        // user has asked for zero throttle - this may be done by a
+        // mission which wants to turn off the engine for a parachute
+        // landing
+        g.channel_throttle.servo_out = 0;
+        return;
+    }
+
     if (!alt_control_airspeed()) {
         int16_t throttle_target = g.throttle_cruise + throttle_nudge;
 
@@ -271,10 +325,12 @@ static void calc_throttle()
 // ----------------------------------------------------------------------
 static void calc_nav_yaw(float speed_scaler, float ch4_inf)
 {
-    if (hold_course != -1) {
+    if (hold_course_cd != -1) {
         // steering on or close to ground
-        g.channel_rudder.servo_out = g.pidWheelSteer.get_pid(bearing_error_cd, speed_scaler) + 
+        int32_t bearing_error_cd = nav_controller->bearing_error_cd();
+        g.channel_rudder.servo_out = g.pidWheelSteer.get_pid_4500(bearing_error_cd, speed_scaler) + 
             g.kff_rudder_mix * g.channel_roll.servo_out;
+        g.channel_rudder.servo_out = constrain_int16(g.channel_rudder.servo_out, -4500, 4500);
         return;
     }
 
@@ -286,7 +342,7 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
     Vector3f temp = ins.get_accel();
     int32_t error = -temp.y*100.0;
 
-    g.channel_rudder.servo_out += g.pidServoRudder.get_pid(error, speed_scaler);
+    g.channel_rudder.servo_out += g.pidServoRudder.get_pid_4500(error, speed_scaler);
 #else // APM_CONTROL == ENABLED
     // use the new APM_Control library
 	g.channel_rudder.servo_out = g.yawController.get_servo_out(speed_scaler, ch4_inf < 0.25f) + g.channel_roll.servo_out * g.kff_rudder_mix;
@@ -309,35 +365,7 @@ static void calc_nav_pitch()
 
 static void calc_nav_roll()
 {
-#define NAV_ROLL_BY_RATE 0
-#if NAV_ROLL_BY_RATE
-    // Scale from centidegrees (PID input) to radians per second. A P gain of 1.0 should result in a
-    // desired rate of 1 degree per second per degree of error - if you're 15 degrees off, you'll try
-    // to turn at 15 degrees per second.
-    float turn_rate = ToRad(g.pidNavRoll.get_pid(bearing_error_cd) * .01);
-
-    // Use airspeed_cruise as an analogue for airspeed if we don't have airspeed.
-    float speed;
-    if (!ahrs.airspeed_estimate(&speed)) {
-        speed = g.airspeed_cruise_cm*0.01;
-
-        // Floor the speed so that the user can't enter a bad value
-        if(speed < 6) {
-            speed = 6;
-        }
-    }
-
-    // Bank angle = V*R/g, where V is airspeed, R is turn rate, and g is gravity.
-    nav_roll = ToDeg(atanf(speed*turn_rate/GRAVITY_MSS)*100);
-
-#else
-    // this is the old nav_roll calculation. We will use this for 2.50
-    // then remove for a future release
-    float nav_gain_scaler = 0.01 * g_gps->ground_speed / g.scaling_speed;
-    nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
-    nav_roll_cd = g.pidNavRoll.get_pid(bearing_error_cd, nav_gain_scaler); //returns desired bank angle in degrees*100
-#endif
-
+    nav_roll_cd = nav_controller->nav_roll_cd();
     nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
 }
 
@@ -371,6 +399,38 @@ static void throttle_slew_limit(int16_t last_throttle)
     }
 }
 
+/*
+  check for automatic takeoff conditions being met
+ */
+static bool auto_takeoff_check(void)
+{
+    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK_FIX_3D) {
+        // no auto takeoff without GPS lock
+        return false;
+    }
+    if (g_gps->ground_speed < g.takeoff_throttle_min_speed*100.0f) {
+        // we haven't reached the minimum ground speed
+        return false;
+    }
+
+    if (g.takeoff_throttle_min_accel > 0.0f) {
+        float xaccel = ins.get_accel().x;
+        if (ahrs.pitch_sensor > -3000 && 
+            ahrs.pitch_sensor < 4500 &&
+            abs(ahrs.roll_sensor) < 3000 && 
+            xaccel >= g.takeoff_throttle_min_accel) {
+            // trigger with minimum acceleration when flat
+            // Thanks to Chris Miser for this suggestion
+            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), xaccel);
+            return true;
+        }
+        return false;
+    }
+
+    // we're good for takeoff
+    return true;
+}
+
 
 /* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 
@@ -379,7 +439,7 @@ static void throttle_slew_limit(int16_t last_throttle)
    *       AND
    *       2 - Our reported altitude is within 10 meters of the home altitude.
    *       3 - Our reported speed is under 5 meters per second.
-   *       4 - We are not performing a takeoff in Auto mode
+   *       4 - We are not performing a takeoff in Auto mode or takeoff speed/accel not yet reached
    *       OR
    *       5 - Home location is not set
 */
@@ -395,7 +455,7 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && takeoff_complete == false) {
+    if (control_mode==AUTO && takeoff_complete == false && auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
         return false;
@@ -408,15 +468,65 @@ static bool suppress_throttle(void)
     }
 
     if (g_gps != NULL && 
-        g_gps->status() == GPS::GPS_OK && 
+        g_gps->status() >= GPS::GPS_OK_FIX_2D && 
         g_gps->ground_speed >= 500) {
-        // we're moving at more than 5 m/s
-        throttle_suppressed = false;
-        return false;        
+        // if we have an airspeed sensor, then check it too, and
+        // require 5m/s. This prevents throttle up due to spiky GPS
+        // groundspeed with bad GPS reception
+        if (!airspeed.use() || airspeed.get_airspeed() >= 5) {
+            // we're moving at more than 5 m/s
+            throttle_suppressed = false;
+            return false;        
+        }
     }
 
     // throttle remains suppressed
     return true;
+}
+
+/*
+  implement a software VTail or elevon mixer. There are 4 different mixing modes
+ */
+static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out)
+{
+    int16_t c1, c2;
+    int16_t v1, v2;
+
+    // first get desired elevator and rudder as -500..500 values
+    c1 = chan1_out - 1500;
+    c2 = chan2_out - 1500;
+
+    v1 = (c1 - c2)/2;
+    v2 = (c1 + c2)/2;
+
+    // now map to mixed output
+    switch (mixing_type) {
+    case MIXING_DISABLED:
+        return;
+
+    case MIXING_UPUP:
+        break;
+
+    case MIXING_UPDN:
+        v2 = -v2;
+        break;
+
+    case MIXING_DNUP:
+        v1 = -v1;
+        break;
+
+    case MIXING_DNDN:
+        v1 = -v1;
+        v2 = -v2;
+        break;
+    }
+
+    v1 = constrain_int16(v1, -500, 500);
+    v2 = constrain_int16(v2, -500, 500);
+
+    // scale for a 1500 center and 1000..2000 range, symmetric
+    chan1_out = 1500 + v1;
+    chan2_out = 1500 + v2;
 }
 
 /*****************************************
@@ -428,7 +538,7 @@ static void set_servos(void)
 
     if (control_mode == MANUAL) {
         // do a direct pass through of radio values
-        if (g.mix_mode == 0) {
+        if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
             g.channel_roll.radio_out                = g.channel_roll.radio_in;
             g.channel_pitch.radio_out               = g.channel_pitch.radio_in;
         } else {
@@ -462,7 +572,7 @@ static void set_servos(void)
         // copy flap control from transmitter
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
 
-        if (g.mix_mode != 0) {
+        if (g.mix_mode == 0 && g.elevon_output == MIXING_DISABLED) {
             // set any differential spoilers to follow the elevons in
             // manual mode. 
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, g.channel_roll.radio_out);
@@ -505,8 +615,8 @@ static void set_servos(void)
 			}
 
             // directly set the radio_out values for elevon mode
-            g.channel_roll.radio_out  =     elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
-            g.channel_pitch.radio_out =     elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
+            g.channel_roll.radio_out  =     elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
+            g.channel_pitch.radio_out =     elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
         }
 
 #if OBC_FAILSAFE == ENABLED
@@ -589,7 +699,23 @@ static void set_servos(void)
         throttle_slew_limit(last_throttle);
     }
 
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
+    if (control_mode == TRAINING) {
+        // copy rudder in training mode
+        g.channel_rudder.radio_out   = g.channel_rudder.radio_in;
+    }
+
+#if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
+        return;
+    }
+#endif
+
+    if (g.vtail_output != MIXING_DISABLED) {
+        channel_output_mixer(g.vtail_output, g.channel_pitch.radio_out, g.channel_rudder.radio_out);
+    } else if (g.elevon_output != MIXING_DISABLED) {
+        channel_output_mixer(g.elevon_output, g.channel_pitch.radio_out, g.channel_roll.radio_out);
+    }
+
     // send values to the PWM timers for output
     // ----------------------------------------
     hal.rcout->write(CH_1, g.channel_roll.radio_out);     // send to Servos
@@ -601,12 +727,14 @@ static void set_servos(void)
     g.rc_6.output_ch(CH_6);
     g.rc_7.output_ch(CH_7);
     g.rc_8.output_ch(CH_8);
- # if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ # if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
     g.rc_9.output_ch(CH_9);
     g.rc_10.output_ch(CH_10);
     g.rc_11.output_ch(CH_11);
  # endif
-#endif
+ # if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    g.rc_12.output_ch(CH_12);
+ # endif
 }
 
 static bool demoing_servos;
@@ -616,13 +744,11 @@ static void demo_servos(uint8_t i) {
     while(i > 0) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
         demoing_servos = true;
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-        hal.rcout->write(1, 1400);
+        servo_write(1, 1400);
         mavlink_delay(400);
-        hal.rcout->write(1, 1600);
+        servo_write(1, 1600);
         mavlink_delay(200);
-        hal.rcout->write(1, 1500);
-#endif
+        servo_write(1, 1500);
         demoing_servos = false;
         mavlink_delay(400);
         i--;

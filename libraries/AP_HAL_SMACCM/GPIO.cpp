@@ -15,6 +15,11 @@ void SMACCMGPIO::pinMode(uint8_t pin, uint8_t output)
 {
 }
 
+int8_t SMACCMGPIO::analogPinToDigitalPin(uint8_t pin)
+{
+	return -1;
+}
+
 uint8_t SMACCMGPIO::read(uint8_t pin)
 {
   return 0;

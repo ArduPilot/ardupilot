@@ -106,12 +106,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
 	GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",     CURR_AMP_PER_VOLT),
 
-    // @Param: INPUT_VOLTS
-    // @DisplayName: Max internal voltage of the battery voltage and current sensing pins
-    // @Description: Used to convert the voltage read in on the voltage and current pins for battery monitoring.  Normally 5 meaning 5 volts.
-    // @User: Advanced
-	GSCALAR(input_voltage,          "INPUT_VOLTS",      INPUT_VOLTAGE),
-
     // @Param: BATT_CAPACITY
     // @DisplayName: Battery Capacity
     // @Description: Battery capacity in milliamp-hours (mAh)
@@ -134,6 +128,22 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
 	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
+
+	// @Param: AUTO_TRIGGER_PIN
+	// @DisplayName: Auto mode trigger pin
+	// @Description: pin number to use to trigger start of auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will start the motor.
+	// @Values: -1:Disabled,0-9:TiggerPin
+	// @User: standard
+	GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
+
+	// @Param: AUTO_KICKSTART
+	// @DisplayName: Auto mode trigger kickstart acceleration
+	// @Description: X acceleration in meters/second/second to use to trigger the motor start in auto mode. If set to zero then auto throttle starts immediately when the mode switch happens, otherwise the rover waits for the X acceleration to go above this value before it will start the motor
+	// @Units: m/s/s
+	// @Range: 0 20
+	// @Increment: 0.1
+	// @User: standard
+	GSCALAR(auto_kickstart,          "AUTO_KICKSTART", 0.0f),
 
     // @Param: CRUISE_SPEED
     // @DisplayName: Target cruise speed in auto modes
@@ -214,50 +224,57 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     0),
 
+    // @Param: SKID_STEER_OUT
+    // @DisplayName: Skid steering output
+    // @Description: Set this to 1 for skid steering controlled rovers (tank track style). When enabled, servo1 is used for the left track control, servo3 is used for right track control
+    // @Values: 0:Disabled, 1:SkidSteeringOutput
+    // @User: Standard
+	GSCALAR(skid_steer_out,          "SKID_STEER_OUT",     0),
+
+    // @Param: SKID_STEER_IN
+    // @DisplayName: Skid steering input
+    // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
+    // @Values: 0:Disabled, 1:SkidSteeringInput
+    // @User: Standard
+	GSCALAR(skid_steer_in,           "SKID_STEER_IN",     0),
+
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:STOP
+    // @Values: 0:Nothing,1:RTL,2:HOLD
     // @User: Standard
-	GSCALAR(fs_action,    "FS_ACTION",     0),
+	GSCALAR(fs_action,    "FS_ACTION",     2),
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
     // @Description: How long a failsafe event need to happen for before we trigger the failsafe action
 	// @Units: seconds
     // @User: Standard
-	GSCALAR(fs_timeout,    "FS_TIMEOUT",     10),
+	GSCALAR(fs_timeout,    "FS_TIMEOUT",     5),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range.
+    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range. Failsafe will be triggered when the throttle channel goes below the FS_THR_VALUE for FS_TIMEOUT seconds.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-	GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     0),
+	GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     1),
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle sailsafe triggers.
     // @User: Standard
-	GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     900),
+	GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     910),
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe
+    // @Description: Enable ground control station telemetry failsafe. When enabled the Rover will execute the FS_ACTION when it fails to receive MAVLink heartbeat packets for FS_TIMEOUT seconds.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
 	GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
 
-	// @Param: SONAR_ENABLE
-	// @DisplayName: Enable Sonar
-	// @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
-	// @Values: 0:Disabled,1:Enabled
-	// @User: Standard
-	GSCALAR(sonar_enabled,	    "SONAR_ENABLE",     SONAR_ENABLED),
-
 	// @Param: SONAR_TRIGGER_CM
 	// @DisplayName: Sonar trigger distance
-	// @Description: The distance from an obstacle at which the sonar triggers a turn to avoid the obstacle
+	// @Description: The distance from an obstacle in centimeters at which the sonar triggers a turn to avoid the obstacle
 	// @Units: centimeters
     // @Range: 0 1000
     // @Increment: 1
@@ -282,6 +299,14 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(sonar_turn_time,    "SONAR_TURN_TIME",     1.0f),
 
+	// @Param: SONAR_DEBOUNCE
+	// @DisplayName: Sonar debounce count
+	// @Description: The number of 50Hz sonar hits needed to trigger an obstacle avoidance event. If you get a lot of false sonar events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
+    // @Range: 1 100
+    // @Increment: 1
+	// @User: Standard
+	GSCALAR(sonar_debounce,   "SONAR_DEBOUNCE",    2),
+
     // @Param: MODE_CH
     // @DisplayName: Mode channel
     // @Description: RC Channel to use for driving mode control
@@ -290,7 +315,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: MODE1
     // @DisplayName: Mode1
-    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,4:HOLD,10:Auto,11:RTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
 	GSCALAR(mode1,           "MODE1",         MODE_1),
@@ -298,35 +323,35 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: MODE2
     // @DisplayName: Mode2
     // @Description: Driving mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,4:HOLD,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode2,           "MODE2",         MODE_2),
 
     // @Param: MODE3
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,4:HOLD,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode3,           "MODE3",         MODE_3),
 
     // @Param: MODE4
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,4:HOLD,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode4,           "MODE4",         MODE_4),
 
     // @Param: MODE5
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,4:HOLD,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode5,           "MODE5",         MODE_5),
 
     // @Param: MODE6
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,2:LEARNING,3:STEERING,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,2:LEARNING,3:STEERING,4:HOLD,10:Auto,11:RTL,15:Guided
     // @User: Standard
 	GSCALAR(mode6,           "MODE6",         MODE_6),
 
@@ -354,6 +379,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: SONAR_
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
     GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
+    GOBJECT(sonar2,                 "SONAR2_", AP_RangeFinder_analog),
 
 #if HIL_MODE == HIL_MODE_DISABLED
     // @Group: INS_

@@ -1,6 +1,12 @@
 # find the mk/ directory, which is where this makefile fragment
 # lives. (patsubst strips the trailing slash.)
-MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+SYSTYPE			:=	$(shell uname)
+
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+  MK_DIR := $(shell cygpath -m ../mk)
+else
+  MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+endif
 
 include $(MK_DIR)/environ.mk
 
@@ -14,6 +20,7 @@ else
 include $(MK_DIR)/targets.mk
 include $(MK_DIR)/sketch_sources.mk
 
+ifneq ($(MAKECMDGOALS),clean)
 # board specific includes
 ifeq ($(HAL_BOARD),HAL_BOARD_APM1)
 include $(MK_DIR)/board_avr.mk
@@ -29,6 +36,7 @@ endif
 
 ifeq ($(HAL_BOARD),HAL_BOARD_PX4)
 include $(MK_DIR)/board_px4.mk
+endif
 endif
 
 endif

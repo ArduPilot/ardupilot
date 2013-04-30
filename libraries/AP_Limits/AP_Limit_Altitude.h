@@ -16,7 +16,7 @@
 class AP_Limit_Altitude : public AP_Limit_Module {
 
 public:
-    AP_Limit_Altitude(struct Location *current_loc);
+    AP_Limit_Altitude(const struct Location *current_loc);
 
     AP_Int32        min_alt();
     AP_Int32        max_alt();
@@ -27,7 +27,7 @@ public:
     static const struct AP_Param::GroupInfo         var_info[];
 
 protected:
-    struct Location *                               _current_loc;
+    const struct Location *                               _current_loc;
     AP_Int32        _min_alt;
     AP_Int32        _max_alt;
 

@@ -25,8 +25,13 @@
 #define DEG_TO_RAD 0.017453292519943295769236907684886f
 #define RAD_TO_DEG 57.295779513082320876798154814105f
 
+#define RadiansToCentiDegrees(x) ((x) * 5729.578f)
+
 // acceleration due to gravity in m/s/s
 #define GRAVITY_MSS 9.80665f
+
+// radius of earth in meters
+#define RADIUS_OF_EARTH 6378100
 
 #define ROTATION_COMBINATION_SUPPORT 0
 
@@ -70,15 +75,26 @@ int32_t                 get_bearing_cd(const struct Location *loc1, const struct
 // our previous waypoint and point2 is our target waypoint
 // then this function returns true if we have flown past
 // the target waypoint
-bool        location_passed_point(struct Location & location,
-                                  struct Location & point1,
-                                  struct Location & point2);
+bool        location_passed_point(const struct Location & location,
+                                  const struct Location & point1,
+                                  const struct Location & point2);
 
 //  extrapolate latitude/longitude given bearing and distance
 void        location_update(struct Location *loc, float bearing, float distance);
 
 // extrapolate latitude/longitude given distances north and east
 void        location_offset(struct Location *loc, float ofs_north, float ofs_east);
+
+/*
+  wrap an angle in centi-degrees
+ */
+int32_t wrap_360_cd(int32_t error);
+int32_t wrap_180_cd(int32_t error);
+
+/*
+  print a int32_t lat/long in decimal degrees
+ */
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
 
 // constrain a value
 float   constrain(float amt, float low, float high);

@@ -20,13 +20,9 @@ COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
 ASOPTS          =   -x assembler-with-cpp 
 LISTOPTS        =   -adhlns=$(@:.o=.lst)
 
-NATIVE_CPUFLAGS     = -D_GNU_SOURCE
-NATIVE_CPULDFLAGS   = -g
-NATIVE_OPTFLAGS     = -O0 -g
-
-CPUFLAGS= $($(TOOLCHAIN)_CPUFLAGS)
-CPULDFLAGS= $($(TOOLCHAIN)_CPULDFLAGS)
-OPTFLAGS= $($(TOOLCHAIN)_OPTFLAGS)
+CPUFLAGS     = -D_GNU_SOURCE
+CPULDFLAGS   = -g
+OPTFLAGS     = -O0 -g
 
 CXXFLAGS        =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
 CXXFLAGS       +=   $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
@@ -95,6 +91,7 @@ endef
 
 # Link the final object
 $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
+	@echo "Building $(SKETCHELF)"
 	$(RULEHDR)
 	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 

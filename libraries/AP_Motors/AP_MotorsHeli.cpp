@@ -250,12 +250,6 @@ void AP_MotorsHeli::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    if(_rc_throttle->control_in > 0) {
-        // we have pushed up the throttle
-        // remove safety
-        _auto_armed = true;
-    }
-
     // for helis - armed or disarmed we allow servos to move
     output_armed();
 }
@@ -388,7 +382,7 @@ void AP_MotorsHeli::init_swash()
         collective_max = 2000;
     }
 
-    collective_mid = constrain(collective_mid, collective_min, collective_max);
+    collective_mid = constrain_int16(collective_mid, collective_min, collective_max);
 
     // calculate throttle mid point
     throttle_mid = ((float)(collective_mid-collective_min))/((float)(collective_max-collective_min))*1000.0f;
@@ -478,13 +472,13 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         // coming into this equation at 4500 or less, and based on the original assumption of the
         // total _servo_x.servo_out range being -4500 to 4500.
         roll_out = roll_out * _roll_scaler;
-        roll_out = constrain(roll_out, (int16_t)-roll_max, (int16_t)roll_max);
+        roll_out = constrain_int16(roll_out, (int16_t)-roll_max, (int16_t)roll_max);
 
         pitch_out = pitch_out * _pitch_scaler;
-        pitch_out = constrain(pitch_out, (int16_t)-pitch_max, (int16_t)pitch_max);
+        pitch_out = constrain_int16(pitch_out, (int16_t)-pitch_max, (int16_t)pitch_max);
 
         // scale collective pitch
-        coll_out = constrain(coll_in, 0, 1000);
+        coll_out = constrain_int16(coll_in, 0, 1000);
 		if (stab_throttle){
 			coll_out = coll_out * _stab_throttle_scalar + stab_col_min*10;
 		}

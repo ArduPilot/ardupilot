@@ -66,7 +66,23 @@ def process_sitl_input(buf):
     elevator = (pwm[1]-1500)/500.0
     throttle = (pwm[2]-1000)/1000.0
     rudder   = (pwm[3]-1500)/500.0
-               
+
+    if opts.elevon:
+        # fake an elevon plane
+        ch1 = aileron
+        ch2 = elevator
+        aileron  = (ch2-ch1)/2.0
+        # the minus does away with the need for RC2_REV=-1
+        elevator = -(ch2+ch1)/2.0
+
+    if opts.vtail:
+        # fake an elevon plane
+        ch1 = elevator
+        ch2 = rudder
+        # this matches VTAIL_OUTPUT==2
+        elevator = (ch2-ch1)/2.0
+        rudder   = (ch2+ch1)/2.0
+        
     if aileron != sitl_state.aileron:
         jsb_set('fcs/aileron-cmd-norm', aileron)
         sitl_state.aileron = aileron
@@ -101,13 +117,14 @@ def process_jsb_input(buf):
             if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
-    simbuf = struct.pack('<16dI',
+    simbuf = struct.pack('<17dI',
                          fdm.get('latitude', units='degrees'),
                          fdm.get('longitude', units='degrees'),
                          fdm.get('altitude', units='meters'),
                          fdm.get('psi', units='degrees'),
                          fdm.get('v_north', units='mps'),
                          fdm.get('v_east', units='mps'),
+                         fdm.get('v_down', units='mps'),
                          fdm.get('A_X_pilot', units='mpss'),
                          fdm.get('A_Y_pilot', units='mpss'),
                          fdm.get('A_Z_pilot', units='mpss'),
@@ -118,7 +135,7 @@ def process_jsb_input(buf):
                          fdm.get('theta', units='degrees'),
                          fdm.get('psi', units='degrees'),
                          fdm.get('vcas', units='mps'),
-                         0x4c56414e)
+                         0x4c56414f)
     try:
         sim_out.send(simbuf)
     except socket.error as e:
@@ -137,6 +154,8 @@ parser.add_option("--fgout",   help="FG display output (IP:port)",   default="12
 parser.add_option("--home",    type='string', help="home lat,lng,alt,hdg (required)")
 parser.add_option("--script",  type='string', help='jsbsim model script', default='jsbsim/rascal_test.xml')
 parser.add_option("--options", type='string', help='jsbsim startup options')
+parser.add_option("--elevon", action='store_true', default=False, help='assume elevon input')
+parser.add_option("--vtail", action='store_true', default=False, help='assume vtail input')
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 
 (opts, args) = parser.parse_args()

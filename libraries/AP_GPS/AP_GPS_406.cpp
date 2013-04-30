@@ -24,8 +24,6 @@ void AP_GPS_406::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting
     _configure_gps();                           // Function to configure GPS, to output only the desired msg's
 
     AP_GPS_SIRF::init(s, nav_setting);                     // let the superclass do anything it might need here
-
-    idleTimeout = 1200;
 }
 
 // Private Methods //////////////////////////////////////////////////////////////

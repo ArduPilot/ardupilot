@@ -142,6 +142,12 @@ static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
 }
 #endif
 
+/*
+  return true if the MAVLink parser is idle, so there is no partly parsed
+  MAVLink message being processed
+ */
+bool comm_is_idle(mavlink_channel_t chan);
+
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 #include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
 

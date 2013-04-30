@@ -123,8 +123,8 @@ Compass::save_offsets()
     _offset.save();
 }
 
-Vector3f &
-Compass::get_offsets()
+const Vector3f &
+Compass::get_offsets() const
 {
     return _offset;
 }
@@ -159,9 +159,13 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
 }
 
 void
-Compass::set_declination(float radians)
+Compass::set_declination(float radians, bool save_to_eeprom)
 {
-    _declination.set_and_save(radians);
+    if (save_to_eeprom) {
+        _declination.set_and_save(radians);
+    }else{
+        _declination.set(radians);
+    }
 }
 
 float

@@ -44,7 +44,6 @@ AP_GPS_MTK19::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
     _epoch = TIME_OF_DAY;
     _time_offset = 0;
     _offset_calculated = false;
-    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
@@ -136,8 +135,15 @@ restart:
 				goto restart;
             }
 
-            fix                     = ((_buffer.msg.fix_type == FIX_3D) ||
-                                       (_buffer.msg.fix_type == FIX_3D_SBAS));                   
+            // parse fix
+            if (_buffer.msg.fix_type == FIX_3D || _buffer.msg.fix_type == FIX_3D_SBAS) {
+                fix = GPS::FIX_3D;
+            }else if (_buffer.msg.fix_type == FIX_2D || _buffer.msg.fix_type == FIX_2D_SBAS) {
+                fix = GPS::FIX_2D;
+            }else{
+                fix = GPS::FIX_NONE;
+            }
+
             if (_mtk_revision == MTK_GPS_REVISION_V16) {
                 latitude            = _buffer.msg.latitude  * 10;  // V16, V17,V18 doc says *10e7 but device says otherwise
                 longitude           = _buffer.msg.longitude * 10;  // V16, V17,V18 doc says *10e7 but device says otherwise

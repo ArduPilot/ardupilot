@@ -68,7 +68,6 @@ void setup(void)
 			 flash_leds);
 
     ahrs.set_compass(&compass);
-    ahrs.set_barometer(&baro);
 
     last_update = hal.scheduler->millis();
 

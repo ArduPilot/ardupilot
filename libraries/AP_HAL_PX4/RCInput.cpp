@@ -19,7 +19,7 @@ void PX4RCInput::init(void* unused)
 	clear_overrides();
 }
 
-uint8_t PX4RCInput::valid() 
+uint8_t PX4RCInput::valid_channels() 
 {
 	return _rcin.timestamp != _last_read || _override_valid;
 }
@@ -88,6 +88,10 @@ void PX4RCInput::_timer_tick(void)
 	bool rc_updated = false;
 	if (orb_check(_rc_sub, &rc_updated) == 0 && rc_updated) {
 		orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
+		_last_input = _rcin.timestamp;
+	} else if (hrt_absolute_time() - _last_input > 300000) {
+		// we've lost RC input, force channel 3 low
+		_rcin.values[2] = 900;
 	}
 	perf_end(_perf_rcin);
 }

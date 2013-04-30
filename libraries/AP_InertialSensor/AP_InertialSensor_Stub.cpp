@@ -4,6 +4,12 @@
 #include <AP_HAL.h>
 const extern AP_HAL::HAL& hal;
 
+AP_InertialSensor_Stub::AP_InertialSensor_Stub() : AP_InertialSensor() {
+        Vector3f accels;
+        accels.z = -GRAVITY_MSS;
+        set_accel(accels);
+}
+
 uint16_t AP_InertialSensor_Stub::_init_sensor( Sample_rate sample_rate ) {
     switch (sample_rate) {
     case RATE_50HZ:

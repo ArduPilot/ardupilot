@@ -12,6 +12,7 @@
 
 #ifndef AP_PARAM_H
 #define AP_PARAM_H
+#include <AP_HAL.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
@@ -125,7 +126,7 @@ public:
     /// @param	buffer			The destination buffer
     /// @param	bufferSize		Total size of the destination buffer.
     ///
-    void copy_name_token(const ParamToken *token, char *buffer, size_t bufferSize, bool force_scalar=false);
+    void copy_name_token(const ParamToken &token, char *buffer, size_t bufferSize, bool force_scalar=false) const;
 
     /// Find a variable by name.
     ///
@@ -191,7 +192,19 @@ public:
     static void         erase_all(void);
 
     /// print the value of all variables
-    static void         show_all(void);
+    static void         show_all(AP_HAL::BetterStream *port);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const char *name,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const ParamToken &token,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
 
     /// Returns the first variable
     ///
@@ -209,7 +222,7 @@ public:
     static AP_Param *       next_scalar(ParamToken *token, enum ap_var_type *ptype);
 
     /// cast a variable to a float given its type
-    float                   cast_to_float(enum ap_var_type type);
+    float                   cast_to_float(enum ap_var_type type) const;
 
 private:
     /// EEPROM header
@@ -259,15 +272,15 @@ private:
                                     uint8_t                     group_shift,
                                     uint32_t *                  group_element,
                                     const struct GroupInfo **   group_ret,
-                                    uint8_t *                   idx);
+                                    uint8_t *                   idx) const;
     const struct Info *         find_var_info(
                                     uint32_t *                group_element,
                                     const struct GroupInfo ** group_ret,
                                     uint8_t *                 idx);
-    const struct Info *			find_var_info_token(const ParamToken *token,
+    const struct Info *			find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo **  group_ret,
-                                                    uint8_t *                  idx);
+                                                    uint8_t *                  idx) const;
     static const struct Info *  find_by_header_group(
                                     struct Param_header phdr, void **ptr,
                                     uint8_t vindex,
@@ -280,7 +293,7 @@ private:
     void                        add_vector3f_suffix(
                                     char *buffer,
                                     size_t buffer_size,
-                                    uint8_t idx);
+                                    uint8_t idx) const;
     static AP_Param *           find_group(
                                     const char *name,
                                     uint8_t vindex,
@@ -330,19 +343,19 @@ public:
 
     /// Value getter
     ///
-    T get(void) const {
+    const T &get(void) const {
         return _value;
     }
 
     /// Value setter
     ///
-    void set(T v) {
+    void set(const T &v) {
         _value = v;
     }
 
     /// Combined set and save
     ///
-    bool set_and_save(T v) {
+    bool set_and_save(const T &v) {
         set(v);
         return save();
     }
@@ -364,26 +377,42 @@ public:
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator const T &() const {
         return _value;
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamT<T,PT>& operator= (AP_ParamT<T,PT>& v) {
-        return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamT<T,PT>& operator= (T v) {
+    AP_ParamT<T,PT>& operator= (const T &v) {
         _value = v;
+        return *this;
+    }
+
+    /// bit ops on parameters
+    ///
+    AP_ParamT<T,PT>& operator |=(const T &v) {
+        _value |= v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator &=(const T &v) {
+        _value &= v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator +=(const T &v) {
+        _value += v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator -=(const T &v) {
+        _value -= v;
         return *this;
     }
 
     /// AP_ParamT types can implement AP_Param::cast_to_float
     ///
-    float cast_to_float(void) {
+    const float cast_to_float(void) const {
         return (float)_value;
     }
 
@@ -409,7 +438,7 @@ public:
 
     /// Value getter
     ///
-    T        get(void) const {
+    const T &get(void) const {
         return _value;
     }
 
@@ -430,14 +459,8 @@ public:
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator const T &() const {
         return _value;
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamV<T,PT>& operator        =(AP_ParamV<T,PT>& v) {
-        return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
@@ -500,12 +523,6 @@ public:
         if (i < N) {
             _value[i] = v;
         }
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamA<T,N,PT>& operator= (AP_ParamA<T,N,PT>& v) {
-        return v;
     }
 
 protected:

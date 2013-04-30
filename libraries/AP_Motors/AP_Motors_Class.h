@@ -32,9 +32,9 @@
 #define AP_MOTORS_APM2  2
 
 // frame definitions
-#define AP_MOTORS_PLUS_FRAME 0
-#define AP_MOTORS_X_FRAME 1
-#define AP_MOTORS_V_FRAME 2
+#define AP_MOTORS_PLUS_FRAME        0
+#define AP_MOTORS_X_FRAME           1
+#define AP_MOTORS_V_FRAME           2
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT 490
@@ -97,15 +97,6 @@ public:
         _armed = arm;
     };
 
-    // check or set status of auto_armed - controls whether autopilot can take control of throttle
-    // Note: this should probably be moved out of this class as it has little to do with the motors
-    virtual bool        auto_armed() {
-        return _auto_armed;
-    };
-    virtual void        auto_armed(bool arm) {
-        _auto_armed = arm;
-    };
-
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
     virtual void        set_min_throttle(uint16_t min_throttle) {
         _min_throttle = min_throttle;
@@ -116,7 +107,7 @@ public:
 
     // output - sends commands to the motors
     virtual void        output() {
-        if( _armed && _auto_armed ) { output_armed(); }else{ output_disarmed(); }
+        if( _armed ) { output_armed(); }else{ output_disarmed(); }
     };
 
     // output_min - sends minimum values out to the motors
@@ -168,7 +159,6 @@ protected:
     uint8_t             _motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS];        // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2
     uint16_t            _speed_hz;                      // speed in hz to send updates to motors
     bool                _armed;                         // true if motors are armed
-    bool                _auto_armed;            // true is throttle is above zero, allows auto pilot to take control of throttle
     uint8_t             _frame_orientation;     // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2
     int16_t             _min_throttle;          // the minimum throttle to be sent to the engines when they're on (prevents issues with some motors on while other off at very low throttle)
     int16_t             _max_throttle;          // the minimum throttle to be sent to the engines when they're on (prevents issues with some motors on while other off at very low throttle)

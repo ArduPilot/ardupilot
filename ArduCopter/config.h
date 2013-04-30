@@ -40,13 +40,16 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-
 #ifdef CONFIG_APM_HARDWARE
 #error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead
 #endif
 
 #ifndef CONFIG_HAL_BOARD
 #error CONFIG_HAL_BOARD must be defined to build ArduCopter
+#endif
+
+#ifdef __AVR_ATmega1280__
+#error ATmega1280 is not supported
 #endif
 //////////////////////////////////////////////////////////////////////////////
 // APM2 HARDWARE DEFAULTS
@@ -113,9 +116,8 @@
 // Bulk defines for TradHeli
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED 				125
-  # define RTL_YAW                  	YAW_LOOK_AT_HOME
-  # define TILT_COMPENSATION 			5
-  # define RATE_INTEGRATOR_LEAK_RATE 	1f
+  # define WP_YAW_BEHAVIOR_DEFAULT      YAW_LOOK_AT_HOME
+  # define RATE_INTEGRATOR_LEAK_RATE 	1.0f //TODO needs to be tested, changed becaused of improved leaky PID implementation
   # define RATE_ROLL_D    				0
   # define RATE_PITCH_D       			0
   # define HELI_PITCH_FF				0
@@ -169,10 +171,8 @@
  # define C_LED_PIN        35
  # define LED_ON           HIGH
  # define LED_OFF          LOW
- # define SLIDE_SWITCH_PIN 40
  # define PUSHBUTTON_PIN   41
  # define USB_MUX_PIN      -1
- # define CLI_SLIDER_ENABLED DISABLED
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -181,9 +181,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      23
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
@@ -193,9 +191,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      -1
  # define BATTERY_VOLT_PIN 1      // Battery voltage on A1
  # define BATTERY_CURR_PIN 2      // Battery current on A2
@@ -205,9 +201,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      -1
  # define BATTERY_VOLT_PIN -1
  # define BATTERY_CURR_PIN -1
@@ -218,9 +212,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define SLIDE_SWITCH_PIN (-1)
  # define PUSHBUTTON_PIN   (-1)
- # define CLI_SLIDER_ENABLED DISABLED
  # define USB_MUX_PIN      -1
  # define BATTERY_VOLT_PIN -1
  # define BATTERY_CURR_PIN -1
@@ -303,8 +295,7 @@
  # endif
 #else
  # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
- # undef SONAR_ENABLED
- # define SONAR_ENABLED DISABLED
+ # define CONFIG_SONAR DISABLED
 #endif
 
 #ifndef CONFIG_SONAR
@@ -315,12 +306,12 @@
  # define SONAR_ALT_HEALTH_MAX 3            // number of good reads that indicates a healthy sonar
 #endif
 
-#ifndef THR_SURFACE_TRACKING_P
- # define THR_SURFACE_TRACKING_P 0.2        // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
+#ifndef SONAR_GAIN_DEFAULT
+ # define SONAR_GAIN_DEFAULT 0.2            // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
 #endif
 
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
- # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max speed number of good reads that indicates a healthy sonar
+ # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max vertical speed change while surface tracking with sonar
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -410,6 +401,25 @@
  # define FS_BATTERY              DISABLED
 #endif
 
+// GPS failsafe
+#ifndef FS_GPS
+ # define FS_GPS                        DISABLED
+#endif
+#ifndef FAILSAFE_GPS_TIMEOUT_MS
+ # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
+#endif
+
+// GCS failsafe
+#ifndef FS_GCS
+ # define FS_GCS                        DISABLED
+#endif
+#ifndef FS_GCS_TIMEOUT_MS
+ # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
+#endif
+// possible values for FS_GCS parameter
+#define FS_GCS_DISABLED                     0
+#define FS_GCS_ENABLED_ALWAYS_RTL           1
+#define FS_GCS_ENABLED_CONTINUE_MISSION     2
 
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
@@ -535,69 +545,23 @@
  # define GROUND_START_DELAY             3
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// FLIGHT AND NAVIGATION CONTROL
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Y6 Support
-
-#ifndef TOP_BOTTOM_RATIO
- # define TOP_BOTTOM_RATIO       1.00f
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
 #ifndef CAMERA
- # if defined( __AVR_ATmega1280__ )
-  #  define CAMERA        DISABLED
- # else
-  #  define CAMERA        ENABLED
- # endif
+ # define CAMERA        ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
- # if defined( __AVR_ATmega1280__ )
-  #  define MOUNT         DISABLED
- # else
-  #  define MOUNT         ENABLED
- # endif
+ # define MOUNT         ENABLED
 #endif
 
 #ifndef MOUNT2
  # define MOUNT2         DISABLED
-#endif
-
-#if defined( __AVR_ATmega1280__ ) && (MOUNT == ENABLED || MOUNT2 == ENABLED)
- # warning "You choose to enable MOUNT on a small ATmega1280, CLI, CAMERA and AP_LIMITS will be disabled to free some space for it"
-
-// The small ATmega1280 chip does not have enough memory for mount support
-// so disable CLI, this will allow mount support and other improvements to fit.
-// This should almost have no side effects, because the APM planner can now do a complete board setup.
- # define CLI_ENABLED DISABLED
-
-// The small ATmega1280 chip does not have enough memory for mount support
-// so disable AUTO GPS support, this will allow mount support and other improvements to fit.
-// This should almost have no side effects, because the most users use MTK anyways.
-// If the user defined a GPS protocol, than we will NOT overwrite it
- # if GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-  #  undef GPS_PROTOCOL
-  #  define GPS_PROTOCOL GPS_PROTOCOL_MTK
- # endif
-
-// To save some more space
- # undef CAMERA
- # define CAMERA         DISABLED
- # define AP_LIMITS      DISABLED
-
 #endif
 
 
@@ -640,8 +604,9 @@
 #endif
 
 // AUTO Mode
-#ifndef AUTO_YAW
- # define AUTO_YAW                  YAW_LOOK_AT_NEXT_WP
+// Note: Auto mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
+#ifndef WP_YAW_BEHAVIOR_DEFAULT
+ # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP     
 #endif
 
 #ifndef AUTO_RP
@@ -654,7 +619,7 @@
 
 // CIRCLE Mode
 #ifndef CIRCLE_YAW
- # define CIRCLE_YAW             	YAW_LOOK_AT_LOCATION
+ # define CIRCLE_YAW             	YAW_CIRCLE
 #endif
 
 #ifndef CIRCLE_RP
@@ -669,11 +634,12 @@
  # define CIRCLE_NAV           	    NAV_CIRCLE
 #endif
 
-// Guided Mode
-#ifndef GUIDED_YAW
- # define GUIDED_YAW                YAW_LOOK_AT_NEXT_WP
+#ifndef CIRCLE_RATE
+ # define CIRCLE_RATE               5.0f        // degrees per second turn rate
 #endif
 
+// Guided Mode
+// Note: Guided mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef GUIDED_RP
  # define GUIDED_RP                 ROLL_PITCH_AUTO
 #endif
@@ -722,10 +688,7 @@
 
 
 // RTL Mode
-#ifndef RTL_YAW
- # define RTL_YAW                   YAW_LOOK_AT_NEXT_WP
-#endif
-
+// Note: RTL Yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef RTL_RP
  # define RTL_RP                    ROLL_PITCH_AUTO
 #endif
@@ -884,7 +847,7 @@
 #endif
 
 #ifndef RATE_YAW_P
- # define RATE_YAW_P              	0.25f
+ # define RATE_YAW_P              	0.200f
 #endif
 #ifndef RATE_YAW_I
  # define RATE_YAW_I              	0.015f
@@ -929,7 +892,7 @@
 // Loiter position control gains
 //
 #ifndef LOITER_P
- # define LOITER_P             		2.0f
+ # define LOITER_P             		1.0f
 #endif
 #ifndef LOITER_I
  # define LOITER_I             		0.0f
@@ -942,34 +905,21 @@
 // Loiter rate control gains
 //
 #ifndef LOITER_RATE_P
- # define LOITER_RATE_P          	2.0f
+ # define LOITER_RATE_P          	1.0f
 #endif
 #ifndef LOITER_RATE_I
- # define LOITER_RATE_I          	1.0f
+ # define LOITER_RATE_I          	0.5f
 #endif
 #ifndef LOITER_RATE_D
- # define LOITER_RATE_D          	0.50f
+ # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX       	30                     // degrees
+ # define LOITER_RATE_IMAX       	4               // maximum acceleration from I term build-up in m/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// WP Navigation control gains
+// Autopilot rotate rate limits
 //
-#ifndef NAV_P
- # define NAV_P                     2.4f                    //
-#endif
-#ifndef NAV_I
- # define NAV_I                     0.17f           // Wind control
-#endif
-#ifndef NAV_D
- # define NAV_D                     0.00f           // .95
-#endif
-#ifndef NAV_IMAX
- # define NAV_IMAX                  18                     // degrees
-#endif
-
 #ifndef AUTO_SLEW_RATE
  # define AUTO_SLEW_RATE         	45                     // degrees/sec
 #endif
@@ -977,20 +927,6 @@
 #ifndef AUTO_YAW_SLEW_RATE
  # define AUTO_YAW_SLEW_RATE        60                     // degrees/sec
 #endif
-
-
-#ifndef WAYPOINT_SPEED_MAX
- # define WAYPOINT_SPEED_MAX        500                    // 6m/s error = 13mph
-#endif
-
-#ifndef WAYPOINT_SPEED_MIN
- # define WAYPOINT_SPEED_MIN        150                    // 1m/s
-#endif
-
-#ifndef TILT_COMPENSATION
-  #   define TILT_COMPENSATION 54
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1022,20 +958,11 @@
  # define THROTTLE_I            0.0f
 #endif
 #ifndef THROTTLE_D
- # define THROTTLE_D            0.2f
+ # define THROTTLE_D            0.0f
 #endif
 
 #ifndef THROTTLE_IMAX
  # define THROTTLE_IMAX         300
-#endif
-
-
-// default minimum and maximum vertical velocity the autopilot may request
-#ifndef AUTO_VELZ_MIN
- # define AUTO_VELZ_MIN -125
-#endif
-#ifndef AUTO_VELZ_MAX
- # define AUTO_VELZ_MAX 125
 #endif
 
 // default maximum vertical velocity the pilot may request
@@ -1043,6 +970,15 @@
  # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
 #endif
 #define ACCELERATION_MAX_Z  750     // maximum veritcal acceleration in cm/s/s
+
+// max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
+#ifndef ALT_HOLD_INIT_MAX_OVERSHOOT
+ # define ALT_HOLD_INIT_MAX_OVERSHOOT 200
+#endif
+// the acceleration used to define the distance-velocity curve
+#ifndef ALT_HOLD_ACCEL_MAX
+ # define ALT_HOLD_ACCEL_MAX 250
+#endif
 
 // Throttle Accel control
 #ifndef THROTTLE_ACCEL_P
@@ -1098,46 +1034,9 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Crosstrack compensation
-//
-#ifndef CROSSTRACK_GAIN
- # define CROSSTRACK_GAIN       .2f
-#endif
-#ifndef CROSSTRACK_MIN_DISTANCE
- # define CROSSTRACK_MIN_DISTANCE       15
-#endif
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// DEBUGGING
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// DEBUG_LEVEL
-//
-#ifndef DEBUG_LEVEL
- # define DEBUG_LEVEL SEVERITY_LOW
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
-// Logging must be disabled for 1280 build.
-#if defined( __AVR_ATmega1280__ )
- # if LOGGING_ENABLED == ENABLED
-// If logging was enabled in APM_Config or command line, warn the user.
-  #  warning "Logging is not supported on ATmega1280"
-  #  undef LOGGING_ENABLED
- # endif
- # ifndef LOGGING_ENABLED
-  #  define LOGGING_ENABLED    DISABLED
- # endif
-#elif !defined(LOGGING_ENABLED)
-// Logging is enabled by default for all other builds.
+#ifndef LOGGING_ENABLED
  # define LOGGING_ENABLED                ENABLED
 #endif
 
@@ -1171,7 +1070,7 @@
 #endif
 // current
 #ifndef LOG_CURRENT
- # define LOG_CURRENT                   DISABLED
+ # define LOG_CURRENT                   ENABLED
 #endif
 // quad motor PWMs
 #ifndef LOG_MOTORS
@@ -1214,63 +1113,21 @@
     LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
 
-// if we are using fast, Disable Medium
-//#if LOG_ATTITUDE_FAST == ENABLED
-//	#undef LOG_ATTITUDE_MED
-//	#define LOG_ATTITUDE_MED        DISABLED
-//#endif
-
 //////////////////////////////////////////////////////////////////////////////
-// Navigation defaults
+// Circle navigation defaults
 //
-#ifndef WP_RADIUS_DEFAULT
- # define WP_RADIUS_DEFAULT      2
-#endif
-
 #ifndef CIRCLE_RADIUS
  # define CIRCLE_RADIUS 10              // meters for circle mode
-#endif
-
-#ifndef USE_CURRENT_ALT
- # define USE_CURRENT_ALT FALSE
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // AP_Limits Defaults
 //
 
-
 // Enable/disable AP_Limits
-#ifndef AP_LIMITS
- #define AP_LIMITS ENABLED
+#ifndef AC_FENCE
+ #define AC_FENCE ENABLED
 #endif
-
-// Use PIN for displaying LIMITS status. 0 is disabled.
-#ifndef LIMITS_TRIGGERED_PIN
- #define LIMITS_TRIGGERED_PIN 0
-#endif
-
-// PWM of "on" state for LIM_CHANNEL
-#ifndef LIMITS_ENABLE_PWM
- #define LIMITS_ENABLE_PWM 1800
-#endif
-
-#ifndef LIM_ENABLED
- #define LIM_ENABLED 0
-#endif
-
-#ifndef LIM_ALT_ON
- #define LIM_ALT_ON 0
-#endif
-
-#ifndef LIM_FNC_ON
- #define LIM_FNC_ON 0
-#endif
-
-#ifndef LIM_GPSLCK_ON
- #define LIM_GPSLCK_ON 0
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1279,17 +1136,7 @@
 
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
-// Sorry the chip is just too small to let this fit
- # if defined( __AVR_ATmega1280__ )
-  #  define CLI_ENABLED           DISABLED
- # else
   #  define CLI_ENABLED           ENABLED
- # endif
-#endif
-
-// use this to disable the CLI slider switch
-#ifndef CLI_SLIDER_ENABLED
- # define CLI_SLIDER_ENABLED DISABLED
 #endif
 
 // experimental mpu6000 DMP code

@@ -160,7 +160,7 @@ static void init_ardupilot()
 		do_erase_logs();
     }
 	if (g.log_bitmask != 0) {
-		DataFlash.start_new_log();
+		start_logging();
 	}
 #endif
 
@@ -306,10 +306,15 @@ static void set_mode(enum mode mode)
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
+
+    if (control_mode != AUTO) {
+        auto_triggered = false;
+    }
         
 	switch(control_mode)
 	{
 		case MANUAL:
+		case HOLD:
 		case LEARNING:
 		case STEERING:
 			break;
@@ -329,29 +334,49 @@ static void set_mode(enum mode mode)
 	}
 
 	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
+		Log_Write_Mode();
 }
 
-static void check_long_failsafe()
+/*
+  called to set/unset a failsafe event. 
+ */
+static void failsafe_trigger(uint8_t failsafe_type, bool on)
 {
-	// only act on changes
-	// -------------------
-	if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS){
-		if(rc_override_active && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
-			failsafe_long_on_event(FAILSAFE_LONG);
-		}
-		if(! rc_override_active && failsafe == FAILSAFE_SHORT && millis() - ch3_failsafe_timer > FAILSAFE_LONG_TIME) {
-			failsafe_long_on_event(FAILSAFE_LONG);
-		}
-		if (g.fs_gcs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
-			failsafe_long_on_event(FAILSAFE_GCS);
-		}
-	} else {
-		// We do not change state but allow for user to change mode
-		if(failsafe == FAILSAFE_GCS && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
-		if(failsafe == FAILSAFE_LONG && rc_override_active && millis() - rc_override_fs_timer < FAILSAFE_SHORT_TIME) failsafe = FAILSAFE_NONE;
-		if(failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) failsafe = FAILSAFE_NONE;
-	}
+    uint8_t old_bits = failsafe.bits;
+    if (on) {
+        failsafe.bits |= failsafe_type;
+    } else {
+        failsafe.bits &= ~failsafe_type;
+    }
+    if (old_bits == 0 && failsafe.bits != 0) {
+        // a failsafe event has started
+        failsafe.start_time = millis();
+    }
+    if (failsafe.triggered != 0 && failsafe.bits == 0) {
+        // a failsafe event has ended
+        gcs_send_text_fmt(PSTR("Failsafe ended"));
+    }
+
+    failsafe.triggered &= failsafe.bits;
+
+    if (failsafe.triggered == 0 && 
+        failsafe.bits != 0 && 
+        millis() - failsafe.start_time > g.fs_timeout*1000 &&
+        control_mode != RTL &&
+        control_mode != HOLD) {
+        failsafe.triggered = failsafe.bits;
+        gcs_send_text_fmt(PSTR("Failsafe trigger 0x%x"), (unsigned)failsafe.triggered);
+        switch (g.fs_action) {
+        case 0:
+            break;
+        case 1:
+            set_mode(RTL);
+            break;
+        case 2:
+            set_mode(HOLD);
+            break;
+        }
+    }
 }
 
 static void startup_INS_ground(bool force_accel_level)
@@ -447,9 +472,9 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 }
 
 
-#if USB_MUX_PIN > 0
 static void check_usb_mux(void)
 {
+#if USB_MUX_PIN > 0
     bool usb_check = !digitalRead(USB_MUX_PIN);
     if (usb_check == usb_connected) {
         return;
@@ -462,8 +487,9 @@ static void check_usb_mux(void)
     } else {
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
     }
-}
 #endif
+}
+
 
 
 /*
@@ -485,26 +511,29 @@ uint16_t board_voltage(void)
 }
 
 static void
-print_mode(uint8_t mode)
+print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        cliSerial->println_P(PSTR("Manual"));
+        port->print_P(PSTR("Manual"));
+        break;
+    case HOLD:
+        port->print_P(PSTR("HOLD"));
         break;
     case LEARNING:
-        cliSerial->println_P(PSTR("Learning"));
+        port->print_P(PSTR("Learning"));
         break;
     case STEERING:
-        cliSerial->println_P(PSTR("Stearing"));
+        port->print_P(PSTR("Stearing"));
         break;
     case AUTO:
-        cliSerial->println_P(PSTR("AUTO"));
+        port->print_P(PSTR("AUTO"));
         break;
     case RTL:
-        cliSerial->println_P(PSTR("RTL"));
+        port->print_P(PSTR("RTL"));
         break;
     default:
-        cliSerial->println_P(PSTR("---"));
+        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
 }

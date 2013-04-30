@@ -60,7 +60,6 @@ static void init_sonar(void)
 static void init_barometer(void)
 {
     barometer.calibrate();
-    ahrs.set_barometer(&barometer);
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
@@ -68,7 +67,7 @@ static void init_barometer(void)
 static int32_t read_barometer(void)
 {
     barometer.read();
-    return baro_filter.apply(barometer.get_altitude() * 100.0f);
+    return barometer.get_altitude() * 100.0f;
 }
 
 // return sonar altitude in centimeters
@@ -217,5 +216,5 @@ void read_receiver_rssi(void)
 {
     rssi_analog_source->set_pin(g.rssi_pin);
     float ret = rssi_analog_source->read_latest();
-    receiver_rssi = constrain(ret, 0, 255);
+    receiver_rssi = constrain_int16(ret, 0, 255);
 }

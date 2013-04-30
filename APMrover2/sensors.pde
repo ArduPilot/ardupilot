@@ -4,8 +4,10 @@ static void init_sonar(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     sonar.Init(&adc);
+    sonar2.Init(&adc);
 #else
     sonar.Init(NULL);
+    sonar2.Init(NULL);
 #endif
 }
 
@@ -36,3 +38,77 @@ static void read_battery(void)
     }
 }
 
+
+// read the receiver RSSI as an 8 bit number for MAVLink
+// RC_CHANNELS_SCALED message
+void read_receiver_rssi(void)
+{
+    rssi_analog_source->set_pin(g.rssi_pin);
+    float ret = rssi_analog_source->read_average();
+    receiver_rssi = constrain_int16(ret, 0, 255);
+}
+
+// read the sonars
+static void read_sonars(void)
+{
+    if (!sonar.enabled()) {
+        // this makes it possible to disable sonar at runtime
+        return;
+    }
+
+    if (sonar2.enabled()) {
+        // we have two sonars
+        obstacle.sonar1_distance_cm = sonar.distance_cm();
+        obstacle.sonar2_distance_cm = sonar2.distance_cm();
+        if (obstacle.sonar1_distance_cm <= (uint16_t)g.sonar_trigger_cm &&
+            obstacle.sonar2_distance_cm <= (uint16_t)obstacle.sonar2_distance_cm)  {
+            // we have an object on the left
+            if (obstacle.detected_count < 127) {
+                obstacle.detected_count++;
+            }
+            if (obstacle.detected_count == g.sonar_debounce) {
+                gcs_send_text_fmt(PSTR("Sonar1 obstacle %.0fcm"),
+                                  obstacle.sonar1_distance_cm);
+            }
+            obstacle.detected_time_ms = hal.scheduler->millis();
+            obstacle.turn_angle = g.sonar_turn_angle;
+        } else if (obstacle.sonar2_distance_cm <= (uint16_t)g.sonar_trigger_cm) {
+            // we have an object on the right
+            if (obstacle.detected_count < 127) {
+                obstacle.detected_count++;
+            }
+            if (obstacle.detected_count == g.sonar_debounce) {
+                gcs_send_text_fmt(PSTR("Sonar2 obstacle %.0fcm"),
+                                  obstacle.sonar2_distance_cm);
+            }
+            obstacle.detected_time_ms = hal.scheduler->millis();
+            obstacle.turn_angle = -g.sonar_turn_angle;
+        }
+    } else {
+        // we have a single sonar
+        obstacle.sonar1_distance_cm = sonar.distance_cm();
+        obstacle.sonar2_distance_cm = 0;
+        if (obstacle.sonar1_distance_cm <= (uint16_t)g.sonar_trigger_cm)  {
+            // obstacle detected in front 
+            if (obstacle.detected_count < 127) {
+                obstacle.detected_count++;
+            }
+            if (obstacle.detected_count == g.sonar_debounce) {
+                gcs_send_text_fmt(PSTR("Sonar obstacle %.0fcm"),
+                                  obstacle.sonar1_distance_cm);
+            }
+            obstacle.detected_time_ms = hal.scheduler->millis();
+            obstacle.turn_angle = g.sonar_turn_angle;
+        }
+    }
+
+    Log_Write_Sonar();
+
+    // no object detected - reset after the turn time
+    if (obstacle.detected_count >= g.sonar_debounce &&
+        hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+        gcs_send_text_fmt(PSTR("Obstacle passed"));
+        obstacle.detected_count = 0;
+        obstacle.turn_angle = 0;
+    }
+}

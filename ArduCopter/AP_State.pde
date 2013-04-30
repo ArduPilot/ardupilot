@@ -55,24 +55,24 @@ void set_simple_mode(bool b)
 }
 
 // ---------------------------------------------
-static void set_failsafe(bool mode)
+static void set_failsafe_radio(bool mode)
 {
     // only act on changes
     // -------------------
-    if(ap.failsafe != mode) {
+    if(ap.failsafe_radio != mode) {
 
         // store the value so we don't trip the gate twice
         // -----------------------------------------------
-        ap.failsafe = mode;
+        ap.failsafe_radio = mode;
 
-        if (ap.failsafe == false) {
+        if (ap.failsafe_radio == false) {
             // We've regained radio contact
             // ----------------------------
-            failsafe_off_event();
+            failsafe_radio_off_event();
         }else{
             // We've lost radio contact
             // ------------------------
-            failsafe_on_event();
+            failsafe_radio_on_event();
         }
     }
 }
@@ -82,6 +82,19 @@ static void set_failsafe(bool mode)
 void set_low_battery(bool b)
 {
     ap.low_battery = b;
+}
+
+
+// ---------------------------------------------
+static void set_failsafe_gps(bool mode)
+{
+    ap.failsafe_gps = mode;
+}
+
+// ---------------------------------------------
+static void set_failsafe_gcs(bool mode)
+{
+    ap.failsafe_gcs = mode;
 }
 
 // ---------------------------------------------
@@ -111,27 +124,6 @@ void set_land_complete(bool b)
 }
 
 // ---------------------------------------------
-
-void set_alt_change(uint8_t flag){
-
-    // if no change, exit immediately
-    if( alt_change_flag == flag ) {
-        return;
-    }
-
-    // update flag
-    alt_change_flag = flag;
-
-    if(flag == REACHED_ALT){
-        Log_Write_Event(DATA_REACHED_ALT);
-
-    }else if(flag == ASCENDING){
-        Log_Write_Event(DATA_ASCENDING);
-
-    }else if(flag == DESCENDING){
-        Log_Write_Event(DATA_DESCENDING);
-    }
-}
 
 void set_compass_healthy(bool b)
 {

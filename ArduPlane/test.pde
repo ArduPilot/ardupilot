@@ -56,11 +56,10 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"airspeed",    test_airspeed},
     {"airpressure", test_pressure},
     {"compass",             test_mag},
-#elif HIL_MODE == HIL_MODE_SENSORS
+#else
     {"gps",                 test_gps},
     {"ins",                 test_ins},
     {"compass",             test_mag},
-#elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
     {"logging",             test_logging},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -140,12 +139,12 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
         delay(20);
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
-        if (hal.rcin->valid() > 0) {
+        if (hal.rcin->valid_channels() > 0) {
             cliSerial->print_P(PSTR("CH:"));
             for(int16_t i = 0; i < 8; i++) {
                 cliSerial->print(hal.rcin->read(i));        // Print channel values
                 print_comma();
-                hal.rcout->write(i, hal.rcin->read(i)); // Copy input to Servos
+                servo_write(i, hal.rcin->read(i)); // Copy input to Servos
             }
             cliSerial->println();
         }
@@ -228,13 +227,15 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 
         if(oldSwitchPosition != readSwitch()) {
             cliSerial->printf_P(PSTR("CONTROL MODE CHANGED: "));
-            print_flight_mode(readSwitch());
+            print_flight_mode(cliSerial, readSwitch());
+            cliSerial->println();
             fail_test++;
         }
 
         if(g.throttle_fs_enabled && g.channel_throttle.get_failsafe()) {
             cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), (int)g.channel_throttle.radio_in);
-            print_flight_mode(readSwitch());
+            print_flight_mode(cliSerial, readSwitch());
+            cliSerial->println();
             fail_test++;
         }
 
@@ -334,7 +335,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 
 static void
-test_wp_print(struct Location *cmd, uint8_t wp_index)
+test_wp_print(const struct Location *cmd, uint8_t wp_index)
 {
     cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
                     (int)wp_index,
@@ -413,8 +414,6 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
 
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
-
  #if CONFIG_ADC == ENABLED
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
@@ -443,7 +442,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while(1) {
-        delay(333);
+        delay(100);
 
         // Blink GPS LED if we don't have a fix
         // ------------------------------------
@@ -601,8 +600,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     compass.save_offsets();
     return (0);
 }
-
-#endif // HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
 
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here

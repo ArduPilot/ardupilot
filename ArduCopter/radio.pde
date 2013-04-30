@@ -16,6 +16,7 @@ static void default_dead_zones()
     g.rc_3.set_dead_zone(60);
     g.rc_4.set_dead_zone(80);
 #endif
+    g.rc_6.set_dead_zone(0);
 }
 
 static void init_rc_in()
@@ -53,7 +54,9 @@ static void init_rc_in()
     g.rc_7.set_range(0,1000);
     g.rc_8.set_range(0,1000);
 
-#if MOUNT == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif MOUNT == ENABLED
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
 #endif
 }
@@ -123,11 +126,11 @@ void output_min()
     motors.output_min();
 }
 
-#define RADIO_FS_TIMEOUT_MS 2000       // 2 seconds
+#define FAILSAFE_RADIO_TIMEOUT_MS 2000       // 2 seconds
 static void read_radio()
 {
     static uint32_t last_update = 0;
-    if (hal.rcin->valid() > 0) {
+    if (hal.rcin->valid_channels() > 0) {
         last_update = millis();
         ap_system.new_radio_frame = true;
         uint16_t periods[8];
@@ -150,10 +153,10 @@ static void read_radio()
     }else{
         uint32_t elapsed = millis() - last_update;
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds
-        if ((elapsed >= RADIO_FS_TIMEOUT_MS)
-                && g.failsafe_throttle && motors.armed() && !ap.failsafe) {
+        if ((elapsed >= FAILSAFE_RADIO_TIMEOUT_MS)
+                && g.failsafe_throttle && motors.armed() && !ap.failsafe_radio) {
             Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
-            set_failsafe(true);
+            set_failsafe_radio(true);
         }
     }
 }
@@ -173,7 +176,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
     if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
-        if (ap.failsafe || !motors.armed()) {
+        if (ap.failsafe_radio || !motors.armed()) {
             g.rc_3.set_pwm(throttle_pwm);
             return;
         }
@@ -183,7 +186,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
         failsafe_counter++;
         if( failsafe_counter >= FS_COUNTER ) {
             failsafe_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
-            set_failsafe(true);
+            set_failsafe_radio(true);
             g.rc_3.set_pwm(throttle_pwm);   // pass through failsafe throttle
         }
     }else{
@@ -193,8 +196,8 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
             failsafe_counter = 0;   // check to ensure we don't underflow the counter
 
             // disengage failsafe after three (nearly) consecutive valid throttle values
-            if (ap.failsafe) {
-                set_failsafe(false);
+            if (ap.failsafe_radio) {
+                set_failsafe_radio(false);
             }
         }
         // pass through throttle

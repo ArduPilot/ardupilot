@@ -24,6 +24,9 @@ public:
     // return true if the sonar is in the configured range
     bool in_range(void);
 
+    // return true if enabled
+    bool enabled(void) { return (bool)_enabled.get(); }
+
     enum RangeFinder_Function {
         FUNCTION_LINEAR    = 0,
         FUNCTION_INVERTED  = 1,
@@ -41,6 +44,7 @@ private:
     AP_Int16 _min_distance_cm;
     AP_Int16 _max_distance_cm;
     int8_t _last_pin;
+    AP_Int8 _enabled;
 };
 #endif // __AP_RangeFinder_analog_H__
 

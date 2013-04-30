@@ -36,7 +36,9 @@ static void init_rc_in()
     rc_ch[CH_8] = &g.rc_8;
 
     //set auxiliary ranges
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
 #else
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
@@ -52,35 +54,38 @@ static void init_rc_out()
     enable_aux_servos();
 
     // Initialization of servo outputs
-    hal.rcout->write(CH_1,   g.channel_roll.radio_trim);
-    hal.rcout->write(CH_2,   g.channel_pitch.radio_trim);
-    hal.rcout->write(CH_3,   g.channel_throttle.radio_min);
-    hal.rcout->write(CH_4,   g.channel_rudder.radio_trim);
+    servo_write(CH_1, g.channel_roll.radio_trim);
+    servo_write(CH_2,   g.channel_pitch.radio_trim);
+    servo_write(CH_3,   g.channel_throttle.radio_min);
+    servo_write(CH_4,   g.channel_rudder.radio_trim);
 
-    hal.rcout->write(CH_5,   g.rc_5.radio_trim);
-    hal.rcout->write(CH_6,   g.rc_6.radio_trim);
-    hal.rcout->write(CH_7,   g.rc_7.radio_trim);
-    hal.rcout->write(CH_8,   g.rc_8.radio_trim);
+    servo_write(CH_5,   g.rc_5.radio_trim);
+    servo_write(CH_6,   g.rc_6.radio_trim);
+    servo_write(CH_7,   g.rc_7.radio_trim);
+    servo_write(CH_8,   g.rc_8.radio_trim);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    hal.rcout->write(CH_9,   g.rc_9.radio_trim);
-    hal.rcout->write(CH_10,  g.rc_10.radio_trim);
-    hal.rcout->write(CH_11,  g.rc_11.radio_trim);
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_9,   g.rc_9.radio_trim);
+    servo_write(CH_10,  g.rc_10.radio_trim);
+    servo_write(CH_11,  g.rc_11.radio_trim);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_12,  g.rc_12.radio_trim);
 #endif
 }
 
 static void read_radio()
 {
-    ch1_temp = hal.rcin->read(CH_ROLL);
-    ch2_temp = hal.rcin->read(CH_PITCH);
+    elevon.ch1_temp = hal.rcin->read(CH_ROLL);
+    elevon.ch2_temp = hal.rcin->read(CH_PITCH);
     uint16_t pwm_roll, pwm_pitch;
 
     if (g.mix_mode == 0) {
-        pwm_roll = ch1_temp;
-        pwm_pitch = ch2_temp;
+        pwm_roll = elevon.ch1_temp;
+        pwm_pitch = elevon.ch2_temp;
     }else{
-        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500;
-        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500;
+        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
+        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
     }
     
     if (control_mode == TRAINING) {
@@ -173,6 +178,19 @@ static void control_failsafe(uint16_t pwm)
 static void trim_control_surfaces()
 {
     read_radio();
+    int16_t trim_roll_range = (g.channel_roll.radio_max - g.channel_roll.radio_min)/5;
+    int16_t trim_pitch_range = (g.channel_pitch.radio_max - g.channel_pitch.radio_min)/5;
+    if (g.channel_roll.radio_in < g.channel_roll.radio_min+trim_roll_range ||
+        g.channel_roll.radio_in > g.channel_roll.radio_max-trim_roll_range ||
+        g.channel_pitch.radio_in < g.channel_pitch.radio_min+trim_pitch_range ||
+        g.channel_pitch.radio_in > g.channel_pitch.radio_max-trim_pitch_range) {
+        // don't trim for extreme values - if we attempt to trim so
+        // there is less than 20 percent range left then assume the
+        // sticks are not properly centered. This also prevents
+        // problems with starting APM with the TX off
+        return;
+    }
+
     // Store control surface trim values
     // ---------------------------------
     if(g.mix_mode == 0) {
@@ -189,11 +207,11 @@ static void trim_control_surfaces()
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron_with_input);
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_elevator_with_input);
     } else{
-        if (ch1_temp != 0) {
-            elevon1_trim = ch1_temp;
+        if (elevon.ch1_temp != 0) {
+            elevon.trim1 = elevon.ch1_temp;
         }
-        if (ch2_temp != 0) {
-            elevon2_trim = ch2_temp;
+        if (elevon.ch2_temp != 0) {
+            elevon.trim2 = elevon.ch2_temp;
         }
         //Recompute values here using new values for elevon1_trim and elevon2_trim
         //We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed

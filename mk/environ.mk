@@ -47,7 +47,7 @@ else
 endif
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
     # Convert cygwin path into a windows normal path
-    SKETCHBOOK	:=	$(shell cygpath ${SKETCHBOOK})
+    SKETCHBOOK	:= $(shell cygpath ${SKETCHBOOK})
 endif
 
 #
@@ -124,6 +124,10 @@ endif
 HARDWARE		?=	arduino
 ifeq ($(BOARD),)
 BOARD = mega2560
+endif
+
+ifneq ($(findstring apm1-1280, $(MAKECMDGOALS)),)
+BOARD = mega
 endif
 
 endif

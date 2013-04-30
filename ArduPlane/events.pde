@@ -109,9 +109,9 @@ static void update_events(void)
         case EVENT_TYPE_SERVO:
             hal.rcout->enable_ch(event_state.rc_channel);
             if (event_state.repeat & 1) {
-                hal.rcout->write(event_state.rc_channel, event_state.undo_value);                 
+                servo_write(event_state.rc_channel, event_state.undo_value);
             } else {
-                hal.rcout->write(event_state.rc_channel, event_state.servo_value);                 
+                servo_write(event_state.rc_channel, event_state.servo_value);                 
             }
             break;
 

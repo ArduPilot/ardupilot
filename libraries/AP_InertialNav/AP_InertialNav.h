@@ -8,11 +8,8 @@
 #include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
 #include <AP_Buffer.h>                  // FIFO buffer library
 
-#define AP_INTERTIALNAV_GRAVITY 9.80665f
 #define AP_INTERTIALNAV_TC_XY   3.0f // default time constant for complementary filter's X & Y axis
-#define AP_INTERTIALNAV_TC_Z    7.0f // default time constant for complementary filter's Z axis
-
-#define AP_INTERTIALNAV_ACCEL_CORR_MAX 100.0    // max allowed accelerometer offset correction
+#define AP_INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
 
 // #defines to control how often historical accel based positions are saved
 // so they can later be compared to laggy gps readings
@@ -37,77 +34,81 @@ public:
         _gps_ptr(gps_ptr),
         _xy_enabled(false),
         _gps_last_update(0),
+        _gps_last_time(0),
         _baro_last_update(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
         }
 
     // Initialisation
-    virtual void        init();
-
-    // save_params - save all parameters to eeprom
-    virtual void        save_params();
+    void        init();
 
     // update - updates velocities and positions using latest info from accelerometers;
-    virtual void        update(float dt);
+    void        update(float dt);
 
     //
     // XY Axis specific methods
     //
 
     // set time constant - set timeconstant used by complementary filter
-    virtual void        set_time_constant_xy( float time_constant_in_seconds );
+    void        set_time_constant_xy( float time_constant_in_seconds );
 
     // altitude_ok, position_ok - true if inertial based altitude and position can be trusted
-    virtual bool        position_ok();
+    bool        position_ok() const;
 
     // check_gps - check if new gps readings have arrived and use them to correct position estimates
-    virtual void        check_gps();
+    void        check_gps();
 
     // correct_with_gps - modifies accelerometer offsets using gps.  dt is time since last gps update
-    virtual void        correct_with_gps(int32_t lon, int32_t lat, float dt);
+    void        correct_with_gps(int32_t lon, int32_t lat, float dt);
+
+    // get_position - returns current position from home in cm
+    Vector3f    get_position() const { return _position_base + _position_correction; }
 
     // get latitude & longitude positions
-    virtual int32_t     get_latitude();
-    virtual int32_t     get_longitude();
+    int32_t     get_latitude() const;
+    int32_t     get_longitude() const;
 
     // set_current_position - all internal calculations are recorded as the distances from this point
-    virtual void        set_current_position(int32_t lon, int32_t lat);
+    void        set_current_position(int32_t lon, int32_t lat);
 
     // get latitude & longitude positions from base location (in cm)
-    virtual float       get_latitude_diff();
-    virtual float       get_longitude_diff();
+    float       get_latitude_diff() const;
+    float       get_longitude_diff() const;
     
     // get velocity in latitude & longitude directions (in cm/s)
-    virtual float       get_latitude_velocity();
-    virtual float       get_longitude_velocity();
+    float       get_latitude_velocity() const;
+    float       get_longitude_velocity() const;
+
+    // get_velocity - returns current velocity in cm/s
+    Vector3f    get_velocity() const { return _velocity; }
 
     // set velocity in latitude & longitude directions (in cm/s)
-    virtual void        set_velocity_xy(float x, float y);
+    void        set_velocity_xy(float x, float y);
 
     //
     // Z Axis methods
     //
 
     // set time constant - set timeconstant used by complementary filter
-    virtual void        set_time_constant_z( float time_constant_in_seconds );
+    void        set_time_constant_z( float time_constant_in_seconds );
 
     // altitude_ok, position_ok - true if inertial based altitude and position can be trusted
-    virtual bool        altitude_ok() { return true; }
+    bool        altitude_ok() const { return true; }
 
     // check_baro - check if new baro readings have arrived and use them to correct vertical accelerometer offsets
-    virtual void        check_baro();
+    void        check_baro();
 
     // correct_with_baro - modifies accelerometer offsets using barometer.  dt is time since last baro reading
-    virtual void        correct_with_baro(float baro_alt, float dt);
+    void        correct_with_baro(float baro_alt, float dt);
 
     // get_altitude - get latest altitude estimate in cm
-    virtual float       get_altitude() { return _position_base.z + _position_correction.z; }
-    virtual void        set_altitude( float new_altitude);
+    float       get_altitude() const { return _position_base.z + _position_correction.z; }
+    void        set_altitude( float new_altitude);
 
     // get_velocity_z - get latest climb rate (in cm/s)
-    virtual float       get_velocity_z() { return _velocity.z; }
-    virtual void        set_velocity_z( float new_velocity );
+    float       get_velocity_z() const { return _velocity.z; }
+    void        set_velocity_z( float new_velocity );
 
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -117,7 +118,7 @@ public:
 
 protected:
 
-    virtual void            update_gains();             // update_gains - update gains from time constant (given in seconds)
+    void                    update_gains();             // update_gains - update gains from time constant (given in seconds)
 
     AP_AHRS*                _ahrs;                      // pointer to ahrs object
     AP_InertialSensor*      _ins;                       // pointer to inertial sensor

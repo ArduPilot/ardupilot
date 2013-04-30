@@ -22,6 +22,7 @@
 #include <AC_PID.h>             // PID library
 #include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>          // AP Motors library
+#include <AP_ADC_AnalogSource.h>
 #include <AP_RangeFinder.h>     // Range finder library
 #include <AP_OpticalFlow.h>     // Optical Flow library
 #include <Filter.h>             // Filter library

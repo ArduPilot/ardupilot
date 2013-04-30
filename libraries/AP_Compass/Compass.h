@@ -91,7 +91,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    Vector3f &get_offsets();
+    const Vector3f &get_offsets() const;
 
     /// Sets the initial location used to get declination
     ///
@@ -122,8 +122,9 @@ public:
     /// Sets the local magnetic field declination.
     ///
     /// @param  radians             Local field declination.
+    /// @param save_to_eeprom       true to save to eeprom (false saves only to memory)
     ///
-    void set_declination(float radians);
+    void set_declination(float radians, bool save_to_eeprom = true);
     float get_declination();
 
     // set overall board orientation
@@ -155,7 +156,7 @@ public:
     void set_motor_compensation(const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    Vector3f& get_motor_compensation() {
+    const Vector3f& get_motor_compensation() const {
         return _motor_compensation;
     }
 
@@ -189,11 +190,13 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // settable parameters
+    AP_Int8 _learn;                             ///<enable calibration learning
+
 protected:
     enum Rotation _orientation;
     AP_Vector3f _offset;
     AP_Float _declination;
-    AP_Int8 _learn;                             ///<enable calibration learning
     AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
 

@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] PROGMEM = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
     // @Description: Set to non-zero to enable scheduler debug messages
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:ShowSlipe,2:ShowOverruns
     // @User: Advanced
     AP_GROUPINFO("DEBUG",    0, AP_Scheduler, _debug, 0),
     AP_GROUPEND
@@ -32,7 +32,8 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks)
     _tasks = tasks;
     _num_tasks = num_tasks;
     _last_run = new uint16_t[_num_tasks];
-    memset(_last_run, 0, sizeof(_last_run[0]*_num_tasks));
+    memset(_last_run, 0, sizeof(_last_run[0]) * _num_tasks);
+    _tick_counter = 0;
 }
 
 // one tick has passed
@@ -79,7 +80,7 @@ void AP_Scheduler::run(uint16_t time_available)
                 
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
-                    if (_debug != 0) {
+                    if (_debug > 1) {
                         hal.console->printf_P(PSTR("Scheduler overrun task[%u] (%u/%u)\n"), 
                                               (unsigned)i, 
                                               (unsigned)time_taken,

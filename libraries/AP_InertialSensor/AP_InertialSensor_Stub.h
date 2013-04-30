@@ -10,8 +10,7 @@ class AP_InertialSensor_Stub : public AP_InertialSensor
 {
 public:
 
-    AP_InertialSensor_Stub() {
-    }
+    AP_InertialSensor_Stub();
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();

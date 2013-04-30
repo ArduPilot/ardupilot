@@ -90,7 +90,7 @@ void AP_OpticalFlow::update_conversion_factors()
 
 // updates internal lon and lat with estimation based on optical flow
 void AP_OpticalFlow::update_position(float roll, float pitch,
-        float cos_yaw_x, float sin_yaw_y, float altitude)
+        float sin_yaw, float cos_yaw, float altitude)
 {
     float diff_roll     = roll  - _last_roll;
     float diff_pitch    = pitch - _last_pitch;
@@ -119,8 +119,8 @@ void AP_OpticalFlow::update_position(float roll, float pitch,
         y_cm = -change_y * avg_altitude * conv_factor;
 
         // convert x/y movements into lon/lat movement
-        vlon = x_cm * sin_yaw_y + y_cm * cos_yaw_x;
-        vlat = y_cm * sin_yaw_y - x_cm * cos_yaw_x;
+        vlon = x_cm * cos_yaw + y_cm * sin_yaw;
+        vlat = y_cm * cos_yaw - x_cm * sin_yaw;
     }
 
     _last_altitude = altitude;

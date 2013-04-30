@@ -10,19 +10,20 @@ ifeq ($(SYSTYPE),Darwin)
   TOOLPATH :=  $(ARDUINOS)/hardware/tools/avr/bin
   # use BWK awk
   AWK =  awk
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 endif
 ifeq ($(SYSTYPE),Linux)
   # expect that tools are on the path
   TOOLPATH :=  $(subst :, ,$(PATH))
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 endif
 ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN) 
   TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
-
-ifeq ($(findstring CYGWIN, $(SYSTYPE)),) 
-FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
-else
-FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW) 
+  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 
 NATIVE_CXX     :=  g++

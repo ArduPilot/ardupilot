@@ -33,6 +33,9 @@ void DataFlash_Block::FinishWrite(void)
 
 void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
 {
+    if (!CardInserted()) {
+        return;
+    }
     while (size > 0) {
         uint16_t n = df_PageSize - df_BufferIdx;
         if (n > size) {
@@ -126,11 +129,6 @@ void DataFlash_Block::ReadBlock(void *pBuffer, uint16_t size)
             df_Read_BufferIdx = sizeof(ph);
         }
     }
-}
-
-void DataFlash_Block::ReadPacket(void *pkt, uint16_t size)
-{
-    ReadBlock((void *)(sizeof(struct log_Header)+(uintptr_t)pkt), size - sizeof(struct log_Header));
 }
 
 void DataFlash_Block::SetFileNumber(uint16_t FileNumber)

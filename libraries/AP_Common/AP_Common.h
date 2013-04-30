@@ -24,6 +24,9 @@
 #pragma GCC diagnostic warning "-Wlogical-op"
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 
+// used to pack structures
+#define PACKED __attribute__((__packed__))
+
 // Make some dire warnings into errors
 //
 // Some warnings indicate questionable code; rather than let
@@ -46,6 +49,13 @@
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
+
+/*
+  check if bit bitnumber is set in value, returned as a
+  bool. Bitnumber starts at 0 for the first bit
+ */
+#define BIT_IS_SET(value, bitnumber) (((value) & (1U<<(bitnumber))) != 0)
+
 // @}
 
 

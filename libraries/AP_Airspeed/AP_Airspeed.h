@@ -59,7 +59,6 @@ private:
     AP_Int8         _use;
     AP_Int8         _enable;
     float           _airspeed;
-    float           _airspeed_raw;
 };
 
 

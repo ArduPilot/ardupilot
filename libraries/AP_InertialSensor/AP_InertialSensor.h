@@ -3,7 +3,6 @@
 #ifndef __AP_INERTIAL_SENSOR_H__
 #define __AP_INERTIAL_SENSOR_H__
 
-#define GRAVITY 9.80665f
 // Gyro and Accelerometer calibration criteria
 #define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
 #define AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET             250.0f
@@ -69,6 +68,12 @@ public:
                                  float& trim_pitch);
 #endif
 
+    /// calibrated - returns true if the accelerometers have been calibrated
+    ///
+    /// @note this should not be called while flying because it reads from the eeprom which can be slow
+    ///
+    bool calibrated();
+
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
@@ -80,7 +85,7 @@ public:
     ///
     /// @returns	vector of rotational rates in radians/sec
     ///
-    Vector3f            get_gyro(void) { return _gyro; }
+    Vector3f            get_gyro(void) const { return _gyro; }
     void                set_gyro(Vector3f gyro) { _gyro = gyro; }
 
     // set gyro offsets in radians/sec
@@ -91,7 +96,7 @@ public:
     ///
     /// @returns	vector of current accelerations in m/s/s
     ///
-    Vector3f            get_accel(void) { return _accel; }
+    Vector3f            get_accel(void) const { return _accel; }
     void                set_accel(Vector3f accel) { _accel = accel; }
 
     // get accel offsets in m/s/s

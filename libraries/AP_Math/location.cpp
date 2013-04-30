@@ -43,7 +43,7 @@ float longitude_scale(const struct Location *loc)
 
 
 
-// return distance in meters to between two locations
+// return distance in meters between two locations
 float get_distance(const struct Location *loc1, const struct Location *loc2)
 {
     float dlat              = (float)(loc2->lat - loc1->lat);
@@ -72,9 +72,9 @@ int32_t get_bearing_cd(const struct Location *loc1, const struct Location *loc2)
 // our previous waypoint and point2 is our target waypoint
 // then this function returns true if we have flown past
 // the target waypoint
-bool location_passed_point(struct Location &location,
-                           struct Location &point1,
-                           struct Location &point2)
+bool location_passed_point(const struct Location &location,
+                           const struct Location &point1,
+                           const struct Location &point2)
 {
     // the 3 points form a triangle. If the angle between lines
     // point1->point2 and location->point2 is greater than 90
@@ -139,4 +139,46 @@ void location_offset(struct Location *loc, float ofs_north, float ofs_east)
         loc->lat += dlat;
         loc->lng += dlng;
     }
+}
+
+/*
+  wrap an angle in centi-degrees to 0..36000
+ */
+int32_t wrap_360_cd(int32_t error)
+{
+    while (error > 36000) error -= 36000;
+    while (error < 0) error += 36000;
+    return error;
+}
+
+/*
+  wrap an angle in centi-degrees to -18000..18000
+ */
+int32_t wrap_180_cd(int32_t error)
+{
+    while (error > 18000) error -= 36000;
+    while (error < -18000) error += 36000;
+    return error;
+}
+
+
+/*
+  print a int32_t lat/long in decimal degrees
+ */
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
+{
+    int32_t dec_portion, frac_portion;
+    int32_t abs_lat_or_lon = labs(lat_or_lon);
+
+    // extract decimal portion (special handling of negative numbers to ensure we round towards zero)
+    dec_portion = abs_lat_or_lon / 10000000UL;
+
+    // extract fractional portion
+    frac_portion = abs_lat_or_lon - dec_portion*10000000UL;
+
+    // print output including the minus sign
+    if( lat_or_lon < 0 ) {
+        s->printf_P(PSTR("-"));
+    }
+    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
 }

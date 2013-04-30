@@ -147,7 +147,7 @@ static int32_t read_alt_to_hold()
  *  This function stores waypoint commands
  *  It looks to see what the next command type is and finds the last command.
  */
-static void set_next_WP(struct Location *wp)
+static void set_next_WP(const struct Location *wp)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------
@@ -193,27 +193,23 @@ static void set_next_WP(struct Location *wp)
     }
 
     // zero out our loiter vals to watch for missed waypoints
-    loiter_delta            = 0;
-    loiter_sum                      = 0;
-    loiter_total            = 0;
+    loiter_angle_reset();
 
     // this is handy for the groundstation
     wp_totalDistance        = get_distance(&current_loc, &next_WP);
     wp_distance             = wp_totalDistance;
-    target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);
-    nav_bearing_cd          = target_bearing_cd;
 
-    // to check if we have missed the WP
-    // ----------------------------
-    old_target_bearing_cd   = target_bearing_cd;
-
-    // set a new crosstrack bearing
-    // ----------------------------
-    reset_crosstrack();
+    loiter_angle_reset();
 }
 
 static void set_guided_WP(void)
 {
+    if (g.loiter_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+
     // copy the current location into the OldWP slot
     // ---------------------------------------
     prev_WP = current_loc;
@@ -230,15 +226,8 @@ static void set_guided_WP(void)
     // this is handy for the groundstation
     wp_totalDistance        = get_distance(&current_loc, &next_WP);
     wp_distance             = wp_totalDistance;
-    target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);
 
-    // to check if we have missed the WP
-    // ----------------------------
-    old_target_bearing_cd = target_bearing_cd;
-
-    // set a new crosstrack bearing
-    // ----------------------------
-    reset_crosstrack();
+    loiter_angle_reset();
 }
 
 // run this at setup on the ground

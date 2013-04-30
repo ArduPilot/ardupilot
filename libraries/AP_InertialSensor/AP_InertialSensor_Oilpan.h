@@ -39,8 +39,6 @@ private:
     static const int8_t         _sensor_signs[6];
     static const uint8_t        _gyro_temp_ch;
 
-    static const float          _gravity;
-
     static const float          _gyro_gain_x;
     static const float          _gyro_gain_y;
     static const float          _gyro_gain_z;

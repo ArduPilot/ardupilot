@@ -69,7 +69,7 @@ void AP_MotorsTri::output_armed()
     int16_t out_max = _rc_throttle->radio_max;
 
     // Throttle is 0 to 1000 only
-    _rc_throttle->servo_out = constrain(_rc_throttle->servo_out, 0, _max_throttle);
+    _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
 
     if(_rc_throttle->servo_out > 0)
         out_min = _rc_throttle->radio_min + _min_throttle;
@@ -149,12 +149,6 @@ void AP_MotorsTri::output_armed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsTri::output_disarmed()
 {
-    if(_rc_throttle->control_in > 0) {
-        // we have pushed up the throttle
-        // remove safety
-        _auto_armed = true;
-    }
-
     // fill the motor_out[] array for HIL use
     for (unsigned char i = AP_MOTORS_MOT_1; i < AP_MOTORS_MOT_4; i++) {
         motor_out[i] = _rc_throttle->radio_min;

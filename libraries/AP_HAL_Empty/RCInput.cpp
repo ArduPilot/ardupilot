@@ -8,7 +8,7 @@ EmptyRCInput::EmptyRCInput()
 void EmptyRCInput::init(void* machtnichts)
 {}
 
-uint8_t EmptyRCInput::valid() {
+uint8_t EmptyRCInput::valid_channels() {
     return 0;
 }
 

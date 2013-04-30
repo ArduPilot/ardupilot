@@ -25,15 +25,15 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    Vector3f        get_gyro(void) {
+    const Vector3f get_gyro(void) const {
         return _omega + _omega_P + _omega_yaw_P;
     }
-    Matrix3f        get_dcm_matrix(void) {
+    const Matrix3f &get_dcm_matrix(void) const {
         return _dcm_matrix;
     }
 
     // return the current drift correction integrator value
-    Vector3f        get_gyro_drift(void) {
+    const Vector3f &get_gyro_drift(void) const {
         return _omega_I;
     }
 
@@ -56,6 +56,8 @@ public:
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float *airspeed_ret);
+
+    bool            use_compass(void);
 
 private:
     float _ki;

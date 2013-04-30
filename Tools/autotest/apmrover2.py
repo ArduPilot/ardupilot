@@ -63,7 +63,7 @@ def drive_mission(mavproxy, mav, filename):
     wait_mode(mav, 'AUTO')
     if not wait_waypoint(mav, 1, 4, max_dist=5):
         return False
-    wait_mode(mav, 'MANUAL')
+    wait_mode(mav, 'HOLD')
     print("Mission OK")
     return True
 
@@ -107,7 +107,7 @@ def drive_APMrover2(viewerip=None):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/APMrover2-test.mavlog")
+    buildlog = util.reltopdir("../buildlogs/APMrover2-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)

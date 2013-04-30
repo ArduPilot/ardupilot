@@ -8,7 +8,7 @@
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
-//#define HIL_MODE				HIL_MODE_ATTITUDE
+//#define HIL_MODE				HIL_MODE_SENSORS
 //#define DMP_ENABLED ENABLED
 //#define SECONDARY_DMP_ENABLED ENABLED       // allows running DMP in parallel with DCM for testing purposes
 
@@ -42,8 +42,8 @@
  *  CH7_CAMERA_TRIGGER
  */
 
-// Inertia based contollers
-#define RTL_YAW YAW_HOLD
+// uncomment the line below to disable control of yaw during missions (or set YAW_BEHAVIOR parameter to 0)
+// #define WP_YAW_BEHAVIOR_DEFAULT  WP_YAW_BEHAVIOR_NONE
 
 //#define MOTORS_JD880
 //#define MOTORS_JD850
