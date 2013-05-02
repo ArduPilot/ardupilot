@@ -20,6 +20,21 @@
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 
+// setup default mag orientation for each board type
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
+# define MAG_BOARD_ORIENTATION ROTATION_PITCH_180
+#else
+# error "You must define a default compass orientation for this board"
+#endif
+
 class Compass
 {
 public:
@@ -65,14 +80,6 @@ public:
     /// @returns heading in radians
     ///
     float calculate_heading(const Matrix3f &dcm_matrix);
-
-    /// Set the compass orientation matrix, used to correct for
-    /// various compass mounting positions.
-    ///
-    /// @param  rotation_matrix     Rotation matrix to transform magnetometer readings
-    ///                             to the body frame.
-    ///
-    void set_orientation(enum Rotation rotation);
 
     /// Sets the compass offset x/y/z values.
     ///
@@ -194,7 +201,7 @@ public:
     AP_Int8 _learn;                             ///<enable calibration learning
 
 protected:
-    enum Rotation _orientation;
+    AP_Int8 _orientation;
     AP_Vector3f _offset;
     AP_Float _declination;
     AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation

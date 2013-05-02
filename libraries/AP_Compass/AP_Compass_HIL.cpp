@@ -47,6 +47,17 @@ void AP_Compass_HIL::setHIL(float _mag_x, float _mag_y, float _mag_z)
     _hil_mag.x = _mag_x;
     _hil_mag.y = _mag_y;
     _hil_mag.z = _mag_z;
+
+    // apply default board orientation for this compass type. This is
+    // a noop on most boards
+    _hil_mag.rotate(MAG_BOARD_ORIENTATION);
+
+    // add user selectable orientation
+    _hil_mag.rotate((enum Rotation)_orientation.get());
+
+    // and add in AHRS_ORIENTATION setting
+    _hil_mag.rotate(_board_orientation);
+
     healthy = true;
 }
 
