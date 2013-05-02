@@ -27,6 +27,13 @@ static bool auto_check_trigger(void)
         return true;
     }
 
+    // check for user pressing the auto trigger to off
+    if (auto_triggered && g.auto_trigger_pin != -1 && check_digital_pin(g.auto_trigger_pin) == 1) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("AUTO triggered off"));
+        auto_triggered = false;
+        return false; 
+    }
+
     // if already triggered, then return true, so you don't
     // need to hold the switch down
     if (auto_triggered) {
@@ -39,21 +46,10 @@ static bool auto_check_trigger(void)
         return true;
     }
  
-    if (g.auto_trigger_pin != -1) {
-        int8_t pin = hal.gpio->analogPinToDigitalPin(g.auto_trigger_pin);
-        if (pin != -1) {
-            // ensure we are in input mode
-            hal.gpio->pinMode(pin, GPIO_INPUT);
-
-            // enable pullup
-            hal.gpio->write(pin, 1);
-
-            if (hal.gpio->read(pin) == 0) {
-                gcs_send_text_P(SEVERITY_LOW, PSTR("Triggered AUTO with pin"));
-                auto_triggered = true;
-                return true;            
-            }
-        }
+    if (g.auto_trigger_pin != -1 && check_digital_pin(g.auto_trigger_pin) == 0) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("Triggered AUTO with pin"));
+        auto_triggered = true;
+        return true;            
     }
 
     if (g.auto_kickstart != 0.0f) {
