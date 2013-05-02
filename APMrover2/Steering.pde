@@ -92,7 +92,7 @@ static void calc_throttle(float target_speed)
       SPEED_TURN_GAIN percentage.
     */
     float steer_rate = fabsf((nav_steer_cd/nav_gain_scaler) / (float)SERVO_MAX);
-    steer_rate = constrain(steer_rate, 0.0, 1.0);
+    steer_rate = constrain_float(steer_rate, 0.0, 1.0);
     float reduction = 1.0 - steer_rate*(100 - g.speed_turn_gain)*0.01;
     
     if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
@@ -129,7 +129,7 @@ static void calc_nav_steer()
     } else {
         nav_gain_scaler = g.speed_cruise / ground_speed;
     }
-	nav_gain_scaler = constrain(nav_gain_scaler, 0.2f, 1.4f);
+	nav_gain_scaler = constrain_float(nav_gain_scaler, 0.2f, 1.4f);
 
 	// Calculate the required turn of the wheels rover
 	// ----------------------------------------
