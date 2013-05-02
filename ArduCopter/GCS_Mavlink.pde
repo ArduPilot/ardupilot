@@ -1967,39 +1967,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
  */
 #if HIL_MODE == HIL_MODE_SENSORS
 
-    case MAVLINK_MSG_ID_RAW_IMU: // 28
-    {
-        // decode
-        mavlink_raw_imu_t packet;
-        mavlink_msg_raw_imu_decode(msg, &packet);
-
-        // set imu hil sensors
-        // TODO: check scaling for temp/absPress
-        float temp = 70;
-        float absPress = 1;
-        //      cliSerial->printf_P(PSTR("accel:\t%d\t%d\t%d\n"), packet.xacc, packet.yacc, packet.zacc);
-        //      cliSerial->printf_P(PSTR("gyro:\t%d\t%d\t%d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
-
-        // rad/sec
-        Vector3f gyros;
-        gyros.x = (float)packet.xgyro / 1000.0;
-        gyros.y = (float)packet.ygyro / 1000.0;
-        gyros.z = (float)packet.zgyro / 1000.0;
-
-        // m/s/s
-        Vector3f accels;
-        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
-        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
-        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
-
-        ins.set_gyro(gyros);
-
-        ins.set_accel(accels);
-
-        compass.setHIL(packet.xmag,packet.ymag,packet.zmag);
-        break;
-    }
-
     case MAVLINK_MSG_ID_RAW_PRESSURE: //29
     {
         // decode
