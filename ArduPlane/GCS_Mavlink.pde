@@ -1904,16 +1904,7 @@ mission_failed:
         ins.set_gyro(gyros);
         ins.set_accel(accels);
 
-        // approximate a barometer
-        float y;
-        const float Temp = 312;
-
-        y = (packet.alt - 584000.0) / 29271.267;
-        y /= (Temp / 10.0) + 273.15;
-        y = 1.0/exp(y);
-        y *= 95446.0;
-
-        barometer.setHIL(Temp, y);
+        barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
         break;
     }
