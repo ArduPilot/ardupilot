@@ -119,7 +119,6 @@
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
  # define CONFIG_PITOT_SCALING 4.0
- # define MAGNETOMETER ENABLED
  # ifdef APM2_BETA_HARDWARE
  #  define CONFIG_BARO     AP_BARO_BMP085
  # else // APM2 Production Hardware (default)
@@ -139,7 +138,6 @@
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
  # define CONFIG_PITOT_SCALING 4.0
- # define MAGNETOMETER ENABLED
  # define CONFIG_BARO     AP_BARO_HIL
  # define CONFIG_COMPASS  AP_COMPASS_HIL
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -155,7 +153,6 @@
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 11
  # define CONFIG_PITOT_SCALING (4.0*5.0/3.3)
- # define MAGNETOMETER ENABLED
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
  # define SERIAL0_BAUD 115200
@@ -262,12 +259,6 @@
 //
 #ifndef INPUT_VOLTAGE
  # define INPUT_VOLTAGE                  4.68   //  4.68 is the average value for a sample set.  This is the value at the processor with 5.02 applied at the servo rail
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  MAGNETOMETER
-#ifndef MAGNETOMETER
- # define MAGNETOMETER                   DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

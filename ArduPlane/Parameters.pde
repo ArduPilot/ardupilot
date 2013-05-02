@@ -542,10 +542,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: MAG_ENABLE
     // @DisplayName: Enable Compass
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
+    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    GSCALAR(compass_enabled,        "MAG_ENABLE",     MAGNETOMETER),
+    GSCALAR(compass_enabled,        "MAG_ENABLE",     1),
 
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
     GSCALAR(flap_1_speed,           "FLAP_1_SPEED",   FLAP_1_SPEED),
