@@ -49,7 +49,6 @@
 # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
-# define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
 # define MAGNETOMETER ENABLED
@@ -223,10 +222,6 @@
 #ifndef MAGNETOMETER
 # define MAGNETOMETER			DISABLED
 #endif
-#ifndef MAG_ORIENTATION
-# define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
