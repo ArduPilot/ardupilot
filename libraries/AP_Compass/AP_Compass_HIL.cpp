@@ -14,6 +14,26 @@
 
 extern const AP_HAL::HAL& hal;
 
+// constructor
+AP_Compass_HIL::AP_Compass_HIL() : Compass() 
+{
+        product_id = AP_COMPASS_TYPE_HIL;
+	_setup_earth_field();
+}
+
+// setup _Bearth
+void AP_Compass_HIL::_setup_earth_field(void)
+{
+	// assume a earth field strength of 400
+        _Bearth(400, 0, 0);
+
+        // rotate _Bearth for inclination and declination. -66 degrees
+	// is the inclination in Canberra, Australia
+        Matrix3f R;
+	R.from_euler(0, ToRad(66), _declination.get());
+        _Bearth = R * _Bearth;
+}
+
 // Public Methods //////////////////////////////////////////////////////////////
 
 bool AP_Compass_HIL::read()
@@ -40,25 +60,40 @@ bool AP_Compass_HIL::read()
     return true;
 }
 
+#define MAG_OFS_X 5.0
+#define MAG_OFS_Y 13.0
+#define MAG_OFS_Z -18.0
+
 // Update raw magnetometer values from HIL data
 //
-void AP_Compass_HIL::setHIL(float _mag_x, float _mag_y, float _mag_z)
+void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
 {
-    _hil_mag.x = _mag_x;
-    _hil_mag.y = _mag_y;
-    _hil_mag.z = _mag_z;
+	Matrix3f R;
 
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _hil_mag.rotate(MAG_BOARD_ORIENTATION);
+        // create a rotation matrix for the given attitude
+        R.from_euler(roll, pitch, yaw);
 
-    // add user selectable orientation
-    _hil_mag.rotate((enum Rotation)_orientation.get());
+	if (_last_declination != _declination.get()) {
+		_setup_earth_field();
+		_last_declination = _declination.get();
+	}
 
-    // and add in AHRS_ORIENTATION setting
-    _hil_mag.rotate(_board_orientation);
+        // convert the earth frame magnetic vector to body frame, and
+        // apply the offsets
+        _hil_mag = R.mul_transpose(_Bearth);
+	_hil_mag -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
 
-    healthy = true;
+	// apply default board orientation for this compass type. This is
+	// a noop on most boards
+	_hil_mag.rotate(MAG_BOARD_ORIENTATION);
+
+	// add user selectable orientation
+	_hil_mag.rotate((enum Rotation)_orientation.get());
+
+	// and add in AHRS_ORIENTATION setting
+	_hil_mag.rotate(_board_orientation);
+
+	healthy = true;
 }
 
 void AP_Compass_HIL::accumulate(void)
