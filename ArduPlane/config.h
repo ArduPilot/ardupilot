@@ -119,7 +119,6 @@
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
  # define CONFIG_PITOT_SCALING 4.0
- # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
  # define MAGNETOMETER ENABLED
  # ifdef APM2_BETA_HARDWARE
  #  define CONFIG_BARO     AP_BARO_BMP085
@@ -157,7 +156,6 @@
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 11
  # define CONFIG_PITOT_SCALING (4.0*5.0/3.3)
  # define MAGNETOMETER ENABLED
- # define MAG_ORIENTATION   ROTATION_NONE
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
  # define SERIAL0_BAUD 115200
@@ -271,11 +269,6 @@
 #ifndef MAGNETOMETER
  # define MAGNETOMETER                   DISABLED
 #endif
-
-#ifndef MAG_ORIENTATION
- # define MAG_ORIENTATION                AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////

@@ -160,7 +160,6 @@ static void init_ardupilot()
     barometer.init();
 
     if (g.compass_enabled==true) {
-        compass.set_orientation(MAG_ORIENTATION);                                                       // set compass's orientation on aircraft
         if (!compass.init() || !compass.read()) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;

@@ -526,7 +526,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
         return (0);
     }
 
-    compass.set_orientation(MAG_ORIENTATION);
     if (!compass.init()) {
         cliSerial->println_P(PSTR("Compass initialisation failed!"));
         return 0;
@@ -544,8 +543,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     int16_t counter = 0;
     float heading = 0;
-
-    //cliSerial->printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
 
     print_hit_enter();
 

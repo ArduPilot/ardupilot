@@ -412,7 +412,6 @@ static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
     if (!strcmp_P(argv[1].str, PSTR("on"))) {
-        compass.set_orientation(MAG_ORIENTATION);       // set compass's orientation on aircraft
         if (!compass.init()) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
