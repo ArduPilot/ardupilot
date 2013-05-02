@@ -281,7 +281,7 @@ static void startup_ground(void)
     //INS ground start
     //------------------------
     //
-    startup_INS_ground();
+    startup_INS_ground(false);
 
     // read the radio to set trims
     // ---------------------------
@@ -427,7 +427,7 @@ static void check_short_failsafe()
 }
 
 
-static void startup_INS_ground(void)
+static void startup_INS_ground(bool do_accel_init)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     while (!barometer.healthy) {
@@ -453,6 +453,10 @@ static void startup_INS_ground(void)
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);
+    if (do_accel_init) {
+        ins.init_accel(flash_leds);
+        ahrs.set_trim(Vector3f(0, 0, 0));
+    }
     ahrs.reset();
 
     // read Baro pressure at ground

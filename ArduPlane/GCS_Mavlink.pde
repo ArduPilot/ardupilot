@@ -1136,7 +1136,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_PREFLIGHT_CALIBRATION:
             if (packet.param1 == 1 ||
                 packet.param2 == 1) {
-                startup_INS_ground();
+                startup_INS_ground(true);
             } else if (packet.param3 == 1) {
                 init_barometer();
                 if (airspeed.enabled()) {
