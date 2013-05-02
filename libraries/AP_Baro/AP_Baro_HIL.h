@@ -16,8 +16,6 @@ private:
     uint8_t _count;
 
 public:
-    AP_Baro_HIL();  // Constructor
-
     bool init();
     uint8_t read();
     float get_pressure();
