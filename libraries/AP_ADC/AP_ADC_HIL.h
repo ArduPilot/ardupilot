@@ -44,12 +44,6 @@ public:
     // Get minimum number of samples read from the sensors
     uint16_t        num_samples_available(const uint8_t *channel_numbers);
 
-    ///
-    // Set the adc raw values given the current rotations rates,
-    // temps, accels, and pressures
-    void        setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
-                       int16_t aX, int16_t aY, int16_t aZ, int16_t diffPress);
-
 private:
 
     ///
