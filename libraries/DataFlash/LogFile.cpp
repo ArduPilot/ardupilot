@@ -632,3 +632,25 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor *ins)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+// Write a text message to the log
+void DataFlash_Class::Log_Write_Message(const char *message)
+{
+    struct log_Message pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
+        msg  : {}
+    };
+    strncpy(pkt.msg, message, sizeof(pkt.msg));
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write a text message to the log
+void DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
+{
+    struct log_Message pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
+        msg  : {}
+    };
+    strncpy_P(pkt.msg, message, sizeof(pkt.msg));
+    WriteBlock(&pkt, sizeof(pkt));
+}
