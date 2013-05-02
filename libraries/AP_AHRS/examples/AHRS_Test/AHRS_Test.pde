@@ -58,13 +58,11 @@ AP_Baro_BMP085_HIL barometer;
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define MAG_ORIENTATION  AP_COMPASS_APM2_SHIELD
 #else
  # define A_LED_PIN        37
  # define C_LED_PIN        35
  # define LED_ON           HIGH
  # define LED_OFF          LOW
- # define MAG_ORIENTATION  AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
 
 
@@ -88,7 +86,6 @@ void setup(void)
 			 flash_leds);
     ins.init_accel(flash_leds);
 
-    compass.set_orientation(MAG_ORIENTATION);
     ahrs.init();
 
     if( compass.init() ) {
