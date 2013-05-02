@@ -22,7 +22,7 @@ public:
     float get_temperature();
     int32_t get_raw_pressure();
     int32_t get_raw_temp();
-    void setHIL(float Temp, float Press);
+    void setHIL(float altitude_msl);
 };
 
 #endif //  __AP_BARO__HIL_H__
