@@ -54,7 +54,7 @@ private:
     // these methods are static as they are called
     // from the timer
     static void _update_barometer(float height);
-    static void _update_compass(float roll, float pitch, float yaw);
+    static void _update_compass(float rollDeg, float pitchDeg, float yawDeg);
 
     struct gps_data {
 	    double latitude;
@@ -89,7 +89,6 @@ private:
     static float _gyro_drift(void);
     static float _rand_float(void);
     static Vector3f _rand_vec3f(void);
-    static Vector3f _heading_to_mag(float roll, float pitch, float yaw);
 
     // signal handlers
     static void _sig_fpe(int signum);
