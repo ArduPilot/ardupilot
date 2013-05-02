@@ -83,7 +83,7 @@ bool AP_Compass_PX4::read(void)
 
     // apply default board orientation for this compass type. This is
     // a noop on most boards
-    rot_mag.rotate(MAG_BOARD_ORIENTATION);
+    _sum.rotate(MAG_BOARD_ORIENTATION);
 
     // add user selectable orientation
     _sum.rotate((enum Rotation)_orientation.get());
