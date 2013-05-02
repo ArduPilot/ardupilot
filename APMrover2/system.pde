@@ -248,7 +248,7 @@ static void init_ardupilot()
 	if (g.log_bitmask & MASK_LOG_CMD)
 			Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
-    set_mode(MANUAL);
+    set_mode((enum mode)g.initial_mode.get());
 
 	// set the correct flight mode
 	// ---------------------------

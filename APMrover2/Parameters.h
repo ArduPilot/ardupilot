@@ -31,6 +31,7 @@ public:
         k_param_log_bitmask = 10,
         k_param_num_resets,
         k_param_reset_switch_chan,
+        k_param_initial_mode,
 
         // IO pins
         k_param_rssi_pin = 20,
@@ -150,6 +151,7 @@ public:
     AP_Int16    log_bitmask;
     AP_Int16    num_resets;
     AP_Int8	    reset_switch_chan;
+    AP_Int8     initial_mode;
 
     // IO pins
     AP_Int8     rssi_pin;
