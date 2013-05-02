@@ -70,11 +70,11 @@ enum Rotation rotation_combination(enum Rotation r1, enum Rotation r2, bool *fou
 #endif
 
 // constrain a value
-float constrain(float amt, float low, float high) 
+float constrain_float(float amt, float low, float high) 
 {
 	// the check for NaN as a float prevents propogation of
 	// floating point errors through any function that uses
-	// constrain(). The normal float semantics already handle -Inf
+	// constrain_float(). The normal float semantics already handle -Inf
 	// and +Inf
 	if (isnan(amt)) {
 		return (low+high)*0.5f;

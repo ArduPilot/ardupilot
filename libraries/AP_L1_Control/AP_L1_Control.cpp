@@ -39,7 +39,7 @@ int32_t AP_L1_Control::nav_roll_cd(void)
 {
 	float ret;	
 	ret = degrees(atanf(_latAccDem * 0.101972f) * 100.0f); // 0.101972 = 1/9.81
-	ret = constrain(ret, -9000, 9000);
+	ret = constrain_float(ret, -9000, 9000);
 	return ret;
 }
 
@@ -143,7 +143,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		float xtrackErr = _cross2D(A_air, AB_unit);
 		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
-		sine_Nu1 = constrain(sine_Nu1, -0.7854f, 0.7854f);
+		sine_Nu1 = constrain_float(sine_Nu1, -0.7854f, 0.7854f);
 		float Nu1 = asinf(sine_Nu1);
 		
 		//Calculate Nu
@@ -159,7 +159,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	}	
 		
 	//Limit Nu to +-pi
-	Nu = constrain(Nu, -1.5708f, +1.5708f);
+	Nu = constrain_float(Nu, -1.5708f, +1.5708f);
 	_latAccDem = (xtrackVel*dampingWeight*Kv + 2.0f*sinf(Nu))*VomegaA;
 	
 	// Waypoint capture status is always false during waypoint following
@@ -210,7 +210,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float xtrackVelCap = _cross2D(A_air_unit , _groundspeed_vector); // Velocity across line - perpendicular to radial inbound to WP
 	float ltrackVelCap = - (_groundspeed_vector * A_air_unit); // Velocity along line - radial inbound to WP
 	float Nu = atan2f(xtrackVelCap,ltrackVelCap);
-	Nu = constrain(Nu, -1.5708f, +1.5708f); //Limit Nu to +- Pi/2
+	Nu = constrain_float(Nu, -1.5708f, +1.5708f); //Limit Nu to +- Pi/2
 
 	//Calculate lat accln demand to capture center_WP (use L1 guidance law)
 	float latAccDemCap = VomegaA * (xtrackVelCap * Kv_L1 + 2.0f * sinf(Nu));
@@ -290,7 +290,7 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 	_bearing_error = Nu; // bearing error angle (radians), +ve to left of track
 
 	// Limit Nu to +-pi
-	Nu = constrain(Nu, -1.5708f, +1.5708f);
+	Nu = constrain_float(Nu, -1.5708f, +1.5708f);
 	_latAccDem = 2.0f*sinf(Nu)*VomegaA;
 }
 

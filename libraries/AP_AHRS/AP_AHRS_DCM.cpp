@@ -509,7 +509,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Vector3f vdelta = (velocity - _last_velocity) * v_scale;
     // limit vertical acceleration correction to 0.5 gravities. The
     // barometer sometimes gives crazy acceleration changes. 
-    vdelta.z = constrain(vdelta.z, -0.5f, 0.5f);
+    vdelta.z = constrain_float(vdelta.z, -0.5f, 0.5f);
     GA_e = Vector3f(0, 0, -1.0f) + vdelta;
     GA_e.normalize();
     if (GA_e.is_inf()) {
@@ -605,9 +605,9 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // short term errors don't cause a buildup of omega_I
         // beyond the physical limits of the device
         float change_limit = _gyro_drift_limit * _omega_I_sum_time;
-        _omega_I_sum.x = constrain(_omega_I_sum.x, -change_limit, change_limit);
-        _omega_I_sum.y = constrain(_omega_I_sum.y, -change_limit, change_limit);
-        _omega_I_sum.z = constrain(_omega_I_sum.z, -change_limit, change_limit);
+        _omega_I_sum.x = constrain_float(_omega_I_sum.x, -change_limit, change_limit);
+        _omega_I_sum.y = constrain_float(_omega_I_sum.y, -change_limit, change_limit);
+        _omega_I_sum.z = constrain_float(_omega_I_sum.z, -change_limit, change_limit);
         _omega_I += _omega_I_sum;
         _omega_I_sum.zero();
         _omega_I_sum_time = 0;
@@ -763,7 +763,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 	if (ret && _wind_max > 0 && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
 		// constrain the airspeed by the ground speed
 		// and AHRS_WIND_MAX
-		*airspeed_ret = constrain(*airspeed_ret, 
+		*airspeed_ret = constrain_float(*airspeed_ret, 
 					  _gps->ground_speed*0.01f - _wind_max, 
 					  _gps->ground_speed*0.01f + _wind_max);
 	}
