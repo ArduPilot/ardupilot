@@ -29,7 +29,6 @@ extern const AP_HAL::HAL& hal;
  */
 void SITL_State::_update_barometer(float altitude)
 {
-	double Temp, Press, y;
 	static uint32_t last_update;
 
 	if (_barometer == NULL) {
@@ -43,16 +42,7 @@ void SITL_State::_update_barometer(float altitude)
 	}
 	last_update = hal.scheduler->millis();
 
-	Temp = 312;
-
-	y = ((altitude-584.0) * 1000.0) / 29271.267;
-	y /= (Temp / 10.0) + 273.15;
-	y = 1.0/exp(y);
-	y *= 95446.0;
-
-	Press = y + (_rand_float() * _sitl->baro_noise);
-
-	_barometer->setHIL(Temp, Press);
+	_barometer->setHIL(altitude);
 }
 
 #endif
