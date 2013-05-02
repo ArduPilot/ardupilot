@@ -19,7 +19,7 @@ static float get_speed_scaler(void)
         } else {
             speed_scaler = 2.0;
         }
-        speed_scaler = constrain(speed_scaler, 0.5, 2.0);
+        speed_scaler = constrain_float(speed_scaler, 0.5, 2.0);
     } else {
         if (g.channel_throttle.servo_out > 0) {
             speed_scaler = 0.5 + ((float)THROTTLE_CRUISE / g.channel_throttle.servo_out / 2.0);                 // First order taylor expansion of square root
@@ -28,7 +28,7 @@ static float get_speed_scaler(void)
             speed_scaler = 1.67;
         }
         // This case is constrained tighter as we don't have real speed info
-        speed_scaler = constrain(speed_scaler, 0.6, 1.67);
+        speed_scaler = constrain_float(speed_scaler, 0.6, 1.67);
     }
     return speed_scaler;
 }
@@ -377,7 +377,7 @@ static void calc_nav_roll()
  *  float roll_slew_limit(float servo)
  *  {
  *       static float last;
- *       float temp = constrain(servo, last-ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f, last + ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f);
+ *       float temp = constrain_float(servo, last-ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f, last + ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f);
  *       last = servo;
  *       return temp;
  *  }*/
