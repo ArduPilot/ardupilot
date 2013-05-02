@@ -1914,6 +1914,7 @@ mission_failed:
         y *= 95446.0;
 
         barometer.setHIL(Temp, y);
+        compass.setHIL(packet.roll, packet.pitch, packet.yaw);
         break;
     }
 #endif // HIL_MODE
