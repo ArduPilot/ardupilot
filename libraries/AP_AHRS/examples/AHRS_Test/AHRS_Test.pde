@@ -47,7 +47,7 @@ AP_GPS_Auto g_gps_driver(&g_gps);
 AP_AHRS_DCM  ahrs(&ins, g_gps);
 //AP_AHRS_MPU6000  ahrs(&ins, g_gps);		// only works with APM2
 
-AP_Baro_BMP085_HIL barometer;
+AP_Baro_HIL barometer;
 
 
 #define HIGH 1

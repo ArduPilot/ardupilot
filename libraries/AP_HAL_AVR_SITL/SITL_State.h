@@ -103,7 +103,7 @@ private:
     static uint32_t _update_count;
     static bool _motors_on;
 
-    static AP_Baro_BMP085_HIL *_barometer;
+    static AP_Baro_HIL *_barometer;
     static AP_InertialSensor_Stub *_ins;
     static SITLScheduler *_scheduler;
     static AP_Compass_HIL *_compass;
