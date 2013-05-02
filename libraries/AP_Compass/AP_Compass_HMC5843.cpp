@@ -323,10 +323,14 @@ bool AP_Compass_HMC5843::read()
         rot_mag.rotate(ROTATION_YAW_90);
     }
 
-    // add components orientation
-    rot_mag.rotate(_orientation);
+    // apply default board orientation for this compass type. This is
+    // a noop on most boards
+    rot_mag.rotate(MAG_BOARD_ORIENTATION);
 
-    // add in board orientation
+    // add user selectable orientation
+    rot_mag.rotate((enum Rotation)_orientation.get());
+
+    // add in board orientation from AHRS
     rot_mag.rotate(_board_orientation);
 
     rot_mag += _offset.get();

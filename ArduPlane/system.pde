@@ -179,7 +179,6 @@ static void init_ardupilot()
     barometer.init();
 
     if (g.compass_enabled==true) {
-        compass.set_orientation(MAG_ORIENTATION);                                                       // set compass's orientation on aircraft
         if (!compass.init() || !compass.read()) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
@@ -447,7 +446,7 @@ static void check_short_failsafe()
 }
 
 
-static void startup_INS_ground(bool force_accel_level)
+static void startup_INS_ground(bool do_accel_init)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     while (!barometer.healthy) {
@@ -473,15 +472,10 @@ static void startup_INS_ground(bool force_accel_level)
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);
-#if HIL_MODE == HIL_MODE_DISABLED
-    if (force_accel_level || g.manual_level == 0) {
-        // when MANUAL_LEVEL is set to 1 we don't do accelerometer
-        // levelling on each boot, and instead rely on the user to do
-        // it once via the ground station
+    if (do_accel_init) {
         ins.init_accel(flash_leds);
         ahrs.set_trim(Vector3f(0, 0, 0));
     }
-#endif
     ahrs.reset();
 
     // read Baro pressure at ground

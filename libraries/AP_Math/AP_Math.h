@@ -97,7 +97,7 @@ int32_t wrap_180_cd(int32_t error);
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
 
 // constrain a value
-float   constrain(float amt, float low, float high);
+float   constrain_float(float amt, float low, float high);
 int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
 int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
 

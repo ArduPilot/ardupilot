@@ -139,7 +139,7 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
         delay(20);
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
-        if (hal.rcin->valid() > 0) {
+        if (hal.rcin->valid_channels() > 0) {
             cliSerial->print_P(PSTR("CH:"));
             for(int16_t i = 0; i < 8; i++) {
                 cliSerial->print(hal.rcin->read(i));        // Print channel values
@@ -526,7 +526,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
         return (0);
     }
 
-    compass.set_orientation(MAG_ORIENTATION);
     if (!compass.init()) {
         cliSerial->println_P(PSTR("Compass initialisation failed!"));
         return 0;
@@ -544,8 +543,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     int16_t counter = 0;
     float heading = 0;
-
-    //cliSerial->printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
 
     print_hit_enter();
 

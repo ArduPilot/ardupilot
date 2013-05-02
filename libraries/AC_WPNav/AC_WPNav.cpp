@@ -92,7 +92,7 @@ void AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& 
         linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
         target_dist = linear_distance + (vel_total*vel_total)/(2*MAX_LOITER_POS_ACCEL);
     }
-    target_dist = constrain(target_dist, 0, MAX_LOITER_OVERSHOOT);
+    target_dist = constrain_float(target_dist, 0, MAX_LOITER_OVERSHOOT);
 
     target.x = position.x + (target_dist * velocity.x / vel_total);
     target.y = position.y + (target_dist * velocity.y / vel_total);
@@ -236,7 +236,7 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
-void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
+void AC_WPNav::advance_target_along_track(float dt)
 {
     float track_covered;
     float track_error;
@@ -251,25 +251,31 @@ void AC_WPNav::advance_target_along_track(float velocity_cms, float dt)
     curr_delta.z = curr_delta.z * _vert_track_scale;
     curr_delta_length = curr_delta.length();
 
+    // increase intermediate target point's velocity if not yet at target speed
+    if(dt > 0 && _limited_speed_xy_cms < _speed_xy_cms) {
+        _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
+    }
+    if(_limited_speed_xy_cms > _speed_xy_cms) {
+        _limited_speed_xy_cms = _speed_xy_cms;
+    }
+
+    // calculate how far along the track we are
     track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
     track_error = safe_sqrt(curr_delta_length*curr_delta_length - track_covered*track_covered);
 
+    // calculate how far along the track we could move the intermediate target before reaching the end of the leash
     track_extra_max = safe_sqrt(_leash_xy*_leash_xy - track_error*track_error);
-
-    // we could save a sqrt by doing the following and not assigning track_error
-    // track_extra_max = safe_sqrt(_leash_xy*_leash_xy - (curr_delta_length*curr_delta_length - track_covered*track_covered));
-
     track_desired_max = track_covered + track_extra_max;
 
     // advance the current target
-    track_desired_temp += velocity_cms * dt;
+    track_desired_temp += _limited_speed_xy_cms * dt;
 
     // constrain the target from moving too far
     if( track_desired_temp > track_desired_max ) {
         track_desired_temp = track_desired_max;
     }
     // do not let desired point go past the end of the segment
-    track_desired_temp = constrain(track_desired_temp, 0, _track_length);
+    track_desired_temp = constrain_float(track_desired_temp, 0, _track_length);
     _track_desired = max(_track_desired, track_desired_temp);
 
     // recalculate the desired position
@@ -316,7 +322,7 @@ void AC_WPNav::update_wpnav()
         reset_I();
     }else{
         // advance the target if necessary
-        advance_target_along_track(_speed_xy_cms, dt);
+        advance_target_along_track(dt);
     }
 
     // run loiter position controller
@@ -348,7 +354,7 @@ void AC_WPNav::get_loiter_position_to_velocity(float dt)
 
     dist_error_total = safe_sqrt(dist_error.x*dist_error.x + dist_error.y*dist_error.y);
     if( dist_error_total > 2*linear_distance ) {
-        vel_sqrt = constrain(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
+        vel_sqrt = constrain_float(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
         desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
         desired_vel.y = vel_sqrt * dist_error.y/dist_error_total;
     }else{
@@ -422,8 +428,8 @@ void AC_WPNav::get_loiter_acceleration_to_lean_angles(float accel_lat, float acc
     accel_right = -accel_lat*_sin_yaw + accel_lon*_cos_yaw;
 
     // update angle targets that will be passed to stabilize controller
-    _desired_roll = constrain((accel_right*_cos_pitch/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
-    _desired_pitch = constrain((-accel_forward/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
+    _desired_roll = constrain_float((accel_right*_cos_pitch/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
+    _desired_pitch = constrain_float((-accel_forward/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
 }
 
 // get_bearing_cd - return bearing in centi-degrees between two positions
@@ -451,6 +457,9 @@ void AC_WPNav::reset_I()
     // reset target velocity - only used by loiter controller's interpretation of pilot input
     _target_vel.x = 0;
     _target_vel.y = 0;
+
+    // reset limited speed to zero to slow initial acceleration
+    _limited_speed_xy_cms = 0;
 }
 
 /// calculate_leash_length - calculates horizontal and vertical leash lengths for waypoint controller

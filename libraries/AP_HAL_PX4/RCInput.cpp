@@ -19,7 +19,7 @@ void PX4RCInput::init(void* unused)
 	clear_overrides();
 }
 
-uint8_t PX4RCInput::valid() 
+uint8_t PX4RCInput::valid_channels() 
 {
 	return _rcin.timestamp != _last_read || _override_valid;
 }

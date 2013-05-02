@@ -216,7 +216,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     return True
 
 
-def fly_ArduPlane(viewerip=None):
+def fly_ArduPlane(viewerip=None, map=False):
     '''fly ArduPlane in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -227,6 +227,8 @@ def fly_ArduPlane(viewerip=None):
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
+    if map:
+        options += ' --map --console'
 
     sil = util.start_SIL('ArduPlane', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)

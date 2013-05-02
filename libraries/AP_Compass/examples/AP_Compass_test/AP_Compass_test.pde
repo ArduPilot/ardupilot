@@ -33,7 +33,6 @@ void setup() {
     }
     hal.console->println("init done");
 
-    compass.set_orientation(AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD); // set compass's orientation on aircraft.
     compass.set_offsets(0,0,0); // set offsets to account for surrounding interference
     compass.set_declination(ToRad(0.0)); // set local difference between magnetic north and true north
 

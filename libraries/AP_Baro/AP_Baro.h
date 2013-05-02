@@ -73,7 +73,7 @@ private:
 
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_BMP085.h"
-#include "AP_Baro_BMP085_hil.h"
+#include "AP_Baro_HIL.h"
 #include "AP_Baro_PX4.h"
 
 #endif // __AP_BARO_H__

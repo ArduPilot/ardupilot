@@ -402,10 +402,6 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     if (success) {
         // reset ahrs's trim to suggested values from calibration routine
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-        if (g.manual_level == 0) {
-            cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
-            g.manual_level.set_and_save(1);
-        }
     }
     report_ins();
     return(0);
@@ -416,7 +412,6 @@ static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
     if (!strcmp_P(argv[1].str, PSTR("on"))) {
-        compass.set_orientation(MAG_ORIENTATION);       // set compass's orientation on aircraft
         if (!compass.init()) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;

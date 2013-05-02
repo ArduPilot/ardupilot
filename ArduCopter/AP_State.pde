@@ -92,6 +92,12 @@ static void set_failsafe_gps(bool mode)
 }
 
 // ---------------------------------------------
+static void set_failsafe_gcs(bool mode)
+{
+    ap.failsafe_gcs = mode;
+}
+
+// ---------------------------------------------
 void set_takeoff_complete(bool b)
 {
     // if no change, exit immediately

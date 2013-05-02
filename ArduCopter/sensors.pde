@@ -65,7 +65,6 @@ static int16_t read_sonar(void)
 
 static void init_compass()
 {
-    compass.set_orientation(MAG_ORIENTATION);                                                   // set compass's orientation on aircraft
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
         cliSerial->println_P(PSTR("COMPASS INIT ERROR"));

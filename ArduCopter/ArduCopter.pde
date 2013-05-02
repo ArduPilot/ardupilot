@@ -1,8 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.9.1b-dev"
+#define THISFIRMWARE "ArduCopter V3.0.0-rc1"
 /*
- *  ArduCopter Version 2.9
+ *  ArduCopter Version 3.0
  *  Lead author:	Jason Short
  *  Based on code and ideas from the Arducopter team: Randy Mackay, Pat Hickey, Jose Julio, Jani Hirvinen, Andrew Tridgell, Justin Beech, Adam Rivera, Jean-Louis Naudin, Roberto Navoni
  *  Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier, Robert Lefebvre, Marco Robustini
@@ -210,7 +210,7 @@ static AP_InertialSensor_PX4 ins;
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
-static AP_Baro_BMP085_HIL barometer;
+static AP_Baro_HIL barometer;
 static AP_Compass_HIL compass;
 static SITL sitl;
  #else
@@ -276,7 +276,7 @@ static AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 static AP_ADC_HIL              adc;
-static AP_Baro_BMP085_HIL      barometer;
+static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
 static AP_InertialSensor_Stub  ins;
@@ -295,7 +295,7 @@ static AP_InertialSensor_Stub  ins;
 static AP_AHRS_HIL             ahrs(&ins, g_gps);
 static AP_GPS_HIL              g_gps_driver;
 static AP_Compass_HIL          compass;                  // never used
-static AP_Baro_BMP085_HIL      barometer;
+static AP_Baro_HIL      barometer;
 
 static int32_t gps_base_alt;
 
@@ -377,11 +377,13 @@ static union {
         uint8_t failsafe_radio     : 1; // 8    // A status flag for the radio failsafe
         uint8_t failsafe_batt      : 1; // 9    // A status flag for the battery failsafe
         uint8_t failsafe_gps       : 1; // 10   // A status flag for the gps failsafe
-        uint8_t do_flip            : 1; // 11   // Used to enable flip code
-        uint8_t takeoff_complete   : 1; // 12
-        uint8_t land_complete      : 1; // 13
-        uint8_t compass_status     : 1; // 14
-        uint8_t gps_status         : 1; // 15
+        uint8_t failsafe_gcs       : 1; // 11   // A status flag for the ground station failsafe
+        uint8_t rc_override_active : 1; // 12   // true if rc control are overwritten by ground station
+        uint8_t do_flip            : 1; // 13   // Used to enable flip code
+        uint8_t takeoff_complete   : 1; // 14
+        uint8_t land_complete      : 1; // 15
+        uint8_t compass_status     : 1; // 16
+        uint8_t gps_status         : 1; // 17
     };
     uint16_t value;
 } ap;
@@ -755,6 +757,7 @@ static AC_WPNav wp_nav(&inertial_nav, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid
 ////////////////////////////////////////////////////////////////////////////////
 // The number of GPS fixes we have had
 static uint8_t gps_fix_count;
+static int16_t pmTest1;
 
 // System Timers
 // --------------
@@ -776,6 +779,8 @@ static uint32_t rtl_loiter_start_time;
 static uint8_t auto_disarming_counter;
 // prevents duplicate GPS messages from entering system
 static uint32_t last_gps_time;
+// the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+static uint32_t last_heartbeat_ms;
 
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
@@ -821,7 +826,7 @@ static AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 // AC_Fence library to reduce fly-aways
 ////////////////////////////////////////////////////////////////////////////////
 #if AC_FENCE == ENABLED
-AC_Fence    fence(&inertial_nav, &g_gps);
+AC_Fence    fence(&inertial_nav);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -928,6 +933,7 @@ static void perf_update(void)
     }
     perf_info_reset();
     gps_fix_count = 0;
+    pmTest1 = 0;
 }
 
 void loop()
@@ -1198,6 +1204,9 @@ static void slow_loop()
     case 0:
         slow_loopCounter++;
         superslow_loopCounter++;
+
+        // check if we've lost contact with the ground station
+        failsafe_gcs_check();
 
         // record if the compass is healthy
         set_compass_healthy(compass.healthy);
@@ -1959,13 +1968,13 @@ static void update_trig(void){
     cos_pitch_x     = safe_sqrt(1 - (temp.c.x * temp.c.x));     // level = 1
     cos_roll_x      = temp.c.z / cos_pitch_x;                       // level = 1
 
-    cos_pitch_x     = constrain(cos_pitch_x, 0, 1.0);
-    // this relies on constrain() of infinity doing the right thing,
+    cos_pitch_x     = constrain_float(cos_pitch_x, 0, 1.0);
+    // this relies on constrain_float() of infinity doing the right thing,
     // which it does do in avr-libc
-    cos_roll_x      = constrain(cos_roll_x, -1.0, 1.0);
+    cos_roll_x      = constrain_float(cos_roll_x, -1.0, 1.0);
 
-    sin_yaw         = constrain(yawvector.y, -1.0, 1.0);
-    cos_yaw         = constrain(yawvector.x, -1.0, 1.0);
+    sin_yaw         = constrain_float(yawvector.y, -1.0, 1.0);
+    cos_yaw         = constrain_float(yawvector.x, -1.0, 1.0);
 
     // added to convert earth frame to body frame for rate controllers
     sin_pitch       = -temp.c.x;

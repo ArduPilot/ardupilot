@@ -66,7 +66,7 @@ public:
         k_param_flap_2_percent,
         k_param_flap_2_speed,
         k_param_reset_switch_chan,
-        k_param_manual_level,
+        k_param_manual_level, // unused
         k_param_land_pitch_cd,
         k_param_ins_old,            // *** Deprecated, remove with next eeprom number change
         k_param_stick_mixing,
@@ -85,6 +85,7 @@ public:
         k_param_hil_servos,
         k_param_vtail_output,
         k_param_nav_controller,
+        k_param_elevon_output,
 
         // 110: Telemetry control
         //
@@ -329,6 +330,7 @@ public:
     AP_Int8 auto_trim;
     AP_Int8 mix_mode;
     AP_Int8 vtail_output;
+    AP_Int8 elevon_output;
     AP_Int8 reverse_elevons;
     AP_Int8 reverse_ch1_elevon;
     AP_Int8 reverse_ch2_elevon;
@@ -336,7 +338,6 @@ public:
     AP_Int16 log_bitmask;
     AP_Int8 reset_switch_chan;
     AP_Int8 reset_mission_chan;
-    AP_Int8 manual_level;
     AP_Int32 airspeed_cruise_cm;
     AP_Int32 RTL_altitude_cm;
     AP_Int16 land_pitch_cd;

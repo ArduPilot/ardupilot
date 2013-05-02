@@ -66,27 +66,6 @@ uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, float *result)
     return ret;
 }
 
-// Set one channel value
-void AP_ADC_HIL::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
-                        int16_t aX, int16_t aY, int16_t aZ, int16_t diffPress)
-{
-    // gyros
-    setGyro(0,p);
-    setGyro(1,q);
-    setGyro(2,r);
-
-    // temp
-    setGyroTemp(gyroTemp);
-
-    // accel
-    setAccel(0,aX);
-    setAccel(1,aY);
-    setAccel(2,aZ);
-
-    // differential pressure
-    setPressure(diffPress);
-}
-
 // see if new data is available
 bool AP_ADC_HIL::new_data_available(const uint8_t *channel_numbers)
 {

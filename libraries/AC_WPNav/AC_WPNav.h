@@ -11,15 +11,15 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 
 // loiter maximum velocities and accelerations
-#define MAX_LOITER_POS_VELOCITY         500         // maximum velocity that our position controller will request.  should be 1.5 ~ 2.0 times the pilot input's max velocity.  To-Do: make consistent with maximum velocity requested by pilot input to loiter
-#define MAX_LOITER_POS_ACCEL            500         // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
-#define MAX_LOITER_VEL_ACCEL            800         // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
+#define MAX_LOITER_POS_VELOCITY         750.0f      // maximum velocity that our position controller will request.  should be 1.5 ~ 2.0 times the pilot input's max velocity.  To-Do: make consistent with maximum velocity requested by pilot input to loiter
+#define MAX_LOITER_POS_ACCEL            500.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
+#define MAX_LOITER_VEL_ACCEL            800.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
 
-#define MAX_LOITER_OVERSHOOT            531        // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
+#define MAX_LOITER_OVERSHOOT            812.5f      // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
 // D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
 // if MAX_LOITER_POS_VELOCITY > 2*D0*Pid_P
 //     MAX_LOITER_OVERSHOOT = D0 + MAX_LOITER_POS_VELOCITY.^2 ./ (2*MAX_LOITER_POS_ACCEL);
@@ -35,6 +35,8 @@
 
 #define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
+
+#define WPNAV_WP_ACCELERATION           200.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
 
 class AC_WPNav
 {
@@ -91,7 +93,7 @@ public:
     void set_origin_and_destination(const Vector3f& origin, const Vector3f& destination);
 
     /// advance_target_along_track - move target location along track from origin to destination
-    void advance_target_along_track(float velocity_cms, float dt);
+    void advance_target_along_track(float dt);
 
     /// get_distance_to_destination - get horizontal distance to destination in cm
     float get_distance_to_destination();
@@ -212,6 +214,7 @@ protected:
     bool        _reached_destination;   // true if we have reached the destination
     float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
     float       _leash_xy;              // horizontal leash length in cm
+    float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
 
 public:
     // for logging purposes

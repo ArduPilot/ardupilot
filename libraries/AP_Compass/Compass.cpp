@@ -82,6 +82,12 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("MOT",    7, Compass, _motor_compensation, 0),
 
+    // @Param: ORIENT
+    // @DisplayName: Compass orientation
+    // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a position value for the Y axis, and a value close to zero for the X axis. NOTE: This orientation is combined with any AHRS_ORIENTATION setting. 
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw135,19:Roll270,20:Roll270Yaw45,21:Roll270Yaw90,22:Roll270Yaw136,23:Pitch90,24:Pitch270
+    AP_GROUPINFO("ORIENT", 8, Compass, _orientation, ROTATION_NONE),
+
     AP_GROUPEND
 };
 
@@ -91,7 +97,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
     product_id(AP_COMPASS_TYPE_UNKNOWN),
-    _orientation(ROTATION_NONE),
     _null_init_done(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -103,12 +108,6 @@ bool
 Compass::init()
 {
     return true;
-}
-
-void
-Compass::set_orientation(enum Rotation rotation)
-{
-    _orientation = rotation;
 }
 
 void
@@ -239,7 +238,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix)
     headY = mag_y*dcm_matrix.c.z/cos_pitch - mag_z*dcm_matrix.c.y/cos_pitch;
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    heading = constrain(atan2f(-headY,headX), -3.15f, 3.15f);
+    heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
 
     // Declination correction (if supplied)
     if( fabsf(_declination) > 0.0f )

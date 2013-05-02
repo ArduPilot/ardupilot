@@ -55,7 +55,7 @@ AP_AHRS_DCM ahrs(&ins, gps);
 AP_InertialNav inertial_nav(&ahrs, &ins, &baro, &gps);
 
 // Fence
-AC_Fence fence(&inertial_nav, &gps);
+AC_Fence fence(&inertial_nav);
 
 void setup()
 {

@@ -12,7 +12,7 @@ void SITLRCInput::init(void* machtnichts)
     clear_overrides();
 }
 
-uint8_t SITLRCInput::valid() {
+uint8_t SITLRCInput::valid_channels() {
     return _sitlState->pwm_valid;
 }
 

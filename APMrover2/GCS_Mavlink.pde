@@ -1595,17 +1595,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else if (var_type == AP_PARAM_INT32) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -2147483648.0f, 2147483647.0f);
+                    v = constrain_float(v, -2147483648.0f, 2147483647.0f);
 					((AP_Int32 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT16) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -32768, 32767);
+                    v = constrain_float(v, -32768, 32767);
 					((AP_Int16 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT8) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain(v, -128, 127);
+                    v = constrain_float(v, -128, 127);
 					((AP_Int8 *)vp)->set_and_save(v);
                 } else {
                     // we don't support mavlink set on this parameter
@@ -1697,13 +1697,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             ins.set_gyro(gyros);
 
             ins.set_accel(accels);
+            compass.setHIL(packet.roll, packet.pitch, packet.yaw);
 			
  #if HIL_MODE == HIL_MODE_ATTITUDE
 			// set AHRS hil sensor
             ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
  #endif
-
+        
 			break;
 		}
 #endif // HIL_MODE
