@@ -147,6 +147,7 @@ parser = optparse.OptionParser("autotest")
 parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
 parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
+parser.add_option("--map", action='store_true', default=False, help='show map')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
 
@@ -252,13 +253,13 @@ def run_step(step):
         return dump_logs('APMrover2')
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(viewerip=opts.viewerip)
+        return arducopter.fly_ArduCopter(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(viewerip=opts.viewerip)
+        return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(viewerip=opts.viewerip)
+        return apmrover2.drive_APMrover2(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'build.All':
         return build_all()

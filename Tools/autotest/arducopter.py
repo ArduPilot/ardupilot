@@ -340,7 +340,7 @@ def setup_rc(mavproxy):
     mavproxy.send('rc 3 1000\n')
 
 
-def fly_ArduCopter(viewerip=None):
+def fly_ArduCopter(viewerip=None, map=False):
     '''fly ArduCopter in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -377,6 +377,8 @@ def fly_ArduCopter(viewerip=None):
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
+    if map:
+        options += ' --map --console'
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)

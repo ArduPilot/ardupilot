@@ -68,7 +68,7 @@ def drive_mission(mavproxy, mav, filename):
     return True
 
 
-def drive_APMrover2(viewerip=None):
+def drive_APMrover2(viewerip=None, map=False):
     '''drive APMrover2 in SIL
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -79,6 +79,8 @@ def drive_APMrover2(viewerip=None):
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
         options += " --out=%s:14550" % viewerip
+    if map:
+        options += ' --map --console'
 
     sil = util.start_SIL('APMrover2', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
