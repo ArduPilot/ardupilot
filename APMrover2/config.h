@@ -83,7 +83,6 @@
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
-# define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 # define A_LED_PIN        27
 # define B_LED_PIN        26
@@ -113,7 +112,6 @@
 # define USB_MUX_PIN -1
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
-# define MAG_ORIENTATION  AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 # define CONFIG_INS_TYPE   CONFIG_INS_PX4
 # define CONFIG_COMPASS  AP_COMPASS_PX4
@@ -131,7 +129,6 @@
 # define USB_MUX_PIN -1
 # define BATTERY_PIN_1	  -1
 # define CURRENT_PIN_1	  -1
-# define MAG_ORIENTATION   ROTATION_NONE
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -270,9 +267,6 @@
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
 # define MAGNETOMETER			ENABLED
-#endif
-#ifndef MAG_ORIENTATION
-# define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
