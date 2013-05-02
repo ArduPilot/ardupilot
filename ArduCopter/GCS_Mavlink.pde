@@ -1925,24 +1925,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         y *= 95446.0;
 
         barometer.setHIL(Temp, y);
-  
-        Vector3f Bearth, m;
-        Matrix3f R;
-
-        // Bearth is the magnetic field in Canberra. We need to adjust
-        // it for inclination and declination
-        Bearth(400, 0, 0);
-        R.from_euler(0, 0, 0);
-        Bearth = R * Bearth;
-
-        // create a rotation matrix for the given attitude
-        R.from_euler(packet.roll, packet.pitch, packet.yaw);
-
-        // convert the earth frame magnetic vector to body frame, and
-        // apply the offsets
-        m = R.transposed() * Bearth - Vector3f(0, 0, 0);
-       
-        compass.setHIL(m.x,m.y,m.z);
+        compass.setHIL(packet.roll, packet.pitch, packet.yaw);
 
  #if HIL_MODE == HIL_MODE_ATTITUDE
         // set AHRS hil sensor
