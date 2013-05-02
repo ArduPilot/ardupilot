@@ -208,7 +208,7 @@ static AP_InertialSensor_PX4 ins;
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
-static AP_Baro_BMP085_HIL barometer;
+static AP_Baro_HIL barometer;
 static AP_Compass_HIL compass;
 static SITL sitl;
  #else
@@ -274,7 +274,7 @@ static AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 static AP_ADC_HIL              adc;
-static AP_Baro_BMP085_HIL      barometer;
+static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
 static AP_InertialSensor_Stub  ins;
@@ -293,7 +293,7 @@ static AP_InertialSensor_Stub  ins;
 static AP_AHRS_HIL             ahrs(&ins, g_gps);
 static AP_GPS_HIL              g_gps_driver;
 static AP_Compass_HIL          compass;                  // never used
-static AP_Baro_BMP085_HIL      barometer;
+static AP_Baro_HIL      barometer;
 
 static int32_t gps_base_alt;
 
