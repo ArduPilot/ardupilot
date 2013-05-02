@@ -1697,13 +1697,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             ins.set_gyro(gyros);
 
             ins.set_accel(accels);
+            compass.setHIL(packet.roll, packet.pitch, packet.yaw);
 			
  #if HIL_MODE == HIL_MODE_ATTITUDE
 			// set AHRS hil sensor
             ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
  #endif
-
+        
 			break;
 		}
 #endif // HIL_MODE
