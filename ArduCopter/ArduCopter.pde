@@ -1963,13 +1963,13 @@ static void update_trig(void){
     cos_pitch_x     = safe_sqrt(1 - (temp.c.x * temp.c.x));     // level = 1
     cos_roll_x      = temp.c.z / cos_pitch_x;                       // level = 1
 
-    cos_pitch_x     = constrain(cos_pitch_x, 0, 1.0);
-    // this relies on constrain() of infinity doing the right thing,
+    cos_pitch_x     = constrain_float(cos_pitch_x, 0, 1.0);
+    // this relies on constrain_float() of infinity doing the right thing,
     // which it does do in avr-libc
-    cos_roll_x      = constrain(cos_roll_x, -1.0, 1.0);
+    cos_roll_x      = constrain_float(cos_roll_x, -1.0, 1.0);
 
-    sin_yaw         = constrain(yawvector.y, -1.0, 1.0);
-    cos_yaw         = constrain(yawvector.x, -1.0, 1.0);
+    sin_yaw         = constrain_float(yawvector.y, -1.0, 1.0);
+    cos_yaw         = constrain_float(yawvector.x, -1.0, 1.0);
 
     // added to convert earth frame to body frame for rate controllers
     sin_pitch       = -temp.c.x;

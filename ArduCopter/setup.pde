@@ -576,7 +576,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
             // calculate scaling for throttle
             throttle_pct = (float)g.rc_3.control_in / 1000.0f;
-            throttle_pct = constrain(throttle_pct,0.0f,1.0f);
+            throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
 
             // if throttle is zero, update base x,y,z values
             if( throttle_pct == 0.0f ) {

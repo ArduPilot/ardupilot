@@ -407,7 +407,7 @@ get_heli_rate_yaw(int32_t target_rate)
 	ff = g.heli_yaw_ff*target_rate;
 
     output  = p + i + d + ff;
-    output = constrain(output, -4500, 4500);
+    output = constrain_float(output, -4500, 4500);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
@@ -745,7 +745,7 @@ static void update_throttle_cruise(int16_t throttle)
 static int16_t get_angle_boost(int16_t throttle)
 {
     float angle_boost_factor = cos_pitch_x * cos_roll_x;
-    angle_boost_factor = 1.0f - constrain(angle_boost_factor, .5f, 1.0f);
+    angle_boost_factor = 1.0f - constrain_float(angle_boost_factor, .5f, 1.0f);
     int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
 
     // to allow logging of angle boost
@@ -761,13 +761,13 @@ static int16_t get_angle_boost(int16_t throttle)
     float temp = cos_pitch_x * cos_roll_x;
     int16_t throttle_out;
 
-    temp = constrain(temp, 0.5f, 1.0f);
+    temp = constrain_float(temp, 0.5f, 1.0f);
 
     // reduce throttle if we go inverted
-    temp = constrain(9000-max(labs(ahrs.roll_sensor),labs(ahrs.pitch_sensor)), 0, 3000) / (3000 * temp);
+    temp = constrain_float(9000-max(labs(ahrs.roll_sensor),labs(ahrs.pitch_sensor)), 0, 3000) / (3000 * temp);
 
     // apply scale and constrain throttle
-    throttle_out = constrain((float)(throttle-g.throttle_min) * temp + g.throttle_min, g.throttle_min, 1000);
+    throttle_out = constrain_float((float)(throttle-g.throttle_min) * temp + g.throttle_min, g.throttle_min, 1000);
 
     // to allow logging of angle boost
     angle_boost = throttle_out - throttle;
@@ -833,7 +833,7 @@ get_throttle_accel(int16_t z_target_accel)
         z_accel_error = 0;
     } else {
         // calculate accel error and Filter with fc = 2 Hz
-        z_accel_error = z_accel_error + 0.11164f * (constrain(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
+        z_accel_error = z_accel_error + 0.11164f * (constrain_float(z_target_accel - z_accel_meas, -32000, 32000) - z_accel_error);
     }
     last_call_ms = now;
 
@@ -849,7 +849,7 @@ get_throttle_accel(int16_t z_target_accel)
 
     //
     // limit the rate
-    output =  constrain(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
+    output =  constrain_float(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
@@ -1020,7 +1020,7 @@ get_throttle_rate(float z_target_speed)
 
     // limit loiter & waypoint navigation from causing too much lean
     // To-Do: ensure that this limit is cleared when this throttle controller is not running so that loiter is not left constrained for Position mode
-    wp_nav.set_angle_limit(4500 - constrain((z_rate_error - 100) * 10, 0, 3500));
+    wp_nav.set_angle_limit(4500 - constrain_float((z_rate_error - 100) * 10, 0, 3500));
 
     // update throttle cruise
     // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration
@@ -1056,7 +1056,7 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
         desired_rate = 0;
     }
 
-    desired_rate = constrain(desired_rate, min_climb_rate, max_climb_rate);
+    desired_rate = constrain_float(desired_rate, min_climb_rate, max_climb_rate);
 
     // call rate based throttle controller which will update accel based throttle controller targets
     get_throttle_rate(desired_rate);
@@ -1073,10 +1073,10 @@ static void
 get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
     // limit target altitude change
-    controller_desired_alt += constrain(target_alt-controller_desired_alt, min_climb_rate*0.02f, max_climb_rate*0.02f);
+    controller_desired_alt += constrain_float(target_alt-controller_desired_alt, min_climb_rate*0.02f, max_climb_rate*0.02f);
 
     // do not let target altitude get too far from current altitude
-    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
+    controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 
     get_throttle_althold(controller_desired_alt, min_climb_rate-250, max_climb_rate+250);   // 250 is added to give head room to alt hold controller
 }
@@ -1090,7 +1090,7 @@ get_throttle_rate_stabilized(int16_t target_rate)
     controller_desired_alt += target_rate * 0.02f;
 
     // do not let target altitude get too far from current altitude
-    controller_desired_alt = constrain(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
+    controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 
     // update target altitude for reporting purposes
     set_target_alt_for_reporting(controller_desired_alt);
@@ -1150,11 +1150,11 @@ get_throttle_surface_tracking(int16_t target_rate)
     target_sonar_alt += target_rate * 0.02f;
 
     distance_error = (target_sonar_alt-sonar_alt);
-    sonar_induced_slew_rate = constrain(fabsf(g.sonar_gain * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
+    sonar_induced_slew_rate = constrain_float(fabsf(g.sonar_gain * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
-    target_sonar_alt = constrain(target_sonar_alt,sonar_alt-750,sonar_alt+750);
+    target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-750,sonar_alt+750);
     controller_desired_alt = current_loc.alt+(target_sonar_alt-sonar_alt);
 
     // update target altitude for reporting purposes
