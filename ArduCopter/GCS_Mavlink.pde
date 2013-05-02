@@ -1916,15 +1916,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         ins.set_accel(accels);
 
-        // approximate a barometer
-        const float Temp = 312;
-
-        float y = (packet.alt - 584000.0) / 29271.267;
-        y /= (Temp / 10.0) + 273.15;
-        y = 1.0/exp(y);
-        y *= 95446.0;
-
-        barometer.setHIL(Temp, y);
+        barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
 
  #if HIL_MODE == HIL_MODE_ATTITUDE
@@ -1948,38 +1940,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         pmTest1++;
         break;
     }
-/*
- * #if HIL_MODE != HIL_MODE_DISABLED
- *               // This is used both as a sensor and to pass the location
- *               // in HIL_ATTITUDE mode.
- *       case MAVLINK_MSG_ID_GPS_RAW:
- *               {
- *                       // decode
- *                       mavlink_gps_raw_t packet;
- *                       mavlink_msg_gps_raw_decode(msg, &packet);
- *
- *                       // set gps hil sensor
- *                       g_gps->setHIL(packet.usec/1000,packet.lat,packet.lon,packet.alt,
- *                       packet.v,packet.hdg,0,0);
- *                       break;
- *               }
- * #endif
- */
-#if HIL_MODE == HIL_MODE_SENSORS
-
-    case MAVLINK_MSG_ID_RAW_PRESSURE: //29
-    {
-        // decode
-        mavlink_raw_pressure_t packet;
-        mavlink_msg_raw_pressure_decode(msg, &packet);
-
-        // set pressure hil sensor
-        // TODO: check scaling
-        float temp = 70;
-        barometer.setHIL(temp,packet.press_diff1);
-        break;
-    }
-#endif // HIL_MODE
 
 #if CAMERA == ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
