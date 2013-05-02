@@ -365,7 +365,7 @@ public:
     /// scan(). This should only be used where we have not set() the
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
-    bool set_and_save_ifchanged(T v) {
+    bool set_and_save_ifchanged(const T &v) {
         if (v == _value) {
             return true;
         }
@@ -412,7 +412,7 @@ public:
 
     /// AP_ParamT types can implement AP_Param::cast_to_float
     ///
-    const float cast_to_float(void) const {
+    float cast_to_float(void) const {
         return (float)_value;
     }
 
@@ -444,13 +444,13 @@ public:
 
     /// Value setter
     ///
-    void        set(T v) {
+    void set(const T &v) {
         _value = v;
     }
 
     /// Combined set and save
     ///
-    bool        set_and_save(T v) {
+    bool set_and_save(const T &v) {
         set(v);
         return save();
     }
@@ -465,7 +465,7 @@ public:
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamV<T,PT>& operator        =(T v) {
+    AP_ParamV<T,PT>& operator=(const T &v) {
         _value = v;
         return *this;
     }
@@ -495,11 +495,11 @@ public:
     ///
     /// @note It would be nice to range-check i here, but then what would we return?
     ///
-    T & operator[](uint8_t i) {
+    const T & operator[](uint8_t i) {
         return _value[i];
     }
 
-    T & operator[](int8_t i) {
+    const T & operator[](int8_t i) {
         return _value[(uint8_t)i];
     }
 
@@ -519,7 +519,7 @@ public:
     ///
     /// @note   Attempts to set an index out of range are discarded.
     ///
-    void  set(uint8_t i, T v) {
+    void  set(uint8_t i, const T &v) {
         if (i < N) {
             _value[i] = v;
         }
