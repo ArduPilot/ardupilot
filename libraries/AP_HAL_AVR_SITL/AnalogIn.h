@@ -19,6 +19,8 @@ public:
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    void set_stop_pin(uint8_t pin) {}
+    void set_settle_time(uint16_t settle_time_ms) {}
 
 private:
     /* prescale scales the raw measurments for read()*/
