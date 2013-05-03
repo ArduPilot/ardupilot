@@ -366,7 +366,7 @@ static union {
 
         uint8_t low_battery        : 1; // 4    // Used to track if the battery is low - LED output flashes when the batt is low
         uint8_t pre_arm_check      : 1; // 5    // true if the radio and accel calibration have been performed
-        uint8_t armed              : 1; // 6
+        uint8_t logging_started    : 1; // 6    // true if dataflash logging has started
         uint8_t auto_armed         : 1; // 7    // stops auto missions from beginning until throttle is raised
 
         uint8_t failsafe_radio     : 1; // 8    // A status flag for the radio failsafe

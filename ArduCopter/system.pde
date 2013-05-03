@@ -176,9 +176,6 @@ static void init_ardupilot()
         do_erase_logs();
         gcs0.reset_cli_timeout();
     }
-    if (g.log_bitmask != 0) {
-		start_logging();
-    }
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME

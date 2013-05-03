@@ -87,10 +87,12 @@ static void init_arm_motors()
     // which calibrates the IMU
     static bool did_ground_start = false;
 
-    // disable failsafe because initialising everything takes a while
+    // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
+    
+    // start dataflash
+    start_logging();
 
-    //cliSerial->printf("\nARM\n");
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
@@ -144,7 +146,6 @@ static void init_arm_motors()
 
     // finally actually arm the motors
     motors.armed(true);
-    set_armed(true);
 
     // reenable failsafe
     failsafe_enable();
@@ -191,7 +192,6 @@ static void init_disarm_motors()
 #endif
 
     motors.armed(false);
-    set_armed(false);
 
     compass.save_offsets();
 
