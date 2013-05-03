@@ -14,19 +14,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-#include <AP_ADC_AnalogSource.h>
-# define SONAR_DEFAULT_PIN 127
-#else
-# define SONAR_DEFAULT_PIN 0
-#endif
+#define SONAR_DEFAULT_PIN 0
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_RangeFinder_analog::var_info[] PROGMEM = {
 
     // @Param: PIN
     // @DisplayName: Sonar pin
-    // @Description: Analog pin that sonar is connected to. Use pin number 127 for an APM1 Oilpan
+    // @Description: Analog pin that sonar is connected to. 
     AP_GROUPINFO("PIN",     0, AP_RangeFinder_analog, _pin, SONAR_DEFAULT_PIN),
 
     // @Param: SCALING
@@ -103,12 +98,6 @@ void AP_RangeFinder_analog::Init(void *adc)
    if (_source != NULL) {
 	  return;
    }
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-   if (_pin == 127) {
-	  _source = new AP_ADC_AnalogSource((AP_ADC*)adc, 7, 1.0);
-	  return;
-   }
-#endif
    _source = hal.analogin->channel(_pin);
    _source->set_stop_pin((uint8_t)_stop_pin);
    _source->set_settle_time((uint16_t)_settle_time_ms);
