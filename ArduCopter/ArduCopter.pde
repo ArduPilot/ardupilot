@@ -3,8 +3,9 @@
 #define THISFIRMWARE "ArduCopter V3.0.0-rc1"
 /*
  *  ArduCopter Version 3.0
- *  Lead author:	Jason Short
- *  Based on code and ideas from the Arducopter team: Randy Mackay, Pat Hickey, Jose Julio, Jani Hirvinen, Andrew Tridgell, Justin Beech, Adam Rivera, Jean-Louis Naudin, Roberto Navoni
+ *  Creator:        Jason Short
+ *  Lead Developer: Randy Mackay
+ *  Based on code and ideas from the Arducopter team: Pat Hickey, Jose Julio, Jani Hirvinen, Andrew Tridgell, Justin Beech, Adam Rivera, Jean-Louis Naudin, Roberto Navoni
  *  Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier, Robert Lefebvre, Marco Robustini
  *
  *  This firmware is free software; you can redistribute it and/or
@@ -26,7 +27,7 @@
  *  HappyKillmore		:Mavlink GCS
  *  Hein Hollander      :Octo Support
  *  Igor van Airde      :Control Law optimization
- *  Leonard Hall 		:Flight Dynamics, INAV throttle
+ *  Leonard Hall 		:Flight Dynamics, Throttle, Loiter and Navigation Controllers
  *  Jonathan Challinger :Inertial Navigation
  *  Jean-Louis Naudin   :Auto Landing
  *  Max Levine			:Tri Support, Graphics
@@ -35,7 +36,6 @@
  *  Jani Hiriven		:Testing feedback
  *  John Arne Birkeland	:PPM Encoder
  *  Jose Julio			:Stabilization Control laws
- *  Randy Mackay		:General development and release
  *  Marco Robustini		:Lead tester
  *  Michael Oborne		:Mission Planner GCS
  *  Mike Smith			:Libraries, Coding support
@@ -525,12 +525,12 @@ static uint8_t rtl_state;
 // by the DCM through a few simple equations. They are used throughout the code where cos and sin
 // would normally be used.
 // The cos values are defaulted to 1 to get a decent initial value for a level state
-static float cos_roll_x         = 1;
-static float cos_pitch_x        = 1;
-static float cos_yaw            = 1;
-static float sin_yaw            = 1;
-static float sin_roll           = 1;
-static float sin_pitch          = 1;
+static float cos_roll_x         = 1.0;
+static float cos_pitch_x        = 1.0;
+static float cos_yaw            = 1.0;
+static float sin_yaw;
+static float sin_roll;
+static float sin_pitch;
 
 ////////////////////////////////////////////////////////////////////////////////
 // SIMPLE Mode

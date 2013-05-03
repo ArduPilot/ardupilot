@@ -56,7 +56,22 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
     _pid_pos_lon(pid_pos_lon),
     _pid_rate_lat(pid_rate_lat),
     _pid_rate_lon(pid_rate_lon),
-    _lean_angle_max(MAX_LEAN_ANGLE)
+    _loiter_last_update(0),
+    _wpnav_last_update(0),
+    _cos_yaw(1.0),
+    _sin_yaw(0.0),
+    _cos_pitch(1.0),
+    _desired_roll(0),
+    _desired_pitch(0),
+    _target(0,0,0),
+    _pilot_vel_forward_cms(0),
+    _pilot_vel_right_cms(0),
+    _target_vel(0,0,0),
+    _vel_last(0,0,0),
+    _lean_angle_max(MAX_LEAN_ANGLE),
+    dist_error(0,0),
+    desired_vel(0,0),
+    desired_accel(0,0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -220,18 +235,23 @@ void AC_WPNav::set_destination(const Vector3f& destination)
 /// set_origin_and_destination - set origin and destination using lat/lon coordinates
 void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f& destination)
 {
+    // store origin and destination locations
     _origin = origin;
     _destination = destination;
     Vector3f pos_delta = _destination - _origin;
 
-    bool climb = pos_delta.z >= 0;  // climb vs descending lead to different leash lengths because speed_up_cms and speed_down_cms can be different
+    // calculate leash lengths 
+    bool climb = pos_delta.z >= 0;  // climbing vs descending leads to different leash lengths because speed_up_cms and speed_down_cms can be different
     calculate_leash_length(climb);  // update leash lengths and _vert_track_scale
 
+    // scale up z-axis position delta (i.e. distance) to make later leash length calculations simpler
     pos_delta.z = pos_delta.z * _vert_track_scale;
     _track_length = pos_delta.length();
     _pos_delta_unit = pos_delta/_track_length;
 
+    // initialise intermediate point to the origin
     _track_desired = 0;
+    _target = origin;
     _reached_destination = false;
 }
 
