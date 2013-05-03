@@ -16,6 +16,10 @@ public:
     void            set_pin(uint8_t);
     float	    voltage_average();
 
+    // stop pins not implemented on ADC yet
+    void set_stop_pin(uint8_t p) {}
+    void set_settle_time(uint16_t settle_time_ms) {}
+
 private:
     AP_ADC *        _adc;
     uint8_t         _ch;
