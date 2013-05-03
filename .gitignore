@@ -51,3 +51,4 @@ Make.dep
 *.tlog
 
 .DS_Store
+.vagrant
