@@ -76,7 +76,7 @@ class MultiCopter(Aircraft):
     '''a MultiCopter'''
     def __init__(self, frame='+',
                  hover_throttle=0.45,
-                 terminal_velocity=20.0,
+                 terminal_velocity=15.0,
                  frame_height=0.1,
                  mass=1.5):
         Aircraft.__init__(self)
