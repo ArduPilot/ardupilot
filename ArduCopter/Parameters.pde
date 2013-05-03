@@ -394,7 +394,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FRAME
     // @DisplayName: Frame Orientation (+, X or V)
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V
+    // @Values: 0:Plus, 1:X, 2:V, 3:H
     // @User: Standard
     // @Range: 0 32767
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
