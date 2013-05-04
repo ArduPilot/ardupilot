@@ -29,7 +29,7 @@ px4-upload: px4
 	$(PX4_MAKE) upload
 
 px4-archives-clean:
-	/bin/rm -rf $(PX4_ROOT)/Archives
+	$(v) /bin/rm -rf $(PX4_ROOT)/Archives
 
 px4-io: $(PX4_ROOT)/Archives/px4io.export
 	$(v) make -C $(PX4_ROOT) px4io_default
@@ -42,6 +42,8 @@ $(PX4_ROOT)/Archives/px4fmu.export:
 
 $(PX4_ROOT)/Archives/px4io.export:
 	make -C $(PX4_ROOT) archives
+
+px4-archives: $(PX4_ROOT)/Archives/px4fmu.export
 
 else
 
