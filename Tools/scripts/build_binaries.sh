@@ -103,7 +103,7 @@ build_arduplane() {
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
-	    copyit $PX4_ROOT/Images/px4fmu.px4 $ddir $tag
+	    copyit ArduPlane.px4 $ddir $tag
 	}
     }
     popd
@@ -134,7 +134,7 @@ build_arducopter() {
 	    skip_build $tag $ddir && continue
 	    make px4-clean || continue
 	    make px4-$f || continue
-	    copyit $PX4_ROOT/Images/px4fmu.px4 $ddir $tag
+	    copyit ArduCopter.px4 $ddir $tag
 	done
     }
     popd
@@ -162,7 +162,7 @@ build_rover() {
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
-	    copyit $PX4_ROOT/Images/px4fmu.px4 $binaries/Rover/$hdate/PX4 $tag
+	    copyit APMRover2.px4 $binaries/Rover/$hdate/PX4 $tag
 	}
     }
     popd
@@ -181,7 +181,7 @@ build_px4io() {
 	    make clean &&
 	    make configure_px4io &&
 	    make && 
-	    copyit $PX4_ROOT/Images/px4io.bin $ddir $tag &&
+	    copyit px4io.bin $ddir $tag &&
 	    make configure_px4fmu
 	}
 	git checkout master
