@@ -1,0 +1,52 @@
+Delta-wing mixer for PX4FMU
+===========================
+
+Designed for Bormatec Camflyer Q
+
+This file defines mixers suitable for controlling a delta wing aircraft using
+PX4FMU. The configuration assumes the elevon servos are connected to PX4FMU
+servo outputs 0 and 1 and the motor speed control to output 3. Output 2 is
+assumed to be unused.
+
+Inputs to the mixer come from channel group 0 (vehicle attitude), channels 0
+(roll), 1 (pitch) and 3 (thrust).
+
+See the README for more information on the scaler format.
+
+Elevon mixers
+-------------
+Three scalers total (output, roll, pitch).
+
+On the assumption that the two elevon servos are physically reversed, the pitch
+input is inverted between the two servos.
+
+The scaling factor for roll inputs is adjusted to implement differential travel
+for the elevons.
+
+M: 2
+O:      10000  10000      0 -10000  10000
+S: 0 0  -5000  -8000      0 -10000  10000
+S: 0 1   8000   8000      0 -10000  10000
+
+M: 2
+O:      10000  10000      0 -10000  10000
+S: 0 0  -8000  -5000      0 -10000  10000
+S: 0 1  -8000  -8000      0 -10000  10000
+
+Output 2
+--------
+This mixer is empty.
+
+Z:
+
+Motor speed mixer
+-----------------
+Two scalers total (output, thrust).
+
+This mixer generates a full-range output (-1 to 1) from an input in the (0 - 1)
+range.  Inputs below zero are treated as zero.
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 3      0  20000 -10000 -10000  10000
+
