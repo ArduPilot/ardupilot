@@ -256,7 +256,7 @@ void SITL_State::_timer_handler(int signum)
                     _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
                     _sitl->state.airspeed);
         _update_barometer(_sitl->state.altitude);
-        _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.heading);
+        _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
     }
 
 	// trigger all APM timers. We do this last as it can re-enable
