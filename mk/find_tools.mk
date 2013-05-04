@@ -54,7 +54,7 @@ GDB = $($(TOOLCHAIN)_GDB)
 OBJCOPY = $($(TOOLCHAIN)_OBJCOPY)
 
 ifeq ($(CXX),)
-$(error ERROR: cannot find the compiler tools anywhere on the path $(TOOLPATH))
+$(error ERROR: cannot find the compiler tools for $(TOOLCHAIN) anywhere on the path $(TOOLPATH))
 endif
 
 # Find awk

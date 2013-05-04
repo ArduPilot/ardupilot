@@ -83,12 +83,6 @@ print-%:
 # fetch dependency info from a previous build if any of it exists
 -include $(ALLDEPS)
 
-# common header for rules, prints what is being built
-define RULEHDR
-	@echo %% $(subst $(BUILDROOT)/,,$@)
-	@mkdir -p $(dir $@)
-endef
-
 # Link the final object
 $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
 	@echo "Building $(SKETCHELF)"

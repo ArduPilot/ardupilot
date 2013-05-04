@@ -2,24 +2,31 @@
 
 ifneq ($(PX4_ROOT),)
 
-# install rc.APM from the AP_HAL_PX4/scripts directory as /etc/init.d/rc.APM
-HAL_PX4_DIR = $(realpath $(MK_DIR)/../libraries/AP_HAL_PX4)
-PX4_EXTERNAL_SCRIPTS = $(HAL_PX4_DIR)/scripts/rc.APM~init.d/rc.APM
-
-# we use CURDIR instead of PWD to avoid a problem with MINGW32 on Windows
-PX4_EXTERNAL = EXTERNAL_APPS=$(CURDIR) EXTERNAL_SCRIPTS=$(PX4_EXTERNAL_SCRIPTS)
-PX4_MAKE = make -C $(PX4_ROOT) $(PX4_EXTERNAL) CONFIG_APM=y EXTRAFLAGS=$(EXTRAFLAGS)
+PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/makefiles/firmware.mk CONFIG_FILE=$(PWD)/$(PX4_CONFIG_FILE) EXTRAFLAGS="$(EXTRAFLAGS)" APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
 
 
-px4:
-	$(PX4_MAKE)
+PX4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu_APM.mk
+PX4SRCS = $(SKETCHCPP) $(SKETCHLIBSRCS)
+EXTRAFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main
+
+$(BUILDROOT)/module.mk:
+	echo "# Auto-generated file - do not edit" > $@
+	echo "MODULE_COMMAND = ArduPilot" >> $@
+	echo "SRCS = $(SKETCH).cpp $(SKETCHLIBSRCS)" >> $@
+	echo "MODULE_STACKSIZE = 4096" >> $@
+	echo "MAXOPTIMIZATION  = -Os" >> $@
+
+px4: $(SKETCHCPP) $(BUILDROOT)/module.mk
+	$(PX4_MAKE) firmware
 
 px4-clean: clean
-	$(PX4_MAKE) clean
-	$(PX4_MAKE) configure_px4fmu
+	/bin/rm -rf $(PX4_ROOT)/makefiles/build
 
-px4-upload:
-	$(PX4_MAKE) upload
+px4-upload: $(SKETCHCPP) $(BUILDROOT)/module.mk
+	$(PX4_MAKE) firmware upload
+
+px4-archives:
+	$(PX4_MAKE) archives
 
 else
 
