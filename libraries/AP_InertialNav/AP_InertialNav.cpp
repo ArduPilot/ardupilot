@@ -164,7 +164,7 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     }
 
     // calculate distance from base location
-    x = (float)(lat - _base_lat) * AP_INERTIALNAV_LATLON_TO_CM;
+    x = (float)(lat - _base_lat) * LATLON_TO_CM;
     y = (float)(lon - _base_lon) * _lon_to_m_scaling;
 
     // ublox gps positions are delayed by 400ms
@@ -190,7 +190,7 @@ int32_t AP_InertialNav::get_latitude() const
         return 0;
     }
 
-    return _base_lat + (int32_t)((_position_base.x + _position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
+    return _base_lat + (int32_t)((_position_base.x + _position_correction.x)/LATLON_TO_CM);
 }
 
 // get accel based longitude
@@ -213,7 +213,7 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
 
     // set longitude->meters scaling
     // this is used to offset the shrinking longitude as we go towards the poles
-    _lon_to_m_scaling = cosf((fabsf((float)lat)*1.0e-7f) * 0.0174532925f) * AP_INERTIALNAV_LATLON_TO_CM;
+    _lon_to_m_scaling = cosf((fabsf((float)lat)*1.0e-7f) * DEG_TO_RAD) * LATLON_TO_CM;
 
     // reset corrections to base position to zero
     _position_base.x = 0;
@@ -237,7 +237,7 @@ float AP_InertialNav::get_latitude_diff() const
         return 0;
     }
 
-    return ((_position_base.x+_position_correction.x)/AP_INERTIALNAV_LATLON_TO_CM);
+    return ((_position_base.x+_position_correction.x)/LATLON_TO_CM);
 }
 
 // get accel based longitude
