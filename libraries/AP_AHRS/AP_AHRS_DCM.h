@@ -14,7 +14,10 @@ class AP_AHRS_DCM : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_DCM(AP_InertialSensor *ins, GPS *&gps) : AP_AHRS(ins, gps)
+    AP_AHRS_DCM(AP_InertialSensor *ins, GPS *&gps) :
+        AP_AHRS(ins, gps),
+        _last_declination(0),
+        _mag_earth(1,0,0)
     {
         _dcm_matrix.identity();
 
@@ -111,8 +114,9 @@ private:
     float _ra_deltat;
     uint32_t _ra_sum_start;
 
-    // current drift error in earth frame
-    Vector3f _drift_error_earth;
+    // the earths magnetic field
+    float _last_declination;
+    Vector3f _mag_earth;
 
     // whether we have GPS lock
     bool _have_gps_lock;

@@ -244,12 +244,16 @@ AP_AHRS_DCM::yaw_error_compass(void)
         return 0.0;
     }
 
-    // get the earths magnetic field (only X and Y components needed)
-    Vector3f mag_earth = Vector3f(cosf(_compass->get_declination()),
-                                  sinf(_compass->get_declination()), 0);
+    // update vector holding earths magnetic field (if required)
+    if( _last_declination != _compass->get_declination() ) {
+        _last_declination = _compass->get_declination();
+        _mag_earth.x = cosf(_last_declination);
+        _mag_earth.y = sinf(_last_declination);
+        _mag_earth.z = 0;
+    }
 
     // calculate the error term in earth frame
-    Vector3f error = rb % mag_earth;
+    Vector3f error = rb % _mag_earth;
 
     return error.z;
 }
