@@ -74,10 +74,10 @@ static void fence_send_mavlink_status(mavlink_channel_t chan)
         // traslate fence library breach types to mavlink breach types
         uint8_t mavlink_breach_type = FENCE_BREACH_NONE;
         uint8_t breaches = fence.get_breaches();
-        if (breaches & AC_FENCE_TYPE_ALT_MAX != 0) {
+        if ((breaches & AC_FENCE_TYPE_ALT_MAX) != 0) {
             mavlink_breach_type = FENCE_BREACH_MAXALT;
         }
-        if (breaches & AC_FENCE_TYPE_CIRCLE != 0) {
+        if ((breaches & AC_FENCE_TYPE_CIRCLE) != 0) {
             mavlink_breach_type = FENCE_BREACH_BOUNDARY;
         }
 
