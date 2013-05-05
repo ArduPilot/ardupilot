@@ -211,9 +211,11 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
     _base_lon = lon;
     _base_lat = lat;
 
-    // set longitude->meters scaling
-    // this is used to offset the shrinking longitude as we go towards the poles
-    _lon_to_m_scaling = cosf((fabsf((float)lat)*1.0e-7f) * DEG_TO_RAD) * LATLON_TO_CM;
+    // set longitude to meters scaling to offset the shrinking longitude as we go towards the poles
+    Location temp_loc;
+    temp_loc.lat = lat;
+    temp_loc.lng = lon;
+    _lon_to_m_scaling = longitude_scale(&temp_loc) * LATLON_TO_CM;
 
     // reset corrections to base position to zero
     _position_base.x = 0;
