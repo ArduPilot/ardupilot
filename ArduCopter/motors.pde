@@ -144,6 +144,9 @@ static void init_arm_motors()
     ahrs2.set_fast_gains(false);
 #endif
 
+    // enable gps velocity based centrefugal force compensation
+    ahrs.gps_gain.load();
+
     // finally actually arm the motors
     motors.armed(true);
 
@@ -209,6 +212,9 @@ static void init_disarm_motors()
 #if SECONDARY_DMP_ENABLED == ENABLED
     ahrs2.set_fast_gains(true);
 #endif
+
+    // disable gps velocity based centrefugal force compensation
+    ahrs.gps_gain.set(0);
 }
 
 /*****************************************
