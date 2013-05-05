@@ -415,6 +415,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Matrix3f temp_dcm = _dcm_matrix;
     Vector3f velocity;
     uint32_t last_correction_time;
+    bool gps_based_velocity = false;
 
     // perform yaw drift correction if we have a new yaw reference
     // vector
@@ -433,7 +434,9 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // we have integrated over
     _ra_deltat += deltat;
 
-    if (!have_gps()) {
+    if (!have_gps() || 
+        _gps->status() < GPS::GPS_OK_FIX_3D || 
+        _gps->num_sats < _gps_minsats) {
         // no GPS, or not a good lock. From experience we need at
         // least 6 satellites to get a really reliable velocity number
         // from the GPS.
@@ -492,6 +495,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
         Vector3f airspeed = velocity - _wind;
         airspeed.z = 0;
         _last_airspeed = airspeed.length();
+
+        gps_based_velocity = true;
     }
 
     // see if this is our first time through - in which case we
@@ -505,16 +510,20 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // equation 9: get the corrected acceleration vector in earth frame. Units
     // are m/s/s
     Vector3f GA_e;
-    float v_scale = gps_gain.get()/(_ra_deltat*GRAVITY_MSS);
-    Vector3f vdelta = (velocity - _last_velocity) * v_scale;
-    // limit vertical acceleration correction to 0.5 gravities. The
-    // barometer sometimes gives crazy acceleration changes. 
-    vdelta.z = constrain_float(vdelta.z, -0.5f, 0.5f);
-    GA_e = Vector3f(0, 0, -1.0f) + vdelta;
-    GA_e.normalize();
-    if (GA_e.is_inf()) {
-        // wait for some non-zero acceleration information
-        return;
+    GA_e = Vector3f(0, 0, -1.0f);
+    
+    if (gps_based_velocity || _fly_forward) {
+        float v_scale = gps_gain.get()/(_ra_deltat*GRAVITY_MSS);
+        Vector3f vdelta = (velocity - _last_velocity) * v_scale;
+        // limit vertical acceleration correction to 0.5 gravities. The
+        // barometer sometimes gives crazy acceleration changes. 
+        vdelta.z = constrain_float(vdelta.z, -0.5f, 0.5f);
+        GA_e += vdelta;
+        GA_e.normalize();
+        if (GA_e.is_inf()) {
+            // wait for some non-zero acceleration information
+            return;
+        }
     }
 
     // calculate the error term in earth frame.

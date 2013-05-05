@@ -169,6 +169,7 @@ public:
     AP_Int8 _gps_use;
     AP_Int8 _wind_max;
     AP_Int8 _board_orientation;
+    AP_Int8 _gps_minsats;
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
