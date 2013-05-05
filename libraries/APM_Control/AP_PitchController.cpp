@@ -15,13 +15,65 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
-	AP_GROUPINFO("OMEGA",        0, AP_PitchController, _kp_angle,       1.0),
+
+	// @Param: OMEGA
+	// @DisplayName: Pitch rate gain
+	// @Description: This is the gain from pitch angle error to demanded pitch rate. It controls the time constant from demanded to achieved pitch angle. For example if a time constant from demanded to achieved pitch of 0.5 sec was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is a good default and will work with nearly all models. Advanced users may want to increase this to obtain a faster response.
+	// @Range: 0.8 2
+	// @Increment: 0.1
+	// @User: Advanced
+	AP_GROUPINFO("OMEGA",      0, AP_PitchController, _kp_angle,       1.0),
+
+	// @Param: K_P
+	// @DisplayName: Pitch demand gain
+	// @Description: This is the gain from demanded pitch rate to demanded elevator. Provided CTL_PTCH_OMEGA is set to 1.0, then this gain works the same way as the P term in the old PID (PTCH2SRV_P) and can be set to the same value.
+	// @Range: 0.1 2
+	// @Increment: 0.1
+	// @User: User
 	AP_GROUPINFO("K_P",        1, AP_PitchController, _kp_ff,          0.4),
+
+	// @Param: K_D
+	// @DisplayName: Pitch derivative gain
+	// @Description: This is the gain from pitch rate error to demanded elevator. This adjusts the damping of the pitch control loop. It has the same effect as the D term in the old PID (PTCH2SRV_D) but without the large spikes in servo demands. This will be set to 0 as a default. Some airframes such as flying wings that have poor pitch damping can benefit from a small value of up to 0.1 on this gain term. This should be increased in 0.01 increments as to high a value can lead to a high frequency pitch oscillation that could overstress the airframe.
+	// @Range: 0 0.1
+	// @Increment: 0.01
+	// @User: User
 	AP_GROUPINFO("K_D",        2, AP_PitchController, _kp_rate,        0.0),
+
+	// @Param: K_I
+	// @DisplayName: Pitch integration gain
+	// @Description: This is the gain for integration of the pitch rate error. It has essentially the same effect as the I term in the old PID (PTCH2SRV_I). This can be set to 0 as a default, however users can increment this to make the pitch angle tracking more accurate.
+	// @Range: 0 0.2
+	// @Increment: 0.01
+	// @User: User
 	AP_GROUPINFO("K_I",        3, AP_PitchController, _ki_rate,        0.0),
-	AP_GROUPINFO("RMAX_U",    4, AP_PitchController, _max_rate_pos,   0.0),
-	AP_GROUPINFO("RMAX_D",    5, AP_PitchController, _max_rate_neg,   0.0),
-	AP_GROUPINFO("K_RLL",    6, AP_PitchController, _roll_ff,        1.0),
+
+	// @Param: RMAX_U
+	// @DisplayName: Pitch up max rate
+	// @Description: This sets the maximum nose up pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
+	// @Range: 0 100
+	// @Units: degrees/second
+	// @Increment: 1
+	// @User: User
+	AP_GROUPINFO("RMAX_U",     4, AP_PitchController, _max_rate_pos,   0.0),
+
+	// @Param: RMAX_D
+	// @DisplayName: Pitch down max rate
+	// @Description: This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
+	// @Range: 0 100
+	// @Units: degrees/second
+	// @Increment: 1
+	// @User: User
+	AP_GROUPINFO("RMAX_D",     5, AP_PitchController, _max_rate_neg,   0.0),
+
+	// @Param: K_RLL
+	// @DisplayName: Pitch/roll height control
+	// @Description: This is the gain term that is applied to the pitch rate offset calculated as required to keep the nose level during turns. The default value is 1 which will work for all models. Advanced users can use it to correct for height variation in turns. If height is lost initially in turns this can be increased in small increments of 0.05 to compensate. If height is gained initially in turns then it can be decreased.
+	// @Range: 0.5 2
+	// @Increment: 0.05
+	// @User: User
+	AP_GROUPINFO("K_RLL",      6, AP_PitchController, _roll_ff,        1.0),
+
 	AP_GROUPEND
 };
 
