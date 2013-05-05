@@ -122,6 +122,9 @@ public:
     // multiplication of transpose by a vector
     Vector3<T>                  mul_transpose(const Vector3<T> &v) const;
 
+    // multiplication by a vector giving a Vector2 result (XY components)
+    Vector2<T> mulXY(const Vector3<T> &v) const;
+
     // extract x column
     Vector3<T>                  colx(void) const
     {

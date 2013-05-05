@@ -203,6 +203,14 @@ Vector3<T> Matrix3<T>::operator *(const Vector3<T> &v) const
                       c.x * v.x + c.y * v.y + c.z * v.z);
 }
 
+// multiplication by a vector, extracting only the xy components
+template <typename T>
+Vector2<T> Matrix3<T>::mulXY(const Vector3<T> &v) const
+{
+    return Vector2<T>(a.x * v.x + a.y * v.y + a.z * v.z,
+                      b.x * v.x + b.y * v.y + b.z * v.z);
+}
+
 // multiplication of transpose by a vector
 template <typename T>
 Vector3<T> Matrix3<T>::mul_transpose(const Vector3<T> &v) const
@@ -255,3 +263,4 @@ template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) cons
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
 template Matrix3<float> Matrix3<float>::transposed(void) const;
+template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
