@@ -105,17 +105,18 @@ static void stabilize_pitch(float speed_scaler)
                                                                     g.flybywire_airspeed_min, g.flybywire_airspeed_max);    
         break;
 
-    default:
+    default: {
         int32_t tempcalc = nav_pitch_cd +
             fabsf(ahrs.roll_sensor * g.kff_pitch_compensation) +
             (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
             (ahrs.pitch_sensor - g.pitch_trim_cd);
-        if (inverted_flight) {
+        if (abs(ahrs.roll_sensor) > 9000) {
             // when flying upside down the elevator control is inverted
             tempcalc = -tempcalc;
         }
         g.channel_pitch.servo_out = g.pidServoPitch.get_pid_4500(tempcalc, speed_scaler);
         break;
+    }
     }
 }
 
