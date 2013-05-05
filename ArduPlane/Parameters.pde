@@ -691,8 +691,16 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
 	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
 
+    // @Group: CTL_RLL_
+    // @Path: ../libraries/APM_Control/AP_RollController.cpp
 	GGROUP(rollController,          "CTL_RLL_",   AP_RollController),
+
+    // @Group: CTL_PTCH_
+    // @Path: ../libraries/APM_Control/AP_PitchController.cpp
 	GGROUP(pitchController,         "CTL_PTCH_",  AP_PitchController),
+
+    // @Group: CTL_YAW_
+    // @Path: ../libraries/APM_Control/AP_YawController.cpp
 	GGROUP(yawController,           "CTL_YAW_",   AP_YawController),
 
 	// variables not in the g class which contain EEPROM saved variables
