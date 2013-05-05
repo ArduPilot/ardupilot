@@ -17,7 +17,7 @@ public:
     AP_AHRS_DCM(AP_InertialSensor *ins, GPS *&gps) :
         AP_AHRS(ins, gps),
         _last_declination(0),
-        _mag_earth(1,0,0)
+        _mag_earth(1,0)
     {
         _dcm_matrix.identity();
 
@@ -116,7 +116,7 @@ private:
 
     // the earths magnetic field
     float _last_declination;
-    Vector3f _mag_earth;
+    Vector2f _mag_earth;
 
     // whether we have GPS lock
     bool _have_gps_lock;

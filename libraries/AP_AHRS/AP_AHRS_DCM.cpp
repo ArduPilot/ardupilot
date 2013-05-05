@@ -236,7 +236,7 @@ AP_AHRS_DCM::yaw_error_compass(void)
 {
     Vector3f mag = Vector3f(_compass->mag_x, _compass->mag_y, _compass->mag_z);
     // get the mag vector in the earth frame
-    Vector3f rb = _dcm_matrix * mag;
+    Vector2f rb = _dcm_matrix.mulXY(mag);
 
     rb.normalize();
     if (rb.is_inf()) {
@@ -249,13 +249,11 @@ AP_AHRS_DCM::yaw_error_compass(void)
         _last_declination = _compass->get_declination();
         _mag_earth.x = cosf(_last_declination);
         _mag_earth.y = sinf(_last_declination);
-        _mag_earth.z = 0;
     }
 
     // calculate the error term in earth frame
-    Vector3f error = rb % _mag_earth;
-
-    return error.z;
+    // calculate the Z component of the cross product of rb and _mag_earth
+    return rb % _mag_earth;
 }
 
 // produce a yaw error value using the GPS. The returned value is proportional
@@ -370,11 +368,8 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         return;
     }
 
-    // the yaw error is a vector in earth frame
-    Vector3f error = Vector3f(0,0, yaw_error);
-
     // convert the error vector to body frame
-    error = _dcm_matrix.mul_transpose(error);
+    float error_z = _dcm_matrix.c.z * yaw_error;
 
     // the spin rate changes the P gain, and disables the
     // integration at higher rates
@@ -385,7 +380,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     // that depends on the spin rate. See the fastRotations.pdf
     // paper from Bill Premerlani
 
-    _omega_yaw_P.z = error.z * _P_gain(spin_rate) * _kp_yaw;
+    _omega_yaw_P.z = error_z * _P_gain(spin_rate) * _kp_yaw;
     if (_fast_ground_gains) {
         _omega_yaw_P.z *= 8;
     }
@@ -394,7 +389,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     // for more than 2 seconds
     if (yaw_deltat < 2.0f && spin_rate < ToRad(SPIN_RATE_LIMIT)) {
         // also add to the I term
-        _omega_I_sum.z += error.z * _ki_yaw * yaw_deltat;
+        _omega_I_sum.z += error_z * _ki_yaw * yaw_deltat;
     }
 
     _error_yaw_sum += fabsf(yaw_error);
@@ -419,7 +414,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Matrix3f temp_dcm = _dcm_matrix;
     Vector3f velocity;
     uint32_t last_correction_time;
-    bool gps_based_velocity = false;
 
     // perform yaw drift correction if we have a new yaw reference
     // vector
@@ -499,8 +493,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
         Vector3f airspeed = velocity - _wind;
         airspeed.z = 0;
         _last_airspeed = airspeed.length();
-
-        gps_based_velocity = true;
     }
 
     // see if this is our first time through - in which case we
@@ -516,7 +508,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Vector3f GA_e;
     GA_e = Vector3f(0, 0, -1.0f);
     
-    if (gps_based_velocity || _fly_forward) {
+    if (_have_gps_lock || _fly_forward) {
         float v_scale = gps_gain.get()/(_ra_deltat*GRAVITY_MSS);
         Vector3f vdelta = (velocity - _last_velocity) * v_scale;
         // limit vertical acceleration correction to 0.5 gravities. The
