@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Param: OMEGA
 	// @DisplayName: Roll rate gain
 	// @Description: This is the gain from pitch angle error to demanded pitch rate. It controls the time constant from demanded to achieved pitch angle. For example if a time constant from demanded to achieved pitch of 0.5 sec was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is a good default and will work with nearly all models. Advanced users may want to increase this to obtain a faster response.
-	// @Range: 0.8 2
+	// @Range: 0.8 2.5
 	// @Increment: 0.1
 	// @User: Advanced
 	AP_GROUPINFO("OMEGA",  0, AP_RollController, _kp_angle,           1.0),
