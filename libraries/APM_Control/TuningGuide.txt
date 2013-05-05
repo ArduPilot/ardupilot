@@ -1,7 +1,7 @@
 Tuning Overview
 ---------------
-x
-The following instruction assume that
+
+The following instruction assume that:
 
 a) your model is trimmed correctly in manual mode
 b) you have done your radio calibration
