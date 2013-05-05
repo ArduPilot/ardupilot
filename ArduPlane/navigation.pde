@@ -119,9 +119,9 @@ static void calc_gndspeed_undershoot()
 	// This prevents flyaway if wind takes plane backwards
     if (g_gps && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
 	    Vector2f gndVel = ahrs.groundspeed_vector();
-		Matrix3f rotMat = ahrs.get_dcm_matrix();
+		const Matrix3f &rotMat = ahrs.get_dcm_matrix();
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
-		yawVect = (yawVect).normalized();
+		yawVect.normalize();
 		float gndSpdFwd = yawVect * gndVel;
         groundspeed_undershoot = (g.min_gndspeed_cm > 0) ? (g.min_gndspeed_cm - gndSpdFwd*100) : 0;
     }
