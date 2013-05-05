@@ -98,18 +98,19 @@ static void stabilize_roll(float speed_scaler)
  */
 static void stabilize_pitch(float speed_scaler)
 {
+    int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + g.channel_throttle.servo_out * g.kff_throttle_to_pitch;
     switch (g.att_controller) {
-    case ATT_CONTROL_APMCONTROL:
-        g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, 
+    case ATT_CONTROL_APMCONTROL: {
+        g.channel_pitch.servo_out = g.pitchController.get_servo_out(demanded_pitch, 
+                                                                    speed_scaler, 
                                                                     control_mode == STABILIZE, 
                                                                     g.flybywire_airspeed_min, g.flybywire_airspeed_max);    
         break;
+    }
 
     default: {
-        int32_t tempcalc = nav_pitch_cd +
-            fabsf(ahrs.roll_sensor * g.kff_pitch_compensation) +
-            (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
-            (ahrs.pitch_sensor - g.pitch_trim_cd);
+        int32_t tempcalc = demanded_pitch - ahrs.pitch_sensor;
+        tempcalc += fabsf(ahrs.roll_sensor * g.kff_pitch_compensation);
         if (abs(ahrs.roll_sensor) > 9000) {
             // when flying upside down the elevator control is inverted
             tempcalc = -tempcalc;
