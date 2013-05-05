@@ -16,11 +16,47 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
+	// @Param: OMEGA
+	// @DisplayName: Roll rate gain
+	// @Description: This is the gain from pitch angle error to demanded pitch rate. It controls the time constant from demanded to achieved pitch angle. For example if a time constant from demanded to achieved pitch of 0.5 sec was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is a good default and will work with nearly all models. Advanced users may want to increase this to obtain a faster response.
+	// @Range: 0.8 2
+	// @Increment: 0.1
+	// @User: Advanced
 	AP_GROUPINFO("OMEGA",  0, AP_RollController, _kp_angle,           1.0),
+
+	// @Param: K_P
+	// @DisplayName: Roll demand gain
+	// @Description: This is the gain from demanded roll rate to demanded aileron. Provided CTL_RLL_OMEGA is set to 1.0, then this gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.
+	// @Range: 0.1 2
+	// @Increment: 0.1
+	// @User: User
 	AP_GROUPINFO("K_P",    1, AP_RollController, _kp_ff,              0.4),
+
+	// @Param: K_D
+	// @DisplayName: Roll derivative gain
+	// @Description: This is the gain from pitch rate error to demanded elevator. This adjusts the damping of the roll control loop. It has the same effect as the D term in the old PID (RLL2SRV_D) but without the large spikes in servo demands. This will be set to 0 as a default. This should be increased in 0.01 increments as too high a value can lead to high frequency roll oscillation.
+	// @Range: 0 0.1
+	// @Increment: 0.01
+	// @User: User
 	AP_GROUPINFO("K_D",    2, AP_RollController, _kp_rate,            0.0),
+
+	// @Param: K_I
+	// @DisplayName: Roll integration gain
+	// @Description: This is the gain for integration of the roll rate error. It has essentially the same effect as the I term in the old PID (RLL2SRV_I). This can be set to 0 as a default, however users can increment this to enable the controller trim out any roll trim offset.
+	// @Range: 0 0.2
+	// @Increment: 0.01
+	// @User: User
 	AP_GROUPINFO("K_I",    3, AP_RollController, _ki_rate,            0.0),
+
+	// @Param: RMAX
+	// @DisplayName: Roll max rate
+	// @Description: This sets the maximum roll rate that the controller will demand (degrees/sec). Setting it to zero disables the limit. If this value is set too low, then the roll can't keep up with the navigation demands and the plane will start weaving. If it is set too high (or disabled by setting to zero) then ailerons will get large inputs at the start of turns. A limit of 60 degrees/sec is a good default.
+	// @Range: 0 180
+	// @Units: degrees/second
+	// @Increment: 1
+	// @User: User
 	AP_GROUPINFO("RMAX",   4, AP_RollController, _max_rate,           60),
+
 	AP_GROUPEND
 };
 
