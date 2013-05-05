@@ -97,7 +97,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	_last_t = tnow;
 	
 	if(_ahrs == NULL) return 0;
-	float delta_time    = (float)dt / 1000.0f;
+	float delta_time    = (float)dt * 0.001f;
 	
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
@@ -105,15 +105,27 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	float aspeed;
 	float rate_offset;
 	float bank_angle = _ahrs->roll;
+	bool inverted = false;
+
 	// limit bank angle between +- 80 deg if right way up
-	if (fabsf(bank_angle) < 1.5707964f)	{
-	    bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
+	if (fabsf(bank_angle) < radians(90))	{
+	    bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
+	} else {
+		inverted = true;
+		if (bank_angle > 0.0f) {
+			bank_angle = constrain_float(bank_angle,radians(100),radians(180));
+		} else {
+			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
+		}
 	}
 	if (!_ahrs->airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
 	}
-    rate_offset = fabsf(ToDeg((9.807f / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;     
+    rate_offset = fabsf(ToDeg((GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+	if (inverted) {
+		rate_offset = -rate_offset;
+	}
 	
 	//Calculate pitch angle error in centi-degrees
 	int32_t angle_err = angle - _ahrs->pitch_sensor;
@@ -121,13 +133,21 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	// Calculate the desired pitch rate (deg/sec) from the angle error
 	float desired_rate = angle_err * 0.01f * _kp_angle;
 	
-	// limit the maximum pitch rate demand
-	if (_max_rate_neg && desired_rate < -_max_rate_neg) {
-        desired_rate = -_max_rate_neg;
-    } else if (_max_rate_pos && desired_rate > _max_rate_pos) {
-        desired_rate = _max_rate_pos;
-    }
+	// limit the maximum pitch rate demand. Don't apply when inverted
+	// as the rates will be tuned when upright, and it is common that
+	// much higher rates are needed inverted	
+	if (!inverted) {
+		if (_max_rate_neg && desired_rate < -_max_rate_neg) {
+			desired_rate = -_max_rate_neg;
+		} else if (_max_rate_pos && desired_rate > _max_rate_pos) {
+			desired_rate = _max_rate_pos;
+		}
+	}
 	
+	if (inverted) {
+		desired_rate = -desired_rate;
+	}
+
 	// Apply the turn correction offset
 	desired_rate = desired_rate + rate_offset;
 
@@ -144,10 +164,13 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 		if ((fabsf(_ki_rate) > 0) && (dt > 0) && (aspeed > float(aspd_min)))
 		{
 		    float integrator_delta = rate_error * _ki_rate * scaler * delta_time;
-			// prevent the integrator from increasing if surface defln demand is above the upper limit
-			if (_last_out < -45) integrator_delta = max(integrator_delta , 0);
-			// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-			else if (_last_out > 45) integrator_delta = min(integrator_delta , 0);
+			if (_last_out < -45) {
+				// prevent the integrator from increasing if surface defln demand is above the upper limit
+				integrator_delta = max(integrator_delta , 0);
+			} else if (_last_out > 45) {
+				// prevent the integrator from decreasing if surface defln demand  is below the lower limit
+				integrator_delta = min(integrator_delta , 0);
+			}
 			_integrator += integrator_delta;
 		}
 	} else {
