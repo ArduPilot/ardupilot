@@ -30,8 +30,6 @@ private:
 	AP_Int16 _max_rate_neg;
 	AP_Float _roll_ff;
 	uint32_t _last_t;
-	float _last_rate_in;
-	float _last_rate_out;
 	float _last_out;
 	
 	float _integrator;

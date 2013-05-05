@@ -55,13 +55,13 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	float bank_angle = _ahrs->roll;
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < 1.5707964f)	{
-	    bank_angle = constrain(bank_angle,-1.3962634,1.3962634f);
+	    bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
 	}
 	if (!_ahrs->airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
 	}
-	rate_offset = fabsf(ToDeg((9.807f / constrain(aspeed , float(aspd_min), float(aspd_max))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+    rate_offset = fabsf(ToDeg((9.807f / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;     
 	
 	//Calculate pitch angle error in centi-degrees
 	int32_t angle_err = angle - _ahrs->pitch_sensor;
@@ -82,16 +82,8 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	// Get body rate vector (radians/sec)
 	float omega_y = _ahrs->get_gyro().y;
 	
-	// Apply a first order lowpass filter with a 20Hz cut-off
-	// Coefficients derived using a first order hold discretisation method
-	// Use of FOH discretisation increases high frequency noise rejection 
-	// and reduces phase loss compared to other methods
-	float rate = 0.0810026f * _last_rate_out + 0.6343426f * omega_y + 0.2846549f * _last_rate_in;
-	_last_rate_out = rate;
-	_last_rate_in = omega_y;
-	
 	// Calculate the pitch rate error (deg/sec) and scale
-	float rate_error = (desired_rate - ToDeg(rate)) * scaler;
+	float rate_error = (desired_rate - ToDeg(omega_y)) * scaler;
 	
 	// Multiply pitch rate error by _ki_rate and integrate
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
@@ -114,11 +106,10 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	float _last_out = ( (rate_error * _kp_rate) + _integrator + (desired_rate * _kp_ff) ) * scaler;
+	_last_out = ( (rate_error * _kp_rate) + _integrator + (desired_rate * _kp_ff) ) * scaler;
 	
 	// Convert to centi-degrees and constrain
-	float out = constrain(_last_out * 100, -4500, 4500);
-	return out;
+	return constrain_float(_last_out * 100, -4500, 4500);
 }
 
 void AP_PitchController::reset_I()

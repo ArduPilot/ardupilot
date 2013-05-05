@@ -44,31 +44,23 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	float bank_angle = _ahrs->roll;
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < 1.5707964f)	{
-	    bank_angle = constrain(bank_angle,-1.3962634,1.3962634f);
+	    bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
 	}
 	if (!_ahrs->airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
 	}
-	rate_offset = (9.807f / constrain(aspeed , float(aspd_min), float(aspd_max))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
+    rate_offset = (9.807f / max(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
-	float omega_z = _ahrs->get_gyro();
-	
-	// Apply a first order lowpass filter with a 20Hz cut-off
-	// Coefficients derived using a first order hold discretisation method
-	// Use of FOH discretisation increases high frequency noise rejection 
-	// and reduces phase loss compared to other methods
-	float rate = 0.0810026f * _last_rate_out + 0.6343426f * omega_z + 0.2846549f * _last_rate_in;
-	_last_rate_out = rate;
-	_last_rate_in = omega_z;
+	float omega_z = _ahrs->get_gyro().z;
 	
 	// Get the accln vector (m/s^2)
 	float accel_y = _ins->get_accel().y;
 
 	// Subtract the steady turn component of rate from the measured rate
 	// to calculate the rate relative to the turn requirement in degrees/sec
-	float rate_hp_in = ToDeg(rate - rate_offset);
+	float rate_hp_in = ToDeg(omega_z - rate_offset);
 	
 	// Apply a high-pass filter to the rate to washout any steady state error
 	// due to bias errors in rate_offset
@@ -112,8 +104,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	_last_out =  _K_D * (_integrator - rate_hp_out) * scaler * scaler;
 
 	// Convert to centi-degrees and constrain
-	float out = constrain(_last_out * 100, -4500, 4500);
-	return out;
+	return constrain_float(_last_out * 100, -4500, 4500);
 }
 
 void AP_YawController::reset_I()

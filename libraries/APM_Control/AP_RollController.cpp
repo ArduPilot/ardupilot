@@ -57,16 +57,8 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
     // Get body rate vector (radians/sec)
 	float omega_x = _ahrs->get_gyro().x;
 	
-	// Apply a first order lowpass filter with a 20Hz cut-off
-	// Coefficients derived using a first order hold discretisation method
-	// Use of FOH discretisation increases high frequency noise rejection 
-	// and reduces phase loss compared to other methods
-	float rate = 0.0810026f * _last_rate_out + 0.6343426f * omega_x + 0.2846549f * _last_rate_in;
-	_last_rate_out = rate;
-	_last_rate_in = omega_x;
-
 	// Calculate the roll rate error (deg/sec) and apply gain scaler
-	float rate_error = (desired_rate - ToDeg(rate)) * scaler;
+	float rate_error = (desired_rate - ToDeg(omega_x)) * scaler;
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;
@@ -93,11 +85,10 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	float _last_out = ( (rate_error * _kp_rate) + _integrator + (desired_rate * _kp_ff) ) * scaler;
+	_last_out = ( (rate_error * _kp_rate) + _integrator + (desired_rate * _kp_ff) ) * scaler;
 	
 	// Convert to centi-degrees and constrain
-	float out = constrain(_last_out * 100, -4500, 4500);
-	return out;
+	return constrain_float(_last_out * 100, -4500, 4500);
 }
 
 void AP_RollController::reset_I()
