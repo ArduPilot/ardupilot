@@ -655,12 +655,6 @@
 #ifndef THROTTLE_SLEW_LIMIT
  # define THROTTLE_SLEW_LIMIT  0
 #endif
-#ifndef P_TO_T
- # define P_TO_T               0
-#endif
-#ifndef T_TO_P
- # define T_TO_P               0
-#endif
 #ifndef PITCH_TARGET
  # define PITCH_TARGET         0
 #endif

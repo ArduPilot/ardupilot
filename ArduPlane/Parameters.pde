@@ -64,7 +64,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
-    GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR",   P_TO_T),
+    GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR",   0),
 
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
@@ -72,7 +72,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
-    GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   T_TO_P),
+    GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   0),
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
