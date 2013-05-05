@@ -77,14 +77,18 @@ static void stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
-#if APM_CONTROL == DISABLED
-	// Calculate dersired servo output for the roll
-	// ---------------------------------------------
-    g.channel_roll.servo_out = g.pidServoRoll.get_pid_4500((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
-#else // APM_CONTROL == ENABLED
-    // calculate roll and pitch control using new APM_Control library
-    g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min);
-#endif
+    switch (g.att_controller) {
+    case ATT_CONTROL_APMCONTROL:
+        // calculate roll and pitch control using new APM_Control library
+        g.channel_roll.servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min);
+        break;
+
+    default:
+        // Calculate dersired servo output for the roll
+        // ---------------------------------------------
+        g.channel_roll.servo_out = g.pidServoRoll.get_pid_4500((nav_roll_cd - ahrs.roll_sensor), speed_scaler);
+        break;
+    }
 }
 
 /*
@@ -94,19 +98,25 @@ static void stabilize_roll(float speed_scaler)
  */
 static void stabilize_pitch(float speed_scaler)
 {
-#if APM_CONTROL == DISABLED
-    int32_t tempcalc = nav_pitch_cd +
-        fabsf(ahrs.roll_sensor * g.kff_pitch_compensation) +
-        (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
-        (ahrs.pitch_sensor - g.pitch_trim_cd);
-    if (inverted_flight) {
-        // when flying upside down the elevator control is inverted
-        tempcalc = -tempcalc;
+    switch (g.att_controller) {
+    case ATT_CONTROL_APMCONTROL:
+        g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, 
+                                                                    control_mode == STABILIZE, 
+                                                                    g.flybywire_airspeed_min, g.flybywire_airspeed_max);    
+        break;
+
+    default:
+        int32_t tempcalc = nav_pitch_cd +
+            fabsf(ahrs.roll_sensor * g.kff_pitch_compensation) +
+            (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
+            (ahrs.pitch_sensor - g.pitch_trim_cd);
+        if (inverted_flight) {
+            // when flying upside down the elevator control is inverted
+            tempcalc = -tempcalc;
+        }
+        g.channel_pitch.servo_out = g.pidServoPitch.get_pid_4500(tempcalc, speed_scaler);
+        break;
     }
-    g.channel_pitch.servo_out = g.pidServoPitch.get_pid_4500(tempcalc, speed_scaler);
-#else // APM_CONTROL == ENABLED
-    g.channel_pitch.servo_out = g.pitchController.get_servo_out(nav_pitch_cd, speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min, g.flybywire_airspeed_max);    
-#endif
 }
 
 /*
@@ -334,19 +344,23 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
         return;
     }
 
-#if APM_CONTROL == DISABLED
-    // always do rudder mixing from roll
-    g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out;
+    switch (g.att_controller) {
+    case ATT_CONTROL_APMCONTROL:
+        g.channel_rudder.servo_out = g.yawController.get_servo_out(speed_scaler, 
+                                                                   control_mode == STABILIZE, 
+                                                                   g.flybywire_airspeed_min, g.flybywire_airspeed_max);
+        break;
 
-    // a PID to coordinate the turn (drive y axis accel to zero)
-    Vector3f temp = ins.get_accel();
-    int32_t error = -temp.y*100.0;
+    default:
+        // a PID to coordinate the turn (drive y axis accel to zero)
+        float temp_y = ins.get_accel().y;
+        int32_t error = -temp_y * 100.0f;
+        g.channel_rudder.servo_out = g.pidServoRudder.get_pid_4500(error, speed_scaler);
+        break;
+    }
 
-    g.channel_rudder.servo_out += g.pidServoRudder.get_pid_4500(error, speed_scaler);
-#else // APM_CONTROL == ENABLED
-    // use the new APM_Control library
-	g.channel_rudder.servo_out = g.yawController.get_servo_out(speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min, g.flybywire_airspeed_max) + g.channel_roll.servo_out * g.kff_rudder_mix;
-#endif
+    // add in rudder mixing from roll
+    g.channel_rudder.servo_out += g.channel_roll.servo_out * g.kff_rudder_mix;
 }
 
 

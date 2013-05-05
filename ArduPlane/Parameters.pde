@@ -138,6 +138,13 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
+	// @Param: ATT_CONTROLLER
+	// @DisplayName: Attitude controller selection
+	// @Description: Which attitude (roll, pitch, yaw) controller to enable
+	// @Values: 0:PID,1:APMControl
+	// @User: Standard
+	GSCALAR(att_controller,          "ATT_CONTROLLER",   ATT_CONTROL_PID),
+
     // @Param: ALT_MIX
     // @DisplayName: Gps to Baro Mix
     // @Description: The percent of mixing between gps altitude and baro altitude. 0 = 100% gps, 1 = 100% baro
@@ -680,15 +687,13 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
 
-#if APM_CONTROL == DISABLED
 	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
 	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
 	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
-#else
+
 	GGROUP(rollController,          "CTL_RLL_",   AP_RollController),
 	GGROUP(pitchController,         "CTL_PTCH_",  AP_PitchController),
 	GGROUP(yawController,           "CTL_YAW_",   AP_YawController),
-#endif
 
 	// variables not in the g class which contain EEPROM saved variables
 

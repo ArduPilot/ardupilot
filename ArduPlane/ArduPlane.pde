@@ -54,11 +54,6 @@
 #include <DataFlash.h>
 #include <SITL.h>
 
-// optional new controller library
-#if APM_CONTROL == ENABLED
-#include <APM_Control.h>
-#endif
-
 #include <AP_Navigation.h>
 #include <AP_L1_Control.h>
 
@@ -1053,17 +1048,17 @@ static void update_current_flight_mode(void)
                 nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
-#if APM_CONTROL == DISABLED
-            float aspeed;
-            if (ahrs.airspeed_estimate(&aspeed)) {
-                // don't use a pitch/roll integrators during takeoff if we are
-                // below minimum speed
-                if (aspeed < g.flybywire_airspeed_min) {
-                    g.pidServoPitch.reset_I();
-                    g.pidServoRoll.reset_I();
+            if (g.att_controller == ATT_CONTROL_PID) {
+                float aspeed;
+                if (ahrs.airspeed_estimate(&aspeed)) {
+                    // don't use a pitch/roll integrators during takeoff if we are
+                    // below minimum speed
+                    if (aspeed < g.flybywire_airspeed_min) {
+                        g.pidServoPitch.reset_I();
+                        g.pidServoRoll.reset_I();
+                    }
                 }
             }
-#endif
 
             // max throttle for takeoff
             g.channel_throttle.servo_out = g.throttle_max;

@@ -171,12 +171,10 @@ static void init_ardupilot()
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
 
-#if APM_CONTROL == ENABLED
     // the axis controllers need access to the AHRS system
     g.rollController.set_ahrs(&ahrs);
     g.pitchController.set_ahrs(&ahrs);
     g.yawController.set_ahrs(&ahrs);
-#endif
 
 	// Do GPS init
 	g_gps = &g_gps_driver;
