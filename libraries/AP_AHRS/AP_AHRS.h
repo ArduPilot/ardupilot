@@ -39,6 +39,9 @@ public:
         // which will make us less prone to increasing omegaI
         // incorrectly due to sensor noise
         _gyro_drift_limit = ins->get_gyro_drift_rate();
+
+        // enable centrifugal correction by default
+        _flags.correct_centrifugal = true;
     }
 
     // init sets up INS board orientation
@@ -48,7 +51,7 @@ public:
 
     // Accessors
     void set_fly_forward(bool b) {
-        _fly_forward = b;
+        _flags.fly_forward = b;
     }
     void set_compass(Compass *compass) {
         _compass = compass;
@@ -144,12 +147,18 @@ public:
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) const {
-        return _have_initial_yaw;
+        return _flags.have_initial_yaw;
     }
 
     // set the fast gains flag
     void set_fast_gains(bool setting) {
-        _fast_ground_gains = setting;
+        _flags.fast_ground_gains = setting;
+    }
+
+    // set the correct centrifugal flag
+    // allows arducopter to disable corrections when disarmed
+    void set_correct_centrifugal(bool setting) {
+        _flags.correct_centrifugal = setting;
     }
 
     // get trim
@@ -175,8 +184,14 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    // whether the yaw value has been intialised with a reference
-    bool _have_initial_yaw;
+
+    // flags structure
+    struct ahrs_flags {
+        uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
+        uint8_t fast_ground_gains       : 1;    // should we raise the gain on the accelerometers for faster convergence, used when disarmed for ArduCopter
+        uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
+        uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
+    } _flags;
 
     // pointer to compass object, if available
     Compass         * _compass;
@@ -194,14 +209,6 @@ protected:
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
-
-    // should we raise the gain on the accelerometers for faster
-    // convergence, used when disarmed for ArduCopter
-    bool _fast_ground_gains;
-
-    // true if we can assume the aircraft will be flying forward
-    // on its X axis
-    bool _fly_forward;
 
     // the limit of the gyro drift claimed by the sensors, in
     // radians/s/s
