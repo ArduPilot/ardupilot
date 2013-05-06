@@ -146,7 +146,7 @@ Advanced:
    slow down and take noticeably longer to complete the roll, them
    this normally indicates that the parameter that sets the time
    constant of the roll maneuver CTL_RLL_OMEGA needs to be increased
-   and CTL_RLL_OMEGA needs to be reduced.
+   and CTL_RLL_K_P needs to be reduced.
 
 Pitch Control Tuning
 --------------------
