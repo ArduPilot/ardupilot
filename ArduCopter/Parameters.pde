@@ -966,8 +966,8 @@ static void load_parameters(void)
     if (!ahrs.gps_gain.load()) {
         ahrs.gps_gain.set_and_save(1.0);
     }
-    // set gps_gain to zero, it will be set back to 1 as part of the arming process
-    ahrs.gps_gain.set(0);
+    // disable centrifugal force correction, it will be enabled as part of the arming process
+    ahrs.set_correct_centrifugal(false);
 
     // setup different AHRS gains for ArduCopter than the default
     // but allow users to override in their config

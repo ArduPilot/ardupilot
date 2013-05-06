@@ -145,7 +145,7 @@ static void init_arm_motors()
 #endif
 
     // enable gps velocity based centrefugal force compensation
-    ahrs.gps_gain.load();
+    ahrs.set_correct_centrifugal(true);
 
     // finally actually arm the motors
     motors.armed(true);
@@ -214,7 +214,7 @@ static void init_disarm_motors()
 #endif
 
     // disable gps velocity based centrefugal force compensation
-    ahrs.gps_gain.set(0);
+    ahrs.set_correct_centrifugal(false);
 }
 
 /*****************************************
