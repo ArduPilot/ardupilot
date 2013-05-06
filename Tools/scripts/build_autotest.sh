@@ -113,7 +113,7 @@ for d in ArduPlane ArduCopter APMrover2; do
 done
 
 mkdir -p "buildlogs/history/$hdate"
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html "history/$hdate/")
+(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png "history/$hdate/")
 echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 APM/Tools/scripts/build_parameters.sh
