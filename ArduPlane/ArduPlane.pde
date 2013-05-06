@@ -1150,6 +1150,7 @@ static void update_current_flight_mode(void)
         case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
             nav_roll_cd  = g.channel_roll.norm_input() * g.roll_limit_cd;
+            nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
             float pitch_input = g.channel_pitch.norm_input();
             if (pitch_input > 0) {
                 nav_pitch_cd = pitch_input * g.pitch_limit_max_cd;
