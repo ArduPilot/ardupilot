@@ -117,6 +117,9 @@ static void init_ardupilot()
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
 
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+
     // init the GCS
     gcs0.init(hal.uartA);
     // Register mavlink_delay_cb, which will run anytime you have
@@ -156,8 +159,6 @@ static void init_ardupilot()
  #if CONFIG_ADC == ENABLED
     adc.Init();      // APM ADC library initialization
  #endif
-
-    barometer.init();
 
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
