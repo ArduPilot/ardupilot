@@ -461,10 +461,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
         last_correction_time = hal.scheduler->millis();
         _have_gps_lock = false;
-
-        // update position delta for get_position()
-        _position_offset_north += velocity.x * _ra_deltat;
-        _position_offset_east  += velocity.y * _ra_deltat;
     } else {
         if (_gps->last_fix_time == _ra_sum_start) {
             // we don't have a new GPS fix - nothing more to do
@@ -479,20 +475,26 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
         _have_gps_lock = true;
 
-        // remember position for get_position()
+        // keep last airspeed estimate for dead-reckoning purposes
+        Vector3f airspeed = velocity - _wind;
+        airspeed.z = 0;
+        _last_airspeed = airspeed.length();
+    }
+
+    if (have_gps()) {
+        // use GPS for positioning with any fix, even a 2D fix
         _last_lat = _gps->latitude;
         _last_lng = _gps->longitude;
         _position_offset_north = 0;
         _position_offset_east = 0;
 
-        // once we have a single GPS lock, we update using
+        // once we have a single GPS lock, we can update using
         // dead-reckoning from then on
         _have_position = true;
-
-        // keep last airspeed estimate for dead-reckoning purposes
-        Vector3f airspeed = velocity - _wind;
-        airspeed.z = 0;
-        _last_airspeed = airspeed.length();
+    } else {
+        // update dead-reckoning position estimate
+        _position_offset_north += velocity.x * _ra_deltat;
+        _position_offset_east  += velocity.y * _ra_deltat;        
     }
 
     // see if this is our first time through - in which case we
