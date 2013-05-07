@@ -374,7 +374,7 @@ void AC_WPNav::get_loiter_position_to_velocity(float dt)
 
     dist_error_total = safe_sqrt(dist_error.x*dist_error.x + dist_error.y*dist_error.y);
     if( dist_error_total > 2*linear_distance ) {
-        vel_sqrt = constrain_float(safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance)),0,1000);
+        vel_sqrt = safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance));
         desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
         desired_vel.y = vel_sqrt * dist_error.y/dist_error_total;
     }else{
