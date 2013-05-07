@@ -11,21 +11,13 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 
 // loiter maximum velocities and accelerations
-#define MAX_LOITER_POS_VELOCITY         750.0f      // maximum velocity that our position controller will request.  should be 1.5 ~ 2.0 times the pilot input's max velocity.  To-Do: make consistent with maximum velocity requested by pilot input to loiter
+#define WPNAV_LOITER_SPEED              750.0f      // maximum default loiter speed in cm/s
 #define MAX_LOITER_POS_ACCEL            500.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
 #define MAX_LOITER_VEL_ACCEL            800.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
-
-#define MAX_LOITER_OVERSHOOT            812.5f      // maximum distance (in cm) that we will allow the target loiter point to be from the current location when switching into loiter
-// D0 = MAX_LOITER_POS_ACCEL/(2*Pid_P^2);
-// if MAX_LOITER_POS_VELOCITY > 2*D0*Pid_P
-//     MAX_LOITER_OVERSHOOT = D0 + MAX_LOITER_POS_VELOCITY.^2 ./ (2*MAX_LOITER_POS_ACCEL);
-// else
-//     MAX_LOITER_OVERSHOOT = min(200, MAX_LOITER_POS_VELOCITY/Pid_P); // to stop it being over sensitive to error
-// end
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed betwen waypoints in cm/s
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
@@ -129,13 +121,13 @@ public:
     }
 
     /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
-    void set_horizontal_velocity(float velocity_cms) { _speed_xy_cms = velocity_cms; };
+    void set_horizontal_velocity(float velocity_cms) { _wp_speed_cms = velocity_cms; };
 
     /// get_climb_velocity - returns target climb speed in cm/s during missions
-    float get_climb_velocity() const { return _speed_up_cms; };
+    float get_climb_velocity() const { return _wp_speed_up_cms; };
 
     /// get_descent_velocity - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_descent_velocity() const { return _speed_down_cms; };
+    float get_descent_velocity() const { return _wp_speed_down_cms; };
 
     /// get_waypoint_radius - access for waypoint radius in cm
     float get_waypoint_radius() const { return _wp_radius_cm; }
@@ -152,7 +144,7 @@ protected:
 
     /// get_loiter_position_to_velocity - loiter position controller
     ///     converts desired position held in _target vector to desired velocity
-    void get_loiter_position_to_velocity(float dt);
+    void get_loiter_position_to_velocity(float dt, float max_speed_cms);
 
     /// get_loiter_velocity_to_acceleration - loiter velocity controller
     ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
@@ -168,9 +160,12 @@ protected:
     /// reset_I - clears I terms from loiter PID controller
     void reset_I();
 
-    /// calculate_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
+    /// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
+    void calculate_loiter_leash_length();
+
+    /// calculate_wp_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
     ///    set climb param to true if track climbs vertically, false if descending
-    void calculate_leash_length(bool climb);
+    void calculate_wp_leash_length(bool climb);
 
     // pointers to inertial nav library
     AP_InertialNav*	_inav;
@@ -182,9 +177,10 @@ protected:
     AC_PID*		_pid_rate_lon;
 
     // parameters
-    AP_Float    _speed_xy_cms;          // horizontal speed target in cm/s
-    AP_Float    _speed_up_cms;          // climb speed target in cm/s
-    AP_Float    _speed_down_cms;        // descent speed target in cm/s
+    AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
+    AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
+    AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
+    AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     uint32_t	_loiter_last_update;    // time of last update_loiter call
     uint32_t	_wpnav_last_update;     // time of last update_wpnav call
@@ -203,6 +199,7 @@ protected:
     Vector3f    _target_vel;            // pilot's latest desired velocity in earth-frame
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
     int32_t     _lean_angle_max;        // maximum lean angle.  can be set from main code so that throttle controller can stop leans that cause copter to lose altitude
+    float       _loiter_leash;          // loiter's horizontal leash length in cm.  used to stop the pilot from pushing the target location too far from the current location
 
     // waypoint controller internal variables
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
@@ -213,7 +210,7 @@ protected:
     float       _distance_to_target;    // distance to loiter target
     bool        _reached_destination;   // true if we have reached the destination
     float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
-    float       _leash_xy;              // horizontal leash length in cm
+    float       _wp_leash_xy;           // horizontal leash length in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
 
 public:

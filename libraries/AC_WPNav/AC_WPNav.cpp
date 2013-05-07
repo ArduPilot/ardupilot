@@ -11,10 +11,10 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @DisplayName: Waypoint Horizontal Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally during a WP mission
     // @Units: Centimeters/Second
-    // @Range: 0 1000
+    // @Range: 0 2000
     // @Increment: 50
     // @User: Standard
-    AP_GROUPINFO("SPEED",   0, AC_WPNav, _speed_xy_cms, WPNAV_WP_SPEED),
+    AP_GROUPINFO("SPEED",       0, AC_WPNav, _wp_speed_cms, WPNAV_WP_SPEED),
 
     // @Param: RADIUS
     // @DisplayName: Waypoint Radius
@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Range: 100 1000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RADIUS",  1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
+    AP_GROUPINFO("RADIUS",      1, AC_WPNav, _wp_radius_cm, WPNAV_WP_RADIUS),
 
     // @Param: SPEED_UP
     // @DisplayName: Waypoint Climb Speed Target
@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Range: 0 1000
     // @Increment: 50
     // @User: Standard
-    AP_GROUPINFO("SPEED_UP",  2, AC_WPNav, _speed_up_cms, WPNAV_WP_SPEED_UP),
+    AP_GROUPINFO("SPEED_UP",    2, AC_WPNav, _wp_speed_up_cms, WPNAV_WP_SPEED_UP),
 
     // @Param: SPEED_DN
     // @DisplayName: Waypoint Descent Speed Target
@@ -41,8 +41,17 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Range: 0 1000
     // @Increment: 50
     // @User: Standard
-    AP_GROUPINFO("SPEED_DN",  3, AC_WPNav, _speed_down_cms, WPNAV_WP_SPEED_DOWN),
-    
+    AP_GROUPINFO("SPEED_DN",    3, AC_WPNav, _wp_speed_down_cms, WPNAV_WP_SPEED_DOWN),
+
+    // @Param: LOIT_SPEED
+    // @DisplayName: Loiter Horizontal Maximum Speed
+    // @Description: Defines the maximum speed in cm/s which the aircraft will travel horizontally while in loiter mode
+    // @Units: Centimeters/Second
+    // @Range: 0 2000
+    // @Increment: 50
+    // @User: Standard
+    AP_GROUPINFO("LOIT_SPEED",  4, AC_WPNav, _loiter_speed_cms, WPNAV_LOITER_SPEED),
+
     AP_GROUPEND
 };
 
@@ -74,6 +83,9 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
     desired_accel(0,0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // calculate loiter leash
+    calculate_loiter_leash_length();
 }
 
 ///
@@ -107,7 +119,7 @@ void AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& 
         linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
         target_dist = linear_distance + (vel_total*vel_total)/(2*MAX_LOITER_POS_ACCEL);
     }
-    target_dist = constrain_float(target_dist, 0, MAX_LOITER_OVERSHOOT);
+    target_dist = constrain_float(target_dist, 0, _loiter_leash);
 
     target.x = position.x + (target_dist * velocity.x / vel_total);
     target.y = position.y + (target_dist * velocity.y / vel_total);
@@ -118,6 +130,7 @@ void AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& 
 void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& velocity)
 {
     Vector3f target;
+    calculate_loiter_leash_length();
     project_stopping_point(position, velocity, target);
     _target.x = target.x;
     _target.y = target.y;
@@ -127,8 +140,8 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
 void AC_WPNav::move_loiter_target(float control_roll, float control_pitch, float dt)
 {
     // convert pilot input to desired velocity in cm/s
-    _pilot_vel_forward_cms = -control_pitch * MAX_LOITER_POS_VELOCITY / 4500.0f;
-    _pilot_vel_right_cms = control_roll * MAX_LOITER_POS_VELOCITY / 4500.0f;
+    _pilot_vel_forward_cms = -control_pitch * _loiter_speed_cms / 4500.0f;
+    _pilot_vel_right_cms = control_roll * _loiter_speed_cms / 4500.0f;
 }
 
 /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
@@ -162,9 +175,9 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 
     // constrain the velocity vector and scale if necessary
     vel_total = safe_sqrt(_target_vel.x*_target_vel.x + _target_vel.y*_target_vel.y);
-    if( vel_total > MAX_LOITER_POS_VELOCITY ) {
-        _target_vel.x = MAX_LOITER_POS_VELOCITY * _target_vel.x/vel_total;
-        _target_vel.y = MAX_LOITER_POS_VELOCITY * _target_vel.y/vel_total;
+    if( vel_total > _loiter_speed_cms ) {
+        _target_vel.x = _loiter_speed_cms * _target_vel.x/vel_total;
+        _target_vel.y = _loiter_speed_cms * _target_vel.y/vel_total;
     }
 
     // update target position
@@ -175,9 +188,9 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
     Vector3f curr_pos = _inav->get_position();
     Vector3f distance_err = _target - curr_pos;
     float distance = safe_sqrt(distance_err.x*distance_err.x + distance_err.y*distance_err.y);
-    if( distance > MAX_LOITER_OVERSHOOT ) {
-        _target.x = curr_pos.x + MAX_LOITER_OVERSHOOT * distance_err.x/distance;
-        _target.y = curr_pos.y + MAX_LOITER_OVERSHOOT * distance_err.y/distance;
+    if( distance > _loiter_leash ) {
+        _target.x = curr_pos.x + _loiter_leash * distance_err.x/distance;
+        _target.y = curr_pos.y + _loiter_leash * distance_err.y/distance;
     }
 }
 
@@ -210,7 +223,28 @@ void AC_WPNav::update_loiter()
     translate_loiter_target_movements(dt);
 
     // run loiter position controller
-    get_loiter_position_to_velocity(dt);
+    get_loiter_position_to_velocity(dt, _loiter_speed_cms);
+}
+
+/// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
+void AC_WPNav::calculate_loiter_leash_length()
+{
+    // get loiter position P
+    float kP = _pid_pos_lat->kP();
+
+    // calculate horiztonal leash length
+    if(_loiter_speed_cms <= MAX_LOITER_POS_ACCEL / kP) {
+        // linear leash length based on speed close in
+        _loiter_leash = _loiter_speed_cms / kP;
+    }else{
+        // leash length grows at sqrt of speed further out
+        _loiter_leash = (MAX_LOITER_POS_ACCEL / (2.0*kP*kP)) + (_loiter_speed_cms*_loiter_speed_cms / (2*MAX_LOITER_POS_ACCEL));
+    }
+
+    // ensure leash is at least 1m long
+    if( _loiter_leash < 100 ) {
+        _loiter_leash = 100;
+    }
 }
 
 ///
@@ -242,7 +276,7 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 
     // calculate leash lengths 
     bool climb = pos_delta.z >= 0;  // climbing vs descending leads to different leash lengths because speed_up_cms and speed_down_cms can be different
-    calculate_leash_length(climb);  // update leash lengths and _vert_track_scale
+    calculate_wp_leash_length(climb);  // update leash lengths and _vert_track_scale
 
     // scale up z-axis position delta (i.e. distance) to make later leash length calculations simpler
     pos_delta.z = pos_delta.z * _vert_track_scale;
@@ -272,11 +306,11 @@ void AC_WPNav::advance_target_along_track(float dt)
     curr_delta_length = curr_delta.length();
 
     // increase intermediate target point's velocity if not yet at target speed
-    if(dt > 0 && _limited_speed_xy_cms < _speed_xy_cms) {
+    if(dt > 0 && _limited_speed_xy_cms < _wp_speed_cms) {
         _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
     }
-    if(_limited_speed_xy_cms > _speed_xy_cms) {
-        _limited_speed_xy_cms = _speed_xy_cms;
+    if(_limited_speed_xy_cms > _wp_speed_cms) {
+        _limited_speed_xy_cms = _wp_speed_cms;
     }
 
     // calculate how far along the track we are
@@ -284,7 +318,7 @@ void AC_WPNav::advance_target_along_track(float dt)
     track_error = safe_sqrt(curr_delta_length*curr_delta_length - track_covered*track_covered);
 
     // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-    track_extra_max = safe_sqrt(_leash_xy*_leash_xy - track_error*track_error);
+    track_extra_max = safe_sqrt(_wp_leash_xy*_wp_leash_xy - track_error*track_error);
     track_desired_max = track_covered + track_extra_max;
 
     // advance the current target
@@ -346,7 +380,7 @@ void AC_WPNav::update_wpnav()
     }
 
     // run loiter position controller
-    get_loiter_position_to_velocity(dt);
+    get_loiter_position_to_velocity(dt, _wp_speed_cms);
 }
 
 ///
@@ -355,7 +389,7 @@ void AC_WPNav::update_wpnav()
 
 /// get_loiter_position_to_velocity - loiter position controller
 ///     converts desired position held in _target vector to desired velocity
-void AC_WPNav::get_loiter_position_to_velocity(float dt)
+void AC_WPNav::get_loiter_position_to_velocity(float dt, float max_speed_cms)
 {
     Vector3f curr = _inav->get_position();
     float dist_error_total;
@@ -382,10 +416,11 @@ void AC_WPNav::get_loiter_position_to_velocity(float dt)
         desired_vel.y = _pid_pos_lon->get_p(dist_error.y);
     }
 
+    // ensure velocity stays within limits
     vel_total = safe_sqrt(desired_vel.x*desired_vel.x + desired_vel.y*desired_vel.y);
-    if( vel_total > MAX_LOITER_POS_VELOCITY ) {
-        desired_vel.x = MAX_LOITER_POS_VELOCITY * desired_vel.x/vel_total;
-        desired_vel.y = MAX_LOITER_POS_VELOCITY * desired_vel.y/vel_total;
+    if( vel_total > max_speed_cms ) {
+        desired_vel.x = max_speed_cms * desired_vel.x/vel_total;
+        desired_vel.y = max_speed_cms * desired_vel.y/vel_total;
     }
 
     // call velocity to acceleration controller
@@ -482,33 +517,33 @@ void AC_WPNav::reset_I()
     _limited_speed_xy_cms = 0;
 }
 
-/// calculate_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
-void AC_WPNav::calculate_leash_length(bool climb)
+/// calculate_wp_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
+void AC_WPNav::calculate_wp_leash_length(bool climb)
 {
 
     // get loiter position P
     float kP = _pid_pos_lat->kP();
 
     // calculate horiztonal leash length
-    if(_speed_xy_cms <= MAX_LOITER_POS_ACCEL / kP) {
+    if(_wp_speed_cms <= MAX_LOITER_POS_ACCEL / kP) {
         // linear leash length based on speed close in
-        _leash_xy = _speed_xy_cms / kP;
+        _wp_leash_xy = _wp_speed_cms / kP;
     }else{
         // leash length grows at sqrt of speed further out
-        _leash_xy = (MAX_LOITER_POS_ACCEL / (2.0*kP*kP)) + (_speed_xy_cms*_speed_xy_cms / (2*MAX_LOITER_POS_ACCEL));
+        _wp_leash_xy = (MAX_LOITER_POS_ACCEL / (2.0*kP*kP)) + (_wp_speed_cms*_wp_speed_cms / (2*MAX_LOITER_POS_ACCEL));
     }
 
     // ensure leash is at least 1m long
-    if( _leash_xy < 100 ) {
-        _leash_xy = 100;
+    if( _wp_leash_xy < 100 ) {
+        _wp_leash_xy = 100;
     }
 
     // calculate vertical leash length
     float speed_vert, leash_z;
     if( climb ) {
-        speed_vert = _speed_up_cms;
+        speed_vert = _wp_speed_up_cms;
     }else{
-        speed_vert = _speed_down_cms;
+        speed_vert = _wp_speed_down_cms;
     }
     if(speed_vert <= WPNAV_ALT_HOLD_ACCEL_MAX / WPNAV_ALT_HOLD_P) {
         // linear leash length based on speed close in
@@ -524,5 +559,5 @@ void AC_WPNav::calculate_leash_length(bool climb)
     }
 
     // calculate vertical track scale used to give altitude equal weighting to horizontal position
-    _vert_track_scale = _leash_xy / leash_z;
+    _vert_track_scale = _wp_leash_xy / leash_z;
 }
