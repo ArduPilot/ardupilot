@@ -159,4 +159,13 @@ uint8_t mav_var_type(enum ap_var_type t);
 // return CRC byte for a mavlink message ID
 uint8_t mavlink_get_message_crc(uint8_t msgid);
 
+// severity levels used in STATUSTEXT messages
+enum gcs_severity {
+    SEVERITY_LOW=1,
+    SEVERITY_MEDIUM,
+    SEVERITY_HIGH,
+    SEVERITY_CRITICAL,
+    SEVERITY_USER_RESPONSE
+};
+
 #endif // GCS_MAVLink_h
