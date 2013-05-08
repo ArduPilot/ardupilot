@@ -168,54 +168,16 @@ Compass::set_declination(float radians, bool save_to_eeprom)
 }
 
 float
-Compass::get_declination()
+Compass::get_declination() const
 {
     return _declination.get();
 }
 
 
 float
-Compass::calculate_heading(float roll, float pitch)
+Compass::calculate_heading(const Matrix3f &dcm_matrix) const
 {
-//  Note - This function implementation is deprecated
-//  The alternate implementation of this function using the dcm matrix is preferred
-    float headX;
-    float headY;
-    float cos_roll;
-    float sin_roll;
-    float cos_pitch;
-    float sin_pitch;
-    float heading;
-
-    cos_roll = cosf(roll);
-    sin_roll = sinf(roll);
-    cos_pitch = cosf(pitch);
-    sin_pitch = sinf(pitch);
-
-    // Tilt compensated magnetic field X component:
-    headX = mag_x*cos_pitch + mag_y*sin_roll*sin_pitch + mag_z*cos_roll*sin_pitch;
     // Tilt compensated magnetic field Y component:
-    headY = mag_y*cos_roll - mag_z*sin_roll;
-    // magnetic heading
-    heading = atan2f(-headY,headX);
-
-    // Declination correction (if supplied)
-    if( fabsf(_declination) > 0.0f )
-    {
-        heading = heading + _declination;
-        if (heading > PI)    // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0f * PI);
-        else if (heading < -PI)
-            heading += (2.0f * PI);
-    }
-
-    return heading;
-}
-
-
-float
-Compass::calculate_heading(const Matrix3f &dcm_matrix)
-{
     float headY = mag_y * dcm_matrix.c.z - mag_z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
