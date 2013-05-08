@@ -12,7 +12,7 @@
 
 // loiter maximum velocities and accelerations
 #define WPNAV_LOITER_SPEED              750.0f      // maximum default loiter speed in cm/s
-#define MAX_LOITER_POS_ACCEL            500.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
+#define MAX_LOITER_POS_ACCEL            250.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
 #define MAX_LOITER_VEL_ACCEL            800.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
@@ -28,7 +28,7 @@
 #define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
 
-#define WPNAV_WP_ACCELERATION           200.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
+#define WPNAV_WP_ACCELERATION           500.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
 
 class AC_WPNav
 {

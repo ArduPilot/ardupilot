@@ -287,6 +287,9 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     _track_desired = 0;
     _target = origin;
     _reached_destination = false;
+
+    // reset limited speed to zero to slow initial acceleration away from wp
+    _limited_speed_xy_cms = 0;
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
