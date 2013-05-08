@@ -9,13 +9,6 @@
 
 #include <stdint.h>
 
-// the last page holds the log format in first 4 bytes. Please change
-// this if (and only if!) the low level format changes
-#define DF_LOGGING_FORMAT    0x28122013
-
-// we use an invalie logging format to test the chip erase
-#define DF_LOGGING_FORMAT_INVALID   0x28122012
-
 class DataFlash_Block : public DataFlash_Class
 {
 public:
