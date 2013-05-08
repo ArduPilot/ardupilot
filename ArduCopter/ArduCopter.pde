@@ -550,7 +550,7 @@ static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration
 static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
-static float target_alt_for_reporting;      // target altitude for reporting (logs and ground station)
+static float target_alt_for_reporting;      // target altitude in cm for reporting (logs and ground station)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1916,13 +1916,13 @@ void update_throttle_mode(void)
     }
 }
 
-// set_target_alt_for_reporting - set target altitude for reporting purposes (logs and gcs)
-static void set_target_alt_for_reporting(float alt)
+// set_target_alt_for_reporting - set target altitude in cm for reporting purposes (logs and gcs)
+static void set_target_alt_for_reporting(float alt_cm)
 {
-    target_alt_for_reporting = alt;
+    target_alt_for_reporting = alt_cm;
 }
 
-// get_target_alt_for_reporting - returns target altitude for reporting purposes (logs and gcs)
+// get_target_alt_for_reporting - returns target altitude in cm for reporting purposes (logs and gcs)
 static float get_target_alt_for_reporting()
 {
     return target_alt_for_reporting;
