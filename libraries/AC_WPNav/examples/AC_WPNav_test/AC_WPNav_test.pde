@@ -24,6 +24,7 @@
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_WPNav.h>           // Waypoint Navigation library
+#include <GCS_MAVLink.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
