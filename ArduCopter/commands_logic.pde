@@ -277,6 +277,10 @@ static void do_nav_wp()
     loiter_time     = 0;
     // this is the delay, stored in seconds and expanded to millis
     loiter_time_max = command_nav_queue.p1;
+    // if no delay set the waypoint as "fast"
+    if (loiter_time_max == 0 ) {
+        wp_nav.set_fast_waypoint(true);
+    }
 
     // set yaw_mode depending upon contents of WP_YAW_BEHAVIOR parameter
     set_yaw_mode(get_wp_yaw_mode(false));
