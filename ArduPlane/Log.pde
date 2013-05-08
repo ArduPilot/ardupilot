@@ -158,9 +158,9 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
-    int32_t roll;
-    int32_t pitch;
-    int32_t yaw;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
 };
 
 // Write an attitude packet. Total length : 10 bytes
@@ -168,9 +168,9 @@ static void Log_Write_Attitude(void)
 {
     struct log_Attitude pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        roll  : ahrs.roll_sensor,
-        pitch : ahrs.pitch_sensor,
-        yaw   : ahrs.yaw_sensor
+        roll  : (int16_t)ahrs.roll_sensor,
+        pitch : (int16_t)ahrs.pitch_sensor,
+        yaw   : (uint16_t)ahrs.yaw_sensor
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
