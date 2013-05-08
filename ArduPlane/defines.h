@@ -146,13 +146,6 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
-enum gcs_severity {
-    SEVERITY_LOW=1,
-    SEVERITY_MEDIUM,
-    SEVERITY_HIGH,
-    SEVERITY_CRITICAL
-};
-
 // Logging message types. NOTE: If you change the value of one
 // of these then existing logs will break! Only add at the end, and 
 // mark unused ones as 'deprecated', but leave them in
