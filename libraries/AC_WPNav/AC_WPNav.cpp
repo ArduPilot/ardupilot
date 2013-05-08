@@ -255,7 +255,7 @@ void AC_WPNav::calculate_loiter_leash_length()
 void AC_WPNav::set_destination(const Vector3f& destination)
 {
     // if waypoint controlls is active and copter has reached the previous waypoint use it for the origin
-    if( _reached_destination && ((hal.scheduler->millis() - _wpnav_last_update) < 1000) ) {
+    if( _flags.reached_destination && ((hal.scheduler->millis() - _wpnav_last_update) < 1000) ) {
         _origin = _destination;
     }else{
         // otherwise calculate origin from the current position and velocity
@@ -286,10 +286,13 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     // initialise intermediate point to the origin
     _track_desired = 0;
     _target = origin;
-    _reached_destination = false;
+    _flags.reached_destination = false;
 
     // reset limited speed to zero to slow initial acceleration away from wp
     _limited_speed_xy_cms = 0;
+
+    // default waypoint back to slow
+    _flags.fast_waypoint = false;
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
@@ -341,12 +344,18 @@ void AC_WPNav::advance_target_along_track(float dt)
     _target.z = _origin.z + (_pos_delta_unit.z * _track_desired)/_vert_track_scale;
 
     // check if we've reached the waypoint
-    if( !_reached_destination ) {
+    if( !_flags.reached_destination ) {
         if( _track_desired >= _track_length ) {
-            Vector3f dist_to_dest = curr_pos - _destination;
-            dist_to_dest.z *=_vert_track_scale;
-            if( dist_to_dest.length() <= _wp_radius_cm ) {
-                _reached_destination = true;
+            // "fast" waypoints are complete once the intermediate point reaches the destination
+            if (_flags.fast_waypoint) {
+                _flags.reached_destination = true;
+            }else{
+                // regular waypoints also require the copter to be within the waypoint radius
+                Vector3f dist_to_dest = curr_pos - _destination;
+                dist_to_dest.z *=_vert_track_scale;
+                if( dist_to_dest.length() <= _wp_radius_cm ) {
+                    _flags.reached_destination = true;
+                }
             }
         }
     }

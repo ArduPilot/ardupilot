@@ -94,7 +94,10 @@ public:
     int32_t get_bearing_to_destination();
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_destination() const { return _reached_destination; }
+    bool reached_destination() const { return _flags.reached_destination; }
+
+    /// set_fast_waypoint - set to true to ignore the waypoint radius and consider the waypoint 'reached' the moment the intermediate point reaches it
+    void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
 
     /// update_wp - update waypoint controller
     void update_wpnav();
@@ -135,6 +138,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
+    // flags structure
+    struct wpnav_flags {
+        uint8_t reached_destination     : 1;    // true if we have reached the destination
+        uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
+    } _flags;
 
     /// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
     void project_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target);
@@ -208,7 +216,6 @@ protected:
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
-    bool        _reached_destination;   // true if we have reached the destination
     float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
     float       _wp_leash_xy;           // horizontal leash length in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
