@@ -42,6 +42,6 @@ void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...
     while (comm_get_txspace(_chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES < sizeof(mavlink_statustext_t)) {
         hal.scheduler->delay(1);        
     }
-    mavlink_msg_statustext_send(_chan, 1, msg);
+    mavlink_msg_statustext_send(_chan, SEVERITY_USER_RESPONSE, msg);
 }
 
