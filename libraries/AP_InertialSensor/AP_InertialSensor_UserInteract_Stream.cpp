@@ -18,10 +18,6 @@ uint8_t AP_InertialSensor_UserInteractStream::blocking_read() {
     return ret;
 }
 
-void AP_InertialSensor_UserInteractStream::println_P(const prog_char_t* str) {
-    _s->println_P(str);
-}
-
 void AP_InertialSensor_UserInteractStream::_printf_P(
         const prog_char* fmt, ...) {
     va_list ap;
