@@ -12,6 +12,7 @@ echo "Testing ArduPlane build"
 pushd ArduPlane
 make px4-clean
 make px4
+make px4-io
 popd
 
 echo "Testing ArduCopter build"
@@ -25,15 +26,5 @@ pushd APMrover2
 make px4-clean
 make px4
 popd
-
-echo "Testing PX4IO build"
-pushd "$PX4_ROOT"
-make clean
-make configure_px4io
-make
-make clean
-make configure_px4fmu
-popd
-
 
 exit 0
