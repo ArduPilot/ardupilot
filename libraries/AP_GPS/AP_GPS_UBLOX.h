@@ -13,6 +13,7 @@
 #define __AP_GPS_UBLOX_H__
 
 #include <AP_HAL.h>
+#include <AP_Common.h>
 #include "GPS.h"
 
 /*
@@ -55,25 +56,24 @@ public:
 
 private:
     // u-blox UBX protocol essentials
-	#pragma pack(push,1)
-    struct ubx_header {
+    struct PACKED ubx_header {
         uint8_t preamble1;
         uint8_t preamble2;
         uint8_t msg_class;
         uint8_t msg_id;
         uint16_t length;
     };
-    struct ubx_cfg_nav_rate {
+    struct PACKED ubx_cfg_nav_rate {
         uint16_t measure_rate_ms;
         uint16_t nav_rate;
         uint16_t timeref;
     };
-    struct ubx_cfg_msg_rate {
+    struct PACKED ubx_cfg_msg_rate {
         uint8_t msg_class;
         uint8_t msg_id;
         uint8_t rate;
     };
-    struct ubx_cfg_nav_settings {
+    struct PACKED ubx_cfg_nav_settings {
         uint16_t mask;
         uint8_t dynModel;
         uint8_t fixMode;
@@ -92,7 +92,7 @@ private:
         uint32_t res4;
     };
 
-    struct ubx_nav_posllh {
+    struct PACKED ubx_nav_posllh {
         uint32_t time;                                  // GPS msToW
         int32_t longitude;
         int32_t latitude;
@@ -101,7 +101,7 @@ private:
         uint32_t horizontal_accuracy;
         uint32_t vertical_accuracy;
     };
-    struct ubx_nav_status {
+    struct PACKED ubx_nav_status {
         uint32_t time;                                  // GPS msToW
         uint8_t fix_type;
         uint8_t fix_status;
@@ -110,7 +110,7 @@ private:
         uint32_t time_to_first_fix;
         uint32_t uptime;                                // milliseconds
     };
-    struct ubx_nav_solution {
+    struct PACKED ubx_nav_solution {
         uint32_t time;
         int32_t time_nsec;
         int16_t week;
@@ -129,7 +129,7 @@ private:
         uint8_t satellites;
         uint32_t res2;
     };
-    struct ubx_nav_velned {
+    struct PACKED ubx_nav_velned {
         uint32_t time;                                  // GPS msToW
         int32_t ned_north;
         int32_t ned_east;
@@ -141,7 +141,7 @@ private:
         uint32_t heading_accuracy;
     };
     // Receive buffer
-    union {
+    union PACKED {
         ubx_nav_posllh posllh;
         ubx_nav_status status;
         ubx_nav_solution solution;
@@ -149,7 +149,6 @@ private:
         ubx_cfg_nav_settings nav_settings;
         uint8_t bytes[];
     } _buffer;
-	#pragma pack(pop)
 
     enum ubs_protocol_bytes {
         PREAMBLE1 = 0xb5,
