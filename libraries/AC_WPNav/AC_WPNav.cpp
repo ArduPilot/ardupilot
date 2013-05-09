@@ -59,8 +59,9 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon) :
+AC_WPNav::AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon) :
     _inav(inav),
+    _ahrs(ahrs),
     _pid_pos_lat(pid_pos_lat),
     _pid_pos_lon(pid_pos_lon),
     _pid_rate_lat(pid_rate_lat),
@@ -134,6 +135,10 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
     project_stopping_point(position, velocity, target);
     _target.x = target.x;
     _target.y = target.y;
+
+    // initialise desired roll and pitch to current roll and pitch.  This avoids a random twitch between now and when the loiter controller is first run
+    _desired_roll = constrain_int32(_ahrs->roll_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
+    _desired_pitch = constrain_int32(_ahrs->pitch_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
 }
 
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
@@ -293,6 +298,10 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 
     // default waypoint back to slow
     _flags.fast_waypoint = false;
+
+    // initialise desired roll and pitch to current roll and pitch.  This avoids a random twitch between now and when the wpnav controller is first run
+    _desired_roll = constrain_int32(_ahrs->roll_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
+    _desired_pitch = constrain_int32(_ahrs->pitch_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
