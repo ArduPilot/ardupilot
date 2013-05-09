@@ -25,7 +25,11 @@
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 
 // used to pack structures
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#define PACKED
+#else
 #define PACKED __attribute__((__packed__))
+#endif
 
 // Make some dire warnings into errors
 //
