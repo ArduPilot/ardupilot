@@ -536,8 +536,8 @@ static bool verify_RTL()
                 // Set wp navigation target to above home
                 wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
 
-                // set yaw mode
-                set_yaw_mode(YAW_HOLD);
+                // point nose towards home (maybe)
+                set_yaw_mode(get_wp_yaw_mode(true));
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_RETURNING_HOME;
