@@ -178,12 +178,14 @@ build_px4io() {
 	checkout PX4IO $tag || return
 	ddir=$binaries/PX4IO/$hdate/PX4IO
 	skip_build $tag $ddir || {
-	    make clean &&
-	    make configure_px4io &&
-	    make && 
-	    copyit px4io.bin $ddir $tag &&
-	    make configure_px4fmu
+	    popd
+	    pushd ArduPlane
+	    make px4-clean &&
+	    make px4-io &&
+	    copyit px4io.bin $ddir $tag
+	    popd
 	}
+	pushd $PX4_ROOT
 	git checkout master
 	popd
     }
