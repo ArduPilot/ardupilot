@@ -47,6 +47,7 @@ static void process_nav_command()
 
 }
 
+// process_cond_command - main switch statement to initiate the next conditional command in the command_cond_queue
 static void process_cond_command()
 {
     switch(command_cond_queue.id) {
@@ -72,6 +73,8 @@ static void process_cond_command()
     }
 }
 
+// process_now_command - main switch statement to initiate the next now command in the command_cond_queue
+// now commands are conditional commands that are executed immediately so they do not require a corresponding verify to be run later
 static void process_now_command()
 {
     switch(command_cond_queue.id) {
@@ -136,9 +139,9 @@ static void process_now_command()
 // Verify command Handlers
 /********************************************************************************/
 
-// verify_must - switch statement to ensure the active navigation command is progressing
+// verify_nav_command - switch statement to ensure the active navigation command is progressing
 // returns true once the active navigation command completes successfully
-static bool verify_must()
+static bool verify_nav_command()
 {
     switch(command_nav_queue.id) {
 
@@ -181,9 +184,9 @@ static bool verify_must()
     }
 }
 
-// verify_may - switch statement to ensure the active conditional command is progressing
+// verify_cond_command - switch statement to ensure the active conditional command is progressing
 // returns true once the active conditional command completes successfully
-static bool verify_may()
+static bool verify_cond_command()
 {
     switch(command_cond_queue.id) {
 
