@@ -6,6 +6,11 @@ static void update_navigation()
 {
     static uint32_t nav_last_update = 0;        // the system time of the last time nav was run update
 
+    // exit immediately if not auto_armed
+    if (!ap.auto_armed) {
+        return;
+    }
+
     // check for inertial nav updates
     if( inertial_nav.position_ok() ) {
 
