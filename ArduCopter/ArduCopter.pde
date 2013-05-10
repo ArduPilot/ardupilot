@@ -1906,6 +1906,7 @@ void update_throttle_mode(void)
             get_throttle_althold_with_slew(wp_nav.get_desired_alt(), -wp_nav.get_descent_velocity(), wp_nav.get_climb_velocity());
             set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
         }
+        // To-Do: explicitly set what the throttle output should be (probably min throttle).  Without setting it the throttle is simply left in it's last position although that is probably zero throttle anyway
         break;
 
     case THROTTLE_LAND:

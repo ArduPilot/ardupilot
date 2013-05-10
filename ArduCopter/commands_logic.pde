@@ -254,7 +254,6 @@ static void do_takeoff()
 }
 
 // do_nav_wp - initiate move to next waypoint
-// note: caller should set yaw mode
 static void do_nav_wp()
 {
     // set roll-pitch mode
@@ -318,6 +317,9 @@ static void do_loiter_unlimited()
 
     // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
     set_throttle_mode(THROTTLE_AUTO);
+
+    // hold yaw
+    set_yaw_mode(YAW_HOLD);
 
     // get current position
     // To-Do: change this to projection based on current location and velocity
@@ -383,6 +385,9 @@ static void do_loiter_time()
 
     // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
     set_throttle_mode(THROTTLE_AUTO);
+
+    // hold yaw
+    set_yaw_mode(YAW_HOLD);
 
     // get current position
     // To-Do: change this to projection based on current location and velocity
