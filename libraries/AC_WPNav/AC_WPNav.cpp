@@ -93,8 +93,8 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM
 /// simple loiter controller
 ///
 
-/// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
-void AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target)
+/// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
+void AC_WPNav::get_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target) const
 {
     float linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
     float linear_velocity;      // the velocity we swap between linear and sqrt.
@@ -132,7 +132,7 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
 {
     Vector3f target;
     calculate_loiter_leash_length();
-    project_stopping_point(position, velocity, target);
+    get_stopping_point(position, velocity, target);
     _target.x = target.x;
     _target.y = target.y;
 
@@ -264,7 +264,7 @@ void AC_WPNav::set_destination(const Vector3f& destination)
         _origin = _destination;
     }else{
         // otherwise calculate origin from the current position and velocity
-        project_stopping_point(_inav->get_position(), _inav->get_velocity(), _origin);
+        get_stopping_point(_inav->get_position(), _inav->get_velocity(), _origin);
     }
 
     // set origin and destination

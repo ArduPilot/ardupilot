@@ -71,6 +71,9 @@ public:
     /// get_angle_limit - retrieve maximum angle in centi-degrees the copter will lean
     int32_t get_angle_limit() const { return _lean_angle_max; }
 
+    /// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
+    void get_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target) const;
+
     ///
     /// waypoint controller
     ///
@@ -143,9 +146,6 @@ protected:
         uint8_t reached_destination     : 1;    // true if we have reached the destination
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
     } _flags;
-
-    /// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
-    void project_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target);
 
     /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
     void translate_loiter_target_movements(float nav_dt);
