@@ -76,7 +76,10 @@ void loop()
             hal.console->println("not healthy");
             return;
         }
-        heading = compass.calculate_heading(0,0); // roll = 0, pitch = 0 for this example
+	Matrix3f dcm_matrix;
+	// use roll = 0, pitch = 0 for this example
+	dcm_matrix.from_euler(0, 0, 0);
+        heading = compass.calculate_heading(dcm_matrix);
         compass.null_offsets();
 
         // capture min

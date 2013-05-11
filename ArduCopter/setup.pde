@@ -548,7 +548,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     }
 
     // enable motors and pass through throttle
-    motors.enable();
+    init_rc_out();
     motors.armed(true);
     motors.output_min();
 

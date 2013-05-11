@@ -219,6 +219,10 @@
 #define RTL_STATE_FINAL_DESCENT     4
 #define RTL_STATE_LAND              5
 
+// LAND state
+#define LAND_STATE_FLY_TO_LOCATION  0
+#define LAND_STATE_DESCENDING       1
+
 //repeating events
 #define RELAY_TOGGLE 5
 
@@ -251,13 +255,6 @@ enum ap_message {
     MSG_SIMSTATE,
     MSG_HWSTATUS,
     MSG_RETRY_DEFERRED // this must be last
-};
-
-enum gcs_severity {
-    SEVERITY_LOW=1,
-    SEVERITY_MEDIUM,
-    SEVERITY_HIGH,
-    SEVERITY_CRITICAL
 };
 
 //  Logging parameters

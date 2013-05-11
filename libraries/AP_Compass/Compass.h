@@ -66,20 +66,11 @@ public:
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
-    /// @param  roll                The current airframe roll angle.
-    /// @param  pitch               The current airframe pitch angle.
-    ///
-    /// @returns heading in radians
-    ///
-    float calculate_heading(float roll, float pitch);
-
-    /// Calculate the tilt-compensated heading_ variables.
-    ///
     /// @param dcm_matrix			The current orientation rotation matrix
     ///
     /// @returns heading in radians
     ///
-    float calculate_heading(const Matrix3f &dcm_matrix);
+    float calculate_heading(const Matrix3f &dcm_matrix) const;
 
     /// Sets the compass offset x/y/z values.
     ///
@@ -122,7 +113,7 @@ public:
     void null_offsets(void);
 
     /// return true if the compass should be used for yaw calculations
-    bool use_for_yaw(void) {
+    bool use_for_yaw(void) const {
         return healthy && _use_for_yaw;
     }
 
@@ -132,7 +123,7 @@ public:
     /// @param save_to_eeprom       true to save to eeprom (false saves only to memory)
     ///
     void set_declination(float radians, bool save_to_eeprom = true);
-    float get_declination();
+    float get_declination() const;
 
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation) {
@@ -152,7 +143,7 @@ public:
     }
 
     /// get the motor compensation value.
-    uint8_t motor_compensation_type() {
+    uint8_t motor_compensation_type() const {
         return _motor_comp_type;
     }
 
@@ -177,7 +168,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    Vector3f &get_motor_offsets() { return _motor_offset; }
+    const Vector3f &get_motor_offsets() const { return _motor_offset; }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0

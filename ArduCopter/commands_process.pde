@@ -145,7 +145,7 @@ static void execute_nav_command(void)
 static void verify_commands(void)
 {
     // check if navigation command completed
-    if(verify_must()) {
+    if(verify_nav_command()) {
         // clear navigation command queue so next command can be loaded
         command_nav_queue.id    = NO_COMMAND;
 
@@ -158,7 +158,7 @@ static void verify_commands(void)
     }
 
     // check if conditional command completed
-    if(verify_may()) {
+    if(verify_cond_command()) {
         // clear conditional command queue so next command can be loaded
         command_cond_queue.id = NO_COMMAND;
     }

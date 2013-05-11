@@ -15,6 +15,7 @@
 #include <AP_Buffer.h>
 #include <Filter.h>
 #include <AP_Baro.h>
+#include <GCS_MAVLink.h>
 
 #include <AP_HAL_AVR.h>
 

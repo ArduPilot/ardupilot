@@ -24,6 +24,7 @@
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence.h>           // Fence library
+#include <GCS_MAVLink.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

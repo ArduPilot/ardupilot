@@ -126,13 +126,6 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
-enum gcs_severity {
-    SEVERITY_LOW=1,
-    SEVERITY_MEDIUM,
-    SEVERITY_HIGH,
-    SEVERITY_CRITICAL
-};
-
 //  Logging parameters
 #define LOG_INDEX_MSG			0xF0
 #define LOG_ATTITUDE_MSG		0x01

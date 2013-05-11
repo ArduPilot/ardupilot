@@ -12,6 +12,7 @@
 #define __AP_GPS_SIRF_H__
 
 #include <AP_HAL.h>
+#include <AP_Common.h>
 #include "GPS.h"
 
 #define SIRF_SET_BINARY "$PSRF100,0,38400,8,1,0*3C"
@@ -32,8 +33,7 @@ public:
 	static bool         _detect(uint8_t data);
 
 private:
-    #pragma pack(push,1)
-    struct sirf_geonav {
+    struct PACKED sirf_geonav {
         uint16_t fix_invalid;
         uint16_t fix_type;
         uint16_t week;
@@ -70,7 +70,6 @@ private:
         uint8_t hdop;
         uint8_t mode_info;
     };
-    #pragma pack(pop)
     enum sirf_protocol_bytes {
         PREAMBLE1 = 0xa0,
         PREAMBLE2 = 0xa2,

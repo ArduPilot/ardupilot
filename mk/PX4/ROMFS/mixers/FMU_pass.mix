@@ -1,0 +1,23 @@
+Passthrough mixer for PX4FMU
+============================
+
+This file defines passthrough mixers suitable for testing.
+
+Channel group 0, channels 0-3 are passed directly through to the outputs.
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 0  10000  10000      0 -10000  10000
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 1  10000  10000      0 -10000  10000
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 2  10000  10000      0 -10000  10000
+
+M: 1
+O:      10000  10000      0 -10000  10000
+S: 0 3  10000  10000      0 -10000  10000
+

@@ -72,6 +72,8 @@ const AP_Param::GroupInfo AP_RangeFinder_analog::var_info[] PROGMEM = {
     // @Param: SETTLE_MS
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the sonar reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the sonar to give a reading after we set the STOP_PIN high. For a sonar with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
+    // @Units: milliseconds
+    // @Increment: 1
     AP_GROUPINFO("SETTLE_MS", 8, AP_RangeFinder_analog, _settle_time_ms, 0),
 
     AP_GROUPEND

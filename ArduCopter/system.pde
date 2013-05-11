@@ -391,12 +391,8 @@ static void set_mode(uint8_t mode)
     case AUTO:
     	ap.manual_throttle = false;
     	ap.manual_attitude = false;
-        set_yaw_mode(YAW_HOLD);     // yaw mode will be set by mission command
-        set_roll_pitch_mode(AUTO_RP);
-        set_throttle_mode(AUTO_THR);
-        // we do not set nav mode for auto because it will be overwritten when first command runs
-        // loads the commands from where we left off
-        init_commands();
+        // roll-pitch, throttle and yaw modes will all be set by the first nav command
+        init_commands();            // clear the command queues. will be reloaded when "run_autopilot" calls "update_commands" function
         break;
 
     case CIRCLE:

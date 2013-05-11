@@ -379,7 +379,14 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
     }
 
     // run the calibration routine
-    if( _calibrate_accel(samples, new_offsets, new_scaling) ) {
+    bool success = _calibrate_accel(samples, new_offsets, new_scaling);
+
+    interact->printf_P(PSTR("Offsets: %.2f %.2f %.2f\n"),
+                       new_offsets.x, new_offsets.y, new_offsets.z);
+    interact->printf_P(PSTR("Scaling: %.2f %.2f %.2f\n"),
+                       new_scaling.x, new_scaling.y, new_scaling.z);
+
+    if (success) {
         interact->printf_P(PSTR("Calibration successful\n"));
 
         // set and save calibration
@@ -393,10 +400,7 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
         return true;
     }
 
-    interact->printf_P(
-            PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
-             new_offsets.x, new_offsets.y, new_offsets.z,
-             new_scaling.x, new_scaling.y, new_scaling.z);
+    interact->printf_P(PSTR("Calibration FAILED\n"));
     // restore original scaling and offsets
     _accel_offset.set(orig_offset);
     _accel_scale.set(orig_scale);

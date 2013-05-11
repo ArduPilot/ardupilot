@@ -12,7 +12,7 @@
 
 // loiter maximum velocities and accelerations
 #define WPNAV_LOITER_SPEED              750.0f      // maximum default loiter speed in cm/s
-#define MAX_LOITER_POS_ACCEL            500.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
+#define MAX_LOITER_POS_ACCEL            250.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
 #define MAX_LOITER_VEL_ACCEL            800.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
@@ -28,14 +28,14 @@
 #define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
 
-#define WPNAV_WP_ACCELERATION           200.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
+#define WPNAV_WP_ACCELERATION           500.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
 
 class AC_WPNav
 {
 public:
 
     /// Constructor
-    AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon);
+    AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon);
 
     ///
     /// simple loiter controller
@@ -71,6 +71,9 @@ public:
     /// get_angle_limit - retrieve maximum angle in centi-degrees the copter will lean
     int32_t get_angle_limit() const { return _lean_angle_max; }
 
+    /// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
+    void get_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target) const;
+
     ///
     /// waypoint controller
     ///
@@ -94,7 +97,10 @@ public:
     int32_t get_bearing_to_destination();
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_destination() const { return _reached_destination; }
+    bool reached_destination() const { return _flags.reached_destination; }
+
+    /// set_fast_waypoint - set to true to ignore the waypoint radius and consider the waypoint 'reached' the moment the intermediate point reaches it
+    void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
 
     /// update_wp - update waypoint controller
     void update_wpnav();
@@ -135,9 +141,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-
-    /// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
-    void project_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target);
+    // flags structure
+    struct wpnav_flags {
+        uint8_t reached_destination     : 1;    // true if we have reached the destination
+        uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
+    } _flags;
 
     /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
     void translate_loiter_target_movements(float nav_dt);
@@ -167,8 +175,9 @@ protected:
     ///    set climb param to true if track climbs vertically, false if descending
     void calculate_wp_leash_length(bool climb);
 
-    // pointers to inertial nav library
+    // pointers to inertial nav and ahrs libraries
     AP_InertialNav*	_inav;
+    AP_AHRS*        _ahrs;
 
     // pointers to pid controllers
     APM_PI*		_pid_pos_lat;
@@ -208,7 +217,6 @@ protected:
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
-    bool        _reached_destination;   // true if we have reached the destination
     float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
     float       _wp_leash_xy;           // horizontal leash length in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint

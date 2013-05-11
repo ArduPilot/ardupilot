@@ -8,6 +8,10 @@
 
 extern AP_HAL::HAL& hal;
 
+// the last page holds the log format in first 4 bytes. Please change
+// this if (and only if!) the low level format changes
+#define DF_LOGGING_FORMAT    0x28122013
+
 // *** DATAFLASH PUBLIC FUNCTIONS ***
 void DataFlash_Block::StartWrite(uint16_t PageAdr)
 {
@@ -149,17 +153,19 @@ uint16_t DataFlash_Block::GetFilePage()
 
 void DataFlash_Block::EraseAll()
 {
-    for(uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
+    for (uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
         BlockErase(j);
         if (j%6 == 0) {
             hal.scheduler->delay(6);
         }
     }
     // write the logging format in the last page
+    hal.scheduler->delay(100);
     StartWrite(df_NumPages+1);
     uint32_t version = DF_LOGGING_FORMAT;
     WriteBlock(&version, sizeof(version));
     FinishWrite();
+    hal.scheduler->delay(100);
 }
 
 /*
@@ -172,5 +178,3 @@ bool DataFlash_Block::NeedErase(void)
     ReadBlock(&version, sizeof(version));
     return version != DF_LOGGING_FORMAT;
 }
-
-

@@ -43,6 +43,12 @@
                <entry value="12" name="MAV_AUTOPILOT_PX4">
                    <description>PX4 Autopilot - http://pixhawk.ethz.ch/px4/</description>
                </entry>
+               <entry value="13" name="MAV_AUTOPILOT_SMACCMPILOT">
+                   <description>SMACCMPilot - http://smaccmpilot.org</description>
+               </entry>
+               <entry value="14" name="MAV_AUTOPILOT_AUTOQUAD">
+                    <description>AutoQuad -- http://autoquad.org</description>
+               </entry>
           </enum>
           <enum name="MAV_TYPE">
                <entry value="0" name="MAV_TYPE_GENERIC">
@@ -1550,6 +1556,15 @@
              <field type="float" name="pressure_alt">Altitude calculated from pressure</field>
              <field type="float" name="temperature">Temperature in degrees celsius</field>
              <field type="uint16_t" name="fields_updated">Bitmask for fields that have updated since last message, bit 0 = xacc, bit 12: temperature</field>
+         </message>
+         <message id="106" name="OMNIDIRECTIONAL_FLOW">
+             <description>Optical flow from an omnidirectional flow sensor (e.g. PX4FLOW with wide angle lens)</description>
+             <field type="uint64_t" name="time_usec">Timestamp (microseconds, synced to UNIX time or since system boot)</field>
+             <field type="uint8_t" name="sensor_id">Sensor ID</field>
+             <field type="int16_t[10]" name="left">Flow in deci pixels (1 = 0.1 pixel) on left hemisphere</field>
+             <field type="int16_t[10]" name="right">Flow in deci pixels (1 = 0.1 pixel) on right hemisphere</field>
+             <field type="uint8_t" name="quality">Optical flow quality / confidence. 0: bad, 255: maximum quality</field>
+             <field type="float" name="front_distance_m">Front distance in meters. Positive value (including zero): distance known. Negative value: Unknown distance</field>
          </message>
          <message id="110" name="FILE_TRANSFER_START">
              <description>Begin file transfer</description>

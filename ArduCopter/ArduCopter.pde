@@ -514,7 +514,8 @@ static uint8_t command_cond_index;
 static float lon_error, lat_error;      // Used to report how many cm we are from the next waypoint or loiter target position
 static int16_t control_roll;
 static int16_t control_pitch;
-static uint8_t rtl_state;
+static uint8_t rtl_state;               // records state of rtl (initial climb, returning home, etc)
+static uint8_t land_state;              // records state of land (flying to location, descending)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Orientation
@@ -555,7 +556,7 @@ static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration
 static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
-static float target_alt_for_reporting;      // target altitude for reporting (logs and ground station)
+static float target_alt_for_reporting;      // target altitude in cm for reporting (logs and ground station)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -743,7 +744,7 @@ static AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
 // Waypoint navigation object
 // To-Do: move inertial nav up or other navigation variables down here
 ////////////////////////////////////////////////////////////////////////////////
-static AC_WPNav wp_nav(&inertial_nav, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid_loiter_rate_lat, &g.pid_loiter_rate_lon);
+static AC_WPNav wp_nav(&inertial_nav, &ahrs, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid_loiter_rate_lat, &g.pid_loiter_rate_lon);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
@@ -1911,6 +1912,7 @@ void update_throttle_mode(void)
             get_throttle_althold_with_slew(wp_nav.get_desired_alt(), -wp_nav.get_descent_velocity(), wp_nav.get_climb_velocity());
             set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
         }
+        // To-Do: explicitly set what the throttle output should be (probably min throttle).  Without setting it the throttle is simply left in it's last position although that is probably zero throttle anyway
         break;
 
     case THROTTLE_LAND:
@@ -1921,13 +1923,13 @@ void update_throttle_mode(void)
     }
 }
 
-// set_target_alt_for_reporting - set target altitude for reporting purposes (logs and gcs)
-static void set_target_alt_for_reporting(float alt)
+// set_target_alt_for_reporting - set target altitude in cm for reporting purposes (logs and gcs)
+static void set_target_alt_for_reporting(float alt_cm)
 {
-    target_alt_for_reporting = alt;
+    target_alt_for_reporting = alt_cm;
 }
 
-// get_target_alt_for_reporting - returns target altitude for reporting purposes (logs and gcs)
+// get_target_alt_for_reporting - returns target altitude in cm for reporting purposes (logs and gcs)
 static float get_target_alt_for_reporting()
 {
     return target_alt_for_reporting;

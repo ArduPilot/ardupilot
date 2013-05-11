@@ -59,8 +59,9 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon) :
+AC_WPNav::AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon) :
     _inav(inav),
+    _ahrs(ahrs),
     _pid_pos_lat(pid_pos_lat),
     _pid_pos_lon(pid_pos_lon),
     _pid_rate_lat(pid_rate_lat),
@@ -92,8 +93,8 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, APM_PI* pid_pos_lat, APM_PI* pid_pos_lo
 /// simple loiter controller
 ///
 
-/// project_stopping_point - returns vector to stopping point based on a horizontal position and velocity
-void AC_WPNav::project_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target)
+/// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
+void AC_WPNav::get_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target) const
 {
     float linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
     float linear_velocity;      // the velocity we swap between linear and sqrt.
@@ -131,9 +132,13 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
 {
     Vector3f target;
     calculate_loiter_leash_length();
-    project_stopping_point(position, velocity, target);
+    get_stopping_point(position, velocity, target);
     _target.x = target.x;
     _target.y = target.y;
+
+    // initialise desired roll and pitch to current roll and pitch.  This avoids a random twitch between now and when the loiter controller is first run
+    _desired_roll = constrain_int32(_ahrs->roll_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
+    _desired_pitch = constrain_int32(_ahrs->pitch_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
 }
 
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
@@ -255,11 +260,11 @@ void AC_WPNav::calculate_loiter_leash_length()
 void AC_WPNav::set_destination(const Vector3f& destination)
 {
     // if waypoint controlls is active and copter has reached the previous waypoint use it for the origin
-    if( _reached_destination && ((hal.scheduler->millis() - _wpnav_last_update) < 1000) ) {
+    if( _flags.reached_destination && ((hal.scheduler->millis() - _wpnav_last_update) < 1000) ) {
         _origin = _destination;
     }else{
         // otherwise calculate origin from the current position and velocity
-        project_stopping_point(_inav->get_position(), _inav->get_velocity(), _origin);
+        get_stopping_point(_inav->get_position(), _inav->get_velocity(), _origin);
     }
 
     // set origin and destination
@@ -286,7 +291,17 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     // initialise intermediate point to the origin
     _track_desired = 0;
     _target = origin;
-    _reached_destination = false;
+    _flags.reached_destination = false;
+
+    // reset limited speed to zero to slow initial acceleration away from wp
+    _limited_speed_xy_cms = 0;
+
+    // default waypoint back to slow
+    _flags.fast_waypoint = false;
+
+    // initialise desired roll and pitch to current roll and pitch.  This avoids a random twitch between now and when the wpnav controller is first run
+    _desired_roll = constrain_int32(_ahrs->roll_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
+    _desired_pitch = constrain_int32(_ahrs->pitch_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
 }
 
 /// advance_target_along_track - move target location along track from origin to destination
@@ -338,12 +353,18 @@ void AC_WPNav::advance_target_along_track(float dt)
     _target.z = _origin.z + (_pos_delta_unit.z * _track_desired)/_vert_track_scale;
 
     // check if we've reached the waypoint
-    if( !_reached_destination ) {
+    if( !_flags.reached_destination ) {
         if( _track_desired >= _track_length ) {
-            Vector3f dist_to_dest = curr_pos - _destination;
-            dist_to_dest.z *=_vert_track_scale;
-            if( dist_to_dest.length() <= _wp_radius_cm ) {
-                _reached_destination = true;
+            // "fast" waypoints are complete once the intermediate point reaches the destination
+            if (_flags.fast_waypoint) {
+                _flags.reached_destination = true;
+            }else{
+                // regular waypoints also require the copter to be within the waypoint radius
+                Vector3f dist_to_dest = curr_pos - _destination;
+                dist_to_dest.z *=_vert_track_scale;
+                if( dist_to_dest.length() <= _wp_radius_cm ) {
+                    _flags.reached_destination = true;
+                }
             }
         }
     }

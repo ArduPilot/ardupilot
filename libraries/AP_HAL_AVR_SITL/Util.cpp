@@ -1,11 +1,14 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #include <stdio.h>
 #include <stdarg.h>
+#include "utility/print_vprintf.h"
 
-int libc_vsnprintf(char* str, size_t size, const char *format, va_list ap) {
-    return vsnprintf(str, size, format, ap);
+int libc_vsnprintf(char* str, size_t size, const char *format, va_list ap) 
+{
+    return print_vsnprintf(str, size, format, ap);
 }
 
 #include "Util.h"
