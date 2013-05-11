@@ -58,7 +58,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
     // @Param: MOTCT
     // @DisplayName: Motor interference compensation type
-    // @Description: Set motor interference compensation type to disabled, throttle or current
+    // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.
     // @Values: 0:Disabled,1:Use Throttle,2:Use Current
     // @Increment: 1
     AP_GROUPINFO("MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
@@ -67,18 +67,21 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Motor interference compensation for body frame X axis
     // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
 
     // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
     // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
 
     // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
     // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
     AP_GROUPINFO("MOT",    7, Compass, _motor_compensation, 0),
 
