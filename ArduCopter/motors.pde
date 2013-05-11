@@ -89,10 +89,12 @@ static void init_arm_motors()
     // which calibrates the IMU
     static bool did_ground_start = false;
 
-    // disable failsafe because initialising everything takes a while
+    // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
+    
+    // start dataflash
+    start_logging();
 
-    //cliSerial->printf("\nARM\n");
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
@@ -144,9 +146,11 @@ static void init_arm_motors()
     ahrs2.set_fast_gains(false);
 #endif
 
+    // enable gps velocity based centrefugal force compensation
+    ahrs.set_correct_centrifugal(true);
+
     // finally actually arm the motors
     motors.armed(true);
-    set_armed(true);
 
     // reenable failsafe
     failsafe_enable();
@@ -193,7 +197,6 @@ static void init_disarm_motors()
 #endif
 
     motors.armed(false);
-    set_armed(false);
 
     compass.save_offsets();
 
@@ -211,6 +214,9 @@ static void init_disarm_motors()
 #if SECONDARY_DMP_ENABLED == ENABLED
     ahrs2.set_fast_gains(true);
 #endif
+
+    // disable gps velocity based centrefugal force compensation
+    ahrs.set_correct_centrifugal(false);
 }
 
 /*****************************************

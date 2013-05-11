@@ -18,8 +18,8 @@
 #define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
 
 // default boundaries
-#define AC_FENCE_ALT_MAX_DEFAULT                    150.0f  // default max altitude is 150m
-#define AC_FENCE_CIRCLE_RADIUS_DEFAULT              300.0f  // default circular fence radius is 300m
+#define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
+#define AC_FENCE_CIRCLE_RADIUS_DEFAULT              150.0f  // default circular fence radius is 150m
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
 

@@ -280,8 +280,8 @@ AP_AHRS_MPU6000::drift_correction_yaw(void)
             heading = _compass->calculate_heading(_dcm_matrix);
 
             // if this is the first good compass reading then set yaw to this heading
-            if( !_have_initial_yaw ) {
-                _have_initial_yaw = true;
+            if( !_flags.have_initial_yaw ) {
+                _flags.have_initial_yaw = true;
                 yaw_corrected = wrap_PI(heading);
             }
 

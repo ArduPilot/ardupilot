@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.72"
+#define THISFIRMWARE "ArduPlane V2.73beta"
 /*
  *  Lead developer: Andrew Tridgell
  *
@@ -55,11 +55,6 @@
 #include <SITL.h>
 
 #include <MobileDriver.h>
-
-// optional new controller library
-#if APM_CONTROL == ENABLED
-#include <APM_Control.h>
-#endif
 
 #include <AP_Navigation.h>
 #include <AP_L1_Control.h>
@@ -1064,7 +1059,6 @@ static void update_current_flight_mode(void)
                 nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
-#if APM_CONTROL == DISABLED
             float aspeed;
             if (ahrs.airspeed_estimate(&aspeed)) {
                 // don't use a pitch/roll integrators during takeoff if we are
@@ -1072,9 +1066,10 @@ static void update_current_flight_mode(void)
                 if (aspeed < g.flybywire_airspeed_min) {
                     g.pidServoPitch.reset_I();
                     g.pidServoRoll.reset_I();
+                    g.pitchController.reset_I();
+                    g.rollController.reset_I();
                 }
             }
-#endif
 
             // max throttle for takeoff
             g.channel_throttle.servo_out = g.throttle_max;
@@ -1166,6 +1161,7 @@ static void update_current_flight_mode(void)
         case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
             nav_roll_cd  = g.channel_roll.norm_input() * g.roll_limit_cd;
+            nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
             float pitch_input = g.channel_pitch.norm_input();
             if (pitch_input > 0) {
                 nav_pitch_cd = pitch_input * g.pitch_limit_max_cd;

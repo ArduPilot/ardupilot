@@ -27,6 +27,10 @@ public:
     void set_pin(uint8_t p);
     float voltage_average();
 
+    // stop pins not implemented on PX4 yet
+    void set_stop_pin(uint8_t p) {}
+    void set_settle_time(uint16_t settle_time_ms) {}
+
 private:
     // what pin it is attached to
     int16_t _pin;

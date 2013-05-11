@@ -203,7 +203,6 @@ static void set_next_WP(const struct Location *wp)
     if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
         prev_WP.alt != home.alt && 
         (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
-    	// What if we are x cm too low here; will it not cause the error to remain in next leg also?
         offset_altitude_cm = next_WP.alt - prev_WP.alt;
     } else {
         offset_altitude_cm = 0;        

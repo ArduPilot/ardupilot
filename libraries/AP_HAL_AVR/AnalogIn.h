@@ -19,7 +19,8 @@ public:
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
-    
+    void set_stop_pin(uint8_t p);
+    void set_settle_time(uint16_t settle_time_ms);    
 
     /* implementation specific interface: */
 
@@ -29,6 +30,12 @@ public:
     /* setup_read(): called to setup ADC registers for next measurment,
      * from interrupt */
     void setup_read();
+
+    /* stop_read(): called to stop device measurement */
+    void stop_read();
+
+    /* reading_settled(): called to check if we have read for long enough */
+    bool reading_settled();
 
     /* read_average: called to calculate and clear the internal average.
      * implements read_average(), unscaled. */
@@ -44,6 +51,13 @@ private:
 
     /* _pin designates the ADC input mux for the sample */
     uint8_t _pin;
+
+    /* _stop_pin designates a digital pin to use for
+       enabling/disabling the analog device */
+    uint8_t _stop_pin;
+    uint16_t _settle_time_ms;
+    uint32_t _read_start_time_ms;
+
     /* prescale scales the raw measurments for read()*/
     const float _prescale;
 };
@@ -64,7 +78,7 @@ protected:
     static ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];
     static int16_t _num_channels;
     static int16_t _active_channel;
-    static int16_t _channel_repeat_count;
+    static uint16_t _channel_repeat_count;
 
 private:
     ADCSource _vcc;

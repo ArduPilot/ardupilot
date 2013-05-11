@@ -33,6 +33,13 @@ T Vector2<T>::operator *(const Vector2<T> &v) const
     return x*v.x + y*v.y;
 }
 
+// cross product
+template <typename T>
+T Vector2<T>::operator %(const Vector2<T> &v) const
+{
+    return x*v.y - y*v.x;
+}
+
 template <typename T>
 Vector2<T> &Vector2<T>::operator *=(const T num)
 {
@@ -124,6 +131,7 @@ float Vector2<T>::angle(const Vector2<T> &v2) const
 // only define for float
 template float Vector2<float>::length(void) const;
 template float Vector2<float>::operator *(const Vector2<float> &v) const;
+template float Vector2<float>::operator %(const Vector2<float> &v) const;
 template Vector2<float> &Vector2<float>::operator *=(const float num);
 template Vector2<float> &Vector2<float>::operator /=(const float num);
 template Vector2<float> &Vector2<float>::operator -=(const Vector2<float> &v);

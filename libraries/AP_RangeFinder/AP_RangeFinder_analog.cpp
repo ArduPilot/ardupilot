@@ -14,19 +14,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-#include <AP_ADC_AnalogSource.h>
-# define SONAR_DEFAULT_PIN 127
-#else
-# define SONAR_DEFAULT_PIN 0
-#endif
+#define SONAR_DEFAULT_PIN 0
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_RangeFinder_analog::var_info[] PROGMEM = {
 
     // @Param: PIN
     // @DisplayName: Sonar pin
-    // @Description: Analog pin that sonar is connected to. Use pin number 127 for an APM1 Oilpan
+    // @Description: Analog pin that sonar is connected to. 
     AP_GROUPINFO("PIN",     0, AP_RangeFinder_analog, _pin, SONAR_DEFAULT_PIN),
 
     // @Param: SCALING
@@ -69,6 +64,16 @@ const AP_Param::GroupInfo AP_RangeFinder_analog::var_info[] PROGMEM = {
 	// @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("ENABLE",  6, AP_RangeFinder_analog, _enabled, 0),
 
+    // @Param: STOP_PIN
+    // @DisplayName: Sonar stop pin
+    // @Description: Digital pin that enables/disables sonar measurement. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the sonar and set to 0 to disable it. This can be used to ensure that multiple sonars don't interfere with each other.
+    AP_GROUPINFO("STOP_PIN", 7, AP_RangeFinder_analog, _stop_pin, -1),
+
+    // @Param: SETTLE_MS
+    // @DisplayName: Sonar settle time
+    // @Description: The time in milliseconds that the sonar reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the sonar to give a reading after we set the STOP_PIN high. For a sonar with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
+    AP_GROUPINFO("SETTLE_MS", 8, AP_RangeFinder_analog, _settle_time_ms, 0),
+
     AP_GROUPEND
 };
 
@@ -93,15 +98,9 @@ void AP_RangeFinder_analog::Init(void *adc)
    if (_source != NULL) {
 	  return;
    }
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-   if (_pin == 127) {
-	  _source = new AP_ADC_AnalogSource((AP_ADC*)adc, 7, 1.0);
-	  _last_pin = 127;
-	  return;
-   }
-#endif
    _source = hal.analogin->channel(_pin);
-   _last_pin = _pin;
+   _source->set_stop_pin((uint8_t)_stop_pin);
+   _source->set_settle_time((uint16_t)_settle_time_ms);
 }
 
 /*
@@ -115,11 +114,10 @@ float AP_RangeFinder_analog::voltage(void)
    if (_source == NULL) {
 	  return 0.0f;
    }
-   // check for pin changes
-   if (_last_pin != 127 && _last_pin != _pin) {
-	  _source->set_pin(_pin);
-	  _last_pin = _pin;
-   }
+   // cope with changed settings
+   _source->set_pin(_pin);
+   _source->set_stop_pin((uint8_t)_stop_pin);
+   _source->set_settle_time((uint16_t)_settle_time_ms);
    return _source->voltage_average();
 }
 

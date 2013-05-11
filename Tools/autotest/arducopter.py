@@ -14,7 +14,7 @@ HOME=mavutil.location(-35.362938,149.165085,584,270)
 homeloc = None
 num_wp = 0
 
-def hover(mavproxy, mav, hover_throttle=1300):
+def hover(mavproxy, mav, hover_throttle=1450):
     mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
 
@@ -49,7 +49,7 @@ def disarm_motors(mavproxy, mav):
     return True
 
 
-def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1510):
+def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1700):
     '''takeoff get to 30m altitude'''
     mavproxy.send('switch 6\n') # stabilize mode
     wait_mode(mav, 'STABILIZE')
@@ -61,10 +61,29 @@ def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1510):
     print("TAKEOFF COMPLETE")
     return True
 
-def loiter(mavproxy, mav, holdtime=60, maxaltchange=20):
+# loiter - fly south west, then hold loiter within 5m position and altitude
+def loiter(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=5):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
+
+    # first aim south east
+    print("turn south east")
+    mavproxy.send('rc 4 1580\n')
+    if not wait_heading(mav, 170):
+        return False
+    mavproxy.send('rc 4 1500\n')
+
+    #fly south east 50m
+    mavproxy.send('rc 2 1100\n')
+    if not wait_distance(mav, 50):
+        return False
+    mavproxy.send('rc 2 1500\n')
+
+    # wait for copter to slow moving
+    if not wait_groundspeed(mav, 0, 2):
+        return False
+
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     start = mav.location()
@@ -77,7 +96,9 @@ def loiter(mavproxy, mav, holdtime=60, maxaltchange=20):
         delta = get_distance(start, pos)
         print("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
         if math.fabs(m.alt - start_altitude) > maxaltchange:
-            tholdstart = time.time()
+            tholdstart = time.time()    # this will cause this test to timeout and fails
+        if delta > maxdistchange:
+            tholdstart = time.time()    # this will cause this test to timeout and fails
         if time.time() - tholdstart > holdtime:
             print("Loiter OK for %u seconds" % holdtime)
             return True
@@ -98,101 +119,127 @@ def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=108
     hover(mavproxy, mav)
     return True
 
-
+# fly a square in stabilize mode
 def fly_square(mavproxy, mav, side=50, timeout=120):
     '''fly a square, flying N then E'''
-    mavproxy.send('switch 6\n')
-    wait_mode(mav, 'STABILIZE')
     tstart = time.time()
     failed = False
 
-    print("Save WP 1 and 2")
-    save_wp(mavproxy, mav)
-
-    print("turn")
-    hover(mavproxy, mav)
-    mavproxy.send('rc 4 1550\n')
-    if not wait_heading(mav, 0):
-        return False
+    # ensure all sticks in the middle
+    mavproxy.send('rc 1 1500\n')
+    mavproxy.send('rc 2 1500\n')
+    mavproxy.send('rc 3 1500\n')
     mavproxy.send('rc 4 1500\n')
 
+    # switch to loiter mode temporarily to stop us from rising
+    mavproxy.send('switch 5\n')
+    wait_mode(mav, 'LOITER')
+
+    # first aim north
+    print("turn right towards north")
+    mavproxy.send('rc 4 1580\n')
+    if not wait_heading(mav, 10):
+        return False
+    mavproxy.send('rc 4 1500\n')
+    mav.recv_match(condition='RC_CHANNELS_RAW.chan4_raw==1500', blocking=True)
+
+    # save bottom left corner of box as waypoint
+    print("Save WP 1 & 2")
+    save_wp(mavproxy, mav)
+
+    # switch back to stabilize mode
+    mavproxy.send('rc 3 1400\n')
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'STABILIZE')
+
+    # pitch forward to fly north
     print("Going north %u meters" % side)
-    mavproxy.send('rc 2 1390\n')
+    mavproxy.send('rc 2 1300\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 2 1500\n')
 
+    # save top left corner of square as waypoint
     print("Save WP 3")
     save_wp(mavproxy, mav)
 
+    # roll right to fly east
     print("Going east %u meters" % side)
     mavproxy.send('rc 1 1700\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 1 1500\n')
 
+    # save top right corner of square as waypoint
     print("Save WP 4")
     save_wp(mavproxy, mav)
 
+    # pitch back to fly south
     print("Going south %u meters" % side)
     mavproxy.send('rc 2 1700\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 2 1500\n')
-    mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
 
+    # save bottom right corner of square as waypoint
     print("Save WP 5")
     save_wp(mavproxy, mav)
 
+    # roll left to fly west
     print("Going west %u meters" % side)
-    mavproxy.send('rc 1 1390\n')
+    mavproxy.send('rc 1 1300\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 1 1500\n')
 
+    # save bottom left corner of square (should be near home) as waypoint
     print("Save WP 6")
     save_wp(mavproxy, mav)
 
     return not failed
 
 def fly_RTL(mavproxy, mav, side=60, timeout=250):
-    '''Fly, return, land'''
-    mavproxy.send('switch 6\n')
-    wait_mode(mav, 'STABILIZE')
-    hover(mavproxy, mav)
-    failed = False
-
-    print("# Going forward %u meters" % side)
-    mavproxy.send('rc 2 1350\n')
-    if not wait_distance(mav, side, 5, 60):
-        failed = True
-    mavproxy.send('rc 2 1500\n')
-
+    '''Return, land'''
     print("# Enter RTL")
     mavproxy.send('switch 3\n')
     tstart = time.time()
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
-        #delta = get_distance(start, pos)
-        print("Alt: %u" % m.alt)
-        if(m.alt <= 1):
+        home_distance = get_distance(HOME, pos)
+        print("Alt: %u  HomeDistance: %.0f" % (m.alt, home_distance))
+        if(m.alt <= 1 and home_distance < 10):
             return True
-    return True
+    return False
 
-def fly_failsafe(mavproxy, mav, side=60, timeout=180):
-    '''Fly, Failsafe, return, land'''
+def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
+    '''Fly east, Failsafe, return, land'''
+
+    # switch to loiter mode temporarily to stop us from rising
+    mavproxy.send('switch 5\n')
+    wait_mode(mav, 'LOITER')
+
+    # first aim east
+    print("turn east")
+    mavproxy.send('rc 4 1580\n')
+    if not wait_heading(mav, 135):
+        return False
+    mavproxy.send('rc 4 1500\n')
+
+    # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
     hover(mavproxy, mav)
     failed = False
 
+    # fly east 60 meters
     print("# Going forward %u meters" % side)
     mavproxy.send('rc 2 1350\n')
     if not wait_distance(mav, side, 5, 60):
         failed = True
     mavproxy.send('rc 2 1500\n')
 
+    # pull throttle low
     print("# Enter Failsafe")
     mavproxy.send('rc 3 900\n')
     tstart = time.time()
@@ -216,42 +263,61 @@ def fly_failsafe(mavproxy, mav, side=60, timeout=180):
     mavproxy.send('switch 6\n')
     return False
 
+#fly_simple - assumes the simple bearing is initialised to be directly north
+#   flies a box with 100m west, 15 seconds north, 50 seconds east, 15 seconds south
+def fly_simple(mavproxy, mav, side=100, timeout=120):
 
-def fly_simple(mavproxy, mav, side=60, timeout=120):
+    #set SIMPLE mode
+    mavproxy.send('param set SIMPLE 63\n')
+
     '''fly Simple, flying N then E'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1350\n')
+    mavproxy.send('rc 3 1400\n')
 
     tstart = time.time()
     failed = False
 
-    print("# Going forward %u meters" % side)
-    mavproxy.send('rc 2 1390\n')
-    if not wait_distance(mav, side, 10, 60):
+    # fly west 100m
+    print("# Flying west %u meters" % side)
+    mavproxy.send('rc 1 1300\n')
+    if not wait_distance(mav, side, 5, 60):
         failed = True
-    mavproxy.send('rc 2 1500\n')
+    mavproxy.send('rc 1 1500\n')
 
-    print("# Going east for 30 seconds")
-    mavproxy.send('rc 1 1700\n')
+    # fly north 15 seconds
+    print("# Flying north for 15 seconds")
+    mavproxy.send('rc 2 1300\n')
     tstart = time.time()
-    while time.time() < (tstart + 30):
+    while time.time() < (tstart + 15):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (time.time() - tstart)
         #print("%u" % delta)
+    mavproxy.send('rc 2 1500\n')
+
+    # fly east 50 meters
+    print("# Flying east %u meters" % (side/2.0))
+    mavproxy.send('rc 1 1700\n')
+    if not wait_distance(mav, side/2, 5, 60):
+        failed = True
     mavproxy.send('rc 1 1500\n')
 
-    print("# Going back %u meters" % side)
+    # fly south 15 seconds
+    print("# Flying south for 15 seconds")
     mavproxy.send('rc 2 1700\n')
-    if not wait_distance(mav, side, 10, 60):
-        failed = True
+    tstart = time.time()
+    while time.time() < (tstart + 15):
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        delta = (time.time() - tstart)
+        #print("%u" % delta)
     mavproxy.send('rc 2 1500\n')
+
     #restore to default
     mavproxy.send('param set SIMPLE 0\n')
+
+    #hover in place
     hover(mavproxy, mav)
     return not failed
-
-
 
 
 def land(mavproxy, mav, timeout=60):
@@ -421,6 +487,7 @@ def fly_ArduCopter(viewerip=None, map=False):
             print("calibrate_level failed")
             failed = True
 
+        # Arm
         print("# Arm motors")
         if not arm_motors(mavproxy, mav):
             print("arm_motors failed")
@@ -430,50 +497,11 @@ def fly_ArduCopter(viewerip=None, map=False):
         if not takeoff(mavproxy, mav, 10):
             print("takeoff failed")
             failed = True
-
-        print("# Test RTL")
-        if not fly_RTL(mavproxy, mav):
-            print("RTL failed")
-            failed = True
-
-        print("# Takeoff")
-        if not takeoff(mavproxy, mav, 10):
-            print("takeoff failed")
-            failed = True
-
-        print("# Test Failsafe")
-        if not fly_failsafe(mavproxy, mav):
-            print("FS failed")
-            failed = True
-
-        print("# Takeoff")
-        if not takeoff(mavproxy, mav, 10):
-            print("takeoff failed")
-            failed = True
-
-        # Loiter for 30 seconds
-        print("# Loiter for 45 seconds")
-        if not loiter(mavproxy, mav, 45):
-            print("loiter failed")
-            failed = True
-
-        print("# Change alt to 60m")
-        if not change_alt(mavproxy, mav, 60):
-            print("change_alt failed")
-            failed = True
-
-        print("# Change alt to 20m")
-        if not change_alt(mavproxy, mav, 20):
-            print("change_alt failed")
-            failed = True
-
-        print("# Change alt to 20m")
-        if not change_alt(mavproxy, mav, 20):
-            print("change_alt failed")
-            failed = True
-
-
-        print("# Fly A square")
+        
+        # Fly a square in Stabilize mode
+        print("#")
+        print("########## Fly A square and save WPs with CH7 switch ##########")
+        print("#")
         if not fly_square(mavproxy, mav):
             print("fly_square failed")
             failed = True
@@ -485,59 +513,115 @@ def fly_ArduCopter(viewerip=None, map=False):
 
         print("Save landing WP")
         save_wp(mavproxy, mav)
+        mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
 
-        # save the stored mission
-        print("# Save out the C7 mission")
+        # save the stored mission to file
+        print("# Save out the CH7 mission to file")
         if not save_mission_to_file(mavproxy, mav, os.path.join(testdir, "ch7_mission.txt")):
             print("save_mission_to_file failed")
             failed = True
 
-        # save the stored mission
-        print("# Fly CH 7 saved mission")
+        # fly the stored mission
+        print("# Fly CH7 saved mission")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
             print("fly_mission failed")
             failed = True
 
-        #set SIMPLE mode
-        mavproxy.send('param set SIMPLE 63\n')
+        # Throttle Failsafe
+        print("#")
+        print("########## Test Failsafe ##########")
+        print("#")
+        if not fly_throttle_failsafe(mavproxy, mav):
+            print("FS failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Loiter for 30 seconds
+        print("#")
+        print("########## Test Loiter for 40 seconds ##########")
+        print("#")
+        if not loiter(mavproxy, mav, 30):
+            print("loiter failed")
+            failed = True
+
+        # Loiter Climb
+        print("#")
+        print("# Loiter - climb to 60m")
+        print("#")
+        if not change_alt(mavproxy, mav, 60):
+            print("change_alt failed")
+            failed = True
+
+        # Loiter Descend
+        print("#")
+        print("# Loiter - descend to 20m")
+        print("#")
+        if not change_alt(mavproxy, mav, 20):
+            print("change_alt failed")
+            failed = True
 
         if not takeoff(mavproxy, mav, 10):
             print("takeoff failed")
             failed = True
 
+        # RTL
+        print("#")
+        print("########## Test RTL ##########")
+        print("#")
+        if not fly_RTL(mavproxy, mav):
+            print("RTL failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Simple mode
         print("# Fly in SIMPLE mode")
         if not fly_simple(mavproxy, mav):
             print("fly_simple failed")
             failed = True
 
+        # RTL
+        print("#")
+        print("########## Test RTL ##########")
+        print("#")
+        if not fly_RTL(mavproxy, mav):
+            print("RTL failed")
+            failed = True
 
+        # Fly mission #1
         print("# Upload mission1")
-        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission2.txt")):
+        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
             print("upload_mission_from_file failed")
             failed = True
 
         # this grabs our mission count
         print("# store mission1 locally")
-        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission2.txt")):
+        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
             print("load_mission_from_file failed")
             failed = True
 
-        print("# Fly mission 2")
+        print("# Fly mission 1")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
             print("fly_mission failed")
             failed = True
         else:
-            print("Flew mission2 OK")
+            print("Flew mission 1 OK")
 
-        print("# Land")
-        if not land(mavproxy, mav):
-            print("land failed")
+        #mission includes LAND at end so should be ok to disamr
+        print("# disarm motors")
+        if not disarm_motors(mavproxy, mav):
+            print("disarm_motors failed")
             failed = True
 
-        #print("# disarm motors")
-        #if not disarm_motors(mavproxy, mav):
-        #    print("disarm_motors failed")
-        #    failed = True
     except pexpect.TIMEOUT, e:
         failed = True
 
@@ -554,7 +638,3 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("FAILED: %s" % e)
         return False
     return True
-
-
-
-

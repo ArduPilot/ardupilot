@@ -850,7 +850,10 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 // start a new log
 static void start_logging() 
 {
-    DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
+    if (g.log_bitmask != 0 && !ap.logging_started) {
+        ap.logging_started = true;
+        DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
+    }
 }
 
 #else // LOGGING_ENABLED

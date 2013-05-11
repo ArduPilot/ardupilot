@@ -394,7 +394,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FRAME
     // @DisplayName: Frame Orientation (+, X or V)
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V
+    // @Values: 0:Plus, 1:X, 2:V, 3:H
     // @User: Standard
     // @Range: 0 32767
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
@@ -966,6 +966,8 @@ static void load_parameters(void)
     if (!ahrs.gps_gain.load()) {
         ahrs.gps_gain.set_and_save(1.0);
     }
+    // disable centrifugal force correction, it will be enabled as part of the arming process
+    ahrs.set_correct_centrifugal(false);
 
     // setup different AHRS gains for ArduCopter than the default
     // but allow users to override in their config

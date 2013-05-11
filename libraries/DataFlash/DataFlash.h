@@ -55,6 +55,8 @@ public:
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor *ins);
+    void Log_Write_Message(const char *message);
+    void Log_Write_Message_P(const prog_char_t *message);
 
 	/*
       every logged packet starts with 3 bytes
@@ -158,6 +160,11 @@ struct PACKED log_GPS {
     int32_t  ground_course;
 };
 
+struct PACKED log_Message {
+    LOG_PACKET_HEADER;
+    char msg[64];
+};
+
 struct PACKED log_IMU {
     LOG_PACKET_HEADER;
     float gyro_x, gyro_y, gyro_z;
@@ -172,13 +179,16 @@ struct PACKED log_IMU {
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "BIBcLLeeEe", "Status,Time,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "ffffff",     "GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }
+      "IMU",  "ffffff",     "GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+    { LOG_MESSAGE_MSG, sizeof(log_Message), \
+      "MSG",  "Z",     "Message" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
 #define LOG_PARAMETER_MSG 129
 #define LOG_GPS_MSG		  130
 #define LOG_IMU_MSG		  131
+#define LOG_MESSAGE_MSG	  132
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

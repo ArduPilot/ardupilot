@@ -267,5 +267,10 @@ enum {
     ALT_CONTROL_NON_AIRSPEED=1
 };
 
+// attitude controller choice
+enum {
+    ATT_CONTROL_PID = 0,
+    ATT_CONTROL_APMCONTROL = 1
+};
 
 #endif // _DEFINES_H

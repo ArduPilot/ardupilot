@@ -64,7 +64,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
-    GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR",   P_TO_T),
+    GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR",   0),
 
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
@@ -72,7 +72,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
-    GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   T_TO_P),
+    GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   0),
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
@@ -137,6 +137,13 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Values: 0:Legacy,1:L1Controller
 	// @User: Standard
 	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
+
+	// @Param: ATT_CONTROLLER
+	// @DisplayName: Attitude controller selection
+	// @Description: Which attitude (roll, pitch, yaw) controller to enable
+	// @Values: 0:PID,1:APMControl
+	// @User: Standard
+	GSCALAR(att_controller,          "ATT_CONTROLLER",   ATT_CONTROL_PID),
 
     // @Param: ALT_MIX
     // @DisplayName: Gps to Baro Mix
@@ -680,15 +687,21 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
 
-#if APM_CONTROL == DISABLED
 	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
 	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
 	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
-#else
-	GGROUP(rollController,          "RLL_",       AP_RollController),
-	GGROUP(pitchController,         "PTCH_",      AP_PitchController),
-	GGROUP(yawController,           "YWCTL_",     AP_YawController),
-#endif
+
+    // @Group: CTL_RLL_
+    // @Path: ../libraries/APM_Control/AP_RollController.cpp
+	GGROUP(rollController,          "CTL_RLL_",   AP_RollController),
+
+    // @Group: CTL_PTCH_
+    // @Path: ../libraries/APM_Control/AP_PitchController.cpp
+	GGROUP(pitchController,         "CTL_PTCH_",  AP_PitchController),
+
+    // @Group: CTL_YAW_
+    // @Path: ../libraries/APM_Control/AP_YawController.cpp
+	GGROUP(yawController,           "CTL_YAW_",   AP_YawController),
 
 	// variables not in the g class which contain EEPROM saved variables
 

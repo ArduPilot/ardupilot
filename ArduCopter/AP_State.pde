@@ -14,21 +14,6 @@ void set_home_is_set(bool b)
 }
 
 // ---------------------------------------------
-void set_armed(bool b)
-{
-    // if no change, exit immediately
-    if( ap.armed == b )
-        return;
-
-    ap.armed = b;
-    if(b){
-        Log_Write_Event(DATA_ARMED);
-    }else{
-        Log_Write_Event(DATA_DISARMED);
-    }
-}
-
-// ---------------------------------------------
 void set_auto_armed(bool b)
 {
     // if no change, exit immediately

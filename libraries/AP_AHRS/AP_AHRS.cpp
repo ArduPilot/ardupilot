@@ -84,6 +84,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Increment: .01
     AP_GROUPINFO("COMP_BETA",  10, AP_AHRS, beta, 0.1f),
 
+    // @Param: GPS_MINSATS
+    // @DisplayName: AHRS GPS Minimum satellites
+    // @Description: Minimum number of satellites visible to use GPS for velocity based corrections attitude correction. This defaults to 6, which is about the point at which the velocity numbers from a GPS become too unreliable for accurate correction of the accelerometers.
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("GPS_MINSATS", 11, AP_AHRS, _gps_minsats, 6),
+
     AP_GROUPEND
 };
 

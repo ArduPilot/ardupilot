@@ -41,7 +41,8 @@ uint32_t AP_InertialSensor_Stub::get_last_sample_time_micros() {
     return _last_update_ms * 1000;
 }
 float AP_InertialSensor_Stub::get_gyro_drift_rate(void) {
-    return 0.0;
+    // 0.5 degrees/second/minute
+    return ToRad(0.5/60);
 }
 uint16_t AP_InertialSensor_Stub::num_samples_available()
 {

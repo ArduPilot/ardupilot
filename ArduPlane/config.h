@@ -664,12 +664,6 @@
 #ifndef THROTTLE_SLEW_LIMIT
  # define THROTTLE_SLEW_LIMIT  0
 #endif
-#ifndef P_TO_T
- # define P_TO_T               0
-#endif
-#ifndef T_TO_P
- # define T_TO_P               0
-#endif
 #ifndef PITCH_TARGET
  # define PITCH_TARGET         0
 #endif
@@ -776,11 +770,6 @@
 // OBC Failsafe enable
 #ifndef OBC_FAILSAFE
  # define OBC_FAILSAFE DISABLED
-#endif
-
-// new APM_Control controller library by Jon Challinger
-#ifndef APM_CONTROL
-# define APM_CONTROL DISABLED
 #endif
 
 #ifndef SERIAL_BUFSIZE

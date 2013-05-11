@@ -36,7 +36,7 @@ float longitude_scale(const struct Location *loc)
         // the same scale factor.
         return scale;
     }
-    scale = cosf((fabsf((float)loc->lat)/1.0e7f) * 0.0174532925f);
+    scale = cosf((fabsf((float)loc->lat)/1.0e7f) * DEG_TO_RAD);
     last_lat = loc->lat;
     return scale;
 }

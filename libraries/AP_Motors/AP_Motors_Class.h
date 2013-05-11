@@ -35,6 +35,7 @@
 #define AP_MOTORS_PLUS_FRAME        0
 #define AP_MOTORS_X_FRAME           1
 #define AP_MOTORS_V_FRAME           2
+#define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT 490

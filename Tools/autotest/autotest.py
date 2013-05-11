@@ -110,6 +110,7 @@ def convert_gpx():
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
         util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
+        util.run_cmd(util.reltopdir("../MAVProxy/tools/mavflightview.py") + " --imagefile=%s.png %s" % (m,m))
     return True
 
 
@@ -295,6 +296,7 @@ class TestResults(object):
         self.githash = util.run_cmd('git rev-parse HEAD', output=True, dir=util.reltopdir('.')).strip()
         self.tests = []
         self.files = []
+        self.images = []
 
     def add(self, name, result, elapsed):
         '''add a result'''
@@ -304,11 +306,21 @@ class TestResults(object):
         '''add a result file'''
         self.files.append(TestFile(name, fname))
 
+    def addimage(self, name, fname):
+        '''add a result image'''
+        self.images.append(TestFile(name, fname))
+
     def addglob(self, name, pattern):
         '''add a set of files'''
         import glob
         for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
             self.addfile(name, os.path.basename(f))
+
+    def addglobimage(self, name, pattern):
+        '''add a set of images'''
+        import glob
+        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+            self.addimage(name, os.path.basename(f))
 
 
 
@@ -379,6 +391,7 @@ def run_tests(steps):
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
     results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
+    results.addglobimage("Flight Track", '*.png')
 
     write_webresults(results)
 

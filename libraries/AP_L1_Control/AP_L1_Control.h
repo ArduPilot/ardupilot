@@ -87,9 +87,6 @@ private:
     // coordinates based on a reference point
 	Vector2f _geo2planar(const Vector2f &ref, const Vector2f &wp) const;
 
-    //Calculate the cross product of two 2D vectors
-	float _cross2D(const Vector2f &v1, const Vector2f &v2);
-
 	//Calculate the maximum of two floating point numbers
 	float _maxf(const float &num1, const float &num2) const;
 

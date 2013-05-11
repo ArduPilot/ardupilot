@@ -22,6 +22,13 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
 
+    // @Param: INITIAL_MODE
+    // @DisplayName: Initial driving mode
+    // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usuallly used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
+    // @Values: 0:MANUAL,2:LEARNING,3:STEERING,4:HOLD,10:AUTO,11:RTL,15:GUIDED
+    // @User: Advanced
+	GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
+
     // @Param: RSSI_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum
@@ -131,7 +138,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: AUTO_TRIGGER_PIN
 	// @DisplayName: Auto mode trigger pin
-	// @Description: pin number to use to trigger start of auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will start the motor.
+	// @Description: pin number to use to trigger start of auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will start the motor, and otherwise will force the throttle off. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
 	// @Values: -1:Disabled,0-9:TiggerPin
 	// @User: standard
 	GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),

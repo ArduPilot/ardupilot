@@ -2145,6 +2145,9 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
     if (gcs3.initialised) {
         gcs3.send_text_P(severity, str);
     }
+#if LOGGING_ENABLED == ENABLED
+    DataFlash.Log_Write_Message_P(str);
+#endif
 }
 
 /*
@@ -2160,6 +2163,9 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     hal.util->vsnprintf_P((char *)gcs0.pending_status.text,
             sizeof(gcs0.pending_status.text), fmt, arg_list);
     va_end(arg_list);
+#if LOGGING_ENABLED == ENABLED
+    DataFlash.Log_Write_Message(gcs0.pending_status.text);
+#endif
     gcs3.pending_status = gcs0.pending_status;
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
     if (gcs3.initialised) {

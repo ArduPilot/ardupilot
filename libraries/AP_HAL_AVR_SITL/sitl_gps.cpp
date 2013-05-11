@@ -232,7 +232,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	memset(&sol, 0, sizeof(sol));
 	sol.fix_type = d->have_lock?3:0;
 	sol.fix_status = 221;
-	sol.satellites = d->have_lock?10:3;
+	sol.satellites = d->have_lock?_sitl->gps_numsats:3;
 
 	_gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
 	_gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
@@ -297,7 +297,7 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
 	if (p.ground_course < 0.0) {
 		p.ground_course += 360.0 * 1000000.0;
 	}
-    p.satellites    = d->have_lock?10:3;
+    p.satellites    = d->have_lock?_sitl->gps_numsats:3;
     p.fix_type      = d->have_lock?3:1;
 
 	// the spec is not very clear, but the time field seems to be
@@ -353,7 +353,7 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
 	if (p.ground_course < 0.0) {
 		p.ground_course += 360.0 * 100.0;
 	}
-    p.satellites    = d->have_lock?10:3;
+    p.satellites    = d->have_lock?_sitl->gps_numsats:3;
     p.fix_type      = d->have_lock?3:1;
 
 	// the spec is not very clear, but the time field seems to be
@@ -411,7 +411,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
 	if (p.ground_course < 0.0) {
 		p.ground_course += 360.0 * 100.0;
 	}
-    p.satellites    = d->have_lock?10:3;
+    p.satellites    = d->have_lock?_sitl->gps_numsats:3;
     p.fix_type      = d->have_lock?3:1;
 
 	// the spec is not very clear, but the time field seems to be

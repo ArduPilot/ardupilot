@@ -86,6 +86,7 @@ public:
         k_param_vtail_output,
         k_param_nav_controller,
         k_param_elevon_output,
+        k_param_att_controller,
 
         // 110: Telemetry control
         //
@@ -263,6 +264,9 @@ public:
     // navigation controller type. See AP_Navigation::ControllerType
     AP_Int8  nav_controller;
 
+    // attitude controller type.
+    AP_Int8  att_controller;
+
     // Estimation
     //
     AP_Float altitude_mix;
@@ -389,15 +393,13 @@ public:
 
     // PID controllers
     //
-#if APM_CONTROL == DISABLED
     PID         pidServoRoll;
     PID         pidServoPitch;
     PID         pidServoRudder;
-#else
+
     AP_RollController  rollController;
     AP_PitchController pitchController;
     AP_YawController   yawController;
-#endif
 
     PID         pidNavPitchAirspeed;
     PID         pidTeThrottle;
@@ -423,15 +425,12 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12                                   (CH_12),
 #endif
-
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
 
-#if APM_CONTROL == DISABLED
         pidServoRoll        (SERVO_ROLL_P,    SERVO_ROLL_I,    SERVO_ROLL_D,    SERVO_ROLL_INT_MAX_CENTIDEGREE),
         pidServoPitch       (SERVO_PITCH_P,   SERVO_PITCH_I,   SERVO_PITCH_D,   SERVO_PITCH_INT_MAX_CENTIDEGREE),
         pidServoRudder      (SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
-#endif
 
         pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
         pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
