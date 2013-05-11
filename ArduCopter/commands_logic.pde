@@ -582,11 +582,13 @@ static bool verify_RTL()
                 // first stage of RTL is the initial climb so just hold current yaw
                 set_yaw_mode(YAW_HOLD);
 
-                // get current position
-                // To-Do: use projection of safe stopping point based on current location and velocity
-                Vector3f target_pos = inertial_nav.get_position();
-                target_pos.z = get_RTL_alt();
-                wp_nav.set_destination(target_pos);
+                // use projection of safe stopping point based on current location and velocity
+                Vector3f origin, dest;
+                wp_nav.get_stopping_point(inertial_nav.get_position(),inertial_nav.get_velocity(),origin);
+                dest.x = origin.x;
+                dest.y = origin.y;
+                dest.z = get_RTL_alt();
+                wp_nav.set_origin_and_destination(origin,dest);
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_INITIAL_CLIMB;
@@ -596,6 +598,10 @@ static bool verify_RTL()
 
                 // Set wp navigation target to above home
                 wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
+
+                // initialise original_wp_bearing which is used to point the nose home
+                wp_bearing = wp_nav.get_bearing_to_destination();
+                original_wp_bearing = wp_bearing;
                 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_RETURNING_HOME;
@@ -609,6 +615,10 @@ static bool verify_RTL()
 
                 // Set wp navigation target to above home
                 wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
+
+                // initialise original_wp_bearing which is used to point the nose home
+                wp_bearing = wp_nav.get_bearing_to_destination();
+                original_wp_bearing = wp_bearing;
 
                 // point nose towards home (maybe)
                 set_yaw_mode(get_wp_yaw_mode(true));
