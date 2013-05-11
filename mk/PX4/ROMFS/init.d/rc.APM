@@ -70,7 +70,6 @@ then
 	ms5611 start
 	hmc5883 start
 	adc start
-	px4io start
 
 	echo "Trying PX4IO board"
 	echo "Trying PX4IO board" >> $logfile
