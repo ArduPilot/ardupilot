@@ -95,7 +95,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 	
 	//Calculate groundspeed
-	float groundSpeed = _groundspeed_vector.length();
+	float groundSpeed = _maxf(_groundspeed_vector.length(), 1.0f);
 
 	// Calculate time varying control parameters
 	// Calculate the L1 length required for specified period
@@ -111,50 +111,65 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     A_air = _geo2planar(A_v, A_air)*RADIUS_OF_EARTH;
     Vector2f AB = _geo2planar(A_v, B_v)*RADIUS_OF_EARTH;
 	
-    //Calculate the unit vector from WP A to WP B
-    Vector2f AB_unit = (AB).normalized();
+	//Check for AB zero length and don't perform calculations if too small
+	if ((AB).length() < 1e-6)
+	{
+		// If AB zero length then an upstream error has occurred so place aircraft
+		// in a gentle RH circle to buy time
+		_latAccDem = 5.0f;
+		_crosstrack_error = 0.0f;
+		_WPcircle = false;
+		_bearing_error = 0.0f;
+		_nav_bearing = 0.0f;
+		_crosstrack_error = 0.0f;
+	}
+	else
+	{
+		//Calculate the unit vector from WP A to WP B
+		Vector2f AB_unit = (AB).normalized();
 
-	// calculate distance to target track, for reporting
-	_crosstrack_error = AB_unit % A_air;
+		// calculate distance to target track, for reporting
+		_crosstrack_error = AB_unit % A_air;
 
-    //Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
-	//and further than L1 distance from WP A. Then use WP A as the L1 reference point
-	//Otherwise do normal L1 guidance
-	float WP_A_dist = A_air.length();
-	float alongTrackDist = A_air * AB_unit;
-	if (WP_A_dist > _L1_dist && alongTrackDist/(WP_A_dist + 1.0f) < -0.7071f) {
+		//Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
+		//and further than L1 distance from WP A. Then use WP A as the L1 reference point
+		//Otherwise do normal L1 guidance
+		float WP_A_dist = A_air.length();
+		float alongTrackDist = A_air * AB_unit;
+		if (WP_A_dist > _L1_dist && alongTrackDist/_maxf(WP_A_dist , 1.0f) < -0.7071f) {
 
-        //Calc Nu to fly To WP A
-		Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
-		xtrackVel = _groundspeed_vector % (-A_air_unit); // Velocity across line
-		ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
-		Nu = atan2f(xtrackVel,ltrackVel);
-		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
+			//Calc Nu to fly To WP A
+			Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
+			xtrackVel = _groundspeed_vector % (-A_air_unit); // Velocity across line
+			ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
+			Nu = atan2f(xtrackVel,ltrackVel);
+			_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
+			
+		} else { //Calc Nu to fly along AB line
+			
+			//Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
+			xtrackVel = _groundspeed_vector % AB_unit; // Velocity cross track
+			ltrackVel = _groundspeed_vector * AB_unit; // Velocity along track
+			float Nu2 = atan2f(xtrackVel,ltrackVel);
+			//Calculate Nu1 angle (Angle to L1 reference point)
+			float xtrackErr = A_air % AB_unit;
+			float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
+			//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
+			sine_Nu1 = constrain_float(sine_Nu1, -0.7854f, 0.7854f);
+			float Nu1 = asinf(sine_Nu1);
+			Nu = Nu1 + Nu2;
+			_nav_bearing = atan2f(AB_unit.y, AB_unit.x) + Nu1; // bearing (radians) from AC to L1 point		
+		}	
+			
+		//Limit Nu to +-pi
+		Nu = constrain_float(Nu, -1.5708f, +1.5708f);
+		_latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 		
-    } else { //Calc Nu to fly along AB line
+		// Waypoint capture status is always false during waypoint following
+		_WPcircle = false;
 		
-		//Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
-		xtrackVel = _groundspeed_vector % AB_unit; // Velocity cross track
-		ltrackVel = _groundspeed_vector * AB_unit; // Velocity along track
-		float Nu2 = atan2f(xtrackVel,ltrackVel);
-		//Calculate Nu1 angle (Angle to L1 reference point)
-		float xtrackErr = A_air % AB_unit;
-		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
-		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
-		sine_Nu1 = constrain_float(sine_Nu1, -0.7854f, 0.7854f);
-		float Nu1 = asinf(sine_Nu1);
-		Nu = Nu1 + Nu2;
-		_nav_bearing = atan2f(AB_unit.y, AB_unit.x) + Nu1; // bearing (radians) from AC to L1 point		
-	}	
-		
-	//Limit Nu to +-pi
-	Nu = constrain_float(Nu, -1.5708f, +1.5708f);
-	_latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
-	
-	// Waypoint capture status is always false during waypoint following
-	_WPcircle = false;
-	
-	_bearing_error = Nu; // bearing error angle (radians), +ve to left of track
+		_bearing_error = Nu; // bearing error angle (radians), +ve to left of track
+	}
 }
 
 // update L1 control for loitering
@@ -179,7 +194,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 
 	//Calculate groundspeed
-	float groundSpeed = _groundspeed_vector.length();
+	float groundSpeed = _maxf(_groundspeed_vector.length() , 1.0f);
 
 	// Calculate time varying control parameters
 	// Calculate the L1 length required for specified period
