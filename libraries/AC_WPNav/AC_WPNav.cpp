@@ -168,7 +168,7 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 
     // constrain the velocity vector and scale if necessary
     vel_delta_total = safe_sqrt(target_vel_adj.x*target_vel_adj.x + target_vel_adj.y*target_vel_adj.y);
-    vel_max = MAX_LOITER_POS_ACCEL*nav_dt;
+    vel_max = 2.0*MAX_LOITER_POS_ACCEL*nav_dt;
     if( vel_delta_total >  vel_max) {
         target_vel_adj.x = vel_max * target_vel_adj.x/vel_delta_total;
         target_vel_adj.y = vel_max * target_vel_adj.y/vel_delta_total;
