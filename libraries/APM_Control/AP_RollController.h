@@ -22,10 +22,10 @@ public:
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	AP_Float _kp_angle;
-	AP_Float _kp_ff;
-	AP_Float _kp_rate;
-	AP_Float _ki_rate;
+	AP_Float _tau;
+	AP_Float _K_P;
+	AP_Float _K_I;
+	AP_Float _K_D;
 	AP_Int16 _max_rate;
 	uint32_t _last_t;
 	float _last_out;
