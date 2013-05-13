@@ -150,6 +150,9 @@ static void init_arm_motors()
     // finally actually arm the motors
     motors.armed(true);
 
+    // log arming to dataflash
+    Log_Write_Event(DATA_ARMED);
+
     // reenable failsafe
     failsafe_enable();
 }
@@ -212,6 +215,9 @@ static void init_disarm_motors()
 #if SECONDARY_DMP_ENABLED == ENABLED
     ahrs2.set_fast_gains(true);
 #endif
+
+    // log disarm to the dataflash
+    Log_Write_Event(DATA_DISARMED);
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
