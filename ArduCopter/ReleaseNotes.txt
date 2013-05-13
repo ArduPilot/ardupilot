@@ -1,5 +1,22 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.0.0-rc2 13-May-2013
+Improvements over3.0.0-rc1:
+1) smoother transition to waypoints, loiter:
+    reduced loiter max acceleration to smooth waypoints
+    bug fix to uninitialised roll/pitch when entering RTL, AUTO, LOITER
+2) fast waypoints - copter does not stop at waypoints unless delay is specified
+3) WPNAV_LOIT_SPEED added to allow faster/slower loiter repositioning
+4) removed speed limits on auto missions
+5) enhance LAND mission command takes lat/lon coordinates
+6) bug fix for RTL not pointing home sometimes
+7) centrifugal correction disabled when copter is disarmed to stop HUD moving
+8) centrifugal correction disabled when sat count less than 6 (AHRS_GPS_MINSATS)
+9) compass calibration reliability improvements when run from mission planner
+10) bug fix to allow compassmot to be run from mission planner terminal screen
+11) add support for H-quad frame
+12) add COMPASS_ORIENT parameter to support external compass in any orientation
+------------------------------------------------------------------
 ArduCopter 3.0.0-rc1 01-May-2013
 Improvements over 2.9.1b:
 1) Inertial navigation for X & Y axis (Randy/Leonard/Jonathan)
