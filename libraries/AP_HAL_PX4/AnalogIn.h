@@ -26,6 +26,7 @@ public:
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    float voltage_average_ratiometric() { return voltage_average(); }
 
     // stop pins not implemented on PX4 yet
     void set_stop_pin(uint8_t p) {}

@@ -59,6 +59,17 @@ float ADCSource::voltage_average(void)
     return v * vcc_mV * 9.765625e-7; // 9.765625e-7 = 1.0/(1024*1000)
 }
 
+/*
+  return voltage from 0.0 to 5.0V, assuming a ratiometric sensor. This
+  means the result is really a pseudo-voltage, that assumes the supply
+  voltage is exactly 5.0V.
+ */
+float ADCSource::voltage_average_ratiometric(void)
+{
+    float v = read_average();
+    return v * (5.0f / 1023.0f);
+}
+
 void ADCSource::set_pin(uint8_t pin) {
     _pin = pin;
 }
