@@ -320,7 +320,6 @@ enum ap_message {
 #define DATA_DID_REACH_ALT              17
 #define DATA_LAND_COMPLETE              18
 #define DATA_LOST_GPS                   19
-#define DATA_LOST_COMPASS               20
 #define DATA_BEGIN_FLIP                 21
 #define DATA_END_FLIP                   22
 #define DATA_EXIT_FLIP                  23
@@ -442,6 +441,8 @@ enum ap_message {
 // subsystem specific error codes -- failsafe_thr, batt, gps
 #define ERROR_CODE_FAILSAFE_RESOLVED        0
 #define ERROR_CODE_FAILSAFE_OCCURRED        1
+// subsystem specific error codes -- compass
+#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
 
 
 
