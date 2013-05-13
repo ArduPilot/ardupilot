@@ -242,8 +242,7 @@ static AP_Navigation *nav_controller = &L1_controller;
 
 static AP_HAL::AnalogSource *pitot_analog_source;
 
-// a pin for reading the receiver RSSI voltage. The scaling by 0.25 
-// is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+// a pin for reading the receiver RSSI voltage. 
 static AP_HAL::AnalogSource *rssi_analog_source;
 
 static AP_HAL::AnalogSource *vcc_pin;
@@ -662,7 +661,7 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
+    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
     pitot_analog_source = new AP_ADC_AnalogSource( &adc,
