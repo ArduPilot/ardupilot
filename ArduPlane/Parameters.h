@@ -264,9 +264,6 @@ public:
     // navigation controller type. See AP_Navigation::ControllerType
     AP_Int8  nav_controller;
 
-    // attitude controller type.
-    AP_Int8  att_controller;
-
     // Estimation
     //
     AP_Float altitude_mix;
