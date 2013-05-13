@@ -37,7 +37,6 @@ class AP_HAL::AnalogIn {
 public:
     virtual void init(void* implspecific) = 0;
     virtual AP_HAL::AnalogSource* channel(int16_t n) = 0;
-    virtual AP_HAL::AnalogSource* channel(int16_t n, float scale) = 0;
 };
 
 #define ANALOG_INPUT_BOARD_VCC 254

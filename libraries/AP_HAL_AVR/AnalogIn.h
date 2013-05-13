@@ -12,7 +12,7 @@ public:
     friend class AP_HAL_AVR::AVRAnalogIn;
     /* pin designates the ADC input number, or when == AVR_ANALOG_PIN_VCC,
      * board vcc */
-    ADCSource(uint8_t pin, float prescale = 1.0);
+    ADCSource(uint8_t pin);
 
     /* implement AnalogSource virtual api: */
     float read_average();
@@ -58,9 +58,6 @@ private:
     uint8_t _stop_pin;
     uint16_t _settle_time_ms;
     uint32_t _read_start_time_ms;
-
-    /* prescale scales the raw measurments for read()*/
-    const float _prescale;
 };
 
 /* AVRAnalogIn : a concrete class providing the implementations of the 
@@ -70,10 +67,9 @@ public:
     AVRAnalogIn();
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
-    AP_HAL::AnalogSource* channel(int16_t n, float prescale);
 
 protected: 
-    static ADCSource* _create_channel(int16_t num, float scale);
+    static ADCSource* _create_channel(int16_t num);
     static void _register_channel(ADCSource*);
     static void _timer_event(uint32_t);
     static ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];

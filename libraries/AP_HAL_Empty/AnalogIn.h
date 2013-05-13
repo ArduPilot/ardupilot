@@ -23,6 +23,5 @@ public:
     EmptyAnalogIn();
     void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t n);
-    AP_HAL::AnalogSource* channel(int16_t n, float scale);
 };
 #endif // __AP_HAL_EMPTY_ANALOGIN_H__

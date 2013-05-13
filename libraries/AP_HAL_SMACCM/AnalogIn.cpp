@@ -34,7 +34,3 @@ AP_HAL::AnalogSource* SMACCMAnalogIn::channel(int16_t n) {
     return new SMACCMAnalogSource(1.11);
 }
 
-AP_HAL::AnalogSource* SMACCMAnalogIn::channel(int16_t n, float scale) {
-    return new SMACCMAnalogSource(scale/2);
-}
-
