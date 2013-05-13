@@ -21,11 +21,12 @@
 class PX4::PX4AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class PX4::PX4AnalogIn;
-    PX4AnalogSource(int16_t pin, float initial_value, float scale);
+    PX4AnalogSource(int16_t pin, float initial_value);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    float voltage_average_ratiometric() { return voltage_average(); }
 
     // stop pins not implemented on PX4 yet
     void set_stop_pin(uint8_t p) {}
@@ -40,7 +41,6 @@ private:
     float _latest_value;
     uint8_t _sum_count;
     float _sum_value;
-    float _scale;
     void _add_value(float v);
 };
 
@@ -49,7 +49,6 @@ public:
     PX4AnalogIn();
     void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t pin);
-    AP_HAL::AnalogSource* channel(int16_t pin, float scale);
 
 private:
     static int _adc_fd;

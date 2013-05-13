@@ -41,13 +41,12 @@ PX4AnalogSource* PX4AnalogIn::_channels[PX4_ANALOG_MAX_CHANNELS] = {};
 int PX4AnalogIn::_battery_handle = -1;
 uint64_t PX4AnalogIn::_battery_timestamp;
 
-PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value, float scale) :
+PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
     _value(initial_value),
     _latest_value(initial_value),
     _sum_count(0),
-    _sum_value(0),
-    _scale(scale)
+    _sum_value(0)
 {
 }
 
@@ -177,14 +176,9 @@ void PX4AnalogIn::_analogin_timer(uint32_t now)
 
 AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin) 
 {
-    return channel(pin, 1.0);
-}
-
-AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin, float scale) 
-{
     for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == NULL) {
-            _channels[j] = new PX4AnalogSource(pin, 0.0, scale);
+            _channels[j] = new PX4AnalogSource(pin, 0.0);
             return _channels[j];
         }
     }

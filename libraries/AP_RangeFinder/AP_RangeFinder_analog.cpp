@@ -120,7 +120,7 @@ float AP_RangeFinder_analog::voltage(void)
    _source->set_pin(_pin);
    _source->set_stop_pin((uint8_t)_stop_pin);
    _source->set_settle_time((uint16_t)_settle_time_ms);
-   return _source->voltage_average();
+   return _source->voltage_average_ratiometric();
 }
 
 /*

@@ -95,7 +95,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 	
 	//Calculate groundspeed
-	float groundSpeed = _groundspeed_vector.length();
+	float groundSpeed = _maxf(_groundspeed_vector.length(), 1.0f);
 
 	// Calculate time varying control parameters
 	// Calculate the L1 length required for specified period
@@ -107,46 +107,52 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     Vector2f A_v((prev_WP.lat*1.0e-7f), (prev_WP.lng*1.0e-7f));
     Vector2f B_v((next_WP.lat*1.0e-7f), (next_WP.lng*1.0e-7f));
 
-	//Calculate the NE position of the aircraft and WP B relative to WP A
-    A_air = _geo2planar(A_v, A_air)*RADIUS_OF_EARTH;
-    Vector2f AB = _geo2planar(A_v, B_v)*RADIUS_OF_EARTH;
+	// Calculate the NE position of WP B relative to WP A
+    Vector2f AB = _geo2planar(A_v, B_v);
 	
-    //Calculate the unit vector from WP A to WP B
-    Vector2f AB_unit = (AB).normalized();
+	// Check for AB zero length and track directly to the destination
+	// if too small
+	if (AB.length() < 1.0e-6f) {
+		AB = _geo2planar(A_air, B_v);
+	}
+	AB.normalize();
+
+	// Calculate the NE position of the aircraft relative to WP A
+    A_air = _geo2planar(A_v, A_air);
 
 	// calculate distance to target track, for reporting
-	_crosstrack_error = AB_unit % A_air;
+	_crosstrack_error = AB % A_air;
 
-    //Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
+	//Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
 	//and further than L1 distance from WP A. Then use WP A as the L1 reference point
-	//Otherwise do normal L1 guidance
+		//Otherwise do normal L1 guidance
 	float WP_A_dist = A_air.length();
-	float alongTrackDist = A_air * AB_unit;
-	if (WP_A_dist > _L1_dist && alongTrackDist/(WP_A_dist + 1.0f) < -0.7071f) {
+	float alongTrackDist = A_air * AB;
+	if (WP_A_dist > _L1_dist && alongTrackDist/_maxf(WP_A_dist , 1.0f) < -0.7071f) {
 
-        //Calc Nu to fly To WP A
+		//Calc Nu to fly To WP A
 		Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
 		xtrackVel = _groundspeed_vector % (-A_air_unit); // Velocity across line
 		ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
 		Nu = atan2f(xtrackVel,ltrackVel);
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
 		
-    } else { //Calc Nu to fly along AB line
-		
+	} else { //Calc Nu to fly along AB line
+			
 		//Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
-		xtrackVel = _groundspeed_vector % AB_unit; // Velocity cross track
-		ltrackVel = _groundspeed_vector * AB_unit; // Velocity along track
+		xtrackVel = _groundspeed_vector % AB; // Velocity cross track
+		ltrackVel = _groundspeed_vector * AB; // Velocity along track
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
 		//Calculate Nu1 angle (Angle to L1 reference point)
-		float xtrackErr = A_air % AB_unit;
+		float xtrackErr = A_air % AB;
 		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
 		sine_Nu1 = constrain_float(sine_Nu1, -0.7854f, 0.7854f);
 		float Nu1 = asinf(sine_Nu1);
 		Nu = Nu1 + Nu2;
-		_nav_bearing = atan2f(AB_unit.y, AB_unit.x) + Nu1; // bearing (radians) from AC to L1 point		
+		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
 	}	
-		
+			
 	//Limit Nu to +-pi
 	Nu = constrain_float(Nu, -1.5708f, +1.5708f);
 	_latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
@@ -179,7 +185,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 
 	//Calculate groundspeed
-	float groundSpeed = _groundspeed_vector.length();
+	float groundSpeed = _maxf(_groundspeed_vector.length() , 1.0f);
 
 	// Calculate time varying control parameters
 	// Calculate the L1 length required for specified period
@@ -191,7 +197,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     Vector2f A_v((center_WP.lat*1.0e-7f), (center_WP.lng*1.0e-7f));
 
 	//Calculate the NE position of the aircraft relative to WP A
-    A_air = _geo2planar(A_v, A_air)*RADIUS_OF_EARTH;
+    A_air = _geo2planar(A_v, A_air);
 	
     //Calculate the unit vector from WP A to aircraft
     Vector2f A_air_unit = (A_air).normalized();
@@ -307,7 +313,7 @@ Vector2f AP_L1_Control::_geo2planar(const Vector2f &ref, const Vector2f &wp) con
     out.x=radians((wp.x-ref.x));
     out.y=radians((wp.y-ref.y)*cosf(radians(ref.x)));
 
-    return out;
+    return out * RADIUS_OF_EARTH;
 }
 
 float AP_L1_Control::_maxf(const float &num1, const float &num2) const

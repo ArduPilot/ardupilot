@@ -606,9 +606,9 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
-    float airspeed_ch = pitot_analog_source->read_average();
+    float airspeed_ch = pitot_analog_source->voltage_average();
     // cliSerial->println(pitot_analog_source.read());
-    cliSerial->printf_P(PSTR("airspeed_ch: %.1f\n"), airspeed_ch);
+    cliSerial->printf_P(PSTR("airspeed_ch: %.3f\n"), airspeed_ch);
 
     if (!airspeed.enabled()) {
         cliSerial->printf_P(PSTR("airspeed: "));

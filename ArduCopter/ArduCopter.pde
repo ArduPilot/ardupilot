@@ -782,8 +782,7 @@ static AP_Relay relay;
   static AP_Camera camera(&relay);
 #endif
 
-// a pin for reading the receiver RSSI voltage. The scaling by 0.25
-// is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+// a pin for reading the receiver RSSI voltage.
 static AP_HAL::AnalogSource* rssi_analog_source;
 
 
@@ -878,7 +877,7 @@ void setup() {
             &sonar_mode_filter);
 #endif
 
-    rssi_analog_source      = hal.analogin->channel(g.rssi_pin, 0.25);
+    rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
     batt_volt_analog_source = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_analog_source = hal.analogin->channel(g.battery_curr_pin);
     board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
