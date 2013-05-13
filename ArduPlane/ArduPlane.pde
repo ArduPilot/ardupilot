@@ -665,9 +665,10 @@ void setup() {
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
     pitot_analog_source = new AP_ADC_AnalogSource( &adc,
-                                         CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0);
+                                         CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0f);
 #elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
-    pitot_analog_source = hal.analogin->channel(CONFIG_PITOT_SOURCE_ANALOG_PIN, CONFIG_PITOT_SCALING);
+    pitot_analog_source = hal.analogin->channel(CONFIG_PITOT_SOURCE_ANALOG_PIN);
+    hal.gpio->write(hal.gpio->analogPinToDigitalPin(CONFIG_PITOT_SOURCE_ANALOG_PIN), 0);
 #endif
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
