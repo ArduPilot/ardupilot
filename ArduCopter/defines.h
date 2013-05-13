@@ -308,29 +308,20 @@ enum ap_message {
 #define DATA_MAVLINK_INT32              2
 #define DATA_MAVLINK_INT16              3
 #define DATA_MAVLINK_INT8               4
-#define DATA_FAST_LOOP                  5
-#define DATA_MED_LOOP                   6
 #define DATA_AP_STATE                   7
-#define DATA_SIMPLE_BEARING             8
 #define DATA_INIT_SIMPLE_BEARING        9
 #define DATA_ARMED                      10
 #define DATA_DISARMED                   11
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
-#define DATA_DID_REACH_ALT              17
 #define DATA_LAND_COMPLETE              18
 #define DATA_LOST_GPS                   19
 #define DATA_BEGIN_FLIP                 21
 #define DATA_END_FLIP                   22
 #define DATA_EXIT_FLIP                  23
-#define DATA_FLIP_ABORTED               24
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
-#define DATA_REACHED_ALT                28
-#define DATA_ASCENDING                  29
-#define DATA_DESCENDING                 30
-#define DATA_RTL_REACHED_ALT            31
 
 // battery monitoring macros
 #define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
