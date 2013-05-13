@@ -184,15 +184,14 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     if (gotAirspeed) {
 	    Vector3f wind = wind_estimate();
 	    Vector2f wind2d = Vector2f(wind.x, wind.y);
-	    Vector2f airspeed_vector = Vector2f(cos(yaw), sin(yaw)) * airspeed;
+	    Vector2f airspeed_vector = Vector2f(cosf(yaw), sinf(yaw)) * airspeed;
 	    gndVelADS = airspeed_vector - wind2d;
     }
     
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
-	    Vector2f v;
 	    float cog = radians(_gps->ground_course*0.01f);
-	    gndVelGPS = Vector2f(cos(cog), sin(cog)) * _gps->ground_speed * 0.01f;
+	    gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * _gps->ground_speed * 0.01f;
     }
     // If both ADS and GPS data is available, apply a complementary filter
     if (gotAirspeed && gotGPS) {
@@ -207,15 +206,13 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 	    // To-Do - set Tau as a function of GPS lag.
 	    const float alpha = 1.0f - beta; 
 	    // Run LP filters
-	    _xlp = beta*gndVelGPS.x + alpha*_xlp;
-	    _ylp = beta*gndVelGPS.y + alpha*_ylp;
+	    _lp = gndVelGPS * beta  + _lp * alpha;
 	    // Run HP filters
-	    _xhp = gndVelADS.x - _lastGndVelADS.x + alpha*_xhp;
-	    _yhp = gndVelADS.y - _lastGndVelADS.y + alpha*_yhp;
+	    _hp = (gndVelADS - _lastGndVelADS) + _hp * alpha;
 	    // Save the current ADS ground vector for the next time step
 	    _lastGndVelADS = gndVelADS;
 	    // Sum the HP and LP filter outputs
-	    return Vector2f(_xhp + _xlp, _yhp + _ylp);
+	    return _hp + _lp;
     }
     // Only ADS data is available return ADS estimate
     if (gotAirspeed && !gotGPS) {
