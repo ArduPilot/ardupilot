@@ -12,12 +12,12 @@ using namespace AP_HAL_AVR;
 extern const AP_HAL::HAL& hal;
 
 ADCSource::ADCSource(uint8_t pin) :
-    _pin(pin),
-    _stop_pin(ANALOG_INPUT_NONE),
     _sum_count(0),
     _sum(0),
-    _settle_time_ms(0),
-    _last_average(0)
+    _last_average(0),
+    _pin(pin),
+    _stop_pin(ANALOG_INPUT_NONE),
+    _settle_time_ms(0)
 {}
 
 float ADCSource::read_average() {

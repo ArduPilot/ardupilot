@@ -11,9 +11,6 @@
 #include <RC_Channel.h>     // RC Channel Library
 #include "AP_Motors_Class.h"
 
-#define AP_MOTORS_MATRIX_MOTOR_UNDEFINED -1
-#define AP_MOTORS_MATRIX_ORDER_UNDEFINED -1
-
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CW   -1
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CCW   1
 
@@ -49,7 +46,7 @@ public:
     virtual void        output_min();
 
     // add_motor using just position and yaw_factor (or prop direction)
-    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, int8_t testing_order = AP_MOTORS_MATRIX_ORDER_UNDEFINED);
+    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
 
     // remove_motor
     void                remove_motor(int8_t motor_num);
@@ -62,21 +59,19 @@ public:
         remove_all_motors();
     };
 
-    // matrix
-    AP_Int8         test_order[AP_MOTORS_MAX_NUM_MOTORS];               // order of the motors in the test sequence
-
 protected:
     // output - sends commands to the motors
     virtual void        output_armed();
     virtual void        output_disarmed();
 
     // add_motor using raw roll, pitch, throttle and yaw factors
-    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, int8_t testing_order = AP_MOTORS_MATRIX_ORDER_UNDEFINED);
+    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
 
     int8_t              _num_motors; // not a very useful variable as you really need to check the motor_enabled array to see which motors are enabled
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
+    uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
 };
 
 #endif  // AP_MOTORSMATRIX
