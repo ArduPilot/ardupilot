@@ -25,7 +25,7 @@
 #define AP_MOTORS_MAX_NUM_MOTORS 8
 
 #define AP_MOTORS_DEFAULT_MIN_THROTTLE  130
-#define AP_MOTORS_DEFAULT_MAX_THROTTLE  850
+#define AP_MOTORS_DEFAULT_MAX_THROTTLE  1000
 
 // APM board definitions
 #define AP_MOTORS_APM1  1
@@ -137,7 +137,7 @@ public:
 	virtual bool setup_throttle_curve();
 
     // 1 if motor is enabled, 0 otherwise
-    AP_Int8             motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
+    bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
 
     // final output values sent to the motors.  public (for now) so that they can be access for logging
     int16_t             motor_out[AP_MOTORS_MAX_NUM_MOTORS];
