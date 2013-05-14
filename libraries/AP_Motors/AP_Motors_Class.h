@@ -126,7 +126,7 @@ public:
     virtual void        output_test() {
     };
 
-    // throttle_pass_through - passes throttle through to motors - dangerous but required for initialising ESCs
+    // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
     virtual void        throttle_pass_through();
 
 	// setup_throttle_curve - used to linearlise thrust output by motors

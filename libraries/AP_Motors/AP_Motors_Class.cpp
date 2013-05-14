@@ -73,13 +73,15 @@ void AP_Motors::Init()
     setup_throttle_curve();
 };
 
-// throttle_pass_through - passes throttle through to motors - dangerous but used for initialising ESCs
+// throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
 void AP_Motors::throttle_pass_through()
 {
-    if( armed() ) {
-        // XXX
-        for( int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-            hal.rcout->write(_motor_to_channel_map[i], _rc_throttle->radio_in);
+    if (armed()) {
+        // send the pilot's input directly to each enabled motor
+        for (int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (motor_enabled[i]) {
+                hal.rcout->write(_motor_to_channel_map[i], _rc_throttle->radio_in);
+            }
         }
     }
 }
