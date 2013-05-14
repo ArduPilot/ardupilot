@@ -2066,10 +2066,6 @@ static void tuning(){
         g.pid_throttle.kD(tuning_value);
         break;
 
-    case CH6_TOP_BOTTOM_RATIO:
-        motors.top_bottom_ratio = tuning_value;
-        break;
-
     case CH6_RELAY:
         if (g.rc_6.control_in > 525) relay.on();
         if (g.rc_6.control_in < 475) relay.off();

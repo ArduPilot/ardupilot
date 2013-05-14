@@ -14,10 +14,7 @@ extern const AP_HAL::HAL& hal;
 
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
-    // @Param: TB_RATIO
-    // @DisplayName: Top Bottom Ratio
-    // @Description: Not Used.  Will control the speed of the top motors vs bottom motors on frames such as the Octo-Quad and Y6
-    AP_GROUPINFO("TB_RATIO", 0, AP_Motors,  top_bottom_ratio, AP_MOTORS_TOP_BOTTOM_RATIO),      // not used
+    // 0 was used by TB_RATIO
 
     // @Param: TCRV_ENABLE
     // @DisplayName: Thrust Curve Enable
@@ -55,8 +52,6 @@ AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_
     uint8_t i;
 
     AP_Param::setup_object_defaults(this, var_info);
-
-    top_bottom_ratio = AP_MOTORS_TOP_BOTTOM_RATIO;
 
     // initialise motor map
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1

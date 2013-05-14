@@ -156,7 +156,6 @@
 #define CH6_THR_ACCEL_KP    34          // accel based throttle controller's P term
 #define CH6_THR_ACCEL_KI    35          // accel based throttle controller's I term
 #define CH6_THR_ACCEL_KD    36          // accel based throttle controller's D term
-#define CH6_TOP_BOTTOM_RATIO 8          // upper/lower motor ratio (not used)
 #define CH6_RELAY           9           // switch relay on if ch6 high, off if low
 #define CH6_WP_SPEED        10          // maximum speed to next way point (0 to 10m/s)
 #define CH6_LOITER_KP       12          // loiter distance controller's P term (position error to speed)

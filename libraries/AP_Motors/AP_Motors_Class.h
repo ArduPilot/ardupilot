@@ -38,10 +38,7 @@
 #define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
 
 // motor update rate
-#define AP_MOTORS_SPEED_DEFAULT 490
-
-// top-bottom ratio (for Y6)
-#define AP_MOTORS_TOP_BOTTOM_RATIO      1.0
+#define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
 #define THROTTLE_CURVE_ENABLED      1   // throttle curve disabled by default
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
@@ -141,9 +138,6 @@ public:
 
     // final output values sent to the motors.  public (for now) so that they can be access for logging
     int16_t             motor_out[AP_MOTORS_MAX_NUM_MOTORS];
-
-    // power ratio of upper vs lower motors (only used by y6 and octa quad copters)
-    AP_Float            top_bottom_ratio;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
