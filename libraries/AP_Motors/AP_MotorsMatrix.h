@@ -49,13 +49,13 @@ public:
     virtual void        output_min();
 
     // add_motor using just position and yaw_factor (or prop direction)
-    virtual void        add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, int8_t testing_order = AP_MOTORS_MATRIX_ORDER_UNDEFINED);
+    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, int8_t testing_order = AP_MOTORS_MATRIX_ORDER_UNDEFINED);
 
     // remove_motor
-    virtual void        remove_motor(int8_t motor_num);
+    void                remove_motor(int8_t motor_num);
 
     // remove_all_motors - removes all motor definitions
-    virtual void        remove_all_motors();
+    void                remove_all_motors();
 
     // setup_motors - configures the motors for a given frame type - should be overwritten by child classes
     virtual void        setup_motors() {
@@ -71,7 +71,7 @@ protected:
     virtual void        output_disarmed();
 
     // add_motor using raw roll, pitch, throttle and yaw factors
-    virtual void        add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, int8_t testing_order = AP_MOTORS_MATRIX_ORDER_UNDEFINED);
+    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, int8_t testing_order = AP_MOTORS_MATRIX_ORDER_UNDEFINED);
 
     int8_t              _num_motors; // not a very useful variable as you really need to check the motor_enabled array to see which motors are enabled
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
