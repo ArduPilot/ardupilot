@@ -585,7 +585,7 @@
 // AUTO Mode
 // Note: Auto mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP     
+ # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL     
 #endif
 
 #ifndef AUTO_RP
