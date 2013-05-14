@@ -658,7 +658,7 @@
 #endif
 
 #ifndef POSITION_THR
- # define POSITION_THR              THROTTLE_HOLD
+ # define POSITION_THR              THROTTLE_MANUAL_TILT_COMPENSATED
 #endif
 
 #ifndef POSITION_NAV
