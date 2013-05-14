@@ -117,11 +117,6 @@ public:
         return _reached_limit & which_limit;
     }
 
-    // get basic information about the platform
-    virtual uint8_t        get_num_motors() {
-        return 0;
-    };
-
     // motor test
     virtual void        output_test() {
     };

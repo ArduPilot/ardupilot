@@ -34,18 +34,13 @@ public:
 
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
-    virtual void            set_update_rate( uint16_t speed_hz );
+    virtual void        set_update_rate( uint16_t speed_hz );
 
     // set frame orientation (normally + or X)
-    virtual void            set_frame_orientation( uint8_t new_orientation );
+    virtual void        set_frame_orientation( uint8_t new_orientation );
 
     // enable - starts allowing signals to be sent to motors
-    virtual void            enable();
-
-    // get basic information about the platform
-    virtual uint8_t         get_num_motors() {
-        return _num_motors;
-    };
+    virtual void        enable();
 
     // motor test
     virtual void        output_test();
