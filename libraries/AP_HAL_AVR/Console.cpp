@@ -5,7 +5,7 @@
 
 #include <limits.h>
 
-#include "print_vprintf.h"
+#include "utility/print_vprintf.h"
 
 #include "Console.h"
 using namespace AP_HAL_AVR;

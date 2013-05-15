@@ -10,7 +10,7 @@
 #include "GPIO.h"
 #include "Semaphores.h"
 
-#include "pins_arduino_mega.h"
+#include "utility/pins_arduino_mega.h"
 
 using namespace AP_HAL_AVR;
 
