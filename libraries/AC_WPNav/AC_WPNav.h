@@ -30,6 +30,8 @@
 
 #define WPNAV_WP_ACCELERATION           500.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
 
+#define WPNAV_MIN_LEASH_LENGTH          100.0f      // minimum leash lengths in cm
+
 class AC_WPNav
 {
 public:
