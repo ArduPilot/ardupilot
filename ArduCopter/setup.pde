@@ -494,7 +494,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     // print warning that motors will spin
     // ask user to raise throttle
     // inform how to stop test
-    cliSerial->print_P(PSTR("This setup records the impact on the compass of spinning up the motors.  The motors will spin!\nHold throttle low, then raise as high as safely possible for 10 sec.\nAt any time you may press any key to exit.\nmeasuring compass vs "));
+    cliSerial->print_P(PSTR("This setup records the impact on the compass of spinning up the motors.  The motors will spin!\nHold throttle low, then raise to mid for 5 sec, then quickly back to low.\nAt any time you may press any key to exit.\nmeasuring compass vs "));
 
     // inform what type of compensation we are attempting
     if( comp_type == AP_COMPASS_MOT_COMP_CURRENT ) {
