@@ -4,7 +4,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
-#include "pins_arduino_mega.h"
+#include "utility/pins_arduino_mega.h"
 
 #include "GPIO.h"
 using namespace AP_HAL_AVR;

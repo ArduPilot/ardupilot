@@ -2,7 +2,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
 #include "Util.h"
-#include "print_vprintf.h"
+#include "utility/print_vprintf.h"
 using namespace AP_HAL_AVR;
 
 /* Helper class implements AP_HAL::Print so we can use utility/vprintf */
