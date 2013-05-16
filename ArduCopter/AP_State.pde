@@ -136,5 +136,5 @@ void set_gps_healthy(bool b)
 
 void dump_state()
 {
-    cliSerial->printf("st: %u\n",ap.value);
+    cliSerial->printf("st: %lu\n",ap.value);
 }
