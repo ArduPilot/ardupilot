@@ -8,7 +8,7 @@ using namespace AP_HAL_AVR;
 /* Helper class implements AP_HAL::Print so we can use utility/vprintf */
 class BufferPrinter : public AP_HAL::Print {
 public:
-    BufferPrinter(char* str, size_t size)  : _str(str), _size(size), _offs(0) {}
+    BufferPrinter(char* str, size_t size)  : _offs(0), _str(str), _size(size)  {}
     size_t write(uint8_t c) {
         if (_offs < _size) {
             _str[_offs] = c;
