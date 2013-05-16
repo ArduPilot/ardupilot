@@ -127,6 +127,10 @@ public:
         return true;
     }
 
+    // get our projected position, based on our GPS position plus
+    // heading and ground speed
+    bool get_projected_position(struct Location *loc);
+
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) {
         return Vector3f(0,0,0);

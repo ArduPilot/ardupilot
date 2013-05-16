@@ -224,3 +224,15 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     }
     return Vector2f(0.0f, 0.0f);
 }
+
+/*
+  get position projected by groundspeed and heading
+ */
+bool AP_AHRS::get_projected_position(struct Location *loc)
+{
+        if (!get_position(loc)) {
+		return false;
+        }
+        location_update(loc, degrees(yaw), _gps->ground_speed * 0.01 * _gps->get_lag());
+        return true;
+}
