@@ -359,28 +359,29 @@ static AP_RangeFinder_MaxsonarXL *sonar;
 //Documentation of GLobals:
 static union {
     struct {
-        uint8_t home_is_set        : 1; // 0
-        uint8_t simple_mode        : 1; // 1    // This is the state of simple mode
-        uint8_t manual_attitude    : 1; // 2
-        uint8_t manual_throttle    : 1; // 3
+        uint8_t home_is_set         : 1; // 0
+        uint8_t simple_mode         : 1; // 1    // This is the state of simple mode
+        uint8_t manual_attitude     : 1; // 2
+        uint8_t manual_throttle     : 1; // 3
 
-        uint8_t low_battery        : 1; // 4    // Used to track if the battery is low - LED output flashes when the batt is low
-        uint8_t pre_arm_check      : 1; // 5    // true if the radio and accel calibration have been performed
-        uint8_t logging_started    : 1; // 6    // true if dataflash logging has started
-        uint8_t auto_armed         : 1; // 7    // stops auto missions from beginning until throttle is raised
+        uint8_t pre_arm_rc_check    : 1; // 5    // true if rc input pre-arm checks have been completed successfully
+        uint8_t pre_arm_check       : 1; // 6    // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+        uint8_t auto_armed          : 1; // 7    // stops auto missions from beginning until throttle is raised
+        uint8_t logging_started     : 1; // 8    // true if dataflash logging has started
 
-        uint8_t failsafe_radio     : 1; // 8    // A status flag for the radio failsafe
-        uint8_t failsafe_batt      : 1; // 9    // A status flag for the battery failsafe
-        uint8_t failsafe_gps       : 1; // 10   // A status flag for the gps failsafe
-        uint8_t failsafe_gcs       : 1; // 11   // A status flag for the ground station failsafe
-        uint8_t rc_override_active : 1; // 12   // true if rc control are overwritten by ground station
-        uint8_t do_flip            : 1; // 13   // Used to enable flip code
-        uint8_t takeoff_complete   : 1; // 14
-        uint8_t land_complete      : 1; // 15
-        uint8_t compass_status     : 1; // 16
-        uint8_t gps_status         : 1; // 17
+        uint8_t low_battery         : 1; // 9    // Used to track if the battery is low - LED output flashes when the batt is low
+        uint8_t failsafe_radio      : 1; // 10   // A status flag for the radio failsafe
+        uint8_t failsafe_batt       : 1; // 11   // A status flag for the battery failsafe
+        uint8_t failsafe_gps        : 1; // 12   // A status flag for the gps failsafe
+        uint8_t failsafe_gcs        : 1; // 13   // A status flag for the ground station failsafe
+        uint8_t rc_override_active  : 1; // 14   // true if rc control are overwritten by ground station
+        uint8_t do_flip             : 1; // 15   // Used to enable flip code
+        uint8_t takeoff_complete    : 1; // 16
+        uint8_t land_complete       : 1; // 17
+        uint8_t compass_status      : 1; // 18
+        uint8_t gps_status          : 1; // 19
     };
-    uint16_t value;
+    uint32_t value;
 } ap;
 
 
@@ -1267,7 +1268,7 @@ static void slow_loop()
 }
 
 #define AUTO_DISARMING_DELAY 25
-// 1Hz loop
+// super_slow_loop - runs at 1Hz
 static void super_slow_loop()
 {
     if (g.log_bitmask != 0) {
