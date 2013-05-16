@@ -26,6 +26,11 @@ void PX4RCOutput::init(void* unused)
     if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming\n");
     }
+#ifdef PWM_SERVO_SET_ARM_OK
+    if (ioctl(_pwm_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
+        hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
+    }
+#endif
     _rate_mask = 0;
     _alt_fd = -1;    
     _servo_count = 0;
@@ -51,6 +56,11 @@ void PX4RCOutput::init(void* unused)
     if (ioctl(_alt_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup alt IO arming\n");
     }
+#ifdef PWM_SERVO_SET_ARM_OK
+    if (ioctl(_alt_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
+        hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
+    }
+#endif
     if (ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
         hal.console->printf("RCOutput: Unable to get servo count\n");        
         return;
