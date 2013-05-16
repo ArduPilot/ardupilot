@@ -320,6 +320,13 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_battery(uint8_t argc, const Menu::arg *argv)
 {
+    // check if radio is calibration
+    pre_arm_rc_checks();
+    if(!ap.pre_arm_rc_check) {
+        cliSerial->print_P(PSTR("radio not calibrated, exiting"));
+        return(0);
+    }
+
     cliSerial->printf_P(PSTR("\nCareful! Motors will spin! Press Enter to start.\n"));
     while (cliSerial->read() != -1); /* flush */
     while(!cliSerial->available()) { /* wait for input */
@@ -329,7 +336,7 @@ test_battery(uint8_t argc, const Menu::arg *argv)
     print_hit_enter();
 
     // allow motors to spin
-    motors.enable();
+    output_min();
     motors.armed(true);
 
     while(1) {

@@ -472,6 +472,13 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
         comp_type = AP_COMPASS_MOT_COMP_CURRENT;
     }
 
+    // check if radio is calibration
+    pre_arm_rc_checks();
+    if(!ap.pre_arm_rc_check) {
+        cliSerial->print_P(PSTR("radio not calibrated, exiting"));
+        return 0;
+    }
+
     // check compass is enabled
     if( !g.compass_enabled ) {
         cliSerial->print_P(PSTR("compass disabled, exiting"));
@@ -549,8 +556,8 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
     // enable motors and pass through throttle
     init_rc_out();
+    output_min();
     motors.armed(true);
-    motors.output_min();
 
     // initialise run time
     last_run_time = millis();
@@ -1370,6 +1377,8 @@ init_esc()
 {
     // reduce update rate to motors to 50Hz
     motors.set_update_rate(50);
+
+    // we enable the motors directly here instead of calling output_min because output_min would send a low signal to the ESC and disrupt the calibration process
     motors.enable();
     motors.armed(true);
     while(1) {
