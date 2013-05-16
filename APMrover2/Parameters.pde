@@ -386,6 +386,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: SONAR_
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
     GOBJECT(sonar,                  "SONAR_", AP_RangeFinder_analog),
+
+    // @Group: SONAR2_
+    // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
     GOBJECT(sonar2,                 "SONAR2_", AP_RangeFinder_analog),
 
 #if HIL_MODE == HIL_MODE_DISABLED
