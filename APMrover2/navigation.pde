@@ -50,7 +50,9 @@ static void update_crosstrack(void)
 {
 	// Crosstrack Error
 	// ----------------
-	if (abs(wrap_180_cd(target_bearing - crosstrack_bearing)) < 4500) {	 // If we are too far off or too close we don't do track following
+
+    // If we are too far off or too close we don't do track following
+	if (abs(wrap_180_cd(target_bearing - crosstrack_bearing)) < 4500 && wp_distance >= 3.0f) {	 
 		crosstrack_error = sinf(radians((target_bearing - crosstrack_bearing) / (float)100)) * wp_distance;	 // Meters we are off track line
 		nav_bearing += constrain_float(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 		nav_bearing = wrap_360_cd(nav_bearing);
