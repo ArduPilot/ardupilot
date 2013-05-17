@@ -4,7 +4,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Muï¿½oz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
  *
@@ -205,7 +205,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
+ *  We call the process of enforcing the orthogonality conditions ï¿½renormalizationï¿½.
  */
 void
 AP_AHRS_DCM::normalize(void)
@@ -281,7 +281,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 }
 
 // return true if we have and should use GPS
-bool AP_AHRS_DCM::have_gps(void)
+bool AP_AHRS_DCM::have_gps(void) const
 {
     if (!_gps || _gps->status() <= GPS::NO_FIX || !_gps_use) {
         return false;
@@ -290,7 +290,7 @@ bool AP_AHRS_DCM::have_gps(void)
 }
 
 // return true if we should use the compass for yaw correction
-bool AP_AHRS_DCM::use_compass(void)
+bool AP_AHRS_DCM::use_compass(void) const
 {
     if (!_compass || !_compass->use_for_yaw()) {
         // no compass available
