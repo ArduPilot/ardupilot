@@ -133,8 +133,3 @@ void set_gps_healthy(bool b)
     }
     ap.gps_status = b;
 }
-
-void dump_state()
-{
-    cliSerial->printf("st: %u\n",ap.value);
-}
