@@ -310,13 +310,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Channel 7 default option
+// Channel 7 and 8 default options
 //
 
 #ifndef CH7_OPTION
- # define CH7_OPTION             CH7_SAVE_WP
+ # define CH7_OPTION            AUX_SWITCH_SAVE_WP
 #endif
 
+#ifndef CH8_OPTION
+ # define CH8_OPTION            AUX_SWITCH_DO_NOTHING
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL

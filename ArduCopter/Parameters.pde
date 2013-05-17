@@ -412,6 +412,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
+    // @Param: CH8_OPT
+    // @DisplayName: Channel 8 option
+    // @Description: Select which function if performed when CH8 is above 1800 pwm
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:Sonar
+    // @User: Standard
+    GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
+
 	// @Param: AUTO_SLEW
     // @DisplayName: Auto Slew Rate
     // @Description: This restricts the rate of change of the roll and pitch attitude commanded by the auto pilot

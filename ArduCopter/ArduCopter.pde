@@ -386,10 +386,11 @@ static union {
 
 
 static struct AP_System{
-    uint8_t GPS_light               : 1; // 1   // Solid indicates we have full 3D lock and can navigate, flash = read
-    uint8_t motor_light             : 1; // 2   // Solid indicates Armed state
-    uint8_t new_radio_frame         : 1; // 3   // Set true if we have new PWM data to act on from the Radio
-    uint8_t CH7_flag                : 1; // 4   // manages state of the ch7 toggle switch
+    uint8_t GPS_light               : 1; // 0   // Solid indicates we have full 3D lock and can navigate, flash = read
+    uint8_t motor_light             : 1; // 1   // Solid indicates Armed state
+    uint8_t new_radio_frame         : 1; // 2   // Set true if we have new PWM data to act on from the Radio
+    uint8_t CH7_flag                : 1; // 3   // true if ch7 aux switch is high
+    uint8_t CH8_flag                : 1; // 4   // true if ch8 aux switch is high
     uint8_t usb_connected           : 1; // 5   // true if APM is powered from USB connection
     uint8_t yaw_stopped             : 1; // 6   // Used to manage the Yaw hold capabilities
 
@@ -586,11 +587,11 @@ static uint32_t loiter_time;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// CH7 control
+// CH7 and CH8 save waypoint control
 ////////////////////////////////////////////////////////////////////////////////
 // This register tracks the current Mission Command index when writing
-// a mission using CH7 in flight
-static int8_t CH7_wp_index;
+// a mission using Ch7 or Ch8 aux switches in flight
+static int8_t aux_switch_wp_index;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1102,10 +1103,8 @@ static void medium_loop()
     case 4:
         medium_loopCounter = 0;
 
-        // Accel trims      = hold > 2 seconds
-        // Throttle cruise  = switch less than 1 second
-        // --------------------------------------------
-        read_trim_switch();
+        // check ch7 and ch8 aux switches
+        read_aux_switches();
 
         // Check for engine arming
         // -----------------------

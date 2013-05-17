@@ -44,23 +44,23 @@
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
 
-// CH 7 control
-#define CH7_PWM_TRIGGER 1800    // pwm value above which the channel 7 option will be invoked
-#define CH6_PWM_TRIGGER_HIGH 1800
-#define CH6_PWM_TRIGGER_LOW 1200
+// Ch7 and Ch8 aux switch control
+#define AUX_SWITCH_PWM_TRIGGER  1800        // pwm value above which the ch7 or ch8 option will be invoked
+#define CH6_PWM_TRIGGER_HIGH    1800
+#define CH6_PWM_TRIGGER_LOW     1200
 
-#define CH7_DO_NOTHING      0
-#define CH7_SET_HOVER       1       // deprecated
-#define CH7_FLIP            2
-#define CH7_SIMPLE_MODE     3
-#define CH7_RTL             4
-#define CH7_SAVE_TRIM       5
-#define CH7_ADC_FILTER      6       // deprecated
-#define CH7_SAVE_WP         7
-#define CH7_MULTI_MODE      8
-#define CH7_CAMERA_TRIGGER  9
-#define CH7_SONAR           10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
-#define CH7_FENCE           11      // allow enabling or disabling fence in flight
+#define AUX_SWITCH_DO_NOTHING       0       // aux switch disabled
+#define AUX_SWITCH_SET_HOVER        1       // deprecated
+#define AUX_SWITCH_FLIP             2       // flip
+#define AUX_SWITCH_SIMPLE_MODE      3       // change to simple mode
+#define AUX_SWITCH_RTL              4       // change to RTL flight mode
+#define AUX_SWITCH_SAVE_TRIM        5       // save current position as level
+#define AUX_SWITCH_ADC_FILTER       6       // deprecated
+#define AUX_SWITCH_SAVE_WP          7       // save mission waypoint or RTL if in auto mode
+#define AUX_SWITCH_MULTI_MODE       8       // depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
+#define AUX_SWITCH_CAMERA_TRIGGER   9       // trigger camera servo or relay
+#define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+#define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
 
 
 
