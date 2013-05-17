@@ -724,27 +724,6 @@
 // Attitude Control
 //
 
-// Extra motor values that are changed from time to time by jani @ jDrones as software
-// and charachteristics changes.
-#ifdef MOTORS_JD880
- # define STABILIZE_ROLL_P          3.7f
- # define STABILIZE_ROLL_I          0.0f
- # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
- # define STABILIZE_PITCH_P         3.7f
- # define STABILIZE_PITCH_I         0.0f
- # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
-#endif
-
-#ifdef MOTORS_JD850
- # define STABILIZE_ROLL_P          4.2f
- # define STABILIZE_ROLL_I          0.0f
- # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
- # define STABILIZE_PITCH_P         4.2f
- # define STABILIZE_PITCH_I         0.0f
- # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
-#endif
-
-
 #ifndef ACRO_P
  # define ACRO_P                 4.5f
 #endif
@@ -753,7 +732,7 @@
  # define AXIS_LOCK_ENABLED      ENABLED
 #endif
 
-// Good for smaller payload motors.
+// Stabilize (angle controller) gains
 #ifndef STABILIZE_ROLL_P
  # define STABILIZE_ROLL_P          4.5f
 #endif

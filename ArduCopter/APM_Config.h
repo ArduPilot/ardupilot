@@ -22,9 +22,6 @@
  *  HELI_FRAME
  */
 
-//#define MOTORS_JD880
-//#define MOTORS_JD850
-
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).
 #define USERHOOK_VARIABLES "UserVariables.h"
