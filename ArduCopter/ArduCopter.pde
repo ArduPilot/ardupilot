@@ -1019,6 +1019,7 @@ static void fast_loop()
 #endif
 }
 
+// medium_loop - runs at 10hz
 static void medium_loop()
 {
     // This is the start of the medium (10 Hz) loop pieces
