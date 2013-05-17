@@ -419,15 +419,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
-	// @Param: AUTO_SLEW
-    // @DisplayName: Auto Slew Rate
-    // @Description: This restricts the rate of change of the roll and pitch attitude commanded by the auto pilot
-    // @Units: Degrees/Second
-	// @Range: 1 90
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(auto_slew_rate, "AUTO_SLEW",            AUTO_SLEW_RATE),
-
 #if FRAME_CONFIG ==     HELI_FRAME
     GGROUP(heli_servo_1,    "HS1_", RC_Channel),
     GGROUP(heli_servo_2,    "HS2_", RC_Channel),

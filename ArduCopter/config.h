@@ -882,10 +882,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Autopilot rotate rate limits
 //
-#ifndef AUTO_SLEW_RATE
- # define AUTO_SLEW_RATE         	45                     // degrees/sec
-#endif
-
 #ifndef AUTO_YAW_SLEW_RATE
  # define AUTO_YAW_SLEW_RATE        60                     // degrees/sec
 #endif

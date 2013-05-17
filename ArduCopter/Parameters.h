@@ -139,7 +139,7 @@ public:
         k_param_optflow_enabled,
         k_param_low_voltage,
         k_param_ch7_option,
-        k_param_auto_slew_rate,
+        k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_sonar_type,
         k_param_super_simple = 155,
         k_param_axis_enabled = 157,
@@ -339,7 +339,6 @@ public:
     AP_Int8         frame_orientation;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
-    AP_Int16        auto_slew_rate;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
