@@ -724,6 +724,7 @@
 // Attitude Control
 //
 
+// Acro mode gains
 #ifndef ACRO_P
  # define ACRO_P                 4.5f
 #endif
@@ -979,9 +980,6 @@
 #ifndef LOG_NTUN
  # define LOG_NTUN                      ENABLED
 #endif
-#ifndef LOG_MODE
- # define LOG_MODE                      ENABLED
-#endif
 #ifndef LOG_IMU
  # define LOG_IMU                       DISABLED
 #endif
@@ -1023,7 +1021,6 @@
     LOGBIT(PM)              | \
     LOGBIT(CTUN)            | \
     LOGBIT(NTUN)            | \
-    LOGBIT(MODE)            | \
     LOGBIT(IMU)             | \
     LOGBIT(CMD)             | \
     LOGBIT(CURRENT)         | \
