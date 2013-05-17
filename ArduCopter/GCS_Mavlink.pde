@@ -1215,7 +1215,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
                 if (packet.param1 == 1.0f) {
-                    init_arm_motors();
+                    if(ap.pre_arm_check) {
+                        init_arm_motors();
+                    }
                     result = MAV_RESULT_ACCEPTED;
                 } else if (packet.param1 == 0.0f)  {
                     init_disarm_motors();
