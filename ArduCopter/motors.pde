@@ -89,9 +89,11 @@ static void init_arm_motors()
 
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
-    
+
+#if LOGGING_ENABLED == ENABLED
     // start dataflash
     start_logging();
+#endif
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
