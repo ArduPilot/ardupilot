@@ -314,6 +314,58 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
     print("Stability Patch FAILED")
     return False
 
+# fly_fence_test - fly east until you hit the horizontal circular fence
+def fly_fence_test(mavproxy, mav, timeout=180):
+    '''hold loiter position'''
+    mavproxy.send('switch 5\n') # loiter mode
+    wait_mode(mav, 'LOITER')
+
+    # enable fence
+    mavproxy.send('param set FENCE_ENABLE 1\n')
+
+    # first east
+    print("turn east")
+    mavproxy.send('rc 4 1580\n')
+    if not wait_heading(mav, 160):
+        return False
+    mavproxy.send('rc 4 1500\n')
+
+    # fly forward (east) at least 20m
+    pitching_forward = True
+    mavproxy.send('rc 2 1100\n')
+    if not wait_distance(mav, 20):
+        return False
+
+    # start timer
+    tstart = time.time()
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        pos = mav.location()
+        home_distance = get_distance(HOME, pos)
+        print("Alt: %u  HomeDistance: %.0f" % (m.alt, home_distance))
+        # recenter pitch sticks once we reach home so we don't fly off again
+        if pitching_forward and home_distance < 10 :
+            pitching_forward = False
+            mavproxy.send('rc 2 1500\n')
+            # disable fence
+            mavproxy.send('param set FENCE_ENABLE 0\n')
+        if m.alt <= 1 and home_distance < 10:
+            # switch modes to reset out of LAND
+            mavproxy.send('switch 2\n')
+            time.sleep(1)
+            mavproxy.send('switch 6\n')
+            print("Reached home OK")
+            mavproxy.send('rc 3 1000\n')
+            return True
+    print("Fence test failed to reach home - timed out after %u seconds" % timeout)
+    # disable fence
+    mavproxy.send('param set FENCE_ENABLE 0\n')
+    # switch modes to reset out of LAND
+    mavproxy.send('switch 2\n')
+    time.sleep(1)
+    mavproxy.send('switch 6\n')
+    return False
+
 #fly_simple - assumes the simple bearing is initialised to be directly north
 #   flies a box with 100m west, 15 seconds north, 50 seconds east, 15 seconds south
 def fly_simple(mavproxy, mav, side=100, timeout=120):
@@ -592,6 +644,40 @@ def fly_ArduCopter(viewerip=None, map=False):
             print("takeoff failed")
             failed = True
 
+        # Stability patch
+        print("#")
+        print("########## Test Stability Patch ##########")
+        print("#")
+        if not fly_stability_patch(mavproxy, mav, 30):
+            print("Stability Patch failed")
+            failed = True
+
+        # RTL
+        print("# RTL #")
+        if not fly_RTL(mavproxy, mav):
+            print("RTL failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Fence test
+        print("#")
+        print("########## Test Horizontal Fence ##########")
+        print("#")
+        if not fly_fence_test(mavproxy, mav, 180):
+            print("Fence test failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
         # Loiter for 30 seconds
         print("#")
         print("########## Test Loiter for 30 seconds ##########")
@@ -624,26 +710,6 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("#")
         print("########## Test RTL ##########")
         print("#")
-        if not fly_RTL(mavproxy, mav):
-            print("RTL failed")
-            failed = True
-
-        # Takeoff
-        print("# Takeoff")
-        if not takeoff(mavproxy, mav, 10):
-            print("takeoff failed")
-            failed = True
-
-        ### Stability patch ###
-        print("#")
-        print("########## Test Stability Patch ##########")
-        print("#")
-        if not fly_stability_patch(mavproxy, mav, 30):
-            print("Stability Patch failed")
-            failed = True
-
-        # RTL
-        print("# RTL #")
         if not fly_RTL(mavproxy, mav):
             print("RTL failed")
             failed = True
