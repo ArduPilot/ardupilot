@@ -445,15 +445,18 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_compassmot(uint8_t argc, const Menu::arg *argv)
 {
-    int8_t   comp_type;             // throttle or current based compensation
-    Vector3f compass_base;          // compass vector when throttle is zero
-    Vector3f motor_impact;          // impact of motors on compass vector
-    Vector3f motor_impact_scaled;   // impact of motors on compass vector scaled with throttle
-    Vector3f motor_compensation;    // final compensation to be stored to eeprom
-    float    throttle_pct;          // throttle as a percentage 0.0 ~ 1.0
+    int8_t   comp_type;                 // throttle or current based compensation
+    Vector3f compass_base;              // compass vector when throttle is zero
+    Vector3f motor_impact;              // impact of motors on compass vector
+    Vector3f motor_impact_scaled;       // impact of motors on compass vector scaled with throttle
+    Vector3f motor_compensation;        // final compensation to be stored to eeprom
+    float    throttle_pct;              // throttle as a percentage 0.0 ~ 1.0
+    float    throttle_pct_max = 0.0f;   // maximum throttle reached (as a percentage 0~1.0)
+    float    current_amps_max = 0.0f;   // maximum current reached
+    float    interference_pct;          // interference as a percentage of total mag field (for reporting purposes only)
     uint32_t last_run_time;
     uint8_t  print_counter = 49;
-    bool     updated = false;       // have we updated the compensation vector at least once
+    bool     updated = false;           // have we updated the compensation vector at least once
 
     // default compensation type to use current if possible
     if( g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT ) {
@@ -501,7 +504,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     // print warning that motors will spin
     // ask user to raise throttle
     // inform how to stop test
-    cliSerial->print_P(PSTR("This setup records the impact on the compass of spinning up the motors.  The motors will spin!\nHold throttle low, then raise to mid for 5 sec, then quickly back to low.\nAt any time you may press any key to exit.\nmeasuring compass vs "));
+    cliSerial->print_P(PSTR("This records the impact on the compass of running the motors.  The motors will spin!\nHold throttle low, then raise to mid for 5 sec, then quickly back to low.\nAt any time you may press any key to exit.\n\nmeasuring compass vs "));
 
     // inform what type of compensation we are attempting
     if( comp_type == AP_COMPASS_MOT_COMP_CURRENT ) {
@@ -524,7 +527,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
     // exit immediately if throttle is not zero
     if( g.rc_3.control_in != 0 ) {
-        cliSerial->print_P(PSTR("throttle not zero, exiting"));
+        cliSerial->print_P(PSTR("throttle not zero, exiting\n"));
         return 0;
     }
 
@@ -537,7 +540,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
     // exit immediately if the compass is not healthy
     if( !compass.healthy ) {
-        cliSerial->print_P(PSTR("compass not healthy, exiting"));
+        cliSerial->print_P(PSTR("compass not healthy, exiting\n"));
         return 0;
     }
 
@@ -619,6 +622,10 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
                     }
                 }
 
+                // record maximum throttle and current
+                throttle_pct_max = max(throttle_pct_max, throttle_pct);
+                current_amps_max = max(current_amps_max, current_amps1);
+
                 // display output at 1hz if throttle is above zero
                 print_counter++;
                 if(print_counter >= 50) {
@@ -649,6 +656,18 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
         compass.motor_compensation_type(comp_type);
         compass.set_motor_compensation(motor_compensation);
         compass.save_motor_compensation();
+
+        // calculate and display interference compensation at full throttle as % of total mag field
+        if (comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+            // interference is impact@fullthrottle / mag field * 100
+            interference_pct = motor_compensation.length() / 330.0f * 100.0f;
+        }else{
+            // interference is impact/amp * (max current seen / max throttle seen) / mag field * 100
+            interference_pct = motor_compensation.length() * (current_amps_max/throttle_pct_max) / 330.0f * 100.0f;
+            // debug -- remove me!
+            cliSerial->printf_P(PSTR("\nlen:%4.2f curr_max:%4.2f thr_max:%4.2f\n"),motor_compensation.length(),current_amps_max,throttle_pct_max);
+        }
+        cliSerial->printf_P(PSTR("\nInterference at full throttle is %d%% of mag field\n\n"),(int)interference_pct);
     }else{
         // compensation vector never updated, report failure
         cliSerial->printf_P(PSTR("Failed! Compensation disabled.  Did you forget to raise the throttle high enough?"));
