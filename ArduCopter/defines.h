@@ -281,7 +281,6 @@ enum ap_message {
 #define LOG_DATA_INT32_MSG              0x16
 #define LOG_DATA_UINT32_MSG             0x17
 #define LOG_DATA_FLOAT_MSG              0x18
-#define LOG_WPNAV_MSG                   0x19
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
