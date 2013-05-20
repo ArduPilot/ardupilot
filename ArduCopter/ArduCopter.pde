@@ -766,8 +766,6 @@ static float dTnav;
 static int16_t superslow_loopCounter;
 // Loiter timer - Records how long we have been in loiter
 static uint32_t rtl_loiter_start_time;
-// disarms the copter while in Acro or Stabilize mode after 30 seconds of no flight
-static uint8_t auto_disarming_counter;
 // prevents duplicate GPS messages from entering system
 static uint32_t last_gps_time;
 // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
@@ -1266,7 +1264,6 @@ static void slow_loop()
     }
 }
 
-#define AUTO_DISARMING_DELAY 25
 // super_slow_loop - runs at 1Hz
 static void super_slow_loop()
 {
@@ -1281,19 +1278,8 @@ static void super_slow_loop()
     // perform pre-arm checks
     pre_arm_checks(false);
 
-    // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
-    // but only of the control mode is manual
-    if((control_mode <= ACRO) && (g.rc_3.control_in == 0) && motors.armed()) {
-        auto_disarming_counter++;
-
-        if(auto_disarming_counter == AUTO_DISARMING_DELAY) {
-            init_disarm_motors();
-        }else if (auto_disarming_counter > AUTO_DISARMING_DELAY) {
-            auto_disarming_counter = AUTO_DISARMING_DELAY + 1;
-        }
-    }else{
-        auto_disarming_counter = 0;
-    }
+    // auto disarm checks
+    auto_disarm_check();
 
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
