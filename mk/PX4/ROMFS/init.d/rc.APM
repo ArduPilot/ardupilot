@@ -79,7 +79,7 @@ then
 		echo "Setting up mkblctrl driver"
 		echo "Setting up mkblctrl driver" >> $logfile
 
-		mkblctrl -mkmode x
+		mkblctrl
 		usleep 5000
 		usleep 5000
 
