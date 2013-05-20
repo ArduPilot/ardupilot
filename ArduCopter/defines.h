@@ -24,7 +24,7 @@
 #define YAW_LOOK_AT_HEADING    		    6       // point towards a particular angle (not pilot input accepted)
 #define YAW_LOOK_AHEAD					7		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
 #define YAW_TOY                         8       // THOR This is the Yaw mode
-
+#define YAW_RESETTOARMEDYAW				9
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
 #define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates
@@ -61,7 +61,7 @@
 #define AUX_SWITCH_CAMERA_TRIGGER   9       // trigger camera servo or relay
 #define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
 #define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
-
+#define AUX_SWITCH_RESETTOARMEDYAW  12      // changes yaw to be same as when quad was armed
 
 
 // Frame types
