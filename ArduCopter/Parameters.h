@@ -83,7 +83,8 @@ public:
         k_param_pilot_velocity_z_max,
         k_param_circle_rate,
         k_param_sonar_gain,
-        k_param_ch8_option,             // 31
+        k_param_ch8_option,
+        k_param_arming_check_enabled,   // 32
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -339,6 +340,7 @@ public:
     AP_Int8         frame_orientation;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
+    AP_Int8         arming_check_enabled;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

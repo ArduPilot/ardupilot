@@ -191,6 +191,12 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // succeed if pre arm checks are disabled
+    if(!g.arming_check_enabled) {
+        ap.pre_arm_check = true;
+        return;
+    }
+
     // pre-arm rc checks a prerequisite
     pre_arm_rc_checks();
     if(!ap.pre_arm_rc_check) {

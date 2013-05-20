@@ -419,6 +419,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
+    // @Param: ARMING_CHECK
+    // @DisplayName: Arming check
+    // @Description: Allows enabling or disabling of pre-arming checks of receiver, accelerometer, barometer and compass
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+    GSCALAR(arming_check_enabled, "ARMING_CHECK",   1),
+
 #if FRAME_CONFIG ==     HELI_FRAME
     GGROUP(heli_servo_1,    "HS1_", RC_Channel),
     GGROUP(heli_servo_2,    "HS2_", RC_Channel),
