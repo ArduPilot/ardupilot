@@ -1083,8 +1083,8 @@ static void medium_loop()
     // -----------------------------------------
     switch(medium_loopCounter) {
 
-    // This case deals with the GPS and Compass
-    //-----------------------------------------
+    // This case reads from the battery and Compass
+    //---------------------------------------------
     case 0:
         medium_loopCounter++;
 
@@ -1098,33 +1098,37 @@ static void medium_loop()
             if (compass.read()) {
                 compass.null_offsets();
             }
+            // log compass information
+            if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
+                Log_Write_Compass();
+            }
         }
 #endif
-
-        // auto_trim - stores roll and pitch radio inputs to ahrs
-        auto_trim();
 
         // record throttle output
         // ------------------------------
         throttle_integrator += g.rc_3.servo_out;
         break;
 
-    // This case performs some navigation computations
-    //------------------------------------------------
+    // This case reads rssi information and performs auto trim
+    //--------------------------------------------------------
     case 1:
         medium_loopCounter++;
+
+        // read receiver rssi information
         read_receiver_rssi();
+
+        // auto_trim - stores roll and pitch radio inputs to ahrs
+        auto_trim();
         break;
 
-    // command processing
-    //-------------------
+    // This case deals with aux switches and toy mode's throttle
+    //----------------------------------------------------------
     case 2:
         medium_loopCounter++;
 
-        // log compass information
-        if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
-            Log_Write_Compass();
-        }
+        // check ch7 and ch8 aux switches
+        read_aux_switches();
 
         if(control_mode == TOY_A) {
             update_toy_throttle();
@@ -1133,11 +1137,10 @@ static void medium_loop()
                 update_toy_altitude();
             }
         }
-
         break;
 
-    // This case deals with sending high rate telemetry
-    //-------------------------------------------------
+    // This case deals with logging attitude and motor information to dataflash
+    // ------------------------------------------------------------------------
     case 3:
         medium_loopCounter++;
 
@@ -1148,22 +1151,17 @@ static void medium_loop()
                 Log_Write_DMP();
 #endif
             }
-
             if (g.log_bitmask & MASK_LOG_MOTORS)
                 Log_Write_Motors();
         }
         break;
 
-    // This case controls the slow loop
-    //---------------------------------
+    // This case deals with arming checks, copter LEDs and 10hz user hooks
+    // -------------------------------------------------------------------------------
     case 4:
         medium_loopCounter = 0;
 
-        // check ch7 and ch8 aux switches
-        read_aux_switches();
-
-        // Check for engine arming
-        // -----------------------
+        // Check for motor arming or disarming
         arm_motors();
 
         // agmatthews - USERHOOKS
