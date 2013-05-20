@@ -1020,6 +1020,62 @@ static void fast_loop()
 #endif
 }
 
+// stuff that happens at 50 hz
+// ---------------------------
+static void fifty_hz_loop()
+{
+    // get altitude and climb rate from inertial lib
+    read_inertial_altitude();
+
+    // Update the throttle ouput
+    // -------------------------
+    update_throttle_mode();
+
+#if TOY_EDF == ENABLED
+    edf_toy();
+#endif
+
+    // check auto_armed status
+    update_auto_armed();
+
+#ifdef USERHOOK_50HZLOOP
+    USERHOOK_50HZLOOP
+#endif
+
+
+#if HIL_MODE != HIL_MODE_DISABLED && FRAME_CONFIG != HELI_FRAME
+    // HIL for a copter needs very fast update of the servo values
+    gcs_send_message(MSG_RADIO_OUT);
+#endif
+
+#if MOUNT == ENABLED
+    // update camera mount's position
+    camera_mount.update_mount_position();
+#endif
+
+#if MOUNT2 == ENABLED
+    // update camera mount's position
+    camera_mount2.update_mount_position();
+#endif
+
+#if CAMERA == ENABLED
+    camera.trigger_pic_cleanup();
+#endif
+
+# if HIL_MODE == HIL_MODE_DISABLED
+    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
+        Log_Write_Attitude();
+#if SECONDARY_DMP_ENABLED == ENABLED
+        Log_Write_DMP();
+#endif
+    }
+
+    if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
+        DataFlash.Log_Write_IMU(&ins);
+#endif
+
+}
+
 // medium_loop - runs at 10hz
 static void medium_loop()
 {
@@ -1126,62 +1182,6 @@ static void medium_loop()
         medium_loopCounter = 0;
         break;
     }
-}
-
-// stuff that happens at 50 hz
-// ---------------------------
-static void fifty_hz_loop()
-{
-    // get altitude and climb rate from inertial lib
-    read_inertial_altitude();
-
-    // Update the throttle ouput
-    // -------------------------
-    update_throttle_mode();
-
-#if TOY_EDF == ENABLED
-    edf_toy();
-#endif
-
-    // check auto_armed status
-    update_auto_armed();
-
-#ifdef USERHOOK_50HZLOOP
-    USERHOOK_50HZLOOP
-#endif
-
-
-#if HIL_MODE != HIL_MODE_DISABLED && FRAME_CONFIG != HELI_FRAME
-    // HIL for a copter needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
-#endif
-
-#if MOUNT == ENABLED
-    // update camera mount's position
-    camera_mount.update_mount_position();
-#endif
-
-#if MOUNT2 == ENABLED
-    // update camera mount's position
-    camera_mount2.update_mount_position();
-#endif
-
-#if CAMERA == ENABLED
-    camera.trigger_pic_cleanup();
-#endif
-
-# if HIL_MODE == HIL_MODE_DISABLED
-    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
-        Log_Write_Attitude();
-#if SECONDARY_DMP_ENABLED == ENABLED
-        Log_Write_DMP();
-#endif
-    }
-
-    if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
-        DataFlash.Log_Write_IMU(&ins);
-#endif
-
 }
 
 // slow_loop - 3.3hz loop
