@@ -6,19 +6,15 @@
 #define AUTO_TRIM_DELAY 100
 
 
+// arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
-static void arm_motors()
+static void arm_motors_check()
 {
     static int16_t arming_counter;
 
     // ensure throttle is down
     if (g.rc_3.control_in > 0) {
         arming_counter = 0;
-        return;
-    }
-
-    // ensure pre-arm checks have been successful
-    if(!ap.pre_arm_check) {
         return;
     }
 
@@ -51,7 +47,14 @@ static void arm_motors()
 
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors.armed()) {
-            init_arm_motors();
+            // run pre-arm-checks and display failures
+            pre_arm_checks(true);
+            if(ap.pre_arm_check) {
+                init_arm_motors();
+            }else{
+                // reset arming counter if pre-arm checks fail
+                arming_counter = 0;
+            }
         }
 
         // arm the motors and configure for flight
@@ -163,7 +166,7 @@ static void init_arm_motors()
 }
 
 // perform pre-arm checks and set ap.pre_arm_check flag
-static void pre_arm_checks()
+static void pre_arm_checks(bool display_failure)
 {
     // exit immediately if we've already successfully performed the pre-arm check
     if( ap.pre_arm_check ) {
@@ -173,22 +176,34 @@ static void pre_arm_checks()
     // pre-arm rc checks a prerequisite
     pre_arm_rc_checks();
     if(!ap.pre_arm_rc_check) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: RC not calibrated"));
+        }
         return;
     }
 
     // check accelerometers have been calibrated
     if(!ins.calibrated()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
+        }
         return;
     }
 
     // check the compass is healthy
     if(!compass.healthy) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
+        }
         return;
     }
 
 #if AC_FENCE == ENABLED
     // check fence is initialised
     if(!fence.pre_arm_check()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No GPS Lock"));
+        }
         return;
     }
 #endif

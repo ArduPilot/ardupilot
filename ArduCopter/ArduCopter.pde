@@ -823,6 +823,7 @@ AC_Fence    fence(&inertial_nav);
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
 void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate);
+static void pre_arm_checks(bool display_failure);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -1162,7 +1163,7 @@ static void medium_loop()
         medium_loopCounter = 0;
 
         // Check for motor arming or disarming
-        arm_motors();
+        arm_motors_check();
 
         // agmatthews - USERHOOKS
 #ifdef USERHOOK_MEDIUMLOOP
@@ -1278,7 +1279,7 @@ static void super_slow_loop()
         Log_Write_Current();
 
     // perform pre-arm checks
-    pre_arm_checks();
+    pre_arm_checks(false);
 
     // this function disarms the copter if it has been sitting on the ground for any moment of time greater than 25 seconds
     // but only of the control mode is manual
