@@ -216,6 +216,23 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // check compass learning is on or offsets have been set
+    Vector3f offsets = compass.get_offsets();
+    if(!compass._learn && offsets.length() == 0) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
+        }
+        return;
+    }
+
+    // check for unreasonable compass offsets
+    if(offsets.length() > 500) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
+        }
+        return;
+    }
+
 #if AC_FENCE == ENABLED
     // check fence is initialised
     if(!fence.pre_arm_check()) {
