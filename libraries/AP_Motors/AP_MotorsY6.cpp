@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
  *       AP_MotorsY6.cpp - ArduCopter motors library
  *       Code by RandyMackay. DIYDrones.com
