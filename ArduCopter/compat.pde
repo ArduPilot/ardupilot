@@ -30,11 +30,6 @@ void digitalWrite(uint8_t pin, uint8_t out)
     hal.gpio->write(pin,out);
 }
 
-uint8_t digitalReadFast(uint8_t pin)
-{
-    return hal.gpio->read(pin);
-}
-
 uint8_t digitalRead(uint8_t pin)
 {
     return hal.gpio->read(pin);
