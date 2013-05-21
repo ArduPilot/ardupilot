@@ -1376,8 +1376,6 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
     }
 
     switch( new_yaw_mode ) {
-        case YAW_RESETTOARMEDYAW:
-            nav_yaw = ahrs.yaw_sensor; // store current yaw so we can start rotating back to correct one
         case YAW_HOLD:
         case YAW_ACRO:
             yaw_initialised = true;
@@ -1411,13 +1409,17 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
                 yaw_initialised = true;
             }
             break;
-        case YAW_TOY:
-            yaw_initialised = true;
-            break;
         case YAW_LOOK_AHEAD:
             if( ap.home_is_set ) {
                 yaw_initialised = true;
             }
+            break;
+        case YAW_TOY:
+            yaw_initialised = true;
+            break;
+        case YAW_RESETTOARMEDYAW:
+            nav_yaw = ahrs.yaw_sensor; // store current yaw so we can start rotating back to correct one
+            yaw_initialised = true;
             break;
     }
 
@@ -1448,11 +1450,6 @@ void update_yaw_mode(void)
         }else{
             get_acro_yaw(g.rc_4.control_in);
         }
-        break;
-
-    case YAW_RESETTOARMEDYAW:
-        nav_yaw = get_yaw_slew(nav_yaw, initial_simple_bearing, AUTO_YAW_SLEW_RATE);
-        get_stabilize_yaw(nav_yaw);
         break;
 
     case YAW_LOOK_AT_NEXT_WP:
@@ -1517,6 +1514,12 @@ void update_yaw_mode(void)
         get_stabilize_yaw(nav_yaw);
         break;
 #endif
+
+    case YAW_RESETTOARMEDYAW:
+        // changes yaw to be same as when quad was armed
+        nav_yaw = get_yaw_slew(nav_yaw, initial_simple_bearing, AUTO_YAW_SLEW_RATE);
+        get_stabilize_yaw(nav_yaw);
+        break;
     }
 }
 

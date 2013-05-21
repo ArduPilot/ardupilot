@@ -24,7 +24,7 @@
 #define YAW_LOOK_AT_HEADING    		    6       // point towards a particular angle (not pilot input accepted)
 #define YAW_LOOK_AHEAD					7		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
 #define YAW_TOY                         8       // THOR This is the Yaw mode
-#define YAW_RESETTOARMEDYAW				9
+#define YAW_RESETTOARMEDYAW				9       // point towards heading at time motors were armed
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
 #define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates
