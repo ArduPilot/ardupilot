@@ -129,6 +129,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Battery Capacity
     // @Description: Battery capacity in milliamp-hours (mAh)
     // @Units: mAh
+	// @User: Standard
     GSCALAR(pack_capacity,  "BATT_CAPACITY",    HIGH_DISCHARGE),
 
     // @Param: MAG_ENABLE
@@ -578,7 +579,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Roll axis rate controller I gain maximum
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: RATE_RLL_D
@@ -604,7 +605,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pitch axis rate controller I gain maximum
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: RATE_PIT_D
@@ -630,7 +631,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Yaw axis rate controller I gain maximum
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: RATE_YAW_D
@@ -656,7 +657,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter rate controller I gain maximum
     // @Description: Loiter rate controller I gain maximum.  Constrains the lean angle that the I gain will output
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: LOITER_LAT_D
@@ -682,7 +683,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter longitude rate controller I gain maximum
     // @Description: Loiter longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will output
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: LOITER_LON_D
@@ -708,7 +709,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle rate controller I gain maximum
     // @Description: Throttle rate controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
     // @Range: 0 500
-    // @Unit: cm/s/s
+    // @Units: cm/s/s
     // @User: Standard
 
     // @Param: THR_RATE_D
@@ -734,7 +735,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: THR_ACCEL_D
@@ -760,7 +761,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Optical Flow based loiter controller roll axis I gain maximum
     // @Description: Optical Flow based loiter controller roll axis I gain maximum.  Constrains the maximum roll angle that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: OF_RLL_D
@@ -786,7 +787,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Optical Flow based loiter controller pitch axis I gain maximum
     // @Description: Optical Flow based loiter controller pitch axis I gain maximum.  Constrains the maximum pitch angle that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: OF_PIT_D
@@ -814,7 +815,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Roll axis stabilize controller I gain maximum
     // @Description: Roll axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum roll rate that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees/Sec
+    // @Units: Centi-Degrees/Sec
     // @User: Standard
     GGROUP(pi_stabilize_roll,       "STB_RLL_", APM_PI),
 
@@ -834,7 +835,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pitch axis stabilize controller I gain maximum
     // @Description: Pitch axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum pitch rate that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees/Sec
+    // @Units: Centi-Degrees/Sec
     // @User: Standard
     GGROUP(pi_stabilize_pitch,      "STB_PIT_", APM_PI),
 
@@ -854,7 +855,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Yaw axis stabilize controller I gain maximum
     // @Description: Yaw axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum yaw rate that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees/Sec
+    // @Units: Centi-Degrees/Sec
     // @User: Standard
     GGROUP(pi_stabilize_yaw,        "STB_YAW_", APM_PI),
 
@@ -874,7 +875,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Altitude controller I gain maximum
     // @Description: Altitude controller I gain maximum.  Constrains the maximum climb rate rate that the I term will generate
     // @Range: 0 500
-    // @Unit: cm/s
+    // @Units: cm/s
     // @User: Standard
     GGROUP(pi_alt_hold,     "THR_ALT_", APM_PI),
 
@@ -894,7 +895,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter latitude position controller I gain maximum
     // @Description: Loiter latitude position controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
     // @Range: 0 3000
-    // @Unit: cm/s
+    // @Units: cm/s
     // @User: Standard
     GGROUP(pi_loiter_lat,   "HLD_LAT_", APM_PI),
 
@@ -914,7 +915,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter longitudeposition controller I gain maximum
     // @Description: Loiter  longitudeposition controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
     // @Range: 0 3000
-    // @Unit: cm/s
+    // @Units: cm/s
     // @User: Standard
     GGROUP(pi_loiter_lon,   "HLD_LON_", APM_PI),
 
