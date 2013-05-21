@@ -18,6 +18,11 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
 
 	// misc
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: Two byte bitmap of log types to enable in dataflash
+    // @Values: 0:Disabled,3950:Default,4078:Default+IMU
+    // @User: Advanced
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
