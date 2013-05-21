@@ -3,6 +3,7 @@
 # APM startup script for NuttX on PX4
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
+# To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
 
 set deviceA /dev/ttyACM0
 set deviceC /dev/ttyS2
@@ -71,31 +72,51 @@ then
 	hmc5883 start
 	adc start
 
-	echo "Trying PX4IO board"
-	echo "Trying PX4IO board" >> $logfile
-	if px4io start
+	if [ -f /fs/microsd/APM/mkblctrl ]
 	then
-		echo "PX4IO board OK"
-		echo "PX4IO board OK" >> $logfile
-		echo "Setting FMU mode_pwm"
-		fmu mode_pwm
-		echo "Loading FMU_pass mixer"
-		mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
-		if [ $deviceC == /dev/ttyS1 ]
-		then
-			# ttyS1 is used for PWM output for 4 extra channels
-			set deviceC /dev/ttyS2
-		fi
-	else
-		echo "No PX4IO board found"
-		echo "No PX4IO board found" >> $logfile
-		echo "Setting up PX4FMU direct mode"
-		fmu mode_pwm
+   	echo "APM/mkblctrl found - switch to MK I2C ESCs"
+   	echo "APM/mkblctrl found - switch to MK I2C ESCs" >> $logfile
+		echo "Setting up mkblctrl driver"
+		echo "Setting up mkblctrl driver" >> $logfile
+
+		mkblctrl
+		usleep 5000
+		usleep 5000
+
 		if [ $deviceC == /dev/ttyS1 ]
 		then
 			# ttyS1 is used for PWM output when there
 			# is no IO board
 			set deviceC /dev/ttyS2
+		fi
+	else
+		echo "Trying PX4IO board"
+		echo "Trying PX4IO board" >> $logfile
+		if px4io start
+		then
+			echo "PX4IO board OK"
+			echo "PX4IO board OK" >> $logfile
+			echo "Setting FMU mode_pwm"
+			fmu mode_pwm
+			echo "Loading FMU_pass mixer"
+			mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
+			if [ $deviceC == /dev/ttyS1 ]
+			then
+				# ttyS1 is used for PWM output for 4 extra channels
+				set deviceC /dev/ttyS2
+			fi
+		else
+			echo "No PX4IO board found"
+			echo "No PX4IO board found" >> $logfile
+			echo "Setting up PX4FMU direct mode"
+			echo "Setting up PX4FMU direct mode" >> $logfile
+			fmu mode_pwm
+			if [ $deviceC == /dev/ttyS1 ]
+			then
+				# ttyS1 is used for PWM output when there
+				# is no IO board
+				set deviceC /dev/ttyS2
+			fi
 		fi
 	fi
 
