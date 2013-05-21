@@ -428,12 +428,38 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(arming_check_enabled, "ARMING_CHECK",   1),
 
 #if FRAME_CONFIG ==     HELI_FRAME
+    // @Group: HS1_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_1,    "HS1_", RC_Channel),
+    // @Group: HS2_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_2,    "HS2_", RC_Channel),
+    // @Group: HS3_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_3,    "HS3_", RC_Channel),
+    // @Group: HS4_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_4,    "HS4_", RC_Channel),
+
+    // @Param: RATE_PIT_FF
+    // @DisplayName: Rate Pitch Feed Forward
+    // @Description: Rate Pitch Feed Forward
+    // @Range: 0 10
+    // @User: Standard
 	GSCALAR(heli_pitch_ff, "RATE_PIT_FF",            HELI_PITCH_FF),
+
+    // @Param: RATE_RLL_FF
+    // @DisplayName: Rate Roll Feed Forward
+    // @Description: Rate Roll Feed Forward
+    // @Range: 0 10
+    // @User: Standard
 	GSCALAR(heli_roll_ff, "RATE_RLL_FF",            HELI_ROLL_FF),
+
+    // @Param: RATE_YAW_FF
+    // @DisplayName: Rate Yaw Feed Forward
+    // @Description: Rate Yaw Feed Forward
+    // @Range: 0 10
+    // @User: Standard
 	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
 #endif
 
