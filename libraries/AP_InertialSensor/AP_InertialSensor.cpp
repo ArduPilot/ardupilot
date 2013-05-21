@@ -24,19 +24,19 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Param: ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
     // @Description: Accelerometer scaling of X axis.  Calculated during acceleration calibration routine
-    // @Range 0.8 1.2
+    // @Range: 0.8 1.2
     // @User: Advanced
 
     // @Param: ACCSCAL_Y
     // @DisplayName: Accelerometer scaling of Y axis
     // @Description: Accelerometer scaling of Y axis  Calculated during acceleration calibration routine
-    // @Range 0.8 1.2
+    // @Range: 0.8 1.2
     // @User: Advanced
 
     // @Param: ACCSCAL_Z
     // @DisplayName: Accelerometer scaling of Z axis
     // @Description: Accelerometer scaling of Z axis  Calculated during acceleration calibration routine
-    // @Range 0.8 1.2
+    // @Range: 0.8 1.2
     // @User: Advanced
     AP_GROUPINFO("ACCSCAL",     1, AP_InertialSensor, _accel_scale,  0),
 
