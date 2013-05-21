@@ -122,6 +122,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Battery Capacity
     // @Description: Battery capacity in milliamp-hours (mAh)
     // @Units: mAh
+	// @User: Standard
 	GSCALAR(pack_capacity,          "BATT_CAPACITY",    HIGH_DISCHARGE),
 
     // @Param: XTRK_GAIN_SC
