@@ -948,7 +948,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(sitl, "SIM_", SITL),
 #endif
 
+    // @Group: GND_
+    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "GND_", AP_Baro),
+
+    // @Group: SCHED_
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
 #if AC_FENCE == ENABLED
