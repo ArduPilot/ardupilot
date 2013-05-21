@@ -624,6 +624,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
+    // @Group: GND_
+    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "GND_", AP_Baro),
 
 #if CAMERA == ENABLED
