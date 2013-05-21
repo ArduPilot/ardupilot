@@ -489,7 +489,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: bitmap of log fields to enable
+    // @Description: Two byte bitmap of log types to enable in dataflash
+    // @Values: 0:Disabled,1902:Default,2030:Default+IMU
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
