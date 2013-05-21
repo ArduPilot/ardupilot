@@ -409,14 +409,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 12:ResetToArmedYaw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function if performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 12:ResetToArmedYaw
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
@@ -443,21 +443,21 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: RATE_PIT_FF
     // @DisplayName: Rate Pitch Feed Forward
-    // @Description: Rate Pitch Feed Forward
+    // @Description: Rate Pitch Feed Forward (for TradHeli Only)
     // @Range: 0 10
     // @User: Standard
 	GSCALAR(heli_pitch_ff, "RATE_PIT_FF",            HELI_PITCH_FF),
 
     // @Param: RATE_RLL_FF
     // @DisplayName: Rate Roll Feed Forward
-    // @Description: Rate Roll Feed Forward
+    // @Description: Rate Roll Feed Forward (for TradHeli Only)
     // @Range: 0 10
     // @User: Standard
 	GSCALAR(heli_roll_ff, "RATE_RLL_FF",            HELI_ROLL_FF),
 
     // @Param: RATE_YAW_FF
     // @DisplayName: Rate Yaw Feed Forward
-    // @Description: Rate Yaw Feed Forward
+    // @Description: Rate Yaw Feed Forward (for TradHeli Only)
     // @Range: 0 10
     // @User: Standard
 	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
@@ -512,8 +512,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
-    // @Units: Hertz (Hz)
-    // @Values: 125,400,490
+    // @Units: Hz
+    // @Range: 50 490
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
