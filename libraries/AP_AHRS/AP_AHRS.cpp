@@ -24,6 +24,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Param: GPS_USE
     // @DisplayName: AHRS use GPS for navigation
     // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight.
+    // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, 1),
 
@@ -55,18 +56,21 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @DisplayName: AHRS Trim Roll
     // @Description: Compensates for the roll angle difference between the control board and the frame
     // @Units: Radians
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
     // @Description: Compensates for the pitch angle difference between the control board and the frame
     // @Units: Radians
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
     // @Description: Not Used
     // @Units: Radians
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("TRIM", 8, AP_AHRS, _trim, 0),
 
@@ -82,12 +86,14 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Description: This controls the time constant for the cross-over frequency used to fuse AHRS (airspeed and heading) and GPS data to estimate ground velocity. Time constant is 0.1/beta. A larger time constant will use GPS data less and a small time constant will use air data less.
     // @Range: 0.001 0.5
     // @Increment: .01
+    // @User: Advanced
     AP_GROUPINFO("COMP_BETA",  10, AP_AHRS, beta, 0.1f),
 
     // @Param: GPS_MINSATS
     // @DisplayName: AHRS GPS Minimum satellites
     // @Description: Minimum number of satellites visible to use GPS for velocity based corrections attitude correction. This defaults to 6, which is about the point at which the velocity numbers from a GPS become too unreliable for accurate correction of the accelerometers.
     // @Range: 0 10
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("GPS_MINSATS", 11, AP_AHRS, _gps_minsats, 6),
 
