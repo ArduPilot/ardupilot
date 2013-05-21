@@ -58,7 +58,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: RTL Altitude
     // @Description: The minimum altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
     // @Units: Centimeters
-    // @Range: 0 4000
+    // @Range: 0 8000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
@@ -149,7 +149,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Low Voltage
     // @Description: Set this to the voltage you want to represent low voltage
     // @Range: 0 20
-    // @Increment: .1
+    // @Increment: 0.1
     // @User: Standard
     GSCALAR(low_voltage,    "LOW_VOLT",         LOW_VOLTAGE),
 
@@ -247,7 +247,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s
     // @Units: Centimeters/Second
-    // @Range: 10 200
+    // @Range: 20 200
     // @Increment: 10
     // @User: Standard
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
@@ -403,7 +403,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
     // @Values: 0:Plus, 1:X, 2:V, 3:H
     // @User: Standard
-    // @Range: 0 32767
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
 
     // @Param: CH7_OPT
