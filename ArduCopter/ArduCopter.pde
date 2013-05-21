@@ -1376,6 +1376,8 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
     }
 
     switch( new_yaw_mode ) {
+        case YAW_RESETTOARMEDYAW:
+            nav_yaw = ahrs.yaw_sensor; // store current yaw so we can start rotating back to correct one
         case YAW_HOLD:
         case YAW_ACRO:
             yaw_initialised = true;
@@ -1446,6 +1448,11 @@ void update_yaw_mode(void)
         }else{
             get_acro_yaw(g.rc_4.control_in);
         }
+        break;
+
+    case YAW_RESETTOARMEDYAW:
+        nav_yaw = get_yaw_slew(nav_yaw, initial_simple_bearing, AUTO_YAW_SLEW_RATE);
+        get_stabilize_yaw(nav_yaw);
         break;
 
     case YAW_LOOK_AT_NEXT_WP:
