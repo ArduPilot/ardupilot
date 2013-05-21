@@ -194,6 +194,10 @@
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last 
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
 
+// Yaw behaviour on reaching home
+#define RTL_YAW_FINAL_NONE          0 // no change
+#define RTL_YAW_FINAL_YAWWHENARMED        1 // switch to yaw when the quad was armed
+
 // TOY mixing options
 #define TOY_LOOKUP_TABLE 0
 #define TOY_LINEAR_MIXER 1

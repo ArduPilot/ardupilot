@@ -692,6 +692,10 @@
  # define RTL_ALT_FINAL             200     // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
+#ifndef RTL_YAW_FINAL
+ #define RTL_YAW_FINAL              RTL_YAW_FINAL_YAWWHENARMED
+#endif
+
 #ifndef RTL_ALT
  # define RTL_ALT 				    1500    // default alt to return to home in cm, 0 = Maintain current altitude
 #endif
