@@ -3,7 +3,7 @@
 set -e
 
 cd APM
-./Tools/autotest/param_metadata/param_parse.py > param.out
+./Tools/autotest/param_metadata/param_parse.py > param.out || exit 1
 (cd ../APM.wiki && git pull --rebase)
 cmp Parameters.wiki ../APM.wiki/APM_Parameters.wiki || {
     cp Parameters.wiki ../APM.wiki/APM_Parameters.wiki
