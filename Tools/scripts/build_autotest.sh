@@ -118,6 +118,6 @@ echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 APM/Tools/scripts/build_parameters.sh
 
-timelimit 4000 APM/Tools/autotest/autotest.py --timeout=3900 > buildlogs/autotest-output.txt 2>&1
+timelimit 4700 APM/Tools/autotest/autotest.py --timeout=4500 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1
