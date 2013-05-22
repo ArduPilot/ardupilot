@@ -311,8 +311,10 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     _target = origin;
     _flags.reached_destination = false;
 
-    // reset limited speed to zero to slow initial acceleration away from wp
-    _limited_speed_xy_cms = 0;
+    // initialise the limited speed to current speed along the track
+    Vector3f curr_vel = _inav->get_velocity();
+    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
+    _limited_speed_xy_cms = constrain_float(speed_along_track,0,_wp_speed_cms);
 
     // default waypoint back to slow
     _flags.fast_waypoint = false;
@@ -338,12 +340,35 @@ void AC_WPNav::advance_target_along_track(float dt)
     curr_delta.z = curr_delta.z * _vert_track_scale;
     curr_delta_length = curr_delta.length();
 
-    // increase intermediate target point's velocity if not yet at target speed
-    if(dt > 0 && _limited_speed_xy_cms < _wp_speed_cms) {
-        _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
+    // get current velocity
+    Vector3f curr_vel = _inav->get_velocity();
+    // get speed along track
+    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
+
+    // calculate point at which velocity switches from linear to sqrt
+    float linear_velocity = _wp_speed_cms;
+    float kP = _pid_pos_lat->kP();
+    if (kP >= 0.0f) {   // avoid divide by zero
+        linear_velocity = MAX_LOITER_POS_ACCEL/kP;
     }
-    if(_limited_speed_xy_cms > _wp_speed_cms) {
-        _limited_speed_xy_cms = _wp_speed_cms;
+
+    // let the limited_speed_xy_cms be some range above or below current velocity along track
+    if (speed_along_track < -linear_velocity) {
+        // we are travelling fast in the opposite direction of travel to the waypoint so do not move the intermediate point
+        _limited_speed_xy_cms = 0;
+    }else{
+        // increase intermediate target point's velocity if not yet at target speed (we will limit it below)
+        if(dt > 0 && _limited_speed_xy_cms < _wp_speed_cms) {
+            _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
+        }
+        // do not go over top speed
+        if(_limited_speed_xy_cms > _wp_speed_cms) {
+            _limited_speed_xy_cms = _wp_speed_cms;
+        }
+        // if our current velocity is within the linear velocity range limit the intermediate point's velocity to be no more than the linear_velocity above or below our current velocity
+        if (fabsf(speed_along_track) < linear_velocity) {
+            _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms,speed_along_track-linear_velocity,speed_along_track+linear_velocity);
+        }
     }
 
     // calculate how far along the track we are
@@ -558,9 +583,6 @@ void AC_WPNav::reset_I()
     // reset target velocity - only used by loiter controller's interpretation of pilot input
     _target_vel.x = 0;
     _target_vel.y = 0;
-
-    // reset limited speed to zero to slow initial acceleration
-    _limited_speed_xy_cms = 0;
 }
 
 /// calculate_wp_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
