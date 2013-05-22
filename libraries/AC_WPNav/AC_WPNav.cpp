@@ -123,7 +123,7 @@ void AC_WPNav::get_stopping_point(const Vector3f& position, const Vector3f& velo
         linear_distance = MAX_LOITER_POS_ACCEL/(2*kP*kP);
         target_dist = linear_distance + (vel_total*vel_total)/(2*MAX_LOITER_POS_ACCEL);
     }
-    target_dist = constrain_float(target_dist, 0, _loiter_leash);
+    target_dist = constrain_float(target_dist, 0, _loiter_leash*2.0);
 
     target.x = position.x + (target_dist * velocity.x / vel_total);
     target.y = position.y + (target_dist * velocity.y / vel_total);
