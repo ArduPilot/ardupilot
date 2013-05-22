@@ -103,6 +103,8 @@ build_arduplane() {
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
+	    rsync ArduPlane.px4 px4fmu.px4 &&
+	    copyit px4fmu.px4 $ddir $tag &&
 	    copyit ArduPlane.px4 $ddir $tag
 	}
     }
@@ -134,6 +136,8 @@ build_arducopter() {
 	    skip_build $tag $ddir && continue
 	    make px4-clean || continue
 	    make px4-$f || continue
+	    rsync ArduCopter.px4 px4fmu.px4 &&
+	    copyit px4fmu.px4 $ddir $tag &&
 	    copyit ArduCopter.px4 $ddir $tag
 	done
     }
@@ -145,7 +149,7 @@ build_arducopter() {
 build_rover() {
     tag="$1"
     checkout APMrover2 $tag || return
-    echo "Building APMRover2 $tag binaries"
+    echo "Building APMrover2 $tag binaries"
     pushd APMrover2
     for b in apm1 apm2 apm1-1280; do
 	echo "Building APMrover2 $b binaries"
@@ -162,7 +166,9 @@ build_rover() {
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
-	    copyit APMRover2.px4 $binaries/Rover/$hdate/PX4 $tag
+	    rsync APMrover2.px4 px4fmu.px4 &&
+	    copyit px4fmu.px4 $ddir $tag &&
+	    copyit APMrover2.px4 $binaries/Rover/$hdate/PX4 $tag
 	}
     }
     popd
