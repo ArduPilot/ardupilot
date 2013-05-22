@@ -35,6 +35,7 @@ checkout() {
 # check if we should skip this build because we have already
 # built this version
 skip_build() {
+    [ "$FORCE_BUILD" -eq "1" ] && return 1
     tag="$1"
     ddir="$2"
     bname=$(basename $ddir)
