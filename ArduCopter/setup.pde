@@ -664,8 +664,6 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
         }else{
             // interference is impact/amp * (max current seen / max throttle seen) / mag field * 100
             interference_pct = motor_compensation.length() * (current_amps_max/throttle_pct_max) / 330.0f * 100.0f;
-            // debug -- remove me!
-            cliSerial->printf_P(PSTR("\nlen:%4.2f curr_max:%4.2f thr_max:%4.2f\n"),motor_compensation.length(),current_amps_max,throttle_pct_max);
         }
         cliSerial->printf_P(PSTR("\nInterference at full throttle is %d%% of mag field\n\n"),(int)interference_pct);
     }else{
