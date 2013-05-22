@@ -262,14 +262,14 @@ test_battery(uint8_t argc, const Menu::arg *argv)
             read_battery();
             if (g.battery_monitoring == 3) {
                 cliSerial->printf_P(PSTR("V: %4.4f\n"),
-                                battery_voltage1,
-                                current_amps1,
-                                current_total1);
+                                battery.voltage,
+                                battery.current_amps,
+                                battery.current_total_mah);
             } else {
                 cliSerial->printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-                                battery_voltage1,
-                                current_amps1,
-                                current_total1);
+                                battery.voltage,
+                                battery.current_amps,
+                                battery.current_total_mah);
             }
 
             // write out the servo PWM values

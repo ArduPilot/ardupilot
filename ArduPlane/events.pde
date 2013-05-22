@@ -80,14 +80,17 @@ static void failsafe_short_off_event()
     }
 }
 
-#if BATTERY_EVENT == ENABLED
 void low_battery_event(void)
 {
-    gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
+    if (battery.low_batttery) {
+        return;
+    }
+    gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
+                      battery.voltage, battery.current_total_mah);
     set_mode(RTL);
     g.throttle_cruise = THROTTLE_CRUISE;
+    battery.low_batttery = true;
 }
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // repeating event control
