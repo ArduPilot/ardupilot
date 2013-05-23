@@ -11,9 +11,9 @@ from rotmat import Vector3, Matrix3
 class Rover(Aircraft):
     '''a simple rover'''
     def __init__(self,
-                 max_speed=10,
+                 max_speed=13,
                  max_accel=10,
-                 max_turn_rate=45,
+                 max_turn_rate=100,
                  skid_steering=False):
         Aircraft.__init__(self)
         self.max_speed = max_speed

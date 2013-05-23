@@ -206,11 +206,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     uint16_t battery_current = -1;
     uint8_t battery_remaining = -1;
 
-    if (current_total1 != 0 && g.pack_capacity != 0) {
-        battery_remaining = (100.0 * (g.pack_capacity - current_total1) / g.pack_capacity);
+    if (battery.current_total_mah != 0 && g.pack_capacity != 0) {
+        battery_remaining = (100.0 * (g.pack_capacity - battery.current_total_mah) / g.pack_capacity);
     }
-    if (current_total1 != 0) {
-        battery_current = current_amps1 * 100;
+    if (battery.current_total_mah != 0) {
+        battery_current = battery.current_amps * 100;
     }
 
     if (g.battery_monitoring == 3) {
@@ -226,7 +226,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_enabled,
         control_sensors_health,
         (uint16_t)(load * 1000),
-        battery_voltage1 * 1000, // mV
+        battery.voltage * 1000, // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
         0, // comm drops %,
@@ -1040,6 +1040,9 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
     uint8_t i;
     for (i=0; i<sizeof(m.text); i++) {
         m.text[i] = pgm_read_byte((const prog_char *)(str++));
+        if (m.text[i] == '\0') {
+            break;
+        }
     }
     if (i < sizeof(m.text)) m.text[i] = 0;
     mavlink_send_text(chan, severity, (const char *)m.text);

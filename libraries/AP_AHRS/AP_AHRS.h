@@ -127,6 +127,10 @@ public:
         return true;
     }
 
+    // get our projected position, based on our GPS position plus
+    // heading and ground speed
+    bool get_projected_position(struct Location *loc);
+
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) {
         return Vector3f(0,0,0);
@@ -219,13 +223,10 @@ protected:
 
 	// Declare filter states for HPF and LPF used by complementary
 	// filter in AP_AHRS::groundspeed_vector
-	float _xlp; // x component low-pass filter
-	float _ylp; // y component low-pass filter
-	float _xhp; // x component high-pass filter
-	float _yhp; // y component high-pass filter
-    Vector2f _lastGndVelADS; // previous HPF input
-		
-	};
+	Vector2f _lp; // ground vector low-pass filter
+	Vector2f _hp; // ground vector high-pass filter
+    Vector2f _lastGndVelADS; // previous HPF input		
+};
 
 #include <AP_AHRS_DCM.h>
 #include <AP_AHRS_MPU6000.h>

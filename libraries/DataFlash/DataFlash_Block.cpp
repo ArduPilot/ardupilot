@@ -37,7 +37,7 @@ void DataFlash_Block::FinishWrite(void)
 
 void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
 {
-    if (!CardInserted()) {
+    if (!CardInserted() || !log_write_started) {
         return;
     }
     while (size > 0) {
@@ -163,7 +163,9 @@ void DataFlash_Block::EraseAll()
     hal.scheduler->delay(100);
     StartWrite(df_NumPages+1);
     uint32_t version = DF_LOGGING_FORMAT;
+    log_write_started = true;
     WriteBlock(&version, sizeof(version));
+    log_write_started = false;
     FinishWrite();
     hal.scheduler->delay(100);
 }
@@ -173,8 +175,9 @@ void DataFlash_Block::EraseAll()
  */
 bool DataFlash_Block::NeedErase(void)
 {
-    uint32_t version;
+    uint32_t version = 0;
     StartRead(df_NumPages+1);
     ReadBlock(&version, sizeof(version));
+    StartRead(1);
     return version != DF_LOGGING_FORMAT;
 }

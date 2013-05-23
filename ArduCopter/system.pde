@@ -84,7 +84,7 @@ static void init_ardupilot()
     // USB_MUX_PIN
     pinMode(USB_MUX_PIN, INPUT);
 
-    ap_system.usb_connected = !digitalReadFast(USB_MUX_PIN);
+    ap_system.usb_connected = !digitalRead(USB_MUX_PIN);
     if (!ap_system.usb_connected) {
         // USB is not connected, this means UART0 may be a Xbee, with
         // its darned bricking problem. We can't write to it for at
@@ -203,7 +203,8 @@ static void init_ardupilot()
 #endif
 
     init_rc_in();               // sets up rc channels from radio
-    init_rc_out();              // sets up the timer libs
+    init_rc_out();              // sets up motors and output to escs
+
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
@@ -552,7 +553,7 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 #if USB_MUX_PIN > 0
 static void check_usb_mux(void)
 {
-    bool usb_check = !digitalReadFast(USB_MUX_PIN);
+    bool usb_check = !digitalRead(USB_MUX_PIN);
     if (usb_check == ap_system.usb_connected) {
         return;
     }

@@ -33,7 +33,4 @@ AP_HAL::AnalogSource* EmptyAnalogIn::channel(int16_t n) {
     return new EmptyAnalogSource(1.11);
 }
 
-AP_HAL::AnalogSource* EmptyAnalogIn::channel(int16_t n, float scale) {
-    return new EmptyAnalogSource(scale/2);
-}
 

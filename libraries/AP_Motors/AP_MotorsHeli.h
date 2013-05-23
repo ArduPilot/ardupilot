@@ -108,11 +108,6 @@ public:
     // enable - starts allowing signals to be sent to motors
     void enable();
 
-    // get basic information about the platform
-    uint8_t get_num_motors() {
-        return 5;
-    };
-
     // motor test
     void output_test();
 

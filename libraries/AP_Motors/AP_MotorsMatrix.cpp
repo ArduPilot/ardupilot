@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
  *       AP_MotorsMatrix.cpp - ArduCopter motors library
  *       Code by RandyMackay. DIYDrones.com
@@ -278,17 +279,17 @@ void AP_MotorsMatrix::output_disarmed()
 // output_disarmed - sends commands to the motors
 void AP_MotorsMatrix::output_test()
 {
-    int8_t min_order, max_order;
-    int8_t i,j;
+    uint8_t min_order, max_order;
+    uint8_t i,j;
 
     // find min and max orders
-    min_order = test_order[0];
-    max_order = test_order[0];
+    min_order = _test_order[0];
+    max_order = _test_order[0];
     for(i=1; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( test_order[i] < min_order )
-            min_order = test_order[i];
-        if( test_order[i] > max_order )
-            max_order = test_order[i];
+        if( _test_order[i] < min_order )
+            min_order = _test_order[i];
+        if( _test_order[i] > max_order )
+            max_order = _test_order[i];
     }
 
     // shut down all motors
@@ -300,7 +301,7 @@ void AP_MotorsMatrix::output_test()
     // loop through all the possible orders spinning any motors that match that description
     for( i=min_order; i<=max_order; i++ ) {
         for( j=0; j<AP_MOTORS_MAX_NUM_MOTORS; j++ ) {
-            if( motor_enabled[j] && test_order[j] == i ) {
+            if( motor_enabled[j] && _test_order[j] == i ) {
                 // turn on this motor and wait 1/3rd of a second
                 hal.rcout->write(_motor_to_channel_map[j], _rc_throttle->radio_min + 100);
                 hal.scheduler->delay(300);
@@ -315,7 +316,7 @@ void AP_MotorsMatrix::output_test()
 }
 
 // add_motor
-void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, int8_t testing_order)
+void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
@@ -332,16 +333,12 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         _yaw_factor[motor_num] = yaw_fac;
 
         // set order that motor appears in test
-        if( testing_order == AP_MOTORS_MATRIX_ORDER_UNDEFINED ) {
-            test_order[motor_num] = motor_num;
-        }else{
-            test_order[motor_num] = testing_order;
-        }
+        _test_order[motor_num] = testing_order;
     }
 }
 
 // add_motor using just position and prop direction
-void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, int8_t testing_order)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
 {
     // call raw motor set-up method
     add_motor_raw(

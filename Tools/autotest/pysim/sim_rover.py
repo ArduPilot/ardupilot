@@ -120,6 +120,8 @@ a.yaw            = float(v[3])
 a.latitude = a.home_latitude
 a.longitude = a.home_longitude
 
+a.set_yaw_degrees(a.yaw)
+
 print("Starting at lat=%f lon=%f alt=%f heading=%.1f" % (
     a.home_latitude,
     a.home_longitude,

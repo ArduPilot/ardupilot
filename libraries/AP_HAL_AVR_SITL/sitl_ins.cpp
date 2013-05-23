@@ -31,12 +31,12 @@ using namespace AVR_SITL;
 uint16_t SITL_State::_airspeed_sensor(float airspeed)
 {
 	const float airspeed_ratio = 1.9936;
-	const float airspeed_offset = 2820;
+	const float airspeed_offset = 2013;
 	float airspeed_pressure, airspeed_raw;
 
 	airspeed_pressure = (airspeed*airspeed) / airspeed_ratio;
 	airspeed_raw = airspeed_pressure + airspeed_offset;
-	return airspeed_raw;
+	return airspeed_raw/4;
 }
 
 

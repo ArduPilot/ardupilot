@@ -25,18 +25,13 @@ public:
     };
 
     // init
-    virtual void            Init();
+    virtual void        Init();
 
     // set update rate to motors - a value in hertz
-    void                    set_update_rate( uint16_t speed_hz );
+    void                set_update_rate( uint16_t speed_hz );
 
     // enable - starts allowing signals to be sent to motors
-    virtual void            enable();
-
-    // get basic information about the platform
-    virtual uint8_t         get_num_motors() {
-        return 4;
-    };                                                  // 3 motors + 1 tail servo
+    virtual void        enable();
 
     // motor test
     virtual void        output_test();

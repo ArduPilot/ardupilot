@@ -58,7 +58,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: RTL Altitude
     // @Description: The minimum altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
     // @Units: Centimeters
-    // @Range: 0 4000
+    // @Range: 0 8000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
@@ -73,7 +73,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SONAR_TYPE
     // @DisplayName: Sonar type
     // @Description: Used to adjust scaling to match the sonar used (only Maxbotix sonars are supported at this time)
-    // @Values: 0:XL-EZ0,1:LV-EZ0,2:XLL-EZ0,3:HRLV
+    // @Values: 0:XL-EZ0 / XL-EZ4,1:LV-EZ0,2:XLL-EZ0,3:HRLV
     // @User: Standard
     GSCALAR(sonar_type,     "SONAR_TYPE",           AP_RANGEFINDER_MAXSONARXL),
 
@@ -129,6 +129,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Battery Capacity
     // @Description: Battery capacity in milliamp-hours (mAh)
     // @Units: mAh
+	// @User: Standard
     GSCALAR(pack_capacity,  "BATT_CAPACITY",    HIGH_DISCHARGE),
 
     // @Param: MAG_ENABLE
@@ -149,7 +150,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Low Voltage
     // @Description: Set this to the voltage you want to represent low voltage
     // @Range: 0 20
-    // @Increment: .1
+    // @Increment: 0.1
     // @User: Standard
     GSCALAR(low_voltage,    "LOW_VOLT",         LOW_VOLTAGE),
 
@@ -247,7 +248,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s
     // @Units: Centimeters/Second
-    // @Range: 10 200
+    // @Range: 20 200
     // @Increment: 10
     // @User: Standard
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
@@ -359,6 +360,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 2 byte bitmap of log types to enable
+    // @Values: 0:Disabled,830:Default,958:Default+IMU,1854:Default+Motors,17214:Default+INav
     // @User: Advanced
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
@@ -380,7 +382,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,8:CH6_TOP_BOTTOM_RATIO,9:CH6_RELAY,10:CH6_WP_SPEED,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD,38:CH6_DECLINATION,39:CH6_CIRCLE_RATE
+    // @Values: 0:CH6_NONE,1:CH6_STABILIZE_KP,2:CH6_STABILIZE_KI,3:CH6_YAW_KP,4:CH6_RATE_KP,5:CH6_RATE_KI,6:CH6_YAW_RATE_KP,7:CH6_THROTTLE_KP,9:CH6_RELAY,10:CH6_WP_SPEED,12:CH6_LOITER_KP,13:CH6_HELI_EXTERNAL_GYRO,14:CH6_THR_HOLD_KP,17:CH6_OPTFLOW_KP,18:CH6_OPTFLOW_KI,19:CH6_OPTFLOW_KD,21:CH6_RATE_KD,22:CH6_LOITER_RATE_KP,23:CH6_LOITER_RATE_KD,24:CH6_YAW_KI,25:CH6_ACRO_KP,26:CH6_YAW_RATE_KD,27:CH6_LOITER_KI,28:CH6_LOITER_RATE_KI,29:CH6_STABILIZE_KD,30:CH6_AHRS_YAW_KP,31:CH6_AHRS_KP,32:CH6_INAV_TC,33:CH6_THROTTLE_KI,34:CH6_THR_ACCEL_KP,35:CH6_THR_ACCEL_KI,36:CH6_THR_ACCEL_KD,38:CH6_DECLINATION,39:CH6_CIRCLE_RATE
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -402,32 +404,62 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
     // @Values: 0:Plus, 1:X, 2:V, 3:H
     // @User: Standard
-    // @Range: 0 32767
     GSCALAR(frame_orientation, "FRAME",             FRAME_ORIENTATION),
 
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:Sonar
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
-	// @Param: AUTO_SLEW
-    // @DisplayName: Auto Slew Rate
-    // @Description: This restricts the rate of change of the roll and pitch attitude commanded by the auto pilot
-    // @Units: Degrees/Second
-	// @Range: 1 90
-    // @Increment: 1
-    // @User: Advanced
-    GSCALAR(auto_slew_rate, "AUTO_SLEW",            AUTO_SLEW_RATE),
+    // @Param: CH8_OPT
+    // @DisplayName: Channel 8 option
+    // @Description: Select which function if performed when CH8 is above 1800 pwm
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw
+    // @User: Standard
+    GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
+
+    // @Param: ARMING_CHECK
+    // @DisplayName: Arming check
+    // @Description: Allows enabling or disabling of pre-arming checks of receiver, accelerometer, barometer and compass
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+    GSCALAR(arming_check_enabled, "ARMING_CHECK",   1),
 
 #if FRAME_CONFIG ==     HELI_FRAME
+    // @Group: HS1_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_1,    "HS1_", RC_Channel),
+    // @Group: HS2_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_2,    "HS2_", RC_Channel),
+    // @Group: HS3_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_3,    "HS3_", RC_Channel),
+    // @Group: HS4_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_4,    "HS4_", RC_Channel),
+
+    // @Param: RATE_PIT_FF
+    // @DisplayName: Rate Pitch Feed Forward
+    // @Description: Rate Pitch Feed Forward (for TradHeli Only)
+    // @Range: 0 10
+    // @User: Standard
 	GSCALAR(heli_pitch_ff, "RATE_PIT_FF",            HELI_PITCH_FF),
+
+    // @Param: RATE_RLL_FF
+    // @DisplayName: Rate Roll Feed Forward
+    // @Description: Rate Roll Feed Forward (for TradHeli Only)
+    // @Range: 0 10
+    // @User: Standard
 	GSCALAR(heli_roll_ff, "RATE_RLL_FF",            HELI_ROLL_FF),
+
+    // @Param: RATE_YAW_FF
+    // @DisplayName: Rate Yaw Feed Forward
+    // @Description: Rate Yaw Feed Forward (for TradHeli Only)
+    // @Range: 0 10
+    // @User: Standard
 	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
 #endif
 
@@ -480,8 +512,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
-    // @Units: Hertz (Hz)
-    // @Values: 125,400,490
+    // @Units: Hz
+    // @Range: 50 490
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
@@ -547,7 +580,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Roll axis rate controller I gain maximum
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: RATE_RLL_D
@@ -573,7 +606,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pitch axis rate controller I gain maximum
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: RATE_PIT_D
@@ -599,7 +632,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Yaw axis rate controller I gain maximum
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: RATE_YAW_D
@@ -625,7 +658,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter rate controller I gain maximum
     // @Description: Loiter rate controller I gain maximum.  Constrains the lean angle that the I gain will output
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: LOITER_LAT_D
@@ -651,7 +684,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter longitude rate controller I gain maximum
     // @Description: Loiter longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will output
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: LOITER_LON_D
@@ -677,7 +710,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle rate controller I gain maximum
     // @Description: Throttle rate controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
     // @Range: 0 500
-    // @Unit: cm/s/s
+    // @Units: cm/s/s
     // @User: Standard
 
     // @Param: THR_RATE_D
@@ -703,7 +736,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 500
-    // @Unit: PWM
+    // @Units: PWM
     // @User: Standard
 
     // @Param: THR_ACCEL_D
@@ -729,7 +762,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Optical Flow based loiter controller roll axis I gain maximum
     // @Description: Optical Flow based loiter controller roll axis I gain maximum.  Constrains the maximum roll angle that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: OF_RLL_D
@@ -755,7 +788,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Optical Flow based loiter controller pitch axis I gain maximum
     // @Description: Optical Flow based loiter controller pitch axis I gain maximum.  Constrains the maximum pitch angle that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees
+    // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: OF_PIT_D
@@ -783,7 +816,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Roll axis stabilize controller I gain maximum
     // @Description: Roll axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum roll rate that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees/Sec
+    // @Units: Centi-Degrees/Sec
     // @User: Standard
     GGROUP(pi_stabilize_roll,       "STB_RLL_", APM_PI),
 
@@ -803,7 +836,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pitch axis stabilize controller I gain maximum
     // @Description: Pitch axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum pitch rate that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees/Sec
+    // @Units: Centi-Degrees/Sec
     // @User: Standard
     GGROUP(pi_stabilize_pitch,      "STB_PIT_", APM_PI),
 
@@ -823,7 +856,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Yaw axis stabilize controller I gain maximum
     // @Description: Yaw axis stabilize (i.e. angle) controller I gain maximum.  Constrains the maximum yaw rate that the I term will generate
     // @Range: 0 4500
-    // @Unit: Centi-Degrees/Sec
+    // @Units: Centi-Degrees/Sec
     // @User: Standard
     GGROUP(pi_stabilize_yaw,        "STB_YAW_", APM_PI),
 
@@ -843,7 +876,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Altitude controller I gain maximum
     // @Description: Altitude controller I gain maximum.  Constrains the maximum climb rate rate that the I term will generate
     // @Range: 0 500
-    // @Unit: cm/s
+    // @Units: cm/s
     // @User: Standard
     GGROUP(pi_alt_hold,     "THR_ALT_", APM_PI),
 
@@ -863,7 +896,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter latitude position controller I gain maximum
     // @Description: Loiter latitude position controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
     // @Range: 0 3000
-    // @Unit: cm/s
+    // @Units: cm/s
     // @User: Standard
     GGROUP(pi_loiter_lat,   "HLD_LAT_", APM_PI),
 
@@ -883,7 +916,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Loiter longitudeposition controller I gain maximum
     // @Description: Loiter  longitudeposition controller I gain maximum.  Constrains the maximum desired speed that the I term will generate
     // @Range: 0 3000
-    // @Unit: cm/s
+    // @Units: cm/s
     // @User: Standard
     GGROUP(pi_loiter_lon,   "HLD_LON_", APM_PI),
 
@@ -942,7 +975,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(sitl, "SIM_", SITL),
 #endif
 
+    // @Group: GND_
+    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "GND_", AP_Baro),
+
+    // @Group: SCHED_
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
 #if AC_FENCE == ENABLED

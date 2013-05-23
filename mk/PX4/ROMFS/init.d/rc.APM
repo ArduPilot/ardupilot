@@ -113,8 +113,9 @@ then
 else
 	echo "No APM sketch found"
 fi
-fi
 
 echo "rc.APM finished"
 echo "rc.APM finished" >> $logfile
+fi
+
 

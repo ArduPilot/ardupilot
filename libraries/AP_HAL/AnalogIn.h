@@ -27,13 +27,16 @@ public:
     // return a voltage from 0.0 to 5.0V, scaled
     // against a reference voltage
     virtual float voltage_average() = 0;
+
+    // return a voltage from 0.0 to 5.0V, assuming a ratiometric
+    // sensor
+    virtual float voltage_average_ratiometric() = 0;
 };
 
 class AP_HAL::AnalogIn {
 public:
     virtual void init(void* implspecific) = 0;
     virtual AP_HAL::AnalogSource* channel(int16_t n) = 0;
-    virtual AP_HAL::AnalogSource* channel(int16_t n, float scale) = 0;
 };
 
 #define ANALOG_INPUT_BOARD_VCC 254

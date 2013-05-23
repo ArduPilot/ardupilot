@@ -1,26 +1,19 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// 10 = 1 second
-// dongfang: They were much, much too long for my taste.
-#define ARM_DELAY 10
-#define DISARM_DELAY 10
-#define AUTO_TRIM_DELAY 40
+#define ARM_DELAY               10  // called at 10hz so 2 seconds
+#define DISARM_DELAY            10  // called at 10hz so 2 seconds
+#define AUTO_TRIM_DELAY         40 // called at 10hz so 10 seconds
+#define AUTO_DISARMING_DELAY    25  // called at 1hz so 25 seconds
 
+// arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
-static void arm_motors()
+static void arm_motors_check()
 {
     static int16_t arming_counter;
 
-    // don't allow arming/disarming in anything but manual
-    // dongfang: Hmmm above original comment is outdated?
-    // This means throttle at zero.
+    // ensure throttle is down
     if (g.rc_3.control_in > 0) {
         arming_counter = 0;
-        return;
-    }
-
-    // ensure pre-arm checks have been successful
-    if(!ap.pre_arm_check) {
         return;
     }
 
@@ -53,7 +46,14 @@ static void arm_motors()
 
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors.armed()) {
-            init_arm_motors();
+            // run pre-arm-checks and display failures
+            pre_arm_checks(true);
+            if(ap.pre_arm_check) {
+                init_arm_motors();
+            }else{
+                // reset arming counter if pre-arm checks fail
+                arming_counter = 0;
+            }
         }
 
         // arm the motors and configure for flight
@@ -80,7 +80,26 @@ static void arm_motors()
     }
 }
 
+// auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 25 seconds
+// called at 1hz
+static void auto_disarm_check()
+{
+    static uint8_t auto_disarming_counter;
 
+    if((control_mode <= ACRO) && (g.rc_3.control_in == 0) && motors.armed()) {
+        auto_disarming_counter++;
+
+        if(auto_disarming_counter == AUTO_DISARMING_DELAY) {
+            init_disarm_motors();
+        }else if (auto_disarming_counter > AUTO_DISARMING_DELAY) {
+            auto_disarming_counter = AUTO_DISARMING_DELAY + 1;
+        }
+    }else{
+        auto_disarming_counter = 0;
+    }
+}
+
+// init_arm_motors - performs arming process including initialisation of barometer and gyros
 static void init_arm_motors()
 {
 	// arming marker
@@ -91,9 +110,11 @@ static void init_arm_motors()
 
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
-    
+
+#if LOGGING_ENABLED == ENABLED
     // start dataflash
     start_logging();
+#endif
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
@@ -149,18 +170,94 @@ static void init_arm_motors()
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
 
+    // enable output to motors
+    output_min();
+
     // finally actually arm the motors
     motors.armed(true);
+
+    // log arming to dataflash
+    Log_Write_Event(DATA_ARMED);
 
     // reenable failsafe
     failsafe_enable();
 }
 
-// perform pre-arm checks and set 
-static void pre_arm_checks()
+// perform pre-arm checks and set ap.pre_arm_check flag
+static void pre_arm_checks(bool display_failure)
 {
     // exit immediately if we've already successfully performed the pre-arm check
     if( ap.pre_arm_check ) {
+        return;
+    }
+
+    // succeed if pre arm checks are disabled
+    if(!g.arming_check_enabled) {
+        ap.pre_arm_check = true;
+        return;
+    }
+
+    // pre-arm rc checks a prerequisite
+    pre_arm_rc_checks();
+    if(!ap.pre_arm_rc_check) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: RC not calibrated"));
+        }
+        return;
+    }
+
+    // check accelerometers have been calibrated
+    if(!ins.calibrated()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
+        }
+        return;
+    }
+
+    // check the compass is healthy
+    if(!compass.healthy) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
+        }
+        return;
+    }
+
+    // check compass learning is on or offsets have been set
+    Vector3f offsets = compass.get_offsets();
+    if(!compass._learn && offsets.length() == 0) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
+        }
+        return;
+    }
+
+    // check for unreasonable compass offsets
+    if(offsets.length() > 500) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
+        }
+        return;
+    }
+
+#if AC_FENCE == ENABLED
+    // check fence is initialised
+    if(!fence.pre_arm_check()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No GPS Lock"));
+        }
+        return;
+    }
+#endif
+
+    // if we've gotten this far then pre arm checks have completed
+    ap.pre_arm_check = true;
+}
+
+// perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
+static void pre_arm_rc_checks()
+{
+    // exit immediately if we've already successfully performed the pre-arm rc check
+    if( ap.pre_arm_rc_check ) {
         return;
     }
 
@@ -169,25 +266,13 @@ static void pre_arm_checks()
         return;
     }
 
-    // check accelerometers have been calibrated
-    if(!ins.calibrated()) {
+    // check if throttle min is reasonable
+    if(g.rc_3.radio_min > 1300) {
         return;
     }
 
-    // check the compass is healthy
-    if(!compass.healthy) {
-        return;
-    }
-
-#if AC_FENCE == ENABLED
-    // check fence is initialised
-    if(!fence.pre_arm_check()) {
-        return;
-    }
-#endif
-
-    // if we've gotten this far then pre arm checks have completed
-    ap.pre_arm_check = true;
+    // if we've gotten this far rc is ok
+    ap.pre_arm_rc_check = true;
 }
 
 static void init_disarm_motors()
@@ -214,6 +299,9 @@ static void init_disarm_motors()
 #if SECONDARY_DMP_ENABLED == ENABLED
     ahrs2.set_fast_gains(true);
 #endif
+
+    // log disarm to the dataflash
+    Log_Write_Event(DATA_DISARMED);
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);

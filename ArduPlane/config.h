@@ -119,7 +119,6 @@
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
- # define CONFIG_PITOT_SCALING 4.0
  # ifdef APM2_BETA_HARDWARE
  #  define CONFIG_BARO     AP_BARO_BMP085
  # else // APM2 Production Hardware (default)
@@ -138,7 +137,6 @@
  # define CONFIG_INS_TYPE CONFIG_INS_STUB
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
- # define CONFIG_PITOT_SCALING 4.0
  # define CONFIG_BARO     AP_BARO_HIL
  # define CONFIG_COMPASS  AP_COMPASS_HIL
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -153,7 +151,6 @@
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
  # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  # define CONFIG_PITOT_SOURCE_ANALOG_PIN 11
- # define CONFIG_PITOT_SCALING (4.0*5.0/3.3)
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
  # define SERIAL0_BAUD 115200
@@ -203,8 +200,6 @@
  #define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
  #undef CONFIG_PITOT_SOURCE_ANALOG_PIN
  #define CONFIG_PITOT_SOURCE_ANALOG_PIN -1
- #undef CONFIG_PITOT_SCALING
- #define CONFIG_PITOT_SCALING 4.0
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
 #endif
@@ -237,12 +232,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef BATTERY_EVENT
- # define BATTERY_EVENT                  DISABLED
-#endif
-#ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    9.6
-#endif
 #ifndef VOLT_DIV_RATIO
  # define VOLT_DIV_RATIO                 3.56   // This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
 //# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
@@ -253,13 +242,6 @@
 #ifndef CURR_AMP_PER_VOLT
  # define CURR_AMP_PER_VOLT              27.32  // This is the proper value for the AttoPilot 50V/90A sensor
 //# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// INPUT_VOLTAGE
-//
-#ifndef INPUT_VOLTAGE
- # define INPUT_VOLTAGE                  4.68   //  4.68 is the average value for a sample set.  This is the value at the processor with 5.02 applied at the servo rail
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

@@ -310,13 +310,16 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Channel 7 default option
+// Channel 7 and 8 default options
 //
 
 #ifndef CH7_OPTION
- # define CH7_OPTION             CH7_SAVE_WP
+ # define CH7_OPTION            AUX_SWITCH_SAVE_WP
 #endif
 
+#ifndef CH8_OPTION
+ # define CH8_OPTION            AUX_SWITCH_DO_NOTHING
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
@@ -585,7 +588,7 @@
 // AUTO Mode
 // Note: Auto mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP     
+ # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL     
 #endif
 
 #ifndef AUTO_RP
@@ -658,7 +661,7 @@
 #endif
 
 #ifndef POSITION_THR
- # define POSITION_THR              THROTTLE_HOLD
+ # define POSITION_THR              THROTTLE_MANUAL_TILT_COMPENSATED
 #endif
 
 #ifndef POSITION_NAV
@@ -724,27 +727,7 @@
 // Attitude Control
 //
 
-// Extra motor values that are changed from time to time by jani @ jDrones as software
-// and charachteristics changes.
-#ifdef MOTORS_JD880
- # define STABILIZE_ROLL_P          3.7f
- # define STABILIZE_ROLL_I          0.0f
- # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
- # define STABILIZE_PITCH_P         3.7f
- # define STABILIZE_PITCH_I         0.0f
- # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
-#endif
-
-#ifdef MOTORS_JD850
- # define STABILIZE_ROLL_P          4.2f
- # define STABILIZE_ROLL_I          0.0f
- # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
- # define STABILIZE_PITCH_P         4.2f
- # define STABILIZE_PITCH_I         0.0f
- # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
-#endif
-
-
+// Acro mode gains
 #ifndef ACRO_P
  # define ACRO_P                 4.5f
 #endif
@@ -753,7 +736,7 @@
  # define AXIS_LOCK_ENABLED      ENABLED
 #endif
 
-// Good for smaller payload motors.
+// Stabilize (angle controller) gains
 #ifndef STABILIZE_ROLL_P
  # define STABILIZE_ROLL_P          4.5f
 #endif
@@ -899,10 +882,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Autopilot rotate rate limits
 //
-#ifndef AUTO_SLEW_RATE
- # define AUTO_SLEW_RATE         	45                     // degrees/sec
-#endif
-
 #ifndef AUTO_YAW_SLEW_RATE
  # define AUTO_YAW_SLEW_RATE        60                     // degrees/sec
 #endif
@@ -1000,9 +979,6 @@
 #ifndef LOG_NTUN
  # define LOG_NTUN                      ENABLED
 #endif
-#ifndef LOG_MODE
- # define LOG_MODE                      ENABLED
-#endif
 #ifndef LOG_IMU
  # define LOG_IMU                       DISABLED
 #endif
@@ -1044,7 +1020,6 @@
     LOGBIT(PM)              | \
     LOGBIT(CTUN)            | \
     LOGBIT(NTUN)            | \
-    LOGBIT(MODE)            | \
     LOGBIT(IMU)             | \
     LOGBIT(CMD)             | \
     LOGBIT(CURRENT)         | \

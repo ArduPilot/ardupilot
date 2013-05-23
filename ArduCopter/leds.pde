@@ -26,23 +26,23 @@ static void update_GPS_light(void)
                 g_gps->valid_read = false;
                 ap_system.GPS_light = !ap_system.GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
                 if (ap_system.GPS_light) {
-                    digitalWriteFast(C_LED_PIN, LED_OFF);
+                    digitalWrite(C_LED_PIN, LED_OFF);
                 }else{
-                    digitalWriteFast(C_LED_PIN, LED_ON);
+                    digitalWrite(C_LED_PIN, LED_ON);
                 }
             }
             break;
 
         case GPS::GPS_OK_FIX_3D:
             if(ap.home_is_set) {
-                digitalWriteFast(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix AND home is set.
+                digitalWrite(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix AND home is set.
             } else {
-                digitalWriteFast(C_LED_PIN, LED_OFF);
+                digitalWrite(C_LED_PIN, LED_OFF);
             }
             break;
 
         default:
-            digitalWriteFast(C_LED_PIN, LED_OFF);
+            digitalWrite(C_LED_PIN, LED_OFF);
             break;
     }
 }
@@ -54,14 +54,14 @@ static void update_motor_light(void)
 
         // blink
         if(ap_system.motor_light) {
-            digitalWriteFast(A_LED_PIN, LED_ON);
+            digitalWrite(A_LED_PIN, LED_ON);
         }else{
-            digitalWriteFast(A_LED_PIN, LED_OFF);
+            digitalWrite(A_LED_PIN, LED_OFF);
         }
     }else{
         if(!ap_system.motor_light) {
             ap_system.motor_light = true;
-            digitalWriteFast(A_LED_PIN, LED_ON);
+            digitalWrite(A_LED_PIN, LED_ON);
         }
     }
 }
@@ -76,26 +76,26 @@ static void dancing_light()
     switch(step)
     {
     case 0:
-        digitalWriteFast(C_LED_PIN, LED_OFF);
-        digitalWriteFast(A_LED_PIN, LED_ON);
+        digitalWrite(C_LED_PIN, LED_OFF);
+        digitalWrite(A_LED_PIN, LED_ON);
         break;
 
     case 1:
-        digitalWriteFast(A_LED_PIN, LED_OFF);
-        digitalWriteFast(B_LED_PIN, LED_ON);
+        digitalWrite(A_LED_PIN, LED_OFF);
+        digitalWrite(B_LED_PIN, LED_ON);
         break;
 
     case 2:
-        digitalWriteFast(B_LED_PIN, LED_OFF);
-        digitalWriteFast(C_LED_PIN, LED_ON);
+        digitalWrite(B_LED_PIN, LED_OFF);
+        digitalWrite(C_LED_PIN, LED_ON);
         break;
     }
 }
 static void clear_leds()
 {
-    digitalWriteFast(A_LED_PIN, LED_OFF);
-    digitalWriteFast(B_LED_PIN, LED_OFF);
-    digitalWriteFast(C_LED_PIN, LED_OFF);
+    digitalWrite(A_LED_PIN, LED_OFF);
+    digitalWrite(B_LED_PIN, LED_OFF);
+    digitalWrite(C_LED_PIN, LED_OFF);
     ap_system.motor_light = false;
     led_mode = NORMAL_LEDS;
 }
@@ -220,56 +220,56 @@ static void update_copter_leds(void)
 }
 
 static void copter_leds_reset(void) {
-    digitalWriteFast(COPTER_LED_1, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_2, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_3, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_4, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_5, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_6, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_7, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_8, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_4, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_5, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_6, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_7, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
 }
 
 static void copter_leds_on(void) {
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX)) {
-        digitalWriteFast(COPTER_LED_1, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_1, COPTER_LED_ON);
     }
  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER)) {
-        digitalWriteFast(COPTER_LED_2, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_2, COPTER_LED_ON);
     }
  #else
-    digitalWriteFast(COPTER_LED_2, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_2, COPTER_LED_ON);
  #endif
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_GPS) ) {
-        digitalWriteFast(COPTER_LED_3, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_3, COPTER_LED_ON);
     }
-    digitalWriteFast(COPTER_LED_4, COPTER_LED_ON);
-    digitalWriteFast(COPTER_LED_5, COPTER_LED_ON);
-    digitalWriteFast(COPTER_LED_6, COPTER_LED_ON);
-    digitalWriteFast(COPTER_LED_7, COPTER_LED_ON);
-    digitalWriteFast(COPTER_LED_8, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_4, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_5, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_6, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_7, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_8, COPTER_LED_ON);
 }
 
 static void copter_leds_off(void) {
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX)) {
-        digitalWriteFast(COPTER_LED_1, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
     }
  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER)) {
-        digitalWriteFast(COPTER_LED_2, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
     }
  #else
-    digitalWriteFast(COPTER_LED_2, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
  #endif
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_GPS)) {
-        digitalWriteFast(COPTER_LED_3, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
     }
-    digitalWriteFast(COPTER_LED_4, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_5, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_6, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_7, COPTER_LED_OFF);
-    digitalWriteFast(COPTER_LED_8, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_4, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_5, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_6, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_7, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
 }
 
 static void copter_leds_slow_blink(void) {
@@ -304,53 +304,53 @@ static void copter_leds_oscillate(void) {
     copter_leds_motor_blink++;                                                  // this increments once every 1/10 second because it is in the 10hz loop
     if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ) {         // when the counter reaches 3 (1/5 sec), then toggle the leds
         if ( !(g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX)) {
-            digitalWriteFast(COPTER_LED_1, COPTER_LED_ON);
+            digitalWrite(COPTER_LED_1, COPTER_LED_ON);
         }
  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
         if ( !(g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER)) {
-            digitalWriteFast(COPTER_LED_2, COPTER_LED_ON);
+            digitalWrite(COPTER_LED_2, COPTER_LED_ON);
         }
  #else
-        digitalWriteFast(COPTER_LED_2, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_2, COPTER_LED_ON);
  #endif
         if ( !(g.copter_leds_mode & COPTER_LEDS_BITMASK_GPS)) {
-            digitalWriteFast(COPTER_LED_3, COPTER_LED_OFF);
+            digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
         }
-        digitalWriteFast(COPTER_LED_4, COPTER_LED_OFF);
-        digitalWriteFast(COPTER_LED_5, COPTER_LED_ON);
-        digitalWriteFast(COPTER_LED_6, COPTER_LED_ON);
-        digitalWriteFast(COPTER_LED_7, COPTER_LED_OFF);
-        digitalWriteFast(COPTER_LED_8, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_4, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_5, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_6, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_7, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
     }else if (2 < copter_leds_motor_blink && copter_leds_motor_blink < 5) {
         if ( !(g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX)) {
-            digitalWriteFast(COPTER_LED_1, COPTER_LED_OFF);
+            digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
         }
  #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
         if ( !(g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER)) {
-            digitalWriteFast(COPTER_LED_2, COPTER_LED_OFF);
+            digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
         }
  #else
-        digitalWriteFast(COPTER_LED_2, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
  #endif
         if ( !(g.copter_leds_mode & COPTER_LEDS_BITMASK_GPS) ) {
-            digitalWriteFast(COPTER_LED_3, COPTER_LED_ON);
+            digitalWrite(COPTER_LED_3, COPTER_LED_ON);
         }
-        digitalWriteFast(COPTER_LED_4, COPTER_LED_ON);
-        digitalWriteFast(COPTER_LED_5, COPTER_LED_OFF);
-        digitalWriteFast(COPTER_LED_6, COPTER_LED_OFF);
-        digitalWriteFast(COPTER_LED_7, COPTER_LED_ON);
-        digitalWriteFast(COPTER_LED_8, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_4, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_5, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_6, COPTER_LED_OFF);
+        digitalWrite(COPTER_LED_7, COPTER_LED_ON);
+        digitalWrite(COPTER_LED_8, COPTER_LED_ON);
     }else{
         copter_leds_motor_blink = 0;                                            // start blink cycle again
     }
 }
 
 static void copter_leds_GPS_on(void) {
-    digitalWriteFast(COPTER_LED_3, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_3, COPTER_LED_ON);
 }
 
 static void copter_leds_GPS_off(void) {
-    digitalWriteFast(COPTER_LED_3, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
 }
 
 static void copter_leds_GPS_slow_blink(void) {
@@ -377,22 +377,22 @@ static void copter_leds_GPS_fast_blink(void) {
 }
 
 static void copter_leds_aux_off(void){
-    digitalWriteFast(COPTER_LED_1, COPTER_LED_OFF);
+    digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
 }
 
 static void copter_leds_aux_on(void){
-    digitalWriteFast(COPTER_LED_1, COPTER_LED_ON);
+    digitalWrite(COPTER_LED_1, COPTER_LED_ON);
 }
 
 void piezo_on(){
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER) {
-        digitalWriteFast(PIEZO_PIN,HIGH);
+        digitalWrite(PIEZO_PIN,HIGH);
     }
 }
 
 void piezo_off(){
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER) {
-        digitalWriteFast(PIEZO_PIN,LOW);
+        digitalWrite(PIEZO_PIN,LOW);
     }
 }
 

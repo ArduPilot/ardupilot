@@ -11,6 +11,7 @@ public:
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    float voltage_average_ratiometric() { return voltage_average(); }
     void set_stop_pin(uint8_t p) {}
     void set_settle_time(uint16_t settle_time_ms) {}
 
@@ -23,6 +24,5 @@ public:
     SMACCMAnalogIn();
     void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t n);
-    AP_HAL::AnalogSource* channel(int16_t n, float scale);
 };
 #endif // __AP_HAL_SMACCM_ANALOGIN_H__

@@ -12,21 +12,20 @@ public:
     friend class AVR_SITL::SITLAnalogIn;
     /* pin designates the ADC input number, or when == AVR_ANALOG_PIN_VCC,
      * board vcc */
-    ADCSource(SITL_State *sitlState, uint8_t pin, float prescale = 1.0);
+    ADCSource(SITL_State *sitlState, uint8_t pin);
 
     /* implement AnalogSource virtual api: */
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    float voltage_average_ratiometric() { return voltage_average(); }
     void set_stop_pin(uint8_t pin) {}
     void set_settle_time(uint16_t settle_time_ms) {}
 
 private:
-    /* prescale scales the raw measurments for read()*/
     SITL_State *_sitlState;
     uint8_t _pin;
-    const float _prescale;
 };
 
 /* AVRAnalogIn : a concrete class providing the implementations of the 
@@ -38,7 +37,6 @@ public:
     }
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
-    AP_HAL::AnalogSource* channel(int16_t n, float prescale);
 
 private:
     static ADCSource* _channels[SITL_INPUT_MAX_CHANNELS];

@@ -24,7 +24,7 @@
 #define YAW_LOOK_AT_HEADING    		    6       // point towards a particular angle (not pilot input accepted)
 #define YAW_LOOK_AHEAD					7		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
 #define YAW_TOY                         8       // THOR This is the Yaw mode
-
+#define YAW_RESETTOARMEDYAW				9       // point towards heading at time motors were armed
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
 #define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates
@@ -44,24 +44,24 @@
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
 
-// CH 7 control
-#define CH7_PWM_TRIGGER 1800    // pwm value above which the channel 7 option will be invoked
-#define CH6_PWM_TRIGGER_HIGH 1800
-#define CH6_PWM_TRIGGER_LOW 1200
+// Ch7 and Ch8 aux switch control
+#define AUX_SWITCH_PWM_TRIGGER  1800        // pwm value above which the ch7 or ch8 option will be invoked
+#define CH6_PWM_TRIGGER_HIGH    1800
+#define CH6_PWM_TRIGGER_LOW     1200
 
-#define CH7_DO_NOTHING      0
-#define CH7_SET_HOVER       1       // deprecated
-#define CH7_FLIP            2
-#define CH7_SIMPLE_MODE     3
-#define CH7_RTL             4
-#define CH7_SAVE_TRIM       5
-#define CH7_ADC_FILTER      6       // deprecated
-#define CH7_SAVE_WP         7
-#define CH7_MULTI_MODE      8
-#define CH7_CAMERA_TRIGGER  9
-#define CH7_SONAR           10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
-#define CH7_FENCE           11      // allow enabling or disabling fence in flight
-
+#define AUX_SWITCH_DO_NOTHING       0       // aux switch disabled
+#define AUX_SWITCH_SET_HOVER        1       // deprecated
+#define AUX_SWITCH_FLIP             2       // flip
+#define AUX_SWITCH_SIMPLE_MODE      3       // change to simple mode
+#define AUX_SWITCH_RTL              4       // change to RTL flight mode
+#define AUX_SWITCH_SAVE_TRIM        5       // save current position as level
+#define AUX_SWITCH_ADC_FILTER       6       // deprecated
+#define AUX_SWITCH_SAVE_WP          7       // save mission waypoint or RTL if in auto mode
+#define AUX_SWITCH_MULTI_MODE       8       // depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
+#define AUX_SWITCH_CAMERA_TRIGGER   9       // trigger camera servo or relay
+#define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+#define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
+#define AUX_SWITCH_RESETTOARMEDYAW  12      // changes yaw to be same as when quad was armed
 
 
 // Frame types
@@ -156,7 +156,6 @@
 #define CH6_THR_ACCEL_KP    34          // accel based throttle controller's P term
 #define CH6_THR_ACCEL_KI    35          // accel based throttle controller's I term
 #define CH6_THR_ACCEL_KD    36          // accel based throttle controller's D term
-#define CH6_TOP_BOTTOM_RATIO 8          // upper/lower motor ratio (not used)
 #define CH6_RELAY           9           // switch relay on if ch6 high, off if low
 #define CH6_WP_SPEED        10          // maximum speed to next way point (0 to 10m/s)
 #define CH6_LOITER_KP       12          // loiter distance controller's P term (position error to speed)
@@ -282,7 +281,6 @@ enum ap_message {
 #define LOG_DATA_INT32_MSG              0x16
 #define LOG_DATA_UINT32_MSG             0x17
 #define LOG_DATA_FLOAT_MSG              0x18
-#define LOG_WPNAV_MSG                   0x19
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
@@ -292,7 +290,7 @@ enum ap_message {
 #define MASK_LOG_PM                     (1<<3)
 #define MASK_LOG_CTUN                   (1<<4)
 #define MASK_LOG_NTUN                   (1<<5)
-#define MASK_LOG_MODE                   (1<<6)
+#define MASK_LOG_MODE                   (1<<6)  // not used
 #define MASK_LOG_IMU                    (1<<7)
 #define MASK_LOG_CMD                    (1<<8)
 #define MASK_LOG_CURRENT                (1<<9)
@@ -308,30 +306,20 @@ enum ap_message {
 #define DATA_MAVLINK_INT32              2
 #define DATA_MAVLINK_INT16              3
 #define DATA_MAVLINK_INT8               4
-#define DATA_FAST_LOOP                  5
-#define DATA_MED_LOOP                   6
 #define DATA_AP_STATE                   7
-#define DATA_SIMPLE_BEARING             8
 #define DATA_INIT_SIMPLE_BEARING        9
 #define DATA_ARMED                      10
 #define DATA_DISARMED                   11
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
-#define DATA_DID_REACH_ALT              17
 #define DATA_LAND_COMPLETE              18
 #define DATA_LOST_GPS                   19
-#define DATA_LOST_COMPASS               20
 #define DATA_BEGIN_FLIP                 21
 #define DATA_END_FLIP                   22
 #define DATA_EXIT_FLIP                  23
-#define DATA_FLIP_ABORTED               24
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
-#define DATA_REACHED_ALT                28
-#define DATA_ASCENDING                  29
-#define DATA_DESCENDING                 30
-#define DATA_RTL_REACHED_ALT            31
 
 // battery monitoring macros
 #define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
@@ -442,6 +430,8 @@ enum ap_message {
 // subsystem specific error codes -- failsafe_thr, batt, gps
 #define ERROR_CODE_FAILSAFE_RESOLVED        0
 #define ERROR_CODE_FAILSAFE_OCCURRED        1
+// subsystem specific error codes -- compass
+#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
 
 
 

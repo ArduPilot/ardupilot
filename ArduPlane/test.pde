@@ -262,14 +262,14 @@ test_battery(uint8_t argc, const Menu::arg *argv)
             read_battery();
             if (g.battery_monitoring == 3) {
                 cliSerial->printf_P(PSTR("V: %4.4f\n"),
-                                battery_voltage1,
-                                current_amps1,
-                                current_total1);
+                                battery.voltage,
+                                battery.current_amps,
+                                battery.current_total_mah);
             } else {
                 cliSerial->printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-                                battery_voltage1,
-                                current_amps1,
-                                current_total1);
+                                battery.voltage,
+                                battery.current_amps,
+                                battery.current_total_mah);
             }
 
             // write out the servo PWM values
@@ -606,9 +606,9 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
-    float airspeed_ch = pitot_analog_source->read_average();
+    float airspeed_ch = pitot_analog_source->voltage_average();
     // cliSerial->println(pitot_analog_source.read());
-    cliSerial->printf_P(PSTR("airspeed_ch: %.1f\n"), airspeed_ch);
+    cliSerial->printf_P(PSTR("airspeed_ch: %.3f\n"), airspeed_ch);
 
     if (!airspeed.enabled()) {
         cliSerial->printf_P(PSTR("airspeed: "));

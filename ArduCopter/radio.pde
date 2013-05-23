@@ -61,6 +61,7 @@ static void init_rc_in()
 #endif
 }
 
+ // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
 static void init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
@@ -77,18 +78,11 @@ static void init_rc_out()
     // we want the input to be scaled correctly
     g.rc_3.set_range_out(0,1000);
 
-    // sanity check - prevent unconfigured radios from outputting
-    if(g.rc_3.radio_min >= 1300) {
-        g.rc_3.radio_min = g.rc_3.radio_in;
-    }
-
-    // we are full throttle
+    // full throttle means to enter ESC calibration
     if(g.rc_3.control_in >= (MAXIMUM_THROTTLE - 50)) {
         if(g.esc_calibrate == 0) {
             // we will enter esc_calibrate mode on next reboot
             g.esc_calibrate.set_and_save(1);
-            // send minimum throttle out to ESC
-            motors.output_min();
             // display message on console
             cliSerial->printf_P(PSTR("Entering ESC Calibration: please restart APM.\n"));
             // block until we restart
@@ -107,8 +101,11 @@ static void init_rc_out()
         // did we abort the calibration?
         if(g.esc_calibrate == 1)
             g.esc_calibrate.set_and_save(0);
+    }
 
-        // send miinimum throttle out to ESC
+    // enable output to motors
+    pre_arm_rc_checks();
+    if (ap.pre_arm_rc_check) {
         output_min();
     }
 
@@ -119,6 +116,7 @@ static void init_rc_out()
 #endif
 }
 
+// output_min - enable and output lowest possible value to motors
 void output_min()
 {
     // enable motors

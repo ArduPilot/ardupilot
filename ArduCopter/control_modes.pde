@@ -17,7 +17,7 @@ static void read_control_switch()
             if( !ap.failsafe_radio ) {
                 set_mode(flight_modes[switchPosition]);
 
-                if(g.ch7_option != CH7_SIMPLE_MODE) {
+                if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
                     // set Simple mode using stored paramters from Mission planner
                     // rather than by the control switch
                     set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
@@ -48,47 +48,62 @@ static void reset_control_switch()
     read_control_switch();
 }
 
-// read at 10 hz
-// set this to your trainer switch
-static void read_trim_switch()
+// read_aux_switches - checks aux switch positions and invokes configured actions
+static void read_aux_switches()
 {
-    // return immediately if the CH7 switch has not changed position
-    if (ap_system.CH7_flag == (g.rc_7.radio_in >= CH7_PWM_TRIGGER)) {
+    // check if ch7 switch has changed position
+    if (ap_system.CH7_flag != (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER)) {
+        // set the ch7 flag
+        ap_system.CH7_flag = (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
+    }
+
+    // safety check to ensure we ch7 and ch8 have different functions
+    if (g.ch7_option == g.ch8_option) {
         return;
     }
 
-    // set the ch7 flag
-    ap_system.CH7_flag = (g.rc_7.radio_in >= CH7_PWM_TRIGGER);
+    // check if ch8 switch has changed position
+    if (ap_system.CH8_flag != (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER)) {
+        // set the ch8 flag
+        ap_system.CH8_flag = (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
+    }
+}
 
-    // multi-mode
-    int8_t option;
+// do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
+static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
+{
+    int8_t tmp_function = ch_function;
 
-    if(g.ch7_option == CH7_MULTI_MODE) {
+    // multi mode check
+    if(ch_function == AUX_SWITCH_MULTI_MODE) {
         if (g.rc_6.radio_in < CH6_PWM_TRIGGER_LOW) {
-            option = CH7_FLIP;
+            tmp_function = AUX_SWITCH_FLIP;
         }else if (g.rc_6.radio_in > CH6_PWM_TRIGGER_HIGH) {
-            option = CH7_SAVE_WP;
+            tmp_function = AUX_SWITCH_SAVE_WP;
         }else{
-            option = CH7_RTL;
+            tmp_function = AUX_SWITCH_RTL;
         }
-    }else{
-        option = g.ch7_option;
     }
 
-    switch(option) {
-        case CH7_FLIP:
+    switch(tmp_function) {
+        case AUX_SWITCH_FLIP:
             // flip if switch is on, positive throttle and we're actually flying
-            if(ap_system.CH7_flag && g.rc_3.control_in >= 0 && ap.takeoff_complete) {
+            if(ch_flag && g.rc_3.control_in >= 0 && ap.takeoff_complete) {
                 init_flip();
             }
             break;
 
-        case CH7_SIMPLE_MODE:
-            set_simple_mode(ap_system.CH7_flag);
+        case AUX_SWITCH_SIMPLE_MODE:
+            set_simple_mode(ch_flag);
             break;
 
-        case CH7_RTL:
-            if (ap_system.CH7_flag) {
+        case AUX_SWITCH_RTL:
+            if (ch_flag) {
                 // engage RTL
                 set_mode(RTL);
             }else{
@@ -99,28 +114,28 @@ static void read_trim_switch()
             }
             break;
 
-        case CH7_SAVE_TRIM:
-            if(ap_system.CH7_flag && control_mode <= ACRO && g.rc_3.control_in == 0) {
+        case AUX_SWITCH_SAVE_TRIM:
+            if(ch_flag && control_mode <= ACRO && g.rc_3.control_in == 0) {
                 save_trim();
             }
             break;
 
-        case CH7_SAVE_WP:
-            // save when CH7 switch is switched off
-            if (ap_system.CH7_flag == false) {
+        case AUX_SWITCH_SAVE_WP:
+            // save waypoint when switch is switched off
+            if (ch_flag == false) {
 
                 // if in auto mode, reset the mission
                 if(control_mode == AUTO) {
-                    CH7_wp_index = 0;
+                    aux_switch_wp_index = 0;
                     g.command_total.set_and_save(1);
                     set_mode(RTL);
                     return;
                 }
 
-                if(CH7_wp_index == 0) {
+                if(aux_switch_wp_index == 0) {
                     // this is our first WP, let's save WP 1 as a takeoff
                     // increment index to WP index of 1 (home is stored at 0)
-                    CH7_wp_index = 1;
+                    aux_switch_wp_index = 1;
 
                     Location temp   = home;
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
@@ -131,15 +146,15 @@ static void read_trim_switch()
                     // we use the current altitude to be the target for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.
                     // If we are above the altitude, we will skip the command.
-                    set_cmd_with_index(temp, CH7_wp_index);
+                    set_cmd_with_index(temp, aux_switch_wp_index);
                 }
 
                 // increment index
-                CH7_wp_index++;
+                aux_switch_wp_index++;
 
                 // set the next_WP (home is stored at 0)
                 // max out at 100 since I think we need to stay under the EEPROM limit
-                CH7_wp_index = constrain_int16(CH7_wp_index, 1, 100);
+                aux_switch_wp_index = constrain_int16(aux_switch_wp_index, 1, 100);
 
                 if(g.rc_3.control_in > 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
@@ -150,7 +165,7 @@ static void read_trim_switch()
                 }
 
                 // save command
-                set_cmd_with_index(current_loc, CH7_wp_index);
+                set_cmd_with_index(current_loc, aux_switch_wp_index);
 
                 // Cause the CopterLEDs to blink twice to indicate saved waypoint
                 copter_leds_nav_blink = 10;
@@ -158,24 +173,31 @@ static void read_trim_switch()
             break;
 
 #if CAMERA == ENABLED
-        case CH7_CAMERA_TRIGGER:
-            if(ap_system.CH7_flag) {
+        case AUX_SWITCH_CAMERA_TRIGGER:
+            if(ch_flag) {
                 do_take_picture();
             }
             break;
 #endif
 
-        case CH7_SONAR:
+        case AUX_SWITCH_SONAR:
             // enable or disable the sonar
-            g.sonar_enabled = ap_system.CH7_flag;
+            g.sonar_enabled = ch_flag;
             break;
 
 #if AC_FENCE == ENABLED
-        case CH7_FENCE:
+        case AUX_SWITCH_FENCE:
             // enable or disable the fence
-            fence.enable(ap_system.CH7_flag);
+            fence.enable(ch_flag);
             break;
 #endif
+        case AUX_SWITCH_RESETTOARMEDYAW:
+            if (ch_flag) {
+                set_yaw_mode(YAW_RESETTOARMEDYAW);
+            }else{
+                set_yaw_mode(YAW_HOLD);
+            }
+            break; 
     }
 }
 

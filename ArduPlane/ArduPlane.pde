@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.73beta"
+#define THISFIRMWARE "ArduPlane V2.74beta"
 /*
  *  Lead developer: Andrew Tridgell
  *
@@ -248,8 +248,7 @@ static AP_Navigation *nav_controller = &L1_controller;
 
 static AP_HAL::AnalogSource *pitot_analog_source;
 
-// a pin for reading the receiver RSSI voltage. The scaling by 0.25 
-// is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+// a pin for reading the receiver RSSI voltage. 
 static AP_HAL::AnalogSource *rssi_analog_source;
 
 static AP_HAL::AnalogSource *vcc_pin;
@@ -426,17 +425,18 @@ static int32_t altitude_error_cm;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery pack 1 voltage.  Initialized above the low voltage threshold to pre-load the filter and prevent low voltage events at startup.
-static float battery_voltage1        = LOW_VOLTAGE * 1.05;
-// Battery pack 1 instantaneous currrent draw.  Amperes
-static float current_amps1;
-// Totalized current (Amp-hours) from battery 1
-static float current_total1;
-
-// To Do - Add support for second battery pack
-//static float  battery_voltage2    = LOW_VOLTAGE * 1.05;		// Battery 2 Voltage, initialized above threshold for filter
-//static float	current_amps2;									// Current (Amperes) draw from battery 2
-//static float	current_total2;									// Totalized current (Amp-hours) from battery 2
+static struct {
+    // Battery pack 1 voltage.  Initialized above the low voltage
+    // threshold to pre-load the filter and prevent low voltage events
+    // at startup.
+    float voltage;
+    // Battery pack 1 instantaneous currrent draw.  Amperes
+    float current_amps;
+    // Totalized current (Amp-hours) from battery 1
+    float current_total_mah;
+    // true when a low battery event has happened
+    bool low_batttery;
+} battery;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
@@ -670,13 +670,14 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE, 0.25);
+    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
     pitot_analog_source = new AP_ADC_AnalogSource( &adc,
-                                         CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0);
+                                         CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0f);
 #elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
-    pitot_analog_source = hal.analogin->channel(CONFIG_PITOT_SOURCE_ANALOG_PIN, CONFIG_PITOT_SCALING);
+    pitot_analog_source = hal.analogin->channel(CONFIG_PITOT_SOURCE_ANALOG_PIN);
+    hal.gpio->write(hal.gpio->analogPinToDigitalPin(CONFIG_PITOT_SOURCE_ANALOG_PIN), 0);
 #endif
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 

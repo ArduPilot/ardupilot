@@ -79,6 +79,8 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM
     _target_vel(0,0,0),
     _vel_last(0,0,0),
     _lean_angle_max(MAX_LEAN_ANGLE),
+    _loiter_leash(WPNAV_MIN_LEASH_LENGTH),
+    _wp_leash_xy(WPNAV_MIN_LEASH_LENGTH),
     dist_error(0,0),
     desired_vel(0,0),
     desired_accel(0,0)
@@ -100,27 +102,28 @@ void AC_WPNav::get_stopping_point(const Vector3f& position, const Vector3f& velo
     float linear_velocity;      // the velocity we swap between linear and sqrt.
     float vel_total;
     float target_dist;
+    float kP = _pid_pos_lat->kP();
 
-    // avoid divide by zero
-    if( _pid_pos_lat->kP() <= 0.1 ) {
+    // calculate current velocity
+    vel_total = safe_sqrt(velocity.x*velocity.x + velocity.y*velocity.y);
+
+    // avoid divide by zero by using current position if the velocity is below 10cm/s or kP is very low
+    if (vel_total < 10.0f || kP <= 0.0f) {
         target = position;
         return;
     }
 
     // calculate point at which velocity switches from linear to sqrt
-    linear_velocity = MAX_LOITER_POS_ACCEL/_pid_pos_lat->kP();
-
-    // calculate total current velocity
-    vel_total = safe_sqrt(velocity.x*velocity.x + velocity.y*velocity.y);
+    linear_velocity = MAX_LOITER_POS_ACCEL/kP;
 
     // calculate distance within which we can stop
     if (vel_total < linear_velocity) {
-        target_dist = vel_total/_pid_pos_lat->kP();
+        target_dist = vel_total/kP;
     } else {
-        linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
+        linear_distance = MAX_LOITER_POS_ACCEL/(2*kP*kP);
         target_dist = linear_distance + (vel_total*vel_total)/(2*MAX_LOITER_POS_ACCEL);
     }
-    target_dist = constrain_float(target_dist, 0, _loiter_leash);
+    target_dist = constrain_float(target_dist, 0, _loiter_leash*2.0);
 
     target.x = position.x + (target_dist * velocity.x / vel_total);
     target.y = position.y + (target_dist * velocity.y / vel_total);
@@ -168,8 +171,8 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 
     // constrain the velocity vector and scale if necessary
     vel_delta_total = safe_sqrt(target_vel_adj.x*target_vel_adj.x + target_vel_adj.y*target_vel_adj.y);
-    vel_max = MAX_LOITER_POS_ACCEL*nav_dt;
-    if( vel_delta_total >  vel_max) {
+    vel_max = 2.0*MAX_LOITER_POS_ACCEL*nav_dt;
+    if (vel_delta_total > vel_max && vel_delta_total > 0.0f) {
         target_vel_adj.x = vel_max * target_vel_adj.x/vel_delta_total;
         target_vel_adj.y = vel_max * target_vel_adj.y/vel_delta_total;
     }
@@ -180,7 +183,7 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 
     // constrain the velocity vector and scale if necessary
     vel_total = safe_sqrt(_target_vel.x*_target_vel.x + _target_vel.y*_target_vel.y);
-    if( vel_total > _loiter_speed_cms ) {
+    if (vel_total > _loiter_speed_cms && vel_total > 0.0f) {
         _target_vel.x = _loiter_speed_cms * _target_vel.x/vel_total;
         _target_vel.y = _loiter_speed_cms * _target_vel.y/vel_total;
     }
@@ -193,7 +196,7 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
     Vector3f curr_pos = _inav->get_position();
     Vector3f distance_err = _target - curr_pos;
     float distance = safe_sqrt(distance_err.x*distance_err.x + distance_err.y*distance_err.y);
-    if( distance > _loiter_leash ) {
+    if (distance > _loiter_leash && distance > 0.0f) {
         _target.x = curr_pos.x + _loiter_leash * distance_err.x/distance;
         _target.y = curr_pos.y + _loiter_leash * distance_err.y/distance;
     }
@@ -237,6 +240,12 @@ void AC_WPNav::calculate_loiter_leash_length()
     // get loiter position P
     float kP = _pid_pos_lat->kP();
 
+    // avoid divide by zero
+    if (kP <= 0.0f) {
+        _loiter_leash = WPNAV_MIN_LEASH_LENGTH;
+        return;
+    }
+
     // calculate horiztonal leash length
     if(_loiter_speed_cms <= MAX_LOITER_POS_ACCEL / kP) {
         // linear leash length based on speed close in
@@ -247,8 +256,8 @@ void AC_WPNav::calculate_loiter_leash_length()
     }
 
     // ensure leash is at least 1m long
-    if( _loiter_leash < 100 ) {
-        _loiter_leash = 100;
+    if( _loiter_leash < WPNAV_MIN_LEASH_LENGTH ) {
+        _loiter_leash = WPNAV_MIN_LEASH_LENGTH;
     }
 }
 
@@ -286,15 +295,26 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     // scale up z-axis position delta (i.e. distance) to make later leash length calculations simpler
     pos_delta.z = pos_delta.z * _vert_track_scale;
     _track_length = pos_delta.length();
-    _pos_delta_unit = pos_delta/_track_length;
+
+    // calculate each axis' percentage of the total distance to the destination
+    if (_track_length == 0.0f) {
+        // avoid possible divide by zero
+        _pos_delta_unit.x = 0;
+        _pos_delta_unit.y = 0;
+        _pos_delta_unit.z = 0;
+    }else{        
+        _pos_delta_unit = pos_delta/_track_length;
+    }
 
     // initialise intermediate point to the origin
     _track_desired = 0;
     _target = origin;
     _flags.reached_destination = false;
 
-    // reset limited speed to zero to slow initial acceleration away from wp
-    _limited_speed_xy_cms = 0;
+    // initialise the limited speed to current speed along the track
+    Vector3f curr_vel = _inav->get_velocity();
+    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
+    _limited_speed_xy_cms = constrain_float(speed_along_track,0,_wp_speed_cms);
 
     // default waypoint back to slow
     _flags.fast_waypoint = false;
@@ -320,12 +340,35 @@ void AC_WPNav::advance_target_along_track(float dt)
     curr_delta.z = curr_delta.z * _vert_track_scale;
     curr_delta_length = curr_delta.length();
 
-    // increase intermediate target point's velocity if not yet at target speed
-    if(dt > 0 && _limited_speed_xy_cms < _wp_speed_cms) {
-        _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
+    // get current velocity
+    Vector3f curr_vel = _inav->get_velocity();
+    // get speed along track
+    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
+
+    // calculate point at which velocity switches from linear to sqrt
+    float linear_velocity = _wp_speed_cms;
+    float kP = _pid_pos_lat->kP();
+    if (kP >= 0.0f) {   // avoid divide by zero
+        linear_velocity = MAX_LOITER_POS_ACCEL/kP;
     }
-    if(_limited_speed_xy_cms > _wp_speed_cms) {
-        _limited_speed_xy_cms = _wp_speed_cms;
+
+    // let the limited_speed_xy_cms be some range above or below current velocity along track
+    if (speed_along_track < -linear_velocity) {
+        // we are travelling fast in the opposite direction of travel to the waypoint so do not move the intermediate point
+        _limited_speed_xy_cms = 0;
+    }else{
+        // increase intermediate target point's velocity if not yet at target speed (we will limit it below)
+        if(dt > 0 && _limited_speed_xy_cms < _wp_speed_cms) {
+            _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
+        }
+        // do not go over top speed
+        if(_limited_speed_xy_cms > _wp_speed_cms) {
+            _limited_speed_xy_cms = _wp_speed_cms;
+        }
+        // if our current velocity is within the linear velocity range limit the intermediate point's velocity to be no more than the linear_velocity above or below our current velocity
+        if (fabsf(speed_along_track) < linear_velocity) {
+            _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms,speed_along_track-linear_velocity,speed_along_track+linear_velocity);
+        }
     }
 
     // calculate how far along the track we are
@@ -419,29 +462,36 @@ void AC_WPNav::get_loiter_position_to_velocity(float dt, float max_speed_cms)
     float vel_total;
 
     float linear_distance;      // the distace we swap between linear and sqrt.
+    float kP = _pid_pos_lat->kP();
 
-    // calculate distance error
-    dist_error.x = _target.x - curr.x;
-    dist_error.y = _target.y - curr.y;
-
-    linear_distance = MAX_LOITER_POS_ACCEL/(2*_pid_pos_lat->kP()*_pid_pos_lat->kP());
-    _distance_to_target = linear_distance;      // for reporting purposes
-
-    dist_error_total = safe_sqrt(dist_error.x*dist_error.x + dist_error.y*dist_error.y);
-    if( dist_error_total > 2*linear_distance ) {
-        vel_sqrt = safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance));
-        desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
-        desired_vel.y = vel_sqrt * dist_error.y/dist_error_total;
+    // avoid divide by zero
+    if (kP <= 0.0f) {
+        desired_vel.x = 0.0;
+        desired_vel.y = 0.0;
     }else{
-        desired_vel.x = _pid_pos_lat->get_p(dist_error.x);
-        desired_vel.y = _pid_pos_lon->get_p(dist_error.y);
-    }
+        // calculate distance error
+        dist_error.x = _target.x - curr.x;
+        dist_error.y = _target.y - curr.y;
 
-    // ensure velocity stays within limits
-    vel_total = safe_sqrt(desired_vel.x*desired_vel.x + desired_vel.y*desired_vel.y);
-    if( vel_total > max_speed_cms ) {
-        desired_vel.x = max_speed_cms * desired_vel.x/vel_total;
-        desired_vel.y = max_speed_cms * desired_vel.y/vel_total;
+        linear_distance = MAX_LOITER_POS_ACCEL/(2*kP*kP);
+        _distance_to_target = linear_distance;      // for reporting purposes
+
+        dist_error_total = safe_sqrt(dist_error.x*dist_error.x + dist_error.y*dist_error.y);
+        if( dist_error_total > 2*linear_distance ) {
+            vel_sqrt = safe_sqrt(2*MAX_LOITER_POS_ACCEL*(dist_error_total-linear_distance));
+            desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
+            desired_vel.y = vel_sqrt * dist_error.y/dist_error_total;
+        }else{
+            desired_vel.x = _pid_pos_lat->get_p(dist_error.x);
+            desired_vel.y = _pid_pos_lon->get_p(dist_error.y);
+        }
+
+        // ensure velocity stays within limits
+        vel_total = safe_sqrt(desired_vel.x*desired_vel.x + desired_vel.y*desired_vel.y);
+        if( vel_total > max_speed_cms ) {
+            desired_vel.x = max_speed_cms * desired_vel.x/vel_total;
+            desired_vel.y = max_speed_cms * desired_vel.y/vel_total;
+        }
     }
 
     // call velocity to acceleration controller
@@ -533,9 +583,6 @@ void AC_WPNav::reset_I()
     // reset target velocity - only used by loiter controller's interpretation of pilot input
     _target_vel.x = 0;
     _target_vel.y = 0;
-
-    // reset limited speed to zero to slow initial acceleration
-    _limited_speed_xy_cms = 0;
 }
 
 /// calculate_wp_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
@@ -545,6 +592,12 @@ void AC_WPNav::calculate_wp_leash_length(bool climb)
     // get loiter position P
     float kP = _pid_pos_lat->kP();
 
+    // avoid divide by zero
+    if (kP <= 0.0f) {
+        _wp_leash_xy = WPNAV_MIN_LEASH_LENGTH;
+        _vert_track_scale = 1.0f;
+        return;
+    }
     // calculate horiztonal leash length
     if(_wp_speed_cms <= MAX_LOITER_POS_ACCEL / kP) {
         // linear leash length based on speed close in
@@ -555,8 +608,8 @@ void AC_WPNav::calculate_wp_leash_length(bool climb)
     }
 
     // ensure leash is at least 1m long
-    if( _wp_leash_xy < 100 ) {
-        _wp_leash_xy = 100;
+    if( _wp_leash_xy < WPNAV_MIN_LEASH_LENGTH ) {
+        _wp_leash_xy = WPNAV_MIN_LEASH_LENGTH;
     }
 
     // calculate vertical leash length
@@ -575,8 +628,8 @@ void AC_WPNav::calculate_wp_leash_length(bool climb)
     }
 
     // ensure leash is at least 1m long
-    if( leash_z < 100 ) {
-        leash_z = 100;
+    if( leash_z < WPNAV_MIN_LEASH_LENGTH ) {
+        leash_z = WPNAV_MIN_LEASH_LENGTH;
     }
 
     // calculate vertical track scale used to give altitude equal weighting to horizontal position

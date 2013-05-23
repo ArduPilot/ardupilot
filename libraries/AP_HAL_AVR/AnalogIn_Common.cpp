@@ -33,8 +33,8 @@ void AVRAnalogIn::init(void* machtnichts) {
     _register_channel(&_vcc);
 }
 
-ADCSource* AVRAnalogIn::_create_channel(int16_t chnum, float scale) {
-    ADCSource *ch = new ADCSource(chnum, scale);
+ADCSource* AVRAnalogIn::_create_channel(int16_t chnum) {
+    ADCSource *ch = new ADCSource(chnum);
     _register_channel(ch);
     return ch;
 }
@@ -110,14 +110,12 @@ next_channel:
 }
 
 
-AP_HAL::AnalogSource* AVRAnalogIn::channel(int16_t ch) {
-    return this->channel(ch, 1.0);
-}
-AP_HAL::AnalogSource* AVRAnalogIn::channel(int16_t ch, float scale) {
+AP_HAL::AnalogSource* AVRAnalogIn::channel(int16_t ch) 
+{
     if (ch == ANALOG_INPUT_BOARD_VCC) {
             return &_vcc;
     } else {
-        return _create_channel(ch, scale);
+        return _create_channel(ch);
     }
 }
 

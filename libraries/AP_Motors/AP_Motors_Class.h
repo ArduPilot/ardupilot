@@ -25,7 +25,7 @@
 #define AP_MOTORS_MAX_NUM_MOTORS 8
 
 #define AP_MOTORS_DEFAULT_MIN_THROTTLE  130
-#define AP_MOTORS_DEFAULT_MAX_THROTTLE  850
+#define AP_MOTORS_DEFAULT_MAX_THROTTLE  1000
 
 // APM board definitions
 #define AP_MOTORS_APM1  1
@@ -38,10 +38,7 @@
 #define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
 
 // motor update rate
-#define AP_MOTORS_SPEED_DEFAULT 490
-
-// top-bottom ratio (for Y6)
-#define AP_MOTORS_TOP_BOTTOM_RATIO      1.0
+#define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
 #define THROTTLE_CURVE_ENABLED      1   // throttle curve disabled by default
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
@@ -65,7 +62,7 @@ public:
     virtual void        Init();
 
     // set mapping from motor number to RC channel
-    virtual void        set_motor_to_channel_map( uint8_t mot_1, uint8_t mot_2, uint8_t mot_3, uint8_t mot_4, uint8_t mot_5, uint8_t mot_6, uint8_t mot_7, uint8_t mot_8 ) {
+    void                set_motor_to_channel_map( uint8_t mot_1, uint8_t mot_2, uint8_t mot_3, uint8_t mot_4, uint8_t mot_5, uint8_t mot_6, uint8_t mot_7, uint8_t mot_8 ) {
         _motor_to_channel_map[AP_MOTORS_MOT_1] = mot_1;
         _motor_to_channel_map[AP_MOTORS_MOT_2] = mot_2;
         _motor_to_channel_map[AP_MOTORS_MOT_3] = mot_3;
@@ -77,37 +74,24 @@ public:
     }
 
     // set update rate to motors - a value in hertz
-    virtual void        set_update_rate( uint16_t speed_hz ) {
-        _speed_hz = speed_hz;
-    };
+    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; };
 
     // set frame orientation (normally + or X)
-    virtual void        set_frame_orientation( uint8_t new_orientation ) {
-        _frame_orientation = new_orientation;
-    };
+    virtual void        set_frame_orientation( uint8_t new_orientation ) { _frame_orientation = new_orientation; };
 
     // enable - starts allowing signals to be sent to motors
-    virtual void        enable() {
-    };
+    virtual void        enable() {};
 
     // arm, disarm or check status status of motors
-    virtual bool        armed() {
-        return _armed;
-    };
-    virtual void        armed(bool arm) {
-        _armed = arm;
-    };
+    bool                armed() { return _armed; };
+    void                armed(bool arm) { _armed = arm; };
 
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-    virtual void        set_min_throttle(uint16_t min_throttle) {
-        _min_throttle = min_throttle;
-    };
-    virtual void        set_max_throttle(uint16_t max_throttle) {
-        _max_throttle = max_throttle;
-    };
+    void                set_min_throttle(uint16_t min_throttle) { _min_throttle = min_throttle; };
+    void                set_max_throttle(uint16_t max_throttle) { _max_throttle = max_throttle; };
 
     // output - sends commands to the motors
-    virtual void        output() {
+    void        output() {
         if( _armed ) { output_armed(); }else{ output_disarmed(); }
     };
 
@@ -116,34 +100,26 @@ public:
     };
 
     // reached_limits - return whether we hit the limits of the motors
-    virtual uint8_t     reached_limit( uint8_t which_limit = AP_MOTOR_ANY_LIMIT ) {
+    uint8_t             reached_limit( uint8_t which_limit = AP_MOTOR_ANY_LIMIT ) {
         return _reached_limit & which_limit;
     }
-
-    // get basic information about the platform
-    virtual uint8_t        get_num_motors() {
-        return 0;
-    };
 
     // motor test
     virtual void        output_test() {
     };
 
-    // throttle_pass_through - passes throttle through to motors - dangerous but required for initialising ESCs
+    // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
     virtual void        throttle_pass_through();
 
 	// setup_throttle_curve - used to linearlise thrust output by motors
     //      returns true if curve is created successfully
-	virtual bool setup_throttle_curve();
+	bool                setup_throttle_curve();
 
     // 1 if motor is enabled, 0 otherwise
-    AP_Int8             motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
+    bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
 
     // final output values sent to the motors.  public (for now) so that they can be access for logging
     int16_t             motor_out[AP_MOTORS_MAX_NUM_MOTORS];
-
-    // power ratio of upper vs lower motors (only used by y6 and octa quad copters)
-    AP_Float            top_bottom_ratio;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
