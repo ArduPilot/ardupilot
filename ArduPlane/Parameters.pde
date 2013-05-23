@@ -349,6 +349,20 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(long_fs_action,         "FS_LONG_ACTN",   LONG_FAILSAFE_ACTION),
 
+    // @Param: FS_BATT_VOLTAGE
+    // @DisplayName: Failsafe battery voltage
+    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage then the plane will RTL
+    // @Units: Volts
+    // @User: Standard
+    GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", 0),
+
+    // @Param: FS_BATT_MAH
+    // @DisplayName: Failsafe battery milliAmpHours
+    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the plane will RTL
+    // @Units: mAh
+    // @User: Standard
+    GSCALAR(fs_batt_mah,            "FS_BATT_MAH", 0),
+
     // @Param: FS_GCS_ENABL
     // @DisplayName: GCS failsafe enable
     // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after 20 seconds of no MAVLink heartbeat messages. WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then either use a separate motor arming switch or remove the propeller in any ground testing.
