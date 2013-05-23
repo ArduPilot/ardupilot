@@ -3,6 +3,7 @@
 # APM startup script for NuttX on PX4
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
+# To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
 
 set deviceA /dev/ttyACM0
 set deviceC /dev/ttyS2
@@ -89,6 +90,20 @@ then
 	else
 		echo "No PX4IO board found"
 		echo "No PX4IO board found" >> $logfile
+
+		if [ -f /fs/microsd/APM/mkblctrl ]
+		then
+	   	echo "APM/mkblctrl found - switch to MK I2C ESCs"
+	   	echo "APM/mkblctrl found - switch to MK I2C ESCs" >> $logfile
+			echo "Setting up mkblctrl driver"
+			echo "Setting up mkblctrl driver" >> $logfile
+	
+			mkblctrl -mkmode x
+			usleep 50000
+			usleep 50000
+		fi
+
+
 		echo "Setting up PX4FMU direct mode"
 		fmu mode_pwm
 		if [ $deviceC == /dev/ttyS1 ]
