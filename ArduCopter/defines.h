@@ -135,6 +135,8 @@
 #define TOY_M 12                        // THOR Enum for Toy mode
 #define NUM_MODES 13
 
+static const uint8_t modes_requiring_GPS[] = {AUTO, GUIDED, LOITER, RTL, CIRCLE, POSITION};
+
 // CH_6 Tuning
 // -----------
 #define CH6_NONE            0           // no tuning performed
