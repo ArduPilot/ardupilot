@@ -5,22 +5,60 @@ simple rover simulator core
 
 from aircraft import Aircraft
 import util, time, math
-from math import degrees, radians
+from math import degrees, radians, sin, cos, pi, asin
 from rotmat import Vector3, Matrix3
 
 class Rover(Aircraft):
     '''a simple rover'''
     def __init__(self,
                  max_speed=13,
-                 max_accel=10,
-                 max_turn_rate=100,
+                 max_accel=9,
+                 wheelbase=0.335,
+                 wheeltrack=0.296,
+                 max_wheel_turn=35,
                  skid_steering=False):
         Aircraft.__init__(self)
         self.max_speed = max_speed
         self.max_accel = max_accel
-        self.max_turn_rate = max_turn_rate
+        self.wheelbase = wheelbase
+        self.wheeltrack = wheeltrack
+        self.max_wheel_turn = max_wheel_turn
         self.last_time = time.time()
         self.skid_steering = skid_steering
+
+    def turn_circle(self, steering_angle):
+        '''return turning circle (diameter) in meters for steering_angle in degrees
+        '''
+        theta = radians(steering_angle)
+        return (self.wheeltrack/2) + (self.wheelbase/sin(theta))
+
+    def yaw_rate(self, steering_angle, speed):
+        '''return yaw rate in degrees/second given steering_angle and speed'''
+        if abs(steering_angle) < 1.0e-6 or abs(speed) < 1.0e-6:
+            return 0
+        d = self.turn_circle(steering_angle)
+        c = pi * d
+        t = c / speed
+        rate = 360.0 / t
+        return rate
+
+    def lat_accel(self, steering_angle, speed):
+        '''return lateral acceleration in m/s/s'''
+        yaw_rate = self.yaw_rate(steering_angle, speed)
+        accel = radians(yaw_rate) * speed
+        return accel
+
+    def lat_accel2(self, steering_angle, speed):
+        '''return lateral acceleration in m/s/s'''
+        mincircle = self.wheelbase/sin(radians(35))
+        steer = steering_angle/35
+        return steer * (speed**2) * (2/mincircle)
+
+    def steering_angle(self, lat_accel, speed):
+        '''return steering angle to achieve the given lat_accel'''
+        mincircle = self.wheelbase/sin(radians(35))
+        steer = 0.5 * lat_accel * mincircle / (speed**2)
+        return steer * 35
 
     def update(self, state):
 
@@ -46,7 +84,7 @@ class Rover(Aircraft):
         speed = velocity_body.x
 
         # yaw rate in degrees/s
-        yaw_rate = self.max_turn_rate * steering * (speed / self.max_speed)
+        yaw_rate = self.yaw_rate(self.max_wheel_turn * steering, speed)
 
         # target speed with current throttle
         target_speed = throttle * self.max_speed
@@ -90,3 +128,24 @@ class Rover(Aircraft):
         # update lat/lon/altitude
         self.update_position(delta_time)
 
+if __name__ == "__main__":
+    r = Rover()
+    d1 = r.turn_circle(r.max_wheel_turn)
+    print("turn_circle=", d1)
+    steer = 0.4*35
+    speed = 2.65
+
+    yrate = r.yaw_rate(steer, speed)
+    yaccel = r.lat_accel(steer, speed)
+    yaccel2 = r.lat_accel2(steer, speed)
+    print yaccel, yaccel2
+    sangle = r.steering_angle(yaccel, speed)
+    print steer, sangle
+
+    yrate2 = degrees(yaccel / speed)
+    t = 360.0 / yrate2
+    c = speed * t
+    d2 = c / pi
+    steer2 = degrees(asin(r.wheelbase / (d2 - (r.wheeltrack/2))))
+    
+    print steer, steer2
