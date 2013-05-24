@@ -49,9 +49,10 @@ Make.dep
 .context
 *.lst
 *.tlog
-
 .DS_Store
 .vagrant
 *.tlog.raw
 *.d
 *.px4
+.directory
+.settings/
