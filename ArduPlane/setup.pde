@@ -393,6 +393,7 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
 
     ahrs.init();
     ahrs.set_fly_forward(true);
+    ahrs.set_wind_estimation(true);
 
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
