@@ -39,7 +39,7 @@ static void update_commands()
     //uint8_t tmp = g.command_index.get();
     //cliSerial->printf("command_index %u \n", tmp);
 
-    if(g.command_total <= 1 || g.command_index >= 255)
+    if(g.command_total <= 1)
         return;
 
     if(command_nav_queue.id == NO_COMMAND) {
