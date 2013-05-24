@@ -1519,6 +1519,12 @@ void update_yaw_mode(void)
         // changes yaw to be same as when quad was armed
         nav_yaw = get_yaw_slew(nav_yaw, initial_simple_bearing, AUTO_YAW_SLEW_RATE);
         get_stabilize_yaw(nav_yaw);
+
+        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
+        if( g.rc_4.control_in != 0 ) {
+            set_yaw_mode(YAW_HOLD);
+        }
+
         break;
     }
 }
