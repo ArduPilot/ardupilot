@@ -97,10 +97,9 @@ then
 	   	echo "APM/mkblctrl found - switch to MK I2C ESCs" >> $logfile
 			echo "Setting up mkblctrl driver"
 			echo "Setting up mkblctrl driver" >> $logfile
-	
-			mkblctrl -mkmode x
-			usleep 50000
-			usleep 50000
+                        sleep 1
+			mkblctrl
+			sleep 1
 		fi
 
 
