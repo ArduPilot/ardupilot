@@ -1071,6 +1071,9 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
     uint8_t i;
     for (i=0; i<sizeof(m.text); i++) {
         m.text[i] = pgm_read_byte((const prog_char *)(str++));
+        if (m.text[i] == '\0') {
+            break;
+        }
     }
     if (i < sizeof(m.text)) m.text[i] = 0;
     mavlink_send_text(chan, severity, (const char *)m.text);
@@ -1215,7 +1218,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
                 if (packet.param1 == 1.0f) {
-                    init_arm_motors();
+                    // run pre-arm-checks and display failures
+                    pre_arm_checks(true);
+                    if(ap.pre_arm_check) {
+                        init_arm_motors();
+                    }
                     result = MAV_RESULT_ACCEPTED;
                 } else if (packet.param1 == 0.0f)  {
                     init_disarm_motors();

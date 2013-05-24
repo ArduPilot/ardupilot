@@ -99,6 +99,14 @@ def build_examples():
         return False
     return True
 
+def build_parameters():
+    '''run the param_parse.py script'''
+    print("Running param_parse.py")
+    if util.run_cmd(util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), dir=util.reltopdir('.')) != 0:
+        print("Failed param_parse.py")
+        return False
+    return True
+
 
 def convert_gpx():
     '''convert any tlog files to GPX and KML'''
@@ -161,6 +169,7 @@ steps = [
     'build.All',
     'build.Binaries',
     'build.Examples',
+    'build.Parameters',
 
     'build1280.ArduPlane',
     'build2560.ArduPlane',
@@ -270,6 +279,9 @@ def run_step(step):
 
     if step == 'build.Examples':
         return build_examples()
+
+    if step == 'build.Parameters':
+        return build_parameters()
 
     if step == 'convertgpx':
         return convert_gpx()

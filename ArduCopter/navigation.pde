@@ -23,11 +23,6 @@ static void update_navigation()
 
         // run the navigation controllers
         update_nav_mode();
-
-        // update log
-        if ((g.log_bitmask & MASK_LOG_NTUN) && motors.armed()) {
-            Log_Write_Nav_Tuning();
-        }
     }
 }
 
@@ -165,16 +160,17 @@ static void update_nav_mode()
         case NAV_LOITER:
             // call loiter controller
             wp_nav.update_loiter();
-            // log to dataflash
-            Log_Write_WPNAV();
             break;
 
         case NAV_WP:
             // call waypoint controller
             wp_nav.update_wpnav();
-            // log to dataflash
-            Log_Write_WPNAV();
             break;
+    }
+
+    // log to dataflash
+    if ((g.log_bitmask & MASK_LOG_NTUN) && nav_mode != NAV_NONE) {
+        Log_Write_Nav_Tuning();
     }
 
     /*

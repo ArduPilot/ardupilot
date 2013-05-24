@@ -183,6 +183,8 @@ public:
         k_param_throttle_suppress_manual,
         k_param_throttle_passthru_stabilize,
         k_param_rc_12,
+        k_param_fs_batt_voltage,
+        k_param_fs_batt_mah,
 
         //
         // 200: Feed-forward gains
@@ -311,6 +313,8 @@ public:
     AP_Int8 short_fs_action;
     AP_Int8 long_fs_action;
     AP_Int8 gcs_heartbeat_fs_enabled;
+    AP_Float fs_batt_voltage;
+    AP_Float fs_batt_mah;
 
     // Flight modes
     //

@@ -1,7 +1,21 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.0.0-rc3 22-May-2013
+Improvements over 3.0.0-rc2
+1) bug fix for dataflash erasing unnecessarily
+2) smoother transition to waypoints, loiter:
+    intermediate point's speed initialised from copter's current speed
+3) Ch8 auxiliary function switch (same features as Ch7)
+4) safety checks:
+    Warning to GCS of reason for pre-arm check failure
+    ARMING_CHECK parameter added to allow disabling pre-arm checks
+    Added compass health and offset check to pre-arm check
+    compassmot procedure displays interference as percentage of total mag field
+5) WPNAV dataflash message combined into NTUN message
+6) allow TriCopters to use ESC calibration
+------------------------------------------------------------------
 ArduCopter 3.0.0-rc2 13-May-2013
-Improvements over3.0.0-rc1:
+Improvements over 3.0.0-rc1:
 1) smoother transition to waypoints, loiter:
     reduced loiter max acceleration to smooth waypoints
     bug fix to uninitialised roll/pitch when entering RTL, AUTO, LOITER

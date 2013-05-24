@@ -278,27 +278,37 @@ struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint32_t wp_distance;
     int16_t  wp_bearing;
-    float    lat_error;
-    float    lon_error;
-    int16_t  nav_pitch;
-    int16_t  nav_roll;
-    int16_t  lat_speed;
-    int16_t  lon_speed;
+    float    pos_error_x;
+    float    pos_error_y;
+    float    desired_velocity_x;
+    float    desired_velocity_y;
+    float    velocity_x;
+    float    velocity_y;
+    float    desired_accel_x;
+    float    desired_accel_y;
+    int32_t  desired_roll;
+    int32_t  desired_pitch;
 };
 
 // Write an Nav Tuning packet
 static void Log_Write_Nav_Tuning()
 {
+    Vector3f velocity = inertial_nav.get_velocity();
+
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
-        wp_distance : wp_distance,
-        wp_bearing  : (int16_t) (wp_bearing/100),
-        lat_error   : lat_error,
-        lon_error   : lon_error,
-        nav_pitch   : (int16_t) nav_pitch,
-        nav_roll    : (int16_t) nav_roll,
-        lat_speed   : (int16_t) inertial_nav.get_latitude_velocity(),
-        lon_speed   : (int16_t) inertial_nav.get_longitude_velocity()
+        wp_distance         : wp_distance,
+        wp_bearing          : (int16_t) (wp_bearing/100),
+        pos_error_x         : wp_nav.dist_error.x,
+        pos_error_y         : wp_nav.dist_error.y,
+        desired_velocity_x  : wp_nav.desired_vel.x,
+        desired_velocity_y  : wp_nav.desired_vel.y,
+        velocity_x          : velocity.x,
+        velocity_y          : velocity.y,
+        desired_accel_x     : wp_nav.desired_accel.x,
+        desired_accel_y     : wp_nav.desired_accel.y,
+        desired_roll        : wp_nav.get_desired_roll(),
+        desired_pitch       : wp_nav.get_desired_pitch()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -729,41 +739,6 @@ static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_WPNAV {
-    LOG_PACKET_HEADER;
-    float   pos_error_x;
-    float   pos_error_y;
-    float   desired_velocity_x;
-    float   desired_velocity_y;
-    float   velocity_x;
-    float   velocity_y;
-    float   desired_accel_x;
-    float   desired_accel_y;
-    int32_t desired_roll;
-    int32_t desired_pitch;
-};
-
-// Write an WPNAV packet
-static void Log_Write_WPNAV()
-{
-    Vector3f velocity = inertial_nav.get_velocity();
-
-    struct log_WPNAV pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_WPNAV_MSG),
-        pos_error_x         : wp_nav.dist_error.x,
-        pos_error_y         : wp_nav.dist_error.y,
-        desired_velocity_x  : wp_nav.desired_vel.x,
-        desired_velocity_y  : wp_nav.desired_vel.y,
-        velocity_x          : velocity.x,
-        velocity_y          : velocity.y,
-        desired_accel_x     : wp_nav.desired_accel.x,
-        desired_accel_y     : wp_nav.desired_accel.y,
-        desired_roll        : wp_nav.get_desired_roll(),
-        desired_pitch       : wp_nav.get_desired_pitch()
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_CURRENT_MSG, sizeof(log_Current),             
@@ -786,7 +761,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "hhBccffee",   "Dx,Dy,SQual,X,Y,Lat,Lng,Roll,Pitch" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
-      "NTUN", "Ecffcccc",    "WPDist,TargBrg,LatErr,LngErr,NavPtch,NavRll,LatSpd,LngSpd" },
+      "NTUN", "Ecffffffffee",    "WPDst,WPBrg,PErX,PErY,DVelX,DVelY,VelX,VelY,DAcX,DAcY,DRol,DPit" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "hcefhhhhh",   "ThrIn,SonAlt,BarAlt,WPAlt,NavThr,AngBst,CRate,ThrOut,DCRate" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
@@ -823,8 +798,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "CAM",   "ILLeccC",    "GPSTime,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "BB",         "Subsys,ECode" },
-    { LOG_WPNAV_MSG, sizeof(log_WPNAV),         
-      "WNAV",  "ffffffffee", "PErrX,PErrY,DVelX,DVelY,VelX,VelY,DAccX,DAccY,DRoll,DPtch" },
 };
 
 // Read the DataFlash log memory

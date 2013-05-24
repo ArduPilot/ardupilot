@@ -39,26 +39,33 @@ static void zero_airspeed(void)
 static void read_battery(void)
 {
     if(g.battery_monitoring == 0) {
-        battery_voltage1 = 0;
+        battery.voltage = 0;
         return;
     }
 
     if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
         // this copes with changing the pin at runtime
         batt_volt_pin->set_pin(g.battery_volt_pin);
-        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_pin);
+        battery.voltage = BATTERY_VOLTAGE(batt_volt_pin);
     }
     if(g.battery_monitoring == 4) {
         // this copes with changing the pin at runtime
         batt_curr_pin->set_pin(g.battery_curr_pin);
-        current_amps1    = CURRENT_AMPS(batt_curr_pin);
-        current_total1   += current_amps1 * (float)delta_ms_medium_loop * 0.0002778;                                    // .0002778 is 1/3600 (conversion to hours)
+        battery.current_amps    = CURRENT_AMPS(batt_curr_pin);
+        // .0002778 is 1/3600 (conversion to hours)
+        battery.current_total_mah += battery.current_amps * (float)delta_ms_medium_loop * 0.0002778;
     }
 
-#if BATTERY_EVENT == ENABLED
-    if(battery_voltage1 < LOW_VOLTAGE) low_battery_event();
-    if(g.battery_monitoring == 4 && current_total1 > g.pack_capacity) low_battery_event();
-#endif
+    if (battery.voltage != 0 && 
+        g.fs_batt_voltage > 0 && 
+        battery.voltage < g.fs_batt_voltage) {
+        low_battery_event();
+    }
+    if (g.battery_monitoring == 4 && 
+        g.fs_batt_mah > 0 && 
+        g.pack_capacity - battery.current_total_mah < g.fs_batt_mah) {
+        low_battery_event();
+    }
 }
 
 

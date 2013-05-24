@@ -231,12 +231,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef BATTERY_EVENT
- # define BATTERY_EVENT                  DISABLED
-#endif
-#ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    9.6
-#endif
 #ifndef VOLT_DIV_RATIO
  # define VOLT_DIV_RATIO                 3.56   // This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
 //# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
@@ -247,13 +241,6 @@
 #ifndef CURR_AMP_PER_VOLT
  # define CURR_AMP_PER_VOLT              27.32  // This is the proper value for the AttoPilot 50V/90A sensor
 //# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// INPUT_VOLTAGE
-//
-#ifndef INPUT_VOLTAGE
- # define INPUT_VOLTAGE                  4.68   //  4.68 is the average value for a sample set.  This is the value at the processor with 5.02 applied at the servo rail
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

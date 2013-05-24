@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 #ifndef __AP_MOTORS_H__
 #define __AP_MOTORS_H__

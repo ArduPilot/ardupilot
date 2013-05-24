@@ -392,10 +392,16 @@ void SITL_State::_simulator_output(void)
 		_motors_on = ((control.pwm[2]-1500)/500.0) != 0;
 	} else {
 		_motors_on = false;
+        // apply engine multiplier to first motor
+        control.pwm[0] = ((control.pwm[0]-1000) * _sitl->engine_mul) + 1000;
+        // run checks on each motor
 		for (i=0; i<4; i++) {
+            // check motors do not exceed their limits
+            if (control.pwm[i] > 2000) control.pwm[i] = 2000;
+            if (control.pwm[i] < 1000) control.pwm[i] = 1000;
+            // update motor_on flag
 			if ((control.pwm[i]-1000)/1000.0 > 0) {
-                control.pwm[i] = ((control.pwm[i]-1000) * _sitl->engine_mul) + 1000;                
-				_motors_on = true;
+                _motors_on = true;
 			}
 		}
 	}
