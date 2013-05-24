@@ -170,13 +170,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
-    // @Param: RTL_YAW_FINAL
-    // @DisplayName: RTL Final Yaw
-    // @Description: This is the yaw the vehicle will switch to before landing as the final stage of Returning to Launch.
-    // @Values: 0:No change, 1:YawWhenArmed
-    // @User: Standard
-    GSCALAR(rtl_yaw_final,  "RTL_YAW_FINAL", RTL_YAW_FINAL),
-
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.

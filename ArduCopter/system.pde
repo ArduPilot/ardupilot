@@ -313,13 +313,17 @@ static void startup_ground(void)
 
 // returns true or false whether mode requires GPS
 static bool mode_requires_GPS(uint8_t mode) {
-   
-    // check list in defines.h to see if mode is in the list of those requiring GPS
-    for(uint8_t i=0; i<sizeof(modes_requiring_GPS) / sizeof(uint8_t); i++) {
-        if(modes_requiring_GPS[i] == mode) {
+    switch(mode) {
+        case AUTO:
+        case GUIDED:
+        case LOITER: 
+        case RTL:
+        case CIRCLE:
+        case POSITION:
             return true;
-        }
-    }
+        default:
+            return false;
+    }   
 
     return false;
 }

@@ -637,7 +637,7 @@ static bool verify_RTL()
                 rtl_loiter_start_time = millis();
 
                 // give pilot back control of yaw
-                if(g.rtl_yaw_final == RTL_YAW_FINAL_YAWWHENARMED)
+                if(get_wp_yaw_mode(true) != YAW_HOLD)
                     set_yaw_mode(YAW_RESETTOARMEDYAW);
                 else
                     set_yaw_mode(YAW_HOLD);
