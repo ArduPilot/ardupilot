@@ -135,7 +135,7 @@ public:
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
     ///
     void motor_compensation_type(const uint8_t comp_type) {
-        if( comp_type >= AP_COMPASS_MOT_COMP_DISABLED && _motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
+        if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
             _motor_comp_type = (int8_t)comp_type;
             _thr_or_curr = 0;                               // set current current or throttle to zero
             set_motor_compensation(Vector3f(0,0,0));        // clear out invalid compensation vector
