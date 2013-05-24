@@ -487,7 +487,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
  * add a _X, _Y, _Z suffix to the name of a Vector3f element
  * @param buffer
  * @param buffer_size
- * @param idx Suffix: 0 --> _X; 1 --> _Y; 2 --> _X; (other --> undefined)
+ * @param idx Suffix: 0 --> _X; 1 --> _Y; 2 --> _Z; (other --> undefined)
  */
 void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx) const
 {
