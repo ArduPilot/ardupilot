@@ -160,7 +160,7 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 // correct a bearing in centi-degrees for wind
 void AP_AHRS::wind_correct_bearing(int32_t &nav_bearing_cd)
 {
-	if (!use_compass()) {
+	if (!use_compass() || !_flags.wind_estimation) {
 		// we are not using the compass - no wind correction,
 		// as GPS gives course over ground already
 		return;
