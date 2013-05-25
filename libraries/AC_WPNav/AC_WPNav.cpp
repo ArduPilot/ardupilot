@@ -156,8 +156,6 @@ void AC_WPNav::move_loiter_target(float control_roll, float control_pitch, float
 void AC_WPNav::translate_loiter_target_movements(float nav_dt)
 {
     Vector2f target_vel_adj;
-    float vel_delta_total;
-    float vel_max;
     float vel_total;
 
     // range check nav_dt
