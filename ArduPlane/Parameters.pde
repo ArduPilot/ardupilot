@@ -497,10 +497,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: MIXING_GAIN
     // @DisplayName: Mixing Gain
-    // @Description: The gain for the Vtail and elevon output mixers. The default is 1, which behaves like most brands of hardware mixers, but leaves open the possibility of saturating your outputs when both channels are offset from trim by large amounts. Using a smaller mixing ratio (such as 0.5) can guarantee that each channel operates independently. The mixer allows outputs in the range 900 to 2100 microseconds.
+    // @Description: The gain for the Vtail and elevon output mixers. The default is 0.5, which ensures that the mixer doesn't saturate, allowing both input channels to go to extremes while retaining control over the output. Hardware mixers often have a 1.0 gain, which gives more servo throw, but can saturate. If you don't have enough throw on your servos with VTAIL_OUTPUT or ELEVON_OUTPUT enabled then you can raise the gain using MIXING_GAIN. The mixer allows outputs in the range 900 to 2100 microseconds.
     // @Range: 0.5 1.2
     // @User: User
-    GSCALAR(mixing_gain,            "MIXING_GAIN",    1),
+    GSCALAR(mixing_gain,            "MIXING_GAIN",    0.5f),
 
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
