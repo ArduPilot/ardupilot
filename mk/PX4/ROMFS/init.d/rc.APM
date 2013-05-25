@@ -4,9 +4,16 @@
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
 # To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
+# To enable mavlink on ttys0 add a /fs/microsd/APM/mavlink-ttys0 file
 
 set deviceA /dev/ttyACM0
-set deviceC /dev/ttyS2
+
+if [ -f /fs/microsd/APM/mavlink-ttys0 ]
+then
+   set deviceC /dev/ttyS0
+else
+   set deviceC /dev/ttyS2
+fi
 
 # check for an old file called APM, caused by 
 # a bug in an earlier firmware release
