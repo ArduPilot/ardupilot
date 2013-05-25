@@ -130,6 +130,14 @@ void AC_WPNav::get_stopping_point(const Vector3f& position, const Vector3f& velo
     target.z = position.z;
 }
 
+/// set_loiter_target in cm from home
+void AC_WPNav::set_loiter_target(const Vector3f& position)
+{
+    _target = position;
+    _target_vel.x = 0;
+    _target_vel.y = 0;
+}
+
 /// set_loiter_target - set initial loiter target based on current position and velocity
 void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& velocity)
 {

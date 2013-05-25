@@ -50,7 +50,7 @@ public:
     const Vector3f &get_loiter_target() const { return _target; }
 
     /// set_loiter_target in cm from home
-    void set_loiter_target(const Vector3f& position) { _target = position; }
+    void set_loiter_target(const Vector3f& position);
 
     /// set_loiter_target - set initial loiter target based on current position and velocity
     void set_loiter_target(const Vector3f& position, const Vector3f& velocity);
