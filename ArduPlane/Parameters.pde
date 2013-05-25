@@ -483,17 +483,24 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: VTAIL_OUTPUT
     // @DisplayName: VTail output
-    // @Description: Enable VTail output in software. If enabled then the APM will provide software VTail mixing on the elevator and rudder channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two VTail servos. Note that you must not use VTail output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable VTAIL_OUTPUT.
+    // @Description: Enable VTail output in software. If enabled then the APM will provide software VTail mixing on the elevator and rudder channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two VTail servos. Note that you must not use VTail output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable VTAIL_OUTPUT. Please also see the MIXING_GAIN parameter for the output gain of the mixer.
     // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
     // @User: User
     GSCALAR(vtail_output,           "VTAIL_OUTPUT",  0),
 
     // @Param: ELEVON_OUTPUT
     // @DisplayName: Elevon output
-    // @Description: Enable software elevon output mixer. If enabled then the APM will provide software elevon mixing on the aileron and elevator channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two elevon servos. Note that you must not use elevon output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable ELEVON_OUTPUT.
+    // @Description: Enable software elevon output mixer. If enabled then the APM will provide software elevon mixing on the aileron and elevator channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two elevon servos. Note that you must not use elevon output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable ELEVON_OUTPUT. Please also see the MIXING_GAIN parameter for the output gain of the mixer.
     // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown
     // @User: User
     GSCALAR(elevon_output,           "ELEVON_OUTPUT",  0),
+
+    // @Param: MIXING_GAIN
+    // @DisplayName: Mixing Gain
+    // @Description: The gain for the Vtail and elevon output mixers. The default is 1, which behaves like most brands of hardware mixers, but leaves open the possibility of saturating your outputs when both channels are offset from trim by large amounts. Using a smaller mixing ratio (such as 0.5) can guarantee that each channel operates independently. The mixer allows outputs in the range 900 to 2100 microseconds.
+    // @Range: 0.5 1.2
+    // @User: User
+    GSCALAR(mixing_gain,            "MIXING_GAIN",    1),
 
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
