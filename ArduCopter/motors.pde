@@ -239,6 +239,14 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // barometer health check
+    if(!barometer.healthy) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy"));
+        }
+        return;
+    }
+
 #if AC_FENCE == ENABLED
     // check fence is initialised
     if(!fence.pre_arm_check()) {
