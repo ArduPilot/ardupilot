@@ -7,10 +7,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-//#include <sys/ioctrl.h>
 #include <fcntl.h>
 #include <unistd.h>
-//#include <sdtint.h>
 
 #include <drivers/drv_led.h>
 
@@ -30,6 +28,10 @@ void PX4GPIO::init()
 	}
 	
 	if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
+        	hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
+    	}
+
+	if (ioctl(_led_fd, LED_OFF, LED_RED) != 0) {
         	hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
     	}
 
