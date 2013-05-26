@@ -15,6 +15,7 @@
 #include "RCOutput.h"
 #include "AnalogIn.h"
 #include "Util.h"
+#include "GPIO.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -33,7 +34,7 @@ using namespace PX4;
 static Empty::EmptySemaphore  i2cSemaphore;
 static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::EmptySPIDeviceManager spiDeviceManager;
-static Empty::EmptyGPIO gpioDriver;
+//static Empty::EmptyGPIO gpioDriver;
 
 static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
@@ -42,6 +43,8 @@ static PX4RCInput rcinDriver;
 static PX4RCOutput rcoutDriver;
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
+static PX4GPIO gpioDriver;
+
 
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
@@ -117,6 +120,7 @@ static int main_loop(int argc, char **argv)
     hal.rcin->init(NULL);
     hal.rcout->init(NULL);
     hal.analogin->init(NULL);
+    hal.gpio->init();
 
     /*
       run setup() at low priority to ensure CLI doesn't hang the
