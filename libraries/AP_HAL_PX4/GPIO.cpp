@@ -1,8 +1,8 @@
 #include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include "GPIO.h"
 
+#include "GPIO.h"
 #include "config.h"
 
 #include <sys/types.h>
@@ -11,6 +11,9 @@
 #include <unistd.h>
 
 #include <drivers/drv_led.h>
+
+#define LOW     1
+#define HIGH    0
 
 
 extern const AP_HAL::HAL& hal;
@@ -56,7 +59,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 	switch (pin) {
 		case A_LED_PIN:
 			// LED A arming
-			if (value == 0) {
+			if (value == LOW) {
 				ioctl(_led_fd, LED_OFF, LED_RED);
 			} else {
 				ioctl(_led_fd, LED_ON, LED_RED);
@@ -69,7 +72,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 
 		case C_LED_PIN:
 			// LED C gps
-                        if (value == 0) { 
+                        if (value == LOW) { 
                                 ioctl(_led_fd, LED_OFF, LED_BLUE);
                         } else { 
                                 ioctl(_led_fd, LED_ON, LED_BLUE);
