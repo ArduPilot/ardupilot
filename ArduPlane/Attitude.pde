@@ -512,8 +512,8 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
     c1 = chan1_out - 1500;
     c2 = chan2_out - 1500;
 
-    v1 = (c1 - c2)/2;
-    v2 = (c1 + c2)/2;
+    v1 = (c1 - c2) * g.mixing_gain;
+    v2 = (c1 + c2) * g.mixing_gain;
 
     // now map to mixed output
     switch (mixing_type) {
@@ -537,10 +537,10 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
         break;
     }
 
-    v1 = constrain_int16(v1, -500, 500);
-    v2 = constrain_int16(v2, -500, 500);
+    // scale for a 1500 center and 900..2100 range, symmetric
+    v1 = constrain_int16(v1, -600, 600);
+    v2 = constrain_int16(v2, -600, 600);
 
-    // scale for a 1500 center and 1000..2000 range, symmetric
     chan1_out = 1500 + v1;
     chan2_out = 1500 + v2;
 }
