@@ -176,8 +176,10 @@ static void stabilize_stick_mixing_fbw()
     // the user can direct the plane in any direction with stick
     // mixing.
     float roll_input = g.channel_roll.norm_input();
-    if (fabsf(roll_input) > 0.5f) {
+    if (roll_input > 0.5f) {
         roll_input = (3*roll_input - 1);
+    } else if (roll_input < -0.5f) {
+        roll_input = (3*roll_input + 1);
     }
     nav_roll_cd += roll_input * g.roll_limit_cd;
     nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
