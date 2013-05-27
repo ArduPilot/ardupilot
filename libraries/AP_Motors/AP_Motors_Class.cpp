@@ -48,7 +48,8 @@ AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_
     _armed(false),
     _frame_orientation(0),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
-    _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE)
+    _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
+    _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE)
 {
     uint8_t i;
 
@@ -73,6 +74,19 @@ void AP_Motors::Init()
     // set-up throttle curve - motors classes will decide whether to use it based on _throttle_curve_enabled parameter
     setup_throttle_curve();
 };
+
+// set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
+void AP_Motors::set_min_throttle(uint16_t min_throttle)
+{
+    _min_throttle = (float)min_throttle * (_rc_throttle->radio_max - _rc_throttle->radio_min) / 1000.0f;
+}
+
+// set_mid_throttle - sets the mid throttle which is close to the hover throttle of the copter
+// this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
+void AP_Motors::set_mid_throttle(uint16_t mid_throttle)
+{
+    _hover_out = _rc_throttle->radio_min + (float)(_rc_throttle->radio_max - _rc_throttle->radio_min) * mid_throttle / 1000.0f;
+}
 
 // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
 void AP_Motors::throttle_pass_through()

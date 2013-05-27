@@ -11,10 +11,13 @@
 #include <RC_Channel.h>     // RC Channel Library
 #include "AP_Motors_Class.h"
 
+// comment out the line below to return to stability patch used in ArduCopter ver 2.8.1 ~ 2.9.1b
+#define AP_MOTORS_MATRIX_SCALING_STABILITY_PATCH
+
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CW   -1
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CCW   1
 
-#define AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM    100
+#define AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM    200
 
 /// @class      AP_MotorsMatrix
 class AP_MotorsMatrix : public AP_Motors {
