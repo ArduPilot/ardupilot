@@ -155,6 +155,7 @@ a.yaw = float(v[3])
 a.ground_level = a.home_altitude
 a.position.z = 0
 a.wind = util.Wind(opts.wind)
+a.set_yaw_degrees(a.yaw)
 
 print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.home_latitude,
