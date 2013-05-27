@@ -389,7 +389,7 @@
 
 // GPS failsafe
 #ifndef FS_GPS
- # define FS_GPS                        DISABLED
+ # define FS_GPS                        ENABLED
 #endif
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
