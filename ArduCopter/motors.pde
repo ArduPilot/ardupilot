@@ -173,6 +173,10 @@ static void init_arm_motors()
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
 
+#if COPTER_LEDS == ENABLED
+    piezo_beep_twice();
+#endif
+
     // enable output to motors
     output_min();
 
