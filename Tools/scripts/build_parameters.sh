@@ -18,7 +18,7 @@ cmp Parameters.wiki ../APM.wiki/APM_Parameters.wiki || {
 [ -d $HOME/WP_Auth ] && {
     # now upload to WordPress
     ./Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane
-    ./Tools/scripts/update_wiki.py --url http://plane.ardupilot.com $(cat $HOME/WP_Auth/copter.auth) --post-title='ArduPlane Parameters' Parameters.html
+    ./Tools/scripts/update_wiki.py --url http://plane.ardupilot.com $(cat $HOME/WP_Auth/plane.auth) --post-title='ArduPlane Parameters' Parameters.html
 
     ./Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
     ./Tools/scripts/update_wiki.py --url http://copter.ardupilot.com $(cat $HOME/WP_Auth/copter.auth) --post-title='ArduCopter Parameters' Parameters.html
