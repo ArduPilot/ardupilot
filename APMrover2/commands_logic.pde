@@ -327,13 +327,17 @@ static void do_change_speed()
 	switch (next_nonnav_command.p1)
 	{
 		case 0:
-			if (next_nonnav_command.alt > 0)
-				g.speed_cruise.set(next_nonnav_command.alt * 100);
+			if (next_nonnav_command.alt > 0) {
+				g.speed_cruise.set(next_nonnav_command.alt);
+                gcs_send_text_fmt(PSTR("Cruise speed: %.1f"), g.speed_cruise.get());
+            }
 			break;
 	}
 
-	if(next_nonnav_command.lat > 0)
+	if (next_nonnav_command.lat > 0) {
 		g.throttle_cruise.set(next_nonnav_command.lat);
+        gcs_send_text_fmt(PSTR("Cruise throttle: %.1f"), g.throttle_cruise.get());
+    }
 }
 
 static void do_set_home()
