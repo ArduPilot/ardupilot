@@ -31,8 +31,6 @@
 #define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
 
-#define WPNAV_WP_ACCELERATION           500.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
-
 #define WPNAV_MIN_LEASH_LENGTH          100.0f      // minimum leash lengths in cm
 
 class AC_WPNav

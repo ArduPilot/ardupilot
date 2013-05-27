@@ -380,7 +380,7 @@ void AC_WPNav::advance_target_along_track(float dt)
     }else{
         // increase intermediate target point's velocity if not yet at target speed (we will limit it below)
         if(dt > 0 && _limited_speed_xy_cms < _wp_speed_cms) {
-            _limited_speed_xy_cms += WPNAV_WP_ACCELERATION * dt;
+            _limited_speed_xy_cms += 2.0f * WPNAV_ACCELERATION * dt;
         }
         // do not go over top speed
         if(_limited_speed_xy_cms > _wp_speed_cms) {
