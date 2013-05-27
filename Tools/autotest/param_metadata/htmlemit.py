@@ -3,6 +3,7 @@
 import re
 from param import *
 from emit import Emit
+import cgi
 
 # Emit docs in a form acceptable to the APM wordpress docs site
 class HtmlEmit(Emit):
@@ -45,7 +46,7 @@ DO NOT EDIT
                 continue
             tag = '%s (%s)' % (param.DisplayName, param.name)
             t += '\n\n<h2>%s</h2>' % tag
-            t += "\n\n<p>%s</p>\n" % param.Description
+            t += "\n\n<p>%s</p>\n" % cgi.escape(param.Description)
             t += "<ul>\n"
             
             for field in param.__dict__.keys():
@@ -58,7 +59,7 @@ DO NOT EDIT
                             t += "<tr><td>%s</td><td>%s</td></tr>\n" % (v[0], v[1])
                         t += "</table>\n"
                     else:
-                        t += "<li>%s: %s</li>\n" % (field, param.__dict__[field])
+                        t += "<li>%s: %s</li>\n" % (field, cgi.escape(param.__dict__[field]))
             t += "</ul>\n"
         self.t += t
 
