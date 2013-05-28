@@ -9,11 +9,6 @@ static bool in_mavlink_delay;
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_ ## id ## _LEN) return false
 
-GCS_MAVLINK::GCS_MAVLINK() : packet_drops(0)
-{
-    AP_Param::setup_object_defaults(this, var_info);
-}
-
 /*
  *  !!NOTE!!
  *
@@ -94,11 +89,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     uint16_t battery_current = -1;
     uint8_t battery_remaining = -1;
 
-    if (current_total1 != 0 && g.pack_capacity != 0) {
-        battery_remaining = (100.0 * (g.pack_capacity - current_total1) / g.pack_capacity);
+    if (battery.current_total_mah != 0 && g.pack_capacity != 0) {
+        battery_remaining = (100.0 * (g.pack_capacity - battery.current_total_mah) / g.pack_capacity);
     }
-    if (current_total1 != 0) {
-        battery_current = current_amps1 * 100;
+    if (battery.current_total_mah != 0) {
+        battery_current = battery.current_amps * 100;
     }
 
     if (g.battery_monitoring == 3) {
@@ -114,7 +109,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_enabled,
         control_sensors_health,
         (uint16_t)(load * 1000),
-        battery_voltage1 * 1000, // mV
+        battery_voltage * 1000, // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
         0, // comm drops %,
@@ -212,6 +207,7 @@ static void NOINLINE send_radio_in(mavlink_channel_t chan)
 static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
     extern RC_Channel* rc_ch[4];
     mavlink_msg_servo_output_raw_send(
         chan,
@@ -221,12 +217,6 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
         rc_ch[1]->radio_out,
         rc_ch[2]->radio_out,
         rc_ch[3]->radio_out,
-        /*
-        rc_ch[4]->radio_out,
-        rc_ch[5]->radio_out,
-        rc_ch[6]->radio_out,
-        rc_ch[7]->radio_out
-        */
         0,0,0,0);
     return;
     }
@@ -647,6 +637,14 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+GCS_MAVLINK::GCS_MAVLINK() :
+    packet_drops(0),
+    waypoint_send_timeout(8000), // 8 seconds
+    waypoint_receive_timeout(8000) // 8 seconds
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
@@ -657,7 +655,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
-    if (_queued_parameter != NULL) {
+    if (waypoint_receiving || _queued_parameter != NULL) {
         rate *= 0.25;
     }
 
@@ -761,6 +759,9 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
     uint8_t i;
     for (i=0; i<sizeof(m.text); i++) {
         m.text[i] = pgm_read_byte((const prog_char *)(str++));
+        if (m.text[i] == '\0') {
+            break;
+        }
     }
     if (i < sizeof(m.text)) m.text[i] = 0;
     mavlink_send_text(chan, severity, (const char *)m.text);
@@ -912,7 +913,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 gcs_send_text_fmt(PSTR("Unknown parameter index %d"), packet.param_index);
                 break;
             }
-            vp->copy_name_token(&token, param_name, AP_MAX_NAME_SIZE, true);
+            vp->copy_name_token(token, param_name, AP_MAX_NAME_SIZE, true);
             param_name[AP_MAX_NAME_SIZE] = 0;
         } else {
             strncpy(param_name, packet.param_id, AP_MAX_NAME_SIZE);
@@ -981,17 +982,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else if (var_type == AP_PARAM_INT32) {
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
-                v = constrain(v, -2147483648.0, 2147483647.0);
+                v = constrain_float(v, -2147483648.0, 2147483647.0);
                 ((AP_Int32 *)vp)->set_and_save(v);
             } else if (var_type == AP_PARAM_INT16) {
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
-                v = constrain(v, -32768, 32767);
+                v = constrain_float(v, -32768, 32767);
                 ((AP_Int16 *)vp)->set_and_save(v);
             } else if (var_type == AP_PARAM_INT8) {
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
-                v = constrain(v, -128, 127);
+                v = constrain_float(v, -128, 127);
                 ((AP_Int8 *)vp)->set_and_save(v);
             } else {
                 // we don't support mavlink set on this parameter
@@ -1009,6 +1010,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 mav_var_type(var_type),
                 _count_parameters(),
                 -1);     // XXX we don't actually know what its index is...
+#if LOGGING_ENABLED == ENABLED
+            DataFlash.Log_Write_Parameter(key, vp->cast_to_float(var_type));
+#endif
         }
 
         break;
@@ -1205,7 +1209,7 @@ GCS_MAVLINK::queued_param_send()
         value = vp->cast_to_float(_queued_parameter_type);
 
         char param_name[AP_MAX_NAME_SIZE];
-        vp->copy_name_token(&_queued_parameter_token, param_name, sizeof(param_name), true);
+        vp->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
         mavlink_msg_param_value_send(
             chan,
@@ -1219,9 +1223,6 @@ GCS_MAVLINK::queued_param_send()
         _queued_parameter_index++;
     }
     _queued_parameter_send_time_ms = tnow;
-}
-
-void GCS_MAVLINK::update(void) {
 }
 
 void GCS_MAVLINK::receive(uint8_t data) {
@@ -1240,9 +1241,6 @@ void GCS_MAVLINK::receive(uint8_t data) {
     packet_drops += status.packet_rx_drop_count;
 }
 
-bool GCS_MAVLINK::isReceivingMessage() {
-	return !comm_is_idle(chan);
-} 
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
  *  callback in long running library initialisation routines to allow
@@ -1301,6 +1299,19 @@ static void gcs_data_stream_send(void)
     }
     if (mavlink1.detected) {
         mavlink1.data_stream_send();
+    }
+}
+
+/*
+ *  look for incoming commands on the GCS links
+ */
+static void gcs_update(void)
+{
+    if (mavlink0.detected) {
+    	mavlink0.update();
+    }
+    if (mavlink1.detected) {
+        mavlink1.update();
     }
 }
 

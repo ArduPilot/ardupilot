@@ -8,11 +8,15 @@ static int8_t   setup_show                              (uint8_t argc, const Men
 static int8_t   setup_factory                   (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_flightmodes               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_level                             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_erase                             (uint8_t argc, const Menu::arg *argv);
+#if !defined( __AVR_ATmega1280__ )
+static int8_t   setup_accel_scale               (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_set                       (uint8_t argc, const Menu::arg *argv);
+#endif
+static int8_t   setup_erase                     (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass                   (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_declination               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_batt_monitor              (uint8_t argc, const Menu::arg *argv);
+
 
 // Command/function table for the setup menu
 static const struct Menu::command setup_menu_commands[] PROGMEM = {
@@ -29,6 +33,9 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"declination",         setup_declination},
     {"battery",                     setup_batt_monitor},
     {"show",                        setup_show},
+#if !defined( __AVR_ATmega1280__ )
+    {"set",                         setup_set},
+#endif
     {"erase",                       setup_erase},
 };
 
@@ -57,22 +64,93 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_show(uint8_t argc, const Menu::arg *argv)
 {
-    // clear the area
-    print_blanks(8);
 
-    report_radio();
-    report_batt_monitor();
-    report_flight_modes();
-    report_ins();
-    report_compass();
+#if !defined( __AVR_ATmega1280__ )
+    AP_Param *param;
+    ap_var_type type;
 
-    cliSerial->printf_P(PSTR("Raw Values\n"));
-    print_divider();
+    //If a parameter name is given as an argument to show, print only that parameter
+    if(argc>=2)
+    {
 
-    AP_Param::show_all();
+        param=AP_Param::find(argv[1].str, &type);
+
+        if(!param)
+        {
+            cliSerial->printf_P(PSTR("Parameter not found: '%s'\n"), argv[1]);
+            return 0;
+        }
+        AP_Param::show(param, argv[1].str, type, cliSerial);
+        return 0;
+    }
+#endif
+
+    AP_Param::show_all(cliSerial);
 
     return(0);
 }
+
+#if !defined( __AVR_ATmega1280__ )
+
+//Set a parameter to a specified value. It will cast the value to the current type of the
+//parameter and make sure it fits in case of INT8 and INT16
+static int8_t setup_set(uint8_t argc, const Menu::arg *argv)
+{
+    int8_t value_int8;
+    int16_t value_int16;
+
+    AP_Param *param;
+    enum ap_var_type p_type;
+
+    if(argc!=3)
+    {
+        cliSerial->printf_P(PSTR("Invalid command. Usage: set <name> <value>\n"));
+        return 0;
+    }
+
+    param = AP_Param::find(argv[1].str, &p_type);
+    if(!param)
+    {
+        cliSerial->printf_P(PSTR("Param not found: %s\n"), argv[1].str);
+        return 0;
+    }
+
+    switch(p_type)
+    {
+        case AP_PARAM_INT8:
+            value_int8 = (int8_t)(argv[2].i);
+            if(argv[2].i!=value_int8)
+            {
+                cliSerial->printf_P(PSTR("Value out of range for type INT8\n"));
+                return 0;
+            }
+            ((AP_Int8*)param)->set_and_save(value_int8);
+            break;
+        case AP_PARAM_INT16:
+            value_int16 = (int16_t)(argv[2].i);
+            if(argv[2].i!=value_int16)
+            {
+                cliSerial->printf_P(PSTR("Value out of range for type INT16\n"));
+                return 0;
+            }
+            ((AP_Int16*)param)->set_and_save(value_int16);
+            break;
+
+        //int32 and float don't need bounds checking, just use the value provoded by Menu::arg
+        case AP_PARAM_INT32:
+            ((AP_Int32*)param)->set_and_save(argv[2].i);
+            break;
+        case AP_PARAM_FLOAT:
+            ((AP_Float*)param)->set_and_save(argv[2].f);
+            break;
+        default:
+            cliSerial->printf_P(PSTR("Cannot set parameter of type %d.\n"), p_type);
+            break;
+    }
+
+    return 0;
+}
+#endif
 
 // Initialise the EEPROM to 'factory' settings (mostly defined in APM_Config.h or via defaults).
 // Called by the setup menu 'factoryreset' command.
@@ -290,19 +368,15 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     ahrs.init();
     ahrs.set_fly_forward(true);
 
-    ins.init(AP_InertialSensor::COLD_START, ins_sample_rate, flash_leds);
-    
+    ins.init(AP_InertialSensor::COLD_START,
+    		ins_sample_rate,
+    		flash_leds);
     AP_InertialSensor_UserInteractStream interact(cliSerial);
 
     bool success = ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch);
-
     if (success) {
         // reset ahrs's trim to suggested values from calibration routine
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-        if (g.manual_level == 0) {
-            cliSerial->println_P(PSTR("Setting MANUAL_LEVEL to 1"));
-            g.manual_level.set_and_save(1);
-        }
     }
     report_ins();
     return(0);
@@ -313,7 +387,6 @@ static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
     if (!strcmp_P(argv[1].str, PSTR("on"))) {
-        compass.set_orientation(MAG_ORIENTATION);       // set compass's orientation on aircraft
         if (!compass.init()) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
@@ -440,17 +513,6 @@ static void report_flight_modes()
 // CLI utilities
 /***************************************************************************/
 
-/*
-// static void print_PID(PID * pid)
-{
-    cliSerial->printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"),
-                    pid->kP(),
-                    pid->kI(),
-                    pid->kD(),
-                    (long)pid->imax());
-}
-*/
-
 static void
 print_radio_values()
 {
@@ -465,7 +527,8 @@ static void
 print_switch(uint8_t p, uint8_t m)
 {
     cliSerial->printf_P(PSTR("Pos %d: "),p);
-    print_flight_mode(m);
+    print_flight_mode(cliSerial, m);
+    cliSerial->println();
 }
 
 static void

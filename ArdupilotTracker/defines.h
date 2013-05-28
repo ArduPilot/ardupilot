@@ -20,15 +20,6 @@
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
 
-// failsafe
-// ----------------------
-#define FAILSAFE_NONE   0
-#define FAILSAFE_SHORT  1
-#define FAILSAFE_LONG   2
-#define FAILSAFE_GCS    3
-#define FAILSAFE_SHORT_TIME 1500        // Milliseconds
-#define FAILSAFE_LONG_TIME  20000       // Milliseconds
-
 
 // active altitude sensor
 // ----------------------
@@ -119,61 +110,23 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
-enum gcs_severity {
-    SEVERITY_LOW=1,
-    SEVERITY_MEDIUM,
-    SEVERITY_HIGH,
-    SEVERITY_CRITICAL
-};
-
-// Logging message types. NOTE: If you change the value of one
-// of these then existing logs will break! Only add at the end, and 
-// mark unused ones as 'deprecated', but leave them in
-enum log_messages {
-    LOG_INDEX_MSG,
-    LOG_ATTITUDE_MSG,
-    LOG_GPS_MSG,
-    LOG_MODE_MSG,
-    LOG_CONTROL_TUNING_MSG,
-    LOG_NAV_TUNING_MSG,
-    LOG_PERFORMANCE_MSG,
-    LOG_IMU_MSG,
-    LOG_CMD_MSG,
-    LOG_CURRENT_MSG,
-    LOG_STARTUP_MSG,
-    TYPE_AIRSTART_MSG,
-    TYPE_GROUNDSTART_MSG,
-    MAX_NUM_LOGS
-};
-
-#define MASK_LOG_ATTITUDE_FAST          (1<<0)
-#define MASK_LOG_ATTITUDE_MED           (1<<1)
-#define MASK_LOG_GPS                    (1<<2)
-#define MASK_LOG_PM                     (1<<3)
-#define MASK_LOG_CTUN                   (1<<4)
-#define MASK_LOG_NTUN                   (1<<5)
-#define MASK_LOG_MODE                   (1<<6)
-#define MASK_LOG_IMU                    (1<<7)
-#define MASK_LOG_CMD                    (1<<8)
-#define MASK_LOG_CURRENT                (1<<9)
-
 // Waypoint Modes
 // ----------------
-#define ABS_WP 0
-#define REL_WP 1
+// #define ABS_WP 0
+// #define REL_WP 1
 
 // Command Queues
 // ---------------
-#define COMMAND_MUST 0
-#define COMMAND_MAY 1
-#define COMMAND_NOW 2
+//#define COMMAND_MUST 0
+//#define COMMAND_MAY 1
+//#define COMMAND_NOW 2
 
 // Events
 // ------
-#define EVENT_WILL_REACH_WAYPOINT 1
-#define EVENT_SET_NEW_COMMAND_INDEX 2
-#define EVENT_LOADED_WAYPOINT 3
-#define EVENT_LOOP 4
+//#define EVENT_WILL_REACH_WAYPOINT 1
+//#define EVENT_SET_NEW_COMMAND_INDEX 2
+//#define EVENT_LOADED_WAYPOINT 3
+//#define EVENT_LOOP 4
 
 // Climb rate calculations
 #define ALTITUDE_HISTORY_LENGTH 8       //Number of (time,altitude) points to

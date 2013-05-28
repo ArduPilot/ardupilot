@@ -776,7 +776,8 @@ static void fast_loop()
 #endif
 
     // custom code/exceptions for flight modes
-    // calculates roll, pitch and yaw demands from navigation demands
+    // calculates target angles and throttle from current control mode.
+    // (stabilize sets them to zero and manual passes RC almost direct to servos).
     // --------------------------------------------------------------
     update_current_flight_mode();
 
@@ -1114,7 +1115,7 @@ static void update_current_flight_mode(void)
             calc_throttle();
             break;
         }
-    }else{
+    } else { // control_mode is not AUTO
         // hold_course is only used in takeoff and landing
         hold_course_cd = -1;
 
@@ -1162,6 +1163,7 @@ static void update_current_flight_mode(void)
         case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
             nav_roll_cd  = g.channel_roll.norm_input() * g.roll_limit_cd;
+            // dongfang: Is this necessary? norm_input() should not return more than +-1.
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
             float pitch_input = g.channel_pitch.norm_input();
             if (pitch_input > 0) {
@@ -1232,6 +1234,7 @@ static void update_current_flight_mode(void)
 
         case MANUAL:
             // servo_out is for Sim control only
+        	// What??? Why not use control_in?
             // ---------------------------------
             g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
             g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
@@ -1299,4 +1302,6 @@ static void update_alt()
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 }
 
+// This is a replacement main() function macro. It does hal init, setup(), scheduler start 
+// and runs loop() forever.
 AP_HAL_MAIN();

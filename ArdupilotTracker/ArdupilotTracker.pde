@@ -51,13 +51,6 @@
 #include <DataFlash.h>
 #include <SITL.h>
 
-#include <MobileDriver.h>
-
-// optional new controller library
-#if APM_CONTROL == ENABLED
-#include <APM_Control.h>
-#endif
-
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -94,18 +87,20 @@ static Parameters g;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
-// static void update_events(void);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
+#if LOGGING_ENABLED == ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 DataFlash_SITL DataFlash;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static DataFlash_File DataFlash("/fs/microsd/APM/logs");
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
@@ -139,7 +134,7 @@ static AP_Baro_BMP085 barometer;
 #elif CONFIG_BARO == AP_BARO_PX4
 static AP_Baro_PX4 barometer;
 #elif CONFIG_BARO == AP_BARO_HIL
-static AP_Baro_BMP085_HIL barometer;
+static AP_Baro_HIL barometer;
 #elif CONFIG_BARO == AP_BARO_MS5611
  #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
  static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
@@ -203,11 +198,7 @@ AP_InertialSensor_Oilpan ins( &adc );
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-#if HIL_MODE == HIL_MODE_ATTITUDE
-AP_AHRS_HIL ahrs(&ins, g_gps);
-#else
 AP_AHRS_DCM ahrs(&ins, g_gps);
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -275,21 +266,8 @@ static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
 // A flag if GCS joystick control is in use
 static bool rc_override_active = false;
 
-////////////////////////////////////////////////////////////////////////////////
-// Failsafe
-////////////////////////////////////////////////////////////////////////////////
-// A tracking variable for type of failsafe active
-// Used for failsafe based on loss of RC signal or GCS signal
-// static int16_t failsafe;
-// Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
-// RC receiver should be set up to output a low throttle value when signal is lost
-// static bool ch3_failsafe;
-
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
-
-// A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-// static uint32_t ch3_failsafe_timer = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -328,58 +306,24 @@ static bool tracker_initialized;
 static int32_t azimuthRCIntegral;
 static int32_t elevationRCIntegral;
 
-// This is the direction to the next waypoint or loiter center
-// deg * 100 : 0 to 360
-// static int32_t target_bearing_cd;
-
 static struct AzimuthElevation incomingAzimuthElevation = {0,0,0};
 static struct AzimuthElevation servoAzimuthElevation = {0,0,0};
 
 ////////////////////////////////////////////////////////////////////////////////
-// Location Errors
-////////////////////////////////////////////////////////////////////////////////
-// Difference between current bearing and desired bearing.  Hundredths of a degree
-// static int32_t bearing_error_cd;
-
-////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery pack 1 voltage.  Initialized above the low voltage threshold to pre-load the filter and prevent low voltage events at startup.
-static float battery_voltage1        = LOW_VOLTAGE * 1.05;
-// Battery pack 1 instantaneous currrent draw.  Amperes
-static float current_amps1;
-// Totalized current (Amp-hours) from battery 1
-static float current_total1;
-
-// To Do - Add support for second battery pack
-//static float  battery_voltage2    = LOW_VOLTAGE * 1.05;		// Battery 2 Voltage, initialized above threshold for filter
-//static float	current_amps2;									// Current (Amperes) draw from battery 2
-//static float	current_total2;									// Totalized current (Amp-hours) from battery 2
-
-////////////////////////////////////////////////////////////////////////////////
-// Loiter management
-////////////////////////////////////////////////////////////////////////////////
-// Previous target bearing.  Used to calculate loiter rotations.  Hundredths of a degree
-// static int32_t old_target_bearing_cd;
-
-////////////////////////////////////////////////////////////////////////////////
-// Navigation control variables
-////////////////////////////////////////////////////////////////////////////////
-// The instantaneous desired bank angle.  Hundredths of a degree
-// static int32_t nav_roll_cd;
-
-// The instantaneous desired pitch angle.  Hundredths of a degree
-// static int32_t nav_pitch_cd;
-
-////////////////////////////////////////////////////////////////////////////////
-// Waypoint distances
-////////////////////////////////////////////////////////////////////////////////
-// Distance between plane and next waypoint.  Meters
-// is not static because AP_Camera uses it
-uint32_t wp_distance;
-
-// Distance between previous and next waypoint.  Meters
-// static uint32_t wp_totalDistance;
+static struct {
+    // Battery pack 1 voltage.  Initialized above the low voltage
+    // threshold to pre-load the filter and prevent low voltage events
+    // at startup.
+    float voltage;
+    // Battery pack 1 instantaneous currrent draw.  Amperes
+    float current_amps;
+    // Totalized current (Amp-hours) from battery 1
+    float current_total_mah;
+    // true when a low battery event has happened
+    bool low_batttery;
+} battery;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
@@ -395,26 +339,9 @@ static bool home_is_set;
 static struct   Location target;
 // Flag for if we have received a target location
 static bool target_is_set;
-// The location of the previous waypoint.  Used for track following and altitude ramp calculations
-// static struct   Location prev_WP;
-// The plane's current location
-static struct   Location current_loc;
-// The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
-static struct   Location next_WP;
-// The location of the active waypoint in Guided mode.
-// static struct   Location guided_WP;
-// The location structure information from the Nav command being processed
-// static struct   Location next_nav_command;
-// The location structure information from the Non-Nav command being processed
-// static struct   Location next_nonnav_command;
 
-////////////////////////////////////////////////////////////////////////////////
-// Altitude / Climb rate control
-////////////////////////////////////////////////////////////////////////////////
-// The current desired altitude.  Altitude is linearly ramped between waypoints.  Centimeters
-// static int32_t target_altitude_cm;
-// Altitude difference between previous and current waypoint.  Centimeters
-// static int32_t offset_altitude_cm;
+// The tracker's current location
+static struct   Location current_loc;
 
 ////////////////////////////////////////////////////////////////////////////////
 // INS variables
@@ -427,7 +354,7 @@ static float G_Dt                                               = 0.02;
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
-// static int32_t perf_mon_timer;
+static int32_t perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
 static int16_t G_Dt_max = 0;
 // The number of gps fixes recorded in the current performance monitoring interval
@@ -536,6 +463,14 @@ void loop()
             counter_one_herz = 0;
         }
 
+        if (millis() - perf_mon_timer > 20000) {
+            if (mainLoop_count != 0) {
+                if (g.log_bitmask & MASK_LOG_PM)
+                    Log_Write_Performance();
+                    resetPerfData();
+            }
+        }
+
         fast_loopTimeStamp_ms = millis();
     } else if (millis() - fast_loopTimeStamp_ms < 19) {
         // less than 19ms has passed. We have at least one millisecond
@@ -590,14 +525,6 @@ static void fast_loop()
     // ------------------------------
     set_servos();
     
-    /*
-    if ((mainLoop_count % 20) == 0) {
-    	char blah[40];
-    	hal.util->snprintf_P(blah, 40, PSTR("Yaw: %d"), ahrs.yaw_sensor/100);
-    	mavlink_send_text(MAVLINK_COMM_0, SEVERITY_LOW, blah);
-    }
-    */
-
     datacomm_update();
     gcs_data_stream_send();
 }
@@ -621,16 +548,16 @@ static void medium_loop()
     case 0:
         medium_loopCounter++;
         update_GPS();
-//        calc_gndspeed_undershoot();
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
         if (g.compass_enabled && compass.read()) {
             ahrs.set_compass(&compass);
             compass.null_offsets();
+            if (g.log_bitmask & MASK_LOG_COMPASS) {
+                Log_Write_Compass();
+            }
         } else {
             ahrs.set_compass(NULL);
         }
-#endif
 
         break;
 
@@ -694,12 +621,11 @@ static void slow_loop()
     case 0:
         slow_loopCounter++;
         superslow_loopCounter++;
-        if(superslow_loopCounter >=200) {                                               //	200 = Execute every minute
-#if HIL_MODE != HIL_MODE_ATTITUDE
+        if(superslow_loopCounter >=200) {                                               
+            //	200 = Execute every minute
             if(g.compass_enabled) {
                 compass.save_offsets();
             }
-#endif
 
             superslow_loopCounter = 0;
         }
@@ -707,7 +633,15 @@ static void slow_loop()
 
     case 1:
         slow_loopCounter++;
-        update_aux_servo_function(&g.rc_3, &g.rc_4);
+
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
+#else
+        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+#endif
         enable_aux_servos();
 
 #if MOUNT == ENABLED
@@ -729,6 +663,8 @@ static void slow_loop()
 
 static void one_second_loop()
 {
+    if (g.log_bitmask & MASK_LOG_CURRENT)
+        Log_Write_Current();
 
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
@@ -736,13 +672,21 @@ static void one_second_loop()
 
 static void update_GPS(void)
 {
+    static uint32_t last_gps_reading;
     g_gps->update();
     update_GPS_light();
+
+    if (g_gps->last_message_time_ms() != last_gps_reading) {
+        last_gps_reading = g_gps->last_message_time_ms();
+        if (g.log_bitmask & MASK_LOG_GPS) {
+            Log_Write_GPS();
+        }
+    }
 
     // get position from AHRS
     have_position = ahrs.get_position(&current_loc);
 
-    if (g_gps->new_data && g_gps->fix) {
+    if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;
 
         // for performance
@@ -752,6 +696,7 @@ static void update_GPS(void)
         if(ground_start_count > 1) {
             ground_start_count--;
             ground_start_avg += g_gps->ground_speed;
+
         } else if (ground_start_count == 1) {
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
@@ -761,12 +706,19 @@ static void update_GPS(void)
 
             } else {
                 if(ENABLE_AIR_START == 1 && (ground_start_avg / 5) < SPEEDFILT) {
+		// Triggered in air start once, when detected we are on the ground.
                     startup_ground();
+
+                    if (g.log_bitmask & MASK_LOG_CMD)
+                        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+
                     init_home();
                 } else if (ENABLE_AIR_START == 0) {
+		// Triggered in ground start once.
                     init_home();
                 }
 
+		// Triggered in air start once and in ground start once.
                 if (g.compass_enabled) {
                     // Set compass declination automatically
                     compass.set_initial_location(g_gps->latitude, g_gps->longitude);
@@ -777,35 +729,17 @@ static void update_GPS(void)
     }
 }
 
-/*
-static void update_navigation()
-{
-    switch(control_mode) {
-    default:
-        // nothing to do
-        break;
-    }
-}
-*/
-
 static void update_alt()
 {
-#if HIL_MODE == HIL_MODE_ATTITUDE
-    current_loc.alt = g_gps->altitude;
-#else
     // this function is in place to potentially add a sonar sensor in the future
     //altitude_sensor = BARO;
 
     if (barometer.healthy) {
         current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;                       // alt_MSL centimeters (meters * 100)
         current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
-    } else if (g_gps->fix) {
+    } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         current_loc.alt = g_gps->altitude;     // alt_MSL centimeters (meters * 100)
     }
-#endif
-    // Calculate new climb rate
-    //if(medium_loopCounter == 0 && slow_loopCounter == 0)
-    //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 }
 
 AP_HAL_MAIN();

@@ -9,10 +9,10 @@ static int8_t   setup_factory                   (uint8_t argc, const Menu::arg *
 static int8_t   setup_flightmodes               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_level                             (uint8_t argc, const Menu::arg *argv);
 #if !defined( __AVR_ATmega1280__ )
-static int8_t   setup_accel_scale                       (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_set                               (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_accel_scale               (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_set                       (uint8_t argc, const Menu::arg *argv);
 #endif
-static int8_t   setup_erase                             (uint8_t argc, const Menu::arg *argv);
+static int8_t   setup_erase                     (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass                   (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_declination               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_batt_monitor              (uint8_t argc, const Menu::arg *argv);
