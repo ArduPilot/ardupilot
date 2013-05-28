@@ -471,6 +471,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     //cliSerial->printf_P(PSTR("Calibrating."));
     ahrs.init();
     ahrs.set_fly_forward(true);
+    ahrs.set_wind_estimation(true);
 
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
@@ -532,6 +533,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     }
     ahrs.init();
     ahrs.set_fly_forward(true);
+    ahrs.set_wind_estimation(true);
     ahrs.set_compass(&compass);
     report_compass();
 

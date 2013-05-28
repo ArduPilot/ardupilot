@@ -144,6 +144,10 @@ static void init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
+    barometer.init();
+#endif
+
     // init the GCS
     gcs0.init(hal.uartA);
 
@@ -216,9 +220,6 @@ static void init_ardupilot()
     // begin filtering the ADC Gyros
     adc.Init();           // APM ADC library initialization
  #endif // CONFIG_ADC
-
-    barometer.init();
-
 #endif // HIL_MODE
 
     // Do GPS init
@@ -270,8 +271,8 @@ static void init_ardupilot()
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME
-// initialise controller filters
-init_rate_controllers();
+    // initialise controller filters
+    init_rate_controllers();
 #endif // HELI_FRAME
 
     // initialize commands

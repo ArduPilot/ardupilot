@@ -11,11 +11,14 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 
 // loiter maximum velocities and accelerations
-#define WPNAV_LOITER_SPEED              750.0f      // maximum default loiter speed in cm/s
-#define MAX_LOITER_POS_ACCEL            250.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that loiter position controller asks for from acceleration controller
-#define MAX_LOITER_VEL_ACCEL            800.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
-                                                    // should be 1.5 times larger than MAX_LOITER_POS_ACCEL.
+#define WPNAV_ACCELERATION              250.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
+#define WPNAV_ACCEL_MAX                 800.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
+                                                    // should be 1.5 times larger than WPNAV_ACCELERATION.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
+
+#define WPNAV_LOITER_SPEED              750.0f      // maximum default loiter speed in cm/s
+#define WPNAV_LOITER_ACCEL_MAX          350.0f      // maximum acceleration in loiter mode
+#define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
 
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
 
@@ -27,8 +30,6 @@
 
 #define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
-
-#define WPNAV_WP_ACCELERATION           500.0f      // acceleration in cm/s/s used to increase the speed of the intermediate point up to it's maximum speed held in _speed_xy_cms
 
 #define WPNAV_MIN_LEASH_LENGTH          100.0f      // minimum leash lengths in cm
 
@@ -47,7 +48,7 @@ public:
     const Vector3f &get_loiter_target() const { return _target; }
 
     /// set_loiter_target in cm from home
-    void set_loiter_target(const Vector3f& position) { _target = position; }
+    void set_loiter_target(const Vector3f& position);
 
     /// set_loiter_target - set initial loiter target based on current position and velocity
     void set_loiter_target(const Vector3f& position, const Vector3f& velocity);
@@ -228,7 +229,7 @@ public:
     Vector2f dist_error;                // distance error calculated by loiter controller
     Vector2f desired_vel;               // loiter controller desired velocity
     Vector2f desired_accel;             // the resulting desired acceleration
-    
+
     // To-Do: add split of fast (100hz for accel->angle) and slow (10hz for navigation)
     /// update - run the loiter and wpnav controllers - should be called at 100hz
     //void update_100hz(void);

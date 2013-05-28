@@ -170,6 +170,13 @@ static void init_arm_motors()
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
 
+    // set hover throttle
+    motors.set_mid_throttle(g.throttle_mid);
+
+#if COPTER_LEDS == ENABLED
+    piezo_beep_twice();
+#endif
+
     // enable output to motors
     output_min();
 
@@ -239,6 +246,14 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // barometer health check
+    if(!barometer.healthy) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy"));
+        }
+        return;
+    }
+
 #if AC_FENCE == ENABLED
     // check fence is initialised
     if(!fence.pre_arm_check()) {
@@ -248,6 +263,14 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 #endif
+
+    // check board voltage
+    if(board_voltage() < BOARD_VOLTAGE_MIN) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Low Board Voltage"));
+        }
+        return;
+    }
 
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;

@@ -239,6 +239,7 @@ static void init_ardupilot()
         //read_EEPROM_airstart_critical();
         ahrs.init();
         ahrs.set_fly_forward(true);
+        ahrs.set_wind_estimation(true);
 
         ins.init(AP_InertialSensor::WARM_START, 
                  ins_sample_rate,
@@ -342,7 +343,6 @@ static void set_mode(enum FlightMode mode)
         trim_control_surfaces();
 
     control_mode = mode;
-    crash_timer = 0;
 
     switch(control_mode)
     {
@@ -467,6 +467,7 @@ static void startup_INS_ground(bool do_accel_init)
 
     ahrs.init();
     ahrs.set_fly_forward(true);
+    ahrs.set_wind_estimation(true);
 
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,

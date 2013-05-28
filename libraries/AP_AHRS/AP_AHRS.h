@@ -53,6 +53,11 @@ public:
     void set_fly_forward(bool b) {
         _flags.fly_forward = b;
     }
+
+    void set_wind_estimation(bool b) {
+        _flags.wind_estimation = b;
+    }
+
     void set_compass(Compass *compass) {
         _compass = compass;
         if (_compass != NULL) {
@@ -195,6 +200,7 @@ protected:
         uint8_t fast_ground_gains       : 1;    // should we raise the gain on the accelerometers for faster convergence, used when disarmed for ArduCopter
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
+        uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
     } _flags;
 
     // pointer to compass object, if available

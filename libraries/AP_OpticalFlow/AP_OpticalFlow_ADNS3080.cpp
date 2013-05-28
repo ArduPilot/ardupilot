@@ -46,17 +46,21 @@ AP_OpticalFlow_ADNS3080::init()
     // suspend timer while we set-up SPI communication
     hal.scheduler->suspend_timer_procs();
 
-    if( _reset_pin != 0)
+    // reset the device if the reset pin has been defined
+    if(_reset_pin != 0) {
         hal.gpio->pinMode(_reset_pin, GPIO_OUTPUT);
+    }
+
     // reset the device
     reset();
 
-    // check 3 times for the sensor on standard SPI bus
+    // get pointer to the spi bus
     _spi = hal.spi->device(AP_HAL::SPIDevice_ADNS3080_SPI0);
     if (_spi == NULL) {
         retvalue = false; goto finish;
     }
 
+    // check 3 times for the sensor on standard SPI bus
     while( retvalue == false && retry < 3 ) {
         if( read_register(ADNS3080_PRODUCT_ID) == 0x17 ) {
             retvalue = true;
@@ -65,11 +69,13 @@ AP_OpticalFlow_ADNS3080::init()
         retry++;
     }
 
-    // if not found, check 3 times on SPI3
+    // if not found, get pointer to the SPI3 bus
     _spi = hal.spi->device(AP_HAL::SPIDevice_ADNS3080_SPI3);
     if (_spi == NULL) {
         retvalue = false; goto finish;
     }
+
+    // check 3 times on SPI3
     retry = 0;
     while( retvalue == false && retry < 3 ) {
         if( read_register(ADNS3080_PRODUCT_ID) == 0x17 ) {
@@ -77,6 +83,7 @@ AP_OpticalFlow_ADNS3080::init()
         }
         retry++;
     }
+
     // If we fail to find on SPI3, no connection available.
     retvalue = false;
     _spi = NULL;

@@ -67,9 +67,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"tune",                test_tuning},
     {"relay",               test_relay},
     {"wp",                  test_wp},
-//	{"toy",			test_toy},
+//	{"toy",			        test_toy},
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
-    {"altitude",    test_baro},
+    {"baro",                test_baro},
     {"sonar",               test_sonar},
 #endif
     {"compass",             test_mag},
@@ -413,20 +413,21 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
+    int32_t alt;
     print_hit_enter();
     init_barometer();
 
     while(1) {
         delay(100);
-        int32_t alt = read_barometer();                 // calls barometer.read()
+        alt = read_barometer();
 
-        float pres = barometer.get_pressure();
-        int16_t temp = barometer.get_temperature();
-        int32_t raw_pres = barometer.get_raw_pressure();
-        int32_t raw_temp = barometer.get_raw_temp();
-        cliSerial->printf_P(PSTR("alt: %ldcm, pres: %fmbar, temp: %d/100degC,"
-                             " raw pres: %ld, raw temp: %ld\n"),
-                            (long)alt, pres, (int)temp, (long)raw_pres, (long)raw_temp);
+        if (!barometer.healthy) {
+            cliSerial->println_P(PSTR("not healthy"));
+        } else {
+            cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),
+                            alt / 100.0,
+                            barometer.get_pressure(), 0.1*barometer.get_temperature());
+        }
         if(cliSerial->available() > 0) {
             return (0);
         }

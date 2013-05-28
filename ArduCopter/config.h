@@ -382,6 +382,10 @@
  # define HIGH_DISCHARGE                 1760
 #endif
 
+#ifndef BOARD_VOLTAGE_MIN
+ # define BOARD_VOLTAGE_MIN             4500        // min board voltage in milli volts for pre-arm checks
+#endif
+
 // Battery failsafe
 #ifndef FS_BATTERY
  # define FS_BATTERY              DISABLED
@@ -389,7 +393,7 @@
 
 // GPS failsafe
 #ifndef FS_GPS
- # define FS_GPS                        DISABLED
+ # define FS_GPS                        ENABLED
 #endif
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS

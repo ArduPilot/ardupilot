@@ -79,14 +79,21 @@
 class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 {
 public:
+
+    // constructor
     AP_OpticalFlow_ADNS3080(uint8_t reset_pin = 0);
+
+    // initialise the sensor
     bool    init();
+
     uint8_t read_register(uint8_t address);
     void    write_register(uint8_t address, uint8_t value);
+
     // reset sensor by holding a pin high (or is it low?) for 10us.
     void    reset();
+
     // read latest values from sensor and fill in x,y and totals,
-    // return true on successful read
+    // returns true on successful read
     void    update(uint32_t now);
 
     // ADNS3080 specific features

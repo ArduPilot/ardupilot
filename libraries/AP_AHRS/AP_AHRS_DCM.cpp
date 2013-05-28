@@ -638,6 +638,10 @@ AP_AHRS_DCM::drift_correction(float deltat)
 // update our wind speed estimate
 void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
 {
+    if (!_flags.wind_estimation) {
+        return;
+    }
+
     // this is based on the wind speed estimation code from MatrixPilot by
     // Bill Premerlani. Adaption for ArduPilot by Jon Challinger
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
@@ -760,6 +764,10 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 		*airspeed_ret = _airspeed->get_airspeed();
 		return true;
 	}
+
+    if (!_flags.wind_estimation) {
+        return false;
+    }
 
 	// estimate it via GPS speed and wind
 	if (have_gps()) {

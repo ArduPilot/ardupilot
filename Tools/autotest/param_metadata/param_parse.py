@@ -5,6 +5,7 @@ import os, glob, re, sys
 from param import *
 from wikiemit import WikiEmit
 from xmlemit import XmlEmit
+from htmlemit import HtmlEmit
 
 from optparse import OptionParser
 parser = OptionParser("param_parse.py [options]")
@@ -143,5 +144,6 @@ for library in libraries:
     
     do_emit(XmlEmit())
     do_emit(WikiEmit())
+    do_emit(HtmlEmit())
 
 sys.exit(error_count)

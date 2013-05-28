@@ -1524,6 +1524,12 @@ void update_yaw_mode(void)
         // changes yaw to be same as when quad was armed
         nav_yaw = get_yaw_slew(nav_yaw, initial_simple_bearing, AUTO_YAW_SLEW_RATE);
         get_stabilize_yaw(nav_yaw);
+
+        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
+        if( g.rc_4.control_in != 0 ) {
+            set_yaw_mode(YAW_HOLD);
+        }
+
         break;
     }
 }
@@ -1890,14 +1896,20 @@ void update_throttle_mode(void)
         break;
 
     case THROTTLE_HOLD:
-        // alt hold plus pilot input of climb rate
-        pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
-            // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
+        if(ap.auto_armed) {
+            // alt hold plus pilot input of climb rate
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+            if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
+                // if sonar is ok, use surface tracking
+                get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
+            }else{
+                // if no sonar fall back stabilize rate controller
+                get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
+            }
         }else{
-            // if no sonar fall back stabilize rate controller
-            get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
+            // pilot's throttle must be at zero so keep motors off
+            set_throttle_out(0, false);
+            set_target_alt_for_reporting(0);
         }
         break;
 
@@ -1906,8 +1918,11 @@ void update_throttle_mode(void)
         if(ap.auto_armed) {
             get_throttle_althold_with_slew(wp_nav.get_desired_alt(), -wp_nav.get_descent_velocity(), wp_nav.get_climb_velocity());
             set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
+        }else{
+            // pilot's throttle must be at zero so keep motors off
+            set_throttle_out(0, false);
+            set_target_alt_for_reporting(0);
         }
-        // To-Do: explicitly set what the throttle output should be (probably min throttle).  Without setting it the throttle is simply left in it's last position although that is probably zero throttle anyway
         break;
 
     case THROTTLE_LAND:
