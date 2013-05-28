@@ -323,9 +323,6 @@ static int16_t failsafe;
 // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
 // RC receiver should be set up to output a low throttle value when signal is lost
 static bool ch3_failsafe;
-// A timer used to help recovery from unusual attitudes.  If we enter an unusual attitude
-// while in autonomous flight this variable is used  to hold roll at 0 for a recovery period
-static uint8_t crash_timer;
 
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
@@ -1025,7 +1022,6 @@ static void update_GPS(void)
 static void update_current_flight_mode(void)
 {
     if(control_mode == AUTO) {
-        crash_checker();
 
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
@@ -1111,7 +1107,6 @@ static void update_current_flight_mode(void)
         case RTL:
         case LOITER:
         case GUIDED:
-            crash_checker();
             calc_nav_roll();
             calc_nav_pitch();
             calc_throttle();

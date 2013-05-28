@@ -232,7 +232,6 @@ static bool verify_condition_command()          // Returns true if command compl
 static void do_RTL(void)
 {
     control_mode    = RTL;
-    crash_timer     = 0;
     next_WP                 = home;
 
     if (g.loiter_radius < 0) {

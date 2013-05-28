@@ -324,7 +324,6 @@ static void set_mode(enum FlightMode mode)
         trim_control_surfaces();
 
     control_mode = mode;
-    crash_timer = 0;
 
     switch(control_mode)
     {

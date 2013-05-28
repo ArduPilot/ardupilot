@@ -63,10 +63,6 @@ static bool stick_mixing_enabled(void)
  */
 static void stabilize_roll(float speed_scaler)
 {
-    if (crash_timer > 0) {
-        nav_roll_cd = 0;
-    }
-
     if (inverted_flight) {
         // we want to fly upside down. We need to cope with wrap of
         // the roll_sensor interfering with wrap of nav_roll, which
@@ -276,16 +272,6 @@ static void stabilize()
         }
         stabilize_yaw(speed_scaler);
     }
-}
-
-
-static void crash_checker()
-{
-    if(ahrs.pitch_sensor < -4500) {
-        crash_timer = 255;
-    }
-    if(crash_timer > 0)
-        crash_timer--;
 }
 
 
