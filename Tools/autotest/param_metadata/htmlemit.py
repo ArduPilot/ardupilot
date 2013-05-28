@@ -18,6 +18,9 @@ DO NOT EDIT
 -->
 
 <!-- add auto-generated table of contents with "Table of Contents Plus" plugin -->
+
+<p>This is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your APM to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.</p>
+
 [toc]\n
 '''        
         self.t = ''
@@ -35,7 +38,7 @@ DO NOT EDIT
         self.f.close()
     
     def start_libraries(self):
-        self.t += '\n\n<h1>Libraries</h1>\n\n'
+        self.t += '\n\n<h1>Library Parameters</h1>\n\n'
         
     def emit(self, g, f):    
         tag = '%s Parameters' % g.name
@@ -44,8 +47,11 @@ DO NOT EDIT
         for param in g.params:
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
+            d = param.__dict__
             tag = '%s (%s)' % (param.DisplayName, param.name)
             t += '\n\n<h2>%s</h2>' % tag
+            if d.get('User',None) == 'Advanced':
+                t += '<em>Note: This parameter is for advanced users</em><br>'
             t += "\n\n<p>%s</p>\n" % cgi.escape(param.Description)
             t += "<ul>\n"
             
