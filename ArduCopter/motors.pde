@@ -264,6 +264,14 @@ static void pre_arm_checks(bool display_failure)
     }
 #endif
 
+    // check board voltage
+    if(board_voltage() < BOARD_VOLTAGE_MIN) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Low Board Voltage"));
+        }
+        return;
+    }
+
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;
 }

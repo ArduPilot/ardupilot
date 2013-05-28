@@ -382,6 +382,10 @@
  # define HIGH_DISCHARGE                 1760
 #endif
 
+#ifndef BOARD_VOLTAGE_MIN
+ # define BOARD_VOLTAGE_MIN             4500        // min board voltage in milli volts for pre-arm checks
+#endif
+
 // Battery failsafe
 #ifndef FS_BATTERY
  # define FS_BATTERY              DISABLED
