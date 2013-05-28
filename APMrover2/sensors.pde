@@ -67,8 +67,8 @@ static void read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(PSTR("Sonar1 obstacle %.0fcm"),
-                                  obstacle.sonar1_distance_cm);
+                gcs_send_text_fmt(PSTR("Sonar1 obstacle %u cm"),
+                                  (unsigned)obstacle.sonar1_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = g.sonar_turn_angle;
@@ -78,8 +78,8 @@ static void read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(PSTR("Sonar2 obstacle %.0fcm"),
-                                  obstacle.sonar2_distance_cm);
+                gcs_send_text_fmt(PSTR("Sonar2 obstacle %u cm"),
+                                  (unsigned)obstacle.sonar2_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = -g.sonar_turn_angle;
@@ -94,8 +94,8 @@ static void read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(PSTR("Sonar obstacle %.0fcm"),
-                                  obstacle.sonar1_distance_cm);
+                gcs_send_text_fmt(PSTR("Sonar obstacle %u cm"),
+                                  (unsigned)obstacle.sonar1_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
             obstacle.turn_angle = g.sonar_turn_angle;
