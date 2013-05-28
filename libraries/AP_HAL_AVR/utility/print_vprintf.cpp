@@ -44,11 +44,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-extern "C" {
 #include "ftoa_engine.h"
-#include "ntz.h"
 #include "xtoa_fast.h"
-}
+#include "ntz.h"
 
 #include "print_vprintf.h"
 
@@ -219,7 +217,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 vtype = prec;
                                 ndigs = 0;
                         }
-                        exp = __ftoa_engine (va_arg(ap,double), (char *)buf, vtype, ndigs);
+                        exp = ftoa_engine(va_arg(ap,double), (char *)buf, vtype, ndigs);
                         vtype = buf[0];
     
                         sign = 0;
@@ -407,7 +405,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 x = -x;
                                 flags |= FL_NEGATIVE;
                         }
-                        c = __ultoa_invert (x, (char *)buf, 10) - (char *)buf;
+                        c = ultoa_invert (x, (char *)buf, 10) - (char *)buf;
 
                 } else {
                         int base;
@@ -437,7 +435,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                         flags |= (FL_ALTHEX | FL_ALTUPP);
                                 base = 16 | XTOA_UPPER;
                         ultoa:
-                                c = __ultoa_invert ((flags & FL_LONG)
+                                c = ultoa_invert ((flags & FL_LONG)
                                                     ? va_arg(ap, unsigned long)
                                                     : va_arg(ap, unsigned int),
                                                     (char *)buf, base)  -  (char *)buf;

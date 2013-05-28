@@ -31,12 +31,11 @@
 #ifndef	_FTOA_ENGINE_H
 #define	_FTOA_ENGINE_H
 
-#ifndef	__ASSEMBLER__
+#include <AP_HAL.h>
+#include <stdint.h>
 
-int __ftoa_engine (double val, char *buf,
-                   unsigned char prec, unsigned char maxdgs);
-
-#endif
+int16_t ftoa_engine(float val, char *buf,
+		    uint8_t precision, uint8_t maxDecimals);
 
 /* '__ftoa_engine' return next flags (in buf[0]):	*/
 #define	FTOA_MINUS	1
