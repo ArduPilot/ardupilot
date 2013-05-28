@@ -146,8 +146,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(att_controller,          "ATT_CONTROLLER",   ATT_CONTROL_PID),
 
     // @Param: ALT_MIX
-    // @DisplayName: Gps to Baro Mix
-    // @Description: The percent of mixing between gps altitude and baro altitude. 0 = 100% gps, 1 = 100% baro
+    // @DisplayName: GPS to Baro Mix
+    // @Description: The percent of mixing between GPS altitude and baro altitude. 0 = 100% gps, 1 = 100% baro. It is highly recommend that you not change this from the default of 1, as GPS altitude is notoriously unreliable. The only time I would recommend changing this is if you have a high altitude enabled GPS, and you are dropping a plane from a high altitude baloon many kilometers off the ground.
     // @Units: Percent
     // @Range: 0 1
     // @Increment: 0.1
