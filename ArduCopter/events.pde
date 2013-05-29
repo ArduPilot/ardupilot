@@ -138,30 +138,8 @@ static void failsafe_gps_check()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GPS, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // take action based on flight mode
-    switch(control_mode) {
-        // for modes that do not require gps, do nothing
-        case STABILIZE:
-        case ACRO:
-        case ALT_HOLD:
-        case OF_LOITER:
-            // do nothing
-            break;
-
-        // modes requiring GPS force a land
-        case AUTO:
-        case GUIDED:
-        case LOITER:
-        case RTL:
-        case CIRCLE:
-        case POSITION:
-            // We have no GPS or are very close to home so we will land
-            set_mode(LAND);
-            break;
-
-        case LAND:
-            // if we're already landing do nothing
-            break;
-    }
+    if(mode_requires_GPS(control_mode))
+        set_mode(LAND);
 }
 
 // failsafe_gps_off_event - actions to take when GPS contact is restored
