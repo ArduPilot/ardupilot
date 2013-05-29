@@ -835,6 +835,10 @@ def fly_CopterAVC(viewerip=None, map=False):
     expect_list_clear()
     expect_list_extend([sim, sil, mavproxy])
 
+    if map:
+        mavproxy.send('map icon 40.072467969730496 -105.2314389590174\n')
+        mavproxy.send('map icon 40.072600990533829 -105.23146100342274\n')        
+
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
