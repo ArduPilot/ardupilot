@@ -582,7 +582,17 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
 
+    // @Param: BATT_MONITOR
+    // @DisplayName: Battery monitoring
+    // @Description: Controls enabling monitoring of the battery's voltage and current
+    // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
+    // @User: Standard
     GSCALAR(battery_monitoring,     "BATT_MONITOR",   0),
+
+    // @Param: VOLT_DIVIDER
+    // @DisplayName: Voltage Divider
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)
+    // @User: Advanced
     GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",   VOLT_DIV_RATIO),
 
     // @Param: APM_PER_VOLT
