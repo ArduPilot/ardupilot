@@ -35,11 +35,15 @@ def get_default_params(atype):
     print("Saved defaults for %s to %s" % (atype, dest))
     return True
 
-def dump_logs(atype):
+def dump_logs(atype, logname=None):
     '''dump DataFlash logs'''
     print("Dumping logs for %s" % atype)
+
+    if logname is None:
+        logname = atype
+        
     sil = util.start_SIL(atype)
-    logfile = util.reltopdir('../buildlogs/%s.flashlog' % atype)
+    logfile = util.reltopdir('../buildlogs/%s.flashlog' % logname)
     log = open(logfile, mode='w')
     mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
     mavproxy.send('\n\n\n')
@@ -190,6 +194,8 @@ steps = [
     'defaults.ArduCopter',
     'fly.ArduCopter',
     'logs.ArduCopter',
+    'fly.CopterAVC',
+    'logs.CopterAVC',
 
     'convertgpx',
     ]
@@ -259,11 +265,17 @@ def run_step(step):
     if step == 'logs.ArduCopter':
         return dump_logs('ArduCopter')
 
+    if step == 'logs.CopterAVC':
+        return dump_logs('ArduCopter', 'CopterAVC')
+
     if step == 'logs.APMrover2':
         return dump_logs('APMrover2')
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(viewerip=opts.viewerip, map=opts.map)
+
+    if step == 'fly.CopterAVC':
+        return arducopter.fly_CopterAVC(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map)

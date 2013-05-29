@@ -10,6 +10,7 @@ testdir=os.path.dirname(os.path.realpath(__file__))
 FRAME='+'
 TARGET='sitl'
 HOME=mavutil.location(-35.362938,149.165085,584,270)
+AVCHOME=mavutil.location(40.072842,-105.230575,1586,0)
 
 homeloc = None
 num_wp = 0
@@ -34,6 +35,7 @@ def arm_motors(mavproxy, mav):
     mavproxy.send('rc 4 2000\n')
     mavproxy.expect('APM: ARMING MOTORS')
     mavproxy.send('rc 4 1500\n')
+    mav.motors_armed_wait()
     print("MOTORS ARMED OK")
     return True
 
@@ -45,6 +47,7 @@ def disarm_motors(mavproxy, mav):
     mavproxy.send('rc 4 1000\n')
     mavproxy.expect('APM: DISARMING MOTORS')
     mavproxy.send('rc 4 1500\n')
+    mav.motors_disarmed_wait()
     print("MOTORS DISARMED OK")
     return True
 
@@ -547,7 +550,7 @@ def fly_ArduCopter(viewerip=None, map=False):
     if viewerip:
         options += ' --out=%s:14550' % viewerip
     if map:
-        options += ' --map --console'
+        options += ' --map'
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
@@ -770,6 +773,134 @@ def fly_ArduCopter(viewerip=None, map=False):
     if os.path.exists('ArduCopter-valgrind.log'):
         os.chmod('ArduCopter-valgrind.log', 0644)
         shutil.copy("ArduCopter-valgrind.log", util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
+
+    if failed:
+        print("FAILED: %s" % e)
+        return False
+    return True
+
+
+def fly_CopterAVC(viewerip=None, map=False):
+    '''fly ArduCopter in SIL for AVC2013 mission
+    '''
+    global homeloc
+
+    if TARGET != 'sitl':
+        util.build_SIL('ArduCopter', target=TARGET)
+
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --rate=400 --home=%f,%f,%u,%u' % (
+        FRAME, AVCHOME.lat, AVCHOME.lng, AVCHOME.alt, AVCHOME.heading)
+    if viewerip:
+        sim_cmd += ' --fgout=%s:5503' % viewerip
+
+    sil = util.start_SIL('ArduCopter', wipe=True)
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
+    mavproxy.expect('Received [0-9]+ parameters')
+
+    # setup test parameters
+    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
+    mavproxy.send("param load %s/CopterAVC.parm\n" % testdir)
+    mavproxy.expect('Loaded [0-9]+ parameters')
+
+    # reboot with new parameters
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
+
+    sil = util.start_SIL('ArduCopter', height=HOME.alt)
+    sim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
+    sim.delaybeforesend = 0
+    util.pexpect_autoclose(sim)
+    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
+    if viewerip:
+        options += ' --out=%s:14550' % viewerip
+    if map:
+        options += ' --map'
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
+    mavproxy.expect('Logging to (\S+)')
+    logfile = mavproxy.match.group(1)
+    print("LOGFILE %s" % logfile)
+
+    buildlog = util.reltopdir("../buildlogs/CopterAVC-test.tlog")
+    print("buildlog=%s" % buildlog)
+    if os.path.exists(buildlog):
+        os.unlink(buildlog)
+    os.link(logfile, buildlog)
+
+    # the received parameters can come before or after the ready to fly message
+    mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+    mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+
+    util.expect_setup_callback(mavproxy, expect_callback)
+
+    expect_list_clear()
+    expect_list_extend([sim, sil, mavproxy])
+
+    # get a mavlink connection going
+    try:
+        mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+    except Exception, msg:
+        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        raise
+    mav.message_hooks.append(message_hook)
+    mav.idle_hooks.append(idle_hook)
+
+
+    failed = False
+    e = 'None'
+    try:
+        mav.wait_heartbeat()
+        setup_rc(mavproxy)
+        homeloc = mav.location()
+
+        print("# Calibrate level")
+        if not calibrate_level(mavproxy, mav):
+            print("calibrate_level failed")
+            failed = True
+
+        # Arm
+        print("# Arm motors")
+        if not arm_motors(mavproxy, mav):
+            print("arm_motors failed")
+            failed = True
+
+        # Fly mission #1
+        print("# Upload AVC mission")
+        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "AVC2013.txt")):
+            print("upload_mission_from_file failed")
+            failed = True
+
+        # this grabs our mission count
+        print("# store mission1 locally")
+        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "AVC2013.txt")):
+            print("load_mission_from_file failed")
+            failed = True
+
+        print("# raising throttle")
+        mavproxy.send('rc 3 1300\n')
+
+        print("# Fly mission 1")
+        if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
+            print("fly_mission failed")
+            failed = True
+        else:
+            print("Flew mission 1 OK")
+
+        print("# lowering throttle")
+        mavproxy.send('rc 3 1000\n')
+
+        #mission includes LAND at end so should be ok to disamr
+        print("# disarm motors")
+        if not disarm_motors(mavproxy, mav):
+            print("disarm_motors failed")
+            failed = True
+
+    except pexpect.TIMEOUT, e:
+        failed = True
+
+    mav.close()
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
+    util.pexpect_close(sim)
 
     if failed:
         print("FAILED: %s" % e)
