@@ -1573,7 +1573,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         waypoint_receiving   = true;
         waypoint_sending         = false;
         waypoint_request_i   = 0;
-        waypoint_request_last= g.command_total;
+        // note that ArduCopter sets waypoint_request_last to
+        // command_total-1, whereas plane and rover use
+        // command_total. This is because the copter code assumes
+        // command_total includes home
+        waypoint_request_last= g.command_total - 1;
         waypoint_timelast_request = 0;
         break;
     }
