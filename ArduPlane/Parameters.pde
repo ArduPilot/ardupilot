@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
  *  ArduPlane parameter definitions
@@ -16,7 +16,19 @@
 const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
+
+    // @Param: SYSID_THISMAV
+    // @DisplayName: MAVLink system ID
+    // @Description: The identifier of this device in the MAVLink protocol
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+
+    // @Param: SYSID_MYGCS
+    // @DisplayName: Ground station MAVLink system ID
+    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
     // @Param: SERIAL0_BAUD
@@ -170,7 +182,18 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(alt_offset, "ALT_OFFSET",                 0),
 
+    // @Param: CMD_TOTAL
+    // @DisplayName: Number of loaded mission items
+    // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(command_total,          "CMD_TOTAL",      0),
+
+    // @Param: CMD_INDEX
+    // @DisplayName: Current mission command index
+    // @Description: The index of the currently running mission item. Do not change this manually.
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(command_index,          "CMD_INDEX",      0),
 
     // @Param: WP_RADIUS
@@ -576,11 +599,39 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",     1),
 
+    // @Param: FLAP_1_PERCNT
+    // @DisplayName: Flap 1 percentage
+    // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
+    // @Range: 0 100
+    // @Units: Percent
+    // @User: Advanced
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
-    GSCALAR(flap_1_speed,           "FLAP_1_SPEED",   FLAP_1_SPEED),
-    GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
-    GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
+    // @Param: FLAP_1_SPEED
+    // @DisplayName: Flap 1 speed
+    // @Description: The speed in meters per second at which to engage FLAP_1_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
+    // @Range: 0 100
+	// @Increment: 1
+    // @Units: m/s
+    // @User: Advanced
+    GSCALAR(flap_1_speed,           "FLAP_1_SPEED",   FLAP_1_SPEED),
+
+    // @Param: FLAP_2_PERCNT
+    // @DisplayName: Flap 2 percentage
+    // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
+    // @Range: 0 100
+	// @Units: Percent
+    // @User: Advanced
+    GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
+
+    // @Param: FLAP_2_SPEED
+    // @DisplayName: Flap 2 speed
+    // @Description: The speed in meters per second at which to engage FLAP_2_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
+    // @Range: 0 100
+	// @Units: m/s
+	// @Increment: 1
+    // @User: Advanced
+    GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
     // @Param: BATT_MONITOR
     // @DisplayName: Battery monitoring
