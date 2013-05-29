@@ -52,3 +52,6 @@ Make.dep
 
 .DS_Store
 .vagrant
+*.tlog.raw
+*.d
+*.px4
