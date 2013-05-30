@@ -190,7 +190,7 @@ public:
         //
         // 200: Feed-forward gains
         //
-        k_param_kff_pitch_compensation = 200,
+        k_param_kff_pitch_compensation = 200, // unused
         k_param_kff_rudder_mix,
         k_param_kff_pitch_to_throttle,
         k_param_kff_throttle_to_pitch,
@@ -232,8 +232,8 @@ public:
         //
         // 240: PID Controllers
         k_param_pidNavRoll = 240, // unused
-        k_param_pidServoRoll,
-        k_param_pidServoPitch,
+        k_param_pidServoRoll, // unused
+        k_param_pidServoPitch, // unused
         k_param_pidNavPitchAirspeed,
         k_param_pidServoRudder,
         k_param_pidTeThrottle,
@@ -256,7 +256,6 @@ public:
 
     // Feed-forward gains
     //
-    AP_Float kff_pitch_compensation;
     AP_Float kff_rudder_mix;
     AP_Float kff_pitch_to_throttle;
     AP_Float kff_throttle_to_pitch;
@@ -266,9 +265,6 @@ public:
 
     // navigation controller type. See AP_Navigation::ControllerType
     AP_Int8  nav_controller;
-
-    // attitude controller type.
-    AP_Int8  att_controller;
 
     // Estimation
     //
@@ -397,16 +393,13 @@ public:
     RC_Channel_aux rc_12;
 #endif
 
-    // PID controllers
+    // Attitude to servo controllers
     //
-    PID         pidServoRoll;
-    PID         pidServoPitch;
-    PID         pidServoRudder;
-
     AP_RollController  rollController;
     AP_PitchController pitchController;
     AP_YawController   yawController;
 
+    // PID controllers
     PID         pidNavPitchAirspeed;
     PID         pidTeThrottle;
     PID         pidNavPitchAltitude;
@@ -433,11 +426,6 @@ public:
 #endif
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-
-        pidServoRoll        (SERVO_ROLL_P,    SERVO_ROLL_I,    SERVO_ROLL_D,    SERVO_ROLL_INT_MAX_CENTIDEGREE),
-        pidServoPitch       (SERVO_PITCH_P,   SERVO_PITCH_I,   SERVO_PITCH_D,   SERVO_PITCH_INT_MAX_CENTIDEGREE),
-        pidServoRudder      (SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
-
         pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
         pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
         pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),

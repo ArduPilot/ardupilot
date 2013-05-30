@@ -1050,8 +1050,6 @@ static void update_current_flight_mode(void)
                 // don't use a pitch/roll integrators during takeoff if we are
                 // below minimum speed
                 if (aspeed < g.flybywire_airspeed_min) {
-                    g.pidServoPitch.reset_I();
-                    g.pidServoRoll.reset_I();
                     g.pitchController.reset_I();
                     g.rollController.reset_I();
                 }

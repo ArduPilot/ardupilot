@@ -54,14 +54,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
-    // @Param: KFF_PTCHCOMP
-    // @DisplayName: Pitch Compensation
-    // @Description: Adds pitch input to compensate for the loss of lift due to roll control. 0 = 0 %, 1 = 100%
-    // @Range: 0 1
-    // @Increment: 0.01
-    // @User: Advanced
-    GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP",   PITCH_COMP),
-
     // @Param: KFF_RDDRMIX
     // @DisplayName: Rudder Mix
     // @Description: The amount of rudder mix to apply during aileron movement 0 = 0 %, 1 = 100%
@@ -149,13 +141,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Values: 0:Legacy,1:L1Controller
 	// @User: Standard
 	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
-
-	// @Param: ATT_CONTROLLER
-	// @DisplayName: Attitude controller selection
-	// @Description: Which attitude (roll, pitch, yaw) controller to enable
-	// @Values: 0:PID,1:APMControl
-	// @User: Standard
-	GSCALAR(att_controller,          "ATT_CONTROLLER",   ATT_CONTROL_PID),
 
     // @Param: ALT_MIX
     // @DisplayName: GPS to Baro Mix
@@ -772,21 +757,17 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
 
-	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
-	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
-	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
-
-    // @Group: CTL_RLL_
+    // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
-	GGROUP(rollController,          "CTL_RLL_",   AP_RollController),
+	GGROUP(rollController,          "RLL2SRV_",   AP_RollController),
 
-    // @Group: CTL_PTCH_
+    // @Group: PTCH2SRV_
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
-	GGROUP(pitchController,         "CTL_PTCH_",  AP_PitchController),
+	GGROUP(pitchController,         "PTCH2SRV_",  AP_PitchController),
 
-    // @Group: CTL_YAW_
+    // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-	GGROUP(yawController,           "CTL_YAW_",   AP_YawController),
+	GGROUP(yawController,           "YAW2SRV_",   AP_YawController),
 
 	// variables not in the g class which contain EEPROM saved variables
 
@@ -851,9 +832,13 @@ const AP_Param::Info var_info[] PROGMEM = {
   old object. This should be zero for top level parameters.
  */
 const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
-    { Parameters::k_param_pidServoRoll, 0, AP_PARAM_FLOAT, "CTL_RLL_K_P" },
-    { Parameters::k_param_pidServoRoll, 1, AP_PARAM_FLOAT, "CTL_RLL_K_I" },
-    { Parameters::k_param_pidServoRoll, 2, AP_PARAM_FLOAT, "CTL_RLL_K_D" },
+    { Parameters::k_param_pidServoRoll, 0, AP_PARAM_FLOAT, "RLL2SRV_P" },
+    { Parameters::k_param_pidServoRoll, 1, AP_PARAM_FLOAT, "RLL2SRV_I" },
+    { Parameters::k_param_pidServoRoll, 2, AP_PARAM_FLOAT, "RLL2SRV_D" },
+
+    { Parameters::k_param_pidServoPitch, 0, AP_PARAM_FLOAT, "PTCH2SRV_P" },
+    { Parameters::k_param_pidServoPitch, 1, AP_PARAM_FLOAT, "PTCH2SRV_I" },
+    { Parameters::k_param_pidServoPitch, 2, AP_PARAM_FLOAT, "PTCH2SRV_D" },
 };
 
 static void load_parameters(void)
