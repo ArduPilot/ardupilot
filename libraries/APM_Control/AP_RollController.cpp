@@ -22,7 +22,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Increment: 0.1
 	// @User: Advanced
-	AP_GROUPINFO("T_CONST",      0, AP_RollController, _tau,       0.7),
+	AP_GROUPINFO("TCONST",      0, AP_RollController, _tau,       0.5f),
 
 	// @Param: K_P
 	// @DisplayName: Proportional Gain
@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0.1 1.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("K_P",        1, AP_RollController, _K_P,          0.4),
+	AP_GROUPINFO("P",        1, AP_RollController, _K_P,        0.4f),
 
 	// @Param: K_D
 	// @DisplayName: Damping Gain
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("K_D",        2, AP_RollController, _K_D,        0.0),
+	AP_GROUPINFO("D",        2, AP_RollController, _K_D,        0.0f),
 
 	// @Param: K_I
 	// @DisplayName: Integrator Gain
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 1.0
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("K_I",        3, AP_RollController, _K_I,        0.0),
+	AP_GROUPINFO("I",        3, AP_RollController, _K_I,        0.0f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate
@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX",   4, AP_RollController, _max_rate,           0),
+	AP_GROUPINFO("RMAX",   4, AP_RollController, _max_rate,       0),
 
 	AP_GROUPEND
 };

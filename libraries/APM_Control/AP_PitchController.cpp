@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Increment: 0.1
 	// @User: Advanced
-	AP_GROUPINFO("T_CONST",      0, AP_PitchController, _tau,       0.7),
+	AP_GROUPINFO("TCONST",      0, AP_PitchController, _tau,       0.5f),
 
 	// @Param: K_P
 	// @DisplayName: Proportional Gain
@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0.1 1.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("K_P",        1, AP_PitchController, _K_P,          0.4),
+	AP_GROUPINFO("P",        1, AP_PitchController, _K_P,          0.4f),
 
 	// @Param: K_D
 	// @DisplayName: Damping Gain
@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("K_D",        2, AP_PitchController, _K_D,        0.0),
+	AP_GROUPINFO("D",        2, AP_PitchController, _K_D,        0.0f),
 
 	// @Param: K_I
 	// @DisplayName: Integrator Gain
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("K_I",        3, AP_PitchController, _K_I,        0.0),
+	AP_GROUPINFO("I",        3, AP_PitchController, _K_I,        0.0f),
 
 	// @Param: RMAX_U
 	// @DisplayName: Pitch up max rate
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX_U",     4, AP_PitchController, _max_rate_pos,   0.0),
+	AP_GROUPINFO("RMAX_U",     4, AP_PitchController, _max_rate_pos,   0.0f),
 
 	// @Param: RMAX_D
 	// @DisplayName: Pitch down max rate
@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX_D",     5, AP_PitchController, _max_rate_neg,   0.0),
+	AP_GROUPINFO("RMAX_D",     5, AP_PitchController, _max_rate_neg,   0.0f),
 
 	// @Param: K_RLL
 	// @DisplayName: Roll compensation
@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0.7 1.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("K_RLL",      6, AP_PitchController, _roll_ff,        1.0),
+	AP_GROUPINFO("K_RLL",      6, AP_PitchController, _roll_ff,        1.0f),
 
 	AP_GROUPEND
 };
