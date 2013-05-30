@@ -637,7 +637,10 @@ static bool verify_RTL()
                 rtl_loiter_start_time = millis();
 
                 // give pilot back control of yaw
-                set_yaw_mode(YAW_HOLD);
+                if(get_wp_yaw_mode(true) != YAW_HOLD)
+                    set_yaw_mode(YAW_RESETTOARMEDYAW);
+                else
+                    set_yaw_mode(YAW_HOLD);
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_LOITERING_AT_HOME;
