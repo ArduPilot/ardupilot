@@ -220,9 +220,11 @@ protected:
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
-    float       _vert_track_scale;      // vertical scaling to give altitude equal weighting to horizontal position
+    float       _track_vert_scale;      // vertical scaling applied to track's z axis to simplify leash length calculations (we expand the track's z axis so the leash lengths become the same horizontally and vertically)
     float       _wp_leash_xy;           // horizontal leash length in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
+    float       _vert_speed_scale;      // scale of horizontal to vertical speed (simply horizontal speed / vertical speed)
+    float       _track_speed_scaler;    // scales a horizontal speed (i.e. _limited_speed_xy_cms) so that it can be used to move the intermediate point along the track which has had it's z axis inflated by the difference in the xy and z leash lengths
 
 public:
     // for logging purposes
