@@ -116,7 +116,7 @@ mkdir -p "buildlogs/history/$hdate"
 (cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png "history/$hdate/")
 echo $githash > "buildlogs/history/$hdate/githash.txt"
 
-APM/Tools/scripts/build_parameters.sh
+(cd APM && Tools/scripts/build_parameters.sh)
 
 timelimit 4700 APM/Tools/autotest/autotest.py --timeout=4500 > buildlogs/autotest-output.txt 2>&1
 
