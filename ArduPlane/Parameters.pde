@@ -837,6 +837,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     AP_VAREND
 };
 
+/*
+  This is a conversion table from old parameter values to new
+  parameter names. The startup code looks for saved values of the old
+  parameters and will copy them across to the new parameters if the
+  new parameter does not yet have a saved value. It then saves the new
+  value.
+
+  Note that this works even if the old parameter has been removed. It
+  relies on the old k_param index not being removed
+
+  The second column below is the index in the var_info[] table for the
+  old object. This should be zero for top level parameters.
+ */
+const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
+    { Parameters::k_param_pidServoRoll, 0, AP_PARAM_FLOAT, "CTL_RLL_K_P" },
+    { Parameters::k_param_pidServoRoll, 1, AP_PARAM_FLOAT, "CTL_RLL_K_I" },
+    { Parameters::k_param_pidServoRoll, 2, AP_PARAM_FLOAT, "CTL_RLL_K_D" },
+};
 
 static void load_parameters(void)
 {
@@ -854,7 +872,7 @@ static void load_parameters(void)
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-
+        AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }
