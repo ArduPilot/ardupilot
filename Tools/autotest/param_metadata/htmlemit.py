@@ -19,6 +19,8 @@ DO NOT EDIT
 
 <!-- add auto-generated table of contents with "Table of Contents Plus" plugin -->
 
+<p style="text-align: right"><a title="Table of Contents" href="/wiki/table-of-contents/"><span style="font-size: medium"><strong>Reference Manual Table of Contents</strong></span></a></p>
+
 <p>This is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your APM to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.</p>
 
 [toc]\n
