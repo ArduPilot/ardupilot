@@ -16,7 +16,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 
-	// @Param: T_CONST
+	// @Param: TCONST
 	// @DisplayName: Pitch Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved pitch angle. A value of 0.7 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
 	// @Range: 0.4 1.0
@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_PitchController, _tau,       0.5f),
 
-	// @Param: K_P
+	// @Param: P
 	// @DisplayName: Proportional Gain
 	// @Description: This is the gain from pitch angle to elevator. This gain works the same way as PTCH2SRV_P in the old PID controller and can be set to the same value.
 	// @Range: 0.1 1.0
@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("P",        1, AP_PitchController, _K_P,          0.4f),
 
-	// @Param: K_D
+	// @Param: D
 	// @DisplayName: Damping Gain
 	// @Description: This is the gain from pitch rate to elevator. This adjusts the damping of the pitch control loop. It has the same effect as PTCH2SRV_D in the old PID controller and can be set to the same value, but without the spikes in servo demands. This gain helps to reduce pitching in turbulence. Some airframes such as flying wings that have poor pitch damping can benefit from increasing this gain term. This should be increased in 0.01 increments as too high a value can lead to a high frequency pitch oscillation that could overstress the airframe.
 	// @Range: 0 0.1
@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("D",        2, AP_PitchController, _K_D,        0.0f),
 
-	// @Param: K_I
+	// @Param: I
 	// @DisplayName: Integrator Gain
 	// @Description: This is the gain applied to the integral of pitch angle. It has the same effect as PTCH2SRV_I in the old PID controller and can be set to the same value. Increasing this gain causes the controller to trim out constant offsets between demanded and measured pitch angle.
 	// @Range: 0 0.5
@@ -49,31 +49,31 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("I",        3, AP_PitchController, _K_I,        0.0f),
 
-	// @Param: RMAX_U
+	// @Param: RMAX_UP
 	// @DisplayName: Pitch up max rate
 	// @Description: This sets the maximum nose up pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX_U",     4, AP_PitchController, _max_rate_pos,   0.0f),
+	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, _max_rate_pos,   0.0f),
 
-	// @Param: RMAX_D
+	// @Param: RMAX_DN
 	// @DisplayName: Pitch down max rate
 	// @Description: This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
 	// @Units: degrees/second
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("RMAX_D",     5, AP_PitchController, _max_rate_neg,   0.0f),
+	AP_GROUPINFO("RMAX_DN",     5, AP_PitchController, _max_rate_neg,   0.0f),
 
-	// @Param: K_RLL
+	// @Param: RLL
 	// @DisplayName: Roll compensation
 	// @Description: This is the gain term that is applied to the pitch rate offset calculated as required to keep the nose level during turns. The default value is 1 which will work for all models. Advanced users can use it to correct for height variation in turns. If height is lost initially in turns this can be increased in small increments of 0.05 to compensate. If height is gained initially in turns then it can be decreased.
 	// @Range: 0.7 1.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("K_RLL",      6, AP_PitchController, _roll_ff,        1.0f),
+	AP_GROUPINFO("RLL",      6, AP_PitchController, _roll_ff,        1.0f),
 
 	AP_GROUPEND
 };

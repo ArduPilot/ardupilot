@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_RollController, _tau,       0.5f),
 
-	// @Param: K_P
+	// @Param: P
 	// @DisplayName: Proportional Gain
 	// @Description: This is the gain from bank angle to aileron. This gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.
 	// @Range: 0.1 1.0
@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("P",        1, AP_RollController, _K_P,        0.4f),
 
-	// @Param: K_D
+	// @Param: D
 	// @DisplayName: Damping Gain
 	// @Description: This is the gain from roll rate to aileron. This adjusts the damping of the roll control loop. It has the same effect as RLL2SRV_D in the old PID controller but without the spikes in servo demands. This gain helps to reduce rolling in turbulence. It should be increased in 0.01 increments as too high a value can lead to a high frequency pitch oscillation that could overstress the airframe.
 	// @Range: 0 0.1
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("D",        2, AP_RollController, _K_D,        0.0f),
 
-	// @Param: K_I
+	// @Param: I
 	// @DisplayName: Integrator Gain
 	// @Description: This is the gain from the integral of bank angle to aileron. It has the same effect as RLL2SRV_I in the old PID controller. Increasing this gain causes the controller to trim out steady offsets due to an out of trim aircraft.
 	// @Range: 0 1.0
