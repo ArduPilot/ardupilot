@@ -1038,19 +1038,6 @@ static void report_batt_monitor()
     print_blanks(2);
 }
 
-static void report_wp(uint8_t index = 255)
-{
-    if(index == 255) {
-        for(uint8_t i = 0; i < g.command_total; i++) {
-            struct Location temp = get_cmd_with_index(i);
-            print_wp(&temp, i);
-        }
-    }else{
-        struct Location temp = get_cmd_with_index(index);
-        print_wp(&temp, index);
-    }
-}
-
 static void report_sonar()
 {
     cliSerial->printf_P(PSTR("Sonar\n"));
