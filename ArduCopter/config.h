@@ -954,7 +954,7 @@
 #endif
 // the acceleration used to define the distance-velocity curve
 #ifndef ALT_HOLD_ACCEL_MAX
- # define ALT_HOLD_ACCEL_MAX 250
+ # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
 #endif
 
 // Throttle Accel control

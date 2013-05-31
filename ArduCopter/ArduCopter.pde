@@ -1271,6 +1271,9 @@ static void super_slow_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
+    // pass latest alt hold kP value to navigation controller
+    wp_nav.set_althold_kP(g.pi_alt_hold.kP());
+
     // log battery info to the dataflash
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
