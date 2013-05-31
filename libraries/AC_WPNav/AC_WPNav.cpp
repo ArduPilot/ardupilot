@@ -71,6 +71,7 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM
     _cos_yaw(1.0),
     _sin_yaw(0.0),
     _cos_pitch(1.0),
+    _althold_kP(WPNAV_ALT_HOLD_P),
     _desired_roll(0),
     _desired_pitch(0),
     _target(0,0,0),
@@ -81,8 +82,10 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM
     _lean_angle_max(MAX_LEAN_ANGLE),
     _loiter_leash(WPNAV_MIN_LEASH_LENGTH),
     _wp_leash_xy(WPNAV_MIN_LEASH_LENGTH),
-    _vert_speed_scale(1.0),
-    _track_speed_scaler(1.0),
+    _wp_leash_z(WPNAV_MIN_LEASH_LENGTH),
+    _track_accel(0),
+    _track_speed(0),
+    _track_leash_length(0),
     dist_error(0,0),
     desired_vel(0,0),
     desired_accel(0,0)
@@ -309,11 +312,8 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 
     // calculate leash lengths
     bool climb = pos_delta.z >= 0;  // climbing vs descending leads to different leash lengths because speed_up_cms and speed_down_cms can be different
-    calculate_wp_leash_length(climb);  // update leash lengths and _track_vert_scale
 
-    // scale up z-axis position delta (i.e. distance) to make later leash length calculations simpler
-    pos_delta.z = pos_delta.z * _track_vert_scale;
-    _track_length = pos_delta.length();
+    _track_length = pos_delta.length(); // get track length
 
     // calculate each axis' percentage of the total distance to the destination
     if (_track_length == 0.0f) {
@@ -324,6 +324,7 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     }else{
         _pos_delta_unit = pos_delta/_track_length;
     }
+    calculate_wp_leash_length(climb);  // update leash lengths
 
     // initialise intermediate point to the origin
     _track_desired = 0;
@@ -333,11 +334,8 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
     // initialise the limited speed to current speed along the track
     Vector3f curr_vel = _inav->get_velocity();
     // get speed along track (note: we convert vertical speed into horizontal speed equivalent)
-    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z*_vert_speed_scale * _pos_delta_unit.z;
+    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
     _limited_speed_xy_cms = constrain_float(speed_along_track,0,_wp_speed_cms);
-
-    // _track_speed_scaler - scales a horizontal speed (i.e. _limited_speed_xy_cms) so that it can be used to move the intermediate point along the track which has had it's z axis inflated by the difference in the xy and z leash lengths
-    _track_speed_scaler = safe_sqrt(_pos_delta_unit.x*_pos_delta_unit.x+_pos_delta_unit.y*_pos_delta_unit.y) + _vert_speed_scale*fabsf(_pos_delta_unit.z);
 
     // default waypoint back to slow
     _flags.fast_waypoint = false;
@@ -355,7 +353,7 @@ void AC_WPNav::set_origin_and_destination(const Vector3f& origin, const Vector3f
 void AC_WPNav::advance_target_along_track(float dt)
 {
     float track_covered;
-    float track_error;
+    Vector3f track_error;
     float track_desired_max;
     float track_desired_temp = _track_desired;
     float track_extra_max;
@@ -364,19 +362,38 @@ void AC_WPNav::advance_target_along_track(float dt)
     // get current location
     Vector3f curr_pos = _inav->get_position();
     Vector3f curr_delta = curr_pos - _origin;
-    curr_delta.z = curr_delta.z * _track_vert_scale;
     curr_delta_length = curr_delta.length();
+
+    // calculate how far along the track we are
+    track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
+
+    Vector3f track_covered_pos = _pos_delta_unit * track_covered;
+    track_error = curr_delta - track_covered_pos;
+
+    // calculate the horizontal error
+    float track_error_xy = safe_sqrt(track_error.x*track_error.x + track_error.y*track_error.y);
+
+    // calculate the vertical error
+    float track_error_z = fabsf(track_error.z);
+
+    // calculate how far along the track we could move the intermediate target before reaching the end of the leash
+    track_extra_max = min(_track_leash_length*(_wp_leash_z-track_error_z)/_wp_leash_z, _track_leash_length*(_wp_leash_xy-track_error_xy)/_wp_leash_xy);
+    if(track_extra_max <0) {
+        track_desired_max = track_covered;
+    }else{
+        track_desired_max = track_covered + track_extra_max;
+    }
 
     // get current velocity
     Vector3f curr_vel = _inav->get_velocity();
-    // get speed along track (note: we convert vertical speed into horizontal speed equivalent)
-    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z*_vert_speed_scale * _pos_delta_unit.z;
+    // get speed along track
+    float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
 
     // calculate point at which velocity switches from linear to sqrt
     float linear_velocity = _wp_speed_cms;
     float kP = _pid_pos_lat->kP();
     if (kP >= 0.0f) {   // avoid divide by zero
-        linear_velocity = WPNAV_ACCELERATION/kP;
+        linear_velocity = _track_accel/kP;
     }
 
     // let the limited_speed_xy_cms be some range above or below current velocity along track
@@ -385,42 +402,32 @@ void AC_WPNav::advance_target_along_track(float dt)
         _limited_speed_xy_cms = 0;
     }else{
         // increase intermediate target point's velocity if not yet at target speed (we will limit it below)
-        if(dt > 0 && _limited_speed_xy_cms < _wp_speed_cms) {
-            _limited_speed_xy_cms += 2.0f * WPNAV_ACCELERATION * dt;
+        if(dt > 0) {
+            if(track_desired_max > _track_desired) {
+                _limited_speed_xy_cms += 2.0 * _track_accel * dt;
+            }else{
+                // do nothing, velocity stays constant
+                _track_desired = track_desired_max;
+            }
         }
         // do not go over top speed
-        if(_limited_speed_xy_cms > _wp_speed_cms) {
-            _limited_speed_xy_cms = _wp_speed_cms;
+        if(_limited_speed_xy_cms > _track_speed) {
+            _limited_speed_xy_cms = _track_speed;
         }
         // if our current velocity is within the linear velocity range limit the intermediate point's velocity to be no more than the linear_velocity above or below our current velocity
         if (fabsf(speed_along_track) < linear_velocity) {
             _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms,speed_along_track-linear_velocity,speed_along_track+linear_velocity);
         }
     }
-
-    // calculate how far along the track we are
-    track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
-    track_error = safe_sqrt(curr_delta_length*curr_delta_length - track_covered*track_covered);
-
-    // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-    track_extra_max = safe_sqrt(_wp_leash_xy*_wp_leash_xy - track_error*track_error);
-    track_desired_max = track_covered + track_extra_max;
-
     // advance the current target
-    track_desired_temp += _limited_speed_xy_cms * _track_speed_scaler * dt;
+    track_desired_temp += _limited_speed_xy_cms * dt;
 
-    // constrain the target from moving too far
-    if( track_desired_temp > track_desired_max ) {
-        track_desired_temp = track_desired_max;
-    }
     // do not let desired point go past the end of the segment
     track_desired_temp = constrain_float(track_desired_temp, 0, _track_length);
     _track_desired = max(_track_desired, track_desired_temp);
 
     // recalculate the desired position
-    _target.x = _origin.x + _pos_delta_unit.x * _track_desired;
-    _target.y = _origin.y + _pos_delta_unit.y * _track_desired;
-    _target.z = _origin.z + (_pos_delta_unit.z * _track_desired)/_track_vert_scale;
+    _target = _origin + _pos_delta_unit * _track_desired;
 
     // check if we've reached the waypoint
     if( !_flags.reached_destination ) {
@@ -431,7 +438,6 @@ void AC_WPNav::advance_target_along_track(float dt)
             }else{
                 // regular waypoints also require the copter to be within the waypoint radius
                 Vector3f dist_to_dest = curr_pos - _destination;
-                dist_to_dest.z *= _track_vert_scale;
                 if( dist_to_dest.length() <= _wp_radius_cm ) {
                     _flags.reached_destination = true;
                 }
@@ -622,7 +628,6 @@ void AC_WPNav::calculate_wp_leash_length(bool climb)
     // avoid divide by zero
     if (kP <= 0.0f) {
         _wp_leash_xy = WPNAV_MIN_LEASH_LENGTH;
-        _track_vert_scale = 1.0f;
         return;
     }
     // calculate horiztonal leash length
@@ -640,32 +645,45 @@ void AC_WPNav::calculate_wp_leash_length(bool climb)
     }
 
     // calculate vertical leash length
-    float speed_vert, leash_z;
+    float speed_vert;
     if( climb ) {
         speed_vert = _wp_speed_up_cms;
     }else{
         speed_vert = _wp_speed_down_cms;
     }
-    if(speed_vert <= WPNAV_ALT_HOLD_ACCEL_MAX / WPNAV_ALT_HOLD_P) {
+    if(speed_vert <= WPNAV_ALT_HOLD_ACCEL_MAX / _althold_kP) {
         // linear leash length based on speed close in
-        leash_z = speed_vert / WPNAV_ALT_HOLD_P;
+        _wp_leash_z = speed_vert / _althold_kP;
     }else{
         // leash length grows at sqrt of speed further out
-        leash_z = (WPNAV_ALT_HOLD_ACCEL_MAX / (2.0*WPNAV_ALT_HOLD_P*WPNAV_ALT_HOLD_P)) + (speed_vert*speed_vert / (2*WPNAV_ALT_HOLD_ACCEL_MAX));
+        _wp_leash_z = (WPNAV_ALT_HOLD_ACCEL_MAX / (2.0*_althold_kP*_althold_kP)) + (speed_vert*speed_vert / (2*WPNAV_ALT_HOLD_ACCEL_MAX));
     }
 
     // ensure leash is at least 1m long
-    if( leash_z < WPNAV_MIN_LEASH_LENGTH ) {
-        leash_z = WPNAV_MIN_LEASH_LENGTH;
+    if( _wp_leash_z < WPNAV_MIN_LEASH_LENGTH ) {
+        _wp_leash_z = WPNAV_MIN_LEASH_LENGTH;
     }
 
-    // calculate vertical track scale used to give altitude equal weighting to horizontal position
-    _track_vert_scale = _wp_leash_xy / leash_z;
+    // length of the unit direction vector in the horizontal
+    float pos_delta_unit_xy = sqrt(_pos_delta_unit.x*_pos_delta_unit.x+_pos_delta_unit.y*_pos_delta_unit.y);
+    float pos_delta_unit_z = fabsf(_pos_delta_unit.z);
 
-    // calculate vertical speed scale
-    if( speed_vert <= 0 ) {
-        _vert_speed_scale = 1.0;
-    }else{
-        _vert_speed_scale = _wp_speed_cms / speed_vert;
+    // calculate the maximum acceleration, maximum velocity, and leash length in the direction of travel
+    if(pos_delta_unit_z == 0 && pos_delta_unit_xy == 0){
+        _track_accel = 0;
+        _track_speed = 0;
+        _track_leash_length = WPNAV_MIN_LEASH_LENGTH;
+    }else if(_pos_delta_unit.z == 0){
+        _track_accel = WPNAV_ACCELERATION/pos_delta_unit_xy;
+        _track_speed = _wp_speed_cms/pos_delta_unit_xy;
+        _track_leash_length = _wp_leash_xy/pos_delta_unit_xy;
+    }else if(pos_delta_unit_xy == 0){
+        _track_accel = WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z;
+        _track_speed = speed_vert/pos_delta_unit_z;
+        _track_leash_length = _wp_leash_z/pos_delta_unit_z;
+    }else{	
+        _track_accel = min(WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z, WPNAV_ACCELERATION/pos_delta_unit_xy);
+        _track_speed = min(speed_vert/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
+        _track_leash_length = min(_wp_leash_z/pos_delta_unit_z, _wp_leash_xy/pos_delta_unit_xy);
     }
 }

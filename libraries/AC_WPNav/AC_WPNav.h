@@ -12,12 +12,12 @@
 
 // loiter maximum velocities and accelerations
 #define WPNAV_ACCELERATION              250.0f      // defines the velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
-#define WPNAV_ACCEL_MAX                 800.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
+#define WPNAV_ACCEL_MAX                 980.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than WPNAV_ACCELERATION.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 
 #define WPNAV_LOITER_SPEED              750.0f      // maximum default loiter speed in cm/s
-#define WPNAV_LOITER_ACCEL_MAX          350.0f      // maximum acceleration in loiter mode
+#define WPNAV_LOITER_ACCEL_MAX          375.0f      // maximum acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
 
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
@@ -28,8 +28,8 @@
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
 #define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
 
-#define WPNAV_ALT_HOLD_P                2.0f        // hard coded estimate of throttle controller's altitude hold's P gain.  To-Do: retrieve gain from throttle controller
-#define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded estimate of throttle controller's maximum acceleration in cm/s.  To-Do: retrieve from throttle controller
+#define WPNAV_ALT_HOLD_P                2.0f        // default throttle controller's altitude hold's P gain.
+#define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded copy of throttle controller's maximum acceleration in cm/s.  To-Do: remove duplication with throttle controller definition
 
 #define WPNAV_MIN_LEASH_LENGTH          100.0f      // minimum leash lengths in cm
 
@@ -129,6 +129,9 @@ public:
         _cos_pitch = cos_pitch;
     }
 
+    /// set_althold_kP - pass in alt hold controller's P gain
+    void set_althold_kP(float kP) { if(kP>0.0) _althold_kP = kP; }
+
     /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
     void set_horizontal_velocity(float velocity_cms) { _wp_speed_cms = velocity_cms; };
 
@@ -199,6 +202,7 @@ protected:
     float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
     float       _cos_pitch;
+    float       _althold_kP;            // alt hold's P gain
 
     // output from controller
     int32_t     _desired_roll;          // fed to stabilize controllers at 50hz
@@ -220,11 +224,12 @@ protected:
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _distance_to_target;    // distance to loiter target
-    float       _track_vert_scale;      // vertical scaling applied to track's z axis to simplify leash length calculations (we expand the track's z axis so the leash lengths become the same horizontally and vertically)
     float       _wp_leash_xy;           // horizontal leash length in cm
+    float       _wp_leash_z;            // horizontal leash length in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
-    float       _vert_speed_scale;      // scale of horizontal to vertical speed (simply horizontal speed / vertical speed)
-    float       _track_speed_scaler;    // scales a horizontal speed (i.e. _limited_speed_xy_cms) so that it can be used to move the intermediate point along the track which has had it's z axis inflated by the difference in the xy and z leash lengths
+    float       _track_accel;           // acceleration along track
+    float       _track_speed;           // speed in cm/s along track
+    float       _track_leash_length;    // leash length along track
 
 public:
     // for logging purposes
