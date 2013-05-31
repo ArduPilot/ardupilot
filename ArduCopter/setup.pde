@@ -660,7 +660,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
         // calculate and display interference compensation at full throttle as % of total mag field
         if (comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
             // interference is impact@fullthrottle / mag field * 100
-            interference_pct = motor_compensation.length() / 330.0f * 100.0f;
+            interference_pct = motor_compensation.length() / (float)COMPASS_MAGFIELD_EXPECTED * 100.0f;
         }else{
             // interference is impact/amp * (max current seen / max throttle seen) / mag field * 100
             interference_pct = motor_compensation.length() * (current_amps_max/throttle_pct_max) / 330.0f * 100.0f;

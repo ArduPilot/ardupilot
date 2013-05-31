@@ -421,6 +421,17 @@
  # define MAGNETOMETER                   ENABLED
 #endif
 
+// expected magnetic field strength
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ #ifndef COMPASS_MAGFIELD_EXPECTED
+  # define COMPASS_MAGFIELD_EXPECTED     330    // maximum mag field length for pre-arm checks
+ #endif
+#else // APM1, PX4, SITL
+ #ifndef COMPASS_MAGFIELD_EXPECTED
+  #define COMPASS_MAGFIELD_EXPECTED      530    // maximum mag field length for pre-arm checks
+ #endif
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #if defined( __AVR_ATmega2560__ )       // determines if optical flow code is included
