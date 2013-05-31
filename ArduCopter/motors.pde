@@ -264,6 +264,7 @@ static void pre_arm_checks(bool display_failure)
     }
 #endif
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
     // check board voltage
     if(board_voltage() < BOARD_VOLTAGE_MIN) {
         if (display_failure) {
@@ -271,6 +272,7 @@ static void pre_arm_checks(bool display_failure)
         }
         return;
     }
+#endif
 
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;
