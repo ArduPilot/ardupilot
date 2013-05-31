@@ -17,7 +17,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Param: T_CONST
 	// @DisplayName: Pitch Time Constant
-	// @Description: This controls the time constant in seconds from demanded to achieved bank angle. A value of 0.7 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
+	// @Description: This controls the time constant in seconds from demanded to achieved bank angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
 	// @Range: 0.4 1.0
 	// @Units: seconds
 	// @Increment: 0.1
@@ -82,8 +82,11 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0);
 	float ki_rate = _K_I * _tau;
 
-	if(_ahrs == NULL) return 0; // can't control without a reference
-	float delta_time    = (float)dt / 1000.0f;
+	if (_ahrs == NULL) {
+        // can't control without a reference
+        return 0;
+    }
+	float delta_time    = (float)dt * 0.001f;
 	
 	// Calculate bank angle error in centi-degrees
 	int32_t angle_err = angle - _ahrs->roll_sensor;
@@ -92,8 +95,11 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	float desired_rate = angle_err * 0.01f / _tau;
 	
 	// Limit the demanded roll rate
-	if (_max_rate && desired_rate < -_max_rate) desired_rate = -_max_rate;
-	else if (_max_rate && desired_rate > _max_rate) desired_rate = _max_rate;
+	if (_max_rate && desired_rate < -_max_rate) {
+        desired_rate = -_max_rate;
+    } else if (_max_rate && desired_rate > _max_rate) {
+        desired_rate = _max_rate;
+    }
 	
     // Get body rate vector (radians/sec)
 	float omega_x = _ahrs->get_gyro().x;
@@ -103,19 +109,23 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;
-	if (!_ahrs->airspeed_estimate(&aspeed)) aspeed = 0.0f;
+	if (!_ahrs->airspeed_estimate(&aspeed)) {
+        aspeed = 0.0f;
+    }
 
 	// Multiply roll rate error by _ki_rate and integrate
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!stabilize) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if ((ki_rate > 0) && (dt > 0) && (aspeed > float(aspd_min)))
-		{
+		if ((ki_rate > 0) && (dt > 0) && (aspeed > float(aspd_min))) {
 		    float integrator_delta = rate_error * ki_rate * scaler * delta_time;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
-			if (_last_out < -45) integrator_delta = max(integrator_delta , 0);
-			// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-			else if (_last_out > 45) integrator_delta = min(integrator_delta , 0);
+			if (_last_out < -45) {
+                integrator_delta = max(integrator_delta , 0);
+            } else if (_last_out > 45) {
+                // prevent the integrator from decreasing if surface defln demand  is below the lower limit
+                 integrator_delta = min(integrator_delta, 0);
+            }
 			_integrator += integrator_delta;
 		}
 	} else {

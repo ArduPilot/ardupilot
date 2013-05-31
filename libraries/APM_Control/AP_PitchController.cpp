@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 
 	// @Param: TCONST
 	// @DisplayName: Pitch Time Constant
-	// @Description: This controls the time constant in seconds from demanded to achieved pitch angle. A value of 0.7 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
+	// @Description: This controls the time constant in seconds from demanded to achieved pitch angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
 	// @Range: 0.4 1.0
 	// @Units: seconds
 	// @Increment: 0.1
@@ -167,8 +167,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!stabilize) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if ((ki_rate > 0) && (dt > 0) && (aspeed > float(aspd_min)))
-		{
+		if ((ki_rate > 0) && (dt > 0) && (aspeed > float(aspd_min))) {
 		    float integrator_delta = rate_error * ki_rate * scaler * delta_time;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
