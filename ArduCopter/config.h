@@ -421,14 +421,14 @@
  # define MAGNETOMETER                   ENABLED
 #endif
 
-// expected magnetic field strength
+// expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  # define COMPASS_MAGFIELD_EXPECTED     330    // maximum mag field length for pre-arm checks
+  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 495 or < 165
  #endif
 #else // APM1, PX4, SITL
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  #define COMPASS_MAGFIELD_EXPECTED      530    // maximum mag field length for pre-arm checks
+  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 795 or < 265
  #endif
 #endif
 
