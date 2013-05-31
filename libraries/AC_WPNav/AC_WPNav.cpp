@@ -357,12 +357,10 @@ void AC_WPNav::advance_target_along_track(float dt)
     float track_desired_max;
     float track_desired_temp = _track_desired;
     float track_extra_max;
-    float curr_delta_length;
 
     // get current location
     Vector3f curr_pos = _inav->get_position();
     Vector3f curr_delta = curr_pos - _origin;
-    curr_delta_length = curr_delta.length();
 
     // calculate how far along the track we are
     track_covered = curr_delta.x * _pos_delta_unit.x + curr_delta.y * _pos_delta_unit.y + curr_delta.z * _pos_delta_unit.z;
