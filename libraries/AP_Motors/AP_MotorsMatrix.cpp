@@ -477,7 +477,7 @@ void AP_MotorsMatrix::output_test()
         for( j=0; j<AP_MOTORS_MAX_NUM_MOTORS; j++ ) {
             if( motor_enabled[j] && _test_order[j] == i ) {
                 // turn on this motor and wait 1/3rd of a second
-                hal.rcout->write(_motor_to_channel_map[j], _rc_throttle->radio_min + 100);
+                hal.rcout->write(_motor_to_channel_map[j], _rc_throttle->radio_min + _min_throttle);
                 hal.scheduler->delay(300);
                 hal.rcout->write(_motor_to_channel_map[j], _rc_throttle->radio_min);
                 hal.scheduler->delay(2000);
