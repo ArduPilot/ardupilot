@@ -228,7 +228,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     if viewerip:
         options += " --out=%s:14550" % viewerip
     if map:
-        options += ' --map --console'
+        options += ' --map'
 
     sil = util.start_SIL('ArduPlane', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
