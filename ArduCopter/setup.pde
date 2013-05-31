@@ -4,7 +4,6 @@
 
 // Functions called from the setup menu
 static int8_t   setup_radio             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_motors            (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_accel             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_accel_scale       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_frame             (uint8_t argc, const Menu::arg *argv);
@@ -35,7 +34,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"reset",                       setup_factory},
     {"radio",                       setup_radio},
     {"frame",                       setup_frame},
-    {"motors",                      setup_motors},
     {"level",                       setup_accel},
     {"accel",                       setup_accel_scale},
     {"modes",                       setup_flightmodes},
@@ -235,27 +233,6 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
     }
     report_radio();
     return(0);
-}
-
-static int8_t
-setup_motors(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->printf_P(PSTR(
-                        "Connect battery for this test.\n"
-                        "Motors will not spin in channel order (1,2,3,4) but by frame position order.\n"
-                        "Front (& right of centerline) motor first, then in clockwise order around frame.\n"
-                        "http://code.google.com/p/arducopter/wiki/AC2_Props_2 for demo video.\n"
-                        "Remember to disconnect battery after this test.\n"
-                        "Any key to exit.\n"));
-    while(1) {
-        delay(20);
-        read_radio();
-        motors.output_test();
-        if(cliSerial->available() > 0) {
-            g.esc_calibrate.set_and_save(0);
-            return(0);
-        }
-    }
 }
 
 static int8_t

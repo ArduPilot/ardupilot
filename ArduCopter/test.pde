@@ -38,6 +38,7 @@ static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
 #endif
+static int8_t   test_motors(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -81,6 +82,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     {"shell", 				test_shell},
 #endif
+    {"motors",              test_motors},
 };
 
 // A Macro to create the Menu
@@ -623,6 +625,38 @@ test_shell(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 #endif
+
+static int8_t
+test_motors(uint8_t argc, const Menu::arg *argv)
+{
+    cliSerial->printf_P(PSTR(
+                        "Connect battery for this test.\n"
+                        "Motors will not spin in channel order (1,2,3,4) but by frame position order.\n"
+                        "Front (& right of centerline) motor first, then in clockwise order around frame.\n"
+                        "http://code.google.com/p/arducopter/wiki/AC2_Props_2 for demo video.\n"
+                        "Remember to disconnect battery after this test.\n"
+                        "Any key to exit.\n"));
+
+    // ensure all values have been sent to motors
+    motors.set_update_rate(g.rc_speed);
+    motors.set_frame_orientation(g.frame_orientation);
+    motors.set_min_throttle(g.throttle_min);
+    motors.set_mid_throttle(g.throttle_mid);
+    motors.set_max_throttle(g.throttle_max);
+
+    // enable motors
+    init_rc_out();
+
+    while(1) {
+        delay(20);
+        read_radio();
+        motors.output_test();
+        if(cliSerial->available() > 0) {
+            g.esc_calibrate.set_and_save(0);
+            return(0);
+        }
+    }
+}
 
 static void print_hit_enter()
 {
