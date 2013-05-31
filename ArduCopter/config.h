@@ -386,6 +386,10 @@
  # define BOARD_VOLTAGE_MIN             4500        // min board voltage in milli volts for pre-arm checks
 #endif
 
+#ifndef BOARD_VOLTAGE_MAX
+ # define BOARD_VOLTAGE_MAX             5800        // max board voltage in milli volts for pre-arm checks
+#endif
+
 // Battery failsafe
 #ifndef FS_BATTERY
  # define FS_BATTERY              DISABLED

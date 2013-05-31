@@ -266,9 +266,9 @@ static void pre_arm_checks(bool display_failure)
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_PX4
     // check board voltage
-    if(board_voltage() < BOARD_VOLTAGE_MIN) {
+    if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Low Board Voltage"));
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
         }
         return;
     }
