@@ -14,7 +14,6 @@ static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_motors(uint8_t argc,               const Menu::arg *argv);
-static int8_t   test_nav(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_radio_pwm(uint8_t argc,            const Menu::arg *argv);
 static int8_t   test_radio(uint8_t argc,                const Menu::arg *argv);
@@ -27,7 +26,6 @@ static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 #endif
 //static int8_t	test_toy(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_tuning(uint8_t argc,               const Menu::arg *argv);
-static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -59,7 +57,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"ins",                 test_ins},
     {"logging",             test_logging},
     {"motors",              test_motors},
-    {"nav",                 test_nav},
     {"optflow",             test_optflow},
     {"pwm",                 test_radio_pwm},
     {"radio",               test_radio},
@@ -71,8 +68,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
     {"sonar",               test_sonar},
 #endif
 //	{"toy",			        test_toy},
-    {"tune",                test_tuning},
-    {"wp",                  test_wp},
+    {"tune",                test_tuning}
 };
 
 // A Macro to create the Menu
@@ -371,20 +367,6 @@ test_motors(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-test_nav(uint8_t argc, const Menu::arg *argv)
-{
-    current_loc.lat = 389539260;
-    current_loc.lng = -1199540200;
-
-    wp_nav.set_destination(pv_latlon_to_vector(389538528,-1199541248,0));
-
-    // got 23506;, should be 22800
-    update_navigation();
-    cliSerial->printf_P(PSTR("bear: %ld\n"), wp_bearing);
-    return 0;
-}
-
-static int8_t
 test_optflow(uint8_t argc, const Menu::arg *argv)
 {
 #if OPTFLOW == ENABLED
@@ -618,27 +600,6 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-}
-
-static int8_t
-test_wp(uint8_t argc, const Menu::arg *argv)
-{
-    delay(1000);
-
-    // save the alitude above home option
-    cliSerial->printf_P(PSTR("Hold alt "));
-    if(g.rtl_altitude < 0) {
-        cliSerial->printf_P(PSTR("\n"));
-    }else{
-        cliSerial->printf_P(PSTR("of %dm\n"), (int)g.rtl_altitude / 100);
-    }
-
-    cliSerial->printf_P(PSTR("%d wp\n"), (int)g.command_total);
-    cliSerial->printf_P(PSTR("Hit rad: %dm\n"), (int)wp_nav.get_waypoint_radius());
-
-    report_wp();
-
-    return (0);
 }
 
 static void print_hit_enter()
