@@ -426,7 +426,7 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
     return not failed
 
 #fly_circle - flies a circle with 20m radius
-def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=75, timeout=125):
+def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=72):
 
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
@@ -460,7 +460,7 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=75, timeout=125):
     tstart = time.time()
     tholdstart = time.time()
     print("Circle at %u meters for %u seconds" % (start_altitude, holdtime))
-    while time.time() < tstart + timeout:
+    while time.time() < tstart + holdtime:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         print("heading %u" % m.heading)
 
