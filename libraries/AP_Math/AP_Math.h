@@ -95,6 +95,11 @@ int32_t wrap_360_cd(int32_t error);
 int32_t wrap_180_cd(int32_t error);
 
 /*
+  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
+ */
+float wrap_PI(float angle_in_radians);
+
+/*
   print a int32_t lat/long in decimal degrees
  */
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);

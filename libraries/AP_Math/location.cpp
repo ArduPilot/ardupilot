@@ -161,6 +161,15 @@ int32_t wrap_180_cd(int32_t error)
     return error;
 }
 
+/*
+  wrap an angle defined in radians to -PI ~ PI (equivalent to +- 180 degrees)
+ */
+float wrap_PI(float angle_in_radians)
+{
+    while (angle_in_radians > PI) angle_in_radians -= 2.0f*PI;
+    while (angle_in_radians < -PI) angle_in_radians += 2.0f*PI;
+    return angle_in_radians;
+}
 
 /*
   print a int32_t lat/long in decimal degrees
