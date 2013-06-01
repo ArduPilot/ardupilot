@@ -106,10 +106,14 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 		if (aspeed > float(aspd_min))
 		{
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
-			if (_last_out < -45) _integrator += max(integ_in * delta_time , 0);
-			// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-			else if (_last_out > 45) _integrator += min(integ_in * delta_time , 0);
-			else _integrator += integ_in * delta_time;
+			if (_last_out < -45) {
+                _integrator += max(integ_in * delta_time , 0);
+            } else if (_last_out > 45) {
+                // prevent the integrator from decreasing if surface defln demand  is below the lower limit
+                _integrator += min(integ_in * delta_time , 0);
+			} else {
+                _integrator += integ_in * delta_time;
+            }
 		}
 	} else {
 		_integrator = 0;
