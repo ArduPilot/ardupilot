@@ -135,6 +135,9 @@ public:
     /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
     void set_horizontal_velocity(float velocity_cms) { _wp_speed_cms = velocity_cms; };
 
+    /// get_horizontal_velocity - allows main code to retrieve target horizontal velocity for wp navigation
+    float get_horizontal_velocity() { return _wp_speed_cms; };
+
     /// get_climb_velocity - returns target climb speed in cm/s during missions
     float get_climb_velocity() const { return _wp_speed_up_cms; };
 
