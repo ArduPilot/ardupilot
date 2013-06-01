@@ -375,6 +375,11 @@ static void set_mode(enum FlightMode mode)
 
     if (g.log_bitmask & MASK_LOG_MODE)
         Log_Write_Mode(control_mode);
+
+    // reset attitude integrators on mode change
+    g.rollController.reset_I();
+    g.pitchController.reset_I();
+    g.yawController.reset_I();    
 }
 
 static void check_long_failsafe()
