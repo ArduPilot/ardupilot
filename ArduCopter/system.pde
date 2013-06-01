@@ -329,20 +329,56 @@ static bool mode_requires_GPS(uint8_t mode) {
     return false;
 }
 
+// returns true or false whether mode requires very good GPS precision
+static bool mode_requires_precise_GPS(uint8_t mode) {
+    switch(mode) {
+        case AUTO:
+        case GUIDED:
+			return true;
+        default:
+            return false;
+    }   
+
+    return false;
+}
+
 // set_mode - change flight mode and perform any necessary initialisation
 static void set_mode(uint8_t mode)
 {
-    // Switch to stabilize mode if requested mode requires a GPS lock
+    //Switch to LAND mode if requested mode is RTL and we don't have a GPS 3D fix, or we are near home position
+	if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius() && mode == RTL) {
+			mode = RTL;
+			goto mode_management;
+    }else{
+            // We have no GPS or we are very close to home position so we will land
+			// We should add a LED control here to report the error
+			// We should add a log report of the error here
+			mode = LAND;
+			goto mode_management;
+    }
+	
+	// Keep previous mode if requested mode require precise GPS and we don't have that (HDOP > 3)
+    if(g_gps->hdop > 3 && g_gps->status() == GPS::GPS_OK_FIX_3D && mode_requires_precise_GPS(mode)) {
+            // We should add a LED control here to report the error
+			// We should add a log report of the error here
+			return;
+    }
+		
+	// Keep previous mode if requested mode requires a GPS lock and we don't have it
     if(g_gps->status() != GPS::GPS_OK_FIX_3D && mode_requires_GPS(mode)) {
-            mode = STABILIZE;
-    } else if(mode == RTL && !ap.home_is_set) {
-            mode = STABILIZE;
+            // We should add a LED control here to report the error
+			// We should add a log report of the error here
+			return;
     }
-
-    // Switch to stabilize if OF_LOITER requested but no optical flow sensor
+	
+    // Keep previous mode if OF_LOITER requested but no optical flow sensor
     if (mode == OF_LOITER && !g.optflow_enabled ) {
-        mode = STABILIZE;
+			// We should add a LED control here to report the error
+			// We should add a log report of the error here
+			return;
     }
+	
+mode_management:
 
     control_mode 	= mode;
     control_mode    = constrain_int16(control_mode, 0, NUM_MODES - 1);
