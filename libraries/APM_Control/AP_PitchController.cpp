@@ -113,6 +113,10 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	float bank_angle = _ahrs->roll;
 	bool inverted = false;
 
+    if (_tau < 0.1) {
+        _tau = 0.1;
+    }
+
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < radians(90))	{
 	    bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
@@ -165,9 +169,9 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	
 	// Multiply pitch rate error by _ki_rate and integrate
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!stabilize) {
+	if (!stabilize && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if ((ki_rate > 0) && (dt > 0) && (aspeed > float(aspd_min))) {
+		if (dt > 0 && aspeed > float(aspd_min)) {
 		    float integrator_delta = rate_error * ki_rate * scaler * delta_time;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit

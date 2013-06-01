@@ -91,6 +91,10 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	// Calculate bank angle error in centi-degrees
 	int32_t angle_err = angle - _ahrs->roll_sensor;
 
+    if (_tau < 0.1) {
+        _tau = 0.1;
+    }
+	
 	// Calculate the desired roll rate (deg/sec) from the angle error
 	float desired_rate = angle_err * 0.01f / _tau;
 	
@@ -115,9 +119,9 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 
 	// Multiply roll rate error by _ki_rate and integrate
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!stabilize) {
+	if (!stabilize && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if ((ki_rate > 0) && (dt > 0) && (aspeed > float(aspd_min))) {
+		if (dt > 0 && aspeed > float(aspd_min)) {
 		    float integrator_delta = rate_error * ki_rate * scaler * delta_time;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
