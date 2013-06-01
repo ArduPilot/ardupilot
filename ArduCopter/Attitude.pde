@@ -963,7 +963,8 @@ get_throttle_rate(float z_target_speed)
 {
     static uint32_t last_call_ms = 0;
     static float z_rate_error = 0;   // The velocity error in cm.
-    static float z_target_speed_last = 0;   // The requested speed from the previous iteration
+    static float z_target_speed_filt = 0;   // The filtered requested speed
+    float z_target_speed_delta;   // The change in requested speed
     int32_t p,i,d;      // used to capture pid values for logging
     int32_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
     uint32_t now = millis();
@@ -971,18 +972,18 @@ get_throttle_rate(float z_target_speed)
     // reset target altitude if this controller has just been engaged
     if( now - last_call_ms > 100 ) {
         // Reset Filter
-        z_rate_error    = 0;
+        z_rate_error = 0;
+        z_target_speed_filt = z_target_speed;
         output = 0;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
         z_rate_error    = z_rate_error + 0.20085f * ((z_target_speed - climb_rate) - z_rate_error);
-        // feed forward acceleration based on change in desired speed.
-        output = (z_target_speed - z_target_speed_last) * 50.0f;   // To-Do: replace 50 with dt
+        // feed forward acceleration based on change in the filtered desired speed.
+        z_target_speed_delta = 0.20085f * (z_target_speed - z_target_speed_filt);
+        z_target_speed_filt    = z_target_speed_filt + z_target_speed_delta;
+        output = z_target_speed_delta * 50.0f;   // To-Do: replace 50 with dt
     }
     last_call_ms = now;
-
-    // store target speed for next iteration
-    z_target_speed_last = z_target_speed;
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
