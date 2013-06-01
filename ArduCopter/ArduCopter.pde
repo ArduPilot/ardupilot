@@ -486,7 +486,7 @@ static float scaleLongDown = 1;
 ////////////////////////////////////////////////////////////////////////////////
 // This is the angle from the copter to the next waypoint in centi-degrees
 static int32_t wp_bearing;
-// The original bearing to the next waypoint.  used to check if we've passed the waypoint
+// The original bearing to the next waypoint.  used to point the nose of the copter at the next waypoint
 static int32_t original_wp_bearing;
 // The location of home in relation to the copter in centi-degrees
 static int32_t home_bearing;
@@ -580,6 +580,9 @@ static float circle_angle;
 static float circle_angle_total;
 // deg : how many times to circle as specified by mission command
 static uint8_t circle_desired_rotations;
+static float circle_angular_acceleration;       // circle mode's angular acceleration
+static float circle_angular_velocity;           // circle mode's angular velocity
+static float circle_angular_velocity_max;       // circle mode's max angular velocity
 // How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint16_t loiter_time_max;
 // How long have we been loitering - The start time in millis
