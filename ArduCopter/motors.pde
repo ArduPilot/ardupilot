@@ -253,8 +253,6 @@ static void pre_arm_checks(bool display_failure)
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
         }
         return;
-    }else{
-        cliSerial->printf_P(PSTR("\nMagField: %4.2f vs %4.2f ~ %4.2f"),mag_field, (float)COMPASS_MAGFIELD_EXPECTED*1.5, COMPASS_MAGFIELD_EXPECTED*0.5);
     }
 
     // barometer health check
