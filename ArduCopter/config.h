@@ -676,7 +676,7 @@
 #endif
 
 #ifndef POSITION_RP
- # define POSITION_RP               ROLL_PITCH_AUTO
+ # define POSITION_RP               ROLL_PITCH_LOITER
 #endif
 
 #ifndef POSITION_THR
