@@ -1045,16 +1045,6 @@ static void update_current_flight_mode(void)
                 nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
-            float aspeed;
-            if (ahrs.airspeed_estimate(&aspeed)) {
-                // don't use a pitch/roll integrators during takeoff if we are
-                // below minimum speed
-                if (aspeed < g.flybywire_airspeed_min) {
-                    g.pitchController.reset_I();
-                    g.rollController.reset_I();
-                }
-            }
-
             // max throttle for takeoff
             g.channel_throttle.servo_out = g.throttle_max;
 

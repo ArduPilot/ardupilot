@@ -245,6 +245,21 @@ static void stabilize()
         }
         stabilize_yaw(speed_scaler);
     }
+
+    /*
+      see if we should zero the attitude controller integrators. 
+     */
+    if (g.channel_throttle.control_in == 0 &&
+        abs(current_loc.alt - home.alt) < 500 && 
+        fabs(barometer.get_climb_rate()) < 0.5f &&
+        g_gps->ground_speed < 300) {
+        // we are low, with no climb rate, and zero throttle, and very
+        // low ground speed. Zero the attitude controller
+        // integrators. This prevents integrator buildup pre-takeoff.
+        g.rollController.reset_I();
+        g.pitchController.reset_I();
+        g.yawController.reset_I();
+    }
 }
 
 
