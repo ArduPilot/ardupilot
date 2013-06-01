@@ -425,23 +425,36 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
     hover(mavproxy, mav)
     return not failed
 
+#fly_circle - flies a circle with 20m radius
+def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=75, timeout=125):
 
-def land(mavproxy, mav, timeout=60):
-    '''land the quad'''
-    print("STARTING LANDING")
-    mavproxy.send('switch 2\n')
-    wait_mode(mav, 'LAND')
-    print("Entered Landing Mode")
-    ret = wait_altitude(mav, -5, 1)
-    print("LANDING: ok= %s" % ret)
-    return ret
+    '''hold loiter position'''
+    mavproxy.send('switch 5\n') # loiter mode
+    wait_mode(mav, 'LOITER')
 
+    # face west
+    print("turn west")
+    mavproxy.send('rc 4 1580\n')
+    if not wait_heading(mav, 270):
+        return False
+    mavproxy.send('rc 4 1500\n')
 
-def circle(mavproxy, mav, maxaltchange=10, holdtime=90, timeout=35):
-    '''fly circle'''
-    print("FLY CIRCLE")
-    mavproxy.send('switch 1\n') # CIRCLE mode
+    #set CIRCLE radius
+    mavproxy.send('param set CIRCLE_RADIUS 30\n')
+
+    # fly forward (east) at least 100m
+    mavproxy.send('rc 2 1100\n')
+    if not wait_distance(mav, 100):
+        return False
+
+    # return pitch stick back to middle
+    mavproxy.send('rc 2 1500\n')
+
+    # set CIRCLE mode
+    mavproxy.send('switch 1\n') # circle mode
     wait_mode(mav, 'CIRCLE')
+
+    # wait 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     tstart = time.time()
@@ -454,6 +467,15 @@ def circle(mavproxy, mav, maxaltchange=10, holdtime=90, timeout=35):
     print("CIRCLE OK for %u seconds" % holdtime)
     return True
 
+def land(mavproxy, mav, timeout=60):
+    '''land the quad'''
+    print("STARTING LANDING")
+    mavproxy.send('switch 2\n')
+    wait_mode(mav, 'LAND')
+    print("Entered Landing Mode")
+    ret = wait_altitude(mav, -5, 1)
+    print("LANDING: ok= %s" % ret)
+    return ret
 
 def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     '''fly a mission from a file'''
@@ -727,6 +749,26 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("# Fly in SIMPLE mode")
         if not fly_simple(mavproxy, mav):
             print("fly_simple failed")
+            failed = True
+
+        # RTL
+        print("#")
+        print("########## Test RTL ##########")
+        print("#")
+        if not fly_RTL(mavproxy, mav):
+            print("RTL failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Circle mode
+        print("# Fly CIRCLE mode")
+        if not fly_circle(mavproxy, mav):
+            print("fly_circle failed")
             failed = True
 
         # RTL
