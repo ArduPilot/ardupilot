@@ -164,9 +164,11 @@ public:
 
     /// Save the current value of the variable to EEPROM.
     ///
+    /// @param  force_save     If true then force save even if default
+    ///
     /// @return                True if the variable was saved successfully.
     ///
-    bool save(void);
+    bool save(bool force_save=false);
 
     /// Load the variable from EEPROM.
     ///
@@ -369,8 +371,9 @@ public:
     /// Combined set and save
     ///
     bool set_and_save(const T &v) {
+        bool force = (_value != v);
         set(v);
-        return save();
+        return save(force);
     }
 
     /// Combined set and save, but only does the save if the value if
@@ -383,7 +386,7 @@ public:
             return true;
         }
         set(v);
-        return save();
+        return save(true);
     }
 
     /// Conversion to T returns a reference to the value.
@@ -464,8 +467,9 @@ public:
     /// Combined set and save
     ///
     bool set_and_save(const T &v) {
+        bool force = (_value != v);
         set(v);
-        return save();
+        return save(force);
     }
 
     /// Conversion to T returns a reference to the value.

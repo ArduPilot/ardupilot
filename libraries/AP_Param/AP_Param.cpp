@@ -650,7 +650,7 @@ AP_Param::find_object(const char *name)
 
 // Save the variable to EEPROM, if supported
 //
-bool AP_Param::save(void)
+bool AP_Param::save(bool force_save)
 {
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
@@ -703,7 +703,7 @@ bool AP_Param::save(void)
         } else {
             v2 = PGM_FLOAT(&info->def_value);
         }
-        if (v1 == v2) {
+        if (v1 == v2 && !force_save) {
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
