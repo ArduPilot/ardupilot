@@ -1361,18 +1361,6 @@ init_esc()
     }
 }
 
-static void print_wp(const struct Location *cmd, uint8_t index)
-{
-    cliSerial->printf_P(PSTR("cmd#: %d | %d, %d, %d, %ld, %ld, %ld\n"),
-                    index,
-                    cmd->id,
-                    cmd->options,
-                    cmd->p1,
-                    cmd->alt,
-                    cmd->lat,
-                    cmd->lng);
-}
-
 static void report_version()
 {
     cliSerial->printf_P(PSTR("FW Ver: %d\n"),(int)g.k_format_version);
