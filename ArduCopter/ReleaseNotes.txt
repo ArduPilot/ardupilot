@@ -9,14 +9,15 @@ Improvements over 3.0.0-rc3
 3) auto mode vertical speed fix (it was not reaching the desired speeds)
 4) alt hold smoothed by filtering feed forward input
 5) circle mode fix to initial position and smoother initialisation
-6) safe features:
+6) RTL returns to initial yaw heading before descending
+7) safe features:
     i) check for gps lock when entering failsafe
     ii) pre-arm check for mag field lenght
     iii) pre-arm check for board voltage between 4.5v ~ 5.8V
     iv) beep twice during arming
     v) GPS failsafe enabled by default (will LAND if loses GPS in Loiter, AUTO, Guided modes)
     vi) bug fix for alt-hold mode spinning motors before pilot has raised throttle
-7) bug fixes:
+8) bug fixes:
     i) fixed position mode so it responding to pilot input
     ii) baro cli test
     iii) moved cli motor test to test sub menu and minor change to throttle output
