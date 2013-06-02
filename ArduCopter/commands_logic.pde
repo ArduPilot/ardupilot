@@ -843,6 +843,35 @@ static bool verify_nav_roi()
 //	Do (Now) commands
 /********************************************************************************/
 
+// do_guided - start guided mode
+// this is not actually a mission command but rather a 
+static void do_guided(const struct Location *cmd)
+{
+    bool first_time = false;
+    // switch to guided mode if we're not already in guided mode
+    if (control_mode != GUIDED) {
+        set_mode(GUIDED);
+        first_time = true;
+    }
+
+    // set wp_nav's destination
+    Vector3f pos = pv_location_to_vector(*cmd);
+    wp_nav.set_destination(pos);
+
+    // initialise wp_bearing for reporting purposes
+    wp_bearing = wp_nav.get_bearing_to_destination();
+
+    // point nose at next waypoint if it is more than 10m away
+    if (yaw_mode == YAW_LOOK_AT_NEXT_WP) {
+        // get distance to new location
+        wp_distance = wp_nav.get_distance_to_destination();
+        // set original_wp_bearing to point at next waypoint
+        if (wp_distance >= 1000 || first_time) {
+            original_wp_bearing = wp_bearing;
+        }
+    }
+}
+
 static void do_change_speed()
 {
     wp_nav.set_horizontal_velocity(command_cond_queue.p1 * 100);

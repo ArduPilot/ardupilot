@@ -1729,11 +1729,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         if(packet.current == 2) {                                               //current = 2 is a flag to tell us this is a "guided mode" waypoint and not for the mission
-            // switch to guided mode
-            set_mode(GUIDED);
-
-            // set wp_nav's destination
-            wp_nav.set_destination(pv_location_to_vector(tell_command));
+            // initiate guided mode
+            do_guided(&tell_command);
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(
