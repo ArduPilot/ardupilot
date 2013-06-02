@@ -1,5 +1,27 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.0.0-rc4 02-Jun-2013
+Improvements over 3.0.0-rc3
+1) loiter improvements:
+     i) repositioning enhanced with feed forward
+     ii) use tan to convert desired accel to lean angle
+2) stability patch improvements for high powered copters or those with roll-pitch rate gains set too high
+3) auto mode vertical speed fix (it was not reaching the desired speeds)
+4) alt hold smoothed by filtering feed forward input
+5) circle mode fix to initial position and smoother initialisation
+6) safe features:
+    i) check for gps lock when entering failsafe
+    ii) pre-arm check for mag field lenght
+    iii) pre-arm check for board voltage between 4.5v ~ 5.8V
+    iv) beep twice during arming
+    v) GPS failsafe enabled by default (will LAND if loses GPS in Loiter, AUTO, Guided modes)
+    vi) bug fix for alt-hold mode spinning motors before pilot has raised throttle
+7) bug fixes:
+    i) fixed position mode so it responding to pilot input
+    ii) baro cli test
+    iii) moved cli motor test to test sub menu and minor change to throttle output
+    iv) guided mode yaw control fix
+------------------------------------------------------------------
 ArduCopter 3.0.0-rc3 22-May-2013
 Improvements over 3.0.0-rc2
 1) bug fix for dataflash erasing unnecessarily
