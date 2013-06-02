@@ -383,7 +383,7 @@
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
- # define BOARD_VOLTAGE_MIN             4500        // min board voltage in milli volts for pre-arm checks
+ # define BOARD_VOLTAGE_MIN             4300        // min board voltage in milli volts for pre-arm checks
 #endif
 
 #ifndef BOARD_VOLTAGE_MAX
