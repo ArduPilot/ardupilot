@@ -73,6 +73,10 @@ then
 	ms5611 start
 	hmc5883 start
 	adc start
+        if ets_airspeed start
+        then
+                echo "Found ETS airspeed sensor" >> $logfile
+        fi
 
 	echo "Trying PX4IO board"
 	echo "Trying PX4IO board" >> $logfile
