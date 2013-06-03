@@ -5,8 +5,6 @@
 static uint8_t failsafeCounter = 0;                // we wait a second to take over the throttle and send the plane circling
 
 
-extern RC_Channel* rc_ch[8];
-
 static void init_rc_in()
 {
     // set rc channel ranges
@@ -25,15 +23,6 @@ static void init_rc_in()
     //g.channel_pitch.dead_zone     = 60;
     //g.channel_rudder.dead_zone    = 60;
     //g.channel_throttle.dead_zone = 6;
-
-    rc_ch[CH_1] = &g.channel_roll;
-    rc_ch[CH_2] = &g.channel_pitch;
-    rc_ch[CH_3] = &g.channel_throttle;
-    rc_ch[CH_4] = &g.channel_rudder;
-    rc_ch[CH_5] = &g.rc_5;
-    rc_ch[CH_6] = &g.rc_6;
-    rc_ch[CH_7] = &g.rc_7;
-    rc_ch[CH_8] = &g.rc_8;
 
     //set auxiliary ranges
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4

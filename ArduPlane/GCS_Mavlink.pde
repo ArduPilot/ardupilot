@@ -340,19 +340,18 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     if (!g.hil_servos) {
-        extern RC_Channel* rc_ch[8];
         mavlink_msg_servo_output_raw_send(
             chan,
             micros(),
             0,     // port
-            rc_ch[0]->radio_out,
-            rc_ch[1]->radio_out,
-            rc_ch[2]->radio_out,
-            rc_ch[3]->radio_out,
-            rc_ch[4]->radio_out,
-            rc_ch[5]->radio_out,
-            rc_ch[6]->radio_out,
-            rc_ch[7]->radio_out);
+            RC_Channel::rc_channel(0)->radio_out,
+            RC_Channel::rc_channel(1)->radio_out,
+            RC_Channel::rc_channel(2)->radio_out,
+            RC_Channel::rc_channel(3)->radio_out,
+            RC_Channel::rc_channel(4)->radio_out,
+            RC_Channel::rc_channel(5)->radio_out,
+            RC_Channel::rc_channel(6)->radio_out,
+            RC_Channel::rc_channel(7)->radio_out);
         return;
     }
 #endif
