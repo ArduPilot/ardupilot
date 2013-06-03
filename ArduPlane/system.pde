@@ -110,11 +110,7 @@ static void init_ardupilot()
     //
     load_parameters();
 
-    // setup channel mappings. Changing these requires a reboot
-    channel_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
-    channel_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
-    channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
-    channel_rudder   = RC_Channel::rc_channel(rcmap.yaw()-1);
+    set_control_channels();
 
     // reset the uartA baud rate after parameter load
     hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
