@@ -223,7 +223,7 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
     circle_center.y = current_position.y + (float)g.circle_radius * 100 * sin_yaw;
 
     // if we are doing a panorama set the circle_angle to the current heading
-    if( g.circle_radius == 0 ) {
+    if( g.circle_radius <= 0 ) {
         circle_angle = heading_in_radians;
         circle_angular_velocity_max = ToRad(g.circle_rate);
         circle_angular_acceleration = circle_angular_velocity_max;  // reach maximum yaw velocity in 1 second
@@ -235,8 +235,14 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
         max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*WPNAV_ACCELERATION*g.circle_radius*100.0f)); 
 
         // angular_velocity in radians per second
-        circle_angular_velocity_max = min(ToRad(g.circle_rate), max_velocity/((float)g.circle_radius * 100.0f));
+        circle_angular_velocity_max = max_velocity/((float)g.circle_radius * 100.0f);
+        circle_angular_velocity_max = constrain_float(ToRad(g.circle_rate),-circle_angular_velocity_max,circle_angular_velocity_max);
+
+        // angular_velocity in radians per second
         circle_angular_acceleration = WPNAV_ACCELERATION/((float)g.circle_radius * 100);
+        if (g.circle_rate < 0.0f) {
+            circle_angular_acceleration = -circle_angular_acceleration;
+        }
     }
 
     // initialise other variables
@@ -252,9 +258,16 @@ update_circle(float dt)
     Vector3f circle_target;
 
     // ramp up angular velocity to maximum
-    if(circle_angular_velocity < circle_angular_velocity_max){
-        circle_angular_velocity += circle_angular_acceleration * dt;
-        circle_angular_velocity = constrain_float(circle_angular_velocity, 0, circle_angular_velocity_max);
+    if (g.circle_rate >= 0) {
+        if (circle_angular_velocity < circle_angular_velocity_max) {
+            circle_angular_velocity += circle_angular_acceleration * dt;
+            circle_angular_velocity = constrain_float(circle_angular_velocity, 0, circle_angular_velocity_max);
+        }
+    }else{
+        if (circle_angular_velocity > circle_angular_velocity_max) {
+            circle_angular_velocity += circle_angular_acceleration * dt;
+            circle_angular_velocity = constrain_float(circle_angular_velocity, circle_angular_velocity_max, 0);
+        }
     }
 
     // update the target angle
