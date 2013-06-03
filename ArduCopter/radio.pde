@@ -3,8 +3,6 @@
 // Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
 
-extern RC_Channel* rc_ch[8];
-
 static void default_dead_zones()
 {
     g.rc_1.set_dead_zone(60);
@@ -38,15 +36,6 @@ static void init_rc_in()
     g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-
-    rc_ch[CH_1] = &g.rc_1;
-    rc_ch[CH_2] = &g.rc_2;
-    rc_ch[CH_3] = &g.rc_3;
-    rc_ch[CH_4] = &g.rc_4;
-    rc_ch[CH_5] = &g.rc_5;
-    rc_ch[CH_6] = &g.rc_6;
-    rc_ch[CH_7] = &g.rc_7;
-    rc_ch[CH_8] = &g.rc_8;
 
     //set auxiliary ranges
     g.rc_5.set_range(0,1000);
