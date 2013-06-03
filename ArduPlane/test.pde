@@ -9,7 +9,7 @@ static int8_t   test_radio(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_passthru(uint8_t argc,     const Menu::arg *argv);
 static int8_t   test_failsafe(uint8_t argc,     const Menu::arg *argv);
 static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
-#if CONFIG_ADC == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static int8_t   test_adc(uint8_t argc,                  const Menu::arg *argv);
 #endif
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
@@ -47,7 +47,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     // Tests below here are for hardware sensors only present
     // when real sensors are attached or they are emulated
 #if HIL_MODE == HIL_MODE_DISABLED
- #if CONFIG_ADC == ENABLED
+ #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     {"adc",                 test_adc},
  #endif
     {"gps",                 test_gps},
@@ -414,18 +414,18 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
 
- #if CONFIG_ADC == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
-    adc.Init();
+    apm1_adc.Init();
     delay(1000);
     cliSerial->printf_P(PSTR("ADC\n"));
     delay(1000);
 
     while(1) {
-        for (int8_t i=0; i<9; i++) cliSerial->printf_P(PSTR("%.1f\t"),adc.Ch(i));
+        for (int8_t i=0; i<9; i++) cliSerial->printf_P(PSTR("%.1f\t"),apm1_adc.Ch(i));
         cliSerial->println();
         delay(100);
         if(cliSerial->available() > 0) {
@@ -433,7 +433,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
         }
     }
 }
- #endif // CONFIG_ADC
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_APM1
 
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
@@ -608,15 +608,10 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
-    float airspeed_ch = pitot_analog_source->voltage_average();
-    // cliSerial->println(pitot_analog_source.read());
-    cliSerial->printf_P(PSTR("airspeed_ch: %.3f\n"), airspeed_ch);
-
     if (!airspeed.enabled()) {
         cliSerial->printf_P(PSTR("airspeed: "));
         print_enabled(false);
         return (0);
-
     }else{
         print_hit_enter();
         zero_airspeed();

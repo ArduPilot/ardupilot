@@ -1919,6 +1919,7 @@ mission_failed:
 
         barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
+        airspeed.disable();
         break;
     }
 #endif // HIL_MODE
