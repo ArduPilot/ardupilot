@@ -122,14 +122,13 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain_int32(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
     }
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
 
     // update roll_axis to be within max_angle_overshoot of our current heading
     roll_axis = wrap_180_cd(angle_error + ahrs.roll_sensor);
-
-    // set earth frame targets for rate controller
 
     // set earth frame targets for rate controller
 	set_roll_rate_target(g.pi_stabilize_roll.get_p(angle_error) + target_rate, EARTH_FRAME);
@@ -158,7 +157,8 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain_int32(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
     }
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
 
@@ -189,7 +189,8 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     // limit the maximum overshoot
     angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
+    // reset target angle to current heading if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
     	angle_error = 0;
     }
 
