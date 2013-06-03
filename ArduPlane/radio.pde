@@ -13,6 +13,12 @@ static void set_control_channels(void)
     channel_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
     channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
     channel_rudder   = RC_Channel::rc_channel(rcmap.yaw()-1);
+
+    // set rc channel ranges
+    channel_roll->set_angle(SERVO_MAX);
+    channel_pitch->set_angle(SERVO_MAX);
+    channel_rudder->set_angle(SERVO_MAX);
+    channel_throttle->set_range(0, 100);
 }
 
 /*
@@ -20,12 +26,6 @@ static void set_control_channels(void)
  */
 static void init_rc_in()
 {
-    // set rc channel ranges
-    channel_roll->set_angle(SERVO_MAX);
-    channel_pitch->set_angle(SERVO_MAX);
-    channel_rudder->set_angle(SERVO_MAX);
-    channel_throttle->set_range(0, 100);
-
     // set rc dead zones
     channel_roll->set_dead_zone(60);
     channel_pitch->set_dead_zone(60);
