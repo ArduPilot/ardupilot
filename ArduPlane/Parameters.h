@@ -159,10 +159,10 @@ public:
         //
         // 170: Radio settings
         //
-        k_param_channel_roll = 170,
-        k_param_channel_pitch,
-        k_param_channel_throttle,
-        k_param_channel_rudder,
+        k_param_rc_1 = 170,
+        k_param_rc_2,
+        k_param_rc_3,
+        k_param_rc_4,
         k_param_rc_5,
         k_param_rc_6,
         k_param_rc_7,
@@ -377,10 +377,10 @@ public:
     AP_Int8 level_roll_limit;
 
     // RC channels
-    RC_Channel channel_roll;
-    RC_Channel channel_pitch;
-    RC_Channel channel_throttle;
-    RC_Channel channel_rudder;
+    RC_Channel rc_1;
+    RC_Channel rc_2;
+    RC_Channel rc_3;
+    RC_Channel rc_4;
     RC_Channel_aux rc_5;
     RC_Channel_aux rc_6;
     RC_Channel_aux rc_7;
@@ -409,10 +409,10 @@ public:
     Parameters() :
         // variable				default
         //----------------------------------------
-        channel_roll                    (CH_1),
-        channel_pitch                   (CH_2),
-        channel_throttle                (CH_3),
-        channel_rudder                  (CH_4),
+        rc_1                                    (CH_1),
+        rc_2                                    (CH_2),
+        rc_3                                    (CH_3),
+        rc_4                                    (CH_4),
         rc_5                                    (CH_5),
         rc_6                                    (CH_6),
         rc_7                                    (CH_7),
