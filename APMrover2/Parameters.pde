@@ -25,6 +25,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
+
+    // @Param: RST_SWITCH_CH
+    // @DisplayName: Reset Switch Channel
+    // @Description: RC channel to use to reset to last flight mode	after geofence takeover.
+    // @User: Advanced
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
 
     // @Param: INITIAL_MODE
@@ -190,13 +195,36 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
 
+    // @Group: RC1_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(channel_steer,           "RC1_", RC_Channel),
+
+    // @Group: RC2_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_2,                    "RC2_", RC_Channel_aux),
+
+    // @Group: RC3_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(channel_throttle,        "RC3_", RC_Channel),
+
+    // @Group: RC4_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_4,                    "RC4_", RC_Channel_aux),
+
+    // @Group: RC5_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
+
+    // @Group: RC6_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
+
+    // @Group: RC7_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
+
+    // @Group: RC8_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
     // @Param: THR_MIN
@@ -383,7 +411,11 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
 	// variables not in the g class which contain EEPROM saved variables
+
+    // @Group: COMPASS_
+    // @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,                "COMPASS_",	Compass),
+
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
 
