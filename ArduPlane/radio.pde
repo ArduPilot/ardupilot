@@ -36,22 +36,16 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-    hal.rcout->enable_ch(CH_1);
-    hal.rcout->enable_ch(CH_2);
-    hal.rcout->enable_ch(CH_3);
-    hal.rcout->enable_ch(CH_4);
+    channel_roll->enable_out();
+    channel_pitch->enable_out();
+    channel_throttle->enable_out();
+    channel_rudder->enable_out();
     enable_aux_servos();
 
     // Initialization of servo outputs
-    servo_write(CH_1, channel_roll->radio_trim);
-    servo_write(CH_2,   channel_pitch->radio_trim);
-    servo_write(CH_3,   channel_throttle->radio_min);
-    servo_write(CH_4,   channel_rudder->radio_trim);
-
-    servo_write(CH_5,   g.rc_5.radio_trim);
-    servo_write(CH_6,   g.rc_6.radio_trim);
-    servo_write(CH_7,   g.rc_7.radio_trim);
-    servo_write(CH_8,   g.rc_8.radio_trim);
+    for (uint8_t i=0; i<8; i++) {
+        RC_Channel::rc_channel(i)->output_trim();
+    }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
     servo_write(CH_9,   g.rc_9.radio_trim);
@@ -65,8 +59,8 @@ static void init_rc_out()
 
 static void read_radio()
 {
-    elevon.ch1_temp = hal.rcin->read(CH_ROLL);
-    elevon.ch2_temp = hal.rcin->read(CH_PITCH);
+    elevon.ch1_temp = channel_roll->read();
+    elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
 
     if (g.mix_mode == 0) {
@@ -82,13 +76,13 @@ static void read_radio()
         // want manual pass through when not exceeding attitude limits
         channel_roll->set_pwm_no_deadzone(pwm_roll);
         channel_pitch->set_pwm_no_deadzone(pwm_pitch);
-        channel_throttle->set_pwm_no_deadzone(hal.rcin->read(CH_3));
-        channel_rudder->set_pwm_no_deadzone(hal.rcin->read(CH_4));
+        channel_throttle->set_pwm_no_deadzone(channel_throttle->read());
+        channel_rudder->set_pwm_no_deadzone(channel_rudder->read());
     } else {
         channel_roll->set_pwm(pwm_roll);
         channel_pitch->set_pwm(pwm_pitch);
-        channel_throttle->set_pwm(hal.rcin->read(CH_3));
-        channel_rudder->set_pwm(hal.rcin->read(CH_4));
+        channel_throttle->set_pwm(channel_throttle->read());
+        channel_rudder->set_pwm(channel_rudder->read());
     }
 
     g.rc_5.set_pwm(hal.rcin->read(CH_5));

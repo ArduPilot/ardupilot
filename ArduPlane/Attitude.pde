@@ -524,8 +524,8 @@ static void set_servos(void)
             channel_roll->radio_out                = channel_roll->radio_in;
             channel_pitch->radio_out               = channel_pitch->radio_in;
         } else {
-            channel_roll->radio_out                = hal.rcin->read(CH_ROLL);
-            channel_pitch->radio_out               = hal.rcin->read(CH_PITCH);
+            channel_roll->radio_out                = channel_roll->read();
+            channel_pitch->radio_out               = channel_pitch->read();
         }
         channel_throttle->radio_out    = channel_throttle->radio_in;
         channel_rudder->radio_out              = channel_rudder->radio_in;
@@ -700,10 +700,10 @@ static void set_servos(void)
 
     // send values to the PWM timers for output
     // ----------------------------------------
-    hal.rcout->write(CH_1, channel_roll->radio_out);     // send to Servos
-    hal.rcout->write(CH_2, channel_pitch->radio_out);     // send to Servos
-    hal.rcout->write(CH_3, channel_throttle->radio_out);     // send to Servos
-    hal.rcout->write(CH_4, channel_rudder->radio_out);     // send to Servos
+    channel_roll->output();
+    channel_pitch->output();
+    channel_throttle->output();
+    channel_rudder->output();
     // Route configurable aux. functions to their respective servos
     g.rc_5.output_ch(CH_5);
     g.rc_6.output_ch(CH_6);
