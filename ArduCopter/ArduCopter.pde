@@ -1293,6 +1293,12 @@ static void super_slow_loop()
     // auto disarm checks
     auto_disarm_check();
 
+    // make it possible to change orientation at runtime - useful
+    // during initial config
+    if (!motors.armed()) {
+        ahrs.set_orientation();
+    }
+
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
     USERHOOK_SUPERSLOWLOOP
