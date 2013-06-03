@@ -336,15 +336,26 @@ RC_Channel::norm_output()
     return ret;
 }
 
-void RC_Channel::output()
+void RC_Channel::output() const
 {
     hal.rcout->write(_ch_out, radio_out);
+}
+
+void RC_Channel::output_trim() const
+{
+    hal.rcout->write(_ch_out, radio_trim);
 }
 
 void
 RC_Channel::input()
 {
     radio_in = hal.rcin->read(_ch_out);
+}
+
+uint16_t
+RC_Channel::read() const
+{
+    return hal.rcin->read(_ch_out);
 }
 
 void
