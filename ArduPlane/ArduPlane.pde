@@ -56,6 +56,7 @@
 
 #include <AP_Navigation.h>
 #include <AP_L1_Control.h>
+#include <AP_RCMapper.h>        // RC input mapping library
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -97,6 +98,15 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 // Global parameters are all contained within the 'g' class.
 //
 static Parameters g;
+
+// mapping between input channels
+static RCMapper rcmap;
+
+// primary control channels
+static RC_Channel *channel_roll;
+static RC_Channel *channel_pitch;
+static RC_Channel *channel_throttle;
+static RC_Channel *channel_rudder;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -1036,7 +1046,7 @@ static void update_current_flight_mode(void)
             }
 
             // max throttle for takeoff
-            g.channel_throttle.servo_out = g.throttle_max;
+            channel_throttle->servo_out = g.throttle_max;
 
             break;
 
@@ -1063,7 +1073,7 @@ static void update_current_flight_mode(void)
             if (land_complete) {
                 // we are in the final stage of a landing - force
                 // zero throttle
-                g.channel_throttle.servo_out = 0;
+                channel_throttle->servo_out = 0;
             }
             break;
 
@@ -1123,9 +1133,9 @@ static void update_current_flight_mode(void)
 
         case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
-            nav_roll_cd  = g.channel_roll.norm_input() * g.roll_limit_cd;
+            nav_roll_cd  = channel_roll->norm_input() * g.roll_limit_cd;
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
-            float pitch_input = g.channel_pitch.norm_input();
+            float pitch_input = channel_pitch->norm_input();
             if (pitch_input > 0) {
                 nav_pitch_cd = pitch_input * g.pitch_limit_max_cd;
             } else {
@@ -1146,10 +1156,10 @@ static void update_current_flight_mode(void)
 
             // Thanks to Yury MonZon for the altitude limit code!
 
-            nav_roll_cd = g.channel_roll.norm_input() * g.roll_limit_cd;
+            nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
 
             float elevator_input;
-            elevator_input = g.channel_pitch.norm_input();
+            elevator_input = channel_pitch->norm_input();
 
             if (g.flybywire_elev_reverse) {
                 elevator_input = -elevator_input;
@@ -1195,9 +1205,9 @@ static void update_current_flight_mode(void)
         case MANUAL:
             // servo_out is for Sim control only
             // ---------------------------------
-            g.channel_roll.servo_out = g.channel_roll.pwm_to_angle();
-            g.channel_pitch.servo_out = g.channel_pitch.pwm_to_angle();
-            g.channel_rudder.servo_out = g.channel_rudder.pwm_to_angle();
+            channel_roll->servo_out = channel_roll->pwm_to_angle();
+            channel_pitch->servo_out = channel_pitch->pwm_to_angle();
+            channel_rudder->servo_out = channel_rudder->pwm_to_angle();
             break;
             //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
 

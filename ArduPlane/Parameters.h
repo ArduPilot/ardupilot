@@ -228,6 +228,7 @@ public:
         k_param_pitchController,
         k_param_yawController,
         k_param_L1_controller,
+        k_param_rcmap,
 
         //
         // 240: PID Controllers

@@ -87,7 +87,7 @@ static void calc_airspeed_errors()
     if (control_mode == FLY_BY_WIRE_B) {
         target_airspeed_cm = ((int)(g.flybywire_airspeed_max -
                                     g.flybywire_airspeed_min) *
-                              g.channel_throttle.servo_out) +
+                              channel_throttle->servo_out) +
                              ((int)g.flybywire_airspeed_min * 100);
     }
 

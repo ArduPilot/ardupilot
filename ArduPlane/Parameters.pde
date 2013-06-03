@@ -774,6 +774,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
     GOBJECT(compass,                "COMPASS_",     Compass),
+
+    // @Group: RCMAP_
+    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
+    GOBJECT(rcmap,                "RCMAP_",         RCMapper),
+
     GOBJECT(gcs0,                                   "SR0_",     GCS_MAVLINK),
     GOBJECT(gcs3,                                   "SR3_",     GCS_MAVLINK),
 

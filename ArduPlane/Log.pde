@@ -312,8 +312,8 @@ static void Log_Write_Control_Tuning()
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)g.channel_throttle.servo_out,
-        rudder_out      : (int16_t)g.channel_rudder.servo_out,
+        throttle_out    : (int16_t)channel_throttle->servo_out,
+        rudder_out      : (int16_t)channel_rudder->servo_out,
         accel_y         : accel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -374,7 +374,7 @@ static void Log_Write_Current()
 {
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-        throttle_in             : g.channel_throttle.control_in,
+        throttle_in             : channel_throttle->control_in,
         battery_voltage         : (int16_t)(battery.voltage * 100.0),
         current_amps            : (int16_t)(battery.current_amps * 100.0),
         board_voltage           : board_voltage(),
