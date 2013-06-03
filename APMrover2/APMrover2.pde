@@ -73,6 +73,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Airspeed.h>    // needed for AHRS build
 #include <memcheck.h>
 #include <DataFlash.h>
+#include <AP_RCMapper.h>        // RC input mapping library
 #include <SITL.h>
 #include <stdarg.h>
 
@@ -115,6 +116,12 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 //
 static Parameters      g;
 
+// mapping between input channels
+static RCMapper rcmap;
+
+// primary control channels
+static RC_Channel *channel_steer;
+static RC_Channel *channel_throttle;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -795,6 +802,8 @@ static void one_second_loop()
 
     // allow orientation change at runtime to aid config
     ahrs.set_orientation();
+
+    set_control_channels();
 }
 
 static void update_GPS(void)
@@ -855,12 +864,12 @@ static void update_current_mode(void)
           the same type of steering control as auto mode. The throttle
           controls the target speed, in proportion to the throttle
          */
-        bearing_error_cd = g.channel_steer.pwm_to_angle();
+        bearing_error_cd = channel_steer->pwm_to_angle();
         calc_nav_steer();
 
         /* we need to reset the I term or it will build up */
         g.pidNavSteer.reset_I();
-        calc_throttle(g.channel_throttle.pwm_to_angle() * 0.01 * g.speed_cruise);
+        calc_throttle(channel_throttle->pwm_to_angle() * 0.01 * g.speed_cruise);
         break;
 
     case LEARNING:
@@ -871,14 +880,14 @@ static void update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
-        g.channel_throttle.servo_out = g.channel_throttle.control_in;
-        g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
+        channel_throttle->servo_out = channel_throttle->control_in;
+        channel_steer->servo_out = channel_steer->pwm_to_angle();
         break;
 
     case HOLD:
         // hold position - stop motors and center steering
-        g.channel_throttle.servo_out = 0;
-        g.channel_steer.servo_out = 0;
+        channel_throttle->servo_out = 0;
+        channel_steer->servo_out = 0;
         break;
 
     case INITIALISING:
@@ -906,7 +915,7 @@ static void update_navigation()
         calc_nav_steer();
         calc_bearing_error();
         if (verify_RTL()) {  
-            g.channel_throttle.servo_out = g.throttle_min.get();
+            channel_throttle->servo_out = g.throttle_min.get();
             set_mode(HOLD);
         }
         break;

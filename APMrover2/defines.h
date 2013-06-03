@@ -42,9 +42,6 @@ enum ch7_option {
 #define GPS_PROTOCOL_MTK19	6
 #define GPS_PROTOCOL_AUTO	7
 
-#define CH_STEER    CH_1
-#define CH_THROTTLE CH_3
-
 // HIL enumerations
 #define HIL_MODE_DISABLED			0
 #define HIL_MODE_ATTITUDE			1

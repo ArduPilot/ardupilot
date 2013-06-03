@@ -197,7 +197,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: RC1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-	GGROUP(channel_steer,           "RC1_", RC_Channel),
+	GGROUP(rc_1,                    "RC1_", RC_Channel),
 
     // @Group: RC2_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
@@ -205,7 +205,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: RC3_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-	GGROUP(channel_throttle,        "RC3_", RC_Channel),
+	GGROUP(rc_3,                    "RC3_", RC_Channel),
 
     // @Group: RC4_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
@@ -415,6 +415,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,                "COMPASS_",	Compass),
+
+    // @Group: RCMAP_
+    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
+    GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
 
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),

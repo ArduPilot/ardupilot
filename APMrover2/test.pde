@@ -91,9 +91,9 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 
 		cliSerial->printf_P(PSTR("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
-							g.channel_steer.radio_in,
+							channel_steer->radio_in,
 							g.rc_2.radio_in,
-							g.channel_throttle.radio_in,
+							channel_throttle->radio_in,
 							g.rc_4.radio_in,
 							g.rc_5.radio_in,
 							g.rc_6.radio_in,
@@ -147,8 +147,8 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		read_radio();
 
-		g.channel_steer.calc_pwm();
-		g.channel_throttle.calc_pwm();
+		channel_steer->calc_pwm();
+		channel_throttle->calc_pwm();
 
 		// write out the servo PWM values
 		// ------------------------------
@@ -157,9 +157,9 @@ test_radio(uint8_t argc, const Menu::arg *argv)
         tuning_value = constrain_float(((float)(g.rc_7.radio_in - g.rc_7.radio_min) / (float)(g.rc_7.radio_max - g.rc_7.radio_min)),0,1);
                 
 		cliSerial->printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d  Tuning = %2.3f\n"),
-							g.channel_steer.control_in,
+							channel_steer->control_in,
 							g.rc_2.control_in,
-							g.channel_throttle.control_in,
+							channel_throttle->control_in,
 							g.rc_4.control_in,
 							g.rc_5.control_in,
 							g.rc_6.control_in,
@@ -190,7 +190,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 	oldSwitchPosition = readSwitch();
 
 	cliSerial->printf_P(PSTR("Unplug battery, throttle in neutral, turn off radio.\n"));
-	while(g.channel_throttle.control_in > 0){
+	while(channel_throttle->control_in > 0){
 		delay(20);
 		read_radio();
 	}
@@ -199,8 +199,8 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		read_radio();
 
-		if(g.channel_throttle.control_in > 0){
-			cliSerial->printf_P(PSTR("THROTTLE CHANGED %d \n"), g.channel_throttle.control_in);
+		if(channel_throttle->control_in > 0){
+			cliSerial->printf_P(PSTR("THROTTLE CHANGED %d \n"), channel_throttle->control_in);
 			fail_test++;
 		}
 
@@ -211,8 +211,8 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 			fail_test++;
 		}
 
-		if (g.fs_throttle_enabled && g.channel_throttle.get_failsafe()){
-			cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.channel_throttle.radio_in);
+		if (g.fs_throttle_enabled && channel_throttle->get_failsafe()){
+			cliSerial->printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), channel_throttle->radio_in);
             print_mode(cliSerial, readSwitch());
             cliSerial->println();
 			fail_test++;

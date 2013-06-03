@@ -264,10 +264,10 @@ static void Log_Write_Control_Tuning()
     Vector3f accel = ins.get_accel();
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
-        steer_out       : (int16_t)g.channel_steer.servo_out,
+        steer_out       : (int16_t)channel_steer->servo_out,
         roll            : (int16_t)ahrs.roll_sensor,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)g.channel_throttle.servo_out,
+        throttle_out    : (int16_t)channel_throttle->servo_out,
         accel_y         : accel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -294,7 +294,7 @@ static void Log_Write_Nav_Tuning()
         target_bearing_cd   : (uint16_t)target_bearing,
         nav_bearing_cd      : (uint16_t)nav_bearing,
         nav_gain_scalar     : (int16_t)(nav_gain_scaler*1000),
-        throttle            : (int8_t)(100 * g.channel_throttle.norm_output())
+        throttle            : (int8_t)(100 * channel_throttle->norm_output())
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -366,7 +366,7 @@ static void Log_Write_Sonar()
         turn_angle      : (int8_t)obstacle.turn_angle,
         turn_time       : turn_time,
         ground_speed    : (uint16_t)(ground_speed*100),
-        throttle        : (int8_t)(100 * g.channel_throttle.norm_output())
+        throttle        : (int8_t)(100 * channel_throttle->norm_output())
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -385,7 +385,7 @@ static void Log_Write_Current()
 {
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-        throttle_in             : g.channel_throttle.control_in,
+        throttle_in             : channel_throttle->control_in,
         battery_voltage         : (int16_t)(battery_voltage1 * 100.0),
         current_amps            : (int16_t)(current_amps1 * 100.0),
         board_voltage           : board_voltage(),

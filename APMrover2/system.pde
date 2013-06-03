@@ -122,6 +122,8 @@ static void init_ardupilot()
 	
     load_parameters();
 
+    set_control_channels();
+
     // after parameter load setup correct baud rate on uartA
     hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
 
