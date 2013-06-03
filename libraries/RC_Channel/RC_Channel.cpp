@@ -56,7 +56,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 
     // @Param: REV
     // @DisplayName: RC reverse
-    // @Description: Reverse servo operation. Ignored on APM1 unless dip-switches are disabled.
+    // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
     // @Values: -1:Reversed,1:Normal
     // @User: Advanced
     AP_GROUPINFO("REV",  3, RC_Channel, _reverse, 1),
