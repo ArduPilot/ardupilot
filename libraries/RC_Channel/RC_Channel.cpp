@@ -24,7 +24,7 @@ extern const AP_HAL::HAL& hal;
 /// global array with pointers to all APM RC channels, will be used by AP_Mount
 /// and AP_Camera classes / It points to RC input channels, both APM1 and APM2
 /// only have 8 input channels.
-RC_Channel* rc_ch[NUM_CHANNELS];
+RC_Channel *RC_Channel::rc_ch[NUM_CHANNELS];
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MIN

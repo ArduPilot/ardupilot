@@ -30,6 +30,7 @@ public:
         _high(1),
         _ch_out(ch_out) {
 		AP_Param::setup_object_defaults(this, var_info);
+        rc_ch[ch_out] = this;
     }
 
     // setup min and max radio values in CLI
@@ -100,6 +101,8 @@ public:
 
     static const struct AP_Param::GroupInfo         var_info[];
 
+    static RC_Channel *rc_channel(uint8_t i) { return rc_ch[i]; }
+
 private:
     AP_Int8         _reverse;
     AP_Int16        _dead_zone;
@@ -109,6 +112,8 @@ private:
     int16_t         _high_out;
     int16_t         _low_out;
     uint8_t         _ch_out;
+
+    static RC_Channel *rc_ch[8];
 };
 
 // This is ugly, but it fixes poorly architected library
