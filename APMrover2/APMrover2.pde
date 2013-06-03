@@ -792,6 +792,9 @@ static void one_second_loop()
 		Log_Write_Current();
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
+
+    // allow orientation change at runtime to aid config
+    ahrs.set_orientation();
 }
 
 static void update_GPS(void)
