@@ -442,7 +442,7 @@ static void set_mode(uint8_t mode)
             ap.manual_attitude = true;
         }
     	ap.manual_throttle = false;
-        do_land();
+        do_land(NULL);  // land at current location
         break;
 
     case RTL:

@@ -17,7 +17,7 @@ static void process_nav_command()
         break;
 
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
-        do_land();
+        do_land(&command_nav_queue);
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:              // 17 Loiter indefinitely
@@ -290,13 +290,12 @@ static void do_nav_wp()
 
 // do_land - initiate landing procedure
 // caller should set roll_pitch_mode to ROLL_PITCH_AUTO (for no pilot input) or ROLL_PITCH_LOITER (for pilot input)
-// caller should set yaw_mode
-static void do_land()
+static void do_land(const struct Location *cmd)
 {
     // To-Do: check if we have already landed
 
     // if location provided we fly to that location at current altitude
-    if (command_nav_queue.lat != 0 || command_nav_queue.lng != 0) {
+    if (cmd != NULL && (cmd->lat != 0 || cmd->lng != 0)) {
         // set state to fly to location
         land_state = LAND_STATE_FLY_TO_LOCATION;
 
@@ -313,9 +312,13 @@ static void do_land()
         set_nav_mode(NAV_WP);
 
         // calculate and set desired location above landing target
-        Vector3f pos = pv_location_to_vector(command_nav_queue);
+        Vector3f pos = pv_location_to_vector(*cmd);
         pos.z = min(current_loc.alt, RTL_ALT_MAX);
         wp_nav.set_destination(pos);
+
+        // initialise original_wp_bearing which is used to check if we have missed the waypoint
+        wp_bearing = wp_nav.get_bearing_to_destination();
+        original_wp_bearing = wp_bearing;
     }else{
         // set landing state
         land_state = LAND_STATE_DESCENDING;
