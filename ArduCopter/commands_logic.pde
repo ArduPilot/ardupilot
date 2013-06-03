@@ -450,12 +450,6 @@ static void do_loiter_time()
 // verify_takeoff - check if we have completed the takeoff
 static bool verify_takeoff()
 {
-    // wait until we are ready!
-    if(g.rc_3.control_in == 0) {
-        // To-Do: reset loiter target if we have not yet taken-off
-        // do not allow I term to build up if we have not yet taken-off
-        return false;
-    }
     // have we reached our target altitude?
     return wp_nav.reached_destination();
 }
