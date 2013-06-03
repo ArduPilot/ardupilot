@@ -961,6 +961,9 @@ static void one_second_loop()
 
     // make it possible to change control channel ordering at runtime
     set_control_channels();
+
+    // make it possible to change orientation at runtime
+    ahrs.set_orientation();
 }
 
 static void update_GPS(void)
