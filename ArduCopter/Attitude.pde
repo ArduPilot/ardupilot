@@ -1020,10 +1020,6 @@ get_throttle_rate(float z_target_speed)
         set_throttle_out(g.throttle_cruise+output, true);
     }
 
-    // limit loiter & waypoint navigation from causing too much lean
-    // To-Do: ensure that this limit is cleared when this throttle controller is not running so that loiter is not left constrained for Position mode
-    wp_nav.set_angle_limit(4500 - constrain_float((z_rate_error - 100) * 10, 0, 3500));
-
     // update throttle cruise
     // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration
     if( z_target_speed == 0 ) {
