@@ -37,7 +37,7 @@ void AVREEPROMStorage::write_dword(uint16_t loc, uint32_t value) {
     write_block(loc, &value, sizeof(value));
 }
 
-void AVREEPROMStorage::write_block(uint16_t dst, void *src, size_t n) {
+void AVREEPROMStorage::write_block(uint16_t dst, const void *src, size_t n) {
     uint8_t *p = (uint8_t *)src;
     while (n--) {
         write_byte(dst++, *p++);

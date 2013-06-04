@@ -165,7 +165,7 @@ void PX4Storage::write_dword(uint16_t loc, uint32_t value)
 	}
 }
 
-void PX4Storage::write_block(uint16_t loc, void *src, size_t n) 
+void PX4Storage::write_block(uint16_t loc, const void *src, size_t n) 
 {
 	if (loc >= sizeof(_buffer)-(n-1)) {
 		return;
