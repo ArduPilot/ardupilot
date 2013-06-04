@@ -67,19 +67,10 @@ uint8_t AP_Param::_num_vars;
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
 
-// write to EEPROM, checking each byte to avoid writing
-// bytes that are already correct
+// write to EEPROM
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
-    const uint8_t *b = (const uint8_t *)ptr;
-    while (size--) {
-        uint8_t v = hal.storage->read_byte(ofs);
-        if (v != *b) {
-            hal.storage->write_byte(ofs, *b);
-        }
-        b++;
-        ofs++;
-    }
+    hal.storage->write_block(ofs, ptr, size);
 }
 
 // write a sentinal value at the given offset
