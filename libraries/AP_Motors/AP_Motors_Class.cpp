@@ -75,10 +75,6 @@ void AP_Motors::Init()
     setup_throttle_curve();
 };
 
-<<<<<<< HEAD
-// throttle_pass_through - passes throttle through to motors - dangerous but used for initialising ESCs
-// Used in compass motor impact calibration and test only.
-=======
 // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 void AP_Motors::set_min_throttle(uint16_t min_throttle)
 {
@@ -93,7 +89,7 @@ void AP_Motors::set_mid_throttle(uint16_t mid_throttle)
 }
 
 // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
->>>>>>> upstream/master
+// Used in compass motor impact calibration and test only.
 void AP_Motors::throttle_pass_through()
 {
     if (armed()) {
