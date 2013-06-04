@@ -8,6 +8,7 @@ Improvements over 3.0.0-rc4
 4) bug fix for mission sticking at take-off command when pilot's throttle is zero
 5) bug fix for parameters not saving when new value is same as default value
 6) reduce pre-arm board min voltage check to 4.3V (was 4.5V)
+7) remove throttle controller's ability to limit lean angle in loiter, rtl, auto
 ------------------------------------------------------------------
 ArduCopter 3.0.0-rc4 02-Jun-2013
 Improvements over 3.0.0-rc3
