@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.42beta2"
+#define THISFIRMWARE "ArduRover v2.42beta3"
 
 /* 
 This is the APMrover2 firmware. It was originally derived from
@@ -550,9 +550,9 @@ static float 			load;
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { update_GPS,             5,    900 },
+    { update_GPS,             5,   1200 },
     { navigate,               5,   1000 },
-    { update_compass,         5,   1000 },
+    { update_compass,         5,   2000 },
     { update_commands,        5,   1000 },
     { update_logging,         5,   1000 },
     { read_battery,           5,   1000 },
@@ -563,7 +563,8 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { check_usb_mux,         15,   1000 },
     { mount_update,           1,    500 },
     { failsafe_check,         5,    500 },
-    { one_second_loop,       50,   1000 }
+    { compass_accumulate,     1,    900 },
+    { one_second_loop,       50,   3000 }
 };
 
 
@@ -685,6 +686,16 @@ static void mount_update(void)
 static void failsafe_check(void)
 {
     failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
+}
+
+/*
+  if the compass is enabled then try to accumulate a reading
+ */
+static void compass_accumulate(void)
+{
+    if (g.compass_enabled) {
+        compass.accumulate();
+    }    
 }
 
 /*
