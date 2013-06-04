@@ -1881,7 +1881,6 @@ mission_failed:
         // our GCS for failsafe purposes
         if (msg->sysid != g.sysid_my_gcs) break;
         last_heartbeat_ms = millis();
-        pmTest1++;
         break;
     }
 

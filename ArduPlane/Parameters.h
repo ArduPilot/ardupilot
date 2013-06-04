@@ -88,6 +88,7 @@ public:
         k_param_elevon_output,
         k_param_att_controller,
         k_param_mixing_gain,
+        k_param_scheduler,
 
         // 110: Telemetry control
         //

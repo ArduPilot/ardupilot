@@ -311,10 +311,9 @@ static void startup_ground(void)
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
+    hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
-    if (gcs3.initialised) {
-        hal.uartC->set_blocking_writes(false);
-    }
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
@@ -523,7 +522,6 @@ static void resetPerfData(void) {
     ahrs.renorm_range_count         = 0;
     ahrs.renorm_blowup_count = 0;
     gps_fix_count                   = 0;
-    pmTest1                                 = 0;
     perf_mon_timer                  = millis();
 }
 
