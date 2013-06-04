@@ -9,9 +9,6 @@ static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_passthru(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
-#if CONFIG_ADC == ENABLED
-static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
-#endif
 static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -40,21 +37,10 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 
 	// Tests below here are for hardware sensors only present
 	// when real sensors are attached or they are emulated
-#if HIL_MODE == HIL_MODE_DISABLED
-#if CONFIG_ADC == ENABLED
-	{"adc", 		test_adc},
-#endif
 	{"gps",			test_gps},
 	{"ins",			test_ins},
 	{"sonartest",	test_sonar},
 	{"compass",		test_mag},
-#elif HIL_MODE == HIL_MODE_SENSORS
-	{"adc", 		test_adc},
-	{"gps",			test_gps},
-	{"ins",			test_ins},
-	{"compass",		test_mag},
-#elif HIL_MODE == HIL_MODE_ATTITUDE
-#endif
 	{"logging",		test_logging},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     {"shell", 				test_shell},
@@ -355,29 +341,6 @@ test_logging(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
 
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
-
-#if CONFIG_ADC == ENABLED
-static int8_t
-test_adc(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-	adc.Init();
-	delay(1000);
-	cliSerial->printf_P(PSTR("ADC\n"));
-	delay(1000);
-
-	while(1){
-		for (int i=0;i<9;i++) cliSerial->printf_P(PSTR("%.1f\t"),adc.Ch(i));
-		cliSerial->println();
-		delay(100);
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
-}
-#endif // CONFIG_ADC
-
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
 {
@@ -543,8 +506,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     compass.save_offsets();
     return (0);
 }
-
-#endif // HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
 
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here

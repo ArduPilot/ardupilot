@@ -175,7 +175,6 @@ struct PACKED log_Performance {
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Performance()
 {
     struct log_Performance pkt = {
@@ -194,7 +193,6 @@ static void Log_Write_Performance()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
-#endif
 
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
@@ -258,7 +256,6 @@ struct PACKED log_Control_Tuning {
 };
 
 // Write a control tuning packet. Total length : 22 bytes
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Control_Tuning()
 {
     Vector3f accel = ins.get_accel();
@@ -272,7 +269,6 @@ static void Log_Write_Control_Tuning()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
-#endif
 
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
@@ -350,7 +346,6 @@ struct PACKED log_Sonar {
 };
 
 // Write a sonar packet
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Sonar()
 {
     uint16_t turn_time = 0;
@@ -370,7 +365,6 @@ static void Log_Write_Sonar()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
-#endif
 
 struct PACKED log_Current {
     LOG_PACKET_HEADER;

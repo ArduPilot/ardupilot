@@ -11,13 +11,6 @@ static void init_sonar(void)
 #endif
 }
 
-// Sensors are not available in HIL_MODE_ATTITUDE
-#if HIL_MODE != HIL_MODE_ATTITUDE
-
-void ReadSCP1000(void) {}
-
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
-
 /*
   read and update the battery
  */

@@ -169,7 +169,7 @@ static GPS         *g_gps;
 // flight modes convenience array
 static AP_Int8		*modes = &g.mode1;
 
-#if CONFIG_ADC == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static AP_ADC_ADS7844 adc;
 #endif
 
@@ -224,11 +224,7 @@ AP_InertialSensor_Oilpan ins( &adc );
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-#if HIL_MODE == HIL_MODE_ATTITUDE
-AP_AHRS_HIL ahrs(&ins, g_gps);
-#else
 AP_AHRS_DCM ahrs(&ins, g_gps);
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -550,8 +546,8 @@ static float 			load;
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { update_GPS,             5,   1200 },
-    { navigate,               5,   1000 },
+    { update_GPS,             5,   2500 },
+    { navigate,               5,   1600 },
     { update_compass,         5,   2000 },
     { update_commands,        5,   1000 },
     { update_logging,         5,   1000 },
@@ -638,7 +634,7 @@ static void fast_loop()
     // some space available
     gcs_send_message(MSG_RETRY_DEFERRED);
 
-	#if HIL_MODE == HIL_MODE_SENSORS
+	#if HIL_MODE != HIL_MODE_DISABLED
 		// update hil before dcm update
 		gcs_update();
 	#endif
@@ -650,13 +646,11 @@ static void fast_loop()
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
 
-	# if HIL_MODE == HIL_MODE_DISABLED
-		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-			Log_Write_Attitude();
+    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
+        Log_Write_Attitude();
 
-		if (g.log_bitmask & MASK_LOG_IMU)
-			DataFlash.Log_Write_IMU(&ins);
-	#endif
+    if (g.log_bitmask & MASK_LOG_IMU)
+        DataFlash.Log_Write_IMU(&ins);
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------

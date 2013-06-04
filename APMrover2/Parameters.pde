@@ -435,11 +435,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
     GOBJECT(sonar2,                 "SONAR2_", AP_RangeFinder_analog),
 
-#if HIL_MODE == HIL_MODE_DISABLED
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,                            "INS_", AP_InertialSensor),
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     // @Group: SIM_

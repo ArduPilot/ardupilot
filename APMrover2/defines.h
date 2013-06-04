@@ -19,9 +19,6 @@
 #define SONAR 0
 #define BARO 1
 
-#define SONAR_SOURCE_ADC 1
-#define SONAR_SOURCE_ANALOG_PIN 2
-
 // CH 7 control
 enum ch7_option {
     CH7_DO_NOTHING=0,
