@@ -122,14 +122,13 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain_int32(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
     }
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
 
     // update roll_axis to be within max_angle_overshoot of our current heading
     roll_axis = wrap_180_cd(angle_error + ahrs.roll_sensor);
-
-    // set earth frame targets for rate controller
 
     // set earth frame targets for rate controller
 	set_roll_rate_target(g.pi_stabilize_roll.get_p(angle_error) + target_rate, EARTH_FRAME);
@@ -158,7 +157,8 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain_int32(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
     }
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
 
@@ -189,7 +189,8 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     // limit the maximum overshoot
     angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
-    if (motors.armed() == false || ((g.rc_3.control_in == 0) && !ap.failsafe_radio)) {
+    // reset target angle to current heading if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
     	angle_error = 0;
     }
 
@@ -963,7 +964,8 @@ get_throttle_rate(float z_target_speed)
 {
     static uint32_t last_call_ms = 0;
     static float z_rate_error = 0;   // The velocity error in cm.
-    static float z_target_speed_last = 0;   // The requested speed from the previous iteration
+    static float z_target_speed_filt = 0;   // The filtered requested speed
+    float z_target_speed_delta;   // The change in requested speed
     int32_t p,i,d;      // used to capture pid values for logging
     int32_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
     uint32_t now = millis();
@@ -971,18 +973,18 @@ get_throttle_rate(float z_target_speed)
     // reset target altitude if this controller has just been engaged
     if( now - last_call_ms > 100 ) {
         // Reset Filter
-        z_rate_error    = 0;
+        z_rate_error = 0;
+        z_target_speed_filt = z_target_speed;
         output = 0;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
         z_rate_error    = z_rate_error + 0.20085f * ((z_target_speed - climb_rate) - z_rate_error);
-        // feed forward acceleration based on change in desired speed.
-        output = (z_target_speed - z_target_speed_last) * 50.0f;   // To-Do: replace 50 with dt
+        // feed forward acceleration based on change in the filtered desired speed.
+        z_target_speed_delta = 0.20085f * (z_target_speed - z_target_speed_filt);
+        z_target_speed_filt    = z_target_speed_filt + z_target_speed_delta;
+        output = z_target_speed_delta * 50.0f;   // To-Do: replace 50 with dt
     }
     last_call_ms = now;
-
-    // store target speed for next iteration
-    z_target_speed_last = z_target_speed;
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle.get_p(z_rate_error);
@@ -1017,10 +1019,6 @@ get_throttle_rate(float z_target_speed)
     }else{
         set_throttle_out(g.throttle_cruise+output, true);
     }
-
-    // limit loiter & waypoint navigation from causing too much lean
-    // To-Do: ensure that this limit is cleared when this throttle controller is not running so that loiter is not left constrained for Position mode
-    wp_nav.set_angle_limit(4500 - constrain_float((z_rate_error - 100) * 10, 0, 3500));
 
     // update throttle cruise
     // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration

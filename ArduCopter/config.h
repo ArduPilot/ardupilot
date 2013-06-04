@@ -383,7 +383,11 @@
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
- # define BOARD_VOLTAGE_MIN             4500        // min board voltage in milli volts for pre-arm checks
+ # define BOARD_VOLTAGE_MIN             4300        // min board voltage in milli volts for pre-arm checks
+#endif
+
+#ifndef BOARD_VOLTAGE_MAX
+ # define BOARD_VOLTAGE_MAX             5800        // max board voltage in milli volts for pre-arm checks
 #endif
 
 // Battery failsafe
@@ -415,6 +419,17 @@
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
  # define MAGNETOMETER                   ENABLED
+#endif
+
+// expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ #ifndef COMPASS_MAGFIELD_EXPECTED
+  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 495 or < 165
+ #endif
+#else // APM1, PX4, SITL
+ #ifndef COMPASS_MAGFIELD_EXPECTED
+  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 795 or < 265
+ #endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -661,7 +676,7 @@
 #endif
 
 #ifndef POSITION_RP
- # define POSITION_RP               ROLL_PITCH_AUTO
+ # define POSITION_RP               ROLL_PITCH_LOITER
 #endif
 
 #ifndef POSITION_THR
@@ -939,7 +954,7 @@
 #endif
 // the acceleration used to define the distance-velocity curve
 #ifndef ALT_HOLD_ACCEL_MAX
- # define ALT_HOLD_ACCEL_MAX 250
+ # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
 #endif
 
 // Throttle Accel control

@@ -31,6 +31,13 @@ float safe_sqrt(float v)
     return ret;
 }
 
+// a faster varient of atan.  accurate to 6 decimal places for values between -1 ~ 1 but then diverges quickly
+float fast_atan(float v)
+{
+    float v2 = v*v;
+    return (v*(1.6867629106f + v2*0.4378497304f)/(1.6867633134f + v2));
+}
+
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board

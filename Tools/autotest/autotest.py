@@ -35,11 +35,15 @@ def get_default_params(atype):
     print("Saved defaults for %s to %s" % (atype, dest))
     return True
 
-def dump_logs(atype):
+def dump_logs(atype, logname=None):
     '''dump DataFlash logs'''
     print("Dumping logs for %s" % atype)
+
+    if logname is None:
+        logname = atype
+        
     sil = util.start_SIL(atype)
-    logfile = util.reltopdir('../buildlogs/%s.flashlog' % atype)
+    logfile = util.reltopdir('../buildlogs/%s.flashlog' % logname)
     log = open(logfile, mode='w')
     mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
     mavproxy.send('\n\n\n')
@@ -171,7 +175,6 @@ steps = [
     'build.Examples',
     'build.Parameters',
 
-    'build1280.ArduPlane',
     'build2560.ArduPlane',
     'build.ArduPlane',
     'defaults.ArduPlane',
@@ -190,6 +193,8 @@ steps = [
     'defaults.ArduCopter',
     'fly.ArduCopter',
     'logs.ArduCopter',
+    'fly.CopterAVC',
+    'logs.CopterAVC',
 
     'convertgpx',
     ]
@@ -226,14 +231,8 @@ def run_step(step):
     if step == 'build.ArduCopter':
         return util.build_SIL('ArduCopter')
 
-    if step == 'build1280.ArduCopter':
-        return util.build_AVR('ArduCopter', board='mega')
-
     if step == 'build2560.ArduCopter':
         return util.build_AVR('ArduCopter', board='mega2560')
-
-    if step == 'build1280.ArduPlane':
-        return util.build_AVR('ArduPlane', board='mega')
 
     if step == 'build2560.ArduPlane':
         return util.build_AVR('ArduPlane', board='mega2560')
@@ -259,11 +258,17 @@ def run_step(step):
     if step == 'logs.ArduCopter':
         return dump_logs('ArduCopter')
 
+    if step == 'logs.CopterAVC':
+        return dump_logs('ArduCopter', 'CopterAVC')
+
     if step == 'logs.APMrover2':
         return dump_logs('APMrover2')
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(viewerip=opts.viewerip, map=opts.map)
+
+    if step == 'fly.CopterAVC':
+        return arducopter.fly_CopterAVC(viewerip=opts.viewerip, map=opts.map)
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip, map=opts.map)

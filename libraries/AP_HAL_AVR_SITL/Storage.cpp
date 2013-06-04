@@ -73,7 +73,7 @@ void SITLEEPROMStorage::write_dword(uint16_t loc, uint32_t value)
 	assert(pwrite(_eeprom_fd, &value, 4, loc) == 4);
 }
 
-void SITLEEPROMStorage::write_block(uint16_t dst, void *src, size_t n) 
+void SITLEEPROMStorage::write_block(uint16_t dst, const void *src, size_t n) 
 {
 	assert(dst < 4096);
 	_eeprom_open();

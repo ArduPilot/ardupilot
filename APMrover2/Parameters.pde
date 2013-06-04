@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
   ArduPlane parameter definitions
@@ -25,6 +25,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
 	GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 	GSCALAR(num_resets,             "SYS_NUM_RESETS",   0),
+
+    // @Param: RST_SWITCH_CH
+    // @DisplayName: Reset Switch Channel
+    // @Description: RC channel to use to reset to last flight mode	after geofence takeover.
+    // @User: Advanced
 	GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
 
     // @Param: INITIAL_MODE
@@ -43,19 +48,17 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13, 100:PX4
     // @User: Standard
     GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    1),
 
     // @Param: BATT_CURR_PIN
     // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. 
+    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12, 101:PX4
     // @User: Standard
     GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    2),
-
-
 
     // @Param: SYSID_THIS_MAV
     // @DisplayName: MAVLink system ID
@@ -144,8 +147,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: AUTO_TRIGGER_PIN
 	// @DisplayName: Auto mode trigger pin
-	// @Description: pin number to use to trigger start of auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will start the motor, and otherwise will force the throttle off. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
-	// @Values: -1:Disabled,0-9:TiggerPin
+	// @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
+	// @Values: -1:Disabled,0-8:TiggerPin
 	// @User: standard
 	GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
 
@@ -192,13 +195,36 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
 
-	GGROUP(channel_steer,           "RC1_", RC_Channel),
+    // @Group: RC1_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+	GGROUP(rc_1,                    "RC1_", RC_Channel),
+
+    // @Group: RC2_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_2,                    "RC2_", RC_Channel_aux),
-	GGROUP(channel_throttle,        "RC3_", RC_Channel),
+
+    // @Group: RC3_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+	GGROUP(rc_3,                    "RC3_", RC_Channel),
+
+    // @Group: RC4_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_4,                    "RC4_", RC_Channel_aux),
+
+    // @Group: RC5_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_5,                    "RC5_", RC_Channel_aux),
+
+    // @Group: RC6_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_6,                    "RC6_", RC_Channel_aux),
+
+    // @Group: RC7_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_7,                    "RC7_", RC_Channel_aux),
+
+    // @Group: RC8_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
     // @Param: THR_MIN
@@ -385,7 +411,19 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
 	// variables not in the g class which contain EEPROM saved variables
+
+    // @Group: COMPASS_
+    // @Path: ../libraries/AP_Compass/Compass.cpp
 	GOBJECT(compass,                "COMPASS_",	Compass),
+
+    // @Group: SCHED_
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
+    GOBJECT(scheduler, "SCHED_", AP_Scheduler),
+
+    // @Group: RCMAP_
+    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
+    GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
+
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
 
@@ -397,11 +435,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp
     GOBJECT(sonar2,                 "SONAR2_", AP_RangeFinder_analog),
 
-#if HIL_MODE == HIL_MODE_DISABLED
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,                            "INS_", AP_InertialSensor),
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     // @Group: SIM_

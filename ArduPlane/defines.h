@@ -48,12 +48,6 @@
 #define GPS_PROTOCOL_MTK19      6
 #define GPS_PROTOCOL_AUTO       7
 
-#define CH_ROLL CH_1
-#define CH_PITCH CH_2
-#define CH_THROTTLE CH_3
-#define CH_RUDDER CH_4
-#define CH_YAW CH_4
-
 // HIL enumerations. Note that HIL_MODE_ATTITUDE and HIL_MODE_SENSORS
 // are now the same thing, and are sensors based. The old define is
 // kept to allow old APM_Config.h headers to keep working

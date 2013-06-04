@@ -275,9 +275,9 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port 0
-        10000 * g.channel_steer.norm_output(),
+        10000 * channel_steer->norm_output(),
         0,
-        10000 * g.channel_throttle.norm_output(),
+        10000 * channel_throttle->norm_output(),
         0,
         0,
         0,
@@ -319,19 +319,18 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
         hal.rcout->read(6),
         hal.rcout->read(7));
 #else
-    extern RC_Channel* rc_ch[8];
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
         0,     // port
-        rc_ch[0]->radio_out,
-        rc_ch[1]->radio_out,
-        rc_ch[2]->radio_out,
-        rc_ch[3]->radio_out,
-        rc_ch[4]->radio_out,
-        rc_ch[5]->radio_out,
-        rc_ch[6]->radio_out,
-        rc_ch[7]->radio_out);
+        RC_Channel::rc_channel(0)->radio_out,
+        RC_Channel::rc_channel(1)->radio_out,
+        RC_Channel::rc_channel(2)->radio_out,
+        RC_Channel::rc_channel(3)->radio_out,
+        RC_Channel::rc_channel(4)->radio_out,
+        RC_Channel::rc_channel(5)->radio_out,
+        RC_Channel::rc_channel(6)->radio_out,
+        RC_Channel::rc_channel(7)->radio_out);
 #endif
 }
 
@@ -342,7 +341,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         (float)g_gps->ground_speed / 100.0,
         (float)g_gps->ground_speed / 100.0,
         (ahrs.yaw_sensor / 100) % 360,
-        (uint16_t)(100 * g.channel_throttle.norm_output()),
+        (uint16_t)(100 * channel_throttle->norm_output()),
         current_loc.alt / 100.0,
         0);
 }
@@ -1701,14 +1700,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             ins.set_accel(accels);
             compass.setHIL(packet.roll, packet.pitch, packet.yaw);
-			
- #if HIL_MODE == HIL_MODE_ATTITUDE
-			// set AHRS hil sensor
-            ahrs.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
-            packet.pitchspeed,packet.yawspeed);
- #endif
-        
-			break;
+            break;
 		}
 #endif // HIL_MODE
 

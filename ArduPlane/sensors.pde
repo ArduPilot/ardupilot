@@ -26,8 +26,10 @@ static int32_t read_barometer(void)
 // in M/S * 100
 static void read_airspeed(void)
 {
-    airspeed.read();
-    calc_airspeed_errors();
+    if (airspeed.enabled()) {
+        airspeed.read();
+        calc_airspeed_errors();
+    }
 }
 
 static void zero_airspeed(void)
@@ -48,12 +50,19 @@ static void read_battery(void)
         batt_volt_pin->set_pin(g.battery_volt_pin);
         battery.voltage = BATTERY_VOLTAGE(batt_volt_pin);
     }
-    if(g.battery_monitoring == 4) {
-        // this copes with changing the pin at runtime
-        batt_curr_pin->set_pin(g.battery_curr_pin);
-        battery.current_amps    = CURRENT_AMPS(batt_curr_pin);
-        // .0002778 is 1/3600 (conversion to hours)
-        battery.current_total_mah += battery.current_amps * (float)delta_ms_medium_loop * 0.0002778;
+
+    if (g.battery_monitoring == 4) {
+        static uint32_t last_time_ms;
+        uint32_t tnow = hal.scheduler->millis();
+        float dt = tnow - last_time_ms;
+        if (last_time_ms != 0 && dt < 2000) {
+            // this copes with changing the pin at runtime
+            batt_curr_pin->set_pin(g.battery_curr_pin);
+            battery.current_amps    = CURRENT_AMPS(batt_curr_pin);
+            // .0002778 is 1/3600 (conversion to hours)
+            battery.current_total_mah += battery.current_amps * dt * 0.0002778f; 
+        }
+        last_time_ms = tnow;
     }
 
     if (battery.voltage != 0 && 

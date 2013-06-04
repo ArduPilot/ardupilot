@@ -200,6 +200,7 @@ public:
         k_param_rc_9,
         k_param_rc_12,
         k_param_failsafe_gcs,           // 198
+        k_param_rcmap,
 
         //
         // 200: flight modes

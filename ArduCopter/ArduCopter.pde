@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.0.0-rc3"
+#define THISFIRMWARE "ArduCopter V3.0.0-rc5"
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -103,6 +103,7 @@
 #include <memcheck.h>           // memory limit checker
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
+#include <AP_RCMapper.h>        // RC input mapping library
 
 #include <MobileDriver.h>
 
@@ -410,6 +411,7 @@ static int8_t control_mode = STABILIZE;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 static uint8_t oldSwitchPosition;
+static RCMapper rcmap;
 
 // receiver RSSI
 static uint8_t receiver_rssi;
@@ -491,7 +493,7 @@ static float scaleLongDown = 1;
 ////////////////////////////////////////////////////////////////////////////////
 // This is the angle from the copter to the next waypoint in centi-degrees
 static int32_t wp_bearing;
-// The original bearing to the next waypoint.  used to check if we've passed the waypoint
+// The original bearing to the next waypoint.  used to point the nose of the copter at the next waypoint
 static int32_t original_wp_bearing;
 // The location of home in relation to the copter in centi-degrees
 static int32_t home_bearing;
@@ -540,6 +542,10 @@ static float sin_pitch;
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
 static int32_t initial_simple_bearing;
 
+// Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
+static int32_t initial_armed_bearing;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Rate contoller targets
 ////////////////////////////////////////////////////////////////////////////////
@@ -585,6 +591,9 @@ static float circle_angle;
 static float circle_angle_total;
 // deg : how many times to circle as specified by mission command
 static uint8_t circle_desired_rotations;
+static float circle_angular_acceleration;       // circle mode's angular acceleration
+static float circle_angular_velocity;           // circle mode's angular velocity
+static float circle_angular_velocity_max;       // circle mode's max angular velocity
 // How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint16_t loiter_time_max;
 // How long have we been loitering - The start time in millis
@@ -911,9 +920,6 @@ static void barometer_accumulate(void)
 {
     barometer.accumulate();
 }
-
-// enable this to get console logging of scheduler performance
-#define SCHEDULER_DEBUG 0
 
 static void perf_update(void)
 {
@@ -1276,6 +1282,9 @@ static void super_slow_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
+    // pass latest alt hold kP value to navigation controller
+    wp_nav.set_althold_kP(g.pi_alt_hold.kP());
+
     // log battery info to the dataflash
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
@@ -1285,6 +1294,12 @@ static void super_slow_loop()
 
     // auto disarm checks
     auto_disarm_check();
+
+    // make it possible to change orientation at runtime - useful
+    // during initial config
+    if (!motors.armed()) {
+        ahrs.set_orientation();
+    }
 
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
@@ -1522,7 +1537,7 @@ void update_yaw_mode(void)
 
     case YAW_RESETTOARMEDYAW:
         // changes yaw to be same as when quad was armed
-        nav_yaw = get_yaw_slew(nav_yaw, initial_simple_bearing, AUTO_YAW_SLEW_RATE);
+        nav_yaw = get_yaw_slew(nav_yaw, initial_armed_bearing, AUTO_YAW_SLEW_RATE);
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration

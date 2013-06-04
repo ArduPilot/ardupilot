@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	RC_Channel.h
 /// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
@@ -26,6 +26,7 @@ public:
         _high(1),
         _ch_out(ch_out) {
 		AP_Param::setup_object_defaults(this, var_info);
+        rc_ch[ch_out] = this;
     }
 
     // setup min and max radio values in CLI
@@ -81,36 +82,39 @@ public:
     // includes offset from PWM
     //int16_t   get_radio_out(void);
 
-    int16_t                                         pwm_to_angle_dz(uint16_t dead_zone);
-    int16_t                                         pwm_to_angle();
-    float                                           norm_input();
-    float                                           norm_output();
-    int16_t                                         angle_to_pwm();
+    int16_t pwm_to_angle_dz(uint16_t dead_zone);
+    int16_t pwm_to_angle();
+    float norm_input();
+    float norm_output();
+    int16_t angle_to_pwm();
 
-    static const struct AP_Param::GroupInfo         var_info[];
+    void output() const;
+    void output_trim() const;
+    uint16_t read() const;
+    void input();
+    void enable_out();
 
-    // Used by subclas RC_Channel_aux and the (nonclass) enable_aux_servos procedure:
-    void                                            output();
-    void                                            enable_out();
-    void                                            input();
-
-private:
-    // Used only privately.
-    int16_t                                         pwm_to_range();
-    // Used only privately.
-    int16_t                                         pwm_to_range_dz(uint16_t dead_zone);
-    // Used only privately.
-    int16_t                                         range_to_pwm();
+    static const struct AP_Param::GroupInfo var_info[];
+    static RC_Channel *rc_channel(uint8_t i) { return rc_ch[i]; }
 
 private:
-    AP_Int8         _reverse;			// reverse flag
-    AP_Int16        _dead_zone;			// around trim value
-    uint8_t         _type;
-    int16_t         _high;				// max. end of abstract range, input. For angle mode: angle.
-    int16_t         _low;				// min. end of abstract range, input
-    int16_t         _high_out;			// max. end of abstract range, output
-    int16_t         _low_out;			// min. end of abstract range, output
-    uint8_t         _ch_out;			// hardware channel number (input and output (!!))
+    // Used only privately.
+    int16_t pwm_to_range();
+    // Used only privately.
+    int16_t pwm_to_range_dz(uint16_t dead_zone);
+    // Used only privately.
+    int16_t range_to_pwm();
+
+    AP_Int8 _reverse;			// reverse flag
+    AP_Int16 _dead_zone;			// around trim value
+    uint8_t _type;
+    int16_t _high;				// max. end of abstract range, input. For angle mode: angle.
+    int16_t _low;				// min. end of abstract range, input
+    int16_t _high_out;			// max. end of abstract range, output
+    int16_t _low_out;			// min. end of abstract range, output
+    uint8_t _ch_out;			// hardware channel number (input and output (!!))
+
+    static RC_Channel *rc_ch[8];
 };
 
 // This is ugly, but it fixes poorly architected library

@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
  *  ArduPlane parameter definitions
@@ -16,7 +16,19 @@
 const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
+
+    // @Param: SYSID_THISMAV
+    // @DisplayName: MAVLink system ID
+    // @Description: The identifier of this device in the MAVLink protocol
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+
+    // @Param: SYSID_MYGCS
+    // @DisplayName: Ground station MAVLink system ID
+    // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
     // @Param: SERIAL0_BAUD
@@ -41,14 +53,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
-
-    // @Param: KFF_PTCHCOMP
-    // @DisplayName: Pitch Compensation
-    // @Description: Adds pitch input to compensate for the loss of lift due to roll control. 0 = 0 %, 1 = 100%
-    // @Range: 0 1
-    // @Increment: 0.01
-    // @User: Advanced
-    GSCALAR(kff_pitch_compensation, "KFF_PTCHCOMP",   PITCH_COMP),
 
     // @Param: KFF_RDDRMIX
     // @DisplayName: Rudder Mix
@@ -138,13 +142,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
-	// @Param: ATT_CONTROLLER
-	// @DisplayName: Attitude controller selection
-	// @Description: Which attitude (roll, pitch, yaw) controller to enable
-	// @Values: 0:PID,1:APMControl
-	// @User: Standard
-	GSCALAR(att_controller,          "ATT_CONTROLLER",   ATT_CONTROL_PID),
-
     // @Param: ALT_MIX
     // @DisplayName: GPS to Baro Mix
     // @Description: The percent of mixing between GPS altitude and baro altitude. 0 = 100% gps, 1 = 100% baro. It is highly recommend that you not change this from the default of 1, as GPS altitude is notoriously unreliable. The only time I would recommend changing this is if you have a high altitude enabled GPS, and you are dropping a plane from a high altitude baloon many kilometers off the ground.
@@ -170,7 +167,18 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(alt_offset, "ALT_OFFSET",                 0),
 
+    // @Param: CMD_TOTAL
+    // @DisplayName: Number of loaded mission items
+    // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(command_total,          "CMD_TOTAL",      0),
+
+    // @Param: CMD_INDEX
+    // @DisplayName: Current mission command index
+    // @Description: The index of the currently running mission item. Do not change this manually.
+    // @Range: 1 255
+    // @User: Advanced
     GSCALAR(command_index,          "CMD_INDEX",      0),
 
     // @Param: WP_RADIUS
@@ -557,7 +565,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ALT_HOLD_RTL
     // @DisplayName: RTL altitude
-    // @Description: Return to launch target altitude
+    // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL.
     // @Units: centimeters
     // @User: User
     GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
@@ -576,13 +584,51 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",     1),
 
+    // @Param: FLAP_1_PERCNT
+    // @DisplayName: Flap 1 percentage
+    // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
+    // @Range: 0 100
+    // @Units: Percent
+    // @User: Advanced
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
+
+    // @Param: FLAP_1_SPEED
+    // @DisplayName: Flap 1 speed
+    // @Description: The speed in meters per second at which to engage FLAP_1_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
+    // @Range: 0 100
+	// @Increment: 1
+    // @Units: m/s
+    // @User: Advanced
     GSCALAR(flap_1_speed,           "FLAP_1_SPEED",   FLAP_1_SPEED),
+
+    // @Param: FLAP_2_PERCNT
+    // @DisplayName: Flap 2 percentage
+    // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
+    // @Range: 0 100
+	// @Units: Percent
+    // @User: Advanced
     GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
+
+    // @Param: FLAP_2_SPEED
+    // @DisplayName: Flap 2 speed
+    // @Description: The speed in meters per second at which to engage FLAP_2_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED
+    // @Range: 0 100
+	// @Units: m/s
+	// @Increment: 1
+    // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
-
+    // @Param: BATT_MONITOR
+    // @DisplayName: Battery monitoring
+    // @Description: Controls enabling monitoring of the battery's voltage and current
+    // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
+    // @User: Standard
     GSCALAR(battery_monitoring,     "BATT_MONITOR",   0),
+
+    // @Param: VOLT_DIVIDER
+    // @DisplayName: Voltage Divider
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)
+    // @User: Advanced
     GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",   VOLT_DIV_RATIO),
 
     // @Param: APM_PER_VOLT
@@ -608,15 +654,15 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13, 100:PX4
     // @User: Standard
     GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    BATTERY_VOLT_PIN),
 
     // @Param: BATT_CURR_PIN
     // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. 
+    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12, 101:PX4
     // @User: Standard
     GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    BATTERY_CURR_PIN),
 
@@ -659,16 +705,19 @@ const AP_Param::Info var_info[] PROGMEM = {
     //-----------
     // @Group: RC1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(channel_roll,            "RC1_", RC_Channel),
+    GGROUP(rc_1,                    "RC1_", RC_Channel),
+
     // @Group: RC2_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(channel_pitch,           "RC2_", RC_Channel),
+    GGROUP(rc_2,                    "RC2_", RC_Channel),
+
     // @Group: RC3_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(channel_throttle,        "RC3_", RC_Channel),
+    GGROUP(rc_3,                    "RC3_", RC_Channel),
+
     // @Group: RC4_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(channel_rudder,          "RC4_", RC_Channel),
+    GGROUP(rc_4,                    "RC4_", RC_Channel),
 
     // @Group: RC5_
     // @Path: ../libraries/RC_Channel/RC_Channel_aux.cpp, ../libraries/RC_Channel/RC_Channel.cpp
@@ -711,27 +760,32 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
 
-	GGROUP(pidServoRoll,            "RLL2SRV_",   PID),
-	GGROUP(pidServoPitch,           "PTCH2SRV_",  PID),
-	GGROUP(pidServoRudder,          "YW2SRV_",    PID),
-
-    // @Group: CTL_RLL_
+    // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
-	GGROUP(rollController,          "CTL_RLL_",   AP_RollController),
+	GGROUP(rollController,          "RLL2SRV_",   AP_RollController),
 
-    // @Group: CTL_PTCH_
+    // @Group: PTCH2SRV_
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
-	GGROUP(pitchController,         "CTL_PTCH_",  AP_PitchController),
+	GGROUP(pitchController,         "PTCH2SRV_",  AP_PitchController),
 
-    // @Group: CTL_YAW_
+    // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-	GGROUP(yawController,           "CTL_YAW_",   AP_YawController),
+	GGROUP(yawController,           "YAW2SRV_",   AP_YawController),
 
 	// variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
     GOBJECT(compass,                "COMPASS_",     Compass),
+
+    // @Group: SCHED_
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
+    GOBJECT(scheduler, "SCHED_", AP_Scheduler),
+
+    // @Group: RCMAP_
+    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
+    GOBJECT(rcmap,                "RCMAP_",         RCMapper),
+
     GOBJECT(gcs0,                                   "SR0_",     GCS_MAVLINK),
     GOBJECT(gcs3,                                   "SR3_",     GCS_MAVLINK),
 
@@ -776,6 +830,28 @@ const AP_Param::Info var_info[] PROGMEM = {
     AP_VAREND
 };
 
+/*
+  This is a conversion table from old parameter values to new
+  parameter names. The startup code looks for saved values of the old
+  parameters and will copy them across to the new parameters if the
+  new parameter does not yet have a saved value. It then saves the new
+  value.
+
+  Note that this works even if the old parameter has been removed. It
+  relies on the old k_param index not being removed
+
+  The second column below is the index in the var_info[] table for the
+  old object. This should be zero for top level parameters.
+ */
+const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
+    { Parameters::k_param_pidServoRoll, 0, AP_PARAM_FLOAT, "RLL2SRV_P" },
+    { Parameters::k_param_pidServoRoll, 1, AP_PARAM_FLOAT, "RLL2SRV_I" },
+    { Parameters::k_param_pidServoRoll, 2, AP_PARAM_FLOAT, "RLL2SRV_D" },
+
+    { Parameters::k_param_pidServoPitch, 0, AP_PARAM_FLOAT, "PTCH2SRV_P" },
+    { Parameters::k_param_pidServoPitch, 1, AP_PARAM_FLOAT, "PTCH2SRV_I" },
+    { Parameters::k_param_pidServoPitch, 2, AP_PARAM_FLOAT, "PTCH2SRV_D" },
+};
 
 static void load_parameters(void)
 {
@@ -793,7 +869,7 @@ static void load_parameters(void)
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-
+        AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }

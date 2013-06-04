@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.42beta"
+#define THISFIRMWARE "ArduRover v2.42beta3"
 
 /* 
 This is the APMrover2 firmware. It was originally derived from
@@ -73,7 +73,9 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Airspeed.h>    // needed for AHRS build
 #include <memcheck.h>
 #include <DataFlash.h>
+#include <AP_RCMapper.h>        // RC input mapping library
 #include <SITL.h>
+#include <AP_Scheduler.h>       // main loop scheduler
 #include <stdarg.h>
 
 #include <AP_HAL_AVR.h>
@@ -115,6 +117,15 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 //
 static Parameters      g;
 
+// main loop scheduler
+static AP_Scheduler scheduler;
+
+// mapping between input channels
+static RCMapper rcmap;
+
+// primary control channels
+static RC_Channel *channel_steer;
+static RC_Channel *channel_throttle;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -158,7 +169,7 @@ static GPS         *g_gps;
 // flight modes convenience array
 static AP_Int8		*modes = &g.mode1;
 
-#if CONFIG_ADC == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static AP_ADC_ADS7844 adc;
 #endif
 
@@ -213,11 +224,7 @@ AP_InertialSensor_Oilpan ins( &adc );
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-#if HIL_MODE == HIL_MODE_ATTITUDE
-AP_AHRS_HIL ahrs(&ins, g_gps);
-#else
 AP_AHRS_DCM ahrs(&ins, g_gps);
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -525,20 +532,6 @@ static uint8_t 		delta_ms_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
-// Time in miliseconds of start of medium control loop.  Milliseconds
-static uint32_t 	medium_loopTimer;
-// Counters for branching from main control loop to slower loops
-static uint8_t 			medium_loopCounter;	
-// Number of milliseconds used in last medium loop cycle
-static uint8_t			delta_ms_medium_loop;
-
-// Counters for branching from medium control loop to slower loops
-static uint8_t 			slow_loopCounter;
-// Counter to trigger execution of very low rate processes
-static uint8_t 			superslow_loopCounter;
-// Counter to trigger execution of 1 Hz processes
-static uint8_t				counter_one_herz;
-
 // % MCU cycles used
 static float 			load;
 
@@ -546,6 +539,34 @@ static float 			load;
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
+  scheduler table - all regular tasks apart from the fast_loop()
+  should be listed here, along with how often they should be called
+  (in 20ms units) and the maximum time they are expected to take (in
+  microseconds)
+ */
+static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+    { update_GPS,             5,   2500 },
+    { navigate,               5,   1600 },
+    { update_compass,         5,   2000 },
+    { update_commands,        5,   1000 },
+    { update_logging,         5,   1000 },
+    { read_battery,           5,   1000 },
+    { read_receiver_rssi,     5,   1000 },
+    { read_trim_switch,       5,   1000 },
+    { read_control_switch,   15,   1000 },
+    { update_events,         15,   1000 },
+    { check_usb_mux,         15,   1000 },
+    { mount_update,           1,    500 },
+    { failsafe_check,         5,    500 },
+    { compass_accumulate,     1,    900 },
+    { one_second_loop,       50,   3000 }
+};
+
+
+/*
+  setup is called when the sketch starts
+ */
 void setup() {
 	memcheck_init();
     cliSerial = hal.console;
@@ -559,17 +580,25 @@ void setup() {
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
 
 	init_ardupilot();
+
+    // initialise the main loop scheduler
+    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
 }
 
+/*
+  loop() is called rapidly while the sketch is running
+ */
 void loop()
 {
+    uint32_t timer = millis();
+
     // We want this to execute at 50Hz, but synchronised with the gyro/accel
     uint16_t num_samples = ins.num_samples_available();
     if (num_samples >= 1) {
-		delta_ms_fast_loop	= millis() - fast_loopTimer;
+		delta_ms_fast_loop	= timer - fast_loopTimer;
 		load                = (float)(fast_loopTimeStamp - fast_loopTimer)/delta_ms_fast_loop;
 		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-		fast_loopTimer      = millis();
+		fast_loopTimer      = timer;
 
 		mainLoop_count++;
 
@@ -577,35 +606,14 @@ void loop()
 		// ---------------------
 		fast_loop();
 
-		// Execute the medium loop
-		// -----------------------
-		medium_loop();
-
-		counter_one_herz++;
-		if(counter_one_herz == 50){
-			one_second_loop();
-			counter_one_herz = 0;
-		}
-
-		if (millis() - perf_mon_timer > 20000) {
-			if (mainLoop_count != 0) {
-				if (g.log_bitmask & MASK_LOG_PM)
-					#if HIL_MODE != HIL_MODE_ATTITUDE
-					Log_Write_Performance();
-					#endif
-				resetPerfData();
-			}
-		}
-
+        // tell the scheduler one tick has passed
+        scheduler.tick();
 		fast_loopTimeStamp = millis();
-    } else if (millis() - fast_loopTimeStamp < 19) {
-        // less than 19ms has passed. We have at least one millisecond
-        // of free time. The most useful thing to do with that time is
-        // to accumulate some sensor readings, specifically the
-        // compass, which is often very noisy but is not interrupt
-        // driven, so it can't accumulate readings by itself
-        if (g.compass_enabled) {
-            compass.accumulate();
+    } else {
+        uint16_t dt = timer - fast_loopTimer;
+        if (dt < 20) {
+            uint16_t time_to_next_loop = 20 - dt;
+            scheduler.run(time_to_next_loop * 1000U);
         }
     }
 }
@@ -626,7 +634,7 @@ static void fast_loop()
     // some space available
     gcs_send_message(MSG_RETRY_DEFERRED);
 
-	#if HIL_MODE == HIL_MODE_SENSORS
+	#if HIL_MODE != HIL_MODE_DISABLED
 		// update hil before dcm update
 		gcs_update();
 	#endif
@@ -638,13 +646,11 @@ static void fast_loop()
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
 
-	# if HIL_MODE == HIL_MODE_DISABLED
-		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-			Log_Write_Attitude();
+    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
+        Log_Write_Attitude();
 
-		if (g.log_bitmask & MASK_LOG_IMU)
-			DataFlash.Log_Write_IMU(&ins);
-	#endif
+    if (g.log_bitmask & MASK_LOG_IMU)
+        DataFlash.Log_Write_IMU(&ins);
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -658,140 +664,110 @@ static void fast_loop()
     gcs_data_stream_send();
 }
 
-static void medium_loop()
+/*
+  update camera mount - 50Hz
+ */
+static void mount_update(void)
 {
 #if MOUNT == ENABLED
 	camera_mount.update_mount_position();
 #endif
-
-	// This is the start of the medium (10 Hz) loop pieces
-	// -----------------------------------------
-	switch(medium_loopCounter) {
-
-		// This case deals with the GPS
-		//-------------------------------
-		case 0:
-            failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
-			medium_loopCounter++;
-            update_GPS();
-            
-			#if HIL_MODE != HIL_MODE_ATTITUDE
-            if (g.compass_enabled && compass.read()) {
-                ahrs.set_compass(&compass);
-                // Calculate heading
-                compass.null_offsets();
-                if (g.log_bitmask & MASK_LOG_COMPASS) {
-                    Log_Write_Compass();
-                }
-            } else {
-                ahrs.set_compass(NULL);
-            }
-			#endif
-			break;
-
-		// This case performs some navigation computations
-		//------------------------------------------------
-		case 1:
-			medium_loopCounter++;
-            navigate();
-			break;
-
-		// command processing
-		//------------------------------
-		case 2:
-			medium_loopCounter++;
-
-            read_receiver_rssi();
-
-			// perform next command
-			// --------------------
-			update_commands();
-			break;
-
-		// This case deals with sending high rate telemetry
-		//-------------------------------------------------
-		case 3:
-			medium_loopCounter++;
-			#if HIL_MODE != HIL_MODE_ATTITUDE
-				if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-					Log_Write_Attitude();
-
-				if (g.log_bitmask & MASK_LOG_CTUN)
-					Log_Write_Control_Tuning();
-			#endif
-
-			if (g.log_bitmask & MASK_LOG_NTUN)
-				Log_Write_Nav_Tuning();
-			break;
-
-		// This case controls the slow loop
-		//---------------------------------
-		case 4:
-			medium_loopCounter = 0;
-			delta_ms_medium_loop	= millis() - medium_loopTimer;
-			medium_loopTimer      	= millis();
-
-			if (g.battery_monitoring != 0){
-				read_battery();
-			}
-
-			read_trim_switch();
-
-			slow_loop();
-			break;
-	}
 }
 
-static void slow_loop()
+/*
+  check for GCS failsafe - 10Hz
+ */
+static void failsafe_check(void)
 {
-	// This is the slow (3 1/3 Hz) loop pieces
-	//----------------------------------------
-	switch (slow_loopCounter){
-		case 0:
-			slow_loopCounter++;
-			superslow_loopCounter++;
-			if(superslow_loopCounter >=200) {				//	200 = Execute every minute
-				#if HIL_MODE != HIL_MODE_ATTITUDE
-					if(g.compass_enabled) {
-						compass.save_offsets();
-					}
-				#endif
-				superslow_loopCounter = 0;
-			}
-			break;
-
-		case 1:
-			slow_loopCounter++;
-
-			// Read 3-position switch on radio
-			// -------------------------------
-			read_control_switch();
-
-			update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
-
-#if MOUNT == ENABLED
-			camera_mount.update_mount_type();
-#endif
-			break;
-
-		case 2:
-			slow_loopCounter = 0;
-                        
-			update_events();
-
-            mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
-
-            check_usb_mux();
-			break;
-	}
+    failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
 }
 
-static void one_second_loop()
+/*
+  if the compass is enabled then try to accumulate a reading
+ */
+static void compass_accumulate(void)
+{
+    if (g.compass_enabled) {
+        compass.accumulate();
+    }    
+}
+
+/*
+  check for new compass data - 10Hz
+ */
+static void update_compass(void)
+{
+    if (g.compass_enabled && compass.read()) {
+        ahrs.set_compass(&compass);
+        // update offsets
+        compass.null_offsets();
+        if (g.log_bitmask & MASK_LOG_COMPASS) {
+            Log_Write_Compass();
+        }
+    } else {
+        ahrs.set_compass(NULL);
+    }
+}
+
+/*
+  log some key data - 10Hz
+ */
+static void update_logging(void)
+{
+    if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
+        Log_Write_Attitude();
+    
+    if (g.log_bitmask & MASK_LOG_CTUN)
+        Log_Write_Control_Tuning();
+
+    if (g.log_bitmask & MASK_LOG_NTUN)
+        Log_Write_Nav_Tuning();
+}
+
+/*
+  once a second events
+ */
+static void one_second_loop(void)
 {
 	if (g.log_bitmask & MASK_LOG_CURRENT)
 		Log_Write_Current();
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
+
+    // allow orientation change at runtime to aid config
+    ahrs.set_orientation();
+
+    set_control_channels();
+
+    // cope with changes to aux functions
+    update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+    enable_aux_servos();
+
+#if MOUNT == ENABLED
+    camera_mount.update_mount_type();
+#endif
+
+    // cope with changes to mavlink system ID
+    mavlink_system.sysid = g.sysid_this_mav;
+
+    static uint8_t counter;
+
+    counter++;
+
+    // write perf data every 20s
+    if (counter == 20) {
+        if (g.log_bitmask & MASK_LOG_PM)
+            Log_Write_Performance();
+        resetPerfData();
+    }
+
+    // save compass offsets once a minute
+    if (counter >= 60) {				
+        if (g.compass_enabled) {
+            compass.save_offsets();
+        }
+        counter = 0;
+    }
 }
 
 static void update_GPS(void)
@@ -852,12 +828,12 @@ static void update_current_mode(void)
           the same type of steering control as auto mode. The throttle
           controls the target speed, in proportion to the throttle
          */
-        bearing_error_cd = g.channel_steer.pwm_to_angle();
+        bearing_error_cd = channel_steer->pwm_to_angle();
         calc_nav_steer();
 
         /* we need to reset the I term or it will build up */
         g.pidNavSteer.reset_I();
-        calc_throttle(g.channel_throttle.pwm_to_angle() * 0.01 * g.speed_cruise);
+        calc_throttle(channel_throttle->pwm_to_angle() * 0.01 * g.speed_cruise);
         break;
 
     case LEARNING:
@@ -868,14 +844,14 @@ static void update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
-        g.channel_throttle.servo_out = g.channel_throttle.control_in;
-        g.channel_steer.servo_out = g.channel_steer.pwm_to_angle();
+        channel_throttle->servo_out = channel_throttle->control_in;
+        channel_steer->servo_out = channel_steer->pwm_to_angle();
         break;
 
     case HOLD:
         // hold position - stop motors and center steering
-        g.channel_throttle.servo_out = 0;
-        g.channel_steer.servo_out = 0;
+        channel_throttle->servo_out = 0;
+        channel_steer->servo_out = 0;
         break;
 
     case INITIALISING:
@@ -903,7 +879,7 @@ static void update_navigation()
         calc_nav_steer();
         calc_bearing_error();
         if (verify_RTL()) {  
-            g.channel_throttle.servo_out = g.throttle_min.get();
+            channel_throttle->servo_out = g.throttle_min.get();
             set_mode(HOLD);
         }
         break;

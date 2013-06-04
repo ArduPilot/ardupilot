@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 //  GPS_406.cpp - 406 GPS library for Arduino
 //  Code by Michael Smith, Jason Short, Jordi Muñoz and Jose Julio. DIYDrones.com

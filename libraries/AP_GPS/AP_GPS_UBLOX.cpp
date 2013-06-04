@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 //  u-blox UBX GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com

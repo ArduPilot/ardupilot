@@ -67,19 +67,10 @@ uint8_t AP_Param::_num_vars;
 // storage and naming information about all types that can be saved
 const AP_Param::Info *AP_Param::_var_info;
 
-// write to EEPROM, checking each byte to avoid writing
-// bytes that are already correct
+// write to EEPROM
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
-    const uint8_t *b = (const uint8_t *)ptr;
-    while (size--) {
-        uint8_t v = hal.storage->read_byte(ofs);
-        if (v != *b) {
-            hal.storage->write_byte(ofs, *b);
-        }
-        b++;
-        ofs++;
-    }
+    hal.storage->write_block(ofs, ptr, size);
 }
 
 // write a sentinal value at the given offset
@@ -608,6 +599,17 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
     return NULL;
 }
 
+// Find a variable by name.
+//
+AP_Param *
+AP_Param::find_P(const prog_char_t *name, enum ap_var_type *ptype)
+{
+    char param_name[AP_MAX_NAME_SIZE+1];
+    strncpy_P(param_name, name, AP_MAX_NAME_SIZE);
+    param_name[AP_MAX_NAME_SIZE] = 0;
+    return find(param_name, ptype);
+}
+
 // Find a variable by index. Note that this is quite slow.
 //
 AP_Param *
@@ -639,7 +641,7 @@ AP_Param::find_object(const char *name)
 
 // Save the variable to EEPROM, if supported
 //
-bool AP_Param::save(void)
+bool AP_Param::save(bool force_save)
 {
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
@@ -692,7 +694,7 @@ bool AP_Param::save(void)
         } else {
             v2 = PGM_FLOAT(&info->def_value);
         }
-        if (v1 == v2) {
+        if (v1 == v2 && !force_save) {
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
@@ -705,6 +707,7 @@ bool AP_Param::save(void)
 
     if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _eeprom_size) {
         // we are out of room for saving variables
+        hal.console->println_P(PSTR("EEPROM full"));
         return false;
     }
 
@@ -770,20 +773,20 @@ bool AP_Param::load(void)
 }
 
 // set a AP_Param variable to a specified value
-void AP_Param::set_value(enum ap_var_type type, void *ptr, float def_value)
+void AP_Param::set_value(enum ap_var_type type, void *ptr, float value)
 {
     switch (type) {
     case AP_PARAM_INT8:
-        ((AP_Int8 *)ptr)->set(def_value);
+        ((AP_Int8 *)ptr)->set(value);
         break;
     case AP_PARAM_INT16:
-        ((AP_Int16 *)ptr)->set(def_value);
+        ((AP_Int16 *)ptr)->set(value);
         break;
     case AP_PARAM_INT32:
-        ((AP_Int32 *)ptr)->set(def_value);
+        ((AP_Int32 *)ptr)->set(value);
         break;
     case AP_PARAM_FLOAT:
-        ((AP_Float *)ptr)->set(def_value);
+        ((AP_Float *)ptr)->set(value);
         break;
     default:
         break;
@@ -1054,3 +1057,72 @@ void AP_Param::show_all(AP_HAL::BetterStream *port)
     }
 }
 
+// convert one old vehicle parameter to new object parameter
+void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
+{
+
+    // find the old value in EEPROM.
+    uint16_t pofs;
+    AP_Param::Param_header header;
+    header.type = PGM_UINT8(&info->type);
+    header.key = PGM_UINT8(&info->old_key);
+    header.group_element = PGM_UINT8(&info->old_group_element);
+    if (!scan(&header, &pofs)) {
+        // the old parameter isn't saved in the EEPROM. It was
+        // probably still set to the default value, which isn't stored
+        // no need to convert
+        return;
+    }
+
+    // load the old value from EEPROM
+    uint8_t old_value[type_size((enum ap_var_type)header.type)];
+    hal.storage->read_block(old_value, pofs+sizeof(header), sizeof(old_value));
+    const AP_Param *ap = (const AP_Param *)&old_value[0];
+
+    // find the new variable in the variable structures
+    enum ap_var_type ptype;
+    AP_Param *ap2;
+    ap2 = find_P((const prog_char_t *)&info->new_name[0], &ptype);
+    if (ap2 == NULL) {
+        hal.console->printf_P(PSTR("Unknown conversion '%S'\n"), info->new_name);
+        return;
+    }
+
+    // see if we can load it from EEPROM
+    if (ap2->load()) {
+        // the new parameter already has a value set by the user, or
+        // has already been converted
+        return;
+    }
+
+    // see if they are the same type
+    if (ptype == header.type) {
+        // copy the value over only if the new parameter does not already
+        // have the old value (via a default).
+        if (memcmp(ap2, ap, sizeof(old_value)) != 0) {
+            memcpy(ap2, ap, sizeof(old_value));
+            // and save
+            ap2->save();
+        }
+    } else if (ptype <= AP_PARAM_FLOAT && header.type <= AP_PARAM_FLOAT) {
+        // perform scalar->scalar conversion
+        float v = ap->cast_to_float((enum ap_var_type)header.type);
+        if (v != ap2->cast_to_float(ptype)) {
+            // the value needs to change
+            set_value(ptype, ap2, v);
+            ap2->save();
+        }
+    } else {
+        // can't do vector<->scalar conversion, or different vector types
+        hal.console->printf_P(PSTR("Bad conversion type '%S'\n"), info->new_name);
+    }
+}
+
+
+// convert old vehicle parameters to new object parametersv
+void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size)
+{
+    for (uint8_t i=0; i<table_size; i++) {
+        convert_old_parameter(&conversion_table[i]);
+    }
+}

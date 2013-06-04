@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #ifndef __AP_MOTORS_CLASS_H__
 #define __AP_MOTORS_CLASS_H__
@@ -81,7 +81,7 @@ public:
     virtual void        set_frame_orientation( uint8_t new_orientation ) { _frame_orientation = new_orientation; };
 
     // enable - starts allowing signals to be sent to motors
-    virtual void        enable() {};
+    virtual void        enable() = 0;
 
     // arm, disarm or check status status of motors
     bool                armed() { return _armed; };
@@ -100,8 +100,7 @@ public:
     };
 
     // output_min - sends minimum values out to the motors
-    virtual void        output_min() {
-    };
+    virtual void        output_min() = 0;
 
     // reached_limits - return whether we hit the limits of the motors
     uint8_t             reached_limit( uint8_t which_limit = AP_MOTOR_ANY_LIMIT ) {
@@ -109,8 +108,7 @@ public:
     }
 
     // motor test
-    virtual void        output_test() {
-    };
+    virtual void        output_test() = 0;
 
     // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
     virtual void        throttle_pass_through();

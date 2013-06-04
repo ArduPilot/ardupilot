@@ -112,6 +112,8 @@ static void init_ardupilot()
     //
     load_parameters();
 
+    set_control_channels();
+
     // reset the uartA baud rate after parameter load
     hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
 
@@ -175,9 +177,12 @@ static void init_ardupilot()
     }
 #endif
 
- #if CONFIG_ADC == ENABLED
-    adc.Init();      // APM ADC library initialization
+ #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    apm1_adc.Init();      // APM ADC library initialization
  #endif
+
+    // initialise airspeed sensor
+    airspeed.init();
 
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
@@ -325,10 +330,9 @@ static void startup_ground(void)
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
+    hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
-    if (gcs3.initialised) {
-        hal.uartC->set_blocking_writes(false);
-    }
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
@@ -394,6 +398,11 @@ static void set_mode(enum FlightMode mode)
 
     if (g.log_bitmask & MASK_LOG_MODE)
         Log_Write_Mode(control_mode);
+
+    // reset attitude integrators on mode change
+    g.rollController.reset_I();
+    g.pitchController.reset_I();
+    g.yawController.reset_I();    
 }
 
 static void check_long_failsafe()
@@ -532,7 +541,6 @@ static void resetPerfData(void) {
     ahrs.renorm_range_count         = 0;
     ahrs.renorm_blowup_count = 0;
     gps_fix_count                   = 0;
-    pmTest1                                 = 0;
     perf_mon_timer                  = millis();
 }
 
@@ -656,9 +664,8 @@ static void servo_write(uint8_t ch, uint16_t pwm)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     if (!g.hil_servos) {
-        extern RC_Channel *rc_ch[8];
         if (ch < 8) {
-            rc_ch[ch]->radio_out = pwm;
+            RC_Channel::rc_channel(ch)->radio_out = pwm;
         }
         return;
     }

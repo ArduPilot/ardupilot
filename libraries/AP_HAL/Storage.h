@@ -16,7 +16,7 @@ public:
     virtual void write_byte(uint16_t loc, uint8_t value) = 0;
     virtual void write_word(uint16_t loc, uint16_t value) = 0;
     virtual void write_dword(uint16_t loc, uint32_t value) = 0;
-    virtual void write_block(uint16_t dst, void* src, size_t n) = 0;
+    virtual void write_block(uint16_t dst, const void* src, size_t n) = 0;
 };
 
 #endif // __AP_HAL_STORAGE_H__

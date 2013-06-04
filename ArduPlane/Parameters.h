@@ -88,6 +88,7 @@ public:
         k_param_elevon_output,
         k_param_att_controller,
         k_param_mixing_gain,
+        k_param_scheduler,
 
         // 110: Telemetry control
         //
@@ -159,10 +160,10 @@ public:
         //
         // 170: Radio settings
         //
-        k_param_channel_roll = 170,
-        k_param_channel_pitch,
-        k_param_channel_throttle,
-        k_param_channel_rudder,
+        k_param_rc_1 = 170,
+        k_param_rc_2,
+        k_param_rc_3,
+        k_param_rc_4,
         k_param_rc_5,
         k_param_rc_6,
         k_param_rc_7,
@@ -190,7 +191,7 @@ public:
         //
         // 200: Feed-forward gains
         //
-        k_param_kff_pitch_compensation = 200,
+        k_param_kff_pitch_compensation = 200, // unused
         k_param_kff_rudder_mix,
         k_param_kff_pitch_to_throttle,
         k_param_kff_throttle_to_pitch,
@@ -228,12 +229,13 @@ public:
         k_param_pitchController,
         k_param_yawController,
         k_param_L1_controller,
+        k_param_rcmap,
 
         //
         // 240: PID Controllers
         k_param_pidNavRoll = 240, // unused
-        k_param_pidServoRoll,
-        k_param_pidServoPitch,
+        k_param_pidServoRoll, // unused
+        k_param_pidServoPitch, // unused
         k_param_pidNavPitchAirspeed,
         k_param_pidServoRudder,
         k_param_pidTeThrottle,
@@ -256,7 +258,6 @@ public:
 
     // Feed-forward gains
     //
-    AP_Float kff_pitch_compensation;
     AP_Float kff_rudder_mix;
     AP_Float kff_pitch_to_throttle;
     AP_Float kff_throttle_to_pitch;
@@ -266,9 +267,6 @@ public:
 
     // navigation controller type. See AP_Navigation::ControllerType
     AP_Int8  nav_controller;
-
-    // attitude controller type.
-    AP_Int8  att_controller;
 
     // Estimation
     //
@@ -380,10 +378,10 @@ public:
     AP_Int8 level_roll_limit;
 
     // RC channels
-    RC_Channel channel_roll;
-    RC_Channel channel_pitch;
-    RC_Channel channel_throttle;
-    RC_Channel channel_rudder;
+    RC_Channel rc_1;
+    RC_Channel rc_2;
+    RC_Channel rc_3;
+    RC_Channel rc_4;
     RC_Channel_aux rc_5;
     RC_Channel_aux rc_6;
     RC_Channel_aux rc_7;
@@ -397,16 +395,13 @@ public:
     RC_Channel_aux rc_12;
 #endif
 
-    // PID controllers
+    // Attitude to servo controllers
     //
-    PID         pidServoRoll;
-    PID         pidServoPitch;
-    PID         pidServoRudder;
-
     AP_RollController  rollController;
     AP_PitchController pitchController;
     AP_YawController   yawController;
 
+    // PID controllers
     PID         pidNavPitchAirspeed;
     PID         pidTeThrottle;
     PID         pidNavPitchAltitude;
@@ -415,10 +410,10 @@ public:
     Parameters() :
         // variable				default
         //----------------------------------------
-        channel_roll                    (CH_1),
-        channel_pitch                   (CH_2),
-        channel_throttle                (CH_3),
-        channel_rudder                  (CH_4),
+        rc_1                                    (CH_1),
+        rc_2                                    (CH_2),
+        rc_3                                    (CH_3),
+        rc_4                                    (CH_4),
         rc_5                                    (CH_5),
         rc_6                                    (CH_6),
         rc_7                                    (CH_7),
@@ -433,11 +428,6 @@ public:
 #endif
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-
-        pidServoRoll        (SERVO_ROLL_P,    SERVO_ROLL_I,    SERVO_ROLL_D,    SERVO_ROLL_INT_MAX_CENTIDEGREE),
-        pidServoPitch       (SERVO_PITCH_P,   SERVO_PITCH_I,   SERVO_PITCH_D,   SERVO_PITCH_INT_MAX_CENTIDEGREE),
-        pidServoRudder      (SERVO_YAW_P,     SERVO_YAW_I,     SERVO_YAW_D,     SERVO_YAW_INT_MAX),
-
         pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
         pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
         pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),

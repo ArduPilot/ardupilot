@@ -136,6 +136,8 @@ static void init_arm_motors()
     // --------------------
     init_simple_bearing();
 
+    initial_armed_bearing = ahrs.yaw_sensor;
+
     // Reset home position
     // -------------------
     if(ap.home_is_set)
@@ -246,6 +248,15 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // check for unreasonable mag field length
+    float mag_field = pythagorous3(compass.mag_x, compass.mag_y, compass.mag_z);
+    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.5 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.5) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
+        }
+        return;
+    }
+
     // barometer health check
     if(!barometer.healthy) {
         if (display_failure) {
@@ -264,13 +275,15 @@ static void pre_arm_checks(bool display_failure)
     }
 #endif
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
     // check board voltage
-    if(board_voltage() < BOARD_VOLTAGE_MIN) {
+    if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Low Board Voltage"));
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
         }
         return;
     }
+#endif
 
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;

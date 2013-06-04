@@ -73,7 +73,7 @@ static void read_trim_switch()
                     g.command_total = 0;
                     g.command_index =0;
                     nav_command_index = 0;
-                    if (g.channel_steer.control_in > 3000) {
+                    if (channel_steer->control_in > 3000) {
 						// if roll is full right store the current location as home
                         init_home();
                     }

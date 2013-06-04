@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 //	Initial Code by Jon Challinger
 //  Modified by Paul Riseborough
@@ -16,63 +16,64 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 
-	// @Param: OMEGA
-	// @DisplayName: Pitch to rate gain
-	// @Description: This is the gain from pitch angle error to demanded pitch rate. It controls the time constant from demanded to achieved pitch angle. For example if a time constant from demanded to achieved pitch of 0.5 sec was required, this gain would be set to 1/0.5 = 2.0. A value of 1.0 is a good default and will work with nearly all models. Advanced users may want to increase this to obtain a faster response.
-	// @Range: 0.8 2.5
+	// @Param: TCONST
+	// @DisplayName: Pitch Time Constant
+	// @Description: This controls the time constant in seconds from demanded to achieved pitch angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
+	// @Range: 0.4 1.0
+	// @Units: seconds
 	// @Increment: 0.1
 	// @User: Advanced
-	AP_GROUPINFO("OMEGA",      0, AP_PitchController, _kp_angle,       1.0),
+	AP_GROUPINFO("TCONST",      0, AP_PitchController, _tau,       0.5f),
 
-	// @Param: K_P
-	// @DisplayName: Pitch to elevator gain
-	// @Description: This is the gain from demanded pitch rate to demanded elevator. Provided CTL_PTCH_OMEGA is set to 1.0, then this gain works the same way as the P term in the old PID (PTCH2SRV_P) and can be set to the same value.
-	// @Range: 0.1 2
+	// @Param: P
+	// @DisplayName: Proportional Gain
+	// @Description: This is the gain from pitch angle to elevator. This gain works the same way as PTCH2SRV_P in the old PID controller and can be set to the same value.
+	// @Range: 0.1 1.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("K_P",        1, AP_PitchController, _kp_ff,          0.4),
+	AP_GROUPINFO("P",        1, AP_PitchController, _K_P,          0.4f),
 
-	// @Param: K_D
-	// @DisplayName: Pitch damping gain
-	// @Description: This is the gain from pitch rate error to demanded elevator. This adjusts the damping of the pitch control loop. It has the same effect as the D term in the old PID (PTCH2SRV_D) but without the large spikes in servo demands. This will be set to 0 as a default. Some airframes such as flying wings that have poor pitch damping can benefit from a small value of up to 0.1 on this gain term. This should be increased in 0.01 increments as to high a value can lead to a high frequency pitch oscillation that could overstress the airframe.
+	// @Param: D
+	// @DisplayName: Damping Gain
+	// @Description: This is the gain from pitch rate to elevator. This adjusts the damping of the pitch control loop. It has the same effect as PTCH2SRV_D in the old PID controller and can be set to the same value, but without the spikes in servo demands. This gain helps to reduce pitching in turbulence. Some airframes such as flying wings that have poor pitch damping can benefit from increasing this gain term. This should be increased in 0.01 increments as too high a value can lead to a high frequency pitch oscillation that could overstress the airframe.
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("K_D",        2, AP_PitchController, _kp_rate,        0.0),
+	AP_GROUPINFO("D",        2, AP_PitchController, _K_D,        0.0f),
 
-	// @Param: K_I
-	// @DisplayName: Pitch integrator gain
-	// @Description: This is the gain for integration of the pitch rate error. It has essentially the same effect as the I term in the old PID (PTCH2SRV_I). This can be set to 0 as a default, however users can increment this to make the pitch angle tracking more accurate.
-	// @Range: 0 0.3
-	// @Increment: 0.01
+	// @Param: I
+	// @DisplayName: Integrator Gain
+	// @Description: This is the gain applied to the integral of pitch angle. It has the same effect as PTCH2SRV_I in the old PID controller and can be set to the same value. Increasing this gain causes the controller to trim out constant offsets between demanded and measured pitch angle.
+	// @Range: 0 0.5
+	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("K_I",        3, AP_PitchController, _ki_rate,        0.0),
+	AP_GROUPINFO("I",        3, AP_PitchController, _K_I,        0.0f),
 
-	// @Param: RMAX_U
+	// @Param: RMAX_UP
 	// @DisplayName: Pitch up max rate
 	// @Description: This sets the maximum nose up pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
 	// @Units: degrees/second
 	// @Increment: 1
-	// @User: User
-	AP_GROUPINFO("RMAX_U",     4, AP_PitchController, _max_rate_pos,   0.0),
+	// @User: Advanced
+	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, _max_rate_pos,   0.0f),
 
-	// @Param: RMAX_D
+	// @Param: RMAX_DN
 	// @DisplayName: Pitch down max rate
 	// @Description: This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
 	// @Units: degrees/second
 	// @Increment: 1
-	// @User: User
-	AP_GROUPINFO("RMAX_D",     5, AP_PitchController, _max_rate_neg,   0.0),
+	// @User: Advanced
+	AP_GROUPINFO("RMAX_DN",     5, AP_PitchController, _max_rate_neg,   0.0f),
 
-	// @Param: K_RLL
+	// @Param: RLL
 	// @DisplayName: Roll compensation
 	// @Description: This is the gain term that is applied to the pitch rate offset calculated as required to keep the nose level during turns. The default value is 1 which will work for all models. Advanced users can use it to correct for height variation in turns. If height is lost initially in turns this can be increased in small increments of 0.05 to compensate. If height is gained initially in turns then it can be decreased.
 	// @Range: 0.7 1.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("K_RLL",      6, AP_PitchController, _roll_ff,        1.0),
+	AP_GROUPINFO("RLL",      6, AP_PitchController, _roll_ff,        1.0f),
 
 	AP_GROUPEND
 };
@@ -99,6 +100,11 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	if(_ahrs == NULL) return 0;
 	float delta_time    = (float)dt * 0.001f;
 	
+	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
+    // No conversion is required for K_D
+	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0);
+	float ki_rate = _K_I * _tau;
+
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
 	// Pitch rate offset is the component of turn rate about the pitch axis
@@ -106,6 +112,10 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	float rate_offset;
 	float bank_angle = _ahrs->roll;
 	bool inverted = false;
+
+    if (_tau < 0.1) {
+        _tau = 0.1;
+    }
 
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < radians(90))	{
@@ -131,7 +141,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	int32_t angle_err = angle - _ahrs->pitch_sensor;
 
 	// Calculate the desired pitch rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f * _kp_angle;
+	float desired_rate = angle_err * 0.01f / _tau;
 	
 	// limit the maximum pitch rate demand. Don't apply when inverted
 	// as the rates will be tuned when upright, and it is common that
@@ -159,11 +169,10 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	
 	// Multiply pitch rate error by _ki_rate and integrate
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!stabilize) {
+	if (!stabilize && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if ((fabsf(_ki_rate) > 0) && (dt > 0) && (aspeed > float(aspd_min)))
-		{
-		    float integrator_delta = rate_error * _ki_rate * scaler * delta_time;
+		if (dt > 0 && aspeed > float(aspd_min)) {
+		    float integrator_delta = rate_error * ki_rate * delta_time;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
 				integrator_delta = max(integrator_delta , 0);
@@ -181,7 +190,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * _kp_rate) + _integrator + (desired_rate * _kp_ff) ) * scaler;
+	_last_out = ( (rate_error * _K_D) + _integrator + (desired_rate * kp_ff) ) * scaler;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);

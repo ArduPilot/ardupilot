@@ -17,11 +17,16 @@ This page was generated using Tools/autotest/param_metadata/param_parse.py
 DO NOT EDIT
 -->
 
-<!-- add auto-generated table of contents with "Table of Contents Plus" plugin -->
+
+<p style="text-align: right"><a title="Table of Contents" href="/wiki/table-of-contents/"><span style="font-size: medium"><strong>Reference Manual Table of Contents</strong></span></a></p>
+<h3 style="text-align: center">Complete Parameter List</h3>
+<hr />
 
 <p>This is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your APM to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.</p>
 
-[toc]\n
+<!-- add auto-generated table of contents with "Table of Contents Plus" plugin -->
+[toc exclude="Complete Parameter List"]
+
 '''        
         self.t = ''
 

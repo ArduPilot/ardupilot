@@ -99,8 +99,6 @@
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
  # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
- # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
- # define CONFIG_PITOT_SOURCE_ADC_CHANNEL 7
  # define CONFIG_BARO     AP_BARO_BMP085
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -117,8 +115,6 @@
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
- # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
- # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
  # ifdef APM2_BETA_HARDWARE
  #  define CONFIG_BARO     AP_BARO_BMP085
  # else // APM2 Production Hardware (default)
@@ -135,8 +131,6 @@
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_STUB
- # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
- # define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
  # define CONFIG_BARO     AP_BARO_HIL
  # define CONFIG_COMPASS  AP_COMPASS_HIL
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -149,24 +143,11 @@
  # define BATTERY_VOLT_PIN      -1
  # define BATTERY_CURR_PIN      -1
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
- # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
- # define CONFIG_PITOT_SOURCE_ANALOG_PIN 11
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
  # define SERIAL0_BAUD 115200
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// ADC Enable - used to eliminate for systems which don't have ADC.
-//
-#ifndef CONFIG_ADC
- # if CONFIG_INS_TYPE == CONFIG_INS_OILPAN
-  #   define CONFIG_ADC ENABLED
- # else
-  #   define CONFIG_ADC DISABLED
- # endif
-#endif
 
 #ifndef CONFIG_BARO
  # error "CONFIG_BARO not set"
@@ -174,10 +155,6 @@
 
 #ifndef CONFIG_COMPASS
  # error "CONFIG_COMPASS not set"
-#endif
-
-#ifndef CONFIG_PITOT_SOURCE
- # error "CONFIG_PITOT_SOURCE not set"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -194,12 +171,6 @@
  #define CONFIG_BARO AP_BARO_HIL
  #undef CONFIG_INS_TYPE
  #define CONFIG_INS_TYPE CONFIG_INS_STUB
- #undef CONFIG_ADC
- #define CONFIG_ADC DISABLED
- #undef CONFIG_PITOT_SOURCE
- #define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
- #undef CONFIG_PITOT_SOURCE_ANALOG_PIN
- #define CONFIG_PITOT_SOURCE_ANALOG_PIN -1
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
 #endif

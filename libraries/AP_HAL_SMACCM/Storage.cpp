@@ -78,7 +78,7 @@ void SMACCMStorage::write_dword(uint16_t loc, uint32_t value)
   eeprom_write(loc, (uint8_t*)&value, sizeof(value));
 }
 
-void SMACCMStorage::write_block(uint16_t loc, void* src, size_t n)
+void SMACCMStorage::write_block(uint16_t loc, const void* src, size_t n)
 {
   eeprom_write(loc, (const uint8_t *)src, n);
 }
