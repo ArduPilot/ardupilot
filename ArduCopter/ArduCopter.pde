@@ -916,9 +916,6 @@ static void barometer_accumulate(void)
     barometer.accumulate();
 }
 
-// enable this to get console logging of scheduler performance
-#define SCHEDULER_DEBUG 0
-
 static void perf_update(void)
 {
     if (g.log_bitmask & MASK_LOG_PM)
