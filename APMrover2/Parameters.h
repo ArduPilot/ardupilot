@@ -32,6 +32,7 @@ public:
         k_param_num_resets,
         k_param_reset_switch_chan,
         k_param_initial_mode,
+        k_param_scheduler,
 
         // IO pins
         k_param_rssi_pin = 20,

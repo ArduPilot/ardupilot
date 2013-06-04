@@ -233,7 +233,6 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 {
 if (g.battery_monitoring == 3 || g.battery_monitoring == 4) {
 	print_hit_enter();
-	delta_ms_medium_loop = 100;
 
 	while(1){
 		delay(100);
@@ -423,6 +422,8 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 
+    uint8_t medium_loopCounter = 0;
+
 	while(1){
 		delay(20);
 		if (millis() - fast_loopTimer > 19) {
@@ -436,7 +437,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
 			if(g.compass_enabled) {
 				medium_loopCounter++;
-				if(medium_loopCounter == 5){
+				if(medium_loopCounter >= 5){
 					compass.read();
                     medium_loopCounter = 0;
 				}
@@ -489,6 +490,8 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     print_hit_enter();
 
+    uint8_t medium_loopCounter = 0;
+
     while(1) {
 		delay(20);
 		if (millis() - fast_loopTimer > 19) {
@@ -501,7 +504,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 			ahrs.update();
 
             medium_loopCounter++;
-            if(medium_loopCounter == 5){
+            if(medium_loopCounter >= 5){
                 if (compass.read()) {
                     // Calculate heading
                     Matrix3f m = ahrs.get_dcm_matrix();

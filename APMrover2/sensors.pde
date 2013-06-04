@@ -18,6 +18,9 @@ void ReadSCP1000(void) {}
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
+/*
+  read and update the battery
+ */
 static void read_battery(void)
 {
 	if(g.battery_monitoring == 0) {
@@ -30,11 +33,19 @@ static void read_battery(void)
         batt_volt_pin->set_pin(g.battery_volt_pin);
         battery_voltage1 = BATTERY_VOLTAGE(batt_volt_pin);
     }
-    if(g.battery_monitoring == 4) {
-        // this copes with changing the pin at runtime
-        batt_curr_pin->set_pin(g.battery_curr_pin);
-        current_amps1    = CURRENT_AMPS(batt_curr_pin);
-        current_total1   += current_amps1 * (float)delta_ms_medium_loop * 0.0002778;                                    // .0002778 is 1/3600 (conversion to hours)
+
+    if (g.battery_monitoring == 4) {
+        static uint32_t last_time_ms;
+        uint32_t tnow = hal.scheduler->millis();
+        float dt = tnow - last_time_ms;
+        if (last_time_ms != 0 && dt < 2000) {
+            // this copes with changing the pin at runtime
+            batt_curr_pin->set_pin(g.battery_curr_pin);
+            current_amps1    = CURRENT_AMPS(batt_curr_pin);
+            // .0002778 is 1/3600 (conversion to hours)
+            current_total1   += current_amps1 * dt * 0.0002778; 
+        }
+        last_time_ms = tnow;
     }
 }
 

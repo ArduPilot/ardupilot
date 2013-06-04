@@ -294,6 +294,10 @@ static void startup_ground(void)
 	// -----------------------
 	demo_servos(3);
 
+    hal.uartA->set_blocking_writes(false);
+    hal.uartB->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
