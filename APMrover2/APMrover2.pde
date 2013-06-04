@@ -595,10 +595,10 @@ void loop()
     // We want this to execute at 50Hz, but synchronised with the gyro/accel
     uint16_t num_samples = ins.num_samples_available();
     if (num_samples >= 1) {
-		delta_ms_fast_loop	= millis() - fast_loopTimer;
+		delta_ms_fast_loop	= timer - fast_loopTimer;
 		load                = (float)(fast_loopTimeStamp - fast_loopTimer)/delta_ms_fast_loop;
 		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-		fast_loopTimer      = millis();
+		fast_loopTimer      = timer;
 
 		mainLoop_count++;
 
@@ -741,6 +741,7 @@ static void one_second_loop(void)
 
     // cope with changes to aux functions
     update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+    enable_aux_servos();
 
 #if MOUNT == ENABLED
     camera_mount.update_mount_type();

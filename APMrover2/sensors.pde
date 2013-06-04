@@ -36,7 +36,7 @@ static void read_battery(void)
             batt_curr_pin->set_pin(g.battery_curr_pin);
             current_amps1    = CURRENT_AMPS(batt_curr_pin);
             // .0002778 is 1/3600 (conversion to hours)
-            current_total1   += current_amps1 * dt * 0.0002778; 
+            current_total1   += current_amps1 * dt * 0.0002778f; 
         }
         last_time_ms = tnow;
     }
