@@ -122,7 +122,7 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	if (!stabilize && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
 		if (dt > 0 && aspeed > float(aspd_min)) {
-		    float integrator_delta = rate_error * ki_rate * scaler * delta_time;
+		    float integrator_delta = rate_error * ki_rate * delta_time;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
                 integrator_delta = max(integrator_delta , 0);
