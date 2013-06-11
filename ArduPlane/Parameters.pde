@@ -627,7 +627,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: VOLT_DIVIDER
     // @DisplayName: Voltage Divider
-    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_DIVIDER). For the 3DR Power brick, this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
     // @User: Advanced
     GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",   VOLT_DIV_RATIO),
 
