@@ -29,6 +29,7 @@ private:
 	AP_Int16 _max_rate_pos;
 	AP_Int16 _max_rate_neg;
 	AP_Float _roll_ff;
+    AP_Int8  _intlim;
 	uint32_t _last_t;
 	float _last_out;
 	
