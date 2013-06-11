@@ -75,6 +75,14 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("RLL",      6, AP_PitchController, _roll_ff,        1.0f),
 
+	// @Param: IMAX
+	// @DisplayName: Integrator limit
+	// @Description: This limits the number of centi-degrees of elevator over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited elevator control effectiveness.
+	// @Range: 0 4500
+	// @Increment: 1
+	// @User: Advanced
+	AP_GROUPINFO("IMAX",      7, AP_PitchController, _imax,        1500),
+
 	AP_GROUPEND
 };
 
@@ -185,6 +193,12 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	} else {
 		_integrator = 0;
 	}
+
+    // Scale the integration limit
+    float intLimScaled = float(_imax) / scaler;
+
+    // Constrain the integrator state
+    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward

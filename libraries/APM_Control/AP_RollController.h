@@ -27,6 +27,7 @@ private:
 	AP_Float _K_I;
 	AP_Float _K_D;
 	AP_Int16 _max_rate;
+    AP_Int16  _imax;
 	uint32_t _last_t;
 	float _last_out;
 
