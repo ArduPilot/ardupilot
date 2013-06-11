@@ -312,8 +312,13 @@ static void startup_ground(void)
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
     hal.uartA->set_blocking_writes(false);
-    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
+
+#if 0
+    // leave GPS blocking until we have support for correct handling
+    // of GPS config in uBlox when non-blocking
+    hal.uartB->set_blocking_writes(false);
+#endif
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
