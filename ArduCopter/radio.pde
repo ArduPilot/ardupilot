@@ -172,7 +172,8 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
         // Note: we do not pass through the low throttle until 3 low throttle values are recieved
         failsafe_counter++;
         if( failsafe_counter >= FS_COUNTER ) {
-            failsafe_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
+            failsafe_counter = 2*FS_COUNTER;  // check to ensure we don't overflow the counter
+                                             // set to twice FS_COUNTER so that disabling failsafe requires twice as many values
             set_failsafe_radio(true);
             g.rc_3.set_pwm(throttle_pwm);   // pass through failsafe throttle
         }
