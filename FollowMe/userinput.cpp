@@ -26,9 +26,10 @@ void UserInput::init( int side_btn_ch, int joy_x_ch,
 
   _joy_x = hal.analogin->channel(joy_x_ch);
   _joy_y = hal.analogin->channel(joy_y_ch);
-  _side_btn = new DigitalDebounce(
-                new DigitalInvert(hal.gpio->channel(side_btn_ch)), 100);
+
+  C = new DigitalDebounce(new DigitalInvert(hal.gpio->channel(side_btn_ch)), 100);
   _joy_btn = new DigitalDebounce(hal.gpio->channel(joy_btn_ch), 100);
+
   hal.scheduler->register_timer_process(_periodic);
 }
 
@@ -104,4 +105,3 @@ void DigitalDebounce::periodic(uint32_t millis) {
       break;
   }
 }
-
