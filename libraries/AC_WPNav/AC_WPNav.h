@@ -50,8 +50,8 @@ public:
     /// set_loiter_target in cm from home
     void set_loiter_target(const Vector3f& position);
 
-    /// set_loiter_target - set initial loiter target based on current position and velocity
-    void set_loiter_target(const Vector3f& position, const Vector3f& velocity);
+    /// init_loiter_target - set initial loiter target based on current position and velocity
+    void init_loiter_target(const Vector3f& position, const Vector3f& velocity);
 
     /// move_loiter_target - move destination using pilot input
     void move_loiter_target(float control_roll, float control_pitch, float dt);

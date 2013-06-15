@@ -103,8 +103,8 @@ static void run_autopilot()
 // set_nav_mode - update nav mode and initialise any variables as required
 static bool set_nav_mode(uint8_t new_nav_mode)
 {
-    // boolean to ensure proper initialisation of nav modes
-    bool nav_initialised = false;
+    bool nav_initialised = false;       // boolean to ensure proper initialisation of nav modes
+    Vector3f stopping_point;            // stopping point for circle mode
 
     // return immediately if no change
     if( new_nav_mode == nav_mode ) {
@@ -119,13 +119,14 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_CIRCLE:
             // set center of circle to current position
-            circle_set_center(inertial_nav.get_position(), ahrs.yaw);
+            wp_nav.get_stopping_point(inertial_nav.get_position(),inertial_nav.get_velocity(),stopping_point);
+            circle_set_center(stopping_point,ahrs.yaw);
             nav_initialised = true;
             break;
 
         case NAV_LOITER:
             // set target to current position
-            wp_nav.set_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+            wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
             nav_initialised = true;
             break;
 
@@ -217,10 +218,11 @@ static void
 circle_set_center(const Vector3f current_position, float heading_in_radians)
 {
     float max_velocity;
+    float cir_radius = g.circle_radius * 100;
 
     // set circle center to circle_radius ahead of current position
-    circle_center.x = current_position.x + (float)g.circle_radius * 100 * cos_yaw;
-    circle_center.y = current_position.y + (float)g.circle_radius * 100 * sin_yaw;
+    circle_center.x = current_position.x + cir_radius * cos_yaw;
+    circle_center.y = current_position.y + cir_radius * sin_yaw;
 
     // if we are doing a panorama set the circle_angle to the current heading
     if( g.circle_radius <= 0 ) {
@@ -248,6 +250,9 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
     // initialise other variables
     circle_angle_total = 0;
     circle_angular_velocity = 0;
+
+    // initialise loiter target.  Note: feed forward velocity set to zero
+    wp_nav.init_loiter_target(current_position, Vector3f(0,0,0));
 }
 
 // update_circle - circle position controller's main call which in turn calls loiter controller with updated target position

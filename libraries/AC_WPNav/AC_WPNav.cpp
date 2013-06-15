@@ -143,8 +143,8 @@ void AC_WPNav::set_loiter_target(const Vector3f& position)
     _target_vel.y = 0;
 }
 
-/// set_loiter_target - set initial loiter target based on current position and velocity
-void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& velocity)
+/// init_loiter_target - set initial loiter target based on current position and velocity
+void AC_WPNav::init_loiter_target(const Vector3f& position, const Vector3f& velocity)
 {
     // set target position and velocity based on current pos and velocity
     _target.x = position.x;
@@ -155,6 +155,13 @@ void AC_WPNav::set_loiter_target(const Vector3f& position, const Vector3f& veloc
     // initialise desired roll and pitch to current roll and pitch.  This avoids a random twitch between now and when the loiter controller is first run
     _desired_roll = constrain_int32(_ahrs->roll_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
     _desired_pitch = constrain_int32(_ahrs->pitch_sensor,-MAX_LEAN_ANGLE,MAX_LEAN_ANGLE);
+
+    // initialise pilot input
+    _pilot_vel_forward_cms = 0;
+    _pilot_vel_right_cms = 0;
+
+    // set last velocity to current velocity
+    _vel_last = _inav->get_velocity();
 }
 
 /// move_loiter_target - move loiter target by velocity provided in front/right directions in cm/s
