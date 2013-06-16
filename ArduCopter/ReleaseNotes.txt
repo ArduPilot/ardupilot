@@ -1,5 +1,11 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.0.0-rc6 16-Jun-2013
+Improvements over 3.0.0-rc5
+1) bug fix to Circle mode's start position (was moving to last loiter target)
+2) WP_ACCEL parameter added to allow user to adjust acceleration during missions
+3) loiter acceleration set to half of LOIT_SPEED parameter value (was hard-coded)
+------------------------------------------------------------------
 ArduCopter 3.0.0-rc5 04-Jun-2013
 Improvements over 3.0.0-rc4
 1) bug fix to LAND flight mode in which it could try to fly to mission's next waypoint location
