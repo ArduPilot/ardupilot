@@ -109,7 +109,6 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_radio();
 	report_batt_monitor();
 	report_gains();
-	report_xtrack();
 	report_throttle();
 	report_modes();
 	report_compass();
@@ -510,25 +509,9 @@ static void report_gains()
 	cliSerial->printf_P(PSTR("servo steer:\n"));
 	print_PID(&g.pidServoSteer);
 
-	cliSerial->printf_P(PSTR("nav steer:\n"));
-	print_PID(&g.pidNavSteer);
-
 	cliSerial->printf_P(PSTR("speed throttle:\n"));
 	print_PID(&g.pidSpeedThrottle);
 
-	print_blanks(2);
-}
-
-static void report_xtrack()
-{
-	//print_blanks(2);
-	cliSerial->printf_P(PSTR("Crosstrack\n"));
-	print_divider();
-	// radio
-	cliSerial->printf_P(PSTR("XTRACK: %4.2f\n"
-						 "XTRACK angle: %d\n"),
-						 (float)g.crosstrack_gain,
-						 (int)g.crosstrack_entry_angle);
 	print_blanks(2);
 }
 

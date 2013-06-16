@@ -123,12 +123,6 @@ static void set_next_WP(const struct Location *wp)
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(current_loc, next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing_cd(current_loc, next_WP);
-	nav_bearing 		= target_bearing;
-
-	// set a new crosstrack bearing
-	// ----------------------------
-	reset_crosstrack();
 }
 
 static void set_guided_WP(void)
@@ -144,11 +138,6 @@ static void set_guided_WP(void)
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(current_loc, next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing_cd(current_loc, next_WP);
-
-	// set a new crosstrack bearing
-	// ----------------------------
-	reset_crosstrack();
 }
 
 // run this at setup on the ground
@@ -185,7 +174,6 @@ void init_home()
 
 static void restart_nav()
 {  
-    g.pidNavSteer.reset_I();
     g.pidSpeedThrottle.reset_I();
     prev_WP = current_loc;
     nav_command_ID = NO_COMMAND;

@@ -74,6 +74,8 @@ public:
         k_param_ch7_option,
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
+        k_param_turn_circle,
+        k_param_turn_max_g,
 
         //
         // 160: Radio settings
@@ -156,6 +158,7 @@ public:
         k_param_ins,
         k_param_compass,
         k_param_rcmap,
+        k_param_L1_controller,
 
         // 254,255: reserved
         };
@@ -194,14 +197,14 @@ public:
 
     // navigation parameters
     //
-    AP_Float    crosstrack_gain;
-    AP_Int16    crosstrack_entry_angle;
     AP_Float    speed_cruise;
     AP_Int8     speed_turn_gain;
     AP_Float    speed_turn_dist;    
     AP_Int8	    ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
+    AP_Float    turn_circle;
+    AP_Float    turn_max_g;
 
     // RC channels
     RC_Channel      rc_1;
@@ -265,7 +268,6 @@ public:
 
     // PID controllers
     //
-    PID         pidNavSteer;
     PID         pidServoSteer;
     PID         pidSpeedThrottle;
 
@@ -292,7 +294,6 @@ public:
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-        pidNavSteer         (0.7,             0.1,             0.2,             2000),
         pidServoSteer       (0.5,             0.1,             0.2,             2000),
         pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
         {}

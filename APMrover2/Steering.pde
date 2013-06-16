@@ -87,7 +87,7 @@ static void calc_throttle(float target_speed)
       reduce target speed in proportion to turning rate, up to the
       SPEED_TURN_GAIN percentage.
     */
-    float steer_rate = fabsf((nav_steer_cd/nav_gain_scaler) / (float)SERVO_MAX);
+    float steer_rate = fabsf(lateral_acceleration / (g.turn_max_g*GRAVITY_MSS));
     steer_rate = constrain_float(steer_rate, 0.0, 1.0);
     float reduction = 1.0 - steer_rate*(100 - g.speed_turn_gain)*0.01;
     
@@ -117,27 +117,55 @@ static void calc_throttle(float target_speed)
  * Calculate desired turn angles (in medium freq loop)
  *****************************************/
 
-static void calc_nav_steer()
+static void calc_lateral_acceleration()
 {
-	// Adjust gain based on ground speed
-    if (ground_speed < 0.01) {
-        nav_gain_scaler = 1.4f;
-    } else {
-        nav_gain_scaler = g.speed_cruise / ground_speed;
-    }
-	nav_gain_scaler = constrain_float(nav_gain_scaler, 0.2f, 1.4f);
+    switch (control_mode) {
+    case AUTO:
+        nav_controller->update_waypoint(prev_WP, next_WP);
+        break;
 
-	// Calculate the required turn of the wheels rover
-	// ----------------------------------------
+    case RTL:
+    case GUIDED:
+    case STEERING:
+        nav_controller->update_waypoint(current_loc, next_WP);
+        break;
+    default:
+        return;
+    }
+
+	// Calculate the required turn of the wheels
 
     // negative error = left turn
 	// positive error = right turn
-	nav_steer_cd = g.pidNavSteer.get_pid_4500(bearing_error_cd, nav_gain_scaler);
+    lateral_acceleration = nav_controller->lateral_acceleration();
+}
 
-    // avoid obstacles, if any
-    nav_steer_cd += obstacle.turn_angle*100;
+/*
+  calculate steering angle given lateral_acceleration
+ */
+static void calc_nav_steer()
+{
+    float speed = g_gps->ground_speed_cm * 0.01f;
+    float steer;
 
-    channel_steer->servo_out = nav_steer_cd;
+    if (speed < 1.0f) {
+        // gps speed isn't very accurate at low speed
+        speed = 1.0f;
+    }
+
+    // add in obstacle avoidance
+    lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
+
+    // constrain to max G force
+    lateral_acceleration = constrain_float(lateral_acceleration, -g.turn_max_g*GRAVITY_MSS, g.turn_max_g*GRAVITY_MSS);
+
+    // this is a linear approximation of the inverse steering
+    // equation for a rover. It returns steering as a proportion
+    // from -1 to 1
+    steer = 0.5 * lateral_acceleration * g.turn_circle / (speed*speed);
+    steer = constrain_float(steer, -1, 1);
+
+    channel_steer->servo_out = steer * 4500;
 }
 
 /*****************************************

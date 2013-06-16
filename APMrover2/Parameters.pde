@@ -123,23 +123,6 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(pack_capacity,          "BATT_CAPACITY",    HIGH_DISCHARGE),
 
-    // @Param: XTRK_GAIN_SC
-    // @DisplayName: Crosstrack Gain
-    // @Description: This controls how hard the Rover tries to follow the lines between waypoints, as opposed to driving directly to the next waypoint. The value is the scale between distance off the line and angle to meet the line (in Degrees * 100)
-    // @Range: 0 2000
-    // @Increment: 1
-    // @User: Standard
-	GSCALAR(crosstrack_gain,        "XTRK_GAIN_SC",     XTRACK_GAIN_SCALED),
-
-    // @Param: XTRK_ANGLE_CD
-    // @DisplayName: Crosstrack Entry Angle
-    // @Description: Maximum angle used to correct for track following.
-    // @Units: centi-Degrees
-    // @Range: 0 9000
-    // @Increment: 1
-    // @User: Standard
-	GSCALAR(crosstrack_entry_angle, "XTRK_ANGLE_CD",    XTRACK_ENTRY_ANGLE_CENTIDEGREE),
-
 	// @Param: AUTO_TRIGGER_PIN
 	// @DisplayName: Auto mode trigger pin
 	// @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
@@ -431,7 +414,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(waypoint_radius,        "WP_RADIUS",        2.0f),
 
-	GGROUP(pidNavSteer,             "HDNG2STEER_",  PID),
+    // @Param: TURN_CIRCLE
+    // @DisplayName: Turning circle
+    // @Description: The diameter of the turning circle in meters of the rover at low speed when wheels are turned to the maximum turn angle
+    // @Units: meters
+    // @Range: 0.5 50
+    // @Increment: 0.1
+    // @User: Standard
+	GSCALAR(turn_circle,            "TURN_CIRCLE",      1.5f),
+
+    // @Param: TURN_MAX_G
+    // @DisplayName: Turning maximum G force
+    // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
+    // @Units: gravities
+    // @Range: 0.2 10
+    // @Increment: 0.1
+    // @User: Standard
+	GSCALAR(turn_max_g,             "TURN_MAX_G",      2.0f),
+
 	GGROUP(pidServoSteer,           "STEER2SRV_",   PID),
 	GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
@@ -455,6 +455,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
 	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
+
+    // @Group: NAVL1_
+    // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
+    GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
 
     // @Group: SONAR_
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder_analog.cpp

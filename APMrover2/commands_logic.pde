@@ -6,10 +6,6 @@
 static void
 handle_process_nav_cmd()
 {
-	// reset navigation integrators
-	// -------------------------
-    g.pidNavSteer.reset_I();
-
     gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nav_command.id);
 
 	switch(next_nav_command.id){
@@ -211,8 +207,6 @@ static bool verify_takeoff()
 
 static bool verify_nav_wp()
 {
-    update_crosstrack();
-
     if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,

@@ -90,6 +90,8 @@
 #include <SITL.h>
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <stdarg.h>
+#include <AP_Navigation.h>
+#include <AP_L1_Control.h>
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
@@ -242,6 +244,11 @@ AP_InertialSensor_Oilpan ins( &adc );
 
 AP_AHRS_DCM ahrs(&ins, g_gps);
 
+static AP_L1_Control L1_controller(ahrs);
+
+// selected navigation controller
+static AP_Navigation *nav_controller = &L1_controller;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
 #endif
@@ -372,17 +379,6 @@ const	float radius_of_earth 	= 6378100;	// meters
 // true if we have a position estimate from AHRS
 static bool have_position;
 
-// This is the currently calculated direction to fly.  
-// deg * 100 : 0 to 360
-static int32_t nav_bearing;
-// This is the direction to the next waypoint
-// deg * 100 : 0 to 360
-static int32_t target_bearing;	
-//This is the direction from the last waypoint to the next waypoint 
-// deg * 100 : 0 to 360
-static int32_t crosstrack_bearing;
-// A gain scaler to account for ground speed/headwind/tailwind
-static float	nav_gain_scaler 		= 1.0f;		
 static bool rtl_complete = false;
 
 // There may be two active commands in Auto mode.  
@@ -428,15 +424,6 @@ static float 	ground_speed = 0;
 static int16_t throttle_last = 0, throttle = 500;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Location Errors
-////////////////////////////////////////////////////////////////////////////////
-// Difference between current bearing and desired bearing.  in centi-degrees
-static int32_t bearing_error_cd;
-
-// Distance perpandicular to the course line that we are off trackline.  Meters 
-static float	crosstrack_error;
-
-////////////////////////////////////////////////////////////////////////////////
 // CH7 control
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -462,8 +449,8 @@ static float	current_total1;
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
 ////////////////////////////////////////////////////////////////////////////////
-// The instantaneous desired steering angle.  Hundredths of a degree
-static int32_t nav_steer_cd;
+// The instantaneous desired lateral acceleration in m/s/s
+static float lateral_acceleration;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint distances
@@ -662,9 +649,6 @@ static void fast_loop()
 	ahrs.update();
 
     read_sonars();
-
-	// uses the yaw from the DCM to give more accurate turns
-	calc_bearing_error();
 
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
         Log_Write_Attitude();
@@ -865,23 +849,22 @@ static void update_current_mode(void)
     case AUTO:
     case RTL:
     case GUIDED:
+        calc_lateral_acceleration();
         calc_nav_steer();
         calc_throttle(g.speed_cruise);
         break;
 
-    case STEERING:
+    case STEERING: {
         /*
-          in steering mode we control the bearing error, which gives
-          the same type of steering control as auto mode. The throttle
-          controls the target speed, in proportion to the throttle
+          in steering mode we control lateral acceleration directly
          */
-        bearing_error_cd = channel_steer->pwm_to_angle();
+        lateral_acceleration = g.turn_max_g * GRAVITY_MSS * (channel_steer->pwm_to_angle()/4500.0f);
         calc_nav_steer();
 
-        /* we need to reset the I term or it will build up */
-        g.pidNavSteer.reset_I();
+        // and throttle gives speed in proportion to cruise speed
         calc_throttle(channel_throttle->pwm_to_angle() * 0.01 * g.speed_cruise);
         break;
+    }
 
     case LEARNING:
     case MANUAL:
@@ -923,8 +906,8 @@ static void update_navigation()
     case RTL:
     case GUIDED:
         // no loitering around the wp with the rover, goes direct to the wp position
+        calc_lateral_acceleration();
         calc_nav_steer();
-        calc_bearing_error();
         if (verify_RTL()) {  
             channel_throttle->servo_out = g.throttle_min.get();
             set_mode(HOLD);
