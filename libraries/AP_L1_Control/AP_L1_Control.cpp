@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
   return the bank angle needed to achieve tracking from the last
   update_*() operation
  */
-int32_t AP_L1_Control::nav_roll_cd(void)
+int32_t AP_L1_Control::nav_roll_cd(void) const
 {
 	float ret;	
 	ret = degrees(atanf(_latAccDem * 0.101972f) * 100.0f); // 0.101972 = 1/9.81
@@ -43,22 +43,31 @@ int32_t AP_L1_Control::nav_roll_cd(void)
 	return ret;
 }
 
-int32_t AP_L1_Control::nav_bearing_cd(void)
+/*
+  return the lateral acceleration needed to achieve tracking from the last
+  update_*() operation
+ */
+float AP_L1_Control::lateral_acceleration(void) const
+{
+	return _latAccDem;
+}
+
+int32_t AP_L1_Control::nav_bearing_cd(void) const
 {
 	return wrap_180_cd(RadiansToCentiDegrees(_nav_bearing));
 }
 
-int32_t AP_L1_Control::bearing_error_cd(void)
+int32_t AP_L1_Control::bearing_error_cd(void) const
 {
 	return RadiansToCentiDegrees(_bearing_error);
 }
 
-int32_t AP_L1_Control::target_bearing_cd(void)
+int32_t AP_L1_Control::target_bearing_cd(void) const
 {
 	return _target_bearing_cd;
 }
 
-float AP_L1_Control::turn_distance(float wp_radius)
+float AP_L1_Control::turn_distance(float wp_radius) const
 {
     wp_radius *= sq(_ahrs->get_EAS2TAS());
 	return min(wp_radius, _L1_dist);
@@ -69,7 +78,7 @@ bool AP_L1_Control::reached_loiter_target(void)
 	return _WPcircle;
 }
 
-float AP_L1_Control::crosstrack_error(void)
+float AP_L1_Control::crosstrack_error(void) const
 {
 	return _crosstrack_error;
 }
