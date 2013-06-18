@@ -59,7 +59,7 @@ then
 	      	echo "Loaded /fs/microsd/px4io.bin OK" >> /fs/microsd/APM/px4io_update.log
                 tone_alarm MSPAA
 	      else
-	      	echo "Failed loading /fs/microsd/px4io.bin" >> /fs/microsd/APM/px4io_update.log
+	        echo "Failed loading /fs/microsd/px4io.bin (check PX4IO is in bootloader mode - hold down the Safety Button while powering up)" >> /fs/microsd/APM/px4io_update.log
 		echo "Failed to upgrade PX4IO firmware - check PX4IO is in bootloader mode"
                 tone_alarm MNGGG
 	      fi
