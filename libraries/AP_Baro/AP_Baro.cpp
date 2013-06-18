@@ -109,9 +109,11 @@ float AP_Baro::get_altitude(void)
     // this has no filtering of the pressure values, use a separate
     // filter if you want a smoothed value. The AHRS driver wants
     // unsmoothed values
-    scaling                                 = (float)_ground_pressure / (float)get_pressure();
+    scaling                                 = (float)get_pressure() / (float)_ground_pressure;
     temp                                    = ((float)_ground_temperature) + 273.15f;
-    _altitude = logf(scaling) * temp * 29.271267f;
+    // This is an exact calculation that is within +-2.5m of the standard atmosphere tables
+    // in the troposphere (up to 11,000 m amsl).
+	_altitude = 153.8462f * temp * (1.0f - exp(0.190259f * log(scaling)));
 
     _last_altitude_t = _last_update;
 
@@ -119,6 +121,24 @@ float AP_Baro::get_altitude(void)
     _climb_rate_filter.update(_altitude, _last_update);
 
     return _altitude;
+}
+
+// return current scale factor that converts from equivalent to true airspeed
+// valid for altitudes up to 10km AMSL
+// assumes standard atmosphere lapse rate
+float AP_Baro::get_EAS2TAS(void)
+{
+    if ((abs(_altitude - _last_altitude_EAS2TAS) < 100.0) && (_EAS2TAS != 0.0)) {
+        // not enough change to require re-calculating
+        return _EAS2TAS;
+    }
+    else
+    {
+    float tempK = ((float)_ground_temperature) + 273.15f - 0.0065f * _altitude;
+    _EAS2TAS = safe_sqrt(1.225f / ((float)get_pressure() / (287.26f * tempK)));
+    _last_altitude_EAS2TAS = _altitude;
+    return _EAS2TAS;
+    }
 }
 
 // return current climb_rate estimeate relative to time that calibrate()
