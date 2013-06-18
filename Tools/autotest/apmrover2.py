@@ -2,7 +2,8 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
-import mavutil, random
+from pymavlink import mavutil
+import random
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
