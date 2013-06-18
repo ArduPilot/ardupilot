@@ -6,8 +6,10 @@ import pexpect, os, sys, shutil, atexit
 import optparse, fnmatch, time, glob, traceback, signal
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink', 'generator'))
+
+# cope with the mavlink package not being installed, and just being a git tree
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink'))
+
 import util
 
 os.environ['PYTHONUNBUFFERED'] = '1'
