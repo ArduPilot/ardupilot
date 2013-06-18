@@ -273,7 +273,9 @@ static void calc_throttle()
         return;
     }
 
-    if (!alt_control_airspeed()) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+        channel_throttle->servo_out = SpdHgt_Controller->get_throttle_demand();
+    } else if (!alt_control_airspeed()) {
         int16_t throttle_target = g.throttle_cruise + throttle_nudge;
 
         // TODO: think up an elegant way to bump throttle when
@@ -302,6 +304,7 @@ static void calc_throttle()
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out,
                                                        g.throttle_min.get(), g.throttle_max.get());
     }
+
 
 }
 
@@ -336,7 +339,9 @@ static void calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
     // --------------------------------
-    if (alt_control_airspeed()) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+        nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
+    } else if (alt_control_airspeed()) {
         nav_pitch_cd = -g.pidNavPitchAirspeed.get_pid(airspeed_error_cm);
     } else {
         nav_pitch_cd = g.pidNavPitchAltitude.get_pid(altitude_error_cm);
@@ -382,37 +387,57 @@ static void throttle_slew_limit(int16_t last_throttle)
 }
 
 /*
-  check for automatic takeoff conditions being met
- */
+  This process must be run at 50Hz
+  Check for automatic takeoff conditions being met
+  If acceleration reaches threshold, start timer and wait takeoff_throttle_delay*0.1 seconds before checking speed.
+  If at the end of 1.5 seconds the speed condition has not been met, then reset.
+  
+*/
 static bool auto_takeoff_check(void)
 {
-    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK_FIX_3D) {
+    uint32_t now = hal.scheduler->micros();
+
+    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK_FIX_3D) 
+    {
         // no auto takeoff without GPS lock
         return false;
     }
-    if (g_gps->ground_speed < g.takeoff_throttle_min_speed*100.0f) {
-        // we haven't reached the minimum ground speed
-        return false;
-    }
-
-    if (g.takeoff_throttle_min_accel > 0.0f) {
-        float xaccel = ins.get_accel().x;
-        if (ahrs.pitch_sensor > -3000 && 
-            ahrs.pitch_sensor < 4500 &&
-            abs(ahrs.roll_sensor) < 3000 && 
-            xaccel >= g.takeoff_throttle_min_accel) {
-            // trigger with minimum acceleration when flat
-            // Thanks to Chris Miser for this suggestion
-            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), xaccel);
-            return true;
+    if (SpdHgt_Controller->get_VXdot() >= g.takeoff_throttle_min_accel || g.takeoff_throttle_min_accel == 0.0 || launchCountStarted)
+    {
+        if (!launchCountStarted) 
+        {
+		launchCountStarted = true;
+        last_tkoff_arm_time = now;
+        gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), SpdHgt_Controller->get_VXdot(), 0.1f*float(min(g.takeoff_throttle_delay,15)));
         }
-        return false;
-    }
-
-    // we're good for takeoff
-    return true;
+ 		if ((now - last_tkoff_arm_time) <= 2500000)
+		{
+            
+			if ((g_gps->ground_speed > g.takeoff_throttle_min_speed*100.0f || g.takeoff_throttle_min_speed == 0.0) && ((now -last_tkoff_arm_time) >= min(uint32_t(g.takeoff_throttle_delay*100000),1500000)))
+            {
+                gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), g_gps->ground_speed*100.0f);
+			    launchCountStarted = false;
+		        last_tkoff_arm_time = 0;
+			    return true;
+		    }
+		    else
+			{
+ 			    launchCountStarted = true;
+ 			    return false;
+            }
+        }
+        else
+        {
+            gcs_send_text_fmt(PSTR("Timeout AUTO"));
+		    launchCountStarted = false;
+		    last_tkoff_arm_time = 0;
+	    	return false;
+        }
+    }         
+    launchCountStarted = false;
+	last_tkoff_arm_time = 0;
+    return false;
 }
-
 
 /* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 

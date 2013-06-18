@@ -322,7 +322,8 @@ static bool verify_takeoff()
         nav_controller->update_level_flight();        
     }
 
-    if (adjusted_altitude_cm() > takeoff_altitude)  {
+    // Set takeoff to complete 2 seconds before reaching altitude to allow for height controller to transition smoothly
+    if (adjusted_altitude_cm() > takeoff_altitude - min(max(int32_t(2.0f*fabs(barometer.get_climb_rate())),0),15))  {
         hold_course_cd = -1;
         takeoff_complete = true;
         next_WP = prev_WP = current_loc;
