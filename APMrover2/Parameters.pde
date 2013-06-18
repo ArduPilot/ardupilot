@@ -301,6 +301,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle sailsafe triggers.
+    // @Range: 925 1100
+    // @Increment: 1
     // @User: Standard
 	GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     910),
 

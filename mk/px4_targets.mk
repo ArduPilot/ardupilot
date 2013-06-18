@@ -20,7 +20,6 @@ $(BUILDROOT)/module.mk:
 	$(v) echo "MODULE_COMMAND = ArduPilot" >> $@
 	$(v) echo "SRCS = $(SKETCH).cpp $(SKETCHLIBSRCS)" >> $@
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $@
-	$(v) echo "MAXOPTIMIZATION  = -Os" >> $@
 
 px4: $(PX4_ROOT)/Archives/px4fmu.export $(SKETCHCPP) $(BUILDROOT)/module.mk
 	$(RULEHDR)

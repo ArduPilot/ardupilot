@@ -6,8 +6,10 @@ import pexpect, os, sys, shutil, atexit
 import optparse, fnmatch, time, glob, traceback, signal
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink', 'pymavlink', 'generator'))
+
+# cope with the mavlink package not being installed, and just being a git tree
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink'))
+
 import util
 
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -117,7 +119,7 @@ def convert_gpx():
     import glob
     mavlog = glob.glob(util.reltopdir("../buildlogs/*.tlog"))
     for m in mavlog:
-        util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
+        util.run_cmd(util.reltopdir("../mavlink/pymavlink/tools/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
