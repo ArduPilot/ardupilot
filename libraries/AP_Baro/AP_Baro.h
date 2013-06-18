@@ -36,6 +36,9 @@ public:
     // of the last calibrate() call
     float        get_altitude(void);
 
+    // get scale factor required to convert equivalent to true airspeed
+    float        get_EAS2TAS(void);
+
     // return how many pressure samples were used to obtain
     // the last pressure reading
     uint8_t        get_pressure_samples(void) {
@@ -67,6 +70,8 @@ private:
     AP_Float                            _ground_temperature;
     AP_Float                            _ground_pressure;
     float                               _altitude;
+    float                               _last_altitude_EAS2TAS;
+    float                               _EAS2TAS;
     uint32_t                            _last_altitude_t;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
 };
