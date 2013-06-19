@@ -636,7 +636,7 @@
 #endif
 
 #ifndef CIRCLE_RATE
- # define CIRCLE_RATE               5.0f        // degrees per second turn rate
+ # define CIRCLE_RATE               20.0f        // degrees per second turn rate
 #endif
 
 // Guided Mode
