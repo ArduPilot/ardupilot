@@ -1650,9 +1650,11 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
+        // copy control_roll and pitch for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
+        // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
 
@@ -1665,9 +1667,9 @@ void update_roll_pitch_mode(void)
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
-        // copy control_roll and pitch for reporting purposes
-        control_roll = nav_roll;
-        control_pitch = nav_pitch;
+        // user input, although ignored is put into control_roll and pitch for reporting purposes
+        control_roll = g.rc_1.control_in;
+        control_pitch = g.rc_2.control_in;
         break;
 
     case ROLL_PITCH_STABLE_OF:
@@ -1676,6 +1678,7 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
+        // copy pilot input to control_roll and pitch for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
@@ -1695,7 +1698,7 @@ void update_roll_pitch_mode(void)
         if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
         }
-        // copy user input for logging purposes
+        // copy user input for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
