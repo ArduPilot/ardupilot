@@ -8,12 +8,34 @@
  *   of the License, or (at your option) any later version.
  */
 
+#include <AP_HAL.h>
 #include <AP_Math.h>
 #include <AP_Common.h>
-#include <AP_HAL.h>
+#include <AP_ADC.h>
 #include <AP_Airspeed.h>
 
 extern const AP_HAL::HAL& hal;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+ #include <AP_ADC_AnalogSource.h>
+ #define ARSPD_DEFAULT_PIN 64
+ extern AP_ADC_ADS7844 apm1_adc;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ #define ARSPD_DEFAULT_PIN 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+ #define ARSPD_DEFAULT_PIN 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <fcntl.h>
+ #include <unistd.h>
+ #include <systemlib/airspeed.h>
+ #include <drivers/drv_airspeed.h>
+ #include <uORB/topics/differential_pressure.h>
+ #define ARSPD_DEFAULT_PIN 11
+#else
+ #define ARSPD_DEFAULT_PIN 0
+#endif
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
@@ -42,8 +64,15 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @Increment: 0.1
     AP_GROUPINFO("RATIO",  3, AP_Airspeed, _ratio, 1.9936f),
 
+    // @Param: PIN
+    // @DisplayName: Airspeed pin
+    // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 65 on the PX4 for an EagleTree I2C airspeed sensor.
+    // @User: Advanced
+    AP_GROUPINFO("PIN",  4, AP_Airspeed, _pin, ARSPD_DEFAULT_PIN),
+
     AP_GROUPEND
 };
+
 
 /*
   this scaling factor converts from the old system where we used a 
@@ -51,6 +80,65 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
   voltage in volts directly from the ADC driver
  */
 #define SCALING_OLD_CALIBRATION 819 // 4095/5
+
+void AP_Airspeed::init()
+{
+    _last_pressure = 0;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    if (_pin == 65) {
+        _ets_fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+        if (_ets_fd == -1) {
+            hal.console->println("Failed to open ETS airspeed driver");
+            _enable.set(0);
+        }
+        if (OK != ioctl(_ets_fd, SENSORIOCSPOLLRATE, 100) ||
+            OK != ioctl(_ets_fd, SENSORIOCSQUEUEDEPTH, 15)) {
+            hal.console->println("Failed to setup ETS driver rate and queue");
+        }
+        return;
+    }
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    if (_pin == 64) {
+        _source = new AP_ADC_AnalogSource( &apm1_adc, 7, 1.0f);
+        return;
+    }
+#endif
+    _source = hal.analogin->channel(_pin);
+}
+
+// read the airspeed sensor
+float AP_Airspeed::get_pressure(void)
+{
+    if (!_enable) {
+        return 0;
+    }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    if (_ets_fd != -1) {
+        // read from the ETS airspeed sensor
+        float sum = 0;
+        uint16_t count = 0;
+        struct differential_pressure_s report;
+
+        while (::read(_ets_fd, &report, sizeof(report)) == sizeof(report)) {
+            sum += report.differential_pressure_pa;
+            count++;
+        }
+        if (count == 0) {
+            return _last_pressure;
+        }
+        _last_pressure = sum / count;
+        return _last_pressure;
+    }
+#endif
+
+    if (_source == NULL) {
+        return 0;
+    }
+    _last_pressure = _source->voltage_average_ratiometric() * SCALING_OLD_CALIBRATION;
+    return _last_pressure;
+}
 
 // calibrate the airspeed. This must be called at least once before
 // the get_airspeed() interface can be used
@@ -61,14 +149,16 @@ void AP_Airspeed::calibrate()
     if (!_enable) {
         return;
     }
-    _source->voltage_average_ratiometric();
+    // discard first reading
+    get_pressure();
     for (c = 0; c < 10; c++) {
         hal.scheduler->delay(100);
-        sum += _source->voltage_average_ratiometric() * SCALING_OLD_CALIBRATION;
+        sum += get_pressure();
     }
     float raw = sum/c;
     _offset.set_and_save(raw);
     _airspeed = 0;
+    _raw_airspeed = 0;
 }
 
 // read the airspeed sensor
@@ -78,8 +168,8 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
-    float raw               = _source->voltage_average_ratiometric() * SCALING_OLD_CALIBRATION;
+    float raw               = get_pressure();
     airspeed_pressure       = max(raw - _offset, 0);
-    float new_airspeed      = sqrtf(airspeed_pressure * _ratio);
-    _airspeed               = 0.7f * _airspeed  +  0.3f * new_airspeed;
+    _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
+    _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
 }

@@ -308,10 +308,10 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0, // port 0
-        10000 * g.channel_roll.norm_output(),
-        10000 * g.channel_pitch.norm_output(),
-        10000 * g.channel_throttle.norm_output(),
-        10000 * g.channel_rudder.norm_output(),
+        10000 * channel_roll->norm_output(),
+        10000 * channel_pitch->norm_output(),
+        10000 * channel_throttle->norm_output(),
+        10000 * channel_rudder->norm_output(),
         0,
         0,
         0,
@@ -340,19 +340,18 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     if (!g.hil_servos) {
-        extern RC_Channel* rc_ch[8];
         mavlink_msg_servo_output_raw_send(
             chan,
             micros(),
             0,     // port
-            rc_ch[0]->radio_out,
-            rc_ch[1]->radio_out,
-            rc_ch[2]->radio_out,
-            rc_ch[3]->radio_out,
-            rc_ch[4]->radio_out,
-            rc_ch[5]->radio_out,
-            rc_ch[6]->radio_out,
-            rc_ch[7]->radio_out);
+            RC_Channel::rc_channel(0)->radio_out,
+            RC_Channel::rc_channel(1)->radio_out,
+            RC_Channel::rc_channel(2)->radio_out,
+            RC_Channel::rc_channel(3)->radio_out,
+            RC_Channel::rc_channel(4)->radio_out,
+            RC_Channel::rc_channel(5)->radio_out,
+            RC_Channel::rc_channel(6)->radio_out,
+            RC_Channel::rc_channel(7)->radio_out);
         return;
     }
 #endif
@@ -378,7 +377,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
     } else if (!ahrs.airspeed_estimate(&aspeed)) {
         aspeed = 0;
     }
-    float throttle_norm = g.channel_throttle.norm_output() * 100;
+    float throttle_norm = channel_throttle->norm_output() * 100;
     throttle_norm = constrain_int16(throttle_norm, -100, 100);
     uint16_t throttle = ((uint16_t)(throttle_norm + 100)) / 2;
     mavlink_msg_vfr_hud_send(
@@ -1882,7 +1881,6 @@ mission_failed:
         // our GCS for failsafe purposes
         if (msg->sysid != g.sysid_my_gcs) break;
         last_heartbeat_ms = millis();
-        pmTest1++;
         break;
     }
 
@@ -1919,6 +1917,7 @@ mission_failed:
 
         barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
+        airspeed.disable();
         break;
     }
 #endif // HIL_MODE

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.0.0-rc3"
+#define THISFIRMWARE "ArduCopter V3.0.0"
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -103,6 +103,7 @@
 #include <memcheck.h>           // memory limit checker
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
+#include <AP_RCMapper.h>        // RC input mapping library
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -405,6 +406,7 @@ static int8_t control_mode = STABILIZE;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 static uint8_t oldSwitchPosition;
+static RCMapper rcmap;
 
 // receiver RSSI
 static uint8_t receiver_rssi;
@@ -486,7 +488,7 @@ static float scaleLongDown = 1;
 ////////////////////////////////////////////////////////////////////////////////
 // This is the angle from the copter to the next waypoint in centi-degrees
 static int32_t wp_bearing;
-// The original bearing to the next waypoint.  used to check if we've passed the waypoint
+// The original bearing to the next waypoint.  used to point the nose of the copter at the next waypoint
 static int32_t original_wp_bearing;
 // The location of home in relation to the copter in centi-degrees
 static int32_t home_bearing;
@@ -535,6 +537,10 @@ static float sin_pitch;
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
 static int32_t initial_simple_bearing;
 
+// Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
+static int32_t initial_armed_bearing;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Rate contoller targets
 ////////////////////////////////////////////////////////////////////////////////
@@ -580,6 +586,9 @@ static float circle_angle;
 static float circle_angle_total;
 // deg : how many times to circle as specified by mission command
 static uint8_t circle_desired_rotations;
+static float circle_angular_acceleration;       // circle mode's angular acceleration
+static float circle_angular_velocity;           // circle mode's angular velocity
+static float circle_angular_velocity_max;       // circle mode's max angular velocity
 // How long we should stay in Loiter Mode for mission scripting (time in seconds)
 static uint16_t loiter_time_max;
 // How long have we been loitering - The start time in millis
@@ -906,9 +915,6 @@ static void barometer_accumulate(void)
 {
     barometer.accumulate();
 }
-
-// enable this to get console logging of scheduler performance
-#define SCHEDULER_DEBUG 0
 
 static void perf_update(void)
 {
@@ -1271,6 +1277,9 @@ static void super_slow_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
+    // pass latest alt hold kP value to navigation controller
+    wp_nav.set_althold_kP(g.pi_alt_hold.kP());
+
     // log battery info to the dataflash
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
@@ -1280,6 +1289,12 @@ static void super_slow_loop()
 
     // auto disarm checks
     auto_disarm_check();
+
+    // make it possible to change orientation at runtime - useful
+    // during initial config
+    if (!motors.armed()) {
+        ahrs.set_orientation();
+    }
 
     // agmatthews - USERHOOKS
 #ifdef USERHOOK_SUPERSLOWLOOP
@@ -1517,7 +1532,7 @@ void update_yaw_mode(void)
 
     case YAW_RESETTOARMEDYAW:
         // changes yaw to be same as when quad was armed
-        nav_yaw = get_yaw_slew(nav_yaw, initial_simple_bearing, AUTO_YAW_SLEW_RATE);
+        nav_yaw = get_yaw_slew(nav_yaw, initial_armed_bearing, AUTO_YAW_SLEW_RATE);
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
@@ -1635,9 +1650,11 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
+        // copy control_roll and pitch for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
+        // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
 
@@ -1650,9 +1667,9 @@ void update_roll_pitch_mode(void)
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
-        // copy control_roll and pitch for reporting purposes
-        control_roll = nav_roll;
-        control_pitch = nav_pitch;
+        // user input, although ignored is put into control_roll and pitch for reporting purposes
+        control_roll = g.rc_1.control_in;
+        control_pitch = g.rc_2.control_in;
         break;
 
     case ROLL_PITCH_STABLE_OF:
@@ -1661,6 +1678,7 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
+        // copy pilot input to control_roll and pitch for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
@@ -1680,7 +1698,7 @@ void update_roll_pitch_mode(void)
         if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
         }
-        // copy user input for logging purposes
+        // copy user input for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
@@ -1891,14 +1909,20 @@ void update_throttle_mode(void)
         break;
 
     case THROTTLE_HOLD:
-        // alt hold plus pilot input of climb rate
-        pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
-            // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
+        if(ap.auto_armed) {
+            // alt hold plus pilot input of climb rate
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+            if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
+                // if sonar is ok, use surface tracking
+                get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
+            }else{
+                // if no sonar fall back stabilize rate controller
+                get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
+            }
         }else{
-            // if no sonar fall back stabilize rate controller
-            get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
+            // pilot's throttle must be at zero so keep motors off
+            set_throttle_out(0, false);
+            set_target_alt_for_reporting(0);
         }
         break;
 
@@ -1907,8 +1931,11 @@ void update_throttle_mode(void)
         if(ap.auto_armed) {
             get_throttle_althold_with_slew(wp_nav.get_desired_alt(), -wp_nav.get_descent_velocity(), wp_nav.get_climb_velocity());
             set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
+        }else{
+            // pilot's throttle must be at zero so keep motors off
+            set_throttle_out(0, false);
+            set_target_alt_for_reporting(0);
         }
-        // To-Do: explicitly set what the throttle output should be (probably min throttle).  Without setting it the throttle is simply left in it's last position although that is probably zero throttle anyway
         break;
 
     case THROTTLE_LAND:

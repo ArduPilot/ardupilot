@@ -122,6 +122,8 @@ static void init_ardupilot()
 	
     load_parameters();
 
+    set_control_channels();
+
     // after parameter load setup correct baud rate on uartA
     hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
 
@@ -164,9 +166,7 @@ static void init_ardupilot()
 	}
 #endif
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-
-#if CONFIG_ADC == ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     adc.Init();      // APM ADC library initialization
 #endif
 
@@ -183,7 +183,6 @@ static void init_ardupilot()
 	// initialise sonar
     init_sonar();
 
-#endif
 	// Do GPS init
 	g_gps = &g_gps_driver;
     // GPS initialisation
@@ -292,6 +291,9 @@ static void startup_ground(void)
 	// -----------------------
 	demo_servos(3);
 
+    hal.uartA->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
@@ -380,7 +382,6 @@ static void failsafe_trigger(uint8_t failsafe_type, bool on)
 
 static void startup_INS_ground(bool force_accel_level)
 {
-#if HIL_MODE != HIL_MODE_ATTITUDE
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
  	mavlink_delay(500);
 
@@ -403,8 +404,6 @@ static void startup_INS_ground(bool force_accel_level)
         ahrs.set_trim(Vector3f(0, 0, 0));
 	}
     ahrs.reset();
-
-#endif // HIL_MODE_ATTITUDE
 
 	digitalWrite(B_LED_PIN, LED_ON);		// Set LED B high to indicate INS ready
 	digitalWrite(A_LED_PIN, LED_OFF);

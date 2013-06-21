@@ -24,7 +24,7 @@ extern const AP_HAL::HAL& hal;
 /// global array with pointers to all APM RC channels, will be used by AP_Mount
 /// and AP_Camera classes / It points to RC input channels, both APM1 and APM2
 /// only have 8 input channels.
-RC_Channel* rc_ch[NUM_CHANNELS];
+RC_Channel *RC_Channel::rc_ch[NUM_CHANNELS];
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MIN
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 
     // @Param: REV
     // @DisplayName: RC reverse
-    // @Description: Reverse servo operation. Ignored on APM1 unless dip-switches are disabled.
+    // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
     // @Values: -1:Reversed,1:Normal
     // @User: Advanced
     AP_GROUPINFO("REV",  3, RC_Channel, _reverse, 1),
@@ -336,15 +336,26 @@ RC_Channel::norm_output()
     return ret;
 }
 
-void RC_Channel::output()
+void RC_Channel::output() const
 {
     hal.rcout->write(_ch_out, radio_out);
+}
+
+void RC_Channel::output_trim() const
+{
+    hal.rcout->write(_ch_out, radio_trim);
 }
 
 void
 RC_Channel::input()
 {
     radio_in = hal.rcin->read(_ch_out);
+}
+
+uint16_t
+RC_Channel::read() const
+{
+    return hal.rcin->read(_ch_out);
 }
 
 void

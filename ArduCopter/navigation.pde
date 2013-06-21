@@ -103,8 +103,8 @@ static void run_autopilot()
 // set_nav_mode - update nav mode and initialise any variables as required
 static bool set_nav_mode(uint8_t new_nav_mode)
 {
-    // boolean to ensure proper initialisation of nav modes
-    bool nav_initialised = false;
+    bool nav_initialised = false;       // boolean to ensure proper initialisation of nav modes
+    Vector3f stopping_point;            // stopping point for circle mode
 
     // return immediately if no change
     if( new_nav_mode == nav_mode ) {
@@ -119,13 +119,14 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_CIRCLE:
             // set center of circle to current position
-            circle_set_center(inertial_nav.get_position(), ahrs.yaw);
+            wp_nav.get_stopping_point(inertial_nav.get_position(),inertial_nav.get_velocity(),stopping_point);
+            circle_set_center(stopping_point,ahrs.yaw);
             nav_initialised = true;
             break;
 
         case NAV_LOITER:
             // set target to current position
-            wp_nav.set_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+            wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
             nav_initialised = true;
             break;
 
@@ -216,53 +217,76 @@ static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t de
 static void
 circle_set_center(const Vector3f current_position, float heading_in_radians)
 {
+    float max_velocity;
+    float cir_radius = g.circle_radius * 100;
+
     // set circle center to circle_radius ahead of current position
-    circle_center.x = current_position.x + (float)g.circle_radius * 100 * sin_yaw;
-    circle_center.y = current_position.y + (float)g.circle_radius * 100 * cos_yaw;
+    circle_center.x = current_position.x + cir_radius * cos_yaw;
+    circle_center.y = current_position.y + cir_radius * sin_yaw;
 
     // if we are doing a panorama set the circle_angle to the current heading
-    if( g.circle_radius == 0 ) {
+    if( g.circle_radius <= 0 ) {
         circle_angle = heading_in_radians;
+        circle_angular_velocity_max = ToRad(g.circle_rate);
+        circle_angular_acceleration = circle_angular_velocity_max;  // reach maximum yaw velocity in 1 second
     }else{
         // set starting angle to current heading - 180 degrees
-        circle_angle = heading_in_radians-ToRad(180);
-        if( circle_angle > 180 ) {
-            circle_angle -= 180;
-        }
-        if( circle_angle < -180 ) {
-            circle_angle -= 180;
+        circle_angle = wrap_PI(heading_in_radians-PI);
+
+        // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
+        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*WPNAV_ACCELERATION*g.circle_radius*100.0f)); 
+
+        // angular_velocity in radians per second
+        circle_angular_velocity_max = max_velocity/((float)g.circle_radius * 100.0f);
+        circle_angular_velocity_max = constrain_float(ToRad(g.circle_rate),-circle_angular_velocity_max,circle_angular_velocity_max);
+
+        // angular_velocity in radians per second
+        circle_angular_acceleration = WPNAV_ACCELERATION/((float)g.circle_radius * 100);
+        if (g.circle_rate < 0.0f) {
+            circle_angular_acceleration = -circle_angular_acceleration;
         }
     }
 
     // initialise other variables
     circle_angle_total = 0;
+    circle_angular_velocity = 0;
+
+    // initialise loiter target.  Note: feed forward velocity set to zero
+    wp_nav.init_loiter_target(current_position, Vector3f(0,0,0));
 }
 
 // update_circle - circle position controller's main call which in turn calls loiter controller with updated target position
 static void
 update_circle(float dt)
 {
-    float angle_delta = ToRad(g.circle_rate) * dt;
     float cir_radius = g.circle_radius * 100;
     Vector3f circle_target;
 
-    // update the target angle
-    circle_angle += angle_delta;
-    if( circle_angle > 180 ) {
-        circle_angle -= 360;
-    }
-    if( circle_angle <= -180 ) {
-        circle_angle += 360;
+    // ramp up angular velocity to maximum
+    if (g.circle_rate >= 0) {
+        if (circle_angular_velocity < circle_angular_velocity_max) {
+            circle_angular_velocity += circle_angular_acceleration * dt;
+            circle_angular_velocity = constrain_float(circle_angular_velocity, 0, circle_angular_velocity_max);
+        }
+    }else{
+        if (circle_angular_velocity > circle_angular_velocity_max) {
+            circle_angular_velocity += circle_angular_acceleration * dt;
+            circle_angular_velocity = constrain_float(circle_angular_velocity, circle_angular_velocity_max, 0);
+        }
     }
 
+    // update the target angle
+    circle_angle += circle_angular_velocity * dt;
+    circle_angle = wrap_PI(circle_angle);
+
     // update the total angle travelled
-    circle_angle_total += angle_delta;
+    circle_angle_total += circle_angular_velocity * dt;
 
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
     if( g.circle_radius != 0.0 ) {
         // calculate target position
-        circle_target.x = circle_center.x + cir_radius * sinf(1.57f - circle_angle);
-        circle_target.y = circle_center.y + cir_radius * cosf(1.57f - circle_angle);
+        circle_target.x = circle_center.x + cir_radius * cosf(-circle_angle);
+        circle_target.y = circle_center.y - cir_radius * sinf(-circle_angle);
 
         // re-use loiter position controller
         wp_nav.set_loiter_target(circle_target);

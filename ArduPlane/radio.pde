@@ -4,36 +4,38 @@
 // ----------------------------------------------------------------------------
 static uint8_t failsafeCounter = 0;                // we wait a second to take over the throttle and send the plane circling
 
+/*
+  allow for runtime change of control channel ordering
+ */
+static void set_control_channels(void)
+{
+    channel_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
+    channel_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
+    channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
+    channel_rudder   = RC_Channel::rc_channel(rcmap.yaw()-1);
 
-extern RC_Channel* rc_ch[8];
+    // set rc channel ranges
+    channel_roll->set_angle(SERVO_MAX);
+    channel_pitch->set_angle(SERVO_MAX);
+    channel_rudder->set_angle(SERVO_MAX);
+    channel_throttle->set_range(0, 100);
+}
 
+/*
+  initialise RC input channels
+ */
 static void init_rc_in()
 {
-    // set rc channel ranges
-    g.channel_roll.set_angle(SERVO_MAX);
-    g.channel_pitch.set_angle(SERVO_MAX);
-    g.channel_rudder.set_angle(SERVO_MAX);
-    g.channel_throttle.set_range(0, 100);
-
     // set rc dead zones
-    g.channel_roll.set_dead_zone(60);
-    g.channel_pitch.set_dead_zone(60);
-    g.channel_rudder.set_dead_zone(60);
-    g.channel_throttle.set_dead_zone(6);
+    channel_roll->set_dead_zone(60);
+    channel_pitch->set_dead_zone(60);
+    channel_rudder->set_dead_zone(60);
+    channel_throttle->set_dead_zone(6);
 
-    //g.channel_roll.dead_zone  = 60;
-    //g.channel_pitch.dead_zone     = 60;
-    //g.channel_rudder.dead_zone    = 60;
-    //g.channel_throttle.dead_zone = 6;
-
-    rc_ch[CH_1] = &g.channel_roll;
-    rc_ch[CH_2] = &g.channel_pitch;
-    rc_ch[CH_3] = &g.channel_throttle;
-    rc_ch[CH_4] = &g.channel_rudder;
-    rc_ch[CH_5] = &g.rc_5;
-    rc_ch[CH_6] = &g.rc_6;
-    rc_ch[CH_7] = &g.rc_7;
-    rc_ch[CH_8] = &g.rc_8;
+    //channel_roll->dead_zone  = 60;
+    //channel_pitch->dead_zone     = 60;
+    //channel_rudder->dead_zone    = 60;
+    //channel_throttle->dead_zone = 6;
 
     //set auxiliary ranges
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -45,24 +47,21 @@ static void init_rc_in()
 #endif
 }
 
+/*
+  initialise RC output channels
+ */
 static void init_rc_out()
 {
-    hal.rcout->enable_ch(CH_1);
-    hal.rcout->enable_ch(CH_2);
-    hal.rcout->enable_ch(CH_3);
-    hal.rcout->enable_ch(CH_4);
+    channel_roll->enable_out();
+    channel_pitch->enable_out();
+    channel_throttle->enable_out();
+    channel_rudder->enable_out();
     enable_aux_servos();
 
     // Initialization of servo outputs
-    servo_write(CH_1, g.channel_roll.radio_trim);
-    servo_write(CH_2,   g.channel_pitch.radio_trim);
-    servo_write(CH_3,   g.channel_throttle.radio_min);
-    servo_write(CH_4,   g.channel_rudder.radio_trim);
-
-    servo_write(CH_5,   g.rc_5.radio_trim);
-    servo_write(CH_6,   g.rc_6.radio_trim);
-    servo_write(CH_7,   g.rc_7.radio_trim);
-    servo_write(CH_8,   g.rc_8.radio_trim);
+    for (uint8_t i=0; i<8; i++) {
+        RC_Channel::rc_channel(i)->output_trim();
+    }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
     servo_write(CH_9,   g.rc_9.radio_trim);
@@ -76,8 +75,8 @@ static void init_rc_out()
 
 static void read_radio()
 {
-    elevon.ch1_temp = hal.rcin->read(CH_ROLL);
-    elevon.ch2_temp = hal.rcin->read(CH_PITCH);
+    elevon.ch1_temp = channel_roll->read();
+    elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
 
     if (g.mix_mode == 0) {
@@ -91,15 +90,15 @@ static void read_radio()
     if (control_mode == TRAINING) {
         // in training mode we don't want to use a deadzone, as we
         // want manual pass through when not exceeding attitude limits
-        g.channel_roll.set_pwm_no_deadzone(pwm_roll);
-        g.channel_pitch.set_pwm_no_deadzone(pwm_pitch);
-        g.channel_throttle.set_pwm_no_deadzone(hal.rcin->read(CH_3));
-        g.channel_rudder.set_pwm_no_deadzone(hal.rcin->read(CH_4));
+        channel_roll->set_pwm_no_deadzone(pwm_roll);
+        channel_pitch->set_pwm_no_deadzone(pwm_pitch);
+        channel_throttle->set_pwm_no_deadzone(channel_throttle->read());
+        channel_rudder->set_pwm_no_deadzone(channel_rudder->read());
     } else {
-        g.channel_roll.set_pwm(pwm_roll);
-        g.channel_pitch.set_pwm(pwm_pitch);
-        g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
-        g.channel_rudder.set_pwm(hal.rcin->read(CH_4));
+        channel_roll->set_pwm(pwm_roll);
+        channel_pitch->set_pwm(pwm_pitch);
+        channel_throttle->set_pwm(channel_throttle->read());
+        channel_rudder->set_pwm(channel_rudder->read());
     }
 
     g.rc_5.set_pwm(hal.rcin->read(CH_5));
@@ -107,12 +106,12 @@ static void read_radio()
     g.rc_7.set_pwm(hal.rcin->read(CH_7));
     g.rc_8.set_pwm(hal.rcin->read(CH_8));
 
-    control_failsafe(g.channel_throttle.radio_in);
+    control_failsafe(channel_throttle->radio_in);
 
-    g.channel_throttle.servo_out = g.channel_throttle.control_in;
+    channel_throttle->servo_out = channel_throttle->control_in;
 
-    if (g.throttle_nudge && g.channel_throttle.servo_out > 50) {
-        float nudge = (g.channel_throttle.servo_out - 50) * 0.02;
+    if (g.throttle_nudge && channel_throttle->servo_out > 50) {
+        float nudge = (channel_throttle->servo_out - 50) * 0.02;
         if (alt_control_airspeed()) {
             airspeed_nudge_cm = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
         } else {
@@ -178,12 +177,12 @@ static void control_failsafe(uint16_t pwm)
 static void trim_control_surfaces()
 {
     read_radio();
-    int16_t trim_roll_range = (g.channel_roll.radio_max - g.channel_roll.radio_min)/5;
-    int16_t trim_pitch_range = (g.channel_pitch.radio_max - g.channel_pitch.radio_min)/5;
-    if (g.channel_roll.radio_in < g.channel_roll.radio_min+trim_roll_range ||
-        g.channel_roll.radio_in > g.channel_roll.radio_max-trim_roll_range ||
-        g.channel_pitch.radio_in < g.channel_pitch.radio_min+trim_pitch_range ||
-        g.channel_pitch.radio_in > g.channel_pitch.radio_max-trim_pitch_range) {
+    int16_t trim_roll_range = (channel_roll->radio_max - channel_roll->radio_min)/5;
+    int16_t trim_pitch_range = (channel_pitch->radio_max - channel_pitch->radio_min)/5;
+    if (channel_roll->radio_in < channel_roll->radio_min+trim_roll_range ||
+        channel_roll->radio_in > channel_roll->radio_max-trim_roll_range ||
+        channel_pitch->radio_in < channel_pitch->radio_min+trim_pitch_range ||
+        channel_pitch->radio_in > channel_pitch->radio_max-trim_pitch_range) {
         // don't trim for extreme values - if we attempt to trim so
         // there is less than 20 percent range left then assume the
         // sticks are not properly centered. This also prevents
@@ -194,11 +193,11 @@ static void trim_control_surfaces()
     // Store control surface trim values
     // ---------------------------------
     if(g.mix_mode == 0) {
-        if (g.channel_roll.radio_in != 0) {
-            g.channel_roll.radio_trim = g.channel_roll.radio_in;
+        if (channel_roll->radio_in != 0) {
+            channel_roll->radio_trim = channel_roll->radio_in;
         }
-        if (g.channel_pitch.radio_in != 0) {
-            g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
+        if (channel_pitch->radio_in != 0) {
+            channel_pitch->radio_trim = channel_pitch->radio_in;
         }
 
         // the secondary aileron/elevator is trimmed only if it has a
@@ -216,17 +215,17 @@ static void trim_control_surfaces()
         //Recompute values here using new values for elevon1_trim and elevon2_trim
         //We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed
         uint16_t center                         = 1500;
-        g.channel_roll.radio_trim       = center;
-        g.channel_pitch.radio_trim      = center;
+        channel_roll->radio_trim       = center;
+        channel_pitch->radio_trim      = center;
     }
-    if (g.channel_rudder.radio_in != 0) {
-        g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
+    if (channel_rudder->radio_in != 0) {
+        channel_rudder->radio_trim = channel_rudder->radio_in;
     }
 
     // save to eeprom
-    g.channel_roll.save_eeprom();
-    g.channel_pitch.save_eeprom();
-    g.channel_rudder.save_eeprom();
+    channel_roll->save_eeprom();
+    channel_pitch->save_eeprom();
+    channel_rudder->save_eeprom();
 }
 
 static void trim_radio()

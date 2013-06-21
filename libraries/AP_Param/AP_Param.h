@@ -83,6 +83,12 @@ public:
             const float def_value;
         };
     };
+    struct ConversionInfo {
+        uint8_t old_key; // k_param_*
+        uint8_t old_group_element; // index in old object
+        enum ap_var_type type; // AP_PARAM_*
+        const char new_name[AP_MAX_NAME_SIZE+1];        
+    };
 
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
@@ -137,6 +143,7 @@ public:
     ///                         it does not exist.
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
+    static AP_Param * find_P(const prog_char_t *name, enum ap_var_type *ptype);
 
     /// Find a variable by index.
     ///
@@ -157,9 +164,11 @@ public:
 
     /// Save the current value of the variable to EEPROM.
     ///
+    /// @param  force_save     If true then force save even if default
+    ///
     /// @return                True if the variable was saved successfully.
     ///
-    bool save(void);
+    bool save(bool force_save=false);
 
     /// Load the variable from EEPROM.
     ///
@@ -186,6 +195,9 @@ public:
     // load default values for all scalars in the main sketch. This
     // does not recurse into the sub-objects    
     static void         setup_sketch_defaults(void);
+
+    // convert old vehicle parameters to new object parameters
+    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
 
     /// Erase all variables in EEPROM.
     ///
@@ -300,7 +312,7 @@ private:
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
     static void                 write_sentinal(uint16_t ofs);
-    bool                        scan(
+    static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
     static uint8_t				type_size(enum ap_var_type type);
@@ -325,6 +337,9 @@ private:
     static const uint8_t        k_EEPROM_magic0      = 0x50;
     static const uint8_t        k_EEPROM_magic1      = 0x41; ///< "AP"
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
+
+    // convert old vehicle parameters to new object parameters
+    static void         convert_old_parameter(const struct ConversionInfo *info);
 };
 
 /// Template class for scalar variables.
@@ -356,8 +371,9 @@ public:
     /// Combined set and save
     ///
     bool set_and_save(const T &v) {
+        bool force = (_value != v);
         set(v);
-        return save();
+        return save(force);
     }
 
     /// Combined set and save, but only does the save if the value if
@@ -370,7 +386,7 @@ public:
             return true;
         }
         set(v);
-        return save();
+        return save(true);
     }
 
     /// Conversion to T returns a reference to the value.
@@ -451,8 +467,9 @@ public:
     /// Combined set and save
     ///
     bool set_and_save(const T &v) {
+        bool force = (_value != v);
         set(v);
-        return save();
+        return save(force);
     }
 
     /// Conversion to T returns a reference to the value.

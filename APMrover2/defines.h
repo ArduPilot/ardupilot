@@ -19,9 +19,6 @@
 #define SONAR 0
 #define BARO 1
 
-#define SONAR_SOURCE_ADC 1
-#define SONAR_SOURCE_ANALOG_PIN 2
-
 // CH 7 control
 enum ch7_option {
     CH7_DO_NOTHING=0,
@@ -41,9 +38,6 @@ enum ch7_option {
 #define GPS_PROTOCOL_HIL	5
 #define GPS_PROTOCOL_MTK19	6
 #define GPS_PROTOCOL_AUTO	7
-
-#define CH_STEER    CH_1
-#define CH_THROTTLE CH_3
 
 // HIL enumerations
 #define HIL_MODE_DISABLED			0

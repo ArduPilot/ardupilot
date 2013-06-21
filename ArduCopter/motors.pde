@@ -136,6 +136,8 @@ static void init_arm_motors()
     // --------------------
     init_simple_bearing();
 
+    initial_armed_bearing = ahrs.yaw_sensor;
+
     // Reset home position
     // -------------------
     if(ap.home_is_set)
@@ -169,6 +171,13 @@ static void init_arm_motors()
 
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
+
+    // set hover throttle
+    motors.set_mid_throttle(g.throttle_mid);
+
+#if COPTER_LEDS == ENABLED
+    piezo_beep_twice();
+#endif
 
     // enable output to motors
     output_min();
@@ -239,6 +248,15 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // check for unreasonable mag field length
+    float mag_field = pythagorous3(compass.mag_x, compass.mag_y, compass.mag_z);
+    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.5 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.5) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
+        }
+        return;
+    }
+
     // barometer health check
     if(!barometer.healthy) {
         if (display_failure) {
@@ -252,6 +270,16 @@ static void pre_arm_checks(bool display_failure)
     if(!fence.pre_arm_check()) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No GPS Lock"));
+        }
+        return;
+    }
+#endif
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+    // check board voltage
+    if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
         }
         return;
     }

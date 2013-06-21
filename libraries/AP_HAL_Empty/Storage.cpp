@@ -35,6 +35,6 @@ void EmptyStorage::write_word(uint16_t loc, uint16_t value)
 void EmptyStorage::write_dword(uint16_t loc, uint32_t value)
 {}
 
-void EmptyStorage::write_block(uint16_t loc, void* src, size_t n)
+void EmptyStorage::write_block(uint16_t loc, const void* src, size_t n)
 {}
 

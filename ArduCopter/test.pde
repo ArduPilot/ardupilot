@@ -4,40 +4,28 @@
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
-static int8_t   test_radio_pwm(uint8_t argc,    const Menu::arg *argv);
-static int8_t   test_radio(uint8_t argc,                const Menu::arg *argv);
-//static int8_t	test_failsafe(uint8_t argc,     const Menu::arg *argv);
-//static int8_t	test_stabilize(uint8_t argc,    const Menu::arg *argv);
-static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
-//static int8_t	test_tri(uint8_t argc,          const Menu::arg *argv);
-//static int8_t	test_adc(uint8_t argc,          const Menu::arg *argv);
-static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
-//static int8_t	test_imu(uint8_t argc,          const Menu::arg *argv);
-//static int8_t	test_dcm_eulers(uint8_t argc,   const Menu::arg *argv);
-//static int8_t	test_dcm(uint8_t argc,          const Menu::arg *argv);
-//static int8_t	test_omega(uint8_t argc,        const Menu::arg *argv);
-//static int8_t	test_stab_d(uint8_t argc,       const Menu::arg *argv);
-static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
-//static int8_t	test_toy(uint8_t argc,      const Menu::arg *argv);
-static int8_t   test_wp_nav(uint8_t argc,               const Menu::arg *argv);
-//static int8_t	test_reverse(uint8_t argc,      const Menu::arg *argv);
-static int8_t   test_tuning(uint8_t argc,               const Menu::arg *argv);
-static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
-static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
+#endif
+static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
+static int8_t   test_compass(uint8_t argc,              const Menu::arg *argv);
+static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
+static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
+static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
+static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
+static int8_t   test_motors(uint8_t argc,               const Menu::arg *argv);
+static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
+static int8_t   test_radio_pwm(uint8_t argc,            const Menu::arg *argv);
+static int8_t   test_radio(uint8_t argc,                const Menu::arg *argv);
+static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static int8_t   test_shell(uint8_t argc,                const Menu::arg *argv);
+#endif
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 #endif
-static int8_t   test_mag(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
-static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
-//static int8_t	test_xbee(uint8_t argc,         const Menu::arg *argv);
-static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
-//static int8_t   test_rawgps(uint8_t argc,               const Menu::arg *argv);
-//static int8_t	test_mission(uint8_t argc,      const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
-#endif
+//static int8_t	test_toy(uint8_t argc,                  const Menu::arg *argv);
+static int8_t   test_tuning(uint8_t argc,               const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -59,28 +47,28 @@ static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 const struct Menu::command test_menu_commands[] PROGMEM = {
-    {"pwm",                 test_radio_pwm},
-    {"radio",               test_radio},
-    {"gps",                 test_gps},
-    {"ins",                 test_ins},
-    {"battery",             test_battery},
-    {"tune",                test_tuning},
-    {"relay",               test_relay},
-    {"wp",                  test_wp},
-//	{"toy",			        test_toy},
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
     {"baro",                test_baro},
-    {"sonar",               test_sonar},
 #endif
-    {"compass",             test_mag},
-    {"optflow",             test_optflow},
-    //{"xbee",		test_xbee},
+    {"battery",             test_battery},
+    {"compass",             test_compass},
     {"eedump",              test_eedump},
+    {"gps",                 test_gps},
+    {"ins",                 test_ins},
     {"logging",             test_logging},
-    {"nav",                 test_wp_nav},
+    {"motors",              test_motors},
+    {"optflow",             test_optflow},
+    {"pwm",                 test_radio_pwm},
+    {"radio",               test_radio},
+    {"relay",               test_relay},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     {"shell", 				test_shell},
 #endif
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+    {"sonar",               test_sonar},
+#endif
+//	{"toy",			        test_toy},
+    {"tune",                test_tuning}
 };
 
 // A Macro to create the Menu
@@ -89,209 +77,28 @@ MENU(test_menu, "test", test_menu_commands);
 static int8_t
 test_mode(uint8_t argc, const Menu::arg *argv)
 {
-    //cliSerial->printf_P(PSTR("Test Mode\n\n"));
     test_menu.run();
     return 0;
 }
 
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t
-test_eedump(uint8_t argc, const Menu::arg *argv)
+test_baro(uint8_t argc, const Menu::arg *argv)
 {
-
-    // hexdump the EEPROM
-    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i += 16) {
-        cliSerial->printf_P(PSTR("%04x:"), i);
-        for (uint16_t j = 0; j < 16; j++)  {
-            int b = hal.storage->read_byte(i+j);
-            cliSerial->printf_P(PSTR(" %02x"), b);
-        }
-        cliSerial->println();
-    }
-    return(0);
-}
-
-
-static int8_t
-test_radio_pwm(uint8_t argc, const Menu::arg *argv)
-{
+    int32_t alt;
     print_hit_enter();
-    delay(1000);
-
-    while(1) {
-        delay(20);
-
-        // Filters radio input - adjust filters in the radio.pde file
-        // ----------------------------------------------------------
-        read_radio();
-
-        // servo Yaw
-        //APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
-
-        cliSerial->printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
-                        g.rc_1.radio_in,
-                        g.rc_2.radio_in,
-                        g.rc_3.radio_in,
-                        g.rc_4.radio_in,
-                        g.rc_5.radio_in,
-                        g.rc_6.radio_in,
-                        g.rc_7.radio_in,
-                        g.rc_8.radio_in);
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-/*
-//static int8_t
-//test_toy(uint8_t argc, const Menu::arg *argv)
-{
-
- 	for(altitude_error = 2000; altitude_error > -100; altitude_error--){
- 		int16_t temp = get_desired_climb_rate();
-		cliSerial->printf("%ld, %d\n", altitude_error, temp);
-	}
- 	return 0;
-}
-{	wp_distance = 0;
-	int16_t max_speed = 0;
-
- 	for(int16_t i = 0; i < 200; i++){
-	 	int32_t temp = 2 * 100 * (wp_distance - wp_nav.get_waypoint_radius());
-		max_speed = sqrtf((float)temp);
-		max_speed = min(max_speed, wp_nav.get_horizontal_speed());
-		cliSerial->printf("Zspeed: %ld, %d, %ld\n", temp, max_speed, wp_distance);
-	 	wp_distance += 100;
-	}
- 	return 0;
- }
-//*/
-
-/*static int8_t
- *  //test_toy(uint8_t argc, const Menu::arg *argv)
- *  {
- *       int16_t yaw_rate;
- *       int16_t roll_rate;
- *       g.rc_1.control_in = -2500;
- *       g.rc_2.control_in = 2500;
- *
- *       g.toy_yaw_rate = 3;
- *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
- *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
- *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
- *
- *       g.toy_yaw_rate = 2;
- *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
- *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
- *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
- *
- *       g.toy_yaw_rate = 1;
- *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
- *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
- *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
- *  }*/
-
-static int8_t
-test_radio(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    while(1) {
-        delay(20);
-        read_radio();
-
-
-        cliSerial->printf_P(PSTR("IN  1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"),
-                        g.rc_1.control_in,
-                        g.rc_2.control_in,
-                        g.rc_3.control_in,
-                        g.rc_4.control_in,
-                        g.rc_5.control_in,
-                        g.rc_6.control_in,
-                        g.rc_7.control_in);
-
-        //cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d\n"), (g.rc_1.servo_out / 100), (g.rc_2.servo_out / 100), g.rc_3.servo_out, (g.rc_4.servo_out / 100));
-
-        /*cliSerial->printf_P(PSTR(	"min: %d"
-         *                                               "\t in: %d"
-         *                                               "\t pwm_in: %d"
-         *                                               "\t sout: %d"
-         *                                               "\t pwm_out %d\n"),
-         *                                               g.rc_3.radio_min,
-         *                                               g.rc_3.control_in,
-         *                                               g.rc_3.radio_in,
-         *                                               g.rc_3.servo_out,
-         *                                               g.rc_3.pwm_out
-         *                                               );
-         */
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-static int8_t
-test_ins(uint8_t argc, const Menu::arg *argv)
-{
-    Vector3f gyro, accel;
-    print_hit_enter();
-    cliSerial->printf_P(PSTR("INS\n"));
-    delay(1000);
-
-    ahrs.init();
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
-
-    delay(50);
-
-    while(1) {
-        ins.update();
-        gyro = ins.get_gyro();
-        accel = ins.get_accel();
-
-        float test = accel.length() / GRAVITY_MSS;
-
-        cliSerial->printf_P(PSTR("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %74f | %7.4f\n"),
-            accel.x, accel.y, accel.z,
-            gyro.x, gyro.y, gyro.z,
-            test);
-
-        delay(40);
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-static int8_t
-test_gps(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
+    init_barometer();
 
     while(1) {
         delay(100);
+        alt = read_barometer();
 
-        // Blink GPS LED if we don't have a fix
-        // ------------------------------------
-        update_GPS_light();
-
-        g_gps->update();
-
-        if (g_gps->new_data) {
-            cliSerial->printf_P(PSTR("Lat: "));
-            print_latlon(cliSerial, g_gps->latitude);
-            cliSerial->printf_P(PSTR(", Lon "));
-            print_latlon(cliSerial, g_gps->longitude);
-            cliSerial->printf_P(PSTR(", Alt: %ldm, #sats: %d\n"),
-                            g_gps->altitude/100,
-                            g_gps->num_sats);
-            g_gps->new_data = false;
-        }else{
-            cliSerial->print_P(PSTR("."));
+        if (!barometer.healthy) {
+            cliSerial->println_P(PSTR("not healthy"));
+        } else {
+            cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),
+                            alt / 100.0,
+                            barometer.get_pressure(), 0.1*barometer.get_temperature());
         }
         if(cliSerial->available() > 0) {
             return (0);
@@ -299,23 +106,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     }
     return 0;
 }
-
-static int8_t
-test_tuning(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-
-    while(1) {
-        delay(200);
-        read_radio();
-        tuning();
-        cliSerial->printf_P(PSTR("tune: %1.3f\n"), tuning_value);
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
+#endif
 
 static int8_t
 test_battery(uint8_t argc, const Menu::arg *argv)
@@ -365,80 +156,8 @@ test_battery(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 
-static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    delay(1000);
-
-    while(1) {
-        cliSerial->printf_P(PSTR("Relay on\n"));
-        relay.on();
-        delay(3000);
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-
-        cliSerial->printf_P(PSTR("Relay off\n"));
-        relay.off();
-        delay(3000);
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-
 static int8_t
-test_wp(uint8_t argc, const Menu::arg *argv)
-{
-    delay(1000);
-
-    // save the alitude above home option
-    cliSerial->printf_P(PSTR("Hold alt "));
-    if(g.rtl_altitude < 0) {
-        cliSerial->printf_P(PSTR("\n"));
-    }else{
-        cliSerial->printf_P(PSTR("of %dm\n"), (int)g.rtl_altitude / 100);
-    }
-
-    cliSerial->printf_P(PSTR("%d wp\n"), (int)g.command_total);
-    cliSerial->printf_P(PSTR("Hit rad: %dm\n"), (int)wp_nav.get_waypoint_radius());
-
-    report_wp();
-
-    return (0);
-}
-
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
-static int8_t
-test_baro(uint8_t argc, const Menu::arg *argv)
-{
-    int32_t alt;
-    print_hit_enter();
-    init_barometer();
-
-    while(1) {
-        delay(100);
-        alt = read_barometer();
-
-        if (!barometer.healthy) {
-            cliSerial->println_P(PSTR("not healthy"));
-        } else {
-            cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),
-                            alt / 100.0,
-                            barometer.get_pressure(), 0.1*barometer.get_temperature());
-        }
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-    return 0;
-}
-#endif
-
-
-static int8_t
-test_mag(uint8_t argc, const Menu::arg *argv)
+test_compass(uint8_t argc, const Menu::arg *argv)
 {
     uint8_t delta_ms_fast_loop;
 
@@ -520,37 +239,132 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
-/*
- *  test the sonar
- */
 static int8_t
-test_sonar(uint8_t argc, const Menu::arg *argv)
+test_eedump(uint8_t argc, const Menu::arg *argv)
 {
-#if CONFIG_SONAR == ENABLED
-    if(g.sonar_enabled == false) {
-        cliSerial->printf_P(PSTR("Sonar disabled\n"));
-        return (0);
+
+    // hexdump the EEPROM
+    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i += 16) {
+        cliSerial->printf_P(PSTR("%04x:"), i);
+        for (uint16_t j = 0; j < 16; j++)  {
+            int b = hal.storage->read_byte(i+j);
+            cliSerial->printf_P(PSTR(" %02x"), b);
+        }
+        cliSerial->println();
     }
+    return(0);
+}
 
-    // make sure sonar is initialised
-    init_sonar();
-
+static int8_t
+test_gps(uint8_t argc, const Menu::arg *argv)
+{
     print_hit_enter();
+    delay(1000);
+
     while(1) {
         delay(100);
 
-        cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar->read());
+        // Blink GPS LED if we don't have a fix
+        // ------------------------------------
+        update_GPS_light();
 
+        g_gps->update();
+
+        if (g_gps->new_data) {
+            cliSerial->printf_P(PSTR("Lat: "));
+            print_latlon(cliSerial, g_gps->latitude);
+            cliSerial->printf_P(PSTR(", Lon "));
+            print_latlon(cliSerial, g_gps->longitude);
+            cliSerial->printf_P(PSTR(", Alt: %ldm, #sats: %d\n"),
+                            g_gps->altitude/100,
+                            g_gps->num_sats);
+            g_gps->new_data = false;
+        }else{
+            cliSerial->print_P(PSTR("."));
+        }
         if(cliSerial->available() > 0) {
             return (0);
         }
     }
-#endif
-    return (0);
+    return 0;
 }
-#endif
 
+static int8_t
+test_ins(uint8_t argc, const Menu::arg *argv)
+{
+    Vector3f gyro, accel;
+    print_hit_enter();
+    cliSerial->printf_P(PSTR("INS\n"));
+    delay(1000);
+
+    ahrs.init();
+    ins.init(AP_InertialSensor::COLD_START, 
+             ins_sample_rate,
+             flash_leds);
+
+    delay(50);
+
+    while(1) {
+        ins.update();
+        gyro = ins.get_gyro();
+        accel = ins.get_accel();
+
+        float test = accel.length() / GRAVITY_MSS;
+
+        cliSerial->printf_P(PSTR("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %74f | %7.4f\n"),
+            accel.x, accel.y, accel.z,
+            gyro.x, gyro.y, gyro.z,
+            test);
+
+        delay(40);
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
+}
+
+/*
+ *  test the dataflash is working
+ */
+static int8_t
+test_logging(uint8_t argc, const Menu::arg *argv)
+{
+    cliSerial->println_P(PSTR("Testing dataflash logging"));
+    DataFlash.ShowDeviceInfo(cliSerial);
+    return 0;
+}
+
+static int8_t
+test_motors(uint8_t argc, const Menu::arg *argv)
+{
+    cliSerial->printf_P(PSTR(
+                        "Connect battery for this test.\n"
+                        "Motors will not spin in channel order (1,2,3,4) but by frame position order.\n"
+                        "Front (& right of centerline) motor first, then in clockwise order around frame.\n"
+                        "http://code.google.com/p/arducopter/wiki/AC2_Props_2 for demo video.\n"
+                        "Remember to disconnect battery after this test.\n"
+                        "Any key to exit.\n"));
+
+    // ensure all values have been sent to motors
+    motors.set_update_rate(g.rc_speed);
+    motors.set_frame_orientation(g.frame_orientation);
+    motors.set_min_throttle(g.throttle_min);
+    motors.set_mid_throttle(g.throttle_mid);
+    motors.set_max_throttle(g.throttle_max);
+
+    // enable motors
+    init_rc_out();
+
+    while(1) {
+        delay(20);
+        read_radio();
+        motors.output_test();
+        if(cliSerial->available() > 0) {
+            g.esc_calibrate.set_and_save(0);
+            return(0);
+        }
+    }
+}
 
 static int8_t
 test_optflow(uint8_t argc, const Menu::arg *argv)
@@ -585,31 +399,98 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 #endif      // OPTFLOW == ENABLED
 }
 
-
 static int8_t
-test_wp_nav(uint8_t argc, const Menu::arg *argv)
+test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
-    current_loc.lat = 389539260;
-    current_loc.lng = -1199540200;
+    print_hit_enter();
+    delay(1000);
 
-    wp_nav.set_destination(pv_latlon_to_vector(389538528,-1199541248,0));
+    while(1) {
+        delay(20);
 
-    // got 23506;, should be 22800
-    update_navigation();
-    cliSerial->printf_P(PSTR("bear: %ld\n"), wp_bearing);
-    return 0;
+        // Filters radio input - adjust filters in the radio.pde file
+        // ----------------------------------------------------------
+        read_radio();
+
+        // servo Yaw
+        //APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+
+        cliSerial->printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
+                        g.rc_1.radio_in,
+                        g.rc_2.radio_in,
+                        g.rc_3.radio_in,
+                        g.rc_4.radio_in,
+                        g.rc_5.radio_in,
+                        g.rc_6.radio_in,
+                        g.rc_7.radio_in,
+                        g.rc_8.radio_in);
+
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
-/*
- *  test the dataflash is working
- */
-
 static int8_t
-test_logging(uint8_t argc, const Menu::arg *argv)
+test_radio(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->println_P(PSTR("Testing dataflash logging"));
-    DataFlash.ShowDeviceInfo(cliSerial);
-    return 0;
+    print_hit_enter();
+    delay(1000);
+
+    while(1) {
+        delay(20);
+        read_radio();
+
+
+        cliSerial->printf_P(PSTR("IN  1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"),
+                        g.rc_1.control_in,
+                        g.rc_2.control_in,
+                        g.rc_3.control_in,
+                        g.rc_4.control_in,
+                        g.rc_5.control_in,
+                        g.rc_6.control_in,
+                        g.rc_7.control_in);
+
+        //cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d\n"), (g.rc_1.servo_out / 100), (g.rc_2.servo_out / 100), g.rc_3.servo_out, (g.rc_4.servo_out / 100));
+
+        /*cliSerial->printf_P(PSTR(	"min: %d"
+         *                                               "\t in: %d"
+         *                                               "\t pwm_in: %d"
+         *                                               "\t sout: %d"
+         *                                               "\t pwm_out %d\n"),
+         *                                               g.rc_3.radio_min,
+         *                                               g.rc_3.control_in,
+         *                                               g.rc_3.radio_in,
+         *                                               g.rc_3.servo_out,
+         *                                               g.rc_3.pwm_out
+         *                                               );
+         */
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
+}
+
+static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
+{
+    print_hit_enter();
+    delay(1000);
+
+    while(1) {
+        cliSerial->printf_P(PSTR("Relay on\n"));
+        relay.on();
+        delay(3000);
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+
+        cliSerial->printf_P(PSTR("Relay off\n"));
+        relay.off();
+        delay(3000);
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -623,6 +504,103 @@ test_shell(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 #endif
+
+#if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
+/*
+ *  test the sonar
+ */
+static int8_t
+test_sonar(uint8_t argc, const Menu::arg *argv)
+{
+#if CONFIG_SONAR == ENABLED
+    if(g.sonar_enabled == false) {
+        cliSerial->printf_P(PSTR("Sonar disabled\n"));
+        return (0);
+    }
+
+    // make sure sonar is initialised
+    init_sonar();
+
+    print_hit_enter();
+    while(1) {
+        delay(100);
+
+        cliSerial->printf_P(PSTR("Sonar: %d cm\n"), sonar->read());
+
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
+#endif
+    return (0);
+}
+#endif
+
+/*
+//static int8_t
+//test_toy(uint8_t argc, const Menu::arg *argv)
+{
+
+ 	for(altitude_error = 2000; altitude_error > -100; altitude_error--){
+ 		int16_t temp = get_desired_climb_rate();
+		cliSerial->printf("%ld, %d\n", altitude_error, temp);
+	}
+ 	return 0;
+}
+{	wp_distance = 0;
+	int16_t max_speed = 0;
+
+ 	for(int16_t i = 0; i < 200; i++){
+	 	int32_t temp = 2 * 100 * (wp_distance - wp_nav.get_waypoint_radius());
+		max_speed = sqrtf((float)temp);
+		max_speed = min(max_speed, wp_nav.get_horizontal_speed());
+		cliSerial->printf("Zspeed: %ld, %d, %ld\n", temp, max_speed, wp_distance);
+	 	wp_distance += 100;
+	}
+ 	return 0;
+ }
+//*/
+
+/*static int8_t
+ *  //test_toy(uint8_t argc, const Menu::arg *argv)
+ *  {
+ *       int16_t yaw_rate;
+ *       int16_t roll_rate;
+ *       g.rc_1.control_in = -2500;
+ *       g.rc_2.control_in = 2500;
+ *
+ *       g.toy_yaw_rate = 3;
+ *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+ *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+ *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
+ *
+ *       g.toy_yaw_rate = 2;
+ *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+ *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+ *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
+ *
+ *       g.toy_yaw_rate = 1;
+ *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
+ *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
+ *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
+ *  }*/
+
+static int8_t
+test_tuning(uint8_t argc, const Menu::arg *argv)
+{
+    print_hit_enter();
+
+    while(1) {
+        delay(200);
+        read_radio();
+        tuning();
+        cliSerial->printf_P(PSTR("tune: %1.3f\n"), tuning_value);
+
+        if(cliSerial->available() > 0) {
+            return (0);
+        }
+    }
+}
 
 static void print_hit_enter()
 {

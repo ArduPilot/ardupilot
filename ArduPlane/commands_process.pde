@@ -37,7 +37,7 @@ static void update_commands(void)
         if(home_is_set == true && g.command_total > 1) {
             process_next_command();
         }
-    }                                                                           // Other (eg GCS_Auto) modes may be implemented here
+    }
 }
 
 static void verify_commands(void)

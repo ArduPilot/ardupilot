@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	AP_Curve.h
 /// @brief	used to transforms a pwm value to account for the non-linear pwm->thrust values of normal ESC+motors

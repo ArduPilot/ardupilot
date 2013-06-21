@@ -29,6 +29,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("GPS_TYPE",  12, SITL,  gps_type,  SITL::GPS_TYPE_UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
+    AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
     AP_GROUPEND
 };
 

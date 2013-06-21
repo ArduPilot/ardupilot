@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	RC_Channel.h
 /// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
@@ -30,6 +30,7 @@ public:
         _high(1),
         _ch_out(ch_out) {
 		AP_Param::setup_object_defaults(this, var_info);
+        rc_ch[ch_out] = this;
     }
 
     // setup min and max radio values in CLI
@@ -94,11 +95,15 @@ public:
     int16_t                                         pwm_to_range_dz(uint16_t dead_zone);
     int16_t                                         range_to_pwm();
 
-    void                                            output();
+    void                                            output() const;
+    void                                            output_trim() const;
+    uint16_t                                        read() const;
     void                                            input();
     void                                            enable_out();
 
     static const struct AP_Param::GroupInfo         var_info[];
+
+    static RC_Channel *rc_channel(uint8_t i) { return rc_ch[i]; }
 
 private:
     AP_Int8         _reverse;
@@ -109,6 +114,8 @@ private:
     int16_t         _high_out;
     int16_t         _low_out;
     uint8_t         _ch_out;
+
+    static RC_Channel *rc_ch[8];
 };
 
 // This is ugly, but it fixes poorly architected library

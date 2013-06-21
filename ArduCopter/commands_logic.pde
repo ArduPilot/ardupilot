@@ -17,7 +17,7 @@ static void process_nav_command()
         break;
 
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
-        do_land();
+        do_land(&command_nav_queue);
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:              // 17 Loiter indefinitely
@@ -290,13 +290,12 @@ static void do_nav_wp()
 
 // do_land - initiate landing procedure
 // caller should set roll_pitch_mode to ROLL_PITCH_AUTO (for no pilot input) or ROLL_PITCH_LOITER (for pilot input)
-// caller should set yaw_mode
-static void do_land()
+static void do_land(const struct Location *cmd)
 {
     // To-Do: check if we have already landed
 
     // if location provided we fly to that location at current altitude
-    if (command_nav_queue.lat != 0 || command_nav_queue.lng != 0) {
+    if (cmd != NULL && (cmd->lat != 0 || cmd->lng != 0)) {
         // set state to fly to location
         land_state = LAND_STATE_FLY_TO_LOCATION;
 
@@ -313,9 +312,13 @@ static void do_land()
         set_nav_mode(NAV_WP);
 
         // calculate and set desired location above landing target
-        Vector3f pos = pv_location_to_vector(command_nav_queue);
+        Vector3f pos = pv_location_to_vector(*cmd);
         pos.z = min(current_loc.alt, RTL_ALT_MAX);
         wp_nav.set_destination(pos);
+
+        // initialise original_wp_bearing which is used to check if we have missed the waypoint
+        wp_bearing = wp_nav.get_bearing_to_destination();
+        original_wp_bearing = wp_bearing;
     }else{
         // set landing state
         land_state = LAND_STATE_DESCENDING;
@@ -450,12 +453,6 @@ static void do_loiter_time()
 // verify_takeoff - check if we have completed the takeoff
 static bool verify_takeoff()
 {
-    // wait until we are ready!
-    if(g.rc_3.control_in == 0) {
-        // To-Do: reset loiter target if we have not yet taken-off
-        // do not allow I term to build up if we have not yet taken-off
-        return false;
-    }
     // have we reached our target altitude?
     return wp_nav.reached_destination();
 }
@@ -637,7 +634,11 @@ static bool verify_RTL()
                 rtl_loiter_start_time = millis();
 
                 // give pilot back control of yaw
-                set_yaw_mode(YAW_HOLD);
+                if(get_wp_yaw_mode(true) != YAW_HOLD) {
+                    set_yaw_mode(YAW_RESETTOARMEDYAW); // yaw back to initial yaw on take off
+                } else {
+                    set_yaw_mode(YAW_HOLD);
+                }
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_LOITERING_AT_HOME;
@@ -842,6 +843,35 @@ static bool verify_nav_roi()
 /********************************************************************************/
 //	Do (Now) commands
 /********************************************************************************/
+
+// do_guided - start guided mode
+// this is not actually a mission command but rather a 
+static void do_guided(const struct Location *cmd)
+{
+    bool first_time = false;
+    // switch to guided mode if we're not already in guided mode
+    if (control_mode != GUIDED) {
+        set_mode(GUIDED);
+        first_time = true;
+    }
+
+    // set wp_nav's destination
+    Vector3f pos = pv_location_to_vector(*cmd);
+    wp_nav.set_destination(pos);
+
+    // initialise wp_bearing for reporting purposes
+    wp_bearing = wp_nav.get_bearing_to_destination();
+
+    // point nose at next waypoint if it is more than 10m away
+    if (yaw_mode == YAW_LOOK_AT_NEXT_WP) {
+        // get distance to new location
+        wp_distance = wp_nav.get_distance_to_destination();
+        // set original_wp_bearing to point at next waypoint
+        if (wp_distance >= 1000 || first_time) {
+            original_wp_bearing = wp_bearing;
+        }
+    }
+}
 
 static void do_change_speed()
 {

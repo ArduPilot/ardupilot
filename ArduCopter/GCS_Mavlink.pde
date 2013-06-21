@@ -895,7 +895,7 @@ GCS_MAVLINK::update(void)
     uint32_t tnow = millis();
 
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.command_total &&
+        waypoint_request_i <= waypoint_request_last &&
         tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
@@ -1573,7 +1573,35 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         waypoint_receiving   = true;
         waypoint_sending         = false;
         waypoint_request_i   = 0;
+        // note that ArduCopter sets waypoint_request_last to
+        // command_total-1, whereas plane and rover use
+        // command_total. This is because the copter code assumes
+        // command_total includes home
+        waypoint_request_last= g.command_total - 1;
         waypoint_timelast_request = 0;
+        break;
+    }
+
+    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
+    {
+        // decode
+        mavlink_mission_write_partial_list_t packet;
+        mavlink_msg_mission_write_partial_list_decode(msg, &packet);
+        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+
+        // start waypoint receiving
+        if (packet.start_index > g.command_total ||
+            packet.end_index > g.command_total ||
+            packet.end_index < packet.start_index) {
+            send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
+            break;
+        }
+
+        waypoint_timelast_receive = millis();
+        waypoint_timelast_request = 0;
+        waypoint_receiving   = true;
+        waypoint_request_i   = packet.start_index;
+        waypoint_request_last= packet.end_index;
         break;
     }
 
@@ -1592,6 +1620,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_MISSION_ITEM:     //39
     {
         // decode
+        uint8_t result = MAV_MISSION_ACCEPTED;
         mavlink_mission_item_t packet;
         mavlink_msg_mission_item_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
@@ -1700,11 +1729,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
 
         if(packet.current == 2) {                                               //current = 2 is a flag to tell us this is a "guided mode" waypoint and not for the mission
-            // switch to guided mode
-            set_mode(GUIDED);
-
-            // set wp_nav's destination
-            wp_nav.set_destination(pv_location_to_vector(tell_command));
+            // initiate guided mode
+            do_guided(&tell_command);
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(
@@ -1733,16 +1759,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         } else {
             // Check if receiving waypoints (mission upload expected)
-            if (!waypoint_receiving) break;
-
-
-            //cliSerial->printf("req: %d, seq: %d, total: %d\n", waypoint_request_i,packet.seq, g.command_total.get());
+            if (!waypoint_receiving) {
+                result = MAV_MISSION_ERROR;
+                goto mission_failed;
+            }
 
             // check if this is the requested waypoint
-            if (packet.seq != waypoint_request_i)
-                break;
+            if (packet.seq != waypoint_request_i) {
+                result = MAV_MISSION_INVALID_SEQUENCE;
+                goto mission_failed;
+            }
 
-            if(packet.seq != 0)
                 set_cmd_with_index(tell_command, packet.seq);
 
             // update waypoint receiving state machine
@@ -1750,14 +1777,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             waypoint_timelast_request = 0;
             waypoint_request_i++;
 
-            if (waypoint_request_i == (uint16_t)g.command_total) {
-                uint8_t type = 0;                         // ok (0), error(1)
-
+            if (waypoint_request_i > waypoint_request_last) {
                 mavlink_msg_mission_ack_send(
                     chan,
                     msg->sysid,
                     msg->compid,
-                    type);
+                    result);
 
                 send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
                 waypoint_receiving = false;
@@ -1765,6 +1790,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // only set WP_RADIUS parameter
             }
         }
+        break;
+
+mission_failed:
+        // we are rejecting the mission/waypoint
+        mavlink_msg_mission_ack_send(
+            chan,
+            msg->sysid,
+            msg->compid,
+            result);
         break;
     }
 
@@ -2101,7 +2135,7 @@ void
 GCS_MAVLINK::queued_waypoint_send()
 {
     if (waypoint_receiving &&
-        waypoint_request_i < (unsigned)g.command_total) {
+        waypoint_request_i <= waypoint_request_last) {
         mavlink_msg_mission_request_send(
             chan,
             waypoint_dest_sysid,

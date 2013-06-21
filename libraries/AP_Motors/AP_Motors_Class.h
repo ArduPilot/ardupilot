@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #ifndef __AP_MOTORS_CLASS_H__
 #define __AP_MOTORS_CLASS_H__
@@ -25,6 +25,7 @@
 #define AP_MOTORS_MAX_NUM_MOTORS 8
 
 #define AP_MOTORS_DEFAULT_MIN_THROTTLE  130
+#define AP_MOTORS_DEFAULT_MID_THROTTLE  500
 #define AP_MOTORS_DEFAULT_MAX_THROTTLE  1000
 
 // APM board definitions
@@ -80,15 +81,18 @@ public:
     virtual void        set_frame_orientation( uint8_t new_orientation ) { _frame_orientation = new_orientation; };
 
     // enable - starts allowing signals to be sent to motors
-    virtual void        enable() {};
+    virtual void        enable() = 0;
 
     // arm, disarm or check status status of motors
     bool                armed() { return _armed; };
     void                armed(bool arm) { _armed = arm; };
 
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-    void                set_min_throttle(uint16_t min_throttle) { _min_throttle = min_throttle; };
+    void                set_min_throttle(uint16_t min_throttle);
     void                set_max_throttle(uint16_t max_throttle) { _max_throttle = max_throttle; };
+    // set_mid_throttle - sets the mid throttle which is close to the hover throttle of the copter
+    // this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
+    void                set_mid_throttle(uint16_t mid_throttle);
 
     // output - sends commands to the motors
     void        output() {
@@ -96,8 +100,7 @@ public:
     };
 
     // output_min - sends minimum values out to the motors
-    virtual void        output_min() {
-    };
+    virtual void        output_min() = 0;
 
     // reached_limits - return whether we hit the limits of the motors
     uint8_t             reached_limit( uint8_t which_limit = AP_MOTOR_ANY_LIMIT ) {
@@ -105,8 +108,7 @@ public:
     }
 
     // motor test
-    virtual void        output_test() {
-    };
+    virtual void        output_test() = 0;
 
     // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
     virtual void        throttle_pass_through();
@@ -144,5 +146,8 @@ protected:
     AP_Int8             _throttle_curve_mid;  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
     AP_Int8             _throttle_curve_max;  // throttle which produces the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
     uint8_t             _reached_limit;                // bit mask to record which motor limits we hit (if any) during most recent output.  Used to provide feedback to attitude controllers
+
+    // for new stability patch
+    int16_t             _hover_out;                     // the estimated hover throttle in pwm (i.e. 1000 ~ 2000).  calculated from the THR_MID parameter
 };
 #endif  // __AP_MOTORS_CLASS_H__

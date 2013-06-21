@@ -89,7 +89,7 @@ build_arduplane() {
     echo "Building ArduPlane $tag binaries"
     checkout ArduPlane $tag || return
     pushd ArduPlane
-    for b in apm1 apm2 apm1-hilsensors apm2-hilsensors apm1-1280; do
+    for b in apm1 apm2 apm1-hilsensors apm2-hilsensors; do
 	echo "Building ArduPlane $b binaries"
 	ddir=$binaries/Plane/$hdate/$b
 	skip_build $tag $ddir && continue

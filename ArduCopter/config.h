@@ -382,6 +382,14 @@
  # define HIGH_DISCHARGE                 1760
 #endif
 
+#ifndef BOARD_VOLTAGE_MIN
+ # define BOARD_VOLTAGE_MIN             4300        // min board voltage in milli volts for pre-arm checks
+#endif
+
+#ifndef BOARD_VOLTAGE_MAX
+ # define BOARD_VOLTAGE_MAX             5800        // max board voltage in milli volts for pre-arm checks
+#endif
+
 // Battery failsafe
 #ifndef FS_BATTERY
  # define FS_BATTERY              DISABLED
@@ -389,7 +397,7 @@
 
 // GPS failsafe
 #ifndef FS_GPS
- # define FS_GPS                        DISABLED
+ # define FS_GPS                        ENABLED
 #endif
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
@@ -411,6 +419,17 @@
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
  # define MAGNETOMETER                   ENABLED
+#endif
+
+// expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ #ifndef COMPASS_MAGFIELD_EXPECTED
+  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 495 or < 165
+ #endif
+#else // APM1, PX4, SITL
+ #ifndef COMPASS_MAGFIELD_EXPECTED
+  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 795 or < 265
+ #endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -617,7 +636,7 @@
 #endif
 
 #ifndef CIRCLE_RATE
- # define CIRCLE_RATE               5.0f        // degrees per second turn rate
+ # define CIRCLE_RATE               20.0f        // degrees per second turn rate
 #endif
 
 // Guided Mode
@@ -657,7 +676,7 @@
 #endif
 
 #ifndef POSITION_RP
- # define POSITION_RP               ROLL_PITCH_AUTO
+ # define POSITION_RP               ROLL_PITCH_LOITER
 #endif
 
 #ifndef POSITION_THR
@@ -899,7 +918,7 @@
 #endif
 
 #ifndef ALT_HOLD_P
- # define ALT_HOLD_P            2.0f
+ # define ALT_HOLD_P            1.0f
 #endif
 #ifndef ALT_HOLD_I
  # define ALT_HOLD_I            0.0f
@@ -935,7 +954,7 @@
 #endif
 // the acceleration used to define the distance-velocity curve
 #ifndef ALT_HOLD_ACCEL_MAX
- # define ALT_HOLD_ACCEL_MAX 250
+ # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
 #endif
 
 // Throttle Accel control

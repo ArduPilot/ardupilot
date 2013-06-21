@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
  *  ArduCopter parameter definitions
@@ -115,7 +115,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: VOLT_DIVIDER
     // @DisplayName: Voltage Divider
-    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin voltage * INPUT_VOLTS/1024 * VOLT_DIVIDER)
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_DIVIDER). For the 3DR Power brick, this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
     // @User: Advanced
     GSCALAR(volt_div_ratio, "VOLT_DIVIDER",     VOLT_DIV_RATIO),
 
@@ -172,15 +172,15 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: BATT_VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100.
+    // @Values: -1:Disabled, 0:A0, 1:A1, 13:A13, 100:PX4
     // @User: Standard
     GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    BATTERY_VOLT_PIN),
 
     // @Param: BATT_CURR_PIN
     // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12
+    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. 
+    // @Values: -1:Disabled, 1:A1, 2:A2, 12:A12, 101:PX4
     // @User: Standard
     GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    BATTERY_CURR_PIN),
 
@@ -290,6 +290,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
+    // @Range: 925 1100
+    // @Increment: 1
     // @User: Standard
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
 
@@ -568,18 +570,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
     // @Range: 0.08 0.20
+    // @Increment: 0.005
     // @User: Standard
 
     // @Param: RATE_RLL_I
     // @DisplayName: Roll axis rate controller I gain
     // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
     // @Range: 0.01 0.5
+    // @Increment: 0.01
     // @User: Standard
 
     // @Param: RATE_RLL_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
+    // @Increment: 10
     // @Units: PWM
     // @User: Standard
 
@@ -587,6 +592,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
     // @Range: 0.001 0.008
+    // @Increment: 0.001
     // @User: Standard
     GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
 
@@ -594,18 +600,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
     // @Range: 0.08 0.20
+    // @Increment: 0.005
     // @User: Standard
 
     // @Param: RATE_PIT_I
     // @DisplayName: Pitch axis rate controller I gain
     // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
     // @Range: 0.01 0.5
+    // @Increment: 0.01
     // @User: Standard
 
     // @Param: RATE_PIT_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
+    // @Increment: 10
     // @Units: PWM
     // @User: Standard
 
@@ -613,6 +622,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
     // @Range: 0.001 0.008
+    // @Increment: 0.001
     // @User: Standard
     GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
 
@@ -620,18 +630,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Yaw axis rate controller P gain
     // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
     // @Range: 0.150 0.250
+    // @Increment: 0.005
     // @User: Standard
 
     // @Param: RATE_YAW_I
     // @DisplayName: Yaw axis rate controller I gain
     // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
     // @Range: 0.010 0.020
+    // @Increment: 0.01
     // @User: Standard
 
     // @Param: RATE_YAW_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
+    // @Increment: 10
     // @Units: PWM
     // @User: Standard
 
@@ -639,58 +652,67 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Yaw axis rate controller D gain
     // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
     // @Range: 0.000 0.001
+    // @Increment: 0.001
     // @User: Standard
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
 
     // @Param: LOITER_LAT_P
     // @DisplayName: Loiter latitude rate controller P gain
     // @Description: Loiter latitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
-    // @Range: 2.000 6.000
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
     // @User: Standard
 
     // @Param: LOITER_LAT_I
     // @DisplayName: Loiter latitude rate controller I gain
     // @Description: Loiter latitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
-    // @Range: 0.020 0.060
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
     // @User: Standard
 
     // @Param: LOITER_LAT_IMAX
     // @DisplayName: Loiter rate controller I gain maximum
     // @Description: Loiter rate controller I gain maximum.  Constrains the lean angle that the I gain will output
     // @Range: 0 4500
+    // @Increment: 10
     // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: LOITER_LAT_D
     // @DisplayName: Loiter latitude rate controller D gain
     // @Description: Loiter latitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.200 0.600
+    // @Range: 0.0 0.6
+    // @Increment: 0.01
     // @User: Standard
     GGROUP(pid_loiter_rate_lat,      "LOITER_LAT_",  AC_PID),
 
     // @Param: LOITER_LON_P
     // @DisplayName: Loiter longitude rate controller P gain
     // @Description: Loiter longitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the longitude direction
-    // @Range: 2.000 6.000
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
     // @User: Standard
 
     // @Param: LOITER_LON_I
     // @DisplayName: Loiter longitude rate controller I gain
     // @Description: Loiter longitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the longitude direction
-    // @Range: 0.020 0.060
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
     // @User: Standard
 
     // @Param: LOITER_LON_IMAX
     // @DisplayName: Loiter longitude rate controller I gain maximum
     // @Description: Loiter longitude rate controller I gain maximum.  Constrains the lean angle that the I gain will output
     // @Range: 0 4500
+    // @Increment: 10
     // @Units: Centi-Degrees
     // @User: Standard
 
     // @Param: LOITER_LON_D
     // @DisplayName: Loiter longituderate controller D gain
     // @Description: Loiter longitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
-    // @Range: 0.200 0.600
+    // @Range: 0.0 0.6
+    // @Increment: 0.01
     // @User: Standard
     GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
 
@@ -935,7 +957,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-#if HIL_MODE == HIL_MODE_DISABLED
+#if HIL_MODE != HIL_MODE_ATTITUDE
     GOBJECT(ins,            "INS_", AP_InertialSensor),
 #endif
 
@@ -998,6 +1020,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
     GOBJECT(motors, "MOT_",         AP_Motors),
 #endif
+
+    // @Group: RCMAP_
+    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
+    GOBJECT(rcmap, "RCMAP_",        RCMapper),
 
     AP_VAREND
 };

@@ -312,14 +312,31 @@ static void startup_ground(void)
     reset_I_all();
 }
 
+// returns true or false whether mode requires GPS
+static bool mode_requires_GPS(uint8_t mode) {
+    switch(mode) {
+        case AUTO:
+        case GUIDED:
+        case LOITER: 
+        case RTL:
+        case CIRCLE:
+        case POSITION:
+            return true;
+        default:
+            return false;
+    }   
+
+    return false;
+}
+
 // set_mode - change flight mode and perform any necessary initialisation
 static void set_mode(uint8_t mode)
 {
     // Switch to stabilize mode if requested mode requires a GPS lock
-    if(!ap.home_is_set) {
-        if (mode > ALT_HOLD && mode != TOY_A && mode != TOY_M && mode != OF_LOITER && mode != LAND) {
+    if(g_gps->status() != GPS::GPS_OK_FIX_3D && mode_requires_GPS(mode)) {
             mode = STABILIZE;
-        }
+    } else if(mode == RTL && !ap.home_is_set) {
+            mode = STABILIZE;
     }
 
     // Switch to stabilize if OF_LOITER requested but no optical flow sensor
@@ -417,7 +434,7 @@ static void set_mode(uint8_t mode)
 
     case LAND:
         // To-Do: it is messy to set manual_attitude here because the do_land function is reponsible for setting the roll_pitch_mode
-        if( ap.home_is_set ) {
+        if( g_gps->status() == GPS::GPS_OK_FIX_3D ) {
             // switch to loiter if we have gps
             ap.manual_attitude = false;
         }else{
@@ -425,7 +442,7 @@ static void set_mode(uint8_t mode)
             ap.manual_attitude = true;
         }
     	ap.manual_throttle = false;
-        do_land();
+        do_land(NULL);  // land at current location
         break;
 
     case RTL:

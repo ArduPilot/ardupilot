@@ -232,7 +232,6 @@ static bool verify_condition_command()          // Returns true if command compl
 static void do_RTL(void)
 {
     control_mode    = RTL;
-    crash_timer     = 0;
     next_WP                 = home;
 
     if (g.loiter_radius < 0) {
@@ -627,7 +626,6 @@ static void do_set_relay()
 static void do_repeat_servo(uint8_t channel, uint16_t servo_value,
                             int16_t repeat, uint8_t delay_time)
 {
-    extern RC_Channel *rc_ch[8];
     channel = channel - 1;
     if (channel < 5 || channel > 8) {
         // not allowed
@@ -640,7 +638,7 @@ static void do_repeat_servo(uint8_t channel, uint16_t servo_value,
     event_state.delay_ms    = delay_time * 500UL;
     event_state.repeat      = repeat * 2;
     event_state.servo_value = servo_value;
-    event_state.undo_value  = rc_ch[channel]->radio_trim;
+    event_state.undo_value  = RC_Channel::rc_channel(channel)->radio_trim;
     update_events();
 }
 

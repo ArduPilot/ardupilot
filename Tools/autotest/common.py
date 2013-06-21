@@ -1,4 +1,5 @@
-import util, pexpect, time, math, mavwp
+import util, pexpect, time, math
+from pymavlink import mavwp
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing

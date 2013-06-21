@@ -14,6 +14,7 @@
 #define PX4_ANALOG_BATTERY_VOLTAGE_PIN 100
 #define PX4_ANALOG_BATTERY_CURRENT_PIN 101
 
+#define PX4_ANALOG_FMU_BATTERY          10 // on multi-connector pin 5
 #define PX4_ANALOG_AIRSPEED_PIN         11
 #define PX4_ANALOG_ANALOG2_PIN          12 // on SPI port pin 3
 #define PX4_ANALOG_ANALOG3_PIN          13 // on SPI port pin 4

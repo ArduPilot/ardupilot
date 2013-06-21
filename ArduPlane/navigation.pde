@@ -87,7 +87,7 @@ static void calc_airspeed_errors()
     if (control_mode == FLY_BY_WIRE_B) {
         target_airspeed_cm = ((int)(g.flybywire_airspeed_max -
                                     g.flybywire_airspeed_min) *
-                              g.channel_throttle.servo_out) +
+                              channel_throttle->servo_out) +
                              ((int)g.flybywire_airspeed_min * 100);
     }
 
@@ -129,6 +129,9 @@ static void calc_gndspeed_undershoot()
 
 static void calc_altitude_error()
 {
+    if (control_mode == FLY_BY_WIRE_B) {
+        return;
+    }
     if (control_mode == AUTO && offset_altitude_cm != 0) {
         // limit climb rates
         target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));

@@ -2,7 +2,8 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
-import mavutil, random
+from pymavlink import mavutil
+import random
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
@@ -228,7 +229,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     if viewerip:
         options += " --out=%s:14550" % viewerip
     if map:
-        options += ' --map --console'
+        options += ' --map'
 
     sil = util.start_SIL('ArduPlane', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
