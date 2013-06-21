@@ -521,7 +521,7 @@ void AP_TECS::_update_throttle(void)
 		float integ_min = (_THRminf - _throttle_dem -0.1f);
 
   		// Calculate integrator state, constraining state
-		// Set integrator to a max throttle value dduring climbout
+		// Set integrator to a max throttle value during climbout
         _integ6_state = _integ6_state + (_STE_error * _integGain) * _DT * K_STE2Thr;
 		if (_climbOutDem)
 		{
@@ -533,19 +533,32 @@ void AP_TECS::_update_throttle(void)
 		}
 
 		// Sum the components. 
-		// Only use feed-forward component if airspeed is not being used
-	    if (_useAirspeed)
-	    {
-	        _throttle_dem = _throttle_dem + _integ6_state;
-	    }
-	    else
-	    {
- 	       _throttle_dem = ff_throttle;
-	    }
+	    _throttle_dem = _throttle_dem + _integ6_state;
     }
 
     // Constrain throttle demand
     _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
+}
+
+void AP_TECS::_update_throttle_option(void)
+{
+	// Calculate throttle demand by interpolating between pitch and throttle limits
+	if (_climbOutDem)
+	{
+		_throttle_dem = _THRmaxf;
+	}
+	else if (_pitch_dem > 0.0 && _PITCHmaxf > 0.0)
+	{
+		_throttle_dem = _cruiseThrottle + (_THRmaxf - _cruiseThrottle) * _pitch_dem / _PITCHmaxf;
+	}
+	else if (_pitch_dem < 0.0 && _PITCHminf < 0.0)
+	{
+		_throttle_dem = _cruiseThrottle + (_THRminf - _cruiseThrottle) * _pitch_dem / _PITCHminf;
+	}
+	else
+	{
+		_throttle_dem = _cruiseThrottle;
+	}
 }
 
 void AP_TECS::_detect_bad_descent(void) 
@@ -717,7 +730,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool
     _update_energies();
 
     // Calculate throttle demand
-    _update_throttle();
+	// Use an alternative algorithm if not using airspeed measurement
+	if (_useAirspeed)
+	{
+    	_update_throttle();
+	}
+	else
+	{
+		_update_throttle_option();
+	}
 
 	// Detect bad descent due to demanded airspeed being too high
 	_detect_bad_descent();
