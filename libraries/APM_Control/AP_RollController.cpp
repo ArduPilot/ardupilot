@@ -59,11 +59,11 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 
 	// @Param: INTLIM
 	// @DisplayName: Integrator limit
-	// @Description: This limits the number of degrees of aileron over which the integrator will operate. At the default setting of 15 degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the aircraft is severely out of trim.
-	// @Range: 0 45
+	// @Description: This limits the number of degrees of aileron in centi-dgrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the aircraft is severely out of trim.
+	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("INTLIM",      5, AP_RollController, _intlim,        15),
+	AP_GROUPINFO("INTLIM",      5, AP_RollController, _intlim,        1500),
 
 	AP_GROUPEND
 };
