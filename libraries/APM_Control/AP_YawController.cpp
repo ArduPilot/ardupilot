@@ -47,11 +47,11 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
-	// @Description: This limits the number of degrees of rudder over which the integrator will operate. At the default setting of 15 degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited rudder control effectiveness.
-	// @Range: 0 45
+	// @Description: This limits the number of centi-degrees of rudder over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited rudder control effectiveness.
+	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      4, AP_YawController, _imax,        15),
+	AP_GROUPINFO("IMAX",      4, AP_YawController, _imax,        1500),
 
 	AP_GROUPEND
 };
@@ -128,7 +128,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	}
 	
     // Scale the integration limit
-    float intLimScaled = float(_imax) / (_K_D * scaler * scaler);
+    float intLimScaled = _imax * 0.01f / (_K_D * scaler * scaler);
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);

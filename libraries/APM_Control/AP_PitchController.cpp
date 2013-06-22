@@ -195,7 +195,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	}
 
     // Scale the integration limit
-    float intLimScaled = float(_imax) / scaler;
+    float intLimScaled = _imax * 0.01f / scaler;
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
