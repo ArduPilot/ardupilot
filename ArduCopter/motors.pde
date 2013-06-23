@@ -181,6 +181,14 @@ static void init_arm_motors()
     piezo_beep_twice();
 #endif
 
+    // Cancel arming if throttle is raised too high so that copter does not suddenly take off
+    read_radio();
+    if (g.rc_3.control_in > g.throttle_cruise && g.throttle_cruise > 100) {
+        motors.output_min();
+        failsafe_enable();
+        return;
+    }
+
     // finally actually arm the motors
     motors.armed(true);
 
