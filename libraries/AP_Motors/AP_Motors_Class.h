@@ -85,6 +85,8 @@ public:
 
     // enable - starts allowing signals to be sent to motors
     virtual void        enable() = 0;
+    
+    virtual void output_unsafe() = 0;
 
     // arm, disarm or check status status of motors
     bool                armed() { return _armed; };

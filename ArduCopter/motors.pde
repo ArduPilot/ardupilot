@@ -110,6 +110,9 @@ static void init_arm_motors()
 
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
+    
+    motors.enable();
+    motors.output_unsafe();
 
 #if LOGGING_ENABLED == ENABLED
     // start dataflash
@@ -177,9 +180,6 @@ static void init_arm_motors()
 #if COPTER_LEDS == ENABLED
     piezo_beep_twice();
 #endif
-
-    // enable output to motors
-    output_min();
 
     // finally actually arm the motors
     motors.armed(true);
