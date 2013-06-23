@@ -182,6 +182,15 @@ static void init_arm_motors()
     piezo_beep_twice();
 #endif
 
+    read_radio();
+    
+    if (g.rc_3.control_in > g.throttle_cruise) {
+        // Cancel arming so that copter does not suddenly take off.
+        motors.output_min();
+        failsafe_enable();
+        return;
+    }
+    
     // finally actually arm the motors
     motors.armed(true);
 
