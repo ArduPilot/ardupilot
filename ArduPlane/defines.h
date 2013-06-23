@@ -157,7 +157,8 @@ enum log_messages {
     LOG_ATTITUDE_MSG,
     LOG_MODE_MSG,
     LOG_COMPASS_MSG,
-    MAX_NUM_LOGS
+    LOG_TECS_MSG,
+    MAX_NUM_LOGS // always at the end
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -171,6 +172,7 @@ enum log_messages {
 #define MASK_LOG_CMD                    (1<<8)
 #define MASK_LOG_CURRENT                (1<<9)
 #define MASK_LOG_COMPASS                (1<<10)
+#define MASK_LOG_TECS                   (1<<11)
 
 // Waypoint Modes
 // ----------------
@@ -250,8 +252,9 @@ enum log_messages {
 
 // altitude control algorithms
 enum {
-    ALT_CONTROL_DEFAULT=0,
-    ALT_CONTROL_NON_AIRSPEED=1
+    ALT_CONTROL_DEFAULT      = 0,
+    ALT_CONTROL_NON_AIRSPEED = 1,
+    ALT_CONTROL_TECS         = 2
 };
 
 // attitude controller choice
