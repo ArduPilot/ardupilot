@@ -229,7 +229,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: CIRCLE_RATE
     // @DisplayName: Circle rate
     // @Description: Circle mode's turn rate in degrees / second.  Positive to turn clockwise, negative for counter clockwise
-    // @Units: Degrees / second
+    // @Units: deg/s
     // @Range: -90 90
     // @Increment: 1
     // @User: Standard
@@ -247,7 +247,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: Centimeters/Second
+    // @Units: cm/s
     // @Range: 20 200
     // @Increment: 10
     // @User: Standard
@@ -291,6 +291,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
     // @Range: 925 1100
+    // @Units: ms
     // @Increment: 1
     // @User: Standard
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
@@ -299,7 +300,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle Trim
     // @Description: The autopilot's estimate of the throttle required to maintain a level hover.  Calculated automatically from the pilot's throttle input while in stabilize mode
     // @Range: 0 1000
-    // @Units: PWM
+    // @Units: ms
     // @User: Standard
     GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
 
@@ -585,7 +586,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
     // @Increment: 10
-    // @Units: PWM
+    // @Units: ms
     // @User: Standard
 
     // @Param: RATE_RLL_D
@@ -615,7 +616,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
     // @Increment: 10
-    // @Units: PWM
+    // @Units: ms
     // @User: Standard
 
     // @Param: RATE_PIT_D
@@ -645,7 +646,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
     // @Increment: 10
-    // @Units: PWM
+    // @Units: ms
     // @User: Standard
 
     // @Param: RATE_YAW_D
@@ -758,7 +759,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 500
-    // @Units: PWM
+    // @Units: ms
     // @User: Standard
 
     // @Param: THR_ACCEL_D
