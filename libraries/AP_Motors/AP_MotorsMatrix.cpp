@@ -125,7 +125,7 @@ void AP_MotorsMatrix::output_armed()
     if (_rc_throttle->servo_out == 0) {
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i]    = _rc_throttle->radio_min;
+                motor_out[i]    = _rc_throttle->radio_min + constrain_int16(_throttle_unsafe,0,AP_MOTORS_THROTTLE_UNSAFE_MAX);
             }
         }
 

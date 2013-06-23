@@ -34,6 +34,12 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
     // @Range: 20 80
     AP_GROUPINFO("TCRV_MAXPCT", 3, AP_Motors, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
+    
+    // @Param: UNSAFE_THR
+    // @DisplayName: Armed min throttle
+    // @Description: Throttle setting used to signal that the copter is armed or otherwise unsafe to approach
+    // @Range: 0 150
+    AP_GROUPINFO("UNSAFE_THR", 4, AP_Motors, _throttle_unsafe, AP_MOTORS_THROTTLE_UNSAFE),
 
     AP_GROUPEND
 };

@@ -45,6 +45,9 @@
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 #define THROTTLE_CURVE_MAX_THRUST   93  // throttle which produces the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 
+#define AP_MOTORS_THROTTLE_UNSAFE 75
+#define AP_MOTORS_THROTTLE_UNSAFE_MAX 150
+
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
 #define AP_MOTOR_ROLLPITCH_LIMIT    0x01
@@ -149,5 +152,7 @@ protected:
 
     // for new stability patch
     int16_t             _hover_out;                     // the estimated hover throttle in pwm (i.e. 1000 ~ 2000).  calculated from the THR_MID parameter
+    //Throttle setting used to signal that the copter is armed or otherwise unsafe to approach
+    AP_Int16             _throttle_unsafe;
 };
 #endif  // __AP_MOTORS_CLASS_H__
