@@ -959,6 +959,10 @@ static void update_GPS(void)
 
         // see if we've breached the geo-fence
         geofence_check(false);
+
+#if CAMERA == ENABLED
+        camera.update_location(current_loc);
+#endif        
     }
 
     calc_gndspeed_undershoot();
