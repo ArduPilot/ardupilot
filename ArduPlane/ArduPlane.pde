@@ -654,7 +654,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_alt,             5,   3000 },
     { calc_altitude_error,    5,   1000 },
     { update_commands,        5,   7000 },
-    { update_mount,           2,   1500 },
+    { update_mount,           1,   1500 },
     { obc_fs_check,           5,   1000 },
     { update_events,		 15,   1500 },
     { check_usb_mux,          5,   1000 },
