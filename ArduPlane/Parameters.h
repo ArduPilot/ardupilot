@@ -89,6 +89,7 @@ public:
         k_param_att_controller,
         k_param_mixing_gain,
         k_param_scheduler,
+        k_param_relay,
 
         // 110: Telemetry control
         //
