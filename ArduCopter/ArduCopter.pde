@@ -1373,6 +1373,10 @@ static void update_GPS(void)
                 ground_start_count = 10;
             }
         }
+
+#if CAMERA == ENABLED
+        camera.update_location(current_loc);
+#endif                
     }
 
     // check for loss of gps
