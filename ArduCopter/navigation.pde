@@ -68,7 +68,7 @@ static void calc_distance_and_bearing()
     }
 
     // calculate home distance and bearing
-    if( ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D ) {
+    if( ap.home_is_set && (g_gps->status() == GPS::GPS_OK_FIX_3D || g_gps->status() == GPS::GPS_OK_FIX_2D)) {
         home_distance = pythagorous2(curr.x, curr.y);
         home_bearing = pv_get_bearing_cd(curr,Vector3f(0,0,0));
 
