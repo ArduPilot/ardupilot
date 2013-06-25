@@ -107,7 +107,7 @@ then
 	fi
 
 	echo Starting $sketch
-	echo Starting $sketch >> $logfile
+	echo Starting $sketch on $deviceA and $deviceC >> $logfile
 	$sketch -d $deviceA -d2 $deviceC start
 
 	# if starting on the console, tell nsh to exit

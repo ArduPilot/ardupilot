@@ -54,6 +54,8 @@ public:
     void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
 
+    void update_location(const struct Location &loc);
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
@@ -70,6 +72,9 @@ private:
     void            throttle_pic();     // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
     void            distance_pic();     // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
     void            transistor_pic();   // hacked the circuit to run a transistor? use this trigger to send output.
+    
+    AP_Float        _trigg_dist;     // distance between trigger points (meters)
+    struct Location _last_location;
 
 };
 

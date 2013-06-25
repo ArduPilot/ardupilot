@@ -583,7 +583,10 @@ def fly_ArduCopter(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
@@ -867,7 +870,10 @@ def fly_CopterAVC(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])

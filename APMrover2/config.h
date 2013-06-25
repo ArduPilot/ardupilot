@@ -36,9 +36,6 @@
  // default choices for a 1280. We can't fit everything in, so we 
  // make some popular choices by default
  #define LOGGING_ENABLED DISABLED
- #ifndef CONFIG_RELAY
- # define CONFIG_RELAY DISABLED
- #endif
  #ifndef MOUNT2
  # define MOUNT2 DISABLED
  #endif
@@ -74,14 +71,12 @@
 # define SLIDE_SWITCH_PIN 40
 # define PUSHBUTTON_PIN   41
 # define USB_MUX_PIN      -1
-# define CONFIG_RELAY     ENABLED
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 # define CONFIG_PUSHBUTTON DISABLED
-# define CONFIG_RELAY      DISABLED
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25
@@ -97,7 +92,6 @@
 # define CONFIG_INS_TYPE CONFIG_INS_STUB
 # define CONFIG_COMPASS  AP_COMPASS_HIL
 # define CONFIG_PUSHBUTTON DISABLED
-# define CONFIG_RELAY      DISABLED
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25
@@ -113,7 +107,6 @@
 # define CONFIG_INS_TYPE   CONFIG_INS_PX4
 # define CONFIG_COMPASS  AP_COMPASS_PX4
 # define CONFIG_PUSHBUTTON DISABLED
-# define CONFIG_RELAY      DISABLED
 # define A_LED_PIN        27
 # define B_LED_PIN        26
 # define C_LED_PIN        25

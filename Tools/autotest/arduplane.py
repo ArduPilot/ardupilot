@@ -264,7 +264,10 @@ def fly_ArduPlane(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     mavproxy.expect('Received [0-9]+ parameters')
 
