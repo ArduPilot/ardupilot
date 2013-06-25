@@ -323,9 +323,20 @@ static void do_land(const struct Location *cmd)
         // set landing state
         land_state = LAND_STATE_DESCENDING;
 
-        // switch to loiter which restores horizontal control to pilot
-        // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
-        set_roll_pitch_mode(ROLL_PITCH_LOITER);
+        // if we have gps lock, attempt to hold horizontal position
+        if( ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D ) {
+            // switch to loiter which restores horizontal control to pilot
+            // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
+            set_roll_pitch_mode(ROLL_PITCH_LOITER);
+            // switch into loiter nav mode
+            set_nav_mode(NAV_LOITER);
+        }else{
+            // no gps lock so give horizontal control to pilot
+            // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
+            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+            // switch into loiter nav mode
+            set_nav_mode(NAV_NONE);
+        }
 
         // hold yaw while landing
         set_yaw_mode(YAW_HOLD);
@@ -333,8 +344,6 @@ static void do_land(const struct Location *cmd)
         // set throttle mode to land
         set_throttle_mode(THROTTLE_LAND);
 
-        // switch into loiter nav mode
-        set_nav_mode(NAV_LOITER);
     }
 }
 
