@@ -44,7 +44,7 @@ void fence_check()
                         }
                     }else{
                         // if more than 100m outside the fence just force a land
-                        if(control_mode != RTL) {
+                        if(control_mode != LAND) {
                             set_mode(LAND);
                         }
                     }
