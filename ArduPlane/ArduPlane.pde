@@ -59,6 +59,9 @@
 #include <AP_L1_Control.h>
 #include <AP_RCMapper.h>        // RC input mapping library
 
+#include <AP_SpdHgtControl.h>
+#include <AP_TECS.h>
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -232,6 +235,7 @@ AP_InertialSensor_Oilpan ins( &apm1_adc );
 AP_AHRS_DCM ahrs(&ins, g_gps);
 
 static AP_L1_Control L1_controller(&ahrs);
+static AP_TECS TECS_controller(&ahrs, &barometer);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -249,6 +253,9 @@ static GCS_MAVLINK gcs3;
 
 // selected navigation controller
 static AP_Navigation *nav_controller = &L1_controller;
+
+// selected navigation controller
+static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs
@@ -341,6 +348,14 @@ static uint32_t last_heartbeat_ms;
 
 // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
 static uint32_t ch3_failsafe_timer = 0;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// AUTO takeoff
+////////////////////////////////////////////////////////////////////////////////
+// States used for delay from launch detect to engine start
+static bool launchCountStarted;
+static uint32_t last_tkoff_arm_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -456,7 +471,7 @@ static bool takeoff_complete    = true;
 //Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
 static bool land_complete;
 // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
-static int32_t takeoff_altitude;
+static int32_t takeoff_altitude_cm;
 
 // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
 static int16_t takeoff_pitch_cd;
@@ -684,7 +699,7 @@ void setup() {
 
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
-    
+   
     init_ardupilot();
 
     // initialise the main loop scheduler
@@ -760,6 +775,11 @@ static void fast_loop()
     // TODO: implement inertial nav function
     inertialNavigation();
 #endif
+
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+        // Call TECS 50Hz update
+        SpdHgt_Controller->update_50hz();
+    }
 
     // custom code/exceptions for flight modes
     // calculates roll, pitch and yaw demands from navigation demands
@@ -1215,6 +1235,15 @@ static void update_alt()
     // Calculate new climb rate
     //if(medium_loopCounter == 0 && slow_loopCounter == 0)
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
+
+    // Update the speed & height controller states
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt, target_airspeed_cm, 
+                                                 nav_command_ID == MAV_CMD_NAV_TAKEOFF, takeoff_pitch_cd);
+        if (g.log_bitmask & MASK_LOG_TECS) {
+            Log_Write_TECS_Tuning();
+        }
+    }
 }
 
 AP_HAL_MAIN();

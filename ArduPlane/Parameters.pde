@@ -87,7 +87,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
-    // @Description: Minimum GPS ground speed in m/s before un-suppressing throttle in auto-takeoff. This is meant to be used for catapult launches where you want the motor to engage only after the plane leaves the catapult. Note that the GPS velocity will lag the real velocity by about 0.5seconds.
+    // @Description: Minimum GPS ground speed in m/s used by the speed check that un-suppresses throttle in auto-takeoff. This can be be used for catapult launches where you want the motor to engage only after the plane leaves the catapult, but it is preferable to use the TKOFF_THR_MINACC and TKOFF_THR_DELAY parameters for cvatapult launches due to the errors associated with GPS measurements. For hand launches with a pusher prop it is strongly advised that this parameter be set to a value no less than 4 m/s to provide additional protection against premature motor start. Note that the GPS velocity will lag the real velocity by about 0.5 seconds. The ground speed check is delayed by the TKOFF_THR_DELAY parameter.
     // @Units: m/s
     // @Range: 0 30
     // @Increment: 0.1
@@ -96,12 +96,21 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: TKOFF_THR_MINACC
     // @DisplayName: Takeoff throttle min acceleration
-    // @Description: Minimum forward acceleration in m/s/s before un-suppressing throttle in auto-takeoff. This is meant to be used for hand launches with a tractor style (front engine) plane. If this is set then the auto takeoff will only trigger if the pitch of the plane is between -30 and +45 degrees, and the roll is less than 30 degrees. This makes it less likely it will trigger due to carrying the plane with the nose down.
+    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches this should be set to 15.
     // @Units: m/s/s
     // @Range: 0 30
     // @Increment: 0.1
     // @User: User
     GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
+
+    // @Param: TKOFF_THR_DELAY
+    // @DisplayName: Takeoff throttle delay
+    // @Description: This parameter sets the time delay (in 1/10ths of a second) that the ground speed check is delayed after the forward acceleration check controlled by TKOFF_THR_MINACC has passed. For hand launches with pusher propellers it is essential that this is set to a value of no less than 2 (0.2 seconds) to ensure that the aircraft is safely clear of the throwers arm before the motor can start. 
+    // @Units: 0.1 seconds
+    // @Range: 0 15
+    // @Increment: 1
+    // @User: User
+    GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  0),
 
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
@@ -812,6 +821,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: NAVL1_
     // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
     GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
+
+    // @Group: TECS_
+    // @Path: ../libraries/AP_TECS/AP_TECS.cpp
+    GOBJECT(TECS_controller,         "TECS_",   AP_TECS),
 
 #if MOUNT == ENABLED
     // @Group: MNT_

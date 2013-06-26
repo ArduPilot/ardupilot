@@ -90,6 +90,7 @@ public:
         k_param_mixing_gain,
         k_param_scheduler,
         k_param_relay,
+        k_param_takeoff_throttle_delay,
 
         // 110: Telemetry control
         //
@@ -231,6 +232,7 @@ public:
         k_param_yawController,
         k_param_L1_controller,
         k_param_rcmap,
+        k_param_TECS_controller,
 
         //
         // 240: PID Controllers
@@ -268,6 +270,9 @@ public:
 
     // navigation controller type. See AP_Navigation::ControllerType
     AP_Int8  nav_controller;
+
+    // attitude controller type.
+    AP_Int8  att_controller;
 
     // Estimation
     //
@@ -376,6 +381,7 @@ public:
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
+    AP_Int8 takeoff_throttle_delay;
     AP_Int8 level_roll_limit;
 
     // RC channels
