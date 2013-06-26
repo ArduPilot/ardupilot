@@ -206,9 +206,7 @@ static void init_ardupilot()
 #if CONFIG_PUSHBUTTON == ENABLED
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
 #endif
-#if CONFIG_RELAY == ENABLED
     relay.init();
-#endif
 
     /*
       setup the 'main loop is dead' check. Note that this relies on
@@ -292,7 +290,6 @@ static void startup_ground(void)
 	demo_servos(3);
 
     hal.uartA->set_blocking_writes(false);
-    hal.uartB->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));

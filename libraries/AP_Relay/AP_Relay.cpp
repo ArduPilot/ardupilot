@@ -10,8 +10,6 @@
 #include <AP_HAL.h>
 #include "AP_Relay.h"
 
-extern const AP_HAL::HAL& hal;
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #define RELAY_PIN 47
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -21,46 +19,57 @@ extern const AP_HAL::HAL& hal;
 #define RELAY_PIN -1
 #endif
 
-void AP_Relay::init() {
-#if RELAY_PIN != -1
-    hal.gpio->pinMode(RELAY_PIN, GPIO_OUTPUT);
-#endif
+const AP_Param::GroupInfo AP_Relay::var_info[] PROGMEM = {
+    // @Param: PIN
+    // @DisplayName: Relay Pin
+    // @Description: Digital pin number for relay control. This is normally 47 for the APM1 relay and 13 for the A9 pin on APM2.
+    // @User: Standard
+    AP_GROUPINFO("PIN",  0, AP_Relay, _pin, RELAY_PIN),
+
+    AP_GROUPEND
+};
+
+
+extern const AP_HAL::HAL& hal;
+
+AP_Relay::AP_Relay(void)
+{
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
-void AP_Relay::on() {
-#if RELAY_PIN != -1
-    hal.gpio->write(RELAY_PIN, 1);
-#endif
-}
 
-
-void AP_Relay::off() {
-#if RELAY_PIN != -1
-    hal.gpio->write(RELAY_PIN, 0);
-#endif
-}
-
-
-void AP_Relay::toggle() {
-#if RELAY_PIN != -1
-    bool ison = hal.gpio->read(RELAY_PIN);
-    if (ison)
+void AP_Relay::init() 
+{
+    if (_pin != -1) {
+        hal.gpio->pinMode(_pin, GPIO_OUTPUT);
         off();
-    else
-        on();
-#endif
+    }
 }
 
-void AP_Relay::set(bool status){
-#if RELAY_PIN != -1
-    hal.gpio->write(RELAY_PIN, status);
-#endif
+void AP_Relay::on() 
+{    
+    if (_pin != -1) {
+        hal.gpio->write(_pin, 1);
+    }
 }
 
-bool AP_Relay::get() {
-#if RELAY_PIN != -1
-    return hal.gpio->read(RELAY_PIN); 
-#else
-    return false;
-#endif
+
+void AP_Relay::off() 
+{
+    if (_pin != -1) {
+        hal.gpio->write(_pin, 0);
+    }
 }
+
+
+void AP_Relay::toggle() 
+{
+    if (_pin != -1) {
+        bool ison = hal.gpio->read(_pin);
+        if (ison)
+            off();
+        else
+            on();
+    }
+}
+

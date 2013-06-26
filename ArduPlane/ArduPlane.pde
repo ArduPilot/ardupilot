@@ -659,10 +659,10 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_compass,         5,   1500 },
     { read_airspeed,          5,   1500 },
     { read_control_switch,   15,   1000 },
-    { update_alt,             5,   1000 },
+    { update_alt,             5,   3000 },
     { calc_altitude_error,    5,   1000 },
     { update_commands,        5,   7000 },
-    { update_mount,           2,   1500 },
+    { update_mount,           1,   1500 },
     { obc_fs_check,           5,   1000 },
     { update_events,		 15,   1500 },
     { check_usb_mux,          5,   1000 },
@@ -859,7 +859,7 @@ static void update_aux(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
+        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
 #else
         update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 #endif
@@ -971,6 +971,10 @@ static void update_GPS(void)
 
         // see if we've breached the geo-fence
         geofence_check(false);
+
+#if CAMERA == ENABLED
+        camera.update_location(current_loc);
+#endif        
     }
 
     calc_gndspeed_undershoot();

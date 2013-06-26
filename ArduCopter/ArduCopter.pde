@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.0.0-rc5"
+#define THISFIRMWARE "ArduCopter V3.0.1-rc1"
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -1378,6 +1378,10 @@ static void update_GPS(void)
                 ground_start_count = 10;
             }
         }
+
+#if CAMERA == ENABLED
+        camera.update_location(current_loc);
+#endif                
     }
 
     // check for loss of gps
@@ -1655,9 +1659,11 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
+        // copy control_roll and pitch for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
+        // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
 
@@ -1670,9 +1676,9 @@ void update_roll_pitch_mode(void)
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
 
-        // copy control_roll and pitch for reporting purposes
-        control_roll = nav_roll;
-        control_pitch = nav_pitch;
+        // user input, although ignored is put into control_roll and pitch for reporting purposes
+        control_roll = g.rc_1.control_in;
+        control_pitch = g.rc_2.control_in;
         break;
 
     case ROLL_PITCH_STABLE_OF:
@@ -1681,6 +1687,7 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
+        // copy pilot input to control_roll and pitch for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
@@ -1700,7 +1707,7 @@ void update_roll_pitch_mode(void)
         if(ap.simple_mode && ap_system.new_radio_frame) {
             update_simple_mode();
         }
-        // copy user input for logging purposes
+        // copy user input for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 

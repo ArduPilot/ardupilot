@@ -2,7 +2,8 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
-import mavutil, random
+from pymavlink import mavutil
+import random
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
@@ -263,7 +264,10 @@ def fly_ArduPlane(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     mavproxy.expect('Received [0-9]+ parameters')
 

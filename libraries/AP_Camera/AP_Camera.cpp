@@ -41,6 +41,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("SERVO_OFF",   3, AP_Camera, _servo_off_pwm, AP_CAMERA_SERVO_OFF_PWM),
 
+    // @Param: TRIGG_DIST
+    // @DisplayName: Camera trigger distance
+    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in
+    // @User: Standard
+    // @Range: 0 1000
+    AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
+
     AP_GROUPEND
 };
 
@@ -209,3 +216,24 @@ AP_Camera::control_msg(mavlink_message_t* msg)
 }
 
 
+// update location, for triggering by GPS distance moved
+void AP_Camera::update_location(const struct Location &loc)
+{
+    if (_trigg_dist == 0.0f) {
+        return;
+    }
+    if (_last_location.lat == 0 && _last_location.lng == 0) {
+        _last_location = loc;
+        return;
+    }
+    if (_last_location.lat == loc.lat && _last_location.lng == loc.lng) {
+        // we haven't moved - this can happen as update_location() may
+        // be called without a new GPS fix
+        return;
+    }
+    if (get_distance(&loc, &_last_location) < _trigg_dist) {
+        return;
+    }
+    _last_location = loc;
+    trigger_pic();
+}
