@@ -131,6 +131,22 @@ float AP_Baro::get_altitude(void)
     return _altitude;
 }
 
+// return current scale factor that converts from equivalent to true airspeed
+// valid for altitudes up to 10km AMSL
+// assumes standard atmosphere lapse rate
+float AP_Baro::get_EAS2TAS(void)
+{
+    if ((abs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
+        // not enough change to require re-calculating
+        return _EAS2TAS;
+    }
+
+    float tempK = ((float)_ground_temperature) + 273.15f - 0.0065f * _altitude;
+    _EAS2TAS = safe_sqrt(1.225f / ((float)get_pressure() / (287.26f * tempK)));
+    _last_altitude_EAS2TAS = _altitude;
+    return _EAS2TAS;
+}
+
 // return current climb_rate estimeate relative to time that calibrate()
 // was called. Returns climb rate in meters/s, positive means up
 // note that this relies on read() being called regularly to get new data
