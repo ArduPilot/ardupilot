@@ -1,6 +1,6 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 3.0.1 26-Jun-2013
+ArduCopter 3.0.1-rc1 26-Jun-2013
 Improvements over 3.0.0
 1) bug fix to Fence checking position after GPS lock was lost
 2) bug fix to LAND so that it does not attempt to maintain horizontal position without GPS lock
