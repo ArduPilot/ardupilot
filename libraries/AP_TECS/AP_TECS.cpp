@@ -15,68 +15,6 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
-    // @Param: THR_MAX
-    // @DisplayName: Maximum Throttle 
-    // @Description: Maximum throttle percentage that can be used by the controller. 
-	// For overpowered aircraft, this should be reduced to a value that provides 
-	// sufficient thrust to climb at the maximum pitch angle PTCH_MAX.
-	// @Range: 0-100
-	// @Increment: 1
-	// @User: User
-    AP_GROUPINFO("THR_MAX",     0, AP_TECS, _maxThr, 80),
-
-    // @Param: THR_MIN
-    // @DisplayName: Minimum Throttle Percentage
-    // @Description: Minimum throttle percentage that can be used by the controller.
-	// For electric aircraft this will normally be set to zero, but can be set to a small
-	// non-zero value if a folding prop is fitted to prevent the prop from folding and unfolding 
-	// repeatedly in-flight or to provide some aerodynamic drag from a turning prop to improve the
-	// descent rate.
-	// @Range: 0-100
-	// @Increment: 1
-	// @User: User
-    AP_GROUPINFO("THR_MIN",     1, AP_TECS, _minThr, 0),
-
-    // @Param: THR_SLEWTIME
-    // @DisplayName: Throttle Slew Time (seconds)
-    // @Description: The time in seconds required for the throttle to
-    // move between THR_MAX and THR_MIN. Increasing this value will reduce
-    // the amount of throttle 'surging' in windy conditions but will reduce
-    // controller accuracy and will produce oscillation in throttle, speed 
-	// and height if increased too much.
-	// @Range: 0-10
-	// @Increment: 1
-	// @User: Advanced
-    AP_GROUPINFO("THR_TIME", 2, AP_TECS, _thrSlewTime, 1.0f),
-
-    // @Param: CRUISE_THR
-    // @DisplayName: Cruise Throttle Percentage
-    // @Description: Percentage throttle required for level flight
-    // at cruise speed.
-	// @Range: 20-80
-	// @Increment: 1
-	// @User: User
-    AP_GROUPINFO("CRUISE_THR",  3, AP_TECS, _cruiseThrottle, 50),
-
-    // @Param: SPD_MAX
-    // @DisplayName: Maximum Indicated Airspeed (metres/sec)
-    // @Description: This is the maximum indicated airspeed that the speed controller will attempt to control to. 
-	// This should be set to a speed that the aircraft can achieve in level flight with the throttle
-	// set to THR_MAX. For electric aircrft, make sure this number is achievable at the end of flight
-	// when the battery voltage has reduced.
-	// @Range: 10-50
-	// @Increment: 1
-	// @User: User
-    AP_GROUPINFO("SPD_MAX",     4, AP_TECS, _EASmax, 24),
-
-    // @Param: SPD_MIN
-    // @DisplayName: Minimum Indicated Airspeed (metres/sec)
-    // @Description: This is the minimum indicatred airspeed that the speed controller will atempt to control to.
-    // This should be set to a speed that allows the aircraft to bank at the maximum bank angle without stalling.
-	// @Range: 5-25
-	// @Increment: 1
-	// @User: Advanced
-    AP_GROUPINFO("SPD_MIN",     5, AP_TECS, _EASmin, 12),
 
     // @Param: CLMB_MAX
     // @DisplayName: Maximum Climb Rate (metres/sec)
@@ -92,7 +30,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// either CLMB_MAX should be increased or THR_MAX reduced.
 	// @Increment: 0.1
 	// @User: User
-    AP_GROUPINFO("CLMB_MAX",    6, AP_TECS, _maxClimbRate, 5.0f),
+    AP_GROUPINFO("CLMB_MAX",    0, AP_TECS, _maxClimbRate, 5.0f),
 
     // @Param: SINK_MIN
     // @DisplayName: Minimum Sink Rate (metres/sec)
@@ -100,7 +38,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// and the same airspeed as used to measure CLMB_MAX.
 	// @Increment: 0.1
 	// @User: User
-    AP_GROUPINFO("SINK_MIN",    7, AP_TECS, _minSinkRate, 2.0f),
+    AP_GROUPINFO("SINK_MIN",    1, AP_TECS, _minSinkRate, 2.0f),
 
     // @Param: TIME_CONST
     // @DisplayName: Controller time constant (sec)
@@ -110,7 +48,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 3.0-10.0
 	// @Increment: 0.2
 	// @User: Advanced
-    AP_GROUPINFO("TIME_CONST",  8, AP_TECS, _timeConst, 5.0f),
+    AP_GROUPINFO("TIME_CONST",  2, AP_TECS, _timeConst, 5.0f),
 
     // @Param: THR_DAMP
     // @DisplayName: Controller throttle damping
@@ -119,7 +57,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 0.1-1.0
 	// @Increment: 0.1
 	// @User: Advanced
-    AP_GROUPINFO("THR_DAMP",    9, AP_TECS, _thrDamp, 0.5f),
+    AP_GROUPINFO("THR_DAMP",    3, AP_TECS, _thrDamp, 0.5f),
 
     // @Param: INTEG_GAIN
     // @DisplayName: Controller integrator
@@ -128,7 +66,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 0.0-0.5
 	// @Increment: 0.02
 	// @User: Advanced
-    AP_GROUPINFO("INTEG_GAIN",   10, AP_TECS, _integGain, 0.1f),
+    AP_GROUPINFO("INTEG_GAIN", 4, AP_TECS, _integGain, 0.1f),
 
     // @Param: VERT_ACC
     // @DisplayName: Vertical Acceleration Limit (metres/sec^2)
@@ -137,7 +75,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 1.0-10.0
 	// @Increment: 0.5
 	// @User: Advanced
-    AP_GROUPINFO("VERT_ACC",   11, AP_TECS, _vertAccLim, 7.0f),
+    AP_GROUPINFO("VERT_ACC",  5, AP_TECS, _vertAccLim, 7.0f),
 
     // @Param: HGT_OMEGA
     // @DisplayName: Height complementary filter frequency (radians/sec)
@@ -147,7 +85,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 1.0-5.0
 	// @Increment: 0.05
 	// @User: Advanced
-    AP_GROUPINFO("HGT_OMEGA",   12, AP_TECS, _hgtCompFiltOmega, 3.0f),
+    AP_GROUPINFO("HGT_OMEGA", 6, AP_TECS, _hgtCompFiltOmega, 3.0f),
 
     // @Param: SPD_OMEGA
     // @DisplayName: Speed complementary filter frequency (radians/sec)
@@ -157,34 +95,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 0.5-2.0
 	// @Increment: 0.05
 	// @User: Advanced
-    AP_GROUPINFO("SPD_OMEGA",   13, AP_TECS, _spdCompFiltOmega, 2.0f),
-
-    // @Param: USE_ASPD
-    // @DisplayName: Select airspeed control method
-    // @Description: When set to 0, the control algorithm will not use the airspeed reading.
-    // This is useful when either no airspeed senesor is fitted or the airspeed sensor
-    // needs to be checked. If set to 0 it is important that CLMB_MAX, SINK_MIN and CRUISE_THR
-    // parameters are set correctly
-    // When set to 1 the control algorithm uses the airspeed. 
-    // @Values: 0:Don't use airspeed measurement, 1:Use airspeed measurement
-	// @User: User
-    AP_GROUPINFO("USE_ASPD",   14, AP_TECS, _useAirspeed, 1.0f),
-
-    // @Param: PTCH_MAX
-    // @DisplayName: Maximum pitch angle (degrees)
-    // @Description: This is the maximum pitch angle in degrees that the controller will demand.
-	// @Range: 10 to +45
-	// @Increment: 1
-	// @User: User
-    AP_GROUPINFO("PTCH_MAX",     15, AP_TECS, _maxPtch, 20.0f),
-
-    // @Param: PTCH_MIN
-    // @DisplayName: Minimum pitch angle (degrees)
-    // @Description: This is the minimum pitch angle in degrees that the controller will demand.
-	// @Range: -45 to -10
-	// @Increment: 1
-	// @User: User
-    AP_GROUPINFO("PTCH_MIN",     16, AP_TECS, _minPtch, -20.0f),
+    AP_GROUPINFO("SPD_OMEGA", 7, AP_TECS, _spdCompFiltOmega, 2.0f),
 
     // @Param: RLL2THR
     // @DisplayName: Bank angle compensation gain
@@ -198,7 +109,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 5.0 to 30.0
 	// @Increment: 1.0
 	// @User: Advanced
-    AP_GROUPINFO("RLL2THR",     17, AP_TECS, _rollComp, 10.0f),
+    AP_GROUPINFO("RLL2THR",  8, AP_TECS, _rollComp, 10.0f),
  
     // @Param: SPDWEIGHT
     // @DisplayName: Weighting applied to speed control
@@ -211,7 +122,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 0.0 to 2.0
 	// @Increment: 0.1
 	// @User: Advanced
-    AP_GROUPINFO("SPDWEIGHT",     18, AP_TECS, _spdWeight, 1.0f),
+    AP_GROUPINFO("SPDWEIGHT", 9, AP_TECS, _spdWeight, 1.0f),
  
     // @Param: PTCH_DAMP
     // @DisplayName: Controller pitch damping
@@ -220,7 +131,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @Range: 0.1-1.0
 	// @Increment: 0.1
 	// @User: Advanced
-    AP_GROUPINFO("PTCH_DAMP",    19, AP_TECS, _ptchDamp, 0.0f),
+    AP_GROUPINFO("PTCH_DAMP", 10, AP_TECS, _ptchDamp, 0.0f),
 
     // @Param: SINK_MAX
     // @DisplayName: Maximum Descent Rate (metres/sec)
@@ -229,7 +140,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// rate. This should be set to a value that can be achieved at the lower pitch angle limit.
 	// @Increment: 0.1
 	// @User: User
-    AP_GROUPINFO("SINK_MAX",    20, AP_TECS, _maxSinkRate, 5.0f),
+    AP_GROUPINFO("SINK_MAX",  11, AP_TECS, _maxSinkRate, 5.0f),
 
     AP_GROUPEND
 };
@@ -292,7 +203,7 @@ void AP_TECS::update_50hz(void)
 	// Update and average speed rate of change
     // Only required if airspeed is being measured and controlled
     float temp = 0;
-	if (_ahrs->airspeed_estimate(&_EAS) && _useAirspeed) {
+	if (_ahrs->airspeed_sensor_enabled() && _ahrs->airspeed_estimate(&_EAS)) {
         // Get DCM
         const Matrix3f &rotMat = _ahrs->get_dcm_matrix();
 	    // Calculate speed rate of change
@@ -316,8 +227,8 @@ void AP_TECS::_update_speed(void)
 
     float EAS2TAS = _baro->get_EAS2TAS();
     _TAS_dem  = _EAS_dem * EAS2TAS;
-    _TASmax   = _EASmax * EAS2TAS;
-    _TASmin   = _EASmin * EAS2TAS;
+    _TASmax   = aparm.flybywire_airspeed_max * EAS2TAS;
+    _TASmin   = aparm.flybywire_airspeed_min * EAS2TAS;
 
     // Reset states of time since last update is too large
     if (DT > 1.0) {
@@ -327,9 +238,9 @@ void AP_TECS::_update_speed(void)
 
     // Get airspeed or default to halfway between min and max if
     // airspeed is not being used and set speed rate to zero
-    if (!_ahrs->airspeed_estimate(&_EAS) || !_useAirspeed) {
+    if (!_ahrs->airspeed_sensor_enabled() || !_ahrs->airspeed_estimate(&_EAS)) {
         // If no airspeed available use average of min and max
-        _EAS = 0.5f*(float(_EASmin) + float(_EASmax));
+        _EAS = 0.5f * (aparm.flybywire_airspeed_min + aparm.flybywire_airspeed_max);
     }
 
     // Implement a second order complementary filter to obtain a
@@ -481,7 +392,7 @@ void AP_TECS::_update_throttle(void)
 
         // Calculate feed-forward throttle
         float ff_throttle = 0;
-		float nomThr = float(_cruiseThrottle) * 0.01f;
+		float nomThr = aparm.throttle_cruise * 0.01f;
 		const Matrix3f &rotMat = _ahrs->get_dcm_matrix();
 		// Use the demanded rate of change of total energy as the feed-forward demand, but add
 		// additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
@@ -502,23 +413,20 @@ void AP_TECS::_update_throttle(void)
 
 		// Rate limit PD + FF throttle
 	    // Calculate the throttle increment from the specified slew time
-	    float thrRateIncr = _DT * (_THRmaxf - _THRminf) / _thrSlewTime;
-		
-	    if ((_throttle_dem - _last_throttle_dem) > thrRateIncr)
-	    {
-			_throttle_dem = _last_throttle_dem + thrRateIncr;
+		if (aparm.throttle_slewrate != 0) {
+			float thrRateIncr = _DT * (_THRmaxf - _THRminf) * aparm.throttle_slewrate * 0.01f;
+
+			_throttle_dem = constrain_float(_throttle_dem, 
+											_last_throttle_dem - thrRateIncr, 
+											_last_throttle_dem + thrRateIncr);
+			_last_throttle_dem = _throttle_dem;
 		}
-			else if ((_throttle_dem - _last_throttle_dem) < -thrRateIncr)
-		{
-			_throttle_dem = _last_throttle_dem - thrRateIncr;
-		}
-		_last_throttle_dem = _throttle_dem;
 
 
 		// Calculate integrator state upper and lower limits
 		// Set to a value thqat will allow 0.1 (10%) throttle saturation to allow for noise on the demand
         float integ_max = (_THRmaxf - _throttle_dem + 0.1f);
-		float integ_min = (_THRminf - _throttle_dem -0.1f);
+		float integ_min = (_THRminf - _throttle_dem - 0.1f);
 
   		// Calculate integrator state, constraining state
 		// Set integrator to a max throttle value dduring climbout
@@ -534,12 +442,9 @@ void AP_TECS::_update_throttle(void)
 
 		// Sum the components. 
 		// Only use feed-forward component if airspeed is not being used
-	    if (_useAirspeed)
-	    {
+	    if (_ahrs->airspeed_sensor_enabled()) {
 	        _throttle_dem = _throttle_dem + _integ6_state;
-	    }
-	    else
-	    {
+	    } else {
  	       _throttle_dem = ff_throttle;
 	    }
     }
@@ -583,12 +488,9 @@ void AP_TECS::_update_pitch(void)
 	// or during takeoff/climbout where a minimum pitch angle is set to ensure height is gained. In this instance, if airspeed
 	// rises above the demanded value, the pitch angle will be increased by the TECS controller.
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-	if ( ( _underspeed || _climbOutDem ) && _useAirspeed )
-	{
+	if ( ( _underspeed || _climbOutDem ) && _ahrs->airspeed_sensor_enabled() ) {
 		SKE_weighting = 2.0f;
-	}
-	else if (!_useAirspeed)
-	{
+	} else if (!_ahrs->airspeed_sensor_enabled()) {
 		SKE_weighting = 0.0f;
 	}
 	float SPE_weighting = 2.0f - SKE_weighting;
@@ -646,8 +548,8 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd)
 	{
 		_integ6_state      = 0.0f;
 		_integ7_state      = 0.0f;
-		_last_throttle_dem = float(_cruiseThrottle) * 0.01f;
-		_last_pitch_dem    = radians(float(_ahrs->pitch_sensor) * 0.01f);
+		_last_throttle_dem = aparm.throttle_cruise * 0.01f;
+		_last_pitch_dem    = _ahrs->pitch;
 		_hgt_dem_adj_last  = _baro->get_altitude();
 		_hgt_dem_adj       = _hgt_dem_adj_last;
 		_hgt_dem_prev      = _hgt_dem_adj_last;
@@ -659,7 +561,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd)
 	}
 	else if (_climbOutDem)
 	{
-		_PITCHminf          = 0.000174533f * float(ptchMinCO_cd);
+		_PITCHminf          = 0.000174533f * ptchMinCO_cd;
 		_THRminf            = _THRmaxf - 0.01f;
 		_hgt_dem_adj_last  = _baro->get_altitude();
 		_hgt_dem_adj       = _hgt_dem_adj_last;
@@ -690,12 +592,12 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool
     _update_speed();
 
 	// Convert inputs
-    _hgt_dem = float(hgt_dem_cm) * 0.01f;
-	_EAS_dem = float(EAS_dem_cm) * 0.01f;
-    _THRmaxf  = float(_maxThr) * 0.01f;
-    _THRminf  = float(_minThr) * 0.01f;
-	_PITCHmaxf = 0.0174533f * float(_maxPtch);
-	_PITCHminf = 0.0174533f * float(_minPtch);
+    _hgt_dem = hgt_dem_cm * 0.01f;
+	_EAS_dem = EAS_dem_cm * 0.01f;
+    _THRmaxf  = aparm.throttle_max * 0.01f;
+    _THRminf  = aparm.throttle_min * 0.01f;
+	_PITCHmaxf = 0.000174533f * aparm.pitch_limit_max_cd;
+	_PITCHminf = 0.000174533f * aparm.pitch_limit_min_cd;
 	_climbOutDem = climbOutDem;
 
 	// initialise selected states and variables if DT > 1 second or in climbout

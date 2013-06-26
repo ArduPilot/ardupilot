@@ -30,9 +30,10 @@
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-	AP_TECS(AP_AHRS *ahrs, AP_Baro *baro) :
+	AP_TECS(AP_AHRS *ahrs, AP_Baro *baro, const AP_SpdHgtControl::AircraftParameters &parms) :
 		_ahrs(ahrs),
-		_baro(baro)
+		_baro(baro),
+		aparm(parms)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
 		}
@@ -47,7 +48,7 @@ public:
 
 	// demanded throttle in percentage
 	// should return 0 to 100
-	int32_t get_throttle_demand(void) {return int32_t((_throttle_dem) * 100.0f);}
+	int32_t get_throttle_demand(void) {return int32_t(_throttle_dem * 100.0f);}
 	
 	// demanded pitch angle in centi-degrees
 	// should return between -9000 to +9000
@@ -94,15 +95,11 @@ private:
 	// pointer to the Baro object
     AP_Baro *_baro;
 
+	const AP_SpdHgtControl::AircraftParameters &aparm;
+
 	// TECS tuning parameters
 	AP_Float _hgtCompFiltOmega;
     AP_Float _spdCompFiltOmega;
-    AP_Int8  _EASmin;
-    AP_Int8  _EASmax;
-    AP_Int8  _maxThr;
-    AP_Int8  _minThr;
-    AP_Int8  _cruiseThrottle;
-    AP_Int8  _useAirspeed;
     AP_Float _maxClimbRate;
     AP_Float _minSinkRate;
     AP_Float _maxSinkRate;
@@ -111,12 +108,8 @@ private:
     AP_Float _thrDamp;
     AP_Float _integGain;
     AP_Float _vertAccLim;
-    AP_Float _thrSlewTime;
-	AP_Int8  _maxPtch;
-	AP_Int8  _minPtch;
 	AP_Float _rollComp;
 	AP_Float _spdWeight;
-	AP_Int8 _airTemp;
 	
 	// throttle demand in the range from 0.0 to 1.0
     float _throttle_dem;
@@ -262,9 +255,6 @@ private:
 
     // declares a 5point average filter using floats
 	AverageFilterFloat_Size5 _vdot_filter;
-
-	// Declare an array that will be used for data logging
-	
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_tuning),	\
