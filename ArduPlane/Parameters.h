@@ -297,21 +297,15 @@ public:
 
     // Fly-by-wire
     //
-    AP_Int16 flybywire_airspeed_min;
-    AP_Int16 flybywire_airspeed_max;
     AP_Int8 flybywire_elev_reverse;
     AP_Int8 flybywire_climb_rate;
 
     // Throttle
     //
-    AP_Int8 throttle_min;
-    AP_Int8 throttle_max;
-    AP_Int8 throttle_slewrate;
     AP_Int8 throttle_suppress_manual;
     AP_Int8 throttle_passthru_stabilize;
     AP_Int8 throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
-    AP_Int8 throttle_cruise;
     AP_Int8 throttle_nudge;
 
     // Failsafe
@@ -334,8 +328,6 @@ public:
     // Navigational maneuvering limits
     //
     AP_Int16 roll_limit_cd;
-    AP_Int16 pitch_limit_max_cd;
-    AP_Int16 pitch_limit_min_cd;
     AP_Int16 alt_offset;
 
     // Misc

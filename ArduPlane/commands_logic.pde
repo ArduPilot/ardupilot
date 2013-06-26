@@ -323,7 +323,7 @@ static bool verify_takeoff()
     }
 
     // see if we have reached takeoff altitude
-    if (adjusted_altitude_cm() > takeoff_altitude) {
+    if (adjusted_altitude_cm() > takeoff_altitude_cm) {
         hold_course_cd = -1;
         takeoff_complete = true;
         next_WP = prev_WP = current_loc;
@@ -368,7 +368,7 @@ static bool verify_land()
             // target speeds too early.
             g.airspeed_cruise_cm.load();
             g.min_gndspeed_cm.load();
-            g.throttle_cruise.load();
+            aparm.throttle_cruise.load();
         }
     }
 
@@ -589,7 +589,7 @@ static void do_change_speed()
 
     if (next_nonnav_command.lat > 0) {
         gcs_send_text_fmt(PSTR("Set throttle %u"), (unsigned)next_nonnav_command.lat);
-        g.throttle_cruise.set(next_nonnav_command.lat);
+        aparm.throttle_cruise.set(next_nonnav_command.lat);
     }
 }
 

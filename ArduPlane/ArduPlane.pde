@@ -103,6 +103,9 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 //
 static Parameters g;
 
+// key aircraft parameters passed to the speed/height controller
+static AP_SpdHgtControl::AircraftParameters aparm;
+
 // main loop scheduler
 static AP_Scheduler scheduler;
 
@@ -235,7 +238,7 @@ AP_InertialSensor_Oilpan ins( &apm1_adc );
 AP_AHRS_DCM ahrs(&ins, g_gps);
 
 static AP_L1_Control L1_controller(&ahrs);
-static AP_TECS TECS_controller(&ahrs, &barometer);
+static AP_TECS TECS_controller(&ahrs, &barometer, aparm);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -348,14 +351,6 @@ static uint32_t last_heartbeat_ms;
 
 // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
 static uint32_t ch3_failsafe_timer = 0;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// AUTO takeoff
-////////////////////////////////////////////////////////////////////////////////
-// States used for delay from launch detect to engine start
-static bool launchCountStarted;
-static uint32_t last_tkoff_arm_time;
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
@@ -1015,7 +1010,7 @@ static void update_current_flight_mode(void)
             }
 
             // max throttle for takeoff
-            channel_throttle->servo_out = g.throttle_max;
+            channel_throttle->servo_out = aparm.throttle_max;
 
             break;
 
@@ -1086,10 +1081,10 @@ static void update_current_flight_mode(void)
 
             // if the pitch is past the set pitch limits, then
             // we set target pitch to the limit
-            if (ahrs.pitch_sensor >= g.pitch_limit_max_cd) {
-                nav_pitch_cd = g.pitch_limit_max_cd;
-            } else if (ahrs.pitch_sensor <= g.pitch_limit_min_cd) {
-                nav_pitch_cd = g.pitch_limit_min_cd;
+            if (ahrs.pitch_sensor >= aparm.pitch_limit_max_cd) {
+                nav_pitch_cd = aparm.pitch_limit_max_cd;
+            } else if (ahrs.pitch_sensor <= aparm.pitch_limit_min_cd) {
+                nav_pitch_cd = aparm.pitch_limit_min_cd;
             } else {
                 training_manual_pitch = true;
                 nav_pitch_cd = 0;
@@ -1106,11 +1101,11 @@ static void update_current_flight_mode(void)
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
             float pitch_input = channel_pitch->norm_input();
             if (pitch_input > 0) {
-                nav_pitch_cd = pitch_input * g.pitch_limit_max_cd;
+                nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
             } else {
-                nav_pitch_cd = -(pitch_input * g.pitch_limit_min_cd);
+                nav_pitch_cd = -(pitch_input * aparm.pitch_limit_min_cd);
             }
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
             if (inverted_flight) {
                 nav_pitch_cd = -nav_pitch_cd;
             }

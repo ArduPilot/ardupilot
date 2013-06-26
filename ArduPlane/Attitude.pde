@@ -73,7 +73,9 @@ static void stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
-    channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, control_mode == STABILIZE, g.flybywire_airspeed_min);
+    channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, 
+                                                             control_mode == STABILIZE, 
+                                                             aparm.flybywire_airspeed_min);
 }
 
 /*
@@ -85,9 +87,10 @@ static void stabilize_pitch(float speed_scaler)
 {
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
     channel_pitch->servo_out = g.pitchController.get_servo_out(demanded_pitch, 
-                                                                speed_scaler, 
-                                                                control_mode == STABILIZE, 
-                                                                g.flybywire_airspeed_min, g.flybywire_airspeed_max);    
+                                                               speed_scaler, 
+                                                               control_mode == STABILIZE, 
+                                                               aparm.flybywire_airspeed_min, 
+                                                               aparm.flybywire_airspeed_max);    
 }
 
 /*
@@ -161,11 +164,11 @@ static void stabilize_stick_mixing_fbw()
         pitch_input = -pitch_input;
     }
     if (pitch_input > 0) {
-        nav_pitch_cd += pitch_input * g.pitch_limit_max_cd;
+        nav_pitch_cd += pitch_input * aparm.pitch_limit_max_cd;
     } else {
-        nav_pitch_cd += -(pitch_input * g.pitch_limit_min_cd);
+        nav_pitch_cd += -(pitch_input * aparm.pitch_limit_min_cd);
     }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
 }
 
 
@@ -265,7 +268,7 @@ static void stabilize()
 
 static void calc_throttle()
 {
-    if (g.throttle_cruise <= 1) {
+    if (aparm.throttle_cruise <= 1) {
         // user has asked for zero throttle - this may be done by a
         // mission which wants to turn off the engine for a parachute
         // landing
@@ -276,7 +279,7 @@ static void calc_throttle()
     if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
         channel_throttle->servo_out = SpdHgt_Controller->get_throttle_demand();
     } else if (!alt_control_airspeed()) {
-        int16_t throttle_target = g.throttle_cruise + throttle_nudge;
+        int16_t throttle_target = aparm.throttle_cruise + throttle_nudge;
 
         // TODO: think up an elegant way to bump throttle when
         // groundspeed_undershoot > 0 in the no airspeed sensor case; PID
@@ -286,23 +289,23 @@ static void calc_throttle()
         // AUTO, RTL, etc
         // ---------------------------------------------------------------------------
         if (nav_pitch_cd >= 0) {
-            channel_throttle->servo_out = throttle_target + (g.throttle_max - throttle_target) * nav_pitch_cd / g.pitch_limit_max_cd;
+            channel_throttle->servo_out = throttle_target + (aparm.throttle_max - throttle_target) * nav_pitch_cd / aparm.pitch_limit_max_cd;
         } else {
-            channel_throttle->servo_out = throttle_target - (throttle_target - g.throttle_min) * nav_pitch_cd / g.pitch_limit_min_cd;
+            channel_throttle->servo_out = throttle_target - (throttle_target - aparm.throttle_min) * nav_pitch_cd / aparm.pitch_limit_min_cd;
         }
 
-        channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, g.throttle_min.get(), g.throttle_max.get());
+        channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, aparm.throttle_min.get(), aparm.throttle_max.get());
     } else {
         // throttle control with airspeed compensation
         // -------------------------------------------
         energy_error = airspeed_energy_error + altitude_error_cm * 0.098f;
 
         // positive energy errors make the throttle go higher
-        channel_throttle->servo_out = g.throttle_cruise + g.pidTeThrottle.get_pid(energy_error);
+        channel_throttle->servo_out = aparm.throttle_cruise + g.pidTeThrottle.get_pid(energy_error);
         channel_throttle->servo_out += (channel_pitch->servo_out * g.kff_pitch_to_throttle);
 
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out,
-                                                       g.throttle_min.get(), g.throttle_max.get());
+                                                       aparm.throttle_min.get(), aparm.throttle_max.get());
     }
 
 
@@ -326,8 +329,9 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
     }
 
     channel_rudder->servo_out = g.yawController.get_servo_out(speed_scaler, 
-                                                               control_mode == STABILIZE, 
-                                                               g.flybywire_airspeed_min, g.flybywire_airspeed_max);
+                                                              control_mode == STABILIZE, 
+                                                              aparm.flybywire_airspeed_min, 
+                                                              aparm.flybywire_airspeed_max);
 
     // add in rudder mixing from roll
     channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;
@@ -346,7 +350,7 @@ static void calc_nav_pitch()
     } else {
         nav_pitch_cd = g.pidNavPitchAltitude.get_pid(altitude_error_cm);
     }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
 }
 
 
@@ -375,9 +379,9 @@ static void calc_nav_roll()
 static void throttle_slew_limit(int16_t last_throttle)
 {
     // if slew limit rate is set to zero then do not slew limit
-    if (g.throttle_slewrate) {                   
+    if (aparm.throttle_slewrate) {                   
         // limit throttle change by the given percentage per second
-        float temp = g.throttle_slewrate * G_Dt * 0.01 * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
+        float temp = aparm.throttle_slewrate * G_Dt * 0.01 * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
         // allow a minimum change of 1 PWM per cycle
         if (temp < 1) {
             temp = 1;
@@ -422,6 +426,8 @@ static bool auto_takeoff_check(void)
 #else
     // this is a more advanced check that relies on TECS
     uint32_t now = hal.scheduler->micros();
+    static bool launchCountStarted;
+    static uint32_t last_tkoff_arm_time;
 
     if (g_gps == NULL || g_gps->status() != GPS::GPS_OK_FIX_3D) 
     {
@@ -680,8 +686,8 @@ static void set_servos(void)
 #else
         // convert 0 to 100% into PWM
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
-                                                       g.throttle_min.get(), 
-                                                       g.throttle_max.get());
+                                                       aparm.throttle_min.get(), 
+                                                       aparm.throttle_max.get());
 
         if (suppress_throttle()) {
             // throttle is suppressed in auto mode
@@ -718,7 +724,7 @@ static void set_servos(void)
         } else if (airspeed.use()) {
             flapSpeedSource = g.airspeed_cruise_cm * 0.01;
         } else {
-            flapSpeedSource = g.throttle_cruise;
+            flapSpeedSource = aparm.throttle_cruise;
         }
         if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, 0);

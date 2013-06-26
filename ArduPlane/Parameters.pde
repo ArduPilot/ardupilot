@@ -10,6 +10,7 @@
  */
 
 #define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} }
+#define ASCALAR(v, name, def) { aparm.v.vtype, name, Parameters::k_param_ ## v, &aparm.v, {def_value : def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info : class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info : class::var_info} }
 
@@ -254,7 +255,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 5 50
     // @Increment: 1
     // @User: Standard
-    GSCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
+    ASCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
 
     // @Param: ARSPD_FBW_MAX
     // @DisplayName: Fly By Wire Maximum Airspeed
@@ -263,7 +264,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 5 50
     // @Increment: 1
     // @User: Standard
-    GSCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
+    ASCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
 
     // @Param: FBWB_ELEV_REV
     // @DisplayName: Fly By Wire elevator reverse
@@ -287,7 +288,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    GSCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),
+    ASCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
@@ -296,7 +297,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    GSCALAR(throttle_max,           "THR_MAX",        THROTTLE_MAX),
+    ASCALAR(throttle_max,           "THR_MAX",        THROTTLE_MAX),
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
@@ -305,7 +306,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    GSCALAR(throttle_slewrate,      "THR_SLEWRATE",   THROTTLE_SLEW_LIMIT),
+    ASCALAR(throttle_slewrate,      "THR_SLEWRATE",   THROTTLE_SLEW_LIMIT),
 
     // @Param: THR_SUPP_MAN
     // @DisplayName: Throttle suppress manual passthru
@@ -344,7 +345,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    GSCALAR(throttle_cruise,        "TRIM_THROTTLE",  THROTTLE_CRUISE),
+    ASCALAR(throttle_cruise,        "TRIM_THROTTLE",  THROTTLE_CRUISE),
 
     // @Param: THROTTLE_NUDGE
     // @DisplayName: Throttle nudge enable
@@ -453,7 +454,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 9000
     // @Increment: 1
     // @User: Standard
-    GSCALAR(pitch_limit_max_cd,     "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
+    ASCALAR(pitch_limit_max_cd,     "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
 
     // @Param: LIM_PITCH_MIN
     // @DisplayName: Minimum Pitch Angle
@@ -462,7 +463,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: -9000 0
     // @Increment: 1
     // @User: Standard
-    GSCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
+    ASCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
 
     // @Param: AUTO_TRIM
     // @DisplayName: Auto trim

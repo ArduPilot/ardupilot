@@ -88,7 +88,7 @@ void low_battery_event(void)
     gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
                       battery.voltage, battery.current_total_mah);
     set_mode(RTL);
-    g.throttle_cruise = THROTTLE_CRUISE;
+    aparm.throttle_cruise.load();
     battery.low_batttery = true;
 }
 

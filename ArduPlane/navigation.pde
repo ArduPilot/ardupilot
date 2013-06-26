@@ -85,10 +85,10 @@ static void calc_airspeed_errors()
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B) {
-        target_airspeed_cm = ((int)(g.flybywire_airspeed_max -
-                                    g.flybywire_airspeed_min) *
+        target_airspeed_cm = ((int32_t)(aparm.flybywire_airspeed_max -
+                                        aparm.flybywire_airspeed_min) *
                               channel_throttle->servo_out) +
-                             ((int)g.flybywire_airspeed_min * 100);
+                             ((int32_t)aparm.flybywire_airspeed_min * 100);
     }
 
     // Set target to current airspeed + ground speed undershoot,
@@ -106,8 +106,8 @@ static void calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > (g.flybywire_airspeed_max * 100))
-        target_airspeed_cm = (g.flybywire_airspeed_max * 100);
+    if (target_airspeed_cm > (aparm.flybywire_airspeed_max * 100))
+        target_airspeed_cm = (aparm.flybywire_airspeed_max * 100);
 
     airspeed_error_cm = target_airspeed_cm - aspeed_cm;
     airspeed_energy_error = ((target_airspeed_cm * target_airspeed_cm) - (aspeed_cm*aspeed_cm))*0.00005;
