@@ -86,10 +86,7 @@ static void low_battery_event(void)
                 }
                 break;
             case AUTO:
-                if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                    // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
-                	set_mode(LAND);
-	            }else if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
+                if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
                     set_mode(RTL);
                 }else{
                     // We have no GPS or are very close to home so we will land
