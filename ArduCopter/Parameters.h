@@ -64,6 +64,9 @@ public:
         // scheduler object (for debugging)
         k_param_scheduler,
 
+        // relay object
+        k_param_relay,
+
         // Misc
         //
         k_param_log_bitmask = 20,

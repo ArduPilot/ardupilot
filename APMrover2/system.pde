@@ -206,9 +206,7 @@ static void init_ardupilot()
 #if CONFIG_PUSHBUTTON == ENABLED
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
 #endif
-#if CONFIG_RELAY == ENABLED
     relay.init();
-#endif
 
     /*
       setup the 'main loop is dead' check. Note that this relies on

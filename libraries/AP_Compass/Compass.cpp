@@ -87,7 +87,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
     // @Param: ORIENT
     // @DisplayName: Compass orientation
-    // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a position value for the Y axis, and a value close to zero for the X axis. NOTE: This orientation is combined with any AHRS_ORIENTATION setting. 
+    // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw135,19:Roll270,20:Roll270Yaw45,21:Roll270Yaw90,22:Roll270Yaw136,23:Pitch90,24:Pitch270
     AP_GROUPINFO("ORIENT", 8, Compass, _orientation, ROTATION_NONE),
 

@@ -427,7 +427,7 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
     return not failed
 
 #fly_circle - flies a circle with 20m radius
-def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=72):
+def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
 
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
@@ -583,7 +583,10 @@ def fly_ArduCopter(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
@@ -867,7 +870,10 @@ def fly_CopterAVC(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])

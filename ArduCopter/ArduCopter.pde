@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.0.0"
+#define THISFIRMWARE "ArduCopter V3.0.1-rc1"
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -1373,6 +1373,10 @@ static void update_GPS(void)
                 ground_start_count = 10;
             }
         }
+
+#if CAMERA == ENABLED
+        camera.update_location(current_loc);
+#endif                
     }
 
     // check for loss of gps

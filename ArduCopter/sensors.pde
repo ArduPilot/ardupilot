@@ -117,12 +117,17 @@ static void read_battery(void)
         battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source);
     }
     if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        batt_curr_analog_source->set_pin(g.battery_curr_pin);
+        static uint32_t last_time_ms;
+        uint32_t tnow = hal.scheduler->millis();
+        float dt_millis = tnow - last_time_ms;
         current_amps1    = CURRENT_AMPS(batt_curr_analog_source);
-        current_total1   += current_amps1 * 0.02778f;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
-
+        if (last_time_ms != 0 && dt_millis < 2000) {
+            batt_curr_analog_source->set_pin(g.battery_curr_pin);
+            current_total1   += current_amps1 * 1000 * dt_millis * (1.0f/1000) * (1.0f/3600); //amps * amps to milliamps * milliseconds * milliseconds to seconds * seconds to hours
+        }
         // update compass with current value
         compass.set_current(current_amps1);
+        last_time_ms = tnow;
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
