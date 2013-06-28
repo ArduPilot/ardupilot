@@ -377,6 +377,16 @@ static void Log_Write_Compass()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+static void Log_Write_GPS(void)
+{
+    DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
+}
+
+static void Log_Write_IMU() 
+{
+    DataFlash.Log_Write_IMU(&ins);
+}
+
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint8_t renorm_count;

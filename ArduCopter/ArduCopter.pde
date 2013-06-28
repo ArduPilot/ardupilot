@@ -1076,7 +1076,7 @@ static void fifty_hz_loop()
     }
 
     if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
-        DataFlash.Log_Write_IMU(&ins);
+        Log_Write_IMU();
 #endif
 
 }
@@ -1346,7 +1346,7 @@ static void update_GPS(void)
 
         // log location if we have at least a 2D fix
         if (g.log_bitmask & MASK_LOG_GPS && motors.armed()) {
-            DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
+            Log_Write_GPS();
         }
 
         // for performance monitoring
