@@ -77,7 +77,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
         cliSerial->printf_P(PSTR("dumping all\n"));
         Log_Read(0, 1, 0);
         return(-1);
-    } else if ((argc != 2) || (dump_log <= (last_log_num - DataFlash.get_num_logs())) || (dump_log > last_log_num)) {
+    } else if ((argc != 2) || ((uint16_t)dump_log <= (last_log_num - DataFlash.get_num_logs())) || ((uint16_t)dump_log > last_log_num)) {
         cliSerial->printf_P(PSTR("bad log number\n"));
         return(-1);
     }
@@ -375,6 +375,16 @@ static void Log_Write_Compass()
         motor_offset_z  : (int16_t)mag_motor_offsets.z
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+static void Log_Write_GPS(void)
+{
+    DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
+}
+
+static void Log_Write_IMU() 
+{
+    DataFlash.Log_Write_IMU(&ins);
 }
 
 struct PACKED log_Performance {
