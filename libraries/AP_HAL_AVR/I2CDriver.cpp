@@ -150,10 +150,6 @@ uint8_t AVRI2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data){
     stat = 0;
     stat = _start();
     if(stat) goto error;
-    stat = _sendAddress(SLA_W(addr));
-    if(stat) goto error;
-    stat = _start();
-    if(stat) goto error;
     stat = _sendAddress(SLA_R(addr));
     if(stat) goto error;
     for(uint8_t i = 0; i < len ; i++) {
