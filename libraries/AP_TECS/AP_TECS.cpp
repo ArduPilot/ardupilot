@@ -558,6 +558,8 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd)
         _TAS_dem_adj       = _TAS_dem;
 		_underspeed        = false;
 		_badDescent        = false;
+		_DT                = 0.1f; // when first starting TECS, use a
+								   // small time constant
 	}
 	else if (_climbOutDem)
 	{
