@@ -1234,7 +1234,8 @@ static void update_alt()
     // Update the speed & height controller states
     if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt, target_airspeed_cm, 
-                                                 nav_command_ID == MAV_CMD_NAV_TAKEOFF, takeoff_pitch_cd);
+                                                 (control_mode==AUTO && takeoff_complete == false), 
+                                                 takeoff_pitch_cd);
         if (g.log_bitmask & MASK_LOG_TECS) {
             Log_Write_TECS_Tuning();
         }
