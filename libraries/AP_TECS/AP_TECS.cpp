@@ -178,6 +178,8 @@ void AP_TECS::update_50hz(void)
 	    _integ3_state = _baro->get_altitude();
 		_integ2_state = 0.0f;
 		_integ1_state = 0.0f;
+		DT            = 0.02f; // when first starting TECS, use a
+							   // small time constant
 	}
 	_update_50hz_last_usec = now;	
 
@@ -194,7 +196,7 @@ void AP_TECS::update_50hz(void)
 	float integ3_input = _integ2_state + hgt_err * _hgtCompFiltOmega * 3.0f;
     // If more than 1 second has elapsed since last update then reset the integrator state
     // to the measured height
-    if (DT > 1) {
+    if (DT > 1.0) {
         _integ3_state = _baro->get_altitude();
     } else {
 	    _integ3_state = _integ3_state + integ3_input*DT;
@@ -234,6 +236,8 @@ void AP_TECS::_update_speed(void)
     if (DT > 1.0) {
         _integ5_state = (_EAS * EAS2TAS);
         _integ4_state = 0.0f;
+		DT            = 0.1f; // when first starting TECS, use a
+							  // small time constant
     }
 
     // Get airspeed or default to halfway between min and max if
