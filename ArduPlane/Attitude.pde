@@ -530,28 +530,21 @@ static void set_servos(void)
         channel_throttle->radio_out    = channel_throttle->radio_in;
         channel_rudder->radio_out              = channel_rudder->radio_in;
 
-        // setup extra aileron channel. We want this to come from the
-        // main aileron input channel, but using the 2nd channels dead
+        // setup extra channels. We want this to come from the
+        // main input channel, but using the 2nd channels dead
         // zone, reverse and min/max settings. We need to use
         // pwm_to_angle_dz() to ensure we don't trim the value for the
         // deadzone of the main aileron channel, otherwise the 2nd
         // aileron won't quite follow the first one
-        int16_t aileron_in = channel_roll->pwm_to_angle_dz(0);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, aileron_in);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, channel_roll->pwm_to_angle_dz(0));
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, channel_pitch->pwm_to_angle_dz(0));
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->pwm_to_angle_dz(0));
 
-        // setup extra elevator channel following the same logic
-        int16_t elevator_in = channel_pitch->pwm_to_angle_dz(0);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, elevator_in);
-
-        // this aileron variant assumes you have the corresponding
+        // this variant assumes you have the corresponding
         // input channel setup in your transmitter for manual control
         // of the 2nd aileron
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input);
-
-        // do the same for the corresponding elevator variant
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input);
-
-        // copy flap control from transmitter
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_flap_auto);
 
         if (g.mix_mode == 0 && g.elevon_output == MIXING_DISABLED) {
@@ -569,6 +562,9 @@ static void set_servos(void)
             // both types of secondary elevator are slaved to the pitch servo out
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, channel_pitch->servo_out);
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator_with_input, channel_pitch->servo_out);
+
+            // setup secondary rudder
+            RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->servo_out);
         }else{
             /*Elevon mode*/
             float ch1;
