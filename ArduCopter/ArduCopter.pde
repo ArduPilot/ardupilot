@@ -2082,11 +2082,11 @@ static void tuning(){
         break;
 
     case CH6_THROTTLE_RATE_KP:
-        g.pid_throttle.kP(tuning_value);
+        g.pid_throttle_rate.kP(tuning_value);
         break;
 
     case CH6_THROTTLE_RATE_KD:
-        g.pid_throttle.kD(tuning_value);
+        g.pid_throttle_rate.kD(tuning_value);
         break;
 
     case CH6_THROTTLE_ACCEL_KP:

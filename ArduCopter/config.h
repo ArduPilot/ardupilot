@@ -921,18 +921,18 @@
 #endif
 
 // RATE control
-#ifndef THROTTLE_P
- # define THROTTLE_P            6.0f
+#ifndef THROTTLE_RATE_P
+ # define THROTTLE_RATE_P       6.0f
 #endif
-#ifndef THROTTLE_I
- # define THROTTLE_I            0.0f
+#ifndef THROTTLE_RATE_I
+ # define THROTTLE_RATE_I       0.0f
 #endif
-#ifndef THROTTLE_D
- # define THROTTLE_D            0.0f
+#ifndef THROTTLE_RATE_D
+ # define THROTTLE_RATE_D       0.0f
 #endif
 
-#ifndef THROTTLE_IMAX
- # define THROTTLE_IMAX         300
+#ifndef THROTTLE_RATE_IMAX
+ # define THROTTLE_RATE_IMAX    300
 #endif
 
 // default maximum vertical velocity the pilot may request

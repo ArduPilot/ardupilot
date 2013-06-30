@@ -987,15 +987,15 @@ get_throttle_rate(float z_target_speed)
     last_call_ms = now;
 
     // separately calculate p, i, d values for logging
-    p = g.pid_throttle.get_p(z_rate_error);
+    p = g.pid_throttle_rate.get_p(z_rate_error);
 
     // freeze I term if we've breached throttle limits
     if(motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT)) {
-        i = g.pid_throttle.get_integrator();
+        i = g.pid_throttle_rate.get_integrator();
     }else{
-        i = g.pid_throttle.get_i(z_rate_error, .02);
+        i = g.pid_throttle_rate.get_i(z_rate_error, .02);
     }
-    d = g.pid_throttle.get_d(z_rate_error, .02);
+    d = g.pid_throttle_rate.get_d(z_rate_error, .02);
 
     // consolidate and constrain target acceleration
     output += p+i+d;
@@ -1194,7 +1194,7 @@ static void reset_throttle_I(void)
 {
     // For Altitude Hold
     g.pi_alt_hold.reset_I();
-    g.pid_throttle.reset_I();
+    g.pid_throttle_rate.reset_I();
     g.pid_throttle_accel.reset_I();
 }
 

@@ -741,7 +741,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Throttle rate controller D gain.  Compensates for short-term change in desired vertical speed vs actual speed
     // @Range: 0.000 0.400
     // @User: Standard
-    GGROUP(pid_throttle,      "THR_RATE_", AC_PID),
+    GGROUP(pid_throttle_rate, "THR_RATE_", AC_PID),
 
     // @Param: THR_ACCEL_P
     // @DisplayName: Throttle acceleration controller P gain
