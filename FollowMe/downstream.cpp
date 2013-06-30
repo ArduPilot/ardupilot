@@ -10,6 +10,7 @@ extern mavlink_channel_t downstream_channel;
 
 extern FMStateMachine sm;
 
+// For HBs coming downstream,
 static void downstream_handle_heartbeat(mavlink_message_t* msg) __attribute__((noinline));
 static void downstream_handle_heartbeat(mavlink_message_t* msg) {
     mavlink_heartbeat_t pkt;

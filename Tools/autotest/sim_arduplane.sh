@@ -18,6 +18,7 @@ gnome-terminal -e /tmp/ArduPlane.build/ArduPlane.elf
 #gnome-terminal -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf"
 sleep 2
 rm -f $tfile
+#gnome-terminal -e '../Tools/autotest/jsbsim/runsim.py --home=47.3246,8.5282,472,180'
 gnome-terminal -e '../Tools/autotest/jsbsim/runsim.py --home=-35.362938,149.165085,584,270'
 sleep 2
 popd

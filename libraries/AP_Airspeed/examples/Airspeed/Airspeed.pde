@@ -27,7 +27,7 @@ void setup()
 {
     hal.console->println("ArduPilot Airspeed library test");
 
-    airspeed.init(hal.analogin->channel(0));
+    airspeed.init();
     airspeed.calibrate();
 }
 

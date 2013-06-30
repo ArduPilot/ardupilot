@@ -2,7 +2,8 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
-import mavutil, mavwp, random
+from pymavlink import mavutil, mavwp
+import random
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
@@ -582,7 +583,10 @@ def fly_ArduCopter(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
@@ -866,7 +870,10 @@ def fly_CopterAVC(viewerip=None, map=False):
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
-    os.link(logfile, buildlog)
+    try:
+        os.link(logfile, buildlog)
+    except Exception:
+        pass
 
     # the received parameters can come before or after the ready to fly message
     mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])

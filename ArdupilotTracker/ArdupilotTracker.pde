@@ -36,11 +36,9 @@
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
-//#include <AP_RangeFinder.h>     // Range finder library
 #include <Filter.h>                     // Filter library
 #include <AP_Buffer.h>      // APM FIFO Buffer
 #include <AP_Relay.h>       // APM relay
-//#include <AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed.h>
 #include <memcheck.h>
 
@@ -85,6 +83,12 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 //
 static Parameters g;
 
+// main loop scheduler
+static AP_Scheduler scheduler;
+
+static RC_Channel *channel_elevation;
+static RC_Channel *channel_azimuth;
+
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
@@ -125,8 +129,8 @@ static GPS         *g_gps;
 // flight modes convenience array
 static AP_Int8          *flight_modes = &g.flight_mode1;
 
-#if CONFIG_ADC == ENABLED
-static AP_ADC_ADS7844 adc;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+AP_ADC_ADS7844 apm1_adc;
 #endif
 
 #if CONFIG_BARO == AP_BARO_BMP085
@@ -193,7 +197,7 @@ AP_InertialSensor_PX4 ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_STUB
 AP_InertialSensor_Stub ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
-AP_InertialSensor_Oilpan ins( &adc );
+AP_InertialSensor_Oilpan ins( &apm1_adc );
 #else
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
@@ -219,9 +223,9 @@ ArduTrackerDataInterpreter ardutracker1;
 // Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
 
-AP_HAL::AnalogSource *vcc_pin;
-AP_HAL::AnalogSource * batt_volt_pin;
-AP_HAL::AnalogSource * batt_curr_pin;
+static AP_HAL::AnalogSource *vcc_pin;
+static AP_HAL::AnalogSource * batt_volt_pin;
+static AP_HAL::AnalogSource * batt_curr_pin;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Relay
@@ -380,19 +384,19 @@ static uint8_t delta_ms_fast_loop;
 static uint16_t mainLoop_count;
 
 // Time in miliseconds of start of medium control loop.  Milliseconds
-static uint32_t medium_loopTimer_ms;
+// static uint32_t medium_loopTimer_ms;
 
 // Counters for branching from main control loop to slower loops
-static uint8_t medium_loopCounter;
+// static uint8_t medium_loopCounter;
 // Number of milliseconds used in last medium loop cycle
-static uint8_t delta_ms_medium_loop;
+// static uint8_t delta_ms_medium_loop;
 
 // Counters for branching from medium control loop to slower loops
-static uint8_t slow_loopCounter;
+// static uint8_t slow_loopCounter;
 // Counter to trigger execution of very low rate processes
-static uint8_t superslow_loopCounter;
+// static uint8_t superslow_loopCounter;
 // Counter to trigger execution of 1 Hz processes
-static uint8_t counter_one_herz;
+// static uint8_t counter_one_hertz;
 
 // % MCU cycles used
 static float load;
@@ -416,6 +420,25 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
+  scheduler table - all regular tasks apart from the fast_loop()
+  should be listed here, along with how often they should be called
+  (in 20ms units) and the maximum time they are expected to take (in
+  microseconds)
+ */
+static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+    { update_GPS,             5,   2500 },
+    { navigate,               5,   4800 },
+    { update_compass,         5,   1500 },
+    { read_control_switch,   15,   1000 },
+    { update_alt,             5,   1000 },
+    { update_events,		 15,   1500 },
+    { check_usb_mux,          5,   1000 },
+    { read_battery,           5,   1000 },
+    { one_second_loop,       50,   3000 },
+    { update_logging,         5,   1000 },
+};
+
 // setup the var_info table
 AP_Param param_loader(var_info, WP_START_BYTE);
 
@@ -434,18 +457,19 @@ void setup() {
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
     
-    init_ardupilot();
+    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
 }
 
 void loop()
 {
+    uint32_t timer = millis();
     // We want this to execute at 50Hz, but synchronised with the gyro/accel
     uint16_t num_samples = ins.num_samples_available();
     if (num_samples >= 1) {
-        delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
+        delta_ms_fast_loop      = timer - fast_loopTimer_ms;
         load                = (float)(fast_loopTimeStamp_ms - fast_loopTimer_ms)/delta_ms_fast_loop;
-        G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-        fast_loopTimer_ms   = millis();
+        G_Dt                = delta_ms_fast_loop * 0.001f;
+        fast_loopTimer_ms   = timer;
 
         mainLoop_count++;
 
@@ -453,33 +477,15 @@ void loop()
         // ---------------------
         fast_loop();
 
-        // Execute the medium loop
-        // -----------------------
-        medium_loop();
-
-        counter_one_herz++;
-        if(counter_one_herz == 50) {
-            one_second_loop();
-            counter_one_herz = 0;
-        }
-
-        if (millis() - perf_mon_timer > 20000) {
-            if (mainLoop_count != 0) {
-                if (g.log_bitmask & MASK_LOG_PM)
-                    Log_Write_Performance();
-                    resetPerfData();
-            }
-        }
+        // tell the scheduler one tick has passed
+        scheduler.tick();
 
         fast_loopTimeStamp_ms = millis();
-    } else if (millis() - fast_loopTimeStamp_ms < 19) {
-        // less than 19ms has passed. We have at least one millisecond
-        // of free time. The most useful thing to do with that time is
-        // to accumulate some sensor readings, specifically the
-        // compass, which is often very noisy but is not interrupt
-        // driven, so it can't accumulate readings by itself
-        if (g.compass_enabled) {
-            compass.accumulate();
+    } else {
+        uint16_t dt = timer - fast_loopTimeStamp_ms;
+        if (dt < 20) {
+            uint16_t time_to_next_loop = 20 - dt;
+            scheduler.run(time_to_next_loop * 1000U);
         }
     }
 }
@@ -515,7 +521,7 @@ static void fast_loop()
 
     // custom code/exceptions for flight modes
     // ---------------------------------------
-    // update_current_flight_mode();
+    // update_current_tracking_mode();
     // apply desired roll, pitch and yaw to the plane
     // ----------------------------------------------
      // if (control_mode > MANUAL)
@@ -529,138 +535,6 @@ static void fast_loop()
     gcs_data_stream_send();
 }
 
-static void medium_loop()
-{
-#if MOUNT == ENABLED
-    camera_mount.update_mount_position();
-#endif
-
-#if MOUNT2 == ENABLED
-    camera_mount2.update_mount_position();
-#endif
-
-    // This is the start of the medium (10 Hz) loop pieces
-    // -----------------------------------------
-    switch(medium_loopCounter) {
-
-    // This case deals with the GPS
-    //-------------------------------
-    case 0:
-        medium_loopCounter++;
-        update_GPS();
-
-        if (g.compass_enabled && compass.read()) {
-            ahrs.set_compass(&compass);
-            compass.null_offsets();
-            if (g.log_bitmask & MASK_LOG_COMPASS) {
-                Log_Write_Compass();
-            }
-        } else {
-            ahrs.set_compass(NULL);
-        }
-
-        break;
-
-    // This case performs some navigation computations
-    //------------------------------------------------
-    case 1:
-        medium_loopCounter++;
-
-        // Read 6-position switch on radio
-        // -------------------------------
-        read_control_switch();
-
-        // calculate the plane's desired bearing
-        // -------------------------------------
-        navigate();
-
-        break;
-
-    // command processing
-    //------------------------------
-    case 2:
-        medium_loopCounter++;
-
-        // Read altitude from sensors
-        // ------------------
-        update_alt();
-
-        // perform next command
-        // --------------------
-        // update_commands();
-        break;
-
-    // This case deals with sending high rate telemetry
-    //-------------------------------------------------
-    case 3:
-        medium_loopCounter++;
-        break;
-
-    // This case controls the slow loop
-    //---------------------------------
-    case 4:
-        medium_loopCounter = 0;
-        delta_ms_medium_loop    = millis() - medium_loopTimer_ms;
-        medium_loopTimer_ms     = millis();
-
-        if (g.battery_monitoring != 0) {
-            read_battery();
-        }
-
-        slow_loop();
-
-        break;
-    }
-}
-
-static void slow_loop()
-{
-    // This is the slow (3 1/3 Hz) loop pieces
-    //----------------------------------------
-    switch (slow_loopCounter) {
-    case 0:
-        slow_loopCounter++;
-        superslow_loopCounter++;
-        if(superslow_loopCounter >=200) {                                               
-            //	200 = Execute every minute
-            if(g.compass_enabled) {
-                compass.save_offsets();
-            }
-
-            superslow_loopCounter = 0;
-        }
-        break;
-
-    case 1:
-        slow_loopCounter++;
-
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11);
-#else
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
-#endif
-        enable_aux_servos();
-
-#if MOUNT == ENABLED
-        camera_mount.update_mount_type();
-#endif
-#if MOUNT2 == ENABLED
-        camera_mount2.update_mount_type();
-#endif
-        break;
-
-    case 2:
-        slow_loopCounter = 0;
-        // update_events();
-        mavlink_system.sysid = g.sysid_this_mav;                // This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
-        check_usb_mux();
-        break;
-    }
-}
-
 static void one_second_loop()
 {
     if (g.log_bitmask & MASK_LOG_CURRENT)
@@ -668,8 +542,33 @@ static void one_second_loop()
 
     // send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
+    
+    // make it possible to change control channel ordering at runtime
+    set_control_channels();
+
+    // make it possible to change orientation at runtime
+    ahrs.set_orientation();
+
+    // sync MAVLink system ID
+    mavlink_system.sysid = g.sysid_this_mav;
+     
+    if (counter == 20) {
+        if (g.log_bitmask & MASK_LOG_PM)
+            Log_Write_Performance();
+        resetPerfData();
+    }
+
+    if (counter >= 60) {                                               
+        if(g.compass_enabled) {
+            compass.save_offsets();
+        }
+        counter = 0;
+    }
 }
 
+/*
+  read the GPS and update position
+ */
 static void update_GPS(void)
 {
     static uint32_t last_gps_reading;
@@ -742,4 +641,6 @@ static void update_alt()
     }
 }
 
+// This is a replacement main() function macro. It does hal init, setup(), scheduler start 
+// and runs loop() forever.
 AP_HAL_MAIN();
