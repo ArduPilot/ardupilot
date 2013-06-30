@@ -59,11 +59,11 @@ get_stabilize_yaw(int32_t target_angle)
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_YAW_KP ) {
+    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_STABILIZE_YAW_KP ) {
         pid_log_counter++;
         if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
             pid_log_counter = 0;
-            Log_Write_PID(CH6_YAW_KP, angle_error, target_rate, i_term, 0, output, tuning_value);
+            Log_Write_PID(CH6_STABILIZE_YAW_KP, angle_error, target_rate, i_term, 0, output, tuning_value);
         }
     }
 #endif
@@ -318,11 +318,11 @@ get_heli_rate_roll(int32_t target_rate)
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_ROLL_PITCH_KP || g.radio_tuning == CH6_RATE_ROLL_PITCH_KI || g.radio_tuning == CH6_RATE_ROLL_PITCH_KD) ) {
         pid_log_counter++;
         if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
             pid_log_counter = 0;
-            Log_Write_PID(CH6_RATE_KP, rate_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_RATE_ROLL_PITCH_KP, rate_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -370,9 +370,9 @@ get_heli_rate_pitch(int32_t target_rate)
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_ROLL_PITCH_KP || g.radio_tuning == CH6_RATE_ROLL_PITCH_KI || g.radio_tuning == CH6_RATE_ROLL_PITCH_KD) ) {
         if( pid_log_counter == 0 ) {               // relies on get_heli_rate_roll to update pid_log_counter
-            Log_Write_PID(CH6_RATE_KP+100, rate_error, p, i, 0, output, tuning_value);
+            Log_Write_PID(CH6_RATE_ROLL_PITCH_KP+100, rate_error, p, i, 0, output, tuning_value);
         }
     }
 #endif
@@ -458,11 +458,11 @@ get_rate_roll(int32_t target_rate)
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_ROLL_PITCH_KP || g.radio_tuning == CH6_RATE_ROLL_PITCH_KI || g.radio_tuning == CH6_RATE_ROLL_PITCH_KD) ) {
         pid_log_counter++;                          // Note: get_rate_pitch pid logging relies on this function to update pid_log_counter so if you change the line above you must change the equivalent line in get_rate_pitch
         if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
             pid_log_counter = 0;
-            Log_Write_PID(CH6_RATE_KP, rate_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_RATE_ROLL_PITCH_KP, rate_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -499,9 +499,9 @@ get_rate_pitch(int32_t target_rate)
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_ROLL_PITCH_KP || g.radio_tuning == CH6_RATE_ROLL_PITCH_KI || g.radio_tuning == CH6_RATE_ROLL_PITCH_KD) ) {
         if( pid_log_counter == 0 ) {               // relies on get_rate_roll having updated pid_log_counter
-            Log_Write_PID(CH6_RATE_KP+100, rate_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_RATE_ROLL_PITCH_KP+100, rate_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -854,11 +854,11 @@ get_throttle_accel(int16_t z_target_accel)
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THR_ACCEL_KP || g.radio_tuning == CH6_THR_ACCEL_KI || g.radio_tuning == CH6_THR_ACCEL_KD) ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_ACCEL_KP || g.radio_tuning == CH6_THROTTLE_ACCEL_KI || g.radio_tuning == CH6_THROTTLE_ACCEL_KD) ) {
         pid_log_counter++;
         if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
             pid_log_counter = 0;
-            Log_Write_PID(CH6_THR_ACCEL_KP, z_accel_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_THROTTLE_ACCEL_KP, z_accel_error, p, i, d, output, tuning_value);
         }
     }
 #endif
@@ -1003,11 +1003,11 @@ get_throttle_rate(float z_target_speed)
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_KP || g.radio_tuning == CH6_THROTTLE_KI || g.radio_tuning == CH6_THROTTLE_KD) ) {
+    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_RATE_KP || g.radio_tuning == CH6_THROTTLE_RATE_KD) ) {
         pid_log_counter++;
         if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
             pid_log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_KP, z_rate_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_THROTTLE_RATE_KP, z_rate_error, p, i, d, output, tuning_value);
         }
     }
 #endif
