@@ -7,6 +7,7 @@ static void set_control_channels(void)
 {
     channel_steer    = RC_Channel::rc_channel(rcmap.roll()-1);
     channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
+    channel_learn    = RC_Channel::rc_channel(g.learn_channel-1);
 
 	// set rc channel ranges
 	channel_steer->set_angle(SERVO_MAX);
