@@ -7,22 +7,22 @@ static void read_control_switch()
 
     uint8_t switchPosition = readSwitch();
 
-    if (oldSwitchPosition != switchPosition) {
+    // has switch moved?
+    // ignore flight mode changes if in failsafe
+    if (oldSwitchPosition != switchPosition && !ap.failsafe_radio) {
         switch_counter++;
         if(switch_counter >= CONTROL_SWITCH_COUNTER) {
             oldSwitchPosition       = switchPosition;
             switch_counter          = 0;
 
-            // ignore flight mode changes if in failsafe
-            if( !ap.failsafe_radio ) {
-                set_mode(flight_modes[switchPosition]);
+            set_mode(flight_modes[switchPosition]);
 
-                if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
-                    // set Simple mode using stored paramters from Mission planner
-                    // rather than by the control switch
-                    set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
-                }
+            if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
+                // set Simple mode using stored paramters from Mission planner
+                // rather than by the control switch
+                set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
             }
+
         }
     }else{
         // reset switch_counter if there's been no change

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.42beta3"
+#define THISFIRMWARE "ArduRover v2.43beta1"
 
 /* 
 This is the APMrover2 firmware. It was originally derived from
@@ -126,6 +126,7 @@ static RCMapper rcmap;
 // primary control channels
 static RC_Channel *channel_steer;
 static RC_Channel *channel_throttle;
+static RC_Channel *channel_learn;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -422,7 +423,6 @@ static bool ch7_flag;
 // This register tracks the current Mission Command index when writing
 // a mission using CH7 in flight
 static int8_t CH7_wp_index;
-float tuning_value;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors

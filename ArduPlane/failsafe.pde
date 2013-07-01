@@ -43,6 +43,13 @@ void failsafe_check(uint32_t tnow)
         channel_pitch->radio_out    = channel_pitch->read();
         channel_throttle->radio_out = channel_throttle->read();
         channel_rudder->radio_out   = channel_rudder->read();
+
+        // setup secondary output channels that don't have
+        // corresponding input channels
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, channel_roll->radio_out);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, channel_pitch->radio_out);
+        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->radio_out);
+
         if (g.vtail_output != MIXING_DISABLED) {
             channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
         } else if (g.elevon_output != MIXING_DISABLED) {
@@ -55,6 +62,8 @@ void failsafe_check(uint32_t tnow)
         channel_throttle->output();
         channel_rudder->output();
 
+        // setup secondary output channels that do have
+        // corresponding input channels
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input, true);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input, true);
