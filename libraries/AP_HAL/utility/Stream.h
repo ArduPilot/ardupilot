@@ -19,9 +19,6 @@ public:
      * -1 if nothing available, uint8_t value otherwise. */
     virtual int16_t read() = 0;
 
-    /* return value for peek():
-     * -1 if nothing available, uint8_t value otherwise. */
-    virtual int16_t peek() = 0;
 };
 
 #endif // __AP_HAL_UTILITY_STREAM_H__

@@ -22,35 +22,6 @@
  *  HELI_FRAME
  */
 
-//#define FRAME_ORIENTATION X_FRAME
-/*
- *  PLUS_FRAME
- *  X_FRAME
- *  V_FRAME
- */
-
-//#define CH7_OPTION		CH7_SAVE_WP
-/*
- *  CH7_DO_NOTHING
- *  CH7_FLIP
- *  CH7_SIMPLE_MODE
- *  CH7_RTL
- *  CH7_SAVE_TRIM
- *  CH7_SAVE_WP
- *  CH7_CAMERA_TRIGGER
- */
-
-// uncomment the line below to disable control of yaw during missions (or set YAW_BEHAVIOR parameter to 0)
-// #define WP_YAW_BEHAVIOR_DEFAULT  WP_YAW_BEHAVIOR_NONE
-
-//#define MOTORS_JD880
-//#define MOTORS_JD850
-//#define LOGGING_ENABLED		DISABLED
-
-#define MOBILE 2
-// OFF is off. ON is raw MAVLink. MOBILE is cellular modem.
-#define SERIAL3_MODE MOBILE
-
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).
 //#define USERHOOK_VARIABLES "UserVariables.h"
@@ -61,4 +32,3 @@
 //#define USERHOOK_MEDIUMLOOP userhook_MediumLoop();        // for code to be run at 10hz
 //#define USERHOOK_SLOWLOOP userhook_SlowLoop();            // for code to be run at 3.3hz
 //#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();  // for code to be run at 1hz
-

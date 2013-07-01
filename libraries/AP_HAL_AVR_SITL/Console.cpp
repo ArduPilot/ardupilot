@@ -90,11 +90,6 @@ int16_t SITLConsoleDriver::txspace(void)
     return _base_uart->txspace();
 }
 
-int16_t SITLConsoleDriver::peek()
-{
-    return _base_uart->peek();
-}
-
 int16_t SITLConsoleDriver::read() 
 {
     return _base_uart->read();

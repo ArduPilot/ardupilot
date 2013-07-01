@@ -258,12 +258,12 @@ static void do_takeoff()
 {
     set_next_WP(&next_nav_command);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-    takeoff_pitch_cd                = (int)next_nav_command.p1 * 100;
+    takeoff_pitch_cd        = (int)next_nav_command.p1 * 100;
     takeoff_altitude        = next_nav_command.alt;
     next_WP.lat             = home.lat + 1000;          // so we don't have bad calcs
     next_WP.lng             = home.lng + 1000;          // so we don't have bad calcs
-    takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
-    // Flag also used to override "on the ground" throttle disable
+    takeoff_complete        = false;                    // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
+    // Flag also used to override "on the ground" throttle disable "throttle_suppressed"
 }
 
 static void do_nav_wp()

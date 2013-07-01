@@ -80,9 +80,7 @@ static void low_battery_event(void)
             case ACRO:
                 // if throttle is zero disarm motors
                 if (g.rc_3.control_in == 0) {
-                    // init_disarm_motors();
-                	// dongfang: I don't want this. I don't want anything at all that might turn off
-                	// the motors in flight, no matter how unlikely.
+                    init_disarm_motors();
                 }else{
                     set_mode(LAND);
                 }

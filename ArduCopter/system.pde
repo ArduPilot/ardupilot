@@ -48,13 +48,11 @@ static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 }
 
 // the user wants the CLI. It never exits
-static void run_cli(AP_HAL::BetterStream *port)
+static void run_cli(AP_HAL::UARTDriver *port)
 {
     cliSerial = port;
     Menu::set_port(port);
-    
-    // TODO: We need to deal with this:
-    ((AP_HAL::UARTDriver*)port)->set_blocking_writes(true);
+    port->set_blocking_writes(true);
 
     // disable the mavlink delay callback
     hal.scheduler->register_delay_callback(NULL, 5);
@@ -155,7 +153,7 @@ static void init_ardupilot()
     // anytime there are more than 5ms remaining in a call to
     // hal.scheduler->delay.
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
-    
+
 #if USB_MUX_PIN > 0
     if (!ap_system.usb_connected) {
         // we are not connected via USB, re-init UART0 with right
@@ -174,15 +172,10 @@ static void init_ardupilot()
     // SERIAL3_MODE==ENALBED  (1): Raw MAVLink for a XBee or similar.
     // SERIAL3_MODE==MOBILE   (2): DroneCell data-via-commands
 
-    #if SERIAL3_MODE == ENABLED || SERIAL3_MODE == MOBILE
+    #if SERIAL3_MODE == ENABLED
     // we have a 2nd serial port for telemetry
         hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
-    #if SERIAL3_MODE == ENABLED
         gcs3.init(hal.uartC);
-    #elif SERIAL3_MODE == MOBILE
-     	mobile.begin(hal.uartC, 128, 128);
-    	gcs3.init(&mobile);
-    #endif
     #endif
 
     // identify ourselves correctly with the ground station

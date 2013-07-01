@@ -79,11 +79,8 @@
  #endif
 #endif
 
-// Use this to enable telemetry on UART3 (APM1) or UART2 (APM2).
-// This is now independent of whether you have a mux or not.
-#define MOBILE 2
 #ifndef SERIAL3_MODE
- # define SERIAL3_MODE DISABLED
+ # define SERIAL3_MODE ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -107,11 +104,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
-// #if TELEMETRY_UART2 == ENABLED
-//  # define USB_MUX_PIN -1
- //#else
-  //# define USB_MUX_PIN 23
- //#endif
+
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000

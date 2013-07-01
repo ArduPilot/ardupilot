@@ -105,7 +105,7 @@ int16_t SITLUARTDriver::txspace(void)
     return _txSpace;
 }
 
-int16_t SITLUARTDriver::input(int type)
+int16_t SITLUARTDriver::read(void) 
 {
     char c;
 
@@ -124,7 +124,7 @@ int16_t SITLUARTDriver::input(int type)
         return ::read(0, &c, 1);
     }
 
-    int n = recv(_fd, &c, 1, MSG_DONTWAIT | MSG_NOSIGNAL | type);
+    int n = recv(_fd, &c, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
     if (n <= 0) {
         // the socket has reached EOF
         close(_fd);
@@ -137,16 +137,6 @@ int16_t SITLUARTDriver::input(int type)
         return (uint8_t)c;
     }
     return -1;
-}
-
-int16_t SITLUARTDriver::peek(void)
-{
-	return input(MSG_PEEK);
-}
-
-int16_t SITLUARTDriver::read(void)
-{
-	return input(0);
 }
 
 void SITLUARTDriver::flush(void) 

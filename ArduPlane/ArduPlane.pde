@@ -55,8 +55,6 @@
 #include <SITL.h>
 #include <AP_Scheduler.h>       // main loop scheduler
 
-#include <MobileDriver.h>
-
 #include <AP_Navigation.h>
 #include <AP_L1_Control.h>
 #include <AP_RCMapper.h>        // RC input mapping library
@@ -249,10 +247,6 @@ static bool training_manual_pitch; // user has manual pitch control
 static GCS_MAVLINK gcs0;
 static GCS_MAVLINK gcs3;
 
-#if SERIAL3_MODE == MOBILE
-SIM900Driver mobile;
-#endif
-
 // selected navigation controller
 static AP_Navigation *nav_controller = &L1_controller;
 
@@ -387,8 +381,6 @@ static int32_t hold_course_cd                 = -1;              // deg * 100 di
 static uint8_t nav_command_index;
 // This indicates the active non-navigation command by index number
 static uint8_t non_nav_command_index;
-
-
 // This is the command type (eg navigate to waypoint) of the active navigation command
 static uint8_t nav_command_ID          = NO_COMMAND;
 static uint8_t non_nav_command_ID      = NO_COMMAND;
