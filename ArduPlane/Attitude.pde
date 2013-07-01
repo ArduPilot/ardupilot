@@ -440,6 +440,11 @@ static bool suppress_throttle(void)
     if (control_mode==AUTO && takeoff_complete == false && auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
+        if (hold_course_cd != -1) {
+            // update takeoff course hold, if already initialised
+            hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course_cd);
+        }
         return false;
     }
     
