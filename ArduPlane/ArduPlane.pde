@@ -713,7 +713,7 @@ void loop()
 
         fast_loopTimeStamp_ms = millis();
     } else {
-        uint16_t dt = timer - fast_loopTimeStamp_ms;
+        uint16_t dt = timer - fast_loopTimer_ms;
         if (dt < 20) {
             uint16_t time_to_next_loop = 20 - dt;
             scheduler.run(time_to_next_loop * 1000U);
