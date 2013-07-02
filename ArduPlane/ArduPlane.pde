@@ -972,10 +972,16 @@ static void update_GPS(void)
     calc_gndspeed_undershoot();
 }
 
+/*
+ * Updates the nav_roll_cd, nav_pitch_cd vars.
+ * Calls calc_throttle(), which in turn updates channel_throttle->servo_out.
+ * In mode MANUAL, this does a strange thing: Updates RCChannel output values
+ * directly (channel_xxx->servo_out = channel_xxx->pwm_to_angle();)
+ * This is called from fast loop before stabilize() and before set_servos().
+ */
 static void update_current_flight_mode(void)
 {
     if(control_mode == AUTO) {
-
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
             if (hold_course_cd == -1) {
@@ -1057,8 +1063,11 @@ static void update_current_flight_mode(void)
             training_manual_roll = false;
             training_manual_pitch = false;
 
+            // dongfang: Implementation of TRAINING.
             // if the roll is past the set roll limit, then
-            // we set target roll to the limit
+            // we set target roll to the limit. Else we set it
+            // to zero. The effect of that implemented in
+            // stabilize_training, which reads nav_roll_cd
             if (ahrs.roll_sensor >= g.roll_limit_cd) {
                 nav_roll_cd = g.roll_limit_cd;
             } else if (ahrs.roll_sensor <= -g.roll_limit_cd) {
