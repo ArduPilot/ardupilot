@@ -282,30 +282,34 @@ void init_rate_controllers()
 static int16_t
 get_heli_rate_roll(int32_t target_rate)
 {
-    int32_t p,i,d,ff;                // used to capture pid values for logging
-	int32_t current_rate;			// this iteration's rate
-    int32_t rate_error;             // simply target_rate - current_rate
-    int32_t output;                 // output from pid controller
+    int32_t         p,i,d,ff;               // used to capture pid values for logging
+	int32_t         current_rate;			// this iteration's rate
+    int32_t         rate_error;             // simply target_rate - current_rate
+    int32_t         output;                 // output from pid controller
+    static bool     pid_saturated;          // tracker from last loop if the PID was saturated
 
-	// get current rate
-	current_rate    = (omega.x * DEGX100);
+	current_rate = (omega.x * DEGX100);                                                         // get current rate
 
     // filter input
     current_rate = rate_roll_filter.apply(current_rate);
 	
-    // call pid controller
-    rate_error  = target_rate - current_rate;
-    p   = g.pid_rate_roll.get_p(rate_error);
+    rate_error = target_rate - current_rate;
+    
+    p = g.pid_rate_roll.get_p(rate_error);
 
-    if (motors.flybar_mode == 1) {												// Mechanical Flybars get regular integral for rate auto trim
-		if (target_rate > -50 && target_rate < 50){								// Frozen at high rates
-			i		= g.pid_rate_roll.get_i(rate_error, G_Dt);
-		} else {
-			i		= g.pid_rate_roll.get_integrator();
-		}
-	} else {
-		i			= g.pid_rate_roll.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);		// Flybarless Helis get huge I-terms. I-term controls much of the rate
-	}
+    if (pid_saturated){
+        i = g.pid_rate_roll.get_integrator();                                                   // Locked Integrator due to PID saturation on previous cycle
+    } else {
+        if (motors.flybar_mode == 1) {												            // Mechanical Flybars get regular integral for rate auto trim
+            if (target_rate > -50 && target_rate < 50){								            // Frozen at high rates
+                i = g.pid_rate_roll.get_i(rate_error, G_Dt);
+            } else {
+                i = g.pid_rate_roll.get_integrator();
+            }
+        } else {
+            i = g.pid_rate_roll.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);		// Flybarless Helis get huge I-terms. I-term controls much of the rate
+        }
+    }
 	
 	d = g.pid_rate_roll.get_d(rate_error, G_Dt);
 	
@@ -313,8 +317,12 @@ get_heli_rate_roll(int32_t target_rate)
 
     output = p + i + d + ff;
 
-    // constrain output
-    output = constrain_int32(output, -4500, 4500);
+    if (labs(output) > 4500){
+        output = constrain_int32(output, -4500, 4500);              // constrain output
+        pid_saturated = true;                                       // freeze integrator next cycle
+    } else {
+        pid_saturated = false;                                      // unfreeze integrator
+    }
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
@@ -327,37 +335,40 @@ get_heli_rate_roll(int32_t target_rate)
     }
 #endif
 
-    // output control
-    return output;
+    return output;                                                  // output control
 }
 
 static int16_t
 get_heli_rate_pitch(int32_t target_rate)
 {
-    int32_t p,i,d,ff;                                                                   // used to capture pid values for logging
-	int32_t current_rate;                                                     			// this iteration's rate
-    int32_t rate_error;                                                                 // simply target_rate - current_rate
-    int32_t output;                                                                     // output from pid controller
-
-	// get current rate
-	current_rate    = (omega.y * DEGX100);
+    int32_t         p,i,d,ff;               // used to capture pid values for logging
+	int32_t         current_rate;           // this iteration's rate
+    int32_t         rate_error;             // simply target_rate - current_rate
+    int32_t         output;                 // output from pid controller
+    static bool     pid_saturated;          // tracker from last loop if the PID was saturated
+    
+	current_rate = (omega.y * DEGX100);                                                         // get current rate
 	
 	// filter input
 	current_rate = rate_pitch_filter.apply(current_rate);
+
+    rate_error = target_rate - current_rate;
+    
+    p = g.pid_rate_pitch.get_p(rate_error);						
 	
-	// call pid controller
-    rate_error      = target_rate - current_rate;
-    p               = g.pid_rate_pitch.get_p(rate_error);						// Helicopters get huge feed-forward
-	
-	if (motors.flybar_mode == 1) {												// Mechanical Flybars get regular integral for rate auto trim
-		if (target_rate > -50 && target_rate < 50){								// Frozen at high rates
-			i		= g.pid_rate_pitch.get_i(rate_error, G_Dt);
-		} else {
-			i		= g.pid_rate_pitch.get_integrator();
-		}
-	} else {
-		i			= g.pid_rate_pitch.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// Flybarless Helis get huge I-terms. I-term controls much of the rate
-	}
+    if (pid_saturated){
+        i = g.pid_rate_pitch.get_integrator();                                                  // Locked Integrator due to PID saturation on previous cycle
+    } else {
+        if (motors.flybar_mode == 1) {												            // Mechanical Flybars get regular integral for rate auto trim
+            if (target_rate > -50 && target_rate < 50){								            // Frozen at high rates
+                i = g.pid_rate_pitch.get_i(rate_error, G_Dt);
+            } else {
+                i = g.pid_rate_pitch.get_integrator();
+            }
+        } else {
+            i = g.pid_rate_pitch.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	    // Flybarless Helis get huge I-terms. I-term controls much of the rate
+        }
+    }
 	
 	d = g.pid_rate_pitch.get_d(rate_error, G_Dt);
 	
@@ -365,9 +376,13 @@ get_heli_rate_pitch(int32_t target_rate)
     
     output = p + i + d + ff;
 
-    // constrain output
-    output = constrain_int32(output, -4500, 4500);
-
+    if (labs(output) > 4500){
+        output = constrain_int32(output, -4500, 4500);          // constrain output
+        pid_saturated = true;                                   // freeze integrator next cycle
+    } else {
+        pid_saturated = false;                                  // unfreeze integrator
+    }
+    
 #if LOGGING_ENABLED == ENABLED
     // log output if PID logging is on and we are tuning the rate P, I or D gains
     if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_KP || g.radio_tuning == CH6_RATE_KI || g.radio_tuning == CH6_RATE_KD) ) {
@@ -377,38 +392,44 @@ get_heli_rate_pitch(int32_t target_rate)
     }
 #endif
 
-    // output control
-    return output;
+    return output;                                              // output control
 }
 
 static int16_t
 get_heli_rate_yaw(int32_t target_rate)
 {
-    int32_t p,i,d,ff;                                                                   // used to capture pid values for logging
-	int32_t current_rate;                                                               // this iteration's rate
-    int32_t rate_error;
-    int32_t output;
+    int32_t         p,i,d,ff;               // used to capture pid values for logging
+	int32_t         current_rate;           // this iteration's rate
+    int32_t         rate_error;
+    int32_t         output;
+    static bool     pid_saturated;          // tracker from last loop if the PID was saturated
 
-	// get current rate
-    current_rate    = (omega.z * DEGX100);
-	
-	// filter input
-	// current_rate = rate_yaw_filter.apply(current_rate);
+    current_rate = (omega.z * DEGX100);                         // get current rate
 	
     // rate control
-    rate_error              = target_rate - current_rate;
+    rate_error = target_rate - current_rate;
 
     // separately calculate p, i, d values for logging
     p = g.pid_rate_yaw.get_p(rate_error);
     
-    i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
+    if (pid_saturated){
+        i = g.pid_rate_yaw.get_integrator();                    // Locked Integrator due to PID saturation on previous cycle
+    } else {
+        i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
+    }
 
     d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
 	
 	ff = g.heli_yaw_ff*target_rate;
 
-    output  = p + i + d + ff;
-    output = constrain_float(output, -4500, 4500);
+    output = p + i + d + ff;
+    
+    if (labs(output) > 4500){
+        output = constrain_int32(output, -4500, 4500);          // constrain output
+        pid_saturated = true;                                   // freeze integrator next cycle
+    } else {
+        pid_saturated = false;                                  // unfreeze integrator
+    }
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
@@ -422,8 +443,7 @@ get_heli_rate_yaw(int32_t target_rate)
 	
 #endif
 
-	// output control
-	return output;
+	return output;                                              // output control
 }
 #endif // HELI_FRAME
 
