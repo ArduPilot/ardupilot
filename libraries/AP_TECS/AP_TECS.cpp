@@ -427,21 +427,22 @@ void AP_TECS::_update_throttle(void)
 void AP_TECS::_update_throttle_option(void)
 {
 	// Calculate throttle demand by interpolating between pitch and throttle limits
+    float nomThr = aparm.throttle_cruise * 0.01f;	
 	if (_climbOutDem)
 	{
 		_throttle_dem = _THRmaxf;
 	}
 	else if (_pitch_dem > 0.0 && _PITCHmaxf > 0.0)
 	{
-		_throttle_dem = _cruiseThrottle + (_THRmaxf - _cruiseThrottle) * _pitch_dem / _PITCHmaxf;
+		_throttle_dem = nomThr + (_THRmaxf - nomThr) * _pitch_dem / _PITCHmaxf;
 	}
 	else if (_pitch_dem < 0.0 && _PITCHminf < 0.0)
 	{
-		_throttle_dem = _cruiseThrottle + (_THRminf - _cruiseThrottle) * _pitch_dem / _PITCHminf;
+		_throttle_dem = nomThr + (_THRminf - nomThr) * _pitch_dem / _PITCHminf;
 	}
 	else
 	{
-		_throttle_dem = _cruiseThrottle;
+		_throttle_dem = nomThr;
 	}
 }
 
