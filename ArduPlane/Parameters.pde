@@ -163,8 +163,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ALT_CTRL_ALG
     // @DisplayName: Altitude control algorithm
-    // @Description: This sets what algorithm will be used for altitude control. The default is to select the algorithm based on whether airspeed is enabled. If you set it to 1, then the airspeed based algorithm won't be used for altitude control, but airspeed can be used for other flight control functions
-    // @Values: 0:Default Method,1:non-airspeed
+    // @Description: This sets what algorithm will be used for altitude control. The default is to select the algorithm based on whether airspeed is enabled. If you set it to 1, then the airspeed based algorithm won't be used for altitude control, but airspeed can be used for other flight control functions. Setting it to 2 selects the new 'TECS' (total energy control system) altitude control, which works both with and without airspeed
+    // @Values: 0:Default Method,1:non-airspeed,2:TECS
     // @User: Advanced
     GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
 
