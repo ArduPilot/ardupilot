@@ -424,6 +424,28 @@ void AP_TECS::_update_throttle(void)
     _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
 }
 
+void AP_TECS::_update_throttle_option(void)
+{
+	// Calculate throttle demand by interpolating between pitch and throttle limits
+    float nomThr = aparm.throttle_cruise * 0.01f;	
+	if (_climbOutDem)
+	{
+		_throttle_dem = _THRmaxf;
+	}
+	else if (_pitch_dem > 0.0 && _PITCHmaxf > 0.0)
+	{
+		_throttle_dem = nomThr + (_THRmaxf - nomThr) * _pitch_dem / _PITCHmaxf;
+	}
+	else if (_pitch_dem < 0.0 && _PITCHminf < 0.0)
+	{
+		_throttle_dem = nomThr + (_THRminf - nomThr) * _pitch_dem / _PITCHminf;
+	}
+	else
+	{
+		_throttle_dem = nomThr;
+	}
+}
+
 void AP_TECS::_detect_bad_descent(void) 
 {
 	// Detect a demanded airspeed too high for the aircraft to achieve. This will be
@@ -591,10 +613,14 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool
     // Calculate specific energy quantitiues
     _update_energies();
 
-    // Calculate throttle demand
-    _update_throttle();
+    // Calculate throttle demand - use simple pitch to throttle if no airspeed sensor
+	if (_ahrs->airspeed_sensor_enabled()) {
+        _update_throttle();
+	} else {
+        _update_throttle_option();
+	}
 
-	// Detect bad descent due to demanded airspeed being too high
+    // Detect bad descent due to demanded airspeed being too high
 	_detect_bad_descent();
 
 	// Calculate pitch demand
