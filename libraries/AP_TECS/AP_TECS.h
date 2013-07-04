@@ -241,6 +241,9 @@ private:
 	// Update Demanded Throttle
 	void _update_throttle(void);
 
+	// Update Demanded Throttle Non-Airspeed
+	void _update_throttle_option(void);
+
 	// Detect Bad Descent
 	void _detect_bad_descent(void);
 
