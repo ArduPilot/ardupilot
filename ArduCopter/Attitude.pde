@@ -522,12 +522,16 @@ get_rate_yaw(int32_t target_rate)
 
     // separately calculate p, i, d values for logging
     p = g.pid_rate_yaw.get_p(rate_error);
-    // freeze I term if we've breached yaw limits
-    if( motors.reached_limit(AP_MOTOR_YAW_LIMIT) ) {
-        i = g.pid_rate_yaw.get_integrator();
-    }else{
+
+    // get i term
+    i = g.pid_rate_yaw.get_integrator();
+
+    // update i term as long as we haven't breached the limits or the I term will certainly reduce
+    if (!motors.reached_limit(AP_MOTOR_YAW_LIMIT) || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
         i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
     }
+
+    // get d value
     d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
 
     output  = p+i+d;
