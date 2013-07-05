@@ -660,22 +660,28 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { update_GPS,             5,   2500 },
+    { update_speed_height,    1,    900 },
+    { update_flight_mode,     1,   1000 },
+    { stabilize,              1,   3200 },
+    { set_servos,             1,   1100 },
+    { update_GPS,             5,   4000 },
     { navigate,               5,   4800 },
     { update_compass,         5,   1500 },
     { read_airspeed,          5,   1500 },
     { read_control_switch,   15,   1000 },
-    { update_alt,             5,   3200 },
+    { update_alt,             5,   3400 },
     { calc_altitude_error,    5,   1000 },
     { update_commands,        5,   7000 },
-    { update_mount,           1,   1500 },
     { obc_fs_check,           5,   1000 },
+    { gcs_update,             1,   1700 },
+    { gcs_data_stream_send,   2,   3000 },
+    { update_mount,           1,   1500 },
     { update_events,		 15,   1500 },
     { check_usb_mux,          5,   1000 },
     { read_battery,           5,   1000 },
-    { compass_accumulate,     1,   1000 },
+    { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 },
-    { one_second_loop,       50,   3000 },
+    { one_second_loop,       50,   3900 },
     { update_logging,         5,   1000 },
     { read_receiver_rssi,     5,   1000 },
     { check_long_failsafe,   15,   1000 },
@@ -729,9 +735,12 @@ void loop()
 
         fast_loopTimeStamp_ms = millis();
     } else {
-        uint16_t dt = timer - fast_loopTimeStamp_ms;
-        if (dt < 20) {
-            uint16_t time_to_next_loop = 20 - dt;
+        uint16_t dt = timer - fast_loopTimer_ms;
+        // we use 19 not 20 here to ensure we run the next loop on
+        // time - it means we spin for 5% of the time when waiting for
+        // the next sample from the IMU
+        if (dt < 19) {
+            uint16_t time_to_next_loop = 19 - dt;
             scheduler.run(time_to_next_loop * 1000U);
         }
     }
@@ -769,29 +778,19 @@ static void fast_loop()
 
     if (g.log_bitmask & MASK_LOG_IMU)
         Log_Write_IMU();
+}
 
+/*
+  update 50Hz speed/height controller
+ */
+static void update_speed_height(void)
+{
     if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode) {
         // Call TECS 50Hz update
         SpdHgt_Controller->update_50hz();
     }
-
-    // custom code/exceptions for flight modes
-    // calculates roll, pitch and yaw demands from navigation demands
-    // --------------------------------------------------------------
-    update_current_flight_mode();
-
-    // apply desired roll, pitch and yaw to the plane
-    // ----------------------------------------------
-    if (control_mode > MANUAL)
-        stabilize();
-
-    // write out the servo PWM values
-    // ------------------------------
-    set_servos();
-
-    gcs_update();
-    gcs_data_stream_send();
 }
+
 
 /*
   update camera mount
@@ -1000,7 +999,7 @@ static void update_GPS(void)
     calc_gndspeed_undershoot();
 }
 
-static void update_current_flight_mode(void)
+static void update_flight_mode(void)
 {
     if(control_mode == AUTO) {
 

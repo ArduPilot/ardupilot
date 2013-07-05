@@ -233,6 +233,10 @@ static void stabilize_training(float speed_scaler)
  */
 static void stabilize()
 {
+    if (control_mode == MANUAL) {
+        // nothing to do
+        return;
+    }
     float speed_scaler = get_speed_scaler();
 
     if (control_mode == TRAINING) {
