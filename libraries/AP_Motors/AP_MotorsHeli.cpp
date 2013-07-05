@@ -571,30 +571,6 @@ void AP_MotorsHeli::rsc_control() {
         hal.rcout->write(AP_MOTORS_HELI_EXT_RSC, rsc_output);
         break;
 
-    //	case 3:																		// Open Loop ESC Control
-    //
-    //	coll_scaled = _motors->coll_out_scaled + 1000;
-    //	if(coll_scaled <= _motors->collective_mid){
-    //		esc_ol_output = map(coll_scaled, _motors->collective_min, _motors->collective_mid, esc_out_low, esc_out_mid);		// Bottom half of V-curve
-    //	} else if (coll_scaled > _motors->collective_mid){
-    //		esc_ol_output = map(coll_scaled, _motors->collective_mid, _motors->collective_max, esc_out_mid, esc_out_high);		// Top half of V-curve
-    //	} else { esc_ol_output = 1000; }																									// Just in case.
-    //
-    //	if(_motors->armed() && _rc_throttle->control_in > 10){
-    //			if (ext_esc_ramp < ext_esc_ramp_up){
-    //				ext_esc_ramp++;
-    //				ext_esc_output = map(ext_esc_ramp, 0, ext_esc_ramp_up, 1000, esc_ol_output);
-    //			} else {
-    //				ext_esc_output = esc_ol_output;
-    //			}
-    //		} else {
-    //			ext_esc_ramp = 0;	//Return ESC Ramp to 0
-    //			ext_esc_output = 1000; //Just to be sure ESC output is 0
-    //}
-    //		hal.rcout->write(AP_MOTORS_HELI_EXT_ESC, ext_esc_output);
-    //	break;
-
-
     default:
         break;
     }
