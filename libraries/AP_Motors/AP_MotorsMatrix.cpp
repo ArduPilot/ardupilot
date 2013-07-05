@@ -166,20 +166,23 @@ void AP_MotorsMatrix::output_armed()
         // calculate amount of yaw we can fit into the throttle range
         // this is always equal to or less than the requested yaw from the pilot or rate controller
         yaw_allowed = min(out_max - out_max_range, out_max_range - out_min) - (rpy_high-rpy_low)/2;
-        yaw_allowed = max(yaw_allowed, AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM);     // allow at least 200 of yaw
+        yaw_allowed = max(yaw_allowed, AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM);
 
-        if (_rc_yaw->pwm_out > 0) {
+        if (_rc_yaw->pwm_out >= 0) {
             // if yawing right
-            yaw_allowed = min(yaw_allowed, _rc_yaw->pwm_out);     // minimum that we can fit vs what we have asked for
-            // we haven't even been able to apply full yaw command
-            _reached_limit |= AP_MOTOR_YAW_LIMIT;
-        }else if(_rc_yaw->pwm_out < 0) {
-            // if yawing left
-            yaw_allowed = max(-yaw_allowed, _rc_yaw->pwm_out);
-            // we haven't even been able to apply full yaw command
-            _reached_limit |= AP_MOTOR_YAW_LIMIT;
+            if (yaw_allowed > _rc_yaw->pwm_out) {
+                yaw_allowed = _rc_yaw->pwm_out; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
+            }else{
+                _reached_limit |= AP_MOTOR_YAW_LIMIT;
+            }
         }else{
-            yaw_allowed = 0;
+            // if yawing left
+            yaw_allowed = -yaw_allowed;
+            if( yaw_allowed < _rc_yaw->pwm_out ) {
+                yaw_allowed = _rc_yaw->pwm_out; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
+            }else{
+                _reached_limit |= AP_MOTOR_YAW_LIMIT;
+            }
         }
 
         // add yaw to intermediate numbers for each motor
