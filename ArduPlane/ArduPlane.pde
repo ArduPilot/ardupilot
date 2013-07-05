@@ -661,7 +661,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_compass,         5,   1500 },
     { read_airspeed,          5,   1500 },
     { read_control_switch,   15,   1000 },
-    { update_alt,             5,   3000 },
+    { update_alt,             5,   3200 },
     { calc_altitude_error,    5,   1000 },
     { update_commands,        5,   7000 },
     { update_mount,           1,   1500 },
@@ -669,6 +669,8 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_events,		 15,   1500 },
     { check_usb_mux,          5,   1000 },
     { read_battery,           5,   1000 },
+    { compass_accumulate,     1,   1000 },
+    { barometer_accumulate,   1,    900 },
     { one_second_loop,       50,   3000 },
     { update_logging,         5,   1000 },
     { read_receiver_rssi,     5,   1000 },
@@ -826,6 +828,24 @@ static void update_compass(void)
     } else {
         ahrs.set_compass(NULL);
     }
+}
+
+/*
+  if the compass is enabled then try to accumulate a reading
+ */
+static void compass_accumulate(void)
+{
+    if (g.compass_enabled) {
+        compass.accumulate();
+    }    
+}
+
+/*
+  try to accumulate a baro reading
+ */
+static void barometer_accumulate(void)
+{
+    barometer.accumulate();
 }
 
 /*
