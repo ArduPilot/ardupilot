@@ -232,7 +232,8 @@ static bool verify_condition_command()          // Returns true if command compl
 static void do_RTL(void)
 {
     control_mode    = RTL;
-    next_WP                 = home;
+    prev_WP = current_loc;
+    next_WP = home;
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
@@ -244,6 +245,8 @@ static void do_RTL(void)
     // Set by configuration tool
     // -------------------------
     next_WP.alt = read_alt_to_hold();
+
+    setup_glide_slope();
 
     if (g.log_bitmask & MASK_LOG_MODE)
         Log_Write_Mode(control_mode);
