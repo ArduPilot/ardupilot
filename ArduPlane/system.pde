@@ -379,7 +379,11 @@ static void set_mode(enum FlightMode mode)
     // if in an auto-throttle mode, start with throttle suppressed for
     // safety. suppress_throttle() will unsupress it when appropriate
     if (control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) {
+        auto_throttle_mode = true;
         throttle_suppressed = true;
+    } else {
+        auto_throttle_mode = false;        
+        throttle_suppressed = false;
     }
 
     if (g.log_bitmask & MASK_LOG_MODE)

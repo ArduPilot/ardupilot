@@ -471,6 +471,10 @@ static int32_t takeoff_altitude_cm;
 // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
 static int16_t takeoff_pitch_cd;
 
+// true if we are in an auto-throttle mode, which means
+// we need to run the speed/height controller
+static bool auto_throttle_mode;
+
 // this controls throttle suppression in auto modes
 static bool throttle_suppressed;
 
@@ -766,14 +770,7 @@ static void fast_loop()
     if (g.log_bitmask & MASK_LOG_IMU)
         Log_Write_IMU();
 
-    // inertial navigation
-    // ------------------
-#if INERTIAL_NAVIGATION == ENABLED
-    // TODO: implement inertial nav function
-    inertialNavigation();
-#endif
-
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode) {
         // Call TECS 50Hz update
         SpdHgt_Controller->update_50hz();
     }
@@ -1252,7 +1249,7 @@ static void update_alt()
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 
     // Update the speed & height controller states
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode) {
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt, target_airspeed_cm, 
                                                  (control_mode==AUTO && takeoff_complete == false), 
                                                  takeoff_pitch_cd);

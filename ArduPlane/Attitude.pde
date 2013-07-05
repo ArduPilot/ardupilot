@@ -38,7 +38,7 @@ static float get_speed_scaler(void)
  */
 static bool stick_mixing_enabled(void)
 {
-    if (control_mode == CIRCLE || control_mode > FLY_BY_WIRE_B) {
+    if (auto_throttle_mode) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
             geofence_stickmixing() &&
@@ -490,7 +490,7 @@ static bool suppress_throttle(void)
         // we've previously met a condition for unsupressing the throttle
         return false;
     }
-    if (control_mode != CIRCLE && control_mode <= FLY_BY_WIRE_A) {
+    if (!auto_throttle_mode) {
         // the user controls the throttle
         throttle_suppressed = false;
         return false;
