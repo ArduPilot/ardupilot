@@ -55,3 +55,6 @@ Make.dep
 *.tlog.raw
 *.d
 *.px4
+
+.directory
+/.settings/

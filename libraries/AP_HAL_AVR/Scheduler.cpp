@@ -8,7 +8,7 @@
 #include <avr/interrupt.h>
 
 #include "Scheduler.h"
-#include "ISRRegistry.h"
+#include "utility/ISRRegistry.h"
 using namespace AP_HAL_AVR;
 
 extern const AP_HAL::HAL& hal;

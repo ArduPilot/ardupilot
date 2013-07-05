@@ -8,7 +8,7 @@
 #include "SPIDevices.h"
 #include "GPIO.h"
 #include "Semaphores.h"
-#include "pins_arduino_mega.h"
+#include "utility/pins_arduino_mega.h"
 using namespace AP_HAL_AVR;
 
 extern const AP_HAL::HAL& hal;

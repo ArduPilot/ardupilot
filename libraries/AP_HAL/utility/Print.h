@@ -47,8 +47,9 @@ class AP_HAL::Print {
     virtual size_t write(uint8_t) = 0;
 
     size_t write(const char *str) { return write((const uint8_t *)str, strlen(str)); }
-    virtual size_t write(const uint8_t *buffer, size_t size);
-    
+    size_t write(const uint8_t *buffer, size_t size) {return write_implementation(buffer, size);}
+    virtual size_t write_implementation(const uint8_t *buffer, size_t size);
+  public:
     size_t print(const char[]);
     size_t print(char);
     size_t print(unsigned char, int = DEC);
