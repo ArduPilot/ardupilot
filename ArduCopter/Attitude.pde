@@ -259,10 +259,16 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain_int32(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
     }
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete) {
+        angle_error = 0;
+    }
+#else      
     // reset target angle to current angle if motors not spinning
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
+#endif // HELI_FRAME
 
     // update roll_axis to be within max_angle_overshoot of our current heading
     roll_axis = wrap_180_cd(angle_error + ahrs.roll_sensor);
@@ -294,10 +300,16 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
         angle_error	= constrain_int32(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
     }
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete) {
+        angle_error = 0;
+    }
+#else       
     // reset target angle to current angle if motors not spinning
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
+#endif // HELI_FRAME
 
     // update pitch_axis to be within max_angle_overshoot of our current heading
     pitch_axis = wrap_180_cd(angle_error + ahrs.pitch_sensor);
@@ -326,10 +338,16 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     // limit the maximum overshoot
     angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete) {
+    	angle_error = 0;
+    }
+#else   
     // reset target angle to current heading if motors not spinning
     if (!motors.armed() || g.rc_3.servo_out == 0) {
     	angle_error = 0;
     }
+#endif // HELI_FRAME
 
     // update nav_yaw to be within max_angle_overshoot of our current heading
     nav_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);

@@ -532,6 +532,19 @@ static long map(long x, long in_min, long in_max, long out_min, long out_max)
 
 
 void AP_MotorsHeli::rsc_control() {
+
+    if (armed() && (rsc_ramp >= rsc_ramp_up_rate)){                     // rsc_ramp will never increase if rsc_mode = 0
+        if (motor_runup_timer < MOTOR_RUNUP_TIME){                      // therefore motor_runup_complete can never be true
+            motor_runup_timer++;
+        } else {
+            motor_runup_complete = true;
+        }
+    } else {
+        motor_runup_complete = false;                                   // motor_runup_complete will go to false if we
+        motor_runup_timer = 0;                                          // disarm or wind down the motor
+    }
+
+
     switch ( rsc_mode ) {
 
     case AP_MOTORSHELI_RSC_MODE_CH8_PASSTHROUGH:
