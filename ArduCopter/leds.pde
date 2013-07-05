@@ -1,15 +1,27 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static void update_lights()
+// update_board_leds - updates leds on board
+// should be called at 10hz
+static void update_board_leds()
 {
+    // we need to slow down the calls to the GPS and dancing lights to 3.33hz
+    static uint8_t counter = 0;
+    if(++counter >= 3){
+        counter = 0;
+    }
+
     switch(led_mode) {
     case NORMAL_LEDS:
-        update_motor_light();
-        update_GPS_light();
+        update_arming_light();
+        if (counter == 0) {
+            update_GPS_light();
+        }
         break;
 
     case SAVE_TRIM_LEDS:
-        dancing_light();
+        if (counter == 0) {
+            dancing_light();
+        }
         break;
     }
 }
@@ -47,20 +59,64 @@ static void update_GPS_light(void)
     }
 }
 
-static void update_motor_light(void)
+static void update_arming_light(void)
 {
-    if(motors.armed() == false) {
-        ap_system.motor_light = !ap_system.motor_light;
+    // counter to control state
+    static int8_t counter = 0;
+    counter++;
 
-        // blink
-        if(ap_system.motor_light) {
+    // disarmed
+    if(!motors.armed()) {
+        if(!ap.pre_arm_check) {
+            // failed pre-arm checks so double flash
+            switch(counter) {
+                case 0:
+                    ap_system.arming_light = true;
+                    break;
+                case 1:
+                    ap_system.arming_light = false;
+                    break;
+                case 2:
+                    ap_system.arming_light = true;
+                    break;
+                case 3:
+                case 4:
+                    ap_system.arming_light = false;
+                    break;
+                default:
+                    // reset counter to restart the sequence
+                    counter = -1;
+                    break;
+            }
+        }else{
+            // passed pre-arm checks so slower single flash
+            switch(counter) {
+                case 0:
+                case 1:
+                case 2:
+                    ap_system.arming_light = true;
+                    break;
+                case 3:
+                case 4:
+                case 5:
+                    ap_system.arming_light = false;
+                    break;
+                default:
+                    // reset counter to restart the sequence
+                    counter = -1;
+                    break;
+            }
+        }
+        // set arming led from arming_light flag
+        if(ap_system.arming_light) {
             digitalWrite(A_LED_PIN, LED_ON);
         }else{
             digitalWrite(A_LED_PIN, LED_OFF);
         }
     }else{
-        if(!ap_system.motor_light) {
-            ap_system.motor_light = true;
+        // armed
+        if(!ap_system.arming_light) {
+            ap_system.arming_light = true;
             digitalWrite(A_LED_PIN, LED_ON);
         }
     }
@@ -91,12 +147,13 @@ static void dancing_light()
         break;
     }
 }
+
 static void clear_leds()
 {
     digitalWrite(A_LED_PIN, LED_OFF);
     digitalWrite(B_LED_PIN, LED_OFF);
     digitalWrite(C_LED_PIN, LED_OFF);
-    ap_system.motor_light = false;
+    ap_system.arming_light = false;
     led_mode = NORMAL_LEDS;
 }
 

@@ -159,10 +159,6 @@ static void init_arm_motors()
     init_barometer();
 #endif
 
-    // temp hack
-    ap_system.motor_light = true;
-    digitalWrite(A_LED_PIN, LED_ON);
-
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
 #if SECONDARY_DMP_ENABLED == ENABLED
@@ -174,6 +170,9 @@ static void init_arm_motors()
 
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
+
+    // update leds on board
+    update_arming_light();
 
 #if COPTER_LEDS == ENABLED
     piezo_beep_twice();
