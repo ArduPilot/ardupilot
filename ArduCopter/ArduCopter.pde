@@ -388,7 +388,7 @@ static union {
 
 static struct AP_System{
     uint8_t GPS_light               : 1; // 0   // Solid indicates we have full 3D lock and can navigate, flash = read
-    uint8_t motor_light             : 1; // 1   // Solid indicates Armed state
+    uint8_t arming_light            : 1; // 1   // Solid indicates armed state, flashing is disarmed, double flashing is disarmed and failing pre-arm checks
     uint8_t new_radio_frame         : 1; // 2   // Set true if we have new PWM data to act on from the Radio
     uint8_t CH7_flag                : 1; // 3   // true if ch7 aux switch is high
     uint8_t CH8_flag                : 1; // 4   // true if ch8 aux switch is high
@@ -1174,6 +1174,8 @@ static void medium_loop()
         USERHOOK_MEDIUMLOOP
 #endif
 
+        // update board leds
+        update_board_leds();
 #if COPTER_LEDS == ENABLED
         update_copter_leds();
 #endif
@@ -1252,9 +1254,6 @@ static void slow_loop()
     case 2:
         slow_loopCounter = 0;
         update_events();
-
-        // blink if we are armed
-        update_lights();
 
         if(g.radio_tuning > 0)
             tuning();
