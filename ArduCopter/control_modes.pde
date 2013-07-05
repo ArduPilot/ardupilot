@@ -237,6 +237,7 @@ static void auto_trim()
         if(auto_trim_counter == 0) {
             ahrs.set_fast_gains(false);
             led_mode = NORMAL_LEDS;
+            clear_leds();
         }
     }
 }
