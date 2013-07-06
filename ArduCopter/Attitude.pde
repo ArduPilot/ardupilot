@@ -548,16 +548,8 @@ get_rate_yaw(int32_t target_rate)
     }
 #endif
 
-#if FRAME_CONFIG == TRI_FRAME
     // constrain output
     return output;
-#else // !TRI_FRAME
-    // output control:
-    int16_t yaw_limit = 2200 + abs(g.rc_4.control_in);
-
-    // smoother Yaw control:
-    return constrain_int32(output, -yaw_limit, yaw_limit);
-#endif // TRI_FRAME
 }
 #endif // !HELI_FRAME
 
