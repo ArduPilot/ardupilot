@@ -364,9 +364,9 @@ static void set_mode(uint8_t mode)
         set_nav_mode(NAV_NONE);
         // reset acro axis targets to current attitude
 		if(g.axis_enabled){
-            roll_axis 	= ahrs.roll_sensor;
-            pitch_axis 	= ahrs.pitch_sensor;
-            nav_yaw 	= ahrs.yaw_sensor;
+            roll_axis   = 0;
+            pitch_axis  = 0;
+            nav_yaw     = 0;
         }
         break;
 
