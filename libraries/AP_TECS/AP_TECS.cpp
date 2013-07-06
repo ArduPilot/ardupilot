@@ -128,11 +128,11 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
  *
  */
 
-void AP_TECS::update_50hz(void)
+void AP_TECS::update_50hz(float hgt_afe)
 { 
 	// Implement third order complementary filter for height and height rate
 	// estimted height rate = _integ2_state
-	// estimated height     = _integ3_state
+	// estimated height above field elevation  = _integ3_state
     // Reference Paper : 
 	// Optimising the Gains of the Baro-Inertial Vertical Channel
 	// Widnall W.S, Sinha P.K, 
@@ -142,7 +142,7 @@ void AP_TECS::update_50hz(void)
     uint32_t now = hal.scheduler->micros();
 	float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
 	if (DT > 1.0) {
-	    _integ3_state = _baro->get_altitude();
+	    _integ3_state = hgt_afe;
 		_integ2_state = 0.0f;
 		_integ1_state = 0.0f;
 		DT            = 0.02f; // when first starting TECS, use a
@@ -155,7 +155,7 @@ void AP_TECS::update_50hz(void)
 	// Perform filter calculation using backwards Euler integration
     // Coefficients selected to place all three filter poles at omega
 	float omega2 = _hgtCompFiltOmega*_hgtCompFiltOmega;
-	float hgt_err = _baro->get_altitude() - _integ3_state;
+	float hgt_err = hgt_afe - _integ3_state;
 	float integ1_input = hgt_err * omega2 * _hgtCompFiltOmega;
 	_integ1_state = _integ1_state + integ1_input * DT;
 	float integ2_input = _integ1_state + hgt_ddot_mea + hgt_err * omega2 * 3.0f;
