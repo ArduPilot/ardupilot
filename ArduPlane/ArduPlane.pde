@@ -785,7 +785,8 @@ static void fast_loop()
  */
 static void update_speed_height(void)
 {
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
+        auto_throttle_mode && !throttle_suppressed) {
         // Call TECS 50Hz update
         SpdHgt_Controller->update_50hz();
     }
@@ -1248,7 +1249,8 @@ static void update_alt()
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 
     // Update the speed & height controller states
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
+        auto_throttle_mode && !throttle_suppressed) {
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt, target_airspeed_cm, 
                                                  (control_mode==AUTO && takeoff_complete == false), 
                                                  takeoff_pitch_cd);
