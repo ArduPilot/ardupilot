@@ -866,7 +866,7 @@
 // Loiter position control gains
 //
 #ifndef LOITER_P
- # define LOITER_P             		1.0f
+ # define LOITER_P             		0.2f
 #endif
 #ifndef LOITER_I
  # define LOITER_I             		0.0f
