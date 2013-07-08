@@ -455,9 +455,6 @@ static struct {
 AP_Airspeed airspeed;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Altitude Sensor variables
-
-////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
 ////////////////////////////////////////////////////////////////////////////////
 // Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
@@ -785,10 +782,23 @@ static void fast_loop()
  */
 static void update_speed_height(void)
 {
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
-        auto_throttle_mode && !throttle_suppressed) {
-        // Call TECS 50Hz update
-        SpdHgt_Controller->update_50hz();
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode && !throttle_suppressed) 
+    {
+        // height above field elevation in cm
+        float hgt_afe_cm;
+
+        // calculate the height above field elevation in centimeters
+        if (barometer.healthy) 
+        {
+            hgt_afe_cm = (1 - g.altitude_mix) * (g_gps->altitude - home.alt);
+            hgt_afe_cm += g.altitude_mix * read_barometer();
+        } 
+        else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) 
+        {
+            hgt_afe_cm = g_gps->altitude - home.alt;
+        }
+	    // Call TECS 50Hz update
+        SpdHgt_Controller->update_50hz(hgt_afe_cm*0.01f);
     }
 }
 
@@ -1249,9 +1259,10 @@ static void update_alt()
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 
     // Update the speed & height controller states
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS &&
         auto_throttle_mode && !throttle_suppressed) {
-        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt, target_airspeed_cm, 
+        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
+                                                 target_airspeed_cm, 
                                                  (control_mode==AUTO && takeoff_complete == false), 
                                                  takeoff_pitch_cd);
         if (g.log_bitmask & MASK_LOG_TECS) {
