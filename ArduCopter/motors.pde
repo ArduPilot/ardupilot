@@ -249,7 +249,7 @@ static void pre_arm_checks(bool display_failure)
 
     // check for unreasonable mag field length
     float mag_field = pythagorous3(compass.mag_x, compass.mag_y, compass.mag_z);
-    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.5 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.5) {
+    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
         }
