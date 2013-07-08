@@ -37,7 +37,7 @@ public:
 	// Update the internal state of the height and height rate estimator
 	// Update of the inertial speed rate estimate internal state
 	// Should be called at 50Hz or faster
-	virtual void update_50hz(void) = 0;
+	virtual void update_50hz(float height_above_field) = 0;
 
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster
