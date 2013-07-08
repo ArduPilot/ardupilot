@@ -272,7 +272,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 }
 
 // return true if we have and should use GPS
-bool AP_AHRS_DCM::have_gps(void)
+bool AP_AHRS_DCM::have_gps(void) const
 {
     if (!_gps || _gps->status() <= GPS::NO_FIX || !_gps_use) {
         return false;
@@ -281,7 +281,7 @@ bool AP_AHRS_DCM::have_gps(void)
 }
 
 // return true if we should use the compass for yaw correction
-bool AP_AHRS_DCM::use_compass(void)
+bool AP_AHRS_DCM::use_compass(void) const
 {
     if (!_compass || !_compass->use_for_yaw()) {
         // no compass available
