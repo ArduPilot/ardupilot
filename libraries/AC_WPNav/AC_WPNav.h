@@ -11,14 +11,14 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 
 // loiter maximum velocities and accelerations
-#define WPNAV_ACCELERATION              250.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
+#define WPNAV_ACCELERATION              100.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
 #define WPNAV_ACCELERATION_MIN           50.0f      // minimum acceleration in cm/s/s - used for sanity checking _wp_accel parameter
 #define WPNAV_ACCEL_MAX                 980.0f      // max acceleration in cm/s/s that the loiter velocity controller will ask from the lower accel controller.
                                                     // should be 1.5 times larger than WPNAV_ACCELERATION.
                                                     // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 
-#define WPNAV_LOITER_SPEED              750.0f      // maximum default loiter speed in cm/s
-#define WPNAV_LOITER_ACCEL_MAX          375.0f      // maximum acceleration in loiter mode
+#define WPNAV_LOITER_SPEED              500.0f      // maximum default loiter speed in cm/s
+#define WPNAV_LOITER_ACCEL_MAX          250.0f      // maximum acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
 
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
@@ -29,7 +29,7 @@
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
 #define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
 
-#define WPNAV_ALT_HOLD_P                2.0f        // default throttle controller's altitude hold's P gain.
+#define WPNAV_ALT_HOLD_P                1.0f        // default throttle controller's altitude hold's P gain.
 #define WPNAV_ALT_HOLD_ACCEL_MAX        250.0f      // hard coded copy of throttle controller's maximum acceleration in cm/s.  To-Do: remove duplication with throttle controller definition
 
 #define WPNAV_MIN_LEASH_LENGTH          100.0f      // minimum leash lengths in cm
