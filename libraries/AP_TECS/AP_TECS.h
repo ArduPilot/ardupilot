@@ -41,7 +41,8 @@ public:
 	// Update of the estimated height and height rate internal state
 	// Update of the inertial speed rate internal state
 	// Should be called at 50Hz or greater
-	void update_50hz(void);
+	// hgt_afe is the height above field elevation (takeoff height)
+	void update_50hz(float hgt_afe);
 
 	// Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool climbOutDem, int32_t ptchMinCO_cd);
