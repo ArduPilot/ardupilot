@@ -140,9 +140,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		// ------------------------------
 		set_servos();
 
-        tuning_value = constrain_float(((float)(g.rc_7.radio_in - g.rc_7.radio_min) / (float)(g.rc_7.radio_max - g.rc_7.radio_min)),0,1);
-                
-		cliSerial->printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d  Tuning = %2.3f\n"),
+		cliSerial->printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
 							channel_steer->control_in,
 							g.rc_2.control_in,
 							channel_throttle->control_in,
@@ -150,8 +148,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 							g.rc_5.control_in,
 							g.rc_6.control_in,
 							g.rc_7.control_in,
-							g.rc_8.control_in,
-                                                        tuning_value);
+							g.rc_8.control_in);
 
 		if(cliSerial->available() > 0){
 			return (0);

@@ -6,6 +6,9 @@ static bool in_mavlink_delay;
 // true when we have received at least 1 MAVLink packet
 static bool mavlink_active;
 
+// true if we are out of time in our event timeslice
+static bool	gcs_out_of_time;
+
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_ ## id ## _LEN) return false
 
@@ -533,6 +536,14 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         return false;
     }
 
+    // if we don't have at least 1ms remaining before the main loop
+    // wants to fire then don't send a mavlink message. We want to
+    // prioritise the main flight control loop over communications
+    if (scheduler.time_available_usec() < 1200) {
+        gcs_out_of_time = true;
+        return false;
+    }
+
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
@@ -954,6 +965,8 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 void
 GCS_MAVLINK::data_stream_send(void)
 {
+    gcs_out_of_time = false;
+
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
             streamRates[STREAM_PARAMS].set(50);
@@ -962,6 +975,8 @@ GCS_MAVLINK::data_stream_send(void)
             send_message(MSG_NEXT_PARAM);
         }
     }
+
+    if (gcs_out_of_time) return;
 
     if (in_mavlink_delay) {
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -979,11 +994,15 @@ GCS_MAVLINK::data_stream_send(void)
         return;
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
         send_message(MSG_RAW_IMU3);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1);
@@ -994,28 +1013,40 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_FENCE_STATUS);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_POSITION)) {
         // sent with GPS read
         send_message(MSG_LOCATION);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
         send_message(MSG_RADIO_IN);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);

@@ -348,6 +348,12 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @User: Standard
 	GSCALAR(sonar_debounce,   "SONAR_DEBOUNCE",    2),
 
+    // @Param: LEARN_CH
+    // @DisplayName: Learning channel
+    // @Description: RC Channel to use for learning waypoints
+    // @User: Advanced
+	GSCALAR(learn_channel,    "LEARN_CH",       7),
+
     // @Param: MODE_CH
     // @DisplayName: Mode channel
     // @Description: RC Channel to use for driving mode control

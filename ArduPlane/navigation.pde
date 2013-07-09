@@ -85,10 +85,10 @@ static void calc_airspeed_errors()
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B) {
-        target_airspeed_cm = ((int)(g.flybywire_airspeed_max -
-                                    g.flybywire_airspeed_min) *
+        target_airspeed_cm = ((int32_t)(aparm.flybywire_airspeed_max -
+                                        aparm.flybywire_airspeed_min) *
                               channel_throttle->servo_out) +
-                             ((int)g.flybywire_airspeed_min * 100);
+                             ((int32_t)aparm.flybywire_airspeed_min * 100);
     }
 
     // Set target to current airspeed + ground speed undershoot,
@@ -106,8 +106,8 @@ static void calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > (g.flybywire_airspeed_max * 100))
-        target_airspeed_cm = (g.flybywire_airspeed_max * 100);
+    if (target_airspeed_cm > (aparm.flybywire_airspeed_max * 100))
+        target_airspeed_cm = (aparm.flybywire_airspeed_max * 100);
 
     airspeed_error_cm = target_airspeed_cm - aspeed_cm;
     airspeed_energy_error = ((target_airspeed_cm * target_airspeed_cm) - (aspeed_cm*aspeed_cm))*0.00005;
@@ -132,12 +132,12 @@ static void calc_altitude_error()
     if (control_mode == FLY_BY_WIRE_B) {
         return;
     }
-    if (control_mode == AUTO && offset_altitude_cm != 0) {
-        // limit climb rates
+    if (offset_altitude_cm != 0) {
+        // control climb/descent rate
         target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 
         // stay within a certain range
-        if(prev_WP.alt > next_WP.alt) {
+        if (prev_WP.alt > next_WP.alt) {
             target_altitude_cm = constrain_int32(target_altitude_cm, next_WP.alt, prev_WP.alt);
         }else{
             target_altitude_cm = constrain_int32(target_altitude_cm, prev_WP.alt, next_WP.alt);
@@ -154,3 +154,42 @@ static void update_loiter()
     nav_controller->update_loiter(next_WP, abs(g.loiter_radius), loiter.direction);
 }
 
+static void setup_glide_slope(void)
+{
+    // establish the distance we are travelling to the next waypoint,
+    // for calculating out rate of change of altitude
+    wp_totalDistance        = get_distance(&current_loc, &next_WP);
+    wp_distance             = wp_totalDistance;
+
+    /*
+      work out if we will gradually change altitude, or try to get to
+      the new altitude as quickly as possible.
+     */
+    switch (control_mode) {
+    case RTL:
+    case GUIDED:
+        /* glide down slowly if above target altitude, but ascend more
+           rapidly if below it. See
+           https://github.com/diydrones/ardupilot/issues/39
+        */
+        if (current_loc.alt > next_WP.alt) {
+            offset_altitude_cm = next_WP.alt - current_loc.alt;            
+        } else {
+            offset_altitude_cm = 0;
+        }
+        break;
+
+    case AUTO:
+        if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
+            prev_WP.alt != home.alt && 
+            (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
+            offset_altitude_cm = next_WP.alt - prev_WP.alt;
+        } else {
+            offset_altitude_cm = 0;        
+        }
+        break;
+    default:
+        offset_altitude_cm = 0;        
+        break;
+    }
+}

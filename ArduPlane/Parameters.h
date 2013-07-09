@@ -90,6 +90,7 @@ public:
         k_param_mixing_gain,
         k_param_scheduler,
         k_param_relay,
+        k_param_takeoff_throttle_delay,
 
         // 110: Telemetry control
         //
@@ -231,6 +232,7 @@ public:
         k_param_yawController,
         k_param_L1_controller,
         k_param_rcmap,
+        k_param_TECS_controller,
 
         //
         // 240: PID Controllers
@@ -269,6 +271,9 @@ public:
     // navigation controller type. See AP_Navigation::ControllerType
     AP_Int8  nav_controller;
 
+    // attitude controller type.
+    AP_Int8  att_controller;
+
     // Estimation
     //
     AP_Float altitude_mix;
@@ -292,21 +297,15 @@ public:
 
     // Fly-by-wire
     //
-    AP_Int16 flybywire_airspeed_min;
-    AP_Int16 flybywire_airspeed_max;
     AP_Int8 flybywire_elev_reverse;
     AP_Int8 flybywire_climb_rate;
 
     // Throttle
     //
-    AP_Int8 throttle_min;
-    AP_Int8 throttle_max;
-    AP_Int8 throttle_slewrate;
     AP_Int8 throttle_suppress_manual;
     AP_Int8 throttle_passthru_stabilize;
     AP_Int8 throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
-    AP_Int8 throttle_cruise;
     AP_Int8 throttle_nudge;
 
     // Failsafe
@@ -329,8 +328,6 @@ public:
     // Navigational maneuvering limits
     //
     AP_Int16 roll_limit_cd;
-    AP_Int16 pitch_limit_max_cd;
-    AP_Int16 pitch_limit_min_cd;
     AP_Int16 alt_offset;
 
     // Misc
@@ -376,6 +373,7 @@ public:
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
+    AP_Int8 takeoff_throttle_delay;
     AP_Int8 level_roll_limit;
 
     // RC channels

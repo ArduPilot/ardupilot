@@ -59,6 +59,9 @@
 #include <AP_L1_Control.h>
 #include <AP_RCMapper.h>        // RC input mapping library
 
+#include <AP_SpdHgtControl.h>
+#include <AP_TECS.h>
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -99,6 +102,9 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 // Global parameters are all contained within the 'g' class.
 //
 static Parameters g;
+
+// key aircraft parameters passed to the speed/height controller
+static AP_SpdHgtControl::AircraftParameters aparm;
 
 // main loop scheduler
 static AP_Scheduler scheduler;
@@ -232,6 +238,7 @@ AP_InertialSensor_Oilpan ins( &apm1_adc );
 AP_AHRS_DCM ahrs(&ins, g_gps);
 
 static AP_L1_Control L1_controller(&ahrs);
+static AP_TECS TECS_controller(&ahrs, &barometer, aparm);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -249,6 +256,9 @@ static GCS_MAVLINK gcs3;
 
 // selected navigation controller
 static AP_Navigation *nav_controller = &L1_controller;
+
+// selected navigation controller
+static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs
@@ -456,10 +466,14 @@ static bool takeoff_complete    = true;
 //Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
 static bool land_complete;
 // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
-static int32_t takeoff_altitude;
+static int32_t takeoff_altitude_cm;
 
 // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
 static int16_t takeoff_pitch_cd;
+
+// true if we are in an auto-throttle mode, which means
+// we need to run the speed/height controller
+static bool auto_throttle_mode;
 
 // this controls throttle suppression in auto modes
 static bool throttle_suppressed;
@@ -646,20 +660,28 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { update_GPS,             5,   2500 },
+    { update_speed_height,    1,    900 },
+    { update_flight_mode,     1,   1000 },
+    { stabilize,              1,   3200 },
+    { set_servos,             1,   1100 },
+    { update_GPS,             5,   4000 },
     { navigate,               5,   4800 },
     { update_compass,         5,   1500 },
     { read_airspeed,          5,   1500 },
     { read_control_switch,   15,   1000 },
-    { update_alt,             5,   3000 },
+    { update_alt,             5,   3400 },
     { calc_altitude_error,    5,   1000 },
     { update_commands,        5,   7000 },
-    { update_mount,           1,   1500 },
     { obc_fs_check,           5,   1000 },
+    { gcs_update,             1,   1700 },
+    { gcs_data_stream_send,   2,   3000 },
+    { update_mount,           1,   1500 },
     { update_events,		 15,   1500 },
     { check_usb_mux,          5,   1000 },
     { read_battery,           5,   1000 },
-    { one_second_loop,       50,   3000 },
+    { compass_accumulate,     1,   1500 },
+    { barometer_accumulate,   1,    900 },
+    { one_second_loop,       50,   3900 },
     { update_logging,         5,   1000 },
     { read_receiver_rssi,     5,   1000 },
     { check_long_failsafe,   15,   1000 },
@@ -684,7 +706,7 @@ void setup() {
 
     batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
     batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
-    
+   
     init_ardupilot();
 
     // initialise the main loop scheduler
@@ -713,9 +735,12 @@ void loop()
 
         fast_loopTimeStamp_ms = millis();
     } else {
-        uint16_t dt = timer - fast_loopTimeStamp_ms;
-        if (dt < 20) {
-            uint16_t time_to_next_loop = 20 - dt;
+        uint16_t dt = timer - fast_loopTimer_ms;
+        // we use 19 not 20 here to ensure we run the next loop on
+        // time - it means we spin for 5% of the time when waiting for
+        // the next sample from the IMU
+        if (dt < 19) {
+            uint16_t time_to_next_loop = 19 - dt;
             scheduler.run(time_to_next_loop * 1000U);
         }
     }
@@ -753,31 +778,20 @@ static void fast_loop()
 
     if (g.log_bitmask & MASK_LOG_IMU)
         Log_Write_IMU();
-
-    // inertial navigation
-    // ------------------
-#if INERTIAL_NAVIGATION == ENABLED
-    // TODO: implement inertial nav function
-    inertialNavigation();
-#endif
-
-    // custom code/exceptions for flight modes
-    // calculates roll, pitch and yaw demands from navigation demands
-    // --------------------------------------------------------------
-    update_current_flight_mode();
-
-    // apply desired roll, pitch and yaw to the plane
-    // ----------------------------------------------
-    if (control_mode > MANUAL)
-        stabilize();
-
-    // write out the servo PWM values
-    // ------------------------------
-    set_servos();
-
-    gcs_update();
-    gcs_data_stream_send();
 }
+
+/*
+  update 50Hz speed/height controller
+ */
+static void update_speed_height(void)
+{
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
+        auto_throttle_mode && !throttle_suppressed) {
+        // Call TECS 50Hz update
+        SpdHgt_Controller->update_50hz();
+    }
+}
+
 
 /*
   update camera mount
@@ -811,6 +825,24 @@ static void update_compass(void)
     } else {
         ahrs.set_compass(NULL);
     }
+}
+
+/*
+  if the compass is enabled then try to accumulate a reading
+ */
+static void compass_accumulate(void)
+{
+    if (g.compass_enabled) {
+        compass.accumulate();
+    }    
+}
+
+/*
+  try to accumulate a baro reading
+ */
+static void barometer_accumulate(void)
+{
+    barometer.accumulate();
 }
 
 /*
@@ -968,7 +1000,7 @@ static void update_GPS(void)
     calc_gndspeed_undershoot();
 }
 
-static void update_current_flight_mode(void)
+static void update_flight_mode(void)
 {
     if(control_mode == AUTO) {
 
@@ -995,7 +1027,7 @@ static void update_current_flight_mode(void)
             }
 
             // max throttle for takeoff
-            channel_throttle->servo_out = g.throttle_max;
+            channel_throttle->servo_out = aparm.throttle_max;
 
             break;
 
@@ -1066,10 +1098,10 @@ static void update_current_flight_mode(void)
 
             // if the pitch is past the set pitch limits, then
             // we set target pitch to the limit
-            if (ahrs.pitch_sensor >= g.pitch_limit_max_cd) {
-                nav_pitch_cd = g.pitch_limit_max_cd;
-            } else if (ahrs.pitch_sensor <= g.pitch_limit_min_cd) {
-                nav_pitch_cd = g.pitch_limit_min_cd;
+            if (ahrs.pitch_sensor >= aparm.pitch_limit_max_cd) {
+                nav_pitch_cd = aparm.pitch_limit_max_cd;
+            } else if (ahrs.pitch_sensor <= aparm.pitch_limit_min_cd) {
+                nav_pitch_cd = aparm.pitch_limit_min_cd;
             } else {
                 training_manual_pitch = true;
                 nav_pitch_cd = 0;
@@ -1086,11 +1118,11 @@ static void update_current_flight_mode(void)
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
             float pitch_input = channel_pitch->norm_input();
             if (pitch_input > 0) {
-                nav_pitch_cd = pitch_input * g.pitch_limit_max_cd;
+                nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
             } else {
-                nav_pitch_cd = -(pitch_input * g.pitch_limit_min_cd);
+                nav_pitch_cd = -(pitch_input * aparm.pitch_limit_min_cd);
             }
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, g.pitch_limit_min_cd.get(), g.pitch_limit_max_cd.get());
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
             if (inverted_flight) {
                 nav_pitch_cd = -nav_pitch_cd;
             }
@@ -1215,6 +1247,17 @@ static void update_alt()
     // Calculate new climb rate
     //if(medium_loopCounter == 0 && slow_loopCounter == 0)
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
+
+    // Update the speed & height controller states
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
+        auto_throttle_mode && !throttle_suppressed) {
+        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt, target_airspeed_cm, 
+                                                 (control_mode==AUTO && takeoff_complete == false), 
+                                                 takeoff_pitch_cd);
+        if (g.log_bitmask & MASK_LOG_TECS) {
+            Log_Write_TECS_Tuning();
+        }
+    }
 }
 
 AP_HAL_MAIN();

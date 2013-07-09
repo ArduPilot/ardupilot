@@ -154,6 +154,12 @@ public:
     // if we have an estimate
     virtual bool airspeed_estimate(float *airspeed_ret);
 
+    // return true if airspeed comes from an airspeed sensor, as
+    // opposed to an IMU estimate
+    bool airspeed_sensor_enabled(void) const {
+        return _airspeed != NULL && _airspeed->use();
+    }
+
     // return a ground vector estimate in meters/second, in North/East order
     Vector2f groundspeed_vector(void);
 

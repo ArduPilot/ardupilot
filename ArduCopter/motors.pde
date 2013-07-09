@@ -159,10 +159,6 @@ static void init_arm_motors()
     init_barometer();
 #endif
 
-    // temp hack
-    ap_system.motor_light = true;
-    digitalWrite(A_LED_PIN, LED_ON);
-
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
 #if SECONDARY_DMP_ENABLED == ENABLED
@@ -174,6 +170,9 @@ static void init_arm_motors()
 
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
+
+    // update leds on board
+    update_arming_light();
 
 #if COPTER_LEDS == ENABLED
     piezo_beep_twice();
@@ -250,7 +249,7 @@ static void pre_arm_checks(bool display_failure)
 
     // check for unreasonable mag field length
     float mag_field = pythagorous3(compass.mag_x, compass.mag_y, compass.mag_z);
-    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.5 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.5) {
+    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
         }

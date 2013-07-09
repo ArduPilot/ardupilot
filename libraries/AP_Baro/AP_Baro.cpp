@@ -22,15 +22,16 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
 
     // @Param: ABS_PRESS
     // @DisplayName: Absolute Pressure
-    // @Description: calibrated ground pressure
+    // @Description: calibrated ground pressure in Pascals
     // @Increment: 1
     AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, _ground_pressure, 0),
 
     // @Param: TEMP
     // @DisplayName: ground temperature
-    // @Description: calibrated ground temperature
+    // @Description: calibrated ground temperature in degrees Celsius
     // @Increment: 1
     AP_GROUPINFO("TEMP", 3, AP_Baro, _ground_temperature, 0),
+
     AP_GROUPEND
 };
 
@@ -106,12 +107,21 @@ float AP_Baro::get_altitude(void)
         return _altitude;
     }
 
-    // this has no filtering of the pressure values, use a separate
-    // filter if you want a smoothed value. The AHRS driver wants
-    // unsmoothed values
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    // on AVR use a less exact, but faster, calculation
     scaling                                 = (float)_ground_pressure / (float)get_pressure();
     temp                                    = ((float)_ground_temperature) + 273.15f;
     _altitude = logf(scaling) * temp * 29.271267f;
+#else
+    // on faster CPUs use a more exact calculation
+    scaling                                 = (float)get_pressure() / (float)_ground_pressure;
+    temp                                    = ((float)_ground_temperature) + 273.15f;
+
+    // This is an exact calculation that is within +-2.5m of the standard atmosphere tables
+    // in the troposphere (up to 11,000 m amsl).
+	_altitude = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
+#endif
 
     _last_altitude_t = _last_update;
 
@@ -119,6 +129,22 @@ float AP_Baro::get_altitude(void)
     _climb_rate_filter.update(_altitude, _last_update);
 
     return _altitude;
+}
+
+// return current scale factor that converts from equivalent to true airspeed
+// valid for altitudes up to 10km AMSL
+// assumes standard atmosphere lapse rate
+float AP_Baro::get_EAS2TAS(void)
+{
+    if ((abs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
+        // not enough change to require re-calculating
+        return _EAS2TAS;
+    }
+
+    float tempK = ((float)_ground_temperature) + 273.15f - 0.0065f * _altitude;
+    _EAS2TAS = safe_sqrt(1.225f / ((float)get_pressure() / (287.26f * tempK)));
+    _last_altitude_EAS2TAS = _altitude;
+    return _EAS2TAS;
 }
 
 // return current climb_rate estimeate relative to time that calibrate()

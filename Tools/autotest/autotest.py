@@ -141,17 +141,7 @@ def alarm_handler(signum, frame):
         results.add('TIMEOUT', '<span class="failed-text">FAILED</span>', opts.timeout)
         util.pexpect_close_all()
         convert_gpx()
-        results.addglob("Google Earth track", '*.kmz')
-        results.addfile('Full Logs', 'autotest-output.txt')
-        results.addglob('DataFlash Log', '*.flashlog')
-        results.addglob("MAVLink log", '*.tlog')
-        results.addfile('ArduPlane build log', 'ArduPlane.txt')
-        results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
-        results.addfile('ArduCopter build log', 'ArduCopter.txt')
-        results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
-        results.addfile('APMrover2 build log', 'APMrover2.txt')
-        results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
-        write_webresults(results)
+        write_fullresults()
         os.killpg(0, signal.SIGKILL)
     except Exception:
         pass
@@ -356,6 +346,30 @@ def write_webresults(results):
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
         shutil.copy(f, util.reltopdir('../buildlogs/%s' % os.path.basename(f)))
 
+def write_fullresults():
+    '''write out full results set'''
+    global results
+    results.addglob("Google Earth track", '*.kmz')
+    results.addfile('Full Logs', 'autotest-output.txt')
+    results.addglob('DataFlash Log', '*.flashlog')
+    results.addglob("MAVLink log", '*.tlog')
+    results.addglob("GPX track", '*.gpx')
+    results.addfile('ArduPlane build log', 'ArduPlane.txt')
+    results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
+    results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
+    results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
+    results.addfile('ArduCopter build log', 'ArduCopter.txt')
+    results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
+    results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
+    results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
+    results.addfile('APMrover2 build log', 'APMrover2.txt')
+    results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
+    results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
+    results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
+    results.addglobimage("Flight Track", '*.png')
+
+    write_webresults(results)
+
 
 results = TestResults()
 
@@ -393,26 +407,7 @@ def run_tests(steps):
 
     util.pexpect_close_all()
 
-    results.addglob("Google Earth track", '*.kmz')
-    results.addfile('Full Logs', 'autotest-output.txt')
-    results.addglob('DataFlash Log', '*.flashlog')
-    results.addglob("MAVLink log", '*.tlog')
-    results.addglob("GPX track", '*.gpx')
-    results.addfile('ArduPlane build log', 'ArduPlane.txt')
-    results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
-    results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
-    results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
-    results.addfile('ArduCopter build log', 'ArduCopter.txt')
-    results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
-    results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
-    results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
-    results.addfile('APMrover2 build log', 'APMrover2.txt')
-    results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
-    results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
-    results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
-    results.addglobimage("Flight Track", '*.png')
-
-    write_webresults(results)
+    write_fullresults()
 
     return passed
 

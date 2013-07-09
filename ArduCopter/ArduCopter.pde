@@ -388,7 +388,7 @@ static union {
 
 static struct AP_System{
     uint8_t GPS_light               : 1; // 0   // Solid indicates we have full 3D lock and can navigate, flash = read
-    uint8_t motor_light             : 1; // 1   // Solid indicates Armed state
+    uint8_t arming_light            : 1; // 1   // Solid indicates armed state, flashing is disarmed, double flashing is disarmed and failing pre-arm checks
     uint8_t new_radio_frame         : 1; // 2   // Set true if we have new PWM data to act on from the Radio
     uint8_t CH7_flag                : 1; // 3   // true if ch7 aux switch is high
     uint8_t CH8_flag                : 1; // 4   // true if ch8 aux switch is high
@@ -1174,6 +1174,8 @@ static void medium_loop()
         USERHOOK_MEDIUMLOOP
 #endif
 
+        // update board leds
+        update_board_leds();
 #if COPTER_LEDS == ENABLED
         update_copter_leds();
 #endif
@@ -1252,9 +1254,6 @@ static void slow_loop()
     case 2:
         slow_loopCounter = 0;
         update_events();
-
-        // blink if we are armed
-        update_lights();
 
         if(g.radio_tuning > 0)
             tuning();
@@ -2042,41 +2041,30 @@ static void tuning(){
 
     switch(g.radio_tuning) {
 
-    case CH6_RATE_KD:
-        g.pid_rate_roll.kD(tuning_value);
-        g.pid_rate_pitch.kD(tuning_value);
-        break;
-
-    case CH6_STABILIZE_KP:
+    // Roll, Pitch tuning
+    case CH6_STABILIZE_ROLL_PITCH_KP:
         g.pi_stabilize_roll.kP(tuning_value);
         g.pi_stabilize_pitch.kP(tuning_value);
         break;
 
-    case CH6_STABILIZE_KI:
-        g.pi_stabilize_roll.kI(tuning_value);
-        g.pi_stabilize_pitch.kI(tuning_value);
-        break;
-
-    case CH6_ACRO_KP:
-        g.acro_p = tuning_value;
-        break;
-
-    case CH6_RATE_KP:
+    case CH6_RATE_ROLL_PITCH_KP:
         g.pid_rate_roll.kP(tuning_value);
         g.pid_rate_pitch.kP(tuning_value);
         break;
 
-    case CH6_RATE_KI:
+    case CH6_RATE_ROLL_PITCH_KI:
         g.pid_rate_roll.kI(tuning_value);
         g.pid_rate_pitch.kI(tuning_value);
         break;
 
-    case CH6_YAW_KP:
-        g.pi_stabilize_yaw.kP(tuning_value);
+    case CH6_RATE_ROLL_PITCH_KD:
+        g.pid_rate_roll.kD(tuning_value);
+        g.pid_rate_pitch.kD(tuning_value);
         break;
 
-    case CH6_YAW_KI:
-        g.pi_stabilize_yaw.kI(tuning_value);
+    // Yaw tuning
+    case CH6_STABILIZE_YAW_KP:
+        g.pi_stabilize_yaw.kP(tuning_value);
         break;
 
     case CH6_YAW_RATE_KP:
@@ -2087,36 +2075,35 @@ static void tuning(){
         g.pid_rate_yaw.kD(tuning_value);
         break;
 
-    case CH6_THROTTLE_KP:
-        g.pid_throttle.kP(tuning_value);
+    // Altitude and throttle tuning
+    case CH6_ALTITUDE_HOLD_KP:
+        g.pi_alt_hold.kP(tuning_value);
         break;
 
-    case CH6_THROTTLE_KI:
-        g.pid_throttle.kI(tuning_value);
+    case CH6_THROTTLE_RATE_KP:
+        g.pid_throttle_rate.kP(tuning_value);
         break;
 
-    case CH6_THROTTLE_KD:
-        g.pid_throttle.kD(tuning_value);
+    case CH6_THROTTLE_RATE_KD:
+        g.pid_throttle_rate.kD(tuning_value);
         break;
 
-    case CH6_RELAY:
-        if (g.rc_6.control_in > 525) relay.on();
-        if (g.rc_6.control_in < 475) relay.off();
+    case CH6_THROTTLE_ACCEL_KP:
+        g.pid_throttle_accel.kP(tuning_value);
         break;
 
-    case CH6_WP_SPEED:
-        // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
-        wp_nav.set_horizontal_velocity(g.rc_6.control_in);
+    case CH6_THROTTLE_ACCEL_KI:
+        g.pid_throttle_accel.kI(tuning_value);
         break;
 
-    case CH6_LOITER_KP:
+    case CH6_THROTTLE_ACCEL_KD:
+        g.pid_throttle_accel.kD(tuning_value);
+        break;
+
+    // Loiter and navigation tuning
+    case CH6_LOITER_POSITION_KP:
         g.pi_loiter_lat.kP(tuning_value);
         g.pi_loiter_lon.kP(tuning_value);
-        break;
-
-    case CH6_LOITER_KI:
-        g.pi_loiter_lat.kI(tuning_value);
-        g.pi_loiter_lon.kI(tuning_value);
         break;
 
     case CH6_LOITER_RATE_KP:
@@ -2134,15 +2121,26 @@ static void tuning(){
         g.pid_loiter_rate_lat.kD(tuning_value);
         break;
 
+    case CH6_WP_SPEED:
+        // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
+        wp_nav.set_horizontal_velocity(g.rc_6.control_in);
+        break;
+
+    // Acro and other tuning
+    case CH6_ACRO_KP:
+        g.acro_p = tuning_value;
+        break;
+
+    case CH6_RELAY:
+        if (g.rc_6.control_in > 525) relay.on();
+        if (g.rc_6.control_in < 475) relay.off();
+        break;
+
 #if FRAME_CONFIG == HELI_FRAME
     case CH6_HELI_EXTERNAL_GYRO:
         motors.ext_gyro_gain = tuning_value;
         break;
 #endif
-
-    case CH6_THR_HOLD_KP:
-        g.pi_alt_hold.kP(tuning_value);
-        break;
 
     case CH6_OPTFLOW_KP:
         g.pid_optflow_roll.kP(tuning_value);
@@ -2175,18 +2173,6 @@ static void tuning(){
         inertial_nav.set_time_constant_z(tuning_value);
         break;
 
-    case CH6_THR_ACCEL_KP:
-        g.pid_throttle_accel.kP(tuning_value);
-        break;
-
-    case CH6_THR_ACCEL_KI:
-        g.pid_throttle_accel.kI(tuning_value);
-        break;
-
-    case CH6_THR_ACCEL_KD:
-        g.pid_throttle_accel.kD(tuning_value);
-        break;
-
     case CH6_DECLINATION:
         // set declination to +-20degrees
         compass.set_declination(ToRad((2.0f * g.rc_6.control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
@@ -2195,7 +2181,6 @@ static void tuning(){
     case CH6_CIRCLE_RATE:
         // set circle rate
         g.circle_rate.set(g.rc_6.control_in/25-20);     // allow approximately 45 degree turn rate in either direction
-        //cliSerial->printf_P(PSTR("\nRate:%4.2f"),(float)g.circle_rate);
         break;
     }
 }

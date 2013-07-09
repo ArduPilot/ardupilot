@@ -33,6 +33,14 @@ using namespace AVR_SITL;
 
 #define LISTEN_BASE_PORT 5760
 
+// On OSX, MSG_NOSIGNAL doesn't exist. The equivalent is to set SO_NOSIGPIPE
+// in setsockopt for the socket. However, if we just skip that, and don't use
+// MSG_NOSIGNAL, everything seems to work fine and SIGPIPE doesn't seem to be
+// generated.
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 bool SITLUARTDriver::_console;
 
 /* UARTDriver method implementations */
