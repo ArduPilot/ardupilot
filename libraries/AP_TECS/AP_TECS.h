@@ -41,15 +41,15 @@ public:
 	// Update of the estimated height and height rate internal state
 	// Update of the inertial speed rate internal state
 	// Should be called at 50Hz or greater
-	void update_50hz(float hgt_afe);
+	void update_50hz(float hgt_amsl);
 
 	// Update the control loop calculations
-    void update_pitch_throttle(int32_t hgt_dem_cm, 
-                               int32_t EAS_dem_cm, 
-                               bool climbOutDem, 
-                               int32_t ptchMinCO_cd,
-                               int16_t throttle_nudge,
-							   float hgt_afe);
+    void update_pitch_throttle(float hgt_dem_amsl, // demanded height AMSL (m)
+							   float EAS_dem, // EAS demand (m/s)
+							   bool climbOutDem, // true in takeoff and climbout
+							   float ptchMinCO, // min pitch angle demanded in takeoff|climbout (deg)
+							   int16_t throttle_nudge, // Throttle increment % used in no-airspeed mode
+                               float hgt_amsl); // measured height AMSL (m)
 
 	// demanded throttle in percentage
 	// should return 0 to 100
@@ -256,7 +256,7 @@ private:
 	void _update_pitch(void);
 
 	// Initialise states and variables
-	void _initialise_states(int32_t ptchMinCO_cd, float hgt_afe);
+	void _initialise_states(float ptchMinCO, float hgt_amsl);
 
 	// Calculate specific total energy rate limits
 	void _update_STE_rate_lim(void);

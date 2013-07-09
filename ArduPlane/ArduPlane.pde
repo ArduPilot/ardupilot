@@ -458,7 +458,7 @@ AP_Airspeed airspeed;
 // Altitude Sensor variables
 ////////////////////////////////////////////////////////////////////////////////
 // height above field elevation in cm
-static uint32_t hgt_afe_cm;
+static uint32_t hgt_amsl_cm;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -794,15 +794,15 @@ static void update_speed_height(void)
         // calculate the height above field elevation in centimeters
         if (barometer.healthy) 
         {
-            hgt_afe_cm = (1 - g.altitude_mix) * (g_gps->altitude - home.alt);
-            hgt_afe_cm += g.altitude_mix * read_barometer();
+            hgt_amsl_cm = (1 - g.altitude_mix) * g_gps->altitude;
+            hgt_amsl_cm += g.altitude_mix * (read_barometer() + home.alt);
         } 
         else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) 
         {
-            hgt_afe_cm = g_gps->altitude - home.alt;
+            hgt_amsl_cm = g_gps->altitude;
         }
 	    // Call TECS 50Hz update
-        SpdHgt_Controller->update_50hz(float(hgt_afe_cm)*0.01f);
+        SpdHgt_Controller->update_50hz(float(hgt_amsl_cm)*0.01f);
     }
 }
 
@@ -1264,12 +1264,12 @@ static void update_alt()
 
     // Update the speed & height controller states
     if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode) {
-        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
-                                                 target_airspeed_cm,
+        SpdHgt_Controller->update_pitch_throttle(float(target_altitude_cm)*0.01f + g.alt_offset, 
+                                                 float(target_airspeed_cm)*0.01f,
                                                  (control_mode==AUTO && takeoff_complete == false), 
-                                                 takeoff_pitch_cd,
+                                                 float(takeoff_pitch_cd)*0.01f,
                                                  throttle_nudge,
-                                                 float(hgt_afe_cm)*0.01f);
+                                                 float(hgt_amsl_cm)*0.01f);
         if (g.log_bitmask & MASK_LOG_TECS) {
             Log_Write_TECS_Tuning();
         }

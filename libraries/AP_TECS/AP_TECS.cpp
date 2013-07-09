@@ -128,7 +128,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
  *
  */
 
-void AP_TECS::update_50hz(float hgt_afe)
+void AP_TECS::update_50hz(float hgt_amsl)
 { 
 	// Implement third order complementary filter for height and height rate
 	// estimted height rate = _integ2_state
@@ -142,7 +142,7 @@ void AP_TECS::update_50hz(float hgt_afe)
     uint32_t now = hal.scheduler->micros();
 	float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
 	if (DT > 1.0) {
-	    _integ3_state = hgt_afe;
+	    _integ3_state = hgt_amsl;
 		_integ2_state = 0.0f;
 		_integ1_state = 0.0f;
 		DT            = 0.02f; // when first starting TECS, use a
@@ -155,7 +155,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 	// Perform filter calculation using backwards Euler integration
     // Coefficients selected to place all three filter poles at omega
 	float omega2 = _hgtCompFiltOmega*_hgtCompFiltOmega;
-	float hgt_err = hgt_afe - _integ3_state;
+	float hgt_err = hgt_amsl - _integ3_state;
 	float integ1_input = hgt_err * omega2 * _hgtCompFiltOmega;
 	_integ1_state = _integ1_state + integ1_input * DT;
 	float integ2_input = _integ1_state + hgt_ddot_mea + hgt_err * omega2 * 3.0f;
@@ -164,7 +164,7 @@ void AP_TECS::update_50hz(float hgt_afe)
     // If more than 1 second has elapsed since last update then reset the integrator state
     // to the measured height
     if (DT > 1.0) {
-        _integ3_state = hgt_afe;
+        _integ3_state = hgt_amsl;
     } else {
 	    _integ3_state = _integ3_state + integ3_input*DT;
     }
@@ -534,7 +534,7 @@ void AP_TECS::_update_pitch(void)
 	_last_pitch_dem = _pitch_dem;
 }
 
-void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe) 
+void AP_TECS::_initialise_states(float ptchMinCO, float hgt_amsl) 
 {
 	// Initialise states and variables if DT > 1 second or in climbout
 	if (_DT > 1.0)
@@ -543,7 +543,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 		_integ7_state      = 0.0f;
 		_last_throttle_dem = aparm.throttle_cruise * 0.01f;
 		_last_pitch_dem    = _ahrs->pitch;
-		_hgt_dem_adj_last  = hgt_afe;
+		_hgt_dem_adj_last  = hgt_amsl;
 		_hgt_dem_adj       = _hgt_dem_adj_last;
 		_hgt_dem_prev      = _hgt_dem_adj_last;
         _hgt_dem_in_old    = _hgt_dem_adj_last;
@@ -556,9 +556,9 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 	}
 	else if (_climbOutDem)
 	{
-		_PITCHminf          = 0.000174533f * ptchMinCO_cd;
+		_PITCHminf          = 0.0174533f * ptchMinCO;
 		_THRminf            = _THRmaxf - 0.01f;
-		_hgt_dem_adj_last  = hgt_afe;
+		_hgt_dem_adj_last  = hgt_amsl;
 		_hgt_dem_adj       = _hgt_dem_adj_last;
 		_hgt_dem_prev      = _hgt_dem_adj_last;
         _TAS_dem_last      = _TAS_dem;
@@ -576,12 +576,12 @@ void AP_TECS::_update_STE_rate_lim(void)
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
 }
 
-void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
-									int32_t EAS_dem_cm, 
+void AP_TECS::update_pitch_throttle(float hgt_dem_amsl,
+									float EAS_dem, 
 									bool climbOutDem, 
-									int32_t ptchMinCO_cd, 
+									float ptchMinCO,
 									int16_t throttle_nudge,
-									float hgt_afe) 
+									float hgt_amsl) 
 {
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
@@ -592,8 +592,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _update_speed();
 
 	// Convert inputs
-    _hgt_dem = hgt_dem_cm * 0.01f;
-	_EAS_dem = EAS_dem_cm * 0.01f;
+    _hgt_dem = hgt_dem_amsl;
+	_EAS_dem = EAS_dem;
     _THRmaxf  = aparm.throttle_max * 0.01f;
     _THRminf  = aparm.throttle_min * 0.01f;
 	_PITCHmaxf = 0.000174533f * aparm.pitch_limit_max_cd;
@@ -601,7 +601,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	_climbOutDem = climbOutDem;
 
 	// initialise selected states and variables if DT > 1 second or in climbout
-	_initialise_states(ptchMinCO_cd, hgt_afe);
+	_initialise_states(ptchMinCO, hgt_amsl);
 
     // Calculate Specific Total Energy Rate Limits
 	_update_STE_rate_lim();

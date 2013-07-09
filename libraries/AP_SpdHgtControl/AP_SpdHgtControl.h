@@ -37,16 +37,16 @@ public:
 	// Update the internal state of the height and height rate estimator
 	// Update of the inertial speed rate estimate internal state
 	// Should be called at 50Hz or faster
-	virtual void update_50hz(float hgt_afe) = 0;
+	virtual void update_50hz(float hgt_amsl) = 0;
 
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster
-	virtual void update_pitch_throttle( int32_t hgt_dem_cm,
-										int32_t EAS_dem_cm,
-										bool climbOutDem,
-										int32_t ptchMinCO_cd,
-										int16_t throttle_nudge,
-                                        float hgt_afe) = 0;
+	virtual void update_pitch_throttle( float hgt_dem_amsl, // demanded height AMSL (m)
+										float EAS_dem, // EAS demand (m/s)
+										bool climbOutDem, // true in takeoff and climbout
+										float ptchMinCO, // min pitch angle demanded in takeoff|climbout (deg)
+										int16_t throttle_nudge, // Throttle increment % used in no-airspeed mode
+                                        float hgt_amsl) = 0; // measured height AMSL (m)
 
 	// demanded throttle in percentage
 	// should return 0 to 100
