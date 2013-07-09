@@ -400,34 +400,6 @@ static void throttle_slew_limit(int16_t last_throttle)
  */
 static bool auto_takeoff_check(void)
 {
-#if 1
-    if (g_gps == NULL || g_gps->status() != GPS::GPS_OK_FIX_3D) {
-        // no auto takeoff without GPS lock
-        return false;
-    }
-    if (g_gps->ground_speed < g.takeoff_throttle_min_speed*100.0f) {
-        // we haven't reached the minimum ground speed
-        return false;
-    }
-
-    if (g.takeoff_throttle_min_accel > 0.0f) {
-        float xaccel = ins.get_accel().x;
-        if (ahrs.pitch_sensor > -3000 && 
-            ahrs.pitch_sensor < 4500 &&
-            abs(ahrs.roll_sensor) < 3000 && 
-            xaccel >= g.takeoff_throttle_min_accel) {
-            // trigger with minimum acceleration when flat
-            // Thanks to Chris Miser for this suggestion
-            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), xaccel);
-            return true;
-        }
-        return false;
-    }
-
-    // we're good for takeoff
-    return true;
-
-#else
     // this is a more advanced check that relies on TECS
     uint32_t now = hal.scheduler->micros();
     static bool launchCountStarted;
@@ -473,7 +445,6 @@ static bool auto_takeoff_check(void)
     launchCountStarted = false;
 	last_tkoff_arm_time = 0;
     return false;
-#endif
 }
 
 
