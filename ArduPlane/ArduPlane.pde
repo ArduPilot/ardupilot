@@ -1003,7 +1003,9 @@ static void update_GPS(void)
         geofence_check(false);
 
 #if CAMERA == ENABLED
-        camera.update_location(current_loc);
+        if (camera.update_location(current_loc) == true) {
+            do_take_picture();
+        }
 #endif        
     }
 
