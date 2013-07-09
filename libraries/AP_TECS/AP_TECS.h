@@ -45,7 +45,11 @@ public:
 	void update_50hz(float hgt_afe);
 
 	// Update the control loop calculations
-    void update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool climbOutDem, int32_t ptchMinCO_cd);
+    void update_pitch_throttle(int32_t hgt_dem_cm, 
+                               int32_t EAS_dem_cm, 
+                               bool climbOutDem, 
+                               int32_t ptchMinCO_cd,
+                               int16_t throttle_nudge);
 
 	// demanded throttle in percentage
 	// should return 0 to 100
@@ -243,7 +247,7 @@ private:
 	void _update_throttle(void);
 
 	// Update Demanded Throttle Non-Airspeed
-	void _update_throttle_option(void);
+	void _update_throttle_option(int16_t throttle_nudge);
 
 	// Detect Bad Descent
 	void _detect_bad_descent(void);

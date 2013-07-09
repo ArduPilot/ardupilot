@@ -424,10 +424,10 @@ void AP_TECS::_update_throttle(void)
     _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
 }
 
-void AP_TECS::_update_throttle_option(void)
+void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
 {
 	// Calculate throttle demand by interpolating between pitch and throttle limits
-    float nomThr = aparm.throttle_cruise * 0.01f;	
+    float nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;	
 	if (_climbOutDem)
 	{
 		_throttle_dem = _THRmaxf;
@@ -576,7 +576,11 @@ void AP_TECS::_update_STE_rate_lim(void)
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
 }
 
-void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool climbOutDem, int32_t ptchMinCO_cd) 
+void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
+									int32_t EAS_dem_cm, 
+									bool climbOutDem, 
+									int32_t ptchMinCO_cd, 
+									int16_t throttle_nudge) 
 {
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
@@ -617,7 +621,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool
 	if (_ahrs->airspeed_sensor_enabled()) {
         _update_throttle();
 	} else {
-        _update_throttle_option();
+        _update_throttle_option(throttle_nudge);
 	}
 
     // Detect bad descent due to demanded airspeed being too high

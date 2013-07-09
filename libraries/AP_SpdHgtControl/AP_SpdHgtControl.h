@@ -41,7 +41,11 @@ public:
 
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster
-	virtual void update_pitch_throttle(int32_t hgt_dem_cm, int32_t EAS_dem_cm, bool climbOutDem, int32_t ptchMinCO_cd) = 0;
+	virtual void update_pitch_throttle( int32_t hgt_dem_cm,
+										int32_t EAS_dem_cm,
+										bool climbOutDem,
+										int32_t ptchMinCO_cd,
+										int16_t throttle_nudge) = 0;
 
 	// demanded throttle in percentage
 	// should return 0 to 100
