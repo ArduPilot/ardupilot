@@ -1262,9 +1262,10 @@ static void update_alt()
     if (g.alt_control_algorithm == ALT_CONTROL_TECS &&
         auto_throttle_mode && !throttle_suppressed) {
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
-                                                 target_airspeed_cm, 
+                                                 target_airspeed_cm,
                                                  (control_mode==AUTO && takeoff_complete == false), 
-                                                 takeoff_pitch_cd);
+                                                 takeoff_pitch_cd,
+                                                 throttle_nudge);
         if (g.log_bitmask & MASK_LOG_TECS) {
             Log_Write_TECS_Tuning();
         }
