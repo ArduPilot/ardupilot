@@ -48,7 +48,8 @@ public:
                                int32_t EAS_dem_cm, 
                                bool climbOutDem, 
                                int32_t ptchMinCO_cd,
-                               int16_t throttle_nudge);
+                               int16_t throttle_nudge,
+							   float hgt_afe);
 
 	// demanded throttle in percentage
 	// should return 0 to 100
@@ -255,7 +256,7 @@ private:
 	void _update_pitch(void);
 
 	// Initialise states and variables
-	void _initialise_states(int32_t ptchMinCO_cd);
+	void _initialise_states(int32_t ptchMinCO_cd, float hgt_afe);
 
 	// Calculate specific total energy rate limits
 	void _update_STE_rate_lim(void);
