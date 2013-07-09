@@ -216,24 +216,28 @@ AP_Camera::control_msg(mavlink_message_t* msg)
 }
 
 
-// update location, for triggering by GPS distance moved
-void AP_Camera::update_location(const struct Location &loc)
+/*  update location, for triggering by GPS distance moved
+    This function returns true if a picture should be taken
+    The caller is responsible for taking the picture based on the return value of this function.
+    The caller is also responsible for logging the details about the photo
+*/
+bool AP_Camera::update_location(const struct Location &loc)
 {
     if (_trigg_dist == 0.0f) {
-        return;
+        return false;
     }
     if (_last_location.lat == 0 && _last_location.lng == 0) {
         _last_location = loc;
-        return;
+        return false;
     }
     if (_last_location.lat == loc.lat && _last_location.lng == loc.lng) {
         // we haven't moved - this can happen as update_location() may
         // be called without a new GPS fix
-        return;
+        return false;
     }
     if (get_distance(&loc, &_last_location) < _trigg_dist) {
-        return;
+        return false;
     }
     _last_location = loc;
-    trigger_pic();
+    return true;
 }
