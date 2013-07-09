@@ -571,8 +571,8 @@ static int32_t pitch_axis;
 
 // Filters
 #if FRAME_CONFIG == HELI_FRAME
-static LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
-static LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
+//static LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
+//static LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 #endif // HELI_FRAME
 
 ////////////////////////////////////////////////////////////////////////////////
