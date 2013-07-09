@@ -12,6 +12,8 @@
 /// @file   AP_Param.cpp
 /// @brief  The AP variable store.
 
+#define __STDC_LIMIT_MACROS // needed for (U)INT*_MAX in stdint.h
+#include <stdint.h>         // needed for UINT16_MAX
 
 #include <AP_HAL.h>
 #include <AP_Common.h>
@@ -444,7 +446,7 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
 // return true if found, along with the offset in the EEPROM where
 // the variable is stored
 // if not found return the offset of the sentinal
-// if the sentinal isn't found either, the offset is set to __UINT16_MAX__
+// if the sentinal isn't found either, the offset is set to UINT16_MAX
 bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 {
     struct Param_header phdr;
@@ -469,7 +471,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
         }
         ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
     }
-    *pofs = __UINT16_MAX__;
+    *pofs = UINT16_MAX;
     serialDebug("scan past end of eeprom");
     return false;
 }
