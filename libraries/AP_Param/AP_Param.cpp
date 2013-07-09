@@ -444,7 +444,7 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
 // return true if found, along with the offset in the EEPROM where
 // the variable is stored
 // if not found return the offset of the sentinal
-// if the sentinal isn't found either, the offset is set to __UINT16_MAX__
+// if the sentinal isn't found either, the offset is set to 0xFFFF
 bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 {
     struct Param_header phdr;
@@ -469,7 +469,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
         }
         ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
     }
-    *pofs = __UINT16_MAX__;
+    *pofs = 0xffff;
     serialDebug("scan past end of eeprom");
     return false;
 }
