@@ -177,10 +177,6 @@ AP_Camera::configure_msg(mavlink_message_t* msg)
      *  packet.mode
      *  packet.shutter_speed
      */
-    // echo the message to the ArduCam OSD camera control board
-    // for more info see: http://code.google.com/p/arducam-osd/
-    // TODO is it connected to MAVLINK_COMM_3 ?
-    mavlink_msg_digicam_configure_send(MAVLINK_COMM_3, packet.target_system, packet.target_component, packet.mode, packet.shutter_speed, packet.aperture, packet.iso, packet.exposure_type, packet.command_id, packet.engine_cut_off, packet.extra_param, packet.extra_value);
 }
 
 /// decode MavLink that controls camera
@@ -209,10 +205,6 @@ AP_Camera::control_msg(mavlink_message_t* msg)
     {
         trigger_pic();
     }
-    // echo the message to the ArduCam OSD camera control board
-    // for more info see: http://code.google.com/p/arducam-osd/
-    // TODO is it connected to MAVLINK_COMM_3 ?
-    mavlink_msg_digicam_control_send(MAVLINK_COMM_3, packet.target_system, packet.target_component, packet.session, packet.zoom_pos, packet.zoom_step, packet.focus_lock, packet.shot, packet.command_id, packet.extra_param, packet.extra_value);
 }
 
 
