@@ -259,7 +259,7 @@ static void stabilize()
     if (channel_throttle->control_in == 0 &&
         relative_altitude_abs_cm() < 500 && 
         fabs(barometer.get_climb_rate()) < 0.5f &&
-        g_gps->ground_speed < 300) {
+        g_gps->ground_speed_cm < 300) {
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
         // integrators. This prevents integrator buildup pre-takeoff.
@@ -405,7 +405,7 @@ static bool auto_takeoff_check(void)
         // no auto takeoff without GPS lock
         return false;
     }
-    if (g_gps->ground_speed < g.takeoff_throttle_min_speed*100.0f) {
+    if (g_gps->ground_speed_cm < g.takeoff_throttle_min_speed*100.0f) {
         // we haven't reached the minimum ground speed
         return false;
     }
@@ -519,7 +519,7 @@ static bool suppress_throttle(void)
 
     if (g_gps != NULL && 
         g_gps->status() >= GPS::GPS_OK_FIX_2D && 
-        g_gps->ground_speed >= 500) {
+        g_gps->ground_speed_cm >= 500) {
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception

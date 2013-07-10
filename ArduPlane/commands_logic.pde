@@ -345,7 +345,7 @@ static bool verify_land()
 
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
-    if ((wp_distance <= (g.land_flare_sec*g_gps->ground_speed*0.01))
+    if ((wp_distance <= (g.land_flare_sec*g_gps->ground_speed_cm*0.01f))
         || (adjusted_altitude_cm() <= next_WP.alt + g.land_flare_alt*100)) {
 
         land_complete = true;
@@ -364,7 +364,7 @@ static bool verify_land()
             gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), hold_course_cd);
         }
 
-        if (g_gps->ground_speed*0.01 < 3.0) {
+        if (g_gps->ground_speed_cm*0.01f < 3.0) {
             // reload any airspeed or groundspeed parameters that may have
             // been set for landing. We don't do this till ground
             // speed drops below 3.0 m/s as otherwise we will change
