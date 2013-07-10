@@ -88,7 +88,6 @@ AC_WPNav::AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM
     _pilot_vel_right_cms(0),
     _target_vel(0,0,0),
     _vel_last(0,0,0),
-    _lean_angle_max(MAX_LEAN_ANGLE),
     _loiter_leash(WPNAV_MIN_LEASH_LENGTH),
     _loiter_accel_cms(WPNAV_LOITER_ACCEL_MAX),
     _wp_leash_xy(WPNAV_MIN_LEASH_LENGTH),
@@ -179,8 +178,8 @@ void AC_WPNav::init_loiter_target(const Vector3f& position, const Vector3f& velo
 void AC_WPNav::move_loiter_target(float control_roll, float control_pitch, float dt)
 {
     // convert pilot input to desired velocity in cm/s
-    _pilot_vel_forward_cms = -control_pitch * WPNAV_LOITER_ACCEL_MAX / 4500.0f;
-    _pilot_vel_right_cms = control_roll * WPNAV_LOITER_ACCEL_MAX / 4500.0f;
+    _pilot_vel_forward_cms = -control_pitch * _loiter_accel_cms / 4500.0f;
+    _pilot_vel_right_cms = control_roll * _loiter_accel_cms / 4500.0f;
 }
 
 /// translate_loiter_target_movements - consumes adjustments created by move_loiter_target
@@ -207,17 +206,17 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
     _target_vel.x += target_vel_adj.x*nav_dt;
     _target_vel.y += target_vel_adj.y*nav_dt;
     if(_target_vel.x > 0 ) {
-        _target_vel.x -= (WPNAV_LOITER_ACCEL_MAX-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.x/_loiter_speed_cms;
+        _target_vel.x -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.x/_loiter_speed_cms;
         _target_vel.x = max(_target_vel.x - WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }else if(_target_vel.x < 0) {
-        _target_vel.x -= (WPNAV_LOITER_ACCEL_MAX-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.x/_loiter_speed_cms;
+        _target_vel.x -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.x/_loiter_speed_cms;
         _target_vel.x = min(_target_vel.x + WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }
     if(_target_vel.y > 0 ) {
-        _target_vel.y -= (WPNAV_LOITER_ACCEL_MAX-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.y/_loiter_speed_cms;
+        _target_vel.y -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.y/_loiter_speed_cms;
         _target_vel.y = max(_target_vel.y - WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }else if(_target_vel.y < 0) {
-        _target_vel.y -= (WPNAV_LOITER_ACCEL_MAX-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.y/_loiter_speed_cms;
+        _target_vel.y -= (_loiter_accel_cms-WPNAV_LOITER_ACCEL_MIN)*nav_dt*_target_vel.y/_loiter_speed_cms;
         _target_vel.y = min(_target_vel.y + WPNAV_LOITER_ACCEL_MIN*nav_dt, 0);
     }
 
@@ -616,8 +615,8 @@ void AC_WPNav::get_loiter_acceleration_to_lean_angles(float accel_lat, float acc
     accel_right = -accel_lat*_sin_yaw + accel_lon*_cos_yaw;
 
     // update angle targets that will be passed to stabilize controller
-    _desired_roll = constrain_float(fast_atan(accel_right*_cos_pitch/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
-    _desired_pitch = constrain_float(fast_atan(-accel_forward/(-z_accel_meas))*(18000/M_PI), -_lean_angle_max, _lean_angle_max);
+    _desired_roll = constrain_float(fast_atan(accel_right*_cos_pitch/(-z_accel_meas))*(18000/M_PI), -MAX_LEAN_ANGLE, MAX_LEAN_ANGLE);
+    _desired_pitch = constrain_float(fast_atan(-accel_forward/(-z_accel_meas))*(18000/M_PI), -MAX_LEAN_ANGLE, MAX_LEAN_ANGLE);
 }
 
 // get_bearing_cd - return bearing in centi-degrees between two positions

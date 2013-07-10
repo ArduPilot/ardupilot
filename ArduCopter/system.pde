@@ -420,7 +420,6 @@ static void set_mode(uint8_t mode)
         set_roll_pitch_mode(POSITION_RP);
         set_throttle_mode(POSITION_THR);
         set_nav_mode(POSITION_NAV);
-        wp_nav.clear_angle_limit();     // ensure there are no left over angle limits from throttle controller.  To-Do: move this to the exit routine of throttle controller
         break;
 
     case GUIDED:

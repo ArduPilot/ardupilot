@@ -234,14 +234,14 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
         circle_angle = wrap_PI(heading_in_radians-PI);
 
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*WPNAV_ACCELERATION*g.circle_radius*100.0f)); 
+        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*g.circle_radius*100.0f)); 
 
         // angular_velocity in radians per second
         circle_angular_velocity_max = max_velocity/((float)g.circle_radius * 100.0f);
         circle_angular_velocity_max = constrain_float(ToRad(g.circle_rate),-circle_angular_velocity_max,circle_angular_velocity_max);
 
         // angular_velocity in radians per second
-        circle_angular_acceleration = WPNAV_ACCELERATION/((float)g.circle_radius * 100);
+        circle_angular_acceleration = wp_nav.get_waypoint_acceleration()/((float)g.circle_radius * 100);
         if (g.circle_rate < 0.0f) {
             circle_angular_acceleration = -circle_angular_acceleration;
         }
