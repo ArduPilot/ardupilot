@@ -257,7 +257,7 @@ static void stabilize()
       see if we should zero the attitude controller integrators. 
      */
     if (channel_throttle->control_in == 0 &&
-        abs(current_loc.alt - home.alt) < 500 && 
+        relative_altitude_abs_cm() < 500 && 
         fabs(barometer.get_climb_rate()) < 0.5f &&
         g_gps->ground_speed < 300) {
         // we are low, with no climb rate, and zero throttle, and very
@@ -511,7 +511,7 @@ static bool suppress_throttle(void)
         return false;
     }
     
-    if (labs(home.alt - current_loc.alt) >= 1000) {
+    if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
         return false;

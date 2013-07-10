@@ -785,7 +785,7 @@ static void update_speed_height(void)
     if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode && !throttle_suppressed) 
     {
 	    // Call TECS 50Hz update
-        SpdHgt_Controller->update_50hz((current_loc.alt - home.alt) * 0.01f);
+        SpdHgt_Controller->update_50hz(relative_altitude());
     }
 }
 
@@ -1255,7 +1255,7 @@ static void update_alt()
                                                  (control_mode==AUTO && takeoff_complete == false), 
                                                  takeoff_pitch_cd,
                                                  throttle_nudge,
-                                                 float(hgt_afe_cm)*0.01f);
+                                                 relative_altitude());
         if (g.log_bitmask & MASK_LOG_TECS) {
             Log_Write_TECS_Tuning();
         }
