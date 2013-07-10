@@ -20,6 +20,7 @@
 #define WPNAV_LOITER_SPEED              500.0f      // maximum default loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL_MAX          250.0f      // maximum acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
+#define WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR 200.0f      // maximum speed used to correct position error (i.e. not including feed forward)
 
 #define MAX_LEAN_ANGLE                  4500        // default maximum lean angle
 
