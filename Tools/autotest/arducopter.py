@@ -283,7 +283,7 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     return False
 
 # fly_stability_patch - fly south, then hold loiter within 5m position and altitude and reduce 1 motor to 60% efficiency
-def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=5):
+def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=10):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
@@ -331,6 +331,8 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
             mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
             return True
     print("Stability Patch FAILED")
+    # restore motor 1 to 100% efficiency
+    mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
     return False
 
 # fly_fence_test - fly east until you hit the horizontal circular fence
