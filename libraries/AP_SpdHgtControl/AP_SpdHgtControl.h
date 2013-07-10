@@ -45,7 +45,8 @@ public:
 										int32_t EAS_dem_cm,
 										bool climbOutDem,
 										int32_t ptchMinCO_cd,
-										int16_t throttle_nudge) = 0;
+										int16_t throttle_nudge,
+                                        float hgt_afe) = 0;
 
 	// demanded throttle in percentage
 	// should return 0 to 100

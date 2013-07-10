@@ -164,7 +164,7 @@ void AP_TECS::update_50hz(float hgt_afe)
     // If more than 1 second has elapsed since last update then reset the integrator state
     // to the measured height
     if (DT > 1.0) {
-        _integ3_state = _baro->get_altitude();
+        _integ3_state = hgt_afe;
     } else {
 	    _integ3_state = _integ3_state + integ3_input*DT;
     }
@@ -534,7 +534,7 @@ void AP_TECS::_update_pitch(void)
 	_last_pitch_dem = _pitch_dem;
 }
 
-void AP_TECS::_initialise_states(int32_t ptchMinCO_cd) 
+void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe) 
 {
 	// Initialise states and variables if DT > 1 second or in climbout
 	if (_DT > 1.0)
@@ -543,7 +543,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd)
 		_integ7_state      = 0.0f;
 		_last_throttle_dem = aparm.throttle_cruise * 0.01f;
 		_last_pitch_dem    = _ahrs->pitch;
-		_hgt_dem_adj_last  = _baro->get_altitude();
+		_hgt_dem_adj_last  = hgt_afe;
 		_hgt_dem_adj       = _hgt_dem_adj_last;
 		_hgt_dem_prev      = _hgt_dem_adj_last;
         _hgt_dem_in_old    = _hgt_dem_adj_last;
@@ -558,7 +558,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd)
 	{
 		_PITCHminf          = 0.000174533f * ptchMinCO_cd;
 		_THRminf            = _THRmaxf - 0.01f;
-		_hgt_dem_adj_last  = _baro->get_altitude();
+		_hgt_dem_adj_last  = hgt_afe;
 		_hgt_dem_adj       = _hgt_dem_adj_last;
 		_hgt_dem_prev      = _hgt_dem_adj_last;
         _TAS_dem_last      = _TAS_dem;
@@ -580,7 +580,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 									int32_t EAS_dem_cm, 
 									bool climbOutDem, 
 									int32_t ptchMinCO_cd, 
-									int16_t throttle_nudge) 
+									int16_t throttle_nudge,
+									float hgt_afe) 
 {
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
@@ -600,7 +601,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	_climbOutDem = climbOutDem;
 
 	// initialise selected states and variables if DT > 1 second or in climbout
-	_initialise_states(ptchMinCO_cd);
+	_initialise_states(ptchMinCO_cd, hgt_afe);
 
     // Calculate Specific Total Energy Rate Limits
 	_update_STE_rate_lim();
