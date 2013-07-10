@@ -7,7 +7,7 @@ Improvements over 3.0.1-rc1
     a) double flash arming light when pre-arm checks fail
     b) relax mag field checks to 35% min, 165% max of expected field
 3) loiter and auto changes:
-      a) reduced Loiter Pos P to 0.2 (was 1.0)
+      a) reduced Loiter Pos P to 0.8 (was 1.0)
       b) reduced Loiter speed to 5 m/s
       c) reduced WP_ACCEL to 1 m/s/s (was 250  m/s/s)
       d) rounding error fix in loiter controller
