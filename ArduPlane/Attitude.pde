@@ -236,22 +236,34 @@ static void stabilize_training(float speed_scaler)
  */
 static void stabilize_acro(float speed_scaler)
 {
-    float roll_rate = channel_roll->norm_input() * 180;
-    float pitch_rate = channel_pitch->norm_input() * 180;
+    float roll_rate = channel_roll->norm_input() * g.acro_roll_rate;
+    float pitch_rate = channel_pitch->norm_input() * g.acro_pitch_rate;
 
+    /*
+      check for special roll handling near the pitch poles
+     */
     if (roll_rate == 0 && 
         acro_state.locked_roll && 
         (ahrs.pitch_sensor > 7000 ||
          ahrs.pitch_sensor < -7000)) {
         // when near the poles do rate holding, but don't unlock the
-        // desired roll
+        // desired roll.
         channel_roll->servo_out  = g.rollController.get_rate_out(roll_rate,  speed_scaler);
     } else if (roll_rate == 0) {
+        /*
+          we have no roll stick input, so we will enter "roll locked"
+          mode, and hold the roll we had when the stick was released
+         */
         if (!acro_state.locked_roll) {
             acro_state.locked_roll = true;
             acro_state.locked_roll_cd = ahrs.roll_sensor;
         }
-        // try to cope with wrap while looping.
+        /* 
+           special handling for the roll inversion while
+           looping. Using euler angles for this is ugly, but it fits
+           with the rest of the APM code, and actually works
+           surprisingly well
+         */
         int32_t roll_error_cd = ahrs.roll_sensor - acro_state.locked_roll_cd;
         if (roll_error_cd > 13500 && roll_error_cd < 21500) {
             acro_state.locked_roll_cd += 18000;
@@ -261,6 +273,11 @@ static void stabilize_acro(float speed_scaler)
         }
         acro_state.locked_roll_cd = wrap_180_cd(acro_state.locked_roll_cd);
         nav_roll_cd = acro_state.locked_roll_cd;
+
+        /* 
+           now we need to prevent the roll controller from seeing a
+           jump as roll passes through the -180 -> 180 point 
+        */
         roll_error_cd = ahrs.roll_sensor - nav_roll_cd;
         if (roll_error_cd > 31500) {
             nav_roll_cd += 36000;
@@ -269,11 +286,19 @@ static void stabilize_acro(float speed_scaler)
         }
         stabilize_roll(speed_scaler);
     } else {
+        /*
+          aileron stick is non-zero, use pure rate control until the
+          user releases the stick
+         */
         acro_state.locked_roll = false;
         channel_roll->servo_out  = g.rollController.get_rate_out(roll_rate,  speed_scaler);
     }
 
     if (pitch_rate == 0) {
+        /*
+          user has zero pitch stick input, so we lock pitch at the
+          point they release the stick
+         */
         if (!acro_state.locked_pitch) {
             acro_state.locked_pitch = true;
             acro_state.locked_pitch_cd = ahrs.pitch_sensor;
@@ -281,10 +306,18 @@ static void stabilize_acro(float speed_scaler)
         nav_pitch_cd = acro_state.locked_pitch_cd;
         stabilize_pitch(speed_scaler);
     } else {
+        /*
+          user has non-zero pitch input, use a pure rate controller
+         */
         acro_state.locked_pitch = false;
         channel_pitch->servo_out = g.pitchController.get_rate_out(pitch_rate, speed_scaler);
     }
 
+    /*
+      call the normal yaw stabilize for now. This allows for manual
+      rudder input, plus automatic coordinated turn handling. For
+      knife-edge we'll need to do something quite different
+     */
     stabilize_yaw(speed_scaler);
 }
 

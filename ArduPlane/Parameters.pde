@@ -465,6 +465,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     ASCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
 
+    // @Param: ACRO_ROLL_RATE
+    // @DisplayName: ACRO mode roll rate
+    // @Description: The maximum roll rate at full stick deflection in ACRO mode
+    // @Units: degrees/second
+    // @Range: 10 500
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(acro_roll_rate,          "ACRO_ROLL_RATE",    180),
+
+    // @Param: ACRO_PITCH_RATE
+    // @DisplayName: ACRO mode pitch rate
+    // @Description: The maximum pitch rate at full stick deflection in ACRO mode
+    // @Units: degrees/second
+    // @Range: 10 500
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(acro_pitch_rate,          "ACRO_PITCH_RATE",  180),
+
     // @Param: AUTO_TRIM
     // @DisplayName: Auto trim
     // @Description: Set RC trim PWM levels to current levels when switching away from manual mode
