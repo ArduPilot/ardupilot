@@ -6,10 +6,11 @@ Improvements over 3.0.1-rc1
 2) pre-arm check changes:
     a) double flash arming light when pre-arm checks fail
     b) relax mag field checks to 35% min, 165% max of expected field
-3) reduce loiter, auto gains:
-      a) Loiter Pos P to 0.2 (was 1.0)
-      b) Loiter speed to 5 m/s
-      c) WP_ACCEL to 1 m/s/s (was 250  m/s/s)
+3) loiter and auto changes:
+      a) reduced Loiter Pos P to 0.2 (was 1.0)
+      b) reduced Loiter speed to 5 m/s
+      c) reduced WP_ACCEL to 1 m/s/s (was 250  m/s/s)
+      d) rounding error fix in loiter controller
 4) Stability Patch fix which was freezing Rate Taw I term and allowing uncommanded Yaw
 ------------------------------------------------------------------
 ArduCopter 3.0.1-rc1 26-Jun-2013
