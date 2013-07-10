@@ -531,9 +531,10 @@ void AC_WPNav::get_loiter_position_to_velocity(float dt, float max_speed_cms)
         dist_error.y = _target.y - curr.y;
 
         linear_distance = _wp_accel_cms/(2.0f*kP*kP);
-        _distance_to_target = linear_distance;      // for reporting purposes
 
         dist_error_total = safe_sqrt(dist_error.x*dist_error.x + dist_error.y*dist_error.y);
+        _distance_to_target = dist_error_total;      // for reporting purposes
+
         if( dist_error_total > 2.0f*linear_distance ) {
             vel_sqrt = safe_sqrt(2.0f*_wp_accel_cms*(dist_error_total-linear_distance));
             desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
