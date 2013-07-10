@@ -1254,7 +1254,8 @@ static void update_alt()
                                                  target_airspeed_cm,
                                                  (control_mode==AUTO && takeoff_complete == false), 
                                                  takeoff_pitch_cd,
-                                                 throttle_nudge);
+                                                 throttle_nudge,
+                                                 float(hgt_afe_cm)*0.01f);
         if (g.log_bitmask & MASK_LOG_TECS) {
             Log_Write_TECS_Tuning();
         }
