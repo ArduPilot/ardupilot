@@ -173,6 +173,7 @@ enum log_messages {
 #define MASK_LOG_CURRENT                (1<<9)
 #define MASK_LOG_COMPASS                (1<<10)
 #define MASK_LOG_TECS                   (1<<11)
+#define MASK_LOG_CAMERA                 (1<<12)
 
 // Waypoint Modes
 // ----------------
