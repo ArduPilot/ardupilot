@@ -2018,7 +2018,7 @@ static void update_altitude()
 {
 #if HIL_MODE == HIL_MODE_ATTITUDE
     // we are in the SIM, fake out the baro and Sonar
-    baro_alt                = g_gps->altitude - gps_base_alt;
+    baro_alt                = g_gps->altitude_cm - gps_base_alt;
 
     if(g.sonar_enabled) {
         sonar_alt           = baro_alt;

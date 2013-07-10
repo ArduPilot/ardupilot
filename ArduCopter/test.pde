@@ -276,7 +276,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
             cliSerial->printf_P(PSTR(", Lon "));
             print_latlon(cliSerial, g_gps->longitude);
             cliSerial->printf_P(PSTR(", Alt: %ldm, #sats: %d\n"),
-                            g_gps->altitude/100,
+                            g_gps->altitude_cm/100,
                             g_gps->num_sats);
             g_gps->new_data = false;
         }else{
