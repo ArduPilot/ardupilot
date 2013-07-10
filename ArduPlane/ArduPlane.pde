@@ -455,6 +455,16 @@ static struct {
 AP_Airspeed airspeed;
 
 ////////////////////////////////////////////////////////////////////////////////
+// ACRO controller state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    bool locked_roll;
+    bool locked_pitch;
+    int32_t locked_roll_cd;
+    int32_t locked_pitch_cd;
+} acro_state;
+
+////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
 ////////////////////////////////////////////////////////////////////////////////
 // Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
@@ -1111,6 +1121,21 @@ static void update_flight_mode(void)
             break;
         }
 
+        case ACRO: {
+            // handle locked/unlocked control
+            if (acro_state.locked_roll) {
+                nav_roll_cd = acro_state.locked_roll_cd;
+            } else {
+                nav_roll_cd = ahrs.roll_sensor;
+            }
+            if (acro_state.locked_pitch) {
+                nav_pitch_cd = acro_state.locked_pitch_cd;
+            } else {
+                nav_pitch_cd = ahrs.pitch_sensor;
+            }
+            break;
+        }
+
         case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
             nav_roll_cd  = channel_roll->norm_input() * g.roll_limit_cd;
@@ -1220,6 +1245,7 @@ static void update_navigation()
     case STABILIZE:
     case TRAINING:
     case INITIALISING:
+    case ACRO:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
     case CIRCLE:

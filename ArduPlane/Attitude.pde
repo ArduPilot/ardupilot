@@ -99,6 +99,7 @@ static void stabilize_pitch(float speed_scaler)
 static void stabilize_stick_mixing_direct()
 {
     if (!stick_mixing_enabled() ||
+        control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == TRAINING) {
@@ -136,6 +137,7 @@ static void stabilize_stick_mixing_direct()
 static void stabilize_stick_mixing_fbw()
 {
     if (!stick_mixing_enabled() ||
+        control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == TRAINING) {
@@ -229,6 +231,64 @@ static void stabilize_training(float speed_scaler)
 
 
 /*
+  this is the ACRO mode stabilization function. It does rate
+  stabilization on roll and pitch axes
+ */
+static void stabilize_acro(float speed_scaler)
+{
+    float roll_rate = channel_roll->norm_input() * 180;
+    float pitch_rate = channel_pitch->norm_input() * 180;
+
+    if (roll_rate == 0 && 
+        acro_state.locked_roll && 
+        (ahrs.pitch_sensor > 7000 ||
+         ahrs.pitch_sensor < -7000)) {
+        // when near the poles do rate holding, but don't unlock the
+        // desired roll
+        channel_roll->servo_out  = g.rollController.get_rate_out(roll_rate,  speed_scaler);
+    } else if (roll_rate == 0) {
+        if (!acro_state.locked_roll) {
+            acro_state.locked_roll = true;
+            acro_state.locked_roll_cd = ahrs.roll_sensor;
+        }
+        // try to cope with wrap while looping.
+        int32_t roll_error_cd = ahrs.roll_sensor - acro_state.locked_roll_cd;
+        if (roll_error_cd > 13500 && roll_error_cd < 21500) {
+            acro_state.locked_roll_cd += 18000;
+        }
+        if (roll_error_cd < -13500 && roll_error_cd > -21500) {
+            acro_state.locked_roll_cd -= 18000;
+        }
+        acro_state.locked_roll_cd = wrap_180_cd(acro_state.locked_roll_cd);
+        nav_roll_cd = acro_state.locked_roll_cd;
+        roll_error_cd = ahrs.roll_sensor - nav_roll_cd;
+        if (roll_error_cd > 31500) {
+            nav_roll_cd += 36000;
+        } else if (roll_error_cd < -31500) {
+            nav_roll_cd -= 36000;
+        }
+        stabilize_roll(speed_scaler);
+    } else {
+        acro_state.locked_roll = false;
+        channel_roll->servo_out  = g.rollController.get_rate_out(roll_rate,  speed_scaler);
+    }
+
+    if (pitch_rate == 0) {
+        if (!acro_state.locked_pitch) {
+            acro_state.locked_pitch = true;
+            acro_state.locked_pitch_cd = ahrs.pitch_sensor;
+        }
+        nav_pitch_cd = acro_state.locked_pitch_cd;
+        stabilize_pitch(speed_scaler);
+    } else {
+        acro_state.locked_pitch = false;
+        channel_pitch->servo_out = g.pitchController.get_rate_out(pitch_rate, speed_scaler);
+    }
+
+    stabilize_yaw(speed_scaler);
+}
+
+/*
   main stabilization function for all 3 axes
  */
 static void stabilize()
@@ -241,6 +301,8 @@ static void stabilize()
 
     if (control_mode == TRAINING) {
         stabilize_training(speed_scaler);
+    } else if (control_mode == ACRO) {
+        stabilize_acro(speed_scaler);
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
             stabilize_stick_mixing_fbw();
@@ -705,6 +767,7 @@ static void set_servos(void)
         } else if (g.throttle_passthru_stabilize && 
                    (control_mode == STABILIZE || 
                     control_mode == TRAINING ||
+                    control_mode == ACRO ||
                     control_mode == FLY_BY_WIRE_A)) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set

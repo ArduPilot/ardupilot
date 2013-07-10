@@ -340,6 +340,7 @@ static void set_mode(enum FlightMode mode)
     case MANUAL:
     case STABILIZE:
     case TRAINING:
+    case ACRO:
     case FLY_BY_WIRE_A:
         break;
 
@@ -619,6 +620,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case TRAINING:
         port->print_P(PSTR("Training"));
+        break;
+    case ACRO:
+        port->print_P(PSTR("ACRO"));
         break;
     case FLY_BY_WIRE_A:
         port->print_P(PSTR("FBW_A"));

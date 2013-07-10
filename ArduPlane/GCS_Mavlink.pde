@@ -43,6 +43,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     switch (control_mode) {
     case MANUAL:
     case TRAINING:
+    case ACRO:
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case STABILIZE:
@@ -157,6 +158,10 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
     switch (control_mode) {
     case MANUAL:
+        break;
+
+    case ACRO:
+        control_sensors_enabled |= (1<<10); // 3D angular rate control
         break;
 
     case STABILIZE:
@@ -1264,6 +1269,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case CIRCLE:
         case STABILIZE:
         case TRAINING:
+        case ACRO:
         case FLY_BY_WIRE_A:
         case FLY_BY_WIRE_B:
         case AUTO:

@@ -11,6 +11,7 @@ static void failsafe_short_on_event(int16_t fstype)
     {
     case MANUAL:
     case STABILIZE:
+    case ACRO:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
     case TRAINING:
@@ -44,6 +45,7 @@ static void failsafe_long_on_event(int16_t fstype)
     {
     case MANUAL:
     case STABILIZE:
+    case ACRO:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
     case TRAINING:
