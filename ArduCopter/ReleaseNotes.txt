@@ -1,6 +1,6 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 3.0.1-rc2 10-Jun-2013
+ArduCopter 3.0.1-rc2 10-Jul-2013
 Improvements over 3.0.1-rc1
 1) Rate Roll, Pitch and Yaw I fix when we hit motor limits
 2) pre-arm check changes:
