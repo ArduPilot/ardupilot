@@ -86,16 +86,17 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
-// Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
-// A positive demand is up
-// Inputs are: 
-// 1) demanded pitch angle in centi-degrees
-// 2) control gain scaler = scaling_speed / aspeed
-// 3) boolean which is true when stabilise mode is active
-// 4) minimum FBW airspeed (metres/sec)
-// 5) maximum FBW airspeed (metres/sec)
-//
-int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stabilize, int16_t aspd_min, int16_t aspd_max)
+/*
+ Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ A positive demand is up
+ Inputs are: 
+ 1) demanded pitch rate in radians/second
+ 2) control gain scaler = scaling_speed / aspeed
+ 3) boolean which is true when stabilise mode is active
+ 4) minimum FBW airspeed (metres/sec)
+ 5) maximum FBW airspeed (metres/sec)
+*/
+int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool stabilize, float aspeed, int16_t aspd_min)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -108,11 +109,78 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	if(_ahrs == NULL) return 0;
 	float delta_time    = (float)dt * 0.001f;
 	
+	// Get body rate vector (radians/sec)
+	float omega_y = _ahrs->get_gyro().y;
+	
+	// Calculate the pitch rate error (deg/sec) and scale
+	float rate_error = (desired_rate - ToDeg(omega_y)) * scaler;
+	
+	// Multiply pitch rate error by _ki_rate and integrate
+	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
+	if (!stabilize && _K_I > 0) {
+        float ki_rate = _K_I * _tau;
+		//only integrate if gain and time step are positive and airspeed above min value.
+		if (dt > 0 && aspeed > 0.5f*float(aspd_min)) {
+		    float integrator_delta = rate_error * ki_rate * delta_time;
+			if (_last_out < -45) {
+				// prevent the integrator from increasing if surface defln demand is above the upper limit
+				integrator_delta = max(integrator_delta , 0);
+			} else if (_last_out > 45) {
+				// prevent the integrator from decreasing if surface defln demand  is below the lower limit
+				integrator_delta = min(integrator_delta , 0);
+			}
+			_integrator += integrator_delta;
+		}
+	} else {
+		_integrator = 0;
+	}
+
+    // Scale the integration limit
+    float intLimScaled = _imax * 0.01f / scaler;
+
+    // Constrain the integrator state
+    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
+
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0);
-	float ki_rate = _K_I * _tau;
+	
+	// Calculate the demanded control surface deflection
+	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
+	// path, but want a 1/speed^2 scaler applied to the rate error path. 
+	// This is because acceleration scales with speed^2, but rate scales with speed.
+	_last_out = ( (rate_error * _K_D) + _integrator + (desired_rate * kp_ff) ) * scaler;
+	
+	// Convert to centi-degrees and constrain
+	return constrain_float(_last_out * 100, -4500, 4500);
+}
 
+/*
+ Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ A positive demand is up
+ Inputs are: 
+ 1) demanded pitch rate in degrees/second
+ 2) control gain scaler = scaling_speed / aspeed
+ 3) boolean which is true when stabilise mode is active
+ 4) minimum FBW airspeed (metres/sec)
+ 5) maximum FBW airspeed (metres/sec)
+*/
+int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
+{
+    return _get_rate_out(desired_rate, scaler, false, 0, 0);
+}
+
+// Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+// A positive demand is up
+// Inputs are: 
+// 1) demanded pitch angle in centi-degrees
+// 2) control gain scaler = scaling_speed / aspeed
+// 3) boolean which is true when stabilise mode is active
+// 4) minimum FBW airspeed (metres/sec)
+// 5) maximum FBW airspeed (metres/sec)
+//
+int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stabilize, int16_t aspd_min, int16_t aspd_max)
+{
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
 	// Pitch rate offset is the component of turn rate about the pitch axis
@@ -169,45 +237,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	// Apply the turn correction offset
 	desired_rate = desired_rate + rate_offset;
 
-	// Get body rate vector (radians/sec)
-	float omega_y = _ahrs->get_gyro().y;
-	
-	// Calculate the pitch rate error (deg/sec) and scale
-	float rate_error = (desired_rate - ToDeg(omega_y)) * scaler;
-	
-	// Multiply pitch rate error by _ki_rate and integrate
-	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!stabilize && ki_rate > 0) {
-		//only integrate if gain and time step are positive and airspeed above min value.
-		if (dt > 0 && aspeed > 0.5f*float(aspd_min)) {
-		    float integrator_delta = rate_error * ki_rate * delta_time;
-			if (_last_out < -45) {
-				// prevent the integrator from increasing if surface defln demand is above the upper limit
-				integrator_delta = max(integrator_delta , 0);
-			} else if (_last_out > 45) {
-				// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-				integrator_delta = min(integrator_delta , 0);
-			}
-			_integrator += integrator_delta;
-		}
-	} else {
-		_integrator = 0;
-	}
-
-    // Scale the integration limit
-    float intLimScaled = _imax * 0.01f / scaler;
-
-    // Constrain the integrator state
-    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
-	
-	// Calculate the demanded control surface deflection
-	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
-	// path, but want a 1/speed^2 scaler applied to the rate error path. 
-	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * _K_D) + _integrator + (desired_rate * kp_ff) ) * scaler;
-	
-	// Convert to centi-degrees and constrain
-	return constrain_float(_last_out * 100, -4500, 4500);
+    return _get_rate_out(desired_rate, scaler, stabilize, aspeed, aspd_min);
 }
 
 void AP_PitchController::reset_I()

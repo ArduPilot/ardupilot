@@ -68,15 +68,12 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
-// Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
-// A positive demand is up
-// Inputs are: 
-// 1) demanded bank angle in centi-degrees
-// 2) control gain scaler = scaling_speed / aspeed
-// 3) boolean which is true when stabilise mode is active
-// 4) minimum FBW airspeed (metres/sec)
-//
-int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabilize, int16_t aspd_min)
+
+/*
+  internal rate controller, called by attitude and rate controller
+  public functions
+*/
+int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool stabilize, int16_t aspd_min)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -95,16 +92,6 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
         return 0;
     }
 	float delta_time    = (float)dt * 0.001f;
-	
-	// Calculate bank angle error in centi-degrees
-	int32_t angle_err = angle - _ahrs->roll_sensor;
-
-    if (_tau < 0.1) {
-        _tau = 0.1;
-    }
-	
-	// Calculate the desired roll rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f / _tau;
 	
 	// Limit the demanded roll rate
 	if (_max_rate && desired_rate < -_max_rate) {
@@ -158,6 +145,43 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
+}
+
+
+/*
+ Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ A positive demand is up
+ Inputs are: 
+ 1) desired roll rate in degrees/sec
+ 2) control gain scaler = scaling_speed / aspeed
+*/
+int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
+{
+    return _get_rate_out(desired_rate, scaler, true, 0);
+}
+
+/*
+ Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ A positive demand is up
+ Inputs are: 
+ 1) demanded bank angle in centi-degrees
+ 2) control gain scaler = scaling_speed / aspeed
+ 3) boolean which is true when stabilise mode is active
+ 4) minimum FBW airspeed (metres/sec)
+*/
+int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabilize, int16_t aspd_min)
+{
+	// Calculate bank angle error in centi-degrees
+	int32_t angle_err = angle - _ahrs->roll_sensor;
+
+    if (_tau < 0.1) {
+        _tau = 0.1;
+    }
+	
+	// Calculate the desired roll rate (deg/sec) from the angle error
+	float desired_rate = angle_err * 0.01f / _tau;
+
+    return _get_rate_out(desired_rate, scaler, stabilize, aspd_min);
 }
 
 void AP_RollController::reset_I()
