@@ -69,6 +69,7 @@ protected:
 private:
     AP_Float                            _ground_temperature;
     AP_Float                            _ground_pressure;
+    AP_Int8                             _alt_offset;
     float                               _altitude;
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
