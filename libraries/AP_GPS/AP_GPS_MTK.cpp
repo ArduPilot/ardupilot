@@ -147,9 +147,9 @@ restart:
             }
             latitude            = _swapl(&_buffer.msg.latitude)  * 10;
             longitude           = _swapl(&_buffer.msg.longitude) * 10;
-            altitude            = _swapl(&_buffer.msg.altitude);
-            ground_speed        = _swapl(&_buffer.msg.ground_speed);
-            ground_course       = _swapl(&_buffer.msg.ground_course) / 10000;
+            altitude_cm         = _swapl(&_buffer.msg.altitude);
+            ground_speed_cm     = _swapl(&_buffer.msg.ground_speed);
+            ground_course_cd    = _swapl(&_buffer.msg.ground_course) / 10000;
             num_sats            = _buffer.msg.satellites;
 
             // time from gps is UTC, but convert here to msToD
