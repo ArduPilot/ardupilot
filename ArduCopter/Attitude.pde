@@ -443,11 +443,12 @@ get_rate_roll(int32_t target_rate)
     rate_error  = target_rate - current_rate;
     p           = g.pid_rate_roll.get_p(rate_error);
 
-    // freeze I term if we've breached roll-pitch limits
-    if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
-        i	= g.pid_rate_roll.get_integrator();
-    }else{
-        i   = g.pid_rate_roll.get_i(rate_error, G_Dt);
+    // get i term
+    i = g.pid_rate_roll.get_integrator();
+
+    // update i term as long as we haven't breached the limits or the I term will certainly reduce
+    if (!motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
+        i = g.pid_rate_roll.get_i(rate_error, G_Dt);
     }
 
     d = g.pid_rate_roll.get_d(rate_error, G_Dt);
@@ -485,12 +486,15 @@ get_rate_pitch(int32_t target_rate)
     // call pid controller
     rate_error      = target_rate - current_rate;
     p               = g.pid_rate_pitch.get_p(rate_error);
-    // freeze I term if we've breached roll-pitch limits
-    if( motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) ) {
-        i = g.pid_rate_pitch.get_integrator();
-    }else{
+
+    // get i term
+    i = g.pid_rate_pitch.get_integrator();
+
+    // update i term as long as we haven't breached the limits or the I term will certainly reduce
+    if (!motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
         i = g.pid_rate_pitch.get_i(rate_error, G_Dt);
     }
+
     d = g.pid_rate_pitch.get_d(rate_error, G_Dt);
     output = p + i + d;
 
