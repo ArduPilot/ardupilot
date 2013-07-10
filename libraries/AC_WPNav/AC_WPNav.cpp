@@ -271,7 +271,7 @@ void AC_WPNav::update_loiter()
     translate_loiter_target_movements(dt);
 
     // run loiter position controller
-    get_loiter_position_to_velocity(dt, _loiter_speed_cms);
+    get_loiter_position_to_velocity(dt, WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR);
 }
 
 /// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
