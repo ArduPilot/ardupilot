@@ -455,9 +455,6 @@ static struct {
 AP_Airspeed airspeed;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Altitude Sensor variables
-
-////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
 ////////////////////////////////////////////////////////////////////////////////
 // Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
@@ -785,10 +782,10 @@ static void fast_loop()
  */
 static void update_speed_height(void)
 {
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
-        auto_throttle_mode && !throttle_suppressed) {
-        // Call TECS 50Hz update
-        SpdHgt_Controller->update_50hz();
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode && !throttle_suppressed) 
+    {
+	    // Call TECS 50Hz update
+        SpdHgt_Controller->update_50hz(relative_altitude());
     }
 }
 
@@ -960,7 +957,7 @@ static void update_GPS(void)
 
         if(ground_start_count > 1) {
             ground_start_count--;
-            ground_start_avg += g_gps->ground_speed;
+            ground_start_avg += g_gps->ground_speed_cm;
 
         } else if (ground_start_count == 1) {
             // We countdown N number of good GPS fixes
@@ -993,7 +990,9 @@ static void update_GPS(void)
         geofence_check(false);
 
 #if CAMERA == ENABLED
-        camera.update_location(current_loc);
+        if (camera.update_location(current_loc) == true) {
+            do_take_picture();
+        }
 #endif        
     }
 
@@ -1022,7 +1021,7 @@ static void update_flight_mode(void)
                 if (nav_pitch_cd < takeoff_pitch_cd)
                     nav_pitch_cd = takeoff_pitch_cd;
             } else {
-                nav_pitch_cd = (g_gps->ground_speed / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
+                nav_pitch_cd = (g_gps->ground_speed_cm / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
                 nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
@@ -1236,10 +1235,12 @@ static void update_alt()
     //altitude_sensor = BARO;
 
     if (barometer.healthy) {
-        current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;                       // alt_MSL centimeters (meters * 100)
+        // alt_MSL centimeters (centimeters)
+        current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
         current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
     } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-        current_loc.alt = g_gps->altitude;     // alt_MSL centimeters (meters * 100)
+        // alt_MSL centimeters (centimeters)
+        current_loc.alt = g_gps->altitude_cm;
     }
 
     geofence_check(true);
@@ -1249,11 +1250,14 @@ static void update_alt()
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 
     // Update the speed & height controller states
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS && 
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS &&
         auto_throttle_mode && !throttle_suppressed) {
-        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt, target_airspeed_cm, 
+        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
+                                                 target_airspeed_cm,
                                                  (control_mode==AUTO && takeoff_complete == false), 
-                                                 takeoff_pitch_cd);
+                                                 takeoff_pitch_cd,
+                                                 throttle_nudge,
+                                                 relative_altitude());
         if (g.log_bitmask & MASK_LOG_TECS) {
             Log_Write_TECS_Tuning();
         }

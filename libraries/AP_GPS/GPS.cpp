@@ -74,7 +74,7 @@ GPS::update(void)
 
         if (_status >= GPS_OK_FIX_2D) {
             last_fix_time = _idleTimer;
-            _last_ground_speed_cm = ground_speed;
+            _last_ground_speed_cm = ground_speed_cm;
 
             if (_have_raw_velocity) {
                 // the GPS is able to give us velocity numbers directly
@@ -82,8 +82,8 @@ GPS::update(void)
                 _velocity_east  = _vel_east * 0.01f;
                 _velocity_down  = _vel_down * 0.01f;
             } else {
-                float gps_heading = ToRad(ground_course * 0.01f);
-                float gps_speed   = ground_speed * 0.01f;
+                float gps_heading = ToRad(ground_course_cd * 0.01f);
+                float gps_speed   = ground_speed_cm * 0.01f;
                 float sin_heading, cos_heading;
 
                 cos_heading = cosf(gps_heading);

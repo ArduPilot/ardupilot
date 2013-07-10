@@ -170,7 +170,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
-    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission, or to adjust for barometric pressure changes
+    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission
     // @Units: Meters
     // @Range: -32767 32767
     // @Increment: 1

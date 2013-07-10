@@ -236,7 +236,7 @@ void init_home()
     home.id         = MAV_CMD_NAV_WAYPOINT;
     home.lng        = g_gps->longitude;                                 // Lon * 10**7
     home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = max(g_gps->altitude, 0);
+    home.alt        = max(g_gps->altitude_cm, 0);
     home_is_set = true;
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);

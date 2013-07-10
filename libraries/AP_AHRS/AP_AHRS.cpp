@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Param: ORIENTATION
     // @DisplayName: Board Orientation
     // @Description: Overall board orientation relative to the standard orientation for the board type. This rotates the IMU and compass readings to allow the board to be oriented in your vehicle at any 90 or 45 degree angle. This option takes affect on next boot. After changing you will need to re-level your vehicle.
-    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270
     // @User: Advanced
     AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
 
@@ -119,11 +119,12 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();
 		if (_wind_max > 0 && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
-			// constrain the airspeed by the ground speed
-			// and AHRS_WIND_MAX
-			*airspeed_ret = constrain_float(*airspeed_ret, 
-						  _gps->ground_speed*0.01f - _wind_max, 
-						  _gps->ground_speed*0.01f + _wind_max);
+                    // constrain the airspeed by the ground speed
+                    // and AHRS_WIND_MAX
+                    float gnd_speed = _gps->ground_speed_cm*0.01f;
+                    *airspeed_ret = constrain_float(*airspeed_ret, 
+                                                    gnd_speed - _wind_max, 
+                                                    gnd_speed + _wind_max);
 		}
 		return true;
 	}
@@ -196,8 +197,8 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
-	    float cog = radians(_gps->ground_course*0.01f);
-	    gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * _gps->ground_speed * 0.01f;
+	    float cog = radians(_gps->ground_course_cd*0.01f);
+	    gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * _gps->ground_speed_cm * 0.01f;
     }
     // If both ADS and GPS data is available, apply a complementary filter
     if (gotAirspeed && gotGPS) {
@@ -239,6 +240,6 @@ bool AP_AHRS::get_projected_position(struct Location *loc)
         if (!get_position(loc)) {
 		return false;
         }
-        location_update(loc, degrees(yaw), _gps->ground_speed * 0.01 * _gps->get_lag());
+        location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
         return true;
 }

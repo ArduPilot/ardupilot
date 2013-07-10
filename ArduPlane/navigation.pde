@@ -193,3 +193,20 @@ static void setup_glide_slope(void)
         break;
     }
 }
+
+/*
+  return relative altitude in meters (relative to home)
+ */
+static float relative_altitude(void)
+{
+    return (current_loc.alt - home.alt) * 0.01f;
+}
+
+/*
+  return relative altitude in centimeters, absolute value
+ */
+static int32_t relative_altitude_abs_cm(void)
+{
+    return labs(current_loc.alt - home.alt);
+}
+

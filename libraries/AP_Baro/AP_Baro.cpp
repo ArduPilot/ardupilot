@@ -32,6 +32,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("TEMP", 3, AP_Baro, _ground_temperature, 0),
 
+    // @Param: ALT_OFFSET
+    // @DisplayName: altitude offset
+    // @Description: altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.
+    // @Units: meters
+    // @Range: -128 127
+    // @Increment: 1
+    AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
+
     AP_GROUPEND
 };
 
@@ -41,6 +49,10 @@ void AP_Baro::calibrate()
 {
     float ground_pressure = 0;
     float ground_temperature = 0;
+
+    // reset the altitude offset when we calibrate. The altitude
+    // offset is supposed to be for within a flight
+    _alt_offset.set_and_save(0);
 
     {
         uint32_t tstart = hal.scheduler->millis();
@@ -104,7 +116,7 @@ float AP_Baro::get_altitude(void)
 
     if (_last_altitude_t == _last_update) {
         // no new information
-        return _altitude;
+        return _altitude + _alt_offset;
     }
 
 
@@ -128,7 +140,7 @@ float AP_Baro::get_altitude(void)
     // ensure the climb rate filter is updated
     _climb_rate_filter.update(_altitude, _last_update);
 
-    return _altitude;
+    return _altitude + _alt_offset;
 }
 
 // return current scale factor that converts from equivalent to true airspeed

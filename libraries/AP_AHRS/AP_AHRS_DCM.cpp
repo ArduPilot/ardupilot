@@ -291,7 +291,7 @@ bool AP_AHRS_DCM::use_compass(void) const
         // we don't have any alterative to the compass
         return true;
     }
-    if (_gps->ground_speed < GPS_SPEED_MIN) {
+    if (_gps->ground_speed_cm < GPS_SPEED_MIN) {
         // we are not going fast enough to use the GPS
         return true;
     }
@@ -300,8 +300,8 @@ bool AP_AHRS_DCM::use_compass(void) const
     // degrees and the estimated wind speed is less than 80% of the
     // ground speed, then switch to GPS navigation. This will help
     // prevent flyaways with very bad compass offsets
-    int32_t error = abs(wrap_180_cd(yaw_sensor - _gps->ground_course));
-    if (error > 4500 && _wind.length() < _gps->ground_speed*0.008f) {
+    int32_t error = abs(wrap_180_cd(yaw_sensor - _gps->ground_course_cd));
+    if (error > 4500 && _wind.length() < _gps->ground_speed_cm*0.008f) {
         // start using the GPS for heading
         return false;
     }
@@ -344,11 +344,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
           we are using GPS for yaw
          */
         if (_gps->last_fix_time != _gps_last_update &&
-            _gps->ground_speed >= GPS_SPEED_MIN) {
+            _gps->ground_speed_cm >= GPS_SPEED_MIN) {
             yaw_deltat = (_gps->last_fix_time - _gps_last_update) * 1.0e-3f;
             _gps_last_update = _gps->last_fix_time;
             new_value = true;
-            float gps_course_rad = ToRad(_gps->ground_course * 0.01f);
+            float gps_course_rad = ToRad(_gps->ground_course_cd * 0.01f);
             float yaw_error_rad = gps_course_rad - yaw;
             yaw_error = sinf(yaw_error_rad);
 
@@ -370,7 +370,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             */
             if (!_flags.have_initial_yaw || 
                 yaw_deltat > 20 ||
-                (_gps->ground_speed >= 3*GPS_SPEED_MIN && fabsf(yaw_error_rad) >= 1.047f)) {
+                (_gps->ground_speed_cm >= 3*GPS_SPEED_MIN && fabsf(yaw_error_rad) >= 1.047f)) {
                 // reset DCM matrix based on current yaw
                 _dcm_matrix.from_euler(roll, pitch, gps_course_rad);
                 _omega_yaw_P.zero();
@@ -611,7 +611,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     if (_flags.fly_forward && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D && 
-        _gps->ground_speed < GPS_SPEED_MIN && 
+        _gps->ground_speed_cm < GPS_SPEED_MIN && 
         _accel_vector.x >= 7 &&
 	    pitch_sensor > -3000 && pitch_sensor < 3000) {
             // assume we are in a launch acceleration, and reduce the
@@ -798,9 +798,10 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 	if (ret && _wind_max > 0 && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D) {
 		// constrain the airspeed by the ground speed
 		// and AHRS_WIND_MAX
+        float gnd_speed = _gps->ground_speed_cm*0.01f;
 		*airspeed_ret = constrain_float(*airspeed_ret, 
-					  _gps->ground_speed*0.01f - _wind_max, 
-					  _gps->ground_speed*0.01f + _wind_max);
+                                        gnd_speed - _wind_max, 
+                                        gnd_speed + _wind_max);
 	}
 	return ret;
 }

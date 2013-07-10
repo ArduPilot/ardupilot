@@ -235,12 +235,12 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         fix_time,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        g_gps->altitude * 10,             // millimeters above sea level
+        g_gps->altitude_cm * 10,             // millimeters above sea level
         (current_loc.alt - home.alt) * 10,           // millimeters above ground
         g_gps->velocity_north() * 100,  // X speed cm/s (+ve North)
         g_gps->velocity_east()  * 100,  // Y speed cm/s (+ve East)
         g_gps->velocity_down()  * -100, // Z speed cm/s (+ve up)
-        g_gps->ground_course);          // course in 1/100 degree
+        g_gps->ground_course_cd);          // course in 1/100 degree
 }
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
@@ -295,11 +295,11 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->status(),
         g_gps->latitude,      // in 1E7 degrees
         g_gps->longitude,     // in 1E7 degrees
-        g_gps->altitude * 10, // in mm
+        g_gps->altitude_cm * 10, // in mm
         g_gps->hdop,
         65535,
-        g_gps->ground_speed,  // cm/s
-        g_gps->ground_course, // 1/100 degrees,
+        g_gps->ground_speed_cm,  // cm/s
+        g_gps->ground_course_cd, // 1/100 degrees,
         g_gps->num_sats);
 
 }
@@ -412,8 +412,8 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
         chan,
-        (float)g_gps->ground_speed / 100.0f,
-        (float)g_gps->ground_speed / 100.0f,
+        (float)g_gps->ground_speed_cm / 100.0f,
+        (float)g_gps->ground_speed_cm / 100.0f,
         (ahrs.yaw_sensor / 100) % 360,
         g.rc_3.servo_out/10,
         current_loc.alt / 100.0f,
@@ -1932,7 +1932,7 @@ mission_failed:
                       vel*1.0e-2, cog*1.0e-2, 0, 10);
 
         if (gps_base_alt == 0) {
-            gps_base_alt = g_gps->altitude;
+            gps_base_alt = g_gps->altitude_cm;
             current_loc.alt = 0;
         }
 

@@ -35,10 +35,10 @@ void AP_GPS_HIL::setHIL(uint32_t _time, float _latitude, float _longitude, float
     time                = _time;
     latitude            = _latitude*1.0e7f;
     longitude           = _longitude*1.0e7f;
-    altitude            = _altitude*1.0e2f;
-    ground_speed        = _ground_speed*1.0e2f;
-    ground_course       = _ground_course*1.0e2f;
-    speed_3d            = _speed_3d*1.0e2f;
+    altitude_cm         = _altitude*1.0e2f;
+    ground_speed_cm     = _ground_speed*1.0e2f;
+    ground_course_cd    = _ground_course*1.0e2f;
+    speed_3d_cm         = _speed_3d*1.0e2f;
     num_sats            = _num_sats;
     fix                 = FIX_3D;
     new_data            = true;

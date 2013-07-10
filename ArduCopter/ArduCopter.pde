@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.0.1-rc1"
+#define THISFIRMWARE "ArduCopter V3.0.1-rc2"
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -1374,7 +1374,9 @@ static void update_GPS(void)
         }
 
 #if CAMERA == ENABLED
-        camera.update_location(current_loc);
+        if (camera.update_location(current_loc) == true) {
+            do_take_picture();
+        }
 #endif                
     }
 
@@ -2016,7 +2018,7 @@ static void update_altitude()
 {
 #if HIL_MODE == HIL_MODE_ATTITUDE
     // we are in the SIM, fake out the baro and Sonar
-    baro_alt                = g_gps->altitude - gps_base_alt;
+    baro_alt                = g_gps->altitude_cm - gps_base_alt;
 
     if(g.sonar_enabled) {
         sonar_alt           = baro_alt;

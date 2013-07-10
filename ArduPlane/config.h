@@ -647,7 +647,8 @@
     MASK_LOG_CMD | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CURRENT | \
-    MASK_LOG_TECS
+    MASK_LOG_TECS | \
+    MASK_LOG_CAMERA
 
 
 

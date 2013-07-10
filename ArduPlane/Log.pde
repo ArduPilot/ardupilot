@@ -50,6 +50,7 @@ print_log_menu(void)
         PLOG(CURRENT);
         PLOG(COMPASS);
         PLOG(TECS);
+        PLOG(CAMERA);
  #undef PLOG
     }
 
@@ -139,6 +140,8 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CMD);
         TARG(CURRENT);
         TARG(COMPASS);
+        TARG(TECS);
+        TARG(CAMERA);
  #undef TARG
     }
 

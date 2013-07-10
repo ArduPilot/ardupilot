@@ -271,7 +271,7 @@ void AC_WPNav::update_loiter()
     translate_loiter_target_movements(dt);
 
     // run loiter position controller
-    get_loiter_position_to_velocity(dt, _loiter_speed_cms);
+    get_loiter_position_to_velocity(dt, WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR);
 }
 
 /// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
@@ -535,8 +535,8 @@ void AC_WPNav::get_loiter_position_to_velocity(float dt, float max_speed_cms)
             desired_vel.x = vel_sqrt * dist_error.x/dist_error_total;
             desired_vel.y = vel_sqrt * dist_error.y/dist_error_total;
         }else{
-            desired_vel.x = _pid_pos_lat->get_p(dist_error.x);
-            desired_vel.y = _pid_pos_lon->get_p(dist_error.y);
+            desired_vel.x = _pid_pos_lat->kP() * dist_error.x;
+            desired_vel.y = _pid_pos_lon->kP() * dist_error.y;
         }
 
         // ensure velocity stays within limits

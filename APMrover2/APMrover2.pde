@@ -790,7 +790,7 @@ static void update_GPS(void)
 
 		if(ground_start_count > 1){
 			ground_start_count--;
-			ground_start_avg += g_gps->ground_speed;
+			ground_start_avg += g_gps->ground_speed_cm;
 
 		} else if (ground_start_count == 1) {
 			// We countdown N number of good GPS fixes
@@ -808,7 +808,7 @@ static void update_GPS(void)
 				ground_start_count = 0;
 			}
 		}
-        ground_speed   = g_gps->ground_speed * 0.01;
+        ground_speed   = g_gps->ground_speed_cm * 0.01;
 	}
 }
 

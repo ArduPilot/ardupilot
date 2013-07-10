@@ -241,12 +241,12 @@ bool AP_GPS_NMEA::_term_complete()
                     date                        = _new_date;
                     latitude            = _new_latitude * 10;   // degrees*10e5 -> 10e7
                     longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
-                    ground_speed        = _new_speed;
-                    ground_course       = _new_course;
+                    ground_speed_cm     = _new_speed;
+                    ground_course_cd    = _new_course;
                     fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
                     break;
                 case _GPS_SENTENCE_GPGGA:
-                    altitude            = _new_altitude;
+                    altitude_cm         = _new_altitude;
                     time                        = _new_time;
                     latitude            = _new_latitude * 10;   // degrees*10e5 -> 10e7
                     longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
@@ -255,8 +255,8 @@ bool AP_GPS_NMEA::_term_complete()
                     fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
                     break;
                 case _GPS_SENTENCE_GPVTG:
-                    ground_speed        = _new_speed;
-                    ground_course       = _new_course;
+                    ground_speed_cm     = _new_speed;
+                    ground_course_cd    = _new_course;
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }
