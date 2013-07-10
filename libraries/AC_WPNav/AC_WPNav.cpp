@@ -280,29 +280,33 @@ void AC_WPNav::calculate_loiter_leash_length()
     // get loiter position P
     float kP = _pid_pos_lat->kP();
 
+    // check loiter speed
+    if( _loiter_speed_cms < 100.0f) {
+        _loiter_speed_cms = 100.0f;
+    }
+
+    // set loiter acceleration to 1/2 loiter speed
+    _loiter_accel_cms = _loiter_speed_cms / 2.0f;
+
     // avoid divide by zero
     if (kP <= 0.0f || _wp_accel_cms <= 0.0f) {
         _loiter_leash = WPNAV_MIN_LEASH_LENGTH;
-        _loiter_accel_cms = _loiter_leash / 2.0f;   // set loiter acceleration to 1/2 loiter speed
         return;
     }
 
-    // calculate horiztonal leash length
-    if(_loiter_speed_cms <= _wp_accel_cms / kP) {
+    // calculate horizontal leash length
+    if(WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR <= _wp_accel_cms / kP) {
         // linear leash length based on speed close in
-        _loiter_leash = _loiter_speed_cms / kP;
+        _loiter_leash = WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR / kP;
     }else{
         // leash length grows at sqrt of speed further out
-        _loiter_leash = (_wp_accel_cms / (2.0f*kP*kP)) + (_loiter_speed_cms*_loiter_speed_cms / (2.0f*_wp_accel_cms));
+        _loiter_leash = (_wp_accel_cms / (2.0f*kP*kP)) + (WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR*WPNAV_LOITER_SPEED_MAX_TO_CORRECT_ERROR / (2.0f*_wp_accel_cms));
     }
 
     // ensure leash is at least 1m long
     if( _loiter_leash < WPNAV_MIN_LEASH_LENGTH ) {
         _loiter_leash = WPNAV_MIN_LEASH_LENGTH;
     }
-
-    // set loiter acceleration to 1/2 loiter speed
-    _loiter_accel_cms = _loiter_leash / 2.0f;
 }
 
 ///
