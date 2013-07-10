@@ -784,21 +784,8 @@ static void update_speed_height(void)
 {
     if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode && !throttle_suppressed) 
     {
-        // height above field elevation in cm
-        float hgt_afe_cm;
-
-        // calculate the height above field elevation in centimeters
-        if (barometer.healthy) 
-        {
-            hgt_afe_cm = (1 - g.altitude_mix) * (g_gps->altitude - home.alt);
-            hgt_afe_cm += g.altitude_mix * read_barometer();
-        } 
-        else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) 
-        {
-            hgt_afe_cm = g_gps->altitude - home.alt;
-        }
 	    // Call TECS 50Hz update
-        SpdHgt_Controller->update_50hz(hgt_afe_cm*0.01f);
+        SpdHgt_Controller->update_50hz((current_loc.alt - home.alt) * 0.01f);
     }
 }
 
