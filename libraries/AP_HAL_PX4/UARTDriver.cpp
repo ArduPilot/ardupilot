@@ -36,10 +36,26 @@ extern const AP_HAL::HAL& hal;
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
 	if (!_initialised) {
-		_fd = open(_devpath, O_RDWR);
+        uint8_t retries = 0;
+        while (retries < 5) {
+            _fd = open(_devpath, O_RDWR);
+            if (_fd != -1) {
+                break;
+            }
+            // sleep a bit and retry. There seems to be a NuttX bug
+            // that can cause ttyACM0 to not be available immediately,
+            // but a small delay can fix it
+            hal.scheduler->delay(100);
+            retries++;
+        }
 		if (_fd == -1) {
 			fprintf(stdout, "Failed to open UART device %s - %s\n",
 				_devpath, strerror(errno));
+			return;
+		}
+		if (retries != 0) {
+			fprintf(stdout, "WARNING: took %u retries to open UART %s\n", 
+                    (unsigned)retries, _devpath);
 			return;
 		}
 
