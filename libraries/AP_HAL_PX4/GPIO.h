@@ -5,6 +5,9 @@
 
 #include <AP_HAL_PX4.h>
 
+#define PX4_GPIO_PIEZO_PIN              110
+#define PX4_GPIO_EXT_RELAY_PIN          111
+
 class PX4::PX4GPIO : public AP_HAL::GPIO {
 public:
     PX4GPIO();

@@ -96,7 +96,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case PIEZO_PIN:    // Piezo beeper 
+        case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
             if (value == LOW) { // this is inverted 
                 ioctl(_tone_alarm_fd, TONE_SET_ALARM, 3);    // Alarm on !! 
                 //::write(_tone_alarm_fd, &user_tune, sizeof(user_tune));
@@ -105,7 +105,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case 99: // Ext Relay 
+        case PX4_GPIO_EXT_RELAY_PIN: // Ext Relay 
             if (value == LOW) {
                 ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1);
             } else {
