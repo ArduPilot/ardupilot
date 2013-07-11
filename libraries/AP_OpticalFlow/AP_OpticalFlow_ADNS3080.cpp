@@ -93,11 +93,6 @@ finish:
     // be called at 1khz
     if( retvalue ) {
         hal.scheduler->register_timer_process( AP_OpticalFlow_ADNS3080::read );
-        _spi_sem = _spi->get_semaphore();
-        if (_spi_sem == NULL) {
-            hal.scheduler->panic(PSTR("PANIC: Got SPI Driver, but did not "
-                        "get valid SPI semaphore in AP_Optflow_ADNS3080"));
-        }
     }
 
     // resume timer
@@ -110,9 +105,18 @@ finish:
 // Read a register from the sensor
 uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 {
-    if (_spi == NULL) return 0;
+    AP_HAL::Semaphore *spi_sem;
 
-    if (!_spi_sem->take_nonblocking()) {
+    // check that we have an spi bus
+    if (_spi == NULL) {
+        return 0;
+    }
+
+    // get spi bus semaphore
+    spi_sem = _spi->get_semaphore();
+
+    // try to get control of the spi bus
+    if (spi_sem == NULL || !spi_sem->take_nonblocking()) {
         return 0;
     }
 
@@ -125,7 +129,8 @@ uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 
     _spi->cs_release();
 
-    _spi_sem->give();
+    // release the spi bus
+    spi_sem->give();
 
     return result;
 }
@@ -133,9 +138,18 @@ uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 // write a value to one of the sensor's registers
 void AP_OpticalFlow_ADNS3080::write_register(uint8_t address, uint8_t value)
 {
-    if (_spi == NULL) return;
+    AP_HAL::Semaphore *spi_sem;
 
-    if (!_spi_sem->take_nonblocking()) {
+    // check that we have an spi bus
+    if (_spi == NULL) {
+        return;
+    }
+
+    // get spi bus semaphore
+    spi_sem = _spi->get_semaphore();
+
+    // try to get control of the spi bus
+    if (spi_sem == NULL || !spi_sem->take_nonblocking()) {
         return;
     }
 
@@ -149,7 +163,8 @@ void AP_OpticalFlow_ADNS3080::write_register(uint8_t address, uint8_t value)
 
     _spi->cs_release();
 
-    _spi_sem->give();
+    // release the spi bus
+    spi_sem->give();
 }
 
 // reset sensor by holding a pin high (or is it low?) for 10us.
