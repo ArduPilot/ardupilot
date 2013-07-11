@@ -56,22 +56,22 @@ public:
 
 	//get Time e.g. 12:05:13.100=120513100
     uint32_t getTimeUTC() {
-    	return ((_valid_time|0x07)==0x07)  ? (uint32_t)(((hour*(uint32_t)100+minutes)*(uint32_t)100+seconds)*(uint32_t)1000+mseconds) : 0 ;//((hour*100+minutes)*100+seconds)*1000+mseconds  : 0;
+    	return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ? (uint32_t)(((hour*(uint32_t)100+minutes)*(uint32_t)100+seconds)*(uint32_t)1000+mseconds) : 0 ;//((hour*100+minutes)*100+seconds)*1000+mseconds  : 0;
     }
 
 	//get Date e.g. 2013/12/30 = 20131230
 	uint32_t getDateUTC(){
-		return ((_valid_time|0x07)==0x07)  ? (uint32_t)((year*(uint32_t)100+month)*(uint32_t)100+day) : 0;
+		return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ? (uint32_t)((year*(uint32_t)100+month)*(uint32_t)100+day) : 0;
 	}
 
 	//get DateTime Stamp e.g. 20131230120513100
 	virtual uint64_t getDateTimeUTC() {
-		return ((_valid_time|0x07)==0x07)  ? (uint64_t)getDateUTC()*(uint64_t)1e9+(uint64_t)getTimeUTC() : 0;
+		return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ? (uint64_t)getDateUTC()*(uint64_t)1e9+(uint64_t)getTimeUTC() : 0;
 	};
 
 	//get Unix time with milisecond precision e.g. 1370863126799
 	uint64_t getUnixTimeUTC() {
-		return ((_valid_time|0x07)==0x07)  ?  _mktime(year,month,day,hour,minutes,seconds)*(uint64_t)1000+mseconds : 0;
+		return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ?  _mktime(year,month,day,hour,minutes,seconds)*(uint64_t)1000+mseconds : 0;
 	}
 
 private:
