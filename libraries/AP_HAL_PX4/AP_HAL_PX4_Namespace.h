@@ -12,6 +12,8 @@ namespace PX4 {
 	class PX4AnalogIn;
 	class PX4AnalogSource;
 	class PX4Util;
+        class PX4GPIO;
+        class PX4DigitalSource;
 }
 
 #endif //__AP_HAL_PX4_NAMESPACE_H__

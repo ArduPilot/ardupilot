@@ -15,6 +15,7 @@
 #include "RCOutput.h"
 #include "AnalogIn.h"
 #include "Util.h"
+#include "GPIO.h"
 
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
@@ -33,7 +34,7 @@ using namespace PX4;
 static Empty::EmptySemaphore  i2cSemaphore;
 static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::EmptySPIDeviceManager spiDeviceManager;
-static Empty::EmptyGPIO gpioDriver;
+//static Empty::EmptyGPIO gpioDriver;
 
 static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
@@ -42,6 +43,7 @@ static PX4RCInput rcinDriver;
 static PX4RCOutput rcoutDriver;
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
+static PX4GPIO gpioDriver;
 
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
@@ -54,9 +56,9 @@ static PX4UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
 
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
-	    &uartADriver,  /* uartA */
-	    &uartBDriver,  /* uartB */
-	    &uartCDriver,  /* uartC */
+        &uartADriver,  /* uartA */
+        &uartBDriver,  /* uartB */
+        &uartCDriver,  /* uartC */
         &i2cDriver, /* i2c */
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
@@ -69,9 +71,9 @@ HAL_PX4::HAL_PX4() :
         &utilInstance) /* util */
 {}
 
-bool _px4_thread_should_exit = false;		/**< Daemon exit flag */
-static bool thread_running = false;		/**< Daemon status flag */
-static int daemon_task;				/**< Handle of daemon task / thread */
+bool _px4_thread_should_exit = false;        /**< Daemon exit flag */
+static bool thread_running = false;        /**< Daemon status flag */
+static int daemon_task;                /**< Handle of daemon task / thread */
 static bool ran_overtime;
 
 extern const AP_HAL::HAL& hal;
@@ -117,6 +119,8 @@ static int main_loop(int argc, char **argv)
     hal.rcin->init(NULL);
     hal.rcout->init(NULL);
     hal.analogin->init(NULL);
+    hal.gpio->init();
+
 
     /*
       run setup() at low priority to ensure CLI doesn't hang the
@@ -153,7 +157,7 @@ static int main_loop(int argc, char **argv)
          */
         hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
 
-		loop();
+        loop();
 
         if (ran_overtime) {
             /*
@@ -181,7 +185,7 @@ static int main_loop(int argc, char **argv)
          */
         hrt_call_after(&loop_call, 500, (hrt_callout)semaphore_yield, &loop_semaphore);
         sem_wait(&loop_semaphore);
-	}
+    }
     thread_running = false;
     return 0;
 }
@@ -203,7 +207,7 @@ void HAL_PX4::init(int argc, char * const argv[]) const
     const char *deviceC = UARTC_DEFAULT_DEVICE;
 
     if (argc < 1) {
-		printf("%s: missing command (try '%s start')", 
+        printf("%s: missing command (try '%s start')", 
                SKETCHNAME, SKETCHNAME);
         usage();
         exit(1);
@@ -248,31 +252,31 @@ void HAL_PX4::init(int argc, char * const argv[]) const
             exit(0);
         }
 
-		if (strcmp(argv[i], "-d") == 0) {
+        if (strcmp(argv[i], "-d") == 0) {
             // set terminal device
-			if (argc > i + 1) {
+            if (argc > i + 1) {
                 deviceA = strdup(argv[i+1]);
-			} else {
-				printf("missing parameter to -d DEVICE\n");
+            } else {
+                printf("missing parameter to -d DEVICE\n");
                 usage();
                 exit(1);
-			}
-		}
+            }
+        }
 
-		if (strcmp(argv[i], "-d2") == 0) {
+        if (strcmp(argv[i], "-d2") == 0) {
             // set uartC terminal device
-			if (argc > i + 1) {
+            if (argc > i + 1) {
                 deviceC = strdup(argv[i+1]);
-			} else {
-				printf("missing parameter to -d2 DEVICE\n");
+            } else {
+                printf("missing parameter to -d2 DEVICE\n");
                 usage();
                 exit(1);
-			}
-		}
+            }
+        }
     }
  
     usage();
-	exit(1);
+    exit(1);
 }
 
 const HAL_PX4 AP_HAL_PX4;
