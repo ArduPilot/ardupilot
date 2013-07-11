@@ -17,8 +17,8 @@ static void set_control_channels(void)
 static void init_rc_in()
 {
 	// set rc dead zones
-	channel_steer->set_dead_zone(60);
-	channel_throttle->set_dead_zone(6);
+	channel_steer->set_default_dead_zone(30);
+	channel_throttle->set_default_dead_zone(3);
 
 	//set auxiliary ranges
     update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
