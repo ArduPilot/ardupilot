@@ -824,7 +824,7 @@
  # define RATE_YAW_P              	0.200f
 #endif
 #ifndef RATE_YAW_I
- # define RATE_YAW_I              	0.015f
+ # define RATE_YAW_I              	0.020f
 #endif
 #ifndef RATE_YAW_D
  # define RATE_YAW_D              	0.000f
