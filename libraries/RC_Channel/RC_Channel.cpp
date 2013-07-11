@@ -95,9 +95,11 @@ RC_Channel::set_angle(int16_t angle)
 }
 
 void
-RC_Channel::set_dead_zone(int16_t dzone)
+RC_Channel::set_default_dead_zone(int16_t dzone)
 {
-    _dead_zone.set_and_save(abs(dzone >>1));
+    if (!_dead_zone.load()) {
+        _dead_zone.set(abs(dzone));
+    }
 }
 
 void
