@@ -351,6 +351,8 @@ static void do_land(const struct Location *cmd)
 // note: caller should set yaw_mode
 static void do_loiter_unlimited()
 {
+    Vector3f target_pos;
+
     // set roll-pitch mode (no pilot input)
     set_roll_pitch_mode(AUTO_RP);
 
@@ -361,26 +363,24 @@ static void do_loiter_unlimited()
     set_yaw_mode(YAW_HOLD);
 
     // get current position
-    // To-Do: change this to projection based on current location and velocity
-    Vector3f curr = inertial_nav.get_position();
-
-    // default to use position provided
-    Vector3f pos = pv_location_to_vector(command_nav_queue);
-
-    // use current altitude if not provided
-    if( command_nav_queue.alt == 0 ) {
-        pos.z = curr.z;
-    }
+    Vector3f curr_pos = inertial_nav.get_position();
 
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        pos.x = curr.x;
-        pos.y = curr.y;
+        wp_nav.get_stopping_point(curr_pos,inertial_nav.get_velocity(),target_pos);
+    }else{
+        // default to use position provided
+        target_pos = pv_location_to_vector(command_nav_queue);
+    }
+
+    // use current altitude if not provided
+    if( command_nav_queue.alt == 0 ) {
+        target_pos.z = curr_pos.z;
     }
 
     // start way point navigator and provide it the desired location
     set_nav_mode(NAV_WP);
-    wp_nav.set_destination(pos);
+    wp_nav.set_destination(target_pos);
 }
 
 // do_circle - initiate moving in a circle
@@ -419,6 +419,8 @@ static void do_circle()
 // note: caller should set yaw_mode
 static void do_loiter_time()
 {
+    Vector3f target_pos;
+
     // set roll-pitch mode (no pilot input)
     set_roll_pitch_mode(AUTO_RP);
 
@@ -429,26 +431,24 @@ static void do_loiter_time()
     set_yaw_mode(YAW_HOLD);
 
     // get current position
-    // To-Do: change this to projection based on current location and velocity
-    Vector3f curr = inertial_nav.get_position();
-
-    // default to use position provided
-    Vector3f pos = pv_location_to_vector(command_nav_queue);
-
-    // use current altitude if not provided
-    if( command_nav_queue.alt == 0 ) {
-        pos.z = curr.z;
-    }
+    Vector3f curr_pos = inertial_nav.get_position();
 
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        pos.x = curr.x;
-        pos.y = curr.y;
+        wp_nav.get_stopping_point(curr_pos,inertial_nav.get_velocity(),target_pos);
+    }else{
+        // default to use position provided
+        target_pos = pv_location_to_vector(command_nav_queue);
+    }
+
+    // use current altitude if not provided
+    if( command_nav_queue.alt == 0 ) {
+        target_pos.z = curr_pos.z;
     }
 
     // start way point navigator and provide it the desired location
     set_nav_mode(NAV_WP);
-    wp_nav.set_destination(pos);
+    wp_nav.set_destination(target_pos);
 
     // setup loiter timer
     loiter_time     = 0;
