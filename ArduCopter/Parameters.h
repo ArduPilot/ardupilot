@@ -126,6 +126,7 @@ public:
         k_param_sysid_my_gcs,
         k_param_serial3_baud,
         k_param_telem_delay,
+        k_param_curr_amps_offset, 
 
         //
         // 140: Sensor parameters
@@ -267,6 +268,7 @@ public:
     AP_Int16        sysid_my_gcs;
     AP_Int8         serial3_baud;
     AP_Int8         telem_delay;
+    AP_Float        curr_amps_offset;
 
     AP_Int16        rtl_altitude;
     AP_Int8         sonar_enabled;
