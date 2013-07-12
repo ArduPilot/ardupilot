@@ -61,6 +61,8 @@ public:
 private:
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay,2:Servo and turn off throttle,3:Servo when 3m from waypoint,4:transistor
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
+    AP_Int8         _noshake_duration;  // duration in 10ths of a second before shutter 
+
     AP_Int16        _servo_on_pwm;      // PWM value to move servo to when shutter is activated
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
@@ -72,7 +74,10 @@ private:
     void            throttle_pic();     // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
     void            distance_pic();     // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
     void            transistor_pic();   // hacked the circuit to run a transistor? use this trigger to send output.
+    void	    set_delay();        // setup delay counter
 
+    AP_Float        _trigg_dist;     // distance between trigger points (meters)
+    struct Location _last_location;
 };
 
 #endif /* AP_CAMERA_H */
