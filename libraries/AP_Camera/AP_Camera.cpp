@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Description: How long navigation noshake before the shutter will be pressed in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)
     // @Range: 0 50
     // @User: Standard
-    AP_GROUPINFO("DUR_NS",    1, AP_Camera, _noshake_duration, 20),
+    AP_GROUPINFO("DUR_NS",    1, AP_Camera, _noshake_duration, 0),
 
     // @Param: TRIGG_DIST
     // @DisplayName: Camera trigger distance
