@@ -340,7 +340,8 @@ enum gcs_severity {
 
 // battery monitoring macros
 #define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
-#define CURRENT_AMPS(x) (x->voltage_average()-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
+//#define CURRENT_AMPS(x) (x->voltage_average()-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
+#define CURRENT_AMPS(x) (x->voltage_average()-g.curr_amps_offset)*g.curr_amp_per_volt //current sensor zero calibration for bipolar sensors support
 
 #define BATT_MONITOR_DISABLED               0
 #define BATT_MONITOR_VOLTAGE_ONLY           3
