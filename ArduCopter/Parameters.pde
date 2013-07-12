@@ -110,6 +110,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT", CURR_AMP_PER_VOLT),
 
+    // @Param: AMP_OFFSET
+    // @DisplayName: current sensor zero calibration
+    // @Description: in volts
+    GSCALAR(curr_amps_offset, "AMP_OFFSET", CURR_AMPS_OFFSET), 
+
     // @Param: BATT_CAPACITY
     // @DisplayName: Battery Capacity
     // @Description: Battery capacity in milliamp-hours (mAh)
