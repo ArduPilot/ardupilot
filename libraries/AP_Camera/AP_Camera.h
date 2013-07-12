@@ -53,7 +53,9 @@ public:
     // MAVLink methods
     void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
-
+    bool update_location(const struct Location &loc);
+    bool do_not_shake();               //for navigation delay before take picture
+    
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
@@ -65,8 +67,8 @@ private:
     uint8_t         _thr_pic_counter;   // timer variable for throttle_pic
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay. The subclasses could be AP_Relay_APM1 or AP_Relay_APM2
 
-    void            servo_pic();        // Servo operated camera
-    void            relay_pic();        // basic relay activation
+ //   void            servo_pic();        // Servo operated camera
+ //   void            relay_pic();        // basic relay activation
     void            throttle_pic();     // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
     void            distance_pic();     // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
     void            transistor_pic();   // hacked the circuit to run a transistor? use this trigger to send output.
