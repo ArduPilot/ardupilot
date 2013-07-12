@@ -357,17 +357,35 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (1.5 seconds) failsafe event in AUTO, GUIDED or LOITER modes. A short failsafe event in stabilization modes will always cause a change to CIRCLE mode. In AUTO mode you can choose whether it will RTL (ReturnToLaunch) or continue with the mission. If FS_SHORT_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter CIRCLE mode, and then enter RTL if the failsafe condition persists for 20 seconds.
+    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event in AUTO, GUIDED or LOITER modes. A short failsafe event in stabilization modes will always cause an immediate change to CIRCLE mode. In AUTO mode you can choose whether it will RTL (ReturnToLaunch) or continue with the mission. If FS_SHORT_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter CIRCLE mode, and then enter RTL if the failsafe condition persists for FS_LONG_TIMEOUT seconds.
     // @Values: 0:Continue,1:Circle/ReturnToLaunch
     // @User: Standard
     GSCALAR(short_fs_action,        "FS_SHORT_ACTN",  SHORT_FAILSAFE_ACTION),
 
+    // @Param: FS_SHORT_TIMEOUT
+    // @DisplayName: Short failsafe timeout
+    // @Description: The time in seconds that a failsafe condition has to persist before a short failsafe event will occor. This defaults to 1.5 seconds
+    // @Units: seconds
+    // @Range: 1 100
+    // @Increment: 0.5
+    // @User: Standard
+    GSCALAR(short_fs_timeout,        "FS_SHORT_TIMEOUT", 1.5f),
+
     // @Param: FS_LONG_ACTN
     // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (20 second) failsafe event in AUTO, GUIDED or LOITER modes. A long failsafe event in stabilization modes will always cause an RTL (ReturnToLaunch). In AUTO modes you can choose whether it will RTL or continue with the mission. If FS_LONG_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter RTL mode. Note that if FS_SHORT_ACTN is 1, then the aircraft will enter CIRCLE mode after 1.5 seconds of failsafe, and will always enter RTL after 20 seconds of failsafe, regardless of the FS_LONG_ACTN setting.
+    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event in AUTO, GUIDED or LOITER modes. A long failsafe event in stabilization modes will always cause an RTL (ReturnToLaunch). In AUTO modes you can choose whether it will RTL or continue with the mission. If FS_LONG_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter RTL mode. Note that if FS_SHORT_ACTN is 1, then the aircraft will enter CIRCLE mode after FS_SHORT_TIMEOUT seconds of failsafe, and will always enter RTL after FS_LONG_TIMEOUT seconds of failsafe, regardless of the FS_LONG_ACTN setting.
     // @Values: 0:Continue,1:ReturnToLaunch
     // @User: Standard
     GSCALAR(long_fs_action,         "FS_LONG_ACTN",   LONG_FAILSAFE_ACTION),
+
+    // @Param: FS_LONG_TIMEOUT
+    // @DisplayName: Long failsafe timeout
+    // @Description: The time in seconds that a failsafe condition has to persist before a long failsafe event will occor. This defaults to 20 seconds
+    // @Units: seconds
+    // @Range: 1 300
+    // @Increment: 0.5
+    // @User: Standard
+    GSCALAR(long_fs_timeout,        "FS_LONG_TIMEOUT", 20),
 
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage

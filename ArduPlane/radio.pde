@@ -140,7 +140,7 @@ static void control_failsafe(uint16_t pwm)
 
     // Check for failsafe condition based on loss of GCS control
     if (rc_override_active) {
-        if (millis() - last_heartbeat_ms > FAILSAFE_SHORT_TIME) {
+        if (millis() - last_heartbeat_ms > g.short_fs_timeout*1000) {
             ch3_failsafe = true;
         } else {
             ch3_failsafe = false;

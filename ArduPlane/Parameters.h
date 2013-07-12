@@ -191,6 +191,8 @@ public:
         k_param_rc_12,
         k_param_fs_batt_voltage,
         k_param_fs_batt_mah,
+        k_param_short_fs_timeout,
+        k_param_long_fs_timeout,
 
         //
         // 200: Feed-forward gains
@@ -313,6 +315,8 @@ public:
     // Failsafe
     AP_Int8 short_fs_action;
     AP_Int8 long_fs_action;
+    AP_Float short_fs_timeout;
+    AP_Float long_fs_timeout;
     AP_Int8 gcs_heartbeat_fs_enabled;
     AP_Float fs_batt_voltage;
     AP_Float fs_batt_mah;

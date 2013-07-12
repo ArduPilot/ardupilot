@@ -22,8 +22,6 @@
 #define FAILSAFE_SHORT  1
 #define FAILSAFE_LONG   2
 #define FAILSAFE_GCS    3
-#define FAILSAFE_SHORT_TIME 1500        // Miliiseconds
-#define FAILSAFE_LONG_TIME  20000       // Miliiseconds
 
 
 // active altitude sensor

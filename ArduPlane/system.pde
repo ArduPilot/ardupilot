@@ -402,28 +402,27 @@ static void check_long_failsafe()
     // only act on changes
     // -------------------
     if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS) {
-        if (rc_override_active && tnow - last_heartbeat_ms > FAILSAFE_LONG_TIME) {
+        if (rc_override_active && (tnow - last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        }
-        if(!rc_override_active && failsafe == FAILSAFE_SHORT && 
-           (tnow - ch3_failsafe_timer) > FAILSAFE_LONG_TIME) {
+        } else if (!rc_override_active && failsafe == FAILSAFE_SHORT && 
+           (tnow - ch3_failsafe_timer) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        }
-        if (g.gcs_heartbeat_fs_enabled && 
+        } else if (g.gcs_heartbeat_fs_enabled && 
             last_heartbeat_ms != 0 &&
-            (tnow - last_heartbeat_ms) > FAILSAFE_LONG_TIME) {
+            (tnow - last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
     } else {
         // We do not change state but allow for user to change mode
         if (failsafe == FAILSAFE_GCS && 
-            (tnow - last_heartbeat_ms) < FAILSAFE_SHORT_TIME) 
+            (tnow - last_heartbeat_ms) < g.short_fs_timeout*1000) {
             failsafe = FAILSAFE_NONE;
-        if (failsafe == FAILSAFE_LONG && rc_override_active && 
-            (tnow - last_heartbeat_ms) < FAILSAFE_SHORT_TIME) 
+        } else if (failsafe == FAILSAFE_LONG && rc_override_active && 
+                   (tnow - last_heartbeat_ms) < g.short_fs_timeout*1000) {
             failsafe = FAILSAFE_NONE;
-        if (failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) 
+        } else if (failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) {
             failsafe = FAILSAFE_NONE;
+        }
     }
 }
 
