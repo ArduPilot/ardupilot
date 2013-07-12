@@ -266,7 +266,7 @@ private:
 	AverageFilterFloat_Size5 _vdot_filter;
 };
 
-#define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_tuning),	\
+#define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
 							   "TECS", "ffffffffffff", "h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
 
 #endif //AP_TECS_H
