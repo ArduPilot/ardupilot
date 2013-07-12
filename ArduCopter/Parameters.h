@@ -118,6 +118,7 @@ public:
         k_param_sysid_my_gcs,
         k_param_serial3_baud,
         k_param_telem_delay,
+        k_param_curr_amps_offset, 
 
         //
         // 140: Sensor parameters
