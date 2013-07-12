@@ -1164,7 +1164,7 @@ static void update_flight_mode(void)
             nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
 
             float elevator_input;
-            elevator_input = channel_pitch->norm_input();
+            elevator_input = channel_pitch->control_in / 4500.0f;
 
             if (g.flybywire_elev_reverse) {
                 elevator_input = -elevator_input;
