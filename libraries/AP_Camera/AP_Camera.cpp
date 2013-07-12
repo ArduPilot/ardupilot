@@ -164,6 +164,14 @@ if (_trigger_counter == _trigger_duration * 5)  // set pwm pulses "on" after nos
 								}
 }
 
+if (_trigger_counter == 1)  // transistor always 1 cycle (1/50 sec)
+{
+        if (_trigger_type == AP_CAMERA_TRIGGER_TYPE_TRANSISTOR) 
+               hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN, 1);
+}
+
+
+
     if (_trigger_counter) {
         _trigger_counter--;
     } else {
