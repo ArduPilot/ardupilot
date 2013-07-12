@@ -340,8 +340,12 @@ static void set_mode(enum FlightMode mode)
     case MANUAL:
     case STABILIZE:
     case TRAINING:
-    case ACRO:
     case FLY_BY_WIRE_A:
+        break;
+
+    case ACRO:
+        acro_state.locked_roll = false;
+        acro_state.locked_pitch = false;
         break;
 
     case FLY_BY_WIRE_B:
