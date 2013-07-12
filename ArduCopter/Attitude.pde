@@ -404,7 +404,7 @@ run_rate_controllers()
 #endif
 
     // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
-    if( g.throttle_accel_enabled && throttle_accel_controller_active ) {
+    if( throttle_accel_controller_active ) {
         set_throttle_out(get_throttle_accel(throttle_accel_target_ef), true);
     }
 }
@@ -938,13 +938,8 @@ void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
 // set_throttle_accel_target - to be called by upper throttle controllers to set desired vertical acceleration in earth frame
 void set_throttle_accel_target( int16_t desired_acceleration )
 {
-    if( g.throttle_accel_enabled ) {
-        throttle_accel_target_ef = desired_acceleration;
-        throttle_accel_controller_active = true;
-    }else{
-        // To-Do log dataflash or tlog error
-        cliSerial->print_P(PSTR("Err: target sent to inactive acc thr controller!\n"));
-    }
+    throttle_accel_target_ef = desired_acceleration;
+    throttle_accel_controller_active = true;
 }
 
 // disable_throttle_accel - disables the accel based throttle controller
@@ -1154,13 +1149,8 @@ get_throttle_rate(float z_target_speed)
     }
 #endif
 
-    // send output to accelerometer based throttle controller if enabled otherwise send directly to motors
-    if( g.throttle_accel_enabled ) {
-        // set target for accel based throttle controller
-        set_throttle_accel_target(output);
-    }else{
-        set_throttle_out(g.throttle_cruise+output, true);
-    }
+    // set target for accel based throttle controller
+    set_throttle_accel_target(output);
 
     // update throttle cruise
     // TO-DO: this may not be correct because g.rc_3.servo_out has not been updated for this iteration
