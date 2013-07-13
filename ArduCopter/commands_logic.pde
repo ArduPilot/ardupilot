@@ -36,11 +36,6 @@ static void process_nav_command()
         do_RTL();
         break;
 
-    // point the copter and camera at a region of interest (ROI)
-    case MAV_CMD_NAV_ROI:             // 80
-        do_nav_roi();
-        break;
-
     default:
         break;
     }
@@ -107,6 +102,11 @@ static void process_now_command()
         do_repeat_relay();
         break;
 
+    case MAV_CMD_DO_SET_ROI:                // 201
+        // point the copter and camera at a region of interest (ROI)
+        do_roi();
+        break;
+
 #if CAMERA == ENABLED
     case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
         break;
@@ -171,10 +171,6 @@ static bool verify_nav_command()
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
-        break;
-
-    case MAV_CMD_NAV_ROI:             // 80
-        return verify_nav_roi();
         break;
 
     default:
@@ -818,37 +814,6 @@ static bool verify_yaw()
     }
 }
 
-// verify_nav_roi - verifies that actions required by MAV_CMD_NAV_ROI have completed
-//              we assume the camera command has been successfully implemented by the do_nav_roi command
-//              so all we need to check is whether we needed to yaw the copter (due to the mount type) and
-//              whether that yaw has completed
-//	TO-DO: add support for other features of MAV_NAV_ROI including pointing at a given waypoint
-static bool verify_nav_roi()
-{
-#if MOUNT == ENABLED
-    // check if mount type requires us to rotate the quad
-    if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
-        // ensure yaw has gotten to within 2 degrees of the target
-        if( labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_WP_bearing)) <= 200 ) {
-            return true;
-        }else{
-            return false;
-        }
-    }else{
-        // if no rotation required, assume the camera instruction was implemented immediately
-        return true;
-    }
-#else
-    // if we have no camera mount simply check we've reached the desired yaw
-    // ensure yaw has gotten to within 2 degrees of the target
-    if( labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_WP_bearing)) <= 200 ) {
-        return true;
-    }else{
-        return false;
-    }
-#endif
-}
-
 /********************************************************************************/
 //	Do (Now) commands
 /********************************************************************************/
@@ -1030,15 +995,14 @@ static void do_repeat_relay()
     update_events();
 }
 
-// do_nav_roi - starts actions required by MAV_CMD_NAV_ROI
-//              this involves either moving the camera to point at the ROI (region of interest)
-//              and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
-//				Note: the ROI should already be in the command_nav_queue global variable
-//	TO-DO: add support for other features of MAV_NAV_ROI including pointing at a given waypoint
-static void do_nav_roi()
+// do_roi - starts actions required by MAV_CMD_NAV_ROI
+//          this involves either moving the camera to point at the ROI (region of interest)
+//          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
+//          Note: the ROI should already be in the command_nav_queue global variable
+//	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
+static void do_roi()
 {
 #if MOUNT == ENABLED
-
     // check if mount type requires us to rotate the quad
     if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
         yaw_look_at_WP = pv_location_to_vector(command_nav_queue);
@@ -1052,7 +1016,7 @@ static void do_nav_roi()
     //		1: point at next waypoint
     //		2: point at a waypoint taken from WP# parameter (2nd parameter?)
     //		3: point at a location given by alt, lon, lat parameters
-    //		4: point at a target given a target id (can't be implmented)
+    //		4: point at a target given a target id (can't be implemented)
 #else
     // if we have no camera mount aim the quad at the location
     yaw_look_at_WP = pv_location_to_vector(command_nav_queue);
