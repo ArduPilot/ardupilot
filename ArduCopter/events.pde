@@ -43,6 +43,11 @@ static void failsafe_radio_on_event()
             }
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
             break;
+        case LAND:
+            // continue to land if battery failsafe is also active otherwise fall through to default handling
+            if (g.failsafe_battery_enabled && ap.low_battery) {
+                break;
+            }
         default:
             if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
