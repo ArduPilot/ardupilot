@@ -102,6 +102,7 @@ static void stabilize_stick_mixing_direct()
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
         control_mode == FLY_BY_WIRE_B ||
+        control_mode == CRUISE ||
         control_mode == TRAINING) {
         return;
     }
@@ -140,6 +141,7 @@ static void stabilize_stick_mixing_fbw()
         control_mode == ACRO ||
         control_mode == FLY_BY_WIRE_A ||
         control_mode == FLY_BY_WIRE_B ||
+        control_mode == CRUISE ||
         control_mode == TRAINING) {
         return;
     }
@@ -883,8 +885,8 @@ static void set_servos(void)
 
 static bool demoing_servos;
 
-static void demo_servos(uint8_t i) {
-
+static void demo_servos(uint8_t i) 
+{
     while(i > 0) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
         demoing_servos = true;

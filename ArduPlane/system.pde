@@ -348,6 +348,12 @@ static void set_mode(enum FlightMode mode)
         acro_state.locked_pitch = false;
         break;
 
+    case CRUISE:
+        cruise_state.locked_heading = false;
+        cruise_state.lock_timer_ms = 0;
+        target_altitude_cm = current_loc.alt;
+        break;
+
     case FLY_BY_WIRE_B:
         target_altitude_cm = current_loc.alt;
         break;
@@ -632,6 +638,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case FLY_BY_WIRE_B:
         port->print_P(PSTR("FBW_B"));
+        break;
+    case CRUISE:
+        port->print_P(PSTR("CRUISE"));
         break;
     case AUTO:
         port->print_P(PSTR("AUTO"));

@@ -61,6 +61,7 @@ enum FlightMode {
     ACRO          = 4,
     FLY_BY_WIRE_A = 5,
     FLY_BY_WIRE_B = 6,
+    CRUISE        = 7,
     AUTO          = 10,
     RTL           = 11,
     LOITER        = 12,

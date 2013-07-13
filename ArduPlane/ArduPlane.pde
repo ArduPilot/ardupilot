@@ -465,6 +465,15 @@ static struct {
 } acro_state;
 
 ////////////////////////////////////////////////////////////////////////////////
+// CRUISE controller state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    bool locked_heading;
+    int32_t locked_heading_cd;
+    uint32_t lock_timer_ms;
+} cruise_state;
+
+////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
 ////////////////////////////////////////////////////////////////////////////////
 // Flag for using gps ground course instead of INS yaw.  Set false when takeoff command in process.
@@ -1153,42 +1162,31 @@ static void update_flight_mode(void)
             break;
         }
 
-        case FLY_BY_WIRE_B: {
-            static float last_elevator_input;
-            // Substitute stick inputs for Navigation control output
-            // We use g.pitch_limit_min because its magnitude is
-            // normally greater than g.pitch_limit_max
-
+        case FLY_BY_WIRE_B:
             // Thanks to Yury MonZon for the altitude limit code!
+            calc_nav_roll();
+            update_fbwb_speed_height();
+            break;
 
-            nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
+        case CRUISE:
+            /*
+              in CRUISE mode we use the navigation code to control
+              roll when heading is locked. Heading becomes unlocked on
+              any aileron or rudder input
+             */
+            if (control_mode == CRUISE && 
+                (channel_roll->control_in != 0 ||
+                 channel_rudder->control_in != 0)) {                
+                cruise_state.locked_heading = false;
+                cruise_state.lock_timer_ms = 0;
+            }                 
 
-            float elevator_input;
-            elevator_input = channel_pitch->control_in / 4500.0f;
-
-            if (g.flybywire_elev_reverse) {
-                elevator_input = -elevator_input;
+            if (control_mode != CRUISE || !cruise_state.locked_heading) {
+                nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
+            } else {
+                calc_nav_roll();
             }
-
-            target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_ms_fast_loop * 0.1f;
-
-            if (elevator_input == 0.0f && last_elevator_input != 0.0f) {
-                // the user has just released the elevator, lock in
-                // the current altitude
-                target_altitude_cm = current_loc.alt;
-            }
-
-            // check for FBWB altitude limit
-            if (g.FBWB_min_altitude_cm != 0 && target_altitude_cm < home.alt + g.FBWB_min_altitude_cm) {
-                target_altitude_cm = home.alt + g.FBWB_min_altitude_cm;
-            }
-            altitude_error_cm = target_altitude_cm - adjusted_altitude_cm();
-
-            last_elevator_input = elevator_input;
-
-            calc_throttle();
-            calc_nav_pitch();
-        }
+            update_fbwb_speed_height();
             break;
 
         case STABILIZE:
@@ -1239,6 +1237,10 @@ static void update_navigation()
     case RTL:
     case GUIDED:
         update_loiter();
+        break;
+
+    case CRUISE:
+        update_cruise();
         break;
 
     case MANUAL:
