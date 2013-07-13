@@ -262,13 +262,13 @@ AP_AHRS_DCM::yaw_error_compass(void)
 float
 AP_AHRS_DCM::_P_gain(float spin_rate)
 {
-    if (spin_rate < ToDeg(50)) {
+    if (spin_rate < ToRad(50)) {
         return 1.0f;
     }
-    if (spin_rate > ToDeg(500)) {
+    if (spin_rate > ToRad(500)) {
         return 10.0f;
     }
-    return spin_rate/ToDeg(50);
+    return spin_rate/ToRad(50);
 }
 
 // return true if we have and should use GPS
