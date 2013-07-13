@@ -312,8 +312,13 @@ static void pre_arm_rc_checks()
         return;
     }
 
-    // check if throttle min is reasonable
-    if(g.rc_3.radio_min > 1300) {
+    // check channels 1 & 2 have min <= 1300 and max >= 1700
+    if (g.rc_1.radio_min > 1300 || g.rc_1.radio_max < 1700 || g.rc_2.radio_min > 1300 || g.rc_2.radio_max < 1700) {
+        return;
+    }
+
+    // check channels 3 & 4 have min <= 1300 and max >= 1700
+    if (g.rc_3.radio_min > 1300 || g.rc_3.radio_max < 1700 || g.rc_4.radio_min > 1300 || g.rc_4.radio_max < 1700) {
         return;
     }
 
