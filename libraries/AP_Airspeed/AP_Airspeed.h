@@ -25,27 +25,37 @@ public:
     void            calibrate();
 
     // return the current airspeed in m/s
-    float           get_airspeed(void) {
+    float           get_airspeed(void) const {
         return _airspeed;
     }
 
     // return the unfiltered airspeed in m/s
-    float           get_raw_airspeed(void) {
+    float           get_raw_airspeed(void) const {
         return _raw_airspeed;
     }
 
     // return the current airspeed in cm/s
-    float        get_airspeed_cm(void) {
+    float        get_airspeed_cm(void) const {
         return _airspeed*100;
     }
 
+    // return the current airspeed ratio (dimensionless)
+    float        get_airspeed_ratio(void) const {
+        return _ratio;
+    }
+
+    // set the airspeed ratio (dimensionless)
+    void        set_airspeed_ratio(float ratio) {
+        _ratio.set(ratio);
+    }
+
     // return true if airspeed is enabled, and airspeed use is set
-    bool        use(void) {
+    bool        use(void) const {
         return _enable && _use && _offset != 0;
     }
 
     // return true if airspeed is enabled
-    bool        enabled(void) {
+    bool        enabled(void) const {
         return _enable;
     }
 
