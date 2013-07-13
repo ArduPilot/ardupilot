@@ -61,11 +61,17 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("REV",  3, RC_Channel, _reverse, 1),
 
+    // Note: index 4 was used by the previous _dead_zone value. We
+    // changed it to 5 as dead zone values had previously been
+    // incorrectly saved, overriding user values. They were also
+    // incorrectly interpreted for the throttle on APM:Plane
+
     // @Param: DZ
     // @DisplayName: RC dead-zone
     // @Description: dead zone around trim.
     // @User: Advanced
-    AP_GROUPINFO("DZ",   4, RC_Channel, _dead_zone, 0),
+    AP_GROUPINFO("DZ",   5, RC_Channel, _dead_zone, 0),
+
     AP_GROUPEND
 };
 
@@ -135,9 +141,8 @@ RC_Channel::set_pwm(int16_t pwm)
 {
     radio_in = pwm;
 
-    if(_type == RC_CHANNEL_TYPE_RANGE) {
+    if (_type == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range();
-        control_in = (control_in < _dead_zone) ? 0 : control_in;
     } else {
         //RC_CHANNEL_TYPE_ANGLE, RC_CHANNEL_TYPE_ANGLE_RAW
         control_in = pwm_to_angle();
