@@ -616,7 +616,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         if (chan == MAVLINK_COMM_0) {
             gcs0.queued_waypoint_send();
-        } else {
+        } else if (gcs3.initialised) {
             gcs3.queued_waypoint_send();
         }
         break;
@@ -827,7 +827,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_send_timeout(1000), // 1 second
     waypoint_receive_timeout(1000) // 1 second
 {
-
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void
