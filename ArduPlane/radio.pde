@@ -30,7 +30,7 @@ static void init_rc_in()
     channel_roll->set_default_dead_zone(30);
     channel_pitch->set_default_dead_zone(30);
     channel_rudder->set_default_dead_zone(30);
-    channel_throttle->set_default_dead_zone(3);
+    channel_throttle->set_default_dead_zone(30);
 
     //set auxiliary ranges
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
