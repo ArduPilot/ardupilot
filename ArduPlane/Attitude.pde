@@ -73,7 +73,8 @@ static void stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
-    channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd, speed_scaler, 
+    channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
+                                                             speed_scaler, 
                                                              control_mode == STABILIZE, 
                                                              aparm.flybywire_airspeed_min);
 }
@@ -86,7 +87,7 @@ static void stabilize_roll(float speed_scaler)
 static void stabilize_pitch(float speed_scaler)
 {
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
-    channel_pitch->servo_out = g.pitchController.get_servo_out(demanded_pitch, 
+    channel_pitch->servo_out = g.pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                speed_scaler, 
                                                                control_mode == STABILIZE, 
                                                                aparm.flybywire_airspeed_min, 
