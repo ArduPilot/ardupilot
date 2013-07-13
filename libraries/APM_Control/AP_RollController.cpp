@@ -169,11 +169,8 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
  3) boolean which is true when stabilise mode is active
  4) minimum FBW airspeed (metres/sec)
 */
-int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabilize, int16_t aspd_min)
+int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool stabilize, int16_t aspd_min)
 {
-	// Calculate bank angle error in centi-degrees
-	int32_t angle_err = angle - _ahrs->roll_sensor;
-
     if (_tau < 0.1) {
         _tau = 0.1;
     }

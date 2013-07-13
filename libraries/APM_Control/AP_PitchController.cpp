@@ -179,7 +179,7 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
 // 4) minimum FBW airspeed (metres/sec)
 // 5) maximum FBW airspeed (metres/sec)
 //
-int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stabilize, int16_t aspd_min, int16_t aspd_max)
+int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool stabilize, int16_t aspd_min, int16_t aspd_max)
 {
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
@@ -208,14 +208,16 @@ int32_t AP_PitchController::get_servo_out(int32_t angle, float scaler, bool stab
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
 	}
-    rate_offset = fabsf(ToDeg((GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+    if (abs(_ahrs->pitch_sensor) > 7000) {
+        // don't do turn coordination handling when at very high pitch angles
+        rate_offset = 0;
+    } else {
+        rate_offset = fabsf(ToDeg((GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+    }
 	if (inverted) {
 		rate_offset = -rate_offset;
 	}
 	
-	//Calculate pitch angle error in centi-degrees
-	int32_t angle_err = angle - _ahrs->pitch_sensor;
-
 	// Calculate the desired pitch rate (deg/sec) from the angle error
 	float desired_rate = angle_err * 0.01f / _tau;
 	
