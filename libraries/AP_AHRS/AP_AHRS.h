@@ -97,10 +97,6 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    // roll and pitch rates in earth frame, in radians/s
-    float get_pitch_rate_earth(void) const;
-    float get_roll_rate_earth(void) const;
-
     // return a smoothed and corrected gyro vector
     virtual const Vector3f get_gyro(void) const = 0;
 
