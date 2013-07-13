@@ -284,6 +284,17 @@ static void pre_arm_checks(bool display_failure)
     }
 #endif
 
+    // failsafe parameter checks
+    if (g.failsafe_throttle) {
+        // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
+        if (g.rc_3.radio_min <= g.failsafe_throttle_value+10 || g.failsafe_throttle_value < 910) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
+            }
+            return;
+        }
+    }
+
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;
 }
