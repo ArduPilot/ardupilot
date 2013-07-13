@@ -460,7 +460,7 @@ AP_Airspeed airspeed;
 static struct {
     bool locked_roll;
     bool locked_pitch;
-    int32_t locked_roll_cd;
+    float locked_roll_err;
     int32_t locked_pitch_cd;
 } acro_state;
 
@@ -1133,7 +1133,7 @@ static void update_flight_mode(void)
         case ACRO: {
             // handle locked/unlocked control
             if (acro_state.locked_roll) {
-                nav_roll_cd = acro_state.locked_roll_cd;
+                nav_roll_cd = acro_state.locked_roll_err;
             } else {
                 nav_roll_cd = ahrs.roll_sensor;
             }

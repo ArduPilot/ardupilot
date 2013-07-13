@@ -245,49 +245,25 @@ static void stabilize_acro(float speed_scaler)
     /*
       check for special roll handling near the pitch poles
      */
-    if (roll_rate == 0 && 
-        acro_state.locked_roll && 
-        (ahrs.pitch_sensor > 7000 ||
-         ahrs.pitch_sensor < -7000)) {
-        // when near the poles do rate holding, but don't unlock the
-        // desired roll.
-        channel_roll->servo_out  = g.rollController.get_rate_out(roll_rate,  speed_scaler);
-    } else if (roll_rate == 0) {
+    if (roll_rate == 0) {
         /*
           we have no roll stick input, so we will enter "roll locked"
           mode, and hold the roll we had when the stick was released
          */
         if (!acro_state.locked_roll) {
             acro_state.locked_roll = true;
-            acro_state.locked_roll_cd = ahrs.roll_sensor;
+            acro_state.locked_roll_err = 0;
+        } else {
+            acro_state.locked_roll_err += ahrs.get_gyro().x * 0.02f;
         }
-        /* 
-           special handling for the roll inversion while
-           looping. Using euler angles for this is ugly, but it fits
-           with the rest of the APM code, and actually works
-           surprisingly well
-         */
-        int32_t roll_error_cd = ahrs.roll_sensor - acro_state.locked_roll_cd;
-        if (roll_error_cd > 13500 && roll_error_cd < 21500) {
-            acro_state.locked_roll_cd += 18000;
-        }
-        if (roll_error_cd < -13500 && roll_error_cd > -21500) {
-            acro_state.locked_roll_cd -= 18000;
-        }
-        acro_state.locked_roll_cd = wrap_180_cd(acro_state.locked_roll_cd);
-        nav_roll_cd = acro_state.locked_roll_cd;
-
-        /* 
-           now we need to prevent the roll controller from seeing a
-           jump as roll passes through the -180 -> 180 point 
-        */
-        roll_error_cd = ahrs.roll_sensor - nav_roll_cd;
-        if (roll_error_cd > 31500) {
-            nav_roll_cd += 36000;
-        } else if (roll_error_cd < -31500) {
-            nav_roll_cd -= 36000;
-        }
-        stabilize_roll(speed_scaler);
+        int32_t roll_error_cd = -ToDeg(acro_state.locked_roll_err)*100;
+        nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
+        // try to reduce the integrated angular error to zero. We set
+        // 'stabilze' to true, which disables the roll integrator
+        channel_roll->servo_out  = g.rollController.get_servo_out(roll_error_cd,
+                                                                  speed_scaler,
+                                                                  true,
+                                                                  aparm.flybywire_airspeed_min);
     } else {
         /*
           aileron stick is non-zero, use pure rate control until the
@@ -306,8 +282,14 @@ static void stabilize_acro(float speed_scaler)
             acro_state.locked_pitch = true;
             acro_state.locked_pitch_cd = ahrs.pitch_sensor;
         }
+        // try to hold the locked pitch. Note that we have the pitch
+        // integrator enabled, which helps with inverted flight
         nav_pitch_cd = acro_state.locked_pitch_cd;
-        stabilize_pitch(speed_scaler);
+        channel_pitch->servo_out  = g.pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
+                                                                    speed_scaler,
+                                                                    false,
+                                                                    aparm.flybywire_airspeed_min,
+                                                                    aparm.flybywire_airspeed_max);
     } else {
         /*
           user has non-zero pitch input, use a pure rate controller
