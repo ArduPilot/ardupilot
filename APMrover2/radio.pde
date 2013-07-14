@@ -21,7 +21,7 @@ static void init_rc_in()
 	channel_throttle->set_default_dead_zone(3);
 
 	//set auxiliary ranges
-    update_aux_servo_function(&g.rc_2, &g.rc_4, &g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+    update_aux();
 }
 
 static void init_rc_out()
@@ -30,6 +30,17 @@ static void init_rc_out()
         RC_Channel::rc_channel(i)->enable_out();
         RC_Channel::rc_channel(i)->output_trim();
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_9,   g.rc_9.radio_trim);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_10,  g.rc_10.radio_trim);
+    servo_write(CH_11,  g.rc_11.radio_trim);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_12,  g.rc_12.radio_trim);
+#endif
 }
 
 static void read_radio()

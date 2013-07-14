@@ -86,6 +86,18 @@ static void handle_process_do_command()
 			do_repeat_relay();
 			break;
 
+#if CAMERA == ENABLED
+    case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
+        break;
+
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|
+        break;
+
+    case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
+        do_take_picture();
+        break;
+#endif
+
 #if MOUNT == ENABLED
 		// Sets the region of interest (ROI) for a sensor set or the
 		// vehicle itself. This can then be used by the vehicles control
@@ -93,7 +105,10 @@ static void handle_process_do_command()
 		// devices such as cameras.
 		//    |Region of interest mode. (see MAV_ROI enum)| Waypoint index/ target ID. (see MAV_ROI enum)| ROI index (allows a vehicle to manage multiple cameras etc.)| Empty| x the location of the fixed ROI (see MAV_FRAME)| y| z|
 		case MAV_CMD_DO_SET_ROI:
+#if 0
+            // not supported yet
 			camera_mount.set_roi_cmd();
+#endif
 			break;
 
 		case MAV_CMD_DO_MOUNT_CONFIGURE:	// Mission command to configure a camera mount |Mount operation mode (see MAV_CONFIGURE_MOUNT_MODE enum)| stabilize roll? (1 = yes, 0 = no)| stabilize pitch? (1 = yes, 0 = no)| stabilize yaw? (1 = yes, 0 = no)| Empty| Empty| Empty|
@@ -375,32 +390,11 @@ static void do_repeat_servo()
 	event_id = next_nonnav_command.p1 - 1;
 
 	if(next_nonnav_command.p1 >= CH_5 + 1 && next_nonnav_command.p1 <= CH_8 + 1) {
-
 		event_timer 	= 0;
 		event_delay 	= next_nonnav_command.lng * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
 		event_repeat 	= next_nonnav_command.lat * 2;
 		event_value 	= next_nonnav_command.alt;
-
-		switch(next_nonnav_command.p1) {
-			case CH_2:
-				event_undo_value = g.rc_2.radio_trim;
-				break;
-			case CH_4:
-				event_undo_value = g.rc_4.radio_trim;
-				break;
-			case CH_5:
-				event_undo_value = g.rc_5.radio_trim;
-				break;
-			case CH_6:
-				event_undo_value = g.rc_6.radio_trim;
-				break;
-			case CH_7:
-				event_undo_value = g.rc_7.radio_trim;
-				break;
-			case CH_8:
-				event_undo_value = g.rc_8.radio_trim;
-				break;
-		}
+        event_undo_value  = RC_Channel::rc_channel(next_nonnav_command.p1-1)->radio_trim;
 		update_events();
 	}
 }
@@ -414,3 +408,14 @@ static void do_repeat_relay()
 	update_events();
 }
 
+
+// do_take_picture - take a picture with the camera library
+static void do_take_picture()
+{
+#if CAMERA == ENABLED
+    camera.trigger_pic();
+    if (g.log_bitmask & MASK_LOG_CAMERA) {
+        Log_Write_Camera();
+    }
+#endif
+}

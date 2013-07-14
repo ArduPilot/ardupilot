@@ -227,6 +227,28 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
 	GGROUP(rc_8,                    "RC8_", RC_Channel_aux),
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // @Group: RC9_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // @Group: RC10_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
+
+    // @Group: RC11_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // @Group: RC12_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
+#endif
+
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle setting to which the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
@@ -460,6 +482,18 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+
+#if CAMERA == ENABLED
+    // @Group: CAM_
+    // @Path: ../libraries/AP_Camera/AP_Camera.cpp
+    GOBJECT(camera,                  "CAM_", AP_Camera),
+#endif
+
+#if MOUNT == ENABLED
+    // @Group: MNT_
+    // @Path: ../libraries/AP_Mount/AP_Mount.cpp
+    GOBJECT(camera_mount,           "MNT_", AP_Mount),
+#endif
 
 	AP_VAREND
 };
