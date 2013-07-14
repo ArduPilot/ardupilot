@@ -447,6 +447,8 @@ static struct {
     float current_total_mah;
     // true when a low battery event has happened
     bool low_batttery;
+    // time when current was last read
+    uint32_t last_time_ms;
 } battery;
 
 ////////////////////////////////////////////////////////////////////////////////

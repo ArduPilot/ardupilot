@@ -52,17 +52,16 @@ static void read_battery(void)
     }
 
     if (g.battery_monitoring == 4) {
-        static uint32_t last_time_ms;
         uint32_t tnow = hal.scheduler->millis();
-        float dt = tnow - last_time_ms;
-        if (last_time_ms != 0 && dt < 2000) {
-            // this copes with changing the pin at runtime
-            batt_curr_pin->set_pin(g.battery_curr_pin);
-            battery.current_amps    = CURRENT_AMPS(batt_curr_pin);
+        float dt = tnow - battery.last_time_ms;
+        // this copes with changing the pin at runtime
+        batt_curr_pin->set_pin(g.battery_curr_pin);
+        battery.current_amps = CURRENT_AMPS(batt_curr_pin);
+        if (battery.last_time_ms != 0 && dt < 2000) {
             // .0002778 is 1/3600 (conversion to hours)
             battery.current_total_mah += battery.current_amps * dt * 0.0002778f; 
         }
-        last_time_ms = tnow;
+        battery.last_time_ms = tnow;
     }
 
     if (battery.voltage != 0 && 

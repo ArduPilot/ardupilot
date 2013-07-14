@@ -216,10 +216,10 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     uint16_t battery_current = -1;
     uint8_t battery_remaining = -1;
 
-    if (battery.current_total_mah != 0 && g.pack_capacity != 0) {
-        battery_remaining = (100.0 * (g.pack_capacity - battery.current_total_mah) / g.pack_capacity);
-    }
-    if (battery.current_total_mah != 0) {
+    if (battery.last_time_ms != 0) {
+        if (g.pack_capacity != 0) {
+            battery_remaining = (100.0 * (g.pack_capacity - battery.current_total_mah) / g.pack_capacity);
+        }
         battery_current = battery.current_amps * 100;
     }
 
