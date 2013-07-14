@@ -1,0 +1,103 @@
+<?xml version='1.0'?>
+<mavlink>
+     <include>common.xml</include>
+     <version>3</version>
+     <enums>
+          <enum name="MAV_CMD">
+               <entry value="2" name="MAV_CMD_AQ_TELEMETRY">
+                    <description>Start/stop AutoQuad telemetry values stream.</description>
+                    <param index="1">Start or stop (1 or 0)</param>
+                    <param index="2">Stream frequency in us</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Empty</param>
+                    <param index="5">Empty</param>
+                    <param index="6">Empty</param>
+                    <param index="7">Empty</param>
+               </entry>
+               <entry value="3" name="MAV_CMD_AQ_FOLLOW">
+                    <description>Command AutoQuad to go to a particular place at a set speed.</description>
+                    <param index="1">Latitude</param>
+                    <param index="2">Lontitude</param>
+                    <param index="3">Altitude</param>
+                    <param index="4">Speed</param>
+                    <param index="5">Empty</param>
+                    <param index="6">Empty</param>
+                    <param index="7">Empty</param>
+               </entry>
+               <entry value="4" name="MAV_CMD_AQ_REQUEST_VERSION">
+                    <description>Request AutoQuad firmware version number.</description>
+                    <param index="1">Empty</param>
+                    <param index="2">Empty</param>
+                    <param index="3">Empty</param>
+                    <param index="4">Empty</param>
+                    <param index="5">Empty</param>
+                    <param index="6">Empty</param>
+                    <param index="7">Empty</param>
+               </entry>
+          </enum>
+     </enums>
+     <messages>
+		<message id="150" name="AQ_TELEMETRY_F">
+			<description>Sends up to 20 raw float values.</description>
+			<field type="uint16_t" name="Index">Index of message</field>
+			<field type="float" name="value1">value1</field>
+			<field type="float" name="value2">value2</field>
+			<field type="float" name="value3">value3</field>
+			<field type="float" name="value4">value4</field>
+			<field type="float" name="value5">value5</field>
+			<field type="float" name="value6">value6</field>
+			<field type="float" name="value7">value7</field>
+			<field type="float" name="value8">value8</field>
+			<field type="float" name="value9">value9</field>
+			<field type="float" name="value10">value10</field>
+			<field type="float" name="value11">value11</field>
+			<field type="float" name="value12">value12</field>
+			<field type="float" name="value13">value13</field>
+			<field type="float" name="value14">value14</field>
+			<field type="float" name="value15">value15</field>
+			<field type="float" name="value16">value16</field>
+			<field type="float" name="value17">value17</field>
+			<field type="float" name="value18">value18</field>
+			<field type="float" name="value19">value19</field>
+			<field type="float" name="value20">value20</field>
+		</message>
+		<!-- 
+		<message id="160" name="groupCreate">
+			<description>Creates/modifies group. Must be broadcast to all group members by leader or gcs.</description>
+			<field type="uint8_t" name="componentID">swarmController</field>
+			<field type="uint8_t" name="groupID">ID of group</field>
+			<field type="uint8_t" name="nUAV">No of uavs in Group</field>
+			<field type="uint8_t" name="leaderID"></field>
+			<field type="uint8_t[5]" name="uavID">Max of 5 in Group</field>
+		</message>
+		<message id="161" name="groupDestroy">
+			<description>Deletes the group. Must be broadcast to all group members by leader or gcs.</description>
+			<field type="uint8_t" name="componentID">swarmController</field>
+			<field type="uint8_t" name="groupID">ID of group</field>
+			<field type="uint8_t" name="leaderID"></field>
+		</message>
+		<message id="162" name="groupLeave">
+			<description>removes 1 uav from Group. Must be broadcast to all group members by leader or gcs.</description>
+			<field type="uint8_t" name="componentID">swarmController</field>
+			<field type="uint8_t" name="groupID">ID of group</field>
+			<field type="uint8_t" name="leaderID"></field>
+			<field type="uint8_t" name="uavID">Remove this uav</field>
+		</message>
+		<message id="163" name="networkTopology">
+			<description>removes 1 uav from Group. Individual message-must be sent by leader or gcs to entire group.</description>
+			<field type="uint8_t" name="componentID">swarmController</field>
+			<field type="uint8_t" name="groupID">ID of group</field>
+			<field type="uint8_t" name="leaderID"></field>
+			<field type="uint8_t" name="followerID"></field>
+			<field type="float[5]" name="connectivityMap"></field>
+		</message>
+		<message id="164" name="coordinationExchange">
+			<description>removes 1 uav from Group. Must be broadcast by every group member.</description>
+			<field type="uint8_t" name="componentID">swarmController</field>
+			<field type="uint8_t" name="groupID">ID of group</field>
+			<field type="uint8_t" name="senderID"></field>
+			<field type="float" name="coordinationParameter"></field>
+		</message>
+		-->
+     </messages>
+</mavlink>

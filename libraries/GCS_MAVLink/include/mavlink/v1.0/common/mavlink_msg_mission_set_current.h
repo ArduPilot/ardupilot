@@ -12,6 +12,9 @@ typedef struct __mavlink_mission_set_current_t
 #define MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN 4
 #define MAVLINK_MSG_ID_41_LEN 4
 
+#define MAVLINK_MSG_ID_MISSION_SET_CURRENT_CRC 28
+#define MAVLINK_MSG_ID_41_CRC 28
+
 
 
 #define MAVLINK_MESSAGE_INFO_MISSION_SET_CURRENT { \
@@ -39,23 +42,27 @@ static inline uint16_t mavlink_msg_mission_set_current_pack(uint8_t system_id, u
 						       uint8_t target_system, uint8_t target_component, uint16_t seq)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[4];
+	char buf[MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN];
 	_mav_put_uint16_t(buf, 0, seq);
 	_mav_put_uint8_t(buf, 2, target_system);
 	_mav_put_uint8_t(buf, 3, target_component);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 4);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
 #else
 	mavlink_mission_set_current_t packet;
 	packet.seq = seq;
 	packet.target_system = target_system;
 	packet.target_component = target_component;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 4);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_MISSION_SET_CURRENT;
-	return mavlink_finalize_message(msg, system_id, component_id, 4, 28);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN, MAVLINK_MSG_ID_MISSION_SET_CURRENT_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
+#endif
 }
 
 /**
@@ -74,23 +81,27 @@ static inline uint16_t mavlink_msg_mission_set_current_pack_chan(uint8_t system_
 						           uint8_t target_system,uint8_t target_component,uint16_t seq)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[4];
+	char buf[MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN];
 	_mav_put_uint16_t(buf, 0, seq);
 	_mav_put_uint8_t(buf, 2, target_system);
 	_mav_put_uint8_t(buf, 3, target_component);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 4);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
 #else
 	mavlink_mission_set_current_t packet;
 	packet.seq = seq;
 	packet.target_system = target_system;
 	packet.target_component = target_component;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 4);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_MISSION_SET_CURRENT;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 4, 28);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN, MAVLINK_MSG_ID_MISSION_SET_CURRENT_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
+#endif
 }
 
 /**
@@ -119,19 +130,27 @@ static inline uint16_t mavlink_msg_mission_set_current_encode(uint8_t system_id,
 static inline void mavlink_msg_mission_set_current_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t seq)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[4];
+	char buf[MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN];
 	_mav_put_uint16_t(buf, 0, seq);
 	_mav_put_uint8_t(buf, 2, target_system);
 	_mav_put_uint8_t(buf, 3, target_component);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT, buf, 4, 28);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT, buf, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN, MAVLINK_MSG_ID_MISSION_SET_CURRENT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT, buf, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
+#endif
 #else
 	mavlink_mission_set_current_t packet;
 	packet.seq = seq;
 	packet.target_system = target_system;
 	packet.target_component = target_component;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT, (const char *)&packet, 4, 28);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN, MAVLINK_MSG_ID_MISSION_SET_CURRENT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MISSION_SET_CURRENT, (const char *)&packet, MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
+#endif
 #endif
 }
 
@@ -183,6 +202,6 @@ static inline void mavlink_msg_mission_set_current_decode(const mavlink_message_
 	mission_set_current->target_system = mavlink_msg_mission_set_current_get_target_system(msg);
 	mission_set_current->target_component = mavlink_msg_mission_set_current_get_target_component(msg);
 #else
-	memcpy(mission_set_current, _MAV_PAYLOAD(msg), 4);
+	memcpy(mission_set_current, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN);
 #endif
 }

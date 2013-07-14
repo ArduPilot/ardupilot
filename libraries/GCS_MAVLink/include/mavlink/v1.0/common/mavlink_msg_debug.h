@@ -12,6 +12,9 @@ typedef struct __mavlink_debug_t
 #define MAVLINK_MSG_ID_DEBUG_LEN 9
 #define MAVLINK_MSG_ID_254_LEN 9
 
+#define MAVLINK_MSG_ID_DEBUG_CRC 46
+#define MAVLINK_MSG_ID_254_CRC 46
+
 
 
 #define MAVLINK_MESSAGE_INFO_DEBUG { \
@@ -39,23 +42,27 @@ static inline uint16_t mavlink_msg_debug_pack(uint8_t system_id, uint8_t compone
 						       uint32_t time_boot_ms, uint8_t ind, float value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_DEBUG_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, value);
 	_mav_put_uint8_t(buf, 8, ind);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_DEBUG_LEN);
 #else
 	mavlink_debug_t packet;
 	packet.time_boot_ms = time_boot_ms;
 	packet.value = value;
 	packet.ind = ind;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_DEBUG_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_DEBUG;
-	return mavlink_finalize_message(msg, system_id, component_id, 9, 46);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_DEBUG_LEN, MAVLINK_MSG_ID_DEBUG_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_DEBUG_LEN);
+#endif
 }
 
 /**
@@ -74,23 +81,27 @@ static inline uint16_t mavlink_msg_debug_pack_chan(uint8_t system_id, uint8_t co
 						           uint32_t time_boot_ms,uint8_t ind,float value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_DEBUG_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, value);
 	_mav_put_uint8_t(buf, 8, ind);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_DEBUG_LEN);
 #else
 	mavlink_debug_t packet;
 	packet.time_boot_ms = time_boot_ms;
 	packet.value = value;
 	packet.ind = ind;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_DEBUG_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_DEBUG;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 9, 46);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_DEBUG_LEN, MAVLINK_MSG_ID_DEBUG_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_DEBUG_LEN);
+#endif
 }
 
 /**
@@ -119,19 +130,27 @@ static inline uint16_t mavlink_msg_debug_encode(uint8_t system_id, uint8_t compo
 static inline void mavlink_msg_debug_send(mavlink_channel_t chan, uint32_t time_boot_ms, uint8_t ind, float value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_DEBUG_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, value);
 	_mav_put_uint8_t(buf, 8, ind);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DEBUG, buf, 9, 46);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DEBUG, buf, MAVLINK_MSG_ID_DEBUG_LEN, MAVLINK_MSG_ID_DEBUG_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DEBUG, buf, MAVLINK_MSG_ID_DEBUG_LEN);
+#endif
 #else
 	mavlink_debug_t packet;
 	packet.time_boot_ms = time_boot_ms;
 	packet.value = value;
 	packet.ind = ind;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DEBUG, (const char *)&packet, 9, 46);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DEBUG, (const char *)&packet, MAVLINK_MSG_ID_DEBUG_LEN, MAVLINK_MSG_ID_DEBUG_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DEBUG, (const char *)&packet, MAVLINK_MSG_ID_DEBUG_LEN);
+#endif
 #endif
 }
 
@@ -183,6 +202,6 @@ static inline void mavlink_msg_debug_decode(const mavlink_message_t* msg, mavlin
 	debug->value = mavlink_msg_debug_get_value(msg);
 	debug->ind = mavlink_msg_debug_get_ind(msg);
 #else
-	memcpy(debug, _MAV_PAYLOAD(msg), 9);
+	memcpy(debug, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_DEBUG_LEN);
 #endif
 }

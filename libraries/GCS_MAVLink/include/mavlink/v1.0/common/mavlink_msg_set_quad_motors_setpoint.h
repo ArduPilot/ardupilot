@@ -14,6 +14,9 @@ typedef struct __mavlink_set_quad_motors_setpoint_t
 #define MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN 9
 #define MAVLINK_MSG_ID_60_LEN 9
 
+#define MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_CRC 30
+#define MAVLINK_MSG_ID_60_CRC 30
+
 
 
 #define MAVLINK_MESSAGE_INFO_SET_QUAD_MOTORS_SETPOINT { \
@@ -45,14 +48,14 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack(uint8_t system_
 						       uint8_t target_system, uint16_t motor_front_nw, uint16_t motor_right_ne, uint16_t motor_back_se, uint16_t motor_left_sw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN];
 	_mav_put_uint16_t(buf, 0, motor_front_nw);
 	_mav_put_uint16_t(buf, 2, motor_right_ne);
 	_mav_put_uint16_t(buf, 4, motor_back_se);
 	_mav_put_uint16_t(buf, 6, motor_left_sw);
 	_mav_put_uint8_t(buf, 8, target_system);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
 #else
 	mavlink_set_quad_motors_setpoint_t packet;
 	packet.motor_front_nw = motor_front_nw;
@@ -61,11 +64,15 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack(uint8_t system_
 	packet.motor_left_sw = motor_left_sw;
 	packet.target_system = target_system;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT;
-	return mavlink_finalize_message(msg, system_id, component_id, 9, 30);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
+#endif
 }
 
 /**
@@ -86,14 +93,14 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack_chan(uint8_t sy
 						           uint8_t target_system,uint16_t motor_front_nw,uint16_t motor_right_ne,uint16_t motor_back_se,uint16_t motor_left_sw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN];
 	_mav_put_uint16_t(buf, 0, motor_front_nw);
 	_mav_put_uint16_t(buf, 2, motor_right_ne);
 	_mav_put_uint16_t(buf, 4, motor_back_se);
 	_mav_put_uint16_t(buf, 6, motor_left_sw);
 	_mav_put_uint8_t(buf, 8, target_system);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
 #else
 	mavlink_set_quad_motors_setpoint_t packet;
 	packet.motor_front_nw = motor_front_nw;
@@ -102,11 +109,15 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack_chan(uint8_t sy
 	packet.motor_left_sw = motor_left_sw;
 	packet.target_system = target_system;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 9, 30);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
+#endif
 }
 
 /**
@@ -137,14 +148,18 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_encode(uint8_t syste
 static inline void mavlink_msg_set_quad_motors_setpoint_send(mavlink_channel_t chan, uint8_t target_system, uint16_t motor_front_nw, uint16_t motor_right_ne, uint16_t motor_back_se, uint16_t motor_left_sw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN];
 	_mav_put_uint16_t(buf, 0, motor_front_nw);
 	_mav_put_uint16_t(buf, 2, motor_right_ne);
 	_mav_put_uint16_t(buf, 4, motor_back_se);
 	_mav_put_uint16_t(buf, 6, motor_left_sw);
 	_mav_put_uint8_t(buf, 8, target_system);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, buf, 9, 30);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, buf, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, buf, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
+#endif
 #else
 	mavlink_set_quad_motors_setpoint_t packet;
 	packet.motor_front_nw = motor_front_nw;
@@ -153,7 +168,11 @@ static inline void mavlink_msg_set_quad_motors_setpoint_send(mavlink_channel_t c
 	packet.motor_left_sw = motor_left_sw;
 	packet.target_system = target_system;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, (const char *)&packet, 9, 30);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, (const char *)&packet, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT, (const char *)&packet, MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
+#endif
 #endif
 }
 
@@ -227,6 +246,6 @@ static inline void mavlink_msg_set_quad_motors_setpoint_decode(const mavlink_mes
 	set_quad_motors_setpoint->motor_left_sw = mavlink_msg_set_quad_motors_setpoint_get_motor_left_sw(msg);
 	set_quad_motors_setpoint->target_system = mavlink_msg_set_quad_motors_setpoint_get_target_system(msg);
 #else
-	memcpy(set_quad_motors_setpoint, _MAV_PAYLOAD(msg), 9);
+	memcpy(set_quad_motors_setpoint, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_SET_QUAD_MOTORS_SETPOINT_LEN);
 #endif
 }

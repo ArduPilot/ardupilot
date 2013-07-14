@@ -8,9 +8,9 @@ typedef struct __mavlink_hil_state_t
  float roll; ///< Roll angle (rad)
  float pitch; ///< Pitch angle (rad)
  float yaw; ///< Yaw angle (rad)
- float rollspeed; ///< Roll angular speed (rad/s)
- float pitchspeed; ///< Pitch angular speed (rad/s)
- float yawspeed; ///< Yaw angular speed (rad/s)
+ float rollspeed; ///< Body frame roll / phi angular speed (rad/s)
+ float pitchspeed; ///< Body frame pitch / theta angular speed (rad/s)
+ float yawspeed; ///< Body frame yaw / psi angular speed (rad/s)
  int32_t lat; ///< Latitude, expressed as * 1E7
  int32_t lon; ///< Longitude, expressed as * 1E7
  int32_t alt; ///< Altitude in meters, expressed as * 1000 (millimeters)
@@ -24,6 +24,9 @@ typedef struct __mavlink_hil_state_t
 
 #define MAVLINK_MSG_ID_HIL_STATE_LEN 56
 #define MAVLINK_MSG_ID_90_LEN 56
+
+#define MAVLINK_MSG_ID_HIL_STATE_CRC 183
+#define MAVLINK_MSG_ID_90_CRC 183
 
 
 
@@ -60,9 +63,9 @@ typedef struct __mavlink_hil_state_t
  * @param roll Roll angle (rad)
  * @param pitch Pitch angle (rad)
  * @param yaw Yaw angle (rad)
- * @param rollspeed Roll angular speed (rad/s)
- * @param pitchspeed Pitch angular speed (rad/s)
- * @param yawspeed Yaw angular speed (rad/s)
+ * @param rollspeed Body frame roll / phi angular speed (rad/s)
+ * @param pitchspeed Body frame pitch / theta angular speed (rad/s)
+ * @param yawspeed Body frame yaw / psi angular speed (rad/s)
  * @param lat Latitude, expressed as * 1E7
  * @param lon Longitude, expressed as * 1E7
  * @param alt Altitude in meters, expressed as * 1000 (millimeters)
@@ -78,7 +81,7 @@ static inline uint16_t mavlink_msg_hil_state_pack(uint8_t system_id, uint8_t com
 						       uint64_t time_usec, float roll, float pitch, float yaw, float rollspeed, float pitchspeed, float yawspeed, int32_t lat, int32_t lon, int32_t alt, int16_t vx, int16_t vy, int16_t vz, int16_t xacc, int16_t yacc, int16_t zacc)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[56];
+	char buf[MAVLINK_MSG_ID_HIL_STATE_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_float(buf, 8, roll);
 	_mav_put_float(buf, 12, pitch);
@@ -96,7 +99,7 @@ static inline uint16_t mavlink_msg_hil_state_pack(uint8_t system_id, uint8_t com
 	_mav_put_int16_t(buf, 52, yacc);
 	_mav_put_int16_t(buf, 54, zacc);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 56);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_HIL_STATE_LEN);
 #else
 	mavlink_hil_state_t packet;
 	packet.time_usec = time_usec;
@@ -116,11 +119,15 @@ static inline uint16_t mavlink_msg_hil_state_pack(uint8_t system_id, uint8_t com
 	packet.yacc = yacc;
 	packet.zacc = zacc;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 56);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_HIL_STATE_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HIL_STATE;
-	return mavlink_finalize_message(msg, system_id, component_id, 56, 183);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_HIL_STATE_LEN, MAVLINK_MSG_ID_HIL_STATE_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_HIL_STATE_LEN);
+#endif
 }
 
 /**
@@ -133,9 +140,9 @@ static inline uint16_t mavlink_msg_hil_state_pack(uint8_t system_id, uint8_t com
  * @param roll Roll angle (rad)
  * @param pitch Pitch angle (rad)
  * @param yaw Yaw angle (rad)
- * @param rollspeed Roll angular speed (rad/s)
- * @param pitchspeed Pitch angular speed (rad/s)
- * @param yawspeed Yaw angular speed (rad/s)
+ * @param rollspeed Body frame roll / phi angular speed (rad/s)
+ * @param pitchspeed Body frame pitch / theta angular speed (rad/s)
+ * @param yawspeed Body frame yaw / psi angular speed (rad/s)
  * @param lat Latitude, expressed as * 1E7
  * @param lon Longitude, expressed as * 1E7
  * @param alt Altitude in meters, expressed as * 1000 (millimeters)
@@ -152,7 +159,7 @@ static inline uint16_t mavlink_msg_hil_state_pack_chan(uint8_t system_id, uint8_
 						           uint64_t time_usec,float roll,float pitch,float yaw,float rollspeed,float pitchspeed,float yawspeed,int32_t lat,int32_t lon,int32_t alt,int16_t vx,int16_t vy,int16_t vz,int16_t xacc,int16_t yacc,int16_t zacc)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[56];
+	char buf[MAVLINK_MSG_ID_HIL_STATE_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_float(buf, 8, roll);
 	_mav_put_float(buf, 12, pitch);
@@ -170,7 +177,7 @@ static inline uint16_t mavlink_msg_hil_state_pack_chan(uint8_t system_id, uint8_
 	_mav_put_int16_t(buf, 52, yacc);
 	_mav_put_int16_t(buf, 54, zacc);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 56);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_HIL_STATE_LEN);
 #else
 	mavlink_hil_state_t packet;
 	packet.time_usec = time_usec;
@@ -190,11 +197,15 @@ static inline uint16_t mavlink_msg_hil_state_pack_chan(uint8_t system_id, uint8_
 	packet.yacc = yacc;
 	packet.zacc = zacc;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 56);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_HIL_STATE_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HIL_STATE;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 56, 183);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_HIL_STATE_LEN, MAVLINK_MSG_ID_HIL_STATE_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_HIL_STATE_LEN);
+#endif
 }
 
 /**
@@ -218,9 +229,9 @@ static inline uint16_t mavlink_msg_hil_state_encode(uint8_t system_id, uint8_t c
  * @param roll Roll angle (rad)
  * @param pitch Pitch angle (rad)
  * @param yaw Yaw angle (rad)
- * @param rollspeed Roll angular speed (rad/s)
- * @param pitchspeed Pitch angular speed (rad/s)
- * @param yawspeed Yaw angular speed (rad/s)
+ * @param rollspeed Body frame roll / phi angular speed (rad/s)
+ * @param pitchspeed Body frame pitch / theta angular speed (rad/s)
+ * @param yawspeed Body frame yaw / psi angular speed (rad/s)
  * @param lat Latitude, expressed as * 1E7
  * @param lon Longitude, expressed as * 1E7
  * @param alt Altitude in meters, expressed as * 1000 (millimeters)
@@ -236,7 +247,7 @@ static inline uint16_t mavlink_msg_hil_state_encode(uint8_t system_id, uint8_t c
 static inline void mavlink_msg_hil_state_send(mavlink_channel_t chan, uint64_t time_usec, float roll, float pitch, float yaw, float rollspeed, float pitchspeed, float yawspeed, int32_t lat, int32_t lon, int32_t alt, int16_t vx, int16_t vy, int16_t vz, int16_t xacc, int16_t yacc, int16_t zacc)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[56];
+	char buf[MAVLINK_MSG_ID_HIL_STATE_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_float(buf, 8, roll);
 	_mav_put_float(buf, 12, pitch);
@@ -254,7 +265,11 @@ static inline void mavlink_msg_hil_state_send(mavlink_channel_t chan, uint64_t t
 	_mav_put_int16_t(buf, 52, yacc);
 	_mav_put_int16_t(buf, 54, zacc);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE, buf, 56, 183);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE, buf, MAVLINK_MSG_ID_HIL_STATE_LEN, MAVLINK_MSG_ID_HIL_STATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE, buf, MAVLINK_MSG_ID_HIL_STATE_LEN);
+#endif
 #else
 	mavlink_hil_state_t packet;
 	packet.time_usec = time_usec;
@@ -274,7 +289,11 @@ static inline void mavlink_msg_hil_state_send(mavlink_channel_t chan, uint64_t t
 	packet.yacc = yacc;
 	packet.zacc = zacc;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE, (const char *)&packet, 56, 183);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE, (const char *)&packet, MAVLINK_MSG_ID_HIL_STATE_LEN, MAVLINK_MSG_ID_HIL_STATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_STATE, (const char *)&packet, MAVLINK_MSG_ID_HIL_STATE_LEN);
+#endif
 #endif
 }
 
@@ -326,7 +345,7 @@ static inline float mavlink_msg_hil_state_get_yaw(const mavlink_message_t* msg)
 /**
  * @brief Get field rollspeed from hil_state message
  *
- * @return Roll angular speed (rad/s)
+ * @return Body frame roll / phi angular speed (rad/s)
  */
 static inline float mavlink_msg_hil_state_get_rollspeed(const mavlink_message_t* msg)
 {
@@ -336,7 +355,7 @@ static inline float mavlink_msg_hil_state_get_rollspeed(const mavlink_message_t*
 /**
  * @brief Get field pitchspeed from hil_state message
  *
- * @return Pitch angular speed (rad/s)
+ * @return Body frame pitch / theta angular speed (rad/s)
  */
 static inline float mavlink_msg_hil_state_get_pitchspeed(const mavlink_message_t* msg)
 {
@@ -346,7 +365,7 @@ static inline float mavlink_msg_hil_state_get_pitchspeed(const mavlink_message_t
 /**
  * @brief Get field yawspeed from hil_state message
  *
- * @return Yaw angular speed (rad/s)
+ * @return Body frame yaw / psi angular speed (rad/s)
  */
 static inline float mavlink_msg_hil_state_get_yawspeed(const mavlink_message_t* msg)
 {
@@ -469,6 +488,6 @@ static inline void mavlink_msg_hil_state_decode(const mavlink_message_t* msg, ma
 	hil_state->yacc = mavlink_msg_hil_state_get_yacc(msg);
 	hil_state->zacc = mavlink_msg_hil_state_get_zacc(msg);
 #else
-	memcpy(hil_state, _MAV_PAYLOAD(msg), 56);
+	memcpy(hil_state, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_HIL_STATE_LEN);
 #endif
 }

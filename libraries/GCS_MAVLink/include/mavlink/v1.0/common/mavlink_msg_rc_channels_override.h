@@ -4,20 +4,23 @@
 
 typedef struct __mavlink_rc_channels_override_t
 {
- uint16_t chan1_raw; ///< RC channel 1 value, in microseconds
- uint16_t chan2_raw; ///< RC channel 2 value, in microseconds
- uint16_t chan3_raw; ///< RC channel 3 value, in microseconds
- uint16_t chan4_raw; ///< RC channel 4 value, in microseconds
- uint16_t chan5_raw; ///< RC channel 5 value, in microseconds
- uint16_t chan6_raw; ///< RC channel 6 value, in microseconds
- uint16_t chan7_raw; ///< RC channel 7 value, in microseconds
- uint16_t chan8_raw; ///< RC channel 8 value, in microseconds
+ uint16_t chan1_raw; ///< RC channel 1 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ uint16_t chan2_raw; ///< RC channel 2 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ uint16_t chan3_raw; ///< RC channel 3 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ uint16_t chan4_raw; ///< RC channel 4 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ uint16_t chan5_raw; ///< RC channel 5 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ uint16_t chan6_raw; ///< RC channel 6 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ uint16_t chan7_raw; ///< RC channel 7 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ uint16_t chan8_raw; ///< RC channel 8 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  uint8_t target_system; ///< System ID
  uint8_t target_component; ///< Component ID
 } mavlink_rc_channels_override_t;
 
 #define MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN 18
 #define MAVLINK_MSG_ID_70_LEN 18
+
+#define MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_CRC 124
+#define MAVLINK_MSG_ID_70_CRC 124
 
 
 
@@ -46,21 +49,21 @@ typedef struct __mavlink_rc_channels_override_t
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param chan1_raw RC channel 1 value, in microseconds
- * @param chan2_raw RC channel 2 value, in microseconds
- * @param chan3_raw RC channel 3 value, in microseconds
- * @param chan4_raw RC channel 4 value, in microseconds
- * @param chan5_raw RC channel 5 value, in microseconds
- * @param chan6_raw RC channel 6 value, in microseconds
- * @param chan7_raw RC channel 7 value, in microseconds
- * @param chan8_raw RC channel 8 value, in microseconds
+ * @param chan1_raw RC channel 1 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan2_raw RC channel 2 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan3_raw RC channel 3 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan4_raw RC channel 4 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan5_raw RC channel 5 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan6_raw RC channel 6 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan7_raw RC channel 7 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan8_raw RC channel 8 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_rc_channels_override_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
 						       uint8_t target_system, uint8_t target_component, uint16_t chan1_raw, uint16_t chan2_raw, uint16_t chan3_raw, uint16_t chan4_raw, uint16_t chan5_raw, uint16_t chan6_raw, uint16_t chan7_raw, uint16_t chan8_raw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[18];
+	char buf[MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN];
 	_mav_put_uint16_t(buf, 0, chan1_raw);
 	_mav_put_uint16_t(buf, 2, chan2_raw);
 	_mav_put_uint16_t(buf, 4, chan3_raw);
@@ -72,7 +75,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_pack(uint8_t system_id, 
 	_mav_put_uint8_t(buf, 16, target_system);
 	_mav_put_uint8_t(buf, 17, target_component);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
 #else
 	mavlink_rc_channels_override_t packet;
 	packet.chan1_raw = chan1_raw;
@@ -86,11 +89,15 @@ static inline uint16_t mavlink_msg_rc_channels_override_pack(uint8_t system_id, 
 	packet.target_system = target_system;
 	packet.target_component = target_component;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE;
-	return mavlink_finalize_message(msg, system_id, component_id, 18, 124);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
+#endif
 }
 
 /**
@@ -101,14 +108,14 @@ static inline uint16_t mavlink_msg_rc_channels_override_pack(uint8_t system_id, 
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
- * @param chan1_raw RC channel 1 value, in microseconds
- * @param chan2_raw RC channel 2 value, in microseconds
- * @param chan3_raw RC channel 3 value, in microseconds
- * @param chan4_raw RC channel 4 value, in microseconds
- * @param chan5_raw RC channel 5 value, in microseconds
- * @param chan6_raw RC channel 6 value, in microseconds
- * @param chan7_raw RC channel 7 value, in microseconds
- * @param chan8_raw RC channel 8 value, in microseconds
+ * @param chan1_raw RC channel 1 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan2_raw RC channel 2 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan3_raw RC channel 3 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan4_raw RC channel 4 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan5_raw RC channel 5 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan6_raw RC channel 6 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan7_raw RC channel 7 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan8_raw RC channel 8 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_rc_channels_override_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -116,7 +123,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_pack_chan(uint8_t system
 						           uint8_t target_system,uint8_t target_component,uint16_t chan1_raw,uint16_t chan2_raw,uint16_t chan3_raw,uint16_t chan4_raw,uint16_t chan5_raw,uint16_t chan6_raw,uint16_t chan7_raw,uint16_t chan8_raw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[18];
+	char buf[MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN];
 	_mav_put_uint16_t(buf, 0, chan1_raw);
 	_mav_put_uint16_t(buf, 2, chan2_raw);
 	_mav_put_uint16_t(buf, 4, chan3_raw);
@@ -128,7 +135,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_pack_chan(uint8_t system
 	_mav_put_uint8_t(buf, 16, target_system);
 	_mav_put_uint8_t(buf, 17, target_component);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
 #else
 	mavlink_rc_channels_override_t packet;
 	packet.chan1_raw = chan1_raw;
@@ -142,11 +149,15 @@ static inline uint16_t mavlink_msg_rc_channels_override_pack_chan(uint8_t system
 	packet.target_system = target_system;
 	packet.target_component = target_component;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 18, 124);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
+#endif
 }
 
 /**
@@ -168,21 +179,21 @@ static inline uint16_t mavlink_msg_rc_channels_override_encode(uint8_t system_id
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param chan1_raw RC channel 1 value, in microseconds
- * @param chan2_raw RC channel 2 value, in microseconds
- * @param chan3_raw RC channel 3 value, in microseconds
- * @param chan4_raw RC channel 4 value, in microseconds
- * @param chan5_raw RC channel 5 value, in microseconds
- * @param chan6_raw RC channel 6 value, in microseconds
- * @param chan7_raw RC channel 7 value, in microseconds
- * @param chan8_raw RC channel 8 value, in microseconds
+ * @param chan1_raw RC channel 1 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan2_raw RC channel 2 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan3_raw RC channel 3 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan4_raw RC channel 4 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan5_raw RC channel 5 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan6_raw RC channel 6 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan7_raw RC channel 7 value, in microseconds. A value of UINT16_MAX means to ignore this field.
+ * @param chan8_raw RC channel 8 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_rc_channels_override_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t chan1_raw, uint16_t chan2_raw, uint16_t chan3_raw, uint16_t chan4_raw, uint16_t chan5_raw, uint16_t chan6_raw, uint16_t chan7_raw, uint16_t chan8_raw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[18];
+	char buf[MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN];
 	_mav_put_uint16_t(buf, 0, chan1_raw);
 	_mav_put_uint16_t(buf, 2, chan2_raw);
 	_mav_put_uint16_t(buf, 4, chan3_raw);
@@ -194,7 +205,11 @@ static inline void mavlink_msg_rc_channels_override_send(mavlink_channel_t chan,
 	_mav_put_uint8_t(buf, 16, target_system);
 	_mav_put_uint8_t(buf, 17, target_component);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, buf, 18, 124);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, buf, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, buf, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
+#endif
 #else
 	mavlink_rc_channels_override_t packet;
 	packet.chan1_raw = chan1_raw;
@@ -208,7 +223,11 @@ static inline void mavlink_msg_rc_channels_override_send(mavlink_channel_t chan,
 	packet.target_system = target_system;
 	packet.target_component = target_component;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, (const char *)&packet, 18, 124);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, (const char *)&packet, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, (const char *)&packet, MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
+#endif
 #endif
 }
 
@@ -240,7 +259,7 @@ static inline uint8_t mavlink_msg_rc_channels_override_get_target_component(cons
 /**
  * @brief Get field chan1_raw from rc_channels_override message
  *
- * @return RC channel 1 value, in microseconds
+ * @return RC channel 1 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan1_raw(const mavlink_message_t* msg)
 {
@@ -250,7 +269,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_get_chan1_raw(const mavl
 /**
  * @brief Get field chan2_raw from rc_channels_override message
  *
- * @return RC channel 2 value, in microseconds
+ * @return RC channel 2 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan2_raw(const mavlink_message_t* msg)
 {
@@ -260,7 +279,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_get_chan2_raw(const mavl
 /**
  * @brief Get field chan3_raw from rc_channels_override message
  *
- * @return RC channel 3 value, in microseconds
+ * @return RC channel 3 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan3_raw(const mavlink_message_t* msg)
 {
@@ -270,7 +289,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_get_chan3_raw(const mavl
 /**
  * @brief Get field chan4_raw from rc_channels_override message
  *
- * @return RC channel 4 value, in microseconds
+ * @return RC channel 4 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan4_raw(const mavlink_message_t* msg)
 {
@@ -280,7 +299,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_get_chan4_raw(const mavl
 /**
  * @brief Get field chan5_raw from rc_channels_override message
  *
- * @return RC channel 5 value, in microseconds
+ * @return RC channel 5 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan5_raw(const mavlink_message_t* msg)
 {
@@ -290,7 +309,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_get_chan5_raw(const mavl
 /**
  * @brief Get field chan6_raw from rc_channels_override message
  *
- * @return RC channel 6 value, in microseconds
+ * @return RC channel 6 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan6_raw(const mavlink_message_t* msg)
 {
@@ -300,7 +319,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_get_chan6_raw(const mavl
 /**
  * @brief Get field chan7_raw from rc_channels_override message
  *
- * @return RC channel 7 value, in microseconds
+ * @return RC channel 7 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan7_raw(const mavlink_message_t* msg)
 {
@@ -310,7 +329,7 @@ static inline uint16_t mavlink_msg_rc_channels_override_get_chan7_raw(const mavl
 /**
  * @brief Get field chan8_raw from rc_channels_override message
  *
- * @return RC channel 8 value, in microseconds
+ * @return RC channel 8 value, in microseconds. A value of UINT16_MAX means to ignore this field.
  */
 static inline uint16_t mavlink_msg_rc_channels_override_get_chan8_raw(const mavlink_message_t* msg)
 {
@@ -337,6 +356,6 @@ static inline void mavlink_msg_rc_channels_override_decode(const mavlink_message
 	rc_channels_override->target_system = mavlink_msg_rc_channels_override_get_target_system(msg);
 	rc_channels_override->target_component = mavlink_msg_rc_channels_override_get_target_component(msg);
 #else
-	memcpy(rc_channels_override, _MAV_PAYLOAD(msg), 18);
+	memcpy(rc_channels_override, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN);
 #endif
 }
