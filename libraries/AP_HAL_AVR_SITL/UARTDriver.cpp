@@ -40,14 +40,6 @@
 
 using namespace AVR_SITL;
 
-// On OSX, MSG_NOSIGNAL doesn't exist. The equivalent is to set SO_NOSIGPIPE
-// in setsockopt for the socket. However, if we just skip that, and don't use
-// MSG_NOSIGNAL, everything seems to work fine and SIGPIPE doesn't seem to be
-// generated.
-#ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL 0
-#endif
-
 bool SITLUARTDriver::_console;
 
 /* UARTDriver method implementations */
@@ -139,7 +131,7 @@ int16_t SITLUARTDriver::read(void)
         return ::read(0, &c, 1);
     }
 
-    int n = recv(_fd, &c, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
+    int n = recv(_fd, &c, 1, MSG_DONTWAIT);
     if (n <= 0) {
         // the socket has reached EOF
         close(_fd);
@@ -160,7 +152,7 @@ void SITLUARTDriver::flush(void)
 
 size_t SITLUARTDriver::write(uint8_t c) 
 {
-    int flags = MSG_NOSIGNAL;
+    int flags = 0;
     _check_connection();
     if (!_connected) {
         return 0;
