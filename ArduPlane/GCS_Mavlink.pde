@@ -546,7 +546,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     // if we don't have at least 1ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (scheduler.time_available_usec() < 1200) {
+    if (!in_mavlink_delay && scheduler.time_available_usec() < 1200) {
         gcs_out_of_time = true;
         return false;
     }
