@@ -8,6 +8,7 @@
 
 #include <AP_HAL.h>
 #include <AP_Param.h>
+#include <AP_Math.h>
 
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build
