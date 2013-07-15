@@ -146,11 +146,11 @@ def axial_left_roll(mavproxy, mav, count=1):
     while count > 0:
         print("Starting roll")
         mavproxy.send('rc 1 1000\n')
-        if not wait_roll(mav, -150, accuracy=20):
+        if not wait_roll(mav, -150, accuracy=45):
             return False
-        if not wait_roll(mav, 150, accuracy=20):
+        if not wait_roll(mav, 150, accuracy=45):
             return False
-        if not wait_roll(mav, 0, accuracy=20):
+        if not wait_roll(mav, 0, accuracy=45):
             return False
         count -= 1
 
