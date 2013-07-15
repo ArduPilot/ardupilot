@@ -30,7 +30,7 @@ private:
 	AP_Float _K_I;
 	AP_Float _K_D;
 	AP_Float _K_FF;
-    AP_Int8  _imax;
+    AP_Int16 _imax;
 	uint32_t _last_t;
 	float _last_error;
 	float _last_out;
