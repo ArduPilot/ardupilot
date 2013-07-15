@@ -11,6 +11,7 @@
 #include <AP_Param.h>
 #include <AP_InertialSensor.h>
 #include <AP_ADC.h>
+#include <AP_ADC_AnalogSource.h>
 #include <AP_GPS.h>
 #include <AP_AHRS.h>
 #include <AP_Compass.h>
