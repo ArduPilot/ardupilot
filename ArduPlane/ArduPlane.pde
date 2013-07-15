@@ -1167,7 +1167,7 @@ static void update_flight_mode(void)
 
         case FLY_BY_WIRE_B:
             // Thanks to Yury MonZon for the altitude limit code!
-            calc_nav_roll();
+            nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
             update_fbwb_speed_height();
             break;
 
@@ -1177,14 +1177,13 @@ static void update_flight_mode(void)
               roll when heading is locked. Heading becomes unlocked on
               any aileron or rudder input
              */
-            if (control_mode == CRUISE && 
-                (channel_roll->control_in != 0 ||
+            if ((channel_roll->control_in != 0 ||
                  channel_rudder->control_in != 0)) {                
                 cruise_state.locked_heading = false;
                 cruise_state.lock_timer_ms = 0;
             }                 
 
-            if (control_mode != CRUISE || !cruise_state.locked_heading) {
+            if (!cruise_state.locked_heading) {
                 nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
             } else {
                 calc_nav_roll();
