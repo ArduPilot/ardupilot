@@ -43,11 +43,11 @@ void loop()
         hal.console->print(" Lon:");
         hal.console->print((float)gps.longitude / T7, DEC);
         hal.console->print(" Alt:");
-        hal.console->print((float)gps.altitude / 100.0, DEC);
+        hal.console->print((float)gps.altitude_cm / 100.0, DEC);
         hal.console->print(" GSP:");
-        hal.console->print(gps.ground_speed / 100.0);
+        hal.console->print(gps.ground_speed_cm / 100.0);
         hal.console->print(" COG:");
-        hal.console->print(gps.ground_course / 100.0, DEC);
+        hal.console->print(gps.ground_course_cd / 100.0, DEC);
         hal.console->print(" SAT:");
         hal.console->print(gps.num_sats, DEC);
         hal.console->print(" FIX:");
