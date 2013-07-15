@@ -41,13 +41,6 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("SERVO_OFF",   3, AP_Camera, _servo_off_pwm, AP_CAMERA_SERVO_OFF_PWM),
     
-        // @Param: DURATION BEFORE SHOT
-    // @DisplayName: Duration before shutter 
-    // @Description: How long navigation noshake before the shutter will be pressed in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)
-    // @Range: 0 50
-    // @User: Standard
-    AP_GROUPINFO("DUR_NS",    1, AP_Camera, _noshake_duration, 0),
-
     // @Param: TRIGG_DIST
     // @DisplayName: Camera trigger distance
     // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in
@@ -55,6 +48,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
 
+        // @Param: DURATION BEFORE SHOT
+    // @DisplayName: Duration before shutter 
+    // @Description: How long navigation noshake before the shutter will be pressed in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("DUR_NS",    5, AP_Camera, _noshake_duration, 0),
+    
     AP_GROUPEND
 };
 
