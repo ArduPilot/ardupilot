@@ -14,10 +14,15 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
-
+#include <AP_ADC.h>
+#include <AP_ADC_AnalogSource.h>
 #include <Filter.h>
 #include <AP_Buffer.h>
 #include <AP_Airspeed.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+AP_ADC_ADS7844 apm1_adc;
+#endif
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
