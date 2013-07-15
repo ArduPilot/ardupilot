@@ -346,7 +346,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,8:Position,9:Land,10:OF_Loiter,11:ToyA,12:ToyM
     // @User: Standard
     GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
-
+    
+    // @Param: FLTMODE_SSPD
+    // @DisplayName: Flight Mode Speed
+    // @Description:  Adjusts the speed of mode switching by xx at 100hz (xx/10th/sec).  Lower values for faster mode switching response.
+    // @Range: 5 30
+    // @Increment: 5
+    // @User: Standard
+    GSCALAR(fltmode_swcgspd,  "FLTMODE_SSPD",      10), 
+    
     // @Param: SIMPLE
     // @DisplayName: Simple mode bitmask
     // @Description: Bitmask which holds which flight modes use simple heading mode (eg bit 0 = 1 means Flight Mode 0 uses simple mode)
