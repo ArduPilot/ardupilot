@@ -360,7 +360,7 @@ static void calc_throttle()
         return;
     }
 
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS || g.alt_control_algorithm == ALT_CONTROL_DEFAULT) {
         channel_throttle->servo_out = SpdHgt_Controller->get_throttle_demand();
     } else if (!alt_control_airspeed()) {
         int16_t throttle_target = aparm.throttle_cruise + throttle_nudge;
@@ -427,7 +427,7 @@ static void calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
     // --------------------------------
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS) {
+    if (g.alt_control_algorithm == ALT_CONTROL_TECS || g.alt_control_algorithm == ALT_CONTROL_DEFAULT) {
         nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
     } else if (alt_control_airspeed()) {
         nav_pitch_cd = -g.pidNavPitchAirspeed.get_pid(airspeed_error_cm);
@@ -887,5 +887,5 @@ static void demo_servos(uint8_t i)
 // return true if we should use airspeed for altitude/throttle control
 static bool alt_control_airspeed(void)
 {
-    return airspeed.use() && g.alt_control_algorithm == ALT_CONTROL_DEFAULT;
+    return airspeed.use() && g.alt_control_algorithm == ALT_CONTROL_AIRSPEED;
 }
