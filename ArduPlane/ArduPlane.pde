@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.74beta4"
+#define THISFIRMWARE "ArduPlane V2.74"
 /*
  *  Lead developer: Andrew Tridgell
  *
@@ -513,8 +513,7 @@ static int32_t nav_pitch_cd;
 // Waypoint distances
 ////////////////////////////////////////////////////////////////////////////////
 // Distance between plane and next waypoint.  Meters
-// is not static because AP_Camera uses it
-uint32_t wp_distance;
+static uint32_t wp_distance;
 
 // Distance between previous and next waypoint.  Meters
 static uint32_t wp_totalDistance;
@@ -803,7 +802,9 @@ static void fast_loop()
  */
 static void update_speed_height(void)
 {
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS && auto_throttle_mode && !throttle_suppressed) 
+    if ((g.alt_control_algorithm == ALT_CONTROL_TECS ||
+         g.alt_control_algorithm == ALT_CONTROL_DEFAULT) &&
+        auto_throttle_mode && !throttle_suppressed) 
     {
 	    // Call TECS 50Hz update
         SpdHgt_Controller->update_50hz(relative_altitude());
@@ -1280,7 +1281,7 @@ static void update_alt()
     //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
 
     // Update the speed & height controller states
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS &&
+    if ((g.alt_control_algorithm == ALT_CONTROL_TECS || g.alt_control_algorithm == ALT_CONTROL_DEFAULT) &&
         auto_throttle_mode && !throttle_suppressed) {
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,

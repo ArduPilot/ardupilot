@@ -255,7 +255,8 @@ enum log_messages {
 enum {
     ALT_CONTROL_DEFAULT      = 0,
     ALT_CONTROL_NON_AIRSPEED = 1,
-    ALT_CONTROL_TECS         = 2
+    ALT_CONTROL_TECS         = 2,
+    ALT_CONTROL_AIRSPEED     = 3
 };
 
 // attitude controller choice

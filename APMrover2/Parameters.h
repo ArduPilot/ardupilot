@@ -132,10 +132,23 @@ public:
         k_param_waypoint_radius,
 
         //
+        // 230: camera control
+        //
+        k_param_camera,
+        k_param_camera_mount,
+        k_param_camera_mount2,
+
+        //
         // 240: PID Controllers
         k_param_pidNavSteer = 230,
         k_param_pidServoSteer,
         k_param_pidSpeedThrottle,
+
+        // high RC channels
+        k_param_rc_9 = 235,
+        k_param_rc_10,
+        k_param_rc_11,
+        k_param_rc_12,
 
         // other objects
         k_param_sitl = 240,
@@ -199,6 +212,16 @@ public:
     RC_Channel_aux	rc_6;
     RC_Channel_aux	rc_7;
     RC_Channel_aux	rc_8;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    RC_Channel_aux rc_9;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    RC_Channel_aux rc_10;
+    RC_Channel_aux rc_11;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    RC_Channel_aux rc_12;
+#endif
 
     // Throttle
     //
@@ -256,6 +279,16 @@ public:
         rc_6(CH_6),
         rc_7(CH_7),
         rc_8(CH_8),
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        rc_9                                    (CH_9),
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        rc_10                                   (CH_10),
+        rc_11                                   (CH_11),
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+        rc_12                                   (CH_12),
+#endif
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------

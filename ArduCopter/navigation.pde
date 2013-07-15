@@ -287,6 +287,7 @@ update_circle(float dt)
         // calculate target position
         circle_target.x = circle_center.x + cir_radius * cosf(-circle_angle);
         circle_target.y = circle_center.y - cir_radius * sinf(-circle_angle);
+        circle_target.z = wp_nav.get_desired_alt();
 
         // re-use loiter position controller
         wp_nav.set_loiter_target(circle_target);
