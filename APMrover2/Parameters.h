@@ -132,6 +132,13 @@ public:
         k_param_waypoint_radius,
 
         //
+        // 230: camera control
+        //
+        k_param_camera,
+        k_param_camera_mount,
+        k_param_camera_mount2,
+
+        //
         // 240: PID Controllers
         k_param_pidNavSteer = 230,
         k_param_pidServoSteer,
@@ -149,9 +156,6 @@ public:
         k_param_ins,
         k_param_compass,
         k_param_rcmap,
-        k_param_camera,
-        k_param_camera_mount,
-        k_param_camera_mount2,
 
         // 254,255: reserved
         };
