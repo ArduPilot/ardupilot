@@ -18,7 +18,7 @@ static void init_rc_in()
 {
 	// set rc dead zones
 	channel_steer->set_default_dead_zone(30);
-	channel_throttle->set_default_dead_zone(3);
+	channel_throttle->set_default_dead_zone(30);
 
 	//set auxiliary ranges
     update_aux();
