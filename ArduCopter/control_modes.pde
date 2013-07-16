@@ -74,6 +74,39 @@ static void read_aux_switches()
     }
 }
 
+// init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
+static void init_aux_switches()
+{
+    // set channel 7 and 8 flags according to switch position
+    ap_system.CH7_flag = (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+    ap_system.CH8_flag = (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+
+    // init channel 7 options
+    switch(g.ch7_option) {
+        case AUX_SWITCH_SIMPLE_MODE:
+        case AUX_SWITCH_SONAR:
+        case AUX_SWITCH_FENCE:
+        case AUX_SWITCH_RESETTOARMEDYAW:
+            do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
+            break;
+    }
+
+    // safety check to ensure we ch7 and ch8 have different functions
+    if (g.ch7_option == g.ch8_option) {
+        return;
+    }
+
+    // init channel 8 option
+    switch(g.ch8_option) {
+        case AUX_SWITCH_SIMPLE_MODE:
+        case AUX_SWITCH_SONAR:
+        case AUX_SWITCH_FENCE:
+        case AUX_SWITCH_RESETTOARMEDYAW:
+            do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
+            break;
+    }
+}
+
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
 static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
 {
