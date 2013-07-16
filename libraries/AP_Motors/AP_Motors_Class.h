@@ -45,6 +45,8 @@
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 #define THROTTLE_CURVE_MAX_THRUST   93  // throttle which produces the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 
+#define AP_MOTORS_SPIN_WHEN_ARMED   0   // spin motors when armed disabled by default
+
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
 #define AP_MOTOR_ROLLPITCH_LIMIT    0x01
@@ -149,5 +151,7 @@ protected:
 
     // for new stability patch
     int16_t             _hover_out;                     // the estimated hover throttle in pwm (i.e. 1000 ~ 2000).  calculated from the THR_MID parameter
+
+    AP_Int8             _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min 
 };
 #endif  // __AP_MOTORS_CLASS_H__

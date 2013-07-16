@@ -215,8 +215,10 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_simple_modes,
-        //       mode switching speed
+        //       mode switching speed rate multiplier
         k_param_fltmode_swcgspd,
+        //       minimum take-off altitude in cm
+        k_param_min_toff_alt,
         
         //
         // 210: Waypoint data
@@ -328,9 +330,11 @@ public:
     AP_Int8         flight_mode5;
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
-    //       mode switch speed
+    //       mode switch speed rate multiplier
     AP_Int16        fltmode_swcgspd;
-
+    //       minimum take-off altitude in cm
+    AP_Float        min_toff_alt;
+    
     // Misc
     //
     AP_Int16        log_bitmask;

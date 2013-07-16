@@ -260,10 +260,10 @@ static void init_ardupilot()
     // -------------------
     init_commands();
 
-    // set the correct flight mode
+    // initialise the flight mode and aux switch
     // ---------------------------
     reset_control_switch();
-
+    init_aux_switches();
 
     startup_ground();
 

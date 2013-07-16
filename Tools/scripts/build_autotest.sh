@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_6-2012q2/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_6-2012q2/bin:$PATH
 export PYTHONUNBUFFERED=1
 export PYTHONPATH=$HOME/APM
 export PX4_ROOT=$HOME/APM/px4/PX4Firmware
@@ -88,11 +88,17 @@ git fetch origin
 git reset --hard origin/master
 popd
 
-for d in MAVProxy mavlink; do
-    pushd $d
-    git pr
-    popd
-done
+echo "Updating pymavlink"
+pushd mavlink/pymavlink
+git pr
+python setup.py build install --user
+popd
+
+echo "Updating MAVProxy"
+pushd MAVProxy
+git pr
+python setup.py build install --user
+popd
 
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")

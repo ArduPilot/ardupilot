@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("ACCEL",       5, AC_WPNav, _wp_accel_cms, WPNAV_ACCELERATION),
-    
+
     // @Param: STPG_LSH
     // @DisplayName: Stopping XYLeash Rate
     // @Description: Controls stopping leash distance.  Lower values for stronger locked-in stops, higher for smoother but drifty stops and switch-overs. Suggested range: 0.5 min, 3.0 max
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: Standard 
     AP_GROUPINFO("STPG_LSH",    6, AC_WPNav, _lsh_stpg, WPNAV_WP_STPG_LSH),
-
+    
     AP_GROUPEND
 };
 
@@ -146,7 +146,7 @@ void AC_WPNav::get_stopping_point(const Vector3f& position, const Vector3f& velo
         linear_distance = _wp_accel_cms/(2.0f*kP*kP);
         target_dist = linear_distance + (vel_total*vel_total)/(2.0f*_wp_accel_cms);
     }
-    target_dist = constrain_float(target_dist, 0, _wp_leash_xy*_lsh_stpg);  // orig:  _wp_leash_xy*2.0f
+    target_dist = constrain_float(target_dist, 0, _wp_leash_xy*_lsh_stpg);
 
     target.x = position.x + (target_dist * velocity.x / vel_total);
     target.y = position.y + (target_dist * velocity.y / vel_total);

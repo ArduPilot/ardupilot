@@ -799,14 +799,14 @@ def fly_ArduCopter(viewerip=None, map=False):
             failed = True
 
         # Fly mission #1
-        print("# Upload mission1")
-        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
+        print("# Upload copter_mission")
+        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_mission.txt")):
             print("upload_mission_from_file failed")
             failed = True
 
         # this grabs our mission count
-        print("# store mission1 locally")
-        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
+        print("# store copter_mission locally")
+        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "copter_mission.txt")):
             print("load_mission_from_file failed")
             failed = True
 

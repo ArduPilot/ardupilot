@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 
 	// @Param: DAMP
 	// @DisplayName: Yaw damping
-	// @Description: This is the gain from yaw rate to rudder. It acts as a damper on yaw motion. If a basic yaw damper is required, this gain term can be incremented, whilst leaving the YAW2SRV_SLIP and YAW2SRV_INT gains at zero.
+	// @Description: This is the gain from yaw rate to rudder. It acts as a damper on yaw motion. If a basic yaw damper is required, this gain term can be incremented, whilst leaving the YAW2SRV_SLIP and YAW2SRV_INT gains at zero. Note that unlike with a standard PID controller, if this damping term is zero then the integrator will also be disabled.
 	// @Range: 0 2
 	// @Increment: 0.25
 	AP_GROUPINFO("DAMP",   2, AP_YawController, _K_D,    0),
@@ -45,13 +45,19 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	// @Increment: 0.05
 	AP_GROUPINFO("RLL",   3, AP_YawController, _K_FF,   1),
 
+    /*
+      Note: index 4 should not be used - it was used for an incorrect
+      AP_Int8 version of the IMAX in the 2.74 release
+     */
+
+
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
 	// @Description: This limits the number of centi-degrees of rudder over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited rudder control effectiveness.
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      4, AP_YawController, _imax,        1500),
+	AP_GROUPINFO("IMAX",  5, AP_YawController, _imax,        1500),
 
 	AP_GROUPEND
 };
@@ -68,6 +74,10 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	if(_ins == NULL) { // can't control without a reference
 		return 0; 
 	}
+
+    if (aspd_min < 1) {
+        aspd_min = 1;
+    }
 	
 	float delta_time = (float) dt / 1000.0f;
 	
@@ -126,6 +136,11 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	} else {
 		_integrator = 0;
 	}
+
+    if (_K_D < 0.0001f) {
+        // yaw damping is disabled, and the integrator is scaled by damping, so return 0
+        return 0;
+    }
 	
     // Scale the integration limit
     float intLimScaled = _imax * 0.01f / (_K_D * scaler * scaler);

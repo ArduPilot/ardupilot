@@ -27,7 +27,7 @@
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed betwen waypoints in cm/s
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
 
-#define WPNAV_WP_STPG_LSH				2.0f		// default stopping-strength leash rate
+#define WPNAV_WP_STPG_LSH				1.0f		// default stopping-strength leash rate
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
 #define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
 
