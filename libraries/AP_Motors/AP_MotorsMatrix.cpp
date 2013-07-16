@@ -125,7 +125,7 @@ void AP_MotorsMatrix::output_armed()
     if (_rc_throttle->servo_out == 0) {
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i]    = _rc_throttle->radio_min;
+                motor_out[i]    = _rc_throttle->radio_min + constrain_int16(_throttle_unsafe,0,AP_MOTORS_THROTTLE_UNSAFE_MAX);
             }
         }
 
@@ -451,6 +451,19 @@ void AP_MotorsMatrix::output_disarmed()
 {
     // Send minimum values to all motors
     output_min();
+}
+
+void AP_MotorsMatrix::output_unsafe()
+{
+    int8_t i;
+    
+    // fill the motor_out[] array for HIL use and send minimum value to each motor
+    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
+        if( motor_enabled[i] ) {
+            motor_out[i] = _rc_throttle->radio_min + constrain_int16(_throttle_unsafe,0,AP_MOTORS_THROTTLE_UNSAFE_MAX);;
+            hal.rcout->write(_motor_to_channel_map[i], motor_out[i]);
+        }
+    }
 }
 
 // output_disarmed - sends commands to the motors
