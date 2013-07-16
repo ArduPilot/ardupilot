@@ -245,6 +245,7 @@ static void do_takeoff()
     // Set wp navigation target to safe altitude above current position
     Vector3f pos = inertial_nav.get_position();
     pos.z = max(pos.z, command_nav_queue.alt);
+    pos.z = max(pos.z, 100.0f);
     wp_nav.set_destination(pos);
 
     // prevent flips
