@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Param: P
 	// @DisplayName: Proportional Gain
 	// @Description: This is the gain from bank angle to aileron. This gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.
-	// @Range: 0.1 1.0
+	// @Range: 0.1 2.0
 	// @Increment: 0.1
 	// @User: User
 	AP_GROUPINFO("P",        1, AP_RollController, _K_P,        0.4f),
