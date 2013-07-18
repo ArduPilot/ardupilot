@@ -104,7 +104,7 @@
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED 				125
-  # define WP_YAW_BEHAVIOR_DEFAULT      YAW_LOOK_AT_HOME
+  # define WP_YAW_BEHAVIOR_DEFAULT      WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define RATE_INTEGRATOR_LEAK_RATE 	0.02f
   # define RATE_ROLL_D    				0
   # define RATE_PITCH_D       			0
