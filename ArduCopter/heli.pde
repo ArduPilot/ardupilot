@@ -174,7 +174,11 @@ get_heli_rate_yaw(int32_t target_rate)
     if (pid_saturated){
         i = g.pid_rate_yaw.get_integrator();                    // Locked Integrator due to PID saturation on previous cycle
     } else {
-        i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
+        if (motors.motor_runup_complete()){
+            i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
+        } else {
+            i = g.pid_rate_yaw.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// If motor is not running use leaky I-term to avoid excessive build-up
+        }
     }
 
     d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
