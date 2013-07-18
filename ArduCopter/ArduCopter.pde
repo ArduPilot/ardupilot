@@ -670,6 +670,11 @@ static uint8_t throttle_mode;
 static int16_t angle_boost;
 // counter to verify landings
 static uint16_t land_detector;
+// counter to control dynamic flight profile
+#if FRAME_CONFIG == HELI_FRAME
+static uint8_t dynamic_flight_counter;
+static bool dynamic_flight;
+#endif // HELI_FRAME
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1873,7 +1878,7 @@ void update_throttle_mode(void)
 	} else {
 		motors.stab_throttle = false;
 	}
-
+    check_dynamic_flight();
     // allow swash collective to move if we are in manual throttle modes, even if disarmed
     if( !motors.armed() ) {
         if ( !(throttle_mode == THROTTLE_MANUAL) && !(throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED)){
@@ -2013,6 +2018,33 @@ void update_throttle_mode(void)
         break;
     }
 }
+
+#if FRAME_CONFIG == HELI_FRAME
+static void check_dynamic_flight(void){
+    
+    if (!motors.armed() || throttle_mode == THROTTLE_LAND || motors.motor_runup_complete == false){
+        dynamic_flight_counter=0;
+        dynamic_flight=false;
+        return;
+    }
+    if (dynamic_flight_counter < 255){                                                      // check if we're in dynamic flight mode
+        if (g.rc_3.servo_out > 800 || (labs(ahrs.pitch_sensor) > 2000)) {
+            dynamic_flight_counter++;
+        }
+        if (dynamic_flight_counter > 254){                                              // we must be in the air by now
+            dynamic_flight = true;
+        }
+    }
+    if (dynamic_flight_counter > 0){
+        if ((labs(ahrs.roll_sensor) < 1500) && (labs(ahrs.pitch_sensor) < 1500)) {
+            dynamic_flight_counter--;
+        }
+        if (dynamic_flight_counter < 1){
+            dynamic_flight = false;
+        }
+    }
+}
+#endif //  HELI_FRAME
 
 // set_target_alt_for_reporting - set target altitude in cm for reporting purposes (logs and gcs)
 static void set_target_alt_for_reporting(float alt_cm)

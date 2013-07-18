@@ -498,7 +498,11 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
                 roll_i = g.pid_rate_roll.get_integrator();
             }
         } else {
-            roll_i = g.pid_rate_roll.get_leaky_i(roll_rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	    // Flybarless Helis get huge I-terms. I-term controls much of the rate
+            if (dynamic_flight){
+                roll_i = g.pid_rate_roll.get_i(roll_rate_error, G_Dt);
+            } else {
+                roll_i = g.pid_rate_roll.get_leaky_i(roll_rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);
+            }
         }
     }
     
@@ -512,7 +516,11 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
                 pitch_i = g.pid_rate_pitch.get_integrator();
             }
         } else {
-            pitch_i = g.pid_rate_pitch.get_leaky_i(pitch_rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// Flybarless Helis get huge I-terms. I-term controls much of the rate
+            if (dynamic_flight){
+                pitch_i = g.pid_rate_pitch.get_i(pitch_rate_error, G_Dt);	
+            } else {
+                pitch_i = g.pid_rate_pitch.get_leaky_i(pitch_rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);
+            }
         }
     }
 	
