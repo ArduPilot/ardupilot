@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
-int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t aspd_min, int16_t aspd_max)
+int32_t AP_YawController::get_servo_out(float scaler, bool stabilize)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -75,6 +75,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 		return 0; 
 	}
 
+    int16_t aspd_min = aparm.airspeed_min;
     if (aspd_min < 1) {
         aspd_min = 1;
     }
@@ -91,7 +92,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize, int16_t as
 	}
 	if (!_ahrs->airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
+        aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
 	}
     rate_offset = (GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 

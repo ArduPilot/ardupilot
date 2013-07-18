@@ -5,24 +5,28 @@
 
 #include <AP_AHRS.h>
 #include <AP_Common.h>
-#include <math.h> // for fabs()
+#include <AP_SpdHgtControl.h>
+#include <math.h>
 
 class AP_RollController {
 public:
-	AP_RollController() { 
+	AP_RollController(const AP_SpdHgtControl::AircraftParameters &parms) :
+		aparm(parms)
+    { 
 		AP_Param::setup_object_defaults(this, var_info);
 	}
 
 	void set_ahrs(AP_AHRS *ahrs) { _ahrs = ahrs; }
 
 	int32_t get_rate_out(float desired_rate, float scaler=1.0);
-	int32_t get_servo_out(int32_t angle_err, float scaler=1.0, bool stabilize=false, int16_t aspd_min = 0);
+	int32_t get_servo_out(int32_t angle_err, float scaler=1.0, bool stabilize=false);
 
 	void reset_I();
 
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
+	const AP_SpdHgtControl::AircraftParameters &aparm;
 	AP_Float _tau;
 	AP_Float _K_P;
 	AP_Float _K_I;
@@ -34,7 +38,7 @@ private:
 
 	float _integrator;
 
-	int32_t _get_rate_out(float desired_rate, float scaler, bool stabilize, int16_t aspd_min);
+	int32_t _get_rate_out(float desired_rate, float scaler, bool stabilize);
 
 	AP_AHRS *_ahrs;
 

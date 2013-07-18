@@ -90,13 +90,13 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
  Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
  Inputs are: 
- 1) demanded pitch rate in radians/second
+ 1) demanded pitch rate in degrees/second
  2) control gain scaler = scaling_speed / aspeed
  3) boolean which is true when stabilise mode is active
  4) minimum FBW airspeed (metres/sec)
  5) maximum FBW airspeed (metres/sec)
 */
-int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool stabilize, float aspeed, int16_t aspd_min)
+int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool stabilize, float aspeed)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -120,7 +120,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	if (!stabilize && _K_I > 0) {
         float ki_rate = _K_I * _tau;
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if (dt > 0 && aspeed > 0.5f*float(aspd_min)) {
+		if (dt > 0 && aspeed > 0.5f*float(aparm.airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
@@ -167,7 +167,58 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 */
 int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
 {
-    return _get_rate_out(desired_rate, scaler, false, 0, 0);
+    return _get_rate_out(desired_rate, scaler, false, 0);
+}
+
+/*
+  get the rate offset in degrees/second needed for pitch in body frame
+  to maintain height in a coordinated turn.
+
+  Also returns the inverted flag and the estimated airspeed in m/s for
+  use by the rest of the pitch controller
+ */
+float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inverted) const
+{
+	float rate_offset;
+	float bank_angle = _ahrs->roll;
+
+	// limit bank angle between +- 80 deg if right way up
+	if (fabsf(bank_angle) < radians(90))	{
+	    bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
+        inverted = false;
+	} else {
+		inverted = true;
+		if (bank_angle > 0.0f) {
+			bank_angle = constrain_float(bank_angle,radians(100),radians(180));
+		} else {
+			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
+		}
+	}
+	if (!_ahrs->airspeed_estimate(&aspeed)) {
+	    // If no airspeed available use average of min and max
+        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+	}
+    if (abs(_ahrs->pitch_sensor) > 7000) {
+        // don't do turn coordination handling when at very high pitch angles
+        rate_offset = 0;
+    } else {
+        rate_offset = fabsf(ToDeg((GRAVITY_MSS / max(aspeed , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+    }
+	if (inverted) {
+		rate_offset = -rate_offset;
+	}
+    return rate_offset;
+}
+
+/*
+  get the rate offset in degrees/second needed for pitch in body frame
+  to maintain height in a coordinated turn.
+ */
+float AP_PitchController::get_coordination_rate_offset(void) const
+{
+    float aspeed;
+    bool inverted;
+    return _get_coordination_rate_offset(aspeed, inverted);
 }
 
 // Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
@@ -179,44 +230,20 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
 // 4) minimum FBW airspeed (metres/sec)
 // 5) maximum FBW airspeed (metres/sec)
 //
-int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool stabilize, int16_t aspd_min, int16_t aspd_max)
+int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool stabilize)
 {
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
 	// Pitch rate offset is the component of turn rate about the pitch axis
 	float aspeed;
 	float rate_offset;
-	float bank_angle = _ahrs->roll;
-	bool inverted = false;
+	bool inverted;
 
     if (_tau < 0.1) {
         _tau = 0.1;
     }
 
-	// limit bank angle between +- 80 deg if right way up
-	if (fabsf(bank_angle) < radians(90))	{
-	    bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
-	} else {
-		inverted = true;
-		if (bank_angle > 0.0f) {
-			bank_angle = constrain_float(bank_angle,radians(100),radians(180));
-		} else {
-			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
-		}
-	}
-	if (!_ahrs->airspeed_estimate(&aspeed)) {
-	    // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aspd_min) + float(aspd_max));
-	}
-    if (abs(_ahrs->pitch_sensor) > 7000) {
-        // don't do turn coordination handling when at very high pitch angles
-        rate_offset = 0;
-    } else {
-        rate_offset = fabsf(ToDeg((GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
-    }
-	if (inverted) {
-		rate_offset = -rate_offset;
-	}
+    rate_offset = _get_coordination_rate_offset(aspeed, inverted);
 	
 	// Calculate the desired pitch rate (deg/sec) from the angle error
 	float desired_rate = angle_err * 0.01f / _tau;
@@ -239,7 +266,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
 	// Apply the turn correction offset
 	desired_rate = desired_rate + rate_offset;
 
-    return _get_rate_out(desired_rate, scaler, stabilize, aspeed, aspd_min);
+    return _get_rate_out(desired_rate, scaler, stabilize, aspeed);
 }
 
 void AP_PitchController::reset_I()

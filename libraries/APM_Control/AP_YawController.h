@@ -5,11 +5,13 @@
 
 #include <AP_AHRS.h>
 #include <AP_Common.h>
-#include <math.h> // for fabs()
+#include <AP_SpdHgtControl.h>
+#include <math.h>
 
 class AP_YawController {
 public:                      
-	AP_YawController()
+	AP_YawController(const AP_SpdHgtControl::AircraftParameters &parms) :
+		aparm(parms)
 	{
 		AP_Param::setup_object_defaults(this, var_info);
 	}
@@ -19,13 +21,14 @@ public:
 		_ins = _ahrs->get_ins();
 	}
 
-	int32_t get_servo_out(float scaler = 1.0, bool stabilize = false, int16_t aspd_min = 0, int16_t aspd_max = 0);
+	int32_t get_servo_out(float scaler = 1.0, bool stabilize = false);
 
 	void reset_I();
 
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
+	const AP_SpdHgtControl::AircraftParameters &aparm;
 	AP_Float _K_A;
 	AP_Float _K_I;
 	AP_Float _K_D;
