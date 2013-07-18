@@ -963,8 +963,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_InertialNav/AP_InertialNav.cpp
     GOBJECT(inertial_nav,           "INAV_",    AP_InertialNav),
 
-    //@Group: WPNAV_
-    //@Path: ../libraries/AC_WPNav/AC_WPNav.cpp
+    // @Group: WPNAV_
+    // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
     GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
     // @Group: SR0_
@@ -1004,8 +1004,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
 #if AC_FENCE == ENABLED
-    //@Group: FENCE_
-    //@Path: ../libraries/AC_Fence/AC_Fence.cpp
+    // @Group: FENCE_
+    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
     GOBJECT(fence,      "FENCE_",   AC_Fence),
 #endif
 
