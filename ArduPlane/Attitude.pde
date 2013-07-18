@@ -75,8 +75,7 @@ static void stabilize_roll(float speed_scaler)
 
     channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
                                                              speed_scaler, 
-                                                             control_mode == STABILIZE, 
-                                                             aparm.flybywire_airspeed_min);
+                                                             control_mode == STABILIZE);
 }
 
 /*
@@ -89,9 +88,7 @@ static void stabilize_pitch(float speed_scaler)
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
     channel_pitch->servo_out = g.pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                speed_scaler, 
-                                                               control_mode == STABILIZE, 
-                                                               aparm.flybywire_airspeed_min, 
-                                                               aparm.flybywire_airspeed_max);    
+                                                               control_mode == STABILIZE);
 }
 
 /*
@@ -262,8 +259,7 @@ static void stabilize_acro(float speed_scaler)
         // 'stabilze' to true, which disables the roll integrator
         channel_roll->servo_out  = g.rollController.get_servo_out(roll_error_cd,
                                                                   speed_scaler,
-                                                                  true,
-                                                                  aparm.flybywire_airspeed_min);
+                                                                  true);
     } else {
         /*
           aileron stick is non-zero, use pure rate control until the
@@ -287,9 +283,7 @@ static void stabilize_acro(float speed_scaler)
         nav_pitch_cd = acro_state.locked_pitch_cd;
         channel_pitch->servo_out  = g.pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
                                                                     speed_scaler,
-                                                                    false,
-                                                                    aparm.flybywire_airspeed_min,
-                                                                    aparm.flybywire_airspeed_max);
+                                                                    false);
     } else {
         /*
           user has non-zero pitch input, use a pure rate controller
@@ -413,9 +407,7 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
     }
 
     channel_rudder->servo_out = g.yawController.get_servo_out(speed_scaler, 
-                                                              control_mode == STABILIZE, 
-                                                              aparm.flybywire_airspeed_min, 
-                                                              aparm.flybywire_airspeed_max);
+                                                              control_mode == STABILIZE);
 
     // add in rudder mixing from roll
     channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;

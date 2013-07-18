@@ -255,7 +255,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 5 50
     // @Increment: 1
     // @User: Standard
-    ASCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
+    ASCALAR(airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
 
     // @Param: ARSPD_FBW_MAX
     // @DisplayName: Fly By Wire Maximum Airspeed
@@ -264,7 +264,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 5 50
     // @Increment: 1
     // @User: Standard
-    ASCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
+    ASCALAR(airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
 
     // @Param: FBWB_ELEV_REV
     // @DisplayName: Fly By Wire elevator reverse

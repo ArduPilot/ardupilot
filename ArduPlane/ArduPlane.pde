@@ -70,6 +70,10 @@
 
 // Local modules
 #include "defines.h"
+
+// key aircraft parameters passed to the speed/height controller
+static AP_SpdHgtControl::AircraftParameters aparm;
+
 #include "Parameters.h"
 #include "GCS.h"
 
@@ -102,9 +106,6 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 // Global parameters are all contained within the 'g' class.
 //
 static Parameters g;
-
-// key aircraft parameters passed to the speed/height controller
-static AP_SpdHgtControl::AircraftParameters aparm;
 
 // main loop scheduler
 static AP_Scheduler scheduler;

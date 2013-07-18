@@ -103,7 +103,7 @@ static void read_radio()
     if (g.throttle_nudge && channel_throttle->servo_out > 50) {
         float nudge = (channel_throttle->servo_out - 50) * 0.02;
         if (alt_control_airspeed()) {
-            airspeed_nudge_cm = (aparm.flybywire_airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
+            airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }

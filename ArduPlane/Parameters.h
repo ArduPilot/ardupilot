@@ -104,8 +104,8 @@ public:
 
         // 120: Fly-by-wire control
         //
-        k_param_flybywire_airspeed_min = 120,
-        k_param_flybywire_airspeed_max,
+        k_param_airspeed_min = 120,
+        k_param_airspeed_max,
         k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm,
@@ -437,6 +437,12 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12                                   (CH_12),
 #endif
+
+        // pass the aircraft parameters structure into the attitude controllers
+        rollController(aparm),
+        pitchController(aparm),
+        yawController(aparm),
+
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
         pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
