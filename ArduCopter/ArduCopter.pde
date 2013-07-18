@@ -1915,9 +1915,6 @@ void update_throttle_mode(void)
             update_throttle_cruise(motors.coll_out);
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
-			#endif  //HELI_FRAME
-
-
             // check if we've taken off yet
             if (!ap.takeoff_complete && motors.armed()) {
                 if (pilot_throttle_scaled > g.throttle_cruise) {
@@ -1925,6 +1922,7 @@ void update_throttle_mode(void)
                     set_takeoff_complete(true);
                 }
             }
+			#endif  //HELI_FRAME            
         }
         set_target_alt_for_reporting(0);
         break;
@@ -1942,14 +1940,13 @@ void update_throttle_mode(void)
             update_throttle_cruise(motors.coll_out);
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
-			#endif  //HELI_FRAME
-
             if (!ap.takeoff_complete && motors.armed()) {
                 if (pilot_throttle_scaled > g.throttle_cruise) {
                     // we must be in the air by now
                     set_takeoff_complete(true);
                 }
             }
+			#endif  //HELI_FRAME
         }
         set_target_alt_for_reporting(0);
         break;
@@ -2028,6 +2025,9 @@ static void check_dynamic_flight(void){
         return;
     }
     if (dynamic_flight_counter < 255){                                                      // check if we're in dynamic flight mode
+        if (!ap.takeoff_complete){
+            set_takeoff_complete(true);
+        }
         if (g.rc_3.servo_out > 800 || (labs(ahrs.pitch_sensor) > 2000)) {
             dynamic_flight_counter++;
         }
