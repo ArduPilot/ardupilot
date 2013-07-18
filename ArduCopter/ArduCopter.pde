@@ -2024,19 +2024,20 @@ static void check_dynamic_flight(void){
         dynamic_flight=false;
         return;
     }
-    if (dynamic_flight_counter < 255){                                                      // check if we're in dynamic flight mode
-        if (!ap.takeoff_complete){
-            set_takeoff_complete(true);
-        }
-        if (g.rc_3.servo_out > 800 || (labs(ahrs.pitch_sensor) > 2000)) {
+    if (dynamic_flight_counter < 100){                                                  // check if we're in dynamic flight mode
+        
+        if (g.rc_3.servo_out > 800 || (ahrs.pitch_sensor < -1500)) {              // Nose down for forward flight.  Remember, nose down is negative pitch.
+            if (!ap.takeoff_complete){
+                set_takeoff_complete(true);
+            }
             dynamic_flight_counter++;
         }
-        if (dynamic_flight_counter > 254){                                              // we must be in the air by now
+        if (dynamic_flight_counter > 99){                                              // we must be in the air by now
             dynamic_flight = true;
         }
     }
     if (dynamic_flight_counter > 0){
-        if ((labs(ahrs.roll_sensor) < 1500) && (labs(ahrs.pitch_sensor) < 1500)) {
+        if ((labs(ahrs.roll_sensor) < 1500) && (labs(ahrs.pitch_sensor) < 1200)) {
             dynamic_flight_counter--;
         }
         if (dynamic_flight_counter < 1){
