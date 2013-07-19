@@ -28,7 +28,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t system_status = MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
     
-    if (failsafe != FAILSAFE_NONE) {
+    if (failsafe.state != FAILSAFE_NONE) {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -1911,7 +1911,7 @@ mission_failed:
 
         // a RC override message is consiered to be a 'heartbeat' from
         // the ground station for failsafe purposes
-        last_heartbeat_ms = millis();
+        failsafe.last_heartbeat_ms = millis();
         break;
     }
 
@@ -1920,7 +1920,7 @@ mission_failed:
         // We keep track of the last time we received a heartbeat from
         // our GCS for failsafe purposes
         if (msg->sysid != g.sysid_my_gcs) break;
-        last_heartbeat_ms = millis();
+        failsafe.last_heartbeat_ms = millis();
         break;
     }
 

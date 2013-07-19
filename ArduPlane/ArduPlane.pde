@@ -334,24 +334,32 @@ static struct {
     ch2_temp : 1500
 };
 
-// A flag if GCS joystick control is in use
-static bool rc_override_active = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Failsafe
 ////////////////////////////////////////////////////////////////////////////////
-// A tracking variable for type of failsafe active
-// Used for failsafe based on loss of RC signal or GCS signal
-static int16_t failsafe;
-// Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
-// RC receiver should be set up to output a low throttle value when signal is lost
-static bool ch3_failsafe;
+static struct {
+    // A flag if GCS joystick control is in use
+    bool rc_override_active;
 
-// the time when the last HEARTBEAT message arrived from a GCS
-static uint32_t last_heartbeat_ms;
+    // A tracking variable for type of failsafe active
+    // Used for failsafe based on loss of RC signal or GCS signal
+    int16_t state;
 
-// A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-static uint32_t ch3_failsafe_timer = 0;
+    // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
+    // RC receiver should be set up to output a low throttle value when signal is lost
+    bool ch3_failsafe;
+
+    // number of low ch3 values
+    uint8_t ch3_counter;
+
+    // the time when the last HEARTBEAT message arrived from a GCS
+    uint32_t last_heartbeat_ms;
+
+    // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
+    uint32_t ch3_timer_ms;
+} failsafe;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // LED output

@@ -42,7 +42,7 @@ static bool stick_mixing_enabled(void)
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
             geofence_stickmixing() &&
-            failsafe == FAILSAFE_NONE &&
+            failsafe.state == FAILSAFE_NONE &&
             (g.throttle_fs_enabled == 0 || 
              channel_throttle->radio_in >= g.throttle_fs_value)) {
             // we're in an auto mode, and haven't triggered failsafe

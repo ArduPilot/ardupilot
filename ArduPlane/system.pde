@@ -306,7 +306,7 @@ static void startup_ground(void)
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    last_heartbeat_ms = millis();
+    failsafe.last_heartbeat_ms = millis();
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -411,27 +411,31 @@ static void check_long_failsafe()
     uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS) {
-        if (rc_override_active && (tnow - last_heartbeat_ms) > g.long_fs_timeout*1000) {
+    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS) {
+        if (failsafe.rc_override_active && (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        } else if (!rc_override_active && failsafe == FAILSAFE_SHORT && 
-           (tnow - ch3_failsafe_timer) > g.long_fs_timeout*1000) {
+        } else if (!failsafe.rc_override_active && 
+                   failsafe.state == FAILSAFE_SHORT && 
+           (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
         } else if (g.gcs_heartbeat_fs_enabled && 
-            last_heartbeat_ms != 0 &&
-            (tnow - last_heartbeat_ms) > g.long_fs_timeout*1000) {
+            failsafe.last_heartbeat_ms != 0 &&
+            (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
     } else {
         // We do not change state but allow for user to change mode
-        if (failsafe == FAILSAFE_GCS && 
-            (tnow - last_heartbeat_ms) < g.short_fs_timeout*1000) {
-            failsafe = FAILSAFE_NONE;
-        } else if (failsafe == FAILSAFE_LONG && rc_override_active && 
-                   (tnow - last_heartbeat_ms) < g.short_fs_timeout*1000) {
-            failsafe = FAILSAFE_NONE;
-        } else if (failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) {
-            failsafe = FAILSAFE_NONE;
+        if (failsafe.state == FAILSAFE_GCS && 
+            (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
+            failsafe.state = FAILSAFE_NONE;
+        } else if (failsafe.state == FAILSAFE_LONG && 
+                   failsafe.rc_override_active && 
+                   (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
+            failsafe.state = FAILSAFE_NONE;
+        } else if (failsafe.state == FAILSAFE_LONG && 
+                   !failsafe.rc_override_active && 
+                   !failsafe.ch3_failsafe) {
+            failsafe.state = FAILSAFE_NONE;
         }
     }
 }
@@ -440,14 +444,14 @@ static void check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if(failsafe == FAILSAFE_NONE) {
-        if(ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
+    if(failsafe.state == FAILSAFE_NONE) {
+        if(failsafe.ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
             failsafe_short_on_event(FAILSAFE_SHORT);
         }
     }
 
-    if(failsafe == FAILSAFE_SHORT) {
-        if(!ch3_failsafe) {
+    if(failsafe.state == FAILSAFE_SHORT) {
+        if(!failsafe.ch3_failsafe) {
             failsafe_short_off_event();
         }
     }
