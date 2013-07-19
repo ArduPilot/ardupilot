@@ -10,6 +10,7 @@
 
 #include <inttypes.h>
 #include <AP_Progmem.h>
+#include <AP_Math.h>
 
 /// @class	GPS
 /// @brief	Abstract base class for GPS receiver drivers.
@@ -126,14 +127,19 @@ public:
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
     // components of velocity in 2D, in m/s
-    float velocity_north(void) {
+    float velocity_north(void) const {
         return _status >= GPS_OK_FIX_2D ? _velocity_north : 0;
     }
-    float velocity_east(void)  {
+    float velocity_east(void)  const {
         return _status >= GPS_OK_FIX_2D ? _velocity_east  : 0;
     }
-    float velocity_down(void)  {
+    float velocity_down(void)  const {
         return _status >= GPS_OK_FIX_3D ? _velocity_down  : 0;
+    }
+
+    // GPS velocity vector as NED in m/s
+    Vector3f velocity_vector(void) const {
+        return Vector3f(_velocity_north, _velocity_east, _velocity_down);
     }
 
     // last ground speed in m/s. This can be used when we have no GPS
