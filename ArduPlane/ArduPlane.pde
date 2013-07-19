@@ -464,6 +464,7 @@ static struct {
 // Airspeed Sensors
 ////////////////////////////////////////////////////////////////////////////////
 AP_Airspeed airspeed;
+Airspeed_Calibration airspeed_calibration;
 
 ////////////////////////////////////////////////////////////////////////////////
 // ACRO controller state
@@ -708,6 +709,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 },
     { one_second_loop,       50,   3900 },
+    { airspeed_ratio_update, 50,   1000 },
     { update_logging,         5,   1000 },
     { read_receiver_rssi,     5,   1000 },
     { check_long_failsafe,   15,   1000 },
@@ -959,6 +961,20 @@ static void one_second_loop()
         counter = 0;
     }
 }
+
+/*
+  once a second update the airspeed calibration ratio
+ */
+static void airspeed_ratio_update(void)
+{
+    if (!airspeed.enabled() ||
+        g_gps->status() < GPS::GPS_OK_FIX_3D ||
+        g_gps->ground_speed_cm < 400) {
+        return;
+    }
+    airspeed.update_calibration(g_gps->velocity_vector(), barometer.get_EAS2TAS());
+}
+
 
 /*
   read the GPS and update position
