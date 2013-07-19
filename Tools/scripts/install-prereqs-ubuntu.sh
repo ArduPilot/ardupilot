@@ -5,7 +5,7 @@ BASE_PKGS="gawk make git arduino-core curl"
 SITL_PKGS="g++"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          genromfsi zip"
+          genromfs zip"
 ASSUME_YES=false
 
 function maybe_prompt_user() {
