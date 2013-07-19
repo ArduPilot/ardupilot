@@ -495,8 +495,14 @@ static void update_auto_armed()
         }
     }else{
         // arm checks
+        
+#if FRAME_CONFIG == HELI_FRAME
+        // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
+        if(motors.armed() && g.rc_3.control_in != 0 && motors.motor_runup_complete) {
+#else
         // if motors are armed and throttle is above zero auto_armed should be true
         if(motors.armed() && g.rc_3.control_in != 0) {
+#endif // HELI_FRAME
             set_auto_armed(true);
         }
     }
