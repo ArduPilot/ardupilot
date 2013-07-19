@@ -5,7 +5,7 @@ BASE_PKGS="gawk make git arduino-core curl"
 SITL_PKGS="g++"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          genromfs"
+          genromfsi zip"
 ASSUME_YES=false
 
 function maybe_prompt_user() {
@@ -44,6 +44,7 @@ $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS
 
 if [ ! -d ~/PX4-Firmware ]; then
     git clone git://github.com/PX4/Firmware.git ~/PX4-Firmware
+    git clone git://github.com/PX4/NuttX.git ~/PX4-Firmware/NuttX
 fi
 
 if [ ! -d ~/gcc-arm-none-eabi-4_6-2012q2 ]; then
