@@ -23,7 +23,7 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
     case GUIDED:
     case LOITER:
         if(g.short_fs_action == 1) {
-            set_mode(RTL);
+            set_mode(CIRCLE);
         }
         break;
 
