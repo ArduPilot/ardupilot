@@ -31,18 +31,46 @@ uint8_t AP_Baro_HIL::read()
     return result;
 }
 
+// ==========================================================================
+// based on tables.cpp from http://www.pdas.com/atmosdownload.html
+
+/* 
+ Compute the temperature, density, and pressure in the standard atmosphere
+ Correct to 20 km.  Only approximate thereafter.
+*/
+static void SimpleAtmosphere(
+	const float alt,                           // geometric altitude, km.
+	float& sigma,                   // density/sea-level standard density
+	float& delta,                 // pressure/sea-level standard pressure
+	float& theta)           // temperature/sea-level standard temperature
+{
+  const float REARTH = 6369.0f;        // radius of the Earth (km)
+  const float GMR    = 34.163195f;     // gas constant
+  float h=alt*REARTH/(alt+REARTH);     // geometric to geopotential altitude
+
+  if (h<11.0)
+    {                                                          // Troposphere
+      theta=(288.15f-6.5f*h)/288.15f;
+      delta=powf(theta, GMR/6.5f);
+    }
+  else
+    {                                                         // Stratosphere
+      theta=216.65f/288.15f;
+      delta=0.2233611f*expf(-GMR*(h-11.0f)/216.65f);
+    }
+
+  sigma=delta/theta;
+}
+
+
 void AP_Baro_HIL::setHIL(float altitude_msl)
 {
-    // approximate a barometer
-    // see http://en.wikipedia.org/wiki/Atmospheric_pressure
+    float sigma, delta, theta;
     const float p0 = 101325;
-    const float L = 0.0065;
-    const float T0 = 288.15;
-    const float M = 0.0289644;
-    const float R = 8.31447;
 
-    float p = p0 * pow(1.0 - (L*altitude_msl)/T0, (GRAVITY_MSS*M)/(R*L));
-    float T = 31.2 - altitude_msl * L;
+    SimpleAtmosphere(altitude_msl*0.001, sigma, delta, theta);
+    float p = p0 * delta;
+    float T = 30 * theta;
 
     _count++;
     _pressure_sum += p;
