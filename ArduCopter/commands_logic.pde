@@ -321,7 +321,7 @@ static void do_land(const struct Location *cmd)
         land_state = LAND_STATE_DESCENDING;
 
         // if we have gps lock, attempt to hold horizontal position
-        if( ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D ) {
+        if (GPS_ok()) {
             // switch to loiter which restores horizontal control to pilot
             // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
             set_roll_pitch_mode(ROLL_PITCH_LOITER);
@@ -826,8 +826,12 @@ static void do_guided(const struct Location *cmd)
     bool first_time = false;
     // switch to guided mode if we're not already in guided mode
     if (control_mode != GUIDED) {
-        set_mode(GUIDED);
-        first_time = true;
+        if (set_mode(GUIDED)) {
+            first_time = true;
+        }else{
+            // if we failed to enter guided mode return immediately
+            return;
+        }
     }
 
     // set wp_nav's destination

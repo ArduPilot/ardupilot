@@ -312,6 +312,16 @@ static void startup_ground(void)
     reset_I_all();
 }
 
+// returns true if the GPS is ok and home position is set
+static bool GPS_ok()
+{
+    if (g_gps != NULL && ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D) {
+        return true;
+    }else{
+        return false;
+    }
+}
+
 // returns true or false whether mode requires GPS
 static bool mode_requires_GPS(uint8_t mode) {
     switch(mode) {
@@ -330,170 +340,192 @@ static bool mode_requires_GPS(uint8_t mode) {
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
-static void set_mode(uint8_t mode)
+// returns true if mode was succesfully set
+// STABILIZE, ACRO and LAND can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+static bool set_mode(uint8_t mode)
 {
-    // Switch to stabilize mode if requested mode requires a GPS lock
-    if(g_gps->status() != GPS::GPS_OK_FIX_3D && mode_requires_GPS(mode)) {
-            mode = STABILIZE;
-    } else if(mode == RTL && !ap.home_is_set) {
-            mode = STABILIZE;
-    }
-
-    // Switch to stabilize if OF_LOITER requested but no optical flow sensor
-    if (mode == OF_LOITER && !g.optflow_enabled ) {
-        mode = STABILIZE;
-    }
-
-    control_mode 	= mode;
-    control_mode    = constrain_int16(control_mode, 0, NUM_MODES - 1);
+    // boolean to record if flight mode could be set
+    bool success = false;
 
     // if we change modes, we must clear landed flag
+    // To-Do: this should be initialised in one of the flight modes
     set_land_complete(false);
 
     // report the GPS and Motor arming status
+    // To-Do: this should be initialised somewhere else related to the LEDs
     led_mode = NORMAL_LEDS;
 
-    switch(control_mode)
-    {
-    case ACRO:
-    	ap.manual_throttle = true;
-    	ap.manual_attitude = true;
-        set_yaw_mode(ACRO_YAW);
-        set_roll_pitch_mode(ACRO_RP);
-        set_throttle_mode(ACRO_THR);
-        set_nav_mode(NAV_NONE);
-        // reset acro axis targets to current attitude
-		if(g.axis_enabled){
-            roll_axis   = 0;
-            pitch_axis  = 0;
-            nav_yaw     = 0;
-        }
-        break;
-
-    case STABILIZE:
-    	ap.manual_throttle = true;
-    	ap.manual_attitude = true;
-        set_yaw_mode(YAW_HOLD);
-        set_roll_pitch_mode(ROLL_PITCH_STABLE);
-        set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
-        set_nav_mode(NAV_NONE);
-        break;
-
-    case ALT_HOLD:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = true;
-        set_yaw_mode(ALT_HOLD_YAW);
-        set_roll_pitch_mode(ALT_HOLD_RP);
-        set_throttle_mode(ALT_HOLD_THR);
-        set_nav_mode(NAV_NONE);
-        break;
-
-    case AUTO:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = false;
-        // roll-pitch, throttle and yaw modes will all be set by the first nav command
-        init_commands();            // clear the command queues. will be reloaded when "run_autopilot" calls "update_commands" function
-        break;
-
-    case CIRCLE:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = false;
-        set_roll_pitch_mode(CIRCLE_RP);
-        set_throttle_mode(CIRCLE_THR);
-        set_nav_mode(CIRCLE_NAV);
-        set_yaw_mode(CIRCLE_YAW);
-        break;
-
-    case LOITER:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = false;
-        set_yaw_mode(LOITER_YAW);
-        set_roll_pitch_mode(LOITER_RP);
-        set_throttle_mode(LOITER_THR);
-        set_nav_mode(LOITER_NAV);
-        break;
-
-    case POSITION:
-    	ap.manual_throttle = true;
-    	ap.manual_attitude = false;
-        set_yaw_mode(POSITION_YAW);
-        set_roll_pitch_mode(POSITION_RP);
-        set_throttle_mode(POSITION_THR);
-        set_nav_mode(POSITION_NAV);
-        break;
-
-    case GUIDED:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = false;
-        set_yaw_mode(get_wp_yaw_mode(false));
-        set_roll_pitch_mode(GUIDED_RP);
-        set_throttle_mode(GUIDED_THR);
-        set_nav_mode(GUIDED_NAV);
-        break;
-
-    case LAND:
-        // To-Do: it is messy to set manual_attitude here because the do_land function is reponsible for setting the roll_pitch_mode
-        if( ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D ) {
-            // switch to loiter if we have gps
-            ap.manual_attitude = false;
-        }else{
-            // otherwise remain with stabilize roll and pitch
+    switch(mode) {
+        case ACRO:
+            success = true;
+            ap.manual_throttle = true;
             ap.manual_attitude = true;
+            set_yaw_mode(ACRO_YAW);
+            set_roll_pitch_mode(ACRO_RP);
+            set_throttle_mode(ACRO_THR);
+            set_nav_mode(NAV_NONE);
+            // reset acro axis targets to current attitude
+            if(g.axis_enabled){
+                roll_axis   = 0;
+                pitch_axis  = 0;
+                nav_yaw     = 0;
+            }
+            break;
+
+        case STABILIZE:
+            success = true;
+            ap.manual_throttle = true;
+            ap.manual_attitude = true;
+            set_yaw_mode(YAW_HOLD);
+            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+            set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
+            set_nav_mode(NAV_NONE);
+            break;
+
+        case ALT_HOLD:
+            success = true;
+            ap.manual_throttle = false;
+            ap.manual_attitude = true;
+            set_yaw_mode(ALT_HOLD_YAW);
+            set_roll_pitch_mode(ALT_HOLD_RP);
+            set_throttle_mode(ALT_HOLD_THR);
+            set_nav_mode(NAV_NONE);
+            break;
+
+        case AUTO:
+            // check we have a GPS and at least one mission command (note the home position is always command 0)
+            if (GPS_ok() && g.command_total > 1) {
+                success = true;
+                ap.manual_throttle = false;
+                ap.manual_attitude = false;
+                // roll-pitch, throttle and yaw modes will all be set by the first nav command
+                init_commands();            // clear the command queues. will be reloaded when "run_autopilot" calls "update_commands" function
+            }
+            break;
+
+        case CIRCLE:
+            if (GPS_ok()) {
+                success = true;
+                ap.manual_throttle = false;
+                ap.manual_attitude = false;
+                set_roll_pitch_mode(CIRCLE_RP);
+                set_throttle_mode(CIRCLE_THR);
+                set_nav_mode(CIRCLE_NAV);
+                set_yaw_mode(CIRCLE_YAW);
+            }
+            break;
+
+        case LOITER:
+            if (GPS_ok()) {
+                success = true;
+                ap.manual_throttle = false;
+                ap.manual_attitude = false;
+                set_yaw_mode(LOITER_YAW);
+                set_roll_pitch_mode(LOITER_RP);
+                set_throttle_mode(LOITER_THR);
+                set_nav_mode(LOITER_NAV);
+            }
+            break;
+
+        case POSITION:
+            if (GPS_ok()) {
+                success = true;
+                ap.manual_throttle = true;
+                ap.manual_attitude = false;
+                set_yaw_mode(POSITION_YAW);
+                set_roll_pitch_mode(POSITION_RP);
+                set_throttle_mode(POSITION_THR);
+                set_nav_mode(POSITION_NAV);
+            }
+            break;
+
+        case GUIDED:
+            if (GPS_ok()) {
+                success = true;
+                ap.manual_throttle = false;
+                ap.manual_attitude = false;
+                set_yaw_mode(get_wp_yaw_mode(false));
+                set_roll_pitch_mode(GUIDED_RP);
+                set_throttle_mode(GUIDED_THR);
+                set_nav_mode(GUIDED_NAV);
+            }
+            break;
+
+        case LAND:
+            success = true;
+            // To-Do: it is messy to set manual_attitude here because the do_land function is reponsible for setting the roll_pitch_mode
+            ap.manual_attitude = !GPS_ok();
+            ap.manual_throttle = false;
+            do_land(NULL);  // land at current location
+            break;
+
+        case RTL:
+            if (GPS_ok()) {
+                success = true;
+                ap.manual_throttle = false;
+                ap.manual_attitude = false;
+                do_RTL();
+            }
+            break;
+
+        case OF_LOITER:
+            if (g.optflow_enabled) {
+                success = true;
+                ap.manual_throttle = false;
+                ap.manual_attitude = false;
+                set_yaw_mode(OF_LOITER_YAW);
+                set_roll_pitch_mode(OF_LOITER_RP);
+                set_throttle_mode(OF_LOITER_THR);
+                set_nav_mode(OF_LOITER_NAV);
+            }
+            break;
+
+        // THOR
+        // These are the flight modes for Toy mode
+        // See the defines for the enumerated values
+        case TOY_A:
+            success = true;
+            ap.manual_throttle = false;
+            ap.manual_attitude = true;
+            set_yaw_mode(YAW_TOY);
+            set_roll_pitch_mode(ROLL_PITCH_TOY);
+            set_throttle_mode(THROTTLE_AUTO);
+            set_nav_mode(NAV_NONE);
+
+            // save throttle for fast exit of Alt hold
+            saved_toy_throttle = g.rc_3.control_in;
+            break;
+
+        case TOY_M:
+            success = true;
+            ap.manual_throttle = false;
+            ap.manual_attitude = true;
+            set_yaw_mode(YAW_TOY);
+            set_roll_pitch_mode(ROLL_PITCH_TOY);
+            set_nav_mode(NAV_NONE);
+            set_throttle_mode(THROTTLE_HOLD);
+            break;
+
+        default:
+            success = false;
+            break;
+    }
+
+    // update flight mode
+    if (success) {
+        if(ap.manual_attitude) {
+            // We are under manual attitude control so initialise nav parameter for when we next enter an autopilot mode
+            reset_nav_params();
         }
-    	ap.manual_throttle = false;
-        do_land(NULL);  // land at current location
-        break;
-
-    case RTL:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = false;
-        do_RTL();
-        break;
-
-    case OF_LOITER:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = false;
-        set_yaw_mode(OF_LOITER_YAW);
-        set_roll_pitch_mode(OF_LOITER_RP);
-        set_throttle_mode(OF_LOITER_THR);
-        set_nav_mode(OF_LOITER_NAV);
-        break;
-
-    // THOR
-    // These are the flight modes for Toy mode
-    // See the defines for the enumerated values
-    case TOY_A:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = true;
-        set_yaw_mode(YAW_TOY);
-        set_roll_pitch_mode(ROLL_PITCH_TOY);
-        set_throttle_mode(THROTTLE_AUTO);
-        set_nav_mode(NAV_NONE);
-
-        // save throttle for fast exit of Alt hold
-        saved_toy_throttle = g.rc_3.control_in;
-        break;
-
-    case TOY_M:
-    	ap.manual_throttle = false;
-    	ap.manual_attitude = true;
-        set_yaw_mode(YAW_TOY);
-        set_roll_pitch_mode(ROLL_PITCH_TOY);
-        set_nav_mode(NAV_NONE);
-        set_throttle_mode(THROTTLE_HOLD);
-        break;
-
-    default:
-        break;
+        control_mode = mode;
+        Log_Write_Mode(control_mode);
+    }else{
+        // Log error that we failed to enter desired flight mode
+        Log_Write_Error(ERROR_SUBSYSTEM_FLGHT_MODE,mode);
     }
 
-    if(ap.manual_attitude) {
-        // We are under manual attitude control
-        // remove the navigation from roll and pitch command
-        reset_nav_params();
-    }
-
-    Log_Write_Mode(control_mode);
+    // return success or failure
+    return success;
 }
 
 static void

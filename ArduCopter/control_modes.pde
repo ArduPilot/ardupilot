@@ -15,12 +15,13 @@ static void read_control_switch()
             oldSwitchPosition       = switchPosition;
             switch_counter          = 0;
 
-            set_mode(flight_modes[switchPosition]);
-
-            if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
-                // set Simple mode using stored paramters from Mission planner
-                // rather than by the control switch
-                set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+            // set flight mode and simple mode setting
+            if (set_mode(flight_modes[switchPosition])) {
+                if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
+                    // set Simple mode using stored paramters from Mission planner
+                    // rather than by the control switch
+                    set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+                }
             }
 
         }
@@ -135,7 +136,7 @@ static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
 
         case AUX_SWITCH_RTL:
             if (ch_flag) {
-                // engage RTL
+                // engage RTL (if not possible we remain in current flight mode)
                 set_mode(RTL);
             }else{
                 // disengage RTL to previous flight mode if we are currently in RTL or loiter
@@ -159,7 +160,7 @@ static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
                 if(control_mode == AUTO) {
                     aux_switch_wp_index = 0;
                     g.command_total.set_and_save(1);
-                    set_mode(RTL);
+                    set_mode(RTL);  // if by chance we are unable to switch to RTL we just stay in AUTO and hope the GPS failsafe will take-over
                     return;
                 }
 

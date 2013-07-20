@@ -416,6 +416,7 @@ enum ap_message {
 #define ERROR_SUBSYSTEM_FAILSAFE_GPS        7
 #define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
 #define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
+#define ERROR_SUBSYSTEM_FLGHT_MODE          10
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1

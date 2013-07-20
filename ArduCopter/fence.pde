@@ -36,7 +36,7 @@ void fence_check()
                 init_disarm_motors();
             }else{
                 // if we have a GPS
-                if( ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D ) {
+                if (GPS_ok()) {
                     // if we are within 100m of the fence, RTL
                     if( fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
                         if(control_mode != RTL) {

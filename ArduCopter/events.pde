@@ -21,8 +21,10 @@ static void failsafe_radio_on_event()
             }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
                 set_mode(LAND);
-            }else if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            }else if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)) {
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
@@ -31,8 +33,10 @@ static void failsafe_radio_on_event()
         case AUTO:
             // failsafe_throttle is 1 do RTL, 2 means continue with the mission
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
-                if(home_distance > wp_nav.get_waypoint_radius()) {
-                    set_mode(RTL);
+                if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                    if (!set_mode(RTL)) {
+                        set_mode(LAND);
+                    }
                 }else{
                     // We are very close to home so we will land
                     set_mode(LAND);
@@ -52,8 +56,10 @@ static void failsafe_radio_on_event()
             if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
                 set_mode(LAND);
-            }else if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            }else if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)){
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
@@ -91,8 +97,11 @@ static void low_battery_event(void)
                 }
                 break;
             case AUTO:
-                if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                    set_mode(RTL);
+                // set_mode to RTL or LAND
+                if (GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                    if (!set_mode(RTL)) {
+                        set_mode(LAND);
+                    }
                 }else{
                     // We have no GPS or are very close to home so we will land
                     set_mode(LAND);
@@ -211,8 +220,10 @@ static void failsafe_gcs_check()
             // if throttle is zero disarm motors
             if (g.rc_3.control_in == 0) {
                 init_disarm_motors();
-            }else if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            }else if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)) {
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
@@ -221,8 +232,10 @@ static void failsafe_gcs_check()
         case AUTO:
             // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
             if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
-                if(home_distance > wp_nav.get_waypoint_radius()) {
-                    set_mode(RTL);
+                if (GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                    if (!set_mode(RTL)) {
+                        set_mode(LAND);
+                    }
                 }else{
                     // We are very close to home so we will land
                     set_mode(LAND);
@@ -231,8 +244,10 @@ static void failsafe_gcs_check()
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
             break;
         default:
-            if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)) {
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
