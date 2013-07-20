@@ -247,7 +247,9 @@ static void startup_ground(void)
     // Makes the servos wiggle
     // step 1 = 1 wiggle
     // -----------------------
-    demo_servos(1);
+    if (!g.skip_gyro_cal) {
+        demo_servos(1);
+    }
 
     //INS ground start
     //------------------------
@@ -268,7 +270,9 @@ static void startup_ground(void)
 
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
-    demo_servos(3);
+    if (!g.skip_gyro_cal) {
+        demo_servos(3);
+    }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -435,20 +439,30 @@ static void startup_INS_ground(bool do_accel_init)
     }
 #endif
 
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
-    mavlink_delay(500);
+    AP_InertialSensor::Start_style style;
+    if (g.skip_gyro_cal && !do_accel_init) {
+        style = AP_InertialSensor::WARM_START;
+    } else {
+        style = AP_InertialSensor::COLD_START;
+    }
 
-    // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
-    // -----------------------
-    demo_servos(2);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
-    mavlink_delay(1000);
+    if (style == AP_InertialSensor::COLD_START) {
+        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
+        mavlink_delay(500);
+
+        // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
+        // -----------------------
+        demo_servos(2);
+
+        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
+        mavlink_delay(1000);
+    }
 
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
 
-    ins.init(AP_InertialSensor::COLD_START, 
+    ins.init(style, 
              ins_sample_rate,
              flash_leds);
     if (do_accel_init) {

@@ -91,6 +91,7 @@ public:
         k_param_scheduler,
         k_param_relay,
         k_param_takeoff_throttle_delay,
+        k_param_skip_gyro_cal,
 
         // 110: Telemetry control
         //
@@ -277,6 +278,9 @@ public:
 
     // attitude controller type.
     AP_Int8  att_controller;
+
+    // skip gyro calibration
+    AP_Int8  skip_gyro_cal;
 
     // Estimation
     //
