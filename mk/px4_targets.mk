@@ -3,14 +3,14 @@
 ifneq ($(PX4_ROOT),)
 
 # try to cope with relative paths
-ifeq ($(wildcard $(PX4_ROOT)/nuttx),)
+ifeq ($(wildcard $(PX4_ROOT)/NuttX),)
 PX4_ROOT := $(shell cd $(SKETCHBOOK)/$(PX4_ROOT) && pwd)
 endif
-ifeq ($(wildcard $(PX4_ROOT)/nuttx),)
+ifeq ($(wildcard $(PX4_ROOT)/NuttX),)
 $(error ERROR: PX4_ROOT not set correctly - no nuttx directory found)
 endif
 
-PX4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu_APM.mk
+PX4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main
 PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/makefiles/firmware.mk CONFIG_FILE=$(PWD)/$(PX4_CONFIG_FILE) EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
 
