@@ -96,6 +96,11 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 	P.a.z = P.c.x = P13;
 	P.b.z = P.c.y = P23;
 
+    // Constrain diagonals to be non-negative - protects against rounding errors
+    P.a.x = max(P.a.x, 0.0f);
+    P.b.y = max(P.b.y, 0.0f);
+    P.c.z = max(P.c.z, 0.0f);
+
     return state.z;
 }
 
