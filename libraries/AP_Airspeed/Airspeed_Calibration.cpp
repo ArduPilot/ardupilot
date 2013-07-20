@@ -2,7 +2,7 @@
 /*
  *   auto_calibration.cpp - airspeed auto calibration
 
- * Algorithm by Paul Riseborough
+ * Algorithm by Paul Riseborough 
  *
  */
 
@@ -102,15 +102,15 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 /*
   called once a second to do calibration update
  */
-void AP_Airspeed::update_calibration(Vector3f vground, float EAS2TAS)
+void AP_Airspeed::update_calibration(Vector3f vground)
 {
     if (!_autocal) {
         // auto-calibration not enabled
         return;
     }
-    // calculate true airspeed, assuming a ratio of 1.0
-    float airspeed = sqrtf(get_differential_pressure()) * EAS2TAS;
-    float ratio = _calibration.update(airspeed, vground);
+    // calculate true airspeed, assuming a airspeed ratio of 1.0
+    float true_airspeed = sqrtf(get_differential_pressure()) * _EAS2TAS;
+    float ratio = _calibration.update(true_airspeed, vground);
     if (isnan(ratio) || isinf(ratio)) {
         return;
     }
