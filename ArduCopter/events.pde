@@ -189,12 +189,12 @@ static void failsafe_gcs_check()
         return;
     }
 
-    // calc time since last gps update
+    // calc time since last gcs update
     last_gcs_update_ms = millis() - last_heartbeat_ms;
 
     // check if all is well
     if( last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
-        // check for recovery from gps failsafe
+        // check for recovery from gcs failsafe
         if( ap.failsafe_gcs ) {
             failsafe_gcs_off_event();
             set_failsafe_gcs(false);
@@ -202,7 +202,7 @@ static void failsafe_gcs_check()
         return;
     }
 
-    // do nothing if gps failsafe already triggered or motors disarmed
+    // do nothing if gcs failsafe already triggered or motors disarmed
     if( ap.failsafe_gcs || !motors.armed()) {
         return;
     }
@@ -256,10 +256,10 @@ static void failsafe_gcs_check()
     }
 }
 
-// failsafe_gps_off_event - actions to take when GPS contact is restored
+// failsafe_gcs_off_event - actions to take when GCS contact is restored
 static void failsafe_gcs_off_event(void)
 {
-    // log recovery of GPS in logs?
+    // log recovery of GCS in logs?
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
