@@ -70,7 +70,7 @@ void AP_Baro_HIL::setHIL(float altitude_msl)
 
     SimpleAtmosphere(altitude_msl*0.001, sigma, delta, theta);
     float p = p0 * delta;
-    float T = 30 * theta;
+    float T = 303.16 * theta - 273.16; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     _count++;
     _pressure_sum += p;
