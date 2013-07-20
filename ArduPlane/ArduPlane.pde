@@ -247,7 +247,7 @@ AP_InertialSensor_Oilpan ins( &apm1_adc );
 AP_AHRS_DCM ahrs(&ins, g_gps);
 
 static AP_L1_Control L1_controller(&ahrs);
-static AP_TECS TECS_controller(&ahrs, &barometer, aparm);
+static AP_TECS TECS_controller(&ahrs, aparm);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -980,7 +980,7 @@ static void airspeed_ratio_update(void)
         g_gps->ground_speed_cm < 400) {
         return;
     }
-    airspeed.update_calibration(g_gps->velocity_vector(), barometer.get_EAS2TAS());
+    airspeed.update_calibration(g_gps->velocity_vector());
 }
 
 
@@ -1325,6 +1325,9 @@ static void update_alt()
             Log_Write_TECS_Tuning();
         }
     }
+
+    // tell AHRS the airspeed to true airspeed ratio
+    airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
 
 AP_HAL_MAIN();
