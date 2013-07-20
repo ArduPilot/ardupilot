@@ -348,15 +348,21 @@ static struct {
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
     // A flag if GCS joystick control is in use
-    bool rc_override_active;
+    uint8_t rc_override_active:1;
+
+    // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
+    // RC receiver should be set up to output a low throttle value when signal is lost
+    uint8_t ch3_failsafe:1;
+
+    // has the saved mode for failsafe been set?
+    uint8_t saved_mode_set:1;
+
+    // saved flight mode
+    enum FlightMode saved_mode;
 
     // A tracking variable for type of failsafe active
     // Used for failsafe based on loss of RC signal or GCS signal
     int16_t state;
-
-    // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
-    // RC receiver should be set up to output a low throttle value when signal is lost
-    bool ch3_failsafe;
 
     // number of low ch3 values
     uint8_t ch3_counter;

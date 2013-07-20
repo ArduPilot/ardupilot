@@ -16,6 +16,8 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
     case FLY_BY_WIRE_B:
     case CRUISE:
     case TRAINING:
+        failsafe.saved_mode = control_mode;
+        failsafe.saved_mode_set = 1;
         set_mode(CIRCLE);
         break;
 
@@ -23,6 +25,8 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
     case GUIDED:
     case LOITER:
         if(g.short_fs_action == 1) {
+            failsafe.saved_mode = control_mode;
+            failsafe.saved_mode_set = 1;
             set_mode(CIRCLE);
         }
         break;
@@ -78,9 +82,9 @@ static void failsafe_short_off_event()
 
     // re-read the switch so we can return to our preferred mode
     // --------------------------------------------------------
-    if (control_mode == CIRCLE ||
-        (g.short_fs_action == 1 && control_mode == RTL)) {
-        reset_control_switch();
+    if (control_mode == CIRCLE && failsafe.saved_mode_set) {
+        failsafe.saved_mode_set = 0;
+        set_mode(failsafe.saved_mode);
     }
 }
 
