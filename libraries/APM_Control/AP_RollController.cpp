@@ -82,15 +82,16 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	}
 	_last_t = tnow;
 	
-	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
-    // No conversion is required for K_D
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0);
-	float ki_rate = _K_I * _tau;
 
 	if (_ahrs == NULL) {
         // can't control without a reference
         return 0;
     }
+
+	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
+    // No conversion is required for K_D
+	float ki_rate = _K_I * _tau;
+	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0)/_ahrs->get_EAS2TAS();
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Limit the demanded roll rate
