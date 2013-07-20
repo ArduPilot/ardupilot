@@ -216,43 +216,9 @@ static void init_ardupilot()
     hal.uartC->println_P(msg);
 #endif
 
-    if (ENABLE_AIR_START == 1) {
-        // Perform an air start and get back to flying
-        gcs_send_text_P(SEVERITY_LOW,PSTR("<init_ardupilot> AIR START"));
-
-        // Get necessary data from EEPROM
-        //----------------
-        //read_EEPROM_airstart_critical();
-        ahrs.init();
-        ahrs.set_fly_forward(true);
-        ahrs.set_wind_estimation(true);
-
-        ins.init(AP_InertialSensor::WARM_START, 
-                 ins_sample_rate,
-                 flash_leds);
-
-        // This delay is important for the APM_RC library to work.
-        // We need some time for the comm between the 328 and 1280 to be established.
-        int old_pulse = 0;
-        while (millis()<=1000 
-            && (abs(old_pulse - hal.rcin->read(g.flight_mode_channel)) > 5
-               || hal.rcin->read(g.flight_mode_channel) == 1000
-               || hal.rcin->read(g.flight_mode_channel) == 1200))
-        {
-            old_pulse = hal.rcin->read(g.flight_mode_channel);
-            delay(25);
-        }
-        g_gps->update();
-
-        if (g.log_bitmask & MASK_LOG_CMD)
-            Log_Write_Startup(TYPE_AIRSTART_MSG);
-        reload_commands_airstart();                     // Get set to resume AUTO from where we left off
-
-    }else {
-        startup_ground();
-        if (g.log_bitmask & MASK_LOG_CMD)
-            Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    }
+    startup_ground();
+    if (g.log_bitmask & MASK_LOG_CMD)
+        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
     // choose the nav controller
     set_nav_controller();

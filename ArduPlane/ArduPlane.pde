@@ -1022,16 +1022,7 @@ static void update_GPS(void)
                 ground_start_count = 5;
 
             } else {
-                if(ENABLE_AIR_START == 1 && (ground_start_avg / 5) < SPEEDFILT) {
-                    startup_ground();
-
-                    if (g.log_bitmask & MASK_LOG_CMD)
-                        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-
-                    init_home();
-                } else if (ENABLE_AIR_START == 0) {
-                    init_home();
-                }
+                init_home();
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
