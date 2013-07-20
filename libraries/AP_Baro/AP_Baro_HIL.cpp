@@ -33,18 +33,21 @@ uint8_t AP_Baro_HIL::read()
 
 void AP_Baro_HIL::setHIL(float altitude_msl)
 {
-    // approximate a barometer. This uses the typical base pressure in
-    // Canberra, Australia
-    const float temperature = 312;
+    // approximate a barometer
+    // see http://en.wikipedia.org/wiki/Atmospheric_pressure
+    const float p0 = 101325;
+    const float L = 0.0065;
+    const float T0 = 288.15;
+    const float M = 0.0289644;
+    const float R = 8.31447;
 
-    float y = (altitude_msl - 584.0) / 29.271267;
-    y /= (temperature / 10.0) + 273.15;
-    y = 1.0/exp(y);
-    y *= 95446.0;
+    float p = p0 * pow(1.0 - (L*altitude_msl)/T0, (GRAVITY_MSS*M)/(R*L));
+    float T = 31.2 - altitude_msl * L;
 
     _count++;
-    _pressure_sum += y;
-    _temperature_sum += temperature;
+    _pressure_sum += p;
+    _temperature_sum += T;
+
     if (_count == 128) {
         // we have summed 128 values. This only happens
         // when we stop reading the barometer for a long time
