@@ -440,7 +440,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     drift_correction_yaw();
 
     // apply trim
-    temp_dcm.rotate(_trim);
+    temp_dcm.rotateXY(_trim);
 
     // rotate accelerometer values into the earth frame
     _accel_ef = temp_dcm * _accel_vector;
