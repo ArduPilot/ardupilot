@@ -89,13 +89,12 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     
     // force symmetry on the covariance matrix - necessary due to rounding
     // errors
-    // Implementation may also need a further check to prevent diagonal 
 	float P12 = 0.5f * (P.a.y + P.b.x);
 	float P13 = 0.5f * (P.a.z + P.c.x);
 	float P23 = 0.5f * (P.b.z + P.c.y);
 	P.a.y = P.b.x = P12;
-	P.a.z = P.c.x = P12;
-	P.b.z = P.c.y = P13;
+	P.a.z = P.c.x = P13;
+	P.b.z = P.c.y = P23;
 
     return state.z;
 }
