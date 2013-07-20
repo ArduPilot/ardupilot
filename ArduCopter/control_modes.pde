@@ -86,6 +86,7 @@ static void init_aux_switches()
     switch(g.ch7_option) {
         case AUX_SWITCH_SIMPLE_MODE:
         case AUX_SWITCH_SONAR:
+        case AUX_SWITCH_FENCE:
         case AUX_SWITCH_RESETTOARMEDYAW:
             do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
             break;
@@ -100,6 +101,7 @@ static void init_aux_switches()
     switch(g.ch8_option) {
         case AUX_SWITCH_SIMPLE_MODE:
         case AUX_SWITCH_SONAR:
+        case AUX_SWITCH_FENCE:
         case AUX_SWITCH_RESETTOARMEDYAW:
             do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
             break;
@@ -217,6 +219,12 @@ static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
             g.sonar_enabled = ch_flag;
             break;
 
+#if AC_FENCE == ENABLED
+        case AUX_SWITCH_FENCE:
+            // enable or disable the fence
+            fence.enable(ch_flag);
+            break;
+#endif
         case AUX_SWITCH_RESETTOARMEDYAW:
             if (ch_flag) {
                 set_yaw_mode(YAW_RESETTOARMEDYAW);
