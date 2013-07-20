@@ -1,5 +1,5 @@
 #
-# Makefile for the px4fmu_Hello configuration
+# Makefile for the px4fmu-v1_APM configuration
 #
 
 #
@@ -28,7 +28,7 @@ MODULES		+= drivers/ms5611
 MODULES		+= drivers/mb12xx
 MODULES		+= drivers/gps
 MODULES		+= drivers/hil
-MODULES		+= drivers/hott_telemetry
+#MODULES		+= drivers/hott_telemetry
 MODULES		+= drivers/blinkm
 MODULES		+= drivers/ets_airspeed
 MODULES		+= drivers/mkblctrl

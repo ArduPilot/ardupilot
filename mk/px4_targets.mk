@@ -3,14 +3,14 @@
 ifneq ($(PX4_ROOT),)
 
 # try to cope with relative paths
-ifeq ($(wildcard $(PX4_ROOT)/nuttx),)
+ifeq ($(wildcard $(PX4_ROOT)/NuttX),)
 PX4_ROOT := $(shell cd $(SKETCHBOOK)/$(PX4_ROOT) && pwd)
 endif
-ifeq ($(wildcard $(PX4_ROOT)/nuttx),)
-$(error ERROR: PX4_ROOT not set correctly - no nuttx directory found)
+ifeq ($(wildcard $(PX4_ROOT)/NuttX),)
+$(error ERROR: PX4_ROOT not set correctly - no NuttX directory found)
 endif
 
-PX4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu_APM.mk
+PX4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main
 PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/makefiles/firmware.mk CONFIG_FILE=$(PWD)/$(PX4_CONFIG_FILE) EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
 
@@ -21,7 +21,7 @@ $(BUILDROOT)/module.mk:
 	$(v) echo "SRCS = $(SKETCH).cpp $(SKETCHLIBSRCS)" >> $@
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $@
 
-px4: $(PX4_ROOT)/Archives/px4fmu.export $(SKETCHCPP) $(BUILDROOT)/module.mk
+px4: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.mk
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) firmware
 	$(v) /bin/rm -f $(SKETCH).px4
@@ -38,19 +38,19 @@ px4-upload: px4
 px4-archives-clean:
 	$(v) /bin/rm -rf $(PX4_ROOT)/Archives
 
-px4-io: $(PX4_ROOT)/Archives/px4io.export
-	$(v) make -C $(PX4_ROOT) px4io_default
-	$(v) /bin/rm -f px4io.bin
-	$(v) cp $(PX4_ROOT)/Build/px4io_default.build/firmware.bin px4io.bin
-	$(v) echo "PX4IO Firmware is in px4io.bin"
+px4-io: $(PX4_ROOT)/Archives/px4io-v1.export
+	$(v) make -C $(PX4_ROOT) px4io-v1_default
+	$(v) /bin/rm -f px4io-v1.bin
+	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.bin px4io-v1.bin
+	$(v) echo "PX4IOv1 Firmware is in px4io-v1.bin"
 
-$(PX4_ROOT)/Archives/px4fmu.export:
+$(PX4_ROOT)/Archives/px4fmu-v1.export:
 	make -C $(PX4_ROOT) archives
 
-$(PX4_ROOT)/Archives/px4io.export:
+$(PX4_ROOT)/Archives/px4io-v1.export:
 	make -C $(PX4_ROOT) archives
 
-px4-archives: $(PX4_ROOT)/Archives/px4fmu.export
+px4-archives: $(PX4_ROOT)/Archives/px4fmu-v1.export
 
 else
 
