@@ -89,11 +89,13 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     
     // force symmetry on the covariance matrix - necessary due to rounding
     // errors
-    // Implementation will also need a further check to prevent diagonal 
-    // terms becoming negative due to rounding errors
-    // This step can be made more efficient by excluding diagonal terms 
-    // (would reduce processing by 1/3)
-    P = (P + P.transpose()) * 0.5f; // [1 x 1] * ( [3 x 3] + [3 x 3])
+    // Implementation may also need a further check to prevent diagonal 
+	float P12 = 0.5f * (P.a.y + P.b.x);
+	float P13 = 0.5f * (P.a.z + P.c.x);
+	float P23 = 0.5f * (P.b.z + P.c.y);
+	P.a.y = P.b.x = P12;
+	P.a.z = P.c.x = P12;
+	P.b.z = P.c.y = P13;
 
     return state.z;
 }
