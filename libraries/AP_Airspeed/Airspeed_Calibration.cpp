@@ -127,8 +127,9 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     if (isnan(ratio) || isinf(ratio)) {
         return;
     }
-    // this constrains the resulting ratio to between 1.5 and 3
-    ratio = constrain_float(ratio, 0.577f, 0.816f);
+
+    // this constrains the resulting ratio to between 1.0 and 4.0
+    ratio = constrain_float(ratio, 0.5f, 1.0f);
     _ratio.set(1/sq(ratio));
     if (_counter > 60) {
         if (_last_saved_ratio < 1.05f*_ratio || 
