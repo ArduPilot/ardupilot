@@ -583,7 +583,7 @@ get_rate_roll(int32_t target_rate)
     i = g.pid_rate_roll.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
-    if (!motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
+    if (!motors.limit.roll_pitch || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
         i = g.pid_rate_roll.get_i(rate_error, G_Dt);
     }
 
@@ -627,7 +627,7 @@ get_rate_pitch(int32_t target_rate)
     i = g.pid_rate_pitch.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
-    if (!motors.reached_limit(AP_MOTOR_ROLLPITCH_LIMIT) || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
+    if (!motors.limit.roll_pitch || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
         i = g.pid_rate_pitch.get_i(rate_error, G_Dt);
     }
 
@@ -667,7 +667,7 @@ get_rate_yaw(int32_t target_rate)
     i = g.pid_rate_yaw.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
-    if (!motors.reached_limit(AP_MOTOR_YAW_LIMIT) || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
+    if (!motors.limit.yaw || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
         i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
     }
 
@@ -972,7 +972,7 @@ get_throttle_accel(int16_t z_target_accel)
     // separately calculate p, i, d values for logging
     p = g.pid_throttle_accel.get_p(z_accel_error);
     // freeze I term if we've breached throttle limits
-    if( motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT) ) {
+    if (motors.limit.throttle) {
         i = g.pid_throttle_accel.get_integrator();
     }else{
         i = g.pid_throttle_accel.get_i(z_accel_error, .01f);
@@ -1121,7 +1121,7 @@ get_throttle_rate(float z_target_speed)
     p = g.pid_throttle_rate.get_p(z_rate_error);
 
     // freeze I term if we've breached throttle limits
-    if(motors.reached_limit(AP_MOTOR_THROTTLE_LIMIT)) {
+    if(motors.limit.throttle) {
         i = g.pid_throttle_rate.get_integrator();
     }else{
         i = g.pid_throttle_rate.get_i(z_rate_error, .02);

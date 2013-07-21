@@ -104,11 +104,6 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
 
-    // reached_limits - return whether we hit the limits of the motors
-    uint8_t             reached_limit( uint8_t which_limit = AP_MOTOR_ANY_LIMIT ) {
-        return _reached_limit & which_limit;
-    }
-
     // motor test
     virtual void        output_test() = 0;
 
@@ -124,6 +119,13 @@ public:
 
     // final output values sent to the motors.  public (for now) so that they can be access for logging
     int16_t             motor_out[AP_MOTORS_MAX_NUM_MOTORS];
+
+    // structure for holding motor limit flags
+    struct AP_Motors_limit {
+        uint8_t roll_pitch      : 1; // we have reached roll or pitch limit
+        uint8_t yaw             : 1; // we have reached yaw limit
+        uint8_t throttle        : 1; // we have reached throttle limit
+    } limit;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
@@ -147,7 +149,6 @@ protected:
     AP_Int8             _throttle_curve_enabled;        // enable throttle curve
     AP_Int8             _throttle_curve_mid;  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
     AP_Int8             _throttle_curve_max;  // throttle which produces the maximum thrust.  expressed as a percentage (i.e. 0 ~ 100 ) of the full throttle range
-    uint8_t             _reached_limit;                // bit mask to record which motor limits we hit (if any) during most recent output.  Used to provide feedback to attitude controllers
 
     // for new stability patch
     int16_t             _hover_out;                     // the estimated hover throttle in pwm (i.e. 1000 ~ 2000).  calculated from the THR_MID parameter
