@@ -503,9 +503,6 @@
  # define SERVO_ROLL_INT_MAX   5
 #endif
 #define SERVO_ROLL_INT_MAX_CENTIDEGREE SERVO_ROLL_INT_MAX*100
-#ifndef ROLL_SLEW_LIMIT
- # define ROLL_SLEW_LIMIT      0
-#endif
 #ifndef SERVO_PITCH_P
  # define SERVO_PITCH_P        0.6
 #endif
@@ -597,9 +594,6 @@
 #endif
 #ifndef THROTTLE_TE_INT_MAX
  # define THROTTLE_TE_INT_MAX  20
-#endif
-#ifndef THROTTLE_SLEW_LIMIT
- # define THROTTLE_SLEW_LIMIT  0
 #endif
 #ifndef PITCH_TARGET
  # define PITCH_TARGET         0
