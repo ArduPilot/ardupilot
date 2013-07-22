@@ -83,7 +83,7 @@ get_stabilize_yaw(int32_t target_angle)
 
     // do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
-    if(motors.ext_gyro_enabled()) {
+    if(motors.tail_type() == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
         g.rc_4.servo_out = constrain_int32(target_rate, -4500, 4500);
     }
 #endif
@@ -446,7 +446,7 @@ run_rate_controllers()
     // convert desired roll and pitch rate to roll and pitch swash angles
     heli_integrated_swash_controller(roll_rate_target_bf, pitch_rate_target_bf);
     // helicopters only use rate controllers for yaw and only when not using an external gyro
-    if(!motors.ext_gyro_enabled()) {
+    if(motors.tail_type() != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
         g.rc_4.servo_out = get_heli_rate_yaw(yaw_rate_target_bf);
     }else{
         // do not use rate controllers for helicotpers with external gyros

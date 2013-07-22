@@ -239,7 +239,7 @@ struct PACKED log_Motors {
     int16_t motor_out[6];
 #elif FRAME_CONFIG == HELI_FRAME
     int16_t motor_out[4];
-    int16_t ext_gyro_gain;
+    int16_t ch7_pwm_setpoint;
 #else        // quads & TRI_FRAME
     int16_t motor_out[4];
 #endif
@@ -271,7 +271,7 @@ static void Log_Write_Motors()
                          motors.motor_out[AP_MOTORS_MOT_2],
                          motors.motor_out[AP_MOTORS_MOT_3],
                          motors.motor_out[AP_MOTORS_MOT_4]},
-        ext_gyro_gain   : motors.ext_gyro_gain()
+        ch7_pwm_setpoint:motors.ch7_pwm_setpoint()
 #elif FRAME_CONFIG == TRI_FRAME
         motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
                          motors.motor_out[AP_MOTORS_MOT_2],

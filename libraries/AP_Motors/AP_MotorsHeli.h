@@ -24,6 +24,10 @@
 #define AP_MOTORS_HELI_SPEED_DIGITAL_SERVOS     125     // update rate for digital servos
 #define AP_MOTORS_HELI_SPEED_ANALOG_SERVOS      125     // update rate for analog servos
 
+// TradHeli Aux Function Output Channels
+#define AP_MOTORS_HELI_AUX                      CH_7
+#define AP_MOTORS_HELI_RSC                      CH_8
+
 // servo position defaults
 #define AP_MOTORS_HELI_SERVO1_POS               -60
 #define AP_MOTORS_HELI_SERVO2_POS                60
@@ -47,8 +51,18 @@
 // swash min while landed or landing (as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
 
+// tail types
+#define AP_MOTORS_HELI_TAILTYPE_SERVO                   0
+#define AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO           1
+#define AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_VARPITCH    2
+#define AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
+
 // default external gyro gain (ch7 out)
-#define AP_MOTORS_HELI_EXT_GYRO_GAIN            1350
+#define AP_MOTORS_HELI_CH7_PWM_SETPOINT                 1350
+
+// minimum outputs for direct drive motors
+#define AP_MOTOR_HELI_TAIL_TYPE_DIRECTDRIVE_PWM_MIN     1000
+
 
 // main rotor speed control types (ch8 out)
 #define AP_MOTORS_HELI_RSC_MODE_NONE            0       // main rotor ESC is directly connected to receiver
@@ -131,12 +145,12 @@ public:
     // allow_arming - returns true if main rotor is spinning and it is ok to arm
     bool allow_arming();
 
-    // ext_gyro_enabled - returns true if we have an external gyro for yaw control
-    bool ext_gyro_enabled() { return _ext_gyro_enabled; }
+    // _tail_type - returns the tail type (servo, servo with ext gyro, direct drive var pitch, direct drive fixed pitch)
+    int16_t tail_type() { return _tail_type; }
 
-    // ext_gyro_gain - gets and sets external gyro gain output on ch7
-    int16_t ext_gyro_gain() { return _ext_gyro_gain; }
-    void ext_gyro_gain(int16_t gain) { _ext_gyro_gain = gain; }
+    // ch7_pwm_setpoint - gets and sets pwm output on ch7 (for gyro gain or direct drive tail motors)
+    int16_t ch7_pwm_setpoint() { return _ch7_pwm_setpoint; }
+    void ch7_pwm_setpoint(int16_t pwm) { _ch7_pwm_setpoint = pwm; }
 
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() { return _flybar_mode; }
@@ -209,9 +223,9 @@ private:
     AP_Int16        _collective_min;            // Lowest possible servo position for the swashplate
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
-    AP_Int16        _ext_gyro_enabled;          // Enabled/Disable an external rudder gyro connected to channel 7.  With no external gyro a more complex yaw controller is used
+    AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
-    AP_Int16        _ext_gyro_gain;             // PWM sent to the external gyro on Ch7
+    AP_Int16        _ch7_pwm_setpoint;          // PWM sent to Ch7 for ext gyro gain or direct drive variable pitch motor
     AP_Int8         _servo_manual;              // Pass radio inputs directly to servos during set-up through mission planner
     AP_Int16        _phase_angle;               // Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     AP_Int16        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.    
