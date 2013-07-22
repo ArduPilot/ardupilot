@@ -134,7 +134,11 @@ static void calc_altitude_error()
         control_mode == CRUISE) {
         return;
     }
-    if (offset_altitude_cm != 0) {
+    if (nav_controller->reached_loiter_target()) {
+        // once we reach a loiter target then lock to the final
+        // altitude target
+        target_altitude_cm = next_WP.alt;
+    } else if (offset_altitude_cm != 0) {
         // control climb/descent rate
         target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 
