@@ -36,10 +36,10 @@ def takeoff(mavproxy, mav):
 
     # hit the gas harder now, and give it some more elevator
     mavproxy.send('rc 2 1100\n')
-    mavproxy.send('rc 3 1800\n')
+    mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+30, homeloc.alt+60, timeout=30):
+    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+180, timeout=30):
         return False
 
     # level off
