@@ -438,18 +438,6 @@ static void calc_nav_roll()
 
 
 /*****************************************
-* Roll servo slew limit
-*****************************************/
-/*
- *  float roll_slew_limit(float servo)
- *  {
- *       static float last;
- *       float temp = constrain_float(servo, last-ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f, last + ROLL_SLEW_LIMIT * delta_ms_fast_loop/1000.f);
- *       last = servo;
- *       return temp;
- *  }*/
-
-/*****************************************
 * Throttle slew limit
 *****************************************/
 static void throttle_slew_limit(int16_t last_throttle)
