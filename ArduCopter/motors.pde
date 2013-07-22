@@ -159,10 +159,6 @@ static void init_arm_motors()
     init_barometer();
 #endif
 
-    // temp hack
-    ap_system.motor_light = true;
-    digitalWrite(A_LED_PIN, LED_ON);
-
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
 #if SECONDARY_DMP_ENABLED == ENABLED
@@ -175,9 +171,20 @@ static void init_arm_motors()
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
 
+    // update leds on board
+    update_arming_light();
+
 #if COPTER_LEDS == ENABLED
     piezo_beep_twice();
 #endif
+
+    // Cancel arming if throttle is raised too high so that copter does not suddenly take off
+    read_radio();
+    if (g.rc_3.control_in > g.throttle_cruise && g.throttle_cruise > 100) {
+        motors.output_min();
+        failsafe_enable();
+        return;
+    }
 
     // enable output to motors
     output_min();
@@ -250,7 +257,7 @@ static void pre_arm_checks(bool display_failure)
 
     // check for unreasonable mag field length
     float mag_field = pythagorous3(compass.mag_x, compass.mag_y, compass.mag_z);
-    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.5 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.5) {
+    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
         }
@@ -285,6 +292,17 @@ static void pre_arm_checks(bool display_failure)
     }
 #endif
 
+    // failsafe parameter checks
+    if (g.failsafe_throttle) {
+        // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
+        if (g.rc_3.radio_min <= g.failsafe_throttle_value+10 || g.failsafe_throttle_value < 910) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
+            }
+            return;
+        }
+    }
+
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;
 }
@@ -302,8 +320,13 @@ static void pre_arm_rc_checks()
         return;
     }
 
-    // check if throttle min is reasonable
-    if(g.rc_3.radio_min > 1300) {
+    // check channels 1 & 2 have min <= 1300 and max >= 1700
+    if (g.rc_1.radio_min > 1300 || g.rc_1.radio_max < 1700 || g.rc_2.radio_min > 1300 || g.rc_2.radio_max < 1700) {
+        return;
+    }
+
+    // check channels 3 & 4 have min <= 1300 and max >= 1700
+    if (g.rc_3.radio_min > 1300 || g.rc_3.radio_max < 1700 || g.rc_4.radio_min > 1300 || g.rc_4.radio_max < 1700) {
         return;
     }
 

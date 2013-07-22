@@ -4,6 +4,7 @@
 #include "string.h"
 #include "checksum.h"
 #include "mavlink_types.h"
+#include "mavlink_conversions.h"
 
 #ifndef MAVLINK_HELPER
 #define MAVLINK_HELPER

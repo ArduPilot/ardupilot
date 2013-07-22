@@ -645,10 +645,13 @@
     MASK_LOG_GPS | \
     MASK_LOG_PM | \
     MASK_LOG_NTUN | \
+    MASK_LOG_CTUN | \
     MASK_LOG_MODE | \
     MASK_LOG_CMD | \
     MASK_LOG_COMPASS | \
-    MASK_LOG_CURRENT
+    MASK_LOG_CURRENT | \
+    MASK_LOG_TECS | \
+    MASK_LOG_CAMERA
 
 
 

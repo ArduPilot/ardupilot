@@ -49,6 +49,8 @@ print_log_menu(void)
         PLOG(CMD);
         PLOG(CURRENT);
         PLOG(COMPASS);
+        PLOG(TECS);
+        PLOG(CAMERA);
  #undef PLOG
     }
 
@@ -138,6 +140,8 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CMD);
         TARG(CURRENT);
         TARG(COMPASS);
+        TARG(TECS);
+        TARG(CAMERA);
  #undef TARG
     }
 
@@ -317,6 +321,12 @@ static void Log_Write_Control_Tuning()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a TECS tuning packet
+static void Log_Write_TECS_Tuning(void)
+{
+    SpdHgt_Controller->log_data(DataFlash, LOG_TECS_MSG);
+}
+
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint16_t yaw;
@@ -447,6 +457,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "CURR", "hhhHf",      "Thr,Volt,Curr,Vcc,CurrTot" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "hhhhhhhhh",   "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
+    TECS_LOG_FORMAT(LOG_TECS_MSG),
 };
 
 // Read the DataFlash.log memory : Packet Parser
@@ -478,6 +489,7 @@ static void Log_Write_Startup(uint8_t type) {}
 static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
 static void Log_Write_Current() {}
 static void Log_Write_Nav_Tuning() {}
+static void Log_Write_TECS_Tuning() {}
 static void Log_Write_Performance() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Control_Tuning() {}

@@ -221,7 +221,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         time            = _buffer.posllh.time;
         longitude       = _buffer.posllh.longitude;
         latitude        = _buffer.posllh.latitude;
-        altitude        = _buffer.posllh.altitude_msl / 10;
+        altitude_cm     = _buffer.posllh.altitude_msl / 10;
         fix             = next_fix;
         _new_position = true;
         break;
@@ -265,9 +265,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
-        speed_3d        = _buffer.velned.speed_3d;                              // cm/s
-        ground_speed = _buffer.velned.speed_2d;                         // cm/s
-        ground_course = _buffer.velned.heading_2d / 1000;       // Heading 2D deg * 100000 rescaled to deg * 100
+        speed_3d_cm     = _buffer.velned.speed_3d;                              // cm/s
+        ground_speed_cm = _buffer.velned.speed_2d;                         // cm/s
+        ground_course_cd = _buffer.velned.heading_2d / 1000;       // Heading 2D deg * 100000 rescaled to deg * 100
         _have_raw_velocity = true;
         _vel_north  = _buffer.velned.ned_north;
         _vel_east   = _buffer.velned.ned_east;

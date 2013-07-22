@@ -1,5 +1,18 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.0.1-rc2 / 3.0.1 11-Jul-2013
+Improvements over 3.0.1-rc1
+1) Rate Roll, Pitch and Yaw I fix when we hit motor limits
+2) pre-arm check changes:
+    a) double flash arming light when pre-arm checks fail
+    b) relax mag field checks to 35% min, 165% max of expected field
+3) loiter and auto changes:
+      a) reduced Loiter speed to 5 m/s
+      b) reduced WP_ACCEL to 1 m/s/s (was 2.5 m/s/s)
+      c) rounding error fix in loiter controller
+      d) bug fix to stopping point calculation for RTL and loiter during missions
+4) Stability Patch fix which was freezing Rate Taw I term and allowing uncommanded Yaw
+------------------------------------------------------------------
 ArduCopter 3.0.1-rc1 26-Jun-2013
 Improvements over 3.0.0
 1) bug fix to Fence checking position after GPS lock was lost

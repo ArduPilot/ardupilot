@@ -453,7 +453,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
             cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
                             (long)g_gps->latitude,
                             (long)g_gps->longitude,
-                            (long)g_gps->altitude/100,
+                            (long)g_gps->altitude_cm/100,
                             (int)g_gps->num_sats);
         }else{
             cliSerial->printf_P(PSTR("."));

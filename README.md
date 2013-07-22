@@ -101,7 +101,7 @@ build ArduCopter for PX4 in the development environment:
 
 ```
 $ vagrant ssh
-# cd ardupilot/Arducopter
+# cd ardupilot/ArduCopter
 # make configure
 ```
 
@@ -114,9 +114,9 @@ PX4_ROOT = ~/PX4-Firmware
 Back at the terminal:
 
 ```
-# cd ~/PX4-Firmware
-# make configure_px4fmu
+# cd ArduCopter
 # make px4
+# make px4-upload (optional)
 ```
 
 # User Technical Support

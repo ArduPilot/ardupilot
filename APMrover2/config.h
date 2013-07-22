@@ -36,9 +36,6 @@
  // default choices for a 1280. We can't fit everything in, so we 
  // make some popular choices by default
  #define LOGGING_ENABLED DISABLED
- #ifndef MOUNT2
- # define MOUNT2 DISABLED
- #endif
  #ifndef MOUNT
  # define MOUNT DISABLED
  #endif
@@ -286,7 +283,14 @@
 // MOUNT (ANTENNA OR CAMERA)
 //
 #ifndef MOUNT
-# define MOUNT		DISABLED
+# define MOUNT		ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// CAMERA control
+//
+#ifndef CAMERA
+# define CAMERA ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -368,12 +372,14 @@
     MASK_LOG_ATTITUDE_MED | \
     MASK_LOG_GPS | \
     MASK_LOG_PM | \
+    MASK_LOG_CTUN | \
     MASK_LOG_NTUN | \
     MASK_LOG_MODE | \
     MASK_LOG_CMD | \
     MASK_LOG_SONAR | \
     MASK_LOG_COMPASS | \
-    MASK_LOG_CURRENT
+    MASK_LOG_CURRENT | \
+    MASK_LOG_CAMERA
 
 
 

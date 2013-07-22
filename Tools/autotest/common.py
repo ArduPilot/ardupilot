@@ -114,6 +114,7 @@ def wait_pitch(mav, pitch, accuracy, timeout=30):
 def wait_heading(mav, heading, accuracy=5, timeout=30):
     '''wait for a given heading'''
     tstart = time.time()
+    print("Waiting for heading %u with accuracy %u" % (heading, accuracy))
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         print("Heading %u" % m.heading)
@@ -212,7 +213,9 @@ def save_wp(mavproxy, mav):
 
 def wait_mode(mav, mode):
     '''wait for a flight mode to be engaged'''
-    mav.recv_match(condition='MAV.flightmode=="%s"' % mode, blocking=True)
+    print("Waiting for mode %s" % mode)
+    mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, blocking=True)
+    print("Got mode %s" % mode)
 
 def mission_count(filename):
     '''load a mission from a file and return number of waypoints'''

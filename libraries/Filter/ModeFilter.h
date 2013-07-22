@@ -111,7 +111,7 @@ void ModeFilter<T,FILTER_SIZE>::        isort(T new_sample, bool drop_high)
         i = FilterWithBuffer<T,FILTER_SIZE>::sample_index-1;
 
         // if the next element is higher than our new sample, push it up one position
-        while( FilterWithBuffer<T,FILTER_SIZE>::samples[i-1] > new_sample && i > 0 ) {
+        while(i > 0 && FilterWithBuffer<T,FILTER_SIZE>::samples[i-1] > new_sample) {
             FilterWithBuffer<T,FILTER_SIZE>::samples[i] = FilterWithBuffer<T,FILTER_SIZE>::samples[i-1];
             i--;
         }

@@ -27,19 +27,12 @@ static void set_control_channels(void)
 static void init_rc_in()
 {
     // set rc dead zones
-    channel_roll->set_dead_zone(20);
-    channel_pitch->set_dead_zone(20);
-    channel_rudder->set_dead_zone(20);
-    channel_throttle->set_dead_zone(4);
+    channel_roll->set_default_dead_zone(10);
+    channel_pitch->set_default_dead_zone(10);
+    channel_rudder->set_default_dead_zone(10);
+    channel_throttle->set_default_dead_zone(10);
 
-    //set auxiliary ranges
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
-#else
-    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
-#endif
+    update_aux();
 }
 
 /*
@@ -110,9 +103,9 @@ static void read_radio()
     if (g.throttle_nudge && channel_throttle->servo_out > 50) {
         float nudge = (channel_throttle->servo_out - 50) * 0.02;
         if (alt_control_airspeed()) {
-            airspeed_nudge_cm = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
+            airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
         } else {
-            throttle_nudge = (g.throttle_max - g.throttle_cruise) * nudge;
+            throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }
     } else {
         airspeed_nudge_cm = 0;
@@ -135,7 +128,7 @@ static void control_failsafe(uint16_t pwm)
 
     // Check for failsafe condition based on loss of GCS control
     if (rc_override_active) {
-        if (millis() - last_heartbeat_ms > FAILSAFE_SHORT_TIME) {
+        if (millis() - last_heartbeat_ms > g.short_fs_timeout*1000) {
             ch3_failsafe = true;
         } else {
             ch3_failsafe = false;

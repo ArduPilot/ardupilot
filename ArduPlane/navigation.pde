@@ -85,11 +85,12 @@ static void calc_airspeed_errors()
     target_airspeed_cm = g.airspeed_cruise_cm;
 
     // FBW_B airspeed target
-    if (control_mode == FLY_BY_WIRE_B) {
-        target_airspeed_cm = ((int)(g.flybywire_airspeed_max -
-                                    g.flybywire_airspeed_min) *
-                              channel_throttle->servo_out) +
-                             ((int)g.flybywire_airspeed_min * 100);
+    if (control_mode == FLY_BY_WIRE_B || 
+        control_mode == CRUISE) {
+        target_airspeed_cm = ((int32_t)(aparm.airspeed_max -
+                                        aparm.airspeed_min) *
+                              channel_throttle->control_in) +
+                             ((int32_t)aparm.airspeed_min * 100);
     }
 
     // Set target to current airspeed + ground speed undershoot,
@@ -107,8 +108,8 @@ static void calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > (g.flybywire_airspeed_max * 100))
-        target_airspeed_cm = (g.flybywire_airspeed_max * 100);
+    if (target_airspeed_cm > (aparm.airspeed_max * 100))
+        target_airspeed_cm = (aparm.airspeed_max * 100);
 
     airspeed_error_cm = target_airspeed_cm - aspeed_cm;
     airspeed_energy_error = ((target_airspeed_cm * target_airspeed_cm) - (aspeed_cm*aspeed_cm))*0.00005;
@@ -130,15 +131,16 @@ static void calc_gndspeed_undershoot()
 
 static void calc_altitude_error()
 {
-    if (control_mode == FLY_BY_WIRE_B) {
+    if (control_mode == FLY_BY_WIRE_B ||
+        control_mode == CRUISE) {
         return;
     }
-    if (control_mode == AUTO && offset_altitude_cm != 0) {
-        // limit climb rates
+    if (offset_altitude_cm != 0) {
+        // control climb/descent rate
         target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 
         // stay within a certain range
-        if(prev_WP.alt > next_WP.alt) {
+        if (prev_WP.alt > next_WP.alt) {
             target_altitude_cm = constrain_int32(target_altitude_cm, next_WP.alt, prev_WP.alt);
         }else{
             target_altitude_cm = constrain_int32(target_altitude_cm, prev_WP.alt, next_WP.alt);
@@ -153,5 +155,131 @@ static void calc_altitude_error()
 static void update_loiter()
 {
     nav_controller->update_loiter(next_WP, abs(g.loiter_radius), loiter.direction);
+}
+
+/*
+  handle CRUISE mode, locking heading to GPS course when we have
+  sufficient ground speed, and no aileron or rudder input
+ */
+static void update_cruise()
+{
+    if (!cruise_state.locked_heading &&
+        channel_roll->control_in == 0 &&
+        channel_rudder->control_in == 0 &&
+        g_gps && g_gps->status() >= GPS::GPS_OK_FIX_2D &&
+        g_gps->ground_speed_cm >= 300 &&
+        cruise_state.lock_timer_ms == 0) {
+        // user wants to lock the heading - start the timer
+        cruise_state.lock_timer_ms = hal.scheduler->millis();
+    }
+    if (cruise_state.lock_timer_ms != 0 &&
+        (hal.scheduler->millis() - cruise_state.lock_timer_ms) > 500) {
+        // lock the heading after 0.5 seconds of zero heading input
+        // from user
+        cruise_state.locked_heading = true;
+        cruise_state.lock_timer_ms = 0;
+        cruise_state.locked_heading_cd = g_gps->ground_course_cd;
+        prev_WP = current_loc;
+    }
+    if (cruise_state.locked_heading) {
+        next_WP = prev_WP;
+        // always look 1km ahead
+        location_update(&next_WP, 
+                        cruise_state.locked_heading_cd*0.01f, 
+                        get_distance(&prev_WP, &current_loc) + 1000);
+        nav_controller->update_waypoint(prev_WP, next_WP);
+    }
+}
+
+
+/*
+  handle speed and height control in FBWB or CRUISE mode. 
+  In this mode the elevator is used to change target altitude. The
+  throttle is used to change target airspeed or throttle
+ */
+static void update_fbwb_speed_height(void)
+{
+    static float last_elevator_input;
+    float elevator_input;
+    elevator_input = channel_pitch->control_in / 4500.0f;
+    
+    if (g.flybywire_elev_reverse) {
+        elevator_input = -elevator_input;
+    }
+    
+    target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_ms_fast_loop * 0.1f;
+    
+    if (elevator_input == 0.0f && last_elevator_input != 0.0f) {
+        // the user has just released the elevator, lock in
+        // the current altitude
+        target_altitude_cm = current_loc.alt;
+    }
+
+    // check for FBWB altitude limit
+    if (g.FBWB_min_altitude_cm != 0 && target_altitude_cm < home.alt + g.FBWB_min_altitude_cm) {
+        target_altitude_cm = home.alt + g.FBWB_min_altitude_cm;
+    }
+    altitude_error_cm = target_altitude_cm - adjusted_altitude_cm();
+    
+    last_elevator_input = elevator_input;
+    
+    calc_throttle();
+    calc_nav_pitch();
+}
+
+static void setup_glide_slope(void)
+{
+    // establish the distance we are travelling to the next waypoint,
+    // for calculating out rate of change of altitude
+    wp_totalDistance        = get_distance(&current_loc, &next_WP);
+    wp_distance             = wp_totalDistance;
+
+    /*
+      work out if we will gradually change altitude, or try to get to
+      the new altitude as quickly as possible.
+     */
+    switch (control_mode) {
+    case RTL:
+    case GUIDED:
+        /* glide down slowly if above target altitude, but ascend more
+           rapidly if below it. See
+           https://github.com/diydrones/ardupilot/issues/39
+        */
+        if (current_loc.alt > next_WP.alt) {
+            offset_altitude_cm = next_WP.alt - current_loc.alt;            
+        } else {
+            offset_altitude_cm = 0;
+        }
+        break;
+
+    case AUTO:
+        if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
+            prev_WP.alt != home.alt && 
+            (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
+            offset_altitude_cm = next_WP.alt - prev_WP.alt;
+        } else {
+            offset_altitude_cm = 0;        
+        }
+        break;
+    default:
+        offset_altitude_cm = 0;        
+        break;
+    }
+}
+
+/*
+  return relative altitude in meters (relative to home)
+ */
+static float relative_altitude(void)
+{
+    return (current_loc.alt - home.alt) * 0.01f;
+}
+
+/*
+  return relative altitude in centimeters, absolute value
+ */
+static int32_t relative_altitude_abs_cm(void)
+{
+    return labs(current_loc.alt - home.alt);
 }
 

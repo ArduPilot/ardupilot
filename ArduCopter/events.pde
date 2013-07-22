@@ -21,8 +21,10 @@ static void failsafe_radio_on_event()
             }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
                 set_mode(LAND);
-            }else if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            }else if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)) {
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
@@ -31,8 +33,10 @@ static void failsafe_radio_on_event()
         case AUTO:
             // failsafe_throttle is 1 do RTL, 2 means continue with the mission
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
-                if(home_distance > wp_nav.get_waypoint_radius()) {
-                    set_mode(RTL);
+                if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                    if (!set_mode(RTL)) {
+                        set_mode(LAND);
+                    }
                 }else{
                     // We are very close to home so we will land
                     set_mode(LAND);
@@ -43,12 +47,19 @@ static void failsafe_radio_on_event()
             }
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
             break;
+        case LAND:
+            // continue to land if battery failsafe is also active otherwise fall through to default handling
+            if (g.failsafe_battery_enabled && ap.low_battery) {
+                break;
+            }
         default:
             if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 // if failsafe_throttle is 3 (i.e. FS_THR_ENABLED_ALWAYS_LAND) land immediately
                 set_mode(LAND);
-            }else if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            }else if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)){
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
@@ -86,8 +97,11 @@ static void low_battery_event(void)
                 }
                 break;
             case AUTO:
-                if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                    set_mode(RTL);
+                // set_mode to RTL or LAND
+                if (GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                    if (!set_mode(RTL)) {
+                        set_mode(LAND);
+                    }
                 }else{
                     // We have no GPS or are very close to home so we will land
                     set_mode(LAND);
@@ -151,9 +165,11 @@ static void failsafe_gps_check()
         set_mode(LAND);
 
     // land if circular fence is enabled
+#if AC_FENCE == ENABLED
     if((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) {
         set_mode(LAND);
     }
+#endif
 }
 
 // failsafe_gps_off_event - actions to take when GPS contact is restored
@@ -173,12 +189,12 @@ static void failsafe_gcs_check()
         return;
     }
 
-    // calc time since last gps update
+    // calc time since last gcs update
     last_gcs_update_ms = millis() - last_heartbeat_ms;
 
     // check if all is well
     if( last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
-        // check for recovery from gps failsafe
+        // check for recovery from gcs failsafe
         if( ap.failsafe_gcs ) {
             failsafe_gcs_off_event();
             set_failsafe_gcs(false);
@@ -186,7 +202,7 @@ static void failsafe_gcs_check()
         return;
     }
 
-    // do nothing if gps failsafe already triggered or motors disarmed
+    // do nothing if gcs failsafe already triggered or motors disarmed
     if( ap.failsafe_gcs || !motors.armed()) {
         return;
     }
@@ -204,8 +220,10 @@ static void failsafe_gcs_check()
             // if throttle is zero disarm motors
             if (g.rc_3.control_in == 0) {
                 init_disarm_motors();
-            }else if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            }else if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)) {
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
@@ -214,8 +232,10 @@ static void failsafe_gcs_check()
         case AUTO:
             // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
             if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
-                if(home_distance > wp_nav.get_waypoint_radius()) {
-                    set_mode(RTL);
+                if (GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                    if (!set_mode(RTL)) {
+                        set_mode(LAND);
+                    }
                 }else{
                     // We are very close to home so we will land
                     set_mode(LAND);
@@ -224,8 +244,10 @@ static void failsafe_gcs_check()
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
             break;
         default:
-            if(ap.home_is_set == true && g_gps->status() == GPS::GPS_OK_FIX_3D && home_distance > wp_nav.get_waypoint_radius()) {
-                set_mode(RTL);
+            if(GPS_ok() && home_distance > wp_nav.get_waypoint_radius()) {
+                if (!set_mode(RTL)) {
+                    set_mode(LAND);
+                }
             }else{
                 // We have no GPS or are very close to home so we will land
                 set_mode(LAND);
@@ -234,10 +256,10 @@ static void failsafe_gcs_check()
     }
 }
 
-// failsafe_gps_off_event - actions to take when GPS contact is restored
+// failsafe_gcs_off_event - actions to take when GCS contact is restored
 static void failsafe_gcs_off_event(void)
 {
-    // log recovery of GPS in logs?
+    // log recovery of GCS in logs?
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 

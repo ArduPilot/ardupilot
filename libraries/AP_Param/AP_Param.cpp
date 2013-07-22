@@ -443,7 +443,8 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
 // scan the EEPROM looking for a given variable by header content
 // return true if found, along with the offset in the EEPROM where
 // the variable is stored
-// if not found return the offset of the sentinal, or
+// if not found return the offset of the sentinal
+// if the sentinal isn't found either, the offset is set to 0xFFFF
 bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
 {
     struct Param_header phdr;
@@ -468,29 +469,26 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
         }
         ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
     }
-    *pofs = ~0;
+    *pofs = 0xffff;
     serialDebug("scan past end of eeprom");
     return false;
 }
 
-// add a X,Y,Z suffix to the name of a Vector3f element
+/**
+ * add a _X, _Y, _Z suffix to the name of a Vector3f element
+ * @param buffer
+ * @param buffer_size
+ * @param idx Suffix: 0 --> _X; 1 --> _Y; 2 --> _Z; (other --> undefined)
+ */
 void AP_Param::add_vector3f_suffix(char *buffer, size_t buffer_size, uint8_t idx) const
 {
-    uint8_t len = strnlen(buffer, buffer_size);
-    if ((size_t)(len+2) > buffer_size) {
-        // the suffix doesn't fit
-        return;
-    }
-    buffer[len] = '_';
-    if (idx == 0) {
-        buffer[len+1] = 'X';
-    } else if (idx == 1) {
-        buffer[len+1] = 'Y';
-    } else if (idx == 2) {
-        buffer[len+1] = 'Z';
-    }
-    if ((size_t)(len+2) < buffer_size) {
-        buffer[len+2] = 0;
+    const size_t len = strnlen(buffer, buffer_size);
+    if (len + 2 <= buffer_size) {
+        buffer[len] = '_';
+        buffer[len + 1] = static_cast<char>('X' + idx);
+        if (len + 3 <= buffer_size) {
+            buffer[len + 2] = 0;
+        }
     }
 }
 
@@ -922,7 +920,7 @@ AP_Param *AP_Param::next_group(uint8_t vindex, const struct GroupInfo *group_inf
                         *ptype = AP_PARAM_FLOAT;
                     }
                     uintptr_t ofs = (uintptr_t)PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset);
-                    ofs += sizeof(float)*(token->idx-1);
+                    ofs += sizeof(float)*(token->idx - 1u);
                     return (AP_Param *)ofs;
                 }
             }
@@ -950,7 +948,7 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
         if (ptype != NULL) {
             *ptype = AP_PARAM_FLOAT;
         }
-        return (AP_Param *)(((token->idx-1)*sizeof(float))+(uintptr_t)PGM_POINTER(&_var_info[i].ptr));
+        return (AP_Param *)(((token->idx - 1u)*sizeof(float))+(uintptr_t)PGM_POINTER(&_var_info[i].ptr));
     }
 
     if (type != AP_PARAM_GROUP) {

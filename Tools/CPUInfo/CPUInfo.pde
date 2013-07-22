@@ -97,7 +97,8 @@ static void show_timings(void)
 	TIMEIT("fadd", v_out += v_f, 100);
 	TIMEIT("fsub", v_out -= v_f, 100);
 	TIMEIT("fmul", v_out *= v_f, 100);
-	TIMEIT("fdiv", v_out /= v_f, 100);
+	TIMEIT("fdiv /=", v_out /= v_f, 100);
+    TIMEIT("fdiv 2/x", v_out = 2.0f/v_f, 100);
 
 	TIMEIT("dadd", v_out_d += v_d, 100);
 	TIMEIT("dsub", v_out_d -= v_d, 100);

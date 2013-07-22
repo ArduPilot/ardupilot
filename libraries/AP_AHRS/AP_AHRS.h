@@ -97,10 +97,6 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    // roll and pitch rates in earth frame, in radians/s
-    float get_pitch_rate_earth(void) const;
-    float get_roll_rate_earth(void) const;
-
     // return a smoothed and corrected gyro vector
     virtual const Vector3f get_gyro(void) const = 0;
 
@@ -153,6 +149,12 @@ public:
     // return an airspeed estimate if available. return true
     // if we have an estimate
     virtual bool airspeed_estimate(float *airspeed_ret);
+
+    // return true if airspeed comes from an airspeed sensor, as
+    // opposed to an IMU estimate
+    bool airspeed_sensor_enabled(void) const {
+        return _airspeed != NULL && _airspeed->use();
+    }
 
     // return a ground vector estimate in meters/second, in North/East order
     Vector2f groundspeed_vector(void);

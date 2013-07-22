@@ -276,7 +276,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
             cliSerial->printf_P(PSTR(", Lon "));
             print_latlon(cliSerial, g_gps->longitude);
             cliSerial->printf_P(PSTR(", Alt: %ldm, #sats: %d\n"),
-                            g_gps->altitude/100,
+                            g_gps->altitude_cm/100,
                             g_gps->num_sats);
             g_gps->new_data = false;
         }else{
@@ -301,6 +301,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     ins.init(AP_InertialSensor::COLD_START, 
              ins_sample_rate,
              flash_leds);
+    cliSerial->printf_P(PSTR("...done\n"));
 
     delay(50);
 
@@ -311,7 +312,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
         float test = accel.length() / GRAVITY_MSS;
 
-        cliSerial->printf_P(PSTR("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %74f | %7.4f\n"),
+        cliSerial->printf_P(PSTR("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %7.4f \n"),
             accel.x, accel.y, accel.z,
             gyro.x, gyro.y, gyro.z,
             test);

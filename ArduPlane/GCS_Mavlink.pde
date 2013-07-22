@@ -6,6 +6,9 @@ static bool in_mavlink_delay;
 // true when we have received at least 1 MAVLink packet
 static bool mavlink_active;
 
+// true if we are out of time in our event timeslice
+static bool	gcs_out_of_time;
+
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_ ## id ## _LEN) return false
 
@@ -40,11 +43,13 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     switch (control_mode) {
     case MANUAL:
     case TRAINING:
+    case ACRO:
         base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case STABILIZE:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
+    case CRUISE:
         base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case AUTO:
@@ -134,7 +139,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->status() >= GPS::NO_GPS) {
+    if (g_gps != NULL && g_gps->status() > GPS::NO_GPS) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -156,6 +161,10 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     case MANUAL:
         break;
 
+    case ACRO:
+        control_sensors_enabled |= (1<<10); // 3D angular rate control
+        break;
+
     case STABILIZE:
     case FLY_BY_WIRE_A:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
@@ -163,6 +172,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         break;
 
     case FLY_BY_WIRE_B:
+    case CRUISE:
         control_sensors_enabled |= (1<<10); // 3D angular rate control
         control_sensors_enabled |= (1<<11); // attitude stabilisation
         control_sensors_enabled |= (1<<15); // motor control
@@ -206,10 +216,10 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     uint16_t battery_current = -1;
     uint8_t battery_remaining = -1;
 
-    if (battery.current_total_mah != 0 && g.pack_capacity != 0) {
-        battery_remaining = (100.0 * (g.pack_capacity - battery.current_total_mah) / g.pack_capacity);
-    }
-    if (battery.current_total_mah != 0) {
+    if (battery.last_time_ms != 0) {
+        if (g.pack_capacity != 0) {
+            battery_remaining = (100.0 * (g.pack_capacity - battery.current_total_mah) / g.pack_capacity);
+        }
         battery_current = battery.current_amps * 100;
     }
 
@@ -261,8 +271,8 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         fix_time,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        g_gps->altitude * 10,             // millimeters above sea level
-        (current_loc.alt-home.alt) * 10,           // millimeters above ground
+        g_gps->altitude_cm * 10,        // millimeters above sea level
+        relative_altitude() * 1.0e3,    // millimeters above ground
         g_gps->velocity_north() * 100,  // X speed cm/s (+ve North)
         g_gps->velocity_east()  * 100,  // Y speed cm/s (+ve East)
         g_gps->velocity_down()  * -100, // Z speed cm/s (+ve up)
@@ -291,11 +301,11 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->status(),
         g_gps->latitude,      // in 1E7 degrees
         g_gps->longitude,     // in 1E7 degrees
-        g_gps->altitude * 10, // in mm
+        g_gps->altitude_cm * 10, // in mm
         g_gps->hdop,
         65535,
-        g_gps->ground_speed,  // cm/s
-        g_gps->ground_course, // 1/100 degrees,
+        g_gps->ground_speed_cm,  // cm/s
+        g_gps->ground_course_cd, // 1/100 degrees,
         g_gps->num_sats);
 }
 
@@ -383,7 +393,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
     mavlink_msg_vfr_hud_send(
         chan,
         aspeed,
-        (float)g_gps->ground_speed * 0.01,
+        (float)g_gps->ground_speed_cm * 0.01f,
         (ahrs.yaw_sensor / 100) % 360,
         throttle,
         current_loc.alt / 100.0,
@@ -530,6 +540,14 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
     if (telemetry_delayed(chan)) {
+        return false;
+    }
+
+    // if we don't have at least 1ms remaining before the main loop
+    // wants to fire then don't send a mavlink message. We want to
+    // prioritise the main flight control loop over communications
+    if (!in_mavlink_delay && scheduler.time_available_usec() < 1200) {
+        gcs_out_of_time = true;
         return false;
     }
 
@@ -954,6 +972,8 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 void
 GCS_MAVLINK::data_stream_send(void)
 {
+    gcs_out_of_time = false;
+
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
             streamRates[STREAM_PARAMS].set(50);
@@ -962,6 +982,8 @@ GCS_MAVLINK::data_stream_send(void)
             send_message(MSG_NEXT_PARAM);
         }
     }
+
+    if (gcs_out_of_time) return;
 
     if (in_mavlink_delay) {
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -979,11 +1001,15 @@ GCS_MAVLINK::data_stream_send(void)
         return;
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
         send_message(MSG_RAW_IMU3);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1);
@@ -994,28 +1020,40 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_FENCE_STATUS);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_POSITION)) {
         // sent with GPS read
         send_message(MSG_LOCATION);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
         send_message(MSG_RADIO_IN);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
@@ -1233,8 +1271,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case CIRCLE:
         case STABILIZE:
         case TRAINING:
+        case ACRO:
         case FLY_BY_WIRE_A:
         case FLY_BY_WIRE_B:
+        case CRUISE:
         case AUTO:
         case RTL:
         case LOITER:

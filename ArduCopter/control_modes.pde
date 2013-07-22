@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define CONTROL_SWITCH_COUNTER  10  // 10 iterations at 100hz (i.e. 1/10th of a second) at a new switch position will cause flight mode change
+#define CONTROL_SWITCH_COUNTER  20  // 20 iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
 static void read_control_switch()
 {
     static uint8_t switch_counter = 0;
@@ -15,12 +15,13 @@ static void read_control_switch()
             oldSwitchPosition       = switchPosition;
             switch_counter          = 0;
 
-            set_mode(flight_modes[switchPosition]);
-
-            if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
-                // set Simple mode using stored paramters from Mission planner
-                // rather than by the control switch
-                set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+            // set flight mode and simple mode setting
+            if (set_mode(flight_modes[switchPosition])) {
+                if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
+                    // set Simple mode using stored paramters from Mission planner
+                    // rather than by the control switch
+                    set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+                }
             }
 
         }
@@ -74,6 +75,39 @@ static void read_aux_switches()
     }
 }
 
+// init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
+static void init_aux_switches()
+{
+    // set channel 7 and 8 flags according to switch position
+    ap_system.CH7_flag = (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+    ap_system.CH8_flag = (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+
+    // init channel 7 options
+    switch(g.ch7_option) {
+        case AUX_SWITCH_SIMPLE_MODE:
+        case AUX_SWITCH_SONAR:
+        case AUX_SWITCH_FENCE:
+        case AUX_SWITCH_RESETTOARMEDYAW:
+            do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
+            break;
+    }
+
+    // safety check to ensure we ch7 and ch8 have different functions
+    if (g.ch7_option == g.ch8_option) {
+        return;
+    }
+
+    // init channel 8 option
+    switch(g.ch8_option) {
+        case AUX_SWITCH_SIMPLE_MODE:
+        case AUX_SWITCH_SONAR:
+        case AUX_SWITCH_FENCE:
+        case AUX_SWITCH_RESETTOARMEDYAW:
+            do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
+            break;
+    }
+}
+
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
 static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
 {
@@ -104,7 +138,7 @@ static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
 
         case AUX_SWITCH_RTL:
             if (ch_flag) {
-                // engage RTL
+                // engage RTL (if not possible we remain in current flight mode)
                 set_mode(RTL);
             }else{
                 // disengage RTL to previous flight mode if we are currently in RTL or loiter
@@ -128,7 +162,7 @@ static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
                 if(control_mode == AUTO) {
                     aux_switch_wp_index = 0;
                     g.command_total.set_and_save(1);
-                    set_mode(RTL);
+                    set_mode(RTL);  // if by chance we are unable to switch to RTL we just stay in AUTO and hope the GPS failsafe will take-over
                     return;
                 }
 
@@ -237,6 +271,7 @@ static void auto_trim()
         if(auto_trim_counter == 0) {
             ahrs.set_fast_gains(false);
             led_mode = NORMAL_LEDS;
+            clear_leds();
         }
     }
 }

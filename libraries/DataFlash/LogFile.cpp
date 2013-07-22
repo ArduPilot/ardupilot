@@ -610,9 +610,9 @@ void DataFlash_Class::Log_Write_GPS(const GPS *gps, int32_t relative_alt)
         latitude      : gps->latitude,
         longitude     : gps->longitude,
         rel_altitude  : relative_alt,
-        altitude      : gps->altitude,
-        ground_speed  : gps->ground_speed,
-        ground_course : gps->ground_course
+        altitude      : gps->altitude_cm,
+        ground_speed  : gps->ground_speed_cm,
+        ground_course : gps->ground_course_cd
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

@@ -63,9 +63,9 @@ void loop()
                     "CoG: %d SAT: %d TIM: %lu\r\n"),
                           (float)gps->latitude / T7,
                           (float)gps->longitude / T7,
-                          (float)gps->altitude / 100.0,
-                          (float)gps->ground_speed / 100.0,
-                          (int)gps->ground_course / 100,
+                          (float)gps->altitude_cm / 100.0,
+                          (float)gps->ground_speed_cm / 100.0,
+                          (int)gps->ground_course_cd / 100,
                           gps->num_sats,
                           gps->time);
         } else {

@@ -11,8 +11,10 @@ static void failsafe_short_on_event(int16_t fstype)
     {
     case MANUAL:
     case STABILIZE:
+    case ACRO:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
+    case CRUISE:
     case TRAINING:
         set_mode(CIRCLE);
         break;
@@ -44,8 +46,10 @@ static void failsafe_long_on_event(int16_t fstype)
     {
     case MANUAL:
     case STABILIZE:
+    case ACRO:
     case FLY_BY_WIRE_A:
     case FLY_BY_WIRE_B:
+    case CRUISE:
     case TRAINING:
     case CIRCLE:
         set_mode(RTL);
@@ -88,7 +92,7 @@ void low_battery_event(void)
     gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
                       battery.voltage, battery.current_total_mah);
     set_mode(RTL);
-    g.throttle_cruise = THROTTLE_CRUISE;
+    aparm.throttle_cruise.load();
     battery.low_batttery = true;
 }
 

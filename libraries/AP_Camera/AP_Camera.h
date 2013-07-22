@@ -13,13 +13,6 @@
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
-#define AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME    2
-#define AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE          3
-#define AP_CAMERA_TRIGGER_TYPE_TRANSISTOR           4
-
-#define AP_CAMERA_TRANSISTOR_PIN    83              // PK6 chosen as it not near anything so safer for soldering
-
-#define AP_CAMERA_WP_DISTANCE       3               // trigger camera shutter when within this many meters of target.  Unfortunately this variable is in meter for ArduPlane and cm for ArduCopter so it will not work for ArduCopter
 
 #define AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE  AP_CAMERA_TRIGGER_TYPE_SERVO    // default is to use servo to trigger camera
 
@@ -54,7 +47,8 @@ public:
     void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
 
-    void update_location(const struct Location &loc);
+    // Update location of vehicle and return true if a picture should be taken
+    bool update_location(const struct Location &loc);
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -72,7 +66,7 @@ private:
     void            throttle_pic();     // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
     void            distance_pic();     // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
     void            transistor_pic();   // hacked the circuit to run a transistor? use this trigger to send output.
-    
+
     AP_Float        _trigg_dist;     // distance between trigger points (meters)
     struct Location _last_location;
 

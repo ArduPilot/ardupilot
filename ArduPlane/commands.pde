@@ -199,20 +199,10 @@ static void set_next_WP(const struct Location *wp)
     // -----------------------------------------------
     target_altitude_cm = current_loc.alt;
 
-    if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
-        prev_WP.alt != home.alt && 
-        (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
-        offset_altitude_cm = next_WP.alt - prev_WP.alt;
-    } else {
-        offset_altitude_cm = 0;        
-    }
-
     // zero out our loiter vals to watch for missed waypoints
     loiter_angle_reset();
 
-    // this is handy for the groundstation
-    wp_totalDistance        = get_distance(&current_loc, &next_WP);
-    wp_distance             = wp_totalDistance;
+    setup_glide_slope();
 
     // This was done already.
     loiter_angle_reset();
@@ -237,11 +227,8 @@ static void set_guided_WP(void)
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
     target_altitude_cm = current_loc.alt;
-    offset_altitude_cm = next_WP.alt - prev_WP.alt;
 
-    // this is handy for the groundstation
-    wp_totalDistance        = get_distance(&current_loc, &next_WP);
-    wp_distance             = wp_totalDistance;
+    setup_glide_slope();
 
     loiter_angle_reset();
 }
@@ -265,9 +252,9 @@ void init_home()
     home.id         = MAV_CMD_NAV_WAYPOINT;
     home.lng        = g_gps->longitude;                                 // Lon * 10**7
     home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    
     // This is not so good if you fly in a depression where alt < 0.
-    home.alt        = max(g_gps->altitude, 0);
+    home.alt        = max(g_gps->altitude_cm, 0);
+
     home_is_set = true;
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);

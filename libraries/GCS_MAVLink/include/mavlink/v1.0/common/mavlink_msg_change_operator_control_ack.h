@@ -12,6 +12,9 @@ typedef struct __mavlink_change_operator_control_ack_t
 #define MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN 3
 #define MAVLINK_MSG_ID_6_LEN 3
 
+#define MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_CRC 104
+#define MAVLINK_MSG_ID_6_CRC 104
+
 
 
 #define MAVLINK_MESSAGE_INFO_CHANGE_OPERATOR_CONTROL_ACK { \
@@ -39,23 +42,27 @@ static inline uint16_t mavlink_msg_change_operator_control_ack_pack(uint8_t syst
 						       uint8_t gcs_system_id, uint8_t control_request, uint8_t ack)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[3];
+	char buf[MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN];
 	_mav_put_uint8_t(buf, 0, gcs_system_id);
 	_mav_put_uint8_t(buf, 1, control_request);
 	_mav_put_uint8_t(buf, 2, ack);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 3);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
 #else
 	mavlink_change_operator_control_ack_t packet;
 	packet.gcs_system_id = gcs_system_id;
 	packet.control_request = control_request;
 	packet.ack = ack;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 3);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK;
-	return mavlink_finalize_message(msg, system_id, component_id, 3, 104);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
+#endif
 }
 
 /**
@@ -74,23 +81,27 @@ static inline uint16_t mavlink_msg_change_operator_control_ack_pack_chan(uint8_t
 						           uint8_t gcs_system_id,uint8_t control_request,uint8_t ack)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[3];
+	char buf[MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN];
 	_mav_put_uint8_t(buf, 0, gcs_system_id);
 	_mav_put_uint8_t(buf, 1, control_request);
 	_mav_put_uint8_t(buf, 2, ack);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 3);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
 #else
 	mavlink_change_operator_control_ack_t packet;
 	packet.gcs_system_id = gcs_system_id;
 	packet.control_request = control_request;
 	packet.ack = ack;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 3);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 3, 104);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
+#endif
 }
 
 /**
@@ -119,19 +130,27 @@ static inline uint16_t mavlink_msg_change_operator_control_ack_encode(uint8_t sy
 static inline void mavlink_msg_change_operator_control_ack_send(mavlink_channel_t chan, uint8_t gcs_system_id, uint8_t control_request, uint8_t ack)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[3];
+	char buf[MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN];
 	_mav_put_uint8_t(buf, 0, gcs_system_id);
 	_mav_put_uint8_t(buf, 1, control_request);
 	_mav_put_uint8_t(buf, 2, ack);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK, buf, 3, 104);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK, buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK, buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
+#endif
 #else
 	mavlink_change_operator_control_ack_t packet;
 	packet.gcs_system_id = gcs_system_id;
 	packet.control_request = control_request;
 	packet.ack = ack;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK, (const char *)&packet, 3, 104);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK, (const char *)&packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK, (const char *)&packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
+#endif
 #endif
 }
 
@@ -183,6 +202,6 @@ static inline void mavlink_msg_change_operator_control_ack_decode(const mavlink_
 	change_operator_control_ack->control_request = mavlink_msg_change_operator_control_ack_get_control_request(msg);
 	change_operator_control_ack->ack = mavlink_msg_change_operator_control_ack_get_ack(msg);
 #else
-	memcpy(change_operator_control_ack, _MAV_PAYLOAD(msg), 3);
+	memcpy(change_operator_control_ack, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN);
 #endif
 }

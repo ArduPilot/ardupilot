@@ -19,7 +19,7 @@
 #include <AP_HAL.h>
 #include <AP_Math.h>
 
-#include "print_vprintf.h"
+#include "utility/print_vprintf.h"
 #include "UARTDriver.h"
 using namespace AP_HAL_AVR;
 
