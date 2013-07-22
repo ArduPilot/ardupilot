@@ -2232,7 +2232,7 @@ static void tuning(){
 
 #if FRAME_CONFIG == HELI_FRAME
     case CH6_HELI_EXTERNAL_GYRO:
-        motors.ext_gyro_gain(tuning_value);
+        motors.ch7_pwm_setpoint(tuning_value);
         break;
 #endif
 

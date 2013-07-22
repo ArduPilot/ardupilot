@@ -100,12 +100,12 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("COL_MID", 8,      AP_MotorsHeli,  _collective_mid, AP_MOTORS_HELI_COLLECTIVE_MID),
 
-    // @Param: GYR_ENABLE
-    // @DisplayName: External Gyro Enabled
-    // @Description: Enabled/Disable an external rudder gyro connected to channel 7.  With no external gyro a more complex yaw controller is used
-    // @Values: 0:Disabled,1:Enabled
+    // @Param: TAIL_TYPE
+    // @DisplayName: Tail Type
+    // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected
+    // @Values: 0:Servo only,1:Servo w/ ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch
     // @User: Standard
-    AP_GROUPINFO("GYR_ENABLE",9,    AP_MotorsHeli,  _ext_gyro_enabled, 0),
+    AP_GROUPINFO("TAIL_TYPE",9,     AP_MotorsHeli,  _tail_type, AP_MOTORS_HELI_TAILTYPE_SERVO),
 
     // @Param: SWASH_TYPE
     // @DisplayName: Swash Type
@@ -114,14 +114,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("SWASH_TYPE",10,   AP_MotorsHeli,  _swash_type, AP_MOTORS_HELI_SWASH_CCPM),
 
-    // @Param: GYR_GAIN
-    // @DisplayName: External Gyro Gain
-    // @Description: PWM sent to the external gyro on Ch7
+    // @Param: CH7_SETPOINT
+    // @DisplayName: Ch7 PWM Setpoint
+    // @Description: PWM output on Ch7 for External Gyro gain or Variable Pitch Direct Drive speed
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("GYR_GAIN",11,     AP_MotorsHeli,  _ext_gyro_gain, AP_MOTORS_HELI_EXT_GYRO_GAIN),
+    AP_GROUPINFO("CH7_SETPOINT",    11,     AP_MotorsHeli,  _ch7_pwm_setpoint, 1000),
 
     // @Param: SV_MAN
     // @DisplayName: Manual Servo Mode
@@ -242,12 +242,12 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
 void AP_MotorsHeli::enable()
 {
     // enable output channels
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_1]);            // swash servo 1
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_2]);            // swash servo 2
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_3]);            // swash servo 3
-    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_4]);            // yaw
-    hal.rcout->enable_ch(AP_MOTORS_HELI_EXT_GYRO);           // for external gyro
-    hal.rcout->enable_ch(AP_MOTORS_HELI_EXT_RSC);            // for external RSC
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_1]);           // swash servo 1
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_2]);           // swash servo 2
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_3]);           // swash servo 3
+    hal.rcout->enable_ch(_motor_to_channel_map[AP_MOTORS_MOT_4]);           // yaw
+    hal.rcout->enable_ch(AP_MOTORS_HELI_AUX);                               // output for gyro gain or direct drive variable pitch tail motor
+    hal.rcout->enable_ch(AP_MOTORS_HELI_RSC);                               // output for main rotor esc
 }
 
 // output_min - sends minimum values out to the motors
@@ -302,8 +302,8 @@ void AP_MotorsHeli::output_test()
     }
 
     // external gyro
-    if (_ext_gyro_enabled) {
-        hal.rcout->write(AP_MOTORS_HELI_EXT_GYRO, _ext_gyro_gain);
+    if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
+        hal.rcout->write(AP_MOTORS_HELI_AUX, _ch7_pwm_setpoint);
     }
 
     // servo 4
@@ -578,7 +578,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
 	
         // rudder feed forward based on collective
-        if (!_ext_gyro_enabled) {
+        if (_tail_type != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
             yaw_offset = _collective_yaw_effect * abs(coll_out_scaled - _collective_mid_pwm);
         }
     }
@@ -621,9 +621,33 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     motor_out[AP_MOTORS_MOT_3] = _servo_3->radio_out;
     motor_out[AP_MOTORS_MOT_4] = _servo_4->radio_out;
 
-    // output gyro value
-    if (_ext_gyro_enabled) {
-        hal.rcout->write(AP_MOTORS_HELI_EXT_GYRO, _ext_gyro_gain);
+    switch (_tail_type) {
+        case AP_MOTORS_HELI_TAILTYPE_SERVO:
+            // do nothing
+            break;
+
+        case AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO:
+            // output gyro value
+            hal.rcout->write(AP_MOTORS_HELI_AUX, _ch7_pwm_setpoint);
+            break;
+
+        case AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_VARPITCH:
+            // switch on the motor if Ch8 is not low
+            if (armed() && _rc_8->control_in > 100) {
+                hal.rcout->write(AP_MOTORS_HELI_AUX, _ch7_pwm_setpoint);
+            } else {
+                hal.rcout->write(AP_MOTORS_HELI_AUX, AP_MOTOR_HELI_TAIL_TYPE_DIRECTDRIVE_PWM_MIN);
+            }
+            break;
+
+        case AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH:
+            // output fixed-pitch speed control if Ch8 is high
+            if (armed() && _rc_8->control_in > 100) {
+                hal.rcout->write(AP_MOTORS_HELI_AUX, _servo_4->radio_out);
+            } else {
+                hal.rcout->write(AP_MOTORS_HELI_AUX, AP_MOTOR_HELI_TAIL_TYPE_DIRECTDRIVE_PWM_MIN);
+            }
+            break;
     }
 }
 
@@ -668,7 +692,7 @@ void AP_MotorsHeli::rsc_control()
 
     case AP_MOTORS_HELI_RSC_MODE_EXT_GOVERNOR:
 
-        if (armed() && _rc_8->control_in > 100) {
+        if (armed() && _rc_8->control_in > 400) {
             if (_rsc_ramp < _rsc_ramp_up_rate) {
                 _rsc_ramp++;
                 _rsc_output = map(_rsc_ramp, 0, _rsc_ramp_up_rate, 1000, _ext_gov_setpoint);
