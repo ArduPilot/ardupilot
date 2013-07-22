@@ -200,7 +200,7 @@ public:
         //
         k_param_kff_pitch_compensation = 200, // unused
         k_param_kff_rudder_mix,
-        k_param_kff_pitch_to_throttle,
+        k_param_kff_pitch_to_throttle, // unused
         k_param_kff_throttle_to_pitch,
         k_param_scaling_speed,
 
@@ -244,10 +244,10 @@ public:
         k_param_pidNavRoll = 240, // unused
         k_param_pidServoRoll, // unused
         k_param_pidServoPitch, // unused
-        k_param_pidNavPitchAirspeed,
-        k_param_pidServoRudder,
-        k_param_pidTeThrottle,
-        k_param_pidNavPitchAltitude,
+        k_param_pidNavPitchAirspeed, // unused
+        k_param_pidServoRudder, // unused
+        k_param_pidTeThrottle, // unused
+        k_param_pidNavPitchAltitude, // unused
         k_param_pidWheelSteer,
 
         // 254,255: reserved
@@ -415,9 +415,6 @@ public:
     AP_YawController   yawController;
 
     // PID controllers
-    PID         pidNavPitchAirspeed;
-    PID         pidTeThrottle;
-    PID         pidNavPitchAltitude;
     PID         pidWheelSteer;
 
     Parameters() :
@@ -449,9 +446,6 @@ public:
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-        pidNavPitchAirspeed (NAV_PITCH_ASP_P, NAV_PITCH_ASP_I, NAV_PITCH_ASP_D, NAV_PITCH_ASP_INT_MAX_CMSEC),
-        pidTeThrottle       (THROTTLE_TE_P,   THROTTLE_TE_I,   THROTTLE_TE_D,   THROTTLE_TE_INT_MAX),
-        pidNavPitchAltitude (NAV_PITCH_ALT_P, NAV_PITCH_ALT_I, NAV_PITCH_ALT_D, NAV_PITCH_ALT_INT_MAX_CM),
         pidWheelSteer         (0, 0, 0, 0)
 
         {}

@@ -59,14 +59,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX",    RUDDER_MIX),
 
-    // @Param: KFF_PTCH2THR
-    // @DisplayName: Pitch to Throttle Mix
-    // @Description: Pitch to throttle feed-forward gain.
-    // @Range: 0 5
-    // @Increment: 0.01
-    // @User: Advanced
-    GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR",   0),
-
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
     // @Description: Throttle to pitch feed-forward gain.
@@ -812,9 +804,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
 #endif
 
-	GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
-	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
-	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
 
     // @Group: RLL2SRV_

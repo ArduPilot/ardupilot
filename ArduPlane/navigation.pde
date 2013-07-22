@@ -111,7 +111,6 @@ static void calc_airspeed_errors()
         target_airspeed_cm = (aparm.airspeed_max * 100);
 
     airspeed_error_cm = target_airspeed_cm - aspeed_cm;
-    airspeed_energy_error = ((target_airspeed_cm * target_airspeed_cm) - (aspeed_cm*aspeed_cm))*0.00005;
 }
 
 static void calc_gndspeed_undershoot()

@@ -428,13 +428,6 @@ static int32_t target_airspeed_cm;
 // The difference between current and desired airspeed.  Used in the pitch controller.  Centimeters per second.
 static float airspeed_error_cm;
 
-// The calculated total energy error (kinetic (altitude) plus potential (airspeed)).
-// Used by the throttle controller
-static int32_t energy_error;
-
-// kinetic portion of energy error (m^2/s^2)
-static int32_t airspeed_energy_error;
-
 // An amount that the airspeed should be increased in auto modes based on the user positioning the
 // throttle stick in the top half of the range.  Centimeters per second.
 static int16_t airspeed_nudge_cm;
@@ -827,10 +820,7 @@ static void fast_loop()
  */
 static void update_speed_height(void)
 {
-    if ((g.alt_control_algorithm == ALT_CONTROL_TECS ||
-         g.alt_control_algorithm == ALT_CONTROL_DEFAULT) &&
-        auto_throttle_mode && !throttle_suppressed) 
-    {
+    if (auto_throttle_mode && !throttle_suppressed) {
 	    // Call TECS 50Hz update
         SpdHgt_Controller->update_50hz(relative_altitude());
     }
@@ -1068,7 +1058,7 @@ static void update_flight_mode(void)
 				nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
             }
 
-            if (alt_control_airspeed()) {
+            if (airspeed.use()) {
                 calc_nav_pitch();
                 if (nav_pitch_cd < takeoff_pitch_cd)
                     nav_pitch_cd = takeoff_pitch_cd;
@@ -1094,7 +1084,7 @@ static void update_flight_mode(void)
                 nav_pitch_cd = g.land_pitch_cd;
             } else {
                 calc_nav_pitch();
-                if (!alt_control_airspeed()) {
+                if (!airspeed.use()) {
                     // when not under airspeed control, don't allow
                     // down pitch in landing
                     nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
@@ -1305,13 +1295,8 @@ static void update_alt()
 
     geofence_check(true);
 
-    // Calculate new climb rate
-    //if(medium_loopCounter == 0 && slow_loopCounter == 0)
-    //	add_altitude_data(millis() / 100, g_gps->altitude / 10);
-
     // Update the speed & height controller states
-    if ((g.alt_control_algorithm == ALT_CONTROL_TECS || g.alt_control_algorithm == ALT_CONTROL_DEFAULT) &&
-        auto_throttle_mode && !throttle_suppressed) {
+    if (auto_throttle_mode && !throttle_suppressed) {
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,
                                                  (control_mode==AUTO && takeoff_complete == false), 

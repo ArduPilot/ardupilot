@@ -354,39 +354,7 @@ static void calc_throttle()
         return;
     }
 
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS || g.alt_control_algorithm == ALT_CONTROL_DEFAULT) {
-        channel_throttle->servo_out = SpdHgt_Controller->get_throttle_demand();
-    } else if (!alt_control_airspeed()) {
-        int16_t throttle_target = aparm.throttle_cruise + throttle_nudge;
-
-        // TODO: think up an elegant way to bump throttle when
-        // groundspeed_undershoot > 0 in the no airspeed sensor case; PID
-        // control?
-
-        // no airspeed sensor, we use nav pitch to determine the proper throttle output
-        // AUTO, RTL, etc
-        // ---------------------------------------------------------------------------
-        if (nav_pitch_cd >= 0) {
-            channel_throttle->servo_out = throttle_target + (aparm.throttle_max - throttle_target) * nav_pitch_cd / aparm.pitch_limit_max_cd;
-        } else {
-            channel_throttle->servo_out = throttle_target - (throttle_target - aparm.throttle_min) * nav_pitch_cd / aparm.pitch_limit_min_cd;
-        }
-
-        channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, aparm.throttle_min.get(), aparm.throttle_max.get());
-    } else {
-        // throttle control with airspeed compensation
-        // -------------------------------------------
-        energy_error = airspeed_energy_error + altitude_error_cm * 0.098f;
-
-        // positive energy errors make the throttle go higher
-        channel_throttle->servo_out = aparm.throttle_cruise + g.pidTeThrottle.get_pid(energy_error);
-        channel_throttle->servo_out += (channel_pitch->servo_out * g.kff_pitch_to_throttle);
-
-        channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out,
-                                                       aparm.throttle_min.get(), aparm.throttle_max.get());
-    }
-
-
+    channel_throttle->servo_out = SpdHgt_Controller->get_throttle_demand();
 }
 
 /*****************************************
@@ -419,13 +387,7 @@ static void calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
     // --------------------------------
-    if (g.alt_control_algorithm == ALT_CONTROL_TECS || g.alt_control_algorithm == ALT_CONTROL_DEFAULT) {
-        nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
-    } else if (alt_control_airspeed()) {
-        nav_pitch_cd = -g.pidNavPitchAirspeed.get_pid(airspeed_error_cm);
-    } else {
-        nav_pitch_cd = g.pidNavPitchAltitude.get_pid(altitude_error_cm);
-    }
+    nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
     nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
 }
 
@@ -864,8 +826,3 @@ static void demo_servos(uint8_t i)
     }
 }
 
-// return true if we should use airspeed for altitude/throttle control
-static bool alt_control_airspeed(void)
-{
-    return airspeed.use() && g.alt_control_algorithm == ALT_CONTROL_AIRSPEED;
-}

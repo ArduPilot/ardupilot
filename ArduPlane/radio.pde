@@ -101,7 +101,7 @@ static void read_radio()
 
     if (g.throttle_nudge && channel_throttle->servo_out > 50) {
         float nudge = (channel_throttle->servo_out - 50) * 0.02;
-        if (alt_control_airspeed()) {
+        if (airspeed.use()) {
             airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
@@ -110,14 +110,6 @@ static void read_radio()
         airspeed_nudge_cm = 0;
         throttle_nudge = 0;
     }
-
-    /*
-     *  cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
-     *                       (int)g.rc_1.control_in,
-     *                       (int)g.rc_2.control_in,
-     *                       (int)g.rc_3.control_in,
-     *                       (int)g.rc_4.control_in);
-     */
 }
 
 static void control_failsafe(uint16_t pwm)
