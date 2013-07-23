@@ -543,9 +543,6 @@ static uint8_t 		delta_ms_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
-// % MCU cycles used
-static float 			load;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
@@ -607,7 +604,6 @@ void loop()
     uint16_t num_samples = ins.num_samples_available();
     if (num_samples >= 1) {
 		delta_ms_fast_loop	= timer - fast_loopTimer;
-		load                = (float)(fast_loopTimeStamp - fast_loopTimer)/delta_ms_fast_loop;
 		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
 		fast_loopTimer      = timer;
 
@@ -620,12 +616,8 @@ void loop()
         // tell the scheduler one tick has passed
         scheduler.tick();
 		fast_loopTimeStamp = millis();
-    } else {
-        uint16_t dt = timer - fast_loopTimer;
-        if (dt < 20) {
-            uint16_t time_to_next_loop = 20 - dt;
-            scheduler.run(time_to_next_loop * 1000U);
-        }
+
+        scheduler.run(19000U);
     }
 }
 
