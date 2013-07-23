@@ -1012,7 +1012,7 @@ get_throttle_rate(float z_target_speed)
     static float z_rate_error = 0;   // The velocity error in cm.
     static float z_target_speed_filt = 0;   // The filtered requested speed
     float z_target_speed_delta;   // The change in requested speed
-    int32_t p,i,d;      // used to capture pid values for logging
+    int32_t p;          // used to capture pid values for logging
     int32_t output;     // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
     uint32_t now = millis();
 
@@ -1032,19 +1032,11 @@ get_throttle_rate(float z_target_speed)
     }
     last_call_ms = now;
 
-    // separately calculate p, i, d values for logging
-    p = g.pid_throttle_rate.get_p(z_rate_error);
-
-    // freeze I term if we've breached throttle limits
-    if(motors.limit.throttle) {
-        i = g.pid_throttle_rate.get_integrator();
-    }else{
-        i = g.pid_throttle_rate.get_i(z_rate_error, .02);
-    }
-    d = g.pid_throttle_rate.get_d(z_rate_error, .02);
+    // calculate p
+    p = g.pid_throttle_rate.kP() * z_rate_error;
 
     // consolidate and constrain target acceleration
-    output += p+i+d;
+    output += p;
     output = constrain_int32(output, -32000, 32000);
 
 #if LOGGING_ENABLED == ENABLED
@@ -1053,7 +1045,7 @@ get_throttle_rate(float z_target_speed)
         pid_log_counter++;
         if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
             pid_log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_RATE_KP, z_rate_error, p, i, d, output, tuning_value);
+            Log_Write_PID(CH6_THROTTLE_RATE_KP, z_rate_error, p, 0, 0, output, tuning_value);
         }
     }
 #endif
