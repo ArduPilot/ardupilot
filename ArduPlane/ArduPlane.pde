@@ -808,8 +808,10 @@ static void fast_loop()
  */
 static void update_speed_height(void)
 {
-    if (auto_throttle_mode && !throttle_suppressed) {
-	    // Call TECS 50Hz update
+    if (auto_throttle_mode) {
+	    // Call TECS 50Hz update. Note that we call this regardless of
+	    // throttle suppressed, as this needs to be running for
+	    // takeoff detection
         SpdHgt_Controller->update_50hz(relative_altitude());
     }
 }
