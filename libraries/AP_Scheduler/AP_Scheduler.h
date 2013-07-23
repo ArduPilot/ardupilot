@@ -53,6 +53,11 @@ public:
     // return debug parameter
     uint8_t debug(void) { return _debug; }
 
+    // return load average, as a number between 0 and 1. 1 means
+    // 100% load. Calculated from how much spare time we have at the
+    // end of a run()
+    float load_average(uint32_t tick_time_usec) const;
+
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -77,6 +82,12 @@ private:
 
 	// the time in microseconds when the task started
 	uint32_t _task_time_started;
+
+    // number of spare microseconds accumulated
+    uint32_t _spare_micros;
+
+    // number of ticks that _spare_micros is counted over
+    uint8_t _spare_ticks;
 };
 
 #endif // AP_SCHEDULER_H
