@@ -4,13 +4,13 @@ static void
 get_stabilize_roll(int32_t target_angle)
 {
     // angle error
-    target_angle            = wrap_180_cd(target_angle - ahrs.roll_sensor);
+    target_angle = wrap_180_cd(target_angle - ahrs.roll_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle            = constrain_int32(target_angle, -4500, 4500);
+    target_angle = constrain_int32(target_angle, -4500, 4500);
 
     // convert to desired rate
-    int32_t target_rate = g.pi_stabilize_roll.get_pi(target_angle, G_Dt);
+    int32_t target_rate = g.pi_stabilize_roll.kP() * target_angle;
 
     // set targets for rate controller
     set_roll_rate_target(target_rate, EARTH_FRAME);
@@ -26,7 +26,7 @@ get_stabilize_pitch(int32_t target_angle)
     target_angle            = constrain_int32(target_angle, -4500, 4500);
 
     // convert to desired rate
-    int32_t target_rate = g.pi_stabilize_pitch.get_pi(target_angle, G_Dt);
+    int32_t target_rate = g.pi_stabilize_pitch.kP() * target_angle;
 
     // set targets for rate controller
     set_pitch_rate_target(target_rate, EARTH_FRAME);
@@ -35,25 +35,23 @@ get_stabilize_pitch(int32_t target_angle)
 static void
 get_stabilize_yaw(int32_t target_angle)
 {
-    int32_t target_rate,i_term;
+    int32_t target_rate;
     int32_t angle_error;
     int32_t output = 0;
 
     // angle error
-    angle_error             = wrap_180_cd(target_angle - ahrs.yaw_sensor);
+    angle_error = wrap_180_cd(target_angle - ahrs.yaw_sensor);
 
     // limit the error we're feeding to the PID
-
-    angle_error             = constrain_int32(angle_error, -4500, 4500);
+    angle_error = constrain_int32(angle_error, -4500, 4500);
 
     // convert angle error to desired Rate:
-    target_rate = g.pi_stabilize_yaw.get_p(angle_error);
-    i_term = g.pi_stabilize_yaw.get_i(angle_error, G_Dt);
+    target_rate = g.pi_stabilize_yaw.kP() * angle_error;
 
     // do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
     if(motors.ext_gyro_enabled) {
-        g.rc_4.servo_out = constrain_int32((target_rate + i_term), -4500, 4500);
+        g.rc_4.servo_out = constrain_int32(target_rate, -4500, 4500);
     }
 #endif
 
@@ -63,13 +61,13 @@ get_stabilize_yaw(int32_t target_angle)
         pid_log_counter++;
         if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
             pid_log_counter = 0;
-            Log_Write_PID(CH6_STABILIZE_YAW_KP, angle_error, target_rate, i_term, 0, output, tuning_value);
+            Log_Write_PID(CH6_STABILIZE_YAW_KP, angle_error, target_rate, 0, 0, output, tuning_value);
         }
     }
 #endif
 
     // set targets for rate controller
-    set_yaw_rate_target(target_rate+i_term, EARTH_FRAME);
+    set_yaw_rate_target(target_rate, EARTH_FRAME);
 }
 
 static void
