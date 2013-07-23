@@ -1340,3 +1340,4 @@ static void update_alt()
 // This is a replacement main() function macro. It does hal init, setup(), scheduler start 
 // and runs loop() forever.
 AP_HAL_MAIN();
+pruttelut
