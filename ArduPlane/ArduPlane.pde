@@ -652,18 +652,11 @@ static uint8_t gps_fix_count = 0;
 // Time in miliseconds of start of main control loop.  Milliseconds
 static uint32_t fast_loopTimer_ms;
 
-// Time Stamp when fast loop was complete.  Milliseconds
-static uint32_t fast_loopTimeStamp_ms;
-
 // Number of milliseconds used in last main loop cycle
 static uint8_t delta_ms_fast_loop;
 
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
-
-// % MCU cycles used
-static float load;
-
 
 // Camera/Antenna mount tracking and stabilisation stuff
 // --------------------------------------
@@ -755,7 +748,6 @@ void loop()
     uint16_t num_samples = ins.num_samples_available();
     if (num_samples >= 1) {
         delta_ms_fast_loop      = timer - fast_loopTimer_ms;
-        load                = (float)(fast_loopTimeStamp_ms - fast_loopTimer_ms)/delta_ms_fast_loop;
         G_Dt                = delta_ms_fast_loop * 0.001f;
         fast_loopTimer_ms   = timer;
 
@@ -768,16 +760,12 @@ void loop()
         // tell the scheduler one tick has passed
         scheduler.tick();
 
-        fast_loopTimeStamp_ms = millis();
-    } else {
-        uint16_t dt = timer - fast_loopTimer_ms;
-        // we use 19 not 20 here to ensure we run the next loop on
-        // time - it means we spin for 5% of the time when waiting for
-        // the next sample from the IMU
-        if (dt < 19) {
-            uint16_t time_to_next_loop = 19 - dt;
-            scheduler.run(time_to_next_loop * 1000U);
-        }
+        // run all the tasks that are due to run. Note that we only
+        // have to call this once per loop, as the tasks are scheduled
+        // in multiples of the main loop tick. So if they don't run on
+        // the first call to the scheduler they won't run on a later
+        // call until scheduler.tick() is called again
+        scheduler.run(19000U);
     }
 }
 
