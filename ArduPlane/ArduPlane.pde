@@ -687,7 +687,7 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { update_speed_height,    1,    900 },
+    { update_speed_height,    1,    900 }, // 0
     { update_flight_mode,     1,   1000 },
     { stabilize,              1,   3200 },
     { set_servos,             1,   1100 },
@@ -697,22 +697,22 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_compass,         5,   1500 },
     { read_airspeed,          5,   1500 },
     { update_alt,             5,   3400 },
-    { calc_altitude_error,    5,   1000 },
+    { calc_altitude_error,    5,   1000 }, // 10
     { update_commands,        5,   7000 },
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
-    { gcs_data_stream_send,   2,   3000 },
+    { gcs_data_stream_send,   1,   3000 },
     { update_mount,           1,   1500 },
     { update_events,		 15,   1500 },
     { check_usb_mux,          5,   1000 },
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
-    { barometer_accumulate,   1,    900 },
+    { barometer_accumulate,   1,    900 }, // 20
     { one_second_loop,       50,   3900 },
-    { airspeed_ratio_update, 50,   1000 },
-    { update_logging,         5,   1000 },
-    { read_receiver_rssi,     5,   1000 },
     { check_long_failsafe,   15,   1000 },
+    { airspeed_ratio_update, 50,   1000 },
+    { update_logging,         5,   1200 },
+    { read_receiver_rssi,     5,   1000 },
 };
 
 // setup the var_info table
