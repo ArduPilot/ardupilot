@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        2, AP_RollController, _K_D,        0.0f),
+	AP_GROUPINFO("D",        2, AP_RollController, _K_D,        0.02f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
