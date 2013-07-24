@@ -120,7 +120,7 @@ uint8_t AC_Fence::check_fence()
     }
 
     // get current altitude in meters
-    float curr_alt = _inav->get_position().z * 0.01f;
+    float curr_alt = _inav->get_altitude() * 0.01f;
 
     // altitude fence check
     if ((_enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
