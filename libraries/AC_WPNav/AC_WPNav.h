@@ -40,7 +40,7 @@ class AC_WPNav
 public:
 
     /// Constructor
-    AC_WPNav(AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon);
+    AC_WPNav(const AP_InertialNav* inav, AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon);
 
     ///
     /// simple loiter controller
@@ -183,8 +183,8 @@ protected:
     ///    set climb param to true if track climbs vertically, false if descending
     void calculate_wp_leash_length(bool climb);
 
-    // pointers to inertial nav and ahrs libraries
-    AP_InertialNav*	_inav;
+    // references to inertial nav and ahrs libraries
+    const AP_InertialNav* const _inav;
     AP_AHRS*        _ahrs;
 
     // pointers to pid controllers
