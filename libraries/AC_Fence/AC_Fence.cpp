@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(AP_InertialNav* inav) :
+AC_Fence::AC_Fence(const AP_InertialNav* inav) :
     _inav(inav),
     _alt_max_backup(0),
     _circle_radius_backup(0),
