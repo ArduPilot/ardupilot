@@ -10,9 +10,13 @@ ifeq ($(wildcard $(PX4_ROOT)/NuttX),)
 $(error ERROR: PX4_ROOT not set correctly - no NuttX directory found)
 endif
 
-PX4_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
+# we have different config files for V1 and V2
+PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
+PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
+
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main
-PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/makefiles/firmware.mk CONFIG_FILE=$(PWD)/$(PX4_CONFIG_FILE) EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
+
+PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/makefiles/firmware.mk EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
 
 $(BUILDROOT)/module.mk:
 	$(RULEHDR)
@@ -21,19 +25,34 @@ $(BUILDROOT)/module.mk:
 	$(v) echo "SRCS = $(SKETCH).cpp $(SKETCHLIBSRCS)" >> $@
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $@
 
-px4: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.mk
+px4-v1: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.mk
 	$(RULEHDR)
-	$(v) $(PX4_MAKE) firmware
-	$(v) /bin/rm -f $(SKETCH).px4
-	$(v) cp $(PX4_ROOT)/makefiles/build/firmware.px4 $(SKETCH).px4
-	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH).px4"
+	$(v) $(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V1_CONFIG_FILE) firmware
+	$(v) /bin/rm -f $(SKETCH)-v1.px4
+	$(v) cp $(PX4_ROOT)/makefiles/build/firmware.px4 $(SKETCH)-v1.px4
+	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
+
+px4-v2: $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) $(BUILDROOT)/module.mk
+	$(RULEHDR)
+	$(v) $(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V2_CONFIG_FILE) firmware
+	$(v) /bin/rm -f $(SKETCH)-v2.px4
+	$(v) cp $(PX4_ROOT)/makefiles/build/firmware.px4 $(SKETCH)-v2.px4
+	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v2.px4"
+
+px4: px4-v1 px4-v2
 
 px4-clean: clean px4-archives-clean
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
-px4-upload: px4
+px4-upload-v1: px4
 	$(RULEHDR)
-	$(PX4_MAKE) upload
+	$(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V1_CONFIG_FILE) upload
+
+px4-upload-v2: px4
+	$(RULEHDR)
+	$(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V2_CONFIG_FILE) upload
+
+px4-upload: px4-upload-v1
 
 px4-archives-clean:
 	$(v) /bin/rm -rf $(PX4_ROOT)/Archives
@@ -47,10 +66,16 @@ px4-io: $(PX4_ROOT)/Archives/px4io-v1.export
 $(PX4_ROOT)/Archives/px4fmu-v1.export:
 	make -C $(PX4_ROOT) archives
 
+$(PX4_ROOT)/Archives/px4fmu-v2.export:
+	make -C $(PX4_ROOT) archives
+
 $(PX4_ROOT)/Archives/px4io-v1.export:
 	make -C $(PX4_ROOT) archives
 
-px4-archives: $(PX4_ROOT)/Archives/px4fmu-v1.export
+$(PX4_ROOT)/Archives/px4io-v2.export:
+	make -C $(PX4_ROOT) archives
+
+px4-archives: $(PX4_ROOT)/Archives/px4fmu-v1.export $(PX4_ROOT)/Archives/px4fmu-v2.export
 
 else
 
