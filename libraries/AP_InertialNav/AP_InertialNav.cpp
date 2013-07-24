@@ -34,9 +34,6 @@ void AP_InertialNav::init()
 // update - updates velocities and positions using latest info from ahrs, ins and barometer if new data is available;
 void AP_InertialNav::update(float dt)
 {
-    Vector3f accel_ef;
-    Vector3f velocity_increase;
-
     // discard samples where dt is too large
     if( dt > 0.1f ) {
         return;
@@ -48,7 +45,7 @@ void AP_InertialNav::update(float dt)
     // check gps
     check_gps();
 
-    accel_ef = _ahrs->get_accel_ef();
+    Vector3f accel_ef = _ahrs->get_accel_ef();
 
     // remove influence of gravity
     accel_ef.z += GRAVITY_MSS;
@@ -79,7 +76,7 @@ void AP_InertialNav::update(float dt)
     _position_correction.z += _position_error.z * _k1_z  * dt;
 
     // calculate velocity increase adding new acceleration from accelerometers
-    velocity_increase = (accel_ef + accel_correction_ef) * dt;
+    Vector3f velocity_increase = (accel_ef + accel_correction_ef) * dt;
 
     // calculate new estimate of position
     _position_base += (_velocity + velocity_increase*0.5) * dt;
