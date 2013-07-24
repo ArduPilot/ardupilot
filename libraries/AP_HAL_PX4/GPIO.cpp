@@ -30,6 +30,7 @@ PX4GPIO::PX4GPIO()
 
 void PX4GPIO::init()
 {
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
     _led_fd = open(LED_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
         hal.scheduler->panic("Unable to open " LED_DEVICE_PATH);
@@ -40,20 +41,21 @@ void PX4GPIO::init()
     if (ioctl(_led_fd, LED_OFF, LED_RED) != 0) {
          hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
     }
-
+#endif
     _tone_alarm_fd = open("/dev/tone_alarm", O_WRONLY);
     if (_tone_alarm_fd == -1) {
         hal.scheduler->panic("Unable to open /dev/tone_alarm");
     }
 
-    _gpio_fd = open(GPIO_DEVICE_PATH, O_RDWR);
+    _gpio_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
     if (_gpio_fd == -1) {
         hal.scheduler->panic("Unable to open GPIO");
     }
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
     if (ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO_1\n");
     }
-
+#endif
 
 }
 
@@ -77,6 +79,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 
     switch (pin) {
 
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
         case A_LED_PIN:    // Arming LED
             if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
@@ -95,6 +98,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
                 ioctl(_led_fd, LED_ON, LED_BLUE);
             }
             break;
+#endif
 
         case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
             if (value == LOW) { // this is inverted 
@@ -106,11 +110,13 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             break;
 
         case PX4_GPIO_EXT_RELAY_PIN: // Ext Relay 
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
             if (value == LOW) {
                 ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1);
             } else {
                 ioctl(_gpio_fd, GPIO_SET, GPIO_EXT_1);
             }
+#endif
             break;
     }
 }
