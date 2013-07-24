@@ -369,7 +369,7 @@ static const float t7                        = 10000000.0;
 // We use atan2 and other trig techniques to calaculate angles
 // A counter used to count down valid gps fixes to allow the gps estimate to settle
 // before recording our home position (and executing a ground start if we booted with an air start)
-static uint8_t ground_start_count      = 5;
+static uint8_t ground_start_count      = 10;
 // Used to compute a speed estimate from the first valid gps fixes to decide if we are
 // on the ground or in the air.  Used to decide if a ground start is appropriate if we
 // booted with an air start.
@@ -1012,8 +1012,7 @@ static void update_GPS(void)
             // so that the altitude is more accurate
             // -------------------------------------
             if (current_loc.lat == 0) {
-                ground_start_count = 5;
-
+                ground_start_count = 10;
             } else {
                 if(ENABLE_AIR_START == 1 && (ground_start_avg / 5) < SPEEDFILT) {
 		// Triggered in air start once, when detected we are on the ground.
@@ -1340,4 +1339,4 @@ static void update_alt()
 // This is a replacement main() function macro. It does hal init, setup(), scheduler start 
 // and runs loop() forever.
 AP_HAL_MAIN();
-pruttelut
+

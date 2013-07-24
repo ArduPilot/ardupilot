@@ -95,7 +95,8 @@ static struct Location get_cmd_with_index(int16_t i)
 
     temp = get_cmd_with_index_raw(i);
 
-    // Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
+    // Add on home altitude if we are a nav command (or other command with altitude) 
+    // and stored alt is relative
     if ((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) &&
         (temp.options & MASK_OPTIONS_RELATIVE_ALT) &&
         (temp.lat != 0 || temp.lng != 0 || temp.alt != 0)) {
@@ -233,13 +234,31 @@ static void set_guided_WP(void)
     loiter_angle_reset();
 }
 
-// run this at setup on the ground
-// -------------------------------
+/*
+ * Run at start or restart when on the ground.
+ * The logic should be:
+ * if WP0 has relative altitude (this is an error condition IMO), store current pos in home and WP0 and set absolute altitude for WP0
+ * else
+ *   let ra <- current altitude
+ *   if distance(current pos, WP0) is smaller than a limit, copy WP0.latlon to home.latlon
+ *     if abs(ra-WP0.altitude) is smaller than a limit, copy WP0.altitude to home.altitude
+ *     else copy ra to home.altitude (OR: warn and wait)
+ *   else 
+ *     copy current.latlon to home.latlon
+ *     copy current.altitude to home.altitude
+ *     issue some sort of warning that WP0 was off in latlon
+ *     
+ * The general rule is: We snap home to WP0 if it is not too far off, and we never overwrite WP0.
+ * If we should warn or not and wait or not if too far off is a matter of preference really.
+ * We need handling for the case where there is no WP0 at all.
+ */
 void init_home()
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
-    // block until we get a good fix
+    // First make sure we have some kind of fix. This will always be the case when called
+    // from update_GPS in ArduPlane, but do_set_home in commands_logic MAY be fired before
+    // there is a GPS fix.
     // -----------------------------
     while (!g_gps->new_data || !g_gps->fix) {
         g_gps->update();
