@@ -57,11 +57,19 @@ px4-upload: px4-upload-v1
 px4-archives-clean:
 	$(v) /bin/rm -rf $(PX4_ROOT)/Archives
 
-px4-io: $(PX4_ROOT)/Archives/px4io-v1.export
+px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 	$(v) make -C $(PX4_ROOT) px4io-v1_default
 	$(v) /bin/rm -f px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.bin px4io-v1.bin
 	$(v) echo "PX4IOv1 Firmware is in px4io-v1.bin"
+
+px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
+	$(v) make -C $(PX4_ROOT) px4io-v2_default
+	$(v) /bin/rm -f px4io-v1.bin
+	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.bin px4io-v2.bin
+	$(v) echo "PX4IOv2 Firmware is in px4io-v2.bin"
+
+px4-io: px4-io-v1 px4-io-v2
 
 $(PX4_ROOT)/Archives/px4fmu-v1.export:
 	make -C $(PX4_ROOT) archives
