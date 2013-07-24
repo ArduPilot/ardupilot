@@ -17,12 +17,13 @@ MODULES		+= drivers/stm32
 MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= drivers/led
-MODULES		+= drivers/rgbled
-MODULES		+= drivers/px4io
 MODULES		+= drivers/px4fmu
-MODULES		+= drivers/boards/px4fmu
+MODULES		+= drivers/px4io
+MODULES		+= drivers/boards/px4fmuv2
+MODULES		+= drivers/rgbled
 MODULES		+= drivers/lsm303d
 MODULES		+= drivers/l3gd20
+#MODULES		+= drivers/mpu6000
 MODULES		+= drivers/hmc5883
 MODULES		+= drivers/ms5611
 MODULES		+= drivers/mb12xx
@@ -30,21 +31,25 @@ MODULES		+= drivers/gps
 MODULES		+= drivers/hil
 #MODULES	+= drivers/hott_telemetry
 MODULES		+= drivers/blinkm
-MODULES		+= drivers/ets_airspeed
 MODULES		+= modules/sensors
+MODULES		+= drivers/ets_airspeed
+
+# mkblctrl does not compile on FMUv2 yet
+# MODULES		+= drivers/mkblctrl
 
 #
 # System commands
 #
+MODULES		+= systemcmds/ramtron
 MODULES		+= systemcmds/bl_update
 MODULES		+= systemcmds/boardinfo
-MODULES		+= systemcmds/i2c
 MODULES		+= systemcmds/mixer
 MODULES		+= systemcmds/perf
 MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
+#MODULES		+= systemcmds/eeprom
 
 #
 # Libraries
