@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Param: P
 	// @DisplayName: Proportional Gain
 	// @Description: This is the gain from bank angle to aileron. This gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.
-	// @Range: 0.1 1.0
+	// @Range: 0.1 2.0
 	// @Increment: 0.1
 	// @User: User
 	AP_GROUPINFO("P",        1, AP_RollController, _K_P,        0.4f),
@@ -68,15 +68,12 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
-// Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
-// A positive demand is up
-// Inputs are: 
-// 1) demanded bank angle in centi-degrees
-// 2) control gain scaler = scaling_speed / aspeed
-// 3) boolean which is true when stabilise mode is active
-// 4) minimum FBW airspeed (metres/sec)
-//
-int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabilize, int16_t aspd_min)
+
+/*
+  internal rate controller, called by attitude and rate controller
+  public functions
+*/
+int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool stabilize)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -85,26 +82,17 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	}
 	_last_t = tnow;
 	
-	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
-    // No conversion is required for K_D
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0);
-	float ki_rate = _K_I * _tau;
 
 	if (_ahrs == NULL) {
         // can't control without a reference
         return 0;
     }
-	float delta_time    = (float)dt * 0.001f;
-	
-	// Calculate bank angle error in centi-degrees
-	int32_t angle_err = angle - _ahrs->roll_sensor;
 
-    if (_tau < 0.1) {
-        _tau = 0.1;
-    }
-	
-	// Calculate the desired roll rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f / _tau;
+	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
+    // No conversion is required for K_D
+	float ki_rate = _K_I * _tau;
+	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0)/_ahrs->get_EAS2TAS();
+	float delta_time    = (float)dt * 0.001f;
 	
 	// Limit the demanded roll rate
 	if (_max_rate && desired_rate < -_max_rate) {
@@ -129,7 +117,7 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!stabilize && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
-		if (dt > 0 && aspeed > float(aspd_min)) {
+		if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
@@ -158,6 +146,40 @@ int32_t AP_RollController::get_servo_out(int32_t angle, float scaler, bool stabi
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
+}
+
+
+/*
+ Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ A positive demand is up
+ Inputs are: 
+ 1) desired roll rate in degrees/sec
+ 2) control gain scaler = scaling_speed / aspeed
+*/
+int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
+{
+    return _get_rate_out(desired_rate, scaler, true);
+}
+
+/*
+ Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ A positive demand is up
+ Inputs are: 
+ 1) demanded bank angle in centi-degrees
+ 2) control gain scaler = scaling_speed / aspeed
+ 3) boolean which is true when stabilise mode is active
+ 4) minimum FBW airspeed (metres/sec)
+*/
+int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool stabilize)
+{
+    if (_tau < 0.1) {
+        _tau = 0.1;
+    }
+	
+	// Calculate the desired roll rate (deg/sec) from the angle error
+	float desired_rate = angle_err * 0.01f / _tau;
+
+    return _get_rate_out(desired_rate, scaler, stabilize);
 }
 
 void AP_RollController::reset_I()

@@ -49,7 +49,7 @@ public:
     void        set_angle(int16_t angle);
     void        set_reverse(bool reverse);
     bool        get_reverse(void);
-    void        set_dead_zone(int16_t dzone);
+    void        set_default_dead_zone(int16_t dzone);
 
     // read input from APM_RC - create a control_in value
     void        set_pwm(int16_t pwm);

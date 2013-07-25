@@ -36,10 +36,10 @@ def takeoff(mavproxy, mav):
 
     # hit the gas harder now, and give it some more elevator
     mavproxy.send('rc 2 1100\n')
-    mavproxy.send('rc 3 1800\n')
+    mavproxy.send('rc 3 2000\n')
 
     # gain a bit of altitude
-    if not wait_altitude(mav, homeloc.alt+30, homeloc.alt+60, timeout=30):
+    if not wait_altitude(mav, homeloc.alt+150, homeloc.alt+180, timeout=30):
         return False
 
     # level off
@@ -78,7 +78,7 @@ def fly_RTL(mavproxy, mav):
     wait_mode(mav, 'RTL')
     if not wait_location(mav, homeloc, accuracy=120,
                          target_altitude=homeloc.alt+100, height_accuracy=20,
-                         timeout=90):
+                         timeout=180):
         return False
     print("RTL Complete")
     return True
@@ -89,6 +89,11 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
     mavproxy.send('switch 3\n')
     mavproxy.send('loiter\n')
     wait_mode(mav, 'LOITER')
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    initial_alt = m.alt
+    print("Initial altitude %u\n" % initial_alt)
+
     while num_circles > 0:
         if not wait_heading(mav, 0, accuracy=10, timeout=60):
             return False
@@ -96,7 +101,51 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
             return False
         num_circles -= 1
         print("Loiter %u circles left" % num_circles)
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    final_alt = m.alt
+    print("Final altitude %u\n" % final_alt)
+
+    mavproxy.send('mode FBWA\n')
+    wait_mode(mav, 'FBWA')
+
+    if abs(final_alt - initial_alt) > 20:
+        print("Failed to maintain altitude")
+        return False
+
     print("Completed Loiter OK")
+    return True
+
+def fly_CIRCLE(mavproxy, mav, num_circles=1):
+    '''circle where we are'''
+    print("Testing CIRCLE for %u turns" % num_circles)
+    mavproxy.send('mode CIRCLE\n')
+    wait_mode(mav, 'CIRCLE')
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    initial_alt = m.alt
+    print("Initial altitude %u\n" % initial_alt)
+
+    while num_circles > 0:
+        if not wait_heading(mav, 0, accuracy=10, timeout=60):
+            return False
+        if not wait_heading(mav, 180, accuracy=10, timeout=60):
+            return False
+        num_circles -= 1
+        print("CIRCLE %u circles left" % num_circles)
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    final_alt = m.alt
+    print("Final altitude %u\n" % final_alt)
+
+    mavproxy.send('mode FBWA\n')
+    wait_mode(mav, 'FBWA')
+
+    if abs(final_alt - initial_alt) > 20:
+        print("Failed to maintain altitude")
+        return False
+
+    print("Completed CIRCLE OK")
     return True
 
 
@@ -116,9 +165,9 @@ def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
     return False
 
 
-def change_altitude(mavproxy, mav, altitude, accuracy=10):
+def change_altitude(mavproxy, mav, altitude, accuracy=30):
     '''get to a given altitude'''
-    mavproxy.send('switch 4\n')
+    mavproxy.send('mode FBWA\n')
     wait_mode(mav, 'FBWA')
     alt_error = mav.messages['VFR_HUD'].alt - altitude
     if alt_error > 0:
@@ -136,7 +185,7 @@ def axial_left_roll(mavproxy, mav, count=1):
     '''fly a left axial roll'''
     # full throttle!
     mavproxy.send('rc 3 2000\n')
-    if not change_altitude(mavproxy, mav, homeloc.alt+200):
+    if not change_altitude(mavproxy, mav, homeloc.alt+300):
         return False
 
     # fly the roll in manual
@@ -146,11 +195,11 @@ def axial_left_roll(mavproxy, mav, count=1):
     while count > 0:
         print("Starting roll")
         mavproxy.send('rc 1 1000\n')
-        if not wait_roll(mav, -150, accuracy=20):
+        if not wait_roll(mav, -150, accuracy=90):
             return False
-        if not wait_roll(mav, 150, accuracy=20):
+        if not wait_roll(mav, 150, accuracy=90):
             return False
-        if not wait_roll(mav, 0, accuracy=20):
+        if not wait_roll(mav, 0, accuracy=90):
             return False
         count -= 1
 
@@ -166,7 +215,7 @@ def inside_loop(mavproxy, mav, count=1):
     '''fly a inside loop'''
     # full throttle!
     mavproxy.send('rc 3 2000\n')
-    if not change_altitude(mavproxy, mav, homeloc.alt+200):
+    if not change_altitude(mavproxy, mav, homeloc.alt+300):
         return False
 
     # fly the loop in manual
@@ -189,6 +238,148 @@ def inside_loop(mavproxy, mav, count=1):
     mavproxy.send('rc 3 1700\n')
     return wait_level_flight(mavproxy, mav)
 
+
+def test_stabilize(mavproxy, mav, count=1):
+    '''fly stabilize mode'''
+    # full throttle!
+    mavproxy.send('rc 3 2000\n')
+    mavproxy.send('rc 2 1300\n')
+    if not change_altitude(mavproxy, mav, homeloc.alt+300):
+        return False
+    mavproxy.send('rc 2 1500\n')
+
+    mavproxy.send("mode STABILIZE\n")
+    wait_mode(mav, 'STABILIZE')
+
+    count = 1
+    while count > 0:
+        print("Starting roll")
+        mavproxy.send('rc 1 2000\n')
+        if not wait_roll(mav, -150, accuracy=90):
+            return False
+        if not wait_roll(mav, 150, accuracy=90):
+            return False
+        if not wait_roll(mav, 0, accuracy=90):
+            return False
+        count -= 1
+
+    mavproxy.send('rc 1 1500\n')
+    if not wait_roll(mav, 0, accuracy=5):
+        return False
+
+    # back to FBWA
+    mavproxy.send('mode FBWA\n')
+    wait_mode(mav, 'FBWA')
+    mavproxy.send('rc 3 1700\n')
+    return wait_level_flight(mavproxy, mav)
+
+def test_acro(mavproxy, mav, count=1):
+    '''fly ACRO mode'''
+    # full throttle!
+    mavproxy.send('rc 3 2000\n')
+    mavproxy.send('rc 2 1300\n')
+    if not change_altitude(mavproxy, mav, homeloc.alt+300):
+        return False
+    mavproxy.send('rc 2 1500\n')
+
+    mavproxy.send("mode ACRO\n")
+    wait_mode(mav, 'ACRO')
+
+    count = 1
+    while count > 0:
+        print("Starting roll")
+        mavproxy.send('rc 1 1000\n')
+        if not wait_roll(mav, -150, accuracy=90):
+            return False
+        if not wait_roll(mav, 150, accuracy=90):
+            return False
+        if not wait_roll(mav, 0, accuracy=90):
+            return False
+        count -= 1
+    mavproxy.send('rc 1 1500\n')
+
+    # back to FBWA
+    mavproxy.send('mode FBWA\n')
+    wait_mode(mav, 'FBWA')
+
+    wait_level_flight(mavproxy, mav)
+
+    mavproxy.send("mode ACRO\n")
+    wait_mode(mav, 'ACRO')
+
+    count = 2
+    while count > 0:
+        print("Starting loop")
+        mavproxy.send('rc 2 1000\n')
+        if not wait_pitch(mav, -60, accuracy=20):
+            return False
+        if not wait_pitch(mav, 0, accuracy=20):
+            return False
+        count -= 1
+
+    mavproxy.send('rc 2 1500\n')
+
+    # back to FBWA
+    mavproxy.send('mode FBWA\n')
+    wait_mode(mav, 'FBWA')
+    mavproxy.send('rc 3 1700\n')
+    return wait_level_flight(mavproxy, mav)
+
+
+def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
+    '''fly FBWB or CRUISE mode'''
+    mavproxy.send("mode %s\n" % mode)
+    wait_mode(mav, mode)
+    mavproxy.send('rc 3 1700\n')
+    mavproxy.send('rc 2 1500\n')
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    initial_alt = m.alt
+    print("Initial altitude %u\n" % initial_alt)
+
+    print("Flying right circuit")
+    # do 4 turns
+    for i in range(0,4):
+        # hard left
+        print("Starting turn %u" % i)
+        mavproxy.send('rc 1 1800\n')
+        if not wait_heading(mav, 0 + (90*i), accuracy=20, timeout=60):
+            mavproxy.send('rc 1 1500\n')
+            return False
+        mavproxy.send('rc 1 1500\n')
+        print("Starting leg %u" % i)
+        if not wait_distance(mav, 100, accuracy=20):
+            return False
+    print("Circuit complete")
+
+    print("Flying rudder left circuit")
+    # do 4 turns
+    for i in range(0,4):
+        # hard left
+        print("Starting turn %u" % i)
+        mavproxy.send('rc 4 1700\n')
+        if not wait_heading(mav, 360 - (90*i), accuracy=20, timeout=60):
+            mavproxy.send('rc 4 1500\n')
+            return False
+        mavproxy.send('rc 4 1500\n')
+        print("Starting leg %u" % i)
+        if not wait_distance(mav, 100, accuracy=20):
+            return False
+    print("Circuit complete")
+
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    final_alt = m.alt
+    print("Final altitude %u\n" % final_alt)
+
+    # back to FBWA
+    mavproxy.send('mode FBWA\n')
+    wait_mode(mav, 'FBWA')
+
+    if abs(final_alt - initial_alt) > 20:
+        print("Failed to maintain altitude")
+        return False
+    
+    return wait_level_flight(mavproxy, mav)
 
 
 def setup_rc(mavproxy):
@@ -313,11 +504,26 @@ def fly_ArduPlane(viewerip=None, map=False):
         if not inside_loop(mavproxy, mav):
             print("Failed inside loop")
             failed = True
+        if not test_stabilize(mavproxy, mav):
+            print("Failed stabilize test")
+            failed = True
+        if not test_acro(mavproxy, mav):
+            print("Failed ACRO test")
+            failed = True
+        if not test_FBWB(mavproxy, mav):
+            print("Failed FBWB test")
+            failed = True
+        if not test_FBWB(mavproxy, mav, mode='CRUISE'):
+            print("Failed CRUISE test")
+            failed = True
         if not fly_RTL(mavproxy, mav):
             print("Failed RTL")
             failed = True
         if not fly_LOITER(mavproxy, mav):
             print("Failed LOITER")
+            failed = True
+        if not fly_CIRCLE(mavproxy, mav):
+            print("Failed CIRCLE")
             failed = True
         if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy = 10,
                            target_altitude=homeloc.alt+100):

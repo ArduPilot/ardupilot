@@ -44,8 +44,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
 #endif
 
-	GSCALAR(flybywire_airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
-	GSCALAR(flybywire_airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
+	GSCALAR(airspeed_min, "ARSPD_FBW_MIN",  AIRSPEED_FBW_MIN),
+	GSCALAR(airspeed_max, "ARSPD_FBW_MAX",  AIRSPEED_FBW_MAX),
 
 	GSCALAR(throttle_min,           "THR_MIN",        THROTTLE_MIN),
 	GSCALAR(throttle_max,           "THR_MAX",        THROTTLE_MAX),

@@ -11,6 +11,9 @@ typedef struct __mavlink_file_transfer_res_t
 #define MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN 9
 #define MAVLINK_MSG_ID_112_LEN 9
 
+#define MAVLINK_MSG_ID_FILE_TRANSFER_RES_CRC 124
+#define MAVLINK_MSG_ID_112_CRC 124
+
 
 
 #define MAVLINK_MESSAGE_INFO_FILE_TRANSFER_RES { \
@@ -36,21 +39,25 @@ static inline uint16_t mavlink_msg_file_transfer_res_pack(uint8_t system_id, uin
 						       uint64_t transfer_uid, uint8_t result)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN];
 	_mav_put_uint64_t(buf, 0, transfer_uid);
 	_mav_put_uint8_t(buf, 8, result);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
 #else
 	mavlink_file_transfer_res_t packet;
 	packet.transfer_uid = transfer_uid;
 	packet.result = result;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_FILE_TRANSFER_RES;
-	return mavlink_finalize_message(msg, system_id, component_id, 9, 124);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_RES_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
+#endif
 }
 
 /**
@@ -68,21 +75,25 @@ static inline uint16_t mavlink_msg_file_transfer_res_pack_chan(uint8_t system_id
 						           uint64_t transfer_uid,uint8_t result)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN];
 	_mav_put_uint64_t(buf, 0, transfer_uid);
 	_mav_put_uint8_t(buf, 8, result);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
 #else
 	mavlink_file_transfer_res_t packet;
 	packet.transfer_uid = transfer_uid;
 	packet.result = result;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 9);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_FILE_TRANSFER_RES;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 9, 124);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_RES_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
+#endif
 }
 
 /**
@@ -110,17 +121,25 @@ static inline uint16_t mavlink_msg_file_transfer_res_encode(uint8_t system_id, u
 static inline void mavlink_msg_file_transfer_res_send(mavlink_channel_t chan, uint64_t transfer_uid, uint8_t result)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[9];
+	char buf[MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN];
 	_mav_put_uint64_t(buf, 0, transfer_uid);
 	_mav_put_uint8_t(buf, 8, result);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, buf, 9, 124);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, buf, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_RES_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, buf, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
+#endif
 #else
 	mavlink_file_transfer_res_t packet;
 	packet.transfer_uid = transfer_uid;
 	packet.result = result;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, (const char *)&packet, 9, 124);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, (const char *)&packet, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_RES_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_RES, (const char *)&packet, MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
+#endif
 #endif
 }
 
@@ -161,6 +180,6 @@ static inline void mavlink_msg_file_transfer_res_decode(const mavlink_message_t*
 	file_transfer_res->transfer_uid = mavlink_msg_file_transfer_res_get_transfer_uid(msg);
 	file_transfer_res->result = mavlink_msg_file_transfer_res_get_result(msg);
 #else
-	memcpy(file_transfer_res, _MAV_PAYLOAD(msg), 9);
+	memcpy(file_transfer_res, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_FILE_TRANSFER_RES_LEN);
 #endif
 }

@@ -192,7 +192,9 @@ static void exit_mission()
         if(g.rtl_alt_final == 0) {
             set_mode(LAND);
         }else{
-            set_mode(LOITER);
+            if (!set_mode(LOITER)) {
+                set_mode(LAND);
+            }
         }
     }
 

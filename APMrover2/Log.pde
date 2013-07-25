@@ -50,6 +50,7 @@ print_log_menu(void)
 		PLOG(CURRENT);
 		PLOG(SONAR);
 		PLOG(COMPASS);
+		PLOG(CAMERA);
 		#undef PLOG
 	}
 
@@ -141,6 +142,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(CURRENT);
 		TARG(SONAR);
 		TARG(COMPASS);
+		TARG(CAMERA);
 		#undef TARG
 	}
 
@@ -221,6 +223,33 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
         waypoint_longitude  : wp->lng
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+struct PACKED log_Camera {
+    LOG_PACKET_HEADER;
+    uint32_t gps_time;
+    int32_t  latitude;
+    int32_t  longitude;
+    int16_t  roll;
+    int16_t  pitch;
+    uint16_t yaw;
+};
+
+// Write a Camera packet. Total length : 26 bytes
+static void Log_Write_Camera()
+{
+#if CAMERA == ENABLED
+    struct log_Camera pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
+        gps_time    : g_gps->time,
+        latitude    : current_loc.lat,
+        longitude   : current_loc.lng,
+        roll        : (int16_t)ahrs.roll_sensor,
+        pitch       : (int16_t)ahrs.pitch_sensor,
+        yaw         : (uint16_t)ahrs.yaw_sensor
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+#endif
 }
 
 struct PACKED log_Startup {
@@ -430,6 +459,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "PM",  "IHhBBBhhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,PMT,I2CErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
+    { LOG_CAMERA_MSG, sizeof(log_Camera),                 
+      "CAM", "ILLccC",   "GPSTime,Lat,Lng,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "BB",         "SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     

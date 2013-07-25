@@ -10,7 +10,7 @@ static void read_control_switch()
     // If we get this value we do not want to change modes.
     if(switchPosition == 255) return;
 
-    if (ch3_failsafe) {
+    if (failsafe.ch3_failsafe || failsafe.ch3_counter > 0) {
         // when we are in ch3_failsafe mode then RC input is not
         // working, and we need to ignore the mode switch channel
         return;

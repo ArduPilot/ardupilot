@@ -30,9 +30,8 @@
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-	AP_TECS(AP_AHRS *ahrs, AP_Baro *baro, const AP_SpdHgtControl::AircraftParameters &parms) :
+	AP_TECS(AP_AHRS *ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
 		_ahrs(ahrs),
-		_baro(baro),
 		aparm(parms)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
@@ -97,9 +96,6 @@ private:
 
 	// pointer to the AHRS object
     AP_AHRS *_ahrs;
-
-	// pointer to the Baro object
-    AP_Baro *_baro;
 
 	const AP_SpdHgtControl::AircraftParameters &aparm;
 
@@ -266,7 +262,7 @@ private:
 	AverageFilterFloat_Size5 _vdot_filter;
 };
 
-#define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_tuning),	\
+#define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
 							   "TECS", "ffffffffffff", "h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
 
 #endif //AP_TECS_H

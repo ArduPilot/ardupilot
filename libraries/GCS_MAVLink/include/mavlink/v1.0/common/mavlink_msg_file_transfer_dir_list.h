@@ -12,6 +12,9 @@ typedef struct __mavlink_file_transfer_dir_list_t
 #define MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN 249
 #define MAVLINK_MSG_ID_111_LEN 249
 
+#define MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_CRC 93
+#define MAVLINK_MSG_ID_111_CRC 93
+
 #define MAVLINK_MSG_FILE_TRANSFER_DIR_LIST_FIELD_DIR_PATH_LEN 240
 
 #define MAVLINK_MESSAGE_INFO_FILE_TRANSFER_DIR_LIST { \
@@ -39,21 +42,25 @@ static inline uint16_t mavlink_msg_file_transfer_dir_list_pack(uint8_t system_id
 						       uint64_t transfer_uid, const char *dir_path, uint8_t flags)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[249];
+	char buf[MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN];
 	_mav_put_uint64_t(buf, 0, transfer_uid);
 	_mav_put_uint8_t(buf, 248, flags);
 	_mav_put_char_array(buf, 8, dir_path, 240);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 249);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
 #else
 	mavlink_file_transfer_dir_list_t packet;
 	packet.transfer_uid = transfer_uid;
 	packet.flags = flags;
 	mav_array_memcpy(packet.dir_path, dir_path, sizeof(char)*240);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 249);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST;
-	return mavlink_finalize_message(msg, system_id, component_id, 249, 93);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
+#endif
 }
 
 /**
@@ -72,21 +79,25 @@ static inline uint16_t mavlink_msg_file_transfer_dir_list_pack_chan(uint8_t syst
 						           uint64_t transfer_uid,const char *dir_path,uint8_t flags)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[249];
+	char buf[MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN];
 	_mav_put_uint64_t(buf, 0, transfer_uid);
 	_mav_put_uint8_t(buf, 248, flags);
 	_mav_put_char_array(buf, 8, dir_path, 240);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 249);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
 #else
 	mavlink_file_transfer_dir_list_t packet;
 	packet.transfer_uid = transfer_uid;
 	packet.flags = flags;
 	mav_array_memcpy(packet.dir_path, dir_path, sizeof(char)*240);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 249);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 249, 93);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
+#endif
 }
 
 /**
@@ -115,17 +126,25 @@ static inline uint16_t mavlink_msg_file_transfer_dir_list_encode(uint8_t system_
 static inline void mavlink_msg_file_transfer_dir_list_send(mavlink_channel_t chan, uint64_t transfer_uid, const char *dir_path, uint8_t flags)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[249];
+	char buf[MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN];
 	_mav_put_uint64_t(buf, 0, transfer_uid);
 	_mav_put_uint8_t(buf, 248, flags);
 	_mav_put_char_array(buf, 8, dir_path, 240);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST, buf, 249, 93);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST, buf, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST, buf, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
+#endif
 #else
 	mavlink_file_transfer_dir_list_t packet;
 	packet.transfer_uid = transfer_uid;
 	packet.flags = flags;
 	mav_array_memcpy(packet.dir_path, dir_path, sizeof(char)*240);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST, (const char *)&packet, 249, 93);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST, (const char *)&packet, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST, (const char *)&packet, MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
+#endif
 #endif
 }
 
@@ -177,6 +196,6 @@ static inline void mavlink_msg_file_transfer_dir_list_decode(const mavlink_messa
 	mavlink_msg_file_transfer_dir_list_get_dir_path(msg, file_transfer_dir_list->dir_path);
 	file_transfer_dir_list->flags = mavlink_msg_file_transfer_dir_list_get_flags(msg);
 #else
-	memcpy(file_transfer_dir_list, _MAV_PAYLOAD(msg), 249);
+	memcpy(file_transfer_dir_list, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_FILE_TRANSFER_DIR_LIST_LEN);
 #endif
 }

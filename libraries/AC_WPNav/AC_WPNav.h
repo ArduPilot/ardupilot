@@ -67,15 +67,6 @@ public:
     /// update_loiter - run the loiter controller - should be called at 10hz
     void update_loiter();
 
-    /// set_angle_limit - limits maximum angle in centi-degrees the copter will lean
-    void set_angle_limit(int32_t lean_angle) { _lean_angle_max = lean_angle; }
-
-    /// clear_angle_limit - reset angle limits back to defaults
-    void clear_angle_limit() { _lean_angle_max = MAX_LEAN_ANGLE; }
-
-    /// get_angle_limit - retrieve maximum angle in centi-degrees the copter will lean
-    int32_t get_angle_limit() const { return _lean_angle_max; }
-
     /// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
     void get_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target) const;
 
@@ -149,6 +140,9 @@ public:
     /// get_waypoint_radius - access for waypoint radius in cm
     float get_waypoint_radius() const { return _wp_radius_cm; }
 
+    /// get_waypoint_acceleration - returns acceleration in cm/s/s during missions
+    float get_waypoint_acceleration() const { return _wp_accel_cms.get(); }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -220,7 +214,6 @@ protected:
     int16_t     _pilot_vel_right_cms;   // pilot's desired velocity right (body-frame)
     Vector3f    _target_vel;            // pilot's latest desired velocity in earth-frame
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
-    int32_t     _lean_angle_max;        // maximum lean angle.  can be set from main code so that throttle controller can stop leans that cause copter to lose altitude
     float       _loiter_leash;          // loiter's horizontal leash length in cm.  used to stop the pilot from pushing the target location too far from the current location
     float       _loiter_accel_cms;      // loiter's acceleration in cm/s/s
 

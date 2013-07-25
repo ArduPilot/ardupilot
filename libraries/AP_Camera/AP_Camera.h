@@ -13,13 +13,6 @@
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
-#define AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME    2
-#define AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE          3
-#define AP_CAMERA_TRIGGER_TYPE_TRANSISTOR           4
-
-#define AP_CAMERA_TRANSISTOR_PIN    83              // PK6 chosen as it not near anything so safer for soldering
-
-#define AP_CAMERA_WP_DISTANCE       3               // trigger camera shutter when within this many meters of target.  Unfortunately this variable is in meter for ArduPlane and cm for ArduCopter so it will not work for ArduCopter
 
 #define AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE  AP_CAMERA_TRIGGER_TYPE_SERVO    // default is to use servo to trigger camera
 

@@ -10,6 +10,9 @@ typedef struct __mavlink_auth_key_t
 #define MAVLINK_MSG_ID_AUTH_KEY_LEN 32
 #define MAVLINK_MSG_ID_7_LEN 32
 
+#define MAVLINK_MSG_ID_AUTH_KEY_CRC 119
+#define MAVLINK_MSG_ID_7_CRC 119
+
 #define MAVLINK_MSG_AUTH_KEY_FIELD_KEY_LEN 32
 
 #define MAVLINK_MESSAGE_INFO_AUTH_KEY { \
@@ -33,19 +36,23 @@ static inline uint16_t mavlink_msg_auth_key_pack(uint8_t system_id, uint8_t comp
 						       const char *key)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[32];
+	char buf[MAVLINK_MSG_ID_AUTH_KEY_LEN];
 
 	_mav_put_char_array(buf, 0, key, 32);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_AUTH_KEY_LEN);
 #else
 	mavlink_auth_key_t packet;
 
 	mav_array_memcpy(packet.key, key, sizeof(char)*32);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_AUTH_KEY_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_AUTH_KEY;
-	return mavlink_finalize_message(msg, system_id, component_id, 32, 119);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_AUTH_KEY_LEN, MAVLINK_MSG_ID_AUTH_KEY_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_AUTH_KEY_LEN);
+#endif
 }
 
 /**
@@ -62,19 +69,23 @@ static inline uint16_t mavlink_msg_auth_key_pack_chan(uint8_t system_id, uint8_t
 						           const char *key)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[32];
+	char buf[MAVLINK_MSG_ID_AUTH_KEY_LEN];
 
 	_mav_put_char_array(buf, 0, key, 32);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_AUTH_KEY_LEN);
 #else
 	mavlink_auth_key_t packet;
 
 	mav_array_memcpy(packet.key, key, sizeof(char)*32);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_AUTH_KEY_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_AUTH_KEY;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 32, 119);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_AUTH_KEY_LEN, MAVLINK_MSG_ID_AUTH_KEY_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_AUTH_KEY_LEN);
+#endif
 }
 
 /**
@@ -101,15 +112,23 @@ static inline uint16_t mavlink_msg_auth_key_encode(uint8_t system_id, uint8_t co
 static inline void mavlink_msg_auth_key_send(mavlink_channel_t chan, const char *key)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[32];
+	char buf[MAVLINK_MSG_ID_AUTH_KEY_LEN];
 
 	_mav_put_char_array(buf, 0, key, 32);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AUTH_KEY, buf, 32, 119);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AUTH_KEY, buf, MAVLINK_MSG_ID_AUTH_KEY_LEN, MAVLINK_MSG_ID_AUTH_KEY_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AUTH_KEY, buf, MAVLINK_MSG_ID_AUTH_KEY_LEN);
+#endif
 #else
 	mavlink_auth_key_t packet;
 
 	mav_array_memcpy(packet.key, key, sizeof(char)*32);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AUTH_KEY, (const char *)&packet, 32, 119);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AUTH_KEY, (const char *)&packet, MAVLINK_MSG_ID_AUTH_KEY_LEN, MAVLINK_MSG_ID_AUTH_KEY_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AUTH_KEY, (const char *)&packet, MAVLINK_MSG_ID_AUTH_KEY_LEN);
+#endif
 #endif
 }
 
@@ -139,6 +158,6 @@ static inline void mavlink_msg_auth_key_decode(const mavlink_message_t* msg, mav
 #if MAVLINK_NEED_BYTE_SWAP
 	mavlink_msg_auth_key_get_key(msg, auth_key->key);
 #else
-	memcpy(auth_key, _MAV_PAYLOAD(msg), 32);
+	memcpy(auth_key, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_AUTH_KEY_LEN);
 #endif
 }

@@ -7,7 +7,6 @@
 #include <AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
-extern int32_t wp_distance;     // Note: unfortunately this variable is in meter for ArduPlane and cm for ArduCopter
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -16,7 +15,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:Servo,1:Relay,2:Servo and turn off throttle,3:Servo when 3m from waypoint,4:transistor
+    // @Values: 0:Servo,1:Relay
     // @User: Standard
     AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE),
 
@@ -72,40 +71,6 @@ AP_Camera::relay_pic()
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
 }
 
-/// pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
-void
-AP_Camera::throttle_pic()
-{
-// TODO find a way to do this without using the global parameter g
-//	g.channel_throttle.radio_out = g.throttle_min;
-    if (_thr_pic_counter == 10) {
-        servo_pic();            // triggering method
-        _thr_pic_counter = 0;
-//		g.channel_throttle.radio_out = g.throttle_cruise;
-    }
-    _thr_pic_counter++;
-}
-
-/// distance_pic - triggers picture when within 3m of waypoint
-void
-AP_Camera::distance_pic()
-{
-    if (wp_distance < AP_CAMERA_WP_DISTANCE) {
-        servo_pic();            // triggering method
-    }
-}
-
-/// hacked the circuit to run a transistor? use this trigger to send output.
-void
-AP_Camera::transistor_pic()
-{
-    // TODO: Assign pin spare pin for output
-    hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN,1);
-
-    // leave a message that it should be active for two event loop cycles
-    _trigger_counter = 1;
-}
-
 /// single entry point to take pictures
 void
 AP_Camera::trigger_pic()
@@ -117,15 +82,6 @@ AP_Camera::trigger_pic()
         break;
     case AP_CAMERA_TRIGGER_TYPE_RELAY:
         relay_pic();                    // basic relay activation
-        break;
-    case AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME:
-        throttle_pic();                 // pictures blurry? use this trigger. Turns off the throttle until for # of cycles of medium loop then takes the picture and re-enables the throttle.
-        break;
-    case AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE:
-        distance_pic();                 // pictures blurry? use this trigger. Turns off the throttle until closer to waypoint then takes the picture and re-enables the throttle.
-        break;
-    case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
-        transistor_pic();                              // hacked the circuit to run a transistor? use this trigger to send output.
         break;
     }
 }
@@ -140,15 +96,10 @@ AP_Camera::trigger_pic_cleanup()
     } else {
         switch (_trigger_type) {
             case AP_CAMERA_TRIGGER_TYPE_SERVO:
-            case AP_CAMERA_TRIGGER_TYPE_THROTTLE_OFF_TIME:
-            case AP_CAMERA_TRIGGER_TYPE_WP_DISTANCE:
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
                 break;
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
                 _apm_relay->off();
-                break;
-            case AP_CAMERA_TRIGGER_TYPE_TRANSISTOR:
-                hal.gpio->write(AP_CAMERA_TRANSISTOR_PIN, 0);
                 break;
         }
     }

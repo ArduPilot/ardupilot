@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.0.1-rc2"
+#define THISFIRMWARE "ArduCopter V3.0.1"
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -240,22 +240,22 @@ static AP_Compass_HMC5843 compass;
 AP_GPS_Auto     g_gps_driver(&g_gps);
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver();
+AP_GPS_NMEA     g_gps_driver;
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver();
+AP_GPS_SIRF     g_gps_driver;
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver();
+AP_GPS_UBLOX    g_gps_driver;
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver();
+AP_GPS_MTK      g_gps_driver;
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK19
-AP_GPS_MTK19    g_gps_driver();
+AP_GPS_MTK19    g_gps_driver;
 
  #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     g_gps_driver();
+AP_GPS_None     g_gps_driver;
 
  #else
   #error Unrecognised GPS_PROTOCOL setting.
@@ -494,8 +494,8 @@ static int32_t original_wp_bearing;
 static int32_t home_bearing;
 // distance between plane and home in cm
 static int32_t home_distance;
-// distance between plane and next waypoint in cm.  is not static because AP_Camera uses it
-uint32_t wp_distance;
+// distance between plane and next waypoint in cm.
+static uint32_t wp_distance;
 // navigation mode - options include NAV_NONE, NAV_LOITER, NAV_CIRCLE, NAV_WP
 static uint8_t nav_mode;
 // Register containing the index of the current navigation command in the mission script
@@ -571,9 +571,8 @@ static int32_t pitch_axis;
 
 // Filters
 #if FRAME_CONFIG == HELI_FRAME
-static LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
-static LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
-// LowPassFilterFloat rate_yaw_filter;     // Rate Yaw filter
+//static LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
+//static LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
 #endif // HELI_FRAME
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1466,7 +1465,7 @@ void update_yaw_mode(void)
     case YAW_ACRO:
         // pilot controlled yaw using rate controller
         if(g.axis_enabled) {
-            get_yaw_rate_stabilized_ef(g.rc_4.control_in);
+            get_yaw_rate_stabilized_bf(g.rc_4.control_in);
         }else{
             get_acro_yaw(g.rc_4.control_in);
         }
@@ -1625,8 +1624,8 @@ void update_roll_pitch_mode(void)
 
 #if FRAME_CONFIG == HELI_FRAME
 		if(g.axis_enabled) {
-            get_roll_rate_stabilized_ef(g.rc_1.control_in);
-            get_pitch_rate_stabilized_ef(g.rc_2.control_in);
+            get_roll_rate_stabilized_bf(g.rc_1.control_in);
+            get_pitch_rate_stabilized_bf(g.rc_2.control_in);
         }else{
             // ACRO does not get SIMPLE mode ability
             if (motors.flybar_mode == 1) {
@@ -1639,8 +1638,8 @@ void update_roll_pitch_mode(void)
 		}
 #else  // !HELI_FRAME
 		if(g.axis_enabled) {
-            get_roll_rate_stabilized_ef(g.rc_1.control_in);
-            get_pitch_rate_stabilized_ef(g.rc_2.control_in);
+            get_roll_rate_stabilized_bf(g.rc_1.control_in);
+            get_pitch_rate_stabilized_bf(g.rc_2.control_in);
         }else{
             // ACRO does not get SIMPLE mode ability
             get_acro_roll(g.rc_1.control_in);
@@ -1842,20 +1841,32 @@ void update_throttle_mode(void)
     if(ap.do_flip)     // this is pretty bad but needed to flip in AP modes.
         return;
 
-    // do not run throttle controllers if motors disarmed
+#if FRAME_CONFIG == HELI_FRAME
+
+	if (control_mode == STABILIZE){
+		motors.stab_throttle = true;
+	} else {
+		motors.stab_throttle = false;
+	}
+    
+    // allow swash collective to move if we are in manual throttle modes, even if disarmed
+    if( !motors.armed() ) {
+        if ( !(throttle_mode == THROTTLE_MANUAL) && !(throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED)){
+            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
+            return;
+        }
+    }
+
+#else // HELI_FRAME
+
+// do not run throttle controllers if motors disarmed
     if( !motors.armed() ) {
         set_throttle_out(0, false);
         throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         set_target_alt_for_reporting(0);
         return;
     }
-
-#if FRAME_CONFIG == HELI_FRAME
-	if (control_mode == STABILIZE){
-		motors.stab_throttle = true;
-	} else {
-		motors.stab_throttle = false;
-	}
+    
 #endif // HELI_FRAME
 
     switch(throttle_mode) {

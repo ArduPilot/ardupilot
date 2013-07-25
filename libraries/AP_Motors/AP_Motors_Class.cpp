@@ -34,6 +34,12 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
     // @Range: 20 80
     AP_GROUPINFO("TCRV_MAXPCT", 3, AP_Motors, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
+    
+    // @Param: SPIN_ARMED
+    // @DisplayName: Motors always spin when armed
+    // @Description: Controls whether motors always spin when armed
+    // @Values: 0:Do Not Spin,50:Slow,85:Medium,120:Fast
+    AP_GROUPINFO("SPIN_ARMED", 4, AP_Motors, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
 
     AP_GROUPEND
 };

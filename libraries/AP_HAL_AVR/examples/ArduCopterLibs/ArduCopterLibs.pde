@@ -27,7 +27,6 @@
 #include <AP_OpticalFlow.h>     // Optical Flow library
 #include <Filter.h>             // Filter library
 #include <AP_Buffer.h>          // APM FIFO Buffer
-#include <AP_LeadFilter.h>      // GPS Lead filter
 #include <AP_Relay.h>           // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount

@@ -5,16 +5,16 @@
 
 static void default_dead_zones()
 {
-    g.rc_1.set_dead_zone(60);
-    g.rc_2.set_dead_zone(60);
+    g.rc_1.set_default_dead_zone(30);
+    g.rc_2.set_default_dead_zone(30);
 #if FRAME_CONFIG == HELI_FRAME
-    g.rc_3.set_dead_zone(20);
-    g.rc_4.set_dead_zone(30);
+    g.rc_3.set_default_dead_zone(10);
+    g.rc_4.set_default_dead_zone(15);
 #else
-    g.rc_3.set_dead_zone(60);
-    g.rc_4.set_dead_zone(80);
+    g.rc_3.set_default_dead_zone(30);
+    g.rc_4.set_default_dead_zone(40);
 #endif
-    g.rc_6.set_dead_zone(0);
+    g.rc_6.set_default_dead_zone(0);
 }
 
 static void init_rc_in()
@@ -29,9 +29,6 @@ static void init_rc_in()
     g.rc_3.set_range(g.throttle_min, g.throttle_max);
 #endif
     g.rc_4.set_angle(4500);
-
-    // reverse: CW = left
-    // normal:  CW = left???
 
     g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
@@ -48,6 +45,9 @@ static void init_rc_in()
 #elif MOUNT == ENABLED
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
 #endif
+
+    // set default dead zones
+    default_dead_zones();
 }
 
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration

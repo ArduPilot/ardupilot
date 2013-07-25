@@ -132,7 +132,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= (1<<2); // compass present
     }
     control_sensors_present |= (1<<3); // absolute pressure sensor present
-    if (g_gps != NULL && g_gps->status() >= GPS::NO_FIX) {
+    if (g_gps != NULL && g_gps->status() > GPS::NO_GPS) {
         control_sensors_present |= (1<<5); // GPS present
     }
     control_sensors_present |= (1<<10); // 3D angular rate control
@@ -616,7 +616,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         if (chan == MAVLINK_COMM_0) {
             gcs0.queued_waypoint_send();
-        } else {
+        } else if (gcs3.initialised) {
             gcs3.queued_waypoint_send();
         }
         break;
@@ -827,7 +827,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_send_timeout(1000), // 1 second
     waypoint_receive_timeout(1000) // 1 second
 {
-
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void
@@ -1268,22 +1268,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // custom_mode instead.
             break;
         }
-        switch (packet.custom_mode) {
-        case STABILIZE:
-        case ACRO:
-        case ALT_HOLD:
-        case AUTO:
-        case GUIDED:
-        case LOITER:
-        case RTL:
-        case CIRCLE:
-        case POSITION:
-        case LAND:
-        case OF_LOITER:
-            set_mode(packet.custom_mode);
-            break;
-        }
-
+        set_mode(packet.custom_mode);
         break;
     }
 
@@ -1379,6 +1364,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_NAV_ROI:
+        case MAV_CMD_DO_SET_ROI:
             param1 = tell_command.p1;                                   // MAV_ROI (aka roi mode) is held in wp's parameter but we actually do nothing with it because we only support pointing at a specific location provided by x,y and z parameters
             break;
 
@@ -1675,6 +1661,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_NAV_ROI:
+        case MAV_CMD_DO_SET_ROI:
             tell_command.p1 = packet.param1;                                    // MAV_ROI (aka roi mode) is held in wp's parameter but we actually do nothing with it because we only support pointing at a specific location provided by x,y and z parameters
             break;
 

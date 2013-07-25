@@ -45,8 +45,12 @@
 #include <string.h>
 
 template <typename T>
+class Matrix3;
+
+template <typename T>
 class Vector3
 {
+
 public:
     T        x, y, z;
 
@@ -100,6 +104,12 @@ public:
 
     // dot product
     T operator *(const Vector3<T> &v) const;
+
+    // multiply a row vector by a matrix, to give a row vector
+    Vector3<T> operator *(const Matrix3<T> &m) const;
+
+    // multiply a column vector by a row vector, returning a 3x3 matrix
+    Matrix3<T> mul_rowcol(const Vector3<T> &v) const;
 
     // cross product
     Vector3<T> operator %(const Vector3<T> &v) const;
