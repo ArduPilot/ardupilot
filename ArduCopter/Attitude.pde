@@ -886,12 +886,15 @@ get_throttle_accel(int16_t z_target_accel)
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle_accel.get_p(z_accel_error);
-    // freeze I term if we've breached throttle limits
-    if (motors.limit.throttle) {
-        i = g.pid_throttle_accel.get_integrator();
-    }else{
+
+    // get i term
+    i = g.pid_throttle_accel.get_integrator();
+
+    // update i term as long as we haven't breached the limits or the I term will certainly reduce
+    if ((!motors.limit.throttle_lower && !motors.limit.throttle_lower) || (i>0&&z_accel_error<0) || (i<0&&z_accel_error>0)) {
         i = g.pid_throttle_accel.get_i(z_accel_error, .01f);
     }
+
     d = g.pid_throttle_accel.get_d(z_accel_error, .01f);
 
     //
@@ -1103,8 +1106,11 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
 static void
 get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
-    // limit target altitude change
-    controller_desired_alt += constrain_float(target_alt-controller_desired_alt, min_climb_rate*0.02f, max_climb_rate*0.02f);
+    float alt_change = target_alt-controller_desired_alt;
+    // adjust desired alt if motors have not hit their limits
+    if ((alt_change<0 && !motors.limit.throttle_lower) || (alt_change>0 && !motors.limit.throttle_upper)) {
+        controller_desired_alt += constrain_float(alt_change, min_climb_rate*0.02f, max_climb_rate*0.02f);
+    }
 
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
@@ -1118,7 +1124,10 @@ get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16
 static void
 get_throttle_rate_stabilized(int16_t target_rate)
 {
-    controller_desired_alt += target_rate * 0.02f;
+    // adjust desired alt if motors have not hit their limits
+    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
+        controller_desired_alt += target_rate * 0.02f;
+    }
 
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
@@ -1178,7 +1187,10 @@ get_throttle_surface_tracking(int16_t target_rate)
     }
     last_call_ms = now;
 
-    target_sonar_alt += target_rate * 0.02f;
+    // adjust target alt if motors have not hit their limits
+    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
+        target_sonar_alt += target_rate * 0.02f;
+    }
 
     distance_error = (target_sonar_alt-sonar_alt);
     sonar_induced_slew_rate = constrain_float(fabsf(g.sonar_gain * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);

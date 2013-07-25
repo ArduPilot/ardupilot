@@ -124,7 +124,8 @@ public:
     struct AP_Motors_limit {
         uint8_t roll_pitch      : 1; // we have reached roll or pitch limit
         uint8_t yaw             : 1; // we have reached yaw limit
-        uint8_t throttle        : 1; // we have reached throttle limit
+        uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
+        uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
     } limit;
 
     // var_info for holding Parameter information
