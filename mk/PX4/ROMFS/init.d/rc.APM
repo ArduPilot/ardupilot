@@ -52,22 +52,37 @@ then
 	     echo "Created APM directory"
 	fi
 
-	if [ -f /fs/microsd/px4io.bin ]
+	uorb start
+        if mpu6000 start
+        then
+                echo "Detected FMUv1 board"
+                set BOARD FMUv1
+                set PX4IOBIN /etc/px4io/px4io-v1.bin
+        else
+                l3gd20 start
+                echo "Detected FMUv2 board"
+                set BOARD FMUv2
+                set PX4IOBIN /etc/px4io/px4io-v2.bin
+        fi
+
+        echo checking for $PX4IOBIN
+	if [ -f $PX4IOBIN ]
 	then
 	   echo "Checking for new px4io firmware"
-	   if cmp /fs/microsd/px4io.bin /fs/microsd/px4io.bin.loaded
+	   if cmp $PX4IOBIN /fs/microsd/px4io.loaded
 	   then
 	      echo "No new px4io firmware"
 	   else
-	      echo "Loading /fs/microsd/px4io.bin"
+	      echo Loading $PX4IOBIN
               tone_alarm MBABGP
-	      if px4io update /fs/microsd/px4io.bin > /fs/microsd/APM/px4io_update.log
+	      if px4io update $PX4IOBIN > /fs/microsd/APM/px4io_update.log
 	      then
-	      	cp /fs/microsd/px4io.bin /fs/microsd/px4io.bin.loaded
-	      	echo "Loaded /fs/microsd/px4io.bin OK" >> /fs/microsd/APM/px4io_update.log
+	      	cp $PX4IOBIN /fs/microsd/px4io.loaded
+	      	echo Loaded $PX4IOBIN OK >> /fs/microsd/APM/px4io_update.log
                 tone_alarm MSPAA
 	      else
-	        echo "Failed loading /fs/microsd/px4io.bin (check PX4IO is in bootloader mode - hold down the Safety Button while powering up)" >> /fs/microsd/APM/px4io_update.log
+	        echo Failed loading $PX4IOBIN >> /fs/microsd/APM/px4io_update.log
+                echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
 		echo "Failed to upgrade PX4IO firmware - check PX4IO is in bootloader mode"
                 tone_alarm MNGGG
 	      fi
@@ -76,11 +91,20 @@ then
 
 	echo "Starting APM sensors"
 	echo "Starting APM sensors" > $logfile
-	uorb start
-	mpu6000 start
-	ms5611 start
-	hmc5883 start
-	adc start
+        if [ $BOARD == FMUv1 ]
+        then
+        	ms5611 start
+	        hmc5883 start
+                adc start
+        else
+        	ms5611 start
+                if hmc5883 start
+                then
+                        echo "Using external magnetometer"
+                fi
+                lsm303d start
+                adc start
+        fi
         if ets_airspeed start
         then
                 echo "Found ETS airspeed sensor" >> $logfile
@@ -114,8 +138,6 @@ then
          		sleep 1
 			mkblctrl -mkmode x
 			sleep 1
-	
-
 		fi
 
 		echo "Setting up PX4FMU direct mode"
@@ -146,5 +168,3 @@ fi
 echo "rc.APM finished"
 echo "rc.APM finished" >> $logfile
 fi
-
-
