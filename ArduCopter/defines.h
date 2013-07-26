@@ -307,6 +307,7 @@ enum ap_message {
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
 #define DATA_LAND_COMPLETE              18
+#define DATA_NOT_LANDED                 28
 #define DATA_LOST_GPS                   19
 #define DATA_BEGIN_FLIP                 21
 #define DATA_END_FLIP                   22

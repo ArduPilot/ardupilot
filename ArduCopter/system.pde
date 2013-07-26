@@ -347,10 +347,6 @@ static bool set_mode(uint8_t mode)
     // boolean to record if flight mode could be set
     bool success = false;
 
-    // if we change modes, we must clear landed flag
-    // To-Do: this should be initialised in one of the flight modes
-    set_land_complete(false);
-
     // report the GPS and Motor arming status
     // To-Do: this should be initialised somewhere else related to the LEDs
     led_mode = NORMAL_LEDS;

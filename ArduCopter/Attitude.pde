@@ -891,7 +891,7 @@ get_throttle_accel(int16_t z_target_accel)
     i = g.pid_throttle_accel.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
-    if ((!motors.limit.throttle_lower && !motors.limit.throttle_lower) || (i>0&&z_accel_error<0) || (i<0&&z_accel_error>0)) {
+    if ((!motors.limit.throttle_lower && !motors.limit.throttle_upper) || (i>0&&z_accel_error<0) || (i<0&&z_accel_error>0)) {
         i = g.pid_throttle_accel.get_i(z_accel_error, .01f);
     }
 
@@ -1150,23 +1150,44 @@ get_throttle_land()
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
-        // detect whether we have landed by watching for minimum throttle and now movement
-        if (abs(climb_rate) < 20 && (g.rc_3.servo_out <= get_angle_boost(g.throttle_min) || g.pid_throttle_accel.get_integrator() <= -150)) {
-            if( land_detector < LAND_DETECTOR_TRIGGER ) {
-                land_detector++;
-            }else{
-                set_land_complete(true);
-                if( g.rc_3.control_in == 0 || ap.failsafe_radio ) {
-                    init_disarm_motors();
-                }
-            }
-        }else{
-            // we've sensed movement up or down so decrease land_detector
-            if (land_detector > 0 ) {
-                land_detector--;
-            }
+        // disarm when the landing detector says we've landed and throttle is at min (or we're in failsafe so we have no pilot thorottle input)
+        if( ap.land_complete && (g.rc_3.control_in == 0 || ap.failsafe_radio) ) {
+            init_disarm_motors();
         }
     }
+}
+
+// reset_land_detector - initialises land detector
+static void reset_land_detector()
+{
+    set_land_complete(false);
+    land_detector = 0;
+}
+
+// update_land_detector - checks if we have landed and updates the ap.land_complete flag
+// returns true if we have landed
+static bool update_land_detector()
+{
+    // detect whether we have landed by watching for low climb rate and minimum throttle
+    if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
+        // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
+        if( land_detector < LAND_DETECTOR_TRIGGER ) {
+            land_detector++;
+        }else{
+            if(!ap.land_complete) {
+                set_land_complete(true);
+            }
+        }
+    }else{
+        // we've sensed movement up or down so reset land_detector
+        land_detector = 0;
+        if(ap.land_complete) {
+            set_land_complete(false);
+        }
+    }
+
+    // return current state of landing
+    return ap.land_complete;
 }
 
 // get_throttle_surface_tracking - hold copter at the desired distance above the ground

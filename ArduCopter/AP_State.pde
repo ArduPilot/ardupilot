@@ -104,6 +104,8 @@ void set_land_complete(bool b)
 
     if(b){
         Log_Write_Event(DATA_LAND_COMPLETE);
+    }else{
+        Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
 }

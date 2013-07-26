@@ -378,7 +378,7 @@ static union {
         uint8_t rc_override_active  : 1; // 14   // true if rc control are overwritten by ground station
         uint8_t do_flip             : 1; // 15   // Used to enable flip code
         uint8_t takeoff_complete    : 1; // 16
-        uint8_t land_complete       : 1; // 17
+        uint8_t land_complete       : 1; // 17   // true if we have detected a landing
         uint8_t compass_status      : 1; // 18
         uint8_t gps_status          : 1; // 19
     };
@@ -1035,6 +1035,9 @@ static void fifty_hz_loop()
     // -------------------------
     update_throttle_mode();
 
+    // check if we've landed
+    update_land_detector();
+
 #if TOY_EDF == ENABLED
     edf_toy();
 #endif
@@ -1458,6 +1461,10 @@ void update_yaw_mode(void)
     switch(yaw_mode) {
 
     case YAW_HOLD:
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }
         // heading hold at heading held in nav_yaw but allow input from pilot
         get_yaw_rate_stabilized_ef(g.rc_4.control_in);
         break;
@@ -1472,9 +1479,14 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_NEXT_WP:
-        // point towards next waypoint (no pilot input accepted)
-        // we don't use wp_bearing because we don't want the copter to turn too much during flight
-        nav_yaw = get_yaw_slew(nav_yaw, original_wp_bearing, AUTO_YAW_SLEW_RATE);
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }else{
+            // point towards next waypoint (no pilot input accepted)
+            // we don't use wp_bearing because we don't want the copter to turn too much during flight
+            nav_yaw = get_yaw_slew(nav_yaw, original_wp_bearing, AUTO_YAW_SLEW_RATE);
+        }
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
@@ -1484,6 +1496,10 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_LOCATION:
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }
         // point towards a location held in yaw_look_at_WP
         get_look_at_yaw();
 
@@ -1494,6 +1510,10 @@ void update_yaw_mode(void)
         break;
 
     case YAW_CIRCLE:
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }
         // points toward the center of the circle or does a panorama
         get_circle_yaw();
 
@@ -1504,8 +1524,13 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_HOME:
-        // keep heading always pointing at home with no pilot input allowed
-        nav_yaw = get_yaw_slew(nav_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }else{
+            // keep heading always pointing at home with no pilot input allowed
+            nav_yaw = get_yaw_slew(nav_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
+        }
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
@@ -1515,28 +1540,47 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_HEADING:
-        // keep heading pointing in the direction held in yaw_look_at_heading with no pilot input allowed
-        nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_heading, yaw_look_at_heading_slew);
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }else{
+            // keep heading pointing in the direction held in yaw_look_at_heading with no pilot input allowed
+            nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_heading, yaw_look_at_heading_slew);
+        }
         get_stabilize_yaw(nav_yaw);
         break;
 
 	case YAW_LOOK_AHEAD:
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }
 		// Commanded Yaw to automatically look ahead.
         get_look_ahead_yaw(g.rc_4.control_in);
         break;
 
 #if TOY_LOOKUP == TOY_EXTERNAL_MIXER
     case YAW_TOY:
-        // update to allow external roll/yaw mixing
-        // keep heading always pointing at home with no pilot input allowed
-        nav_yaw = get_yaw_slew(nav_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }else{
+            // update to allow external roll/yaw mixing
+            // keep heading always pointing at home with no pilot input allowed
+            nav_yaw = get_yaw_slew(nav_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
+        }
         get_stabilize_yaw(nav_yaw);
         break;
 #endif
 
     case YAW_RESETTOARMEDYAW:
-        // changes yaw to be same as when quad was armed
-        nav_yaw = get_yaw_slew(nav_yaw, initial_armed_bearing, AUTO_YAW_SLEW_RATE);
+        // if we are landed reset yaw target to current heading
+        if (ap.land_complete) {
+            nav_yaw = ahrs.yaw_sensor;
+        }else{
+            // changes yaw to be same as when quad was armed
+            nav_yaw = get_yaw_slew(nav_yaw, initial_armed_bearing, AUTO_YAW_SLEW_RATE);
+        }
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
@@ -1706,12 +1750,18 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
-        // update loiter target from user controls - max velocity is 5.0 m/s
-        wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
+        // if landed simply keep the copter level
+        if (ap.land_complete) {
+            nav_roll = 0;
+            nav_pitch = 0;
+        }else{
+            // update loiter target from user controls
+            wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
 
-        // copy latest output from nav controller to stabilize controller
-        nav_roll = wp_nav.get_desired_roll();
-        nav_pitch = wp_nav.get_desired_pitch();
+            // copy latest output from nav controller to stabilize controller
+            nav_roll = wp_nav.get_desired_roll();
+            nav_pitch = wp_nav.get_desired_pitch();
+        }
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
@@ -1806,8 +1856,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             break;
 
         case THROTTLE_LAND:
-            set_land_complete(false);   // mark landing as incomplete
-            land_detector = 0;          // A counter that goes up if our climb rate stalls out.
+            reset_land_detector();  // initialise land detector
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             throttle_initialised = true;
             break;
