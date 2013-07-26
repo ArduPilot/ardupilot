@@ -25,14 +25,14 @@ $(BUILDROOT)/module.mk:
 	$(v) echo "SRCS = $(SKETCH).cpp $(SKETCHLIBSRCS)" >> $@
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $@
 
-px4-v1: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.mk
+px4-v1: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.mk px4-io-v1
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V1_CONFIG_FILE) firmware
 	$(v) /bin/rm -f $(SKETCH)-v1.px4
 	$(v) cp $(PX4_ROOT)/makefiles/build/firmware.px4 $(SKETCH)-v1.px4
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
-px4-v2: $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) $(BUILDROOT)/module.mk
+px4-v2: $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) $(BUILDROOT)/module.mk px4-io-v2
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V2_CONFIG_FILE) firmware
 	$(v) /bin/rm -f $(SKETCH)-v2.px4
@@ -44,13 +44,12 @@ px4: px4-v1 px4-v2
 px4-clean: clean px4-archives-clean
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
-px4-upload-v1: px4
+px4-upload-v1:
 	$(RULEHDR)
-	$(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V1_CONFIG_FILE) upload
+	$(PX4_ROOT)/Tools/px_uploader.py --port /dev/serial/by-id/usb-3D_Robotics_PX4* $(SKETCH)-v1.px4
 
-px4-upload-v2: px4
-	$(RULEHDR)
-	$(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V2_CONFIG_FILE) upload
+px4-upload-v2:
+	$(PX4_ROOT)/Tools/px_uploader.py --port /dev/serial/by-id/usb-3D_Robotics_PX4* $(SKETCH)-v2.px4
 
 px4-upload: px4-upload-v1
 
@@ -61,12 +60,15 @@ px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 	$(v) make -C $(PX4_ROOT) px4io-v1_default
 	$(v) /bin/rm -f px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.bin px4io-v1.bin
+	$(v) cp px4io-v1.bin $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) echo "PX4IOv1 Firmware is in px4io-v1.bin"
+
 
 px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 	$(v) make -C $(PX4_ROOT) px4io-v2_default
 	$(v) /bin/rm -f px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.bin px4io-v2.bin
+	$(v) cp px4io-v2.bin $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) echo "PX4IOv2 Firmware is in px4io-v2.bin"
 
 px4-io: px4-io-v1 px4-io-v2
@@ -83,7 +85,8 @@ $(PX4_ROOT)/Archives/px4io-v1.export:
 $(PX4_ROOT)/Archives/px4io-v2.export:
 	make -C $(PX4_ROOT) archives
 
-px4-archives: $(PX4_ROOT)/Archives/px4fmu-v1.export $(PX4_ROOT)/Archives/px4fmu-v2.export
+px4-archives:
+	make -C $(PX4_ROOT) archives
 
 else
 
