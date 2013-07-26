@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        2, AP_PitchController, _K_D,        0.0f),
+	AP_GROUPINFO("D",        2, AP_PitchController, _K_D,        0.02f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
@@ -143,7 +143,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0);
+	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0) / _ahrs->get_EAS2TAS();
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward

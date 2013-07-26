@@ -86,11 +86,21 @@ void AP_Scheduler::run(uint16_t time_available)
                                               (unsigned)time_taken,
                                               (unsigned)_task_time_allowed);
                     }
-                    return;
+                    goto update_spare_ticks;
                 }
                 time_available -= time_taken;
             }
         }
+    }
+
+    // update number of spare microseconds
+    _spare_micros += time_available;
+
+update_spare_ticks:
+    _spare_ticks++;
+    if (_spare_ticks == 32) {
+        _spare_ticks /= 2;
+        _spare_micros /= 2;
     }
 }
 
@@ -106,3 +116,11 @@ uint16_t AP_Scheduler::time_available_usec(void)
     return _task_time_allowed - dt;
 }
 
+/*
+  calculate load average as a number from 0 to 1
+ */
+float AP_Scheduler::load_average(uint32_t tick_time_usec) const
+{
+    uint32_t used_time = tick_time_usec - (_spare_micros/_spare_ticks);
+    return used_time / (float)tick_time_usec;
+}

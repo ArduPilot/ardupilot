@@ -172,7 +172,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 	// Update and average speed rate of change
     // Only required if airspeed is being measured and controlled
     float temp = 0;
-	if (_ahrs->airspeed_sensor_enabled() && _ahrs->airspeed_estimate(&_EAS)) {
+	if (_ahrs->airspeed_sensor_enabled() && _ahrs->airspeed_estimate_true(&_EAS)) {
         // Get DCM
         const Matrix3f &rotMat = _ahrs->get_dcm_matrix();
 	    // Calculate speed rate of change
@@ -194,7 +194,7 @@ void AP_TECS::_update_speed(void)
 
     // Convert equivalent airspeeds to true airspeeds
 
-    float EAS2TAS = _baro->get_EAS2TAS();
+    float EAS2TAS = _ahrs->get_EAS2TAS();
     _TAS_dem  = _EAS_dem * EAS2TAS;
     _TASmax   = aparm.airspeed_max * EAS2TAS;
     _TASmin   = aparm.airspeed_min * EAS2TAS;

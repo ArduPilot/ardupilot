@@ -132,7 +132,7 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define USB_MUX_PIN -1
+ # define USB_MUX_PIN 23
  # define BATTERY_VOLT_PIN      -1
  # define BATTERY_CURR_PIN      -1
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
@@ -346,21 +346,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// ENABLE_AIR_START
-//
-#ifndef ENABLE_AIR_START
- # define ENABLE_AIR_START               DISABLED
-#endif
-
-#ifndef AIR_START_FIX_COUNT
- # define AIR_START_FIX_COUNT               5
-#endif
-
-#ifndef GROUND_START_FIX_COUNT
- # define GROUND_START_FIX_COUNT               100
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // ENABLE ELEVON_MIXING
 //
 #ifndef ELEVON_MIXING
@@ -512,9 +497,6 @@
  # define SERVO_ROLL_INT_MAX   5
 #endif
 #define SERVO_ROLL_INT_MAX_CENTIDEGREE SERVO_ROLL_INT_MAX*100
-#ifndef ROLL_SLEW_LIMIT
- # define ROLL_SLEW_LIMIT      0
-#endif
 #ifndef SERVO_PITCH_P
  # define SERVO_PITCH_P        0.6
 #endif
@@ -606,9 +588,6 @@
 #endif
 #ifndef THROTTLE_TE_INT_MAX
  # define THROTTLE_TE_INT_MAX  20
-#endif
-#ifndef THROTTLE_SLEW_LIMIT
- # define THROTTLE_SLEW_LIMIT  0
 #endif
 #ifndef PITCH_TARGET
  # define PITCH_TARGET         0

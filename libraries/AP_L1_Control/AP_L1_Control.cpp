@@ -60,6 +60,7 @@ int32_t AP_L1_Control::target_bearing_cd(void)
 
 float AP_L1_Control::turn_distance(float wp_radius)
 {
+    wp_radius *= sq(_ahrs->get_EAS2TAS());
 	return min(wp_radius, _L1_dist);
 }
 
@@ -167,6 +168,10 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction)
 {
 	struct Location _current_loc;
+
+    // scale loiter radius with square of EAS2TAS to allow us to stay
+    // stable at high altitude
+    radius *= sq(_ahrs->get_EAS2TAS());
 
 	// Calculate guidance gains used by PD loop (used during circle tracking)
 	float omega = (6.2832f / _L1_period);

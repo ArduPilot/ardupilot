@@ -129,13 +129,9 @@ void loop(void)
 
     if (now - last_print >= 100000 /* 100ms : 10hz */) {
         Vector3f drift  = ahrs.get_gyro_drift();
-        Vector3f omega = ahrs.get_gyro();
-        float lomega = omega.length();
-        Vector3f acc = ins.get_accel();
-        float lacc = acc.length();
         hal.console->printf_P(
                 PSTR("r:%4.1f  p:%4.1f y:%4.1f "
-                    "drift=(%5.1f %5.1f %5.1f) hdg=%.1f lrate=%4.1f freq=%.1f\n"),
+                    "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n"),
                         ToDeg(ahrs.roll),
                         ToDeg(ahrs.pitch),
                         ToDeg(ahrs.yaw),
@@ -143,13 +139,10 @@ void loop(void)
                         ToDeg(drift.y),
                         ToDeg(drift.z),
                         compass.use_for_yaw() ? ToDeg(heading) : 0.0,
-                        lomega,
-                        lacc,
                         (1.0e6*counter)/(now-last_print));
         last_print = now;
         counter = 0;
     }
 }
-
 
 AP_HAL_MAIN();

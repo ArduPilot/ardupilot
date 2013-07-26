@@ -109,9 +109,11 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
                     // constrain the airspeed by the ground speed
                     // and AHRS_WIND_MAX
                     float gnd_speed = _gps->ground_speed_cm*0.01f;
-                    *airspeed_ret = constrain_float(*airspeed_ret, 
+                    float true_airspeed = *airspeed_ret * get_EAS2TAS();
+                    true_airspeed = constrain_float(true_airspeed,
                                                     gnd_speed - _wind_max, 
                                                     gnd_speed + _wind_max);
+                    *airspeed_ret = true_airspeed / get_EAS2TAS();
 		}
 		return true;
 	}
@@ -145,27 +147,6 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     }
 }
 
-// correct a bearing in centi-degrees for wind
-void AP_AHRS::wind_correct_bearing(int32_t &nav_bearing_cd)
-{
-	if (!use_compass() || !_flags.wind_estimation) {
-		// we are not using the compass - no wind correction,
-		// as GPS gives course over ground already
-		return;
-	}
-
-	// if we are using a compass for navigation, then adjust the
-	// heading to account for wind	
-	Vector3f wind = wind_estimate();
-	Vector2f wind2d = Vector2f(wind.x, wind.y);
-	float speed;
-	if (airspeed_estimate(&speed)) {
-		Vector2f nav_vector = Vector2f(cos(radians(nav_bearing_cd*0.01)), sin(radians(nav_bearing_cd*0.01))) * speed;
-		Vector2f nav_adjusted = nav_vector - wind2d;
-		nav_bearing_cd = degrees(atan2(nav_adjusted.y, nav_adjusted.x)) * 100;
-	}
-}
-
 // return a ground speed estimate in m/s
 Vector2f AP_AHRS::groundspeed_vector(void)
 {
@@ -173,7 +154,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     Vector2f gndVelADS;
     Vector2f gndVelGPS;
     float airspeed;
-    bool gotAirspeed = airspeed_estimate(&airspeed);
+    bool gotAirspeed = airspeed_estimate_true(&airspeed);
     bool gotGPS = (_gps && _gps->status() >= GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
 	    Vector3f wind = wind_estimate();
