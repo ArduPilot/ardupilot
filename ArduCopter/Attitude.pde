@@ -859,6 +859,14 @@ void throttle_accel_deactivate()
     throttle_accel_controller_active = false;
 }
 
+// set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
+static void
+set_throttle_takeoff()
+{
+    if (g.pid_throttle_accel.get_integrator() < 0)
+        g.pid_throttle_accel.reset_I();
+}
+
 // get_throttle_accel - accelerometer based throttle controller
 // returns an actual throttle output (0 ~ 1000) to be sent to the motors
 static int16_t

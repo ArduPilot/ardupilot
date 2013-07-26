@@ -1977,6 +1977,12 @@ void update_throttle_mode(void)
         if(ap.auto_armed) {
             // alt hold plus pilot input of climb rate
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+
+            // clear i term when we're taking off
+            if (pilot_climb_rate > 0 && ap.land_complete) {
+                set_throttle_takeoff();
+            }
+
             if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
                 // if sonar is ok, use surface tracking
                 get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
