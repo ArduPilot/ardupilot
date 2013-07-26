@@ -1752,8 +1752,8 @@ void update_roll_pitch_mode(void)
 
         // if landed simply keep the copter level
         if (ap.land_complete) {
-            nav_roll = 0;
-            nav_pitch = 0;
+            nav_roll = ahrs.roll_sensor;
+            nav_pitch = ahrs.pitch_sensor;
         }else{
             // update loiter target from user controls
             wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);

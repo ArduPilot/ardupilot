@@ -162,9 +162,10 @@ static void update_nav_mode()
             // reset target if we are still on the ground
             if (ap.land_complete) {
                 wp_nav.init_loiter_target(inertial_nav.get_position(),inertial_nav.get_velocity());
+            }else{
+                // call loiter controller
+                wp_nav.update_loiter();
             }
-            // call loiter controller
-            wp_nav.update_loiter();
             break;
 
         case NAV_WP:
