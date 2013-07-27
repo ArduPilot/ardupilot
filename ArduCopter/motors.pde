@@ -10,6 +10,7 @@
 static void arm_motors_check()
 {
     static int16_t arming_counter;
+    bool allow_arming = false;
 
     // ensure throttle is down
     if (g.rc_3.control_in > 0) {
@@ -17,8 +18,18 @@ static void arm_motors_check()
         return;
     }
 
-    // ensure we are in Stabilize, Acro or TOY mode
-    if ((control_mode > ACRO) && ((control_mode != TOY_A) && (control_mode != TOY_M))) {
+    // allow arming/disarming in ACRO, STABILIZE and TOY flight modes
+    if (control_mode == ACRO || control_mode == STABILIZE || control_mode == TOY_A || control_mode == TOY_M) {
+        allow_arming = true;
+    }
+
+    // allow arming/disarming in Loiter and AltHold if landed
+    if (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD)) {
+        allow_arming = true;
+    }
+
+    // kick out other flight modes
+    if (!allow_arming) {
         arming_counter = 0;
         return;
     }
