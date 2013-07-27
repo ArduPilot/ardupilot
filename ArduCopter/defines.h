@@ -44,10 +44,14 @@
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
 
-// Ch7 and Ch8 aux switch control
+// Ch6, Ch7 and Ch8 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER  1800        // pwm value above which the ch7 or ch8 option will be invoked
 #define CH6_PWM_TRIGGER_HIGH    1800
 #define CH6_PWM_TRIGGER_LOW     1200
+#define CH7_PWM_TRIGGER_HIGH    1800
+#define CH7_PWM_TRIGGER_LOW     1200
+#define CH8_PWM_TRIGGER_HIGH    1800
+#define CH8_PWM_TRIGGER_LOW     1200
 
 #define AUX_SWITCH_DO_NOTHING       0       // aux switch disabled
 #define AUX_SWITCH_SET_HOVER        1       // deprecated
@@ -62,6 +66,9 @@
 #define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
 #define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
 #define AUX_SWITCH_RESETTOARMEDYAW  12      // changes yaw to be same as when quad was armed
+
+// Functions >= 100 need a 3 positions switch
+#define AUX_SWITCH_3POS_SIMPLE_SUPERSIMPLE_MODE 100     // depending upon CH7 or CH8 position : disable Simple mode (if CH7 or CH8 is low) ; select Simple mode (if CH7 or CH8 in middle) ; select SuperSimple mode (if CH7 or CH8 is high)
 
 
 // Frame types
@@ -315,6 +322,7 @@ enum ap_message {
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
+#define DATA_SET_SUPERSIMPLE_ON         28
 
 // battery monitoring macros
 #define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)

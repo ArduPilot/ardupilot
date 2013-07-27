@@ -361,9 +361,9 @@ static AP_RangeFinder_MaxsonarXL *sonar;
 static union {
     struct {
         uint8_t home_is_set         : 1; // 0
-        uint8_t simple_mode         : 1; // 1    // This is the state of simple mode
-        uint8_t manual_attitude     : 1; // 2
-        uint8_t manual_throttle     : 1; // 3
+        uint8_t simple_mode         : 2; // 1,2  // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
+        uint8_t manual_attitude     : 1; // 3
+        uint8_t manual_throttle     : 1; // 4
 
         uint8_t pre_arm_rc_check    : 1; // 5    // true if rc input pre-arm checks have been completed successfully
         uint8_t pre_arm_check       : 1; // 6    // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
@@ -390,10 +390,11 @@ static struct AP_System{
     uint8_t GPS_light               : 1; // 0   // Solid indicates we have full 3D lock and can navigate, flash = read
     uint8_t arming_light            : 1; // 1   // Solid indicates armed state, flashing is disarmed, double flashing is disarmed and failing pre-arm checks
     uint8_t new_radio_frame         : 1; // 2   // Set true if we have new PWM data to act on from the Radio
-    uint8_t CH7_flag                : 1; // 3   // true if ch7 aux switch is high
-    uint8_t CH8_flag                : 1; // 4   // true if ch8 aux switch is high
-    uint8_t usb_connected           : 1; // 5   // true if APM is powered from USB connection
-    uint8_t yaw_stopped             : 1; // 6   // Used to manage the Yaw hold capabilities
+    uint8_t CH7_flag                : 2; // 3,4 // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t CH8_flag                : 2; // 5,6 // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    uint8_t usb_connected           : 1; // 7   // true if APM is powered from USB connection
+    uint8_t yaw_stopped             : 1; // 8   // Used to manage the Yaw hold capabilities
+    uint8_t                         : 7; // 9-15 // Fill bit field to 16 bits
 
 } ap_system;
 
@@ -1809,8 +1810,8 @@ void update_simple_mode(void)
 // should be called after home_bearing has been updated
 void update_super_simple_bearing()
 {
-    // are we in SIMPLE mode?
-    if(ap.simple_mode && g.super_simple) {
+    // are we in SUPERSIMPLE mode?
+    if(ap.simple_mode == 2 || (ap.simple_mode && g.super_simple)) {
         // get distance to home
         if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
             // we reset the angular offset to be a vector from home to the quad
