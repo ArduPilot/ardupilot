@@ -27,15 +27,17 @@ void set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void set_simple_mode(bool b)
+void set_simple_mode(uint8_t t)
 {
-    if(ap.simple_mode != b){
-        if(b){
+    if(ap.simple_mode != t){
+        if(t == 0){
+            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+        }else if(t == 1){
             Log_Write_Event(DATA_SET_SIMPLE_ON);
         }else{
-            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+            Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
         }
-        ap.simple_mode = b;
+        ap.simple_mode = t;
     }
 }
 
