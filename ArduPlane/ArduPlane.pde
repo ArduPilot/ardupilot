@@ -1015,20 +1015,8 @@ static void update_GPS(void)
                 ground_start_count = 5;
 
             } else {
-                if(ENABLE_AIR_START == 1 && (ground_start_avg / 5) < SPEEDFILT) {
-		// Triggered in air start once, when detected we are on the ground.
-                    startup_ground();
-
-                    if (g.log_bitmask & MASK_LOG_CMD)
-                        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-
-                    init_home();
-                } else if (ENABLE_AIR_START == 0) {
-		// Triggered in ground start once.
-                    init_home();
-                }
-
-		// Triggered in air start once and in ground start once.
+                init_home();
+                // Triggered in air start once and in ground start once.
                 if (g.compass_enabled) {
                     // Set compass declination automatically
                     compass.set_initial_location(g_gps->latitude, g_gps->longitude);
