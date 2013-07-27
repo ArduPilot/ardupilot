@@ -2,7 +2,6 @@
 
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-static uint8_t failsafeCounter = 0;                // we wait a second to take over the throttle and send the plane circling
 
 /*
   allow for runtime change of control channel ordering
@@ -102,7 +101,7 @@ static void read_radio()
 
     if (g.throttle_nudge && channel_throttle->servo_out > 50) {
         float nudge = (channel_throttle->servo_out - 50) * 0.02;
-        if (alt_control_airspeed()) {
+        if (airspeed.use()) {
             airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
@@ -111,14 +110,6 @@ static void read_radio()
         airspeed_nudge_cm = 0;
         throttle_nudge = 0;
     }
-
-    /*
-     *  cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
-     *                       (int)g.rc_1.control_in,
-     *                       (int)g.rc_2.control_in,
-     *                       (int)g.rc_3.control_in,
-     *                       (int)g.rc_4.control_in);
-     */
 }
 
 static void control_failsafe(uint16_t pwm)
@@ -127,11 +118,11 @@ static void control_failsafe(uint16_t pwm)
         return;
 
     // Check for failsafe condition based on loss of GCS control
-    if (rc_override_active) {
-        if (millis() - last_heartbeat_ms > g.short_fs_timeout*1000) {
-            ch3_failsafe = true;
+    if (failsafe.rc_override_active) {
+        if (millis() - failsafe.last_heartbeat_ms > g.short_fs_timeout*1000) {
+            failsafe.ch3_failsafe = true;
         } else {
-            ch3_failsafe = false;
+            failsafe.ch3_failsafe = false;
         }
 
         //Check for failsafe and debounce funky reads
@@ -139,26 +130,26 @@ static void control_failsafe(uint16_t pwm)
         if (pwm < (unsigned)g.throttle_fs_value) {
             // we detect a failsafe from radio
             // throttle has dropped below the mark
-            failsafeCounter++;
-            if (failsafeCounter == 9) {
+            failsafe.ch3_counter++;
+            if (failsafe.ch3_counter == 9) {
                 gcs_send_text_fmt(PSTR("MSG FS ON %u"), (unsigned)pwm);
-            }else if(failsafeCounter == 10) {
-                ch3_failsafe = true;
-            }else if (failsafeCounter > 10) {
-                failsafeCounter = 11;
+            }else if(failsafe.ch3_counter == 10) {
+                failsafe.ch3_failsafe = true;
+            }else if (failsafe.ch3_counter > 10) {
+                failsafe.ch3_counter = 11;
             }
 
-        }else if(failsafeCounter > 0) {
+        }else if(failsafe.ch3_counter > 0) {
             // we are no longer in failsafe condition
             // but we need to recover quickly
-            failsafeCounter--;
-            if (failsafeCounter > 3) {
-                failsafeCounter = 3;
+            failsafe.ch3_counter--;
+            if (failsafe.ch3_counter > 3) {
+                failsafe.ch3_counter = 3;
             }
-            if (failsafeCounter == 1) {
+            if (failsafe.ch3_counter == 1) {
                 gcs_send_text_fmt(PSTR("MSG FS OFF %u"), (unsigned)pwm);
-            } else if(failsafeCounter == 0) {
-                ch3_failsafe = false;
+            } else if(failsafe.ch3_counter == 0) {
+                failsafe.ch3_failsafe = false;
             }
         }
     }

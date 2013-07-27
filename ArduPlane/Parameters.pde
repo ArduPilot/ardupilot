@@ -3,10 +3,6 @@
 /*
  *  ArduPlane parameter definitions
  *
- *  This firmware is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
  */
 
 #define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} }
@@ -63,14 +59,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(kff_rudder_mix,         "KFF_RDDRMIX",    RUDDER_MIX),
 
-    // @Param: KFF_PTCH2THR
-    // @DisplayName: Pitch to Throttle Mix
-    // @Description: Pitch to throttle feed-forward gain.
-    // @Range: 0 5
-    // @Increment: 0.01
-    // @User: Advanced
-    GSCALAR(kff_pitch_to_throttle,  "KFF_PTCH2THR",   0),
-
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
     // @Description: Throttle to pitch feed-forward gain.
@@ -85,6 +73,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   STICK_MIXING_FBW),
+
+    // @Param: SKIP_GYRO_CAL
+    // @DisplayName: Skip gyro calibration
+    // @Description: When enabled this tells the APM to skip the normal gyroscope calibration at startup, and instead use the saved gyro calibration from the last flight. You should only enable this if you are careful to check that your aircraft has good attitude control before flying, as some boards may have significantly different gyro calibration between boots, especially if the temperature changes a lot. If gyro calibration is skipped then APM relies on using the gyro drift detection code to get the right gyro calibration in the few minutes after it boots. This option is mostly useful where the requirement to hold the plane still while it is booting is a significant problem.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(skip_gyro_cal,           "SKIP_GYRO_CAL",   0),
 
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
@@ -250,7 +245,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ARSPD_FBW_MIN
     // @DisplayName: Fly By Wire Minimum Airspeed
-    // @Description: Airspeed corresponding to minimum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL)
+    // @Description: Airspeed corresponding to minimum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.
     // @Units: m/s
     // @Range: 5 50
     // @Increment: 1
@@ -259,7 +254,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ARSPD_FBW_MAX
     // @DisplayName: Fly By Wire Maximum Airspeed
-    // @Description: Airspeed corresponding to maximum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL)
+    // @Description: Airspeed corresponding to maximum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.
     // @Units: m/s
     // @Range: 5 50
     // @Increment: 1
@@ -301,12 +296,12 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second
+    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second.
     // @Units: Percent
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    ASCALAR(throttle_slewrate,      "THR_SLEWRATE",   THROTTLE_SLEW_LIMIT),
+    ASCALAR(throttle_slewrate,      "THR_SLEWRATE",   100),
 
     // @Param: THR_SUPP_MAN
     // @DisplayName: Throttle suppress manual passthru
@@ -357,7 +352,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event in AUTO, GUIDED or LOITER modes. A short failsafe event in stabilization modes will always cause an immediate change to CIRCLE mode. In AUTO mode you can choose whether it will RTL (ReturnToLaunch) or continue with the mission. If FS_SHORT_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter CIRCLE mode, and then enter RTL if the failsafe condition persists for FS_LONG_TIMEOUT seconds.
+    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event in AUTO, GUIDED or LOITER modes. A short failsafe event in stabilization modes will always cause an immediate change to CIRCLE mode. In AUTO mode you can choose whether it will enter CIRCLE mode or continue with the mission. If FS_SHORT_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter CIRCLE mode, and then enter RTL if the failsafe condition persists for FS_LONG_TIMEOUT seconds.
     // @Values: 0:Continue,1:Circle/ReturnToLaunch
     // @User: Standard
     GSCALAR(short_fs_action,        "FS_SHORT_ACTN",  SHORT_FAILSAFE_ACTION),
@@ -585,7 +580,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: TRIM_ARSPD_CM
     // @DisplayName: Target airspeed
-    // @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode
+    // @Description: Airspeed in cm/s to aim for when airspeed is enabled in auto mode. This is a calibrated (apparent) airspeed.
     // @Units: cm/s
     // @User: User
     GSCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
@@ -809,9 +804,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
 #endif
 
-	GGROUP(pidNavPitchAirspeed,     "ARSP2PTCH_", PID),
-	GGROUP(pidTeThrottle,           "ENRGY2THR_", PID),
-	GGROUP(pidNavPitchAltitude,     "ALT2PTCH_",  PID),
 	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
 
     // @Group: RLL2SRV_

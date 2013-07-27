@@ -70,6 +70,12 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("PIN",  4, AP_Airspeed, _pin, ARSPD_DEFAULT_PIN),
 
+    // @Param: AUTOCAL
+    // @DisplayName: Automatic airspeed ratio calibration
+    // @Description: If this is enabled then the APM will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%
+    // @User: Advanced
+    AP_GROUPINFO("AUTOCAL",  5, AP_Airspeed, _autocal, 0),
+
     AP_GROUPEND
 };
 
@@ -105,6 +111,10 @@ void AP_Airspeed::init()
     }
 #endif
     _source = hal.analogin->channel(_pin);
+
+    _calibration.init(_ratio);
+    _last_saved_ratio = _ratio;
+    _counter = 0;
 }
 
 // read the airspeed sensor

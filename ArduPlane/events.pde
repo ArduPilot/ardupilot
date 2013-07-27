@@ -1,11 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 
-static void failsafe_short_on_event(int16_t fstype)
+static void failsafe_short_on_event(enum failsafe_state fstype)
 {
     // This is how to handle a short loss of control signal failsafe.
-    failsafe = fstype;
-    ch3_failsafe_timer = millis();
+    failsafe.state = fstype;
+    failsafe.ch3_timer_ms = millis();
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event on, "));
     switch(control_mode)
     {
@@ -16,6 +16,8 @@ static void failsafe_short_on_event(int16_t fstype)
     case FLY_BY_WIRE_B:
     case CRUISE:
     case TRAINING:
+        failsafe.saved_mode = control_mode;
+        failsafe.saved_mode_set = 1;
         set_mode(CIRCLE);
         break;
 
@@ -23,7 +25,9 @@ static void failsafe_short_on_event(int16_t fstype)
     case GUIDED:
     case LOITER:
         if(g.short_fs_action == 1) {
-            set_mode(RTL);
+            failsafe.saved_mode = control_mode;
+            failsafe.saved_mode_set = 1;
+            set_mode(CIRCLE);
         }
         break;
 
@@ -35,13 +39,13 @@ static void failsafe_short_on_event(int16_t fstype)
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
 
-static void failsafe_long_on_event(int16_t fstype)
+static void failsafe_long_on_event(enum failsafe_state fstype)
 {
     // This is how to handle a long loss of control signal failsafe.
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
     //  If the GCS is locked up we allow control to revert to RC
     hal.rcin->clear_overrides();
-    failsafe = fstype;
+    failsafe.state = fstype;
     switch(control_mode)
     {
     case MANUAL:
@@ -74,13 +78,13 @@ static void failsafe_short_off_event()
 {
     // We're back in radio contact
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event off"));
-    failsafe = FAILSAFE_NONE;
+    failsafe.state = FAILSAFE_NONE;
 
     // re-read the switch so we can return to our preferred mode
     // --------------------------------------------------------
-    if (control_mode == CIRCLE ||
-        (g.short_fs_action == 1 && control_mode == RTL)) {
-        reset_control_switch();
+    if (control_mode == CIRCLE && failsafe.saved_mode_set) {
+        failsafe.saved_mode_set = 0;
+        set_mode(failsafe.saved_mode);
     }
 }
 

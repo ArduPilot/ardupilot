@@ -228,43 +228,9 @@ static void init_ardupilot()
     hal.uartC->println_P(msg);
 #endif
 
-    if (ENABLE_AIR_START == 1) {
-        // Perform an air start and get back to flying
-        gcs_send_text_P(SEVERITY_LOW,PSTR("<init_ardupilot> AIR START"));
-
-        // Get necessary data from EEPROM
-        //----------------
-        //read_EEPROM_airstart_critical();
-        ahrs.init();
-        ahrs.set_fly_forward(true);
-        ahrs.set_wind_estimation(true);
-
-        ins.init(AP_InertialSensor::WARM_START, 
-                 ins_sample_rate,
-                 flash_leds);
-
-        // This delay is important for the APM_RC library to work.
-        // We need some time for the comm between the 328 and 1280 to be established.
-        int old_pulse = 0;
-        while (millis()<=1000 
-            && (abs(old_pulse - hal.rcin->read(g.flight_mode_channel)) > 5
-               || hal.rcin->read(g.flight_mode_channel) == 1000
-               || hal.rcin->read(g.flight_mode_channel) == 1200))
-        {
-            old_pulse = hal.rcin->read(g.flight_mode_channel);
-            delay(25);
-        }
-        g_gps->update();
-
-        if (g.log_bitmask & MASK_LOG_CMD)
-            Log_Write_Startup(TYPE_AIRSTART_MSG);
-        reload_commands_airstart();                     // Get set to resume AUTO from where we left off
-
-    }else {
-        startup_ground();
-        if (g.log_bitmask & MASK_LOG_CMD)
-            Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    }
+    startup_ground();
+    if (g.log_bitmask & MASK_LOG_CMD)
+        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
     // choose the nav controller
     set_nav_controller();
@@ -293,7 +259,9 @@ static void startup_ground(void)
     // Makes the servos wiggle
     // step 1 = 1 wiggle
     // -----------------------
-    demo_servos(1);
+    if (!g.skip_gyro_cal) {
+        demo_servos(1);
+    }
 
     //INS ground start
     //------------------------
@@ -314,11 +282,13 @@ static void startup_ground(void)
 
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
-    demo_servos(3);
+    if (!g.skip_gyro_cal) {
+        demo_servos(3);
+    }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    last_heartbeat_ms = millis();
+    failsafe.last_heartbeat_ms = millis();
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -423,27 +393,31 @@ static void check_long_failsafe()
     uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS) {
-        if (rc_override_active && (tnow - last_heartbeat_ms) > g.long_fs_timeout*1000) {
+    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS) {
+        if (failsafe.rc_override_active && (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        } else if (!rc_override_active && failsafe == FAILSAFE_SHORT && 
-           (tnow - ch3_failsafe_timer) > g.long_fs_timeout*1000) {
+        } else if (!failsafe.rc_override_active && 
+                   failsafe.state == FAILSAFE_SHORT && 
+           (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
         } else if (g.gcs_heartbeat_fs_enabled && 
-            last_heartbeat_ms != 0 &&
-            (tnow - last_heartbeat_ms) > g.long_fs_timeout*1000) {
+            failsafe.last_heartbeat_ms != 0 &&
+            (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
     } else {
         // We do not change state but allow for user to change mode
-        if (failsafe == FAILSAFE_GCS && 
-            (tnow - last_heartbeat_ms) < g.short_fs_timeout*1000) {
-            failsafe = FAILSAFE_NONE;
-        } else if (failsafe == FAILSAFE_LONG && rc_override_active && 
-                   (tnow - last_heartbeat_ms) < g.short_fs_timeout*1000) {
-            failsafe = FAILSAFE_NONE;
-        } else if (failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) {
-            failsafe = FAILSAFE_NONE;
+        if (failsafe.state == FAILSAFE_GCS && 
+            (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
+            failsafe.state = FAILSAFE_NONE;
+        } else if (failsafe.state == FAILSAFE_LONG && 
+                   failsafe.rc_override_active && 
+                   (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
+            failsafe.state = FAILSAFE_NONE;
+        } else if (failsafe.state == FAILSAFE_LONG && 
+                   !failsafe.rc_override_active && 
+                   !failsafe.ch3_failsafe) {
+            failsafe.state = FAILSAFE_NONE;
         }
     }
 }
@@ -452,14 +426,14 @@ static void check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if(failsafe == FAILSAFE_NONE) {
-        if(ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
+    if(failsafe.state == FAILSAFE_NONE) {
+        if(failsafe.ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
             failsafe_short_on_event(FAILSAFE_SHORT);
         }
     }
 
-    if(failsafe == FAILSAFE_SHORT) {
-        if(!ch3_failsafe) {
+    if(failsafe.state == FAILSAFE_SHORT) {
+        if(!failsafe.ch3_failsafe) {
             failsafe_short_off_event();
         }
     }
@@ -477,20 +451,30 @@ static void startup_INS_ground(bool do_accel_init)
     }
 #endif
 
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
-    mavlink_delay(500);
+    AP_InertialSensor::Start_style style;
+    if (g.skip_gyro_cal && !do_accel_init) {
+        style = AP_InertialSensor::WARM_START;
+    } else {
+        style = AP_InertialSensor::COLD_START;
+    }
 
-    // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
-    // -----------------------
-    demo_servos(2);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
-    mavlink_delay(1000);
+    if (style == AP_InertialSensor::COLD_START) {
+        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
+        mavlink_delay(500);
+
+        // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
+        // -----------------------
+        demo_servos(2);
+
+        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
+        mavlink_delay(1000);
+    }
 
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
 
-    ins.init(AP_InertialSensor::COLD_START, 
+    ins.init(style, 
              ins_sample_rate,
              flash_leds);
     if (do_accel_init) {

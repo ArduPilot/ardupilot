@@ -221,6 +221,14 @@ static void pre_arm_checks(bool display_failure)
         }
         return;
     }
+    
+    // pre-arm check to ensure ch7 and ch8 have different functions
+    if (g.ch7_option == g.ch8_option) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check CH7 and CH8 settings"));
+        }
+        return;
+    }
 
     // check accelerometers have been calibrated
     if(!ins.calibrated()) {

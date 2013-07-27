@@ -52,8 +52,8 @@ void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
             // if we are at the start of a page we need to insert a
             // page header
         	// dongfang:  if (n +sizeof(struct PageHeader) > df_PageSize) is clearer.
-        	if (n > df_PageSize - sizeof(struct PageHeader)) {
-                n -= sizeof(struct PageHeader);
+            if (n > df_PageSize - sizeof(struct PageHeader)) {
+                n = df_PageSize - sizeof(struct PageHeader);
             }
             struct PageHeader ph = { df_FileNumber, df_FilePage };
             /*BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,

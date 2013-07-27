@@ -30,9 +30,8 @@
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-	AP_TECS(AP_AHRS *ahrs, AP_Baro *baro, const AP_SpdHgtControl::AircraftParameters &parms) :
+	AP_TECS(AP_AHRS *ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
 		_ahrs(ahrs),
-		_baro(baro),
 		aparm(parms)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
@@ -97,9 +96,6 @@ private:
 
 	// pointer to the AHRS object
     AP_AHRS *_ahrs;
-
-	// pointer to the Baro object
-    AP_Baro *_baro;
 
 	const AP_SpdHgtControl::AircraftParameters &aparm;
 

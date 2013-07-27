@@ -42,7 +42,6 @@ static void loiter_angle_update(void)
 
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
-// Called from the medium loop.
 //****************************************************************
 static void navigate()
 {
@@ -112,7 +111,6 @@ static void calc_airspeed_errors()
         target_airspeed_cm = (aparm.airspeed_max * 100);
 
     airspeed_error_cm = target_airspeed_cm - aspeed_cm;
-    airspeed_energy_error = ((target_airspeed_cm * target_airspeed_cm) - (aspeed_cm*aspeed_cm))*0.00005;
 }
 
 static void calc_gndspeed_undershoot()
@@ -135,7 +133,11 @@ static void calc_altitude_error()
         control_mode == CRUISE) {
         return;
     }
-    if (offset_altitude_cm != 0) {
+    if (nav_controller->reached_loiter_target()) {
+        // once we reach a loiter target then lock to the final
+        // altitude target
+        target_altitude_cm = next_WP.alt;
+    } else if (offset_altitude_cm != 0) {
         // control climb/descent rate
         target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 

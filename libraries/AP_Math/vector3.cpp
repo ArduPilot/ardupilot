@@ -272,11 +272,32 @@ float Vector3<T>::angle(const Vector3<T> &v2) const
     return acosf(((*this)*v2) / (this->length()*v2.length()));
 }
 
+// multiplication of transpose by a vector
+template <typename T>
+Vector3<T> Vector3<T>::operator *(const Matrix3<T> &m) const
+{
+    return Vector3<T>(*this * m.colx(),
+                      *this * m.coly(),
+                      *this * m.colz());
+}
+
+// multiply a column vector by a row vector, returning a 3x3 matrix
+template <typename T>
+Matrix3<T> Vector3<T>::mul_rowcol(const Vector3<T> &v2) const
+{
+    const Vector3<T> v1 = *this;
+    return Matrix3<T>(v1.x * v2.x, v1.x * v2.y, v1.x * v2.z,
+                      v1.y * v2.x, v1.y * v2.y, v1.y * v2.z,
+                      v1.z * v2.x, v1.z * v2.y, v1.z * v2.z);
+}
+
 // only define for float
 template void Vector3<float>::rotate(enum Rotation);
 template float Vector3<float>::length(void) const;
 template Vector3<float> Vector3<float>::operator %(const Vector3<float> &v) const;
 template float Vector3<float>::operator *(const Vector3<float> &v) const;
+template Vector3<float> Vector3<float>::operator *(const Matrix3<float> &m) const;
+template Matrix3<float> Vector3<float>::mul_rowcol(const Vector3<float> &v) const;
 template Vector3<float> &Vector3<float>::operator *=(const float num);
 template Vector3<float> &Vector3<float>::operator /=(const float num);
 template Vector3<float> &Vector3<float>::operator -=(const Vector3<float> &v);

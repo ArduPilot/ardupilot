@@ -61,11 +61,6 @@ static void read_aux_switches()
         do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
     }
 
-    // safety check to ensure we ch7 and ch8 have different functions
-    if (g.ch7_option == g.ch8_option) {
-        return;
-    }
-
     // check if ch8 switch has changed position
     if (ap_system.CH8_flag != (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER)) {
         // set the ch8 flag
