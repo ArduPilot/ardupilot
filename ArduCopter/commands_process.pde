@@ -184,14 +184,13 @@ static void exit_mission()
     // we are out of commands
     g.command_index = 255;
 
-    // if we are on the ground, enter stabilize, else Land
-    if(ap.land_complete) {
-        // we will disarm the motors after landing.
-    }else{
+    // if we are not on the ground switch to loiter or land
+    if(!ap.land_complete) {
         // If the approach altitude is valid (above 1m), do approach, else land
         if(g.rtl_alt_final == 0) {
             set_mode(LAND);
         }else{
+            // try to enter loiter but if that fails land
             if (!set_mode(LOITER)) {
                 set_mode(LAND);
             }
