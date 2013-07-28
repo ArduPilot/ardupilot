@@ -310,6 +310,9 @@ static void startup_ground(void)
     // when we re-calibrate the gyros,
     // all previous I values are invalid
     reset_I_all();
+
+    // set landed flag
+    set_land_complete(true);
 }
 
 // returns true if the GPS is ok and home position is set
