@@ -1750,18 +1750,13 @@ void update_roll_pitch_mode(void)
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
 
-        // if landed simply keep the copter level
-        if (ap.land_complete) {
-            nav_roll = ahrs.roll_sensor;
-            nav_pitch = ahrs.pitch_sensor;
-        }else{
-            // update loiter target from user controls
-            wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
+        // update loiter target from user controls
+        wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
 
-            // copy latest output from nav controller to stabilize controller
-            nav_roll = wp_nav.get_desired_roll();
-            nav_pitch = wp_nav.get_desired_pitch();
-        }
+        // copy latest output from nav controller to stabilize controller
+        nav_roll = wp_nav.get_desired_roll();
+        nav_pitch = wp_nav.get_desired_pitch();
+
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
         break;
