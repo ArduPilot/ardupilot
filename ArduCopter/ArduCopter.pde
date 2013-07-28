@@ -1983,6 +1983,8 @@ void update_throttle_mode(void)
                 }else{
                     // move throttle to minimum to keep us on the ground
                     set_throttle_out(0, false);
+                    // deactivate accel based throttle controller (it will be automatically re-enabled when alt-hold controller next runs)
+                    throttle_accel_deactivate();
                 }
             }
             // check land_complete flag again in case it was changed above
@@ -1998,6 +2000,8 @@ void update_throttle_mode(void)
         }else{
             // pilot's throttle must be at zero so keep motors off
             set_throttle_out(0, false);
+            // deactivate accel based throttle controller
+            throttle_accel_deactivate();
             set_target_alt_for_reporting(0);
         }
         break;
@@ -2010,6 +2014,8 @@ void update_throttle_mode(void)
         }else{
             // pilot's throttle must be at zero so keep motors off
             set_throttle_out(0, false);
+            // deactivate accel based throttle controller
+            throttle_accel_deactivate();
             set_target_alt_for_reporting(0);
         }
         break;
