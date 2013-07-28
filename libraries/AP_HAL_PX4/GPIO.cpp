@@ -47,11 +47,11 @@ void PX4GPIO::init()
         hal.scheduler->panic("Unable to open /dev/tone_alarm");
     }
 
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
     _gpio_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
     if (_gpio_fd == -1) {
         hal.scheduler->panic("Unable to open GPIO");
     }
-#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
     if (ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO_1\n");
     }
