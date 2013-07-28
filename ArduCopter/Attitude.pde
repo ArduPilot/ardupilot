@@ -863,8 +863,14 @@ void throttle_accel_deactivate()
 static void
 set_throttle_takeoff()
 {
-    if (g.pid_throttle_accel.get_integrator() < 0)
+    // set alt target
+    if (controller_desired_alt < current_loc.alt) {
+        controller_desired_alt = current_loc.alt + 20;
+    }
+    // clear i term from acceleration controller
+    if (g.pid_throttle_accel.get_integrator() < 0) {
         g.pid_throttle_accel.reset_I();
+    }
 }
 
 // get_throttle_accel - accelerometer based throttle controller
@@ -1178,12 +1184,13 @@ static bool update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate and minimum throttle
     if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
-        // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
-        if( land_detector < LAND_DETECTOR_TRIGGER ) {
-            land_detector++;
-        }else{
-            if(!ap.land_complete) {
+        if (!ap.land_complete) {
+            // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
+            if( land_detector < LAND_DETECTOR_TRIGGER) {
+                land_detector++;
+            }else{
                 set_land_complete(true);
+                land_detector = 0;
             }
         }
     }else{

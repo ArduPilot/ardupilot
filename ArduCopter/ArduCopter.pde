@@ -1978,17 +1978,27 @@ void update_throttle_mode(void)
             // alt hold plus pilot input of climb rate
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
 
-            // clear i term when we're taking off
-            if (pilot_climb_rate > 0 && ap.land_complete) {
-                set_throttle_takeoff();
+            // special handling if we have landed
+            if (ap.land_complete) {
+                if (pilot_climb_rate > 0) {
+                    // indicate we are taking off
+                    set_land_complete(false);
+                    // clear i term when we're taking off
+                    set_throttle_takeoff();
+                }else{
+                    // move throttle to minimum to keep us on the ground
+                    set_throttle_out(g.throttle_min, false);
+                }
             }
-
-            if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
-                // if sonar is ok, use surface tracking
-                get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
-            }else{
-                // if no sonar fall back stabilize rate controller
-                get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
+            // check land_complete flag again in case it was changed above
+            if (!ap.land_complete) {
+                if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
+                    // if sonar is ok, use surface tracking
+                    get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
+                }else{
+                    // if no sonar fall back stabilize rate controller
+                    get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
+                }
             }
         }else{
             // pilot's throttle must be at zero so keep motors off
