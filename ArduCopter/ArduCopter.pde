@@ -1987,7 +1987,7 @@ void update_throttle_mode(void)
                     set_throttle_takeoff();
                 }else{
                     // move throttle to minimum to keep us on the ground
-                    set_throttle_out(g.throttle_min, false);
+                    set_throttle_out(0, false);
                 }
             }
             // check land_complete flag again in case it was changed above
