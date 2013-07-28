@@ -32,7 +32,9 @@ MODULES		+= drivers/hil
 #MODULES	+= drivers/hott_telemetry
 MODULES		+= drivers/blinkm
 MODULES		+= modules/sensors
+MODULES		+= drivers/airspeed
 MODULES		+= drivers/ets_airspeed
+MODULES		+= drivers/meas_airspeed
 
 # mkblctrl does not compile on FMUv2 yet
 # MODULES		+= drivers/mkblctrl
