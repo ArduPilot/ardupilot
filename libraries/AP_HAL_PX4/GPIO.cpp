@@ -46,7 +46,7 @@ void PX4GPIO::init()
         hal.scheduler->panic("Unable to open /dev/tone_alarm");
     }
 
-    _gpio_fd = open(GPIO_DEVICE_PATH, O_RDWR);
+    _gpio_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
     if (_gpio_fd == -1) {
         hal.scheduler->panic("Unable to open GPIO");
     }
