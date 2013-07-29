@@ -28,8 +28,9 @@ MODULES		+= drivers/ms5611
 MODULES		+= drivers/mb12xx
 MODULES		+= drivers/gps
 MODULES		+= drivers/hil
-MODULES		+= drivers/hott_telemetry
+MODULES		+= drivers/hott/hott_telemetry
 MODULES		+= drivers/blinkm
+MODULES		+= drivers/airspeed
 MODULES		+= drivers/ets_airspeed
 MODULES		+= drivers/mkblctrl
 MODULES		+= modules/sensors
@@ -51,6 +52,8 @@ MODULES		+= systemcmds/tests
 #
 # Libraries
 #
+MODULES         += modules/mavlink
+MODULES         += modules/mathlib
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB

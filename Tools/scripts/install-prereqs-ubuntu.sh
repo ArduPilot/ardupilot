@@ -46,6 +46,10 @@ if [ ! -d ~/PX4-Firmware ]; then
     git clone git://github.com/PX4/Firmware.git ~/PX4-Firmware
 fi
 
+if [ ! -d ~/PX4-Firmware/NuttX ]; then
+    git clone git://github.com/PX4/NuttX.git ~/PX4-Firmware/NuttX
+fi
+
 if [ ! -d ~/gcc-arm-none-eabi-4_6-2012q2 ]; then
     ARM_TARBALL=gcc-arm-none-eabi-4_6-2012q2-20120614.tar.bz2
     (
