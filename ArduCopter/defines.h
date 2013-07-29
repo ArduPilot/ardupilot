@@ -45,13 +45,10 @@
 #define SONAR_SOURCE_ANALOG_PIN 2
 
 // Ch6, Ch7 and Ch8 aux switch control
-#define AUX_SWITCH_PWM_TRIGGER  1800        // pwm value above which the ch7 or ch8 option will be invoked
+#define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
+#define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
 #define CH6_PWM_TRIGGER_HIGH    1800
 #define CH6_PWM_TRIGGER_LOW     1200
-#define CH7_PWM_TRIGGER_HIGH    1800
-#define CH7_PWM_TRIGGER_LOW     1200
-#define CH8_PWM_TRIGGER_HIGH    1800
-#define CH8_PWM_TRIGGER_LOW     1200
 
 #define AUX_SWITCH_DO_NOTHING       0       // aux switch disabled
 #define AUX_SWITCH_SET_HOVER        1       // deprecated
@@ -66,10 +63,12 @@
 #define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
 #define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
 #define AUX_SWITCH_RESETTOARMEDYAW  12      // changes yaw to be same as when quad was armed
+#define AUX_SWITCH_SUPERSIMPLE_MODE 13      // change to simple mode in middle, super simple at top
 
-// Functions >= 100 need a 3 positions switch
-#define AUX_SWITCH_3POS_SIMPLE_SUPERSIMPLE_MODE 100     // depending upon CH7 or CH8 position : disable Simple mode (if CH7 or CH8 is low) ; select Simple mode (if CH7 or CH8 in middle) ; select SuperSimple mode (if CH7 or CH8 is high)
-
+// values used by the ap.ch7_opt and ap.ch8_opt flags
+#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
+#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
+#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
 
 // Frame types
 #define QUAD_FRAME 0
