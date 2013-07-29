@@ -310,6 +310,9 @@ static void startup_ground(void)
     // when we re-calibrate the gyros,
     // all previous I values are invalid
     reset_I_all();
+
+    // set landed flag
+    set_land_complete(true);
 }
 
 // returns true if the GPS is ok and home position is set
@@ -346,10 +349,6 @@ static bool set_mode(uint8_t mode)
 {
     // boolean to record if flight mode could be set
     bool success = false;
-
-    // if we change modes, we must clear landed flag
-    // To-Do: this should be initialised in one of the flight modes
-    set_land_complete(false);
 
     // report the GPS and Motor arming status
     // To-Do: this should be initialised somewhere else related to the LEDs

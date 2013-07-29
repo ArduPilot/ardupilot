@@ -859,6 +859,20 @@ void throttle_accel_deactivate()
     throttle_accel_controller_active = false;
 }
 
+// set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
+static void
+set_throttle_takeoff()
+{
+    // set alt target
+    if (controller_desired_alt < current_loc.alt) {
+        controller_desired_alt = current_loc.alt + 20;
+    }
+    // clear i term from acceleration controller
+    if (g.pid_throttle_accel.get_integrator() < 0) {
+        g.pid_throttle_accel.reset_I();
+    }
+}
+
 // get_throttle_accel - accelerometer based throttle controller
 // returns an actual throttle output (0 ~ 1000) to be sent to the motors
 static int16_t
@@ -886,12 +900,15 @@ get_throttle_accel(int16_t z_target_accel)
 
     // separately calculate p, i, d values for logging
     p = g.pid_throttle_accel.get_p(z_accel_error);
-    // freeze I term if we've breached throttle limits
-    if (motors.limit.throttle) {
-        i = g.pid_throttle_accel.get_integrator();
-    }else{
+
+    // get i term
+    i = g.pid_throttle_accel.get_integrator();
+
+    // update i term as long as we haven't breached the limits or the I term will certainly reduce
+    if ((!motors.limit.throttle_lower && !motors.limit.throttle_upper) || (i>0&&z_accel_error<0) || (i<0&&z_accel_error>0)) {
         i = g.pid_throttle_accel.get_i(z_accel_error, .01f);
     }
+
     d = g.pid_throttle_accel.get_d(z_accel_error, .01f);
 
     //
@@ -1103,8 +1120,11 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
 static void
 get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
-    // limit target altitude change
-    controller_desired_alt += constrain_float(target_alt-controller_desired_alt, min_climb_rate*0.02f, max_climb_rate*0.02f);
+    float alt_change = target_alt-controller_desired_alt;
+    // adjust desired alt if motors have not hit their limits
+    if ((alt_change<0 && !motors.limit.throttle_lower) || (alt_change>0 && !motors.limit.throttle_upper)) {
+        controller_desired_alt += constrain_float(alt_change, min_climb_rate*0.02f, max_climb_rate*0.02f);
+    }
 
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
@@ -1118,7 +1138,10 @@ get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16
 static void
 get_throttle_rate_stabilized(int16_t target_rate)
 {
-    controller_desired_alt += target_rate * 0.02f;
+    // adjust desired alt if motors have not hit their limits
+    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
+        controller_desired_alt += target_rate * 0.02f;
+    }
 
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
@@ -1141,23 +1164,45 @@ get_throttle_land()
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
-        // detect whether we have landed by watching for minimum throttle and now movement
-        if (abs(climb_rate) < 20 && (g.rc_3.servo_out <= get_angle_boost(g.throttle_min) || g.pid_throttle_accel.get_integrator() <= -150)) {
-            if( land_detector < LAND_DETECTOR_TRIGGER ) {
+        // disarm when the landing detector says we've landed and throttle is at min (or we're in failsafe so we have no pilot thorottle input)
+        if( ap.land_complete && (g.rc_3.control_in == 0 || ap.failsafe_radio) ) {
+            init_disarm_motors();
+        }
+    }
+}
+
+// reset_land_detector - initialises land detector
+static void reset_land_detector()
+{
+    set_land_complete(false);
+    land_detector = 0;
+}
+
+// update_land_detector - checks if we have landed and updates the ap.land_complete flag
+// returns true if we have landed
+static bool update_land_detector()
+{
+    // detect whether we have landed by watching for low climb rate and minimum throttle
+    if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
+        if (!ap.land_complete) {
+            // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
+            if( land_detector < LAND_DETECTOR_TRIGGER) {
                 land_detector++;
             }else{
                 set_land_complete(true);
-                if( g.rc_3.control_in == 0 || ap.failsafe_radio ) {
-                    init_disarm_motors();
-                }
-            }
-        }else{
-            // we've sensed movement up or down so decrease land_detector
-            if (land_detector > 0 ) {
-                land_detector--;
+                land_detector = 0;
             }
         }
+    }else{
+        // we've sensed movement up or down so reset land_detector
+        land_detector = 0;
+        if(ap.land_complete) {
+            set_land_complete(false);
+        }
     }
+
+    // return current state of landing
+    return ap.land_complete;
 }
 
 // get_throttle_surface_tracking - hold copter at the desired distance above the ground
@@ -1178,7 +1223,10 @@ get_throttle_surface_tracking(int16_t target_rate)
     }
     last_call_ms = now;
 
-    target_sonar_alt += target_rate * 0.02f;
+    // adjust target alt if motors have not hit their limits
+    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
+        target_sonar_alt += target_rate * 0.02f;
+    }
 
     distance_error = (target_sonar_alt-sonar_alt);
     sonar_induced_slew_rate = constrain_float(fabsf(g.sonar_gain * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);

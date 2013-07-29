@@ -44,8 +44,9 @@
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
 
-// Ch7 and Ch8 aux switch control
-#define AUX_SWITCH_PWM_TRIGGER  1800        // pwm value above which the ch7 or ch8 option will be invoked
+// Ch6, Ch7 and Ch8 aux switch control
+#define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
+#define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
 #define CH6_PWM_TRIGGER_HIGH    1800
 #define CH6_PWM_TRIGGER_LOW     1200
 
@@ -62,7 +63,12 @@
 #define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
 #define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
 #define AUX_SWITCH_RESETTOARMEDYAW  12      // changes yaw to be same as when quad was armed
+#define AUX_SWITCH_SUPERSIMPLE_MODE 13      // change to simple mode in middle, super simple at top
 
+// values used by the ap.ch7_opt and ap.ch8_opt flags
+#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
+#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
+#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
 
 // Frame types
 #define QUAD_FRAME 0
@@ -307,6 +313,7 @@ enum ap_message {
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
 #define DATA_LAND_COMPLETE              18
+#define DATA_NOT_LANDED                 28
 #define DATA_LOST_GPS                   19
 #define DATA_BEGIN_FLIP                 21
 #define DATA_END_FLIP                   22
@@ -314,6 +321,7 @@ enum ap_message {
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
+#define DATA_SET_SUPERSIMPLE_ON         28
 
 // battery monitoring macros
 #define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
