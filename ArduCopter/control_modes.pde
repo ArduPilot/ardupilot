@@ -17,7 +17,8 @@ static void read_control_switch()
 
             // set flight mode and simple mode setting
             if (set_mode(flight_modes[switchPosition])) {
-                if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE) {
+
+                if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_3POS_SIMPLE_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_3POS_SIMPLE_SUPERSIMPLE_MODE) {
                     // set Simple mode using stored paramters from Mission planner
                     // rather than by the control switch
                     set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
@@ -52,30 +53,81 @@ static void reset_control_switch()
 // read_aux_switches - checks aux switch positions and invokes configured actions
 static void read_aux_switches()
 {
-    // check if ch7 switch has changed position
-    if (ap_system.CH7_flag != (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER)) {
-        // set the ch7 flag
+
+    // Check if we have a 3 positions switch function for Ch7
+    if (g.ch7_option >= 100) {  
+        // check if CH7 switch has changed position
+        if (ap_system.CH7_flag != read3posCH7Switch()) {
+        // set the CH7 flag
+        ap_system.CH7_flag = read3posCH7Switch();
+        
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
+        }
+    }
+    // Else we have a 2 positions switch function - check if ch7 switch has changed position
+    else if (ap_system.CH7_flag != (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER)) {
+        // set the CH7 flag
         ap_system.CH7_flag = (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER);
 
         // invoke the appropriate function
         do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
     }
 
-    // check if ch8 switch has changed position
-    if (ap_system.CH8_flag != (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER)) {
-        // set the ch8 flag
+
+    // Check if we have a 3 positions switch function for Ch8
+    if (g.ch8_option >= 100) {  
+        // check if Ch8 switch has changed position
+        if (ap_system.CH8_flag != read3posCH8Switch()) {
+        // set the CH8 flag
+        ap_system.CH8_flag = read3posCH8Switch();
+
+        // invoke the appropriate function
+        do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
+        }
+    }
+    // Else we have a 2 positions switch function - check if Ch8 switch has changed position
+    else if (ap_system.CH8_flag != (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER)) {
+        // set the CH8 flag
         ap_system.CH8_flag = (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+
         // invoke the appropriate function
         do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
     }
 }
 
+static uint8_t read3posCH7Switch(void){
+    int16_t pulsewidth = g.rc_7.radio_in;   // Read CH7
+
+    if (pulsewidth < CH7_PWM_TRIGGER_LOW) return 0;    // Ch7 switch is in low position
+    if (pulsewidth > CH7_PWM_TRIGGER_HIGH) return 2;   // Ch7 switch is in high position
+    return 1;                                          // Ch7 switch is in center position
+}
+
+static uint8_t read3posCH8Switch(void){
+    int16_t pulsewidth = g.rc_8.radio_in;   // Read CH8
+
+    if (pulsewidth < CH8_PWM_TRIGGER_LOW) return 0;    // Ch8 switch is in low position
+    if (pulsewidth > CH8_PWM_TRIGGER_HIGH) return 2;   // Ch8 switch is in high position
+    return 1;                                          // Ch8 switch is in center position
+}
+
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
 static void init_aux_switches()
 {
-    // set channel 7 and 8 flags according to switch position
-    ap_system.CH7_flag = (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER);
-    ap_system.CH8_flag = (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+
+    // set channel 7 and 8 flags according to switch position and switch type (2 or 3 positions)
+    if (g.ch7_option >= 100) {
+        // set the CH7 flag
+        ap_system.CH7_flag = read3posCH7Switch();
+    } else {
+        ap_system.CH7_flag = (g.rc_7.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+    }
+    if (g.ch8_option >= 100) {
+        ap_system.CH8_flag = read3posCH8Switch();
+    } else {
+        ap_system.CH8_flag = (g.rc_8.radio_in >= AUX_SWITCH_PWM_TRIGGER);
+    }
 
     // init channel 7 options
     switch(g.ch7_option) {
@@ -83,28 +135,24 @@ static void init_aux_switches()
         case AUX_SWITCH_SONAR:
         case AUX_SWITCH_FENCE:
         case AUX_SWITCH_RESETTOARMEDYAW:
+        case AUX_SWITCH_3POS_SIMPLE_SUPERSIMPLE_MODE:
             do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
             break;
     }
-
-    // safety check to ensure we ch7 and ch8 have different functions
-    if (g.ch7_option == g.ch8_option) {
-        return;
-    }
-
     // init channel 8 option
     switch(g.ch8_option) {
         case AUX_SWITCH_SIMPLE_MODE:
         case AUX_SWITCH_SONAR:
         case AUX_SWITCH_FENCE:
         case AUX_SWITCH_RESETTOARMEDYAW:
+        case AUX_SWITCH_3POS_SIMPLE_SUPERSIMPLE_MODE:
             do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
             break;
     }
 }
 
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
-static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
+static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
     int8_t tmp_function = ch_function;
 
@@ -128,6 +176,7 @@ static void do_aux_switch_function(int8_t ch_function, bool ch_flag)
             break;
 
         case AUX_SWITCH_SIMPLE_MODE:
+        case AUX_SWITCH_3POS_SIMPLE_SUPERSIMPLE_MODE:
             set_simple_mode(ch_flag);
             break;
 
