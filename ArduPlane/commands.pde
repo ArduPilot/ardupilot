@@ -1,4 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#include "Parameters.h"
+
 /*
  *  logic for dealing with the current command in the mission and home location
  */
@@ -88,7 +91,7 @@ static struct Location get_cmd_with_index(int16_t i)
 
     temp = get_cmd_with_index_raw(i);
 
-    // Add on home altitude if we are a nav command (or other command with altitude) 
+    // Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
     // and stored alt is relative
     if ((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) &&
         (temp.options & MASK_OPTIONS_RELATIVE_ALT) &&
@@ -220,31 +223,8 @@ static void set_guided_WP(void)
     loiter_angle_reset();
 }
 
-/*
- * Run at start or restart when on the ground.
- * The logic should be:
- * if WP0 has relative altitude (this is an error condition IMO), store current pos in home and WP0 and set absolute altitude for WP0
- * else
- *   let ra <- current altitude
- *   if distance(current pos, WP0) is smaller than a limit, copy WP0.latlon to home.latlon
- *     if abs(ra-WP0.altitude) is smaller than a limit, copy WP0.altitude to home.altitude
- *     else copy ra to home.altitude (OR: warn and wait)
- *   else 
- *     copy current.latlon to home.latlon
- *     copy current.altitude to home.altitude
- *     issue some sort of warning that WP0 was off in latlon
- *     
- * The general rule is: We snap home to WP0 if it is not too far off, and we never overwrite WP0.
- * If we should warn or not and wait or not if too far off is a matter of preference really.
- * We need handling for the case where there is no WP0 at all.
- */
-void init_home()
-{
-    gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
-
-    // First make sure we have some kind of fix. This will always be the case when called
-    // from update_GPS in ArduPlane, but do_set_home in commands_logic MAY be fired before
-    // there is a GPS fix.
+void init_home_from_gps() {
+    // block until we get a good fix
     // -----------------------------
     while (!g_gps->new_data || !g_gps->fix) {
         g_gps->update();
@@ -261,12 +241,51 @@ void init_home()
     home.alt        = max(g_gps->altitude_cm, 0);
 
     home_is_set = true;
+}
 
-    gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
+// run this at setup on the ground
+// -------------------------------
+void init_home()
+{
+	init_home_from_gps();
+	
+    struct Location waypointZero= get_cmd_with_index_raw(0);
+    bool isWP0Set = waypointZero.lng != 0 || waypointZero.lat != 0; 
+    float horizontal_diff_m = get_distance(&home, &waypointZero);
+    
+    // If WP0 was set, use that as home if it is not too far from current GPS location.
+    // If WP0 was never set, it will be read as at lat=0, lon=0. This is in the ocean. 
+    // Any reasonable max. distance will then be exceeded for any startup location on land,
+    // and the home location will remain the current location.
+    if (isWP0Set) {
+    	if (horizontal_diff_m <= g.stickyhome_rad_m) {
+    		home.lng = waypointZero.lng;
+    		home.lat = waypointZero.lat;
+    		
+    	    gcs_send_text_P(SEVERITY_LOW, PSTR("Using WP0 pos as home pos"));
 
-    // Save Home to EEPROM - Command 0
-    // -------------------
-    set_cmd_with_index(home, 0);
+    		int32_t alt_diff_cm = abs(home.alt - waypointZero.alt);
+    		if (abs(alt_diff_cm) <= (int16_t)(g.stickyhome_mad_m.get())*100) {
+    			home.alt = waypointZero.alt;
+        	    gcs_send_text_P(SEVERITY_LOW, PSTR("Using WP0 alt as home alt"));
+    		} else {
+    			// Five jerks means: Position is within expected bounds but altitude is off.
+    			// You can ignore this if you use relative altitude but it is a sloppy practise.
+    			// If you use absolute altitude missions, an incorrectly initialized alt. can
+    			// be dangerous. If getting this signal from the plane, better reset APM (just 
+    			// reset, do NOT cycle power) and try again until GPS gets a better fix.
+        	    gcs_send_text_fmt(PSTR("Altitude is off from WP0 by %ld cm"), alt_diff_cm);
+    			demo_servos(5);
+    		}
+    	} else {
+    		// Three jerks means: Position is beyond expected bounds.
+    		gcs_send_text_fmt(PSTR("Position is off from WP0 by %.1f m"), horizontal_diff_m);
+    		demo_servos(3);
+    	}
+    } else {
+        // Save Home to EEPROM - Command 0
+       	set_cmd_with_index(home, 0);
+    }
 
     // Save prev loc
     // -------------

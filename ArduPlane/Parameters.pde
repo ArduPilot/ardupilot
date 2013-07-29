@@ -243,6 +243,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
 #endif
 
+    // @Param: STICKYHOME_RAD
+    // @DisplayName: Maximum radius for sticky home
+    // @Description: If GPS position at startup is within this distance from waypoint 0, waypoint 0 will be used as home position instead.
+    // @Units: meters
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(stickyhome_rad_m,	 	"STICKYHOME_RAD",   100),
+
+    // @Param: STICKYHOME_MAD
+    // @DisplayName: Maximum altitude diff. for sticky home
+    // @Description: If GPS altitude at startup is within this difference from waypoint 0 altitude, waypoint 0 altitude will be used as home altitude instead.
+    // @Units: meters
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(stickyhome_mad_m, 		"STICKYHOME_MAD",   50),
+
     // @Param: ARSPD_FBW_MIN
     // @DisplayName: Fly By Wire Minimum Airspeed
     // @Description: Airspeed corresponding to minimum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.

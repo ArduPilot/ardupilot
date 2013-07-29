@@ -259,9 +259,10 @@ static void startup_ground(void)
     // Makes the servos wiggle
     // step 1 = 1 wiggle
     // -----------------------
-    if (!g.skip_gyro_cal) {
-        demo_servos(1);
-    }
+	// removed.
+    // if (!g.skip_gyro_cal) {
+    // demo_servos(1);
+    // }
 
     //INS ground start
     //------------------------
@@ -281,10 +282,11 @@ static void startup_ground(void)
     init_commands();
 
     // Makes the servos wiggle - 3 times signals ready to fly
+    // Removed.
     // -----------------------
-    if (!g.skip_gyro_cal) {
-        demo_servos(3);
-    }
+    // if (!g.skip_gyro_cal) {
+    //    demo_servos(3);
+    // }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -464,7 +466,8 @@ static void startup_INS_ground(bool do_accel_init)
 
         // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
         // -----------------------
-        demo_servos(2);
+        // Removed.
+        // demo_servos(2);
 
         gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
         mavlink_delay(1000);

@@ -616,7 +616,10 @@ static void do_change_speed()
 static void do_set_home()
 {
     if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
-        init_home();
+    	// Previously, there was a call to init_home here.
+    	// This had side effects on prev_wp, next_wp and guided_WP.
+    	// This is no longer the case. I believe the new behavior is more correct.
+        init_home_from_gps();
     } else {
         home.id         = MAV_CMD_NAV_WAYPOINT;
         home.lng        = next_nonnav_command.lng;                                      // Lon * 10**7
