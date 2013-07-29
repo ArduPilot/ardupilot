@@ -1337,8 +1337,6 @@ static void update_GPS(void)
     g_gps->update();
     update_GPS_light();
 
-    set_gps_healthy(g_gps->status() >= GPS::GPS_OK_FIX_3D);
-
     if (g_gps->new_data && last_gps_time != g_gps->time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         // clear new data flag
         g_gps->new_data = false;
