@@ -86,8 +86,6 @@ static void read_aux_switches()
 // init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
 static void init_aux_switches()
 {
-    uint8_t switch_position;
-
     // set the CH7 flag
     ap_system.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
     ap_system.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
