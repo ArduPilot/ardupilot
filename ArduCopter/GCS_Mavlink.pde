@@ -2199,7 +2199,6 @@ static void gcs_data_stream_send(void)
  */
 static void gcs_check_input(void)
 {
-
     gcs0.update();
     if (gcs3.initialised) {
         gcs3.update();

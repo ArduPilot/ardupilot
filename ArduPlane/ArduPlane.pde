@@ -1290,9 +1290,7 @@ static void update_navigation()
     }
 }
 
-
-static void update_alt()
-{
+static void update_alt() {
     // this function is in place to potentially add a sonar sensor in the future
     //altitude_sensor = BARO;
 
