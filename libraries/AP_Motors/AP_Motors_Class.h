@@ -45,7 +45,7 @@
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 #define THROTTLE_CURVE_MAX_THRUST   93  // throttle which produces the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 
-#define AP_MOTORS_SPIN_WHEN_ARMED   0   // spin motors when armed disabled by default
+#define AP_MOTORS_SPIN_WHEN_ARMED   65  // spin motors at this PWM value when armed
 
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
@@ -124,7 +124,8 @@ public:
     struct AP_Motors_limit {
         uint8_t roll_pitch      : 1; // we have reached roll or pitch limit
         uint8_t yaw             : 1; // we have reached yaw limit
-        uint8_t throttle        : 1; // we have reached throttle limit
+        uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
+        uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
     } limit;
 
     // var_info for holding Parameter information
