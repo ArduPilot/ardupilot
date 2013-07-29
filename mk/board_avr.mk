@@ -145,6 +145,7 @@ ALLDEPS			=	$(ALLOBJS:%.o=%.d)
 #
 
 all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
+	$(v)$(AVRSIZE) --format=avr --mcu=$(MCU) $(SKETCHELF)
 
 print-%:
 	echo "$*=$($*)"
