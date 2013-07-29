@@ -13,7 +13,9 @@
 #include <stdio.h>
 #include <drivers/drv_hrt.h>
 #include <nuttx/arch.h>
+extern "C" {
 #include <systemlib/systemlib.h>
+}
 #include <poll.h>
 
 #include "UARTDriver.h"

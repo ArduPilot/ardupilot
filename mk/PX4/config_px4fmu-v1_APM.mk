@@ -50,13 +50,20 @@ MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
 
 #
-# Libraries
+# Library modules
 #
-MODULES         += modules/mavlink
-MODULES         += modules/mathlib
+MODULES		+= modules/commander
+MODULES		+= modules/mavlink
+MODULES		+= modules/mathlib
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
+
+#
+# Libraries
+#
+
+LIBRARIES         += modules/mathlib/CMSIS
 
 #
 # Transitional support - add commands from the NuttX export archive.
