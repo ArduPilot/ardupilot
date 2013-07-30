@@ -107,7 +107,11 @@ public:
     uint32_t ground_speed;      ///< ground speed in cm/sec
     int32_t ground_course;      ///< ground course in 100ths of a degree
     int32_t speed_3d;                   ///< 3D speed in cm/sec (not always available)
-    int16_t hdop;                       ///< horizontal dilution of precision in cm
+    //int16_t hdop;                       ///< horizontal dilution of precision in cm
+    
+    int16_t h_dop;			///< horizontal dilution of precision in cm mjc
+    int16_t p_dop;			///< position dilution of precision in cm
+    int16_t v_dop;			///< vertical dilution of precision in cm
     uint8_t num_sats;           ///< Number of visible satelites
 
     /// Set to true when new data arrives.  A client may set this
