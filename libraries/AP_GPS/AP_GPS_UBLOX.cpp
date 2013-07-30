@@ -243,6 +243,12 @@ AP_GPS_UBLOX::_parse_gps(void)
             fix = GPS::FIX_NONE;
         }
         break;
+    case MSG_DOP: // add for true HDOP mjc
+	Debug("MSG_DOP h_dop=%u h_dop=%u", _buffer.buffer.dop.horizontal_DOP);
+		p_dop		= _buffer.dop.positional_DOP; // note re-named positional_DOP with extra "al"
+		h_dop		= _buffer.dop.horizontal_DOP; // true HDOP 
+		v_dop		= _buffer.dop.vertical_DOP;   // optional VDOP value
+		break;	
     case MSG_SOL:
         Debug("MSG_SOL fix_status=%u fix_type=%u",
               _buffer.solution.fix_status,
@@ -382,6 +388,7 @@ AP_GPS_UBLOX::_configure_gps(void)
     // ask for the messages we parse to be sent on every navigation solution
     _configure_message_rate(CLASS_NAV, MSG_POSLLH, 1);
     _configure_message_rate(CLASS_NAV, MSG_STATUS, 1);
+    _configure_message_rate(CLASS_NAV, MSG_DOP, 1);
     _configure_message_rate(CLASS_NAV, MSG_SOL, 1);
     _configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
 
