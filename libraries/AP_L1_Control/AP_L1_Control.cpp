@@ -148,7 +148,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		float xtrackErr = A_air % AB;
 		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
-		sine_Nu1 = constrain_float(sine_Nu1, -0.7854f, 0.7854f);
+		sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
 		float Nu1 = asinf(sine_Nu1);
 		Nu = Nu1 + Nu2;
 		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
