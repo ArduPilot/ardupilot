@@ -5,8 +5,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include "GPIO.h"
-#include "defines.h"
-#include "config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
