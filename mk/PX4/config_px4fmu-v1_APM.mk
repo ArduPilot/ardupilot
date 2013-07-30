@@ -30,7 +30,9 @@ MODULES		+= drivers/gps
 MODULES		+= drivers/hil
 #MODULES		+= drivers/hott_telemetry
 MODULES		+= drivers/blinkm
+MODULES		+= drivers/airspeed
 MODULES		+= drivers/ets_airspeed
+MODULES		+= drivers/meas_airspeed
 MODULES		+= drivers/mkblctrl
 MODULES		+= modules/sensors
 
