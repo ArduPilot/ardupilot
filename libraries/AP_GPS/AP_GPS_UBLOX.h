@@ -110,6 +110,16 @@ private:
         uint32_t time_to_first_fix;
         uint32_t uptime;                                // milliseconds
     };
+    struct PACKED ubx_nav_dop {			// added new DOP message for for GCS
+	uint32_t time;			
+	uint16_t geometric_DOP;			// g_dop  NOT sent
+	uint16_t positional_DOP;		// p_dop sent to GCS Note: New name positional_DOP with extra "al"
+	uint16_t time_DOP;			// t_dop  NOT sent   
+	uint16_t vertical_DOP;			// v_dop sent to GCS
+	uint16_t horizontal_DOP;		// h_dop sent to GCS Note: actual H_dop value when using UBLOX
+	uint16_t northing_DOP;			// n_dop  NOT sent
+	uint16_t easting_DOP;			// e_dop  NOT sent
+	};
     struct PACKED ubx_nav_solution {
         uint32_t time;
         int32_t time_nsec;
@@ -160,6 +170,7 @@ private:
         MSG_ACK_ACK = 0x01,
         MSG_POSLLH = 0x2,
         MSG_STATUS = 0x3,
+        MSG_DOP = 0x4,
         MSG_SOL = 0x6,
         MSG_VELNED = 0x12,
         MSG_CFG_PRT = 0x00,
