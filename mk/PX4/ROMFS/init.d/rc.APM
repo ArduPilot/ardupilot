@@ -118,8 +118,8 @@ then
 		echo "PX4IO board OK" >> $logfile
 		echo "Setting FMU mode_pwm"
 		fmu mode_pwm
-		echo "Loading FMU_pass mixer"
-		mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
+		#echo "Loading FMU_pass mixer"
+		#mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
 		if [ $deviceC == /dev/ttyS1 ]
 		then
 			# ttyS1 is used for PWM output for 4 extra channels
