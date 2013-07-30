@@ -267,7 +267,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             fix = GPS::FIX_NONE;
         }
         num_sats        = _buffer.solution.satellites;
-        hdop            = _buffer.solution.position_DOP;
+        //hdop            = _buffer.solution.position_DOP; // depricated, see NAV_DOP for true H_dop values
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
