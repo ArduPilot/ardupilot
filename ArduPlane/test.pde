@@ -450,11 +450,14 @@ test_gps(uint8_t argc, const Menu::arg *argv)
         g_gps->update();
 
         if (g_gps->new_data) {
-            cliSerial->printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
-                            (long)g_gps->latitude,
-                            (long)g_gps->longitude,
-                            (long)g_gps->altitude/100,
-                            (int)g_gps->num_sats);
+                cliSerial->printf_P(PSTR("Lat: "));
+                    print_latlon(cliSerial, g_gps->latitude);
+                cliSerial->printf_P(PSTR(", Lon "));
+                    print_latlon(cliSerial, g_gps->longitude);
+                cliSerial->printf_P(PSTR(", Alt: %ldm, H_dop: %d, #sats: %d\n"),
+                            g_gps->altitude/100,
+                            g_gps->h_dop,
+                            g_gps->num_sats);
         }else{
             cliSerial->printf_P(PSTR("."));
         }
