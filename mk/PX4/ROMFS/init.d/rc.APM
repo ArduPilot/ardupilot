@@ -57,33 +57,31 @@ then
         then
                 echo "Detected FMUv1 board"
                 set BOARD FMUv1
-                set PX4IOBIN /etc/px4io/px4io-v1.bin
         else
                 l3gd20 start
                 echo "Detected FMUv2 board"
                 set BOARD FMUv2
-                set PX4IOBIN /etc/px4io/px4io-v2.bin
         fi
 
-        echo checking for $PX4IOBIN
-	if [ -f $PX4IOBIN ]
+        echo checking for /etc/px4io/px4io.bin
+	if [ -f /etc/px4io/px4io.bin ]
 	then
 	   echo "Checking for new px4io firmware"
-	   if cmp $PX4IOBIN /fs/microsd/px4io.loaded
+	   if cmp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
 	   then
 	      echo "No new px4io firmware"
 	   else
-	      echo Loading $PX4IOBIN
+	      echo Loading /etc/px4io/px4io.bin
               tone_alarm MBABGP
-	      if px4io update $PX4IOBIN > /fs/microsd/APM/px4io_update.log
+	      if px4io update /etc/px4io/px4io.bin > /fs/microsd/APM/px4io_update.log
 	      then
-	      	cp $PX4IOBIN /fs/microsd/px4io.loaded
-	      	echo Loaded $PX4IOBIN OK >> /fs/microsd/APM/px4io_update.log
+	      	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
+	      	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/APM/px4io_update.log
                 tone_alarm MSPAA
 	      else
-	        echo Failed loading $PX4IOBIN >> /fs/microsd/APM/px4io_update.log
+	        echo Failed loading /etc/px4io/px4io.bin >> /fs/microsd/APM/px4io_update.log
                 echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
-		echo "Failed to upgrade PX4IO firmware - check PX4IO is in bootloader mode"
+		echo "Failed to upgrade PX4IO firmware"
                 tone_alarm MNGGG
 	      fi
 	   fi

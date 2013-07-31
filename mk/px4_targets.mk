@@ -54,14 +54,17 @@ px4: px4-v1 px4-v2
 px4-clean: clean px4-archives-clean
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
-px4-upload-v1:
+px4-v1-upload:
 	$(RULEHDR)
-	$(PX4_ROOT)/Tools/px_uploader.py --port /dev/serial/by-id/usb-3D_Robotics_PX4* $(SKETCH)-v1.px4
+	$(v) ln -sf $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) $(PX4_MAKE) px4fmu-v1_APM upload
 
-px4-upload-v2:
-	$(PX4_ROOT)/Tools/px_uploader.py --port /dev/serial/by-id/usb-3D_Robotics_PX4* $(SKETCH)-v2.px4
+px4-v2-upload:
+	$(RULEHDR)
+	$(v) ln -sf $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) $(PX4_MAKE) px4fmu-v2_APM upload
 
-px4-upload: px4-upload-v1
+px4-upload: px4-v1-upload
 
 px4-archives-clean:
 	$(v) /bin/rm -rf $(PX4_ROOT)/Archives
@@ -69,8 +72,10 @@ px4-archives-clean:
 px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 	$(v) make -C $(PX4_ROOT) px4io-v1_default
 	$(v) /bin/rm -f px4io-v1.bin
-	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.bin px4io-v1.bin
-	$(v) cp px4io-v1.bin $(MK_DIR)/PX4/ROMFS/px4io/
+	$(v) cp $(PX4_ROOT)/Images/px4io-v1_default.bin px4io-v1.bin
+	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
+	$(v) rm -f $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
+	$(v) cp px4io-v1.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) echo "PX4IOv1 Firmware is in px4io-v1.bin"
 
 
@@ -78,7 +83,10 @@ px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 	$(v) make -C $(PX4_ROOT) px4io-v2_default
 	$(v) /bin/rm -f px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.bin px4io-v2.bin
-	$(v) cp px4io-v2.bin $(MK_DIR)/PX4/ROMFS/px4io/
+	$(v) cp $(PX4_ROOT)/Images/px4io-v2_default.bin px4io-v2.bin
+	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
+	$(v) rm -f $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
+	$(v) cp px4io-v2.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) echo "PX4IOv2 Firmware is in px4io-v2.bin"
 
 px4-io: px4-io-v1 px4-io-v2
