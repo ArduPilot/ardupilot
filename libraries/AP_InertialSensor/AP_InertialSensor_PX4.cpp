@@ -53,6 +53,7 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
         hal.scheduler->panic("Unable to open gyro device " GYRO_DEVICE_PATH);
     }
 
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     /* 
      * set the accel and gyro sampling rate. We always set these to
      * 200 then average in this driver
@@ -66,6 +67,23 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     // support this yet, but when it does we want to use it
     ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 10);
     ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 10);
+#else
+    /* 
+     * set the accel and gyro sampling rate. Set a fixed rate of 800Hz
+     * then average
+     */
+    ioctl(_accel_fd, ACCELIOCSSAMPLERATE, 800);
+    ioctl(_accel_fd, SENSORIOCSPOLLRATE,  800);
+    ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  800);
+    ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  800);
+
+    // ask for a 20 sample buffer
+    ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 20);
+    ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 20);
+
+    // sample dividers above were setup for 200Hz
+    _sample_divider *= 4;
+#endif
 
     // register a 1kHz timer to read from PX4 sensor drivers
     hal.scheduler->register_timer_process(_ins_timer);
@@ -157,14 +175,14 @@ void AP_InertialSensor_PX4::_accumulate(void)
     }
     _in_accumulate = true;
 
-    if (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
+    while (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
         accel_report.timestamp != _last_accel_timestamp) {        
         _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
         _accel_sum_count++;
         _last_accel_timestamp = accel_report.timestamp;
 	}
 
-    if (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
+    while (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
         gyro_report.timestamp != _last_gyro_timestamp) {        
         _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
         _gyro_sum_count++;
@@ -182,7 +200,7 @@ void AP_InertialSensor_PX4::_ins_timer(uint32_t now)
 uint16_t AP_InertialSensor_PX4::num_samples_available(void)
 {
     _accumulate();
-    return min(_accel_sum_count, _gyro_sum_count) / _sample_divider;
+    return min(_accel_sum_count, _gyro_sum_count) / _sample_divider;    
 }
 
 #endif // CONFIG_HAL_BOARD
