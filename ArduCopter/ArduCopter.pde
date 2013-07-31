@@ -569,6 +569,7 @@ static float target_alt_for_reporting;      // target altitude in cm for reporti
 // Used to control Axis lock
 static int32_t roll_axis;
 static int32_t pitch_axis;
+static float acro_level_mix;
 
 // Filters
 #if FRAME_CONFIG == HELI_FRAME
@@ -1670,8 +1671,10 @@ void update_roll_pitch_mode(void)
 
 #if FRAME_CONFIG == HELI_FRAME
 		if(g.axis_enabled) {
+		    acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
             get_roll_rate_stabilized_bf(g.rc_1.control_in);
             get_pitch_rate_stabilized_bf(g.rc_2.control_in);
+            get_acro_level_rates();
         }else{
             // ACRO does not get SIMPLE mode ability
             if (motors.flybar_mode == 1) {
@@ -1684,8 +1687,10 @@ void update_roll_pitch_mode(void)
 		}
 #else  // !HELI_FRAME
 		if(g.axis_enabled) {
+            acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
             get_roll_rate_stabilized_bf(g.rc_1.control_in);
             get_pitch_rate_stabilized_bf(g.rc_2.control_in);
+            get_acro_level_rates();
         }else{
             // ACRO does not get SIMPLE mode ability
             get_acro_roll(g.rc_1.control_in);
