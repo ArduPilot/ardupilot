@@ -16,7 +16,7 @@ PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main
 
-PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/makefiles/firmware.mk EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
+PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
 
 $(BUILDROOT)/module.mk:
 	$(RULEHDR)
@@ -27,16 +27,26 @@ $(BUILDROOT)/module.mk:
 
 px4-v1: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.mk px4-io-v1
 	$(RULEHDR)
-	$(v) $(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V1_CONFIG_FILE) firmware
+	# we shouldn't need to remove these files ....
+	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.d' -exec rm -f {} \;
+	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.o' -exec rm -f {} \;
+	$(v) ln -sf $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) $(PX4_MAKE) clean
+	$(v) $(PX4_MAKE) px4fmu-v1_APM
 	$(v) /bin/rm -f $(SKETCH)-v1.px4
-	$(v) cp $(PX4_ROOT)/makefiles/build/firmware.px4 $(SKETCH)-v1.px4
+	$(v) cp $(PX4_ROOT)/Images/px4fmu-v1_APM.px4 $(SKETCH)-v1.px4
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
 px4-v2: $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) $(BUILDROOT)/module.mk px4-io-v2
 	$(RULEHDR)
-	$(v) $(PX4_MAKE) CONFIG_FILE=$(PWD)/$(PX4_V2_CONFIG_FILE) firmware
+	# we shouldn't need to remove these files ....
+	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.d' -exec rm -f {} \;
+	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.o' -exec rm -f {} \;
+	$(v) ln -sf $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) $(PX4_MAKE) clean
+	$(v) $(PX4_MAKE) px4fmu-v2_APM
 	$(v) /bin/rm -f $(SKETCH)-v2.px4
-	$(v) cp $(PX4_ROOT)/makefiles/build/firmware.px4 $(SKETCH)-v2.px4
+	$(v) cp $(PX4_ROOT)/Images/px4fmu-v2_APM.px4 $(SKETCH)-v2.px4
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v2.px4"
 
 px4: px4-v1 px4-v2
