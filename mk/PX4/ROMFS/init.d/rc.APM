@@ -8,13 +8,6 @@
 
 set deviceA /dev/ttyACM0
 
-if [ -f /fs/microsd/APM/mavlink-ttys0 ]
-then
-   set deviceC /dev/ttyS0
-else
-   set deviceC /dev/ttyS2
-fi
-
 # check for an old file called APM, caused by 
 # a bug in an earlier firmware release
 if [ -f /fs/microsd/APM ]
@@ -62,6 +55,18 @@ then
                 echo "Detected FMUv2 board"
                 set BOARD FMUv2
         fi
+
+	if [ -f /fs/microsd/APM/mavlink-ttys0 ]
+	then
+	   set deviceC /dev/ttyS0
+	else
+		if [ $BOARD == FMUv1 ]
+		then
+			set deviceC /dev/ttyS2
+		else
+			set deviceC /dev/ttyS1
+		fi
+	fi
 
         echo checking for /etc/px4io/px4io.bin
 	if [ -f /etc/px4io/px4io.bin ]
@@ -118,7 +123,7 @@ then
 		fmu mode_pwm
 		#echo "Loading FMU_pass mixer"
 		#mixer load /dev/pwm_output /etc/mixers/FMU_pass.mix
-		if [ $deviceC == /dev/ttyS1 ]
+		if [ $BOARD == FMUv1 ] && [ $deviceC == /dev/ttyS1 ]
 		then
 			# ttyS1 is used for PWM output for 4 extra channels
 			set deviceC /dev/ttyS2
@@ -140,7 +145,7 @@ then
 
 		echo "Setting up PX4FMU direct mode"
 		fmu mode_pwm
-		if [ $deviceC == /dev/ttyS1 ]
+		if [ $BOARD == FMUv1 ] && [ $deviceC == /dev/ttyS1 ]
 		then
 			# ttyS1 is used for PWM output when there
 			# is no IO board
