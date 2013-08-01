@@ -8,17 +8,46 @@
 #include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
 #include <AP_Buffer.h>                  // FIFO buffer library
 
-#define AP_INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
-#define AP_INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
+#define AP_INAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
+#define AP_INAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
 
-// #defines to control how often historical accel based positions are saved
-// so they can later be compared to laggy gps readings
-#define AP_INTERTIALNAV_SAVE_POS_AFTER_ITERATIONS   10
-#define AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS  4       // must not be larger than size of _hist_position_estimate_x and _hist_position_estimate_y
-#define AP_INTERTIALNAV_GPS_TIMEOUT_MS              300     // timeout after which position error from GPS will fall to zero
+
+/* #defines to control how often historical accel based positions are saved
+ * so they can later be compared to laggy gps and baro readings
+ ********************************************************************************/
+
+#define AP_INAV_GPS_DELAY_MS   400
+#define AP_INAV_BARO_DELAY_MS  150
+
+// 100Hz --> 10ms period
+#define AP_INAV_MAIN_LOOP_PERIOD_MS 10
+
+// 150ms delay --> 15 iterations at 100Hz
+#define AP_INAV_BARO_DELAY_QUEUE_SIZE (AP_INAV_BARO_DELAY_MS / AP_INAV_MAIN_LOOP_PERIOD_MS)
+
+/* since the GPS update rate is pretty low (<= 5Hz), we don't store the accel based positions at 100Hz (main loop freq.)
+ * but at a lower rate determined by this divider.
+ * --> 10 Hz (=100Hz / 10)
+ */
+#define AP_INAV_SAVE_POS_AFTER_ITERATIONS   10
+
+
+/* GPS has 400ms delay --> we need to store 4 historical accel based position values
+ * (values are written at 10Hz <=> every 10th iteration at 100Hz)
+ */
+#define AP_INAV_GPS_DELAY_QUEUE_SIZE (  AP_INAV_GPS_DELAY_MS            \
+		                              / AP_INAV_MAIN_LOOP_PERIOD_MS     \
+		                              / AP_INAV_SAVE_POS_AFTER_ITERATIONS )
+
+
+// timeout after which position error from GPS will fall to zero
+#define AP_INAV_GPS_TIMEOUT_MS              300
 
 /*
- * AP_InertialNav is an attempt to use accelerometers to augment other sensors to improve altitud e position hold
+ * AP_InertialNav is an attempt to use accelerometers to augment other sensors
+ * to improve altitude and position hold.
+ *
+ * Most of the functions have to be called at 100Hz. (see defines above)
  */
 class AP_InertialNav
 {
@@ -132,8 +161,9 @@ protected:
     uint32_t                _gps_last_update;           // system time of last gps update
     uint32_t                _gps_last_time;             // time of last gps update according to the gps itself
     uint8_t                 _historic_xy_counter;       // counter used to slow saving of position estimates for later comparison to gps
-    AP_BufferFloat_Size5    _hist_position_estimate_x;  // buffer of historic accel based position to account for lag
-    AP_BufferFloat_Size5    _hist_position_estimate_y;  // buffer of historic accel based position to account for lag
+    typedef AP_Buffer<float,AP_INAV_GPS_DELAY_QUEUE_SIZE> GPS_Queue_t;
+    GPS_Queue_t             _hist_position_estimate_x;  // buffer of historic accel based position to account for gps lag
+    GPS_Queue_t             _hist_position_estimate_y;  // buffer of historic accel based position to account for gps lag
     int32_t                 _base_lat;                  // base latitude
     int32_t                 _base_lon;                  // base longitude
     float                   _lon_to_m_scaling;          // conversion of longitude to meters
@@ -144,7 +174,8 @@ protected:
     float                   _k2_z;                      // gain for vertical velocity correction
     float                   _k3_z;                      // gain for vertical accelerometer offset correction
     uint32_t                _baro_last_update;           // time of last barometer update
-    AP_BufferFloat_Size15   _hist_position_estimate_z;  // buffer of historic accel based altitudes to account for lag
+    typedef AP_Buffer<float, AP_INAV_BARO_DELAY_QUEUE_SIZE> Baro_Queue_t;
+    Baro_Queue_t            _hist_position_estimate_z;  // buffer of historic accel based altitudes to account for barometer lag
 
     // general variables
     Vector3f                _position_base;             // position estimate

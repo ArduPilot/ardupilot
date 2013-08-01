@@ -12,19 +12,19 @@ const AP_Param::GroupInfo AP_InertialNav::var_info[] PROGMEM = {
     // @Description: Time constant for GPS and accel mixing. Higher TC decreases GPS impact on position estimate
     // @Range: 0 10
     // @Increment: 0.1
-    AP_GROUPINFO("TC_XY",   1, AP_InertialNav, _time_constant_xy, AP_INTERTIALNAV_TC_XY),
+    AP_GROUPINFO("TC_XY",   1, AP_InertialNav, _time_constant_xy, AP_INAV_TC_XY),
 
     // @Param: TC_Z
     // @DisplayName: Vertical Time Constant
     // @Description: Time constant for baro and accel mixing. Higher TC decreases barometers impact on altitude estimate
     // @Range: 0 10
     // @Increment: 0.1
-    AP_GROUPINFO("TC_Z",    2, AP_InertialNav, _time_constant_z, AP_INTERTIALNAV_TC_Z),
+    AP_GROUPINFO("TC_Z",    2, AP_InertialNav, _time_constant_z, AP_INAV_TC_Z),
 
     AP_GROUPEND
 };
 
-// init - initialise library
+// init - initialize library
 void AP_InertialNav::init()
 {
     // recalculate the gains
@@ -87,9 +87,9 @@ void AP_InertialNav::update(float dt)
     // store 3rd order estimate (i.e. estimated vertical position) for future use
     _hist_position_estimate_z.push_back(_position_base.z);
 
-    // store 3rd order estimate (i.e. horizontal position) for future use at 10hz
+    // store 3rd order estimate (i.e. horizontal position) for future use at 10hz (= 100Hz / 10)
     _historic_xy_counter++;
-    if( _historic_xy_counter >= AP_INTERTIALNAV_SAVE_POS_AFTER_ITERATIONS ) {
+    if( _historic_xy_counter >= AP_INAV_SAVE_POS_AFTER_ITERATIONS ) {
         _historic_xy_counter = 0;
         _hist_position_estimate_x.push_back(_position_base.x);
         _hist_position_estimate_y.push_back(_position_base.y);
@@ -143,7 +143,7 @@ void AP_InertialNav::check_gps()
     }
 
     // clear position error if GPS updates stop arriving
-    if( now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS ) {
+    if( now - _gps_last_update > AP_INAV_GPS_TIMEOUT_MS ) {
         _position_error.x = 0;
         _position_error.y = 0;
     }
@@ -165,10 +165,11 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     y = (float)(lon - _base_lon) * _lon_to_m_scaling;
 
     // ublox gps positions are delayed by 400ms
-    // we store historical position at 10hz so 4 iterations ago
-    if( _hist_position_estimate_x.size() >= AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS ) {
-        hist_position_base_x = _hist_position_estimate_x.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
-        hist_position_base_y = _hist_position_estimate_y.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
+    // we store historical position at 10Hz so we need the
+    // value from 4 iterations ago
+    if( _hist_position_estimate_x.is_full() ) {
+        hist_position_base_x = _hist_position_estimate_x.front();
+        hist_position_base_y = _hist_position_estimate_y.front();
     }else{
         hist_position_base_x = _position_base.x;
         hist_position_base_y = _position_base.y;
