@@ -34,37 +34,52 @@ public:
     /**
      * removes an element from the begin of the buffer (i.e. the oldest element) and returns it.
      *
-     * If the buffer is empty, 0 is returned.
+     * If the buffer is empty, the result is undefined.
+     *
+     * Use is_empty() to check if your call will be valid.
      *
      * @return
      */
     T pop_front();
 
     /**
+     * Check if an index for accessing an element is valid.
+     * @param index
+     * @return
+     */
+    bool index_is_valid(uint8_t index) const { return index < this->size(); }
+
+    /**
      * Returns a reference to an element of the buffer.
      *
-     * If position isn't valid (i.e. >= size(); ) 0 is returned.
+     * If index isn't valid (i.e. >= size(); ) the behavior is undefined.
      *
-     * @param position : index of the element
+     * Use index_is_valid(uin8_t) to verify your argument.
+     *
+     * @param index : index of the element
      * 						- "0"          is the oldest ( front(); )
      * 						- "size() - 1" is the newest ( back();  )
      * @return
      */
-    const T& peek(uint8_t position) const;
+    const T& peek(uint8_t index) const;
 
     /**
      * Return a reference to the element at the begin of the queue (i.e. the oldest element).
      *
-     * If the queue is empty, 0 is returned.
+     * If the queue is empty, the behavior is undefined.
+     *
+     * Use is_empty() to check if your call will be valid.
      *
      * @return : oldest element
      */
-    const T& front() const { return this->peek(0); }
+    const T& front() const { return _buff[_head]; }
 
     /**
      * Returns a reference to the element at the end of the queue (i.e. the newest element).
      *
-     * If the queue is empty, 0 is returned.
+     * If the queue is empty, the behavior is undefined.
+     *
+     * Use is_empty() to check if your call will be valid.
      *
      * @return : newest element
      */
@@ -78,7 +93,7 @@ public:
     uint8_t size() const { return _num_items; }
 
     /**
-     * Return whether the queue is full (i.e. size() == SIZE).
+     * Return whether the queue is full (i.e. size() >= SIZE).
      * @return
      */
     bool is_full() const { return _num_items >= SIZE; }
@@ -107,7 +122,6 @@ AP_Buffer<T,SIZE>::AP_Buffer() :
 
 template <class T, uint8_t SIZE>
 void AP_Buffer<T,SIZE>::clear() {
-	// clear the curve
 	_num_items = 0;
     _head = 0;
 }
@@ -139,25 +153,23 @@ void AP_Buffer<T,SIZE>::push_back( const T &item )
 template <class T, uint8_t SIZE>
 T AP_Buffer<T,SIZE>::pop_front()
 {
-	T result;
+	// store the result
+    T result = this->front();
 
-	// return zero if buffer is empty
-	if( _num_items == 0 ) {
-		return 0;
-	}
+    // remove value from queue
+    // -----------------------
+    // pop on an empty queue yields an undefined result.
+    // We perform the empty-check, to keep the queue in a defined state (i.e. _head and _num_items remain valid)
+    // and prevent memory corruption.
+    if( not this->is_empty() ) {
+		// increment to next point
+		_head++;
+		if( _head >= SIZE )
+			_head = 0;
 
-	// get next value in buffer
-    result = _buff[_head];
-
-    // increment to next point
-    _head++;
-    if( _head >= SIZE )
-        _head = 0;
-
-    // reduce number of items
-    _num_items--;
-
-    // return item
+		// reduce number of items
+		_num_items--;
+    }
     return result;
 }
 
@@ -165,12 +177,6 @@ template <class T, uint8_t SIZE>
 const T& AP_Buffer<T,SIZE>::peek(uint8_t position) const
 {
     uint8_t j = _head + position;
-
-    // return zero if position is out of range
-    if( position >= _num_items ) {
-    	const static T r = 0;
-        return r;
-    }
 
     // wrap around if necessary
     if( j >= SIZE )
