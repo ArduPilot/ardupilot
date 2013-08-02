@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	AP_GROUPEND
 };
 
-int32_t AP_YawController::get_servo_out(float scaler, bool stabilize)
+int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -120,7 +120,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool stabilize)
 	// Apply integrator, but clamp input to prevent control saturation and freeze integrator below min FBW speed
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	// Don't integrate if _K_D is zero as integrator will keep winding up
-	if (!stabilize && _K_D > 0) {
+	if (!disable_integrator && _K_D > 0) {
 		//only integrate if airspeed above min value
 		if (aspeed > float(aspd_min))
 		{
