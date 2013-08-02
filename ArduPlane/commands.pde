@@ -15,7 +15,7 @@ static void update_auto()
 {
     if (mission.command_index() >= mission.command_total()) {
         handle_no_commands();
-        if(g.command_total == 0) {
+        if(mission.command_total() == 0) {
             next_WP.lat             = home.lat + 1000;                  // so we don't have bad calcs
             next_WP.lng             = home.lng + 1000;                  // so we don't have bad calcs
         }
