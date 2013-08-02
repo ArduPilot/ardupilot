@@ -96,7 +96,11 @@ public:
     const struct Location           get_home()            {
         return _home;
     };
-
+    
+    const int32_t get_home_alt()    {
+        return _home.alt;
+    };
+    
     //Low(er) level functions to store commands and waypoints into storage.
     struct Location         get_cmd_with_index(int16_t inx);
     struct Location         get_cmd_with_index_raw(int16_t inx);
