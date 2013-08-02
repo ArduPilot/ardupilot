@@ -621,8 +621,6 @@ static int16_t condition_rate;
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
-// The home location used for RTL.  The location is set when we first get stable GPS lock
-static struct   Location home;
 // Flag for if we have g_gps lock and have set the home location
 static bool home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
@@ -1320,7 +1318,7 @@ static void update_alt()
     if (barometer.healthy) {
         // alt_MSL centimeters (centimeters)
         current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
-        current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
+        current_loc.alt += g.altitude_mix * (read_barometer() + mission.get_home_alt());
     } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         // alt_MSL centimeters (centimeters)
         current_loc.alt = g_gps->altitude_cm;

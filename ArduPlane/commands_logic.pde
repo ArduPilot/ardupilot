@@ -150,17 +150,9 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {
-<<<<<<< HEAD
-    gcs_send_text_fmt(PSTR("Returning to Home"));
-    next_nav_command = rally_find_best_location(current_loc, home);
-    next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
-    nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
-    non_nav_command_ID = WAIT_COMMAND;
-    handle_process_nav_cmd();
-=======
+
     gcs_send_text_fmt(PSTR("Returning to Home, RTL"));
     do_RTL();
->>>>>>> Plane: When out of commands, transition to RTL, rather than staying in a redundant "RTL-like" state, auto with waypoint 0 as the active waypoint.  This simplifies the user interface, as there is only 1 RTL state.
 }
 
 /*******************************************************************************
@@ -260,8 +252,6 @@ static void do_takeoff()
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
     takeoff_pitch_cd                = (int)next_nav_command.p1 * 100;
     takeoff_altitude_cm     = next_nav_command.alt;
-    next_WP.lat             = home.lat + 1000;          // so we don't have bad calcs
-    next_WP.lng             = home.lng + 1000;          // so we don't have bad calcs
     takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
     // Flag also used to override "on the ground" throttle disable
 }
@@ -568,13 +558,16 @@ static void do_change_speed()
 
 static void do_set_home()
 {
+    Location tmp;
+    
     if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
-        home.id         = MAV_CMD_NAV_WAYPOINT;
-        home.lng        = next_nonnav_command.lng;                                      // Lon * 10**7
-        home.lat        = next_nonnav_command.lat;                                      // Lat * 10**7
-        home.alt        = max(next_nonnav_command.alt, 0);
+        tmp.id         = MAV_CMD_NAV_WAYPOINT;
+        tmp.lng        = next_nonnav_command.lng;                                      // Lon * 10**7
+        tmp.lat        = next_nonnav_command.lat;                                      // Lat * 10**7
+        tmp.alt        = max(next_nonnav_command.alt, 0);
+        mission.set_home(tmp);
         home_is_set = true;
     }
 }
@@ -637,3 +630,4 @@ static void do_take_picture()
     }
 #endif
 }
+

@@ -1589,6 +1589,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL_NED
         case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
         {
+            Location home = mission.get_home();
+            
             tell_command.lat = 1.0e7f*ToDeg(packet.x/
                                            (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
             tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
@@ -1698,7 +1700,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // add home alt if needed
             if (guided_WP.options & MASK_OPTIONS_RELATIVE_ALT) {
-                guided_WP.alt += home.alt;
+                guided_WP.alt += mission.get_home_alt();
             }
 
             set_mode(GUIDED);
@@ -1717,7 +1719,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // add home alt if needed
             if (tell_command.options & MASK_OPTIONS_RELATIVE_ALT) {
-                tell_command.alt += home.alt;
+                tell_command.alt += mission.get_home_alt();
             }
 
             next_WP.alt = tell_command.alt;

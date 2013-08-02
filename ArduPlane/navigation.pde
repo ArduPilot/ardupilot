@@ -218,8 +218,8 @@ static void update_fbwb_speed_height(void)
     }
 
     // check for FBWB altitude limit
-    if (g.FBWB_min_altitude_cm != 0 && target_altitude_cm < home.alt + g.FBWB_min_altitude_cm) {
-        target_altitude_cm = home.alt + g.FBWB_min_altitude_cm;
+    if (g.FBWB_min_altitude_cm != 0 && target_altitude_cm < mission.get_home_alt() + g.FBWB_min_altitude_cm) {
+        target_altitude_cm = mission.get_home_alt() + g.FBWB_min_altitude_cm;
     }
     altitude_error_cm = target_altitude_cm - adjusted_altitude_cm();
     
@@ -256,7 +256,7 @@ static void setup_glide_slope(void)
 
     case AUTO:
         if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
-            prev_WP.alt != home.alt && 
+            prev_WP.alt != mission.get_home_alt() && 
             (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
             offset_altitude_cm = next_WP.alt - prev_WP.alt;
         } else {
@@ -274,7 +274,7 @@ static void setup_glide_slope(void)
  */
 static float relative_altitude(void)
 {
-    return (current_loc.alt - home.alt) * 0.01f;
+    return (current_loc.alt - mission.get_home_alt()) * 0.01f;
 }
 
 /*
@@ -282,6 +282,6 @@ static float relative_altitude(void)
  */
 static int32_t relative_altitude_abs_cm(void)
 {
-    return labs(current_loc.alt - home.alt);
+    return labs(current_loc.alt - mission.get_home_alt());
 }
 

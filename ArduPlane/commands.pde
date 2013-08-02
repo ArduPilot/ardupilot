@@ -15,10 +15,6 @@ static void update_auto()
 {
     if (mission.command_index() >= mission.command_total()) {
         handle_no_commands();
-        if(mission.command_total() == 0) {
-            next_WP.lat             = home.lat + 1000;                  // so we don't have bad calcs
-            next_WP.lng             = home.lng + 1000;                  // so we don't have bad calcs
-        }
     } else {
         if (mission.command_index() == 0) {
             mission.change_waypoint_index(1);
@@ -38,7 +34,7 @@ static int32_t read_alt_to_hold()
     if (g.RTL_altitude_cm < 0) {
         return current_loc.alt;
     }
-    return g.RTL_altitude_cm + home.alt;
+    return g.RTL_altitude_cm + mission.get_home_alt();
 }
 
 
@@ -120,6 +116,8 @@ static void set_guided_WP(void)
 // -------------------------------
 static void init_home()
 {
+    Location tmp;
+    
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
     // block until we get a good fix
@@ -132,26 +130,26 @@ static void init_home()
 #endif
     }
 
-    home.id         = MAV_CMD_NAV_WAYPOINT;
-    home.lng        = g_gps->longitude;                                 // Lon * 10**7
-    home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = max(g_gps->altitude_cm, 0);
+    tmp.id         = MAV_CMD_NAV_WAYPOINT;
+    tmp.lng        = g_gps->longitude;                                 // Lon * 10**7
+    tmp.lat        = g_gps->latitude;                                  // Lat * 10**7
+    tmp.alt        = max(g_gps->altitude_cm, 0);
     home_is_set = true;
 
-    gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
-
-    // Save Home to EEPROM - Command 0
-    // -------------------
-    mission.set_home(home);
+    gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)mission.get_home_alt());
 
     // Save prev loc
     // -------------
-    next_WP = prev_WP = home;
+    next_WP = prev_WP = tmp;
 
     // Load home for a default guided_WP
     // -------------
-    guided_WP = home;
+    guided_WP = tmp;
     guided_WP.alt += g.RTL_altitude_cm;
+    
+    // Save Home to Mission
+    // -------------------
+    mission.set_home(tmp);
 
 }
 
