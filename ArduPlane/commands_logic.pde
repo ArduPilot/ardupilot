@@ -568,7 +568,6 @@ static void do_set_home()
         tmp.lat        = next_nonnav_command.lat;                                      // Lat * 10**7
         tmp.alt        = max(next_nonnav_command.alt, 0);
         mission.set_home(tmp);
-        home_is_set = true;
     }
 }
 

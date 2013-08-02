@@ -134,7 +134,6 @@ static void init_home()
     tmp.lng        = g_gps->longitude;                                 // Lon * 10**7
     tmp.lat        = g_gps->latitude;                                  // Lat * 10**7
     tmp.alt        = max(g_gps->altitude_cm, 0);
-    home_is_set = true;
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)mission.get_home_alt());
 

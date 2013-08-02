@@ -621,8 +621,6 @@ static int16_t condition_rate;
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
-// Flag for if we have g_gps lock and have set the home location
-static bool home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
 static struct   Location prev_WP;
 // The plane's current location
