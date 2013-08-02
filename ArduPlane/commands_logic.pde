@@ -150,12 +150,17 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {
+<<<<<<< HEAD
     gcs_send_text_fmt(PSTR("Returning to Home"));
     next_nav_command = rally_find_best_location(current_loc, home);
     next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
     nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
     non_nav_command_ID = WAIT_COMMAND;
     handle_process_nav_cmd();
+=======
+    gcs_send_text_fmt(PSTR("Returning to Home, RTL"));
+    do_RTL();
+>>>>>>> Plane: When out of commands, transition to RTL, rather than staying in a redundant "RTL-like" state, auto with waypoint 0 as the active waypoint.  This simplifies the user interface, as there is only 1 RTL state.
 }
 
 /*******************************************************************************
