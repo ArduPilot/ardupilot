@@ -892,7 +892,7 @@ static void obc_fs_check(void)
 #if OBC_FAILSAFE == ENABLED
     // perform OBC failsafe checks
     obc.check(OBC_MODE(control_mode),
-              last_heartbeat_ms,
+              failsafe.last_heartbeat_ms,
               g_gps ? g_gps->last_fix_time : 0);
 #endif
 }
