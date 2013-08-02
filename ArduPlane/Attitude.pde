@@ -73,9 +73,13 @@ static void stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
+    bool disable_integrator = false;
+    if (control_mode == STABILIZE && channel_roll->control_in != 0) {
+        disable_integrator = true;
+    }
     channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
                                                              speed_scaler, 
-                                                             control_mode == STABILIZE);
+                                                             disable_integrator);
 }
 
 /*
@@ -86,9 +90,13 @@ static void stabilize_roll(float speed_scaler)
 static void stabilize_pitch(float speed_scaler)
 {
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
+    bool disable_integrator = false;
+    if (control_mode == STABILIZE && channel_pitch->control_in != 0) {
+        disable_integrator = true;
+    }
     channel_pitch->servo_out = g.pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                speed_scaler, 
-                                                               control_mode == STABILIZE);
+                                                               disable_integrator);
 }
 
 /*
@@ -374,8 +382,11 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
         return;
     }
 
-    channel_rudder->servo_out = g.yawController.get_servo_out(speed_scaler, 
-                                                              control_mode == STABILIZE);
+    bool disable_integrator = false;
+    if (control_mode == STABILIZE && channel_rudder->control_in != 0) {
+        disable_integrator = true;
+    }
+    channel_rudder->servo_out = g.yawController.get_servo_out(speed_scaler, disable_integrator);
 
     // add in rudder mixing from roll
     channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;
