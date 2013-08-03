@@ -42,7 +42,6 @@ static void process_waypoint(void) {
     }
     if(control_mode == AUTO) {
         mission.get_current_wp(next_nav_command);
-        nav_command_ID=next_nav_command.id;
         non_nav_command_ID=NO_COMMAND;
         handle_process_nav_cmd();
     }

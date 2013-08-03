@@ -165,7 +165,7 @@ should move onto the next mission element.
 
 static bool verify_nav_command()        // Returns true if command complete
 {
-    switch(nav_command_ID) {
+    switch(next_nav_command.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
         return verify_takeoff();
