@@ -37,22 +37,22 @@ void setup(void)
 
     hal.console->printf("WP_SIZE=%u, WP_START_BYTE=%x\n",mission._wp_size,mission._start_byte);
 
-    mission.init_commands();
+    
     //Hack because parameters from APM are not loaded
-    uint8_t missionsize=8;
+    uint8_t missionsize=118;
     mission.set_command_total(missionsize);
+    mission.init_commands();
+    /*
     temp_jump=mission.get_cmd_with_index(6);
     temp_jump.lat=5;
     mission.set_cmd_with_index(temp_jump,6);
-    
+    */
     // temp_jump=mission.get_cmd_with_index(7);
     // temp_jump.lat=10;
     // mission.set_cmd_with_index(temp_jump,7);
-    
-    mission.change_waypoint_index(1);
-    
+     
     show_mission(missionsize);
-    mission.change_waypoint_index(1);
+    //mission.change_waypoint_index(0);
     sequence_through_mission(missionsize);
     
     // sequence_through_mission(missionsize);
@@ -62,11 +62,11 @@ void sequence_through_mission(int missionsize) {
     struct Location tmp_cmd;
 
     hal.console->printf("------Sequence through mission--------\n");
-    index=mission.waypoint_index();
+    index=mission.waypoint_array_index();
     print_index();
 
     while(mission.increment_waypoint_index()) {
-        index=mission.waypoint_index();
+        index=mission.waypoint_array_index();
         print_index();
         
         mission.get_current_wp(tmp_cmd);
@@ -81,7 +81,7 @@ void sequence_through_mission(int missionsize) {
         }
     }
     print_index();
-    hal.console->printf("Mission Complete\n");
+    hal.console->printf("---------Mission Complete--------\n");
 }
 
 void show_mission(int size){
