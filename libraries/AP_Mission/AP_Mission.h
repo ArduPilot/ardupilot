@@ -70,6 +70,11 @@ public:
 
     /*---------------------Utility Functions-------------------*/
 
+
+    uint8_t *      waypoint_array_index()           {
+        return _index;
+    };
+    
     /*returns just the current index.  */
     uint8_t        waypoint_index()    {
         return _index[1];

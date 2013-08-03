@@ -20,7 +20,8 @@ extern const AP_HAL::HAL& hal;
 
 void AP_Mission::init_commands()
 {
-    change_waypoint_index(0);
+    uint8_t tmp_index=_find_nav_index(1);
+    change_waypoint_index(tmp_index);
 }
 
 bool AP_Mission::get_future_wp(struct Location &wp, uint8_t n)
