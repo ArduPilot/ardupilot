@@ -5,6 +5,7 @@
 
 static void init_commands()
 {
+    mission.init_commands();
     nav_command_ID  = NO_COMMAND;
     non_nav_command_ID      = NO_COMMAND;
     next_nav_command.id     = CMD_BLANK;
