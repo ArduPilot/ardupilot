@@ -150,8 +150,7 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {
-
-    gcs_send_text_fmt(PSTR("Returning to Home, RTL"));
+    gcs_send_text_fmt(PSTR("No more commands in mission, RTL"));
     do_RTL();
 }
 

@@ -18,11 +18,9 @@ static void verify_commands(void)
             if (mission.increment_waypoint_index()) {
                 process_waypoint();
             } else {
-                gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
                 handle_no_commands();
             }
         }
-
     }
     
     if (verify_condition_command() || non_nav_command_ID == NO_COMMAND) {
@@ -34,7 +32,8 @@ static void verify_commands(void)
     }
 }
 
-static void process_waypoint(void) {
+static void process_waypoint(void) 
+{
     gcs_send_text_fmt(PSTR("Nav command index updated to #%i"),mission.waypoint_index());
     
     if (g.log_bitmask & MASK_LOG_CMD) {
