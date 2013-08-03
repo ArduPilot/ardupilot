@@ -88,8 +88,7 @@ enum ChannelMixing {
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol
 // commands.  See enum MAV_CMD in the GCS_Mavlink library
-#define CMD_BLANK 0 // there is no command stored in the mem location
-                    // requested
+
 #define NO_COMMAND 0
 #define WAIT_COMMAND 255
 
