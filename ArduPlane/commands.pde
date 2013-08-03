@@ -12,13 +12,10 @@ static void init_commands()
 
 static void update_auto()
 {
-    if (mission.waypoint_index() >= mission.command_total()) {
-        handle_no_commands();
+    if (mission.get_mission_status()) {
+        process_waypoint();
     } else {
-        if (mission.waypoint_index() == 0) {
-            mission.change_waypoint_index(1);
-        }
-    process_waypoint();
+        handle_no_commands();
     }
 }
 
