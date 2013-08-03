@@ -490,7 +490,7 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(
         chan,
-        mission.command_index());
+        mission.waypoint_index());
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
@@ -1322,7 +1322,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // time that the mav should loiter in milliseconds
         uint8_t current = 0;     // 1 (true), 0 (false)
 
-        if (packet.seq == (uint16_t)mission.command_index())
+        if (packet.seq == (uint16_t)mission.waypoint_index())
             current = 1;
 
         uint8_t autocontinue = 1;     // 1 (true), 0 (false)
@@ -1502,7 +1502,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // set current command
         change_waypoint(packet.seq);
 
-        mavlink_msg_mission_current_send(chan, mission.command_index());
+        mavlink_msg_mission_current_send(chan, mission.waypoint_index());
         break;
     }
 

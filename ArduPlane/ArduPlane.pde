@@ -422,11 +422,11 @@ static bool have_position;
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
 
-// There may be two active commands in Auto mode.
-// This indicates the active navigation command by index number
-static uint8_t nav_command_index;
-// This indicates the active non-navigation command by index number
-static uint8_t non_nav_command_index;
+// Direction held during phases of takeoff and landing
+// deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
+// this is a 0..36000 value, or -1 for disabled
+static int32_t hold_course_cd                 = -1;              // deg * 100 dir of plane
+
 // This is the command type (eg navigate to waypoint) of the active navigation command
 static uint8_t nav_command_ID          = NO_COMMAND;
 static uint8_t non_nav_command_ID      = NO_COMMAND;

@@ -8,15 +8,14 @@ static void init_commands()
     nav_command_ID  = NO_COMMAND;
     non_nav_command_ID      = NO_COMMAND;
     next_nav_command.id     = CMD_BLANK;
-    nav_command_index = 0;
 }
 
 static void update_auto()
 {
-    if (mission.command_index() >= mission.command_total()) {
+    if (mission.waypoint_index() >= mission.command_total()) {
         handle_no_commands();
     } else {
-        if (mission.command_index() == 0) {
+        if (mission.waypoint_index() == 0) {
             mission.change_waypoint_index(1);
         }
     process_waypoint();

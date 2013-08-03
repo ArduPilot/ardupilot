@@ -35,10 +35,10 @@ static void verify_commands(void)
 }
 
 static void process_waypoint(void) {
-    gcs_send_text_fmt(PSTR("Nav command index updated to #%i"),mission.command_index());
+    gcs_send_text_fmt(PSTR("Nav command index updated to #%i"),mission.waypoint_index());
     
     if (g.log_bitmask & MASK_LOG_CMD) {
-        Log_Write_Cmd(mission.command_index(), &next_nav_command);
+        Log_Write_Cmd(mission.waypoint_index(), &next_nav_command);
     }
     if(control_mode == AUTO) {
         mission.get_current_wp(next_nav_command);
@@ -53,7 +53,7 @@ static void process_non_nav_command()
     non_nav_command_ID=next_nonnav_command.id;
     gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i idx=%u"),
                   (unsigned)non_nav_command_ID, 
-                  (unsigned)non_nav_command_index);            
+                  (unsigned)mission.command_index());            
     
     if (g.log_bitmask & MASK_LOG_CMD) {
         Log_Write_Cmd(mission.command_index(), &next_nonnav_command);
