@@ -70,18 +70,16 @@ public:
 
     /*---------------------Utility Functions-------------------*/
 
-    /*returns the waypoint index, a pointer to a 3 element array
-     *  that contains the indicies of the waypoints corresponding to
-     *  those in nav_waypoints.  */
-    uint8_t *      waypoint_index()           {
-        return _index;
-    };
-
     /*returns just the current index.  */
-    uint8_t        command_index()    {
+    uint8_t        waypoint_index()    {
         return _index[1];
     };
-
+    
+    /*returns just the current command index.  */
+    uint8_t        command_index()    {
+        return _cmd_index;
+    };
+    
     //gets the total number of commands in the mission.
     uint8_t        command_total();
 
