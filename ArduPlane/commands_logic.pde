@@ -558,7 +558,7 @@ static void do_change_speed()
 
 static void do_set_home()
 {
-    Location tmp;
+    struct Location tmp;
     
     if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
         init_home();

@@ -106,7 +106,7 @@ static void set_guided_WP(void)
 // -------------------------------
 static void init_home()
 {
-    Location tmp;
+    struct Location tmp;
     
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
