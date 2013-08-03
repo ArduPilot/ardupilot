@@ -15,7 +15,10 @@ static void update_auto()
     if (mission.waypoint_index() >= mission.command_total()) {
         handle_no_commands();
     } else {
-        process_waypoint();
+        if (mission.waypoint_index() == 0) {
+            mission.change_waypoint_index(1);
+        }
+    process_waypoint();
     }
 }
 
