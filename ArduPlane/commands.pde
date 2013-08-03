@@ -19,12 +19,6 @@ static void update_auto()
     }
 }
 
-// this is only used by an air-start
-static void reload_commands_airstart()
-{
-    init_commands();
-}
-
 static int32_t read_alt_to_hold()
 {
     if (g.RTL_altitude_cm < 0) {
