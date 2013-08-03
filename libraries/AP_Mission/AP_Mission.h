@@ -39,6 +39,7 @@ public:
     	{
 			AP_Param::setup_object_defaults(this, var_info);
             _index[0]=0; _index[1]=0; _index[2]=0;
+            _mission_status = false;
 		}
 
     /*---------Basic Functions and variables--------*/
@@ -67,6 +68,9 @@ public:
      *  Returns false if error or if there are no more commands.  */
     bool        get_new_cmd(struct Location &new_cmd);
 
+    /* Returns the overall health of the mission.  If the mission is complete, or
+     * there is an error, this will return false. */
+    bool        get_mission_status() {return _mission_status;};
 
     /*---------------------Utility Functions-------------------*/
 
@@ -121,31 +125,30 @@ private:
      *  nav_waypoints[1]: Current Waypoint, the vehicle is navigating towards this.
      *  nav_waypoints[2]: After Waypoint
      *  The vehicle is typically located between waypoints corresponding to indicies 0 and 1 */
-    struct Location        _nav_waypoints[3];
+    struct Location     _nav_waypoints[3];
     
     /*Starts from search_index, and searches forward (=1) or
      *  backward (=0) for the next navigation waypoint.  This function is mindful of DO_JUMP
      *  commands.  Returns the index of the found navigation waypoint.  */
-    uint8_t        _find_nav_index(uint8_t search_index);
+    uint8_t             _find_nav_index(uint8_t search_index);
 
     //Checks a navigation command for validity.
-    bool        _check_nav_valid(const struct Location &temp);
+    bool                _check_nav_valid(const struct Location &temp);
 
     /* Takes the input index, sets as _index[1] and rebases index[2] to that index.
      *  Returns false if it fails to rebase to the index.  */
-    bool        _sync_waypoint_index(const uint8_t &new_index);
+    bool                _sync_waypoint_index(const uint8_t &new_index);
 
     //Synchronizes the nav_waypoints array with the indicies in _index
-    void        _sync_nav_waypoints();
+    void                _sync_nav_waypoints();
 
     //Current index for non navigation commands
-    uint8_t        _cmd_index;
+    uint8_t             _cmd_index;
 
-    //Total number of commands.
-    uint8_t                 _index[3];
-    struct Location         _home;
-
-    AP_Float                _cmd_max;
+    bool                _mission_status;
+    uint8_t             _index[3];
+    struct Location     _home;
+    AP_Float            _cmd_max;
 
 };
 

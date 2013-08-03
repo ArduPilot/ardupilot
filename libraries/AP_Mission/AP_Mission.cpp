@@ -22,6 +22,7 @@ void AP_Mission::init_commands()
 {
     uint8_t tmp_index=_find_nav_index(1);
     change_waypoint_index(tmp_index);
+    _mission_status = true;
 }
 
 bool AP_Mission::get_future_wp(struct Location &wp, uint8_t n)
@@ -56,12 +57,15 @@ bool AP_Mission::increment_waypoint_index()
 {
     //Check if the current waypoint is home, if so the mission is complete.
     if (_index[1] == 0) {
+        _mission_status = false;
         return false;
     } 
     
     if (_sync_waypoint_index(_index[2])) {
+        _mission_status = true;
         return true;
     } else {
+        _mission_status = false;
         return false;
     }
 }
@@ -76,6 +80,7 @@ bool AP_Mission::change_waypoint_index(const uint8_t &new_index)
     Location tmp=get_cmd_with_index(new_index);
     if(_check_nav_valid(tmp)) {
         if(_sync_waypoint_index(new_index)) {
+            _mission_status = true;
             return true;
         }
     }
