@@ -97,6 +97,7 @@ static void init_aux_switches()
         case AUX_SWITCH_FENCE:
         case AUX_SWITCH_RESETTOARMEDYAW:
         case AUX_SWITCH_SUPERSIMPLE_MODE:
+        case AUX_SWITCH_ACRO_TRAINER:
             do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
             break;
     }
@@ -107,6 +108,7 @@ static void init_aux_switches()
         case AUX_SWITCH_FENCE:
         case AUX_SWITCH_RESETTOARMEDYAW:
         case AUX_SWITCH_SUPERSIMPLE_MODE:
+        case AUX_SWITCH_ACRO_TRAINER:
             do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
             break;
     }
@@ -244,7 +246,20 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }else{
                 set_yaw_mode(YAW_HOLD);
             }
-            break; 
+            break;
+
+        case AUX_SWITCH_ACRO_TRAINER:
+            switch(ch_flag) {
+                case AUX_SWITCH_LOW:
+                    g.acro_trainer = ACRO_TRAINER_DISABLED;
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                    g.acro_trainer = ACRO_TRAINER_LEVELING;
+                    break;
+                case AUX_SWITCH_HIGH:
+                    g.acro_trainer = ACRO_TRAINER_LIMITED;
+                    break;
+            }
     }
 }
 
