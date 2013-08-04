@@ -13,8 +13,8 @@ handle_process_nav_cmd()
     // except in a takeoff 
     takeoff_complete = true;
 
-    gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),next_nav_command.id);
-    switch(next_nav_command.id) {
+    gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),mission.current_wp().id);
+    switch(mission.current_wp().id) {
 
     case MAV_CMD_NAV_TAKEOFF:
         do_takeoff();
@@ -164,7 +164,7 @@ should move onto the next mission element.
 
 static bool verify_nav_command()        // Returns true if command complete
 {
-    switch(next_nav_command.id) {
+    switch(mission.current_wp().id) {
 
     case MAV_CMD_NAV_TAKEOFF:
         return verify_takeoff();
@@ -247,22 +247,22 @@ static void do_RTL(void)
 
 static void do_takeoff()
 {
-    set_next_WP(&next_nav_command);
+    set_next_WP(&mission.current_wp());
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-    takeoff_pitch_cd                = (int)next_nav_command.p1 * 100;
-    takeoff_altitude_cm     = next_nav_command.alt;
+    takeoff_pitch_cd                = (int)mission.current_wp().p1 * 100;
+    takeoff_altitude_cm     = mission.current_wp().alt;
     takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
     // Flag also used to override "on the ground" throttle disable
 }
 
 static void do_nav_wp()
 {
-    set_next_WP(&next_nav_command);
+    set_next_WP(&mission.current_wp());
 }
 
 static void do_land()
 {
-    set_next_WP(&next_nav_command);
+    set_next_WP(&mission.current_wp());
 }
 
 static void loiter_set_direction_wp(const struct Location *nav_command)
@@ -276,24 +276,24 @@ static void loiter_set_direction_wp(const struct Location *nav_command)
 
 static void do_loiter_unlimited()
 {
-    set_next_WP(&next_nav_command);
-    loiter_set_direction_wp(&next_nav_command);
+    set_next_WP(&mission.current_wp());
+    loiter_set_direction_wp(&mission.current_wp());
 }
 
 static void do_loiter_turns()
 {
-    set_next_WP(&next_nav_command);
-    loiter.total_cd = next_nav_command.p1 * 36000UL;
-    loiter_set_direction_wp(&next_nav_command);
+    set_next_WP(&mission.current_wp());
+    loiter.total_cd = mission.current_wp().p1 * 36000UL;
+    loiter_set_direction_wp(&mission.current_wp());
 }
 
 static void do_loiter_time()
 {
-    set_next_WP(&next_nav_command);
+    set_next_WP(&mission.current_wp());
     // we set start_time_ms when we reach the waypoint
     loiter.start_time_ms = 0;
-    loiter.time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
-    loiter_set_direction_wp(&next_nav_command);
+    loiter.time_max_ms = mission.current_wp().p1 * (uint32_t)1000;     // units are seconds
+    loiter_set_direction_wp(&mission.current_wp());
 }
 
 /********************************************************************************/

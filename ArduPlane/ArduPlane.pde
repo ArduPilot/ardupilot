@@ -294,7 +294,7 @@ static AP_Navigation *nav_controller = &L1_controller;
 // selected navigation controller
 static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
-static AP_Mission mission;
+static AP_Mission mission(&ahrs);
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
@@ -628,8 +628,6 @@ static struct   Location current_loc;
 static struct   Location next_WP;
 // The location of the active waypoint in Guided mode.
 static struct   Location guided_WP;
-// The location structure information from the Nav command being processed
-static struct   Location next_nav_command;
 // The location structure information from the Non-Nav command being processed
 static struct   Location next_nonnav_command;
 
@@ -1053,7 +1051,7 @@ static void update_GPS(void)
  */
 static void handle_auto_mode(void)
 {
-    switch(next_nav_command.id) {
+    switch(mission.current_wp()) {
     case MAV_CMD_NAV_TAKEOFF:
         if (steer_state.hold_course_cd == -1) {
             // we don't yet have a heading to hold - just level
@@ -1353,4 +1351,5 @@ static void update_alt()
 }
 
 AP_HAL_MAIN();
+
 

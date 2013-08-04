@@ -37,10 +37,9 @@ static void process_waypoint(void)
     gcs_send_text_fmt(PSTR("Nav command index updated to #%i"),mission.waypoint_index());
     
     if (g.log_bitmask & MASK_LOG_CMD) {
-        Log_Write_Cmd(mission.waypoint_index(), &next_nav_command);
+        Log_Write_Cmd(mission.waypoint_index(), &mission.current_wp());
     }
     if(control_mode == AUTO) {
-        mission.get_current_wp(next_nav_command);
         non_nav_command_ID=NO_COMMAND;
         handle_process_nav_cmd();
     }

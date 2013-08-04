@@ -7,7 +7,6 @@ static void init_commands()
 {
     mission.init_commands();
     non_nav_command_ID      = NO_COMMAND;
-    next_nav_command.id     = NO_COMMAND;
 }
 
 static void update_auto()
@@ -32,29 +31,16 @@ static int32_t read_alt_to_hold()
  *  This function stores waypoint commands
  *  It looks to see what the next command type is and finds the last command.
  */
-static void set_next_WP(const struct Location *wp)
+static void set_next_WP(struct Location *wp)
 {
-    // copy the current WP into the OldWP slot
+        // copy the current WP into the OldWP slot
     // ---------------------------------------
     prev_WP = next_WP;
 
     // Load the next_WP slot
     // ---------------------
     next_WP = *wp;
-
-    // if lat and lon is zero, then use current lat/lon
-    // this allows a mission to contain a "loiter on the spot"
-    // command
-    if (next_WP.lat == 0 && next_WP.lng == 0) {
-        next_WP.lat = current_loc.lat;
-        next_WP.lng = current_loc.lng;
-        // additionally treat zero altitude as current altitude
-        if (next_WP.alt == 0) {
-            next_WP.alt = current_loc.alt;
-        }
-    }
-
-
+    
     // are we already past the waypoint? This happens when we jump
     // waypoints, and it can cause us to skip a waypoint. If we are
     // past the waypoint when we start on a leg, then use the current
@@ -149,8 +135,11 @@ static void init_home()
 */
 static void update_home()
 {
-    home.lng        = g_gps->longitude;                                 // Lon * 10**7
-    home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = max(g_gps->altitude_cm, 0);
+    struct Location tmp;
+
+    tmp.lng        = g_gps->longitude;                                 // Lon * 10**7
+    tmp.lat        = g_gps->latitude;                                  // Lat * 10**7
+    tmp.alt        = max(g_gps->altitude_cm, 0);
     barometer.update_calibration();
+    mission.set_home(tmp);
 }
