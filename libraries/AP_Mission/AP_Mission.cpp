@@ -64,10 +64,20 @@ bool AP_Mission::change_waypoint_index(const uint8_t &new_index)
     return false;
 }
 
-void AP_Mission::goto_home()
+void AP_Mission::goto_home(const int32_t &altitude)
 {
+    struct Location temp;
     _index[1] = _index[2] = 0;
-    goto_location(_home);
+    temp=_home;
+    temp.alt=+altitude;
+    goto_location(temp);
+}
+
+void AP_Mission::resume()
+{
+    _sync_nav_waypoints();
+    _ahrs->get_position(&_current_loc);
+    _nav_waypoints[0]=_current_loc;
 }
 
 bool AP_Mission::goto_location(const struct Location &wp)

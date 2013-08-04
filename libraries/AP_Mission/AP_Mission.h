@@ -54,11 +54,12 @@ public:
     struct      Location current_wp() {return _nav_waypoints[1];};
     struct      Location after_wp()   {return _nav_waypoints[2];};
     
-    void        goto_home();
+    void        goto_home(const int32_t &altitude);
     bool        goto_location(const struct Location &wp);
-    
+    void        override_altitude(const int32_t &altitude) { _nav_waypoints[1].alt=altitude; } ;
+    void        resume();
     /* Forces the previous wp to a vehicle defined location */
-    void        set_prev_wp(const struct Location &wp) { _nav_waypoints[0] = wp; } ;
+    void        override_prev_wp(const struct Location &wp) { _nav_waypoints[0] = wp; } ;
     void        set_current_wp(const struct Location &wp) { _nav_waypoints[1] = wp; } ;
     
     /*Sequencies the entire waypoint queue to the next waypoint.
