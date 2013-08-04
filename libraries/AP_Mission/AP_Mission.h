@@ -48,12 +48,13 @@ public:
      *  Do this first. */
     void        init_commands();
 
-    bool        get_current_wp(struct Location &wp);
-    bool        get_after_wp(struct Location &wp);
-    bool        get_future_wp(struct Location &wp, uint8_t n);
+    struct Location get_prev_wp() {return _nav_waypoints[0];};
+    struct Location get_current_wp() {return _nav_waypoints[1];};
+    struct Location get_after_wp()   {return _nav_waypoints[2];};
     
     /* Forces the previous wp to a vehicle defined location */
     void        set_prev_wp(const struct Location &wp) { _nav_waypoints[0] = wp; } ;
+    void        set_current_wp(const struct Location &wp) { _nav_waypoints[1] = wp; } ;
     
     /*Sequencies the entire waypoint queue to the next waypoint.
      *  Returns false if there is an error.  */

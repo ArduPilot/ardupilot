@@ -25,34 +25,6 @@ void AP_Mission::init_commands()
     _mission_status = true;
 }
 
-bool AP_Mission::get_future_wp(struct Location &wp, uint8_t n)
-{
-    if ( n < 4 ){
-        wp=_nav_waypoints[n];
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool AP_Mission::get_current_wp(struct Location &wp)
-{
-    if( get_future_wp(wp,1)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool AP_Mission::get_after_wp(struct Location &wp)
-{
-    if( get_future_wp(wp,2)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 bool AP_Mission::increment_waypoint_index()
 {
     //Check if the current waypoint is home, if so the mission is complete.
