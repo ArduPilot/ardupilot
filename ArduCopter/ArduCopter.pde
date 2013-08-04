@@ -567,9 +567,12 @@ static float target_alt_for_reporting;      // target altitude in cm for reporti
 // ACRO Mode
 ////////////////////////////////////////////////////////////////////////////////
 // Used to control Axis lock
-static int32_t roll_axis;
-static int32_t pitch_axis;
-static float acro_level_mix;
+static int32_t acro_roll;                   // desired roll angle while sport mode
+static int32_t acro_roll_rate;              // desired roll rate while in acro mode
+static int32_t acro_pitch;                  // desired pitch angle while sport mode
+static int32_t acro_pitch_rate;             // desired pitch rate while acro mode
+static int32_t acro_yaw_rate;               // desired yaw rate while acro mode
+static float acro_level_mix;                // scales back roll, pitch and yaw inversely proportional to input from pilot
 
 // Filters
 #if FRAME_CONFIG == HELI_FRAME

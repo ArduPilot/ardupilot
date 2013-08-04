@@ -379,12 +379,10 @@ static bool set_mode(uint8_t mode)
             set_roll_pitch_mode(ACRO_RP);
             set_throttle_mode(ACRO_THR);
             set_nav_mode(NAV_NONE);
-            // reset acro axis targets to current attitude
-            if(g.axis_enabled){
-                roll_axis   = 0;
-                pitch_axis  = 0;
-                nav_yaw     = 0;
-            }
+            // reset acro level rates
+            acro_roll_rate = 0;
+            acro_pitch_rate = 0;
+            acro_yaw_rate = 0;
             break;
 
         case STABILIZE:
@@ -529,6 +527,10 @@ static bool set_mode(uint8_t mode)
             set_roll_pitch_mode(SPORT_RP);
             set_throttle_mode(SPORT_THR);
             set_nav_mode(NAV_NONE);
+            // reset acro angle targets to current attitude
+            acro_roll = ahrs.roll_sensor;
+            acro_pitch = ahrs.pitch_sensor;
+            nav_yaw = ahrs.yaw_sensor;
             break;
 
         default:

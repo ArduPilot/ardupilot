@@ -585,6 +585,10 @@
  # define ACRO_THR           	    THROTTLE_MANUAL
 #endif
 
+#ifndef ACRO_LEVEL_MAX_ANGLE
+ # define ACRO_LEVEL_MAX_ANGLE      3000
+#endif
+
 // Sport Mode
 #ifndef SPORT_YAW
  # define SPORT_YAW           	    YAW_HOLD
