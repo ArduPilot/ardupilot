@@ -32,7 +32,9 @@ bool AP_Mission::increment_waypoint_index()
         _mission_status = false;
         return false;
     } 
-    
+
+    _index[0]=_index[1];
+
     if (_sync_waypoint_index(_index[2])) {
         _mission_status = true;
         return true;
@@ -51,6 +53,9 @@ bool AP_Mission::change_waypoint_index(const uint8_t &new_index)
 
     Location tmp=get_cmd_with_index(new_index);
     if(_check_nav_valid(tmp)) {
+        _ahrs->get_position(&_current_loc);
+        _nav_waypoints[0]=_current_loc;
+        
         if(_sync_waypoint_index(new_index)) {
             _mission_status = true;
             return true;
@@ -59,6 +64,24 @@ bool AP_Mission::change_waypoint_index(const uint8_t &new_index)
     return false;
 }
 
+void AP_Mission::goto_home()
+{
+    _index[1] = _index[2] = 0;
+    goto_location(_home);
+}
+
+bool AP_Mission::goto_location(const struct Location &wp)
+{
+    _ahrs->get_position(&_current_loc);
+    if(_check_nav_valid(_current_loc)) {
+        _nav_waypoints[0] = _current_loc;
+        _nav_waypoints[1] = _nav_waypoints[2] = wp;
+        return true;
+    } else {
+        return false;
+    }
+}    
+    
 bool AP_Mission::get_new_cmd(struct Location &new_CMD)
 {
     struct Location temp;
@@ -111,7 +134,6 @@ bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
     Location tmp=get_cmd_with_index(new_index);
     if (new_index <= _cmd_max) {
         if (_check_nav_valid(tmp)) {
-                _index[0]=_index[1];
             if (new_index == _cmd_max) {
                 _index[1]=_cmd_max;
                 _index[2]=0;
@@ -255,7 +277,6 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
     // this allows a mission to contain a "loiter on the spot"
     // command
     if (temp.lat == 0 && temp.lng == 0) {
-        struct Location _current_loc;
         _ahrs->get_position(&_current_loc);
         temp.lat = _current_loc.lat;
         temp.lng = _current_loc.lng;

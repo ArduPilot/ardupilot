@@ -50,9 +50,12 @@ public:
      *  Do this first. */
     void        init_commands();
 
-    struct Location prev_wp() {return _nav_waypoints[0];};
-    struct Location current_wp() {return _nav_waypoints[1];};
-    struct Location after_wp()   {return _nav_waypoints[2];};
+    struct      Location prev_wp()    {return _nav_waypoints[0];};
+    struct      Location current_wp() {return _nav_waypoints[1];};
+    struct      Location after_wp()   {return _nav_waypoints[2];};
+    
+    void        goto_home();
+    bool        goto_location(const struct Location &wp);
     
     /* Forces the previous wp to a vehicle defined location */
     void        set_prev_wp(const struct Location &wp) { _nav_waypoints[0] = wp; } ;
@@ -155,6 +158,7 @@ private:
     
     // reference to the AHRS object
     AP_AHRS *_ahrs;
+    struct Location _current_loc;
     
 
 };
