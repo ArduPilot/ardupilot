@@ -233,6 +233,88 @@ get_yaw_rate_stabilized_bf(int32_t stick_angle)
     set_yaw_rate_target(0, BODY_EARTH_FRAME);
 }
 
+// Roll with rate input and stabilized in the earth frame
+static void
+get_roll_rate_stabilized_ef(int32_t stick_angle)
+{
+    int32_t angle_error = 0;
+
+    // convert the input to the desired roll rate
+    int32_t target_rate = stick_angle * g.acro_p - (roll_axis * g.acro_balance_roll)/100;
+
+    // convert the input to the desired roll rate
+    roll_axis += target_rate * G_Dt;
+    roll_axis = wrap_180_cd(roll_axis);
+
+    // ensure that we don't reach gimbal lock
+    if (labs(roll_axis) > 4500 && g.acro_trainer_enabled) {
+        roll_axis  = constrain_int32(roll_axis, -4500, 4500);
+        angle_error = wrap_180_cd(roll_axis - ahrs.roll_sensor);
+    } else {
+        // angle error with maximum of +- max_angle_overshoot
+        angle_error = wrap_180_cd(roll_axis - ahrs.roll_sensor);
+        angle_error  = constrain_int32(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
+    }
+
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete) {
+        angle_error = 0;
+    }
+#else      
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
+        angle_error = 0;
+    }
+#endif // HELI_FRAME
+
+    // update roll_axis to be within max_angle_overshoot of our current heading
+    roll_axis = wrap_180_cd(angle_error + ahrs.roll_sensor);
+
+    // set earth frame targets for rate controller
+  set_roll_rate_target(g.pi_stabilize_roll.get_p(angle_error) + target_rate, EARTH_FRAME);
+}
+
+// Pitch with rate input and stabilized in the earth frame
+static void
+get_pitch_rate_stabilized_ef(int32_t stick_angle)
+{
+    int32_t angle_error = 0;
+
+    // convert the input to the desired pitch rate
+    int32_t target_rate = stick_angle * g.acro_p - (pitch_axis * g.acro_balance_pitch)/100;
+
+    // convert the input to the desired pitch rate
+    pitch_axis += target_rate * G_Dt;
+    pitch_axis = wrap_180_cd(pitch_axis);
+
+    // ensure that we don't reach gimbal lock
+    if (labs(pitch_axis) > 4500) {
+        pitch_axis  = constrain_int32(pitch_axis, -4500, 4500);
+        angle_error = wrap_180_cd(pitch_axis - ahrs.pitch_sensor);
+    } else {
+        // angle error with maximum of +- max_angle_overshoot
+        angle_error = wrap_180_cd(pitch_axis - ahrs.pitch_sensor);
+        angle_error  = constrain_int32(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
+    }
+
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete) {
+        angle_error = 0;
+    }
+#else       
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
+        angle_error = 0;
+    }
+#endif // HELI_FRAME
+
+    // update pitch_axis to be within max_angle_overshoot of our current heading
+    pitch_axis = wrap_180_cd(angle_error + ahrs.pitch_sensor);
+
+    // set earth frame targets for rate controller
+  set_pitch_rate_target(g.pi_stabilize_pitch.get_p(angle_error) + target_rate, EARTH_FRAME);
+}
+
 // Yaw with rate input and stabilized in the earth frame
 static void
 get_yaw_rate_stabilized_ef(int32_t stick_angle)

@@ -1637,6 +1637,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
         case ROLL_PITCH_TOY:
+        case ROLL_PITCH_SPORT:
             roll_pitch_initialised = true;
             break;
 
@@ -1760,6 +1761,18 @@ void update_roll_pitch_mode(void)
 
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
+        break;
+
+    case ROLL_PITCH_SPORT:
+        // apply SIMPLE mode transform
+        if(ap.simple_mode && ap_system.new_radio_frame) {
+            update_simple_mode();
+        }
+        // copy user input for reporting purposes
+        control_roll = g.rc_1.control_in;
+        control_pitch = g.rc_2.control_in;
+        get_roll_rate_stabilized_ef(g.rc_1.control_in);
+        get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         break;
     }
 

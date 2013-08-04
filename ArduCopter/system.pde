@@ -342,9 +342,25 @@ static bool mode_requires_GPS(uint8_t mode) {
     return false;
 }
 
+// manual_flight_mode - returns true if flight mode is completely manual (i.e. roll, pitch and yaw controlled by pilot)
+static bool manual_flight_mode(uint8_t mode) {
+    switch(mode) {
+        case ACRO:
+        case STABILIZE:
+        case TOY_A:
+        case TOY_M:
+        case SPORT:
+            return true;
+        default:
+            return false;
+    }
+
+    return false;
+}
+
 // set_mode - change flight mode and perform any necessary initialisation
 // returns true if mode was succesfully set
-// STABILIZE, ACRO and LAND can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+// STABILIZE, ACRO, SPORT and LAND can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 static bool set_mode(uint8_t mode)
 {
     // boolean to record if flight mode could be set
@@ -505,6 +521,16 @@ static bool set_mode(uint8_t mode)
             set_throttle_mode(THROTTLE_HOLD);
             break;
 
+        case SPORT:
+            success = true;
+            ap.manual_throttle = true;
+            ap.manual_attitude = true;
+            set_yaw_mode(SPORT_YAW);
+            set_roll_pitch_mode(SPORT_RP);
+            set_throttle_mode(SPORT_THR);
+            set_nav_mode(NAV_NONE);
+            break;
+
         default:
             success = false;
             break;
@@ -547,7 +573,7 @@ static void update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(control_mode <= ACRO && g.rc_3.control_in == 0 && !ap.failsafe_radio) {
+        if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !ap.failsafe_radio) {
             set_auto_armed(false);
         }
     }else{
@@ -667,6 +693,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case TOY_A:
         port->print_P(PSTR("TOY_A"));
+        break;
+    case SPORT:
+        port->print_P(PSTR("SPORT"));
         break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);

@@ -585,6 +585,19 @@
  # define ACRO_THR           	    THROTTLE_MANUAL
 #endif
 
+// Sport Mode
+#ifndef SPORT_YAW
+ # define SPORT_YAW           	    YAW_ACRO
+#endif
+
+#ifndef SPORT_RP
+ # define SPORT_RP            	    ROLL_PITCH_SPORT
+#endif
+
+#ifndef SPORT_THR
+ # define SPORT_THR           	    THROTTLE_MANUAL
+#endif
+
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
  # define ALT_HOLD_YAW           	YAW_HOLD

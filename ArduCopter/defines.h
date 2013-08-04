@@ -27,11 +27,12 @@
 #define YAW_RESETTOARMEDYAW				9       // point towards heading at time motors were armed
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
-#define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates
+#define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates in body frame
 #define ROLL_PITCH_AUTO             2       // no pilot input.  autopilot roll, pitch is sent to stabilize controller inputs
 #define ROLL_PITCH_STABLE_OF        3       // pilot inputs roll, pitch angles which are mixed with optical flow based position controller lean anbles
 #define ROLL_PITCH_TOY              4       // THOR This is the Roll and Pitch mode
 #define ROLL_PITCH_LOITER           5       // pilot inputs the desired horizontal velocities
+#define ROLL_PITCH_SPORT            6       // pilot inputs roll, pitch rotation rates in earth frame
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation
@@ -135,11 +136,11 @@
 #define CIRCLE 7                        // AUTO control
 #define POSITION 8                      // AUTO control
 #define LAND 9                          // AUTO control
-#define OF_LOITER 10                    // Hold a single location using optical flow
-                                        // sensor
+#define OF_LOITER 10                    // Hold a single location using optical flow sensor
 #define TOY_A 11                        // THOR Enum for Toy mode
 #define TOY_M 12                        // THOR Enum for Toy mode
-#define NUM_MODES 13
+#define SPORT 13                        // earth frame rate control
+#define NUM_MODES 14
 
 // CH_6 Tuning
 // -----------

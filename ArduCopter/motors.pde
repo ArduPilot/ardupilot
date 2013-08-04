@@ -18,8 +18,8 @@ static void arm_motors_check()
         return;
     }
 
-    // allow arming/disarming in ACRO, STABILIZE and TOY flight modes
-    if (control_mode == ACRO || control_mode == STABILIZE || control_mode == TOY_A || control_mode == TOY_M) {
+    // allow arming/disarming in fully manual flight modes ACRO, STABILIZE, SPORT and TOY
+    if (manual_flight_mode(control_mode)) {
         allow_arming = true;
     }
 
@@ -97,7 +97,7 @@ static void auto_disarm_check()
 {
     static uint8_t auto_disarming_counter;
 
-    if((control_mode <= ACRO) && (g.rc_3.control_in == 0) && motors.armed()) {
+    if(manual_flight_mode(control_mode) && (g.rc_3.control_in == 0) && motors.armed()) {
         auto_disarming_counter++;
 
         if(auto_disarming_counter == AUTO_DISARMING_DELAY) {
