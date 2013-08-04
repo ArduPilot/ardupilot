@@ -620,12 +620,8 @@ static int16_t condition_rate;
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
-// The location of the previous waypoint.  Used for track following and altitude ramp calculations
-static struct   Location prev_WP;
 // The plane's current location
 static struct   Location current_loc;
-// The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
-static struct   Location next_WP;
 // The location of the active waypoint in Guided mode.
 static struct   Location guided_WP;
 // The location structure information from the Non-Nav command being processed

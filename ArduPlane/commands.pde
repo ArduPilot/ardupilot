@@ -11,6 +11,7 @@ static void init_commands()
 
 static void update_auto()
 {
+    mission.resume();
     if (mission.get_mission_status()) {
         process_waypoint();
     } else {
@@ -31,24 +32,16 @@ static int32_t read_alt_to_hold()
  *  This function stores waypoint commands
  *  It looks to see what the next command type is and finds the last command.
  */
-static void set_next_WP(struct Location *wp)
+static void setup_path()
 {
-        // copy the current WP into the OldWP slot
-    // ---------------------------------------
-    prev_WP = next_WP;
-
-    // Load the next_WP slot
-    // ---------------------
-    next_WP = *wp;
-    
     // are we already past the waypoint? This happens when we jump
     // waypoints, and it can cause us to skip a waypoint. If we are
     // past the waypoint when we start on a leg, then use the current
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+    if (location_passed_point(current_loc, mission.prev_wp(), mission.current_wp())) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("Resetting prev_WP"));
-        prev_WP = current_loc;
+        mission.override_prev_wp(current_loc);
     }
 
     // used to control FBW and limit the rate of climb
@@ -71,13 +64,9 @@ static void set_guided_WP(void)
         loiter.direction = 1;
     }
 
-    // copy the current location into the OldWP slot
-    // ---------------------------------------
-    prev_WP = current_loc;
-
     // Load the next_WP slot
     // ---------------------
-    next_WP = guided_WP;
+    mission.goto_location(guided_WP);
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
@@ -112,10 +101,6 @@ static void init_home()
     tmp.alt        = max(g_gps->altitude_cm, 0);
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)mission.get_home_alt());
-
-    // Save prev loc
-    // -------------
-    next_WP = prev_WP = tmp;
 
     // Load home for a default guided_WP
     // -------------

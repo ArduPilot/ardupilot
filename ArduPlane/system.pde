@@ -301,16 +301,15 @@ static void set_mode(enum FlightMode mode)
 
     case CIRCLE:
         // the altitude to circle at is taken from the current altitude
-        next_WP.alt = current_loc.alt;
+        mission.goto_location(current_loc);
         break;
 
     case AUTO:
-        prev_WP = current_loc;
         update_auto();
         break;
 
     case RTL:
-        prev_WP = current_loc;
+        mission.override_prev_wp(current_loc);
         do_RTL();
         break;
 
@@ -324,7 +323,7 @@ static void set_mode(enum FlightMode mode)
         break;
 
     default:
-        prev_WP = current_loc;
+        mission.override_prev_wp(current_loc);
         do_RTL();
         break;
     }

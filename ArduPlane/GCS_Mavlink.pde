@@ -1722,7 +1722,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 tell_command.alt += mission.get_home_alt();
             }
 
-            next_WP.alt = tell_command.alt;
+            mission.override_altitude(tell_command.alt);
 
             // verify we recevied the command
             mavlink_msg_mission_ack_send(
