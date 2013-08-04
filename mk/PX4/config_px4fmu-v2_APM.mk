@@ -51,14 +51,16 @@ MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
+MODULES		+= systemcmds/nshterm
 #MODULES		+= systemcmds/eeprom
 
 #
-# Libraries
+# Library modules
 #
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
+MODULES		+= modules/mathlib/math/filter
 
 #
 # Transitional support - add commands from the NuttX export archive.
