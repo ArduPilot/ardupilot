@@ -521,13 +521,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(acro_p,                 "ACRO_P",           ACRO_P),
 
-    // @Param: AXIS_ENABLE
-    // @DisplayName: Acro Axis
-    // @Description: Used to control whether acro mode actively maintains the current angle when control sticks are released (Enabled = maintains current angle)
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Standard
-    GSCALAR(axis_enabled,           "AXIS_ENABLE",      AXIS_LOCK_ENABLED),
-
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll
     // @Description: rate at which roll angle returns to level in acro mode

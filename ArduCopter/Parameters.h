@@ -146,7 +146,7 @@ public:
         k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_sonar_type,
         k_param_super_simple = 155,
-        k_param_axis_enabled = 157,
+        k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,
         k_param_ahrs, // AHRS group
 
@@ -290,7 +290,6 @@ public:
     AP_Float        low_voltage;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
-    AP_Int8         axis_enabled;
     AP_Int8         copter_leds_mode;           // Operating mode of LED
                                                 // lighting system
 

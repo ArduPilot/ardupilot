@@ -1476,11 +1476,7 @@ void update_yaw_mode(void)
 
     case YAW_ACRO:
         // pilot controlled yaw using rate controller
-        if(g.axis_enabled) {
-            get_yaw_rate_stabilized_bf(g.rc_4.control_in);
-        }else{
-            get_acro_yaw(g.rc_4.control_in);
-        }
+        get_yaw_rate_stabilized_bf(g.rc_4.control_in);
         break;
 
     case YAW_LOOK_AT_NEXT_WP:
@@ -1673,32 +1669,21 @@ void update_roll_pitch_mode(void)
         control_pitch           = g.rc_2.control_in;
 
 #if FRAME_CONFIG == HELI_FRAME
-		if(g.axis_enabled) {
-		    acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
-            get_roll_rate_stabilized_bf(g.rc_1.control_in);
-            get_pitch_rate_stabilized_bf(g.rc_2.control_in);
-            get_acro_level_rates();
+        // ACRO does not get SIMPLE mode ability
+        if (motors.flybar_mode == 1) {
+            g.rc_1.servo_out = g.rc_1.control_in;
+            g.rc_2.servo_out = g.rc_2.control_in;
         }else{
-            // ACRO does not get SIMPLE mode ability
-            if (motors.flybar_mode == 1) {
-                g.rc_1.servo_out = g.rc_1.control_in;
-                g.rc_2.servo_out = g.rc_2.control_in;
-            } else {
-                get_acro_roll(g.rc_1.control_in);
-                get_acro_pitch(g.rc_2.control_in);
-            }
-		}
-#else  // !HELI_FRAME
-		if(g.axis_enabled) {
             acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
             get_roll_rate_stabilized_bf(g.rc_1.control_in);
             get_pitch_rate_stabilized_bf(g.rc_2.control_in);
             get_acro_level_rates();
-        }else{
-            // ACRO does not get SIMPLE mode ability
-            get_acro_roll(g.rc_1.control_in);
-            get_acro_pitch(g.rc_2.control_in);
-		}
+        }
+#else  // !HELI_FRAME
+        acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
+        get_roll_rate_stabilized_bf(g.rc_1.control_in);
+        get_pitch_rate_stabilized_bf(g.rc_2.control_in);
+        get_acro_level_rates();
 #endif  // HELI_FRAME
         break;
 
