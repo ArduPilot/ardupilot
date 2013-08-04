@@ -991,6 +991,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(camera_mount2,           "MNT2_",       AP_Mount),
 #endif
 
+#if SPRAYER == ENABLED
+    // @Group: SPRAYER_
+    // @Path: ../libraries/AC_Sprayer/AC_Sprayer.cpp
+    GOBJECT(sprayer,                "SPRAY_",       AC_Sprayer),
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     GOBJECT(sitl, "SIM_", SITL),
 #endif

@@ -87,7 +87,8 @@ public:
         k_param_circle_rate,
         k_param_sonar_gain,
         k_param_ch8_option,
-        k_param_arming_check_enabled,   // 32
+        k_param_arming_check_enabled,
+        k_param_sprayer,    // 33
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove

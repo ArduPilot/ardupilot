@@ -104,6 +104,7 @@
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
+#include <AC_Sprayer.h>         // Crop sprayer library
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -831,6 +832,13 @@ AC_Fence    fence(&inertial_nav);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Crop Sprayer
+////////////////////////////////////////////////////////////////////////////////
+#if SPRAYER == ENABLED
+static AC_Sprayer sprayer(&inertial_nav);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
 void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate);
@@ -1251,6 +1259,10 @@ static void slow_loop()
 
 #if MOUNT2 == ENABLED
         camera_mount2.update_mount_type();
+#endif
+
+#if SPRAYER == ENABLED
+        sprayer.update();
 #endif
 
         // agmatthews - USERHOOKS
