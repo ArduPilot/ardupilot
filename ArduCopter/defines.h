@@ -164,7 +164,8 @@
 #define CH6_LOITER_RATE_KI              28  // loiter rate controller's I term (speed error to tilt angle)
 #define CH6_LOITER_RATE_KD              23  // loiter rate controller's D term (speed error to tilt angle)
 #define CH6_WP_SPEED                    10  // maximum speed to next way point (0 to 10m/s)
-#define CH6_ACRO_KP                     25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+#define CH6_ACRO_RP_KP                  25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+#define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
 #define CH6_RELAY                       9   // switch relay on if ch6 high, off if low
 #define CH6_HELI_EXTERNAL_GYRO          13  // TradHeli specific external tail gyro gain
 #define CH6_OPTFLOW_KP                  17  // optical flow loiter controller's P term (position error to tilt angle)

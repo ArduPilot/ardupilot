@@ -233,7 +233,7 @@ public:
         //
         // 220: PI/D Controllers
         //
-        k_param_acro_p = 221,
+        k_param_acro_rp_p = 221,
         k_param_axis_lock_p,    // remove
         k_param_pid_rate_roll,
         k_param_pid_rate_pitch,
@@ -255,7 +255,8 @@ public:
         k_param_acro_balance_pitch_old, // 240 - remove
         k_param_pid_throttle_accel,
         k_param_acro_balance_roll,
-        k_param_acro_balance_pitch, // 243
+        k_param_acro_balance_pitch,
+        k_param_acro_yaw_p, // 244
 
         // 254,255: reserved
     };
@@ -377,7 +378,8 @@ public:
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
     // Acro parameters
-    AP_Float                acro_p;
+    AP_Float                acro_rp_p;
+    AP_Float                acro_yaw_p;
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;

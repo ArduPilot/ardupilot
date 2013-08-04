@@ -758,12 +758,12 @@
 //
 
 // Acro mode gains
-#ifndef ACRO_P
- # define ACRO_P                 4.5f
+#ifndef ACRO_RP_P
+ # define ACRO_RP_P                 4.5f
 #endif
 
-#ifndef AXIS_LOCK_ENABLED
- # define AXIS_LOCK_ENABLED      ENABLED
+#ifndef ACRO_YAW_P
+ # define ACRO_YAW_P                4.5f
 #endif
 
 // Stabilize (angle controller) gains

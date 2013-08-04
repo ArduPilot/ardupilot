@@ -2212,9 +2212,14 @@ static void tuning(){
         wp_nav.set_horizontal_velocity(g.rc_6.control_in);
         break;
 
-    // Acro and other tuning
-    case CH6_ACRO_KP:
-        g.acro_p = tuning_value;
+    // Acro roll pitch gain
+    case CH6_ACRO_RP_KP:
+        g.acro_rp_p = tuning_value;
+        break;
+
+    // Acro yaw gain
+    case CH6_ACRO_YAW_KP:
+        g.acro_yaw_p = tuning_value;
         break;
 
     case CH6_RELAY:

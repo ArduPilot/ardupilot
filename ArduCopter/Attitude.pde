@@ -73,7 +73,7 @@ get_stabilize_yaw(int32_t target_angle)
 static void
 get_acro_roll(int32_t target_rate)
 {
-    target_rate = target_rate * g.acro_p;
+    target_rate = target_rate * g.acro_rp_p;
 
     // set targets for rate controller
     set_roll_rate_target(target_rate, BODY_FRAME);
@@ -82,7 +82,7 @@ get_acro_roll(int32_t target_rate)
 static void
 get_acro_pitch(int32_t target_rate)
 {
-    target_rate = target_rate * g.acro_p;
+    target_rate = target_rate * g.acro_rp_p;
 
     // set targets for rate controller
     set_pitch_rate_target(target_rate, BODY_FRAME);
@@ -91,7 +91,7 @@ get_acro_pitch(int32_t target_rate)
 static void
 get_acro_yaw(int32_t target_rate)
 {
-    target_rate = target_rate * g.acro_p;
+    target_rate = target_rate * g.acro_yaw_p;
 
     // set targets for rate controller
     set_yaw_rate_target(target_rate, BODY_FRAME);
@@ -154,7 +154,7 @@ get_roll_rate_stabilized_bf(int32_t stick_angle)
     static float angle_error = 0;
 
     // convert the input to the desired body frame roll rate
-    int32_t rate_request = stick_angle * g.acro_p;
+    int32_t rate_request = stick_angle * g.acro_rp_p;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         rate_request += acro_roll_rate;
@@ -193,7 +193,7 @@ get_pitch_rate_stabilized_bf(int32_t stick_angle)
     static float angle_error = 0;
 
     // convert the input to the desired body frame pitch rate
-    int32_t rate_request = stick_angle * g.acro_p;
+    int32_t rate_request = stick_angle * g.acro_rp_p;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         rate_request += acro_pitch_rate;
@@ -232,7 +232,7 @@ get_yaw_rate_stabilized_bf(int32_t stick_angle)
     static float angle_error = 0;
 
     // convert the input to the desired body frame yaw rate
-    int32_t rate_request = stick_angle * g.acro_p;
+    int32_t rate_request = stick_angle * g.acro_yaw_p;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         rate_request += acro_yaw_rate;
@@ -271,7 +271,7 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired roll rate
-    int32_t target_rate = stick_angle * g.acro_p - (acro_roll * g.acro_balance_roll);
+    int32_t target_rate = stick_angle * g.acro_rp_p - (acro_roll * g.acro_balance_roll);
 
     // convert the input to the desired roll rate
     acro_roll += target_rate * G_Dt;
@@ -312,7 +312,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired pitch rate
-    int32_t target_rate = stick_angle * g.acro_p - (acro_pitch * g.acro_balance_pitch);
+    int32_t target_rate = stick_angle * g.acro_rp_p - (acro_pitch * g.acro_balance_pitch);
 
     // convert the input to the desired pitch rate
     acro_pitch += target_rate * G_Dt;
@@ -354,7 +354,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired yaw rate
-    int32_t target_rate = stick_angle * g.acro_p;
+    int32_t target_rate = stick_angle * g.acro_yaw_p;
 
     // convert the input to the desired yaw rate
     nav_yaw += target_rate * G_Dt;
@@ -879,7 +879,7 @@ static void get_look_ahead_yaw(int16_t pilot_yaw)
         nav_yaw = get_yaw_slew(nav_yaw, g_gps->ground_course_cd, AUTO_YAW_SLEW_RATE);
         get_stabilize_yaw(wrap_360_cd(nav_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
     }else{
-        nav_yaw += pilot_yaw * g.acro_p * G_Dt;
+        nav_yaw += pilot_yaw * g.acro_yaw_p * G_Dt;
         nav_yaw = wrap_360_cd(nav_yaw);
         get_stabilize_yaw(nav_yaw);
     }
