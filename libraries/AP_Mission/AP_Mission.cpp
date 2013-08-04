@@ -251,6 +251,20 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
         temp.alt += _home.alt;
     }
 
+    // if lat and lon is zero, then use current lat/lon
+    // this allows a mission to contain a "loiter on the spot"
+    // command
+    if (temp.lat == 0 && temp.lng == 0) {
+        struct Location _current_loc;
+        _ahrs->get_position(&_current_loc);
+        temp.lat = _current_loc.lat;
+        temp.lng = _current_loc.lng;
+        // additionally treat zero altitude as current altitude
+        if (temp.alt == 0) {
+            temp.alt = _current_loc.alt;
+        }
+    }
+    
     return temp;
 }
 

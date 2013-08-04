@@ -19,6 +19,7 @@
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_Param.h>
+#include <AP_AHRS.h>
 #include <AP_HAL.h>
 
 #define AP_MISSION_CMD_BLANK 0
@@ -33,7 +34,8 @@
 class AP_Mission {
 
 public:
-    AP_Mission(uint8_t wp_size = 15, uint16_t start_byte = 0x500) : 
+    AP_Mission(AP_AHRS *ahrs, uint8_t wp_size = 15, uint16_t start_byte = 0x500) : 
+        _ahrs(ahrs),
         _wp_size(wp_size),
         _start_byte(start_byte)
     	{
@@ -150,6 +152,10 @@ private:
     uint8_t             _index[3];
     struct Location     _home;
     AP_Float            _cmd_max;
+    
+    // reference to the AHRS object
+    AP_AHRS *_ahrs;
+    
 
 };
 
