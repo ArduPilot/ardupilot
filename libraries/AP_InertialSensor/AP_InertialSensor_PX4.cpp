@@ -23,6 +23,7 @@ uint64_t AP_InertialSensor_PX4::_last_accel_timestamp;
 uint64_t AP_InertialSensor_PX4::_last_gyro_timestamp;
 int AP_InertialSensor_PX4::_accel_fd;
 int AP_InertialSensor_PX4::_gyro_fd;
+bool AP_InertialSensor_PX4::_do_averaging;
 
 uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) 
 {
@@ -67,6 +68,7 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     // support this yet, but when it does we want to use it
     ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 10);
     ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 10);
+    _do_averaging = true;
 #else
     /* 
      * set the accel and gyro sampling rate. Set a fixed rate of 800Hz
@@ -83,6 +85,10 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
 
     // sample dividers above were setup for 200Hz
     _sample_divider *= 4;
+
+    // the NuttX driver uses a builtin low pass filter, so asking for
+    // the latest value is always the right one
+    _do_averaging = false;
 #endif
 
     // register a 1kHz timer to read from PX4 sensor drivers
@@ -121,11 +127,19 @@ bool AP_InertialSensor_PX4::update(void)
     _delta_time = (_last_gyro_timestamp - _last_update_usec) * 1.0e-6f;
     _last_update_usec = _last_gyro_timestamp;
 
-    _accel = _accel_sum / _accel_sum_count;
+    if (_do_averaging) {
+        _accel = _accel_sum / _accel_sum_count;
+    } else {
+        _accel = _accel_sum;
+    }
     _accel_sum.zero();
     _accel_sum_count = 0;
 
-    _gyro = _gyro_sum / _gyro_sum_count;
+    if (_do_averaging) {
+        _gyro = _gyro_sum / _gyro_sum_count;
+    } else {
+        _gyro = _gyro_sum;
+    }
     _gyro_sum.zero();
     _gyro_sum_count = 0;
 
@@ -177,14 +191,22 @@ void AP_InertialSensor_PX4::_accumulate(void)
 
     while (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
         accel_report.timestamp != _last_accel_timestamp) {        
-        _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
+        if (_do_averaging) {
+            _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
+        } else {
+            _accel_sum = Vector3f(accel_report.x, accel_report.y, accel_report.z);
+        }
         _accel_sum_count++;
         _last_accel_timestamp = accel_report.timestamp;
 	}
 
     while (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
         gyro_report.timestamp != _last_gyro_timestamp) {        
-        _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
+        if (_do_averaging) {
+            _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
+        } else {
+            _gyro_sum = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
+        }
         _gyro_sum_count++;
         _last_gyro_timestamp = gyro_report.timestamp;
 	}

@@ -40,6 +40,7 @@ private:
     static uint64_t _last_accel_timestamp;
     static uint64_t _last_gyro_timestamp;
     uint8_t  _sample_divider;
+    static bool _do_averaging;
 
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
