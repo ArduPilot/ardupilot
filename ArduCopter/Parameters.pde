@@ -531,25 +531,25 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll
     // @Description: rate at which roll angle returns to level in acro mode
-    // @Range: 0 300
-    // @Increment: 1
+    // @Range: 0 3
+    // @Increment: 0.1
     // @User: Advanced
     GSCALAR(acro_balance_roll,      "ACRO_BAL_ROLL",    ACRO_BALANCE_ROLL),
 
     // @Param: ACRO_BAL_PITCH
     // @DisplayName: Acro Balance Pitch
     // @Description: rate at which pitch angle returns to level in acro mode
-    // @Range: 0 300
-    // @Increment: 1
+    // @Range: 0 3
+    // @Increment: 0.1
     // @User: Advanced
     GSCALAR(acro_balance_pitch,     "ACRO_BAL_PITCH",   ACRO_BALANCE_PITCH),
 
     // @Param: ACRO_TRAINER
-    // @DisplayName: Acro Trainer Enabled
-    // @Description: Set to 1 (Enabled) to make roll return to within 45 degrees of level automatically
-    // @Values: 0:Disabled,1:Enabled
+    // @DisplayName: Acro Trainer
+    // @Description: Type of trainer used in acro mode
+    // @Values: 0:Disabled,1:Leveling,2:Leveling and Limited
     // @User: Advanced
-    GSCALAR(acro_trainer_enabled,   "ACRO_TRAINER",     ACRO_TRAINER_ENABLED),
+    GSCALAR(acro_trainer,   "ACRO_TRAINER",     ACRO_TRAINER_LIMITED),
 
     // @Param: LED_MODE
     // @DisplayName: Copter LED Mode

@@ -175,6 +175,10 @@
 #define CH6_DECLINATION                 38  // compass declination in radians
 #define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
 
+// Acro Trainer types
+#define ACRO_TRAINER_DISABLED   0
+#define ACRO_TRAINER_LEVELING   1
+#define ACRO_TRAINER_LIMITED    2
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol
 // commands.  See enum MAV_CMD in the GCS_Mavlink library

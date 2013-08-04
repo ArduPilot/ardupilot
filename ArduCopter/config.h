@@ -869,15 +869,11 @@
 #endif
 
 #ifndef ACRO_BALANCE_ROLL
- #define ACRO_BALANCE_ROLL			200
+ #define ACRO_BALANCE_ROLL			1.0f
 #endif
 
 #ifndef ACRO_BALANCE_PITCH
- #define ACRO_BALANCE_PITCH			200
-#endif
-
-#ifndef ACRO_TRAINER_ENABLED
- #define ACRO_TRAINER_ENABLED       ENABLED
+ #define ACRO_BALANCE_PITCH			1.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

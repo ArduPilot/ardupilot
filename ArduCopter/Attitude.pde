@@ -101,11 +101,19 @@ get_acro_yaw(int32_t target_rate)
 static void
 get_acro_level_rates()
 {
+    // zero earth frame leveling if trainer is disabled
+    if (g.acro_trainer == ACRO_TRAINER_DISABLED) {
+        set_roll_rate_target(0, BODY_EARTH_FRAME);
+        set_pitch_rate_target(0, BODY_EARTH_FRAME);
+        set_yaw_rate_target(0, BODY_EARTH_FRAME);
+        return;
+    }
+
     // Calculate trainer mode earth frame rate command for roll
     int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
     int32_t target_rate = 0;
 
-    if (g.acro_trainer_enabled) {
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         if (roll_angle > 4500){
             target_rate =  g.pi_stabilize_roll.get_p(4500-roll_angle);
         }else if (roll_angle < -4500) {
@@ -113,7 +121,7 @@ get_acro_level_rates()
         }
     }
     roll_angle   = constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
-    target_rate -=  (roll_angle * g.acro_balance_roll)/100;
+    target_rate -= roll_angle * g.acro_balance_roll;
 
     // add earth frame targets for roll rate controller
     set_roll_rate_target(target_rate, BODY_EARTH_FRAME);
@@ -122,7 +130,7 @@ get_acro_level_rates()
     int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
     target_rate = 0;
 
-    if (g.acro_trainer_enabled) {
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         if (pitch_angle > 4500){
             target_rate =  g.pi_stabilize_pitch.get_p(4500-pitch_angle);
         }else if (pitch_angle < -4500) {
@@ -130,7 +138,7 @@ get_acro_level_rates()
         }
     }
     pitch_angle  = constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
-    target_rate -=  (pitch_angle * g.acro_balance_pitch)/100;
+    target_rate -= pitch_angle * g.acro_balance_pitch;
 
     // add earth frame targets for pitch rate controller
     set_pitch_rate_target(target_rate, BODY_EARTH_FRAME);
@@ -148,7 +156,9 @@ get_roll_rate_stabilized_bf(int32_t stick_angle)
     // convert the input to the desired body frame roll rate
     int32_t rate_request = stick_angle * g.acro_p;
 
-    if (!g.acro_trainer_enabled) {
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        rate_request += acro_roll_rate;
+    }else{        
         // Scale pitch leveling by stick input
         acro_roll_rate = (float)acro_roll_rate*acro_level_mix;
 
@@ -157,8 +167,6 @@ get_roll_rate_stabilized_bf(int32_t stick_angle)
 
         rate_request += acro_roll_rate;
         rate_request = constrain_int32(rate_request, -rate_limit, rate_limit);
-    } else {
-        rate_request += acro_roll_rate;
     }
 
     // add automatic correction
@@ -187,7 +195,9 @@ get_pitch_rate_stabilized_bf(int32_t stick_angle)
     // convert the input to the desired body frame pitch rate
     int32_t rate_request = stick_angle * g.acro_p;
 
-    if (!g.acro_trainer_enabled) {
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        rate_request += acro_pitch_rate;
+    }else{
         // Scale pitch leveling by stick input
         acro_pitch_rate = (float)acro_pitch_rate*acro_level_mix;
         
@@ -196,8 +206,6 @@ get_pitch_rate_stabilized_bf(int32_t stick_angle)
         
         rate_request += acro_pitch_rate;
         rate_request = constrain_int32(rate_request, -rate_limit, rate_limit);
-    } else {
-        rate_request += acro_pitch_rate;
     }
 
     // add automatic correction
@@ -226,7 +234,9 @@ get_yaw_rate_stabilized_bf(int32_t stick_angle)
     // convert the input to the desired body frame yaw rate
     int32_t rate_request = stick_angle * g.acro_p;
 
-    if (!g.acro_trainer_enabled) {
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        rate_request += acro_yaw_rate;
+    }else{
         // Scale pitch leveling by stick input
         acro_yaw_rate = (float)acro_yaw_rate*acro_level_mix;
 
@@ -235,8 +245,6 @@ get_yaw_rate_stabilized_bf(int32_t stick_angle)
 
         rate_request += acro_yaw_rate;
         rate_request = constrain_int32(rate_request, -rate_limit, rate_limit);
-    } else {
-        rate_request += acro_yaw_rate;
     }
 
     // add automatic correction
@@ -263,14 +271,14 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired roll rate
-    int32_t target_rate = stick_angle * g.acro_p - (acro_roll * g.acro_balance_roll)/100;
+    int32_t target_rate = stick_angle * g.acro_p - (acro_roll * g.acro_balance_roll);
 
     // convert the input to the desired roll rate
     acro_roll += target_rate * G_Dt;
     acro_roll = wrap_180_cd(acro_roll);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_roll) > 4500 && g.acro_trainer_enabled) {
+    if (labs(acro_roll) > 4500 && g.acro_trainer == ACRO_TRAINER_LIMITED) {
         acro_roll  = constrain_int32(acro_roll, -4500, 4500);
         angle_error = wrap_180_cd(acro_roll - ahrs.roll_sensor);
     } else {
@@ -304,7 +312,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired pitch rate
-    int32_t target_rate = stick_angle * g.acro_p - (acro_pitch * g.acro_balance_pitch)/100;
+    int32_t target_rate = stick_angle * g.acro_p - (acro_pitch * g.acro_balance_pitch);
 
     // convert the input to the desired pitch rate
     acro_pitch += target_rate * G_Dt;

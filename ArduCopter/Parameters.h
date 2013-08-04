@@ -82,7 +82,7 @@ public:
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
-        k_param_acro_trainer_enabled,
+        k_param_acro_trainer,
         k_param_pilot_velocity_z_max,
         k_param_circle_rate,
         k_param_sonar_gain,
@@ -251,9 +251,11 @@ public:
         k_param_pid_throttle_rate,
         k_param_pid_optflow_roll,
         k_param_pid_optflow_pitch,
-        k_param_acro_balance_roll,      // scalar (not PID)
-        k_param_acro_balance_pitch,     // scalar (not PID)
-        k_param_pid_throttle_accel, // 241
+        k_param_acro_balance_roll_old,  // 239 - remove
+        k_param_acro_balance_pitch_old, // 240 - remove
+        k_param_pid_throttle_accel,
+        k_param_acro_balance_roll,
+        k_param_acro_balance_pitch, // 243
 
         // 254,255: reserved
     };
@@ -377,9 +379,9 @@ public:
 
     // Acro parameters
     AP_Float                acro_p;
-    AP_Int16                acro_balance_roll;
-    AP_Int16                acro_balance_pitch;
-    AP_Int8                 acro_trainer_enabled;
+    AP_Float                acro_balance_roll;
+    AP_Float                acro_balance_pitch;
+    AP_Int8                 acro_trainer;
 
     // PI/D controllers
     AC_PID                  pid_rate_roll;
