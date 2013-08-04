@@ -27,8 +27,8 @@ void AP_Mission::init_commands()
 
 bool AP_Mission::increment_waypoint_index()
 {
-    //Check if the current waypoint is home, if so the mission is complete.
-    if (_index[1] == 0) {
+    //Check if the after waypoint is home, if so the mission is complete.
+    if (_index[2] == 0) {
         _mission_status = false;
         return false;
     } 
