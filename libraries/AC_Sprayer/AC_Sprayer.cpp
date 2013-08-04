@@ -148,11 +148,10 @@ AC_Sprayer::update()
     // if spraying update the pump servo position
     if (_spraying) {
         RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, min(ground_speed * _pump_pct_1ms,10000),0,10000);
+        RC_Channel_aux::set_radio(RC_Channel_aux::k_sprayer_spinner, _spinner_pwm);
     }else{
-        // ensure sprayer is off
+        // ensure sprayer and spinner are off
         RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_pump);
+        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_spinner);
     }
-
-    // send output to spinner servo
-    RC_Channel_aux::set_radio(RC_Channel_aux::k_sprayer_spinner, _spinner_pwm);
 }
