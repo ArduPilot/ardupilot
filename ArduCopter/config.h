@@ -587,7 +587,7 @@
 
 // Sport Mode
 #ifndef SPORT_YAW
- # define SPORT_YAW           	    YAW_ACRO
+ # define SPORT_YAW           	    YAW_HOLD
 #endif
 
 #ifndef SPORT_RP
