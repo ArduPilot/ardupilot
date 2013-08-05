@@ -269,9 +269,9 @@ static void do_land()
     setup_path();
 }
 
-static void loiter_set_direction_wp(const struct Location *nav_command)
+static void loiter_set_direction_wp(const struct Location &nav_command)
 {
-    if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
+    if (nav_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -281,14 +281,14 @@ static void loiter_set_direction_wp(const struct Location *nav_command)
 static void do_loiter_unlimited()
 {
     setup_path();
-    loiter_set_direction_wp(&mission.current_wp());
+    loiter_set_direction_wp(mission.current_wp());
 }
 
 static void do_loiter_turns()
 {
     setup_path();
     loiter.total_cd = mission.current_wp().p1 * 36000UL;
-    loiter_set_direction_wp(&mission.current_wp());
+    loiter_set_direction_wp(mission.current_wp());
 }
 
 static void do_loiter_time()
@@ -297,7 +297,7 @@ static void do_loiter_time()
     // we set start_time_ms when we reach the waypoint
     loiter.start_time_ms = 0;
     loiter.time_max_ms = mission.current_wp().p1 * (uint32_t)1000;     // units are seconds
-    loiter_set_direction_wp(&mission.current_wp());
+    loiter_set_direction_wp(mission.current_wp());
 }
 
 /********************************************************************************/

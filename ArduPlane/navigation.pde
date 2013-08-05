@@ -184,13 +184,15 @@ static void update_cruise()
         mission.override_prev_wp(current_loc);
     }
     if (cruise_state.locked_heading) {
-//        next_WP = prev_WP;
         // always look 1km ahead
-        struct Location new_wp = mission.current_wp();
-        location_update(new_wp, 
+        struct Location new_wp;
+        new_wp = mission.current_wp();
+        location_update(new_wp,
                         cruise_state.locked_heading_cd*0.01f, 
                         get_distance(mission.prev_wp(), current_loc) + 1000);
         mission.set_current_wp(new_wp);
+
+        // tell the navigation controller about the new waypoints
         nav_controller->update_waypoint(mission.prev_wp(), mission.current_wp());
     }
 }
