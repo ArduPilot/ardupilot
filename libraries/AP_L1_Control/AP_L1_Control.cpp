@@ -88,10 +88,10 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	// Get current position and velocity
-    _ahrs->get_position(&_current_loc);
+    _ahrs->get_position(_current_loc);
 
 	// update _target_bearing_cd
-	_target_bearing_cd = get_bearing_cd(&_current_loc, &next_WP);
+	_target_bearing_cd = get_bearing_cd(_current_loc, next_WP);
 
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 	
@@ -182,10 +182,10 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	//Get current position and velocity
-    _ahrs->get_position(&_current_loc);
+    _ahrs->get_position(_current_loc);
 
 	// update _target_bearing_cd
-	_target_bearing_cd = get_bearing_cd(&_current_loc, &center_WP);
+	_target_bearing_cd = get_bearing_cd(_current_loc, center_WP);
 
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 
