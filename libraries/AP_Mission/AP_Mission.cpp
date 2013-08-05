@@ -18,6 +18,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
 
 extern const AP_HAL::HAL& hal;
 
+#define WP_SIZE 15
+
 void AP_Mission::init_commands()
 {
     uint8_t tmp_index=_find_nav_index(1);
@@ -44,7 +46,7 @@ bool AP_Mission::increment_waypoint_index()
     }
 }
 
-bool AP_Mission::change_waypoint_index(const uint8_t &new_index)
+bool AP_Mission::change_waypoint_index(uint8_t new_index)
 {
     //Current index is requested, no change.
     if(new_index == _index[1]) {
@@ -53,7 +55,7 @@ bool AP_Mission::change_waypoint_index(const uint8_t &new_index)
 
     Location tmp=get_cmd_with_index(new_index);
     if(_check_nav_valid(tmp)) {
-        _ahrs->get_position(&_current_loc);
+        _ahrs.get_position(_current_loc);
         _nav_waypoints[0]=_current_loc;
         
         if(_sync_waypoint_index(new_index)) {
@@ -76,13 +78,13 @@ void AP_Mission::goto_home(const int32_t &altitude)
 void AP_Mission::resume()
 {
     _sync_nav_waypoints();
-    _ahrs->get_position(&_current_loc);
+    _ahrs.get_position(_current_loc);
     _nav_waypoints[0]=_current_loc;
 }
 
 bool AP_Mission::goto_location(const struct Location &wp)
 {
-    _ahrs->get_position(&_current_loc);
+    _ahrs.get_position(_current_loc);
     if(_check_nav_valid(_current_loc)) {
         _nav_waypoints[0] = _current_loc;
         _nav_waypoints[1] = _nav_waypoints[2] = wp;
@@ -244,7 +246,7 @@ struct Location AP_Mission::get_cmd_with_index_raw(int16_t i)
     }else{
         // we can load a command, we don't process it yet
         // read WP position
-        mem = (_start_byte) + (i * _wp_size);
+        mem = (_start_byte) + (i * WP_SIZE);
 
         temp.id = hal.storage->read_byte(mem);
 
@@ -287,7 +289,7 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
     // this allows a mission to contain a "loiter on the spot"
     // command
     if (temp.lat == 0 && temp.lng == 0) {
-        _ahrs->get_position(&_current_loc);
+        _ahrs.get_position(_current_loc);
         temp.lat = _current_loc.lat;
         temp.lng = _current_loc.lng;
         // additionally treat zero altitude as current altitude
@@ -302,7 +304,7 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
 void AP_Mission::set_cmd_with_index(struct Location &temp, uint16_t i)
 {
     i = constrain_int16(i, 0, command_total());
-    uint16_t mem = _start_byte + (i * _wp_size);
+    uint16_t mem = _start_byte + (i * WP_SIZE);
 
     // force home wp to absolute height
     if (i == 0) {

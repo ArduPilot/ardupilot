@@ -34,10 +34,9 @@
 class AP_Mission {
 
 public:
-    AP_Mission(AP_AHRS *ahrs, uint8_t wp_size = 15, uint16_t start_byte = 0x500) : 
-        _ahrs(ahrs),
-        _wp_size(wp_size),
-        _start_byte(start_byte)
+    AP_Mission(AP_AHRS &ahrs, uint16_t start_byte = 0x500) : 
+        _start_byte(start_byte),
+        _ahrs(ahrs)
     	{
 			AP_Param::setup_object_defaults(this, var_info);
             _index[0]=0; _index[1]=0; _index[2]=0;
@@ -50,17 +49,17 @@ public:
      *  Do this first. */
     void        init_commands();
 
-    struct      Location prev_wp()    {return _nav_waypoints[0];};
-    struct      Location current_wp() {return _nav_waypoints[1];};
-    struct      Location after_wp()   {return _nav_waypoints[2];};
+    const struct Location &prev_wp() const {return _nav_waypoints[0];}
+    const struct Location &current_wp() const {return _nav_waypoints[1];}
+    const struct Location &after_wp() const {return _nav_waypoints[2];}
     
     void        goto_home(const int32_t &altitude);
     bool        goto_location(const struct Location &wp);
-    void        override_altitude(const int32_t &altitude) { _nav_waypoints[1].alt=altitude; } ;
+    void        override_altitude(const int32_t &altitude) { _nav_waypoints[1].alt=altitude; }
     void        resume();
     /* Forces the previous wp to a vehicle defined location */
-    void        override_prev_wp(const struct Location &wp) { _nav_waypoints[0] = wp; } ;
-    void        set_current_wp(const struct Location &wp) { _nav_waypoints[1] = wp; } ;
+    void        override_prev_wp(const struct Location &wp) { _nav_waypoints[0] = wp; }
+    void        set_current_wp(const struct Location &wp) { _nav_waypoints[1] = wp; }
     
     /*Sequencies the entire waypoint queue to the next waypoint.
      *  Returns false if there is an error.  */
@@ -68,7 +67,7 @@ public:
 
     /* Forces a reset of the command queue to a specified waypoint.
     *  Returns false if a non_nav command is requested or error. */
-    bool        change_waypoint_index(const uint8_t &new_index);
+    bool        change_waypoint_index(uint8_t new_index);
 
     /*Gets a new command associated with current leg of the mission.
      *  Each time this is called a new command is returned.
@@ -77,24 +76,19 @@ public:
 
     /* Returns the overall health of the mission.  If the mission is complete, or
      * there is an error, this will return false. */
-    bool        get_mission_status() {return _mission_status;};
+    bool        get_mission_status() const {return _mission_status;}
 
     /*---------------------Utility Functions-------------------*/
 
-
-    uint8_t *      waypoint_array_index()           {
-        return _index;
-    };
-    
     /*returns just the current index.  */
-    uint8_t        waypoint_index()    {
+    uint8_t        waypoint_index() const {
         return _index[1];
-    };
+    }
     
     /*returns just the current command index.  */
     uint8_t        command_index()    {
         return _cmd_index;
-    };
+    }
     
     //gets the total number of commands in the mission.
     uint8_t        command_total();
@@ -109,18 +103,17 @@ public:
     /*Returns home location */
     const struct Location           get_home()            {
         return _home;
-    };
+    }
     
     const int32_t get_home_alt()    {
         return _home.alt;
-    };
+    }
     
     //Low(er) level functions to store commands and waypoints into storage.
     struct Location         get_cmd_with_index(int16_t inx);
     struct Location         get_cmd_with_index_raw(int16_t inx);
     void                    set_cmd_with_index(struct Location &temp, uint16_t inx);
     uint16_t _start_byte;
-    uint8_t _wp_size;
     
     // this supports the Mission_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -158,7 +151,7 @@ private:
     AP_Float            _cmd_max;
     
     // reference to the AHRS object
-    AP_AHRS *_ahrs;
+    AP_AHRS &_ahrs;
     struct Location _current_loc;
     
 
