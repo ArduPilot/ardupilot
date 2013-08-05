@@ -17,7 +17,7 @@ static void navigate()
 
 	// waypoint distance from rover
 	// ----------------------------
-	wp_distance = get_distance(&current_loc, &next_WP);
+	wp_distance = get_distance(current_loc, next_WP);
 
 	if (wp_distance < 0){
 		gcs_send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
@@ -26,7 +26,7 @@ static void navigate()
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
-	target_bearing 	= get_bearing_cd(&current_loc, &next_WP);
+	target_bearing 	= get_bearing_cd(current_loc, next_WP);
 
 	// nav_bearing will includes xtrac correction
 	// ------------------------------------------
@@ -61,7 +61,7 @@ static void update_crosstrack(void)
 
 static void reset_crosstrack()
 {
-	crosstrack_bearing 	= get_bearing_cd(&prev_WP, &next_WP);	// Used for track following
+	crosstrack_bearing 	= get_bearing_cd(prev_WP, next_WP);	// Used for track following
 }
 
 void reached_waypoint()
