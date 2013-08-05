@@ -203,7 +203,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 /*
   get position projected by groundspeed and heading
  */
-bool AP_AHRS::get_projected_position(struct Location *loc)
+bool AP_AHRS::get_projected_position(struct Location &loc)
 {
         if (!get_position(loc)) {
 		return false;
