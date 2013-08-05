@@ -18,8 +18,8 @@ public:
 
 	void set_ahrs(AP_AHRS *ahrs) { _ahrs = ahrs; }
 
-	int32_t get_rate_out(float desired_rate, float scaler=1.0);
-	int32_t get_servo_out(int32_t angle_err, float scaler=1.0, bool stabilize=false);
+	int32_t get_rate_out(float desired_rate, float scaler);
+	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
 
 	void reset_I();
 
@@ -38,7 +38,7 @@ private:
 
 	float _integrator;
 
-	int32_t _get_rate_out(float desired_rate, float scaler, bool stabilize);
+	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
 
 	AP_AHRS *_ahrs;
 

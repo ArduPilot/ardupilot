@@ -652,18 +652,11 @@ static uint8_t gps_fix_count = 0;
 // Time in miliseconds of start of main control loop.  Milliseconds
 static uint32_t fast_loopTimer_ms;
 
-// Time Stamp when fast loop was complete.  Milliseconds
-static uint32_t fast_loopTimeStamp_ms;
-
 // Number of milliseconds used in last main loop cycle
 static uint8_t delta_ms_fast_loop;
 
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
-
-// % MCU cycles used
-static float load;
-
 
 // Camera/Antenna mount tracking and stabilisation stuff
 // --------------------------------------
@@ -694,7 +687,7 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { update_speed_height,    1,    900 },
+    { update_speed_height,    1,    900 }, // 0
     { update_flight_mode,     1,   1000 },
     { stabilize,              1,   3200 },
     { set_servos,             1,   1100 },
@@ -704,22 +697,22 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_compass,         5,   1500 },
     { read_airspeed,          5,   1500 },
     { update_alt,             5,   3400 },
-    { calc_altitude_error,    5,   1000 },
+    { calc_altitude_error,    5,   1000 }, // 10
     { update_commands,        5,   7000 },
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
-    { gcs_data_stream_send,   2,   3000 },
+    { gcs_data_stream_send,   1,   3000 },
     { update_mount,           1,   1500 },
     { update_events,		 15,   1500 },
     { check_usb_mux,          5,   1000 },
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
-    { barometer_accumulate,   1,    900 },
+    { barometer_accumulate,   1,    900 }, // 20
     { one_second_loop,       50,   3900 },
-    { airspeed_ratio_update, 50,   1000 },
-    { update_logging,         5,   1000 },
-    { read_receiver_rssi,     5,   1000 },
     { check_long_failsafe,   15,   1000 },
+    { airspeed_ratio_update, 50,   1000 },
+    { update_logging,         5,   1200 },
+    { read_receiver_rssi,     5,   1000 },
 };
 
 // setup the var_info table
@@ -755,7 +748,6 @@ void loop()
     uint16_t num_samples = ins.num_samples_available();
     if (num_samples >= 1) {
         delta_ms_fast_loop      = timer - fast_loopTimer_ms;
-        load                = (float)(fast_loopTimeStamp_ms - fast_loopTimer_ms)/delta_ms_fast_loop;
         G_Dt                = delta_ms_fast_loop * 0.001f;
         fast_loopTimer_ms   = timer;
 
@@ -768,16 +760,12 @@ void loop()
         // tell the scheduler one tick has passed
         scheduler.tick();
 
-        fast_loopTimeStamp_ms = millis();
-    } else {
-        uint16_t dt = timer - fast_loopTimer_ms;
-        // we use 19 not 20 here to ensure we run the next loop on
-        // time - it means we spin for 5% of the time when waiting for
-        // the next sample from the IMU
-        if (dt < 19) {
-            uint16_t time_to_next_loop = 19 - dt;
-            scheduler.run(time_to_next_loop * 1000U);
-        }
+        // run all the tasks that are due to run. Note that we only
+        // have to call this once per loop, as the tasks are scheduled
+        // in multiples of the main loop tick. So if they don't run on
+        // the first call to the scheduler they won't run on a later
+        // call until scheduler.tick() is called again
+        scheduler.run(19000U);
     }
 }
 
@@ -820,8 +808,10 @@ static void fast_loop()
  */
 static void update_speed_height(void)
 {
-    if (auto_throttle_mode && !throttle_suppressed) {
-	    // Call TECS 50Hz update
+    if (auto_throttle_mode) {
+	    // Call TECS 50Hz update. Note that we call this regardless of
+	    // throttle suppressed, as this needs to be running for
+	    // takeoff detection
         SpdHgt_Controller->update_50hz(relative_altitude());
     }
 }
@@ -901,7 +891,7 @@ static void obc_fs_check(void)
 #if OBC_FAILSAFE == ENABLED
     // perform OBC failsafe checks
     obc.check(OBC_MODE(control_mode),
-              last_heartbeat_ms,
+              failsafe.last_heartbeat_ms,
               g_gps ? g_gps->last_fix_time : 0);
 #endif
 }
@@ -996,7 +986,7 @@ static void update_GPS(void)
     }
 
     // get position from AHRS
-    have_position = ahrs.get_position(&current_loc);
+    have_position = ahrs.get_position(current_loc);
 
     if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;

@@ -27,11 +27,12 @@
 #define YAW_RESETTOARMEDYAW				9       // point towards heading at time motors were armed
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
-#define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates
+#define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates in body frame
 #define ROLL_PITCH_AUTO             2       // no pilot input.  autopilot roll, pitch is sent to stabilize controller inputs
 #define ROLL_PITCH_STABLE_OF        3       // pilot inputs roll, pitch angles which are mixed with optical flow based position controller lean anbles
 #define ROLL_PITCH_TOY              4       // THOR This is the Roll and Pitch mode
 #define ROLL_PITCH_LOITER           5       // pilot inputs the desired horizontal velocities
+#define ROLL_PITCH_SPORT            6       // pilot inputs roll, pitch rotation rates in earth frame
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation
@@ -44,8 +45,9 @@
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
 
-// Ch7 and Ch8 aux switch control
-#define AUX_SWITCH_PWM_TRIGGER  1800        // pwm value above which the ch7 or ch8 option will be invoked
+// Ch6, Ch7 and Ch8 aux switch control
+#define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
+#define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
 #define CH6_PWM_TRIGGER_HIGH    1800
 #define CH6_PWM_TRIGGER_LOW     1200
 
@@ -62,7 +64,14 @@
 #define AUX_SWITCH_SONAR            10      // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
 #define AUX_SWITCH_FENCE            11      // allow enabling or disabling fence in flight
 #define AUX_SWITCH_RESETTOARMEDYAW  12      // changes yaw to be same as when quad was armed
+#define AUX_SWITCH_SUPERSIMPLE_MODE 13      // change to simple mode in middle, super simple at top
+#define AUX_SWITCH_ACRO_TRAINER     14      // low = disabled, middle = leveled, high = leveled and limited
+#define AUX_SWITCH_SPRAYER          15      // enable/disable the crop sprayer
 
+// values used by the ap.ch7_opt and ap.ch8_opt flags
+#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
+#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
+#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
 
 // Frame types
 #define QUAD_FRAME 0
@@ -129,11 +138,11 @@
 #define CIRCLE 7                        // AUTO control
 #define POSITION 8                      // AUTO control
 #define LAND 9                          // AUTO control
-#define OF_LOITER 10                    // Hold a single location using optical flow
-                                        // sensor
+#define OF_LOITER 10                    // Hold a single location using optical flow sensor
 #define TOY_A 11                        // THOR Enum for Toy mode
 #define TOY_M 12                        // THOR Enum for Toy mode
-#define NUM_MODES 13
+#define SPORT 13                        // earth frame rate control
+#define NUM_MODES 14
 
 // CH_6 Tuning
 // -----------
@@ -156,7 +165,8 @@
 #define CH6_LOITER_RATE_KI              28  // loiter rate controller's I term (speed error to tilt angle)
 #define CH6_LOITER_RATE_KD              23  // loiter rate controller's D term (speed error to tilt angle)
 #define CH6_WP_SPEED                    10  // maximum speed to next way point (0 to 10m/s)
-#define CH6_ACRO_KP                     25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+#define CH6_ACRO_RP_KP                  25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+#define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
 #define CH6_RELAY                       9   // switch relay on if ch6 high, off if low
 #define CH6_HELI_EXTERNAL_GYRO          13  // TradHeli specific external tail gyro gain
 #define CH6_OPTFLOW_KP                  17  // optical flow loiter controller's P term (position error to tilt angle)
@@ -168,6 +178,10 @@
 #define CH6_DECLINATION                 38  // compass declination in radians
 #define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
 
+// Acro Trainer types
+#define ACRO_TRAINER_DISABLED   0
+#define ACRO_TRAINER_LEVELING   1
+#define ACRO_TRAINER_LIMITED    2
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol
 // commands.  See enum MAV_CMD in the GCS_Mavlink library
@@ -307,6 +321,7 @@ enum ap_message {
 #define DATA_AUTO_ARMED                 15
 #define DATA_TAKEOFF                    16
 #define DATA_LAND_COMPLETE              18
+#define DATA_NOT_LANDED                 28
 #define DATA_LOST_GPS                   19
 #define DATA_BEGIN_FLIP                 21
 #define DATA_END_FLIP                   22
@@ -314,6 +329,7 @@ enum ap_message {
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
+#define DATA_SET_SUPERSIMPLE_ON         28
 
 // battery monitoring macros
 #define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)

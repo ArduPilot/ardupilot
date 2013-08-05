@@ -128,18 +128,18 @@ public:
     // dead-reckoning. Return true if a position is available,
     // otherwise false. This only updates the lat and lng fields
     // of the Location
-    virtual bool get_position(struct Location *loc) {
+    virtual bool get_position(struct Location &loc) {
         if (!_gps || _gps->status() <= GPS::NO_FIX) {
             return false;
         }
-        loc->lat = _gps->latitude;
-        loc->lng = _gps->longitude;
+        loc.lat = _gps->latitude;
+        loc.lng = _gps->longitude;
         return true;
     }
 
     // get our projected position, based on our GPS position plus
     // heading and ground speed
-    bool get_projected_position(struct Location *loc);
+    bool get_projected_position(struct Location &loc);
 
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) {

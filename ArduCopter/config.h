@@ -464,6 +464,11 @@
  #define OPTFLOW_IMAX 1
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+//  Crop Sprayer
+#ifndef SPRAYER
+ # define SPRAYER  DISABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
@@ -583,6 +588,23 @@
 
 #ifndef ACRO_THR
  # define ACRO_THR           	    THROTTLE_MANUAL
+#endif
+
+#ifndef ACRO_LEVEL_MAX_ANGLE
+ # define ACRO_LEVEL_MAX_ANGLE      3000
+#endif
+
+// Sport Mode
+#ifndef SPORT_YAW
+ # define SPORT_YAW           	    YAW_HOLD
+#endif
+
+#ifndef SPORT_RP
+ # define SPORT_RP            	    ROLL_PITCH_SPORT
+#endif
+
+#ifndef SPORT_THR
+ # define SPORT_THR           	    THROTTLE_MANUAL
 #endif
 
 // Alt Hold Mode
@@ -741,12 +763,12 @@
 //
 
 // Acro mode gains
-#ifndef ACRO_P
- # define ACRO_P                 4.5f
+#ifndef ACRO_RP_P
+ # define ACRO_RP_P                 4.5f
 #endif
 
-#ifndef AXIS_LOCK_ENABLED
- # define AXIS_LOCK_ENABLED      ENABLED
+#ifndef ACRO_YAW_P
+ # define ACRO_YAW_P                4.5f
 #endif
 
 // Stabilize (angle controller) gains
@@ -781,7 +803,7 @@
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
- # define YAW_LOOK_AHEAD_MIN_SPEED  1000             // minimum ground speed in cm/s required before copter is aimed at ground course
+ # define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before copter is aimed at ground course
 #endif
 
 
@@ -852,15 +874,11 @@
 #endif
 
 #ifndef ACRO_BALANCE_ROLL
- #define ACRO_BALANCE_ROLL			200
+ #define ACRO_BALANCE_ROLL			1.0f
 #endif
 
 #ifndef ACRO_BALANCE_PITCH
- #define ACRO_BALANCE_PITCH			200
-#endif
-
-#ifndef ACRO_TRAINER_ENABLED
- #define ACRO_TRAINER_ENABLED       ENABLED
+ #define ACRO_BALANCE_PITCH			1.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

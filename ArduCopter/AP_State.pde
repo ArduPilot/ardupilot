@@ -27,15 +27,17 @@ void set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void set_simple_mode(bool b)
+void set_simple_mode(uint8_t t)
 {
-    if(ap.simple_mode != b){
-        if(b){
+    if(ap.simple_mode != t){
+        if(t == 0){
+            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+        }else if(t == 1){
             Log_Write_Event(DATA_SET_SIMPLE_ON);
         }else{
-            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+            Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
         }
-        ap.simple_mode = b;
+        ap.simple_mode = t;
     }
 }
 
@@ -104,6 +106,8 @@ void set_land_complete(bool b)
 
     if(b){
         Log_Write_Event(DATA_LAND_COMPLETE);
+    }else{
+        Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
 }
@@ -122,14 +126,4 @@ void set_compass_healthy(bool b)
         }
     }
     ap.compass_status = b;
-}
-
-void set_gps_healthy(bool b)
-{
-    if(ap.gps_status != b){
-        if(false == b){
-            Log_Write_Event(DATA_LOST_GPS);
-        }
-    }
-    ap.gps_status = b;
 }

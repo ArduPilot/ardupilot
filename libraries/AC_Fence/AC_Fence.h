@@ -86,7 +86,6 @@ private:
 
     // pointers to other objects we depend upon
     AP_InertialNav* _inav;
-    GPS**           _gps_ptr;              // pointer to pointer to gps
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
