@@ -287,7 +287,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
     cliSerial->printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
     for(uint8_t i = 0; i <= g.command_total; i++) {
-        struct Location temp = get_cmd_with_index(i);
+        struct Location temp = mission.get_cmd_with_index(i);
         test_wp_print(&temp, i);
     }
 

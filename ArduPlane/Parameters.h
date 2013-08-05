@@ -245,8 +245,12 @@ public:
         k_param_L1_controller,
         k_param_rcmap,
         k_param_TECS_controller,
+<<<<<<< HEAD
         k_param_rally_total,
         k_param_steerController,
+=======
+        k_param_mission,
+>>>>>>> Plane: integration with AP_Mission
 
         //
         // 240: PID Controllers

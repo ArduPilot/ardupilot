@@ -287,8 +287,8 @@ static void Log_Write_Startup(uint8_t type)
 
     // write all commands to the dataflash as well
     struct Location cmd;
-    for (uint8_t i = 0; i <= g.command_total; i++) {
-        cmd = get_cmd_with_index(i);
+    for (uint8_t i = 0; i <= mission.command_total(); i++) {
+        cmd = mission.get_cmd_with_index(i);
         Log_Write_Cmd(i, &cmd);
     }
 }

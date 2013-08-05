@@ -5,7 +5,6 @@
 
 static void init_commands()
 {
-    g.command_index.set_and_save(0);
     nav_command_ID  = NO_COMMAND;
     non_nav_command_ID      = NO_COMMAND;
     next_nav_command.id     = CMD_BLANK;
@@ -14,110 +13,24 @@ static void init_commands()
 
 static void update_auto()
 {
-    if (g.command_index >= g.command_total) {
+    if (mission.command_index() >= mission.command_total()) {
         handle_no_commands();
         if(g.command_total == 0) {
             next_WP.lat             = home.lat + 1000;                  // so we don't have bad calcs
             next_WP.lng             = home.lng + 1000;                  // so we don't have bad calcs
         }
     } else {
-        if(g.command_index != 0) {
-            g.command_index = nav_command_index;
-            nav_command_index--;
+        if (mission.command_index() == 0) {
+            mission.change_waypoint_index(1);
         }
-        nav_command_ID  = NO_COMMAND;
-        non_nav_command_ID      = NO_COMMAND;
-        next_nav_command.id     = CMD_BLANK;
-        process_next_command();
+    process_waypoint();
     }
 }
 
-/*
-  fetch a mission item from EEPROM
-*/
-static struct Location get_cmd_with_index_raw(int16_t i)
+// this is only used by an air-start
+static void reload_commands_airstart()
 {
-    struct Location temp;
-    uint16_t mem;
-
-    // Find out proper location in memory by using the start_byte position + the index
-    // --------------------------------------------------------------------------------
-    if (i > g.command_total) {
-        memset(&temp, 0, sizeof(temp));
-        temp.id = CMD_BLANK;
-    }else{
-        // read WP position
-        mem = (WP_START_BYTE) + (i * WP_SIZE);
-        temp.id = hal.storage->read_byte(mem);
-
-        mem++;
-        temp.options = hal.storage->read_byte(mem);
-
-        mem++;
-        temp.p1 = hal.storage->read_byte(mem);
-
-        mem++;
-        temp.alt = hal.storage->read_dword(mem);
-
-        mem += 4;
-        temp.lat = hal.storage->read_dword(mem);
-
-        mem += 4;
-        temp.lng = hal.storage->read_dword(mem);
-    }
-
-    return temp;
-}
-
-/*
-  fetch a mission item from EEPROM. Adjust altitude to be absolute
-*/
-static struct Location get_cmd_with_index(int16_t i)
-{
-    struct Location temp;
-
-    temp = get_cmd_with_index_raw(i);
-
-    // Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
-    if ((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) &&
-        (temp.options & MASK_OPTIONS_RELATIVE_ALT) &&
-        (temp.lat != 0 || temp.lng != 0 || temp.alt != 0)) {
-        temp.alt += home.alt;
-    }
-
-    return temp;
-}
-
-// Setters
-// -------
-static void set_cmd_with_index(struct Location temp, int16_t i)
-{
-    i = constrain_int16(i, 0, g.command_total.get());
-    uint16_t mem = WP_START_BYTE + (i * WP_SIZE);
-
-    // force home wp to absolute height
-    if (i == 0) {
-        temp.options &= ~(MASK_OPTIONS_RELATIVE_ALT);
-    }
-    // zero unused bits
-    temp.options &= (MASK_OPTIONS_RELATIVE_ALT | MASK_OPTIONS_LOITER_DIRECTION);
-
-    hal.storage->write_byte(mem, temp.id);
-
-    mem++;
-    hal.storage->write_byte(mem, temp.options);
-
-    mem++;
-    hal.storage->write_byte(mem, temp.p1);
-
-    mem++;
-    hal.storage->write_dword(mem, temp.alt);
-
-    mem += 4;
-    hal.storage->write_dword(mem, temp.lat);
-
-    mem += 4;
-    hal.storage->write_dword(mem, temp.lng);
+    init_commands();
 }
 
 static int32_t read_alt_to_hold()
@@ -229,7 +142,7 @@ static void init_home()
 
     // Save Home to EEPROM - Command 0
     // -------------------
-    set_cmd_with_index(home, 0);
+    mission.set_home(home);
 
     // Save prev loc
     // -------------
