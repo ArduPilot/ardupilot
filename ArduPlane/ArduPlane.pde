@@ -294,7 +294,7 @@ static AP_Navigation *nav_controller = &L1_controller;
 // selected navigation controller
 static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
-static AP_Mission mission(&ahrs);
+static AP_Mission mission(ahrs);
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
