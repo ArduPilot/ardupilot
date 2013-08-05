@@ -393,7 +393,7 @@ static bool verify_nav_wp()
     if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
-                          (unsigned)get_distance(&current_loc, &next_WP));
+                          (unsigned)get_distance(current_loc, next_WP));
         return true;
 	}
 
@@ -401,7 +401,7 @@ static bool verify_nav_wp()
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
-                          (unsigned)get_distance(&current_loc, &next_WP));
+                          (unsigned)get_distance(current_loc, next_WP));
         return true;
     }
 

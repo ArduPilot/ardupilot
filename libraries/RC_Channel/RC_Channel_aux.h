@@ -48,6 +48,8 @@ public:
         k_elevator              = 19,            ///< elevator
         k_elevator_with_input   = 20,            ///< elevator, with rc input
         k_rudder                = 21,            ///< secondary rudder channel
+        k_sprayer_pump          = 22,            ///< crop sprayer pump channel
+        k_sprayer_spinner       = 23,            ///< crop sprayer spinner channel
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 

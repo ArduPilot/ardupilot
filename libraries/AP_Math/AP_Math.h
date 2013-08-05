@@ -65,16 +65,16 @@ enum Rotation           rotation_combination(enum Rotation r1, enum Rotation r2,
 
 // longitude_scale - returns the scaler to compensate for shrinking longitude as you move north or south from the equator
 // Note: this does not include the scaling to convert longitude/latitude points to meters or centimeters
-float                   longitude_scale(const struct Location *loc);
+float                   longitude_scale(const struct Location &loc);
 
 // return distance in meters between two locations
-float                   get_distance(const struct Location *loc1, const struct Location *loc2);
+float                   get_distance(const struct Location &loc1, const struct Location &loc2);
 
 // return distance in centimeters between two locations
-uint32_t                get_distance_cm(const struct Location *loc1, const struct Location *loc2);
+uint32_t                get_distance_cm(const struct Location &loc1, const struct Location &loc2);
 
 // return bearing in centi-degrees between two locations
-int32_t                 get_bearing_cd(const struct Location *loc1, const struct Location *loc2);
+int32_t                 get_bearing_cd(const struct Location &loc1, const struct Location &loc2);
 
 // see if location is past a line perpendicular to
 // the line between point1 and point2. If point1 is
@@ -86,10 +86,10 @@ bool        location_passed_point(const struct Location & location,
                                   const struct Location & point2);
 
 //  extrapolate latitude/longitude given bearing and distance
-void        location_update(struct Location *loc, float bearing, float distance);
+void        location_update(struct Location &loc, float bearing, float distance);
 
 // extrapolate latitude/longitude given distances north and east
-void        location_offset(struct Location *loc, float ofs_north, float ofs_east);
+void        location_offset(struct Location &loc, float ofs_north, float ofs_east);
 
 /*
   wrap an angle in centi-degrees

@@ -368,16 +368,9 @@ void AP_TECS::_update_throttle(void)
 		// Use the demanded rate of change of total energy as the feed-forward demand, but add
 		// additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
 		// drag increase during turns.
-		float cosPhi = sqrt((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
+		float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
 		STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi * cosPhi , 0.1f, 1.0f) - 1.0f);
-		if (STEdot_dem >= 0)
-		{
-			ff_throttle = nomThr + STEdot_dem / _STEdot_max * (1.0f - nomThr);
-		}
-		else
-		{
-			ff_throttle = nomThr - STEdot_dem / _STEdot_min * nomThr;
-		}
+		ff_throttle = nomThr + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 
 		// Calculate PD + FF throttle
 		_throttle_dem = (_STE_error + STEdot_error * _thrDamp) * K_STE2Thr + ff_throttle;
@@ -400,7 +393,7 @@ void AP_TECS::_update_throttle(void)
 		float integ_min = (_THRminf - _throttle_dem - 0.1f);
 
   		// Calculate integrator state, constraining state
-		// Set integrator to a max throttle value dduring climbout
+		// Set integrator to a max throttle value during climbout
         _integ6_state = _integ6_state + (_STE_error * _integGain) * _DT * K_STE2Thr;
 		if (_climbOutDem)
 		{
@@ -444,6 +437,15 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
 	{
 		_throttle_dem = nomThr;
 	}
+
+    // Calculate additional throttle for turn drag compensation including throttle nudging
+	const Matrix3f &rotMat = _ahrs->get_dcm_matrix();
+	// Use the demanded rate of change of total energy as the feed-forward demand, but add
+	// additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
+	// drag increase during turns.
+	float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
+	float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi * cosPhi , 0.1f, 1.0f) - 1.0f);
+	_throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
 }
 
 void AP_TECS::_detect_bad_descent(void) 
@@ -571,7 +573,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 void AP_TECS::_update_STE_rate_lim(void) 
 {
     // Calculate Specific Total Energy Rate Limits
-	// This is a tivial calculation at the moment but will get bigger once we start adding altitude effects
+	// This is a trivial calculation at the moment but will get bigger once we start adding altitude effects
     _STEdot_max = _maxClimbRate * GRAVITY_MSS;
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
 }

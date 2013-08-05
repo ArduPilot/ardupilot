@@ -82,12 +82,13 @@ public:
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
-        k_param_acro_trainer_enabled,
+        k_param_acro_trainer,
         k_param_pilot_velocity_z_max,
         k_param_circle_rate,
         k_param_sonar_gain,
         k_param_ch8_option,
-        k_param_arming_check_enabled,   // 32
+        k_param_arming_check_enabled,
+        k_param_sprayer,    // 33
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -146,7 +147,7 @@ public:
         k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_sonar_type,
         k_param_super_simple = 155,
-        k_param_axis_enabled = 157,
+        k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,
         k_param_ahrs, // AHRS group
 
@@ -233,7 +234,7 @@ public:
         //
         // 220: PI/D Controllers
         //
-        k_param_acro_p = 221,
+        k_param_acro_rp_p = 221,
         k_param_axis_lock_p,    // remove
         k_param_pid_rate_roll,
         k_param_pid_rate_pitch,
@@ -251,9 +252,12 @@ public:
         k_param_pid_throttle_rate,
         k_param_pid_optflow_roll,
         k_param_pid_optflow_pitch,
-        k_param_acro_balance_roll,      // scalar (not PID)
-        k_param_acro_balance_pitch,     // scalar (not PID)
-        k_param_pid_throttle_accel, // 241
+        k_param_acro_balance_roll_old,  // 239 - remove
+        k_param_acro_balance_pitch_old, // 240 - remove
+        k_param_pid_throttle_accel,
+        k_param_acro_balance_roll,
+        k_param_acro_balance_pitch,
+        k_param_acro_yaw_p, // 244
 
         // 254,255: reserved
     };
@@ -288,7 +292,6 @@ public:
     AP_Float        low_voltage;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
-    AP_Int8         axis_enabled;
     AP_Int8         copter_leds_mode;           // Operating mode of LED
                                                 // lighting system
 
@@ -376,10 +379,11 @@ public:
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
     // Acro parameters
-    AP_Float                acro_p;
-    AP_Int16                acro_balance_roll;
-    AP_Int16                acro_balance_pitch;
-    AP_Int8                 acro_trainer_enabled;
+    AP_Float                acro_rp_p;
+    AP_Float                acro_yaw_p;
+    AP_Float                acro_balance_roll;
+    AP_Float                acro_balance_pitch;
+    AP_Int8                 acro_trainer;
 
     // PI/D controllers
     AC_PID                  pid_rate_roll;

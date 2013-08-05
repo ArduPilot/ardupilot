@@ -21,7 +21,7 @@ public:
 		_ins = _ahrs->get_ins();
 	}
 
-	int32_t get_servo_out(float scaler = 1.0, bool stabilize = false);
+	int32_t get_servo_out(float scaler, bool disable_integrator);
 
 	void reset_I();
 

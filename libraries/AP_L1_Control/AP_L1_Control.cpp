@@ -88,10 +88,10 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	// Get current position and velocity
-    _ahrs->get_position(&_current_loc);
+    _ahrs->get_position(_current_loc);
 
 	// update _target_bearing_cd
-	_target_bearing_cd = get_bearing_cd(&_current_loc, &next_WP);
+	_target_bearing_cd = get_bearing_cd(_current_loc, next_WP);
 
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 	
@@ -148,7 +148,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		float xtrackErr = A_air % AB;
 		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
-		sine_Nu1 = constrain_float(sine_Nu1, -0.7854f, 0.7854f);
+		sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
 		float Nu1 = asinf(sine_Nu1);
 		Nu = Nu1 + Nu2;
 		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
@@ -182,10 +182,10 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	//Get current position and velocity
-    _ahrs->get_position(&_current_loc);
+    _ahrs->get_position(_current_loc);
 
 	// update _target_bearing_cd
-	_target_bearing_cd = get_bearing_cd(&_current_loc, &center_WP);
+	_target_bearing_cd = get_bearing_cd(_current_loc, center_WP);
 
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 
