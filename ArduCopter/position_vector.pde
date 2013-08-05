@@ -28,19 +28,19 @@ const int32_t pv_get_lat(const Vector3f pos_vec)
 }
 
 // pv_get_lon - extract longitude from position vector
-const int32_t pv_get_lon(const Vector3f pos_vec)
+const int32_t pv_get_lon(const Vector3f &pos_vec)
 {
     return home.lng + (int32_t)(pos_vec.y / LATLON_TO_CM * scaleLongUp);
 }
 
 // pv_get_horizontal_distance_cm - return distance between two positions in cm
-const float pv_get_horizontal_distance_cm(const Vector3f origin, const Vector3f destination)
+const float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
 {
     return pythagorous2(destination.x-origin.x,destination.y-origin.y);
 }
 
 // pv_get_bearing_cd - return bearing in centi-degrees between two positions
-const float pv_get_bearing_cd(const Vector3f origin, const Vector3f destination)
+const float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
 {
     float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * DEGX100;
     if (bearing < 0) {
