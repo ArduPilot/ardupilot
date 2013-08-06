@@ -62,8 +62,11 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         if (rxS == 0) {
             rxS = 128;
         }
-        if (txS == 0) {
-            txS = 128;
+        // on PX4 we have enough memory to have a larger transmit
+        // buffer for all ports. This means we don't get delays while
+        // waiting to write GPS config packets
+        if (txS < 512) {
+            txS = 512;
         }
 	}
 
