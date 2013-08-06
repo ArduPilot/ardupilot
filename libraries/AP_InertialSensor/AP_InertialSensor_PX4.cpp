@@ -14,32 +14,33 @@ const extern AP_HAL::HAL& hal;
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
 
-Vector3f AP_InertialSensor_PX4::_accel_sum;
-uint32_t AP_InertialSensor_PX4::_accel_sum_count;
-Vector3f AP_InertialSensor_PX4::_gyro_sum;
-uint32_t AP_InertialSensor_PX4::_gyro_sum_count;
+Vector3f AP_InertialSensor_PX4::_accel_in;
+uint32_t AP_InertialSensor_PX4::_accel_count;
+Vector3f AP_InertialSensor_PX4::_gyro_in;
+uint32_t AP_InertialSensor_PX4::_gyro_count;
 volatile bool AP_InertialSensor_PX4::_in_accumulate;
 uint64_t AP_InertialSensor_PX4::_last_accel_timestamp;
 uint64_t AP_InertialSensor_PX4::_last_gyro_timestamp;
 int AP_InertialSensor_PX4::_accel_fd;
 int AP_InertialSensor_PX4::_gyro_fd;
-bool AP_InertialSensor_PX4::_do_averaging;
 
 uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) 
 {
+    uint32_t msec_per_sample;
+
     switch (sample_rate) {
     case RATE_50HZ:
-        _sample_divider = 4;
-        _default_filter_hz = 10;
+        msec_per_sample = 20;
+        _default_filter_hz = 15;
         break;
     case RATE_100HZ:
-        _sample_divider = 2;
-        _default_filter_hz = 20;
+        msec_per_sample = 10;
+        _default_filter_hz = 30;
         break;
     case RATE_200HZ:
     default:
-        _sample_divider = 1;
-        _default_filter_hz = 20;
+        msec_per_sample = 5;
+        _default_filter_hz = 30;
         break;
     }
 
@@ -55,41 +56,25 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     }
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
-    /* 
-     * set the accel and gyro sampling rate. We always set these to
-     * 200 then average in this driver
-     */
-    ioctl(_accel_fd, ACCELIOCSSAMPLERATE, 200);
-    ioctl(_accel_fd, SENSORIOCSPOLLRATE,  200);
-    ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  200);
-    ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  200);
-
-    // ask for a 10 sample buffer. The mpu6000 PX4 driver doesn't
-    // support this yet, but when it does we want to use it
-    ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 10);
-    ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 10);
-    _do_averaging = true;
+    uint32_t driver_rate = 1000;
 #else
+    uint32_t driver_rate = 800;
+#endif
+
     /* 
-     * set the accel and gyro sampling rate. Set a fixed rate of 800Hz
-     * then average
+     * set the accel and gyro sampling rate. 
      */
-    ioctl(_accel_fd, ACCELIOCSSAMPLERATE, 800);
-    ioctl(_accel_fd, SENSORIOCSPOLLRATE,  800);
-    ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  800);
-    ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  800);
+    ioctl(_accel_fd, ACCELIOCSSAMPLERATE, driver_rate);
+    ioctl(_accel_fd, SENSORIOCSPOLLRATE,  driver_rate);
+    ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  driver_rate);
+    ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  driver_rate);
 
     // ask for a 20 sample buffer
     ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 20);
     ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 20);
 
-    // sample dividers above were setup for 200Hz
-    _sample_divider *= 4;
-
-    // the NuttX driver uses a builtin low pass filter, so asking for
-    // the latest value is always the right one
-    _do_averaging = false;
-#endif
+    // setup sample divider
+    _sample_divider = (driver_rate * msec_per_sample) / 1000;
 
     // register a 1kHz timer to read from PX4 sensor drivers
     hal.scheduler->register_timer_process(_ins_timer);
@@ -127,21 +112,11 @@ bool AP_InertialSensor_PX4::update(void)
     _delta_time = (_last_gyro_timestamp - _last_update_usec) * 1.0e-6f;
     _last_update_usec = _last_gyro_timestamp;
 
-    if (_do_averaging) {
-        _accel = _accel_sum / _accel_sum_count;
-    } else {
-        _accel = _accel_sum;
-    }
-    _accel_sum.zero();
-    _accel_sum_count = 0;
+    _accel = _accel_in;
+    _accel_count = 0;
 
-    if (_do_averaging) {
-        _gyro = _gyro_sum / _gyro_sum_count;
-    } else {
-        _gyro = _gyro_sum;
-    }
-    _gyro_sum.zero();
-    _gyro_sum_count = 0;
+    _gyro = _gyro_in;
+    _gyro_count = 0;
 
     hal.scheduler->resume_timer_procs();
 
@@ -191,23 +166,15 @@ void AP_InertialSensor_PX4::_accumulate(void)
 
     while (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
         accel_report.timestamp != _last_accel_timestamp) {        
-        if (_do_averaging) {
-            _accel_sum += Vector3f(accel_report.x, accel_report.y, accel_report.z);
-        } else {
-            _accel_sum = Vector3f(accel_report.x, accel_report.y, accel_report.z);
-        }
-        _accel_sum_count++;
+        _accel_in = Vector3f(accel_report.x, accel_report.y, accel_report.z);
+        _accel_count++;
         _last_accel_timestamp = accel_report.timestamp;
 	}
 
     while (::read(_gyro_fd, &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
         gyro_report.timestamp != _last_gyro_timestamp) {        
-        if (_do_averaging) {
-            _gyro_sum += Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
-        } else {
-            _gyro_sum = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
-        }
-        _gyro_sum_count++;
+        _gyro_in = Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
+        _gyro_count++;
         _last_gyro_timestamp = gyro_report.timestamp;
 	}
 
@@ -222,7 +189,7 @@ void AP_InertialSensor_PX4::_ins_timer(uint32_t now)
 uint16_t AP_InertialSensor_PX4::num_samples_available(void)
 {
     _accumulate();
-    return min(_accel_sum_count, _gyro_sum_count) / _sample_divider;    
+    return min(_accel_count, _gyro_count) / _sample_divider;    
 }
 
 #endif // CONFIG_HAL_BOARD
