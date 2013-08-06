@@ -77,7 +77,6 @@ fi
 ########################
 # PX4IO upgrade handling
 echo checking for /etc/px4io/px4io.bin
-sleep 1
 if [ -f /etc/px4io/px4io.bin ]
 then
    echo "Checking for new px4io firmware"
@@ -87,11 +86,12 @@ then
    else
       echo Loading /etc/px4io/px4io.bin
       tone_alarm MBABGP
-      if px4io update /etc/px4io/px4io.bin > /fs/microsd/APM/px4io_update.log
+      if px4io update /etc/px4io/px4io.bin
       then
       	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
       	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/APM/px4io_update.log
         tone_alarm MSPAA
+        sleep 1
       else
         echo Failed loading /etc/px4io/px4io.bin >> /fs/microsd/APM/px4io_update.log
         echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
@@ -162,7 +162,6 @@ then
 	# ttyS1 is used for PWM output for 4 extra channels
 	set deviceC /dev/ttyS2
     fi
-    sleep 1
 else
     echo "No PX4IO board found"
     echo "No PX4IO board found" >> $logfile
@@ -194,7 +193,6 @@ then
 else
     sh /etc/init.d/rc.error
 fi
-sleep 1
 
 # if starting on the console, tell nsh to exit
 # this prevents it from chewing bytes
@@ -206,4 +204,4 @@ fi
 
 echo "rc.APM finished"
 echo "rc.APM finished" >> $logfile
-sleep 1
+
