@@ -63,12 +63,12 @@ px4: px4-v1 px4-v2
 px4-clean: clean px4-archives-clean
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
-px4-v1-upload:
+px4-v1-upload: px4-v1
 	$(RULEHDR)
 	$(v) ln -sf $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM upload
 
-px4-v2-upload:
+px4-v2-upload: px4-v2
 	$(RULEHDR)
 	$(v) ln -sf $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
 	$(v) $(PX4_MAKE) px4fmu-v2_APM upload
