@@ -45,7 +45,7 @@ then
    sh /etc/init.d/rc.error
 fi
 
-if mkdir /fs/microsd/APM
+if mkdir /fs/microsd/APM > /dev/null
 then
      echo "Created APM directory"
 fi
