@@ -176,7 +176,7 @@ else
 
     echo "Setting up PX4FMU direct mode"
     fmu mode_pwm
-    if [ $BOARD == FMUv1 ] && [ $deviceC == /dev/ttyS1 ]
+    if [ $BOARD == FMUv1 -a $deviceC == /dev/ttyS1 ]
     then
 	# ttyS1 is used for PWM output when there
 	# is no IO board
