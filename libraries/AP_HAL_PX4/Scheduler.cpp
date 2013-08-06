@@ -170,7 +170,7 @@ void PX4Scheduler::resume_timer_procs()
 
 void PX4Scheduler::reboot() 
 {
-	systemreset();
+	systemreset(false);
 }
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)
