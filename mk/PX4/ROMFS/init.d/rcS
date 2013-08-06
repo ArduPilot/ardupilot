@@ -77,7 +77,7 @@ fi
 
 # if this is an APM build then there will be a rc.APM script
 # from an EXTERNAL_SCRIPTS build option
-if [ -f /etc/init.d/rc.APM -a $HAVE_MICROSD == 1 ]
+if [ -f /etc/init.d/rc.APM -a $HAVE_MICROSD == 1 -a ! -f /fs/microsd/APM/nostart ]
 then
 	echo Running rc.APM
 	# if APM startup is successful then nsh will exit
