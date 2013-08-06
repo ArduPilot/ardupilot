@@ -73,9 +73,11 @@ else
    fi
 fi
 
+
 ########################
 # PX4IO upgrade handling
 echo checking for /etc/px4io/px4io.bin
+sleep 1
 if [ -f /etc/px4io/px4io.bin ]
 then
    echo "Checking for new px4io firmware"
