@@ -56,7 +56,6 @@ public:
     // Constructor
     AP_InertialNav( AP_AHRS* ahrs, AP_InertialSensor* ins, AP_Baro* baro, GPS** gps_ptr ) :
         _ahrs(ahrs),
-        _ins(ins),
         _baro(baro),
         _gps_ptr(gps_ptr),
         _xy_enabled(false),
@@ -152,7 +151,6 @@ protected:
     void                    update_gains();             // update_gains - update gains from time constant (given in seconds)
 
     AP_AHRS*                _ahrs;                      // pointer to ahrs object
-    AP_InertialSensor*      _ins;                       // pointer to inertial sensor
     AP_Baro*                _baro;                      // pointer to barometer
     GPS**                   _gps_ptr;                   // pointer to pointer to gps
 
