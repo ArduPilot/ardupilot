@@ -160,7 +160,7 @@ void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
 
     // calculate distance from base location
     x = (float)(lat - _base_lat) * LATLON_TO_CM;
-    y = (float)(lon - _base_lon) * _lon_to_m_scaling;
+    y = (float)(lon - _base_lon) * _lon_to_cm_scaling;
 
     // sanity check the gps position.  Relies on the main code calling GPS_Glitch::check_position() immediatley after a GPS update
     if (_glitch_detector.glitching()) {
@@ -215,7 +215,7 @@ int32_t AP_InertialNav::get_longitude() const
         return 0;
     }
 
-    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / _lon_to_m_scaling);
+    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / _lon_to_cm_scaling);
 }
 
 // set_home_position - all internal calculations are recorded as the distances from this point
@@ -229,7 +229,7 @@ void AP_InertialNav::set_home_position(int32_t lon, int32_t lat)
     Location temp_loc;
     temp_loc.lat = lat;
     temp_loc.lng = lon;
-    _lon_to_m_scaling = longitude_scale(temp_loc) * LATLON_TO_CM;
+    _lon_to_cm_scaling = longitude_scale(temp_loc) * LATLON_TO_CM;
 
     // reset corrections to base position to zero
     _position_base.x = 0;
@@ -264,7 +264,7 @@ float AP_InertialNav::get_longitude_diff() const
         return 0;
     }
 
-    return (_position_base.y+_position_correction.y) / _lon_to_m_scaling;
+    return (_position_base.y+_position_correction.y) / _lon_to_cm_scaling;
 }
 
 // get velocity in latitude & longitude directions
