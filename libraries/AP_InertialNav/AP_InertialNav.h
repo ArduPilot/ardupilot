@@ -62,7 +62,10 @@ public:
         _xy_enabled(false),
         _gps_last_update(0),
         _gps_last_time(0),
+        _historic_xy_counter(0),
         _baro_last_update(0)
+		// all other members (_k1_xy, _k2_xy, _k3_xy; _k1_z, _k2_z, _k3_z; _base_lat, _base_lon, _lon_to_cm_scaling)
+		// are initialized by the update method that is called by init();
         {
             AP_Param::setup_object_defaults(this, var_info);
         }
@@ -92,11 +95,12 @@ public:
     // get_position - returns current position from home in cm
     Vector3f    get_position() const { return _position_base + _position_correction; }
 
-    // get latitude & longitude positions
+    // get latitude & longitude positions in degrees * 10,000,000
     int32_t     get_latitude() const;
     int32_t     get_longitude() const;
 
     // set_current_position - all internal calculations are recorded as the distances from this point
+    // units: degrees * 10,000,000
     void        set_current_position(int32_t lon, int32_t lat);
 
     // get latitude & longitude positions from base location (in cm)
@@ -166,14 +170,14 @@ protected:
     GPS_Queue_t             _hist_position_estimate_y;  // buffer of historic accel based position to account for gps lag
     int32_t                 _base_lat;                  // base latitude
     int32_t                 _base_lon;                  // base longitude
-    float                   _lon_to_m_scaling;          // conversion of longitude to meters
+    float                   _lon_to_cm_scaling;         // conversion of longitude to centimeters
     
     // Z Axis specific variables
     AP_Float                _time_constant_z;           // time constant for vertical corrections
     float                   _k1_z;                      // gain for vertical position correction
     float                   _k2_z;                      // gain for vertical velocity correction
     float                   _k3_z;                      // gain for vertical accelerometer offset correction
-    uint32_t                _baro_last_update;           // time of last barometer update
+    uint32_t                _baro_last_update;          // time of last barometer update
     typedef AP_Buffer<float, AP_INAV_BARO_DELAY_QUEUE_SIZE> Baro_Queue_t;
     Baro_Queue_t            _hist_position_estimate_z;  // buffer of historic accel based altitudes to account for barometer lag
 
