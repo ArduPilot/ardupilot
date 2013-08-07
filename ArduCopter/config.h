@@ -651,6 +651,10 @@
  # define CIRCLE_NAV           	    NAV_CIRCLE
 #endif
 
+#ifndef CIRCLE_RADIUS
+ # define CIRCLE_RADIUS             10              // radius in meters for circle mode
+#endif
+
 #ifndef CIRCLE_RATE
  # define CIRCLE_RATE               20.0f        // degrees per second turn rate
 #endif
@@ -1059,13 +1063,6 @@
     LOGBIT(PID)             | \
     LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
-
-//////////////////////////////////////////////////////////////////////////////
-// Circle navigation defaults
-//
-#ifndef CIRCLE_RADIUS
- # define CIRCLE_RADIUS 10              // meters for circle mode
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // AP_Limits Defaults
