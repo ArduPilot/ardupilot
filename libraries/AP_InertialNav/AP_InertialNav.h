@@ -28,7 +28,6 @@ public:
     // Constructor
     AP_InertialNav( AP_AHRS* ahrs, AP_InertialSensor* ins, AP_Baro* baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
         _ahrs(ahrs),
-        _ins(ins),
         _baro(baro),
         _gps(gps),
         _xy_enabled(false),
@@ -130,7 +129,6 @@ protected:
     } _flags;
 
     AP_AHRS*                _ahrs;                      // pointer to ahrs object
-    AP_InertialSensor*      _ins;                       // pointer to inertial sensor
     AP_Baro*                _baro;                      // pointer to barometer
     GPS*&                   _gps;                       // pointer to gps
 
