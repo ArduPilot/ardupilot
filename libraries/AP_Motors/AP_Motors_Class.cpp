@@ -81,6 +81,12 @@ void AP_Motors::Init()
     setup_throttle_curve();
 };
 
+void AP_Motors::armed(bool arm)
+{
+    _armed = arm;
+    notify.flags.armed = _armed;
+};
+
 // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 void AP_Motors::set_min_throttle(uint16_t min_throttle)
 {
