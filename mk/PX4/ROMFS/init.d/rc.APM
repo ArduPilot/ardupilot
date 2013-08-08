@@ -86,12 +86,11 @@ then
    else
       echo Loading /etc/px4io/px4io.bin
       tone_alarm MBABGP
-      if px4io update /etc/px4io/px4io.bin
+      if px4io update /etc/px4io/px4io.bin > /fs/microsd/APM/px4io_update.log
       then
       	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
       	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/APM/px4io_update.log
         tone_alarm MSPAA
-        sleep 1
       else
         echo Failed loading /etc/px4io/px4io.bin >> /fs/microsd/APM/px4io_update.log
         echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
@@ -139,9 +138,6 @@ else
        sh /etc/init.d/rc.error
     fi
 fi
-
-# why is this sleep needed?
-sleep 1
 
 # optional ETS airspeed sensor
 if ets_airspeed start
