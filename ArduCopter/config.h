@@ -168,9 +168,6 @@
 // LED and IO Pins
 //
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- # define A_LED_PIN        37
- # define B_LED_PIN        36
- # define C_LED_PIN        35
  # define LED_ON           HIGH
  # define LED_OFF          LOW
  # define PUSHBUTTON_PIN   41
@@ -178,9 +175,6 @@
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
  # define PUSHBUTTON_PIN   (-1)
@@ -188,9 +182,6 @@
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
  # define PUSHBUTTON_PIN   (-1)
@@ -198,9 +189,6 @@
  # define BATTERY_VOLT_PIN 1      // Battery voltage on A1
  # define BATTERY_CURR_PIN 2      // Battery current on A2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
  # define PUSHBUTTON_PIN   (-1)
@@ -209,9 +197,6 @@
  # define BATTERY_CURR_PIN -1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
 // XXX these are just copied, may not make sense
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
  # define PUSHBUTTON_PIN   (-1)

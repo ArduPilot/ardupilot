@@ -1356,7 +1356,7 @@ init_esc()
     while(1) {
         read_radio();
         delay(100);
-        dancing_light();
+        notify.flags.esc_calibration = true;
         motors.throttle_pass_through();
     }
 }

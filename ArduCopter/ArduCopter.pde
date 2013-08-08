@@ -73,6 +73,8 @@
 #include <AP_HAL_Empty.h>
 
 // Application dependencies
+#include <AP_Notify.h>          // Notify library
+#include <AP_BoardLED.h>        // BoardLEDs library
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_GPS.h>             // ArduPilot GPS library
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
@@ -133,7 +135,6 @@ static AP_HAL::BetterStream* cliSerial;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
 ////////////////////////////////////////////////////////////////////////////////
@@ -144,6 +145,9 @@ static Parameters g;
 
 // main loop scheduler
 static AP_Scheduler scheduler;
+
+// AP_BoardLED instance
+static AP_BoardLED board_led;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -461,9 +465,6 @@ static uint8_t pid_log_counter;
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
 ////////////////////////////////////////////////////////////////////////////////
-// This is current status for the LED lights state machine
-// setting this value changes the output of the LEDs
-static uint8_t led_mode = NORMAL_LEDS;
 // Blinking indicates GPS status
 static uint8_t copter_leds_GPS_blink;
 // Blinking indicates battery status
@@ -884,6 +885,9 @@ void setup() {
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
+    // initialise board leds
+    board_led.init();
+
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
     sonar_analog_source = new AP_ADC_AnalogSource(
@@ -1190,8 +1194,6 @@ static void medium_loop()
         USERHOOK_MEDIUMLOOP
 #endif
 
-        // update board leds
-        update_board_leds();
 #if COPTER_LEDS == ENABLED
         update_copter_leds();
 #endif
@@ -1355,7 +1357,6 @@ static void update_GPS(void)
     static uint8_t ground_start_count  = 10;
 
     g_gps->update();
-    update_GPS_light();
 
     if (g_gps->new_data && last_gps_time != g_gps->time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         // clear new data flag

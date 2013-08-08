@@ -182,9 +182,6 @@ static void init_arm_motors()
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
 
-    // update leds on board
-    update_arming_light();
-
 #if COPTER_LEDS == ENABLED
     piezo_beep_twice();
 #endif

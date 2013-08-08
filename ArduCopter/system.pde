@@ -123,16 +123,6 @@ static void init_ardupilot()
     //
     report_version();
 
-    // setup IO pins
-    pinMode(A_LED_PIN, OUTPUT);                                 // GPS status LED
-    digitalWrite(A_LED_PIN, LED_OFF);
-
-    pinMode(B_LED_PIN, OUTPUT);                         // GPS status LED
-    digitalWrite(B_LED_PIN, LED_OFF);
-
-    pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
-    digitalWrite(C_LED_PIN, LED_OFF);
-
     relay.init(); 
 
 #if COPTER_LEDS == ENABLED
@@ -303,10 +293,6 @@ static void startup_ground(void)
     ahrs2.set_fast_gains(true);
 #endif
 
-    // reset the leds
-    // ---------------------------
-    clear_leds();
-
     // when we re-calibrate the gyros,
     // all previous I values are invalid
     reset_I_all();
@@ -366,10 +352,6 @@ static bool set_mode(uint8_t mode)
     // boolean to record if flight mode could be set
     bool success = false;
     bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
-
-    // report the GPS and Motor arming status
-    // To-Do: this should be initialised somewhere else related to the LEDs
-    led_mode = NORMAL_LEDS;
 
     switch(mode) {
         case ACRO:
@@ -632,8 +614,8 @@ static void check_usb_mux(void)
  */
 void flash_leds(bool on)
 {
-    digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
-    digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
+    //digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
+    //digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
 /*
