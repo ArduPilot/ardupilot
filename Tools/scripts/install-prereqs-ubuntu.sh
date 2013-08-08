@@ -39,6 +39,11 @@ else
     APT_GET="sudo apt-get"
 fi
 
+if [ "`uname -a | grep 64`" ]
+then
+  PX4_PKGS+=" ia32-libs"
+fi
+
 $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS
 
