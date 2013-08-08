@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include <AP_Progmem.h>
 #include <AP_Math.h>
+#include <AP_Notify.h>
 
 /// @class	GPS
 /// @brief	Abstract base class for GPS receiver drivers.

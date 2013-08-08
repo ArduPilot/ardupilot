@@ -97,6 +97,9 @@ GPS::update(void)
             }
         }
     }
+
+    // update notify with gps status
+    notify.flags.gps_status = _status;
 }
 
 void
