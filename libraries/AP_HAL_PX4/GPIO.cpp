@@ -120,7 +120,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
     switch (pin) {
 
 #ifdef CONFIG_ARCH_BOARD_PX4IO_V1
-        case A_LED_PIN:    // Arming LED
+        case HAL_GPIO_A_LED_PIN:    // Arming LED
             if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
             } else {
@@ -128,10 +128,10 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case B_LED_PIN:    // not used yet 
+        case HAL_GPIO_B_LED_PIN:    // not used yet 
             break;
 
-        case C_LED_PIN:    // GPS LED 
+        case HAL_GPIO_C_LED_PIN:    // GPS LED 
             if (value == LOW) { 
                 ioctl(_led_fd, LED_OFF, LED_BLUE);
             } else { 
@@ -187,6 +187,35 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
     }
 }
 
+void PX4GPIO::toggle(uint8_t pin)
+{
+    switch (pin) {
+
+        case HAL_GPIO_A_LED_PIN:    // Arming LED
+            ioctl(_led_fd, LED_OFF, LED_RED);
+            ioctl(_led_fd, LED_ON, LED_RED);
+            break;
+
+        case HAL_GPIO_B_LED_PIN:    // not used yet 
+            break;
+
+        case HAL_GPIO_C_LED_PIN:    // GPS LED 
+            ioctl(_led_fd, LED_OFF, LED_BLUE);
+            ioctl(_led_fd, LED_ON, LED_BLUE);
+            break;
+
+        case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
+            ioctl(_tone_alarm_fd, TONE_SET_ALARM, 3);    // Alarm on !! 
+            ioctl(_tone_alarm_fd, TONE_SET_ALARM, 0);    // Alarm off !! 
+            break;
+
+        case PX4_GPIO_EXT_RELAY_PIN: // Ext Relay 
+            ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1);
+            ioctl(_gpio_fd, GPIO_SET, GPIO_EXT_1);
+            break;
+    }
+}
+
 /* Alternative interface: */
 AP_HAL::DigitalSource* PX4GPIO::channel(uint16_t n) {
     return new PX4DigitalSource(0);
@@ -212,6 +241,10 @@ uint8_t PX4DigitalSource::read() {
 
 void PX4DigitalSource::write(uint8_t value) {
     _v = value;
+}
+
+void PX4DigitalSource::toggle() {
+    _v = !_v;
 }
 
 #endif // CONFIG_HAL_BOARD

@@ -29,6 +29,10 @@ void SMACCMGPIO::write(uint8_t pin, uint8_t value)
 {
 }
 
+void SMACCMGPIO::toggle(uint8_t pin)
+{
+}
+
 /* Alternative interface: */
 AP_HAL::DigitalSource* SMACCMGPIO::channel(uint16_t n)
 {
@@ -59,4 +63,9 @@ uint8_t SMACCMDigitalSource::read()
 void SMACCMDigitalSource::write(uint8_t value)
 {
   _v = value;
+}
+
+void SMACCMDigitalSource::toggle()
+{
+  _v = !_v;
 }

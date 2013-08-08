@@ -12,6 +12,7 @@ public:
     int8_t  analogPinToDigitalPin(uint8_t pin);
     uint8_t read(uint8_t pin);
     void    write(uint8_t pin, uint8_t value);
+    void    toggle(uint8_t pin);
 
     /* Alternative interface: */
     AP_HAL::DigitalSource* channel(uint16_t n);
@@ -28,6 +29,7 @@ public:
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 
+    void    toggle();
 private:
     uint8_t _v;
 };
