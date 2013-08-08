@@ -43,7 +43,7 @@ $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS
 
 if [ ! -d ~/PX4-Firmware ]; then
-    git clone git://github.com/PX4/Firmware.git ~/PX4-Firmware
+    git clone git://github.com/diydrones/Firmware.git ~/PX4-Firmware
 fi
 
 if [ ! -d ~/gcc-arm-none-eabi-4_6-2012q2 ]; then
