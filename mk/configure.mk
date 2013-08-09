@@ -19,4 +19,4 @@ endif
 	@echo  \# ARDUINO = /path/to/Arduino  >> $(SKETCHBOOK)/config.mk
 	@echo  >> $(SKETCHBOOK)/config.mk
 	@echo \# PX4 app build: fill in the path to PX4Firmware repository from github.com/diydrones: >> $(SKETCHBOOK)/config.mk
-	@echo PX4_ROOT = ../PX4Firmware >> $(SKETCHBOOK)/config.mk
+	@echo PX4_ROOT = ~/PX4-Firmware >> $(SKETCHBOOK)/config.mk

@@ -5,7 +5,7 @@ BASE_PKGS="gawk make git arduino-core curl"
 SITL_PKGS="g++"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          genromfs"
+          genromfs zip"
 ASSUME_YES=false
 
 function maybe_prompt_user() {
@@ -43,7 +43,7 @@ $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS
 
 if [ ! -d ~/PX4-Firmware ]; then
-    git clone git://github.com/PX4/Firmware.git ~/PX4-Firmware
+    git clone git://github.com/diydrones/PX4Firmware.git ~/PX4-Firmware
 fi
 
 if [ ! -d ~/gcc-arm-none-eabi-4_6-2012q2 ]; then
@@ -62,4 +62,9 @@ if ! grep -Fxq "$exportline" ~/.profile ; then
     else
         echo "Skipping adding $HOME/gcc-arm-none-eabi-4_6-2012q2/bin to PATH."
     fi
+fi
+
+if [ "`uname -a | grep 64`" ]
+then
+  $APT_GET install ia32-libs
 fi
