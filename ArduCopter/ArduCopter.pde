@@ -106,7 +106,7 @@
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
-#include <AC_Sprayer.h>         // Crop sprayer library
+#include <ToshibaLED.h>         // ToshibaLED library
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -148,6 +148,9 @@ static AP_Scheduler scheduler;
 
 // AP_BoardLED instance
 static AP_BoardLED board_led;
+
+// Toshiba LED instance
+static ToshibaLED toshiba_led;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -872,6 +875,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,    2,     700 },
     { barometer_accumulate,  2,     900 },
     { super_slow_loop,     100,    1100 },
+    { update_toshiba_led,    2,     100 },
     { perf_update,        1000,     500 }
 };
 
@@ -887,6 +891,9 @@ void setup() {
 
     // initialise board leds
     board_led.init();
+
+    // initialise toshiba led
+    toshiba_led.init();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC

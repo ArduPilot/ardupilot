@@ -1,5 +1,12 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// update_toshiba_led - updates the status of the toshiba led
+// should be called at 50hz ~ 100hz
+static void update_toshiba_led()
+{
+    toshiba_led.update();
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 //	Copter LEDS by Robert Lefebvre
 //	Based on the work of U4eake, Bill Sanford, Max Levine, and Oliver
