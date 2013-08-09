@@ -35,7 +35,7 @@ public:
         return FILTER_SIZE;
     };
 
-    virtual T get_sample(uint8_t i) const {
+    T get_sample(uint8_t i) const {
         return samples[i];
     }
 
