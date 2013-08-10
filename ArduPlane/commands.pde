@@ -16,6 +16,7 @@ static void update_auto()
         process_waypoint();
     } else {
         handle_no_commands();
+        process_waypoint();
     }
 }
 
