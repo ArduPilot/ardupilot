@@ -13,20 +13,22 @@ const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
     // @Range: 1 255
     // @User: Advanced
     AP_GROUPINFO("CMD_MAX",  0, AP_Mission, _cmd_max, 0),
-    
+
     // @Param: RTL_ALT
     // @DisplayName: RTL altitude
     // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL.
     // @Range: 1 255
     // @User: Advanced
     AP_GROUPINFO("RTL_ALT",  1, AP_Mission, _RTL_altitude_cm, 10000),
-    
+
     AP_GROUPEND
 };
 
 extern const AP_HAL::HAL& hal;
 
 #define WP_SIZE 15
+
+/*-------------------Commonly Used Methods --------------------------*/
 
 void AP_Mission::init_commands()
 {
@@ -38,7 +40,7 @@ void AP_Mission::init_commands()
 
 bool AP_Mission::increment_waypoint_index()
 {
-    //Check if the after waypoint is home, if so the mission is complete.
+    //Check if the currend and after waypoint is home, if so the mission is complete.
     if (_index[1] == 0 && _index[2] == 0) {
         _mission_status = false;
         return false;
@@ -54,7 +56,6 @@ bool AP_Mission::increment_waypoint_index()
         _mission_status = false;
         return false;
     }
-    
 }
 
 bool AP_Mission::change_waypoint_index(uint8_t new_index)
@@ -63,13 +64,13 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
     if(new_index == _index[1]) {
         return false;
     }
-    
+
     //Home is requested.
     if(new_index == 0) {
         goto_home();
         return true;
     }
-    
+
     Location tmp=get_cmd_with_index(new_index);
     if(_check_nav_valid(tmp)) {
         if(_sync_waypoint_index(new_index)) {
@@ -82,16 +83,43 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
     return false;
 }
 
+bool AP_Mission::get_new_cmd(struct Location &new_CMD)
+{
+    struct Location temp;
+    temp = get_cmd_with_index(_cmd_index);
+
+    if(temp.id <= MAV_CMD_NAV_LAST || _prev_index_overriden) {
+        return false;                       //no more commands for this leg
+    } else {
+
+        /*  This code is required to properly handle when there is a
+         *   conditional command prior to a DO_JUMP*/
+        if(temp.id == MAV_CMD_DO_JUMP && (temp.lat > 0 || temp.lat == -1)) {
+            uint8_t old_cmd_index = _cmd_index;
+
+            if(change_waypoint_index(temp.p1)) {
+                if( temp.lat > 0) {
+                    temp.lat--;
+                    temp.lat=constrain_int16(temp.lat, 0, 100);
+                    set_cmd_with_index(temp, old_cmd_index);
+                }
+            } else { //Waypoint is already current, or do_jump was invalid.
+                _cmd_index++;
+                return false;
+            }
+        }
+
+        new_CMD=temp;
+        _cmd_index++;
+        return true;
+    }
+}
+
+/*--------------------------Specific Purpose Methods-------------------*/
+
 void AP_Mission::goto_home()
 {
     goto_location(_home);
-}
-
-void AP_Mission::resume()
-{
-    _sync_nav_waypoints();
-    _nav_waypoints[0]=_current_loc;
-    _prev_index_overriden = true;
 }
 
 bool AP_Mission::goto_location(const struct Location &wp)
@@ -106,38 +134,21 @@ bool AP_Mission::goto_location(const struct Location &wp)
         return false;
     }
 }
-    
-bool AP_Mission::get_new_cmd(struct Location &new_CMD)
-{
-    struct Location temp;
-    temp = get_cmd_with_index(_cmd_index);
 
-    if(temp.id <= MAV_CMD_NAV_LAST || _prev_index_overriden) {
-        return false;                       //no more commands for this leg
-    } else {
-        
-        /*  This code is required to properly handle when there is a 
-            conditional command prior to a DO_JUMP*/
-        if(temp.id == MAV_CMD_DO_JUMP && (temp.lat > 0 || temp.lat == -1)) {
-            uint8_t old_cmd_index = _cmd_index;
-                
-            if(change_waypoint_index(temp.p1)) {
-                if( temp.lat > 0) {
-                    temp.lat--;
-                    temp.lat=constrain_int16(temp.lat, 0, 100);
-                    set_cmd_with_index(temp, old_cmd_index);
-                }
-            } else { //Waypoint is already current, or do_jump was invalid.
-                _cmd_index++;
-                return false;
-            }
-        }
-        
-        new_CMD=temp;
-        _cmd_index++;
-        return true;
-    }
+void AP_Mission::resume()
+{
+    _sync_nav_waypoints();
+    _nav_waypoints[0]=_current_loc;
+    _prev_index_overriden = true;
 }
+
+void AP_Mission::override_prev_wp(const struct Location &wp)
+{
+    _nav_waypoints[0] = wp;
+    _prev_index_overriden = true;
+}
+
+/*---------------------Utility Methods------------------------------*/
 
 void AP_Mission::set_command_total(uint8_t max_index)
 {
@@ -155,22 +166,22 @@ bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
 {
     Location tmp=get_cmd_with_index(new_index);
     if (new_index <= _cmd_max) {
-    
+
         if (_check_nav_valid(tmp)) {
-        
+
             _index[0]=_index[1];
-        
-            if (new_index == _cmd_max) {
+
+            if (new_index == _cmd_max) { //The last waypoint in msn was requested.
                 _index[1]=_cmd_max;
                 _index[2]=0;
-            } else if (new_index == 0) {
+            } else if (new_index == 0) { //Home was requested.
                 _index[1]=0;
                 _index[2]=0;
             } else {
                 _index[1]= new_index;
                 _index[2]=_find_nav_index(_index[1]+1);
             }
-            
+
             _cmd_index=_index[0]+1; //Reset command index to read commands associated with current mission leg.
 
             _sync_nav_waypoints();
@@ -185,9 +196,10 @@ void AP_Mission::_sync_nav_waypoints(){
     for(int i=0; i<3; i++) {
         _nav_waypoints[i]=get_cmd_with_index(_index[i]);
 
+        //Special handling for home, to ensure waypoint handed to vehicle is not 0 ft AGL.
         if(_index[i] == 0) {
             _nav_waypoints[i].id=MAV_CMD_NAV_LOITER_UNLIM;
-        
+
             if(_RTL_altitude_cm < 0) {
                 _nav_waypoints[i].alt=_current_loc.alt;
             } else {
@@ -313,7 +325,7 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
         (temp.lat != 0 || temp.lng != 0 || temp.alt != 0)) {
         temp.alt += _home.alt;
     }
-    
+
     // if lat and lon is zero, then use current lat/lon
     // this allows a mission to contain a "loiter on the spot"
     // command
@@ -326,7 +338,7 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
             temp.alt = _current_loc.alt;
         }
     }
-    
+
     return temp;
 }
 
