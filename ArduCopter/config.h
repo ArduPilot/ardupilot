@@ -604,7 +604,7 @@
 #endif
 
 #ifndef SPORT_THR
- # define SPORT_THR           	    THROTTLE_MANUAL
+ # define SPORT_THR           	    THROTTLE_HOLD
 #endif
 
 // Alt Hold Mode
