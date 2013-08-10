@@ -24,6 +24,7 @@ void AP_Mission::init_commands()
 {
     uint8_t tmp_index=_find_nav_index(1);
     change_waypoint_index(tmp_index);
+    _prev_index_overriden= false;
     _mission_status = true;
 }
 
@@ -39,11 +40,13 @@ bool AP_Mission::increment_waypoint_index()
 
     if (_sync_waypoint_index(_index[2])) {
         _mission_status = true;
+        _prev_index_overriden= false;
         return true;
     } else {
         _mission_status = false;
         return false;
     }
+    
 }
 
 bool AP_Mission::change_waypoint_index(uint8_t new_index)
@@ -52,13 +55,21 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
     if(new_index == _index[1]) {
         return false;
     }
-
+    
+    //Home is requested.
+    if(new_index == 0) {
+        goto_home(0);
+        return true;
+    }
+    
     Location tmp=get_cmd_with_index(new_index);
     if(_check_nav_valid(tmp)) {
-        _ahrs.get_position(_current_loc);
-        _nav_waypoints[0]=_current_loc;
-        
         if(_sync_waypoint_index(new_index)) {
+        
+            _current_loc=_nav_waypoints[0];
+            _ahrs.get_position(_current_loc);
+            _nav_waypoints[0]=_current_loc;
+            _prev_index_overriden = true;
             _mission_status = true;
             return true;
         }
@@ -69,9 +80,16 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
 void AP_Mission::goto_home(const int32_t &altitude)
 {
     struct Location temp;
-    _index[1] = _index[2] = 0;
+    _index[1] = 0;
+    _index[2] = 0;
     temp=_home;
-    temp.alt=+altitude;
+    temp.id=MAV_CMD_NAV_LOITER_UNLIM;
+    
+    if(altitude > 0) {
+        temp.alt=+altitude;
+    } else {
+        temp.alt=_nav_waypoints[1].alt;
+    }
     goto_location(temp);
 }
 
@@ -80,6 +98,8 @@ void AP_Mission::resume()
     _sync_nav_waypoints();
     _ahrs.get_position(_current_loc);
     _nav_waypoints[0]=_current_loc;
+    _prev_index_overriden = true;
+
 }
 
 bool AP_Mission::goto_location(const struct Location &wp)
@@ -87,7 +107,10 @@ bool AP_Mission::goto_location(const struct Location &wp)
     _ahrs.get_position(_current_loc);
     if(_check_nav_valid(_current_loc)) {
         _nav_waypoints[0] = _current_loc;
-        _nav_waypoints[1] = _nav_waypoints[2] = wp;
+        _nav_waypoints[0].alt = wp.alt;
+        _prev_index_overriden = true;
+        _nav_waypoints[1] = wp;
+        _nav_waypoints[2] = wp;
         return true;
     } else {
         return false;
@@ -145,7 +168,11 @@ bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
 {
     Location tmp=get_cmd_with_index(new_index);
     if (new_index <= _cmd_max) {
+    
         if (_check_nav_valid(tmp)) {
+        
+            _index[0]=_index[1];
+        
             if (new_index == _cmd_max) {
                 _index[1]=_cmd_max;
                 _index[2]=0;
@@ -153,7 +180,11 @@ bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
                 _index[1]= new_index;
                 _index[2]=_find_nav_index(_index[1]+1);
             }
-            _cmd_index=_index[0]+1; //Reset command index to read commands associated with current mission leg.
+            
+            if (!_prev_index_overriden) {
+                _cmd_index=_index[0]+1; //Reset command index to read commands associated with current mission leg.
+            }
+            
             _sync_nav_waypoints();
             return true;
         }
@@ -162,7 +193,6 @@ bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
 }
 
 void AP_Mission::_sync_nav_waypoints(){
-
     //TODO: this could be optimimzed by making use of the fact some waypoints are already loaded.
     for(int i=0; i<3; i++) {
         _nav_waypoints[i]=get_cmd_with_index(_index[i]);
@@ -284,7 +314,7 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
         (temp.lat != 0 || temp.lng != 0 || temp.alt != 0)) {
         temp.alt += _home.alt;
     }
-
+    
     // if lat and lon is zero, then use current lat/lon
     // this allows a mission to contain a "loiter on the spot"
     // command

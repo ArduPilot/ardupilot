@@ -147,6 +147,7 @@ private:
 
     bool                _mission_status;
     uint8_t             _index[3];
+    bool                _prev_index_overriden;
     struct Location     _home;
     AP_Float            _cmd_max;
     
