@@ -24,7 +24,7 @@ static void verify_commands(void)
     }
     
     if (verify_condition_command() || non_nav_command_ID == NO_COMMAND) {
-        if(mission.get_new_cmd(next_nonnav_command)) {
+        if(mission.get_new_cmd(next_nonnav_command) && control_mode == AUTO) {
             process_non_nav_command();
         } else {
             non_nav_command_ID=NO_COMMAND;
