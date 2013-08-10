@@ -79,7 +79,7 @@ public:
 
     /* Returns the overall health of the mission.  If the mission is complete, or
      * there is an error, this will return false. */
-    bool        get_mission_status() const {
+    bool        get_status() const {
         return _mission_status;
     }
 

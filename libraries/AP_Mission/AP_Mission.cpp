@@ -14,6 +14,9 @@ const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CMD_MAX",  0, AP_Mission, _cmd_max, 0),
 
+    /* Need to figure out how to get this to default to define in config.h
+        the default should be different for planes versus copters. */
+
     // @Param: RTL_ALT
     // @DisplayName: RTL altitude
     // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL.
@@ -40,7 +43,7 @@ void AP_Mission::init_commands()
 
 bool AP_Mission::increment_waypoint_index()
 {
-    //Check if the currend and after waypoint is home, if so the mission is complete.
+    //Check if the current and after waypoint is home, if so the mission is complete.
     if (_index[1] == 0 && _index[2] == 0) {
         _mission_status = false;
         return false;
@@ -261,6 +264,7 @@ uint8_t AP_Mission::_find_nav_index(uint8_t search_index)
     }
     return 0;
 }
+
 
 bool AP_Mission::_check_nav_valid(const struct Location &temp)
 {
