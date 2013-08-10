@@ -119,7 +119,11 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
 
 void AP_Mission::goto_home()
 {
-    goto_location(_home);
+    _index[1]=0;
+    _index[2]=0;
+    struct Location safe_home; 
+    _safe_home(safe_home);
+    goto_location(safe_home);
 }
 
 bool AP_Mission::goto_location(const struct Location &wp)
@@ -197,16 +201,21 @@ void AP_Mission::_sync_nav_waypoints(){
         _nav_waypoints[i]=get_cmd_with_index(_index[i]);
 
         //Special handling for home, to ensure waypoint handed to vehicle is not 0 ft AGL.
-        if(_index[i] == 0) {
-            _nav_waypoints[i].id=MAV_CMD_NAV_LOITER_UNLIM;
-
-            if(_RTL_altitude_cm < 0) {
-                _nav_waypoints[i].alt=_current_loc.alt;
-            } else {
-                _nav_waypoints[i].alt = _nav_waypoints[i].alt + _RTL_altitude_cm;
-            }
-
+        if(_index[i] == 0 && _nav_waypoints[i].id != MAV_CMD_NAV_LAND) {
+            _safe_home(_nav_waypoints[i]);
         }
+    }
+}
+
+void AP_Mission::_safe_home(struct Location &safe_home){ 
+    
+    safe_home=_home;
+    safe_home.id=MAV_CMD_NAV_LOITER_UNLIM;
+
+    if(_RTL_altitude_cm < 0) {
+        safe_home.alt=_current_loc.alt;
+    } else {
+        safe_home.alt = _home.alt + _RTL_altitude_cm;
     }
 }
 

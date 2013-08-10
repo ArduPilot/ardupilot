@@ -187,6 +187,8 @@ private:
     //Synchronizes the nav_waypoints array with the indicies in _index
     void        _sync_nav_waypoints();
 
+    void        _safe_home(struct Location &safe_home);
+
     //Current index for non navigation commands
     uint8_t        _cmd_index;
 
