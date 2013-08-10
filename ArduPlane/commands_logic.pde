@@ -151,7 +151,7 @@ static void handle_process_do_command()
 static void handle_no_commands()
 {
     gcs_send_text_fmt(PSTR("Returning to Home"));
-    mission.goto_home(read_alt_to_hold());
+    mission.goto_home();
     process_waypoint();
 }
 
@@ -239,7 +239,7 @@ static void do_RTL(void)
     mission.goto_home(read_alt_to_hold());
 
     guided_WP=mission.get_home();
-    guided_WP.alt=read_alt_to_hold();
+    guided_WP.alt=mission.get_home_hold_alt();
     
     if (g.loiter_radius < 0) {
         loiter.direction = -1;

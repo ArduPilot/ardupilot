@@ -20,15 +20,6 @@ static void update_auto()
     }
 }
 
-static int32_t read_alt_to_hold()
-{
-    if (g.RTL_altitude_cm < 0) {
-        return current_loc.alt;
-    }
-    return g.RTL_altitude_cm + mission.get_home_alt();
-}
-
-
 /*
  *  This function stores waypoint commands
  *  It looks to see what the next command type is and finds the last command.
