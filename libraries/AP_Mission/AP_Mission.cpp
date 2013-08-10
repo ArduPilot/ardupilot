@@ -39,16 +39,16 @@ void AP_Mission::init_commands()
 bool AP_Mission::increment_waypoint_index()
 {
     //Check if the after waypoint is home, if so the mission is complete.
-    if (_index[2] == 0) {
+    if (_index[1] == 0 && _index[2] == 0) {
         _mission_status = false;
         return false;
-    } 
+    }
 
     _index[0]=_index[1];
+    _prev_index_overriden= false;
 
     if (_sync_waypoint_index(_index[2])) {
         _mission_status = true;
-        _prev_index_overriden= false;
         return true;
     } else {
         _mission_status = false;
@@ -105,18 +105,19 @@ bool AP_Mission::goto_location(const struct Location &wp)
     } else {
         return false;
     }
-}    
+}
     
 bool AP_Mission::get_new_cmd(struct Location &new_CMD)
 {
     struct Location temp;
     temp = get_cmd_with_index(_cmd_index);
 
-    if(temp.id <= MAV_CMD_NAV_LAST) {
+    if(temp.id <= MAV_CMD_NAV_LAST || _prev_index_overriden) {
         return false;                       //no more commands for this leg
     } else {
         
-        //This is required when there is a conditional command prior to a DO_JUMP
+        /*  This code is required to properly handle when there is a 
+            conditional command prior to a DO_JUMP*/
         if(temp.id == MAV_CMD_DO_JUMP && (temp.lat > 0 || temp.lat == -1)) {
             uint8_t old_cmd_index = _cmd_index;
                 
@@ -126,7 +127,8 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
                     temp.lat=constrain_int16(temp.lat, 0, 100);
                     set_cmd_with_index(temp, old_cmd_index);
                 }
-            } else {
+            } else { //Waypoint is already current, or do_jump was invalid.
+                _cmd_index++;
                 return false;
             }
         }
@@ -135,11 +137,6 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
         _cmd_index++;
         return true;
     }
-}
-
-uint8_t AP_Mission::command_total()
-{
-    return _cmd_max;
 }
 
 void AP_Mission::set_command_total(uint8_t max_index)
@@ -166,15 +163,16 @@ bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
             if (new_index == _cmd_max) {
                 _index[1]=_cmd_max;
                 _index[2]=0;
+            } else if (new_index == 0) {
+                _index[1]=0;
+                _index[2]=0;
             } else {
                 _index[1]= new_index;
                 _index[2]=_find_nav_index(_index[1]+1);
             }
             
-            if (!_prev_index_overriden) {
-                _cmd_index=_index[0]+1; //Reset command index to read commands associated with current mission leg.
-            }
-            
+            _cmd_index=_index[0]+1; //Reset command index to read commands associated with current mission leg.
+
             _sync_nav_waypoints();
             return true;
         }

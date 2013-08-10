@@ -81,29 +81,27 @@ public:
     /*---------------------Utility Functions-------------------*/
 
     /*returns just the current index.  */
-    uint8_t        waypoint_index() const {
-        return _index[1];
-    }
+    uint8_t   waypoint_index() const { return _index[1]; }
+    
+    uint8_t   prev_waypoint_index() const { return _index[0];}
+    
+    uint8_t   after_waypoint_index() const { return _index[2];}
     
     /*returns just the current command index.  */
-    uint8_t        command_index()    {
-        return _cmd_index;
-    }
+    uint8_t     command_index() const { return _cmd_index;}
     
     //gets the total number of commands in the mission.
-    uint8_t        command_total();
+    uint8_t     command_total() const { return _cmd_max;}
 
     /*Sets the total number of commands in the mission.
      *  Used when a new mission is uploaded by a planner. */
-    void        set_command_total(uint8_t max_index);
+    void            set_command_total(uint8_t max_index);
 
     /*Sets the home location, and writes it to storage */
-    void        set_home(const struct Location &home);
+    void            set_home(const struct Location &home);
 
     /*Returns home location */
-    const struct Location           get_home()            {
-        return _home;
-    }
+    struct Location get_home() const { return _home;}
     
     int32_t get_home_alt() const { return _home.alt;}
     int32_t get_home_hold_alt() const { return (_home.alt + _RTL_altitude_cm);}
