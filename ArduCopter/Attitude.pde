@@ -303,8 +303,8 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     acro_roll = wrap_180_cd(acro_roll);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_roll) > 4500 && g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        acro_roll  = constrain_int32(acro_roll, -4500, 4500);
+    if (labs(acro_roll) > g.angle_max && g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        acro_roll  = constrain_int32(acro_roll, -g.angle_max, g.angle_max);
         angle_error = wrap_180_cd(acro_roll - ahrs.roll_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
@@ -344,8 +344,8 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     acro_pitch = wrap_180_cd(acro_pitch);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_pitch) > 4500) {
-        acro_pitch  = constrain_int32(acro_pitch, -4500, 4500);
+    if (labs(acro_pitch) > g.angle_max) {
+        acro_pitch  = constrain_int32(acro_pitch, -g.angle_max, g.angle_max);
         angle_error = wrap_180_cd(acro_pitch - ahrs.pitch_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
