@@ -20,8 +20,8 @@ static void default_dead_zones()
 static void init_rc_in()
 {
     // set rc channel ranges
-    g.rc_1.set_angle(MAX_INPUT_ROLL_ANGLE);
-    g.rc_2.set_angle(MAX_INPUT_PITCH_ANGLE);
+    g.rc_1.set_angle(ROLL_PITCH_INPUT_MAX);
+    g.rc_2.set_angle(ROLL_PITCH_INPUT_MAX);
 #if FRAME_CONFIG == HELI_FRAME
     // we do not want to limit the movment of the heli's swash plate
     g.rc_3.set_range(0, 1000);

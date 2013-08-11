@@ -1,5 +1,30 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
+// returns desired angle in centi-degrees
+static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
+{
+    static float _scaler = 1.0;
+    static int16_t _angle_max = 0;
+
+    // return immediately if no scaling required
+    if (g.angle_max == ROLL_PITCH_INPUT_MAX) {
+        roll_out = roll_in;
+        pitch_out = pitch_in;
+        return;
+    }
+
+    // check if angle_max has been updated and redo scaler
+    if (g.angle_max != _angle_max) {
+        _angle_max = g.angle_max;
+        _scaler = (float)g.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    }
+
+    // convert pilot input to lean angle
+    roll_out = roll_in * _scaler;
+    pitch_out = pitch_in * _scaler;
+}
+
 static void
 get_stabilize_roll(int32_t target_angle)
 {
@@ -7,7 +32,7 @@ get_stabilize_roll(int32_t target_angle)
     target_angle = wrap_180_cd(target_angle - ahrs.roll_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle = constrain_int32(target_angle, -4500, 4500);
+    target_angle = constrain_int32(target_angle, -g.angle_max, g.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_roll.kP() * target_angle;
@@ -23,7 +48,7 @@ get_stabilize_pitch(int32_t target_angle)
     target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle            = constrain_int32(target_angle, -4500, 4500);
+    target_angle            = constrain_int32(target_angle, -g.angle_max, g.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_pitch.kP() * target_angle;
@@ -114,10 +139,10 @@ get_acro_level_rates()
     int32_t target_rate = 0;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (roll_angle > 4500){
-            target_rate =  g.pi_stabilize_roll.get_p(4500-roll_angle);
-        }else if (roll_angle < -4500) {
-            target_rate =  g.pi_stabilize_roll.get_p(-4500-roll_angle);
+        if (roll_angle > g.angle_max){
+            target_rate =  g.pi_stabilize_roll.get_p(g.angle_max-roll_angle);
+        }else if (roll_angle < -g.angle_max) {
+            target_rate =  g.pi_stabilize_roll.get_p(-g.angle_max-roll_angle);
         }
     }
     roll_angle   = constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
@@ -131,10 +156,10 @@ get_acro_level_rates()
     target_rate = 0;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (pitch_angle > 4500){
-            target_rate =  g.pi_stabilize_pitch.get_p(4500-pitch_angle);
-        }else if (pitch_angle < -4500) {
-            target_rate =  g.pi_stabilize_pitch.get_p(-4500-pitch_angle);
+        if (pitch_angle > g.angle_max){
+            target_rate =  g.pi_stabilize_pitch.get_p(g.angle_max-pitch_angle);
+        }else if (pitch_angle < -g.angle_max) {
+            target_rate =  g.pi_stabilize_pitch.get_p(-g.angle_max-pitch_angle);
         }
     }
     pitch_angle  = constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
