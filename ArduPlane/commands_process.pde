@@ -14,7 +14,7 @@ void change_waypoint(uint8_t new_waypoint_index)
 static void verify_commands(void)
 {
    if (verify_nav_command()) {
-        if (control_mode == AUTO) {
+        if (control_mode == AUTO && mission.get_status()) {
             if (mission.increment_waypoint_index()) {
                 process_waypoint();
             } else {
