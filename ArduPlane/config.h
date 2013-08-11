@@ -284,10 +284,10 @@
  # define FLIGHT_MODE_2                  RTL
 #endif
 #if !defined(FLIGHT_MODE_3)
- # define FLIGHT_MODE_3                  STABILIZE
+ # define FLIGHT_MODE_3                  FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_4)
- # define FLIGHT_MODE_4                  STABILIZE
+ # define FLIGHT_MODE_4                  FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_5)
  # define FLIGHT_MODE_5                  MANUAL
