@@ -12,7 +12,7 @@ static void init_commands()
 static void update_auto()
 {
     mission.resume();
-    if (mission.get_mission_status()) {
+    if (mission.get_status()) {
         process_waypoint();
     } else {
         handle_no_commands();
