@@ -6,13 +6,21 @@
 #include "AP_Mission.h"
 
 const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
+
     // @Param: CMD_MAX
     // @DisplayName: Number of loaded mission items
     // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
     // @Range: 1 255
     // @User: Advanced
     AP_GROUPINFO("CMD_MAX",  0, AP_Mission, _cmd_max, 0),
-        
+    
+    // @Param: RTL_ALT
+    // @DisplayName: RTL altitude
+    // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL.
+    // @Range: 1 255
+    // @User: Advanced
+    AP_GROUPINFO("RTL_ALT",  1, AP_Mission, _RTL_altitude_cm, 10000),
+    
     AP_GROUPEND
 };
 
@@ -58,16 +66,13 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
     
     //Home is requested.
     if(new_index == 0) {
-        goto_home(0);
+        goto_home();
         return true;
     }
     
     Location tmp=get_cmd_with_index(new_index);
     if(_check_nav_valid(tmp)) {
         if(_sync_waypoint_index(new_index)) {
-        
-            _current_loc=_nav_waypoints[0];
-            _ahrs.get_position(_current_loc);
             _nav_waypoints[0]=_current_loc;
             _prev_index_overriden = true;
             _mission_status = true;
@@ -77,37 +82,22 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
     return false;
 }
 
-void AP_Mission::goto_home(const int32_t &altitude)
+void AP_Mission::goto_home()
 {
-    struct Location temp;
-    _index[1] = 0;
-    _index[2] = 0;
-    temp=_home;
-    temp.id=MAV_CMD_NAV_LOITER_UNLIM;
-    
-    if(altitude > 0) {
-        temp.alt=+altitude;
-    } else {
-        temp.alt=_nav_waypoints[1].alt;
-    }
-    goto_location(temp);
+    goto_location(_home);
 }
 
 void AP_Mission::resume()
 {
     _sync_nav_waypoints();
-    _ahrs.get_position(_current_loc);
     _nav_waypoints[0]=_current_loc;
     _prev_index_overriden = true;
-
 }
 
 bool AP_Mission::goto_location(const struct Location &wp)
 {
-    _ahrs.get_position(_current_loc);
-    if(_check_nav_valid(_current_loc)) {
+    if(_check_nav_valid(wp)) {
         _nav_waypoints[0] = _current_loc;
-        _nav_waypoints[0].alt = wp.alt;
         _prev_index_overriden = true;
         _nav_waypoints[1] = wp;
         _nav_waypoints[2] = wp;
@@ -196,6 +186,17 @@ void AP_Mission::_sync_nav_waypoints(){
     //TODO: this could be optimimzed by making use of the fact some waypoints are already loaded.
     for(int i=0; i<3; i++) {
         _nav_waypoints[i]=get_cmd_with_index(_index[i]);
+
+        if(_index[i] == 0) {
+            _nav_waypoints[i].id=MAV_CMD_NAV_LOITER_UNLIM;
+        
+            if(_RTL_altitude_cm < 0) {
+                _nav_waypoints[i].alt=_current_loc.alt;
+            } else {
+                _nav_waypoints[i].alt = _nav_waypoints[i].alt + _RTL_altitude_cm;
+            }
+
+        }
     }
 }
 
@@ -319,7 +320,7 @@ struct Location AP_Mission::get_cmd_with_index(int16_t i)
     // this allows a mission to contain a "loiter on the spot"
     // command
     if (temp.lat == 0 && temp.lng == 0) {
-        _ahrs.get_position(_current_loc);
+
         temp.lat = _current_loc.lat;
         temp.lng = _current_loc.lng;
         // additionally treat zero altitude as current altitude

@@ -34,9 +34,9 @@
 class AP_Mission {
 
 public:
-    AP_Mission(AP_AHRS &ahrs, uint16_t start_byte = 0x500) : 
+    AP_Mission(struct Location &current_loc, uint16_t start_byte = 0x500) : 
         _start_byte(start_byte),
-        _ahrs(ahrs)
+        _current_loc(current_loc)
     	{
 			AP_Param::setup_object_defaults(this, var_info);
             _index[0]=0; _index[1]=0; _index[2]=0;
@@ -53,7 +53,7 @@ public:
     const struct Location &current_wp() const {return _nav_waypoints[1];}
     const struct Location &after_wp() const {return _nav_waypoints[2];}
     
-    void        goto_home(const int32_t &altitude);
+    void        goto_home();
     bool        goto_location(const struct Location &wp);
     void        override_altitude(const int32_t &altitude) { _nav_waypoints[1].alt=altitude; }
     void        resume();
@@ -105,9 +105,9 @@ public:
         return _home;
     }
     
-    const int32_t get_home_alt()    {
-        return _home.alt;
-    }
+    int32_t get_home_alt() const { return _home.alt;}
+    int32_t get_home_hold_alt() const { return (_home.alt + _RTL_altitude_cm);}
+
     
     //Low(er) level functions to store commands and waypoints into storage.
     struct Location         get_cmd_with_index(int16_t inx);
@@ -150,10 +150,9 @@ private:
     bool                _prev_index_overriden;
     struct Location     _home;
     AP_Float            _cmd_max;
+    AP_Float            _RTL_altitude_cm;
     
-    // reference to the AHRS object
-    AP_AHRS &_ahrs;
-    struct Location _current_loc;
+    struct Location &_current_loc;
     
 
 };
