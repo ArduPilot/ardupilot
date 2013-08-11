@@ -303,7 +303,7 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     acro_roll = wrap_180_cd(acro_roll);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_roll) > g.angle_max && g.acro_trainer == ACRO_TRAINER_LIMITED) {
+    if (labs(acro_roll) > g.angle_max) {
         acro_roll  = constrain_int32(acro_roll, -g.angle_max, g.angle_max);
         angle_error = wrap_180_cd(acro_roll - ahrs.roll_sensor);
     } else {
