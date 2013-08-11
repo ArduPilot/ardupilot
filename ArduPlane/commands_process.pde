@@ -16,6 +16,9 @@ static void verify_commands(void)
    if (verify_nav_command()) {
         if (control_mode == AUTO && mission.get_status()) {
             if (mission.increment_waypoint_index()) {
+                if(mission.prev_wp().id == MAV_CMD_NAV_TAKEOFF) {
+                    mission.override_prev_wp(current_loc);
+                }
                 process_waypoint();
             } else {
                 handle_no_commands();

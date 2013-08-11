@@ -328,7 +328,6 @@ static bool verify_takeoff()
     if (adjusted_altitude_cm() > takeoff_altitude_cm) {
         steer_state.hold_course_cd = -1;
         takeoff_complete = true;
-//        next_WP = prev_WP = current_loc;
         return true;
     } else {
         return false;
