@@ -586,7 +586,10 @@ static bool suppress_throttle(void)
 }
 
 /*
-  implement a software VTail or elevon mixer. There are 4 different mixing modes
+ * Implement a software VTail or elevon mixer. There are 4 different mixing modes
+ * Applies mixing_type, basically a one of 4 quadrant transformer.
+ * Has no side effects - other than on its own arguments.
+ * These values are in us-space and not in centidegree-space...
  */
 static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out)
 {
@@ -603,7 +606,7 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
     // now map to mixed output
     switch (mixing_type) {
     case MIXING_DISABLED:
-        return;
+        return; // nothing done.
 
     case MIXING_UPUP:
         break;
@@ -638,15 +641,19 @@ static void set_servos(void)
     int16_t last_throttle = channel_throttle->radio_out;
 
     if (control_mode == MANUAL) {
-        // do a direct pass through of radio values
+    		// g.mix_mode == 0 means elevon input mix is off.
+    		// g.elevon_output != MIXING_DISABLED means output mixing is on..? What?
         if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
+            // No elevon transform done here. Do a direct pass through of radio values
             channel_roll->radio_out                = channel_roll->radio_in;
             channel_pitch->radio_out               = channel_pitch->radio_in;
         } else {
+        	// Read() does: For RC_Channel, a plain return of the HAL input value.
+        	// 
             channel_roll->radio_out                = channel_roll->read();
             channel_pitch->radio_out               = channel_pitch->read();
         }
-        channel_throttle->radio_out    = channel_throttle->radio_in;
+        channel_throttle->radio_out  		   = channel_throttle->radio_in;
         channel_rudder->radio_out              = channel_rudder->radio_in;
 
         // setup extra channels. We want this to come from the
@@ -672,7 +679,7 @@ static void set_servos(void)
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, channel_roll->radio_out);
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler2, channel_pitch->radio_out);
         }
-    } else {
+    } else {	// not manual
         if (g.mix_mode == 0) {
             // both types of secondary aileron are slaved to the roll servo out
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, channel_roll->servo_out);
@@ -684,10 +691,12 @@ static void set_servos(void)
 
             // setup secondary rudder
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->servo_out);
-        }else{
-            /*Elevon mode*/
+        } else {
+            // Elevon input and output mode
             float ch1;
             float ch2;
+            // reverse_elevons reverses roll direction on both.
+            // reverse_ch1_elevon and reverse_ch2_elevon reverses each channel on final output.
             ch1 = channel_pitch->servo_out - (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->servo_out);
             ch2 = channel_pitch->servo_out + (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->servo_out);
 
@@ -700,7 +709,7 @@ static void set_servos(void)
 			if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
 				float ch3 = ch1;
 				float ch4 = ch2;
-				if ( BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->servo_out < 0) {
+				if (BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->servo_out < 0) {
 				    ch1 += abs(channel_rudder->servo_out);
 				    ch3 -= abs(channel_rudder->servo_out);
 				} else {
@@ -811,6 +820,7 @@ static void set_servos(void)
     if (g.vtail_output != MIXING_DISABLED) {
         channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
     } else if (g.elevon_output != MIXING_DISABLED) {
+    	// Output-only elevon mixer
         channel_output_mixer(g.elevon_output, channel_pitch->radio_out, channel_roll->radio_out);
     }
 

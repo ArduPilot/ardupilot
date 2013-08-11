@@ -326,6 +326,7 @@ uint8_t oldSwitchPosition;
 // This is used to enable the inverted flight feature
 bool inverted_flight     = false;
 
+// These values are in us-space and not in centidegree-space...
 static struct {
     // These are trim values used for elevon control
     // For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are
@@ -1043,12 +1044,14 @@ static void update_flight_mode(void)
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
             if (hold_course_cd == -1) {
-                // we don't yet have a heading to hold - just level
+            	// It seems the autostart heading is read from the GPS as the
+            	// first heading read after the plane has picked up some speed.
+                // We don't yet have a heading to hold - just level
                 // the wings until we get up enough speed to get a GPS heading
                 nav_roll_cd = 0;
             } else {
                 calc_nav_roll();
-                // during takeoff use the level flight roll limit to
+                // During takeoff use the level flight roll limit to
                 // prevent large course corrections
 				nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
             }
@@ -1058,7 +1061,9 @@ static void update_flight_mode(void)
                 if (nav_pitch_cd < takeoff_pitch_cd)
                     nav_pitch_cd = takeoff_pitch_cd;
             } else {
+            	// Make pitch proportional to speed and = takeoff_pitch_cd when cruise airspeed is reached.
                 nav_pitch_cd = (g_gps->ground_speed_cm / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
+                // Limit between 5 degs and takeoff pitch
                 nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
@@ -1085,6 +1090,7 @@ static void update_flight_mode(void)
                     nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
                 }
             }
+
             calc_throttle();
 
             if (land_complete) {
@@ -1145,6 +1151,7 @@ static void update_flight_mode(void)
                 training_manual_pitch = true;
                 nav_pitch_cd = 0;
             }
+            
             if (inverted_flight) {
                 nav_pitch_cd = -nav_pitch_cd;
             }
@@ -1229,6 +1236,8 @@ static void update_flight_mode(void)
         case MANUAL:
             // servo_out is for Sim control only
         	// What??? Why not use control_in?
+        	// This means software trims are used even in manual. Not desirable I think.
+        	// Dead zones seem to apply too. Also not desirable.
             // ---------------------------------
             channel_roll->servo_out = channel_roll->pwm_to_angle();
             channel_pitch->servo_out = channel_pitch->pwm_to_angle();

@@ -259,9 +259,9 @@ static void startup_ground(void)
     // Makes the servos wiggle
     // step 1 = 1 wiggle
     // -----------------------
-    if (!g.skip_gyro_cal) {
-        demo_servos(1);
-    }
+    // if (!g.skip_gyro_cal) {
+    //    demo_servos(1);
+    // }
 
     //INS ground start
     //------------------------
@@ -282,9 +282,9 @@ static void startup_ground(void)
 
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
-    if (!g.skip_gyro_cal) {
-        demo_servos(3);
-    }
+    // if (!g.skip_gyro_cal) {
+    //    demo_servos(3);
+    // }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup

@@ -68,10 +68,13 @@ static void read_radio()
     elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
 
+    // Elevon input mixer.
     if (g.mix_mode == 0) {
         pwm_roll = elevon.ch1_temp;
         pwm_pitch = elevon.ch2_temp;
-    }else{
+    } else {
+    	// calculate(!) pwms for elevons. Seems to assume pitch and roll have same weight (wrong-o).
+    	// The 2 hardware pwm values are zeroed and added, then divided by 2.
         pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
         pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
     }
@@ -84,6 +87,7 @@ static void read_radio()
         channel_throttle->set_pwm_no_deadzone(channel_throttle->read());
         channel_rudder->set_pwm_no_deadzone(channel_rudder->read());
     } else {
+    	// apply dead zones.
         channel_roll->set_pwm(pwm_roll);
         channel_pitch->set_pwm(pwm_pitch);
         channel_throttle->set_pwm(channel_throttle->read());
