@@ -95,7 +95,6 @@ void
 AC_Sprayer::update()
 {
     uint32_t now;
-    Vector3f velocity;
     float ground_speed;
 
     // exit immediately if we are disabled (perhaps set pwm values back to defaults)
@@ -109,7 +108,7 @@ AC_Sprayer::update()
     }
 
     // get horizontal velocity
-    velocity = _inav->get_velocity();
+    const Vector3f &velocity = _inav->get_velocity();
     ground_speed = pythagorous2(velocity.x,velocity.y);
 
     // get the current time
