@@ -97,7 +97,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	// Get current position and velocity
-    _ahrs->get_projected_position(_current_loc);
+    _ahrs->get_position(_current_loc);
 
 	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 
