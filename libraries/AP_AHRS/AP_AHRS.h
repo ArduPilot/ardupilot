@@ -27,6 +27,7 @@ class AP_AHRS
 public:
     // Constructor
     AP_AHRS(AP_InertialSensor *ins, GPS *&gps) :
+    	_airspeed(NULL),
         _ins(ins),
         _gps(gps)
     {
