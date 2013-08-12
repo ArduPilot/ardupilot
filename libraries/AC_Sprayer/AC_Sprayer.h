@@ -19,18 +19,16 @@
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     // delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    // shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
 
-/// @class	Camera
-/// @brief	Object managing a Photo or video camera
 class AC_Sprayer {
 
 public:
     /// Constructor
-    AC_Sprayer(AP_InertialNav* inav);
+    AC_Sprayer(const AP_InertialNav* inav);
 
     /// enable - allows sprayer to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool true_false);
 
-    /// enabled - returns true if fence is enabled
+    /// enabled - returns true if sprayer is enabled
     bool enabled() const { return _enabled; }
 
     /// To-Do: add function to decode pilot input from channel 6 tuning knob
@@ -45,7 +43,7 @@ public:
 
 private:
     // pointers to other objects we depend upon
-    AP_InertialNav* _inav;
+    const AP_InertialNav* const _inav;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
