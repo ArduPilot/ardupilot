@@ -1,0 +1,7 @@
+@INCLUDE = docs/config/default
+
+INPUT = ArduPlane/
+OUTPUT_DIRECTORY = docs/ArduPlane
+HTML_OUTPUT = .
+TAGFILES = docs/tags/libraries=../libraries
+

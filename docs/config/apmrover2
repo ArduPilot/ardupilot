@@ -1,0 +1,7 @@
+@INCLUDE = docs/config/default
+
+INPUT = APMrover2/
+OUTPUT_DIRECTORY = docs/APMrover2
+HTML_OUTPUT = .
+TAGFILES = docs/tags/libraries=../libraries
+

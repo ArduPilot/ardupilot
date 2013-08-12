@@ -1,0 +1,6 @@
+@INCLUDE = docs/config/default
+
+INPUT = libraries/
+OUTPUT_DIRECTORY = docs/libraries
+HTML_OUTPUT = .
+GENERATE_TAGFILE = docs/tags/libraries
