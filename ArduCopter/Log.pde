@@ -339,7 +339,7 @@ struct PACKED log_Nav_Tuning {
 // Write an Nav Tuning packet
 static void Log_Write_Nav_Tuning()
 {
-    Vector3f velocity = inertial_nav.get_velocity();
+    const Vector3f &velocity = inertial_nav.get_velocity();
 
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
@@ -525,7 +525,7 @@ struct PACKED log_INAV {
 // Write an INAV packet
 static void Log_Write_INAV()
 {
-    Vector3f accel_corr = inertial_nav.accel_correction_ef;
+    const Vector3f &accel_corr = inertial_nav.accel_correction_ef;
 
     struct log_INAV pkt = {
         LOG_PACKET_HEADER_INIT(LOG_INAV_MSG),
