@@ -144,7 +144,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		//Otherwise do normal L1 guidance
 	float WP_A_dist = A_air.length();
 	float alongTrackDist = A_air * AB;
-	if (WP_A_dist > _L1_dist && alongTrackDist/_maxf(WP_A_dist , 1.0f) < -0.7071f) {
+	if (WP_A_dist > _L1_dist && alongTrackDist/max(WP_A_dist, 1.0f) < -0.7071f) {
 
 		//Calc Nu to fly To WP A
 		Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
@@ -161,7 +161,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
 		//Calculate Nu1 angle (Angle to L1 reference point)
 		float xtrackErr = A_air % AB;
-		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
+		float sine_Nu1 = xtrackErr/max(_L1_dist, 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
 		sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
 		float Nu1 = asinf(sine_Nu1);
@@ -249,11 +249,11 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	
     //Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
     if ( velTangent < 0.0f ) {
-        latAccDemCircPD =  _maxf(latAccDemCircPD , 0.0f);
+        latAccDemCircPD =  max(latAccDemCircPD, 0.0f);
 	}
 	
 	// Calculate centripetal acceleration demand
-	float latAccDemCircCtr = velTangent * velTangent / _maxf((0.5f * radius) , (radius + xtrackErrCirc));
+	float latAccDemCircCtr = velTangent * velTangent / max((0.5f * radius), (radius + xtrackErrCirc));
 
 	//Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
 	float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
@@ -327,27 +327,3 @@ void AP_L1_Control::update_level_flight(void)
 
 	_latAccDem = 0;
 }
-
-
-Vector2f AP_L1_Control::_geo2planar(const Vector2f &ref, const Vector2f &wp) const
-{
-    Vector2f out;
-
-    out.x=radians((wp.x-ref.x));
-    out.y=radians((wp.y-ref.y)*cosf(radians(ref.x)));
-
-    return out * RADIUS_OF_EARTH;
-}
-
-float AP_L1_Control::_maxf(const float &num1, const float &num2) const
-{
-    float result;
-
-   if (num1 > num2)
-      result = num1;
-   else
-      result = num2;
- 
-   return result; 
-}
-

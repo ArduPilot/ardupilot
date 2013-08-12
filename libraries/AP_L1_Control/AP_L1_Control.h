@@ -84,10 +84,6 @@ private:
 	// L1 tracking loop damping ratio
 	AP_Float _L1_damping;
 	
-    // Convert a 2D vector from latitude and longitude to planar
-    // coordinates based on a reference point
-	Vector2f _geo2planar(const Vector2f &ref, const Vector2f &wp) const;
-
 	//Calculate the maximum of two floating point numbers
 	float _maxf(const float &num1, const float &num2) const;
 
