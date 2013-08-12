@@ -118,23 +118,18 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	// 0.3183099 = 1/1/pipi
 	_L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
 	
-	//Convert current location and WP positions to 2D vectors in lat and long
-    Vector2f A_air((_current_loc.lat*1.0e-7f), (_current_loc.lng*1.0e-7f));
-    Vector2f A_v((prev_WP.lat*1.0e-7f), (prev_WP.lng*1.0e-7f));
-    Vector2f B_v((next_WP.lat*1.0e-7f), (next_WP.lng*1.0e-7f));
-
 	// Calculate the NE position of WP B relative to WP A
-    Vector2f AB = _geo2planar(A_v, B_v);
+    Vector2f AB = location_diff(prev_WP, next_WP);
 	
 	// Check for AB zero length and track directly to the destination
 	// if too small
 	if (AB.length() < 1.0e-6f) {
-		AB = _geo2planar(A_air, B_v);
+		AB = location_diff(_current_loc, next_WP);
 	}
 	AB.normalize();
 
 	// Calculate the NE position of the aircraft relative to WP A
-    A_air = _geo2planar(A_v, A_air);
+    Vector2f A_air = location_diff(prev_WP, _current_loc);
 
 	// calculate distance to target track, for reporting
 	_crosstrack_error = AB % A_air;
@@ -212,15 +207,11 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	// 0.3183099 = 1/pi
 	_L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
 
-	//Convert current location and WP positionsto 2D vectors in lat and long
-    Vector2f A_air((_current_loc.lat*1.0e-7f), (_current_loc.lng*1.0e-7f));
-    Vector2f A_v((center_WP.lat*1.0e-7f), (center_WP.lng*1.0e-7f));
-
 	//Calculate the NE position of the aircraft relative to WP A
-    A_air = _geo2planar(A_v, A_air);
+    Vector2f A_air = location_diff(center_WP, _current_loc);
 	
     //Calculate the unit vector from WP A to aircraft
-    Vector2f A_air_unit = (A_air).normalized();
+    Vector2f A_air_unit = A_air.normalized();
 
 	//Calculate Nu to capture center_WP
 	float xtrackVelCap = A_air_unit % _groundspeed_vector; // Velocity across line - perpendicular to radial inbound to WP
