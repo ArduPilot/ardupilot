@@ -26,6 +26,12 @@
 // radius of earth in meters
 #define RADIUS_OF_EARTH 6378100
 
+// scaling factor from 1e-7 degrees to meters at equater
+// == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
+#define LOCATION_SCALING_FACTOR 0.011131884502145034f
+// inverse of LOCATION_SCALING_FACTOR
+#define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
+
 float longitude_scale(const struct Location &loc)
 {
     static int32_t last_lat;
@@ -36,7 +42,7 @@ float longitude_scale(const struct Location &loc)
         // the same scale factor.
         return scale;
     }
-    scale = cosf((fabsf((float)loc.lat)/1.0e7f) * DEG_TO_RAD);
+    scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
     last_lat = loc.lat;
     return scale;
 }
@@ -48,7 +54,7 @@ float get_distance(const struct Location &loc1, const struct Location &loc2)
 {
     float dlat              = (float)(loc2.lat - loc1.lat);
     float dlong             = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlong) * 0.01113195f;
+    return pythagorous2(dlat, dlong) * LOCATION_SCALING_FACTOR;
 }
 
 // return distance in centimeters to between two locations
@@ -108,23 +114,16 @@ bool location_passed_point(const struct Location &location,
 
 /*
  *  extrapolate latitude/longitude given bearing and distance
- *  thanks to http://www.movable-type.co.uk/scripts/latlong.html
- *
- *  This function is precise, but costs about 1.7 milliseconds on an AVR2560
+ * Note that this function is accurate to about 1mm at a distance of 
+ * 100m. This function has the advantage that it works in relative
+ * positions, so it keeps the accuracy even when dealing with small
+ * distances and floating point numbers
  */
 void location_update(struct Location &loc, float bearing, float distance)
 {
-    float lat1 = radians(loc.lat*1.0e-7f);
-    float lon1 = radians(loc.lng*1.0e-7f);
-    float brng = radians(bearing);
-    float dr = distance/RADIUS_OF_EARTH;
-
-    float lat2 = asinf(sinf(lat1)*cosf(dr) +
-                       cosf(lat1)*sinf(dr)*cosf(brng));
-    float lon2 = lon1 + atan2f(sinf(brng)*sinf(dr)*cosf(lat1),
-                               cosf(dr)-sinf(lat1)*sinf(lat2));
-    loc.lat = degrees(lat2)*1.0e7f;
-    loc.lng = degrees(lon2)*1.0e7f;
+    float ofs_north = cosf(radians(bearing))*distance;
+    float ofs_east  = sinf(radians(bearing))*distance;
+    location_offset(loc, ofs_north, ofs_east);
 }
 
 /*
@@ -134,11 +133,21 @@ void location_update(struct Location &loc, float bearing, float distance)
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
     if (ofs_north != 0 || ofs_east != 0) {
-        float dlat = ofs_north * 89.831520982f;
-        float dlng = (ofs_east * 89.831520982f) / longitude_scale(loc);
+        float dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
+        float dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
         loc.lat += dlat;
         loc.lng += dlng;
     }
+}
+
+/*
+  return the distance in meters in North/East plane as a N/E vector
+  from loc1 to loc2
+ */
+Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
+{
+    return Vector2f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1));
 }
 
 /*
