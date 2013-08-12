@@ -8,12 +8,12 @@
 class AP_Baro_PX4 : public AP_Baro
 {
 public:
-    bool init();
-    uint8_t read();
-    float get_pressure();
-    float get_temperature();
-    int32_t get_raw_pressure();
-    int32_t get_raw_temp();
+	virtual bool init();
+	virtual uint8_t read();
+	virtual float get_pressure() const;
+	virtual float get_temperature() const;
+	virtual int32_t get_raw_pressure() const;
+	virtual int32_t get_raw_temp() const;
 
 private:
     float _temperature;

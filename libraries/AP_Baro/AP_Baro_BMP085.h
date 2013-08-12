@@ -16,14 +16,14 @@ public:
 
 
     /* AP_Baro public interface: */
-    bool            init();
-    uint8_t         read();
-    void 			accumulate(void);
-    float           get_pressure();
-    float           get_temperature();
+    virtual bool            init();
+    virtual uint8_t         read();
+    virtual void 			accumulate(void);
+    virtual float           get_pressure() const;
+    virtual float           get_temperature() const;
 
-    int32_t         get_raw_pressure();
-    int32_t         get_raw_temp();
+    virtual int32_t         get_raw_pressure() const;
+    virtual int32_t         get_raw_temp() const;
 
 private:
     int32_t         RawPress;
