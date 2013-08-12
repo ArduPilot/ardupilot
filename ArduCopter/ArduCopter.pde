@@ -1300,6 +1300,9 @@ static void super_slow_loop()
     // pass latest alt hold kP value to navigation controller
     wp_nav.set_althold_kP(g.pi_alt_hold.kP());
 
+    // update latest lean angle to navigation controller
+    wp_nav.set_lean_angle_max(g.angle_max);
+
     // log battery info to the dataflash
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
@@ -1705,9 +1708,8 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
-        // copy control_roll and pitch for reporting purposes
-        control_roll            = g.rc_1.control_in;
-        control_pitch           = g.rc_2.control_in;
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
 
         // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
@@ -1733,9 +1735,8 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
-        // copy pilot input to control_roll and pitch for reporting purposes
-        control_roll            = g.rc_1.control_in;
-        control_pitch           = g.rc_2.control_in;
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
 
         // mix in user control with optical flow
         get_stabilize_roll(get_of_roll(control_roll));

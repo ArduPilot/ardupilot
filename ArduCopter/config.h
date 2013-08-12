@@ -604,7 +604,7 @@
 #endif
 
 #ifndef SPORT_THR
- # define SPORT_THR           	    THROTTLE_MANUAL
+ # define SPORT_THR           	    THROTTLE_HOLD
 #endif
 
 // Alt Hold Mode
@@ -649,6 +649,10 @@
 
 #ifndef CIRCLE_NAV
  # define CIRCLE_NAV           	    NAV_CIRCLE
+#endif
+
+#ifndef CIRCLE_RADIUS
+ # define CIRCLE_RADIUS             10              // radius in meters for circle mode
 #endif
 
 #ifndef CIRCLE_RATE
@@ -810,12 +814,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stabilize Rate Control
 //
-
-#ifndef MAX_INPUT_ROLL_ANGLE
- # define MAX_INPUT_ROLL_ANGLE      4500
+#ifndef ROLL_PITCH_INPUT_MAX
+ # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
 #endif
-#ifndef MAX_INPUT_PITCH_ANGLE
- # define MAX_INPUT_PITCH_ANGLE     4500
+#ifndef DEFAULT_ANGLE_MAX
+ # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
 #endif
 #ifndef RATE_ROLL_P
  # define RATE_ROLL_P        		0.150f
@@ -1059,13 +1062,6 @@
     LOGBIT(PID)             | \
     LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
-
-//////////////////////////////////////////////////////////////////////////////
-// Circle navigation defaults
-//
-#ifndef CIRCLE_RADIUS
- # define CIRCLE_RADIUS 10              // meters for circle mode
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // AP_Limits Defaults

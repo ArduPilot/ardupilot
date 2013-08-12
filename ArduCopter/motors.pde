@@ -322,6 +322,14 @@ static void pre_arm_checks(bool display_failure)
         }
     }
 
+    // lean angle parameter check
+    if (g.angle_max < 1000 || g.angle_max > 8000) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
+        }
+        return;
+    }
+
     // if we've gotten this far then pre arm checks have completed
     ap.pre_arm_check = true;
 }

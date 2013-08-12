@@ -423,6 +423,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(arming_check_enabled, "ARMING_CHECK",   1),
 
+    // @Param: ANGLE_MAX
+    // @DisplayName: Angle Max
+    // @Description: Maximum lean angle in all flight modes
+    // @Range 1000 8000
+    // @User: Advanced
+    GSCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
+
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp

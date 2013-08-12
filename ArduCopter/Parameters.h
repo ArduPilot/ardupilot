@@ -88,7 +88,8 @@ public:
         k_param_sonar_gain,
         k_param_ch8_option,
         k_param_arming_check_enabled,
-        k_param_sprayer,    // 33
+        k_param_sprayer,
+        k_param_angle_max,              // 34
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -299,6 +300,7 @@ public:
     AP_Int8         battery_curr_pin;
     AP_Int8         rssi_pin;
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
+    AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees
 
     // Waypoints
     //
