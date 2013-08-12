@@ -1,0 +1,7 @@
+@INCLUDE = docs/config/default
+
+INPUT = ArduCopter/
+OUTPUT_DIRECTORY = docs/ArduCopter
+HTML_OUTPUT = .
+TAGFILES = docs/tags/libraries=../libraries
+
