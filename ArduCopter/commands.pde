@@ -113,6 +113,10 @@ static int32_t get_initial_RTL_alt() {
     }
     // needed in case we are RTLing from down in a valley below home
     if (initial_alt < g.rtl_altitude) initial_alt = g.rtl_altitude;
+    
+    // needed in case RTL altitude is set to zero
+    if (initial_alt < RTL_ALT_MARGIN) initial_alt = RTL_ALT_MARGIN;
+    
     return initial_alt;
 }
 
