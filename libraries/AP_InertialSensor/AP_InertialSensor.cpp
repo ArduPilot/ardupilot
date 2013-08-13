@@ -252,13 +252,12 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
     do {
         // get latest accelerometer values
         update();
-        const Vector3f &ins_accel = get_accel();
 
         // store old offsets
         Vector3f prev = accel_offset;
 
         // get new offsets
-        accel_offset = ins_accel;
+        accel_offset = get_accel();
 
         // We take some readings...
         for(int8_t i = 0; i < 50; i++) {
