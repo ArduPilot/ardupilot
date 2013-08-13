@@ -389,6 +389,7 @@ static float get_RTL_alt()
 {
     // maximum of current altitude and rtl altitude
     float rtl_alt = max(current_loc.alt, g.rtl_altitude);
+    rtl_alt = max(rtl_alt, RTL_ALT_MIN);
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
