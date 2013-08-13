@@ -292,7 +292,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    Vector3f gyro, accel;
     print_hit_enter();
     cliSerial->printf_P(PSTR("INS\n"));
     delay(1000);
@@ -307,8 +306,8 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         ins.update();
-        gyro = ins.get_gyro();
-        accel = ins.get_accel();
+        const Vector3f &gyro = ins.get_gyro();
+        const Vector3f &accel = ins.get_accel();
 
         float test = accel.length() / GRAVITY_MSS;
 
