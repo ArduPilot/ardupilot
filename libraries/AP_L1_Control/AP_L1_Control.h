@@ -23,7 +23,7 @@
 
 class AP_L1_Control : public AP_Navigation {
 public:
-	AP_L1_Control(AP_AHRS *ahrs) :
+	AP_L1_Control(AP_AHRS &ahrs) :
 		_ahrs(ahrs)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
@@ -55,7 +55,7 @@ public:
 
 private:
 	// reference to the AHRS object
-    AP_AHRS *_ahrs;
+    AP_AHRS &_ahrs;
 
 	// lateral acceration in m/s required to fly to the 
 	// L1 reference point (+ve to right)

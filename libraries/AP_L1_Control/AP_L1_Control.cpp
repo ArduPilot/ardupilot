@@ -69,7 +69,7 @@ int32_t AP_L1_Control::target_bearing_cd(void) const
 
 float AP_L1_Control::turn_distance(float wp_radius) const
 {
-    wp_radius *= sq(_ahrs->get_EAS2TAS());
+    wp_radius *= sq(_ahrs.get_EAS2TAS());
 	return min(wp_radius, _L1_dist);
 }
 
@@ -97,13 +97,13 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	// Get current position and velocity
-    _ahrs->get_position(_current_loc);
+    _ahrs.get_position(_current_loc);
 
-	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
+	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 
     // update the position for lag. This helps especially for rovers
     // where waypoints may be very close together
-    Vector2f lag_offset = _groundspeed_vector * _ahrs->get_position_lag();
+    Vector2f lag_offset = _groundspeed_vector * _ahrs.get_position_lag();
     location_offset(_current_loc, lag_offset.x, lag_offset.y);
 
 	// update _target_bearing_cd
@@ -114,7 +114,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     if (groundSpeed < 1.0f) {
         // use a small ground speed vector in the right direction,
         // allowing us to use the compass heading at zero GPS velocity
-        _groundspeed_vector = Vector2f(cosf(_ahrs->yaw), sinf(_ahrs->yaw));
+        _groundspeed_vector = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
         groundSpeed = 1.0f;
     }
 
@@ -186,7 +186,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
     // scale loiter radius with square of EAS2TAS to allow us to stay
     // stable at high altitude
-    radius *= sq(_ahrs->get_EAS2TAS());
+    radius *= sq(_ahrs.get_EAS2TAS());
 
 	// Calculate guidance gains used by PD loop (used during circle tracking)
 	float omega = (6.2832f / _L1_period);
@@ -197,13 +197,13 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	//Get current position and velocity
-    _ahrs->get_position(_current_loc);
+    _ahrs.get_position(_current_loc);
 
-	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
+	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 
     // update the position for lag. This helps especially for rovers
     // where waypoints may be very close together
-    Vector2f lag_offset = _groundspeed_vector * _ahrs->get_position_lag();
+    Vector2f lag_offset = _groundspeed_vector * _ahrs.get_position_lag();
     location_offset(_current_loc, lag_offset.x, lag_offset.y);
 
 	//Calculate groundspeed
@@ -288,11 +288,11 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 	_target_bearing_cd = wrap_180_cd(navigation_heading_cd);
 	_nav_bearing = radians(navigation_heading_cd * 0.01f);
 
-	Nu_cd = _target_bearing_cd - wrap_180_cd(_ahrs->yaw_sensor);
+	Nu_cd = _target_bearing_cd - wrap_180_cd(_ahrs.yaw_sensor);
 	Nu_cd = wrap_180_cd(Nu_cd);
 	Nu = radians(Nu_cd * 0.01f);
 
-	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
+	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 	
 	//Calculate groundspeed
 	float groundSpeed = _groundspeed_vector.length();
@@ -317,8 +317,8 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 void AP_L1_Control::update_level_flight(void)
 {
 	// copy to _target_bearing_cd and _nav_bearing
-	_target_bearing_cd = _ahrs->yaw_sensor;
-	_nav_bearing = _ahrs->yaw;
+	_target_bearing_cd = _ahrs.yaw_sensor;
+	_nav_bearing = _ahrs.yaw;
 	_bearing_error = 0;
 	_crosstrack_error = 0;
 
