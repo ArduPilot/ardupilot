@@ -246,7 +246,7 @@ AP_InertialSensor_Oilpan ins( &apm1_adc );
 
 AP_AHRS_DCM ahrs(&ins, g_gps);
 
-static AP_L1_Control L1_controller(&ahrs);
+static AP_L1_Control L1_controller(ahrs);
 static AP_TECS TECS_controller(&ahrs, aparm);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
