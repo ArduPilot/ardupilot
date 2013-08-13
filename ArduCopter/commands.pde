@@ -106,9 +106,9 @@ static int32_t get_initial_RTL_alt() {
     // to ensure an initial climb, the initial RTL alt should be rtl_altitude greater than the current alt
     int32_t initial_alt = g.rtl_altitude + current_loc.alt;
     // if fence is enabled, RTL alt must be kept under the fence
-    if (fence.enabled() && fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) {
+    if (fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) {
         // keep under the fence by a margin
-        int32_t max_alt = fence.alt_max() * 1000 - RTL_ALT_MARGIN;
+        int32_t max_alt = fence.alt_max() * 100 - RTL_ALT_MARGIN;
         if(initial_alt > max_alt) initial_alt = max_alt;
     }
     // needed in case we are RTLing from down in a valley below home
