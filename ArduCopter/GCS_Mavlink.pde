@@ -469,9 +469,9 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
 
 static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
 {
-    Vector3f mag_offsets = compass.get_offsets();
-    Vector3f accel_offsets = ins.get_accel_offsets();
-    Vector3f gyro_offsets = ins.get_gyro_offsets();
+    const Vector3f &mag_offsets = compass.get_offsets();
+    const Vector3f &accel_offsets = ins.get_accel_offsets();
+    const Vector3f &gyro_offsets = ins.get_gyro_offsets();
 
     mavlink_msg_sensor_offsets_send(chan,
                                     mag_offsets.x,
