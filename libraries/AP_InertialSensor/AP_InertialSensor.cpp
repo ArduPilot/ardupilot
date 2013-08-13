@@ -140,8 +140,7 @@ AP_InertialSensor::init_gyro(void (*flash_leds_cb)(bool on))
 void
 AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
 {
-    Vector3f last_average, best_avg;
-    Vector3f ins_gyro;
+    Vector3f best_avg;
     float best_diff = 0;
 
     // cold start
@@ -158,7 +157,6 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
         hal.scheduler->delay(20);
 
         update();
-        ins_gyro = get_gyro();
 
         FLASH_LEDS(false);
         hal.scheduler->delay(20);
@@ -168,7 +166,7 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
     // again and see if the 2nd average is within a small margin of
     // the first
 
-    last_average.zero();
+    Vector3f last_average(0, 0, 0);
 
     // we try to get a good calibration estimate for up to 10 seconds
     // if the gyros are stable, we should get it in 2 seconds
@@ -182,7 +180,7 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
         gyro_sum.zero();
         for (i=0; i<200; i++) {
             update();
-            ins_gyro = get_gyro();
+            const Vector3f &ins_gyro = get_gyro();
             gyro_sum += ins_gyro;
             if (i % 40 == 20) {
                 FLASH_LEDS(true);
@@ -234,9 +232,6 @@ void
 AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 {
     int8_t flashcount = 0;
-    Vector3f ins_accel;
-    Vector3f prev;
-    Vector3f accel_offset;
     float total_change;
     float max_offset;
 
@@ -251,16 +246,16 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 
     // initialise accel offsets to a large value the first time
     // this will force us to calibrate accels at least twice
-    accel_offset = Vector3f(500, 500, 500);
+    Vector3f accel_offset(500, 500, 500);
 
     // loop until we calculate acceptable offsets
     do {
         // get latest accelerometer values
         update();
-        ins_accel = get_accel();
+        const Vector3f &ins_accel = get_accel();
 
         // store old offsets
-        prev = accel_offset;
+        Vector3f prev = accel_offset;
 
         // get new offsets
         accel_offset = ins_accel;
@@ -270,7 +265,7 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 
             hal.scheduler->delay(20);
             update();
-            ins_accel = get_accel();
+            const Vector3f &ins_accel = get_accel();
 
             // low pass filter the offsets
             accel_offset = accel_offset * 0.9 + ins_accel * 0.1;
