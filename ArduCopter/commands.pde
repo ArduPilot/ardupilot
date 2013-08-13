@@ -121,11 +121,11 @@ static int32_t get_RTL_alt()
     int32_t rtl_alt = g.rtl_altitude;
     // set to zero means RTL at current altitude, but make sure it's above launch ground level by RTL_ALT_MARGIN
     if(rtl_alt <= 0) {
-	    rtl_alt = max(current_loc.alt, RTL_ALT_MARGIN);
+        rtl_alt = max(current_loc.alt, RTL_ALT_MARGIN);
     }
     // otherwise, RTL alt should be at least our currrent alt
     else if (rtl_alt < current_loc.alt) {
-		rtl_alt = current_loc.alt;
+        rtl_alt = current_loc.alt;
     }
     return rtl_alt;      
 }
