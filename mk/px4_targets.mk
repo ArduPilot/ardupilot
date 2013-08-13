@@ -16,7 +16,9 @@ ifeq ($(wildcard $(PX4_ROOT)/NuttX),)
  ifeq ($(wildcard $(PX4_ROOT)/../NuttX),)
  $(error ERROR: NuttX git tree not found)
  endif
-$(shell cd $(PX4_ROOT) && ln -s ../NuttX)
+NUTTX_SRC := $(shell cd $(PX4_ROOT)/../NuttX/nuttx && pwd)/
+else
+NUTTX_SRC := $(shell cd $(PX4_ROOT)/NuttX/nuttx && pwd)/
 endif
 
 # we have different config files for V1 and V2
@@ -25,7 +27,7 @@ PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main
 
-PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT)
+PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC)
 
 $(BUILDROOT)/module.mk:
 	$(RULEHDR)
@@ -39,7 +41,8 @@ px4-v1: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.m
 	# we shouldn't need to remove these files ....
 	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.d' -exec rm -f {} \;
 	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.o' -exec rm -f {} \;
-	$(v) ln -sf $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V1_CONFIG_FILE)
+	$(v) cp $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
 	$(v) $(PX4_MAKE) clean
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
 	$(v) /bin/rm -f $(SKETCH)-v1.px4
@@ -51,9 +54,10 @@ px4-v2: $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) $(BUILDROOT)/module.m
 	# we shouldn't need to remove these files ....
 	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.d' -exec rm -f {} \;
 	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.o' -exec rm -f {} \;
-	$(v) ln -sf $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V2_CONFIG_FILE)
+	$(v) cp $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
 	$(v) $(PX4_MAKE) clean
-	$(v) $(PX4_MAKE) px4fmu-v2_APM
+	$(PX4_MAKE) px4fmu-v2_APM
 	$(v) /bin/rm -f $(SKETCH)-v2.px4
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v2_APM.px4 $(SKETCH)-v2.px4
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v2.px4"
@@ -65,12 +69,10 @@ px4-clean: clean px4-archives-clean
 
 px4-v1-upload: px4-v1
 	$(RULEHDR)
-	$(v) ln -sf $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM upload
 
 px4-v2-upload: px4-v2
 	$(RULEHDR)
-	$(v) ln -sf $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
 	$(v) $(PX4_MAKE) px4fmu-v2_APM upload
 
 px4-upload: px4-v1-upload
@@ -100,20 +102,16 @@ px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 
 px4-io: px4-io-v1 px4-io-v2
 
-$(PX4_ROOT)/Archives/px4fmu-v1.export:
-	make -C $(PX4_ROOT) archives
+$(PX4_ROOT)/Archives/px4fmu-v1.export: px4-archives
 
-$(PX4_ROOT)/Archives/px4fmu-v2.export:
-	make -C $(PX4_ROOT) archives
+$(PX4_ROOT)/Archives/px4fmu-v2.export: px4-archives
 
-$(PX4_ROOT)/Archives/px4io-v1.export:
-	make -C $(PX4_ROOT) archives
+$(PX4_ROOT)/Archives/px4io-v1.export: px4-archives
 
-$(PX4_ROOT)/Archives/px4io-v2.export:
-	make -C $(PX4_ROOT) archives
+$(PX4_ROOT)/Archives/px4io-v2.export: px4-archives
 
 px4-archives:
-	make -C $(PX4_ROOT) archives
+	$(v) make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) archives
 
 else
 
