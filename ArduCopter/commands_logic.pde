@@ -310,7 +310,7 @@ static void do_land(const struct Location *cmd)
 
         // calculate and set desired location above landing target
         Vector3f pos = pv_location_to_vector(*cmd);
-        pos.z = min(current_loc.alt, RTL_ALT_MAX);
+        pos.z = current_loc.alt;
         wp_nav.set_destination(pos);
 
         // initialise original_wp_bearing which is used to check if we have missed the waypoint
@@ -572,7 +572,7 @@ static bool verify_RTL()
     bool retval = false;
 
     switch( rtl_state ) {
-        case RTL_STATE_START:
+        case RTL_STATE_START: {
             // set roll, pitch and yaw modes
             set_roll_pitch_mode(RTL_RP);
             set_throttle_mode(RTL_THR);
@@ -581,7 +581,8 @@ static bool verify_RTL()
             set_nav_mode(NAV_WP);
 
             // if we are below rtl alt do initial climb
-            if( current_loc.alt < get_RTL_alt() ) {
+            int32_t initial_RTL_alt = get_initial_RTL_alt();
+            if( current_loc.alt < initial_RTL_alt ) {
                 // first stage of RTL is the initial climb so just hold current yaw
                 set_yaw_mode(YAW_HOLD);
 
@@ -590,7 +591,7 @@ static bool verify_RTL()
                 wp_nav.get_stopping_point(inertial_nav.get_position(),inertial_nav.get_velocity(),origin);
                 dest.x = origin.x;
                 dest.y = origin.y;
-                dest.z = get_RTL_alt();
+                dest.z = initial_RTL_alt;
                 wp_nav.set_origin_and_destination(origin,dest);
 
                 // advance to next rtl state
@@ -610,6 +611,7 @@ static bool verify_RTL()
                 rtl_state = RTL_STATE_RETURNING_HOME;
             }
             break;
+        }
         case RTL_STATE_INITIAL_CLIMB:
             // check if we've reached the safe altitude
             if (wp_nav.reached_destination()) {
