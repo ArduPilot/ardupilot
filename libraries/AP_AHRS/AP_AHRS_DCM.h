@@ -28,39 +28,39 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f get_gyro(void) const {
+    virtual Vector3f get_gyro(void) const override {
         return _omega + _omega_P + _omega_yaw_P;
     }
-    const Matrix3f &get_dcm_matrix(void) const {
+    virtual const Matrix3f &get_dcm_matrix(void) const override {
         return _dcm_matrix;
     }
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift(void) const {
+    virtual const Vector3f &get_gyro_drift(void) const override {
         return _omega_I;
     }
 
     // Methods
-    void            update(void);
-    void            reset(bool recover_eulers = false);
+    virtual void    update(void) override;
+    virtual void    reset(bool recover_eulers = false) override;
 
     // dead-reckoning support
-    bool get_position(struct Location &loc);
+    virtual bool get_position(struct Location &loc) const override;
 
     // status reporting
-    float           get_error_rp(void);
-    float           get_error_yaw(void);
+    virtual float           get_error_rp(void) override;
+    virtual float           get_error_yaw(void) override;
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate(void) {
+    virtual Vector3f wind_estimate(void) const override {
         return _wind;
     }
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret);
+    virtual bool airspeed_estimate(float *airspeed_ret) const override;
 
-    bool            use_compass(void) const;
+    virtual bool use_compass(void) const override;
 
 private:
     float _ki;

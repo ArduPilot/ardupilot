@@ -11,16 +11,16 @@ public:
 		{}
 
     // Accessors
-    const Vector3f get_gyro(void) const {
+    virtual Vector3f get_gyro(void) const override {
         return _omega;
     }
 
-    const Matrix3f &get_dcm_matrix(void) const {
+    virtual const Matrix3f &get_dcm_matrix(void) const override {
 	    return _dcm_matrix;
     }
 
     // Methods
-    void update(void) {
+    virtual void update(void) override {
         _ins->update();
     }
     
@@ -28,18 +28,18 @@ public:
                 float rollRate, float pitchRate, float yawRate);
 
     // return the current estimate of the gyro drift
-    const Vector3f &get_gyro_drift(void) const {
+    virtual const Vector3f &get_gyro_drift(void) const override {
 	   return  _drift;
     }
 
     // reset the current attitude, used on new IMU calibration
-    void reset(bool recover_eulers=false) {
+    virtual void reset(bool recover_eulers=false) override {
     }
 
-    float get_error_rp(void) {
+    virtual float get_error_rp(void) override {
         return 0;
     }
-    float get_error_yaw(void) {
+    virtual float get_error_yaw(void) override {
         return 0;
     }
 

@@ -37,25 +37,25 @@ public:
     }
 
     // initialisation routine to start MPU6000's dmp
-    void init();
+    virtual void init() override;
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f get_gyro(void) const {
+    virtual Vector3f get_gyro(void) const override {
         return _ins->get_gyro();
     }
 
-    const Matrix3f &get_dcm_matrix(void) const {
+    virtual const Matrix3f &get_dcm_matrix(void) const override {
         return _dcm_matrix;
     }
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift(void) const {
+    virtual const Vector3f &get_gyro_drift(void) const override {
         return _omega_I;
     }
 
     // Methods
-    void update(void);
-    void reset(bool recover_eulers = false);
+    virtual void update(void) override;
+    virtual void reset(bool recover_eulers = false) override;
 
     // push offsets down from IMU to INS (required so MPU6000 can perform it's
     // own attitude estimation)
@@ -63,8 +63,8 @@ public:
     void push_gains_to_dmp();
 
     // status reporting
-    float get_error_rp(void);
-    float get_error_yaw(void);
+    virtual float get_error_rp(void) override;
+    virtual float get_error_yaw(void) override;
 
     // set_as_secondary - avoid running some steps twice (imu updates) if
     // this is a secondary ahrs

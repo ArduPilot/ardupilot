@@ -765,7 +765,7 @@ float AP_AHRS_DCM::get_error_yaw(void)
 
 // return our current position estimate using
 // dead-reckoning or GPS
-bool AP_AHRS_DCM::get_position(struct Location &loc)
+bool AP_AHRS_DCM::get_position(struct Location &loc) const
 {
     if (!_have_position) {
         return false;
@@ -777,7 +777,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc)
 }
 
 // return an airspeed estimate if available
-bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
+bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 {
 	bool ret = false;
 	if (_airspeed && _airspeed->use()) {
