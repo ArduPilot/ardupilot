@@ -40,7 +40,7 @@ private:
     void _storage_create(void);
     void _storage_open(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
-    uint8_t _buffer[PX4_STORAGE_SIZE];
+    uint8_t _buffer[PX4_STORAGE_SIZE] __attribute__((aligned(4)));
     volatile uint32_t _dirty_mask;
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
