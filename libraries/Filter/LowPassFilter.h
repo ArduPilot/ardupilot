@@ -29,10 +29,10 @@ public:
     void    set_time_constant(float time_step, float time_constant);
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
-    virtual T        apply(T sample);
+    virtual T        apply(T sample) override;
 
     // reset - clear the filter - next sample added will become the new base value
-    virtual void        reset() {
+    virtual void        reset() override {
         _base_value_set = false;
     };
 

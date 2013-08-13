@@ -33,7 +33,7 @@ public:
     float        slope(void) const;
 
     // reset - clear the filter
-    virtual void        reset();
+    virtual void        reset() override;
 
 private:
     mutable bool    _new_data;   // new_data and _last_slope are only used for caching the slope() result.
