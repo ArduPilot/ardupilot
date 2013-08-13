@@ -64,7 +64,7 @@ endif
 # Work out where we are going to be building things
 #
 TMPDIR			?=	/tmp
-BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
+BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   # Workaround a $(abspath ) bug on cygwin
   ifeq ($(BUILDROOT),)
