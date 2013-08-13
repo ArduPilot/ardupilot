@@ -102,15 +102,32 @@ static void set_cmd_with_index(struct Location temp, int i)
         g.command_total.set_and_save(i+1);
 }
 
+static int32_t get_initial_RTL_alt() {
+    // to ensure an initial climb, the initial RTL alt should be rtl_altitude greater than the current alt
+    int32_t initial_alt = g.rtl_altitude + current_loc.alt;
+    // if fence is enabled, RTL alt must be kept under the fence
+    if (fence.enabled()) {
+        // keep under the fence by a margin
+        int32_t max_alt = fence.alt_max() * 1000 - RTL_ALT_MARGIN;
+        if(initial_alt > max_alt) initial_alt = max_alt;
+    }
+    // needed in case we are RTLing from down in a valley below home
+    if (initial_alt < g.rtl_altitude) initial_alt = g.rtl_altitude;
+    return initial_alt;
+}
+
 static int32_t get_RTL_alt()
 {
-    if(g.rtl_altitude <= 0) {
-		return min(current_loc.alt, RTL_ALT_MAX);
-    }else if (g.rtl_altitude < current_loc.alt) {
-		return min(current_loc.alt, RTL_ALT_MAX);
-    }else{
-        return g.rtl_altitude;
+    int32_t rtl_alt = g.rtl_altitude;
+    // set to zero means RTL at current altitude, but make sure it's above launch ground level by RTL_ALT_MARGIN
+    if(rtl_alt <= 0) {
+	    rtl_alt = max(current_loc.alt, RTL_ALT_MARGIN);
     }
+    // otherwise, RTL alt should be at least our currrent alt
+    else if (rtl_alt < current_loc.alt) {
+		rtl_alt = current_loc.alt;
+    }
+    return rtl_alt;      
 }
 
 // run this at setup on the ground
