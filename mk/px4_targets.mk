@@ -27,36 +27,29 @@ PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
 
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main
 
-PX4_MAKE = make -C $(BUILDROOT) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(BUILDROOT) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC)
+PX4_MAKE = make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) "$(EXTRAFLAGS) APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC)
+PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) archives
 
-$(BUILDROOT)/module.mk:
+$(SKETCHBOOK)/module.mk:
 	$(RULEHDR)
 	$(v) echo "# Auto-generated file - do not edit" > $@
 	$(v) echo "MODULE_COMMAND = ArduPilot" >> $@
-	$(v) echo "SRCS = $(SKETCH).cpp $(SKETCHLIBSRCS)" >> $@
+	$(v) echo "SRCS = Build.$(SKETCH)/$(SKETCH).cpp $(SKETCHLIBSRCSRELATIVE)" >> $@
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $@
 
-px4-v1: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(BUILDROOT)/module.mk px4-io-v1
+px4-v1: $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) $(SKETCHBOOK)/module.mk px4-io-v1
 	$(RULEHDR)
-	# we shouldn't need to remove these files ....
-	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.d' -exec rm -f {} \;
-	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.o' -exec rm -f {} \;
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V1_CONFIG_FILE)
 	$(v) cp $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
-	$(v) $(PX4_MAKE) clean
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
 	$(v) /bin/rm -f $(SKETCH)-v1.px4
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v1_APM.px4 $(SKETCH)-v1.px4
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
-px4-v2: $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) $(BUILDROOT)/module.mk px4-io-v2
+px4-v2: $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) $(SKETCHBOOK)/module.mk px4-io-v2
 	$(RULEHDR)
-	# we shouldn't need to remove these files ....
-	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.d' -exec rm -f {} \;
-	$(v) find $(SKETCHBOOK)/libraries -type f -name '*.cpp.o' -exec rm -f {} \;
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V2_CONFIG_FILE)
 	$(v) cp $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
-	$(v) $(PX4_MAKE) clean
 	$(PX4_MAKE) px4fmu-v2_APM
 	$(v) /bin/rm -f $(SKETCH)-v2.px4
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v2_APM.px4 $(SKETCH)-v2.px4
@@ -102,16 +95,21 @@ px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 
 px4-io: px4-io-v1 px4-io-v2
 
-$(PX4_ROOT)/Archives/px4fmu-v1.export: px4-archives
 
-$(PX4_ROOT)/Archives/px4fmu-v2.export: px4-archives
+$(PX4_ROOT)/Archives/px4fmu-v1.export:
+	$(v) $(PX4_MAKE_ARCHIVES)
 
-$(PX4_ROOT)/Archives/px4io-v1.export: px4-archives
+$(PX4_ROOT)/Archives/px4fmu-v2.export:
+	$(v) $(PX4_MAKE_ARCHIVES)
 
-$(PX4_ROOT)/Archives/px4io-v2.export: px4-archives
+$(PX4_ROOT)/Archives/px4io-v1.export:
+	$(v) $(PX4_MAKE_ARCHIVES)
+
+$(PX4_ROOT)/Archives/px4io-v2.export:
+	$(v) $(PX4_MAKE_ARCHIVES)
 
 px4-archives:
-	$(v) make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) archives
+	$(v) $(PX4_MAKE_ARCHIVES)
 
 else
 
