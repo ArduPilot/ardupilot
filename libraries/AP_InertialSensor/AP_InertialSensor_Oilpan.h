@@ -16,16 +16,17 @@ public:
     AP_InertialSensor_Oilpan( AP_ADC * adc );
 
     /* Concrete implementation of AP_InertialSensor functions: */
-    bool            update();
-    float        	get_delta_time();    // get_delta_time returns the time period in seconds overwhich the sensor data was collected    
-    //uint32_t        get_last_sample_time_micros();  // last_sample_time - get time (in microseconds) that last sample was captured
-    float           get_gyro_drift_rate();
+    virtual bool      update();
+    virtual float 	  get_delta_time() const;    // get_delta_time returns the time period in seconds overwhich the sensor data was collected
+    virtual float     get_gyro_drift_rate() const;
 
     // get number of samples read from the sensors
-    uint16_t        num_samples_available();
+    virtual uint16_t  num_samples_available();
+
+    //uint32_t          get_last_sample_time_micros();  // last_sample_time - get time (in microseconds) that last sample was captured
 
 protected:
-    uint16_t        _init_sensor(Sample_rate sample_rate);
+    virtual uint16_t _init_sensor(Sample_rate sample_rate);
 
 private:
 

@@ -108,14 +108,14 @@ bool AP_InertialSensor_Oilpan::update()
     return true;
 }
 
-float AP_InertialSensor_Oilpan::get_delta_time() {
+float AP_InertialSensor_Oilpan::get_delta_time() const {
     return _delta_time_micros * 1.0e-6;
 }
 
 /* ------ Private functions -------------------------------------------*/
 
 // return the oilpan gyro drift rate in radian/s/s
-float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
+float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void) const
 {
     // 3.0 degrees/second/minute
     return ToRad(3.0/60);

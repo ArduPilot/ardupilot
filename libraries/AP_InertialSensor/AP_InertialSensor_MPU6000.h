@@ -28,8 +28,8 @@ public:
     static void         dmp_reset();    // Reset the DMP (required for changes in gains or offsets to take effect)
 
     /* Concrete implementation of AP_InertialSensor functions: */
-    bool                update();
-    float               get_gyro_drift_rate();
+    virtual bool        update();
+    virtual float       get_gyro_drift_rate() const;
 
     // push_gyro_offsets_to_dmp - updates gyro offsets in mpu6000 registers
     void                push_gyro_offsets_to_dmp();
@@ -40,13 +40,13 @@ public:
     void                set_dmp_accel_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ);
 
     // num_samples_available - get number of samples read from the sensors
-    uint16_t            num_samples_available();
+    virtual uint16_t    num_samples_available();
 
     // get_delta_time returns the time period in seconds overwhich the sensor data was collected
-    float            	get_delta_time();
+    virtual float      	get_delta_time() const;
 
 protected:
-    uint16_t                    _init_sensor( Sample_rate sample_rate );
+    virtual uint16_t    _init_sensor( Sample_rate sample_rate );
 
 private:
 

@@ -632,7 +632,7 @@ float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
 
 // return the MPU6k gyro drift rate in radian/s/s
 // note that this is much better than the oilpan gyros
-float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
+float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void) const
 {
     // 0.5 degrees/second/minute
     return ToRad(0.5/60);
@@ -664,7 +664,7 @@ void AP_InertialSensor_MPU6000::_dump_registers(void)
 
 
 // get_delta_time returns the time period in seconds overwhich the sensor data was collected
-float AP_InertialSensor_MPU6000::get_delta_time() 
+float AP_InertialSensor_MPU6000::get_delta_time() const
 {
     // the sensor runs at 200Hz
     return 0.005 * _num_samples;
