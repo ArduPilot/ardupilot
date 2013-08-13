@@ -49,7 +49,7 @@ public:
     /* set_overrides: array starts at ch 0, for len channels */
     bool set_overrides(int16_t *overrides, uint8_t len);
     /* set_override: set just a specific channel */
-    bool set_override(uint8_t channel, int16_t override);
+    bool set_override(uint8_t channel, int16_t override_val);
     /* clear_overrides: equivelant to setting all overrides to 0 */
     void clear_overrides();
 
@@ -71,7 +71,7 @@ class AP_HAL_AVR::APM2RCInput : public AP_HAL::RCInput {
     uint16_t read(uint8_t ch);
     uint8_t  read(uint16_t* periods, uint8_t len);
     bool set_overrides(int16_t *overrides, uint8_t len);
-    bool set_override(uint8_t channel, int16_t override);
+    bool set_override(uint8_t channel, int16_t override_val);
     void clear_overrides();
 private:
     /* private callback for input capture ISR */
