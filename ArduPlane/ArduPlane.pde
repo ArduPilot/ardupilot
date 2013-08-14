@@ -247,7 +247,7 @@ AP_InertialSensor_Oilpan ins( &apm1_adc );
 AP_AHRS_DCM ahrs(&ins, g_gps);
 
 static AP_L1_Control L1_controller(ahrs);
-static AP_TECS TECS_controller(&ahrs, aparm);
+static AP_TECS TECS_controller(ahrs, aparm);
 
 // Attitude to servo controllers
 static AP_RollController  rollController(ahrs, aparm);
