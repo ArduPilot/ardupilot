@@ -145,6 +145,9 @@ ALLDEPS			=	$(ALLOBJS:%.o=%.d)
 #
 
 all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
+	$(v)echo "\nused c++ compiler\n-----------------"
+	$(v)$(CXX) --version | head -n1
+	$(v)echo
 	$(v)$(AVRSIZE) --format=avr --mcu=$(MCU) $(SKETCHELF)
 
 print-%:
