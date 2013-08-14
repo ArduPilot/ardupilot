@@ -1,5 +1,6 @@
 @INCLUDE = docs/config/default
 
+PROJECT_NAME = "APM:Copter"
 INPUT = ArduCopter/
 OUTPUT_DIRECTORY = docs/ArduCopter
 HTML_OUTPUT = .

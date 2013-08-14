@@ -1,5 +1,6 @@
 @INCLUDE = docs/config/default
 
+PROJECT_NAME = "APM:Rover"
 INPUT = APMrover2/
 OUTPUT_DIRECTORY = docs/APMrover2
 HTML_OUTPUT = .
