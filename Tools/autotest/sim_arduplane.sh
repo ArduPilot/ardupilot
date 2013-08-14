@@ -4,6 +4,9 @@ killall -q JSBSim
 killall -q ArduPlane.elf
 pkill -f runsim.py
 
+# check the instance number to allow for multiple copies of the sim running at once
+INSTANCE=0
+
 set -e
 set -x
 
@@ -14,7 +17,7 @@ make clean sitl
 tfile=$(mktemp)
 echo r > $tfile
 #gnome-terminal -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
-gnome-terminal -e /tmp/ArduPlane.build/ArduPlane.elf
+gnome-terminal -e "/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
 #gnome-terminal -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf"
 sleep 2
 rm -f $tfile

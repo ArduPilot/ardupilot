@@ -39,6 +39,7 @@ public:
     static uint16_t pwm_input[8];
     static bool pwm_valid;
     static void loop_hook(void);
+    uint16_t base_port(void) const { return _base_port; }
 
     // simulated airspeed
     static uint16_t airspeed_pin_value;
@@ -100,6 +101,7 @@ private:
     // internal state
     static enum vehicle_type _vehicle;
     static uint16_t _framerate;
+    static uint16_t _base_port;
     float _initial_height;
     static struct sockaddr_in _rcout_addr;
     static pid_t _parent_pid;
@@ -113,8 +115,8 @@ private:
 
     static int _sitl_fd;
     static SITL *_sitl;
-    static const uint16_t _rcout_port = 5502;
-    static const uint16_t _simin_port = 5501;
+    static uint16_t _rcout_port;
+    static uint16_t _simin_port;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL

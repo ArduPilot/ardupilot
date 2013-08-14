@@ -31,8 +31,6 @@
 
 using namespace AVR_SITL;
 
-#define LISTEN_BASE_PORT 5760
-
 // On OSX, MSG_NOSIGNAL doesn't exist. The equivalent is to set SO_NOSIGPIPE
 // in setsockopt for the socket. However, if we just skip that, and don't use
 // MSG_NOSIGNAL, everything seems to work fine and SIGPIPE doesn't seem to be
@@ -236,7 +234,7 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
 #ifdef HAVE_SOCK_SIN_LEN
             sockaddr.sin_len = sizeof(sockaddr);
 #endif
-            sockaddr.sin_port = htons(LISTEN_BASE_PORT + _portNumber);
+            sockaddr.sin_port = htons(_sitlState->base_port() + _portNumber);
             sockaddr.sin_family = AF_INET;
 
             _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -266,7 +264,8 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
                 exit(1);
             }
 
-            fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber, LISTEN_BASE_PORT + _portNumber);
+            fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber, 
+                    _sitlState->base_port() + _portNumber);
             fflush(stdout);
         }
 
