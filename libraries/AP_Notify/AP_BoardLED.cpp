@@ -31,7 +31,7 @@ void AP_BoardLED::_update(uint32_t now)
     uint8_t counter2 = _counter >> 6;
 
     // initialising
-    if (notify.flags.initialising) {
+    if (AP_Notify::flags.initialising) {
         // blink LEDs A and C at 8Hz (full cycle) during initialisation
         if (counter2 & 1) {
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
@@ -44,7 +44,7 @@ void AP_BoardLED::_update(uint32_t now)
 	}
 
     // save trim
-    if (notify.flags.save_trim) {
+    if (AP_Notify::flags.save_trim) {
         static uint8_t save_trim_counter = 0;
         if ((counter2 & 0x2) == 0) {
             save_trim_counter++;
@@ -73,14 +73,14 @@ void AP_BoardLED::_update(uint32_t now)
 
     // arming light
     static uint8_t arm_counter = 0;
-	if (notify.flags.armed) {
+	if (AP_Notify::flags.armed) {
         // red led solid
         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
     }else{
         if ((counter2 & 0x2) == 0) {
             arm_counter++;
         }
-        if (notify.flags.pre_arm_check) {
+        if (AP_Notify::flags.pre_arm_check) {
             // passed pre-arm checks so slower single flash
             switch(arm_counter) {
                 case 0:
@@ -98,15 +98,7 @@ void AP_BoardLED::_update(uint32_t now)
                     arm_counter = -1;
                     break;
             }
-            // disarmed and passing pre-arm checks, blink at about 2hz
-            //if ((counter2 & 0x7) == 0) {
-            //    hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
-            //}
         }else{
-            // disarmed and failing pre-arm checks, double blink
-            //if (counter2 & 0x4) {
-            //    hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
-            //}
             // failed pre-arm checks so double flash
             switch(arm_counter) {
                 case 0:
@@ -132,7 +124,7 @@ void AP_BoardLED::_update(uint32_t now)
     }
 
     // gps light
-    switch (notify.flags.gps_status) {
+    switch (AP_Notify::flags.gps_status) {
         case 0:
             // no GPS attached
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
@@ -153,7 +145,7 @@ void AP_BoardLED::_update(uint32_t now)
             break;
 
         case 3:
-            // GPS attached but 2D lock, blink more slowly (around 2Hz)
+            // solid blue on gps lock
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
             break;        
     }

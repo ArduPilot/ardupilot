@@ -14,7 +14,6 @@
 #define __TOSHIBA_LED_H__
 
 #include <AP_HAL.h>
-//#include "AP_HAL_AVR_Namespace.h"
 #include <AP_Notify.h>
 
 #define TOSHIBA_LED_ADDRESS 0x55    // default I2C bus address
@@ -23,16 +22,13 @@
 #define TOSHIBA_LED_PWM2    0x03    // pwm2 register
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
 
-#define TOSHIBA_LED_BRIGHT  0x0F    // full brightness
-#define TOSHIBA_LED_MEDIUM  0x0A    // medium brightness
-#define TOSHIBA_LED_DIM     0x01    // dim      // was 0x05
-#define TOSHIBA_LED_OFF     0x00    // dim      // was 0x05
+#define TOSHIBA_LED_BRIGHT  0xFF    // full brightness
+#define TOSHIBA_LED_MEDIUM  0x80    // medium brightness
+#define TOSHIBA_LED_DIM     0x11    // dim
+#define TOSHIBA_LED_OFF     0x00    // off
 
 class ToshibaLED {
 public:
-
-    // constructor
-    ToshibaLED();
 
     // init - initialised the LED
     static void init(void);
@@ -62,7 +58,6 @@ private:
     static bool _healthy;                               // true if the LED is operating properly
     static uint8_t _red_des, _green_des, _blue_des;     // color requested by timed update
     static uint8_t _red_curr, _green_curr, _blue_curr;  // current colours displayed by the led
-    static uint16_t _counter;                           // used to slow the update rate
 };
 
 #endif // __TOSHIBA_LED_H__

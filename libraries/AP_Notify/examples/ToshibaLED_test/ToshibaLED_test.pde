@@ -29,11 +29,11 @@ void setup(void)
     }
 
     // turn on initialising notification
-    notify.flags.initialising = false;
-    notify.flags.save_trim = true;
-    notify.flags.gps_status = 1;
-    notify.flags.armed = 1;
-    notify.flags.pre_arm_check = 1;
+    AP_Notify::flags.initialising = false;
+    AP_Notify::flags.save_trim = true;
+    AP_Notify::flags.gps_status = 1;
+    AP_Notify::flags.armed = 1;
+    AP_Notify::flags.pre_arm_check = 1;
 }
 
 void loop(void)

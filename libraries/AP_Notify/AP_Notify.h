@@ -9,6 +9,9 @@ class AP_Notify
 {
 public:
 
+    /// definition of callback function
+    typedef void (*update_fn_t)(void);
+
     /// notify_type - bitmask of notification types
     struct notify_type {
         uint16_t initialising   : 1;    // 1 if initialising and copter should not be moved
@@ -17,11 +20,16 @@ public:
         uint16_t pre_arm_check  : 1;    // 0 = failing checks, 1 = passed
         uint16_t save_trim      : 1;    // 1 if gathering trim data
         uint16_t esc_calibration: 1;    // 1 if calibrating escs
-    } flags;
+    };
 
-    /// Constructor
-    //Notify();
-    
+    static struct notify_type flags;
+
+    /// register_callback - allows registering functions to be called with AP_Notify::update() is called from main loop
+    static void register_update_function(update_fn_t fn) {_update_fn = fn;}
+
+    /// update - allow updates of leds that cannot be updated during a timed interrupt
+    static void update() { if (AP_Notify::_update_fn != NULL) AP_Notify::_update_fn(); }
+
     /// To-Do: potential notifications to add
 
     /// flight_mode 
@@ -46,10 +54,9 @@ public:
     /// copter leds
     /// blinkm
     /// buzzer
+//private:
+    static update_fn_t _update_fn;
 
 };
-
-// declare a static instance so that it can be accessed easily from anywhere
-extern AP_Notify notify;
 
 #endif	// __AP_NOTIFY_H__

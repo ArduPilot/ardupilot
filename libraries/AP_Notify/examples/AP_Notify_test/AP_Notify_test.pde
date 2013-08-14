@@ -25,10 +25,10 @@ void setup()
     board_led.init();
 
     // turn on initialising notification
-    //notify.flags.initialising = true;
-    notify.flags.gps_status = 1;
-    notify.flags.armed = 1;
-    notify.flags.pre_arm_check = 1;
+    AP_Notify::flags.initialising = true;
+    AP_Notify::flags.gps_status = 1;
+    AP_Notify::flags.armed = 1;
+    AP_Notify::flags.pre_arm_check = 1;
 }
 
 void loop()
