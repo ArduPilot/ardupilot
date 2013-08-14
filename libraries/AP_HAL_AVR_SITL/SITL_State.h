@@ -69,12 +69,15 @@ private:
     #define MAX_GPS_DELAY 100
     static gps_data _gps_data[MAX_GPS_DELAY];
 
-    static void _gps_write(uint8_t *p, uint16_t size);
+    static void _gps_write(const uint8_t *p, uint16_t size);
     static void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size);
     static void _update_gps_ubx(const struct gps_data *d);
     static void _update_gps_mtk(const struct gps_data *d);
     static void _update_gps_mtk16(const struct gps_data *d);
     static void _update_gps_mtk19(const struct gps_data *d);
+    static uint16_t _gps_nmea_checksum(const char *s);
+    static void _gps_nmea_printf(const char *fmt, ...);
+    static void _update_gps_nmea(const struct gps_data *d);
 
     static void _update_gps(double latitude, double longitude, float altitude,
 			    double speedN, double speedE, double speedD, bool have_lock);
