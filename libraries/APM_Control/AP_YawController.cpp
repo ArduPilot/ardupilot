@@ -71,9 +71,6 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	}
 	_last_t = tnow;
 	
-	if(_ins == NULL) { // can't control without a reference
-		return 0; 
-	}
 
     int16_t aspd_min = aparm.airspeed_min;
     if (aspd_min < 1) {
@@ -85,22 +82,22 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	// Calculate yaw rate required to keep up with a constant height coordinated turn
 	float aspeed;
 	float rate_offset;
-	float bank_angle = _ahrs->roll;
+	float bank_angle = _ahrs.roll;
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < 1.5707964f)	{
 	    bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
 	}
-	if (!_ahrs->airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
 	}
     rate_offset = (GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
-	float omega_z = _ahrs->get_gyro().z;
+	float omega_z = _ahrs.get_gyro().z;
 	
 	// Get the accln vector (m/s^2)
-	float accel_y = _ins->get_accel().y;
+	float accel_y = _ahrs.get_ins()->get_accel().y;
 
 	// Subtract the steady turn component of rate from the measured rate
 	// to calculate the rate relative to the turn requirement in degrees/sec

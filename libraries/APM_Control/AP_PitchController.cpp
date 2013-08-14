@@ -106,11 +106,10 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	}
 	_last_t = tnow;
 	
-	if(_ahrs == NULL) return 0;
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Get body rate vector (radians/sec)
-	float omega_y = _ahrs->get_gyro().y;
+	float omega_y = _ahrs.get_gyro().y;
 	
 	// Calculate the pitch rate error (deg/sec) and scale
 	float rate_error = (desired_rate - ToDeg(omega_y)) * scaler;
@@ -143,7 +142,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0) / _ahrs->get_EAS2TAS();
+	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0) / _ahrs.get_EAS2TAS();
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
@@ -180,7 +179,7 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
 float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inverted) const
 {
 	float rate_offset;
-	float bank_angle = _ahrs->roll;
+	float bank_angle = _ahrs.roll;
 
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < radians(90))	{
@@ -194,11 +193,11 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
 		}
 	}
-	if (!_ahrs->airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(&aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
 	}
-    if (abs(_ahrs->pitch_sensor) > 7000) {
+    if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
