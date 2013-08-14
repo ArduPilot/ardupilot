@@ -14,8 +14,12 @@
 #define __TOSHIBA_LED_PX4_H__
 
 #include <AP_HAL.h>
-
 #include <AP_Notify.h>
+
+#define TOSHIBA_PX4_LED_BRIGHT  0xFF    // full brightness
+#define TOSHIBA_PX4_LED_MEDIUM  0x80    // medium brightness
+#define TOSHIBA_PX4_LED_DIM     0x11    // dim
+#define TOSHIBA_PX4_LED_OFF     0x00    // off
 
 class ToshibaLED_PX4 {
 public:

@@ -112,14 +112,14 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
     if (AP_Notify::flags.initialising) {
         if (step & 1) {
             // odd steps display red light
-            _red_des = TOSHIBA_LED_DIM;
-            _blue_des = TOSHIBA_LED_OFF;
-            _green_des = TOSHIBA_LED_OFF;
+            _red_des = TOSHIBA_PX4_LED_DIM;
+            _blue_des = TOSHIBA_PX4_LED_OFF;
+            _green_des = TOSHIBA_PX4_LED_OFF;
         }else{
             // even display blue light
-            _red_des = TOSHIBA_LED_OFF;
-            _blue_des = TOSHIBA_LED_DIM;
-            _green_des = TOSHIBA_LED_OFF;
+            _red_des = TOSHIBA_PX4_LED_OFF;
+            _blue_des = TOSHIBA_PX4_LED_DIM;
+            _green_des = TOSHIBA_PX4_LED_OFF;
         }
 
         // exit so no other status modify this pattern
@@ -132,31 +132,31 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
             case 0:
             case 3:
             case 6:
-                _red_des = TOSHIBA_LED_DIM;
-                _blue_des = TOSHIBA_LED_OFF;
-                _green_des = TOSHIBA_LED_OFF;
+                _red_des = TOSHIBA_PX4_LED_DIM;
+                _blue_des = TOSHIBA_PX4_LED_OFF;
+                _green_des = TOSHIBA_PX4_LED_OFF;
                 break;
 
             case 1:
             case 4:
             case 7:
-                _red_des = TOSHIBA_LED_OFF;
-                _blue_des = TOSHIBA_LED_DIM;
-                _green_des = TOSHIBA_LED_OFF;
+                _red_des = TOSHIBA_PX4_LED_OFF;
+                _blue_des = TOSHIBA_PX4_LED_DIM;
+                _green_des = TOSHIBA_PX4_LED_OFF;
                 break;
 
             case 2:
             case 5:
             case 8:
-                _red_des = TOSHIBA_LED_OFF;
-                _blue_des = TOSHIBA_LED_OFF;
-                _green_des = TOSHIBA_LED_DIM;
+                _red_des = TOSHIBA_PX4_LED_OFF;
+                _blue_des = TOSHIBA_PX4_LED_OFF;
+                _green_des = TOSHIBA_PX4_LED_DIM;
                 break;
 
             case 9:
-                _red_des = TOSHIBA_LED_OFF;
-                _blue_des = TOSHIBA_LED_OFF;
-                _green_des = TOSHIBA_LED_OFF;
+                _red_des = TOSHIBA_PX4_LED_OFF;
+                _blue_des = TOSHIBA_PX4_LED_OFF;
+                _green_des = TOSHIBA_PX4_LED_OFF;
                 break;
         }
         // exit so no other status modify this pattern
@@ -167,9 +167,9 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
     if (AP_Notify::flags.armed) {
         // solid green if armed with 3d lock
         if (AP_Notify::flags.gps_status == 3) {
-            _red_des = TOSHIBA_LED_OFF;
-            _blue_des = TOSHIBA_LED_OFF;
-            _green_des = TOSHIBA_LED_DIM;
+            _red_des = TOSHIBA_PX4_LED_OFF;
+            _blue_des = TOSHIBA_PX4_LED_OFF;
+            _green_des = TOSHIBA_PX4_LED_DIM;
         }else{
             // flash green if armed with no gps lock
             switch(step) {
@@ -178,18 +178,18 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
                 case 2:
                 case 3:
                 case 4:
-                    _red_des = TOSHIBA_LED_DIM;
-                    _blue_des = TOSHIBA_LED_DIM;
-                    _green_des = TOSHIBA_LED_DIM;
+                    _red_des = TOSHIBA_PX4_LED_DIM;
+                    _blue_des = TOSHIBA_PX4_LED_DIM;
+                    _green_des = TOSHIBA_PX4_LED_DIM;
                     break;
                 case 5:
                 case 6:
                 case 7:
                 case 8:
                 case 9:
-                    _red_des = TOSHIBA_LED_OFF;
-                    _blue_des = TOSHIBA_LED_OFF;
-                    _green_des = TOSHIBA_LED_OFF;
+                    _red_des = TOSHIBA_PX4_LED_OFF;
+                    _blue_des = TOSHIBA_PX4_LED_OFF;
+                    _green_des = TOSHIBA_PX4_LED_OFF;
                     break;
             }
         }
@@ -202,9 +202,9 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
                 case 2:
                 case 3:
                 case 4:
-                    _red_des = TOSHIBA_LED_DIM;
-                    _blue_des = TOSHIBA_LED_OFF;
-                    _green_des = TOSHIBA_LED_DIM;
+                    _red_des = TOSHIBA_PX4_LED_DIM;
+                    _blue_des = TOSHIBA_PX4_LED_OFF;
+                    _green_des = TOSHIBA_PX4_LED_DIM;
                     break;
                 case 5:
                 case 6:
@@ -212,17 +212,17 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
                 case 8:
                 case 9:
                     // even display blue light
-                    _red_des = TOSHIBA_LED_OFF;
-                    _blue_des = TOSHIBA_LED_OFF;
-                    _green_des = TOSHIBA_LED_OFF;
+                    _red_des = TOSHIBA_PX4_LED_OFF;
+                    _blue_des = TOSHIBA_PX4_LED_OFF;
+                    _green_des = TOSHIBA_PX4_LED_OFF;
                     break;
             }
         }else{
             // solid blue if gps 3d lock
             if (AP_Notify::flags.gps_status == 3) {
-                _red_des = TOSHIBA_LED_OFF;
-                _blue_des = TOSHIBA_LED_DIM;
-                _green_des = TOSHIBA_LED_OFF;
+                _red_des = TOSHIBA_PX4_LED_OFF;
+                _blue_des = TOSHIBA_PX4_LED_DIM;
+                _green_des = TOSHIBA_PX4_LED_OFF;
             }else{
                 // flashing blue if no gps lock
                 switch(step) {
@@ -231,9 +231,9 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
                     case 2:
                     case 3:
                     case 4:
-                        _red_des = TOSHIBA_LED_OFF;
-                        _blue_des = TOSHIBA_LED_DIM;
-                        _green_des = TOSHIBA_LED_OFF;
+                        _red_des = TOSHIBA_PX4_LED_OFF;
+                        _blue_des = TOSHIBA_PX4_LED_DIM;
+                        _green_des = TOSHIBA_PX4_LED_OFF;
                         break;
                     case 5:
                     case 6:
@@ -241,9 +241,9 @@ void ToshibaLED_PX4::_scheduled_update(uint32_t now)
                     case 8:
                     case 9:
                         // even display blue light
-                        _red_des = TOSHIBA_LED_OFF;
-                        _blue_des = TOSHIBA_LED_OFF;
-                        _green_des = TOSHIBA_LED_OFF;
+                        _red_des = TOSHIBA_PX4_LED_OFF;
+                        _blue_des = TOSHIBA_PX4_LED_OFF;
+                        _green_des = TOSHIBA_PX4_LED_OFF;
                         break;
                 }
             }
