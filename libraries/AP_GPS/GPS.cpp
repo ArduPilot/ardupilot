@@ -5,6 +5,7 @@
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>
+#include <AP_Notify.h>
 #include "GPS.h"
 
 extern const AP_HAL::HAL& hal;
@@ -99,7 +100,7 @@ GPS::update(void)
     }
 
     // update notify with gps status
-    notify.flags.gps_status = _status;
+    AP_Notify::flags.gps_status = _status;
 }
 
 void
