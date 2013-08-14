@@ -209,10 +209,12 @@ void PX4GPIO::toggle(uint8_t pin)
             ioctl(_tone_alarm_fd, TONE_SET_ALARM, 0);    // Alarm off !! 
             break;
 
+#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
         case PX4_GPIO_EXT_RELAY_PIN: // Ext Relay 
             ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1);
             ioctl(_gpio_fd, GPIO_SET, GPIO_EXT_1);
             break;
+#endif
     }
 }
 
