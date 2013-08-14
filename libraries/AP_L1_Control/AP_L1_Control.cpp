@@ -111,11 +111,11 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	
 	//Calculate groundspeed
 	float groundSpeed = _groundspeed_vector.length();
-    if (groundSpeed < 1.0f) {
+    if (groundSpeed < 0.1f) {
         // use a small ground speed vector in the right direction,
         // allowing us to use the compass heading at zero GPS velocity
-        _groundspeed_vector = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
-        groundSpeed = 1.0f;
+        groundSpeed = 0.1f;
+        _groundspeed_vector = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw)) * groundSpeed;
     }
 
 	// Calculate time varying control parameters
