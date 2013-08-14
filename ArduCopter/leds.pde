@@ -4,7 +4,7 @@
 // should be called at 50hz ~ 100hz
 static void update_toshiba_led()
 {
-    toshiba_led.update();
+    AP_Notify::update();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////

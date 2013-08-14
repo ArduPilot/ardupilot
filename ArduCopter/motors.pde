@@ -217,7 +217,7 @@ static void pre_arm_checks(bool display_failure)
 
     // succeed if pre arm checks are disabled
     if(!g.arming_check_enabled) {
-        ap.pre_arm_check = true;
+        set_pre_arm_check(true);
         return;
     }
 
@@ -328,7 +328,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // if we've gotten this far then pre arm checks have completed
-    ap.pre_arm_check = true;
+    set_pre_arm_check(true);
 }
 
 // perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag

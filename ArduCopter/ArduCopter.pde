@@ -107,6 +107,7 @@
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <ToshibaLED.h>         // ToshibaLED library
+#include <ToshibaLED_PX4.h>     // ToshibaLED library
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -150,7 +151,12 @@ static AP_Scheduler scheduler;
 static AP_BoardLED board_led;
 
 // Toshiba LED instance
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static ToshibaLED_PX4 toshiba_led;
+ #else
 static ToshibaLED toshiba_led;
+ #endif
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes

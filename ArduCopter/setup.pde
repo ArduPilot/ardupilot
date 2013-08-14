@@ -1356,7 +1356,7 @@ init_esc()
     while(1) {
         read_radio();
         delay(100);
-        notify.flags.esc_calibration = true;
+        AP_Notify::flags.esc_calibration = true;
         motors.throttle_pass_through();
     }
 }

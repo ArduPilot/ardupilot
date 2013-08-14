@@ -75,7 +75,7 @@ static void init_rc_out()
             // display message on console
             cliSerial->printf_P(PSTR("Entering ESC Calibration: please restart APM.\n"));
             // turn on esc calibration notification
-            notify.flags.esc_calibration = true;
+            AP_Notify::flags.esc_calibration = true;
             // block until we restart
             while(1) {}
         }else{

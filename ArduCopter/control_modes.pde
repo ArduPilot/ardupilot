@@ -295,7 +295,7 @@ static void auto_trim()
         auto_trim_counter--;
 
         // flash the leds
-        notify.flags.save_trim = true;
+        AP_Notify::flags.save_trim = true;
 
         // calculate roll trim adjustment
         float roll_trim_adjustment = ToRad((float)g.rc_1.control_in / 4000.0f);
@@ -313,7 +313,7 @@ static void auto_trim()
         // on last iteration restore leds and accel gains to normal
         if(auto_trim_counter == 0) {
             ahrs.set_fast_gains(false);
-            notify.flags.save_trim = false;
+            AP_Notify::flags.save_trim = false;
         }
     }
 }
