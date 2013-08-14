@@ -30,7 +30,7 @@
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-	AP_TECS(AP_AHRS *ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
+	AP_TECS(AP_AHRS &ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
 		_ahrs(ahrs),
 		aparm(parms)
 		{
@@ -94,8 +94,8 @@ private:
     // Last time update_pitch_throttle was called
     uint32_t _update_pitch_throttle_last_usec;
 
-	// pointer to the AHRS object
-    AP_AHRS *_ahrs;
+	// reference to the AHRS object
+    AP_AHRS &_ahrs;
 
 	const AP_SpdHgtControl::AircraftParameters &aparm;
 
