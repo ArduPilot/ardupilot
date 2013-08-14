@@ -2,7 +2,6 @@
 
 PROJECT_NAME = "APM:Plane"
 INPUT = ArduPlane/
-OUTPUT_DIRECTORY = docs/ArduPlane
+OUTPUT_DIRECTORY = $(DOCS_OUTPUT_BASE)/ArduPlane
 HTML_OUTPUT = .
-TAGFILES = docs/tags/libraries=../libraries
-
+TAGFILES = $(DOCS_OUTPUT_BASE)/tags/libraries=../libraries

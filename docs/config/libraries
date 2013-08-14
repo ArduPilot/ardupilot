@@ -2,6 +2,6 @@
 
 PROJECT_NAME = "APM:Libraries"
 INPUT = libraries/
-OUTPUT_DIRECTORY = docs/libraries
+OUTPUT_DIRECTORY = $(DOCS_OUTPUT_BASE)/libraries
 HTML_OUTPUT = .
-GENERATE_TAGFILE = docs/tags/libraries
+GENERATE_TAGFILE = $(DOCS_OUTPUT_BASE)/tags/libraries
