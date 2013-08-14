@@ -249,6 +249,12 @@ AP_AHRS_DCM ahrs(&ins, g_gps);
 static AP_L1_Control L1_controller(ahrs);
 static AP_TECS TECS_controller(&ahrs, aparm);
 
+// Attitude to servo controllers
+static AP_RollController  rollController(ahrs, aparm);
+static AP_PitchController pitchController(ahrs, aparm);
+static AP_YawController   yawController(ahrs, aparm);
+
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
 #endif
