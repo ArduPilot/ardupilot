@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
+#include <AP_Notify.h>
 #include "AP_InertialSensor_UserInteract.h"
 /* AP_InertialSensor is an abstraction for gyro and accel measurements
  * which are correctly aligned to the body axes and scaled to SI units.
