@@ -1,4 +1,8 @@
-
+/**
+ * @file compat.pde
+ *
+ * @brief Arduino compatability functions - just call our implementations.
+ */
 
 void delay(uint32_t ms)
 {

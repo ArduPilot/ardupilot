@@ -1,11 +1,14 @@
+/**
+ * @file position_vector.pde
+ *
+ * @brief position_vector related utility functions
+ * position vectors are Vector2f
+ *   .x = latitude from home in cm
+ *   .y = longitude from home in cm
+ *   .z = altitude above home in cm
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-// position_vector.pde related utility functions
-
-// position vectors are Vector2f
-//    .x = latitude from home in cm
-//    .y = longitude from home in cm
-//    .z = altitude above home in cm
 
 // pv_latlon_to_vector - convert lat/lon coordinates to a position vector
 const Vector3f pv_latlon_to_vector(int32_t lat, int32_t lon, int32_t alt)

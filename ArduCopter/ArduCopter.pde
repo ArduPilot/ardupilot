@@ -1,6 +1,12 @@
+/**
+ * @file ArduCopter.pde
+ *
+ * @brief Main ArduCopter file - loop functions, scheduler, etc
+ */
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define THISFIRMWARE "ArduCopter V3.1-dev"
+
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -408,9 +414,10 @@ static int8_t control_mode = STABILIZE;
 // Used to maintain the state of the previous control switch position
 // This is set to -1 when we need to re-read the switch
 static uint8_t oldSwitchPosition;
+
 static RCMapper rcmap;
 
-// receiver RSSI
+// receiver RSSI (received signal strength)
 static uint8_t receiver_rssi;
 
 
@@ -852,10 +859,10 @@ static void pre_arm_checks(bool display_failure);
 AP_Param param_loader(var_info, WP_START_BYTE);
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 10ms units) and the maximum time they are expected to take (in
-  microseconds)
+ * Scheduler table - lists all tasks that are to be run at regualer intervals
+ * all regular tasks apart from the fast_loop() should be listed here, along 
+ * with how often they should be called (in 10ms units) and the maximum time
+ * they are expected to take (in microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
@@ -875,7 +882,14 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { perf_update,        1000,     500 }
 };
 
-
+/**
+ * setup
+ *
+ * @return void
+ *
+ * @brief Arduino setup function - this function is called first and 
+ * will intialise some hardware, ardupilot and the scheduler
+ */
 void setup() {
     // this needs to be the first call, as it fills memory with
     // sentinel values
@@ -928,6 +942,11 @@ static void barometer_accumulate(void)
     barometer.accumulate();
 }
 
+/**
+ * perf_update
+ *
+ * @brief Used for performance logging.
+ */
 static void perf_update(void)
 {
     if (g.log_bitmask & MASK_LOG_PM)
@@ -943,6 +962,15 @@ static void perf_update(void)
     pmTest1 = 0;
 }
 
+/**
+ * loop
+ *
+ * @return void
+ *
+ * @brief Main arduino loop function, this is called similar to while(1) loop();
+ * from the AVR_HAL_MAIN() macro at the bottom of this file.  It's job is to measure loop 
+ * execution time for each loop iteration (Gt), call fast_loop() and run the scheduler.
+ */
 void loop()
 {
     uint32_t timer = micros();
@@ -978,7 +1006,15 @@ void loop()
 }
 
 
-// Main loop - 100hz
+/**
+ * fast_loop
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Called at 100Hz.  Mainly reads the attitude sensors, runs the rate PIDs and updates the motors.  
+ * Plus a few other high-frequency tasks.
+ */
 static void fast_loop()
 {
     // IMU DCM Algorithm
@@ -1039,8 +1075,14 @@ static void fast_loop()
 #endif
 }
 
-// stuff that happens at 50 hz
-// ---------------------------
+/**
+ * fifty_hz_loop
+ *
+ * @access static
+ * @return void
+ *
+ * @brief 50Hz loop. Altitude reading, etc
+ */
 static void fifty_hz_loop()
 {
     // get altitude and climb rate from inertial lib
@@ -1098,7 +1140,15 @@ static void fifty_hz_loop()
 
 }
 
-// medium_loop - runs at 10hz
+/**
+ * medium_loop
+ *
+ * @access static
+ * @return void
+ *
+ * @brief 10Hz loop.  medium_loopCounter is increment upon each invokation, and depending on 
+ * the value of this variable different tasks are run.
+ */
 static void medium_loop()
 {
     // This is the start of the medium (10 Hz) loop pieces
@@ -1206,7 +1256,15 @@ static void medium_loop()
     }
 }
 
-// slow_loop - 3.3hz loop
+/**
+ * slow_loop
+ *
+ * @access static
+ * @return void
+ *
+ * @brief 3.3Hz loop.  Low frequency tasks. A counter variable increments on each 
+ * invokation, the value of the counter dictates what is done.
+ */
 static void slow_loop()
 {
     // This is the slow (3 1/3 Hz) loop pieces
@@ -1290,7 +1348,14 @@ static void slow_loop()
     }
 }
 
-// super_slow_loop - runs at 1Hz
+/**
+ * super_slow_loop
+ *
+ * @access static
+ * @return void
+ *
+ * @brief 1Hz loop.  Motor arm checks, misc 
+ */
 static void super_slow_loop()
 {
     if (g.log_bitmask != 0) {
@@ -1325,8 +1390,17 @@ static void super_slow_loop()
 #endif
 }
 
-// called at 100hz but data from sensor only arrives at 20 Hz
 #if OPTFLOW == ENABLED
+/**
+ * update_optical_flow
+ *
+ * @access static
+ * @param voi void
+ * @return void
+ *
+ * @brief Called at 100hz but data from sensor only arrives at 20 Hz. Updates the optical flow 
+ * sensor (if installed - uncommon) that is used to estimate position (like a computer mouse sensor).
+ */
 static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
@@ -1349,7 +1423,14 @@ static void update_optical_flow(void)
 }
 #endif  // OPTFLOW == ENABLED
 
-// called at 50hz
+/**
+ * update_GPS
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Called at 50hz. Read GPS, set home if not set already, call GPS failsafe checks.
+ */ 
 static void update_GPS(void)
 {
     // A counter that is used to grab at least 10 reads before commiting the Home location
@@ -1406,7 +1487,16 @@ static void update_GPS(void)
     failsafe_gps_check();
 }
 
-// set_yaw_mode - update yaw mode and initialise any variables required
+/**
+ * set_yaw_mode
+ *
+ * @param uint8_t new_yaw_mode from YAW_ defines
+ * @return bool Whether yaw mode was changed or not.
+ *
+ * @brief Copter has a yaw mode that dictates its behaviour - this function changes 
+ * the yaw mode and initialises any variables to begin that mode.  Once this function 
+ * is called, the actual logic of changing the yaw is done in update_yaw_mode() below.
+ */
 bool set_yaw_mode(uint8_t new_yaw_mode)
 {
     // boolean to ensure proper initialisation of throttle modes
@@ -1474,8 +1564,15 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
     return yaw_initialised;
 }
 
-// update_yaw_mode - run high level yaw controllers
-// 100hz update rate
+/**
+ * update_yaw_mode
+ *
+ * @return void
+ *
+ * @brief Responsible for actually executing yaw changes or holding yaw.  This function is 
+ * called at 100Hz and will need to update the yaw rates if necessary.  To set the yaw - call set_yaw_mode() above.
+ * A new yaw mode requires an entry in set_yaw_mode() for initialisation, and here for 'doing' of yaw changes.
+ */
 void update_yaw_mode(void)
 {
     switch(yaw_mode) {
@@ -1608,8 +1705,15 @@ void update_yaw_mode(void)
     }
 }
 
-// get yaw mode based on WP_YAW_BEHAVIOR parameter
-// set rtl parameter to true if this is during an RTL
+/**
+ * get_wp_yaw_mode
+ *
+ * @param bool rtl Whether Return to Launch is executing now.  Changes behaviour for some settings.
+ * @return uint8_t New yaw mode, for passing to set_yaw_mode()
+ *
+ * @brief Passes the WP_YAW_BEHAVIOR user configurable parameter and returns the new yaw mode
+ * for passing to set_yaw_mode()
+ */
 uint8_t get_wp_yaw_mode(bool rtl)
 {
     switch (g.wp_yaw_behavior) {
@@ -1673,8 +1777,12 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
     return roll_pitch_initialised;
 }
 
-// update_roll_pitch_mode - run high level roll and pitch controllers
-// 100hz update rate
+/**
+ * update_roll_pitch_mode
+ *
+ * @brief 100Hz loop.  Using the mode, and user stick inputs (if needed), runs the 
+ * roll/pitch controllers that will feed the desired rotational rate to the rate controllers.
+ */
 void update_roll_pitch_mode(void)
 {
     switch(roll_pitch_mode) {
@@ -1795,7 +1903,12 @@ void update_roll_pitch_mode(void)
     }
 }
 
-// new radio frame is used to make sure we only call this at 50hz
+/**
+ * update_simple_mode
+ *
+ * @brief Called at 50hz. Rotates the user stick inputs if simple mode is enabled.  Forward will now cause
+ * aircraft to lean in the same direction as it was facing on take off.
+ */
 void update_simple_mode(void)
 {
     static uint8_t simple_counter = 0;             // State machine counter for Simple Mode
@@ -1825,8 +1938,11 @@ void update_simple_mode(void)
     g.rc_2.control_in = _pitch;
 }
 
-// update_super_simple_bearing - adjusts simple bearing based on location
-// should be called after home_bearing has been updated
+/**
+ * update_super_simple_bearing
+ *
+ * @brief adjusts simple bearing based on location should be called after home_bearing has been updated
+ */
 void update_super_simple_bearing()
 {
     // are we in SUPERSIMPLE mode?
@@ -1840,6 +1956,14 @@ void update_super_simple_bearing()
 }
 
 // set_throttle_mode - sets the throttle mode and initialises any variables as required
+/**
+ * set_throttle_mode
+ *
+ * @param uint8_t new_throttle_mode from THROTTLE_ defines
+ * @return bool whether throttle mode changed
+ *
+ * @brief Changes throttle mode and initialises the variables for that mode
+ */
 bool set_throttle_mode( uint8_t new_throttle_mode )
 {
     // boolean to ensure proper initialisation of throttle modes
@@ -1895,8 +2019,12 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
     return throttle_initialised;
 }
 
-// update_throttle_mode - run high level throttle controllers
-// 50 hz update rate
+/**
+ * update_throttle_mode
+ *
+ * @brief Called at 50Hz to manage the desired throttle mode.  e.g. if altitude hole, will run the
+ * appropriate controllers to work out the throttle.  
+ */
 void update_throttle_mode(void)
 {
     int16_t pilot_climb_rate;
@@ -2048,18 +2176,41 @@ void update_throttle_mode(void)
     }
 }
 
-// set_target_alt_for_reporting - set target altitude in cm for reporting purposes (logs and gcs)
+/**
+ * set_target_alt_for_reporting
+ *
+ * @access static
+ * @param float alt_cm  Altitude in cm
+ * @return void
+ *
+ * @brief set target altitude in cm for reporting purposes (logs and gcs)
+ */
 static void set_target_alt_for_reporting(float alt_cm)
 {
     target_alt_for_reporting = alt_cm;
 }
 
-// get_target_alt_for_reporting - returns target altitude in cm for reporting purposes (logs and gcs)
+/**
+ * get_target_alt_for_reporting
+ *
+ * @access static
+ * @return float target alt in cm
+ *
+ * @brief returns target altitude in cm for reporting purposes (logs and gcs)
+ */
 static float get_target_alt_for_reporting()
 {
     return target_alt_for_reporting;
 }
 
+/**
+ * read_AHRS
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Read the AHRS system to get attitude/heading/etc
+ */
 static void read_AHRS(void)
 {
     // Perform IMU calculations and get attitude info
@@ -2077,6 +2228,12 @@ static void read_AHRS(void)
 #endif
 }
 
+/**
+ * update_trig
+ *
+ * @brief reads all of the necessary trig functions for cameras, throttle, etc.
+ * FIXME: add more detail here on what this function is doing
+ */
 static void update_trig(void){
     Vector2f yawvector;
     const Matrix3f &temp   = ahrs.get_dcm_matrix();
@@ -2110,7 +2267,14 @@ static void update_trig(void){
     // 270 = cos_yaw:  0.00, sin_yaw: -1.00,
 }
 
-// read baro and sonar altitude at 20hz
+/**
+ * update_altitude
+ *
+ * @access static
+ * @return void
+ *
+ * @brief read baro and sonar altitude at 20hz
+ */
 static void update_altitude()
 {
 #if HIL_MODE == HIL_MODE_ATTITUDE
@@ -2134,6 +2298,11 @@ static void update_altitude()
     }
 }
 
+/**
+ * tuning
+ *
+ * @brief If CH6 is being used for tuning, update the deired pid config based on CH6.
+ */
 static void tuning(){
     tuning_value = (float)g.rc_6.control_in / 1000.0f;
     g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);                   // 0 to 1
@@ -2289,5 +2458,10 @@ static void tuning(){
     }
 }
 
+/**
+ * AP_HAL_MAIN
+ *
+ * @brief main() macro to run setup(), loop() and scheduler.
+ */
 AP_HAL_MAIN();
 

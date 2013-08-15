@@ -1,7 +1,23 @@
+/**
+ * @file Attitude.pde
+ *
+ * @brief Implementation of the attitude PID controllers
+ */
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
-// returns desired angle in centi-degrees
+/**
+ * get_pilot_desired_lean_angles
+ *
+ * @access static
+ * @param int16_t roll_in pilot roll in 
+ * @param int16_t pitch_in pilot pitch in 
+ * @param int16_t &roll_out desired roll out in centi-degrees 
+ * @param int16_t &pitch_out desired pitch out in centi degrees 
+ * @return void
+ *
+ * @brief transform pilot's roll or pitch input into a desired lean angle.  
+ */
 static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
 {
     static float _scaler = 1.0;
@@ -25,8 +41,16 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
     pitch_out = pitch_in * _scaler;
 }
 
-static void
-get_stabilize_roll(int32_t target_angle)
+/**
+ * get_stabilize_roll
+ *
+ * @access static
+ * @param int32_t target_angle Desired roll angle in centidegrees
+ * @return void
+ *
+ * @brief Sets the rate controller targets from the desired roll angle
+ */
+static void get_stabilize_roll(int32_t target_angle)
 {
     // angle error
     target_angle = wrap_180_cd(target_angle - ahrs.roll_sensor);
@@ -41,8 +65,16 @@ get_stabilize_roll(int32_t target_angle)
     set_roll_rate_target(target_rate, EARTH_FRAME);
 }
 
-static void
-get_stabilize_pitch(int32_t target_angle)
+/**
+ * get_stabilize_pitch
+ *
+ * @access static
+ * @param int32_t target_angle Desired pitch angle in centidegrees
+ * @return void
+ *
+ * @brief Sets the rate controller targets from the desired pitch angle
+ */
+static void get_stabilize_pitch(int32_t target_angle)
 {
     // angle error
     target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
@@ -57,8 +89,16 @@ get_stabilize_pitch(int32_t target_angle)
     set_pitch_rate_target(target_rate, EARTH_FRAME);
 }
 
-static void
-get_stabilize_yaw(int32_t target_angle)
+/**
+ * get_stabilize_yaw
+ *
+ * @access static
+ * @param int32_t target_angle Desired yaw angle in centidegrees
+ * @return void
+ *
+ * @brief Sets the rate controller targets from the desired yaw angle
+ */
+static void get_stabilize_yaw(int32_t target_angle)
 {
     int32_t target_rate;
     int32_t angle_error;
@@ -95,8 +135,17 @@ get_stabilize_yaw(int32_t target_angle)
     set_yaw_rate_target(target_rate, EARTH_FRAME);
 }
 
-static void
-get_acro_roll(int32_t target_rate)
+/**
+ * get_acro_roll
+ *
+ * @access static
+ * @param int32_t target_rate Desired rate of rotation in centidegrees/sec
+ * @return void
+ *
+ * @brief ACRO mode. Multiplies user's stick inputs by a gain to get desired rate of 
+ * rotation where higher gain = faster rates of rotation.  Sets rate controller target to this.
+ */
+static void get_acro_roll(int32_t target_rate)
 {
     target_rate = target_rate * g.acro_rp_p;
 
@@ -104,8 +153,17 @@ get_acro_roll(int32_t target_rate)
     set_roll_rate_target(target_rate, BODY_FRAME);
 }
 
-static void
-get_acro_pitch(int32_t target_rate)
+/**
+ * get_acro_pitch
+ *
+ * @access static
+ * @param int32_t target_rate Desired rate of rotation in centidegrees/sec
+ * @return void
+ *
+ * @brief ACRO mode. Multiplies user's stick inputs by a gain to get desired rate of 
+ * rotation where higher gain = faster rates of rotation.  Sets rate controller target to this.
+ */
+static void get_acro_pitch(int32_t target_rate)
 {
     target_rate = target_rate * g.acro_rp_p;
 
@@ -113,8 +171,17 @@ get_acro_pitch(int32_t target_rate)
     set_pitch_rate_target(target_rate, BODY_FRAME);
 }
 
-static void
-get_acro_yaw(int32_t target_rate)
+/**
+ * get_acro_yaw
+ *
+ * @access static
+ * @param int32_t target_rate Desired rate of rotation in centidegrees/sec
+ * @return void
+ *
+ * @brief ACRO mode. Multiplies user's stick inputs by a gain to get desired rate of 
+ * rotation where higher gain = faster rates of rotation.  Sets rate controller target to this.
+ */
+static void get_acro_yaw(int32_t target_rate)
 {
     target_rate = target_rate * g.acro_yaw_p;
 
@@ -122,9 +189,12 @@ get_acro_yaw(int32_t target_rate)
     set_yaw_rate_target(target_rate, BODY_FRAME);
 }
 
-// get_acro_level_rates - calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
-static void
-get_acro_level_rates()
+/**
+ * get_acro_level_rates
+ *
+ * @brief calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
+ */
+static void get_acro_level_rates()
 {
     // zero earth frame leveling if trainer is disabled
     if (g.acro_trainer == ACRO_TRAINER_DISABLED) {
@@ -172,9 +242,16 @@ get_acro_level_rates()
     set_yaw_rate_target(0, BODY_EARTH_FRAME);
 }
 
-// Roll with rate input and stabilized in the body frame
-static void
-get_roll_rate_stabilized_bf(int32_t stick_angle)
+/**
+ * get_roll_rate_stabilized_bf
+ *
+ * @access static
+ * @param int32_t stick_angle 
+ * @return void
+ *
+ * @brief Roll with rate input and stabilized in the body frame
+ */
+static void get_roll_rate_stabilized_bf(int32_t stick_angle)
 {
     static float angle_error = 0;
 
@@ -211,9 +288,16 @@ get_roll_rate_stabilized_bf(int32_t stick_angle)
     }
 }
 
-// Pitch with rate input and stabilized in the body frame
-static void
-get_pitch_rate_stabilized_bf(int32_t stick_angle)
+/**
+ * get_pitch_rate_stabilized_bf
+ *
+ * @access static
+ * @param int32_t stick_angle
+ * @return void
+ *
+ * @brief Pitch with rate input and stabilized in the body frame
+ */
+static void get_pitch_rate_stabilized_bf(int32_t stick_angle)
 {
     static float angle_error = 0;
 
@@ -250,9 +334,16 @@ get_pitch_rate_stabilized_bf(int32_t stick_angle)
     }
 }
 
-// Yaw with rate input and stabilized in the body frame
-static void
-get_yaw_rate_stabilized_bf(int32_t stick_angle)
+/**
+ * get_yaw_rate_stabilized_bf
+ *
+ * @access static
+ * @param int32_t stick_angle
+ * @return void
+ *
+ * @brief Yaw with rate input and stabilized in the body frame
+ */
+static void get_yaw_rate_stabilized_bf(int32_t stick_angle)
 {
     static float angle_error = 0;
 
@@ -289,9 +380,16 @@ get_yaw_rate_stabilized_bf(int32_t stick_angle)
     }
 }
 
-// Roll with rate input and stabilized in the earth frame
-static void
-get_roll_rate_stabilized_ef(int32_t stick_angle)
+/**
+ * get_roll_rate_stabilized_ef
+ *
+ * @access static
+ * @param int32_t stick_angle
+ * @return void
+ *
+ * @brief Roll with rate input and stabilized in the earth frame
+ */
+static void get_roll_rate_stabilized_ef(int32_t stick_angle)
 {
     int32_t angle_error = 0;
 
@@ -371,9 +469,16 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     set_pitch_rate_target(g.pi_stabilize_pitch.get_p(angle_error) + target_rate, EARTH_FRAME);
 }
 
-// Yaw with rate input and stabilized in the earth frame
-static void
-get_yaw_rate_stabilized_ef(int32_t stick_angle)
+/**
+ * get_yaw_rate_stabilized_ef
+ *
+ * @access static
+ * @param int32_t stick_angle
+ * @return void
+ *
+ * @brief Yaw with rate input and stabilized in the earth frame
+ */
+static void get_yaw_rate_stabilized_ef(int32_t stick_angle)
 {
 
     int32_t angle_error = 0;
@@ -409,7 +514,15 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
 	set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
 }
 
-// set_roll_rate_target - to be called by upper controllers to set roll rate targets in the earth frame
+/**
+ * set_roll_rate_target
+ *
+ * @param int32_t desired_rate in centidegrees/sec
+ * @param uint8_t earth_or_body_frame BODY_FRAME or EARTH_FRAME
+ * @return void
+ *
+ * @brief to be called by upper controllers to set roll rate targets in the earth frame
+ */
 void set_roll_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
     rate_targets_frame = earth_or_body_frame;
     if( earth_or_body_frame == BODY_FRAME ) {
@@ -419,7 +532,15 @@ void set_roll_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
     }
 }
 
-// set_pitch_rate_target - to be called by upper controllers to set pitch rate targets in the earth frame
+/**
+ * set_pitch_rate_target
+ *
+ * @param int32_t desired_rate in centidegrees/sec
+ * @param uint8_t earth_or_body_frame BODY_FRAME or EARTH_FRAME
+ * @return void
+ *
+ * @brief to be called by upper controllers to set roll rate targets in the earth frame
+ */
 void set_pitch_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
     rate_targets_frame = earth_or_body_frame;
     if( earth_or_body_frame == BODY_FRAME ) {
@@ -429,7 +550,15 @@ void set_pitch_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) 
     }
 }
 
-// set_yaw_rate_target - to be called by upper controllers to set yaw rate targets in the earth frame
+/**
+ * set_yaw_rate_target
+ *
+ * @param int32_t desired_rate in centidegrees/sec
+ * @param uint8_t earth_or_body_frame BODY_FRAME or EARTH_FRAME
+ * @return void
+ *
+ * @brief to be called by upper controllers to set yaw rate targets in the earth frame
+ */
 void set_yaw_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
     rate_targets_frame = earth_or_body_frame;
     if( earth_or_body_frame == BODY_FRAME ) {
@@ -439,9 +568,12 @@ void set_yaw_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
     }
 }
 
-// update_rate_contoller_targets - converts earth frame rates to body frame rates for rate controllers
-void
-update_rate_contoller_targets()
+/**
+ * update_rate_contoller_targets
+ *
+ * @brief converts earth frame rates to body frame rates for rate controllers
+ */
+void update_rate_contoller_targets()
 {
     if( rate_targets_frame == EARTH_FRAME ) {
         // convert earth frame rates to body frame rates
@@ -456,10 +588,14 @@ update_rate_contoller_targets()
     }
 }
 
-// run roll, pitch and yaw rate controllers and send output to motors
-// targets for these controllers comes from stabilize controllers
-void
-run_rate_controllers()
+/**
+ * run_rate_controllers
+ *
+ * @return void
+ *
+ * @brief run roll, pitch and yaw rate controllers and send output to motors.  
+ */
+void run_rate_controllers()
 {
 #if FRAME_CONFIG == HELI_FRAME          // helicopters only use rate controllers for yaw and only when not using an external gyro
     if(!motors.ext_gyro_enabled) {
@@ -480,7 +616,13 @@ run_rate_controllers()
 }
 
 #if FRAME_CONFIG == HELI_FRAME
-// init_rate_controllers - set-up filters for rate controller inputs
+/**
+ * init_rate_controllers
+ *
+ * @return void
+ *
+ * @brief set-up filters for rate controller inputs
+ */
 void init_rate_controllers()
 {
    // initalise low pass filters on rate controller inputs
@@ -489,6 +631,16 @@ void init_rate_controllers()
    // rate_pitch_filter.set_cutoff_frequency(0.01f, 0.1f);
 }
 
+/**
+ * heli_integrated_swash_controller
+ *
+ * @access static
+ * @param int32_t target_roll_rate  in centidegrees/sec
+ * @param int32_t target_pitch_rate in centidegrees/sec
+ * @return void
+ *
+ * @brief Helicopter swash plate controller
+ */
 static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t target_pitch_rate)
 {
     int32_t         roll_p, roll_i, roll_d, roll_ff;            // used to capture pid values for logging
@@ -564,8 +716,16 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
 	g.rc_2.servo_out = pitch_output;
 }
 
-static int16_t
-get_heli_rate_yaw(int32_t target_rate)
+/**
+ * get_heli_rate_yaw
+ *
+ * @access static
+ * @param int32_t target_rate in centidegrees/sec
+ * @return int16_t PID output
+ *
+ * @brief Heli Yaw Rate PID
+ */
+static int16_t get_heli_rate_yaw(int32_t target_rate)
 {
     int32_t         p,i,d,ff;               // used to capture pid values for logging
 	int32_t         current_rate;           // this iteration's rate
@@ -617,8 +777,16 @@ get_heli_rate_yaw(int32_t target_rate)
 #endif // HELI_FRAME
 
 #if FRAME_CONFIG != HELI_FRAME
-static int16_t
-get_rate_roll(int32_t target_rate)
+/**
+ * get_rate_roll
+ *
+ * @access static
+ * @param int32_t target_rate in centidegrees/sec
+ * @return int16_t PID output
+ *
+ * @brief Roll Rate PID
+ */
+static int16_t get_rate_roll(int32_t target_rate)
 {
     int32_t p,i,d;                  // used to capture pid values for logging
     int32_t current_rate;           // this iteration's rate
@@ -661,8 +829,16 @@ get_rate_roll(int32_t target_rate)
     return output;
 }
 
-static int16_t
-get_rate_pitch(int32_t target_rate)
+/**
+ * get_rate_pitch
+ *
+ * @access static
+ * @param int32_t target_rate in centidegrees/sec
+ * @return int16_t PID Output
+ *
+ * @brief Pitch Rate PID
+ */
+static int16_t get_rate_pitch(int32_t target_rate)
 {
     int32_t p,i,d;                                                                      // used to capture pid values for logging
     int32_t current_rate;                                                       // this iteration's rate
@@ -703,8 +879,16 @@ get_rate_pitch(int32_t target_rate)
     return output;
 }
 
-static int16_t
-get_rate_yaw(int32_t target_rate)
+/**
+ * get_rate_yaw
+ *
+ * @access static
+ * @param int32_t target_rate in centidegrees/sec
+ * @return int16_t PID output
+ *
+ * @brief Yaw Rate PID
+ */
+static int16_t get_rate_yaw(int32_t target_rate)
 {
     int32_t p,i,d;                                                                      // used to capture pid values for logging
     int32_t rate_error;
@@ -746,9 +930,16 @@ get_rate_yaw(int32_t target_rate)
 }
 #endif // !HELI_FRAME
 
-// calculate modified roll/pitch depending upon optical flow calculated position
-static int32_t
-get_of_roll(int32_t input_roll)
+/**
+ * get_of_roll
+ *
+ * @access static
+ * @param int32_t input_roll 
+ * @return int32_t 
+ *
+ * @brief calculate modified roll/pitch depending upon optical flow calculated position
+ */
+static int32_t get_of_roll(int32_t input_roll)
 {
 #if OPTFLOW == ENABLED
     static float tot_x_cm = 0;      // total distance from target
@@ -800,8 +991,16 @@ get_of_roll(int32_t input_roll)
 #endif
 }
 
-static int32_t
-get_of_pitch(int32_t input_pitch)
+/**
+ * get_of_pitch
+ *
+ * @access static
+ * @param int32_t input_pitch 
+ * @return int32_t 
+ *
+ * @brief Optical flow pitch controller
+ */
+static int32_t get_of_pitch(int32_t input_pitch)
 {
 #if OPTFLOW == ENABLED
     static float tot_y_cm = 0;  // total distance from target
@@ -856,8 +1055,11 @@ get_of_pitch(int32_t input_pitch)
  * yaw controllers
  *************************************************************/
 
- // get_look_at_yaw - updates bearing to look at center of circle or do a panorama
-// should be called at 100hz
+/**
+ * get_circle_yaw
+ *
+ * @brief updates bearing to look at center of circle or do a panorama. Called at 100Hz.
+ */
 static void get_circle_yaw()
 {
     static uint8_t look_at_yaw_counter = 0;     // used to reduce update rate to 10hz
@@ -880,8 +1082,11 @@ static void get_circle_yaw()
     get_stabilize_yaw(nav_yaw);
 }
 
-// get_look_at_yaw - updates bearing to location held in look_at_yaw_WP and calls stabilize yaw controller
-// should be called at 100hz
+/**
+ * get_look_at_yaw
+ *
+ * @brief updates bearing to location held in look_at_yaw_WP and calls stabilize yaw controller. called at 100hz.
+ */
 static void get_look_at_yaw()
 {
     static uint8_t look_at_yaw_counter = 0;     // used to reduce update rate to 10hz
@@ -897,6 +1102,15 @@ static void get_look_at_yaw()
     get_stabilize_yaw(nav_yaw);
 }
 
+/**
+ * get_look_ahead_yaw
+ *
+ * @access static
+ * @param int16_t pilot_yaw in  in centidegrees
+ * @return void
+ *
+ * @brief FIXME: what does this do
+ */
 static void get_look_ahead_yaw(int16_t pilot_yaw)
 {
     // Commanded Yaw to automatically look ahead.
@@ -914,7 +1128,15 @@ static void get_look_ahead_yaw(int16_t pilot_yaw)
  *  throttle control
  ****************************************************************/
 
-// update_throttle_cruise - update throttle cruise if necessary
+/**
+ * update_throttle_cruise
+ *
+ * @access static
+ * @param int16_t throttle Current throttle
+ * @return void
+ *
+ * @brief update Tries to guess throttle required for level hover from pilot.  Uses an averaging filter when in level hover. 
+ */
 static void update_throttle_cruise(int16_t throttle)
 {
     // ensure throttle_avg has been initialised
@@ -929,9 +1151,15 @@ static void update_throttle_cruise(int16_t throttle)
 }
 
 #if FRAME_CONFIG == HELI_FRAME
-// get_angle_boost - returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1000
-// for traditional helicopters
+/**
+ * get_angle_boost
+ *
+ * @access static
+ * @param int16_t throttle should be 0 ~ 1000
+ * @return int16_t throttle including compensation for roll/pitch angle
+ *
+ * @brief HELI: returns a throttle including compensation for roll/pitch angle 
+ */
 static int16_t get_angle_boost(int16_t throttle)
 {
     float angle_boost_factor = cos_pitch_x * cos_roll_x;
@@ -944,8 +1172,15 @@ static int16_t get_angle_boost(int16_t throttle)
     return throttle + angle_boost;
 }
 #else   // all multicopters
-// get_angle_boost - returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1000
+/**
+ * get_angle_boost
+ *
+ * @access static
+ * @param int16_t throttle throttle value should be 0 ~ 1000
+ * @return int16_t throttle including compensation for roll/pitch angle
+ *
+ * @brief MULTICOPTERS: returns a throttle including compensation for roll/pitch angle
+ */
 static int16_t get_angle_boost(int16_t throttle)
 {
     float temp = cos_pitch_x * cos_roll_x;
@@ -966,8 +1201,16 @@ static int16_t get_angle_boost(int16_t throttle)
 }
 #endif // FRAME_CONFIG == HELI_FRAME
 
- // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
- // provide 0 to cut motors
+/**
+ * set_throttle_out
+ *
+ * @param int16_t throttle_out desired throttle
+ * @param bool apply_angle_boost true/false to apply angle boost
+ * @return void
+ *
+ * @brief to be called by upper throttle controllers when they wish to provide throttle 
+ * output directly to motors provide 0 to cut motors
+ */
 void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
 {
     if( apply_angle_boost ) {
@@ -982,24 +1225,42 @@ void set_throttle_out( int16_t throttle_out, bool apply_angle_boost )
     compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
 }
 
-// set_throttle_accel_target - to be called by upper throttle controllers to set desired vertical acceleration in earth frame
+/**
+ * set_throttle_accel_target
+ *
+ * @param int16_t desired_acceleration (FIXME: units? suspect cm/s/s)
+ * @return void
+ *
+ * @brief To be called by upper throttle controllers to set desired vertical acceleration in earth frame
+ */
 void set_throttle_accel_target( int16_t desired_acceleration )
 {
     throttle_accel_target_ef = desired_acceleration;
     throttle_accel_controller_active = true;
 }
 
-// disable_throttle_accel - disables the accel based throttle controller
-// it will be re-enasbled on the next set_throttle_accel_target
-// required when we wish to set motors to zero when pilot inputs zero throttle
+/**
+ * throttle_accel_deactivate
+ *
+ * @return void
+ *
+ * @brief Disables the accel based throttle controller. It will be re-enasbled on the next set_throttle_accel_target. 
+ * Required when we wish to set motors to zero when pilot inputs zero throttle.
+ */
 void throttle_accel_deactivate()
 {
     throttle_accel_controller_active = false;
 }
 
-// set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
-static void
-set_throttle_takeoff()
+/**
+ * set_throttle_takeoff
+ *
+ * @access static
+ * @return void
+ *
+ * @brief allows parents to tell throttle controller we are taking off so I terms can be cleared
+ */
+static void set_throttle_takeoff()
 {
     // set alt target
     if (controller_desired_alt < current_loc.alt) {
@@ -1011,10 +1272,17 @@ set_throttle_takeoff()
     }
 }
 
-// get_throttle_accel - accelerometer based throttle controller
-// returns an actual throttle output (0 ~ 1000) to be sent to the motors
-static int16_t
-get_throttle_accel(int16_t z_target_accel)
+/**
+ * get_throttle_accel
+ *
+ * @access static
+ * @param int16_t z_target_accel (FIXME: units? cm/s/s?)
+ * @return int16_t actual throttle output (0 ~ 1000) to be sent to the motors
+ *
+ * @brief accelerometer based throttle controller - tries to achieve desired acceleration by modifying the throttle.  This is the last part of
+ * automatic throttle controller for auto modes.  Usually fed from desired rate controller, which is fed from altitude controller.
+ */
+static int16_t get_throttle_accel(int16_t z_target_accel)
 {
     static float z_accel_error = 0;     // The acceleration error in cm.
     static uint32_t last_call_ms = 0;   // the last time this controller was called
@@ -1067,10 +1335,17 @@ get_throttle_accel(int16_t z_target_accel)
     return output;
 }
 
-// get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
-// used only for manual throttle modes
-// returns throttle output 0 to 1000
 #define THROTTLE_IN_MIDDLE 500          // the throttle mid point
+/**
+ * get_pilot_desired_throttle
+ *
+ * @access static
+ * @param int16_t throttle_control throttle in - 0 to 1000
+ * @return int16_t throttle output 0 to 1000
+ *
+ * @brief transform pilot's throttle input to make cruise throttle mid stick
+ * used only for manual throttle modes
+ */
 static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 {
     int16_t throttle_out;
@@ -1099,12 +1374,20 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
     return throttle_out;
 }
 
-// get_pilot_desired_climb_rate - transform pilot's throttle input to
-// climb rate in cm/s.  we use radio_in instead of control_in to get the full range
-// without any deadzone at the bottom
 #define THROTTLE_IN_DEADBAND 100        // the throttle input channel's deadband in PWM
 #define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+THROTTLE_IN_DEADBAND)  // top of the deadband
 #define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-THROTTLE_IN_DEADBAND)  // bottom of the deadband
+/**
+ * get_pilot_desired_climb_rate
+ *
+ * @access static
+ * @param int16_t throttle_control Throttle in
+ * @return int16_t Climb rate in cm/s
+ *
+ * @brief transform pilot's throttle input to climb rate in cm/s. Used in loiter and 
+ * alt-hold, throttle stick controls climb rate with deadband in centre. We use radio_in instead 
+ * of control_in to get the full range without any deadzone at the bottom.
+ */
 static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 {
     int16_t desired_rate = 0;
@@ -1135,9 +1418,17 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     return desired_rate;
 }
 
-// get_initial_alt_hold - get new target altitude based on current altitude and climb rate
-static int32_t
-get_initial_alt_hold( int32_t alt_cm, int16_t climb_rate_cms)
+/**
+ * get_initial_alt_hold
+ *
+ * @access static
+ * @param int32_t alt_cm Current altitude in cm
+ * @param int16_t climb_rate_cms current climb rate in cm/s
+ * @return int32_t Target altitude in cm
+ *
+ * @brief get new target altitude based on current altitude and climb rate
+ */
+static int32_t get_initial_alt_hold( int32_t alt_cm, int16_t climb_rate_cms)
 {
     int32_t target_alt;
     int32_t linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
@@ -1158,10 +1449,16 @@ get_initial_alt_hold( int32_t alt_cm, int16_t climb_rate_cms)
     return constrain_int32(target_alt, alt_cm - ALT_HOLD_INIT_MAX_OVERSHOOT, alt_cm + ALT_HOLD_INIT_MAX_OVERSHOOT);
 }
 
-// get_throttle_rate - calculates desired accel required to achieve desired z_target_speed
-// sets accel based throttle controller target
-static void
-get_throttle_rate(float z_target_speed)
+/**
+ * get_throttle_rate
+ *
+ * @access static
+ * @param float z_target_speed Target climb rate in cm/s
+ * @return void
+ *
+ * @brief Calculates desired accel required to achieve desired z_target_speed. Sets accel based throttle controller target.
+ */
+static void get_throttle_rate(float z_target_speed)
 {
     static uint32_t last_call_ms = 0;
     static float z_rate_error = 0;   // The velocity error in cm.
@@ -1215,11 +1512,18 @@ get_throttle_rate(float z_target_speed)
     }
 }
 
-// get_throttle_althold - hold at the desired altitude in cm
-// updates accel based throttle controller targets
-// Note: max_climb_rate is an optional parameter to allow reuse of this function by landing controller
-static void
-get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
+/**
+ * get_throttle_althold
+ *
+ * @access static
+ * @param int32_t target_alt cm
+ * @param int16_t min_climb_rate cm/s
+ * @param int16_t max_climb_rate cm/s.  
+ * @return void
+ *
+ * @brief High-level althold controller.  Takes target altitude, and converts to desired rate, and then passes this to acceleration controller above
+ */
+static void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
     int32_t alt_error;
     float desired_rate;
@@ -1253,10 +1557,19 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
     // TO-DO: enabled PID logging for this controller
 }
 
-// get_throttle_althold_with_slew - altitude controller with slew to avoid step changes in altitude target
-// calls normal althold controller which updates accel based throttle controller targets
-static void
-get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
+/**
+ * get_throttle_althold_with_slew
+ *
+ * @access static
+ * @param int32_t target_alt
+ * @param int16_t min_climb_rate
+ * @param int16_t max_climb_rate
+ * @return void
+ *
+ * @brief Altitude controller with slew to avoid step changes in altitude target. Calls normal althold 
+ * controller which updates accel based throttle controller targets
+ */
+static void get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
 {
     float alt_change = target_alt-controller_desired_alt;
     // adjust desired alt if motors have not hit their limits
@@ -1270,11 +1583,16 @@ get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16
     get_throttle_althold(controller_desired_alt, min_climb_rate-250, max_climb_rate+250);   // 250 is added to give head room to alt hold controller
 }
 
-// get_throttle_rate_stabilized - rate controller with additional 'stabilizer'
-// 'stabilizer' ensure desired rate is being met
-// calls normal throttle rate controller which updates accel based throttle controller targets
-static void
-get_throttle_rate_stabilized(int16_t target_rate)
+/**
+ * get_throttle_rate_stabilized
+ *
+ * @access static
+ * @param int16_t target_rate cm/s
+ * @return void
+ *
+ * @brief Rate controller with additional 'stabilizer' which ensure desired rate is being met
+ */
+static void get_throttle_rate_stabilized(int16_t target_rate)
 {
     // adjust desired alt if motors have not hit their limits
     if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
@@ -1301,11 +1619,15 @@ get_throttle_rate_stabilized(int16_t target_rate)
     get_throttle_althold(controller_desired_alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
 }
 
-// get_throttle_land - high level landing logic
-// sends the desired acceleration in the accel based throttle controller
-// called at 50hz
-static void
-get_throttle_land()
+/**
+ * get_throttle_land
+ *
+ * @access static
+ * @return void
+ *
+ * @brief High level landing logic called at 50Hz. Sets the desired acceleration in the accel based throttle controller.
+ */
+static void get_throttle_land()
 {
     // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
     if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
@@ -1320,15 +1642,28 @@ get_throttle_land()
     }
 }
 
-// reset_land_detector - initialises land detector
+/**
+ * reset_land_detector
+ *
+ * @access static
+ * @return void
+ *
+ * @brief initialises land detector
+ */
 static void reset_land_detector()
 {
     set_land_complete(false);
     land_detector = 0;
 }
 
-// update_land_detector - checks if we have landed and updates the ap.land_complete flag
-// returns true if we have landed
+/**
+ * update_land_detector
+ *
+ * @access static
+ * @return bool true if landed
+ *
+ * @brief Checks if we have landed and updates the ap.land_complete flag
+ */
 static bool update_land_detector()
 {
     // detect whether we have landed by watching for low climb rate and minimum throttle
@@ -1354,10 +1689,16 @@ static bool update_land_detector()
     return ap.land_complete;
 }
 
-// get_throttle_surface_tracking - hold copter at the desired distance above the ground
-// updates accel based throttle controller targets
-static void
-get_throttle_surface_tracking(int16_t target_rate)
+/**
+ * get_throttle_surface_tracking
+ *
+ * @access static
+ * @param int16_t target_rate cm/s
+ * @return void
+ *
+ * @brief (when using sonar) Hold copter at the desired distance above the ground. updates accel based throttle controller targets
+ */
+static void get_throttle_surface_tracking(int16_t target_rate)
 {
     static float target_sonar_alt = 0;   // The desired altitude in cm above the ground
     static uint32_t last_call_ms = 0;
@@ -1391,8 +1732,10 @@ get_throttle_surface_tracking(int16_t target_rate)
     get_throttle_althold_with_slew(controller_desired_alt, target_rate-sonar_induced_slew_rate, target_rate+sonar_induced_slew_rate);   // VELZ_MAX limits how quickly we react
 }
 
-/*
- *  reset all I integrators
+/**
+ * reset_I_all
+ *
+ * @brief reset all I integrators
  */
 static void reset_I_all(void)
 {
@@ -1405,6 +1748,11 @@ static void reset_I_all(void)
     g.pi_stabilize_yaw.reset_I();
 }
 
+/**
+ * reset_rate_I
+ *
+ * @brief reset rate I integrators
+ */
 static void reset_rate_I()
 {
     g.pid_rate_roll.reset_I();
@@ -1412,6 +1760,11 @@ static void reset_rate_I()
     g.pid_rate_yaw.reset_I();
 }
 
+/**
+ * reset_optflow_I
+ *
+ * @brief reset optflow integrators
+ */
 static void reset_optflow_I(void)
 {
     g.pid_optflow_roll.reset_I();
@@ -1420,6 +1773,11 @@ static void reset_optflow_I(void)
     of_pitch = 0;
 }
 
+/**
+ * reset_throttle_I
+ *
+ * @brief reset throttle I
+ */
 static void reset_throttle_I(void)
 {
     // For Altitude Hold
@@ -1428,12 +1786,26 @@ static void reset_throttle_I(void)
     g.pid_throttle_accel.reset_I();
 }
 
+/**
+ * set_accel_throttle_I_from_pilot_throttle
+ *
+ * @access static
+ * @param int16_t pilot_throttle FIXME
+ * @return void
+ *
+ * @brief FIXME: what does this do?
+ */
 static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
     g.pid_throttle_accel.set_integrator(pilot_throttle-g.throttle_cruise);
 }
 
+/**
+ * reset_stability_I
+ *
+ * @brief reset_stability_I: FIXME: purpose?
+ */
 static void reset_stability_I(void)
 {
     // Used to balance a quad

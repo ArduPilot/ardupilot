@@ -1,6 +1,18 @@
+/**
+ * @file control_modes.pde
+ *
+ * @brief Flight mode switch and ch7/ch8 switch logic
+ */
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define CONTROL_SWITCH_COUNTER  20  // 20 iterations at 100hz (i.e. 2/10th of a second) at a new switch position will cause flight mode change
+/**
+ * read_control_switch
+ *
+ * @brief Reads flight mode control switch at 100Hz.  A change persisting for >20ms will execute - this prevents signal noise from effecting a 
+ * change.  If radio failsafe is on, then this does nothing.
+ */
 static void read_control_switch()
 {
     static uint8_t switch_counter = 0;
@@ -33,6 +45,13 @@ static void read_control_switch()
     }
 }
 
+/**
+ * readSwitch
+ *
+ * @return uint8_t Flight mode number
+ *
+ * @brief Flight mode switch PWMs to flight mode number
+ */
 static uint8_t readSwitch(void){
     int16_t pulsewidth = g.rc_5.radio_in;   // default for Arducopter
 
@@ -44,20 +63,36 @@ static uint8_t readSwitch(void){
     return 5;                               // Hardware Manual
 }
 
+/**
+ * reset_control_switch
+ *
+ * @brief Reset flight mode control switch change detector and re-read switch
+ */
 static void reset_control_switch()
 {
     oldSwitchPosition = -1;
     read_control_switch();
 }
 
-// read_3pos_switch 
+/**
+ * read_3pos_switch
+ *
+ * @param int16_t radio_in Radio PWM
+ * @return uint8_t Switch position
+ *
+ * @brief 3 position switch read
+ */
 static uint8_t read_3pos_switch(int16_t radio_in){
     if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
     return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
 }
 
-// read_aux_switches - checks aux switch positions and invokes configured actions
+/**
+ * read_aux_switches
+ *
+ * @brief Read aux switchs (e.g. ch7/8) and run desired action
+ */
 static void read_aux_switches()
 {
     uint8_t switch_position;
@@ -83,7 +118,11 @@ static void read_aux_switches()
     }
 }
 
-// init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
+/**
+ * init_aux_switches
+ *
+ * @brief invoke configured actions at start-up for aux function where it is safe to do so
+ */
 static void init_aux_switches()
 {
     // set the CH7 flag
@@ -116,7 +155,16 @@ static void init_aux_switches()
     }
 }
 
-// do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
+/**
+ * do_aux_switch_function
+ *
+ * @access static
+ * @param int8_t ch_function Configured function for switch
+ * @param uint8_t ch_flag Switch position
+ * @return void
+ *
+ * @brief implement the function invoked by the ch7 or ch8 switch
+ */
 static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
     int8_t tmp_function = ch_function;
@@ -282,7 +330,14 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
     }
 }
 
-// save_trim - adds roll and pitch trims from the radio to ahrs
+/**
+ * save_trim
+ *
+ * @access static
+ * @return void
+ *
+ * @brief save_trim - adds roll and pitch trims from the radio to ahrs
+ */
 static void save_trim()
 {
     // save roll and pitch trim
@@ -291,8 +346,15 @@ static void save_trim()
     ahrs.add_trim(roll_trim, pitch_trim);
 }
 
-// auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
-// meant to be called continuously while the pilot attempts to keep the copter level
+/**
+ * auto_trim
+ *
+ * @access static
+ * @return void
+ *
+ * @brief auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
+ * meant to be called continuously while the pilot attempts to keep the copter level
+ */
 static void auto_trim()
 {
     if(auto_trim_counter > 0) {

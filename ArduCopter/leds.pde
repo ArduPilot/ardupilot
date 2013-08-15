@@ -1,7 +1,19 @@
+/**
+ * @file leds.pde
+ *
+ * @brief Board status LEDs and External LED logic
+ */
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// update_board_leds - updates leds on board
-// should be called at 10hz
+/**
+ * update_board_leds
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Status leds on APM board. Called at 10Hz - sets the lights to their respective state depending on copter state
+ */
 static void update_board_leds()
 {
     // we need to slow down the calls to the GPS and dancing lights to 3.33hz
@@ -26,6 +38,11 @@ static void update_board_leds()
     }
 }
 
+/**
+ * update_GPS_light
+ *
+ * @brief Sets GPS light on APM board
+ */
 static void update_GPS_light(void)
 {
     // GPS LED on if we have a fix or Blink GPS LED if we are receiving data
@@ -59,6 +76,11 @@ static void update_GPS_light(void)
     }
 }
 
+/**
+ * update_arming_light
+ *
+ * @brief Sets armed led on APM board
+ */
 static void update_arming_light(void)
 {
     // counter to control state
@@ -122,6 +144,14 @@ static void update_arming_light(void)
     }
 }
 
+/**
+ * dancing_light
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Dancing pattern on APM board leds - used principally for ESC calibration and save trim.
+ */
 static void dancing_light()
 {
     static uint8_t step;
@@ -148,6 +178,11 @@ static void dancing_light()
     }
 }
 
+/**
+ * clear_leds
+ *
+ * @brief APM board LEDS off
+ */
 static void clear_leds()
 {
     digitalWrite(A_LED_PIN, LED_OFF);
@@ -185,6 +220,12 @@ static void clear_leds()
 #define COPTER_LEDS_BITMASK_GPS_NAV_BLINK   0x40        // bit #6
 
 #if COPTER_LEDS == ENABLED
+/**
+ * copter_leds_init
+ *
+ *
+ * @brief Initialise external LEDs
+ */
 static void copter_leds_init(void)
 {
     pinMode(COPTER_LED_1, OUTPUT);              //Motor LED
@@ -201,6 +242,11 @@ static void copter_leds_init(void)
     }
 }
 
+/**
+ * update_copter_leds
+ *
+ * @brief Called repeatedly to update external LEDs.  
+ */
 static void update_copter_leds(void)
 {
     if (g.copter_leds_mode == 0) {
@@ -276,6 +322,11 @@ static void update_copter_leds(void)
     }
 }
 
+/**
+ * copter_leds_reset
+ *
+ * @brief External LEDs off
+ */
 static void copter_leds_reset(void) {
     digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
     digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
@@ -287,6 +338,11 @@ static void copter_leds_reset(void) {
     digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
 }
 
+/**
+ * copter_leds_on
+ *
+ * @brief All external LEDs on
+ */
 static void copter_leds_on(void) {
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX)) {
         digitalWrite(COPTER_LED_1, COPTER_LED_ON);
@@ -308,6 +364,11 @@ static void copter_leds_on(void) {
     digitalWrite(COPTER_LED_8, COPTER_LED_ON);
 }
 
+/**
+ * copter_leds_off
+ *
+ * @brief All external LEDs off
+ */
 static void copter_leds_off(void) {
     if (!(g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX)) {
         digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
@@ -329,6 +390,11 @@ static void copter_leds_off(void) {
     digitalWrite(COPTER_LED_8, COPTER_LED_OFF);
 }
 
+/**
+ * copter_leds_slow_blink
+ *
+ * @brief Slow blinks external LEDs
+ */
 static void copter_leds_slow_blink(void) {
     copter_leds_motor_blink++;                                                  // this increments once every 1/10 second because it is in the 10hz loop
 
@@ -346,6 +412,12 @@ static void copter_leds_slow_blink(void) {
     }
 }
 
+
+/**
+ * copter_leds_fast_blink
+ *
+ * @brief Fast blinks external leds
+ */
 static void copter_leds_fast_blink(void) {    
     copter_leds_motor_blink++;                                                  // this increments once every 1/10 second because it is in the 10hz loop
     if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ) {         // when the counter reaches 3 (1/5 sec), then toggle the leds
@@ -357,6 +429,11 @@ static void copter_leds_fast_blink(void) {
     }
 }
 
+/**
+ * copter_leds_oscillate
+ *
+ * @brief Oscillates External LEDs.
+ */
 static void copter_leds_oscillate(void) {
     copter_leds_motor_blink++;                                                  // this increments once every 1/10 second because it is in the 10hz loop
     if ( 0 < copter_leds_motor_blink && copter_leds_motor_blink < 3 ) {         // when the counter reaches 3 (1/5 sec), then toggle the leds
@@ -402,14 +479,29 @@ static void copter_leds_oscillate(void) {
     }
 }
 
+/**
+ * copter_leds_GPS_on
+ *
+ * @brief External GPS led on
+ */
 static void copter_leds_GPS_on(void) {
     digitalWrite(COPTER_LED_3, COPTER_LED_ON);
 }
 
+/**
+ * copter_leds_GPS_off
+ *
+ * @brief External GPS led off
+ */
 static void copter_leds_GPS_off(void) {
     digitalWrite(COPTER_LED_3, COPTER_LED_OFF);
 }
 
+/**
+ * copter_leds_GPS_slow_blink
+ *
+ * @brief Slow blink external GPS led
+ */
 static void copter_leds_GPS_slow_blink(void) {
     copter_leds_GPS_blink++;                                                    // this increments once every 1/10 second because it is in the 10hz loop
     if ( 0 < copter_leds_GPS_blink && copter_leds_GPS_blink < 6 ) {             // when the counter reaches 5 (1/2 sec), then toggle the leds
@@ -423,6 +515,11 @@ static void copter_leds_GPS_slow_blink(void) {
     else copter_leds_GPS_blink = 0;                                             // start blink cycle again
 }
 
+/**
+ * copter_leds_GPS_fast_blink
+ *
+ * @brief Fast blink external GPS led
+ */
 static void copter_leds_GPS_fast_blink(void) {
     copter_leds_GPS_blink++;                                                    // this increments once every 1/10 second because it is in the 10hz loop
     if ( 0 < copter_leds_GPS_blink && copter_leds_GPS_blink < 3 ) {             // when the counter reaches 3 (1/5 sec), then toggle the leds
@@ -441,18 +538,33 @@ static void copter_leds_aux_on(void){
     digitalWrite(COPTER_LED_1, COPTER_LED_ON);
 }
 
+/**
+ * piezo_on
+ *
+ * @brief External optional buzzer on
+ */
 void piezo_on(){
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER) {
         digitalWrite(PIEZO_PIN,HIGH);
     }
 }
 
+/**
+ * piezo_off
+ *
+ * @brief External optional buzzer off
+ */
 void piezo_off(){
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER) {
         digitalWrite(PIEZO_PIN,LOW);
     }
 }
 
+/**
+ * piezo_beep
+ *
+ * @brief Beep external optional buzzer
+ */
 void piezo_beep(){                                                              // Note! This command should not be used in time sensitive loops
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER) {
         piezo_on();
@@ -461,6 +573,11 @@ void piezo_beep(){                                                              
     }
 }
 
+/**
+ * piezo_beep_twice
+ *
+ * @brief Beep external optional buzzer twice
+ */
 void piezo_beep_twice(){                                                        // Note! This command should not be used in time sensitive loops
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BEEPER) {
         piezo_beep();

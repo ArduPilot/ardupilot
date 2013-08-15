@@ -1,9 +1,22 @@
+/**
+ * @file sensors.pde
+ *
+ * @author gho
+ * @date Thu 15 Aug 2013 16:55:51 
+ * @brief Various sensor initialisation/reading
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // Sensors are not available in HIL_MODE_ATTITUDE
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
  #if CONFIG_SONAR == ENABLED
+/**
+ * init_sonar
+ *
+ * @brief Init sonar
+ */
 static void init_sonar(void)
 {
   #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
@@ -14,6 +27,11 @@ static void init_sonar(void)
 }
  #endif
 
+/**
+ * init_barometer
+ *
+ * @brief Calibrate barometer
+ */
 static void init_barometer(void)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));
@@ -21,14 +39,30 @@ static void init_barometer(void)
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
-// return barometric altitude in centimeters
+/**
+ * read_barometer
+ *
+ * @access static
+ * @param voi void
+ * @return int32_t altitude in cm
+ *
+ * @brief return barometric altitude in centimeters
+ */
 static int32_t read_barometer(void)
 {
     barometer.read();
     return barometer.get_altitude() * 100.0f;
 }
 
-// return sonar altitude in centimeters
+/**
+ * read_sonar
+ *
+ * @access static
+ * @param voi void
+ * @return int16_t sonar altitude in cm
+ *
+ * @brief return sonar altitude in centimeters
+ */
 static int16_t read_sonar(void)
 {
 #if CONFIG_SONAR == ENABLED
@@ -63,7 +97,11 @@ static int16_t read_sonar(void)
 
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
-
+/**
+ * init_compass
+ *
+ * @brief Initialise compass and comfigure AHRS to use it.
+ */
 static void init_compass()
 {
     if (!compass.init() || !compass.read()) {
@@ -78,6 +116,11 @@ static void init_compass()
 #endif
 }
 
+/**
+ * init_optflow
+ *
+ * @brief Initialise optical flow sensor if fitted
+ */
 static void init_optflow()
 {
 #if OPTFLOW == ENABLED
@@ -100,9 +143,12 @@ static void init_optflow()
 #endif      // OPTFLOW == ENABLED
 }
 
-// read_battery - check battery voltage and current and invoke failsafe if necessary
-// called at 10hz
 #define BATTERY_FS_COUNTER  100     // 100 iterations at 10hz is 10 seconds
+/**
+ * read_battery
+ *
+ * @brief Measure battery voltage and trigger failsafe if necessary. Called at 10Hz.
+ */
 static void read_battery(void)
 {
     static uint8_t low_battery_counter = 0;
@@ -143,8 +189,14 @@ static void read_battery(void)
     }
 }
 
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
+/**
+ * read_receiver_rssi
+ *
+ * @param voi void
+ * @return void
+ *
+ * @brief Read the receiver RSSI (signal strength) as an 8 bit number for MAVLink
+ */
 void read_receiver_rssi(void)
 {
     rssi_analog_source->set_pin(g.rssi_pin);

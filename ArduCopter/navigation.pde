@@ -1,7 +1,17 @@
+/**
+ * @file navigation.pde
+ *
+ * @brief Navigation utility functions plus high level controllers
+ */
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // update_navigation - invokes navigation routines
 // called at 10hz
+/**
+ * update_navigation
+ *
+ * @brief invokes navigation routines - called at 10Hz
+ */
 static void update_navigation()
 {
     static uint32_t nav_last_update = 0;        // the system time of the last time nav was run update
@@ -26,9 +36,17 @@ static void update_navigation()
     }
 }
 
-// run_nav_updates - top level call for the autopilot
-// ensures calculations such as "distance to waypoint" are calculated before autopilot makes decisions
-// To-Do - rename and move this function to make it's purpose more clear
+/**
+ * run_nav_updates
+ *
+ * @access static
+ * @param voi void
+ * @return void
+ *
+ * @brief top level call for the autopilot that ensures calculations such as "distance to waypoint" are 
+ * calculated before autopilot makes decisions.
+ * TODO: rename and move this function to make it's purpose more clear
+ */
 static void run_nav_updates(void)
 {
     // fetch position from inertial navigation
@@ -41,7 +59,11 @@ static void run_nav_updates(void)
     run_autopilot();
 }
 
-// calc_position - get lat and lon positions from inertial nav library
+/**
+ * calc_position
+ *
+ * @brief get lat and lon positions from inertial nav library
+ */
 static void calc_position(){
     if( inertial_nav.position_ok() ) {
         // pull position from interial nav library
@@ -51,6 +73,11 @@ static void calc_position(){
 }
 
 // calc_distance_and_bearing - calculate distance and direction to waypoints for reporting and autopilot decisions
+/**
+ * calc_distance_and_bearing
+ *
+ * @brief calculate distance and direction to waypoints for reporting and autopilot decisions
+ */
 static void calc_distance_and_bearing()
 {
     Vector3f curr = inertial_nav.get_position();
@@ -80,7 +107,11 @@ static void calc_distance_and_bearing()
     }
 }
 
-// run_autopilot - highest level call to process mission commands
+/**
+ * run_autopilot
+ *
+ * @brief highest level call to process mission commands
+ */
 static void run_autopilot()
 {
     switch( control_mode ) {
@@ -100,7 +131,15 @@ static void run_autopilot()
     }
 }
 
-// set_nav_mode - update nav mode and initialise any variables as required
+/**
+ * set_nav_mode
+ *
+ * @access static
+ * @param uint8_t new_nav_mode One of the NAV_ defines
+ * @return bool Sucessfully set new mode
+ *
+ * @brief update nav mode and initialise any variables as required
+ */
 static bool set_nav_mode(uint8_t new_nav_mode)
 {
     bool nav_initialised = false;       // boolean to ensure proper initialisation of nav modes
@@ -145,6 +184,11 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 }
 
 // update_nav_mode - run navigation controller based on nav_mode
+/**
+ * update_nav_mode
+ *
+ * @brief run navigation controller based on nav_mode
+ */
 static void update_nav_mode()
 {
     switch( nav_mode ) {
@@ -191,6 +235,11 @@ static void update_nav_mode()
 }
 
 // Keeps old data out of our calculation / logs
+/**
+ * reset_nav_params
+ *
+ * @brief Keeps old data out of our calculation / logs
+ */
 static void reset_nav_params(void)
 {
     // Will be set by new command
@@ -206,8 +255,17 @@ static void reset_nav_params(void)
     nav_pitch 						= 0;
 }
 
-// get_yaw_slew - reduces rate of change of yaw to a maximum
-// assumes it is called at 100hz so centi-degrees and update rate cancel each other out
+/**
+ * get_yaw_slew
+ *
+ * @access static
+ * @param int32_t current_yaw Yaw in 100*deg
+ * @param int32_t desired_yaw Desired Yaw in 100*deg
+ * @param int16_t deg_per_sec Desired rate in deg/sec
+ * @return int32_t New target angle
+ *
+ * @brief reduces rate of change of yaw to a maximum.  assumes it is called at 100hz so centi-degrees and update rate cancel each other out
+ */
 static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
 {
     return wrap_360_cd(current_yaw + constrain_int16(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
@@ -218,9 +276,17 @@ static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t de
 // circle navigation controller
 //////////////////////////////////////////////////////////
 
-// circle_set_center -- set circle controller's center position and starting angle
-static void
-circle_set_center(const Vector3f current_position, float heading_in_radians)
+/**
+ * circle_set_center
+ *
+ * @access static
+ * @param const Vector3f current_position
+ * @param float heading_in_radians
+ * @return void
+ *
+ * @brief set circle controller's center position and starting angle
+ */
+static void circle_set_center(const Vector3f current_position, float heading_in_radians)
 {
     float max_velocity;
     float cir_radius = g.circle_radius * 100;
@@ -260,9 +326,15 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
     wp_nav.init_loiter_target(current_position, Vector3f(0,0,0));
 }
 
-// update_circle - circle position controller's main call which in turn calls loiter controller with updated target position
-static void
-update_circle(float dt)
+/**
+ * update_circle
+ *
+ * @param float dt Time difference since last call - FIXME: suspect units=seconds but TBC
+ * @return void
+ *
+ * @brief circle position controller's main call which in turn calls loiter controller with updated target position
+ */
+static void update_circle(float dt)
 {
     float cir_radius = g.circle_radius * 100;
     Vector3f circle_target;

@@ -1,7 +1,18 @@
+/**
+ * @file commands_process.pde
+ *
+ * @brief High-level mission management - e.g. executing mission cmd queue
+ */
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// For changing active command mid-mission
-//----------------------------------------
+/**
+ * change_command
+ *
+ * @param uint8_t cmd_index New command index
+ *
+ * @brief For changing active command mid-mission
+ */
 static void change_command(uint8_t cmd_index)
 {
     //cliSerial->printf("change_command: %d\n",cmd_index );
@@ -28,8 +39,11 @@ static void change_command(uint8_t cmd_index)
     }
 }
 
-// update_commands - initiates new navigation commands if we have completed the previous command
-// called by 10 Hz loop
+/**
+ * update_commands
+ *
+ * @brief Called at 10Hz. Continually checks mission state and moves to next command if last complete.
+ */
 static void update_commands()
 {
     //cliSerial->printf("update_commands: %d\n",increment );
@@ -120,7 +134,11 @@ static void update_commands()
     }
 }
 
-// execute_nav_command - performs minor initialisation and logging before next navigation command in the queue is executed
+/**
+ * execute_nav_command
+ *
+ * @brief performs minor initialisation and logging before next navigation command in the queue is executed
+ */
 static void execute_nav_command(void)
 {
     // This is what we report to MAVLINK
@@ -141,7 +159,15 @@ static void execute_nav_command(void)
     command_cond_index      = NO_COMMAND;
 }
 
-// verify_commands - high level function to check if navigation and conditional commands have completed
+/**
+ * verify_commands
+ *
+ * @access static
+ * @param voi void
+ * @return void
+ *
+ * @brief high level function to check if navigation and conditional commands have completed
+ */
 static void verify_commands(void)
 {
     // check if navigation command completed
@@ -164,7 +190,15 @@ static void verify_commands(void)
     }
 }
 
-// Finds the next navgation command in EEPROM
+/**
+ * find_next_nav_index
+ *
+ * @access static
+ * @param int16_t search_index Start search at this index
+ * @return int16_t Next index
+ *
+ * @brief Finds the next navgation command in EEPROM
+ */
 static int16_t find_next_nav_index(int16_t search_index)
 {
     Location tmp;
@@ -179,6 +213,11 @@ static int16_t find_next_nav_index(int16_t search_index)
     return -1;
 }
 
+/**
+ * exit_mission
+ *
+ * @brief Exit mission due to completion
+ */
 static void exit_mission()
 {
     // we are out of commands

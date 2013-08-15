@@ -41,13 +41,30 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
+/**
+ * reboot_board
+ *
+ * @access static
+ * @param uint8_t argc
+ * @param const Menu::arg *argv
+ * @return int8_t
+ *
+ * @brief Reboot
+ */
 static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 {
     reboot_apm();
     return 0;
 }
 
-// the user wants the CLI. It never exits
+/**
+ * run_cli
+ *
+ * @param AP_HAL::UARTDriver *port port to run CLI on
+ * @return void
+ *
+ * @brief the user wants the CLI. It never exits
+ */
 static void run_cli(AP_HAL::UARTDriver *port)
 {
     cliSerial = port;
@@ -73,6 +90,11 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 #endif // CLI_ENABLED
 
+/**
+ * init_ardupilot
+ *
+ * @brief Initialise the ardupilot - called on system power up.
+ */
 static void init_ardupilot()
 {
 #if USB_MUX_PIN > 0
@@ -274,10 +296,11 @@ static void init_ardupilot()
     cliSerial->print_P(PSTR("\nReady to FLY "));
 }
 
-
-//******************************************************************************
-//This function does all the calibrations, etc. that we need during a ground start
-//******************************************************************************
+/**
+ * startup_ground
+ *
+ * @brief This function does all the calibrations, etc. that we need during a ground start
+ */
 static void startup_ground(void)
 {
     gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
@@ -315,7 +338,14 @@ static void startup_ground(void)
     set_land_complete(true);
 }
 
-// returns true if the GPS is ok and home position is set
+/**
+ * GPS_ok
+ *
+ * @access static
+ * @return bool True if GPS ok and home set
+ *
+ * @brief returns true if the GPS is ok and home position is set
+ */
 static bool GPS_ok()
 {
     if (g_gps != NULL && ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D) {
@@ -325,7 +355,15 @@ static bool GPS_ok()
     }
 }
 
-// returns true or false whether mode requires GPS
+/**
+ * mode_requires_GPS
+ *
+ * @access static
+ * @param uint8_t mode desired mode
+ * @return bool whether GPS is required
+ *
+ * @brief returns true or false whether mode requires GPS.  Utility function.
+ */
 static bool mode_requires_GPS(uint8_t mode) {
     switch(mode) {
         case AUTO:
@@ -342,7 +380,15 @@ static bool mode_requires_GPS(uint8_t mode) {
     return false;
 }
 
-// manual_flight_mode - returns true if flight mode is completely manual (i.e. roll, pitch and yaw controlled by pilot)
+/**
+ * manual_flight_mode
+ *
+ * @access static
+ * @param uint8_t mode Desired mode
+ * @return bool true if flightmode is manual
+ *
+ * @brief returns true if flight mode is completely manual (i.e. roll, pitch and yaw controlled by pilot)
+ */
 static bool manual_flight_mode(uint8_t mode) {
     switch(mode) {
         case ACRO:
@@ -358,9 +404,17 @@ static bool manual_flight_mode(uint8_t mode) {
     return false;
 }
 
-// set_mode - change flight mode and perform any necessary initialisation
-// returns true if mode was succesfully set
-// STABILIZE, ACRO, SPORT and LAND can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+/**
+ * set_mode
+ *
+ * @access static
+ * @param uint8_t mode Desired mode
+ * @return bool Whether flight mode change was successful.  Caller MUST check this value and act appropriately on failure.
+ *
+ * @brief change flight mode and perform any necessary initialisation.  Caller MUST check return 
+ * value - failure indicates unable to switch mode e.g. it requires GPS but there is no GPS. STABILIZE, 
+ * ACRO, SPORT and LAND can always be set successfully
+ */
 static bool set_mode(uint8_t mode)
 {
     // boolean to record if flight mode could be set
@@ -555,8 +609,16 @@ static bool set_mode(uint8_t mode)
     return success;
 }
 
-static void
-init_simple_bearing()
+/**
+ * init_simple_bearing
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Set heading used for simple mode - typically set when quad is armed.  Forward will always be 
+ * in this direction when in simple mode, regardless on yaw.
+ */
+static void init_simple_bearing()
 {
     initial_simple_bearing = ahrs.yaw_sensor;
     if (g.log_bitmask != 0) {
@@ -564,7 +626,11 @@ init_simple_bearing()
     }
 }
 
-// update_auto_armed - update status of auto_armed flag
+/**
+ * update_auto_armed
+ *
+ * @brief update status of auto_armed flag
+ */
 static void update_auto_armed()
 {
     // disarm checks
@@ -587,8 +653,15 @@ static void update_auto_armed()
     }
 }
 
-/*
- *  map from a 8 bit EEPROM baud rate to a real baud rate
+/**
+ * map_baudrate
+ *
+ * @access static
+ * @param int8_t rate EEPROM rate
+ * @param uint32_t default_baud Rate to use if rate is unknown.
+ * @return uint32_t Real buald rate
+ *
+ * @brief map from a 8 bit EEPROM baud rate to a real baud rate
  */
 static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 {
@@ -608,6 +681,11 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
 }
 
 #if USB_MUX_PIN > 0
+/**
+ * check_usb_mux
+ *
+ * @brief Initialise uartA according to whether USB is connected or not.  Radios use different baud rate.
+ */
 static void check_usb_mux(void)
 {
     bool usb_check = !digitalRead(USB_MUX_PIN);
@@ -625,9 +703,13 @@ static void check_usb_mux(void)
 }
 #endif
 
-/*
- *  called by gyro/accel init to flash LEDs so user
- *  has some mesmerising lights to watch while waiting
+/**
+ * flash_leds
+ *
+ * @param bool on Used to alternate between to pairs of lights
+ *
+ * @brief called by gyro/accel init to flash LEDs so user has some mesmerising 
+ * lights to watch while waiting
  */
 void flash_leds(bool on)
 {
@@ -635,26 +717,38 @@ void flash_leds(bool on)
     digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
-/*
- * Read Vcc vs 1.1v internal reference
+/**
+ * board_voltage
+ *
+ * @param voi void
+ * @return uint16_t
+ *
+ * @brief Read Vcc vs 1.1v internal reference
  */
 uint16_t board_voltage(void)
 {
     return board_vcc_analog_source->read_latest();
 }
 
-/*
-  force a software reset of the APM
+/**
+ * reboot_apm
+ *
+ * @brief force a software reset of the APM
  */
 static void reboot_apm(void) {
     hal.scheduler->reboot();
 }
 
-//
-// print_flight_mode - prints flight mode to serial port.
-//
-static void
-print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
+/**
+ * print_flight_mode
+ *
+ * @param AP_HAL::BetterStream *port Serial port
+ * @param uint8_t mode Mode number
+ * @return void
+ *
+ * @brief prints flight mode to serial port.
+ */
+static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case STABILIZE:

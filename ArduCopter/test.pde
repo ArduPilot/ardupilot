@@ -1,3 +1,9 @@
+/**
+ * @file test.pde
+ *
+ * @brief Various test functions for use with the CLI
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #if CLI_ENABLED == ENABLED

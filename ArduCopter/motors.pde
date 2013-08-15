@@ -1,3 +1,9 @@
+/**
+ * @file motors.pde
+ *
+ * @brief Arm/disarm logic.  Mixing logic is in AP_Motors library.
+ */
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
@@ -5,8 +11,14 @@
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define AUTO_DISARMING_DELAY    25  // called at 1hz so 25 seconds
 
-// arm_motors_check - checks for pilot input to arm or disarm the copter
-// called at 10hz
+/**
+ * arm_motors_check
+ *
+ * @access static
+ * @return void
+ *
+ * @brief checks for pilot input to arm or disarm the copter. called at 10hz.
+ */
 static void arm_motors_check()
 {
     static int16_t arming_counter;
@@ -91,8 +103,14 @@ static void arm_motors_check()
     }
 }
 
-// auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 25 seconds
-// called at 1hz
+/**
+ * auto_disarm_check
+ *
+ * @access static
+ * @return void
+ *
+ * @brief disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 25 seconds. called at 1hz
+ */
 static void auto_disarm_check()
 {
     static uint8_t auto_disarming_counter;
@@ -110,7 +128,14 @@ static void auto_disarm_check()
     }
 }
 
-// init_arm_motors - performs arming process including initialisation of barometer and gyros
+/**
+ * init_arm_motors
+ *
+ * @access static
+ * @return void
+ *
+ * @brief performs arming process including initialisation of barometer and gyros
+ */
 static void init_arm_motors()
 {
 	// arming marker
@@ -210,7 +235,15 @@ static void init_arm_motors()
     failsafe_enable();
 }
 
-// perform pre-arm checks and set ap.pre_arm_check flag
+/**
+ * pre_arm_checks
+ *
+ * @access static
+ * @param bool display_failure If true, send mavlink error to GCS
+ * @return void
+ *
+ * @brief perform pre-arm checks and set ap.pre_arm_check flag
+ */
 static void pre_arm_checks(bool display_failure)
 {
     // exit immediately if we've already successfully performed the pre-arm check
@@ -334,7 +367,14 @@ static void pre_arm_checks(bool display_failure)
     ap.pre_arm_check = true;
 }
 
-// perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
+/**
+ * pre_arm_rc_checks
+ *
+ * @access static
+ * @return void
+ *
+ * @brief perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag. Checks radio pwms within sensible bounds
+ */
 static void pre_arm_rc_checks()
 {
     // exit immediately if we've already successfully performed the pre-arm rc check
@@ -361,6 +401,11 @@ static void pre_arm_rc_checks()
     ap.pre_arm_rc_check = true;
 }
 
+/**
+ * init_disarm_motors
+ *
+ * @brief Disarm motors
+ */
 static void init_disarm_motors()
 {
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -393,11 +438,12 @@ static void init_disarm_motors()
     ahrs.set_correct_centrifugal(false);
 }
 
-/*****************************************
-* Set the flight control servos based on the current calculated values
-*****************************************/
-static void
-set_servos_4()
+/**
+ * set_servos_4
+ *
+ * @brief Call to AP_Motors library to do motor mixing.  Output values from Rate PIDs will be mixed and sent to motors by AP_Motors.
+ */
+static void set_servos_4()
 {
 #if FRAME_CONFIG == TRI_FRAME
     // To-Do: implement improved stability patch for tri so that we do not need to limit throttle input to motors

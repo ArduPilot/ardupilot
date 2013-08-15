@@ -1,3 +1,8 @@
+/**
+ * @file Parameters.pde
+ *
+ * @brief ArduCopter parameter definitions e.g. user config
+ */
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
@@ -1046,7 +1051,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     AP_VAREND
 };
 
-
+/**
+ * load_parameters
+ *
+ * @brief Load parameters from the EEPROM, or loads and writes defaults if EEPROM empty
+ */
 static void load_parameters(void)
 {
     // change the default for the AHRS_GPS_GAIN for ArduCopter

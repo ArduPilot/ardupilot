@@ -1,9 +1,20 @@
+/**
+ * @file commands_logic.pde
+ *
+ * @brief Automated navigation command logic
+ */
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-// process_nav_command - main switch statement to initiate the next nav command in the command_nav_queue
+/**
+ * process_nav_command
+ *
+ * @brief Main switch statement to initiate the next nav command in the command_nav_queue - e.g. mission.
+ */
 static void process_nav_command()
 {
     switch(command_nav_queue.id) {
@@ -42,7 +53,14 @@ static void process_nav_command()
 
 }
 
-// process_cond_command - main switch statement to initiate the next conditional command in the command_cond_queue
+/**
+ * process_cond_command
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Main switch statement to initiate the next conditional command in the command_cond_queue e.g. mission
+ */
 static void process_cond_command()
 {
     switch(command_cond_queue.id) {
@@ -68,8 +86,12 @@ static void process_cond_command()
     }
 }
 
-// process_now_command - main switch statement to initiate the next now command in the command_cond_queue
-// now commands are conditional commands that are executed immediately so they do not require a corresponding verify to be run later
+/**
+ * process_now_command
+ *
+ * @brief Main switch statement to initiate the next now command in the command_cond_queue. Now commands are 
+ * conditional commands that are executed    immediately so they do not require a corresponding verify to be run later
+ */
 static void process_now_command()
 {
     switch(command_cond_queue.id) {
@@ -139,8 +161,14 @@ static void process_now_command()
 // Verify command Handlers
 /********************************************************************************/
 
-// verify_nav_command - switch statement to ensure the active navigation command is progressing
-// returns true once the active navigation command completes successfully
+/**
+ * verify_nav_command
+ *
+ * @access static
+ * @return bool true once nav command completed
+ *
+ * @brief Calls the logic for a continuing nav command once it has been initiated.
+ */
 static bool verify_nav_command()
 {
     switch(command_nav_queue.id) {
@@ -180,8 +208,14 @@ static bool verify_nav_command()
     }
 }
 
-// verify_cond_command - switch statement to ensure the active conditional command is progressing
-// returns true once the active conditional command completes successfully
+/**
+ * verify_cond_command
+ *
+ * @access static
+ * @return bool returns true once the active conditional command completes successfully
+ *
+ * @brief Calls the logic for a continuing nav command once it has been initiated.
+ */
 static bool verify_cond_command()
 {
     switch(command_cond_queue.id) {
@@ -213,7 +247,11 @@ static bool verify_cond_command()
 //
 /********************************************************************************/
 
-// do_RTL - start Return-to-Launch
+/**
+ * do_RTL
+ *
+ * @brief Initiale RTL
+ */
 static void do_RTL(void)
 {
     // set rtl state
@@ -227,7 +265,11 @@ static void do_RTL(void)
 //	Nav (Must) commands
 /********************************************************************************/
 
-// do_takeoff - initiate takeoff navigation command
+/**
+ * do_takeoff
+ *
+ * @brief Initiate takeoff navigation command
+ */
 static void do_takeoff()
 {
     // set roll-pitch mode
@@ -253,7 +295,14 @@ static void do_takeoff()
     reset_I_all();    
 }
 
-// do_nav_wp - initiate move to next waypoint
+/**
+ * do_nav_wp
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Initiate move to next waypoint
+ */
 static void do_nav_wp()
 {
     // set roll-pitch mode
@@ -285,8 +334,15 @@ static void do_nav_wp()
     set_yaw_mode(get_wp_yaw_mode(false));
 }
 
-// do_land - initiate landing procedure
-// caller should set roll_pitch_mode to ROLL_PITCH_AUTO (for no pilot input) or ROLL_PITCH_LOITER (for pilot input)
+/**
+ * do_land
+ *
+ * @param const struct Location *cmd NULL to land here, otherwise desired landing location.
+ * @return void
+ *
+ * @brief Initiate landing procedure.  Caller should set roll_pitch_mode to 
+ * ROLL_PITCH_AUTO (for no pilot input) or ROLL_PITCH_LOITER (for pilot input).
+ */
 static void do_land(const struct Location *cmd)
 {
     // To-Do: check if we have already landed
@@ -344,8 +400,14 @@ static void do_land(const struct Location *cmd)
     }
 }
 
-// do_loiter_unlimited - start loitering with no end conditions
-// note: caller should set yaw_mode
+/**
+ * do_loiter_unlimited
+ *
+ * @access static
+ * @return void
+ *
+ * @brief Initiate loitering with no end conditions. Caller must set yaw_mode.
+ */
 static void do_loiter_unlimited()
 {
     Vector3f target_pos;
@@ -380,7 +442,11 @@ static void do_loiter_unlimited()
     wp_nav.set_destination(target_pos);
 }
 
-// do_circle - initiate moving in a circle
+/**
+ * do_circle
+ *
+ * @brief Initiate moving in a circle
+ */
 static void do_circle()
 {
     // set roll-pitch mode (no pilot input)
@@ -412,8 +478,11 @@ static void do_circle()
     circle_desired_rotations = command_nav_queue.p1;
 }
 
-// do_loiter_time - initiate loitering at a point for a given time period
-// note: caller should set yaw_mode
+/**
+ * do_loiter_time
+ *
+ * @brief Initiate loitering at a point for a given time period. Caller should set yaw_mode
+ */
 static void do_loiter_time()
 {
     Vector3f target_pos;
@@ -456,14 +525,25 @@ static void do_loiter_time()
 //	Verify Nav (Must) commands
 /********************************************************************************/
 
-// verify_takeoff - check if we have completed the takeoff
+/**
+ * verify_takeoff
+ *
+ * @brief check if we have completed the takeoff
+ */
 static bool verify_takeoff()
 {
     // have we reached our target altitude?
     return wp_nav.reached_destination();
 }
 
-// verify_land - returns true if landing has been completed
+/**
+ * verify_land
+ *
+ * @access static
+ * @return bool true if landing complete
+ *
+ * @brief Handles ongoing land logic through to completion.  Called repeatedly.
+ */
 static bool verify_land()
 {
     bool retval = false;
@@ -512,7 +592,14 @@ static bool verify_land()
     return retval;
 }
 
-// verify_nav_wp - check if we have reached the next way point
+/**
+ * verify_nav_wp
+ *
+ * @access static
+ * @return bool
+ *
+ * @brief check if we have reached the next way point
+ */
 static bool verify_nav_wp()
 {
     // check if we have reached the waypoint
@@ -535,12 +622,27 @@ static bool verify_nav_wp()
     }
 }
 
+/**
+ * verify_loiter_unlimited
+ *
+ * @access static
+ * @return bool Complete? Never!
+ *
+ * @brief Have completed unlimited loiter?  Well, err no, it's unlimited.
+ */
 static bool verify_loiter_unlimited()
 {
     return false;
 }
 
-// verify_loiter_time - check if we have loitered long enough
+/**
+ * verify_loiter_time
+ *
+ * @access static
+ * @return bool true if loiter complete
+ *
+ * @brief check if we have loitered long enough
+ */
 static bool verify_loiter_time()
 {
     // return immediately if we haven't reached our destination
@@ -557,7 +659,14 @@ static bool verify_loiter_time()
     return (((millis() - loiter_time) / 1000) >= loiter_time_max);
 }
 
-// verify_circle - check if we have circled the point enough
+/**
+ * verify_circle
+ *
+ * @access static
+ * @return bool true if complete
+ *
+ * @brief check if we have circled the point enough
+ */
 static bool verify_circle()
 {
     // have we rotated around the center enough times?
@@ -567,6 +676,16 @@ static bool verify_circle()
 // verify_RTL - handles any state changes required to implement RTL
 // do_RTL should have been called once first to initialise all variables
 // returns true with RTL has completed successfully
+/**
+ * verify_RTL
+ *
+ * @access static
+ * @return bool true when RTL has completed successfully
+ *
+ * @brief Ongoing RTL logic through to completion. Handles any state changes required to 
+ * implement RTL.  As with all these verify_() funcs, do_RTL should have been called once 
+ * first to initialise all variables.
+ */
 static bool verify_RTL()
 {
     bool retval = false;
@@ -713,7 +832,11 @@ static bool verify_RTL()
 /********************************************************************************/
 //	Condition (May) commands
 /********************************************************************************/
-
+/**
+ * do_wait_delay
+ *
+ * @brief Mission wait command initialisation
+ */
 static void do_wait_delay()
 {
     //cliSerial->print("dwd ");
@@ -722,6 +845,11 @@ static void do_wait_delay()
     //cliSerial->println(condition_value,DEC);
 }
 
+/**
+ * do_change_alt
+ *
+ * @brief Initialise altitude change 
+ */
 static void do_change_alt()
 {
     // adjust target appropriately for each nav mode
@@ -740,11 +868,21 @@ static void do_change_alt()
     // To-Do: store desired altitude in a variable so that it can be verified later
 }
 
+/**
+ * do_within_distance
+ *
+ * @brief FIXME: what's this
+ */
 static void do_within_distance()
 {
     condition_value  = command_cond_queue.lat * 100;
 }
 
+/**
+ * do_yaw
+ *
+ * @brief Init yaw command
+ */
 static void do_yaw()
 {
     // get final angle, 1 = Relative, 0 = Absolute
@@ -776,7 +914,14 @@ static void do_yaw()
 /********************************************************************************/
 // Verify Condition (May) commands
 /********************************************************************************/
-
+/**
+ * verify_wait_delay
+ *
+ * @access static
+ * @return bool true if complete
+ *
+ * @brief Has wait command completed?
+ */
 static bool verify_wait_delay()
 {
     //cliSerial->print("vwd");
@@ -789,12 +934,25 @@ static bool verify_wait_delay()
     return false;
 }
 
+/**
+ * verify_change_alt
+ *
+ * @access static
+ * @return bool true if complete
+ *
+ * @brief Change of altitude completed?
+ */
 static bool verify_change_alt()
 {
     // To-Do: use recorded target altitude to verify we have reached the target
     return true;
 }
 
+/**
+ * verify_within_distance
+ *
+ * @brief FIXME: what's this
+ */
 static bool verify_within_distance()
 {
     //cliSerial->printf("cond dist :%d\n", (int)condition_value);
@@ -805,7 +963,14 @@ static bool verify_within_distance()
     return false;
 }
 
-// verify_yaw - return true if we have reached the desired heading
+/**
+ * verify_yaw
+ *
+ * @access static
+ * @return bool true if yes
+ *
+ * @brief Have we reached desired heading?
+ */
 static bool verify_yaw()
 {
     if( labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200 ) {
@@ -819,8 +984,15 @@ static bool verify_yaw()
 //	Do (Now) commands
 /********************************************************************************/
 
-// do_guided - start guided mode
-// this is not actually a mission command but rather a 
+
+/**
+ * do_guided
+ *
+ * @param const struct Location *cmd Position to head go to
+ * @return void
+ *
+ * @brief Start guided mode
+ */
 static void do_guided(const struct Location *cmd)
 {
     bool first_time = false;
@@ -852,11 +1024,21 @@ static void do_guided(const struct Location *cmd)
     }
 }
 
+/**
+ * do_change_speed
+ *
+ * @brief Speed change initialise
+ */
 static void do_change_speed()
 {
     wp_nav.set_horizontal_velocity(command_cond_queue.p1 * 100);
 }
 
+/**
+ * do_jump
+ *
+ * @brief Initialise jump mission command
+ */
 static void do_jump()
 {
     // Used to track the state of the jump command in Mission scripting
@@ -890,6 +1072,11 @@ static void do_jump()
     }
 }
 
+/**
+ * do_set_home
+ *
+ * @brief Set home mission command
+ */
 static void do_set_home()
 {
     if(command_cond_queue.p1 == 1) {
@@ -904,6 +1091,11 @@ static void do_set_home()
     }
 }
 
+/**
+ * do_set_servo
+ *
+ * @brief Set a servo mission command
+ */
 static void do_set_servo()
 {
     uint8_t channel_num = 0xff;
@@ -951,6 +1143,11 @@ static void do_set_servo()
     }
 }
 
+/**
+ * do_set_relay
+ *
+ * @brief Relay set mission command
+ */
 static void do_set_relay()
 {
     if (command_cond_queue.p1 == 1) {
@@ -962,6 +1159,11 @@ static void do_set_relay()
     }
 }
 
+/**
+ * do_repeat_servo
+ *
+ * @brief FIXME: what's this
+ */
 static void do_repeat_servo()
 {
     event_id = command_cond_queue.p1 - 1;
@@ -991,6 +1193,11 @@ static void do_repeat_servo()
     }
 }
 
+/**
+ * do_repeat_relay
+ *
+ * @brief FIXME: what's this
+ */
 static void do_repeat_relay()
 {
     event_id                = RELAY_TOGGLE;
@@ -1000,11 +1207,14 @@ static void do_repeat_relay()
     update_events();
 }
 
-// do_roi - starts actions required by MAV_CMD_NAV_ROI
-//          this involves either moving the camera to point at the ROI (region of interest)
-//          and possibly rotating the copter to point at the ROI if our mount type does not support a yaw feature
-//          Note: the ROI should already be in the command_nav_queue global variable
-//	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
+/**
+ * do_roi
+ *
+ * @brief Initialise Region Of Interest (ROI) mission cmd. this involves either moving the camera to point at 
+ * the ROI (region of interest)  and possibly rotating the copter to point at the ROI if our mount type does 
+ * not support a yaw feature.
+ * Note: the ROI should already be in the command_nav_queue global variable
+ */
 static void do_roi()
 {
 #if MOUNT == ENABLED
@@ -1029,7 +1239,11 @@ static void do_roi()
 #endif
 }
 
-// do_take_picture - take a picture with the camera library
+/**
+ * do_take_picture
+ *
+ * @brief take a picture with the camera library
+ */
 static void do_take_picture()
 {
 #if CAMERA == ENABLED

@@ -1,3 +1,9 @@
+/**
+ * @file setup.pde
+ *
+ * @brief ArduPilot command line interface implementation
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #if CLI_ENABLED == ENABLED
@@ -26,7 +32,7 @@ static int8_t   setup_sonar             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_tune              (uint8_t argc, const Menu::arg *argv);
 
 
-// Command/function table for the setup menu
+// Command/function table for the setup menu.  Function name (for user entry) and function pointer to handler.
 const struct Menu::command setup_menu_commands[] PROGMEM = {
     // command			function called
     // =======          ===============

@@ -1,6 +1,19 @@
+/**
+ * @file inertia.pde
+ *
+ * @brief Inertial Navigation update functions
+ */
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// read_inertia - read inertia in from accelerometers
+/**
+ * read_inertia
+ *
+ * @access static
+ * @return void
+ *
+ * @brief read inertia in from accelerometers
+ */
 static void read_inertia()
 {
     static uint8_t log_counter_inav = 0;
@@ -18,6 +31,11 @@ static void read_inertia()
 }
 
 // read_inertial_altitude - pull altitude and climb rate from inertial nav library
+/**
+ * read_inertial_altitude
+ *
+ * @brief pull altitude and climb rate from inertial nav library
+ */
 static void read_inertial_altitude()
 {
     // with inertial nav we can update the altitude and climb rate at 50hz
