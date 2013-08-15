@@ -268,6 +268,17 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             sprayer.enable(ch_flag == AUX_SWITCH_HIGH);
             break;
 #endif
+
+        case AUX_SWITCH_AUTO_AND_LAND:
+            switch(ch_flag) {
+                case AUX_SWITCH_LOW:
+                case AUX_SWITCH_MIDDLE:
+                    set_mode(LAND);
+                    break;
+                case AUX_SWITCH_HIGH:
+                    set_mode(AUTO);
+                    break;
+            }
     }
 }
 
