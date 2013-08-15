@@ -394,6 +394,9 @@
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
 #endif
+#ifndef GPS_HDOP_GOOD_DEFAULT
+ # define GPS_HDOP_GOOD_DEFAULT         200     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
+#endif
 
 // GCS failsafe
 #ifndef FS_GCS
