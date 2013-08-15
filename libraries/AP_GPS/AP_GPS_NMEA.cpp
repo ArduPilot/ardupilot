@@ -185,11 +185,14 @@ uint32_t AP_GPS_NMEA::_parse_decimal()
     return ret;
 }
 
+/*
+  parse a NMEA latitude/longitude degree value. The result is in degrees*10e7
+ */
 uint32_t AP_GPS_NMEA::_parse_degrees()
 {
     char *p, *q;
     uint8_t deg = 0, min = 0;
-    uint32_t frac_min = 0;
+    float frac_min = 0;
     int32_t ret = 0;
 
     // scan for decimal point or end of field
@@ -212,17 +215,17 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     }
 
     // convert fractional minutes
-    // expect up to four digits, result is in
-    // ten-thousandths of a minute
     if (*p == '.') {
         q = p + 1;
-        for (int16_t i = 0; i < 5; i++) {
-            frac_min = (int32_t)(frac_min * 10);
-            if (isdigit(*q))
-                frac_min += *q++ - '0';
+        float frac_scale = 0.1f;
+        while (isdigit(*q)) {
+            frac_min += (*q++ - '0') * frac_scale;
+            frac_scale *= 0.1f;
         }
     }
-    ret = (int32_t)deg * (int32_t)1000000UL + (int32_t)((min * 100000UL + frac_min) / 6UL);
+    ret = (deg * (int32_t)10000000UL);
+    ret += (min * (int32_t)10000000UL / 60);
+    ret += frac_min * (1.0e7 / 60.0f);
     return ret;
 }
 
@@ -239,8 +242,8 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GPRMC:
                     time                        = _new_time;
                     date                        = _new_date;
-                    latitude            = _new_latitude * 10;   // degrees*10e5 -> 10e7
-                    longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
+                    latitude            = _new_latitude;
+                    longitude           = _new_longitude;
                     ground_speed_cm     = _new_speed;
                     ground_course_cd    = _new_course;
                     fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
@@ -248,8 +251,8 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GPGGA:
                     altitude_cm         = _new_altitude;
                     time                        = _new_time;
-                    latitude            = _new_latitude * 10;   // degrees*10e5 -> 10e7
-                    longitude           = _new_longitude * 10;  // degrees*10e5 -> 10e7
+                    latitude            = _new_latitude;
+                    longitude           = _new_longitude;
                     num_sats            = _new_satellite_count;
                     hdop                        = _new_hdop;
                     fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix

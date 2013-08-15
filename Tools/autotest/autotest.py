@@ -366,6 +366,10 @@ def write_fullresults():
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
     results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
+    results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
+    results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
+    results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
+    results.addglob('APM:Rover documentation', 'docs/APMrover2/index.html')
     results.addglobimage("Flight Track", '*.png')
 
     write_webresults(results)

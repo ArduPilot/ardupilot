@@ -808,15 +808,15 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
-	GGROUP(rollController,          "RLL2SRV_",   AP_RollController),
+	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
 
     // @Group: PTCH2SRV_
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
-	GGROUP(pitchController,         "PTCH2SRV_",  AP_PitchController),
+	GOBJECT(pitchController,        "PTCH2SRV_",  AP_PitchController),
 
     // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-	GGROUP(yawController,           "YAW2SRV_",   AP_YawController),
+	GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
 
 	// variables not in the g class which contain EEPROM saved variables
 

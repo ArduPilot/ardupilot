@@ -327,7 +327,7 @@ static GCS_MAVLINK gcs3;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size3 sonar_mode_filter(1);
+ModeFilterInt16_Size5 sonar_mode_filter(1);
 #if CONFIG_SONAR == ENABLED
 static AP_HAL::AnalogSource *sonar_analog_source;
 static AP_RangeFinder_MaxsonarXL *sonar;

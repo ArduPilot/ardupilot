@@ -68,7 +68,7 @@ static void arm_motors_check()
         }
 
         // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors.armed()) {
+        if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
             auto_trim_counter = 250;
         }
 
@@ -293,9 +293,9 @@ static void pre_arm_checks(bool display_failure)
 
 #if AC_FENCE == ENABLED
     // check fence is initialised
-    if(!fence.pre_arm_check()) {
+    if(!fence.pre_arm_check() || (((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) && g_gps->hdop > g.gps_hdop_good)) {
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No GPS Lock"));
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
         }
         return;
     }

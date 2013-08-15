@@ -1,0 +1,8 @@
+@INCLUDE = docs/config/default
+
+PROJECT_NAME = "APM:Copter"
+INPUT = ArduCopter/
+OUTPUT_DIRECTORY = $(DOCS_OUTPUT_BASE)/ArduCopter
+HTML_OUTPUT = .
+TAGFILES = $(DOCS_OUTPUT_BASE)/tags/libraries=../libraries
+

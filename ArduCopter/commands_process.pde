@@ -186,16 +186,10 @@ static void exit_mission()
 
     // if we are not on the ground switch to loiter or land
     if(!ap.land_complete) {
-        // If the approach altitude is valid (above 1m), do approach, else land
-        if(g.rtl_alt_final == 0) {
+        // try to enter loiter but if that fails land
+        if (!set_mode(LOITER)) {
             set_mode(LAND);
-        }else{
-            // try to enter loiter but if that fails land
-            if (!set_mode(LOITER)) {
-                set_mode(LAND);
-            }
         }
     }
-
 }
 

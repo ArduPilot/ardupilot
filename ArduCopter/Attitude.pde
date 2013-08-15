@@ -1284,6 +1284,17 @@ get_throttle_rate_stabilized(int16_t target_rate)
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 
+#if AC_FENCE == ENABLED
+    // do not let target altitude be too close to the fence
+    // To-Do: add this to other altitude controllers
+    if((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        float alt_limit = fence.get_safe_alt() * 100.0f;
+        if (controller_desired_alt > alt_limit) {
+            controller_desired_alt = alt_limit;
+        }
+    }
+#endif
+
     // update target altitude for reporting purposes
     set_target_alt_for_reporting(controller_desired_alt);
 

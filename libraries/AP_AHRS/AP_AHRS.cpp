@@ -211,3 +211,11 @@ bool AP_AHRS::get_projected_position(struct Location &loc)
         location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
         return true;
 }
+
+/*
+  get the GPS lag in seconds
+ */
+float AP_AHRS::get_position_lag(void) const
+{
+    return _gps->get_lag();
+}

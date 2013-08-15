@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
   return the bank angle needed to achieve tracking from the last
   update_*() operation
  */
-int32_t AP_L1_Control::nav_roll_cd(void)
+int32_t AP_L1_Control::nav_roll_cd(void) const
 {
 	float ret;	
 	ret = degrees(atanf(_latAccDem * 0.101972f) * 100.0f); // 0.101972 = 1/9.81
@@ -43,24 +43,33 @@ int32_t AP_L1_Control::nav_roll_cd(void)
 	return ret;
 }
 
-int32_t AP_L1_Control::nav_bearing_cd(void)
+/*
+  return the lateral acceleration needed to achieve tracking from the last
+  update_*() operation
+ */
+float AP_L1_Control::lateral_acceleration(void) const
+{
+	return _latAccDem;
+}
+
+int32_t AP_L1_Control::nav_bearing_cd(void) const
 {
 	return wrap_180_cd(RadiansToCentiDegrees(_nav_bearing));
 }
 
-int32_t AP_L1_Control::bearing_error_cd(void)
+int32_t AP_L1_Control::bearing_error_cd(void) const
 {
 	return RadiansToCentiDegrees(_bearing_error);
 }
 
-int32_t AP_L1_Control::target_bearing_cd(void)
+int32_t AP_L1_Control::target_bearing_cd(void) const
 {
 	return _target_bearing_cd;
 }
 
-float AP_L1_Control::turn_distance(float wp_radius)
+float AP_L1_Control::turn_distance(float wp_radius) const
 {
-    wp_radius *= sq(_ahrs->get_EAS2TAS());
+    wp_radius *= sq(_ahrs.get_EAS2TAS());
 	return min(wp_radius, _L1_dist);
 }
 
@@ -69,7 +78,7 @@ bool AP_L1_Control::reached_loiter_target(void)
 	return _WPcircle;
 }
 
-float AP_L1_Control::crosstrack_error(void)
+float AP_L1_Control::crosstrack_error(void) const
 {
 	return _crosstrack_error;
 }
@@ -88,38 +97,44 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	// Get current position and velocity
-    _ahrs->get_position(_current_loc);
+    _ahrs.get_position(_current_loc);
+
+	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
+
+    // update the position for lag. This helps especially for rovers
+    // where waypoints may be very close together
+    Vector2f lag_offset = _groundspeed_vector * _ahrs.get_position_lag();
+    location_offset(_current_loc, lag_offset.x, lag_offset.y);
 
 	// update _target_bearing_cd
 	_target_bearing_cd = get_bearing_cd(_current_loc, next_WP);
-
-	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
 	
 	//Calculate groundspeed
-	float groundSpeed = _maxf(_groundspeed_vector.length(), 1.0f);
+	float groundSpeed = _groundspeed_vector.length();
+    if (groundSpeed < 0.1f) {
+        // use a small ground speed vector in the right direction,
+        // allowing us to use the compass heading at zero GPS velocity
+        groundSpeed = 0.1f;
+        _groundspeed_vector = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw)) * groundSpeed;
+    }
 
 	// Calculate time varying control parameters
 	// Calculate the L1 length required for specified period
 	// 0.3183099 = 1/1/pipi
 	_L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
 	
-	//Convert current location and WP positions to 2D vectors in lat and long
-    Vector2f A_air((_current_loc.lat*1.0e-7f), (_current_loc.lng*1.0e-7f));
-    Vector2f A_v((prev_WP.lat*1.0e-7f), (prev_WP.lng*1.0e-7f));
-    Vector2f B_v((next_WP.lat*1.0e-7f), (next_WP.lng*1.0e-7f));
-
 	// Calculate the NE position of WP B relative to WP A
-    Vector2f AB = _geo2planar(A_v, B_v);
+    Vector2f AB = location_diff(prev_WP, next_WP);
 	
 	// Check for AB zero length and track directly to the destination
 	// if too small
 	if (AB.length() < 1.0e-6f) {
-		AB = _geo2planar(A_air, B_v);
+		AB = location_diff(_current_loc, next_WP);
 	}
 	AB.normalize();
 
 	// Calculate the NE position of the aircraft relative to WP A
-    A_air = _geo2planar(A_v, A_air);
+    Vector2f A_air = location_diff(prev_WP, _current_loc);
 
 	// calculate distance to target track, for reporting
 	_crosstrack_error = AB % A_air;
@@ -129,7 +144,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		//Otherwise do normal L1 guidance
 	float WP_A_dist = A_air.length();
 	float alongTrackDist = A_air * AB;
-	if (WP_A_dist > _L1_dist && alongTrackDist/_maxf(WP_A_dist , 1.0f) < -0.7071f) {
+	if (WP_A_dist > _L1_dist && alongTrackDist/max(WP_A_dist, 1.0f) < -0.7071f) {
 
 		//Calc Nu to fly To WP A
 		Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
@@ -146,7 +161,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
 		//Calculate Nu1 angle (Angle to L1 reference point)
 		float xtrackErr = A_air % AB;
-		float sine_Nu1 = xtrackErr/_maxf(_L1_dist , 0.1f);
+		float sine_Nu1 = xtrackErr/max(_L1_dist, 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
 		sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
 		float Nu1 = asinf(sine_Nu1);
@@ -171,7 +186,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
     // scale loiter radius with square of EAS2TAS to allow us to stay
     // stable at high altitude
-    radius *= sq(_ahrs->get_EAS2TAS());
+    radius *= sq(_ahrs.get_EAS2TAS());
 
 	// Calculate guidance gains used by PD loop (used during circle tracking)
 	float omega = (6.2832f / _L1_period);
@@ -182,30 +197,33 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float K_L1 = 4.0f * _L1_damping * _L1_damping;
 
 	//Get current position and velocity
-    _ahrs->get_position(_current_loc);
+    _ahrs.get_position(_current_loc);
+
+	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
+
+    // update the position for lag. This helps especially for rovers
+    // where waypoints may be very close together
+    Vector2f lag_offset = _groundspeed_vector * _ahrs.get_position_lag();
+    location_offset(_current_loc, lag_offset.x, lag_offset.y);
+
+	//Calculate groundspeed
+	float groundSpeed = max(_groundspeed_vector.length() , 1.0f);
+
 
 	// update _target_bearing_cd
 	_target_bearing_cd = get_bearing_cd(_current_loc, center_WP);
 
-	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
-
-	//Calculate groundspeed
-	float groundSpeed = _maxf(_groundspeed_vector.length() , 1.0f);
 
 	// Calculate time varying control parameters
 	// Calculate the L1 length required for specified period
 	// 0.3183099 = 1/pi
 	_L1_dist = 0.3183099f * _L1_damping * _L1_period * groundSpeed;
 
-	//Convert current location and WP positionsto 2D vectors in lat and long
-    Vector2f A_air((_current_loc.lat*1.0e-7f), (_current_loc.lng*1.0e-7f));
-    Vector2f A_v((center_WP.lat*1.0e-7f), (center_WP.lng*1.0e-7f));
-
 	//Calculate the NE position of the aircraft relative to WP A
-    A_air = _geo2planar(A_v, A_air);
+    Vector2f A_air = location_diff(center_WP, _current_loc);
 	
     //Calculate the unit vector from WP A to aircraft
-    Vector2f A_air_unit = (A_air).normalized();
+    Vector2f A_air_unit = A_air.normalized();
 
 	//Calculate Nu to capture center_WP
 	float xtrackVelCap = A_air_unit % _groundspeed_vector; // Velocity across line - perpendicular to radial inbound to WP
@@ -231,11 +249,11 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	
     //Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
     if ( velTangent < 0.0f ) {
-        latAccDemCircPD =  _maxf(latAccDemCircPD , 0.0f);
+        latAccDemCircPD =  max(latAccDemCircPD, 0.0f);
 	}
 	
 	// Calculate centripetal acceleration demand
-	float latAccDemCircCtr = velTangent * velTangent / _maxf((0.5f * radius) , (radius + xtrackErrCirc));
+	float latAccDemCircCtr = velTangent * velTangent / max((0.5f * radius), (radius + xtrackErrCirc));
 
 	//Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
 	float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
@@ -270,11 +288,11 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 	_target_bearing_cd = wrap_180_cd(navigation_heading_cd);
 	_nav_bearing = radians(navigation_heading_cd * 0.01f);
 
-	Nu_cd = _target_bearing_cd - wrap_180_cd(_ahrs->yaw_sensor);
+	Nu_cd = _target_bearing_cd - wrap_180_cd(_ahrs.yaw_sensor);
 	Nu_cd = wrap_180_cd(Nu_cd);
 	Nu = radians(Nu_cd * 0.01f);
 
-	Vector2f _groundspeed_vector = _ahrs->groundspeed_vector();
+	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 	
 	//Calculate groundspeed
 	float groundSpeed = _groundspeed_vector.length();
@@ -299,8 +317,8 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 void AP_L1_Control::update_level_flight(void)
 {
 	// copy to _target_bearing_cd and _nav_bearing
-	_target_bearing_cd = _ahrs->yaw_sensor;
-	_nav_bearing = _ahrs->yaw;
+	_target_bearing_cd = _ahrs.yaw_sensor;
+	_nav_bearing = _ahrs.yaw;
 	_bearing_error = 0;
 	_crosstrack_error = 0;
 
@@ -309,27 +327,3 @@ void AP_L1_Control::update_level_flight(void)
 
 	_latAccDem = 0;
 }
-
-
-Vector2f AP_L1_Control::_geo2planar(const Vector2f &ref, const Vector2f &wp) const
-{
-    Vector2f out;
-
-    out.x=radians((wp.x-ref.x));
-    out.y=radians((wp.y-ref.y)*cosf(radians(ref.x)));
-
-    return out * RADIUS_OF_EARTH;
-}
-
-float AP_L1_Control::_maxf(const float &num1, const float &num2) const
-{
-    float result;
-
-   if (num1 > num2)
-      result = num1;
-   else
-      result = num2;
- 
-   return result; 
-}
-

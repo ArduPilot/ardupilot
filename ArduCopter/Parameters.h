@@ -89,7 +89,8 @@ public:
         k_param_ch8_option,
         k_param_arming_check_enabled,
         k_param_sprayer,
-        k_param_angle_max,              // 34
+        k_param_angle_max,
+        k_param_gps_hdop_good,          // 35
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -287,6 +288,7 @@ public:
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
+    AP_Int16        gps_hdop_good;              // GPS Hdop value below which represent a good position
 
     AP_Int8         compass_enabled;
     AP_Int8         optflow_enabled;
