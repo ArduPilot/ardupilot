@@ -1,8 +1,16 @@
+/**
+ * @file radio.pde
+ *
+ * @brief Functions that will read the radio data, limit servos and trigger a failsafe
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// Function that will read the radio data, limit servos and trigger a failsafe
-// ----------------------------------------------------------------------------
-
+/**
+ * default_dead_zones
+ *
+ * @brief Set deadzones
+ */
 static void default_dead_zones()
 {
     g.rc_1.set_default_dead_zone(30);
@@ -17,6 +25,11 @@ static void default_dead_zones()
     g.rc_6.set_default_dead_zone(0);
 }
 
+/**
+ * init_rc_in
+ *
+ * @brief Init radio in, ranges and limits.
+ */
 static void init_rc_in()
 {
     // set rc channel ranges
@@ -50,7 +63,11 @@ static void init_rc_in()
     default_dead_zones();
 }
 
- // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
+/**
+ * init_rc_out
+ *
+ * @brief initialise motors and check if pilot wants to perform ESC calibration
+ */
 static void init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
@@ -105,7 +122,11 @@ static void init_rc_out()
 #endif
 }
 
-// output_min - enable and output lowest possible value to motors
+/**
+ * output_min
+ *
+ * @brief enable and output lowest possible value to motors
+ */
 void output_min()
 {
     // enable motors
@@ -114,6 +135,11 @@ void output_min()
 }
 
 #define FAILSAFE_RADIO_TIMEOUT_MS 2000       // 2 seconds
+/**
+ * read_radio
+ *
+ * @brief Read RC radio data. call failsafe functions if radio in stops.
+ */
 static void read_radio()
 {
     static uint32_t last_update = 0;
@@ -148,7 +174,16 @@ static void read_radio()
     }
 }
 
+// Failsafe counter - this many values below g.failsafe_throttle_value will trigger failsafe
 #define FS_COUNTER 3
+/**
+ * set_throttle_and_failsafe
+ *
+ * @param uint16_t throttle_pwm Desired throttle pwm
+ * @return void
+ *
+ * @brief Used to set throttle, also checks for failsafe throttle and triggers failsafe if needed.
+ */
 static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     static int8_t failsafe_counter = 0;
@@ -192,6 +227,11 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
     }
 }
 
+/**
+ * trim_radio
+ *
+ * @brief FIXME: what's this for?
+ */
 static void trim_radio()
 {
     for (uint8_t i = 0; i < 30; i++) {

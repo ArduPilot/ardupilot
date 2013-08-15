@@ -1,11 +1,17 @@
-// 2010 Jose Julio
-// 2011 Adapted and updated for AC2 by Jason Short
-//
-// Automatic Acrobatic Procedure (AAP) v1 : Roll flip
-// State machine aproach:
-//    Some states are fixed commands (for a fixed time)
-//    Some states are fixed commands (until some IMU condition)
-//    Some states include controls inside
+/**
+ * @file flip.pde
+ *
+ * @brief Automated flip logic
+ * 2010 Jose Julio
+ * 2011 Adapted and updated for AC2 by Jason Short
+ *
+ * Automatic Acrobatic Procedure (AAP) v1 : Roll flip
+ * State machine aproach:
+ *    Some states are fixed commands (for a fixed time)
+ *    Some states are fixed commands (until some IMU condition)
+ *    Some states include controls inside
+ */
+
 uint8_t flip_timer;
 uint8_t flip_state;
 

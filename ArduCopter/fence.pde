@@ -1,3 +1,8 @@
+/**
+ * @file fence.pde
+ *
+ * @brief GeoFence logic
+ */
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // Code to integrate AC_Fence library with main ArduCopter code
@@ -6,8 +11,13 @@
 
 uint8_t lim_state = 0, lim_old_state = 0;
 
-// fence_check - ask fence library to check for breaches and initiate the response
-// called at 1hz
+/**
+ * fence_check
+ *
+ * @return void
+ *
+ * @brief ask fence library to check for breaches and initiate the response. called at 1hz
+ */
 void fence_check()
 {
     uint8_t new_breaches; // the type of fence that has been breached
@@ -67,7 +77,13 @@ void fence_check()
     }
 }
 
-// fence_send_mavlink_status - send fence status to ground station
+/**
+ * fence_send_mavlink_status
+ *
+ * @param mavlink_channel_t chan mavlink channel
+ *
+ * @brief send fence status to ground station
+ */
 static void fence_send_mavlink_status(mavlink_channel_t chan)
 {   
     if (fence.enabled()) {

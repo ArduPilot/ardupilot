@@ -1,3 +1,9 @@
+/**
+ * @file GCS_Mavlink.pde
+ *
+ * @brief Mavlink packet sending/receiving to/from ground station.  Please read warning about adding new messages.
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // use this to prevent recursion during sensor init
@@ -1064,8 +1070,16 @@ GCS_MAVLINK::send_message(enum ap_message id)
     mavlink_send_message(chan,id, packet_drops);
 }
 
-void
-GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
+/**
+ * GCS_MAVLINK::send_text_P
+ *
+ * @param gcs_severity severity Severity constant
+ * @param const prog_char_t *str String
+ * @return void
+ *
+ * @brief Text status message
+ */
+void GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;
@@ -1079,6 +1093,14 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
     mavlink_send_text(chan, severity, (const char *)m.text);
 }
 
+/**
+ * GCS_MAVLINK::handleMessage
+ *
+ * @param mavlink_message_t* msg Message
+ * @return void
+ *
+ * @brief Handle message from ground station
+ */
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     struct Location tell_command = {};                                  // command for telemetry
@@ -2081,11 +2103,13 @@ GCS_MAVLINK::_count_parameters()
 }
 
 /**
- * queued_param_send - Send the next pending parameter, called from deferred message
- * handling code
+ * GCS_MAVLINK::queued_param_send
+ *
+ * @return void
+ *
+ * @brief Send the next pending parameter, called from deferred message handling code
  */
-void
-GCS_MAVLINK::queued_param_send()
+void GCS_MAVLINK::queued_param_send()
 {
     // Check to see if we are sending parameters
     if (NULL == _queued_parameter) return;

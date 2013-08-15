@@ -1,10 +1,12 @@
+/**
+ * @file failsafe.pde
+ *
+ * @author Andrew Tridgell
+ * @date December 2011
+ * @brief Mainloop lockup failsafe checks - disarm motors in event of crash/lockup.  Other failsafes in events.pde
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-//
-//  failsafe support
-//  Andrew Tridgell, December 2011
-//
-//  our failsafe strategy is to detect main loop lockup and disarm the motors
-//
 
 static bool failsafe_enabled = true;
 static uint16_t failsafe_last_mainLoop_count;
@@ -14,23 +16,40 @@ static bool in_failsafe;
 //
 // failsafe_enable - enable failsafe
 //
+
+/**
+ * failsafe_enable
+ *
+ * @return void
+ *
+ * @brief Main loop lockup failsafe: enable
+ */
 void failsafe_enable()
 {
     failsafe_enabled = true;
     failsafe_last_timestamp = micros();
 }
 
-//
-// failsafe_disable - used when we know we are going to delay the mainloop significantly
-//
+/**
+ * failsafe_disable
+ *
+ * @return void
+ *
+ * @brief Main loop lockup failsafe disable - used when we know we are going to delay the mainloop significantly
+ */
 void failsafe_disable()
 {
     failsafe_enabled = false;
 }
 
-//
-//  failsafe_check - this function is called from the core timer interrupt at 1kHz.
-//
+/**
+ * failsafe_check
+ *
+ * @param uint32_t tnow
+ * @return void
+ *
+ * @brief Called at 1Khz - checks for main loop lockups
+ */
 void failsafe_check(uint32_t tnow)
 {
     if (mainLoop_count != failsafe_last_mainLoop_count) {

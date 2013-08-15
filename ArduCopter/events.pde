@@ -1,8 +1,15 @@
+/**
+ * @file events.pde
+ *
+ * @brief Event handlers - mostly failsafe events.
+ */
+
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-/*
- *       This event will be called when the failsafe changes
- *       boolean failsafe reflects the current state
+/**
+ * failsafe_radio_on_event
+ *
+ * @brief Radio failsafe activated.  Called when boolean flag changes.
  */
 static void failsafe_radio_on_event()
 {
@@ -73,9 +80,14 @@ static void failsafe_radio_on_event()
 
 }
 
-// failsafe_off_event - respond to radio contact being regained
-// we must be in AUTO, LAND or RTL modes
-// or Stabilize or ACRO mode but with motors disarmed
+/**
+ * failsafe_radio_off_event
+ *
+ * @access static
+ * @return void
+ *
+ * @brief respond to radio contact being regained, we must be in AUTO, LAND or RTL modes, or Stabilize or ACRO mode but with motors disarmed
+ */
 static void failsafe_radio_off_event()
 {
     // no need to do anything except log the error as resolved
@@ -83,6 +95,11 @@ static void failsafe_radio_off_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
+/**
+ * low_battery_event
+ *
+ * @brief Battery low event - enabled configured action
+ */
 static void low_battery_event(void)
 {
     // failsafe check
@@ -128,7 +145,11 @@ static void low_battery_event(void)
 #endif // COPTER_LEDS
 }
 
-// failsafe_gps_check - check for gps failsafe
+/**
+ * failsafe_gps_check
+ *
+ * @brief Check whether there is a GPS failsafe event
+ */
 static void failsafe_gps_check()
 {
     uint32_t last_gps_update_ms;
@@ -174,14 +195,26 @@ static void failsafe_gps_check()
 #endif
 }
 
-// failsafe_gps_off_event - actions to take when GPS contact is restored
+/**
+ * failsafe_gps_off_event
+ *
+ * @access static
+ * @param voi void
+ * @return void
+ *
+ * @brief actions to take when GPS contact is restored
+ */
 static void failsafe_gps_off_event(void)
 {
     // log recovery of GPS in logs?
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GPS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
-// failsafe_gcs_check - check for ground station failsafe
+/**
+ * failsafe_gcs_check
+ *
+ * @brief check for ground station failsafe
+ */
 static void failsafe_gcs_check()
 {
     uint32_t last_gcs_update_ms;
@@ -260,12 +293,22 @@ static void failsafe_gcs_check()
 }
 
 // failsafe_gcs_off_event - actions to take when GCS contact is restored
+/**
+ * failsafe_gcs_off_event
+ *
+ * @brief actions to take when GCS contact is restored
+ */
 static void failsafe_gcs_off_event(void)
 {
     // log recovery of GCS in logs?
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
+/**
+ * update_events
+ *
+ * @brief FIXME: what's this?
+ */
 static void update_events()     // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
 {
     if(event_repeat == 0 || (millis() - event_timer) < event_delay)

@@ -1,5 +1,15 @@
+/**
+ * @file commands.pde
+ *
+ * @brief 
+ */
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+/**
+ * init_commands
+ *
+ * @brief FIXME
+ */
 static void init_commands()
 {
     g.command_index         = NO_COMMAND;
@@ -10,8 +20,12 @@ static void init_commands()
     command_nav_queue.id    = NO_COMMAND;
 }
 
-// Getters
-// -------
+/**
+ * Location get_cmd_with_index
+ *
+ * @return struct Location Command
+ * @brief Mission Command getter
+ */
 static struct Location get_cmd_with_index(int i)
 {
     struct Location temp;
@@ -63,8 +77,14 @@ static struct Location get_cmd_with_index(int i)
     return temp;
 }
 
-// Setters
-// -------
+/**
+ * set_cmd_with_index
+ *
+ * @param struct Location temp Command
+ * @param int i index
+ *
+ * @brief Mission command setter
+ */
 static void set_cmd_with_index(struct Location temp, int i)
 {
 
@@ -102,6 +122,14 @@ static void set_cmd_with_index(struct Location temp, int i)
         g.command_total.set_and_save(i+1);
 }
 
+/**
+ * get_RTL_alt
+ *
+ * @access static
+ * @return int32_t Altitude in cm
+ *
+ * @brief Returns altitude that copter will return to home at, limiting it to be within sensible bounds to protect users.
+ */
 static int32_t get_RTL_alt()
 {
     if(g.rtl_altitude <= 0) {
@@ -115,6 +143,11 @@ static int32_t get_RTL_alt()
 
 // run this at setup on the ground
 // -------------------------------
+/**
+ * init_home
+ *
+ * @brief Set home position
+ */
 static void init_home()
 {
     set_home_is_set(true);

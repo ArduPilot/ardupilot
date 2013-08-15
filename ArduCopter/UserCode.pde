@@ -1,3 +1,8 @@
+/**
+ * @file UserCode.pde
+ *
+ * @brief Hooks for you to add your own code
+ */
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #ifdef USERHOOK_INIT
