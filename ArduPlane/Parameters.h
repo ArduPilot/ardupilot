@@ -226,8 +226,8 @@ public:
         // 220: Waypoint data
         //
         k_param_waypoint_mode = 220,
-        k_param_command_total,
-        k_param_command_index,
+        k_param_command_total, // unused
+        k_param_command_index, // unused
         k_param_waypoint_radius,
         k_param_loiter_radius,
         k_param_fence_action,
