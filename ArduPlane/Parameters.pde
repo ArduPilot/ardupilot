@@ -647,6 +647,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),
 
+    // @Param: ALT_HOLD_RTL
+    // @DisplayName: RTL altitude
+    // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL.
+    // @Units: centimeters
+    // @User: User
+    GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
+
     // @Param: ALT_HOLD_FBWCM
     // @DisplayName: Minimum altitude for FBWB mode
     // @Description: This is the minimum altitude in centimeters that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.
@@ -850,7 +857,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: MISSION_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
-    GOBJECT(mission,         "MISSION_",   AP_Mission),
+    GOBJECT(mission,                "CMD_",   AP_Mission),
     
 #if MOUNT == ENABLED
     // @Group: MNT_
@@ -914,6 +921,7 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
     { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
     
     { Parameters::k_param_RTL_altitude_cm, 0, AP_PARAM_FLOAT, "ALT_HOLD_RTL" },
+    { Parameters::k_param_command_total, 0, AP_PARAM_INT8,  "CMD_TOTAL" },
 };
 
 static void load_parameters(void)

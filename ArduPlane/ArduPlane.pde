@@ -627,7 +627,7 @@ static struct   Location guided_WP;
 // The location structure information from the Non-Nav command being processed
 static struct   Location next_nonnav_command;
 
-static AP_Mission mission(current_loc);
+static AP_Mission mission(current_loc, WP_START_BYTE, g.RTL_altitude_cm);
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude / Climb rate control
 ////////////////////////////////////////////////////////////////////////////////
