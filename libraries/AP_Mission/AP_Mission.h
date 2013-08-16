@@ -34,8 +34,11 @@
 class AP_Mission {
 
 public:
-    AP_Mission(struct Location &current_loc, uint16_t start_byte = 0x500) :
+    AP_Mission(const struct Location &current_loc, 
+			   uint16_t start_byte,
+			   const AP_Int32 &RTL_altitude_cm) :
         _start_byte(start_byte),
+		_RTL_altitude_cm(RTL_altitude_cm),
         _current_loc(current_loc)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -208,11 +211,10 @@ private:
     AP_Int16        _cmd_max;
 
     //The user specified RTL altitude.
-    AP_Float        _RTL_altitude_cm;
+    const AP_Int32 &_RTL_altitude_cm;
 
     //The address of the current location, provided by vehicle code.
-    struct Location &      _current_loc;
-
+    const struct Location &_current_loc;
 };
 
 #endif
