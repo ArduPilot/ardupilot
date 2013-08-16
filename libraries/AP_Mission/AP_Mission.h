@@ -204,8 +204,8 @@ private:
     // The home location.  Altitude does not include RTL altitude.
     struct Location        _home;
 
-    //Total number of commands in storage.
-    AP_Float        _cmd_max;
+    // Total number of commands in storage.
+    AP_Int16        _cmd_max;
 
     //The user specified RTL altitude.
     AP_Float        _RTL_altitude_cm;
