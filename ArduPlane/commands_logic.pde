@@ -241,6 +241,8 @@ static void do_RTL(void)
     guided_WP=mission.get_home();
     guided_WP.alt=mission.get_home_hold_alt();
     
+    mission.goto_location(guided_WP);
+
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
