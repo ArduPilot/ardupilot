@@ -151,8 +151,11 @@ public:
         return _home.alt;
     }
 
-    /*Returns altitude to RTL, specified in parameter */
+    /* Returns altitude to RTL, specified in parameter */
     int32_t        get_home_hold_alt() const {
+		if (_RTL_altitude_cm < 0) {
+			return _current_loc.alt;
+		}
         return (_home.alt + _RTL_altitude_cm);
     }
 

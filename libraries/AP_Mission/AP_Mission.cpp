@@ -212,14 +212,9 @@ void AP_Mission::_sync_nav_waypoints(){
 
 void AP_Mission::_safe_home(struct Location &safe_home){ 
     
-    safe_home=_home;
-    safe_home.id=MAV_CMD_NAV_LOITER_UNLIM;
-
-    if(_RTL_altitude_cm < 0) {
-        safe_home.alt=_current_loc.alt;
-    } else {
-        safe_home.alt = _home.alt + _RTL_altitude_cm;
-    }
+    safe_home     = _home;
+    safe_home.id  = MAV_CMD_NAV_LOITER_UNLIM;
+	safe_home.alt = get_home_hold_alt();
 }
 
 /*
