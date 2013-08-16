@@ -12,17 +12,7 @@ const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
     // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
     // @Range: 1 255
     // @User: Advanced
-    AP_GROUPINFO("CMD_MAX",  0, AP_Mission, _cmd_max, 0),
-
-    /* Need to figure out how to get this to default to define in config.h
-        the default should be different for planes versus copters. */
-
-    // @Param: RTL_ALT
-    // @DisplayName: RTL altitude
-    // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL.
-    // @Range: 1 255
-    // @User: Advanced
-    AP_GROUPINFO("RTL_ALT",  1, AP_Mission, _RTL_altitude_cm, 10000),
+    AP_GROUPINFO("TOTAL",  0, AP_Mission, _cmd_max, 0),
 
     AP_GROUPEND
 };
