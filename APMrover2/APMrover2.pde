@@ -862,6 +862,7 @@ static void update_current_mode(void)
         calc_nav_steer();
 
         // and throttle gives speed in proportion to cruise speed
+        throttle_nudge = 0;
         calc_throttle(channel_throttle->pwm_to_angle() * 0.01 * g.speed_cruise);
         break;
     }
