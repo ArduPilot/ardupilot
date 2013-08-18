@@ -178,6 +178,7 @@
 #define CH6_INAV_TC                     32  // inertial navigation baro/accel and gps/accel time constant (1.5 = strong baro/gps correction on accel estimatehas very strong does not correct accel estimate, 7 = very weak correction)
 #define CH6_DECLINATION                 38  // compass declination in radians
 #define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
+#define CH6_SONAR_GAIN                  41  // sonar gain
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
