@@ -67,7 +67,7 @@
 #define AUX_SWITCH_SUPERSIMPLE_MODE 13      // change to simple mode in middle, super simple at top
 #define AUX_SWITCH_ACRO_TRAINER     14      // low = disabled, middle = leveled, high = leveled and limited
 #define AUX_SWITCH_SPRAYER          15      // enable/disable the crop sprayer
-#define AUX_SWITCH_AUTO_AND_LAND    16      // switch enabled auto (high) or land (low) flight modes
+#define AUX_SWITCH_AUTO             16      // change to auto flight mode
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
