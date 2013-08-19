@@ -335,7 +335,7 @@ static void Log_Write_Control_Tuning()
         sonar_alt           : sonar_alt,
         baro_alt            : baro_alt,
         next_wp_alt         : get_target_alt_for_reporting() / 100.0f,
-        desired_sonar_alt   : target_sonar_alt,
+        desired_sonar_alt   : (int16_t)target_sonar_alt,
         angle_boost         : angle_boost,
         climb_rate          : climb_rate,
         throttle_out        : g.rc_3.servo_out,
