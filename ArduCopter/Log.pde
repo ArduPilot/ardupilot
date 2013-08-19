@@ -319,7 +319,7 @@ struct PACKED log_Control_Tuning {
     int16_t sonar_alt;
     int32_t baro_alt;
     float   next_wp_alt;
-    int16_t nav_throttle;
+    int16_t desired_sonar_alt;
     int16_t angle_boost;
     int16_t climb_rate;
     int16_t throttle_out;
@@ -335,7 +335,7 @@ static void Log_Write_Control_Tuning()
         sonar_alt           : sonar_alt,
         baro_alt            : baro_alt,
         next_wp_alt         : get_target_alt_for_reporting() / 100.0f,
-        nav_throttle        : nav_throttle,
+        desired_sonar_alt   : target_sonar_alt,
         angle_boost         : angle_boost,
         climb_rate          : climb_rate,
         throttle_out        : g.rc_3.servo_out,
@@ -763,7 +763,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Ecffffffffee",    "WPDst,WPBrg,PErX,PErY,DVelX,DVelY,VelX,VelY,DAcX,DAcY,DRol,DPit" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),     
-      "CTUN", "hcefhhhhh",   "ThrIn,SonAlt,BarAlt,WPAlt,NavThr,AngBst,CRate,ThrOut,DCRate" },
+      "CTUN", "hcefchhhh",   "ThrIn,SonAlt,BarAlt,WPAlt,DesSonAlt,AngBst,CRate,ThrOut,DCRate" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "hhhhhhhhh",    "MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 

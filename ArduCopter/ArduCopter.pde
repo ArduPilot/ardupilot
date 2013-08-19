@@ -631,6 +631,7 @@ static int16_t climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t sonar_alt;
 static uint8_t sonar_alt_health;   // true if we can trust the altitude from the sonar
+static float target_sonar_alt;      // desired altitude in cm above the ground
 // The altitude as reported by Baro in cm – Values can be quite high
 static int32_t baro_alt;
 
