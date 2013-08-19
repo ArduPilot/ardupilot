@@ -105,7 +105,11 @@ def convert_gpx():
     import glob
     mavlog = glob.glob(util.reltopdir("../buildlogs/*.mavlog"))
     for m in mavlog:
-        util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
+        try:
+            util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/wptogpx.py") + m)
+        except:
+            # We have an old version of mavlink, before mavtogpx was renamed to wptogpx
+            util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
