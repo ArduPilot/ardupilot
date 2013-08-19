@@ -30,7 +30,13 @@
 // this allows us to make mavlink_message_t much smaller. It means we
 // can't support the largest messages in common.xml, but we don't need
 // those for APM
-#define MAVLINK_MAX_PAYLOAD_LEN 96
+// additional infos:
+// * 98 is the payloadsize of the largest message in ardupilotmega.xml (data96)
+// * at the moment (2013-09-19)
+//   * there are only 3 messages in common.xml that are larger than 98:
+//     gps_status (101), file_transfer_start (254), file_transfer_dir_list(249)
+//   * currently the largest used message (common.xml & ardupilotmega.xml) is: hil_state (56)
+#define MAVLINK_MAX_PAYLOAD_LEN 98
 
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include "include/mavlink/v1.0/mavlink_types.h"
