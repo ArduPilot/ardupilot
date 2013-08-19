@@ -106,7 +106,7 @@ def convert_gpx():
     mavlog = glob.glob(util.reltopdir("../buildlogs/*.mavlog"))
     for m in mavlog:
         try:
-            util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/wptogpx.py") + m)
+            util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/wptogpx.py ") + m)
         except:
             # We have an old version of mavlink, before mavtogpx was renamed to wptogpx
             util.run_cmd(util.reltopdir("../mavlink/pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
