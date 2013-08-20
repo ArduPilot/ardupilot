@@ -1202,6 +1202,7 @@ static void update_flight_mode(void)
               in CRUISE mode we use the navigation code to control
               roll when heading is locked. Heading becomes unlocked on
               any aileron or rudder input
+              dongfang: Here is a usage of dead zone deadzone dead_zone
              */
             if ((channel_roll->control_in != 0 ||
                  channel_rudder->control_in != 0)) {                
