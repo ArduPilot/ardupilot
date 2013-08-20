@@ -969,7 +969,8 @@ static void airspeed_ratio_update(void)
 {
     if (!airspeed.enabled() ||
         g_gps->status() < GPS::GPS_OK_FIX_3D ||
-        g_gps->ground_speed_cm < 400) {
+        g_gps->ground_speed_cm < 400 ||
+        airspeed.get_airspeed() < aparm.airspeed_min) {
         return;
     }
     airspeed.update_calibration(g_gps->velocity_vector());

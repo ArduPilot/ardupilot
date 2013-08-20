@@ -428,7 +428,7 @@
 // FLY_BY_WIRE_B airspeed control
 //
 #ifndef AIRSPEED_FBW_MIN
- # define AIRSPEED_FBW_MIN               6
+ # define AIRSPEED_FBW_MIN               9
 #endif
 #ifndef AIRSPEED_FBW_MAX
  # define AIRSPEED_FBW_MAX               22

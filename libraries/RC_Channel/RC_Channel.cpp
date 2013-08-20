@@ -20,11 +20,10 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
-#define NUM_CHANNELS 8
 /// global array with pointers to all APM RC channels, will be used by AP_Mount
 /// and AP_Camera classes / It points to RC input channels, both APM1 and APM2
 /// only have 8 input channels.
-RC_Channel *RC_Channel::rc_ch[NUM_CHANNELS];
+RC_Channel *RC_Channel::rc_ch[RC_MAX_CHANNELS];
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MIN
@@ -369,4 +368,12 @@ void
 RC_Channel::enable_out()
 {
     hal.rcout->enable_ch(_ch_out);
+}
+
+RC_Channel *RC_Channel::rc_channel(uint8_t i)
+{
+    if (i >= RC_MAX_CHANNELS) {
+        return NULL;
+    }
+    return rc_ch[i];
 }

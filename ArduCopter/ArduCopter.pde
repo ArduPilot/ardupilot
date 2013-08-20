@@ -327,7 +327,7 @@ static GCS_MAVLINK gcs3;
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size5 sonar_mode_filter(1);
+ModeFilterInt16_Size3 sonar_mode_filter(1);
 #if CONFIG_SONAR == ENABLED
 static AP_HAL::AnalogSource *sonar_analog_source;
 static AP_RangeFinder_MaxsonarXL *sonar;
@@ -631,6 +631,7 @@ static int16_t climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t sonar_alt;
 static uint8_t sonar_alt_health;   // true if we can trust the altitude from the sonar
+static float target_sonar_alt;      // desired altitude in cm above the ground
 // The altitude as reported by Baro in cm – Values can be quite high
 static int32_t baro_alt;
 
@@ -2285,6 +2286,11 @@ static void tuning(){
     case CH6_CIRCLE_RATE:
         // set circle rate
         g.circle_rate.set(g.rc_6.control_in/25-20);     // allow approximately 45 degree turn rate in either direction
+        break;
+
+    case CH6_SONAR_GAIN:
+        // set sonar gain
+        g.sonar_gain.set(tuning_value);
         break;
     }
 }
