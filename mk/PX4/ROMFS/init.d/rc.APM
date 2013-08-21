@@ -145,6 +145,11 @@ then
     echo "Found ETS airspeed sensor" >> $logfile
 fi
 
+if meas_airspeed start
+then
+    echo "Found MEAS airspeed sensor" >> $logfile
+fi
+
 echo "Trying PX4IO board"
 echo "Trying PX4IO board" >> $logfile
 if px4io start
