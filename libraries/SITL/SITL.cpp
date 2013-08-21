@@ -61,8 +61,8 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.yAccel,
                               state.zAccel,
                               p, q, r,
-                              state.latitude,
-                              state.longitude);
+                              state.latitude*1.0e7,
+                              state.longitude*1.0e7);
 }
 
 // convert a set of roll rates from earth frame to body frame

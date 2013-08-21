@@ -293,12 +293,16 @@
  # define SONAR_ALT_HEALTH_MAX 3            // number of good reads that indicates a healthy sonar
 #endif
 
+#ifndef SONAR_RELIABLE_DISTANCE_PCT
+ # define SONAR_RELIABLE_DISTANCE_PCT 0.60f // we trust the sonar out to 60% of it's maximum range
+#endif
+
 #ifndef SONAR_GAIN_DEFAULT
- # define SONAR_GAIN_DEFAULT 0.2            // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
+ # define SONAR_GAIN_DEFAULT 2.0            // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
 #endif
 
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
- # define THR_SURFACE_TRACKING_VELZ_MAX 30  // max vertical speed change while surface tracking with sonar
+ # define THR_SURFACE_TRACKING_VELZ_MAX 150 // max vertical speed change while surface tracking with sonar
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -394,6 +398,9 @@
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
 #endif
+#ifndef GPS_HDOP_GOOD_DEFAULT
+ # define GPS_HDOP_GOOD_DEFAULT         200     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
+#endif
 
 // GCS failsafe
 #ifndef FS_GCS
@@ -461,7 +468,7 @@
  #define OPTFLOW_PITCH_D 0.12f
 #endif
 #ifndef OPTFLOW_IMAX
- #define OPTFLOW_IMAX 1
+ #define OPTFLOW_IMAX 100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -604,7 +611,7 @@
 #endif
 
 #ifndef SPORT_THR
- # define SPORT_THR           	    THROTTLE_MANUAL
+ # define SPORT_THR           	    THROTTLE_HOLD
 #endif
 
 // Alt Hold Mode
@@ -649,6 +656,10 @@
 
 #ifndef CIRCLE_NAV
  # define CIRCLE_NAV           	    NAV_CIRCLE
+#endif
+
+#ifndef CIRCLE_RADIUS
+ # define CIRCLE_RADIUS             10              // radius in meters for circle mode
 #endif
 
 #ifndef CIRCLE_RATE
@@ -779,7 +790,7 @@
  # define STABILIZE_ROLL_I          0.0f
 #endif
 #ifndef STABILIZE_ROLL_IMAX
- # define STABILIZE_ROLL_IMAX    	8.0f            // degrees
+ # define STABILIZE_ROLL_IMAX    	0
 #endif
 
 #ifndef STABILIZE_PITCH_P
@@ -789,7 +800,7 @@
  # define STABILIZE_PITCH_I         0.0f
 #endif
 #ifndef STABILIZE_PITCH_IMAX
- # define STABILIZE_PITCH_IMAX   	8.0f            // degrees
+ # define STABILIZE_PITCH_IMAX   	0
 #endif
 
 #ifndef  STABILIZE_YAW_P
@@ -799,7 +810,7 @@
  # define STABILIZE_YAW_I           0.0f
 #endif
 #ifndef  STABILIZE_YAW_IMAX
- # define STABILIZE_YAW_IMAX        8.0f            // degrees * 100
+ # define STABILIZE_YAW_IMAX        0
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
@@ -810,12 +821,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stabilize Rate Control
 //
-
-#ifndef MAX_INPUT_ROLL_ANGLE
- # define MAX_INPUT_ROLL_ANGLE      4500
+#ifndef ROLL_PITCH_INPUT_MAX
+ # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
 #endif
-#ifndef MAX_INPUT_PITCH_ANGLE
- # define MAX_INPUT_PITCH_ANGLE     4500
+#ifndef DEFAULT_ANGLE_MAX
+ # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
 #endif
 #ifndef RATE_ROLL_P
  # define RATE_ROLL_P        		0.150f
@@ -827,7 +837,7 @@
  # define RATE_ROLL_D        		0.004f
 #endif
 #ifndef RATE_ROLL_IMAX
- # define RATE_ROLL_IMAX         	5.0f                    // degrees
+ # define RATE_ROLL_IMAX         	500
 #endif
 
 #ifndef RATE_PITCH_P
@@ -840,7 +850,7 @@
  # define RATE_PITCH_D       		0.004f
 #endif
 #ifndef RATE_PITCH_IMAX
- # define RATE_PITCH_IMAX        	5.0f                    // degrees
+ # define RATE_PITCH_IMAX        	500
 #endif
 
 #ifndef RATE_YAW_P
@@ -853,7 +863,7 @@
  # define RATE_YAW_D              	0.000f
 #endif
 #ifndef RATE_YAW_IMAX
- # define RATE_YAW_IMAX            	8.0f          // degrees
+ # define RATE_YAW_IMAX            	800
 #endif
 
 
@@ -891,7 +901,7 @@
  # define LOITER_I             		0.0f
 #endif
 #ifndef LOITER_IMAX
- # define LOITER_IMAX          		30             // degrees
+ # define LOITER_IMAX          		0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -907,7 +917,7 @@
  # define LOITER_RATE_D          	0.0f
 #endif
 #ifndef LOITER_RATE_IMAX
- # define LOITER_RATE_IMAX       	4               // maximum acceleration from I term build-up in m/s/s
+ # define LOITER_RATE_IMAX       	400             // maximum acceleration from I term build-up in cm/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1059,13 +1069,6 @@
     LOGBIT(PID)             | \
     LOGBIT(COMPASS)         | \
     LOGBIT(INAV)
-
-//////////////////////////////////////////////////////////////////////////////
-// Circle navigation defaults
-//
-#ifndef CIRCLE_RADIUS
- # define CIRCLE_RADIUS 10              // meters for circle mode
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // AP_Limits Defaults

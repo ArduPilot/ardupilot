@@ -37,7 +37,8 @@ public:
         GPS_TYPE_UBLOX = 1,
         GPS_TYPE_MTK   = 2,
         GPS_TYPE_MTK16 = 3,
-        GPS_TYPE_MTK19 = 4
+        GPS_TYPE_MTK19 = 4,
+        GPS_TYPE_NMEA  = 5
     };
 
 	struct sitl_fdm state;

@@ -141,6 +141,9 @@ public:
     // heading and ground speed
     bool get_projected_position(struct Location &loc);
 
+    // return the estimated lag in our position due to GPS lag
+    float get_position_lag(void) const;
+
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) {
         return Vector3f(0,0,0);

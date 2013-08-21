@@ -553,7 +553,6 @@ protected:
 // declare a scalar type
 // _t is the base type
 // _suffix is the suffix on the AP_* type name
-
 // _pt is the enum ap_var_type type
 // typedef AP_ParamT<int8_t, AP_PARAM_INT8> AP_Int8; etc.
 

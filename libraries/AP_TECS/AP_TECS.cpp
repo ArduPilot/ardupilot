@@ -151,7 +151,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 	_update_50hz_last_usec = now;	
 
 	// Get height acceleration
-	float hgt_ddot_mea = -(_ahrs->get_accel_ef().z + GRAVITY_MSS);
+	float hgt_ddot_mea = -(_ahrs.get_accel_ef().z + GRAVITY_MSS);
 	// Perform filter calculation using backwards Euler integration
     // Coefficients selected to place all three filter poles at omega
 	float omega2 = _hgtCompFiltOmega*_hgtCompFiltOmega;
@@ -172,11 +172,11 @@ void AP_TECS::update_50hz(float hgt_afe)
 	// Update and average speed rate of change
     // Only required if airspeed is being measured and controlled
     float temp = 0;
-	if (_ahrs->airspeed_sensor_enabled() && _ahrs->airspeed_estimate_true(&_EAS)) {
+	if (_ahrs.airspeed_sensor_enabled() && _ahrs.airspeed_estimate_true(&_EAS)) {
         // Get DCM
-        const Matrix3f &rotMat = _ahrs->get_dcm_matrix();
+        const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
 	    // Calculate speed rate of change
-	    temp = rotMat.c.x * GRAVITY_MSS + _ahrs->get_ins()->get_accel().x;
+	    temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins()->get_accel().x;
 	    // take 5 point moving average
         _vel_dot = _vdot_filter.apply(temp);
     } else {
@@ -194,7 +194,7 @@ void AP_TECS::_update_speed(void)
 
     // Convert equivalent airspeeds to true airspeeds
 
-    float EAS2TAS = _ahrs->get_EAS2TAS();
+    float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem  = _EAS_dem * EAS2TAS;
     _TASmax   = aparm.airspeed_max * EAS2TAS;
     _TASmin   = aparm.airspeed_min * EAS2TAS;
@@ -209,7 +209,7 @@ void AP_TECS::_update_speed(void)
 
     // Get airspeed or default to halfway between min and max if
     // airspeed is not being used and set speed rate to zero
-    if (!_ahrs->airspeed_sensor_enabled() || !_ahrs->airspeed_estimate(&_EAS)) {
+    if (!_ahrs.airspeed_sensor_enabled() || !_ahrs.airspeed_estimate(&_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = 0.5f * (aparm.airspeed_min + aparm.airspeed_max);
     }
@@ -364,7 +364,7 @@ void AP_TECS::_update_throttle(void)
         // Calculate feed-forward throttle
         float ff_throttle = 0;
 		float nomThr = aparm.throttle_cruise * 0.01f;
-		const Matrix3f &rotMat = _ahrs->get_dcm_matrix();
+		const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
 		// Use the demanded rate of change of total energy as the feed-forward demand, but add
 		// additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
 		// drag increase during turns.
@@ -406,7 +406,7 @@ void AP_TECS::_update_throttle(void)
 
 		// Sum the components. 
 		// Only use feed-forward component if airspeed is not being used
-	    if (_ahrs->airspeed_sensor_enabled()) {
+	    if (_ahrs.airspeed_sensor_enabled()) {
 	        _throttle_dem = _throttle_dem + _integ6_state;
 	    } else {
  	       _throttle_dem = ff_throttle;
@@ -439,7 +439,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
 	}
 
     // Calculate additional throttle for turn drag compensation including throttle nudging
-	const Matrix3f &rotMat = _ahrs->get_dcm_matrix();
+	const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
 	// Use the demanded rate of change of total energy as the feed-forward demand, but add
 	// additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
 	// drag increase during turns.
@@ -483,9 +483,9 @@ void AP_TECS::_update_pitch(void)
 	// or during takeoff/climbout where a minimum pitch angle is set to ensure height is gained. In this instance, if airspeed
 	// rises above the demanded value, the pitch angle will be increased by the TECS controller.
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-	if ( ( _underspeed || _climbOutDem ) && _ahrs->airspeed_sensor_enabled() ) {
+	if ( ( _underspeed || _climbOutDem ) && _ahrs.airspeed_sensor_enabled() ) {
 		SKE_weighting = 2.0f;
-	} else if (!_ahrs->airspeed_sensor_enabled()) {
+	} else if (!_ahrs.airspeed_sensor_enabled()) {
 		SKE_weighting = 0.0f;
 	}
 	float SPE_weighting = 2.0f - SKE_weighting;
@@ -544,7 +544,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 		_integ6_state      = 0.0f;
 		_integ7_state      = 0.0f;
 		_last_throttle_dem = aparm.throttle_cruise * 0.01f;
-		_last_pitch_dem    = _ahrs->pitch;
+		_last_pitch_dem    = _ahrs.pitch;
 		_hgt_dem_adj_last  = hgt_afe;
 		_hgt_dem_adj       = _hgt_dem_adj_last;
 		_hgt_dem_prev      = _hgt_dem_adj_last;
@@ -621,7 +621,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _update_energies();
 
     // Calculate throttle demand - use simple pitch to throttle if no airspeed sensor
-	if (_ahrs->airspeed_sensor_enabled()) {
+	if (_ahrs.airspeed_sensor_enabled()) {
         _update_throttle();
 	} else {
         _update_throttle_option(throttle_nudge);

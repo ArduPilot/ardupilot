@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdio.h>
 #include <sys/time.h>
 
 using namespace AVR_SITL;
@@ -80,7 +81,7 @@ int SITL_State::gps_pipe(void)
 /*
   write some bytes from the simulated GPS
  */
-void SITL_State::_gps_write(uint8_t *p, uint16_t size)
+void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
 {
 	while (size--) {
 		if (_sitl->gps_byteloss > 0.0) {
@@ -426,6 +427,100 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
 }
 
 /*
+  NMEA checksum
+ */
+uint16_t SITL_State::_gps_nmea_checksum(const char *s)
+{
+    uint16_t cs = 0;
+    const uint8_t *b = (const uint8_t *)s;
+    for (uint16_t i=1; s[i]; i++) {
+        cs ^= b[i];
+    }
+    return cs;
+}
+
+/*
+  formated print of NMEA message, with checksum appended
+ */
+void SITL_State::_gps_nmea_printf(const char *fmt, ...) 
+{
+    char *s = NULL;
+    uint16_t csum;
+    char trailer[6];
+
+    va_list ap;
+
+    va_start(ap, fmt);
+    vasprintf(&s, fmt, ap);
+    va_end(ap);
+    csum = _gps_nmea_checksum(s);
+    snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)csum);
+    _gps_write((const uint8_t*)s, strlen(s));
+    _gps_write((const uint8_t*)trailer, 5);
+    free(s);
+}
+
+
+/*
+  send a new GPS NMEA packet
+ */
+void SITL_State::_update_gps_nmea(const struct gps_data *d)
+{
+    struct timeval tv;
+    struct tm *tm;
+    char tstring[20];
+    char dstring[20];
+    char lat_string[20];
+    char lng_string[20];
+
+    gettimeofday(&tv, NULL);
+
+    tm = gmtime(&tv.tv_sec);
+
+    // format time string
+    snprintf(tstring, sizeof(tstring), "%02d%02d%05.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec*1.0e-6);
+
+    // format date string
+    snprintf(dstring, sizeof(dstring), "%02d%02d%02d", tm->tm_mday, tm->tm_mon, tm->tm_year % 100);
+
+    // format latitude
+    double deg = fabs(d->latitude);
+    snprintf(lat_string, sizeof(lat_string), "%02u%08.5f,%c",
+             (unsigned)deg, 
+             (deg - int(deg))*60,
+             d->latitude<0?'S':'N');
+
+    // format longitude
+    deg = fabs(d->longitude);
+    snprintf(lng_string, sizeof(lng_string), "%03u%08.5f,%c",
+             (unsigned)deg, 
+             (deg - int(deg))*60,
+             d->longitude<0?'W':'E');
+
+    _gps_nmea_printf("$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
+                     tstring, 
+                     lat_string, 
+                     lng_string,
+                     d->have_lock?1:0, 
+                     d->have_lock?_sitl->gps_numsats:3,
+                     2.0, 
+                     d->altitude);
+    float speed_knots = pythagorous2(d->speedN, d->speedE)*1.94384449f;
+    float heading = ToDeg(atan2f(d->speedE, d->speedN));
+    if (heading < 0) {
+        heading += 360.0f;
+    }
+    _gps_nmea_printf("$GPRMC,%s,%c,%s,%s,%.2f,%.2f,%s,,",
+                     tstring, 
+                     d->have_lock?'A':'V', 
+                     lat_string,
+                     lng_string,
+                     speed_knots,
+                     heading,
+                     dstring);
+}
+
+/*
   possibly send a new GPS packet
  */
 void SITL_State::_update_gps(double latitude, double longitude, float altitude,
@@ -493,6 +588,10 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
 	case SITL::GPS_TYPE_MTK19:
 		_update_gps_mtk19(&d);
+		break;
+
+	case SITL::GPS_TYPE_NMEA:
+		_update_gps_nmea(&d);
 		break;
 	}
 }

@@ -10,13 +10,12 @@
 
 class AP_RollController {
 public:
-	AP_RollController(const AP_SpdHgtControl::AircraftParameters &parms) :
-		aparm(parms)
+	AP_RollController(AP_AHRS &ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
+		aparm(parms),
+        _ahrs(ahrs)
     { 
 		AP_Param::setup_object_defaults(this, var_info);
 	}
-
-	void set_ahrs(AP_AHRS *ahrs) { _ahrs = ahrs; }
 
 	int32_t get_rate_out(float desired_rate, float scaler);
 	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
@@ -40,7 +39,7 @@ private:
 
 	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
 
-	AP_AHRS *_ahrs;
+	AP_AHRS &_ahrs;
 
 };
 

@@ -189,11 +189,6 @@ static void init_ardupilot()
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
 
-    // the axis controllers need access to the AHRS system
-    g.rollController.set_ahrs(&ahrs);
-    g.pitchController.set_ahrs(&ahrs);
-    g.yawController.set_ahrs(&ahrs);
-
 	// Do GPS init
 	g_gps = &g_gps_driver;
     // GPS Initialization
@@ -383,9 +378,9 @@ static void set_mode(enum FlightMode mode)
         Log_Write_Mode(control_mode);
 
     // reset attitude integrators on mode change
-    g.rollController.reset_I();
-    g.pitchController.reset_I();
-    g.yawController.reset_I();    
+    rollController.reset_I();
+    pitchController.reset_I();
+    yawController.reset_I();    
 }
 
 static void check_long_failsafe()

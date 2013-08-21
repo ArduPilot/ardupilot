@@ -78,7 +78,7 @@ static void stabilize_roll(float speed_scaler)
     bool disable_integrator = 
     		control_mode == STABILIZE && channel_roll->control_in != 0;
 
-    channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
+    channel_roll->servo_out = rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
                                                              speed_scaler, 
                                                              disable_integrator);
 }
@@ -95,7 +95,7 @@ static void stabilize_pitch(float speed_scaler)
     // dongfang: Here is a usage of dead zone deadzone dead_zone
     bool disable_integrator = control_mode == STABILIZE && channel_pitch->control_in != 0;
 
-    channel_pitch->servo_out = g.pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
+    channel_pitch->servo_out = pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                speed_scaler, 
                                                                disable_integrator);
 }
@@ -277,16 +277,16 @@ static void stabilize_acro(float speed_scaler)
         nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
         // 'stabilze' to true, which disables the roll integrator
-        channel_roll->servo_out  = g.rollController.get_servo_out(roll_error_cd,
-                                                                  speed_scaler,
-                                                                  true);
+        channel_roll->servo_out  = rollController.get_servo_out(roll_error_cd,
+                                                                speed_scaler,
+                                                                true);
     } else {
         /*
           aileron stick is non-zero, use pure rate control until the
           user releases the stick
          */
         acro_state.locked_roll = false;
-        channel_roll->servo_out  = g.rollController.get_rate_out(roll_rate,  speed_scaler);
+        channel_roll->servo_out  = rollController.get_rate_out(roll_rate,  speed_scaler);
     }
 
     if (pitch_rate == 0) {
@@ -301,15 +301,15 @@ static void stabilize_acro(float speed_scaler)
         // try to hold the locked pitch. Note that we have the pitch
         // integrator enabled, which helps with inverted flight
         nav_pitch_cd = acro_state.locked_pitch_cd;
-        channel_pitch->servo_out  = g.pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
-                                                                    speed_scaler,
-                                                                    false);
+        channel_pitch->servo_out  = pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
+                                                                  speed_scaler,
+                                                                  false);
     } else {
         /*
           user has non-zero pitch input, use a pure rate controller
          */
         acro_state.locked_pitch = false;
-        channel_pitch->servo_out = g.pitchController.get_rate_out(pitch_rate, speed_scaler);
+        channel_pitch->servo_out = pitchController.get_rate_out(pitch_rate, speed_scaler);
     }
 
     /*
@@ -321,7 +321,6 @@ static void stabilize_acro(float speed_scaler)
 }
 
 /*
- * main stabilization function for all 3 axes
  * main stabilization function for all 3 axes
  * Called for all control modes except MANUAL. Here is the 2nd time control_mode is 
  * checked.
@@ -360,9 +359,9 @@ static void stabilize()
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
         // integrators. This prevents integrator buildup pre-takeoff.
-        g.rollController.reset_I();
-        g.pitchController.reset_I();
-        g.yawController.reset_I();
+        rollController.reset_I();
+        pitchController.reset_I();
+        yawController.reset_I();
     }
 }
 
@@ -403,7 +402,7 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
     // dongfang: Here is a usage of dead zone deadzone dead_zone
     bool disable_integrator = control_mode == STABILIZE && channel_rudder->control_in != 0;
 
-    channel_rudder->servo_out = g.yawController.get_servo_out(speed_scaler, disable_integrator);
+    channel_rudder->servo_out = yawController.get_servo_out(speed_scaler, disable_integrator);
 
     // add in rudder mixing from roll
     channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;

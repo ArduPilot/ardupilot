@@ -262,12 +262,19 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     g.acro_trainer = ACRO_TRAINER_LIMITED;
                     break;
             }
+            break;
 
 #if SPRAYER == ENABLED
         case AUX_SWITCH_SPRAYER:
             sprayer.enable(ch_flag == AUX_SWITCH_HIGH);
             break;
 #endif
+
+        case AUX_SWITCH_AUTO:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                set_mode(AUTO);
+            }
+            break;
     }
 }
 

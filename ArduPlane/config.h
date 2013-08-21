@@ -279,10 +279,10 @@
  # define FLIGHT_MODE_2                  RTL
 #endif
 #if !defined(FLIGHT_MODE_3)
- # define FLIGHT_MODE_3                  STABILIZE
+ # define FLIGHT_MODE_3                  FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_4)
- # define FLIGHT_MODE_4                  STABILIZE
+ # define FLIGHT_MODE_4                  FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_5)
  # define FLIGHT_MODE_5                  MANUAL
@@ -423,7 +423,7 @@
 // FLY_BY_WIRE_B airspeed control
 //
 #ifndef AIRSPEED_FBW_MIN
- # define AIRSPEED_FBW_MIN               6
+ # define AIRSPEED_FBW_MIN               9
 #endif
 #ifndef AIRSPEED_FBW_MAX
  # define AIRSPEED_FBW_MAX               22

@@ -738,8 +738,8 @@ static void mavlink_test_simstate(uint8_t system_id, uint8_t component_id, mavli
 	185.0,
 	213.0,
 	241.0,
-	269.0,
-	297.0,
+	963499336,
+	963499544,
 	};
 	mavlink_simstate_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));

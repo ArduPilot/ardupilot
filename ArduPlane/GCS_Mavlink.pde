@@ -846,7 +846,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  50),
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  10),
     AP_GROUPEND
 };
 
@@ -976,7 +976,7 @@ GCS_MAVLINK::data_stream_send(void)
 
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(50);
+            streamRates[STREAM_PARAMS].set(10);
         }
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);

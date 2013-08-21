@@ -1,5 +1,30 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
+// returns desired angle in centi-degrees
+static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
+{
+    static float _scaler = 1.0;
+    static int16_t _angle_max = 0;
+
+    // return immediately if no scaling required
+    if (g.angle_max == ROLL_PITCH_INPUT_MAX) {
+        roll_out = roll_in;
+        pitch_out = pitch_in;
+        return;
+    }
+
+    // check if angle_max has been updated and redo scaler
+    if (g.angle_max != _angle_max) {
+        _angle_max = g.angle_max;
+        _scaler = (float)g.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    }
+
+    // convert pilot input to lean angle
+    roll_out = roll_in * _scaler;
+    pitch_out = pitch_in * _scaler;
+}
+
 static void
 get_stabilize_roll(int32_t target_angle)
 {
@@ -7,7 +32,7 @@ get_stabilize_roll(int32_t target_angle)
     target_angle = wrap_180_cd(target_angle - ahrs.roll_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle = constrain_int32(target_angle, -4500, 4500);
+    target_angle = constrain_int32(target_angle, -g.angle_max, g.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_roll.kP() * target_angle;
@@ -23,7 +48,7 @@ get_stabilize_pitch(int32_t target_angle)
     target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle            = constrain_int32(target_angle, -4500, 4500);
+    target_angle            = constrain_int32(target_angle, -g.angle_max, g.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_pitch.kP() * target_angle;
@@ -114,10 +139,10 @@ get_acro_level_rates()
     int32_t target_rate = 0;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (roll_angle > 4500){
-            target_rate =  g.pi_stabilize_roll.get_p(4500-roll_angle);
-        }else if (roll_angle < -4500) {
-            target_rate =  g.pi_stabilize_roll.get_p(-4500-roll_angle);
+        if (roll_angle > g.angle_max){
+            target_rate =  g.pi_stabilize_roll.get_p(g.angle_max-roll_angle);
+        }else if (roll_angle < -g.angle_max) {
+            target_rate =  g.pi_stabilize_roll.get_p(-g.angle_max-roll_angle);
         }
     }
     roll_angle   = constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
@@ -131,10 +156,10 @@ get_acro_level_rates()
     target_rate = 0;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (pitch_angle > 4500){
-            target_rate =  g.pi_stabilize_pitch.get_p(4500-pitch_angle);
-        }else if (pitch_angle < -4500) {
-            target_rate =  g.pi_stabilize_pitch.get_p(-4500-pitch_angle);
+        if (pitch_angle > g.angle_max){
+            target_rate =  g.pi_stabilize_pitch.get_p(g.angle_max-pitch_angle);
+        }else if (pitch_angle < -g.angle_max) {
+            target_rate =  g.pi_stabilize_pitch.get_p(-g.angle_max-pitch_angle);
         }
     }
     pitch_angle  = constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
@@ -278,8 +303,8 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     acro_roll = wrap_180_cd(acro_roll);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_roll) > 4500 && g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        acro_roll  = constrain_int32(acro_roll, -4500, 4500);
+    if (labs(acro_roll) > g.angle_max) {
+        acro_roll  = constrain_int32(acro_roll, -g.angle_max, g.angle_max);
         angle_error = wrap_180_cd(acro_roll - ahrs.roll_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
@@ -319,8 +344,8 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     acro_pitch = wrap_180_cd(acro_pitch);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_pitch) > 4500) {
-        acro_pitch  = constrain_int32(acro_pitch, -4500, 4500);
+    if (labs(acro_pitch) > g.angle_max) {
+        acro_pitch  = constrain_int32(acro_pitch, -g.angle_max, g.angle_max);
         angle_error = wrap_180_cd(acro_pitch - ahrs.pitch_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
@@ -1259,6 +1284,17 @@ get_throttle_rate_stabilized(int16_t target_rate)
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 
+#if AC_FENCE == ENABLED
+    // do not let target altitude be too close to the fence
+    // To-Do: add this to other altitude controllers
+    if((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        float alt_limit = fence.get_safe_alt() * 100.0f;
+        if (controller_desired_alt > alt_limit) {
+            controller_desired_alt = alt_limit;
+        }
+    }
+#endif
+
     // update target altitude for reporting purposes
     set_target_alt_for_reporting(controller_desired_alt);
 
@@ -1323,10 +1359,9 @@ static bool update_land_detector()
 static void
 get_throttle_surface_tracking(int16_t target_rate)
 {
-    static float target_sonar_alt = 0;   // The desired altitude in cm above the ground
     static uint32_t last_call_ms = 0;
     float distance_error;
-    float sonar_induced_slew_rate;
+    float velocity_correction;
 
     uint32_t now = millis();
 
@@ -1336,23 +1371,22 @@ get_throttle_surface_tracking(int16_t target_rate)
     }
     last_call_ms = now;
 
-    // adjust target alt if motors have not hit their limits
+    // adjust sonar target alt if motors have not hit their limits
     if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
         target_sonar_alt += target_rate * 0.02f;
     }
 
-    distance_error = (target_sonar_alt-sonar_alt);
-    sonar_induced_slew_rate = constrain_float(fabsf(g.sonar_gain * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
-
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
     target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-750,sonar_alt+750);
-    controller_desired_alt = current_loc.alt+(target_sonar_alt-sonar_alt);
 
-    // update target altitude for reporting purposes
-    set_target_alt_for_reporting(controller_desired_alt);
+    // calc desired velocity correction from target sonar alt vs actual sonar alt
+    distance_error = target_sonar_alt-sonar_alt;
+    velocity_correction = distance_error * g.sonar_gain;
+    velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 
-    get_throttle_althold_with_slew(controller_desired_alt, target_rate-sonar_induced_slew_rate, target_rate+sonar_induced_slew_rate);   // VELZ_MAX limits how quickly we react
+    // call regular rate stabilize alt hold controller
+    get_throttle_rate_stabilized(target_rate + velocity_correction);
 }
 
 /*

@@ -10,15 +10,11 @@
 
 class AP_YawController {
 public:                      
-	AP_YawController(const AP_SpdHgtControl::AircraftParameters &parms) :
-		aparm(parms)
+	AP_YawController(AP_AHRS &ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
+		aparm(parms),
+        _ahrs(ahrs)
 	{
 		AP_Param::setup_object_defaults(this, var_info);
-	}
-
-	void set_ahrs(AP_AHRS *ahrs) { 
-		_ahrs = ahrs; 
-		_ins = _ahrs->get_ins();
 	}
 
 	int32_t get_servo_out(float scaler, bool disable_integrator);
@@ -43,9 +39,7 @@ private:
 
 	float _integrator;
 
-	AP_AHRS *_ahrs;
-	AP_InertialSensor *_ins;
-
+	AP_AHRS &_ahrs;
 };
 
 #endif // __AP_YAW_CONTROLLER_H__

@@ -92,6 +92,12 @@ void        location_update(struct Location &loc, float bearing, float distance)
 void        location_offset(struct Location &loc, float ofs_north, float ofs_east);
 
 /*
+  return the distance in meters in North/East plane as a N/E vector
+  from loc1 to loc2
+ */
+Vector2f location_diff(const struct Location &loc1, const struct Location &loc2);
+
+/*
   wrap an angle in centi-degrees
  */
 int32_t wrap_360_cd(int32_t error);

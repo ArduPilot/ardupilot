@@ -308,14 +308,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: When throttle is supressed in auto mode it is normally forced to zero. If you enable this option, then while suppressed it will be manual throttle. This is useful on petrol engines to hold the idle throttle manually while waiting for takeoff
 	// @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    GSCALAR(throttle_suppress_manual,"THR_SUPP_MAN",   1),
+    GSCALAR(throttle_suppress_manual,"THR_SUPP_MAN",   0),
 
     // @Param: THR_PASS_STAB
     // @DisplayName: Throttle passthru in stabilize
     // @Description: If this is set then when in STABILIZE, FBWA or ACRO modes the throttle is a direct passthru from the transmitter. This means the THR_MIN and THR_MAX settings are not used in these modes. This is useful for petrol engines where you setup a throttle cut switch that suppresses the throttle below the normal minimum.
 	// @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    GSCALAR(throttle_passthru_stabilize,"THR_PASS_STAB",   1),
+    GSCALAR(throttle_passthru_stabilize,"THR_PASS_STAB",   0),
 
     // @Param: THR_FAILSAFE
     // @DisplayName: Throttle Failsafe Enable
@@ -808,15 +808,15 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
-	GGROUP(rollController,          "RLL2SRV_",   AP_RollController),
+	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
 
     // @Group: PTCH2SRV_
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
-	GGROUP(pitchController,         "PTCH2SRV_",  AP_PitchController),
+	GOBJECT(pitchController,        "PTCH2SRV_",  AP_PitchController),
 
     // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-	GGROUP(yawController,           "YAW2SRV_",   AP_YawController),
+	GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
 
 	// variables not in the g class which contain EEPROM saved variables
 
