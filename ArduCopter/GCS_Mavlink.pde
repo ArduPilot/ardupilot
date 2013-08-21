@@ -2060,6 +2060,30 @@ mission_failed:
     }
 #endif // AC_FENCE ENABLED
 */
+    case MAVLINK_MSG_ID_STATE_CORRECTION : {
+
+    	/* currently only horizontal corrections are supported
+    	 *
+    	 * the mavlink state-correction message misses almost all units in its description
+    	 * (apart from the missing receiver id in the message)
+    	 *
+    	 * for consistency with other length units that are transmitted as floats,
+    	 * the following assumptions about units are made:
+    	 * x-/y-/z- error in meters
+    	 * velocity error in m/s
+    	 */
+
+    	// TODO: plausibility check ( e.g. abs(err) <= 2 * gps-standard-deviation )
+     	constexpr float m_to_cm = 100.f;
+    	const Vector3f &current_pos_estimate = inertial_nav.get_position();
+        inertial_nav.set_position_xy(
+        		current_pos_estimate.x + mavlink_msg_state_correction_get_xErr(msg) * m_to_cm,
+        		current_pos_estimate.y + mavlink_msg_state_correction_get_yErr(msg) * m_to_cm
+        	    );
+        // TODO: report back the new position estimate
+        // ("send_location" can't be used, because it sends the old position still stored in "current_loc", that is updated later)
+        break;
+    }
 
     }     // end switch
 } // end handle mavlink
