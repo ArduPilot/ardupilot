@@ -223,20 +223,8 @@ static void set_guided_WP(void)
     loiter_angle_reset();
 }
 
-<<<<<<< HEAD
 void init_home_from_gps() {
     // block until we get a good fix
-=======
-// run this at setup on the ground
-// -------------------------------
-void init_home()
-{
-    gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
-
-    // First make sure we have some kind of fix. This will always be the case when called
-    // from update_GPS in ArduPlane, but do_set_home in commands_logic MAY be fired before
-    // there is a GPS fix.
->>>>>>> origin/master
     // -----------------------------
     while (!g_gps->new_data || !g_gps->fix) {
         g_gps->update();
