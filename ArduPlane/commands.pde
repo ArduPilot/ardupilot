@@ -251,7 +251,7 @@ void init_home()
 	
     struct Location waypointZero= get_cmd_with_index_raw(0);
     bool isWP0Set = waypointZero.lng != 0 || waypointZero.lat != 0; 
-    float horizontal_diff_m = get_distance(&home, &waypointZero);
+    float horizontal_diff_m = get_distance(home, waypointZero);
     
     // If WP0 was set, use that as home if it is not too far from current GPS location.
     // If WP0 was never set, it will be read as at lat=0, lon=0. This is in the ocean. 
