@@ -130,6 +130,7 @@ static RC_Channel *channel_rudder;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 static void update_events(void);
+void gcs_send_text_fmt_severity(gcs_severity severity, const prog_char_t *fmt, ...);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
@@ -1008,14 +1009,16 @@ static void update_GPS(void)
             ground_start_avg += g_gps->ground_speed_cm;
 
         } else if (ground_start_count == 1) {
+
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
             // -------------------------------------
             if (current_loc.lat == 0) {
+            	// gcs_send_text_P(SEVERITY_LOW, PSTR("Ground start timeout but no position"));
                 ground_start_count = 10;
             } else {
+            	// gcs_send_text_P(SEVERITY_LOW, PSTR("Doing init home."));
                 init_home();
-
                 if (g.compass_enabled) {
                     // Set compass declination automatically
                     compass.set_initial_location(g_gps->latitude, g_gps->longitude);

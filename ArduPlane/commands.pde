@@ -262,28 +262,29 @@ void init_home()
     		home.lng = waypointZero.lng;
     		home.lat = waypointZero.lat;
     		
-    	    gcs_send_text_P(SEVERITY_LOW, PSTR("Using WP0 pos as home pos"));
+    	    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Using WP0 pos as home pos"));
 
     		int32_t alt_diff_cm = abs(home.alt - waypointZero.alt);
     		if (abs(alt_diff_cm) <= (int16_t)(g.stickyhome_mad_m.get())*100) {
     			home.alt = waypointZero.alt;
-        	    gcs_send_text_P(SEVERITY_LOW, PSTR("Using WP0 alt as home alt"));
+        	    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Using WP0 alt as home alt"));
     		} else {
     			// Five jerks means: Position is within expected bounds but altitude is off.
     			// You can ignore this if you use relative altitude but it is a sloppy practise.
     			// If you use absolute altitude missions, an incorrectly initialized alt. can
     			// be dangerous. If getting this signal from the plane, better reset APM (just 
     			// reset, do NOT cycle power) and try again until GPS gets a better fix.
-        	    gcs_send_text_fmt(PSTR("Altitude is off from WP0 by %ld cm"), alt_diff_cm);
+    			gcs_send_text_fmt_severity(SEVERITY_MEDIUM, PSTR("Altitude is off from WP0 by %ld cm"), alt_diff_cm);
     			demo_servos(5);
     		}
     	} else {
     		// Three jerks means: Position is beyond expected bounds.
-    		gcs_send_text_fmt(PSTR("Position is off from WP0 by %.1f m"), horizontal_diff_m);
+    		gcs_send_text_fmt_severity(SEVERITY_MEDIUM, PSTR("Position is off from WP0 by %.1f m."), horizontal_diff_m);
     		demo_servos(3);
     	}
     } else {
         // Save Home to EEPROM - Command 0
+    	gcs_send_text_P(SEVERITY_MEDIUM, PSTR("WP0 was not set"));
        	set_cmd_with_index(home, 0);
     }
 
