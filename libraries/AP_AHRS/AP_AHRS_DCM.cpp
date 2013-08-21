@@ -765,13 +765,13 @@ float AP_AHRS_DCM::get_error_yaw(void)
 
 // return our current position estimate using
 // dead-reckoning or GPS
-bool AP_AHRS_DCM::get_position(struct Location *loc)
+bool AP_AHRS_DCM::get_position(struct Location &loc)
 {
     if (!_have_position) {
         return false;
     }
-    loc->lat = _last_lat;
-    loc->lng = _last_lng;
+    loc.lat = _last_lat;
+    loc.lng = _last_lng;
     location_offset(loc, _position_offset_north, _position_offset_east);
     return true;
 }

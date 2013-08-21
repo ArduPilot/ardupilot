@@ -27,6 +27,9 @@ using namespace AVR_SITL;
 
 enum SITL_State::vehicle_type SITL_State::_vehicle;
 uint16_t SITL_State::_framerate;
+uint16_t SITL_State::_base_port = 5760;
+uint16_t SITL_State::_rcout_port = 5502;
+uint16_t SITL_State::_simin_port = 5501;
 struct sockaddr_in SITL_State::_rcout_addr;
 pid_t SITL_State::_parent_pid;
 uint32_t SITL_State::_update_count;
@@ -58,6 +61,7 @@ void SITL_State::_usage(void)
 	fprintf(stdout, "\t-r RATE     set SITL framerate\n");
 	fprintf(stdout, "\t-H HEIGHT   initial barometric height\n");
 	fprintf(stdout, "\t-C          use console instead of TCP ports\n");
+	fprintf(stdout, "\t-I          set instance of SITL (adds 10*instance to all port numbers)\n");
 }
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
@@ -69,7 +73,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
 
-	while ((opt = getopt(argc, argv, "swhr:H:C")) != -1) {
+	while ((opt = getopt(argc, argv, "swhr:H:CI:")) != -1) {
 		switch (opt) {
 		case 'w':
 			AP_Param::erase_all();
@@ -83,6 +87,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 			break;
 		case 'C':
 			AVR_SITL::SITLUARTDriver::_console = true;
+			break;
+		case 'I': {
+            uint8_t instance = atoi(optarg);
+            _base_port  += instance * 10;
+            _rcout_port += instance * 10;
+            _simin_port += instance * 10;
+        }
 			break;
 		default:
 			_usage();

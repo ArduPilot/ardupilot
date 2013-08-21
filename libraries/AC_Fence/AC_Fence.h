@@ -22,6 +22,7 @@
 #define AC_FENCE_CIRCLE_RADIUS_DEFAULT              150.0f  // default circular fence radius is 150m
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
+#define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
 
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
@@ -66,6 +67,9 @@ public:
 
     /// get_action - getter for user requested action on limit breach
     uint8_t get_action() const { return _action.get(); }
+
+    /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
+    float get_safe_alt() const { return _alt_max - _margin; }
     
     ///
     /// time saving methods to piggy-back on main code's calculations
@@ -86,7 +90,6 @@ private:
 
     // pointers to other objects we depend upon
     AP_InertialNav* _inav;
-    GPS**           _gps_ptr;              // pointer to pointer to gps
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
@@ -94,6 +97,7 @@ private:
     AP_Int8         _action;                // recovery action specified by user
     AP_Float        _alt_max;               // altitude upper limit in meters
     AP_Float        _circle_radius;         // circle fence radius in meters
+    AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
@@ -101,7 +105,7 @@ private:
 
     // breach distances
     float           _alt_max_breach_distance;   // distance above the altitude max
-    float           _circle_breach_distance;    // distance above the altitude max
+    float           _circle_breach_distance;    // distance beyond the circular fence
 
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)

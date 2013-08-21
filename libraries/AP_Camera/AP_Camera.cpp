@@ -178,7 +178,7 @@ bool AP_Camera::update_location(const struct Location &loc)
         // be called without a new GPS fix
         return false;
     }
-    if (get_distance(&loc, &_last_location) < _trigg_dist) {
+    if (get_distance(loc, _last_location) < _trigg_dist) {
         return false;
     }
     _last_location = loc;

@@ -199,7 +199,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present,
         control_sensors_enabled,
         control_sensors_health,
-        0, // CPU Load not supported in AC yet
+        (uint16_t)(scheduler.load_average(10000) * 1000),
         battery_voltage1 * 1000, // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %

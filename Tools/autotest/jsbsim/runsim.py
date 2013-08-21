@@ -33,6 +33,7 @@ def jsb_set(variable, value):
 
 def setup_template(home):
     '''setup aircraft/Rascal/reset.xml'''
+    global opts
     v = home.split(',')
     if len(v) != 4:
         print("home should be lat,lng,alt,hdg - '%s'" % home)
@@ -49,6 +50,20 @@ def setup_template(home):
                                     'HEADING'   : str(heading) }
     open(reset, mode='w').write(xml)
     print("Wrote %s" % reset)
+
+    baseport = int(opts.simout.split(':')[1])
+
+    template = os.path.join('jsbsim', 'fgout_template.xml')
+    out      = os.path.join('jsbsim', 'fgout.xml')
+    xml = open(template).read() % { 'FGOUTPORT'  : str(baseport+3) }
+    open(out, mode='w').write(xml)
+    print("Wrote %s" % out)
+
+    template = os.path.join('jsbsim', 'rascal_test_template.xml')
+    out      = os.path.join('jsbsim', 'rascal_test.xml')
+    xml = open(template).read() % { 'JSBCONSOLEPORT'  : str(baseport+4) }
+    open(out, mode='w').write(xml)
+    print("Wrote %s" % out)
     
 
 def process_sitl_input(buf):

@@ -215,7 +215,7 @@ void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
     Location temp_loc;
     temp_loc.lat = lat;
     temp_loc.lng = lon;
-    _lon_to_m_scaling = longitude_scale(&temp_loc) * LATLON_TO_CM;
+    _lon_to_m_scaling = longitude_scale(temp_loc) * LATLON_TO_CM;
 
     // reset corrections to base position to zero
     _position_base.x = 0;

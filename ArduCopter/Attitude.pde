@@ -1,5 +1,30 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
+// returns desired angle in centi-degrees
+static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
+{
+    static float _scaler = 1.0;
+    static int16_t _angle_max = 0;
+
+    // return immediately if no scaling required
+    if (g.angle_max == ROLL_PITCH_INPUT_MAX) {
+        roll_out = roll_in;
+        pitch_out = pitch_in;
+        return;
+    }
+
+    // check if angle_max has been updated and redo scaler
+    if (g.angle_max != _angle_max) {
+        _angle_max = g.angle_max;
+        _scaler = (float)g.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    }
+
+    // convert pilot input to lean angle
+    roll_out = roll_in * _scaler;
+    pitch_out = pitch_in * _scaler;
+}
+
 static void
 get_stabilize_roll(int32_t target_angle)
 {
@@ -7,7 +32,7 @@ get_stabilize_roll(int32_t target_angle)
     target_angle = wrap_180_cd(target_angle - ahrs.roll_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle = constrain_int32(target_angle, -4500, 4500);
+    target_angle = constrain_int32(target_angle, -g.angle_max, g.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_roll.kP() * target_angle;
@@ -23,7 +48,7 @@ get_stabilize_pitch(int32_t target_angle)
     target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
 
     // limit the error we're feeding to the PID
-    target_angle            = constrain_int32(target_angle, -4500, 4500);
+    target_angle            = constrain_int32(target_angle, -g.angle_max, g.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_pitch.kP() * target_angle;
@@ -73,7 +98,7 @@ get_stabilize_yaw(int32_t target_angle)
 static void
 get_acro_roll(int32_t target_rate)
 {
-    target_rate = target_rate * g.acro_p;
+    target_rate = target_rate * g.acro_rp_p;
 
     // set targets for rate controller
     set_roll_rate_target(target_rate, BODY_FRAME);
@@ -82,7 +107,7 @@ get_acro_roll(int32_t target_rate)
 static void
 get_acro_pitch(int32_t target_rate)
 {
-    target_rate = target_rate * g.acro_p;
+    target_rate = target_rate * g.acro_rp_p;
 
     // set targets for rate controller
     set_pitch_rate_target(target_rate, BODY_FRAME);
@@ -91,10 +116,60 @@ get_acro_pitch(int32_t target_rate)
 static void
 get_acro_yaw(int32_t target_rate)
 {
-    target_rate = target_rate * g.acro_p;
+    target_rate = target_rate * g.acro_yaw_p;
 
     // set targets for rate controller
     set_yaw_rate_target(target_rate, BODY_FRAME);
+}
+
+// get_acro_level_rates - calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
+static void
+get_acro_level_rates()
+{
+    // zero earth frame leveling if trainer is disabled
+    if (g.acro_trainer == ACRO_TRAINER_DISABLED) {
+        set_roll_rate_target(0, BODY_EARTH_FRAME);
+        set_pitch_rate_target(0, BODY_EARTH_FRAME);
+        set_yaw_rate_target(0, BODY_EARTH_FRAME);
+        return;
+    }
+
+    // Calculate trainer mode earth frame rate command for roll
+    int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
+    int32_t target_rate = 0;
+
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        if (roll_angle > g.angle_max){
+            target_rate =  g.pi_stabilize_roll.get_p(g.angle_max-roll_angle);
+        }else if (roll_angle < -g.angle_max) {
+            target_rate =  g.pi_stabilize_roll.get_p(-g.angle_max-roll_angle);
+        }
+    }
+    roll_angle   = constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
+    target_rate -= roll_angle * g.acro_balance_roll;
+
+    // add earth frame targets for roll rate controller
+    set_roll_rate_target(target_rate, BODY_EARTH_FRAME);
+
+    // Calculate trainer mode earth frame rate command for pitch
+    int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
+    target_rate = 0;
+
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        if (pitch_angle > g.angle_max){
+            target_rate =  g.pi_stabilize_pitch.get_p(g.angle_max-pitch_angle);
+        }else if (pitch_angle < -g.angle_max) {
+            target_rate =  g.pi_stabilize_pitch.get_p(-g.angle_max-pitch_angle);
+        }
+    }
+    pitch_angle  = constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
+    target_rate -= pitch_angle * g.acro_balance_pitch;
+
+    // add earth frame targets for pitch rate controller
+    set_pitch_rate_target(target_rate, BODY_EARTH_FRAME);
+
+    // add earth frame targets for yaw rate controller
+    set_yaw_rate_target(0, BODY_EARTH_FRAME);
 }
 
 // Roll with rate input and stabilized in the body frame
@@ -103,49 +178,37 @@ get_roll_rate_stabilized_bf(int32_t stick_angle)
 {
     static float angle_error = 0;
 
-    // Scale pitch leveling by stick input
-    if (!g.acro_trainer_enabled) {
-        roll_axis = (float)roll_axis*constrain_float((1-fabsf(stick_angle/4500.0)),0,1)*cos_pitch_x;
+    // convert the input to the desired body frame roll rate
+    int32_t rate_request = stick_angle * g.acro_rp_p;
+
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        rate_request += acro_roll_rate;
+    }else{        
+        // Scale pitch leveling by stick input
+        acro_roll_rate = (float)acro_roll_rate*acro_level_mix;
+
+        // Calculate rate limit to prevent change of rate through inverted
+        int32_t rate_limit = labs(labs(rate_request)-labs(acro_roll_rate));
+
+        rate_request += acro_roll_rate;
+        rate_request = constrain_int32(rate_request, -rate_limit, rate_limit);
     }
 
-
-    // convert the input to the desired body frame roll rate
-
-    roll_axis += stick_angle * g.acro_p;
-
     // add automatic correction
-    int32_t correction_rate = g.pi_stabilize_roll.get_p(angle_error);
+    int32_t rate_correction = g.pi_stabilize_roll.get_p(angle_error);
+
+    // set body frame targets for rate controller
+    set_roll_rate_target(rate_request+rate_correction, BODY_FRAME);
 
     // Calculate integrated body frame rate error
-    angle_error += (roll_axis - (omega.x * DEGX100)) * G_Dt;
+    angle_error += (rate_request - (omega.x * DEGX100)) * G_Dt;
 
     // don't let angle error grow too large
-    angle_error = constrain_float(angle_error, - MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
+    angle_error = constrain_float(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
 
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
-
-    // set body frame targets for rate controller
-    set_roll_rate_target(roll_axis + correction_rate, BODY_FRAME);
-
-    // Calculate trainer mode earth frame rate command
-    int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
-
-    int32_t target_rate = 0;
-
-    if (g.acro_trainer_enabled) {
-        if (roll_angle > 4500){
-            target_rate =  g.pi_stabilize_roll.get_p(4500-roll_angle);
-        }else if (roll_angle < -4500) {
-            target_rate =  g.pi_stabilize_roll.get_p(-4500-roll_angle);
-        }
-    }
-    roll_angle   = constrain_int32(roll_angle, -3000, 3000);
-    target_rate -=  (roll_angle * g.acro_balance_roll)/100;
-
-    // add earth frame targets for rate controller
-    set_roll_rate_target(target_rate, BODY_EARTH_FRAME);
 }
 
 // Pitch with rate input and stabilized in the body frame
@@ -154,48 +217,37 @@ get_pitch_rate_stabilized_bf(int32_t stick_angle)
 {
     static float angle_error = 0;
 
-    // scale pitch leveling by stick input
+    // convert the input to the desired body frame pitch rate
+    int32_t rate_request = stick_angle * g.acro_rp_p;
 
-    if (!g.acro_trainer_enabled) {
-        pitch_axis = (float)pitch_axis*constrain_float((1-fabsf(stick_angle/4500.0)),0,1)*cos_pitch_x;
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        rate_request += acro_pitch_rate;
+    }else{
+        // Scale pitch leveling by stick input
+        acro_pitch_rate = (float)acro_pitch_rate*acro_level_mix;
+        
+        // Calculate rate limit to prevent change of rate through inverted
+        int32_t rate_limit = labs(labs(rate_request)-labs(acro_pitch_rate));
+        
+        rate_request += acro_pitch_rate;
+        rate_request = constrain_int32(rate_request, -rate_limit, rate_limit);
     }
 
-    // convert the input to the desired body frame pitch rate
-    pitch_axis += stick_angle * g.acro_p;
-
     // add automatic correction
-    int32_t correction_rate = g.pi_stabilize_pitch.get_p(angle_error);
+    int32_t rate_correction = g.pi_stabilize_pitch.get_p(angle_error);
+
+    // set body frame targets for rate controller
+    set_pitch_rate_target(rate_request+rate_correction, BODY_FRAME);
 
     // Calculate integrated body frame rate error
-    angle_error += (pitch_axis - (omega.y * DEGX100)) * G_Dt;
+    angle_error += (rate_request - (omega.y * DEGX100)) * G_Dt;
 
     // don't let angle error grow too large
-    angle_error = constrain_float(angle_error, - MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
+    angle_error = constrain_float(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
 
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
-
-    // set body frame targets for rate controller
-    set_pitch_rate_target(pitch_axis + correction_rate, BODY_FRAME);
-
-    // Calculate trainer mode earth frame rate command
-    int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
-
-    int32_t target_rate = 0;
-
-    if (g.acro_trainer_enabled) {
-        if (pitch_angle > 4500){
-            target_rate =  g.pi_stabilize_pitch.get_p(4500-pitch_angle);
-        }else if (pitch_angle < -4500) {
-            target_rate =  g.pi_stabilize_pitch.get_p(-4500-pitch_angle);
-        }
-    }
-    pitch_angle   = constrain_int32(pitch_angle, -3000, 3000);
-    target_rate -=  (pitch_angle * g.acro_balance_pitch)/100;
-
-    // add earth frame targets for rate controller
-    set_pitch_rate_target(target_rate, BODY_EARTH_FRAME);
 }
 
 // Yaw with rate input and stabilized in the body frame
@@ -204,33 +256,119 @@ get_yaw_rate_stabilized_bf(int32_t stick_angle)
 {
     static float angle_error = 0;
 
-    // scale yaw leveling by stick input
+    // convert the input to the desired body frame yaw rate
+    int32_t rate_request = stick_angle * g.acro_yaw_p;
 
-    if (!g.acro_trainer_enabled) {
-        nav_yaw = (float)nav_yaw*constrain_float((1-fabsf(stick_angle/4500.0)),0,1)*cos_pitch_x;
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        rate_request += acro_yaw_rate;
+    }else{
+        // Scale pitch leveling by stick input
+        acro_yaw_rate = (float)acro_yaw_rate*acro_level_mix;
+
+        // Calculate rate limit to prevent change of rate through inverted
+        int32_t rate_limit = labs(labs(rate_request)-labs(acro_yaw_rate));
+
+        rate_request += acro_yaw_rate;
+        rate_request = constrain_int32(rate_request, -rate_limit, rate_limit);
     }
 
-    // convert the input to the desired body frame yaw rate
-    nav_yaw += stick_angle * g.acro_p;
-
     // add automatic correction
-    int32_t correction_rate = g.pi_stabilize_yaw.get_p(angle_error);
+    int32_t rate_correction = g.pi_stabilize_yaw.get_p(angle_error);
+
+    // set body frame targets for rate controller
+    set_yaw_rate_target(rate_request+rate_correction, BODY_FRAME);
 
     // Calculate integrated body frame rate error
-    angle_error += (nav_yaw - (omega.z * DEGX100)) * G_Dt;
+    angle_error += (rate_request - (omega.z * DEGX100)) * G_Dt;
 
     // don't let angle error grow too large
-    angle_error = constrain_float(angle_error, - MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
+    angle_error = constrain_float(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
+}
 
-    // set body frame targets for rate controller
-    set_yaw_rate_target(nav_yaw + correction_rate, BODY_FRAME);
+// Roll with rate input and stabilized in the earth frame
+static void
+get_roll_rate_stabilized_ef(int32_t stick_angle)
+{
+    int32_t angle_error = 0;
 
-    // add earth frame targets for rate controller
-    set_yaw_rate_target(0, BODY_EARTH_FRAME);
+    // convert the input to the desired roll rate
+    int32_t target_rate = stick_angle * g.acro_rp_p - (acro_roll * g.acro_balance_roll);
+
+    // convert the input to the desired roll rate
+    acro_roll += target_rate * G_Dt;
+    acro_roll = wrap_180_cd(acro_roll);
+
+    // ensure that we don't reach gimbal lock
+    if (labs(acro_roll) > g.angle_max) {
+        acro_roll  = constrain_int32(acro_roll, -g.angle_max, g.angle_max);
+        angle_error = wrap_180_cd(acro_roll - ahrs.roll_sensor);
+    } else {
+        // angle error with maximum of +- max_angle_overshoot
+        angle_error = wrap_180_cd(acro_roll - ahrs.roll_sensor);
+        angle_error  = constrain_int32(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
+    }
+
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete) {
+        angle_error = 0;
+    }
+#else      
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
+        angle_error = 0;
+    }
+#endif // HELI_FRAME
+
+    // update acro_roll to be within max_angle_overshoot of our current heading
+    acro_roll = wrap_180_cd(angle_error + ahrs.roll_sensor);
+
+    // set earth frame targets for rate controller
+  set_roll_rate_target(g.pi_stabilize_roll.get_p(angle_error) + target_rate, EARTH_FRAME);
+}
+
+// Pitch with rate input and stabilized in the earth frame
+static void
+get_pitch_rate_stabilized_ef(int32_t stick_angle)
+{
+    int32_t angle_error = 0;
+
+    // convert the input to the desired pitch rate
+    int32_t target_rate = stick_angle * g.acro_rp_p - (acro_pitch * g.acro_balance_pitch);
+
+    // convert the input to the desired pitch rate
+    acro_pitch += target_rate * G_Dt;
+    acro_pitch = wrap_180_cd(acro_pitch);
+
+    // ensure that we don't reach gimbal lock
+    if (labs(acro_pitch) > g.angle_max) {
+        acro_pitch  = constrain_int32(acro_pitch, -g.angle_max, g.angle_max);
+        angle_error = wrap_180_cd(acro_pitch - ahrs.pitch_sensor);
+    } else {
+        // angle error with maximum of +- max_angle_overshoot
+        angle_error = wrap_180_cd(acro_pitch - ahrs.pitch_sensor);
+        angle_error  = constrain_int32(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
+    }
+
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete) {
+        angle_error = 0;
+    }
+#else       
+    // reset target angle to current angle if motors not spinning
+    if (!motors.armed() || g.rc_3.servo_out == 0) {
+        angle_error = 0;
+    }
+#endif // HELI_FRAME
+
+    // update acro_pitch to be within max_angle_overshoot of our current heading
+    acro_pitch = wrap_180_cd(angle_error + ahrs.pitch_sensor);
+
+    // set earth frame targets for rate controller
+    set_pitch_rate_target(g.pi_stabilize_pitch.get_p(angle_error) + target_rate, EARTH_FRAME);
 }
 
 // Yaw with rate input and stabilized in the earth frame
@@ -241,7 +379,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     int32_t angle_error = 0;
 
     // convert the input to the desired yaw rate
-    int32_t target_rate = stick_angle * g.acro_p;
+    int32_t target_rate = stick_angle * g.acro_yaw_p;
 
     // convert the input to the desired yaw rate
     nav_yaw += target_rate * G_Dt;
@@ -312,9 +450,9 @@ update_rate_contoller_targets()
         yaw_rate_target_bf      = cos_pitch_x * cos_roll_x * yaw_rate_target_ef - sin_roll * pitch_rate_target_ef;
     }else if( rate_targets_frame == BODY_EARTH_FRAME ) {
         // add converted earth frame rates to body frame rates
-        roll_axis   = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
-        pitch_axis  = cos_roll_x  * pitch_rate_target_ef + sin_roll * cos_pitch_x * yaw_rate_target_ef;
-        nav_yaw     = cos_pitch_x * cos_roll_x * yaw_rate_target_ef - sin_roll * pitch_rate_target_ef;
+        acro_roll_rate = roll_rate_target_ef - sin_pitch * yaw_rate_target_ef;
+        acro_pitch_rate = cos_roll_x  * pitch_rate_target_ef + sin_roll * cos_pitch_x * yaw_rate_target_ef;
+        acro_yaw_rate = cos_pitch_x * cos_roll_x * yaw_rate_target_ef - sin_roll * pitch_rate_target_ef;
     }
 }
 
@@ -762,11 +900,11 @@ static void get_look_at_yaw()
 static void get_look_ahead_yaw(int16_t pilot_yaw)
 {
     // Commanded Yaw to automatically look ahead.
-    if (g_gps->fix && g_gps->ground_course_cd > YAW_LOOK_AHEAD_MIN_SPEED) {
+    if (g_gps->fix && g_gps->ground_speed_cm > YAW_LOOK_AHEAD_MIN_SPEED) {
         nav_yaw = get_yaw_slew(nav_yaw, g_gps->ground_course_cd, AUTO_YAW_SLEW_RATE);
         get_stabilize_yaw(wrap_360_cd(nav_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
     }else{
-        nav_yaw += pilot_yaw * g.acro_p * G_Dt;
+        nav_yaw += pilot_yaw * g.acro_yaw_p * G_Dt;
         nav_yaw = wrap_360_cd(nav_yaw);
         get_stabilize_yaw(nav_yaw);
     }
@@ -1146,6 +1284,17 @@ get_throttle_rate_stabilized(int16_t target_rate)
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 
+#if AC_FENCE == ENABLED
+    // do not let target altitude be too close to the fence
+    // To-Do: add this to other altitude controllers
+    if((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        float alt_limit = fence.get_safe_alt() * 100.0f;
+        if (controller_desired_alt > alt_limit) {
+            controller_desired_alt = alt_limit;
+        }
+    }
+#endif
+
     // update target altitude for reporting purposes
     set_target_alt_for_reporting(controller_desired_alt);
 
@@ -1210,10 +1359,9 @@ static bool update_land_detector()
 static void
 get_throttle_surface_tracking(int16_t target_rate)
 {
-    static float target_sonar_alt = 0;   // The desired altitude in cm above the ground
     static uint32_t last_call_ms = 0;
     float distance_error;
-    float sonar_induced_slew_rate;
+    float velocity_correction;
 
     uint32_t now = millis();
 
@@ -1223,23 +1371,22 @@ get_throttle_surface_tracking(int16_t target_rate)
     }
     last_call_ms = now;
 
-    // adjust target alt if motors have not hit their limits
+    // adjust sonar target alt if motors have not hit their limits
     if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
         target_sonar_alt += target_rate * 0.02f;
     }
 
-    distance_error = (target_sonar_alt-sonar_alt);
-    sonar_induced_slew_rate = constrain_float(fabsf(g.sonar_gain * distance_error),0,THR_SURFACE_TRACKING_VELZ_MAX);
-
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
     target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-750,sonar_alt+750);
-    controller_desired_alt = current_loc.alt+(target_sonar_alt-sonar_alt);
 
-    // update target altitude for reporting purposes
-    set_target_alt_for_reporting(controller_desired_alt);
+    // calc desired velocity correction from target sonar alt vs actual sonar alt
+    distance_error = target_sonar_alt-sonar_alt;
+    velocity_correction = distance_error * g.sonar_gain;
+    velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 
-    get_throttle_althold_with_slew(controller_desired_alt, target_rate-sonar_induced_slew_rate, target_rate+sonar_induced_slew_rate);   // VELZ_MAX limits how quickly we react
+    // call regular rate stabilize alt hold controller
+    get_throttle_rate_stabilized(target_rate + velocity_correction);
 }
 
 /*

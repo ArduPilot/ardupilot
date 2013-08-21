@@ -414,12 +414,6 @@ public:
     RC_Channel_aux rc_12;
 #endif
 
-    // Attitude to servo controllers
-    //
-    AP_RollController  rollController;
-    AP_PitchController pitchController;
-    AP_YawController   yawController;
-
     // PID controllers
     PID         pidWheelSteer;
 
@@ -444,11 +438,6 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12                                   (CH_12),
 #endif
-
-        // pass the aircraft parameters structure into the attitude controllers
-        rollController(aparm),
-        pitchController(aparm),
-        yawController(aparm),
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------

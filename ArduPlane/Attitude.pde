@@ -74,9 +74,13 @@ static void stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
-    channel_roll->servo_out = g.rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
+    // dongfang: Here is a usage of dead zone deadzone dead_zone
+    bool disable_integrator = 
+    		control_mode == STABILIZE && channel_roll->control_in != 0;
+
+    channel_roll->servo_out = rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
                                                              speed_scaler, 
-                                                             control_mode == STABILIZE);
+                                                             disable_integrator);
 }
 
 /*
@@ -87,9 +91,13 @@ static void stabilize_roll(float speed_scaler)
 static void stabilize_pitch(float speed_scaler)
 {
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
-    channel_pitch->servo_out = g.pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
+
+    // dongfang: Here is a usage of dead zone deadzone dead_zone
+    bool disable_integrator = control_mode == STABILIZE && channel_pitch->control_in != 0;
+
+    channel_pitch->servo_out = pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                speed_scaler, 
-                                                               control_mode == STABILIZE);
+                                                               disable_integrator);
 }
 
 /*
@@ -269,16 +277,16 @@ static void stabilize_acro(float speed_scaler)
         nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
         // 'stabilze' to true, which disables the roll integrator
-        channel_roll->servo_out  = g.rollController.get_servo_out(roll_error_cd,
-                                                                  speed_scaler,
-                                                                  true);
+        channel_roll->servo_out  = rollController.get_servo_out(roll_error_cd,
+                                                                speed_scaler,
+                                                                true);
     } else {
         /*
           aileron stick is non-zero, use pure rate control until the
           user releases the stick
          */
         acro_state.locked_roll = false;
-        channel_roll->servo_out  = g.rollController.get_rate_out(roll_rate,  speed_scaler);
+        channel_roll->servo_out  = rollController.get_rate_out(roll_rate,  speed_scaler);
     }
 
     if (pitch_rate == 0) {
@@ -293,15 +301,15 @@ static void stabilize_acro(float speed_scaler)
         // try to hold the locked pitch. Note that we have the pitch
         // integrator enabled, which helps with inverted flight
         nav_pitch_cd = acro_state.locked_pitch_cd;
-        channel_pitch->servo_out  = g.pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
-                                                                    speed_scaler,
-                                                                    false);
+        channel_pitch->servo_out  = pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
+                                                                  speed_scaler,
+                                                                  false);
     } else {
         /*
           user has non-zero pitch input, use a pure rate controller
          */
         acro_state.locked_pitch = false;
-        channel_pitch->servo_out = g.pitchController.get_rate_out(pitch_rate, speed_scaler);
+        channel_pitch->servo_out = pitchController.get_rate_out(pitch_rate, speed_scaler);
     }
 
     /*
@@ -313,7 +321,6 @@ static void stabilize_acro(float speed_scaler)
 }
 
 /*
- * main stabilization function for all 3 axes
  * main stabilization function for all 3 axes
  * Called for all control modes except MANUAL. Here is the 2nd time control_mode is 
  * checked.
@@ -352,9 +359,9 @@ static void stabilize()
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
         // integrators. This prevents integrator buildup pre-takeoff.
-        g.rollController.reset_I();
-        g.pitchController.reset_I();
-        g.yawController.reset_I();
+        rollController.reset_I();
+        pitchController.reset_I();
+        yawController.reset_I();
     }
 }
 
@@ -392,8 +399,10 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
         return;
     }
 
-    channel_rudder->servo_out = g.yawController.get_servo_out(speed_scaler, 
-                                                              control_mode == STABILIZE);
+    // dongfang: Here is a usage of dead zone deadzone dead_zone
+    bool disable_integrator = control_mode == STABILIZE && channel_rudder->control_in != 0;
+
+    channel_rudder->servo_out = yawController.get_servo_out(speed_scaler, disable_integrator);
 
     // add in rudder mixing from roll
     channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;
@@ -575,7 +584,10 @@ static bool suppress_throttle(void)
 }
 
 /*
-  implement a software VTail or elevon mixer. There are 4 different mixing modes
+ * Implement a software VTail or elevon mixer. There are 4 different mixing modes
+ * Applies mixing_type, basically a one of 4 quadrant transformer.
+ * Has no side effects - other than on its own arguments.
+ * These values are in us-space and not in centidegree-space...
  */
 static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out)
 {
@@ -592,7 +604,7 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
     // now map to mixed output
     switch (mixing_type) {
     case MIXING_DISABLED:
-        return;
+        return; // nothing done.
 
     case MIXING_UPUP:
         break;
@@ -627,15 +639,19 @@ static void set_servos(void)
     int16_t last_throttle = channel_throttle->radio_out;
 
     if (control_mode == MANUAL) {
-        // do a direct pass through of radio values
+    		// g.mix_mode == 0 means elevon input mix is off.
+    		// g.elevon_output != MIXING_DISABLED means output mixing is on..? What?
         if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
+            // No elevon transform done here. Do a direct pass through of radio values
             channel_roll->radio_out                = channel_roll->radio_in;
             channel_pitch->radio_out               = channel_pitch->radio_in;
         } else {
+        	// Read() does: For RC_Channel, a plain return of the HAL input value.
+        	// 
             channel_roll->radio_out                = channel_roll->read();
             channel_pitch->radio_out               = channel_pitch->read();
         }
-        channel_throttle->radio_out    = channel_throttle->radio_in;
+        channel_throttle->radio_out  		   = channel_throttle->radio_in;
         channel_rudder->radio_out              = channel_rudder->radio_in;
 
         // setup extra channels. We want this to come from the
@@ -661,7 +677,7 @@ static void set_servos(void)
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, channel_roll->radio_out);
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler2, channel_pitch->radio_out);
         }
-    } else {
+    } else {	// not manual
         if (g.mix_mode == 0) {
             // both types of secondary aileron are slaved to the roll servo out
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, channel_roll->servo_out);
@@ -673,10 +689,12 @@ static void set_servos(void)
 
             // setup secondary rudder
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->servo_out);
-        }else{
-            /*Elevon mode*/
+        } else {
+            // Elevon input and output mode
             float ch1;
             float ch2;
+            // reverse_elevons reverses roll direction on both.
+            // reverse_ch1_elevon and reverse_ch2_elevon reverses each channel on final output.
             ch1 = channel_pitch->servo_out - (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->servo_out);
             ch2 = channel_pitch->servo_out + (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->servo_out);
 
@@ -689,7 +707,7 @@ static void set_servos(void)
 			if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
 				float ch3 = ch1;
 				float ch4 = ch2;
-				if ( BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->servo_out < 0) {
+				if (BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->servo_out < 0) {
 				    ch1 += abs(channel_rudder->servo_out);
 				    ch3 -= abs(channel_rudder->servo_out);
 				} else {
@@ -800,6 +818,7 @@ static void set_servos(void)
     if (g.vtail_output != MIXING_DISABLED) {
         channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
     } else if (g.elevon_output != MIXING_DISABLED) {
+    	// Output-only elevon mixer
         channel_output_mixer(g.elevon_output, channel_pitch->radio_out, channel_roll->radio_out);
     }
 

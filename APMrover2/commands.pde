@@ -121,9 +121,9 @@ static void set_next_WP(const struct Location *wp)
     }
 
 	// this is handy for the groundstation
-	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
+	wp_totalDistance 	= get_distance(current_loc, next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing_cd(&current_loc, &next_WP);
+	target_bearing 		= get_bearing_cd(current_loc, next_WP);
 	nav_bearing 		= target_bearing;
 
 	// set a new crosstrack bearing
@@ -142,9 +142,9 @@ static void set_guided_WP(void)
 	next_WP = guided_WP;
 
 	// this is handy for the groundstation
-	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
+	wp_totalDistance 	= get_distance(current_loc, next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing_cd(&current_loc, &next_WP);
+	target_bearing 		= get_bearing_cd(current_loc, next_WP);
 
 	// set a new crosstrack bearing
 	// ----------------------------

@@ -143,6 +143,9 @@ public:
     /// get_waypoint_acceleration - returns acceleration in cm/s/s during missions
     float get_waypoint_acceleration() const { return _wp_accel_cms.get(); }
 
+    /// set_lean_angle_max - limits maximum lean angle
+    void set_lean_angle_max(int16_t angle_cd) { if (angle_cd >= 1000 && angle_cd <= 8000) {_lean_angle_max_cd = angle_cd;} }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -216,6 +219,7 @@ protected:
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
     float       _loiter_leash;          // loiter's horizontal leash length in cm.  used to stop the pilot from pushing the target location too far from the current location
     float       _loiter_accel_cms;      // loiter's acceleration in cm/s/s
+    int16_t     _lean_angle_max_cd;     // maximum lean angle in centi-degrees
 
     // waypoint controller internal variables
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)

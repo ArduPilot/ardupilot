@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.0.1"
+#define THISFIRMWARE "ArduCopter V3.1-dev"
 /*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
@@ -104,6 +104,7 @@
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
+#include <AC_Sprayer.h>         // Crop sprayer library
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -170,7 +171,7 @@ static DataFlash_Empty DataFlash;
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
 ////////////////////////////////////////////////////////////////////////////////
-static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_200HZ;
+static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_100HZ;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
@@ -567,8 +568,12 @@ static float target_alt_for_reporting;      // target altitude in cm for reporti
 // ACRO Mode
 ////////////////////////////////////////////////////////////////////////////////
 // Used to control Axis lock
-static int32_t roll_axis;
-static int32_t pitch_axis;
+static int32_t acro_roll;                   // desired roll angle while sport mode
+static int32_t acro_roll_rate;              // desired roll rate while in acro mode
+static int32_t acro_pitch;                  // desired pitch angle while sport mode
+static int32_t acro_pitch_rate;             // desired pitch rate while acro mode
+static int32_t acro_yaw_rate;               // desired yaw rate while acro mode
+static float acro_level_mix;                // scales back roll, pitch and yaw inversely proportional to input from pilot
 
 // Filters
 #if FRAME_CONFIG == HELI_FRAME
@@ -626,6 +631,7 @@ static int16_t climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
 static int16_t sonar_alt;
 static uint8_t sonar_alt_health;   // true if we can trust the altitude from the sonar
+static float target_sonar_alt;      // desired altitude in cm above the ground
 // The altitude as reported by Baro in cm – Values can be quite high
 static int32_t baro_alt;
 
@@ -827,6 +833,13 @@ AC_Fence    fence(&inertial_nav);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Crop Sprayer
+////////////////////////////////////////////////////////////////////////////////
+#if SPRAYER == ENABLED
+static AC_Sprayer sprayer(&inertial_nav);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
 void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate);
@@ -937,7 +950,7 @@ void loop()
 
     // We want this to execute fast
     // ----------------------------
-    if (ins.num_samples_available() >= 2) {
+    if (ins.num_samples_available() >= 1) {
 
         // check loop time
         perf_info_check_loop_time(timer - fast_loopTimer);
@@ -954,12 +967,14 @@ void loop()
 
         // tell the scheduler one tick has passed
         scheduler.tick();
-    } else {
-        uint16_t dt = timer - fast_loopTimer;
-        if (dt < 10000) {
-            uint16_t time_to_next_loop = 10000 - dt;
-            scheduler.run(time_to_next_loop);
-        }
+
+        // run all the tasks that are due to run. Note that we only
+        // have to call this once per loop, as the tasks are scheduled
+        // in multiples of the main loop tick. So if they don't run on
+        // the first call to the scheduler they won't run on a later
+        // call until scheduler.tick() is called again
+        uint32_t time_available = (timer + 10000) - micros();
+        scheduler.run(time_available - 500);
     }
 }
 
@@ -1247,6 +1262,10 @@ static void slow_loop()
         camera_mount2.update_mount_type();
 #endif
 
+#if SPRAYER == ENABLED
+        sprayer.update();
+#endif
+
         // agmatthews - USERHOOKS
 #ifdef USERHOOK_SLOWLOOP
         USERHOOK_SLOWLOOP
@@ -1281,6 +1300,9 @@ static void super_slow_loop()
 
     // pass latest alt hold kP value to navigation controller
     wp_nav.set_althold_kP(g.pi_alt_hold.kP());
+
+    // update latest lean angle to navigation controller
+    wp_nav.set_lean_angle_max(g.angle_max);
 
     // log battery info to the dataflash
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
@@ -1336,8 +1358,6 @@ static void update_GPS(void)
 
     g_gps->update();
     update_GPS_light();
-
-    set_gps_healthy(g_gps->status() >= GPS::GPS_OK_FIX_3D);
 
     if (g_gps->new_data && last_gps_time != g_gps->time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         // clear new data flag
@@ -1472,11 +1492,7 @@ void update_yaw_mode(void)
 
     case YAW_ACRO:
         // pilot controlled yaw using rate controller
-        if(g.axis_enabled) {
-            get_yaw_rate_stabilized_bf(g.rc_4.control_in);
-        }else{
-            get_acro_yaw(g.rc_4.control_in);
-        }
+        get_yaw_rate_stabilized_bf(g.rc_4.control_in);
         break;
 
     case YAW_LOOK_AT_NEXT_WP:
@@ -1637,6 +1653,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
         case ROLL_PITCH_TOY:
+        case ROLL_PITCH_SPORT:
             roll_pitch_initialised = true;
             break;
 
@@ -1668,28 +1685,21 @@ void update_roll_pitch_mode(void)
         control_pitch           = g.rc_2.control_in;
 
 #if FRAME_CONFIG == HELI_FRAME
-		if(g.axis_enabled) {
+        // ACRO does not get SIMPLE mode ability
+        if (motors.flybar_mode == 1) {
+            g.rc_1.servo_out = g.rc_1.control_in;
+            g.rc_2.servo_out = g.rc_2.control_in;
+        }else{
+            acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
             get_roll_rate_stabilized_bf(g.rc_1.control_in);
             get_pitch_rate_stabilized_bf(g.rc_2.control_in);
-        }else{
-            // ACRO does not get SIMPLE mode ability
-            if (motors.flybar_mode == 1) {
-                g.rc_1.servo_out = g.rc_1.control_in;
-                g.rc_2.servo_out = g.rc_2.control_in;
-            } else {
-                get_acro_roll(g.rc_1.control_in);
-                get_acro_pitch(g.rc_2.control_in);
-            }
-		}
+            get_acro_level_rates();
+        }
 #else  // !HELI_FRAME
-		if(g.axis_enabled) {
-            get_roll_rate_stabilized_bf(g.rc_1.control_in);
-            get_pitch_rate_stabilized_bf(g.rc_2.control_in);
-        }else{
-            // ACRO does not get SIMPLE mode ability
-            get_acro_roll(g.rc_1.control_in);
-            get_acro_pitch(g.rc_2.control_in);
-		}
+        acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
+        get_roll_rate_stabilized_bf(g.rc_1.control_in);
+        get_pitch_rate_stabilized_bf(g.rc_2.control_in);
+        get_acro_level_rates();
 #endif  // HELI_FRAME
         break;
 
@@ -1699,9 +1709,8 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
-        // copy control_roll and pitch for reporting purposes
-        control_roll            = g.rc_1.control_in;
-        control_pitch           = g.rc_2.control_in;
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
 
         // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
@@ -1727,9 +1736,8 @@ void update_roll_pitch_mode(void)
             update_simple_mode();
         }
 
-        // copy pilot input to control_roll and pitch for reporting purposes
-        control_roll            = g.rc_1.control_in;
-        control_pitch           = g.rc_2.control_in;
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
 
         // mix in user control with optical flow
         get_stabilize_roll(get_of_roll(control_roll));
@@ -1760,6 +1768,18 @@ void update_roll_pitch_mode(void)
 
         get_stabilize_roll(nav_roll);
         get_stabilize_pitch(nav_pitch);
+        break;
+
+    case ROLL_PITCH_SPORT:
+        // apply SIMPLE mode transform
+        if(ap.simple_mode && ap_system.new_radio_frame) {
+            update_simple_mode();
+        }
+        // copy user input for reporting purposes
+        control_roll = g.rc_1.control_in;
+        control_pitch = g.rc_2.control_in;
+        get_roll_rate_stabilized_ef(g.rc_1.control_in);
+        get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         break;
     }
 
@@ -2206,9 +2226,14 @@ static void tuning(){
         wp_nav.set_horizontal_velocity(g.rc_6.control_in);
         break;
 
-    // Acro and other tuning
-    case CH6_ACRO_KP:
-        g.acro_p = tuning_value;
+    // Acro roll pitch gain
+    case CH6_ACRO_RP_KP:
+        g.acro_rp_p = tuning_value;
+        break;
+
+    // Acro yaw gain
+    case CH6_ACRO_YAW_KP:
+        g.acro_yaw_p = tuning_value;
         break;
 
     case CH6_RELAY:
@@ -2261,6 +2286,11 @@ static void tuning(){
     case CH6_CIRCLE_RATE:
         // set circle rate
         g.circle_rate.set(g.rc_6.control_in/25-20);     // allow approximately 45 degree turn rate in either direction
+        break;
+
+    case CH6_SONAR_GAIN:
+        // set sonar gain
+        g.sonar_gain.set(tuning_value);
         break;
     }
 }

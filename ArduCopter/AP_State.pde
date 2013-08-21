@@ -127,13 +127,3 @@ void set_compass_healthy(bool b)
     }
     ap.compass_status = b;
 }
-
-void set_gps_healthy(bool b)
-{
-    if(ap.gps_status != b){
-        if(false == b){
-            Log_Write_Event(DATA_LOST_GPS);
-        }
-    }
-    ap.gps_status = b;
-}

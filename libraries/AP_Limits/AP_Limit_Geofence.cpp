@@ -93,7 +93,7 @@ bool AP_Limit_Geofence::triggered() {
 
     // simple mode, pointers to current and home exist.
     if (_simple && _current_loc && _home) {
-        distance = (uint32_t) get_distance(_current_loc, _home);
+        distance = (uint32_t) get_distance(*_current_loc, *_home);
         if (distance > 0 &&  distance > (uint16_t) _radius) {
 
             // TRIGGER

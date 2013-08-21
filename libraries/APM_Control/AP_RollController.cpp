@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
   internal rate controller, called by attitude and rate controller
   public functions
 */
-int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool stabilize)
+int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
 	uint32_t tnow = hal.scheduler->millis();
 	uint32_t dt = tnow - _last_t;
@@ -82,16 +82,10 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	}
 	_last_t = tnow;
 	
-
-	if (_ahrs == NULL) {
-        // can't control without a reference
-        return 0;
-    }
-
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float ki_rate = _K_I * _tau;
-	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0)/_ahrs->get_EAS2TAS();
+	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0)/_ahrs.get_EAS2TAS();
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Limit the demanded roll rate
@@ -102,20 +96,20 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     }
 	
     // Get body rate vector (radians/sec)
-	float omega_x = _ahrs->get_gyro().x;
+	float omega_x = _ahrs.get_gyro().x;
 	
 	// Calculate the roll rate error (deg/sec) and apply gain scaler
 	float rate_error = (desired_rate - ToDeg(omega_x)) * scaler;
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;
-	if (!_ahrs->airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(&aspeed)) {
         aspeed = 0.0f;
     }
 
 	// Multiply roll rate error by _ki_rate and integrate
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!stabilize && ki_rate > 0) {
+	if (!disable_integrator && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
 		if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time;
@@ -170,7 +164,7 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
  3) boolean which is true when stabilise mode is active
  4) minimum FBW airspeed (metres/sec)
 */
-int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool stabilize)
+int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
 {
     if (_tau < 0.1) {
         _tau = 0.1;
@@ -179,7 +173,7 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool s
 	// Calculate the desired roll rate (deg/sec) from the angle error
 	float desired_rate = angle_err * 0.01f / _tau;
 
-    return _get_rate_out(desired_rate, scaler, stabilize);
+    return _get_rate_out(desired_rate, scaler, disable_integrator);
 }
 
 void AP_RollController::reset_I()

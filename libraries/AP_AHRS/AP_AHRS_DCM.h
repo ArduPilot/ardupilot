@@ -45,7 +45,7 @@ public:
     void            reset(bool recover_eulers = false);
 
     // dead-reckoning support
-    bool get_position(struct Location *loc);
+    bool get_position(struct Location &loc);
 
     // status reporting
     float           get_error_rp(void);

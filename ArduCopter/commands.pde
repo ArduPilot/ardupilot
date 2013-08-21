@@ -135,6 +135,6 @@ static void init_home()
         Log_Write_Cmd(0, &home);
 
     // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
-    scaleLongDown = longitude_scale(&home);
+    scaleLongDown = longitude_scale(home);
     scaleLongUp   = 1.0f/scaleLongDown;
 }

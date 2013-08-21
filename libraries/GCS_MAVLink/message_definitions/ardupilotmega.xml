@@ -267,8 +267,8 @@
             <field type="float" name="xgyro">Angular speed around X axis rad/s</field>
             <field type="float" name="ygyro">Angular speed around Y axis rad/s</field>
             <field type="float" name="zgyro">Angular speed around Z axis rad/s</field>
-            <field type="float" name="lat">Latitude in degrees</field>
-            <field type="float" name="lng">Longitude in degrees</field>
+            <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
+            <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
 	  </message>
 
 	  <message name="HWSTATUS" id="165">

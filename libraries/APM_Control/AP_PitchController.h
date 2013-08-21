@@ -10,16 +10,15 @@
 
 class AP_PitchController {
 public:
-	AP_PitchController(const AP_SpdHgtControl::AircraftParameters &parms) :
-		aparm(parms)
+	AP_PitchController(AP_AHRS &ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
+		aparm(parms),
+        _ahrs(ahrs)
     { 
 		AP_Param::setup_object_defaults(this, var_info);
 	}
 
-	void set_ahrs(AP_AHRS *ahrs) { _ahrs = ahrs; }
-
 	int32_t get_rate_out(float desired_rate, float scaler);
-	int32_t get_servo_out(int32_t angle_err, float scaler, bool stabilize);
+	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
     float   get_coordination_rate_offset(void) const;
 
 	void reset_I();
@@ -41,10 +40,10 @@ private:
 	
 	float _integrator;
 
-	int32_t _get_rate_out(float desired_rate, float scaler, bool stabilize, float aspeed);
+	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
     float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
 	
-	AP_AHRS *_ahrs;
+	AP_AHRS &_ahrs;
 	
 };
 

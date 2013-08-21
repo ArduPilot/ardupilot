@@ -16,11 +16,11 @@
  # define MNT_STABILIZE_OPTION  DISABLED // stabilize camera using frame attitude information
  # define MNT_MOUNT2_OPTION     DISABLED // second mount, can for example be used to keep an antenna pointed at the home position
 #else
- # define MNT_JSTICK_SPD_OPTION ENABLED // uses  844 bytes of memory
- # define MNT_RETRACT_OPTION    ENABLED // uses  244 bytes of memory
- # define MNT_GPSPOINT_OPTION   ENABLED // uses  580 bytes of memory
- # define MNT_STABILIZE_OPTION  ENABLED // uses 2424 bytes of memory
- # define MNT_MOUNT2_OPTION     ENABLED // uses   58 bytes of memory (must also be enabled in APM_Config.h)
+ # define MNT_JSTICK_SPD_OPTION DISABLED // uses  844 bytes of memory
+ # define MNT_RETRACT_OPTION    DISABLED // uses  244 bytes of memory
+ # define MNT_GPSPOINT_OPTION   ENABLED  // uses  580 bytes of memory
+ # define MNT_STABILIZE_OPTION  ENABLED  // uses 2424 bytes of memory
+ # define MNT_MOUNT2_OPTION     DISABLED // uses   58 bytes of memory (must also be enabled in APM_Config.h)
 #endif
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
@@ -603,8 +603,11 @@ AP_Mount::stabilize()
             m = _ahrs->get_dcm_matrix();
             m.transpose();
             cam.from_euler(_roll_control_angle, _tilt_control_angle, _pan_control_angle);
+            // Combine control and attitude matrices.
             gimbal_target = m * cam;
+            // Get combined Euler angles
             gimbal_target.to_euler(&_roll_angle, &_tilt_angle, &_pan_angle);
+            // Select control+attitude, or simply control (for mounts doing attitude by themselves)
             _roll_angle  = _stab_roll ? degrees(_roll_angle) : degrees(_roll_control_angle);
             _tilt_angle  = _stab_tilt ? degrees(_tilt_angle) : degrees(_tilt_control_angle);
             _pan_angle   = degrees(_pan_angle);
