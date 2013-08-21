@@ -138,6 +138,3 @@ static void init_home()
     scaleLongDown = longitude_scale(home);
     scaleLongUp   = 1.0f/scaleLongDown;
 }
-
-
-

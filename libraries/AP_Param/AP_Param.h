@@ -554,6 +554,8 @@ protected:
 // _t is the base type
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
+// typedef AP_ParamT<int8_t, AP_PARAM_INT8> AP_Int8; etc.
+
 #define AP_PARAMDEF(_t, _suffix, _pt)   typedef AP_ParamT<_t, _pt> AP_ ## _suffix;
 AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8

@@ -37,7 +37,7 @@ public:
     ///
     /// @param	port		The stream over which messages are exchanged.
     ///
-    void        init(AP_HAL::UARTDriver *port) {
+    void init(AP_HAL::UARTDriver *port) {
         _port = port;
         initialised = true;
     }
@@ -76,7 +76,7 @@ public:
 
 protected:
     /// The stream we are communicating over
-    AP_HAL::UARTDriver *      _port;
+    AP_HAL::UARTDriver*      _port;
 };
 
 //

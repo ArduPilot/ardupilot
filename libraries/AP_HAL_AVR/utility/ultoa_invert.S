@@ -41,7 +41,7 @@
 
    This function is intended for usage as internal printf's one.
    It differs from others of `xtoa_fast' family:
-       * srt[] will NOT 0 terminated.
+       * str[] will NOT 0 terminated.
        * Sequence of digits is inverted.
        * It returns pointer to first byte after a string.
        * Only `XTOA_UPPER' flag is operated.

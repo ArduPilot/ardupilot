@@ -60,6 +60,7 @@ static bool stick_mixing_enabled(void)
   this is the main roll stabilization function. It takes the
   previously set nav_roll calculates roll servo_out to try to
   stabilize the plane at the given roll
+  It does NOT consider user input.
  */
 static void stabilize_roll(float speed_scaler)
 {
@@ -73,13 +74,13 @@ static void stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
-    bool disable_integrator = false;
-    if (control_mode == STABILIZE && channel_roll->control_in != 0) {
-        disable_integrator = true;
-    }
+    // dongfang: Here is a usage of dead zone deadzone dead_zone
+    bool disable_integrator = 
+    		control_mode == STABILIZE && channel_roll->control_in != 0;
+
     channel_roll->servo_out = rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
-                                                           speed_scaler, 
-                                                           disable_integrator);
+                                                             speed_scaler, 
+                                                             disable_integrator);
 }
 
 /*
@@ -90,13 +91,13 @@ static void stabilize_roll(float speed_scaler)
 static void stabilize_pitch(float speed_scaler)
 {
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + channel_throttle->servo_out * g.kff_throttle_to_pitch;
-    bool disable_integrator = false;
-    if (control_mode == STABILIZE && channel_pitch->control_in != 0) {
-        disable_integrator = true;
-    }
+
+    // dongfang: Here is a usage of dead zone deadzone dead_zone
+    bool disable_integrator = control_mode == STABILIZE && channel_pitch->control_in != 0;
+
     channel_pitch->servo_out = pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
-                                                             speed_scaler, 
-                                                             disable_integrator);
+                                                               speed_scaler, 
+                                                               disable_integrator);
 }
 
 /*
@@ -118,15 +119,15 @@ static void stabilize_stick_mixing_direct()
         
     ch1_inf = (float)channel_roll->radio_in - (float)channel_roll->radio_trim;
     ch1_inf = fabsf(ch1_inf);
-    ch1_inf = min(ch1_inf, 400.0);
-    ch1_inf = ((400.0 - ch1_inf) /400.0);
+    ch1_inf = min(ch1_inf, 400.0);			// limit to [0..400]
+    ch1_inf = ((400.0 - ch1_inf) /400.0);	// 0->1, 400->0, >400->0
         
     ch2_inf = (float)channel_pitch->radio_in - channel_pitch->radio_trim;
     ch2_inf = fabsf(ch2_inf);
     ch2_inf = min(ch2_inf, 400.0);
     ch2_inf = ((400.0 - ch2_inf) /400.0);
         
-    // scale the sensor input based on the stick input
+    // scale the sensor input based on the stick input (servo_out was set in stabilize_pitch/roll)
     // -----------------------------------------------
     channel_roll->servo_out  *= ch1_inf;
     channel_pitch->servo_out *= ch2_inf;
@@ -157,6 +158,9 @@ static void stabilize_stick_mixing_fbw()
     // non-linear and ends up as 2x the maximum, to ensure that
     // the user can direct the plane in any direction with stick
     // mixing.
+
+    
+    // This needed not be done with floats. If that is removed, norm_input() could also go.
     float roll_input = channel_roll->norm_input();
     if (roll_input > 0.5f) {
         roll_input = (3*roll_input - 1);
@@ -205,23 +209,32 @@ static void stabilize_yaw(float speed_scaler)
     channel_rudder->servo_out += channel_rudder->pwm_to_angle();
 }
 
-
 /*
   a special stabilization function for training mode
  */
 static void stabilize_training(float speed_scaler)
 {
+	// This var is updated every cycle.. it is true iff nav_roll_cd==0. That means pilot is allowed to fly without intervention.
     if (training_manual_roll) {
+    	// Fly totally manually.
         channel_roll->servo_out = channel_roll->control_in;
     } else {
-        // calculate what is needed to hold
-        stabilize_roll(speed_scaler);
+        // calculate what is needed to hold. Sets channel_roll->servo_out.
+    	// If nav_roll_cd is nonzero, then we are at or beyond limit.
+    	// If nav_roll_cd os zero, fly as normal.
+
+    	// This again sets channel_roll->servo_out.
+    	stabilize_roll(speed_scaler);
+    	
+    	// If pilot does MORE to pull out of the roll than autostabilizer, let pilot command.
         if ((nav_roll_cd > 0 && channel_roll->control_in < channel_roll->servo_out) ||
             (nav_roll_cd < 0 && channel_roll->control_in > channel_roll->servo_out)) {
             // allow user to get out of the roll
             channel_roll->servo_out = channel_roll->control_in;            
         }
     }
+    
+    // Same for pitch.
 
     if (training_manual_pitch) {
         channel_pitch->servo_out = channel_pitch->control_in;
@@ -236,7 +249,6 @@ static void stabilize_training(float speed_scaler)
 
     stabilize_yaw(speed_scaler);
 }
-
 
 /*
   this is the ACRO mode stabilization function. It does rate
@@ -309,7 +321,9 @@ static void stabilize_acro(float speed_scaler)
 }
 
 /*
-  main stabilization function for all 3 axes
+ * main stabilization function for all 3 axes
+ * Called for all control modes except MANUAL. Here is the 2nd time control_mode is 
+ * checked.
  */
 static void stabilize()
 {
@@ -351,7 +365,10 @@ static void stabilize()
     }
 }
 
-
+/*
+ * Opposite calc_nav_pitch() and calc_nav_roll(), this delivers its output
+ * by side effect - to channel_throttle->servo_out.
+ */
 static void calc_throttle()
 {
     if (aparm.throttle_cruise <= 1) {
@@ -382,10 +399,9 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
         return;
     }
 
-    bool disable_integrator = false;
-    if (control_mode == STABILIZE && channel_rudder->control_in != 0) {
-        disable_integrator = true;
-    }
+    // dongfang: Here is a usage of dead zone deadzone dead_zone
+    bool disable_integrator = control_mode == STABILIZE && channel_rudder->control_in != 0;
+
     channel_rudder->servo_out = yawController.get_servo_out(speed_scaler, disable_integrator);
 
     // add in rudder mixing from roll
@@ -568,7 +584,10 @@ static bool suppress_throttle(void)
 }
 
 /*
-  implement a software VTail or elevon mixer. There are 4 different mixing modes
+ * Implement a software VTail or elevon mixer. There are 4 different mixing modes
+ * Applies mixing_type, basically a one of 4 quadrant transformer.
+ * Has no side effects - other than on its own arguments.
+ * These values are in us-space and not in centidegree-space...
  */
 static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out)
 {
@@ -585,7 +604,7 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
     // now map to mixed output
     switch (mixing_type) {
     case MIXING_DISABLED:
-        return;
+        return; // nothing done.
 
     case MIXING_UPUP:
         break;
@@ -620,15 +639,19 @@ static void set_servos(void)
     int16_t last_throttle = channel_throttle->radio_out;
 
     if (control_mode == MANUAL) {
-        // do a direct pass through of radio values
+    		// g.mix_mode == 0 means elevon input mix is off.
+    		// g.elevon_output != MIXING_DISABLED means output mixing is on..? What?
         if (g.mix_mode == 0 || g.elevon_output != MIXING_DISABLED) {
+            // No elevon transform done here. Do a direct pass through of radio values
             channel_roll->radio_out                = channel_roll->radio_in;
             channel_pitch->radio_out               = channel_pitch->radio_in;
         } else {
+        	// Read() does: For RC_Channel, a plain return of the HAL input value.
+        	// 
             channel_roll->radio_out                = channel_roll->read();
             channel_pitch->radio_out               = channel_pitch->read();
         }
-        channel_throttle->radio_out    = channel_throttle->radio_in;
+        channel_throttle->radio_out  		   = channel_throttle->radio_in;
         channel_rudder->radio_out              = channel_rudder->radio_in;
 
         // setup extra channels. We want this to come from the
@@ -654,7 +677,7 @@ static void set_servos(void)
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, channel_roll->radio_out);
             RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler2, channel_pitch->radio_out);
         }
-    } else {
+    } else {	// not manual
         if (g.mix_mode == 0) {
             // both types of secondary aileron are slaved to the roll servo out
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, channel_roll->servo_out);
@@ -666,10 +689,12 @@ static void set_servos(void)
 
             // setup secondary rudder
             RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, channel_rudder->servo_out);
-        }else{
-            /*Elevon mode*/
+        } else {
+            // Elevon input and output mode
             float ch1;
             float ch2;
+            // reverse_elevons reverses roll direction on both.
+            // reverse_ch1_elevon and reverse_ch2_elevon reverses each channel on final output.
             ch1 = channel_pitch->servo_out - (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->servo_out);
             ch2 = channel_pitch->servo_out + (BOOL_TO_SIGN(g.reverse_elevons) * channel_roll->servo_out);
 
@@ -682,7 +707,7 @@ static void set_servos(void)
 			if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
 				float ch3 = ch1;
 				float ch4 = ch2;
-				if ( BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->servo_out < 0) {
+				if (BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->servo_out < 0) {
 				    ch1 += abs(channel_rudder->servo_out);
 				    ch3 -= abs(channel_rudder->servo_out);
 				} else {
@@ -793,6 +818,7 @@ static void set_servos(void)
     if (g.vtail_output != MIXING_DISABLED) {
         channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
     } else if (g.elevon_output != MIXING_DISABLED) {
+    	// Output-only elevon mixer
         channel_output_mixer(g.elevon_output, channel_pitch->radio_out, channel_roll->radio_out);
     }
 
@@ -821,10 +847,10 @@ static void set_servos(void)
 
 static bool demoing_servos;
 
-static void demo_servos(uint8_t i) 
+void demo_servos(uint8_t i) 
 {
     while(i > 0) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
+        //gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
         demoing_servos = true;
         servo_write(1, 1400);
         mavlink_delay(400);

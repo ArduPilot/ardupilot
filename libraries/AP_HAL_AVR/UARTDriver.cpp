@@ -47,6 +47,7 @@ AVRUARTDriver::AVRUARTDriver(
 }
 /* UARTDriver method implementations */
 
+// Space: 0 means keep-previous. If calling the first time with 0s: ??
 void AVRUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) {
 	uint16_t ubrr;
 	bool use_u2x = true;

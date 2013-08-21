@@ -78,6 +78,7 @@ int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
 // our previous waypoint and point2 is our target waypoint
 // then this function returns true if we have flown past
 // the target waypoint
+// dongfang: Could this not be greatly simplified? If passed, dot product is negative.
 bool location_passed_point(const struct Location &location,
                            const struct Location &point1,
                            const struct Location &point2)

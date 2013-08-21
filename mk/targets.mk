@@ -168,7 +168,7 @@ obc-sitl: EXTRAFLAGS += "-DSERIAL_BUFSIZE=512 "
 obc-sitl: sitl
 
 obc: EXTRAFLAGS += "-DOBC_FAILSAFE=ENABLED "
-obc: EXTRAFLAGS += "-DTELEMETRY_UART2=ENABLED "
+obc: EXTRAFLAGS += "-SERIAL3_MODE=ENABLED"
 obc: EXTRAFLAGS += "-DSERIAL_BUFSIZE=512 "
 obc: apm2
 
@@ -179,6 +179,7 @@ sitl-mount: sitl
 etags:
 	cd .. && etags -f ArduCopter/TAGS --lang=c++ $$(git ls-files ArduCopter libraries)
 	cd .. && etags -f ArduPlane/TAGS --lang=c++ $$(git ls-files ArduPlane libraries)
+	cd .. && etags -f ArdupilotTracker/TAGS --lang=c++ $$(git ls-files ArdupilotTracker libraries)
 	cd .. && etags -f APMrover2/TAGS --lang=c++ $$(git ls-files APMrover2 libraries)
 
 clean:

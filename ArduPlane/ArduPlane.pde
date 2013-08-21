@@ -130,6 +130,7 @@ static RC_Channel *channel_rudder;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 static void update_events(void);
+void gcs_send_text_fmt_severity(gcs_severity severity, const prog_char_t *fmt, ...);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
@@ -332,6 +333,7 @@ uint8_t oldSwitchPosition;
 // This is used to enable the inverted flight feature
 bool inverted_flight     = false;
 
+// These values are in us-space and not in centidegree-space...
 static struct {
     // These are trim values used for elevon control
     // For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are
@@ -397,7 +399,7 @@ static const float t7                        = 10000000.0;
 // We use atan2 and other trig techniques to calaculate angles
 // A counter used to count down valid gps fixes to allow the gps estimate to settle
 // before recording our home position (and executing a ground start if we booted with an air start)
-static uint8_t ground_start_count      = 5;
+static uint8_t ground_start_count      = 10;
 // Used to compute a speed estimate from the first valid gps fixes to decide if we are
 // on the ground or in the air.  Used to decide if a ground start is appropriate if we
 // booted with an air start.
@@ -822,7 +824,6 @@ static void update_speed_height(void)
     }
 }
 
-
 /*
   update camera mount
  */
@@ -1008,15 +1009,16 @@ static void update_GPS(void)
             ground_start_avg += g_gps->ground_speed_cm;
 
         } else if (ground_start_count == 1) {
+
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
             // -------------------------------------
             if (current_loc.lat == 0) {
-                ground_start_count = 5;
-
+            	// gcs_send_text_P(SEVERITY_LOW, PSTR("Ground start timeout but no position"));
+                ground_start_count = 10;
             } else {
+            	// gcs_send_text_P(SEVERITY_LOW, PSTR("Doing init home."));
                 init_home();
-
                 if (g.compass_enabled) {
                     // Set compass declination automatically
                     compass.set_initial_location(g_gps->latitude, g_gps->longitude);
@@ -1038,19 +1040,27 @@ static void update_GPS(void)
     calc_gndspeed_undershoot();
 }
 
+/*
+ * Updates the nav_roll_cd, nav_pitch_cd vars.
+ * Calls calc_throttle(), which in turn updates channel_throttle->servo_out.
+ * In mode MANUAL, this does a strange thing: Updates RCChannel output values
+ * directly (channel_xxx->servo_out = channel_xxx->pwm_to_angle();)
+ * This is called from fast loop before stabilize() and before set_servos().
+ */
 static void update_flight_mode(void)
 {
     if(control_mode == AUTO) {
-
         switch(nav_command_ID) {
         case MAV_CMD_NAV_TAKEOFF:
             if (hold_course_cd == -1) {
-                // we don't yet have a heading to hold - just level
+            	// It seems the autostart heading is read from the GPS as the
+            	// first heading read after the plane has picked up some speed.
+                // We don't yet have a heading to hold - just level
                 // the wings until we get up enough speed to get a GPS heading
                 nav_roll_cd = 0;
             } else {
                 calc_nav_roll();
-                // during takeoff use the level flight roll limit to
+                // During takeoff use the level flight roll limit to
                 // prevent large course corrections
 				nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
             }
@@ -1060,7 +1070,9 @@ static void update_flight_mode(void)
                 if (nav_pitch_cd < takeoff_pitch_cd)
                     nav_pitch_cd = takeoff_pitch_cd;
             } else {
+            	// Make pitch proportional to speed and = takeoff_pitch_cd when cruise airspeed is reached.
                 nav_pitch_cd = (g_gps->ground_speed_cm / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
+                // Limit between 5 degs and takeoff pitch
                 nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
             }
 
@@ -1087,6 +1099,7 @@ static void update_flight_mode(void)
                     nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
                 }
             }
+
             calc_throttle();
 
             if (land_complete) {
@@ -1106,7 +1119,7 @@ static void update_flight_mode(void)
             calc_throttle();
             break;
         }
-    }else{
+    } else { // control_mode is not AUTO
         // hold_course is only used in takeoff and landing
         hold_course_cd = -1;
 
@@ -1123,8 +1136,11 @@ static void update_flight_mode(void)
             training_manual_roll = false;
             training_manual_pitch = false;
 
+            // dongfang: Implementation of TRAINING.
             // if the roll is past the set roll limit, then
-            // we set target roll to the limit
+            // we set target roll to the limit. Else we set it
+            // to zero. The effect of that implemented in
+            // stabilize_training, which reads nav_roll_cd
             if (ahrs.roll_sensor >= g.roll_limit_cd) {
                 nav_roll_cd = g.roll_limit_cd;
             } else if (ahrs.roll_sensor <= -g.roll_limit_cd) {
@@ -1144,6 +1160,7 @@ static void update_flight_mode(void)
                 training_manual_pitch = true;
                 nav_pitch_cd = 0;
             }
+            
             if (inverted_flight) {
                 nav_pitch_cd = -nav_pitch_cd;
             }
@@ -1167,6 +1184,7 @@ static void update_flight_mode(void)
 
         case FLY_BY_WIRE_A: {
             // set nav_roll and nav_pitch using sticks
+            // dongfang: Is this necessary? norm_input() should not return more than +-1.
             nav_roll_cd  = channel_roll->norm_input() * g.roll_limit_cd;
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
             float pitch_input = channel_pitch->norm_input();
@@ -1193,6 +1211,7 @@ static void update_flight_mode(void)
               in CRUISE mode we use the navigation code to control
               roll when heading is locked. Heading becomes unlocked on
               any aileron or rudder input
+              dongfang: Here is a usage of dead zone deadzone dead_zone
              */
             if ((channel_roll->control_in != 0 ||
                  channel_rudder->control_in != 0)) {                
@@ -1226,6 +1245,9 @@ static void update_flight_mode(void)
 
         case MANUAL:
             // servo_out is for Sim control only
+        	// What??? Why not use control_in?
+        	// This means software trims are used even in manual. Not desirable I think.
+        	// Dead zones seem to apply too. Also not desirable.
             // ---------------------------------
             channel_roll->servo_out = channel_roll->pwm_to_angle();
             channel_pitch->servo_out = channel_pitch->pwm_to_angle();
@@ -1241,6 +1263,9 @@ static void update_flight_mode(void)
     }
 }
 
+/*
+ * Called (only) from navigate() in navigation.pde (why not just move it to there)
+ */
 static void update_navigation()
 {
     // wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
@@ -1275,9 +1300,7 @@ static void update_navigation()
     }
 }
 
-
-static void update_alt()
-{
+static void update_alt() {
     // this function is in place to potentially add a sonar sensor in the future
     //altitude_sensor = BARO;
 
@@ -1309,4 +1332,6 @@ static void update_alt()
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
 
+// This is a replacement main() function macro. It does hal init, setup(), scheduler start 
+// and runs loop() forever.
 AP_HAL_MAIN();

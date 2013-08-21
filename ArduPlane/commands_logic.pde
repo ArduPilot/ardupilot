@@ -3,8 +3,7 @@
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-static void
-handle_process_nav_cmd()
+static void handle_process_nav_cmd()
 {
     // set land_complete to false to stop us zeroing the throttle
     land_complete = false;
@@ -144,16 +143,21 @@ static void handle_process_do_command()
     }
 }
 
+/*
+ * The special variety of RTL when beyond the last command.
+ */
 static void handle_no_commands()
 {
     gcs_send_text_fmt(PSTR("Returning to Home"));
     next_nav_command = home;
     next_nav_command.alt = read_alt_to_hold();
+   
+    // Is there really any reason for storing this 2x?
     next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
     nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
+    
     non_nav_command_ID = WAIT_COMMAND;
     handle_process_nav_cmd();
-
 }
 
 /*******************************************************************************
@@ -162,6 +166,7 @@ Verify command Handlers
 Each type of mission element has a "verify" operation. The verify
 operation returns true when the mission element has completed and we
 should move onto the next mission element.
+Called (only) from verify_commands().
 *******************************************************************************/
 
 static bool verify_nav_command()        // Returns true if command complete
@@ -256,12 +261,12 @@ static void do_takeoff()
 {
     set_next_WP(&next_nav_command);
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-    takeoff_pitch_cd                = (int)next_nav_command.p1 * 100;
+    takeoff_pitch_cd        = (int)next_nav_command.p1 * 100;
     takeoff_altitude_cm     = next_nav_command.alt;
     next_WP.lat             = home.lat + 1000;          // so we don't have bad calcs
     next_WP.lng             = home.lng + 1000;          // so we don't have bad calcs
-    takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
-    // Flag also used to override "on the ground" throttle disable
+    takeoff_complete        = false;                    // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
+    // Flag also used to override "on the ground" throttle disable "throttle_suppressed"
 }
 
 static void do_nav_wp()
@@ -527,14 +532,21 @@ static void do_loiter_at_location()
     next_WP = current_loc;
 }
 
+/*
+ * Apparently expects next_nonnav_command to be the jump command (check that).
+ * Apparently expects g.command_index to be (list) index of the jump command.
+ */
 static void do_jump()
 {
     if (next_nonnav_command.lat == 0) {
+    	// "Latitude" is the repeat count.
         // the jump counter has reached zero - ignore
         gcs_send_text_fmt(PSTR("Jumps left: 0 - skipping"));
         return;
     }
+    // Not sure I understand this. If there are 
     if (next_nonnav_command.p1 >= g.command_total) {
+    	// p1 is the index to jump to.
         gcs_send_text_fmt(PSTR("Skipping invalid jump to %i"), next_nonnav_command.p1);
         return;        
     }
@@ -545,9 +557,14 @@ static void do_jump()
     gcs_send_text_fmt(PSTR("Jump to WP %u. Jumps left: %d"),
                       (unsigned)next_nonnav_command.p1,
                       (int)next_nonnav_command.lat);
+
+    // This condition will always be true cf. above check, and can be omitted.
     if (next_nonnav_command.lat > 0) {
         // Decrement repeat counter
         temp.lat                        = next_nonnav_command.lat - 1;                                          
+        // Overwrite (argh) the command stored.
+        // This might confuse people! The 2nd time they fly their stored mission, it will no longer work.
+        // Possible hack: Use the otherwise unused p2/"altitude" parameter for this instead.
         set_cmd_with_index(temp, g.command_index);
     }
 
@@ -599,11 +616,15 @@ static void do_change_speed()
 static void do_set_home()
 {
     if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
-        init_home();
+    	// Previously, there was a call to init_home here.
+    	// This had side effects on prev_wp, next_wp and guided_WP.
+    	// This is no longer the case. I believe the new behavior is more correct.
+        init_home_from_gps();
     } else {
         home.id         = MAV_CMD_NAV_WAYPOINT;
         home.lng        = next_nonnav_command.lng;                                      // Lon * 10**7
         home.lat        = next_nonnav_command.lat;                                      // Lat * 10**7
+        // This is not so good if you fly in a depression where alt < 0.
         home.alt        = max(next_nonnav_command.alt, 0);
         home_is_set = true;
     }

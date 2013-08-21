@@ -9,10 +9,6 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 
-#define RC_CHANNEL_TYPE_ANGLE 0
-#define RC_CHANNEL_TYPE_RANGE 1
-#define RC_CHANNEL_TYPE_ANGLE_RAW 2
-
 #define RC_CHANNEL_TYPE_ANGLE       0
 #define RC_CHANNEL_TYPE_RANGE       1
 #define RC_CHANNEL_TYPE_ANGLE_RAW   2
@@ -60,7 +56,7 @@ public:
     void        set_pwm_no_deadzone(int16_t pwm);
 
     // pwm is stored here
-    int16_t        radio_in;
+    int16_t        radio_in;					// latest backend input value
 
     // call after first set_pwm
     void        trim();
@@ -71,7 +67,7 @@ public:
     // value generated from PWM
     int16_t         control_in;
 
-    int16_t         control_mix(float value);
+    int16_t         control_mix(float value);	// latest abstract input value
 
     // current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100
     int16_t        servo_out;
@@ -83,41 +79,45 @@ public:
     int16_t         pwm_out;
     int16_t         radio_out;
 
-    AP_Int16        radio_min;
-    AP_Int16        radio_trim;
-    AP_Int16        radio_max;
+    AP_Int16        radio_min;			// backend min. value
+    AP_Int16        radio_trim;			// backend neutral value
+    AP_Int16        radio_max;			// backend max. value
 
     // includes offset from PWM
     //int16_t   get_radio_out(void);
 
-    int16_t                                         pwm_to_angle_dz(uint16_t dead_zone);
-    int16_t                                         pwm_to_angle();
-    float                                           norm_input();
-    float                                           norm_output();
-    int16_t                                         angle_to_pwm();
-    int16_t                                         pwm_to_range();
-    int16_t                                         pwm_to_range_dz(uint16_t dead_zone);
-    int16_t                                         range_to_pwm();
+    int16_t pwm_to_angle_dz(uint16_t dead_zone);
+    int16_t pwm_to_angle();
+    float norm_input();
+    float norm_output();
+    int16_t angle_to_pwm();
 
-    void                                            output() const;
-    void                                            output_trim() const;
-    uint16_t                                        read() const;
-    void                                            input();
-    void                                            enable_out();
+    void output() const;
+    void output_trim() const;
+    uint16_t read() const;
+    void input();
+    void enable_out();
 
     static const struct AP_Param::GroupInfo         var_info[];
 
     static RC_Channel *rc_channel(uint8_t i);
 
 private:
-    AP_Int8         _reverse;
-    AP_Int16        _dead_zone;
-    uint8_t         _type;
-    int16_t         _high;
-    int16_t         _low;
-    int16_t         _high_out;
-    int16_t         _low_out;
-    uint8_t         _ch_out;
+    // Used only privately.
+    int16_t pwm_to_range();
+    // Used only privately.
+    int16_t pwm_to_range_dz(uint16_t dead_zone);
+    // Used only privately.
+    int16_t range_to_pwm();
+
+    AP_Int8 _reverse;			// reverse flag
+    AP_Int16 _dead_zone;			// around trim value
+    uint8_t _type;
+    int16_t _high;				// max. end of abstract range, input. For angle mode: angle.
+    int16_t _low;				// min. end of abstract range, input
+    int16_t _high_out;			// max. end of abstract range, output
+    int16_t _low_out;			// min. end of abstract range, output
+    uint8_t _ch_out;			// hardware channel number (input and output (!!))
 
     static RC_Channel *rc_ch[RC_MAX_CHANNELS];
 };

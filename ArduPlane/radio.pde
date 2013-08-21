@@ -26,10 +26,10 @@ static void set_control_channels(void)
 static void init_rc_in()
 {
     // set rc dead zones
-    channel_roll->set_default_dead_zone(30);
-    channel_pitch->set_default_dead_zone(30);
-    channel_rudder->set_default_dead_zone(30);
-    channel_throttle->set_default_dead_zone(30);
+    channel_roll->set_default_dead_zone(10);
+    channel_pitch->set_default_dead_zone(10);
+    channel_rudder->set_default_dead_zone(10);
+    channel_throttle->set_default_dead_zone(10);
 
     update_aux();
 }
@@ -64,14 +64,18 @@ static void init_rc_out()
 
 static void read_radio()
 {
+	// read() goes straight to the HAL layer's radio in and has no side effects.
     elevon.ch1_temp = channel_roll->read();
     elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
 
+    // Elevon input mixer.
     if (g.mix_mode == 0) {
         pwm_roll = elevon.ch1_temp;
         pwm_pitch = elevon.ch2_temp;
-    }else{
+    } else {
+    	// calculate(!) pwms for elevons. Seems to assume pitch and roll have same weight (wrong-o).
+    	// The 2 hardware pwm values are zeroed and added, then divided by 2.
         pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
         pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
     }
@@ -84,6 +88,7 @@ static void read_radio()
         channel_throttle->set_pwm_no_deadzone(channel_throttle->read());
         channel_rudder->set_pwm_no_deadzone(channel_rudder->read());
     } else {
+    	// apply dead zones.
         channel_roll->set_pwm(pwm_roll);
         channel_pitch->set_pwm(pwm_pitch);
         channel_throttle->set_pwm(channel_throttle->read());
@@ -158,14 +163,14 @@ static void control_failsafe(uint16_t pwm)
 static void trim_control_surfaces()
 {
     read_radio();
-    int16_t trim_roll_range = (channel_roll->radio_max - channel_roll->radio_min)/5;
-    int16_t trim_pitch_range = (channel_pitch->radio_max - channel_pitch->radio_min)/5;
+    int16_t trim_roll_range = (channel_roll->radio_max - channel_roll->radio_min)/3;
+    int16_t trim_pitch_range = (channel_pitch->radio_max - channel_pitch->radio_min)/3;
     if (channel_roll->radio_in < channel_roll->radio_min+trim_roll_range ||
         channel_roll->radio_in > channel_roll->radio_max-trim_roll_range ||
         channel_pitch->radio_in < channel_pitch->radio_min+trim_pitch_range ||
         channel_pitch->radio_in > channel_pitch->radio_max-trim_pitch_range) {
         // don't trim for extreme values - if we attempt to trim so
-        // there is less than 20 percent range left then assume the
+        // there is less than 33 percent range left then assume the
         // sticks are not properly centered. This also prevents
         // problems with starting APM with the TX off
         return;
@@ -173,7 +178,7 @@ static void trim_control_surfaces()
 
     // Store control surface trim values
     // ---------------------------------
-    if(g.mix_mode == 0) {
+    if (g.mix_mode == 0) {
         if (channel_roll->radio_in != 0) {
             channel_roll->radio_trim = channel_roll->radio_in;
         }
@@ -186,7 +191,7 @@ static void trim_control_surfaces()
         // doesn't have
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron_with_input);
         RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_elevator_with_input);
-    } else{
+    } else {
         if (elevon.ch1_temp != 0) {
             elevon.trim1 = elevon.ch1_temp;
         }
@@ -195,7 +200,7 @@ static void trim_control_surfaces()
         }
         //Recompute values here using new values for elevon1_trim and elevon2_trim
         //We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed
-        uint16_t center                         = 1500;
+        uint16_t center                = 1500;
         channel_roll->radio_trim       = center;
         channel_pitch->radio_trim      = center;
     }

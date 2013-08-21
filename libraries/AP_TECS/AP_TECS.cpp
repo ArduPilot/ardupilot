@@ -141,7 +141,7 @@ void AP_TECS::update_50hz(float hgt_afe)
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
 	float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
-	if (DT > 1.0) {
+	if (DT > 1.0) { // abnormal first-run case.
 	    _integ3_state = hgt_afe;
 		_integ2_state = 0.0f;
 		_integ1_state = 0.0f;

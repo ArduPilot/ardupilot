@@ -39,4 +39,3 @@ private:
 };
 
 #endif // __AP_HAL_AVR_CONSOLE_DRIVER_H__
-

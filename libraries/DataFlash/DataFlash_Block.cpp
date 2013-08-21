@@ -27,6 +27,7 @@ void DataFlash_Block::FinishWrite(void)
     BufferToPage(df_BufferNum, df_PageAdr, 0);      
     df_PageAdr++;
     // If we reach the end of the memory, start from the begining    
+    // dongfang: Here is the wrap.
     if (df_PageAdr > df_NumPages)
         df_PageAdr = 1;
 
@@ -41,6 +42,7 @@ void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
         return;
     }
     while (size > 0) {
+    	// Fill available space in current page, but only up to size bytes.
         uint16_t n = df_PageSize - df_BufferIdx;
         if (n > size) {
             n = size;
@@ -49,10 +51,14 @@ void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
         if (df_BufferIdx == 0) {
             // if we are at the start of a page we need to insert a
             // page header
+        	// dongfang:  if (n +sizeof(struct PageHeader) > df_PageSize) is clearer.
             if (n > df_PageSize - sizeof(struct PageHeader)) {
                 n = df_PageSize - sizeof(struct PageHeader);
             }
             struct PageHeader ph = { df_FileNumber, df_FilePage };
+            /*BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
+                                    const void *pHeader, uint8_t hdr_size,
+                                    const void *pBuffer, uint16_t size) = 0;*/
             BlockWrite(df_BufferNum, df_BufferIdx, &ph, sizeof(ph), pBuffer, n);
             df_BufferIdx += n + sizeof(ph);
         } else {

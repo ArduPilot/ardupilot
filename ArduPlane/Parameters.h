@@ -218,7 +218,7 @@ public:
         //
         // 220: Waypoint data
         //
-        k_param_waypoint_mode = 220,
+        k_param_waypoint_mode = 220,	// unused
         k_param_command_total,
         k_param_command_index,
         k_param_waypoint_radius,
@@ -229,8 +229,11 @@ public:
         k_param_fence_minalt,
         k_param_fence_maxalt,
 
+        k_param_stickyhome_rad_m,
+        k_param_stickyhome_mad_m,
+
         // other objects
-        k_param_sitl = 230,
+        k_param_sitl = 235,
         k_param_obc,
         k_param_rollController,
         k_param_pitchController,
@@ -240,8 +243,8 @@ public:
         k_param_TECS_controller,
 
         //
-        // 240: PID Controllers
-        k_param_pidNavRoll = 240, // unused
+        // 250: PID Controllers
+        k_param_pidNavRoll = 245, // unused
         k_param_pidServoRoll, // unused
         k_param_pidServoPitch, // unused
         k_param_pidNavPitchAirspeed, // unused
@@ -289,7 +292,7 @@ public:
 
     // Waypoints
     //
-    AP_Int8 waypoint_mode;
+    AP_Int8 waypoint_mode;	// unused
     AP_Int8 command_total;
     AP_Int8 command_index;
     AP_Int16 waypoint_radius;
@@ -302,6 +305,9 @@ public:
     AP_Int16 fence_minalt;    // meters
     AP_Int16 fence_maxalt;    // meters
 #endif
+
+    AP_Int16 stickyhome_rad_m;
+    AP_Int8 stickyhome_mad_m;
 
     // Fly-by-wire
     //

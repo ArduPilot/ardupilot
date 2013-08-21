@@ -134,7 +134,7 @@ RC_Channel::trim()
     radio_trim = radio_in;
 }
 
-// read input from APM_RC - create a control_in value
+// get input from backend.
 void
 RC_Channel::set_pwm(int16_t pwm)
 {
@@ -164,6 +164,12 @@ RC_Channel::set_pwm_no_deadzone(int16_t pwm)
     }
 }
 
+// Mix but with manual override possibility.
+// Assumes that _low ~= -_high
+// Mix result:
+// control_in==0 : value+control_in
+// control_in==+-high: control_in
+// Not used from anywhere at all.
 int16_t
 RC_Channel::control_mix(float value)
 {
@@ -171,13 +177,17 @@ RC_Channel::control_mix(float value)
 }
 
 // are we below a threshold?
+// Not used except in test.pde, which is probably an error.
 bool
 RC_Channel::get_failsafe(void)
 {
     return (radio_in < (radio_min - 50));
 }
 
-// returns just the PWM without the offset from radio_min
+// Convert abstract servo_out value to
+// pwm_out in the range [0, radio_max-radio_min], no reverse applied, and
+// radio_out with offset and reverse applied.
+// in the case of range: What happens to trim???
 void
 RC_Channel::calc_pwm(void)
 {
@@ -276,17 +286,16 @@ RC_Channel::angle_to_pwm()
         return _reverse * ((long)servo_out * (long)(radio_trim - radio_min)) / (long)_high;
 }
 
-/*
-  convert a pulse width modulation value to a value in the configured
-  range, using the specified deadzone
- */
+// Convert backend range value to abstract range value (applying reversal but not trim).
+// Applies dead zone only (!!!) to bottom end of range, why? Throttle?
 int16_t
 RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
 {
-    int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
+    int16_t r_in = constrain_int16(radio_in, radio_min, radio_max);
 
+    // Apply radio to abstract reverse
     if (_reverse == -1) {
-	    r_in = radio_max.get() - (r_in - radio_min.get());
+	    r_in = radio_max - (r_in - radio_min);
     }
 
     int16_t radio_trim_low  = radio_min + dead_zone;
@@ -299,25 +308,25 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
         return _low;
 }
 
-/*
-  convert a pulse width modulation value to a value in the configured
-  range
- */
+// Convert backend range value to abstract range value (applying reversal but not trim).
 int16_t
 RC_Channel::pwm_to_range()
 {
     return pwm_to_range_dz(_dead_zone);
 }
 
-
+// Convert servo_out value in the range [_low_out .. _high_out] to the range
+// [0..radio_max-radio_min].
+// There is no trim and no reverse applied.
 int16_t
 RC_Channel::range_to_pwm()
 {
-    return ((long)(servo_out - _low_out) * (long)(radio_max - radio_min)) / (long)(_high_out - _low_out);
+    return ((long)(servo_out - _low_out) * (long)(radio_max - radio_min)) /
+    		(long)(_high_out - _low_out);
 }
 
 // ------------------------------------------
-
+// Return input as a value in the range [-1..1]. Used for fly-by-wire.
 float
 RC_Channel::norm_input()
 {
@@ -333,15 +342,20 @@ RC_Channel::norm_output()
     int16_t mid = (radio_max + radio_min) / 2;
     float ret;
     if(radio_out < mid)
+    	// Negative value in the range [-1..0[
         ret = (float)(radio_out - mid) / (float)(mid - radio_min);
     else
+    	// Nonnegative value in the range [0..1]
         ret = (float)(radio_out - mid) / (float)(radio_max  - mid);
-    if (_reverse == -1) {
+    if (_reverse == -1) { // Shit.. reverse back to internal sign.
 	    ret = -ret;
     }
     return ret;
 }
 
+/*
+ * These 3 methods are used only used from RC_Channel_aux.
+ */
 void RC_Channel::output() const
 {
     hal.rcout->write(_ch_out, radio_out);

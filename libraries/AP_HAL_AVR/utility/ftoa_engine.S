@@ -71,9 +71,14 @@
 #define	prec	r18
 #define	buf_lo	r20
 #define	buf_hi	r21
+
+// bits 0..7 of fraction
 #define	val_lo	r22
+// bits 0..7  of fraction
 #define	val_hi	r23
+// bits 16..21 of fraction and exponent bit 0
 #define	val_hlo	r24
+// and exponent bits 1..7 and sign.
 #define	val_hhi	r25
 
     /* Float value parse	*/
@@ -232,12 +237,13 @@ __ftoa_engine:
 #else
 	lpm
 	adiw	ZL, 1
+	// dongfang: This looks SOOOOO much like a bug. But it is not. The lsr above when it quit did shift an 1 into C.
 	sec
 #endif
 	ror	r0
   ; addition
 12:	brcc	13f
-	add	mlt_2, val_hi		; val_hi is the least byte now
+	add	mlt_2, val_hi		; val_hi is the least byte now. dongfang: How can we know, val_hi may not have been lsl'ed 8 times??
 	adc	mlt_3, val_hlo
 	adc	mlt_4, val_hhi
 	adc	mlt_5, val_lo
@@ -262,7 +268,7 @@ __ftoa_engine:
 	ror	r0
   ; addition
 14:	brcc	15f
-	add	mlt_3, val_hlo		; val_hlo is the least byte now
+	add	mlt_3, val_hlo		; val_hlo is the least byte now.
 	adc	mlt_4, val_hhi
 	adc	mlt_5, val_lo
 	adc	mlt_6, val_hi
@@ -477,21 +483,21 @@ __ftoa_engine:
 
     .type .L_powr10, "object"
 .L_powr10:
-	.byte	0, 64, 122, 16, 243, 90	; 100000000000000
-	.byte	0, 160, 114, 78, 24, 9	; 10000000000000
-	.byte	0, 16, 165, 212, 232, 0	; 1000000000000
-	.byte	0, 232, 118, 72, 23, 0	; 100000000000
-	.byte	0, 228, 11, 84, 2, 0	; 10000000000
-	.byte	0, 202, 154, 59, 0, 0	; 1000000000
-	.byte	0, 225, 245, 5, 0, 0	; 100000000
-	.byte	128, 150, 152, 0, 0, 0	; 10000000
-	.byte	64, 66, 15, 0, 0, 0	; 1000000
-	.byte	160, 134, 1, 0, 0, 0	; 100000
-	.byte	16, 39, 0, 0, 0, 0	; 10000
-	.byte	232, 3, 0, 0, 0, 0	; 1000
-	.byte	100, 0, 0, 0, 0, 0	; 100
-	.byte	10, 0, 0, 0, 0, 0	; 10
-	.byte	1, 0, 0, 0, 0, 0	; 1
+	.byte	0, 64, 122, 16, 243, 90	; 1 000 000 000 000 00  a 47 bits monster!
+	.byte	0, 160, 114, 78, 24, 9	; 1 000 000 000 000 0
+	.byte	0, 16, 165, 212, 232, 0	; 1 000 000 000 000
+	.byte	0, 232, 118, 72, 23, 0	; 1 000 000 00000
+	.byte	0, 228, 11, 84, 2, 0	; 1 000 000 0000
+	.byte	0, 202, 154, 59, 0, 0	; 1 000 000 000
+	.byte	0, 225, 245, 5, 0, 0	; 1 000 000 00
+	.byte	128, 150, 152, 0, 0, 0	; 1 000 000 0
+	.byte	64, 66, 15, 0, 0, 0		; 1 000 000
+	.byte	160, 134, 1, 0, 0, 0	; 1 000 00
+	.byte	16, 39, 0, 0, 0, 0		; 1 000 0
+	.byte	232, 3, 0, 0, 0, 0		; 1 000
+	.byte	100, 0, 0, 0, 0, 0		; 100
+	.byte	10, 0, 0, 0, 0, 0		; 10
+	.byte	1, 0, 0, 0, 0, 0		; 1
     .size .L_powr10, . - .L_powr10
 
     .type	.L_base10, "object"

@@ -11,7 +11,6 @@ void gcs_console_handle_data16(mavlink_message_t* msg) {
     if (data16.type == DATAMSG_TYPE_CONSOLE) {
         hal.console->backend_write(data16.data, data16.len);
     }
-
 }
 
 void gcs_console_handle_data32(mavlink_message_t* msg) {

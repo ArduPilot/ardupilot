@@ -95,6 +95,7 @@ void AP_Motors::set_mid_throttle(uint16_t mid_throttle)
 }
 
 // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
+// Used in compass motor impact calibration and test only.
 void AP_Motors::throttle_pass_through()
 {
     if (armed()) {

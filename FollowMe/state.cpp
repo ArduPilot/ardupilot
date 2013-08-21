@@ -7,6 +7,7 @@ extern const AP_HAL::HAL& hal;
 extern mavlink_channel_t upstream_channel;
 extern mavlink_channel_t downstream_channel;
 
+// Does this intercept a command from the groundstation to UAS?
 void FMStateMachine::on_upstream_command_long(mavlink_command_long_t* pkt) {
   switch(pkt->command) {
     case MAV_CMD_NAV_LOITER_UNLIM:
@@ -29,6 +30,7 @@ void FMStateMachine::on_upstream_set_mode(mavlink_set_mode_t* pkt) {
   _on_user_override();
 }
 
+// Basically disabled FM if UAS detected mode or armed changed via RC
 void FMStateMachine::on_downstream_heartbeat(mavlink_heartbeat_t* pkt) {
   /* if mode has changed from last set_mode, the user has triggered a change
    * via RC switch.
@@ -45,6 +47,7 @@ void FMStateMachine::on_downstream_heartbeat(mavlink_heartbeat_t* pkt) {
   _vehicle_mode = pktmode;
 }
 
+
 void FMStateMachine::on_downstream_gps_raw_int(mavlink_gps_raw_int_t* pkt) {
   /* Keep track of vehicle's latest lat, lon, altitude */
   _vehicle_lat     = pkt->lat;
@@ -53,6 +56,7 @@ void FMStateMachine::on_downstream_gps_raw_int(mavlink_gps_raw_int_t* pkt) {
   _vehicle_gps_fix = pkt->fix_type;
 }
 
+// Activates "guiding"
 void FMStateMachine::on_button_activate() {
   if (_guiding) return;
   /* This action is allowed to swing the state to start guide mode. */
@@ -68,12 +72,14 @@ void FMStateMachine::on_button_activate() {
   }
 }
 
+// Deactivates "guiding" and commands loiter.
 void FMStateMachine::on_button_cancel() {
   if (!_guiding) return;
   _send_loiter();
   _guiding = false;
 }
 
+// Updates gps every 500ms and - if guided is on - sends a guided message.
 void FMStateMachine::on_loop(GPS* gps) {
   uint32_t now = hal.scheduler->millis();
   if ((_last_run_millis + _loop_period) > now) return;
@@ -88,11 +94,13 @@ void FMStateMachine::on_loop(GPS* gps) {
   }
 }
 
+// Check HB timeout and vehicle mode.
+// This is actually only performed when enabling the guided mode.
 bool FMStateMachine::_check_guide_valid() {
   uint32_t now = hal.scheduler->millis();
 
   bool vehicle_gps_valid = (_vehicle_gps_fix == 3);
-  bool vehicle_hb_valid = (now - _last_vehicle_hb_millis) < 2000;
+  bool vehicle_hb_valid = (now - _last_vehicle_hb_millis) < 15000;
 
   bool vehicle_mode_valid = _vehicle_armed 
                           && ( (_vehicle_mode == MODE_LOITER)
@@ -164,6 +172,8 @@ void FMStateMachine::_send_guide() {
   int32_t lat = _local_gps_lat + _offs_lat;
   int32_t lon = _local_gps_lon + _offs_lon;
   // int32_t alt = _local_gps_altitude + _offs_altitude;
+
+  // TODO: This is useless. It does not track altitude. It is constant.
   int32_t alt = _offs_altitude; /* assume above ground. (ArduCopter bug.) */
 
   float x = (float) lat / (float) 1e7; /* lat, lon in deg * 10,000,000 */

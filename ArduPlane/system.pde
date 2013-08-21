@@ -134,10 +134,22 @@ static void init_ardupilot()
         // baud rate
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
-#else
-    // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
-            128, SERIAL_BUFSIZE);
+
+#endif
+
+// Originally, gcs3 would not get initialized if there was a multiplexer pin
+// defined. That would defeat UART2 telemetry on all APM2s. If would however
+// be nice if we could connect a 3DR or XBee to uartA _and_ a further telemetry
+// system to uartC. I have changed the meaning of USB_MUX_PIN to _not_ determine
+// which serial ports should be inited, and added the SERIAL3_MODE define to decide
+// what kind of telemetry HW should be expected at the 2nd UART:
+// SERIAL3_MODE==DISABLED (0): Disabled.
+// SERIAL3_MODE==ENALBED  (1): Raw MAVLink for a XBee or similar.
+// SERIAL3_MODE==MOBILE   (2): DroneCell data-via-commands
+
+#if SERIAL3_MODE == ENABLED
+// we have a 2nd serial port for telemetry
+    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, SERIAL_BUFSIZE);
     gcs3.init(hal.uartC);
 #endif
 
@@ -242,9 +254,9 @@ static void startup_ground(void)
     // Makes the servos wiggle
     // step 1 = 1 wiggle
     // -----------------------
-    if (!g.skip_gyro_cal) {
-        demo_servos(1);
-    }
+    // if (!g.skip_gyro_cal) {
+    //    demo_servos(1);
+    // }
 
     //INS ground start
     //------------------------
@@ -264,10 +276,11 @@ static void startup_ground(void)
     init_commands();
 
     // Makes the servos wiggle - 3 times signals ready to fly
+    // Removed.
     // -----------------------
-    if (!g.skip_gyro_cal) {
-        demo_servos(3);
-    }
+    // if (!g.skip_gyro_cal) {
+    //    demo_servos(3);
+    // }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -447,7 +460,8 @@ static void startup_INS_ground(bool do_accel_init)
 
         // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
         // -----------------------
-        demo_servos(2);
+        // Removed.
+        // demo_servos(2);
 
         gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
         mavlink_delay(1000);

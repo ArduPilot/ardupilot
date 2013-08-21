@@ -15,13 +15,14 @@ const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,5:flaperon,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoiler1,17:DifferentialSpoiler2,18:AileronWithInput,19:Elevator,20:ElevatorWithInput,21:Rudder
     // @User: Standard
     AP_GROUPINFO("FUNCTION",       1, RC_Channel_aux, function, 0),
-
     AP_GROUPEND
 };
 
 static RC_Channel_aux *_aux_channels[8];
 
-/// map a function to a servo channel and output it
+// map the "none" and the "manual" functions to the servo channel and output them.
+// If the function is any other, radio_out (assumed to be updated from somewhere else)
+// is written to hardware.
 void
 RC_Channel_aux::output_ch(unsigned char ch_nr)
 {
@@ -187,10 +188,14 @@ RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::Aux_servo_function_t function,
         if (_aux_channels[i] && _aux_channels[i]->function.get() == function) {
 			if (do_input_output) {
 				_aux_channels[i]->input();
+				// Is this the same as:
+				// _aux_channels[i]->radio_in = hal.rcin->read(_aux_channels[i]->_ch_out);
 			}
 			_aux_channels[i]->radio_out = _aux_channels[i]->radio_in;
 			if (do_input_output) {
 				_aux_channels[i]->output();
+				// Same as:
+			    // hal.rcout->write(_aux_channels[i]->ch_nr, _aux_channels[i]->radio_out);
 			}
 		}
     }

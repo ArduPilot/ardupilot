@@ -79,10 +79,8 @@
  #endif
 #endif
 
-// use this to enable telemetry on UART2. This is used
-// when you have setup the solder bridge on an APM2 to enable UART2
-#ifndef TELEMETRY_UART2
- # define TELEMETRY_UART2 DISABLED
+#ifndef SERIAL3_MODE
+ # define SERIAL3_MODE ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -106,11 +104,8 @@
  # define C_LED_PIN        25
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- #if TELEMETRY_UART2 == ENABLED
-  # define USB_MUX_PIN -1
- #else
-  # define USB_MUX_PIN 23
- #endif
+ # define USB_MUX_PIN 23
+
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
@@ -709,4 +704,3 @@
 #ifndef SERIAL_BUFSIZE
  # define SERIAL_BUFSIZE 512
 #endif
-

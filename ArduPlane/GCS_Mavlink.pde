@@ -289,7 +289,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->target_bearing_cd() * 0.01f,
         wp_distance,
         altitude_error_cm * 0.01,
-        airspeed_error_cm,
+        airspeed_error_cm * 0.01,
         nav_controller->crosstrack_error());
 }
 
@@ -853,8 +853,8 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 
 GCS_MAVLINK::GCS_MAVLINK() :
     packet_drops(0),
-    waypoint_send_timeout(1000), // 1 second
-    waypoint_receive_timeout(1000) // 1 second
+    waypoint_send_timeout(8000), // 8 seconds
+    waypoint_receive_timeout(8000) // 8 seconds
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -926,7 +926,7 @@ GCS_MAVLINK::update(void)
 
     if (waypoint_receiving &&
         waypoint_request_i <= waypoint_request_last &&
-        tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
+        tnow > waypoint_timelast_request + 200 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
@@ -1543,6 +1543,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
         // start waypoint receiving
+        // If start_index > g.command_total and end_index<= g.command_total then start_index > end_index.
+        // the 1st or the 3rd check is not necessary.
         if (packet.start_index > g.command_total ||
             packet.end_index > g.command_total ||
             packet.end_index < packet.start_index) {
@@ -2198,14 +2200,12 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 }
 
 /*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
+ *  send a random-priority formatted message to the GCS
  */
-void gcs_send_text_fmt(const prog_char_t *fmt, ...)
+void gcs_send_text_fmt_severity(gcs_severity severity, const prog_char_t *fmt, ...)
 {
     va_list arg_list;
-    gcs0.pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs0.pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
     hal.util->vsnprintf_P((char *)gcs0.pending_status.text,
             sizeof(gcs0.pending_status.text), fmt, arg_list);
@@ -2220,3 +2220,14 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     }
 }
 
+/*
+ *  send a low priority formatted message to the GCS
+ *  only one fits in the queue, so if you send more than one before the
+ *  last one gets into the serial buffer then the old one will be lost
+ */
+void gcs_send_text_fmt(const prog_char_t *fmt, ...) {
+    va_list arg_list;
+	va_start(arg_list, fmt);
+	gcs_send_text_fmt_severity(SEVERITY_LOW, fmt, arg_list);
+	va_end(arg_list);
+}
