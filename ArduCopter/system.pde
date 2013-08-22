@@ -365,6 +365,7 @@ static bool set_mode(uint8_t mode)
 {
     // boolean to record if flight mode could be set
     bool success = false;
+    bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
     // report the GPS and Motor arming status
     // To-Do: this should be initialised somewhere else related to the LEDs
@@ -407,7 +408,7 @@ static bool set_mode(uint8_t mode)
 
         case AUTO:
             // check we have a GPS and at least one mission command (note the home position is always command 0)
-            if (GPS_ok() && g.command_total > 1) {
+            if ((GPS_ok() && g.command_total > 1) || ignore_checks) {
                 success = true;
                 ap.manual_throttle = false;
                 ap.manual_attitude = false;
@@ -417,7 +418,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case CIRCLE:
-            if (GPS_ok()) {
+            if (GPS_ok() || ignore_checks) {
                 success = true;
                 ap.manual_throttle = false;
                 ap.manual_attitude = false;
@@ -429,7 +430,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case LOITER:
-            if (GPS_ok()) {
+            if (GPS_ok() || ignore_checks) {
                 success = true;
                 ap.manual_throttle = false;
                 ap.manual_attitude = false;
@@ -441,7 +442,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case POSITION:
-            if (GPS_ok()) {
+            if (GPS_ok() || ignore_checks) {
                 success = true;
                 ap.manual_throttle = true;
                 ap.manual_attitude = false;
@@ -453,7 +454,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case GUIDED:
-            if (GPS_ok()) {
+            if (GPS_ok() || ignore_checks) {
                 success = true;
                 ap.manual_throttle = false;
                 ap.manual_attitude = false;
@@ -473,7 +474,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case RTL:
-            if (GPS_ok()) {
+            if (GPS_ok() || ignore_checks) {
                 success = true;
                 ap.manual_throttle = false;
                 ap.manual_attitude = false;
@@ -482,7 +483,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case OF_LOITER:
-            if (g.optflow_enabled) {
+            if (g.optflow_enabled || ignore_checks) {
                 success = true;
                 ap.manual_throttle = false;
                 ap.manual_attitude = false;
