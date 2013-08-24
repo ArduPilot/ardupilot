@@ -96,6 +96,11 @@
 #include <AP_HAL_Empty.h>
 #include "compat.h"
 
+#include <AP_Notify.h>      // Notify library
+#include <AP_BoardLED.h>    // BoardLEDs library
+#include <ToshibaLED.h>     // ToshibaLED library
+#include <ToshibaLED_PX4.h> // ToshibaLED library for PX4
+
 // Configuration
 #include "config.h"
 
@@ -341,8 +346,12 @@ static struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
 ////////////////////////////////////////////////////////////////////////////////
-// state of the GPS light (on/off)
-static bool GPS_light;							
+static AP_BoardLED board_led;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static ToshibaLED_PX4 toshiba_led;
+#else
+static ToshibaLED toshiba_led;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
@@ -579,6 +588,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { mount_update,           1,    500 },
     { failsafe_check,         5,    500 },
     { compass_accumulate,     1,    900 },
+    { update_toshiba_led,     1,    100 },
     { one_second_loop,       50,   3000 }
 };
 
@@ -592,6 +602,14 @@ void setup() {
 
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
+
+    // arduplane does not use arming nor pre-arm checks
+    AP_Notify::flags.armed = true;
+    AP_Notify::flags.pre_arm_check = true;
+
+    // initialise board and toshiba led
+    board_led.init();
+    toshiba_led.init();
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
@@ -810,7 +828,6 @@ static void update_GPS(void)
 {        
     static uint32_t last_gps_reading;
 	g_gps->update();
-	update_GPS_light();
 
     if (g_gps->last_message_time_ms() != last_gps_reading) {
         last_gps_reading = g_gps->last_message_time_ms();
