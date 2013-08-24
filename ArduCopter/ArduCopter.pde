@@ -73,8 +73,6 @@
 #include <AP_HAL_Empty.h>
 
 // Application dependencies
-#include <AP_Notify.h>          // Notify library
-#include <AP_BoardLED.h>        // BoardLEDs library
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_GPS.h>             // ArduPilot GPS library
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
@@ -106,8 +104,10 @@
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
+#include <AP_Notify.h>          // Notify library
+#include <AP_BoardLED.h>        // BoardLEDs library
 #include <ToshibaLED.h>         // ToshibaLED library
-#include <ToshibaLED_PX4.h>     // ToshibaLED library
+#include <ToshibaLED_PX4.h>     // ToshibaLED library for PX4
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
