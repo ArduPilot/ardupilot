@@ -483,36 +483,12 @@ static void startup_INS_ground(bool do_accel_init)
     digitalWrite(C_LED_PIN, LED_OFF);
 }
 
-
-static void update_GPS_light(void)
+// update_toshiba_led - updates the status of the toshiba led
+// should be called at 50hz
+static void update_toshiba_led()
 {
-    // GPS LED on if we have a fix or Blink GPS LED if we are receiving data
-    // ---------------------------------------------------------------------
-    switch (g_gps->status()) {
-        case GPS::NO_FIX:
-        case GPS::GPS_OK_FIX_2D:
-            // check if we've blinked since the last gps update
-            if (g_gps->valid_read) {
-                g_gps->valid_read = false;
-                GPS_light = !GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-                if (GPS_light) {
-                    digitalWrite(C_LED_PIN, LED_OFF);
-                }else{
-                    digitalWrite(C_LED_PIN, LED_ON);
-                }
-            }
-            break;
-
-        case GPS::GPS_OK_FIX_3D:
-            digitalWrite(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix AND home is set.
-            break;
-
-        default:
-            digitalWrite(C_LED_PIN, LED_OFF);
-            break;
-    }
+    AP_Notify::update();
 }
-
 
 static void resetPerfData(void) {
     mainLoop_count                  = 0;
