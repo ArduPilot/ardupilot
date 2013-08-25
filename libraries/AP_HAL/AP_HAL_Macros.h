@@ -16,6 +16,7 @@
 #if !(defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L)
 # define constexpr const
 # define override
+# define nullptr NULL
 #endif
 
 #endif // __AP_HAL_MACROS_H__
