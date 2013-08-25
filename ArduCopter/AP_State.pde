@@ -127,3 +127,4 @@ void set_compass_healthy(bool b)
     }
     ap.compass_status = b;
 }
+

@@ -24,7 +24,7 @@ public:
     ModeFilter(uint8_t return_element);
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
-    virtual T        apply(T sample);
+    virtual T        apply(T sample) override;
 
 private:
     // private methods
@@ -107,8 +107,11 @@ void ModeFilter<T,FILTER_SIZE>::        isort(T new_sample, bool drop_high)
 
     if( drop_high ) {      // drop highest sample from the buffer to make room for our new sample
 
-        // start from top. Note: sample_index always points to the next open space so we start from sample_index-1
-        i = FilterWithBuffer<T,FILTER_SIZE>::sample_index-1;
+    	// FILZER_SIZE <= 129 --> sample_index <= 128 --> sample_index - 1 <= 128 fits in an int8_t
+    	typedef char STATIC_ASSERT_sample_index_fits_in_int8_t [(FILTER_SIZE <= 129)?1:-1];
+
+    	// start from top. Note: sample_index always points to the next open space so we start from sample_index-1
+        i = static_cast<int8_t>(FilterWithBuffer<T,FILTER_SIZE>::sample_index - 1);
 
         // if the next element is higher than our new sample, push it up one position
         while(i > 0 && FilterWithBuffer<T,FILTER_SIZE>::samples[i-1] > new_sample) {

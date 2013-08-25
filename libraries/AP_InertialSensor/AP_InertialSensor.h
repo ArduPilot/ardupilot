@@ -85,26 +85,26 @@ public:
     ///
     /// @returns	vector of rotational rates in radians/sec
     ///
-    Vector3f            get_gyro(void) const { return _gyro; }
-    void                set_gyro(Vector3f gyro) { _gyro = gyro; }
+    const Vector3f&     get_gyro(void) const { return _gyro; }
+    void                set_gyro(const Vector3f &gyro) { _gyro = gyro; }
 
     // set gyro offsets in radians/sec
-    Vector3f get_gyro_offsets(void) { return _gyro_offset; }
-    void     set_gyro_offsets(Vector3f offsets) { _gyro_offset.set(offsets); }
+    const Vector3f& get_gyro_offsets(void) const { return _gyro_offset; }
+    void            set_gyro_offsets(const Vector3f &offsets) { _gyro_offset.set(offsets); }
 
     /// Fetch the current accelerometer values
     ///
     /// @returns	vector of current accelerations in m/s/s
     ///
-    Vector3f            get_accel(void) const { return _accel; }
-    void                set_accel(Vector3f accel) { _accel = accel; }
+    const Vector3f&     get_accel(void) const { return _accel; }
+    void                set_accel(const Vector3f &accel) { _accel = accel; }
 
     // get accel offsets in m/s/s
-    Vector3f get_accel_offsets() { return _accel_offset; }
-    void     set_accel_offsets(Vector3f offsets) { _accel_offset.set(offsets); }
+    const Vector3f& get_accel_offsets() const { return _accel_offset; }
+    void            set_accel_offsets(const Vector3f &offsets) { _accel_offset.set(offsets); }
 
     // get accel scale
-    Vector3f get_accel_scale() { return _accel_scale; }
+    const Vector3f& get_accel_scale() const { return _accel_scale; }
 
     /* Update the sensor data, so that getters are nonblocking.
      * Returns a bool of whether data was updated or not.
@@ -114,11 +114,11 @@ public:
     /* get_delta_time returns the time period in seconds
      * overwhich the sensor data was collected
      */
-    virtual float get_delta_time() = 0;
+    virtual float get_delta_time() const = 0;
 
     // return the maximum gyro drift rate in radians/s/s. This
     // depends on what gyro chips are being used
-    virtual float get_gyro_drift_rate(void) = 0;
+    virtual float get_gyro_drift_rate(void) const = 0;
 
     // get number of samples read from the sensors
     virtual uint16_t num_samples_available() = 0;

@@ -38,11 +38,11 @@ bool SITLRCInput::set_overrides(int16_t *overrides, uint8_t len) {
     return res;
 }
 
-bool SITLRCInput::set_override(uint8_t channel, int16_t override) {
-    if (override < 0) return false; /* -1: no change. */
+bool SITLRCInput::set_override(uint8_t channel, int16_t override_val) {
+    if (override_val < 0) return false; /* -1: no change. */
     if (channel < 8) {
-        _override[channel] = override;
-        if (override != 0) {
+        _override[channel] = override_val;
+        if (override_val != 0) {
             return true;
         }
     }

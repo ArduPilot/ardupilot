@@ -34,17 +34,17 @@
 
 float longitude_scale(const struct Location &loc)
 {
-    static int32_t last_lat;
-    static float scale = 1.0;
+    static int32_t last_lat   = 0;
+    static float   last_scale = 1.0;
     if (labs(last_lat - loc.lat) < 100000) {
         // we are within 0.01 degrees (about 1km) of the
         // same latitude. We can avoid the cos() and return
         // the same scale factor.
-        return scale;
+        return last_scale;
     }
-    scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    last_scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
     last_lat = loc.lat;
-    return scale;
+    return last_scale;
 }
 
 

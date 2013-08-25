@@ -27,6 +27,7 @@ class AP_AHRS
 public:
     // Constructor
     AP_AHRS(AP_InertialSensor *ins, GPS *&gps) :
+    	_airspeed(NULL),
         _ins(ins),
         _gps(gps)
     {
@@ -98,7 +99,7 @@ public:
     int32_t yaw_sensor;
 
     // return a smoothed and corrected gyro vector
-    virtual const Vector3f get_gyro(void) const = 0;
+    virtual Vector3f get_gyro(void) const = 0;
 
     // return the current estimate of the gyro drift
     virtual const Vector3f &get_gyro_drift(void) const = 0;
@@ -128,7 +129,7 @@ public:
     // dead-reckoning. Return true if a position is available,
     // otherwise false. This only updates the lat and lng fields
     // of the Location
-    virtual bool get_position(struct Location &loc) {
+    virtual bool get_position(struct Location &loc) const {
         if (!_gps || _gps->status() <= GPS::NO_FIX) {
             return false;
         }
@@ -145,17 +146,17 @@ public:
     float get_position_lag(void) const;
 
     // return a wind estimation vector, in m/s
-    virtual Vector3f wind_estimate(void) {
+    virtual Vector3f wind_estimate(void) const {
         return Vector3f(0,0,0);
     }
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float *airspeed_ret);
+    virtual bool airspeed_estimate(float *airspeed_ret) const;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_estimate_true(float *airspeed_ret) {
+    bool airspeed_estimate_true(float *airspeed_ret) const {
         if (!airspeed_estimate(airspeed_ret)) {
             return false;
         }

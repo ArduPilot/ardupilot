@@ -42,7 +42,7 @@ void DerivativeFilter<T,FILTER_SIZE>::update(T sample, uint32_t timestamp)
 
 
 template <class T,  uint8_t FILTER_SIZE>
-float DerivativeFilter<T,FILTER_SIZE>::slope(void)
+float DerivativeFilter<T,FILTER_SIZE>::slope(void) const
 {
     if (!_new_data) {
         return _last_slope;
@@ -112,22 +112,9 @@ void DerivativeFilter<T,FILTER_SIZE>::reset(void)
     FilterWithBuffer<T,FILTER_SIZE>::reset();
 }
 
-// add new instances as needed here
-template void DerivativeFilter<float,5>::update(float sample, uint32_t timestamp);
-template float DerivativeFilter<float,5>::slope(void);
-template void DerivativeFilter<float,5>::reset(void);
-
-template void DerivativeFilter<float,7>::update(float sample, uint32_t timestamp);
-template float DerivativeFilter<float,7>::slope(void);
-template void DerivativeFilter<float,7>::reset(void);
-
-template void DerivativeFilter<float,9>::update(float sample, uint32_t timestamp);
-template float DerivativeFilter<float,9>::slope(void);
-template void DerivativeFilter<float,9>::reset(void);
-
-template void DerivativeFilter<float,11>::update(float sample, uint32_t timestamp);
-template float DerivativeFilter<float,11>::slope(void);
-template void DerivativeFilter<float,11>::reset(void);
-
-
-
+// explicitly instantiate all needed template instances (add new ones as needed here)
+// (this is needed to allow the separation of declaration and definition into header and source files)
+template class DerivativeFilter<float,  5>;
+template class DerivativeFilter<float,  7>;
+template class DerivativeFilter<float,  9>;
+template class DerivativeFilter<float, 11>;

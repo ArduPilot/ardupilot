@@ -16,12 +16,12 @@ private:
     uint8_t _count;
 
 public:
-    bool init();
-    uint8_t read();
-    float get_pressure();
-    float get_temperature();
-    int32_t get_raw_pressure();
-    int32_t get_raw_temp();
+    virtual bool init() override;
+    virtual uint8_t read() override;
+    virtual float get_pressure() const override;
+    virtual float get_temperature() const override;
+    virtual int32_t get_raw_pressure() const override;
+    virtual int32_t get_raw_temp() const override;
     void setHIL(float altitude_msl);
 };
 

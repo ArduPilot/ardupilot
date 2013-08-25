@@ -4,7 +4,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Muï¿½oz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
  *
@@ -205,7 +205,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
+ *  We call the process of enforcing the orthogonality conditions ï¿½renormalizationï¿½.
  */
 void
 AP_AHRS_DCM::normalize(void)
@@ -765,7 +765,7 @@ float AP_AHRS_DCM::get_error_yaw(void)
 
 // return our current position estimate using
 // dead-reckoning or GPS
-bool AP_AHRS_DCM::get_position(struct Location &loc)
+bool AP_AHRS_DCM::get_position(struct Location &loc) const
 {
     if (!_have_position) {
         return false;
@@ -777,7 +777,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc)
 }
 
 // return an airspeed estimate if available
-bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
+bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
 {
 	bool ret = false;
 	if (_airspeed && _airspeed->use()) {

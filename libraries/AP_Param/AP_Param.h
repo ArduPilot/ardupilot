@@ -53,6 +53,16 @@ enum ap_var_type {
     AP_PARAM_GROUP
 };
 
+// templates for getting the ap_var_type for a given type
+// e.g. get_ap_var_type<int8_t>::value
+// add more as needed
+template<typename T> struct get_ap_var_type;
+template<> struct get_ap_var_type<int8_t > { enum {value = AP_PARAM_INT8};  };
+template<> struct get_ap_var_type<int16_t> { enum {value = AP_PARAM_INT16}; };
+template<> struct get_ap_var_type<int32_t> { enum {value = AP_PARAM_INT32}; };
+template<> struct get_ap_var_type<float  > { enum {value = AP_PARAM_FLOAT}; };
+
+
 /// Base class for variables.
 ///
 /// Provides naming and lookup services for variables.
@@ -348,13 +358,12 @@ private:
 /// were the value.
 ///
 /// @tparam T			The scalar type of the variable
-/// @tparam PT			The AP_PARAM_* type
 ///
-template<typename T, ap_var_type PT>
+template<typename T>
 class AP_ParamT : public AP_Param
 {
 public:
-    static const ap_var_type        vtype = PT;
+    static const ap_var_type        vtype = static_cast<ap_var_type>(get_ap_var_type<T>::value);
 
     /// Value getter
     ///
@@ -399,29 +408,29 @@ public:
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamT<T,PT>& operator= (const T &v) {
+    AP_ParamT& operator= (const T &v) {
         _value = v;
         return *this;
     }
 
     /// bit ops on parameters
     ///
-    AP_ParamT<T,PT>& operator |=(const T &v) {
+    AP_ParamT& operator |=(const T &v) {
         _value |= v;
         return *this;
     }
 
-    AP_ParamT<T,PT>& operator &=(const T &v) {
+    AP_ParamT& operator &=(const T &v) {
         _value &= v;
         return *this;
     }
 
-    AP_ParamT<T,PT>& operator +=(const T &v) {
+    AP_ParamT& operator +=(const T &v) {
         _value += v;
         return *this;
     }
 
-    AP_ParamT<T,PT>& operator -=(const T &v) {
+    AP_ParamT& operator -=(const T &v) {
         _value -= v;
         return *this;
     }
@@ -548,17 +557,11 @@ protected:
 
 
 
-/// Convenience macro for defining instances of the AP_ParamT template.
-///
-// declare a scalar type
-// _t is the base type
-// _suffix is the suffix on the AP_* type name
-// _pt is the enum ap_var_type type
-#define AP_PARAMDEF(_t, _suffix, _pt)   typedef AP_ParamT<_t, _pt> AP_ ## _suffix;
-AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
-AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
-AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
-AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
+/// define instances of the AP_ParamT template.
+typedef AP_ParamT<int8_t > AP_Int8;
+typedef AP_ParamT<int16_t> AP_Int16;
+typedef AP_ParamT<int32_t> AP_Int32;
+typedef AP_ParamT<float  > AP_Float;
 
 // declare an array type
 // _t is the base type
@@ -567,6 +570,7 @@ AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEFA(_t, _suffix, _size, _pt)   typedef AP_ParamA<_t, _size, _pt> AP_ ## _suffix;
 AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
+
 
 // declare a non-scalar type
 // this is used in AP_Math.h

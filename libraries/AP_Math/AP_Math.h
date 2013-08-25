@@ -64,7 +64,8 @@ enum Rotation           rotation_combination(enum Rotation r1, enum Rotation r2,
 #endif
 
 // longitude_scale - returns the scaler to compensate for shrinking longitude as you move north or south from the equator
-// Note: this does not include the scaling to convert longitude/latitude points to meters or centimeters
+// Note: * this does not include the scaling to convert longitude/latitude points to meters or centimeters
+//       * the only used value is loc.lat
 float                   longitude_scale(const struct Location &loc);
 
 // return distance in meters between two locations

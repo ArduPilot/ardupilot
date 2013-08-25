@@ -29,7 +29,7 @@ bool EmptyRCInput::set_overrides(int16_t *overrides, uint8_t len) {
     return true;
 }
 
-bool EmptyRCInput::set_override(uint8_t channel, int16_t override) {
+bool EmptyRCInput::set_override(uint8_t channel, int16_t override_val) {
     return true;
 }
 

@@ -77,7 +77,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
         cliSerial->printf_P(PSTR("dumping all\n"));
         Log_Read(0, 1, 0);
         return(-1);
-    } else if ((argc != 2) || ((uint16_t)dump_log <= (last_log_num - DataFlash.get_num_logs())) || (static_cast<uint16_t>(dump_log) > last_log_num)) {
+    } else if ((argc != 2) || (static_cast<uint16_t>(dump_log) <= (last_log_num - DataFlash.get_num_logs())) || (static_cast<uint16_t>(dump_log) > last_log_num)) {
         cliSerial->printf_P(PSTR("bad log number\n"));
         return(-1);
     }
@@ -293,7 +293,7 @@ struct PACKED log_Nav_Tuning {
 // Write an Nav Tuning packet
 static void Log_Write_Nav_Tuning()
 {
-    Vector3f velocity = inertial_nav.get_velocity();
+    const Vector3f &velocity = inertial_nav.get_velocity();
 
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
@@ -479,7 +479,7 @@ struct PACKED log_INAV {
 // Write an INAV packet
 static void Log_Write_INAV()
 {
-    Vector3f accel_corr = inertial_nav.accel_correction_ef;
+    const Vector3f &accel_corr = inertial_nav.accel_correction_ef;
 
     struct log_INAV pkt = {
         LOG_PACKET_HEADER_INIT(LOG_INAV_MSG),

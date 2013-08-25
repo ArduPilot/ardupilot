@@ -99,19 +99,19 @@ void AP_Baro_PX4::_baro_timer(uint32_t now)
     _accumulate();
 }
 
-float AP_Baro_PX4::get_pressure() {
+float AP_Baro_PX4::get_pressure() const {
     return _pressure;
 }
 
-float AP_Baro_PX4::get_temperature() {
+float AP_Baro_PX4::get_temperature() const {
     return _temperature;
 }
 
-int32_t AP_Baro_PX4::get_raw_pressure() {
+int32_t AP_Baro_PX4::get_raw_pressure() const {
     return _pressure;
 }
 
-int32_t AP_Baro_PX4::get_raw_temp() {
+int32_t AP_Baro_PX4::get_raw_temp() const {
     return _temperature;
 }
 

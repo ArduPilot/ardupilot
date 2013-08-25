@@ -110,7 +110,7 @@ void AP_Baro::calibrate()
 // return current altitude estimate relative to time that calibrate()
 // was called. Returns altitude in meters
 // note that this relies on read() being called regularly to get new data
-float AP_Baro::get_altitude(void)
+float AP_Baro::get_altitude(void) const
 {
     float scaling, temp;
 
@@ -146,7 +146,7 @@ float AP_Baro::get_altitude(void)
 // return current scale factor that converts from equivalent to true airspeed
 // valid for altitudes up to 10km AMSL
 // assumes standard atmosphere lapse rate
-float AP_Baro::get_EAS2TAS(void)
+float AP_Baro::get_EAS2TAS(void) const
 {
     if ((abs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
         // not enough change to require re-calculating
@@ -162,7 +162,7 @@ float AP_Baro::get_EAS2TAS(void)
 // return current climb_rate estimeate relative to time that calibrate()
 // was called. Returns climb rate in meters/s, positive means up
 // note that this relies on read() being called regularly to get new data
-float AP_Baro::get_climb_rate(void)
+float AP_Baro::get_climb_rate(void) const
 {
     // we use a 7 point derivative filter on the climb rate. This seems
     // to produce somewhat reasonable results on real hardware

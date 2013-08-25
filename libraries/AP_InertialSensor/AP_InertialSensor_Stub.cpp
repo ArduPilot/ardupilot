@@ -34,13 +34,13 @@ bool AP_InertialSensor_Stub::update( void ) {
     return true;
 }
 
-float AP_InertialSensor_Stub::get_delta_time() {
+float AP_InertialSensor_Stub::get_delta_time() const {
     return _delta_time_usec * 1.0e-6;
 }
 uint32_t AP_InertialSensor_Stub::get_last_sample_time_micros() {
     return _last_update_ms * 1000;
 }
-float AP_InertialSensor_Stub::get_gyro_drift_rate(void) {
+float AP_InertialSensor_Stub::get_gyro_drift_rate(void) const {
     // 0.5 degrees/second/minute
     return ToRad(0.5/60);
 }

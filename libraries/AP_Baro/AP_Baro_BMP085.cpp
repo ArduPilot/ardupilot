@@ -144,19 +144,19 @@ uint8_t AP_Baro_BMP085::read()
     return 1;
 }
 
-float AP_Baro_BMP085::get_pressure() {
+float AP_Baro_BMP085::get_pressure() const {
     return Press;
 }
 
-float AP_Baro_BMP085::get_temperature() {
+float AP_Baro_BMP085::get_temperature() const {
     return Temp;
 }
 
-int32_t AP_Baro_BMP085::get_raw_pressure() {
+int32_t AP_Baro_BMP085::get_raw_pressure() const {
     return RawPress;
 }
 
-int32_t AP_Baro_BMP085::get_raw_temp() {
+int32_t AP_Baro_BMP085::get_raw_temp() const {
     return RawTemp;
 }
 

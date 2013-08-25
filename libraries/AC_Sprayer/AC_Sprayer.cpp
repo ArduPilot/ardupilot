@@ -42,8 +42,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-/// Default constructor.
-AC_Sprayer::AC_Sprayer(AP_InertialNav* inav) :
+AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
     _inav(inav),
     _spraying(false),
     _speed_over_min_time(0),
@@ -62,7 +61,6 @@ AC_Sprayer::AC_Sprayer(AP_InertialNav* inav) :
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }
 
-/// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
 void AC_Sprayer::enable(bool true_false)
 {
     // return immediately if no change
@@ -90,7 +88,6 @@ void
 AC_Sprayer::update()
 {
     uint32_t now;
-    Vector3f velocity;
     float ground_speed;
 
     // exit immediately if we are disabled (perhaps set pwm values back to defaults)
@@ -104,7 +101,7 @@ AC_Sprayer::update()
     }
 
     // get horizontal velocity
-    velocity = _inav->get_velocity();
+    const Vector3f &velocity = _inav->get_velocity();
     ground_speed = pythagorous2(velocity.x,velocity.y);
 
     // get the current time

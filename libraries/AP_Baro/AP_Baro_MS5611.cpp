@@ -398,22 +398,22 @@ void AP_Baro_MS5611::_calculate()
     Press = P;
 }
 
-float AP_Baro_MS5611::get_pressure()
+float AP_Baro_MS5611::get_pressure() const
 {
     return Press;
 }
 
-float AP_Baro_MS5611::get_temperature()
+float AP_Baro_MS5611::get_temperature() const
 {
     // callers want the temperature in 0.1C units
     return Temp/10;
 }
 
-int32_t AP_Baro_MS5611::get_raw_pressure() {
+int32_t AP_Baro_MS5611::get_raw_pressure() const {
     return _raw_press;
 }
 
-int32_t AP_Baro_MS5611::get_raw_temp() {
+int32_t AP_Baro_MS5611::get_raw_temp() const {
     return _raw_temp;
 }
 

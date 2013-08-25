@@ -27,17 +27,18 @@ public:
     };
 
     // update - Add a new raw value to the filter, but don't recalculate
-    virtual void        update(T sample, uint32_t timestamp);
+    void        update(T sample, uint32_t timestamp);
 
     // return the derivative value
-    virtual float        slope(void);
+    float        slope(void) const;
 
     // reset - clear the filter
-    virtual void        reset();
+    virtual void        reset() override;
 
 private:
-    bool            _new_data;
-    float           _last_slope;
+    mutable bool    _new_data;   // new_data and _last_slope are only used for caching the slope() result.
+    mutable float   _last_slope; // Apart from the caching, slope() doesn't change the object and should
+                                 // therefore be marked as const what requires these members to be mutable.
 
     // microsecond timestamps for samples. This is needed
     // to cope with non-uniform time spacing of the data

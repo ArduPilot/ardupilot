@@ -6,24 +6,32 @@
 # Decide where we are going to look for tools
 #
 ifeq ($(SYSTYPE),Darwin)
-  # use the tools that come with Arduino
-  TOOLPATH :=  $(ARDUINOS)/hardware/tools/avr/bin
+  # first search in the macports directory, then on path, 
+  # otherwise use the tools that come with Arduino
+  TOOLPATH 	      := /opt/local/bin $(subst :, ,$(PATH)) $(ARDUINOS)/hardware/tools/avr/bin
+  # unfortunately the macports avr-size version doesn't support --format=avr
+  # so we have to use the one that ships with Arduino
+  TOOLPATHAVRSIZE := $(ARDUINOS)/hardware/tools/avr/bin
   # use BWK awk
   AWK =  awk
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
+  FIND_AVRSIZE =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATHAVRSIZE))))    
 endif
 ifeq ($(SYSTYPE),Linux)
   # expect that tools are on the path
   TOOLPATH :=  $(subst :, ,$(PATH))
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
+  FIND_AVRSIZE = $(FIND_TOOL)
 endif
 ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN) 
   TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+  FIND_AVRSIZE = $(FIND_TOOL)
 endif
 ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW) 
   TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+  FIND_AVRSIZE = $(FIND_TOOL)
 endif
 
 NATIVE_CXX     :=  g++
@@ -44,6 +52,7 @@ AVR_OBJCOPY :=  $(call FIND_TOOL,avr-objcopy)
 
 AVRDUDE      :=  $(call FIND_TOOL,avrdude)
 AVARICE      :=  $(call FIND_TOOL,avarice)
+AVRSIZE      :=  $(call FIND_AVRSIZE,avr-size)
 
 CXX = $($(TOOLCHAIN)_CXX)
 CC = $($(TOOLCHAIN)_CC)

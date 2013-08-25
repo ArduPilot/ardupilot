@@ -89,18 +89,18 @@ void AP_Baro_HIL::setHIL(float altitude_msl)
     _last_update = hal.scheduler->millis();
 }
 
-float AP_Baro_HIL::get_pressure() {
+float AP_Baro_HIL::get_pressure() const {
     return Press;
 }
 
-float AP_Baro_HIL::get_temperature() {
+float AP_Baro_HIL::get_temperature() const {
     return Temp;
 }
 
-int32_t AP_Baro_HIL::get_raw_pressure() {
+int32_t AP_Baro_HIL::get_raw_pressure() const {
     return Press;
 }
 
-int32_t AP_Baro_HIL::get_raw_temp() {
+int32_t AP_Baro_HIL::get_raw_temp() const {
     return Temp;
 }

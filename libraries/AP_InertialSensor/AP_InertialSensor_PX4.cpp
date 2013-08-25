@@ -131,7 +131,7 @@ bool AP_InertialSensor_PX4::update(void)
     return true;
 }
 
-float AP_InertialSensor_PX4::get_delta_time(void) 
+float AP_InertialSensor_PX4::get_delta_time(void) const
 {
     return _delta_time;
 }
@@ -141,7 +141,7 @@ uint32_t AP_InertialSensor_PX4::get_last_sample_time_micros(void)
     return _last_update_usec;
 }
 
-float AP_InertialSensor_PX4::get_gyro_drift_rate(void) 
+float AP_InertialSensor_PX4::get_gyro_drift_rate(void) const
 {
     // 0.5 degrees/second/minute
     return ToRad(0.5/60);

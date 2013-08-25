@@ -83,14 +83,14 @@ bool SMACCMRCInput::set_overrides(int16_t *overrides, uint8_t len)
   return result;
 }
 
-bool SMACCMRCInput::set_override(uint8_t channel, int16_t override)
+bool SMACCMRCInput::set_override(uint8_t channel, int16_t override_val)
 {
-  if (override < 0)
+  if (override_val < 0)
     return false;
 
   if (channel < SMACCM_RCINPUT_CHANNELS) {
-    _override[channel] = override;
-    if (override != 0) {
+    _override[channel] = override_val;
+    if (override_val != 0) {
       return true;
     }
   }

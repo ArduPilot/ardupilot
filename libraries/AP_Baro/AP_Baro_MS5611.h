@@ -74,13 +74,13 @@ public:
     }
 
     /* AP_Baro public interface: */
-    bool            init();
-    uint8_t         read();
-    float           get_pressure(); // in mbar*100 units
-    float           get_temperature(); // in celsius degrees * 100 units
+    virtual bool            init() override;
+    virtual uint8_t         read() override;
+    virtual float           get_pressure() const override; // in mbar*100 units
+    virtual float           get_temperature() const override; // in celsius degrees * 100 units
 
-    int32_t         get_raw_pressure();
-    int32_t         get_raw_temp();
+    virtual int32_t         get_raw_pressure() const override;
+    virtual int32_t         get_raw_temp() const override;
 
     void            _calculate();
 

@@ -12,7 +12,7 @@ DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
 WARNFLAGS      +=   -Wwrite-strings -Wformat=2
-WARNFLAGSCXX    =   -Wno-reorder
+WARNFLAGSCXX    =   -Woverloaded-virtual -Wsign-promo
 DEPFLAGS        =   -MD -MT $@
 
 CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char
@@ -145,6 +145,10 @@ ALLDEPS			=	$(ALLOBJS:%.o=%.d)
 #
 
 all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
+	$(v)echo "\nused c++ compiler\n-----------------"
+	$(v)$(CXX) --version | head -n1
+	$(v)echo
+	$(v)$(AVRSIZE) --format=avr --mcu=$(MCU) $(SKETCHELF)
 
 print-%:
 	echo "$*=$($*)"
