@@ -96,6 +96,7 @@ void AP_Airspeed::init()
         if (_ets_fd == -1) {
             hal.console->println("Failed to open ETS airspeed driver");
             _enable.set(0);
+            return;
         }
         if (OK != ioctl(_ets_fd, SENSORIOCSPOLLRATE, 100) ||
             OK != ioctl(_ets_fd, SENSORIOCSQUEUEDEPTH, 15)) {
