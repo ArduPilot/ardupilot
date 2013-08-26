@@ -295,6 +295,50 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_270_YAW_135, 270,   0, 135);
     test_euler(ROTATION_PITCH_90,           0,  90,   0);
     test_euler(ROTATION_PITCH_270,          0, 270,   0);    
+    test_euler(ROTATION_PITCH_180_YAW_90,   0, 180,  90);    
+    test_euler(ROTATION_PITCH_180_YAW_270,  0, 180, 270);    
+    test_euler(ROTATION_ROLL_90_PITCH_90,  90,  90,   0);    
+    test_euler(ROTATION_ROLL_180_PITCH_90,180,  90,   0);    
+    test_euler(ROTATION_ROLL_270_PITCH_90,270,  90,   0);    
+    test_euler(ROTATION_ROLL_90_PITCH_180, 90, 180,   0);    
+    test_euler(ROTATION_ROLL_270_PITCH_180,270,180,   0);    
+    test_euler(ROTATION_ROLL_90_PITCH_270, 90, 270,   0);    
+    test_euler(ROTATION_ROLL_180_PITCH_270,180,270,   0);    
+    test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);    
+    test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);    
+    test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);    
+}
+
+static bool have_rotation(const Matrix3f &m)
+{
+    Matrix3f mt = m.transposed();
+    for (enum Rotation r=ROTATION_NONE; 
+         r<ROTATION_MAX;
+         r = (enum Rotation)((uint8_t)r+1)) {
+        Vector3f v(1,2,3);
+        Vector3f v2 = v;
+        v2.rotate(r);
+        v2 = mt * v2;
+        if ((v2 - v).length() < 0.01f) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void missing_rotations(void)
+{
+    hal.console->println("testing for missing rotations");
+    uint16_t roll, pitch, yaw;
+    for (yaw=0; yaw<360; yaw += 90)
+        for (pitch=0; pitch<360; pitch += 90)
+            for (roll=0; roll<360; roll += 90) {
+                Matrix3f m;
+                m.from_euler(ToRad(roll), ToRad(pitch), ToRad(yaw));
+                if (!have_rotation(m)) {
+                    hal.console->printf("Missing rotation (%u, %u, %u)\n", roll, pitch, yaw);
+                }
+            }
 }
 
 /*
@@ -310,6 +354,7 @@ void setup(void)
 #endif
     test_rotation_accuracy();
     test_eulers();
+    missing_rotations();
     hal.console->println("rotation unit tests done\n");
 }
 
