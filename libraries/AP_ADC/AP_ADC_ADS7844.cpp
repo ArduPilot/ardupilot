@@ -1,5 +1,20 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
  *       AP_ADC_ADS7844.cpp - ADC ADS7844 Library for Ardupilot Mega
  *       Code by Jordi Mu�oz and Jose Julio. DIYDrones.com
  *
@@ -8,12 +23,6 @@
  *               only an issue on initial read of ADC at program start.
  *       2)Reorder analog read order as follows:
  *               p, q, r, ax, ay, az
- *
- *       This library is free software; you can redistribute it and / or
- *               modify it under the terms of the GNU Lesser General Public
- *               License as published by the Free Software Foundation; either
- *               version 2.1 of the License, or (at your option) any later version.
- *
  *       External ADC ADS7844 is connected via Serial port 2 (in SPI mode)
  *       TXD2 = MOSI = pin PH1
  *       RXD2 = MISO = pin PH0
