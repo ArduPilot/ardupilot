@@ -2111,7 +2111,7 @@ static void update_trig(void){
     // 270 = cos_yaw:  0.00, sin_yaw: -1.00,
 }
 
-// read baro and sonar altitude at 20hz
+// read baro and sonar altitude at 10hz
 static void update_altitude()
 {
 #if HIL_MODE == HIL_MODE_ATTITUDE
