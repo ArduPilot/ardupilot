@@ -82,4 +82,6 @@ then
 	echo Running rc.APM
 	# if APM startup is successful then nsh will exit
 	sh /etc/init.d/rc.APM
+else
+        nshterm /dev/ttyACM0 &
 fi
