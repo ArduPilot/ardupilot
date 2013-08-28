@@ -23,7 +23,9 @@ static int32_t read_barometer(void)
     return altitude_filter.apply(barometer.get_altitude() * 100.0);
 }
 
-// in M/S * 100
+/*
+  ask airspeed sensor for a new value
+ */
 static void read_airspeed(void)
 {
     if (airspeed.enabled()) {
