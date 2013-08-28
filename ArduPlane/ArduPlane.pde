@@ -476,8 +476,7 @@ static struct {
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
 ////////////////////////////////////////////////////////////////////////////////
-AP_Airspeed airspeed;
-Airspeed_Calibration airspeed_calibration;
+AP_Airspeed airspeed(aparm);
 
 ////////////////////////////////////////////////////////////////////////////////
 // ACRO controller state
@@ -971,9 +970,18 @@ static void airspeed_ratio_update(void)
         g_gps->status() < GPS::GPS_OK_FIX_3D ||
         g_gps->ground_speed_cm < 400 ||
         airspeed.get_airspeed() < aparm.airspeed_min) {
+        // don't calibrate when not moving
         return;
     }
-    airspeed.update_calibration(g_gps->velocity_vector());
+    if (abs(ahrs.roll_sensor) > g.roll_limit_cd ||
+        ahrs.pitch_sensor > aparm.pitch_limit_max_cd ||
+        ahrs.pitch_sensor < aparm.pitch_limit_min_cd) {
+        // don't calibrate when going beyond normal flight envelope
+        return;
+    }
+    Vector3f vg = g_gps->velocity_vector();
+    airspeed.update_calibration(vg);
+    gcs_send_airspeed_calibration(vg);
 }
 
 
