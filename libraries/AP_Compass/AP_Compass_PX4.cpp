@@ -26,12 +26,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-int AP_Compass_PX4::_mag_fd = -1;
-Vector3f AP_Compass_PX4::_sum;
-uint32_t AP_Compass_PX4::_count = 0;
-uint32_t AP_Compass_PX4::_last_timer = 0;
-uint64_t AP_Compass_PX4::_last_timestamp = 0;
-
 
 // Public Methods //////////////////////////////////////////////////////////////
 
@@ -49,32 +43,28 @@ bool AP_Compass_PX4::init(void)
 	/* set the driver to poll at 150Hz */
 	ioctl(_mag_fd, SENSORIOCSPOLLRATE, 150);
 
-    // average over up to 10 samples
-    ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 10);
+    // average over up to 20 samples
+    ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 20);
 
     healthy = false;
     _count = 0;
     _sum.zero();
 
-    hal.scheduler->register_timer_process(_compass_timer);
-
-    // give the timer a chance to run, and gather one sample
+    // give the driver a chance to run, and gather one sample
     hal.scheduler->delay(40);
+    accumulate();
 
     return true;
 }
 
 bool AP_Compass_PX4::read(void)
 {
-    hal.scheduler->suspend_timer_procs();
-
     // try to accumulate one more sample, so we have the latest data
-    _accumulate();
+    accumulate();
 
     // consider the compass healthy if we got a reading in the last 0.2s
     healthy = (hrt_absolute_time() - _last_timestamp < 200000);
     if (!healthy || _count == 0) {
-        hal.scheduler->resume_timer_procs();
         return healthy;
     }
 
@@ -109,14 +99,12 @@ bool AP_Compass_PX4::read(void)
     _sum.zero();
     _count = 0;
 
-    hal.scheduler->resume_timer_procs();
-    
     last_update = _last_timestamp;
     
     return true;
 }
 
-void AP_Compass_PX4::_accumulate(void)
+void AP_Compass_PX4::accumulate(void)
 {
     struct mag_report mag_report;
     while (::read(_mag_fd, &mag_report, sizeof(mag_report)) == sizeof(mag_report) &&
@@ -125,21 +113,6 @@ void AP_Compass_PX4::_accumulate(void)
         _count++;
         _last_timestamp = mag_report.timestamp;
     }
-}
-
-void AP_Compass_PX4::accumulate(void)
-{
-    // let the timer do the work
-}
-
-void AP_Compass_PX4::_compass_timer(uint32_t now)
-{
-    // try to accumulate samples at 100Hz
-    if (now - _last_timer < 10000) {
-        return;
-    }
-    _last_timer = hal.scheduler->micros();
-    _accumulate();
 }
 
 #endif // CONFIG_HAL_BOARD
