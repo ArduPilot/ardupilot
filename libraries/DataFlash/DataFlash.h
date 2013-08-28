@@ -10,7 +10,6 @@
 #include <AP_Param.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
-#include <AP_AHRS.h>
 #include <stdint.h>
 
 class DataFlash_Class
