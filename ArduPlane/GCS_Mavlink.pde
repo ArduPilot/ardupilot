@@ -2221,3 +2221,19 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     }
 }
 
+/*
+  send airspeed calibration data
+ */
+static void gcs_send_airspeed_calibration(const Vector3f &vg)
+{
+    if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
+        MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
+        airspeed.log_mavlink_send(MAVLINK_COMM_0, vg);
+    }
+    if (gcs3.initialised) {
+        if (comm_get_txspace(MAVLINK_COMM_1) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
+            MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
+            airspeed.log_mavlink_send(MAVLINK_COMM_1, vg);
+        }
+    }
+}
