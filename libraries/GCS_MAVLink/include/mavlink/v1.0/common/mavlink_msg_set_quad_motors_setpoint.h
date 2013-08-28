@@ -79,7 +79,7 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack(uint8_t system_
  * @brief Pack a set_quad_motors_setpoint message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID of the system that should set these motor commands
  * @param motor_front_nw Front motor in + configuration, front left motor in x configuration
@@ -121,7 +121,7 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack_chan(uint8_t sy
 }
 
 /**
- * @brief Encode a set_quad_motors_setpoint struct into a message
+ * @brief Encode a set_quad_motors_setpoint struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -131,6 +131,20 @@ static inline uint16_t mavlink_msg_set_quad_motors_setpoint_pack_chan(uint8_t sy
 static inline uint16_t mavlink_msg_set_quad_motors_setpoint_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_quad_motors_setpoint_t* set_quad_motors_setpoint)
 {
 	return mavlink_msg_set_quad_motors_setpoint_pack(system_id, component_id, msg, set_quad_motors_setpoint->target_system, set_quad_motors_setpoint->motor_front_nw, set_quad_motors_setpoint->motor_right_ne, set_quad_motors_setpoint->motor_back_se, set_quad_motors_setpoint->motor_left_sw);
+}
+
+/**
+ * @brief Encode a set_quad_motors_setpoint struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param set_quad_motors_setpoint C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_set_quad_motors_setpoint_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_set_quad_motors_setpoint_t* set_quad_motors_setpoint)
+{
+	return mavlink_msg_set_quad_motors_setpoint_pack_chan(system_id, component_id, chan, msg, set_quad_motors_setpoint->target_system, set_quad_motors_setpoint->motor_front_nw, set_quad_motors_setpoint->motor_right_ne, set_quad_motors_setpoint->motor_back_se, set_quad_motors_setpoint->motor_left_sw);
 }
 
 /**

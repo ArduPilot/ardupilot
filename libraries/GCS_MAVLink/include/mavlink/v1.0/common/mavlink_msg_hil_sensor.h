@@ -129,7 +129,7 @@ static inline uint16_t mavlink_msg_hil_sensor_pack(uint8_t system_id, uint8_t co
  * @brief Pack a hil_sensor message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param xacc X acceleration (m/s^2)
@@ -201,7 +201,7 @@ static inline uint16_t mavlink_msg_hil_sensor_pack_chan(uint8_t system_id, uint8
 }
 
 /**
- * @brief Encode a hil_sensor struct into a message
+ * @brief Encode a hil_sensor struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -211,6 +211,20 @@ static inline uint16_t mavlink_msg_hil_sensor_pack_chan(uint8_t system_id, uint8
 static inline uint16_t mavlink_msg_hil_sensor_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_hil_sensor_t* hil_sensor)
 {
 	return mavlink_msg_hil_sensor_pack(system_id, component_id, msg, hil_sensor->time_usec, hil_sensor->xacc, hil_sensor->yacc, hil_sensor->zacc, hil_sensor->xgyro, hil_sensor->ygyro, hil_sensor->zgyro, hil_sensor->xmag, hil_sensor->ymag, hil_sensor->zmag, hil_sensor->abs_pressure, hil_sensor->diff_pressure, hil_sensor->pressure_alt, hil_sensor->temperature, hil_sensor->fields_updated);
+}
+
+/**
+ * @brief Encode a hil_sensor struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param hil_sensor C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_hil_sensor_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_hil_sensor_t* hil_sensor)
+{
+	return mavlink_msg_hil_sensor_pack_chan(system_id, component_id, chan, msg, hil_sensor->time_usec, hil_sensor->xacc, hil_sensor->yacc, hil_sensor->zacc, hil_sensor->xgyro, hil_sensor->ygyro, hil_sensor->zgyro, hil_sensor->xmag, hil_sensor->ymag, hil_sensor->zmag, hil_sensor->abs_pressure, hil_sensor->diff_pressure, hil_sensor->pressure_alt, hil_sensor->temperature, hil_sensor->fields_updated);
 }
 
 /**

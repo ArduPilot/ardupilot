@@ -72,7 +72,7 @@ static inline uint16_t mavlink_msg_param_request_read_pack(uint8_t system_id, ui
  * @brief Pack a param_request_read message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -109,7 +109,7 @@ static inline uint16_t mavlink_msg_param_request_read_pack_chan(uint8_t system_i
 }
 
 /**
- * @brief Encode a param_request_read struct into a message
+ * @brief Encode a param_request_read struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -119,6 +119,20 @@ static inline uint16_t mavlink_msg_param_request_read_pack_chan(uint8_t system_i
 static inline uint16_t mavlink_msg_param_request_read_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_param_request_read_t* param_request_read)
 {
 	return mavlink_msg_param_request_read_pack(system_id, component_id, msg, param_request_read->target_system, param_request_read->target_component, param_request_read->param_id, param_request_read->param_index);
+}
+
+/**
+ * @brief Encode a param_request_read struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param param_request_read C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_param_request_read_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_param_request_read_t* param_request_read)
+{
+	return mavlink_msg_param_request_read_pack_chan(system_id, component_id, chan, msg, param_request_read->target_system, param_request_read->target_component, param_request_read->param_id, param_request_read->param_index);
 }
 
 /**

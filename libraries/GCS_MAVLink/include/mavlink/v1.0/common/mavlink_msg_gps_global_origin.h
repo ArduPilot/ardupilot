@@ -69,7 +69,7 @@ static inline uint16_t mavlink_msg_gps_global_origin_pack(uint8_t system_id, uin
  * @brief Pack a gps_global_origin message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param latitude Latitude (WGS84), in degrees * 1E7
  * @param longitude Longitude (WGS84), in degrees * 1E7
@@ -105,7 +105,7 @@ static inline uint16_t mavlink_msg_gps_global_origin_pack_chan(uint8_t system_id
 }
 
 /**
- * @brief Encode a gps_global_origin struct into a message
+ * @brief Encode a gps_global_origin struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -115,6 +115,20 @@ static inline uint16_t mavlink_msg_gps_global_origin_pack_chan(uint8_t system_id
 static inline uint16_t mavlink_msg_gps_global_origin_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_gps_global_origin_t* gps_global_origin)
 {
 	return mavlink_msg_gps_global_origin_pack(system_id, component_id, msg, gps_global_origin->latitude, gps_global_origin->longitude, gps_global_origin->altitude);
+}
+
+/**
+ * @brief Encode a gps_global_origin struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param gps_global_origin C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_gps_global_origin_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_gps_global_origin_t* gps_global_origin)
+{
+	return mavlink_msg_gps_global_origin_pack_chan(system_id, component_id, chan, msg, gps_global_origin->latitude, gps_global_origin->longitude, gps_global_origin->altitude);
 }
 
 /**

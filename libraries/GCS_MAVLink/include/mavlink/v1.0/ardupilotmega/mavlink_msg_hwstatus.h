@@ -64,7 +64,7 @@ static inline uint16_t mavlink_msg_hwstatus_pack(uint8_t system_id, uint8_t comp
  * @brief Pack a hwstatus message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param Vcc board voltage (mV)
  * @param I2Cerr I2C error count
@@ -97,7 +97,7 @@ static inline uint16_t mavlink_msg_hwstatus_pack_chan(uint8_t system_id, uint8_t
 }
 
 /**
- * @brief Encode a hwstatus struct into a message
+ * @brief Encode a hwstatus struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -107,6 +107,20 @@ static inline uint16_t mavlink_msg_hwstatus_pack_chan(uint8_t system_id, uint8_t
 static inline uint16_t mavlink_msg_hwstatus_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_hwstatus_t* hwstatus)
 {
 	return mavlink_msg_hwstatus_pack(system_id, component_id, msg, hwstatus->Vcc, hwstatus->I2Cerr);
+}
+
+/**
+ * @brief Encode a hwstatus struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param hwstatus C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_hwstatus_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_hwstatus_t* hwstatus)
+{
+	return mavlink_msg_hwstatus_pack_chan(system_id, component_id, chan, msg, hwstatus->Vcc, hwstatus->I2Cerr);
 }
 
 /**

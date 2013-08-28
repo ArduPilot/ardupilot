@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_safety_allowed_area_pack(uint8_t system_id, u
  * @brief Pack a safety_allowed_area message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param frame Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.
  * @param p1x x position 1 / Latitude 1
@@ -137,7 +137,7 @@ static inline uint16_t mavlink_msg_safety_allowed_area_pack_chan(uint8_t system_
 }
 
 /**
- * @brief Encode a safety_allowed_area struct into a message
+ * @brief Encode a safety_allowed_area struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -147,6 +147,20 @@ static inline uint16_t mavlink_msg_safety_allowed_area_pack_chan(uint8_t system_
 static inline uint16_t mavlink_msg_safety_allowed_area_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_safety_allowed_area_t* safety_allowed_area)
 {
 	return mavlink_msg_safety_allowed_area_pack(system_id, component_id, msg, safety_allowed_area->frame, safety_allowed_area->p1x, safety_allowed_area->p1y, safety_allowed_area->p1z, safety_allowed_area->p2x, safety_allowed_area->p2y, safety_allowed_area->p2z);
+}
+
+/**
+ * @brief Encode a safety_allowed_area struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param safety_allowed_area C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_safety_allowed_area_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_safety_allowed_area_t* safety_allowed_area)
+{
+	return mavlink_msg_safety_allowed_area_pack_chan(system_id, component_id, chan, msg, safety_allowed_area->frame, safety_allowed_area->p1x, safety_allowed_area->p1y, safety_allowed_area->p1z, safety_allowed_area->p2x, safety_allowed_area->p2y, safety_allowed_area->p2z);
 }
 
 /**

@@ -94,7 +94,7 @@ static inline uint16_t mavlink_msg_attitude_quaternion_pack(uint8_t system_id, u
  * @brief Pack a attitude_quaternion message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param q1 Quaternion component 1
@@ -145,7 +145,7 @@ static inline uint16_t mavlink_msg_attitude_quaternion_pack_chan(uint8_t system_
 }
 
 /**
- * @brief Encode a attitude_quaternion struct into a message
+ * @brief Encode a attitude_quaternion struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -155,6 +155,20 @@ static inline uint16_t mavlink_msg_attitude_quaternion_pack_chan(uint8_t system_
 static inline uint16_t mavlink_msg_attitude_quaternion_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_attitude_quaternion_t* attitude_quaternion)
 {
 	return mavlink_msg_attitude_quaternion_pack(system_id, component_id, msg, attitude_quaternion->time_boot_ms, attitude_quaternion->q1, attitude_quaternion->q2, attitude_quaternion->q3, attitude_quaternion->q4, attitude_quaternion->rollspeed, attitude_quaternion->pitchspeed, attitude_quaternion->yawspeed);
+}
+
+/**
+ * @brief Encode a attitude_quaternion struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param attitude_quaternion C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_attitude_quaternion_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_attitude_quaternion_t* attitude_quaternion)
+{
+	return mavlink_msg_attitude_quaternion_pack_chan(system_id, component_id, chan, msg, attitude_quaternion->time_boot_ms, attitude_quaternion->q1, attitude_quaternion->q2, attitude_quaternion->q3, attitude_quaternion->q4, attitude_quaternion->rollspeed, attitude_quaternion->pitchspeed, attitude_quaternion->yawspeed);
 }
 
 /**

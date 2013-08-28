@@ -79,7 +79,7 @@ static inline uint16_t mavlink_msg_local_position_setpoint_pack(uint8_t system_i
  * @brief Pack a local_position_setpoint message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param coordinate_frame Coordinate frame - valid values are only MAV_FRAME_LOCAL_NED or MAV_FRAME_LOCAL_ENU
  * @param x x position
@@ -121,7 +121,7 @@ static inline uint16_t mavlink_msg_local_position_setpoint_pack_chan(uint8_t sys
 }
 
 /**
- * @brief Encode a local_position_setpoint struct into a message
+ * @brief Encode a local_position_setpoint struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -131,6 +131,20 @@ static inline uint16_t mavlink_msg_local_position_setpoint_pack_chan(uint8_t sys
 static inline uint16_t mavlink_msg_local_position_setpoint_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_local_position_setpoint_t* local_position_setpoint)
 {
 	return mavlink_msg_local_position_setpoint_pack(system_id, component_id, msg, local_position_setpoint->coordinate_frame, local_position_setpoint->x, local_position_setpoint->y, local_position_setpoint->z, local_position_setpoint->yaw);
+}
+
+/**
+ * @brief Encode a local_position_setpoint struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param local_position_setpoint C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_local_position_setpoint_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_local_position_setpoint_t* local_position_setpoint)
+{
+	return mavlink_msg_local_position_setpoint_pack_chan(system_id, component_id, chan, msg, local_position_setpoint->coordinate_frame, local_position_setpoint->x, local_position_setpoint->y, local_position_setpoint->z, local_position_setpoint->yaw);
 }
 
 /**

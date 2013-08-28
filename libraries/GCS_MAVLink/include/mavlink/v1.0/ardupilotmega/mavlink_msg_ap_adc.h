@@ -84,7 +84,7 @@ static inline uint16_t mavlink_msg_ap_adc_pack(uint8_t system_id, uint8_t compon
  * @brief Pack a ap_adc message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param adc1 ADC output 1
  * @param adc2 ADC output 2
@@ -129,7 +129,7 @@ static inline uint16_t mavlink_msg_ap_adc_pack_chan(uint8_t system_id, uint8_t c
 }
 
 /**
- * @brief Encode a ap_adc struct into a message
+ * @brief Encode a ap_adc struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -139,6 +139,20 @@ static inline uint16_t mavlink_msg_ap_adc_pack_chan(uint8_t system_id, uint8_t c
 static inline uint16_t mavlink_msg_ap_adc_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_ap_adc_t* ap_adc)
 {
 	return mavlink_msg_ap_adc_pack(system_id, component_id, msg, ap_adc->adc1, ap_adc->adc2, ap_adc->adc3, ap_adc->adc4, ap_adc->adc5, ap_adc->adc6);
+}
+
+/**
+ * @brief Encode a ap_adc struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param ap_adc C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_ap_adc_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_ap_adc_t* ap_adc)
+{
+	return mavlink_msg_ap_adc_pack_chan(system_id, component_id, chan, msg, ap_adc->adc1, ap_adc->adc2, ap_adc->adc3, ap_adc->adc4, ap_adc->adc5, ap_adc->adc6);
 }
 
 /**

@@ -124,7 +124,7 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack(uint8_t system_id, uin
  * @brief Pack a hil_rc_inputs_raw message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  * @param chan1_raw RC channel 1 value, in microseconds
@@ -193,7 +193,7 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack_chan(uint8_t system_id
 }
 
 /**
- * @brief Encode a hil_rc_inputs_raw struct into a message
+ * @brief Encode a hil_rc_inputs_raw struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -203,6 +203,20 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack_chan(uint8_t system_id
 static inline uint16_t mavlink_msg_hil_rc_inputs_raw_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_hil_rc_inputs_raw_t* hil_rc_inputs_raw)
 {
 	return mavlink_msg_hil_rc_inputs_raw_pack(system_id, component_id, msg, hil_rc_inputs_raw->time_usec, hil_rc_inputs_raw->chan1_raw, hil_rc_inputs_raw->chan2_raw, hil_rc_inputs_raw->chan3_raw, hil_rc_inputs_raw->chan4_raw, hil_rc_inputs_raw->chan5_raw, hil_rc_inputs_raw->chan6_raw, hil_rc_inputs_raw->chan7_raw, hil_rc_inputs_raw->chan8_raw, hil_rc_inputs_raw->chan9_raw, hil_rc_inputs_raw->chan10_raw, hil_rc_inputs_raw->chan11_raw, hil_rc_inputs_raw->chan12_raw, hil_rc_inputs_raw->rssi);
+}
+
+/**
+ * @brief Encode a hil_rc_inputs_raw struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param hil_rc_inputs_raw C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_hil_rc_inputs_raw_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_hil_rc_inputs_raw_t* hil_rc_inputs_raw)
+{
+	return mavlink_msg_hil_rc_inputs_raw_pack_chan(system_id, component_id, chan, msg, hil_rc_inputs_raw->time_usec, hil_rc_inputs_raw->chan1_raw, hil_rc_inputs_raw->chan2_raw, hil_rc_inputs_raw->chan3_raw, hil_rc_inputs_raw->chan4_raw, hil_rc_inputs_raw->chan5_raw, hil_rc_inputs_raw->chan6_raw, hil_rc_inputs_raw->chan7_raw, hil_rc_inputs_raw->chan8_raw, hil_rc_inputs_raw->chan9_raw, hil_rc_inputs_raw->chan10_raw, hil_rc_inputs_raw->chan11_raw, hil_rc_inputs_raw->chan12_raw, hil_rc_inputs_raw->rssi);
 }
 
 /**

@@ -83,7 +83,7 @@ static inline uint16_t mavlink_msg_omnidirectional_flow_pack(uint8_t system_id, 
  * @brief Pack a omnidirectional_flow message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param sensor_id Sensor ID
@@ -126,7 +126,7 @@ static inline uint16_t mavlink_msg_omnidirectional_flow_pack_chan(uint8_t system
 }
 
 /**
- * @brief Encode a omnidirectional_flow struct into a message
+ * @brief Encode a omnidirectional_flow struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -136,6 +136,20 @@ static inline uint16_t mavlink_msg_omnidirectional_flow_pack_chan(uint8_t system
 static inline uint16_t mavlink_msg_omnidirectional_flow_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_omnidirectional_flow_t* omnidirectional_flow)
 {
 	return mavlink_msg_omnidirectional_flow_pack(system_id, component_id, msg, omnidirectional_flow->time_usec, omnidirectional_flow->sensor_id, omnidirectional_flow->left, omnidirectional_flow->right, omnidirectional_flow->quality, omnidirectional_flow->front_distance_m);
+}
+
+/**
+ * @brief Encode a omnidirectional_flow struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param omnidirectional_flow C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_omnidirectional_flow_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_omnidirectional_flow_t* omnidirectional_flow)
+{
+	return mavlink_msg_omnidirectional_flow_pack_chan(system_id, component_id, chan, msg, omnidirectional_flow->time_usec, omnidirectional_flow->sensor_id, omnidirectional_flow->left, omnidirectional_flow->right, omnidirectional_flow->quality, omnidirectional_flow->front_distance_m);
 }
 
 /**
