@@ -14,14 +14,15 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor - fill in all the initial values
-Airspeed_Calibration::Airspeed_Calibration() :
+Airspeed_Calibration::Airspeed_Calibration(const AP_SpdHgtControl::AircraftParameters &parms) :
     P(100,   0,         0,
       0,   100,         0,
       0,     0,  0.000001f),
     Q0(0.01f),
     Q1(0.000001f),
     state(0, 0, 0),
-    DT(1)
+    DT(1),
+    aparm(parms)
 {
 }
 
@@ -108,15 +109,17 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 /*
   called once a second to do calibration update
  */
-void AP_Airspeed::update_calibration(Vector3f vground)
+void AP_Airspeed::update_calibration(const Vector3f &vground)
 {
     if (!_autocal) {
         // auto-calibration not enabled
         return;
     }
     // calculate true airspeed, assuming a airspeed ratio of 1.0
-    float true_airspeed = sqrtf(get_differential_pressure()) * _EAS2TAS;
+    float dpress = get_differential_pressure();
+    float true_airspeed = sqrtf(dpress) * _EAS2TAS;
     float ratio = _calibration.update(true_airspeed, vground);
+
     if (isnan(ratio) || isinf(ratio)) {
         return;
     }
@@ -133,4 +136,22 @@ void AP_Airspeed::update_calibration(Vector3f vground)
     } else {
         _counter++;
     }
+}
+
+// log airspeed calibration data to MAVLink
+void AP_Airspeed::log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground)
+{
+    mavlink_msg_airspeed_autocal_send(chan,
+                                      vground.x,
+                                      vground.y,
+                                      vground.z,
+                                      get_differential_pressure(),
+                                      _EAS2TAS,
+                                      _ratio.get(),
+                                      _calibration.state.x,
+                                      _calibration.state.y,
+                                      _calibration.state.z,
+                                      _calibration.P.a.x,
+                                      _calibration.P.b.y,
+                                      _calibration.P.c.z);
 }

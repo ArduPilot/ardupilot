@@ -131,11 +131,15 @@ float AP_Airspeed::get_pressure(void)
         float sum = 0;
         uint16_t count = 0;
         struct differential_pressure_s report;
+        static uint64_t last_timestamp;
 
-        while (::read(_ets_fd, &report, sizeof(report)) == sizeof(report)) {
+        while (::read(_ets_fd, &report, sizeof(report)) == sizeof(report) &&
+               report.timestamp != last_timestamp) {
             sum += report.differential_pressure_pa;
             count++;
+            last_timestamp = report.timestamp;
         }
+        // hal.console->printf("count=%u\n", (unsigned)count);
         if (count == 0) {
             return _last_pressure;
         }

@@ -6,11 +6,14 @@
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include <AP_Param.h>
+#include <GCS_MAVLink.h>
+#include <AP_SpdHgtControl.h>
 
 class Airspeed_Calibration {
 public:
+    friend class AP_Airspeed;
     // constructor
-    Airspeed_Calibration(void);
+    Airspeed_Calibration(const AP_SpdHgtControl::AircraftParameters &parms);
 
     // initialise the calibration
     void init(float initial_ratio);
@@ -26,15 +29,17 @@ private:
     const float Q1; // process noise matrix bottom right element
     Vector3f state; // state vector
     const float DT; // time delta
+    const AP_SpdHgtControl::AircraftParameters &aparm;
 };
 
 class AP_Airspeed
 {
 public:
     // constructor
-    AP_Airspeed() : 
+    AP_Airspeed(const AP_SpdHgtControl::AircraftParameters &parms) : 
         _ets_fd(-1),
-        _EAS2TAS(1.0f)
+        _EAS2TAS(1.0f),
+        _calibration(parms)
     {
 		AP_Param::setup_object_defaults(this, var_info);
     };
@@ -110,9 +115,13 @@ public:
     }
 
     // update airspeed ratio calibration
-    void update_calibration(Vector3f vground);
+    void update_calibration(const Vector3f &vground);
+
+	// log data to MAVLink
+	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     static const struct AP_Param::GroupInfo var_info[];
+
 
 private:
     AP_HAL::AnalogSource *_source;
