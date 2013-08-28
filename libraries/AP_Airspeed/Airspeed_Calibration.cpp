@@ -102,6 +102,10 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
     P.b.y = max(P.b.y, 0.0f);
     P.c.z = max(P.c.z, 0.0f);
 
+    state.x = constrain_float(state.x, -aparm.airspeed_max, aparm.airspeed_max);
+    state.y = constrain_float(state.y, -aparm.airspeed_max, aparm.airspeed_max);
+    state.z = constrain_float(state.z, 0.5f, 1.0f);
+
     return state.z;
 }
 
