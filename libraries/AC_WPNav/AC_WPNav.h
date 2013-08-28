@@ -200,8 +200,12 @@ protected:
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     AP_Float    _wp_accel_cms;          // acceleration in cm/s/s during missions
+    uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
+    uint8_t     _wpnav_step;            // used to decide which portion of wpnav controller to run during this iteration
     uint32_t	_loiter_last_update;    // time of last update_loiter call
     uint32_t	_wpnav_last_update;     // time of last update_wpnav call
+    float       _loiter_dt;             // time difference since last loiter call
+    float       _wpnav_dt;              // time difference since last loiter call
     float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
     float       _cos_pitch;
