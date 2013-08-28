@@ -15,6 +15,7 @@
 #include <drivers/drv_led.h>
 #include <drivers/drv_tone_alarm.h>
 #include <drivers/drv_gpio.h>
+#include <modules/px4iofirmware/protocol.h>
 
 #define LOW     1
 #define HIGH    0
@@ -46,15 +47,20 @@ void PX4GPIO::init()
     }
 
 #ifdef CONFIG_ARCH_BOARD_PX4IO_V1
-    _gpio_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
-    if (_gpio_fd == -1) {
+    _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
+    if (_gpio_fmu_fd == -1) {
         hal.scheduler->panic("Unable to open GPIO");
     }
-    if (ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
+    if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO_1\n");
     }
 #endif
 
+    // also try to setup for the relay pins on the IO board
+    _gpio_io_fd = open(PX4IO_DEVICE_PATH, O_RDWR);
+    if (_gpio_io_fd == -1) {
+        hal.console->printf("GPIO: Unable to open px4io\n");
+    }
 }
 
 void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
@@ -67,14 +73,50 @@ int8_t PX4GPIO::analogPinToDigitalPin(uint8_t pin)
 
 
 uint8_t PX4GPIO::read(uint8_t pin) {
-    return 0;
+    uint32_t relays = 0;
+    switch (pin) {
+
+#ifdef GPIO_EXT_1
+        case PX4_GPIO_EXT_FMU_RELAY1_PIN:
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & GPIO_EXT_1)?HIGH:LOW;
+#endif
+
+#ifdef GPIO_EXT_2
+        case PX4_GPIO_EXT_FMU_RELAY2_PIN:
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & GPIO_EXT_2)?HIGH:LOW;
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER1
+        case PX4_GPIO_EXT_IO_RELAY1_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_POWER1)?HIGH:LOW;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER2
+        case PX4_GPIO_EXT_IO_RELAY2_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_POWER2)?HIGH:LOW;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC1
+        case PX4_GPIO_EXT_IO_ACC1_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_ACC1)?HIGH:LOW;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC2
+        case PX4_GPIO_EXT_IO_ACC2_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_ACC2)?HIGH:LOW;
+#endif
+    }
 }
 
 void PX4GPIO::write(uint8_t pin, uint8_t value)
 {
-
-    //char *user_tune = "MBL4O6C";
-
     switch (pin) {
 
 #ifdef CONFIG_ARCH_BOARD_PX4IO_V1
@@ -107,15 +149,41 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case PX4_GPIO_EXT_RELAY_PIN: // Ext Relay 
-#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
-            if (value == LOW) {
-                ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1);
-            } else {
-                ioctl(_gpio_fd, GPIO_SET, GPIO_EXT_1);
-            }
-#endif
+#ifdef GPIO_EXT_1
+        case PX4_GPIO_EXT_FMU_RELAY1_PIN:
+            ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_EXT_1);
             break;
+#endif
+
+#ifdef GPIO_EXT_2
+        case PX4_GPIO_EXT_FMU_RELAY2_PIN:
+            ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_EXT_2);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER1
+        case PX4_GPIO_EXT_IO_RELAY1_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER1);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER2
+        case PX4_GPIO_EXT_IO_RELAY2_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER2);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC1
+        case PX4_GPIO_EXT_IO_ACC1_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC1);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC2
+        case PX4_GPIO_EXT_IO_ACC2_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC2);
+            break;
+#endif
     }
 }
 
