@@ -104,7 +104,7 @@
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////
-// Bulk defines for TradHeli
+// TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED 				125
   # define WP_YAW_BEHAVIOR_DEFAULT      YAW_LOOK_AT_HOME
@@ -116,6 +116,17 @@
   # define HELI_YAW_FF					0  
   # define STABILIZE_THROTTLE			THROTTLE_MANUAL
   # define MPU6K_FILTER                 10
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////
+// Y6 defaults
+#if FRAME_CONFIG == Y6_FRAME
+  # define RATE_ROLL_P    				0.1f
+  # define RATE_ROLL_D    				0.006f
+  # define RATE_PITCH_P    				0.1f
+  # define RATE_PITCH_D    				0.006f
+  # define RATE_YAW_P    				0.150f
+  # define RATE_YAW_I    				0.015f
 #endif
 
 
