@@ -176,9 +176,6 @@ public:
         return a.is_nan() || b.is_nan() || c.is_nan();
     }
 
-    // fill in the matrix with a standard rotation
-    void        rotation(enum Rotation rotation);
-
     // create a rotation matrix from Euler angles
     void        from_euler(float roll, float pitch, float yaw);
 
