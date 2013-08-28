@@ -437,6 +437,7 @@ void DataFlash_File::_io_timer(uint32_t tnow)
     assert(_writebuf_head+nbytes <= _writebuf_size);
     ssize_t nwritten = ::write(_write_fd, &_writebuf[_writebuf_head], nbytes);
     if (nwritten <= 0) {
+        hal.console->printf("DataFlash write: %d %d\n", (int)nwritten, (int)errno);
         close(_write_fd);
         _write_fd = -1;
         _initialised = false;
