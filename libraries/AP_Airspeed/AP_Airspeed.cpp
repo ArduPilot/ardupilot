@@ -90,6 +90,10 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
 void AP_Airspeed::init()
 {
     _last_pressure = 0;
+    _calibration.init(_ratio);
+    _last_saved_ratio = _ratio;
+    _counter = 0;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (_pin == 65) {
         _ets_fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
@@ -112,10 +116,6 @@ void AP_Airspeed::init()
     }
 #endif
     _source = hal.analogin->channel(_pin);
-
-    _calibration.init(_ratio);
-    _last_saved_ratio = _ratio;
-    _counter = 0;
 }
 
 // read the airspeed sensor
