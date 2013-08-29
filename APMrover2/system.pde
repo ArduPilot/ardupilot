@@ -408,11 +408,11 @@ static void startup_INS_ground(bool force_accel_level)
 	digitalWrite(C_LED_PIN, LED_OFF);
 }
 
-// update_toshiba_led - updates the status of the toshiba led
+// updates the notify state
 // should be called at 50hz
-static void update_toshiba_led()
+static void update_notify()
 {
-    AP_Notify::update();
+    notify.update();
 }
 
 static void resetPerfData(void) {
