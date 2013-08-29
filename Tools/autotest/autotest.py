@@ -7,9 +7,6 @@ import optparse, fnmatch, time, glob, traceback, signal
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
 
-# cope with the mavlink package not being installed, and just being a git tree
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'mavlink'))
-
 import util
 
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -335,8 +332,7 @@ class TestResults(object):
 
 def write_webresults(results):
     '''write webpage results'''
-    sys.path.insert(0, os.path.join(util.reltopdir("../mavlink/pymavlink/generator")))
-    import mavtemplate
+    from pymavlink.generator import mavtemplate
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
