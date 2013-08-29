@@ -124,7 +124,9 @@ static void low_battery_event(void)
 
 #if COPTER_LEDS == ENABLED
     // Only Activate if a battery is connected to avoid alarm on USB only
-    piezo_on();
+    if (!ap_system.usb_connected) {
+        piezo_on();
+    }
 #endif // COPTER_LEDS
 }
 
