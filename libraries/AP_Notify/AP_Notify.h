@@ -1,17 +1,32 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef __AP_NOTIFY_H__
 #define __AP_NOTIFY_H__
 
 #include <AP_Common.h>
+#include <AP_BoardLED.h>
+#include <ToshibaLED.h>
+#include <ToshibaLED_I2C.h>
+#include <ToshibaLED_PX4.h>
 
 class AP_Notify
 {
 public:
-
-    /// definition of callback function
-    typedef void (*update_fn_t)(void);
-
     /// notify_type - bitmask of notification types
     struct notify_type {
         uint16_t initialising   : 1;    // 1 if initialising and copter should not be moved
@@ -22,41 +37,24 @@ public:
         uint16_t esc_calibration: 1;    // 1 if calibrating escs
     };
 
+    // the notify flags are static to allow direct class access
+    // without declaring the object
     static struct notify_type flags;
 
-    /// register_callback - allows registering functions to be called with AP_Notify::update() is called from main loop
-    static void register_update_function(update_fn_t fn) {_update_fn = fn;}
+    // initialisation
+    void init(void);
 
     /// update - allow updates of leds that cannot be updated during a timed interrupt
-    static void update() { if (AP_Notify::_update_fn != NULL) AP_Notify::_update_fn(); }
+    void update(void);
 
-    /// To-Do: potential notifications to add
-
-    /// flight_mode 
-    /// void flight_mode(uint8_t mode) = 0;
-
-    /// throttle failsafe
-    /// void fs_throttle(bool uint8_t);     // 0 if throttle failsafe is cleared, 1 if activated
-    /// void fs_battery(bool uint8_t);      // 1 if battery voltage is low or consumed amps close to battery capacity, 0 if cleared
-    /// void fs_gps(bool uint8_t);          // 1 if we've lost gps lock and it is required for our current flightmode, 0 if cleared
-    /// void fs_gcs(bool uint8_t);          // 1 if we've lost contact with the gcs and it is required for our current flightmode or pilot input method, 0 if cleared
-    /// void fence_breach(bool uint8_t);    // fence type breached or 0 if cleared
-
-    /// switch_aux1(uint8_t state);     // 0 if aux switch is off, 1 if in middle, 2 if high
-    /// switch_aux2(uint8_t state);     // 0 if aux switch is off, 1 if in middle, 2 if high
-
-    /// reached_waypoint();             // called after we reach a waypoint
-
-    /// error(uint8_t subsystem_id, uint8_t error_code);    // general error reporting
-
-    /// objects that we expect to create:
-    /// apm2, px4 leds
-    /// copter leds
-    /// blinkm
-    /// buzzer
-//private:
-    static update_fn_t _update_fn;
-
+private:
+    // individual drivers
+    AP_BoardLED boardled;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
+    ToshibaLED_I2C toshibaled;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    ToshibaLED_PX4 toshibaled;
+#endif
 };
 
 #endif	// __AP_NOTIFY_H__

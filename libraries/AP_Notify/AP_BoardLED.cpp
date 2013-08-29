@@ -1,34 +1,46 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_BoardLED.h>
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
-// static private variable instantiation
-uint16_t AP_BoardLED::_counter;
-
 void AP_BoardLED::init(void)
 {
-    // update LEDs as often as needed
-    hal.scheduler->register_timer_process( AP_BoardLED::_update );	
-
     // setup the main LEDs as outputs
     hal.gpio->pinMode(HAL_GPIO_A_LED_PIN, GPIO_OUTPUT);
     hal.gpio->pinMode(HAL_GPIO_B_LED_PIN, GPIO_OUTPUT);
     hal.gpio->pinMode(HAL_GPIO_C_LED_PIN, GPIO_OUTPUT);
 }
 
-void AP_BoardLED::_update(uint32_t now)
+/*
+  main update function called at 50Hz
+ */
+void AP_BoardLED::update(void)
 {
     _counter++;
 
     // we never want to update LEDs at a higher than 16Hz rate
-    if (_counter & 0x3F) {
+    if (_counter % 3 != 0) {
         return;
     }
 
     // counter2 used to drop frequency down to 16hz
-    uint8_t counter2 = _counter >> 6;
+    uint8_t counter2 = _counter / 3;
 
     // initialising
     if (AP_Notify::flags.initialising) {
