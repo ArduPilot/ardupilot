@@ -55,8 +55,8 @@ void AP_BoardLED::update(void)
         return;
 	}
 
-    // save trim
-    if (AP_Notify::flags.save_trim) {
+    // save trim and ESC calibration
+    if (AP_Notify::flags.save_trim || AP_Notify::flags.esc_calibration) {
         static uint8_t save_trim_counter = 0;
         if ((counter2 & 0x2) == 0) {
             save_trim_counter++;
