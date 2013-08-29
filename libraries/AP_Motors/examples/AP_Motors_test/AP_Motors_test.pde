@@ -12,6 +12,7 @@
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_Motors.h>
 #include <AP_Curve.h>
+#include <AP_Notify.h>
 
 #include <AP_HAL_AVR.h>
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
