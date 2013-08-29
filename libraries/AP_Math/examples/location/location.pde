@@ -142,19 +142,19 @@ static void test_accuracy(void)
     loc2 = loc;
     loc2.lat += 10000000;
     v2 = Vector2f(loc2.lat*1.0e-7f, loc2.lng*1.0e-7f);
-    hal.console->printf("1 degree lat dist=%.4f\n", get_distance(&loc, &loc2));
+    hal.console->printf("1 degree lat dist=%.4f\n", get_distance(loc, loc2));
 
     loc2 = loc;
     loc2.lng += 10000000;
     v2 = Vector2f(loc2.lat*1.0e-7f, loc2.lng*1.0e-7f);
-    hal.console->printf("1 degree lng dist=%.4f\n", get_distance(&loc, &loc2));
+    hal.console->printf("1 degree lng dist=%.4f\n", get_distance(loc, loc2));
 
     for (int32_t i=0; i<100; i++) {
         loc2 = loc;
         loc2.lat += i;
         v2 = Vector2f((loc.lat+i)*1.0e-7f, loc.lng*1.0e-7f);
         if (v2.x != v.x || v2.y != v.y) {
-            hal.console->printf("lat v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(&loc, &loc2));
+            hal.console->printf("lat v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
             break;
         }
     }
@@ -163,7 +163,7 @@ static void test_accuracy(void)
         loc2.lng += i;
         v2 = Vector2f(loc.lat*1.0e-7f, (loc.lng+i)*1.0e-7f);
         if (v2.x != v.x || v2.y != v.y) {
-            hal.console->printf("lng v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(&loc, &loc2));
+            hal.console->printf("lng v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
             break;
         }
     }
@@ -173,7 +173,7 @@ static void test_accuracy(void)
         loc2.lat -= i;
         v2 = Vector2f((loc.lat-i)*1.0e-7f, loc.lng*1.0e-7f);
         if (v2.x != v.x || v2.y != v.y) {
-            hal.console->printf("-lat v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(&loc, &loc2));
+            hal.console->printf("-lat v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
             break;
         }
     }
@@ -182,7 +182,7 @@ static void test_accuracy(void)
         loc2.lng -= i;
         v2 = Vector2f(loc.lat*1.0e-7f, (loc.lng-i)*1.0e-7f);
         if (v2.x != v.x || v2.y != v.y) {
-            hal.console->printf("-lng v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(&loc, &loc2));
+            hal.console->printf("-lng v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
             break;
         }
     }
