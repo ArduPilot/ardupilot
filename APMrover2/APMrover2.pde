@@ -83,6 +83,7 @@
 #include <AP_Camera.h>		// Camera triggering
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Airspeed.h>    // needed for AHRS build
+#include <AP_SpdHgtControl.h>// needed for AHRS build
 #include <memcheck.h>
 #include <DataFlash.h>
 #include <AP_RCMapper.h>        // RC input mapping library
