@@ -19,6 +19,12 @@
 #include <Filter.h>
 #include <AP_Buffer.h>
 #include <AP_Airspeed.h>
+#include <AP_SpdHgtControl.h>
+#include <AP_Notify.h>
+#include <DataFlash.h>
+#include <GCS_MAVLink.h>
+#include <AP_GPS.h>
+#include <AP_InertialSensor.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
@@ -26,7 +32,9 @@ AP_ADC_ADS7844 apm1_adc;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-AP_Airspeed airspeed;
+static AP_SpdHgtControl::AircraftParameters aparm;
+
+AP_Airspeed airspeed(aparm);
 
 void setup()
 {
