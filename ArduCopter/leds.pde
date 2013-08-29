@@ -1,10 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// update_toshiba_led - updates the status of the toshiba led
-// should be called at 50hz ~ 100hz
-static void update_toshiba_led()
+// updates the status of notify
+// should be called at 50hz
+static void update_notify()
 {
-    AP_Notify::update();
+    notify.update();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////

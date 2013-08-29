@@ -105,9 +105,6 @@
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
-#include <AP_BoardLED.h>        // BoardLEDs library
-#include <ToshibaLED.h>         // ToshibaLED library
-#include <ToshibaLED_PX4.h>     // ToshibaLED library for PX4
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -147,15 +144,9 @@ static Parameters g;
 // main loop scheduler
 static AP_Scheduler scheduler;
 
-// AP_BoardLED instance
-static AP_BoardLED board_led;
+// AP_Notify instance
+static AP_Notify notify;
 
-// Toshiba LED instance
- #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static ToshibaLED_PX4 toshiba_led;
- #else
-static ToshibaLED toshiba_led;
- #endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -881,7 +872,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,    2,     700 },
     { barometer_accumulate,  2,     900 },
     { super_slow_loop,     100,    1100 },
-    { update_toshiba_led,    2,     100 },
+    { update_notify,         2,     100 },
     { perf_update,        1000,     500 }
 };
 
@@ -895,11 +886,8 @@ void setup() {
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
-    // initialise board leds
-    board_led.init();
-
-    // initialise toshiba led
-    toshiba_led.init();
+    // initialise notify system
+    notify.init();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
