@@ -71,9 +71,6 @@
 #include <AP_TECS.h>
 
 #include <AP_Notify.h>      // Notify library
-#include <AP_BoardLED.h>    // BoardLEDs library
-#include <ToshibaLED.h>     // ToshibaLED library
-#include <ToshibaLED_PX4.h> // ToshibaLED library for PX4
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -131,6 +128,9 @@ static RC_Channel *channel_roll;
 static RC_Channel *channel_pitch;
 static RC_Channel *channel_throttle;
 static RC_Channel *channel_rudder;
+
+// notification object for LEDs, buzzers etc
+static AP_Notify notify;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -385,16 +385,6 @@ static struct {
     uint32_t ch3_timer_ms;
 } failsafe;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// LED output
-////////////////////////////////////////////////////////////////////////////////
-static AP_BoardLED board_led;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static ToshibaLED_PX4 toshiba_led;
-#else
-static ToshibaLED toshiba_led;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
@@ -722,7 +712,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 }, // 20
-    { update_toshiba_led,     1,    100 },
+    { update_notify,          1,    100 },
     { one_second_loop,       50,   3900 },
     { check_long_failsafe,   15,   1000 },
     { airspeed_ratio_update, 50,   1000 },
@@ -744,14 +734,9 @@ void setup() {
     AP_Param::setup_sketch_defaults();
 
     // arduplane does not use arming nor pre-arm checks
+    notify.init();
     AP_Notify::flags.armed = true;
     AP_Notify::flags.pre_arm_check = true;
-
-    // initialise board leds
-    board_led.init();
-
-    // initialise toshiba led
-    toshiba_led.init();
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
