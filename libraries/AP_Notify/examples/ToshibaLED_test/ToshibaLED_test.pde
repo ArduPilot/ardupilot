@@ -11,7 +11,12 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-ToshibaLED toshiba_led;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ToshibaLED_I2C toshiba_led;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ToshibaLED_PX4 toshiba_led;
+#endif
+
 uint8_t led_state;
 uint8_t red, green, blue;
 
@@ -50,16 +55,13 @@ void loop(void)
     // update the toshiba led
     toshiba_led.update();
 
-    // wait 1/100th of a second
-    hal.scheduler->delay(10);
+    // wait 1/50th of a second
+    hal.scheduler->delay(20);
 }
 
 // full_spectrum - runs through the full spectrum of colours the led can display
 void full_spectrum()
 {
-    // turn on led
-    toshiba_led.on();
-
     // go through the full range of colours but only up to the dim light level
     for (uint8_t red=0; red<=0x05; red++) {
         for (uint8_t green=0; green<=0x05; green++) {
@@ -85,12 +87,6 @@ void blink()
             toshiba_led.set_rgb(0,TOSHIBA_LED_DIM,0);   // green
         }else{
             toshiba_led.set_rgb(0,0,TOSHIBA_LED_DIM);   // blue
-        }
-        for (uint8_t i=0; i<10; i++) {
-            toshiba_led.on();
-            hal.scheduler->delay(100);
-            toshiba_led.off();
-            hal.scheduler->delay(100);
         }
     }
 }
