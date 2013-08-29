@@ -775,8 +775,6 @@ static uint8_t medium_loopCounter;
 static uint8_t slow_loopCounter;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
-// Delta Time in milliseconds for navigation computations, updated with every good GPS read
-static float dTnav;
 // Counters for branching from 4 minute control loop used to save Compass offsets
 static int16_t superslow_loopCounter;
 // Loiter timer - Records how long we have been in loiter
@@ -860,7 +858,7 @@ AP_Param param_loader(var_info, WP_START_BYTE);
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_GPS,            2,     900 },
-    { update_navigation,     10,    500 },
+    { update_nav_mode,       1,     400 },
     { medium_loop,           2,     700 },
     { update_altitude,      10,    1000 },
     { fifty_hz_loop,         2,     950 },

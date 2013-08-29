@@ -237,7 +237,7 @@ static void do_takeoff()
     set_yaw_mode(YAW_HOLD);
 
     // set throttle mode to AUTO although we should already be in this mode
-    set_throttle_mode(THROTTLE_AUTO);
+    set_throttle_mode(AUTO_THR);
 
     // set our nav mode to loiter
     set_nav_mode(NAV_WP);
@@ -260,7 +260,7 @@ static void do_nav_wp()
     set_roll_pitch_mode(AUTO_RP);
 
     // set throttle mode
-    set_throttle_mode(THROTTLE_AUTO);
+    set_throttle_mode(AUTO_THR);
 
     // set nav mode
     set_nav_mode(NAV_WP);
@@ -303,7 +303,7 @@ static void do_land(const struct Location *cmd)
         set_yaw_mode(get_wp_yaw_mode(false));
 
         // set throttle mode
-        set_throttle_mode(THROTTLE_AUTO);
+        set_throttle_mode(AUTO_THR);
 
         // set nav mode
         set_nav_mode(NAV_WP);
@@ -354,7 +354,7 @@ static void do_loiter_unlimited()
     set_roll_pitch_mode(AUTO_RP);
 
     // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
-    set_throttle_mode(THROTTLE_AUTO);
+    set_throttle_mode(AUTO_THR);
 
     // hold yaw
     set_yaw_mode(YAW_HOLD);
@@ -387,7 +387,7 @@ static void do_circle()
     set_roll_pitch_mode(AUTO_RP);
 
     // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
-    set_throttle_mode(THROTTLE_AUTO);
+    set_throttle_mode(AUTO_THR);
 
     // set nav mode to CIRCLE
     set_nav_mode(NAV_CIRCLE);
@@ -422,7 +422,7 @@ static void do_loiter_time()
     set_roll_pitch_mode(AUTO_RP);
 
     // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
-    set_throttle_mode(THROTTLE_AUTO);
+    set_throttle_mode(AUTO_THR);
 
     // hold yaw
     set_yaw_mode(YAW_HOLD);
