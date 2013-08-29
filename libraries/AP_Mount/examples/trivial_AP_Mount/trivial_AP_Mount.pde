@@ -18,6 +18,10 @@
 #include <Filter.h>
 #include <GCS_MAVLink.h>
 #include <RC_Channel.h>
+#include <AP_Airspeed.h>
+#include <AP_SpdHgtControl.h>
+#include <DataFlash.h>
+#include <AP_Notify.h>
 
 #include <AP_Mount.h>
 
