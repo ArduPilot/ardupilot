@@ -5,6 +5,7 @@
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
+#include <AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -159,9 +160,6 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
 
         update();
         ins_gyro = get_gyro();
-
-        // give leds a chance to update
-        AP_Notify::update();
     }
 
     // the strategy is to average 200 points over 1 second, then do it
@@ -185,8 +183,6 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
             ins_gyro = get_gyro();
             gyro_sum += ins_gyro;
             hal.scheduler->delay(5);
-            // give leds a chance to update
-            AP_Notify::update();
         }
         gyro_avg = gyro_sum / i;
 
@@ -285,9 +281,6 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
                 flashcount = 0;
             }
             flashcount++;
-
-            // give leds a chance to update
-            AP_Notify::update();
         }
 
         // null gravity from the Z accel
