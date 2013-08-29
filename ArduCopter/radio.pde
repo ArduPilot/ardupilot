@@ -77,7 +77,7 @@ static void init_rc_out()
             // turn on esc calibration notification
             AP_Notify::flags.esc_calibration = true;
             // block until we restart
-            while(1) {}
+            while(1) { delay(5); }
         }else{
             cliSerial->printf_P(PSTR("ESC Calibration active: passing throttle through to ESCs.\n"));
             // clear esc flag
