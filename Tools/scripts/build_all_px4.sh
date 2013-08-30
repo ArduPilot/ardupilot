@@ -12,7 +12,6 @@ echo "Testing ArduPlane build"
 pushd ArduPlane
 make px4-clean
 make px4
-make px4-io
 popd
 
 echo "Testing ArduCopter build"
