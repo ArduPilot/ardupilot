@@ -102,8 +102,10 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
     // add user selectable orientation
     _hil_mag.rotate((enum Rotation)_orientation.get());
 
-    // and add in AHRS_ORIENTATION setting
-    _hil_mag.rotate(_board_orientation);
+    if (!_external) {
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        _hil_mag.rotate(_board_orientation);
+    }
 
     healthy = true;
 }

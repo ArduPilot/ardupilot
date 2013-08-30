@@ -57,6 +57,9 @@ bool AP_Compass_PX4::init(void)
     // average over up to 20 samples
     ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 20);
 
+    // remember if the compass is external
+	_is_external = (ioctl(_mag_fd, MAGIOCGEXTERNAL, 0) > 0);
+
     healthy = false;
     _count = 0;
     _sum.zero();
@@ -89,8 +92,14 @@ bool AP_Compass_PX4::read(void)
     // add user selectable orientation
     _sum.rotate((enum Rotation)_orientation.get());
 
-    // and add in AHRS_ORIENTATION setting
-    _sum.rotate(_board_orientation);
+    // override any user setting of COMPASS_EXTERNAL 
+    _external.set(_is_external);
+
+    if (!_external) {
+        // add in board orientation from AHRS
+        _sum.rotate(_board_orientation);
+    }
+
     _sum += _offset.get();
 
     // apply motor compensation

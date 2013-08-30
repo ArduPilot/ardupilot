@@ -197,6 +197,7 @@ protected:
     AP_Float _declination;
     AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
+    AP_Int8 _external;                          ///<compass is external
 
     bool _null_init_done;                           ///< first-time-around flag used by offset nulling
 

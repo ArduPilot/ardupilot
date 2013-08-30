@@ -340,8 +340,10 @@ bool AP_Compass_HMC5843::read()
     // add user selectable orientation
     rot_mag.rotate((enum Rotation)_orientation.get());
 
-    // add in board orientation from AHRS
-    rot_mag.rotate(_board_orientation);
+    if (!_external) {
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        rot_mag.rotate(_board_orientation);
+    }
 
     rot_mag += _offset.get();
 

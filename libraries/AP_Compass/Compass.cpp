@@ -91,6 +91,13 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270
     AP_GROUPINFO("ORIENT", 8, Compass, _orientation, ROTATION_NONE),
 
+    // @Param: EXTERNAL
+    // @DisplayName: Compass is attached via an external cable
+    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
+    // @Values: 0:Internal,1:External
+    // @User: Advanced
+    AP_GROUPINFO("EXTERNAL", 9, Compass, _external, 0),
+
     AP_GROUPEND
 };
 
