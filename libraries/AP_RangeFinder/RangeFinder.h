@@ -35,9 +35,6 @@ public:
     // minimum measurable distance: in cm
     int  min_distance;
 
-    int  orientation_x, orientation_y, orientation_z;
-    void set_orientation(int x, int y, int z);
-
     /**
      * convert_raw_to_distance:
      * function that each child class should override to convert voltage
