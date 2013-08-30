@@ -25,14 +25,7 @@
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-void RangeFinder::set_orientation(int x, int y, int z)
-{
-    orientation_x = x;
-    orientation_y = y;
-    orientation_z = z;
-}
-
-// Read Sensor data - only the raw_value is filled in by this parent class
+// default read for analog sensors - only the raw_value is filled in by this parent class
 int RangeFinder::read()
 {
     int temp_dist;

@@ -31,7 +31,7 @@ public:
     // read value from sensor and return distance in cm
     int             read();
 
-    // heath
+    // health
     bool            healthy;
 
 protected:
