@@ -98,7 +98,7 @@ build_arduplane() {
 	copyit $TMPDIR/ArduPlane.build/ArduPlane.hex $ddir $tag
 	touch $binaries/Plane/$tag
     done
-    test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
+    test -n "$PX4_ROOT" && {
 	echo "Building ArduPlane PX4 binaries"
 	ddir=$binaries/Plane/$hdate/PX4
 	skip_build $tag $ddir || {
@@ -129,7 +129,7 @@ build_arducopter() {
 	    touch $binaries/Copter/$tag
 	done
     done
-    test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
+    test -n "$PX4_ROOT" && {
 	for f in quad tri hexa y6 octa octa-quad heli quad-hil heli-hil; do
 	    echo "Building ArduCopter PX4-$f binaries"
 	    ddir="$binaries/Copter/$hdate/PX4-$f"
@@ -159,7 +159,7 @@ build_rover() {
 	copyit $TMPDIR/APMrover2.build/APMrover2.hex $ddir $tag
 	touch $binaries/Rover/$tag
     done
-    test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
+    test -n "$PX4_ROOT" && {
 	echo "Building APMrover2 PX4 binaries"
 	ddir=$binaries/Rover/$hdate/PX4
 	skip_build $tag $ddir || {
