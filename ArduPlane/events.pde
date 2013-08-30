@@ -127,6 +127,7 @@ static void update_events(void)
             break;
 
         case EVENT_TYPE_RELAY:
+            gcs_send_text_fmt(PSTR("Relay toggle"));
             relay.toggle();
             break;
         }

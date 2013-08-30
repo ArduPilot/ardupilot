@@ -617,10 +617,13 @@ static void do_set_servo()
 static void do_set_relay()
 {
     if (next_nonnav_command.p1 == 1) {
+        gcs_send_text_fmt(PSTR("Relay on"));
         relay.on();
     } else if (next_nonnav_command.p1 == 0) {
+        gcs_send_text_fmt(PSTR("Relay off"));
         relay.off();
     }else{
+        gcs_send_text_fmt(PSTR("Relay toggle"));
         relay.toggle();
     }
 }
