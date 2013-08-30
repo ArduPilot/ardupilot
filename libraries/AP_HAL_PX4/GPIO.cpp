@@ -17,8 +17,8 @@
 #include <drivers/drv_gpio.h>
 #include <modules/px4iofirmware/protocol.h>
 
-#define LOW     1
-#define HIGH    0
+#define LOW     0
+#define HIGH    1
 
 extern const AP_HAL::HAL& hal;
 
