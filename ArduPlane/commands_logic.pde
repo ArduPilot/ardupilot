@@ -616,7 +616,6 @@ static void do_set_servo()
 
 static void do_set_relay()
 {
-#if CONFIG_RELAY == ENABLED
     if (next_nonnav_command.p1 == 1) {
         relay.on();
     } else if (next_nonnav_command.p1 == 0) {
@@ -624,7 +623,6 @@ static void do_set_relay()
     }else{
         relay.toggle();
     }
-#endif
 }
 
 static void do_repeat_servo(uint8_t channel, uint16_t servo_value,
