@@ -74,7 +74,7 @@ static inline uint16_t mavlink_msg_ping_pack(uint8_t system_id, uint8_t componen
  * @brief Pack a ping message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Unix timestamp in microseconds
  * @param seq PING sequence
@@ -113,7 +113,7 @@ static inline uint16_t mavlink_msg_ping_pack_chan(uint8_t system_id, uint8_t com
 }
 
 /**
- * @brief Encode a ping struct into a message
+ * @brief Encode a ping struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -123,6 +123,20 @@ static inline uint16_t mavlink_msg_ping_pack_chan(uint8_t system_id, uint8_t com
 static inline uint16_t mavlink_msg_ping_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_ping_t* ping)
 {
 	return mavlink_msg_ping_pack(system_id, component_id, msg, ping->time_usec, ping->seq, ping->target_system, ping->target_component);
+}
+
+/**
+ * @brief Encode a ping struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param ping C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_ping_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_ping_t* ping)
+{
+	return mavlink_msg_ping_pack_chan(system_id, component_id, chan, msg, ping->time_usec, ping->seq, ping->target_system, ping->target_component);
 }
 
 /**

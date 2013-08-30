@@ -2,16 +2,25 @@
 
 #define THISFIRMWARE "ArduCopter V3.1-dev"
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
  *  Based on code and ideas from the Arducopter team: Pat Hickey, Jose Julio, Jani Hirvinen, Andrew Tridgell, Justin Beech, Adam Rivera, Jean-Louis Naudin, Roberto Navoni
  *  Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier, Robert Lefebvre, Marco Robustini
- *
- *  This firmware is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
  *
  *  Special Thanks for Contributors (in alphabetical order by first name):
  *
@@ -96,6 +105,7 @@
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>        // needed for AHRS build
+#include <AP_SpdHgtControl.h>   // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
@@ -104,7 +114,7 @@
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
-#include <AC_Sprayer.h>         // Crop sprayer library
+#include <AP_Notify.h>          // Notify library
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -133,7 +143,6 @@ static AP_HAL::BetterStream* cliSerial;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
 ////////////////////////////////////////////////////////////////////////////////
@@ -144,6 +153,11 @@ static Parameters g;
 
 // main loop scheduler
 static AP_Scheduler scheduler;
+
+// AP_Notify instance
+static AP_Notify notify;
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -461,9 +475,6 @@ static uint8_t pid_log_counter;
 ////////////////////////////////////////////////////////////////////////////////
 // LED output
 ////////////////////////////////////////////////////////////////////////////////
-// This is current status for the LED lights state machine
-// setting this value changes the output of the LEDs
-static uint8_t led_mode = NORMAL_LEDS;
 // Blinking indicates GPS status
 static uint8_t copter_leds_GPS_blink;
 // Blinking indicates battery status
@@ -871,6 +882,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,    2,     700 },
     { barometer_accumulate,  2,     900 },
     { super_slow_loop,     100,    1100 },
+    { update_notify,         2,     100 },
     { perf_update,        1000,     500 }
 };
 
@@ -883,6 +895,9 @@ void setup() {
 
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
+
+    // initialise notify system
+    notify.init();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
@@ -1190,8 +1205,6 @@ static void medium_loop()
         USERHOOK_MEDIUMLOOP
 #endif
 
-        // update board leds
-        update_board_leds();
 #if COPTER_LEDS == ENABLED
         update_copter_leds();
 #endif
@@ -1355,7 +1368,6 @@ static void update_GPS(void)
     static uint8_t ground_start_count  = 10;
 
     g_gps->update();
-    update_GPS_light();
 
     if (g_gps->new_data && last_gps_time != g_gps->time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         // clear new data flag

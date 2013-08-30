@@ -162,7 +162,7 @@ static inline void byte_copy_8(char *dst, const char *src)
 /*
   like memcpy(), but if src is NULL, do a memset to zero
 */
-static void mav_array_memcpy(void *dest, const void *src, size_t n)
+static inline void mav_array_memcpy(void *dest, const void *src, size_t n)
 {
 	if (src == NULL) {
 		memset(dest, 0, n);

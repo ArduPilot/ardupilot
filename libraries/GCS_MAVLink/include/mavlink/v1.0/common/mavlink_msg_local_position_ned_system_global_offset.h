@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_local_position_ned_system_global_offset_pack(
  * @brief Pack a local_position_ned_system_global_offset message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param x X Position
@@ -137,7 +137,7 @@ static inline uint16_t mavlink_msg_local_position_ned_system_global_offset_pack_
 }
 
 /**
- * @brief Encode a local_position_ned_system_global_offset struct into a message
+ * @brief Encode a local_position_ned_system_global_offset struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -147,6 +147,20 @@ static inline uint16_t mavlink_msg_local_position_ned_system_global_offset_pack_
 static inline uint16_t mavlink_msg_local_position_ned_system_global_offset_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_local_position_ned_system_global_offset_t* local_position_ned_system_global_offset)
 {
 	return mavlink_msg_local_position_ned_system_global_offset_pack(system_id, component_id, msg, local_position_ned_system_global_offset->time_boot_ms, local_position_ned_system_global_offset->x, local_position_ned_system_global_offset->y, local_position_ned_system_global_offset->z, local_position_ned_system_global_offset->roll, local_position_ned_system_global_offset->pitch, local_position_ned_system_global_offset->yaw);
+}
+
+/**
+ * @brief Encode a local_position_ned_system_global_offset struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param local_position_ned_system_global_offset C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_local_position_ned_system_global_offset_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_local_position_ned_system_global_offset_t* local_position_ned_system_global_offset)
+{
+	return mavlink_msg_local_position_ned_system_global_offset_pack_chan(system_id, component_id, chan, msg, local_position_ned_system_global_offset->time_boot_ms, local_position_ned_system_global_offset->x, local_position_ned_system_global_offset->y, local_position_ned_system_global_offset->z, local_position_ned_system_global_offset->roll, local_position_ned_system_global_offset->pitch, local_position_ned_system_global_offset->yaw);
 }
 
 /**

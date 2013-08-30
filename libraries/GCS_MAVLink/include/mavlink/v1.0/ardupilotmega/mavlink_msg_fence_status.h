@@ -74,7 +74,7 @@ static inline uint16_t mavlink_msg_fence_status_pack(uint8_t system_id, uint8_t 
  * @brief Pack a fence_status message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param breach_status 0 if currently inside fence, 1 if outside
  * @param breach_count number of fence breaches
@@ -113,7 +113,7 @@ static inline uint16_t mavlink_msg_fence_status_pack_chan(uint8_t system_id, uin
 }
 
 /**
- * @brief Encode a fence_status struct into a message
+ * @brief Encode a fence_status struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -123,6 +123,20 @@ static inline uint16_t mavlink_msg_fence_status_pack_chan(uint8_t system_id, uin
 static inline uint16_t mavlink_msg_fence_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_fence_status_t* fence_status)
 {
 	return mavlink_msg_fence_status_pack(system_id, component_id, msg, fence_status->breach_status, fence_status->breach_count, fence_status->breach_type, fence_status->breach_time);
+}
+
+/**
+ * @brief Encode a fence_status struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param fence_status C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_fence_status_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_fence_status_t* fence_status)
+{
+	return mavlink_msg_fence_status_pack_chan(system_id, component_id, chan, msg, fence_status->breach_status, fence_status->breach_count, fence_status->breach_type, fence_status->breach_time);
 }
 
 /**

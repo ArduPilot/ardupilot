@@ -69,7 +69,7 @@ static inline uint16_t mavlink_msg_change_operator_control_ack_pack(uint8_t syst
  * @brief Pack a change_operator_control_ack message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param gcs_system_id ID of the GCS this message 
  * @param control_request 0: request control of this MAV, 1: Release control of this MAV
@@ -105,7 +105,7 @@ static inline uint16_t mavlink_msg_change_operator_control_ack_pack_chan(uint8_t
 }
 
 /**
- * @brief Encode a change_operator_control_ack struct into a message
+ * @brief Encode a change_operator_control_ack struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -115,6 +115,20 @@ static inline uint16_t mavlink_msg_change_operator_control_ack_pack_chan(uint8_t
 static inline uint16_t mavlink_msg_change_operator_control_ack_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_change_operator_control_ack_t* change_operator_control_ack)
 {
 	return mavlink_msg_change_operator_control_ack_pack(system_id, component_id, msg, change_operator_control_ack->gcs_system_id, change_operator_control_ack->control_request, change_operator_control_ack->ack);
+}
+
+/**
+ * @brief Encode a change_operator_control_ack struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param change_operator_control_ack C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_change_operator_control_ack_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_change_operator_control_ack_t* change_operator_control_ack)
+{
+	return mavlink_msg_change_operator_control_ack_pack_chan(system_id, component_id, chan, msg, change_operator_control_ack->gcs_system_id, change_operator_control_ack->control_request, change_operator_control_ack->ack);
 }
 
 /**

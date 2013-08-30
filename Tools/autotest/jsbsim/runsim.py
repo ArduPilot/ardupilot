@@ -5,9 +5,9 @@ import sys, os, pexpect, socket
 import math, time, select, struct, signal, errno
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pysim'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
 
-import util, fgFDM, atexit, fdpexpect
+import util, atexit, fdpexpect
+from pymavlink import fgFDM
 
 class control_state(object):
     def __init__(self):

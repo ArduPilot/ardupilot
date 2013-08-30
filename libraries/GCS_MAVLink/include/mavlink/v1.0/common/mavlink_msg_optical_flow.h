@@ -94,7 +94,7 @@ static inline uint16_t mavlink_msg_optical_flow_pack(uint8_t system_id, uint8_t 
  * @brief Pack a optical_flow message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Timestamp (UNIX)
  * @param sensor_id Sensor ID
@@ -145,7 +145,7 @@ static inline uint16_t mavlink_msg_optical_flow_pack_chan(uint8_t system_id, uin
 }
 
 /**
- * @brief Encode a optical_flow struct into a message
+ * @brief Encode a optical_flow struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -155,6 +155,20 @@ static inline uint16_t mavlink_msg_optical_flow_pack_chan(uint8_t system_id, uin
 static inline uint16_t mavlink_msg_optical_flow_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_optical_flow_t* optical_flow)
 {
 	return mavlink_msg_optical_flow_pack(system_id, component_id, msg, optical_flow->time_usec, optical_flow->sensor_id, optical_flow->flow_x, optical_flow->flow_y, optical_flow->flow_comp_m_x, optical_flow->flow_comp_m_y, optical_flow->quality, optical_flow->ground_distance);
+}
+
+/**
+ * @brief Encode a optical_flow struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param optical_flow C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_optical_flow_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_optical_flow_t* optical_flow)
+{
+	return mavlink_msg_optical_flow_pack_chan(system_id, component_id, chan, msg, optical_flow->time_usec, optical_flow->sensor_id, optical_flow->flow_x, optical_flow->flow_y, optical_flow->flow_comp_m_x, optical_flow->flow_comp_m_y, optical_flow->quality, optical_flow->ground_distance);
 }
 
 /**

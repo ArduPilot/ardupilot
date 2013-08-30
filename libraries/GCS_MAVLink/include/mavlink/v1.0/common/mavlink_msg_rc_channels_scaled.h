@@ -109,7 +109,7 @@ static inline uint16_t mavlink_msg_rc_channels_scaled_pack(uint8_t system_id, ui
  * @brief Pack a rc_channels_scaled message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param port Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows for more than 8 servos.
@@ -169,7 +169,7 @@ static inline uint16_t mavlink_msg_rc_channels_scaled_pack_chan(uint8_t system_i
 }
 
 /**
- * @brief Encode a rc_channels_scaled struct into a message
+ * @brief Encode a rc_channels_scaled struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -179,6 +179,20 @@ static inline uint16_t mavlink_msg_rc_channels_scaled_pack_chan(uint8_t system_i
 static inline uint16_t mavlink_msg_rc_channels_scaled_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_rc_channels_scaled_t* rc_channels_scaled)
 {
 	return mavlink_msg_rc_channels_scaled_pack(system_id, component_id, msg, rc_channels_scaled->time_boot_ms, rc_channels_scaled->port, rc_channels_scaled->chan1_scaled, rc_channels_scaled->chan2_scaled, rc_channels_scaled->chan3_scaled, rc_channels_scaled->chan4_scaled, rc_channels_scaled->chan5_scaled, rc_channels_scaled->chan6_scaled, rc_channels_scaled->chan7_scaled, rc_channels_scaled->chan8_scaled, rc_channels_scaled->rssi);
+}
+
+/**
+ * @brief Encode a rc_channels_scaled struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param rc_channels_scaled C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_rc_channels_scaled_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_rc_channels_scaled_t* rc_channels_scaled)
+{
+	return mavlink_msg_rc_channels_scaled_pack_chan(system_id, component_id, chan, msg, rc_channels_scaled->time_boot_ms, rc_channels_scaled->port, rc_channels_scaled->chan1_scaled, rc_channels_scaled->chan2_scaled, rc_channels_scaled->chan3_scaled, rc_channels_scaled->chan4_scaled, rc_channels_scaled->chan5_scaled, rc_channels_scaled->chan6_scaled, rc_channels_scaled->chan7_scaled, rc_channels_scaled->chan8_scaled, rc_channels_scaled->rssi);
 }
 
 /**

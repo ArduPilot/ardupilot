@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack(uint8_t 
  * @brief Pack a global_vision_position_estimate message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param x Global X position
@@ -137,7 +137,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack_chan(uin
 }
 
 /**
- * @brief Encode a global_vision_position_estimate struct into a message
+ * @brief Encode a global_vision_position_estimate struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -147,6 +147,20 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack_chan(uin
 static inline uint16_t mavlink_msg_global_vision_position_estimate_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_global_vision_position_estimate_t* global_vision_position_estimate)
 {
 	return mavlink_msg_global_vision_position_estimate_pack(system_id, component_id, msg, global_vision_position_estimate->usec, global_vision_position_estimate->x, global_vision_position_estimate->y, global_vision_position_estimate->z, global_vision_position_estimate->roll, global_vision_position_estimate->pitch, global_vision_position_estimate->yaw);
+}
+
+/**
+ * @brief Encode a global_vision_position_estimate struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param global_vision_position_estimate C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_global_vision_position_estimate_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_global_vision_position_estimate_t* global_vision_position_estimate)
+{
+	return mavlink_msg_global_vision_position_estimate_pack_chan(system_id, component_id, chan, msg, global_vision_position_estimate->usec, global_vision_position_estimate->x, global_vision_position_estimate->y, global_vision_position_estimate->z, global_vision_position_estimate->roll, global_vision_position_estimate->pitch, global_vision_position_estimate->yaw);
 }
 
 /**

@@ -1,5 +1,5 @@
 #
-# Makefile for the px4fmu_Hello configuration
+# Makefile for the px4fmu-v1_APM configuration
 #
 
 #
@@ -19,20 +19,22 @@ MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= drivers/led
 MODULES		+= drivers/px4io
 MODULES		+= drivers/px4fmu
-MODULES		+= drivers/boards/px4fmu
+MODULES		+= drivers/boards/px4fmu-v1
 MODULES		+= drivers/l3gd20
-MODULES		+= drivers/bma180
+# MODULES		+= drivers/bma180
 MODULES		+= drivers/mpu6000
 MODULES		+= drivers/hmc5883
 MODULES		+= drivers/ms5611
 MODULES		+= drivers/mb12xx
 MODULES		+= drivers/gps
-MODULES		+= drivers/hil
-MODULES		+= drivers/hott_telemetry
+#MODULES		+= drivers/hil
+#MODULES		+= drivers/hott_telemetry
 MODULES		+= drivers/blinkm
+MODULES		+= drivers/airspeed
 MODULES		+= drivers/ets_airspeed
+MODULES		+= drivers/meas_airspeed
 MODULES		+= drivers/mkblctrl
-MODULES		+= modules/sensors
+#MODULES	+= modules/sensors
 
 #
 # System commands
@@ -47,6 +49,7 @@ MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
+MODULES		+= systemcmds/nshterm
 
 #
 # Libraries
@@ -54,6 +57,7 @@ MODULES		+= systemcmds/tests
 MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
+MODULES		+= lib/mathlib/math/filter
 
 #
 # Transitional support - add commands from the NuttX export archive.

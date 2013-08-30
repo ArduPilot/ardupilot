@@ -22,6 +22,7 @@
 #include <AP_Compass.h>
 #include <AP_Declination.h>
 #include <SITL.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

@@ -67,7 +67,7 @@ static inline uint16_t mavlink_msg_named_value_float_pack(uint8_t system_id, uin
  * @brief Pack a named_value_float message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param name Name of the debug variable
@@ -101,7 +101,7 @@ static inline uint16_t mavlink_msg_named_value_float_pack_chan(uint8_t system_id
 }
 
 /**
- * @brief Encode a named_value_float struct into a message
+ * @brief Encode a named_value_float struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -111,6 +111,20 @@ static inline uint16_t mavlink_msg_named_value_float_pack_chan(uint8_t system_id
 static inline uint16_t mavlink_msg_named_value_float_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_named_value_float_t* named_value_float)
 {
 	return mavlink_msg_named_value_float_pack(system_id, component_id, msg, named_value_float->time_boot_ms, named_value_float->name, named_value_float->value);
+}
+
+/**
+ * @brief Encode a named_value_float struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param named_value_float C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_named_value_float_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_named_value_float_t* named_value_float)
+{
+	return mavlink_msg_named_value_float_pack_chan(system_id, component_id, chan, msg, named_value_float->time_boot_ms, named_value_float->name, named_value_float->value);
 }
 
 /**

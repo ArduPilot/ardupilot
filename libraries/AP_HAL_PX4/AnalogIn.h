@@ -8,7 +8,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/battery_status.h>
 
-#define PX4_ANALOG_MAX_CHANNELS 8
+#define PX4_ANALOG_MAX_CHANNELS 16
 
 // these are virtual pins that read from the ORB
 #define PX4_ANALOG_BATTERY_VOLTAGE_PIN 100

@@ -15,8 +15,13 @@
 #include <AP_HAL_Empty.h>
 #include <AP_GPS.h>
 #include <AP_Math.h>
+#include <AP_Notify.h>
+#include <AP_BoardLED.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+
+// create board led object
+AP_BoardLED board_led;
 
 GPS         *gps;
 AP_GPS_Auto GPS(&gps);
@@ -31,6 +36,9 @@ void setup()
     hal.console->println("GPS AUTO library test");
     gps = &GPS;
     gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_2G);
+
+    // initialise the leds
+    board_led.init();
 }
 
 void loop()

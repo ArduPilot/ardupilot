@@ -72,7 +72,7 @@ static inline uint16_t mavlink_msg_change_operator_control_pack(uint8_t system_i
  * @brief Pack a change_operator_control message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System the GCS requests control for
  * @param control_request 0: request control of this MAV, 1: Release control of this MAV
@@ -109,7 +109,7 @@ static inline uint16_t mavlink_msg_change_operator_control_pack_chan(uint8_t sys
 }
 
 /**
- * @brief Encode a change_operator_control struct into a message
+ * @brief Encode a change_operator_control struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -119,6 +119,20 @@ static inline uint16_t mavlink_msg_change_operator_control_pack_chan(uint8_t sys
 static inline uint16_t mavlink_msg_change_operator_control_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_change_operator_control_t* change_operator_control)
 {
 	return mavlink_msg_change_operator_control_pack(system_id, component_id, msg, change_operator_control->target_system, change_operator_control->control_request, change_operator_control->version, change_operator_control->passkey);
+}
+
+/**
+ * @brief Encode a change_operator_control struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param change_operator_control C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_change_operator_control_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_change_operator_control_t* change_operator_control)
+{
+	return mavlink_msg_change_operator_control_pack_chan(system_id, component_id, chan, msg, change_operator_control->target_system, change_operator_control->control_request, change_operator_control->version, change_operator_control->passkey);
 }
 
 /**

@@ -227,7 +227,7 @@ void HAL_PX4::init(int argc, char * const argv[]) const
                    SKETCHNAME, deviceA, deviceC);
 
             _px4_thread_should_exit = false;
-            daemon_task = task_spawn(SKETCHNAME,
+            daemon_task = task_spawn_cmd(SKETCHNAME,
                                      SCHED_FIFO,
                                      APM_MAIN_PRIORITY,
                                      8192,

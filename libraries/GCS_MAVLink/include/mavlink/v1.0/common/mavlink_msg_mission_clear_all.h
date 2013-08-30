@@ -64,7 +64,7 @@ static inline uint16_t mavlink_msg_mission_clear_all_pack(uint8_t system_id, uin
  * @brief Pack a mission_clear_all message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -97,7 +97,7 @@ static inline uint16_t mavlink_msg_mission_clear_all_pack_chan(uint8_t system_id
 }
 
 /**
- * @brief Encode a mission_clear_all struct into a message
+ * @brief Encode a mission_clear_all struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -107,6 +107,20 @@ static inline uint16_t mavlink_msg_mission_clear_all_pack_chan(uint8_t system_id
 static inline uint16_t mavlink_msg_mission_clear_all_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_mission_clear_all_t* mission_clear_all)
 {
 	return mavlink_msg_mission_clear_all_pack(system_id, component_id, msg, mission_clear_all->target_system, mission_clear_all->target_component);
+}
+
+/**
+ * @brief Encode a mission_clear_all struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param mission_clear_all C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_mission_clear_all_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_mission_clear_all_t* mission_clear_all)
+{
+	return mavlink_msg_mission_clear_all_pack_chan(system_id, component_id, chan, msg, mission_clear_all->target_system, mission_clear_all->target_component);
 }
 
 /**

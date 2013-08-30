@@ -1886,6 +1886,7 @@ static void mavlink_delay_cb()
         last_50hz = tnow;
         gcs_update();
         gcs_data_stream_send();
+        notify.update();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;

@@ -79,7 +79,7 @@ static inline uint16_t mavlink_msg_set_global_position_setpoint_int_pack(uint8_t
  * @brief Pack a set_global_position_setpoint_int message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param coordinate_frame Coordinate frame - valid values are only MAV_FRAME_GLOBAL or MAV_FRAME_GLOBAL_RELATIVE_ALT
  * @param latitude Latitude (WGS84), in degrees * 1E7
@@ -121,7 +121,7 @@ static inline uint16_t mavlink_msg_set_global_position_setpoint_int_pack_chan(ui
 }
 
 /**
- * @brief Encode a set_global_position_setpoint_int struct into a message
+ * @brief Encode a set_global_position_setpoint_int struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -131,6 +131,20 @@ static inline uint16_t mavlink_msg_set_global_position_setpoint_int_pack_chan(ui
 static inline uint16_t mavlink_msg_set_global_position_setpoint_int_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_global_position_setpoint_int_t* set_global_position_setpoint_int)
 {
 	return mavlink_msg_set_global_position_setpoint_int_pack(system_id, component_id, msg, set_global_position_setpoint_int->coordinate_frame, set_global_position_setpoint_int->latitude, set_global_position_setpoint_int->longitude, set_global_position_setpoint_int->altitude, set_global_position_setpoint_int->yaw);
+}
+
+/**
+ * @brief Encode a set_global_position_setpoint_int struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param set_global_position_setpoint_int C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_set_global_position_setpoint_int_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_set_global_position_setpoint_int_t* set_global_position_setpoint_int)
+{
+	return mavlink_msg_set_global_position_setpoint_int_pack_chan(system_id, component_id, chan, msg, set_global_position_setpoint_int->coordinate_frame, set_global_position_setpoint_int->latitude, set_global_position_setpoint_int->longitude, set_global_position_setpoint_int->altitude, set_global_position_setpoint_int->yaw);
 }
 
 /**

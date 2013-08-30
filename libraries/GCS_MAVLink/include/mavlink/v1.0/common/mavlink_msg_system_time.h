@@ -64,7 +64,7 @@ static inline uint16_t mavlink_msg_system_time_pack(uint8_t system_id, uint8_t c
  * @brief Pack a system_time message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_unix_usec Timestamp of the master clock in microseconds since UNIX epoch.
  * @param time_boot_ms Timestamp of the component clock since boot time in milliseconds.
@@ -97,7 +97,7 @@ static inline uint16_t mavlink_msg_system_time_pack_chan(uint8_t system_id, uint
 }
 
 /**
- * @brief Encode a system_time struct into a message
+ * @brief Encode a system_time struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -107,6 +107,20 @@ static inline uint16_t mavlink_msg_system_time_pack_chan(uint8_t system_id, uint
 static inline uint16_t mavlink_msg_system_time_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_system_time_t* system_time)
 {
 	return mavlink_msg_system_time_pack(system_id, component_id, msg, system_time->time_unix_usec, system_time->time_boot_ms);
+}
+
+/**
+ * @brief Encode a system_time struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param system_time C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_system_time_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_system_time_t* system_time)
+{
+	return mavlink_msg_system_time_pack_chan(system_id, component_id, chan, msg, system_time->time_unix_usec, system_time->time_boot_ms);
 }
 
 /**

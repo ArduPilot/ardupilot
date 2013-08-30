@@ -85,7 +85,7 @@ static inline uint16_t mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_pack(uin
  * @brief Pack a set_quad_swarm_roll_pitch_yaw_thrust message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param group ID of the quadrotor group (0 - 255, up to 256 groups supported)
  * @param mode ID of the flight mode (0 - 255, up to 256 modes supported)
@@ -128,7 +128,7 @@ static inline uint16_t mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_pack_cha
 }
 
 /**
- * @brief Encode a set_quad_swarm_roll_pitch_yaw_thrust struct into a message
+ * @brief Encode a set_quad_swarm_roll_pitch_yaw_thrust struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -138,6 +138,20 @@ static inline uint16_t mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_pack_cha
 static inline uint16_t mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_quad_swarm_roll_pitch_yaw_thrust_t* set_quad_swarm_roll_pitch_yaw_thrust)
 {
 	return mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_pack(system_id, component_id, msg, set_quad_swarm_roll_pitch_yaw_thrust->group, set_quad_swarm_roll_pitch_yaw_thrust->mode, set_quad_swarm_roll_pitch_yaw_thrust->roll, set_quad_swarm_roll_pitch_yaw_thrust->pitch, set_quad_swarm_roll_pitch_yaw_thrust->yaw, set_quad_swarm_roll_pitch_yaw_thrust->thrust);
+}
+
+/**
+ * @brief Encode a set_quad_swarm_roll_pitch_yaw_thrust struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param set_quad_swarm_roll_pitch_yaw_thrust C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_set_quad_swarm_roll_pitch_yaw_thrust_t* set_quad_swarm_roll_pitch_yaw_thrust)
+{
+	return mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_pack_chan(system_id, component_id, chan, msg, set_quad_swarm_roll_pitch_yaw_thrust->group, set_quad_swarm_roll_pitch_yaw_thrust->mode, set_quad_swarm_roll_pitch_yaw_thrust->roll, set_quad_swarm_roll_pitch_yaw_thrust->pitch, set_quad_swarm_roll_pitch_yaw_thrust->yaw, set_quad_swarm_roll_pitch_yaw_thrust->thrust);
 }
 
 /**

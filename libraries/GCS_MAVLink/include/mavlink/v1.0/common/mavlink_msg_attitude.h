@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_attitude_pack(uint8_t system_id, uint8_t comp
  * @brief Pack a attitude message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param roll Roll angle (rad, -pi..+pi)
@@ -137,7 +137,7 @@ static inline uint16_t mavlink_msg_attitude_pack_chan(uint8_t system_id, uint8_t
 }
 
 /**
- * @brief Encode a attitude struct into a message
+ * @brief Encode a attitude struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -147,6 +147,20 @@ static inline uint16_t mavlink_msg_attitude_pack_chan(uint8_t system_id, uint8_t
 static inline uint16_t mavlink_msg_attitude_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_attitude_t* attitude)
 {
 	return mavlink_msg_attitude_pack(system_id, component_id, msg, attitude->time_boot_ms, attitude->roll, attitude->pitch, attitude->yaw, attitude->rollspeed, attitude->pitchspeed, attitude->yawspeed);
+}
+
+/**
+ * @brief Encode a attitude struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param attitude C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_attitude_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_attitude_t* attitude)
+{
+	return mavlink_msg_attitude_pack_chan(system_id, component_id, chan, msg, attitude->time_boot_ms, attitude->roll, attitude->pitch, attitude->yaw, attitude->rollspeed, attitude->pitchspeed, attitude->yawspeed);
 }
 
 /**

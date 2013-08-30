@@ -40,6 +40,7 @@
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash.h>
 #include <SITL.h>
+#include <AP_Notify.h>
 
 #include "config.h"
 #include "Parameters.h"

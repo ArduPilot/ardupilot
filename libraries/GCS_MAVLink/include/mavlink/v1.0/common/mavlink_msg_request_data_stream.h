@@ -79,7 +79,7 @@ static inline uint16_t mavlink_msg_request_data_stream_pack(uint8_t system_id, u
  * @brief Pack a request_data_stream message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system The target requested to send the message stream.
  * @param target_component The target requested to send the message stream.
@@ -121,7 +121,7 @@ static inline uint16_t mavlink_msg_request_data_stream_pack_chan(uint8_t system_
 }
 
 /**
- * @brief Encode a request_data_stream struct into a message
+ * @brief Encode a request_data_stream struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -131,6 +131,20 @@ static inline uint16_t mavlink_msg_request_data_stream_pack_chan(uint8_t system_
 static inline uint16_t mavlink_msg_request_data_stream_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_request_data_stream_t* request_data_stream)
 {
 	return mavlink_msg_request_data_stream_pack(system_id, component_id, msg, request_data_stream->target_system, request_data_stream->target_component, request_data_stream->req_stream_id, request_data_stream->req_message_rate, request_data_stream->start_stop);
+}
+
+/**
+ * @brief Encode a request_data_stream struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param request_data_stream C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_request_data_stream_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_request_data_stream_t* request_data_stream)
+{
+	return mavlink_msg_request_data_stream_pack_chan(system_id, component_id, chan, msg, request_data_stream->target_system, request_data_stream->target_component, request_data_stream->req_stream_id, request_data_stream->req_message_rate, request_data_stream->start_stop);
 }
 
 /**
