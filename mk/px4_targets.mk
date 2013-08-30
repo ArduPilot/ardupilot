@@ -2,23 +2,28 @@
 
 ifneq ($(PX4_ROOT),)
 
-# try to cope with relative paths
+# cope with relative paths
 ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
 PX4_ROOT := $(shell cd $(SKETCHBOOK)/$(PX4_ROOT) && pwd)
 endif
+
+# check it is a valid PX4Firmware tree
 ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
 $(error ERROR: PX4_ROOT not set correctly - no nuttx-configs directory found)
 endif
 
-# allow user to have NuttX git tree in directory above Firmware tree. This
-# makes life simpler for git usage
-ifeq ($(wildcard $(PX4_ROOT)/NuttX),)
- ifeq ($(wildcard $(PX4_ROOT)/../NuttX),)
- $(error ERROR: NuttX git tree not found)
- endif
-NUTTX_SRC := $(shell cd $(PX4_ROOT)/../NuttX/nuttx && pwd)/
-else
-NUTTX_SRC := $(shell cd $(PX4_ROOT)/NuttX/nuttx && pwd)/
+# default to PX4NuttX above the PX4Firmware tree
+ifeq ($(NUTTX_SRC),)
+NUTTX_SRC := $(shell cd $(PX4_ROOT)/../PX4NuttX/nuttx && pwd)/
+endif
+
+# cope with relative paths for NUTTX_SRC
+ifeq ($(wildcard $(NUTTX_SRC)/configs),)
+NUTTX_SRC := $(shell cd $(SKETCHBOOK)/$(NUTTX_SRC) && pwd)/
+endif
+
+ifeq ($(wildcard $(NUTTX_SRC)configs),)
+$(error ERROR: NUTTX_SRC not set correctly - no configs directory found)
 endif
 
 # we have different config files for V1 and V2
