@@ -132,7 +132,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     ratio = constrain_float(ratio, 0.5f, 1.0f);
     _ratio.set(1/sq(ratio));
     if (_counter > 60) {
-        if (_last_saved_ratio < 1.05f*_ratio || 
+        if (_last_saved_ratio > 1.05f*_ratio || 
             _last_saved_ratio < 0.95f*_ratio) {
             _ratio.save();
             _last_saved_ratio = _ratio;
