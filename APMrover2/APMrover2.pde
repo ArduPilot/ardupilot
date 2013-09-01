@@ -541,6 +541,10 @@ static uint8_t 		delta_ms_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
+static struct {
+    float last_saved_value;
+} learning;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
@@ -864,6 +868,9 @@ static void update_current_mode(void)
         // and throttle gives speed in proportion to cruise speed
         throttle_nudge = 0;
         calc_throttle(channel_throttle->pwm_to_angle() * 0.01 * g.speed_cruise);
+        if (g.steering_learn) {
+            steering_learning();
+        }
         break;
     }
 

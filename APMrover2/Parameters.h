@@ -55,6 +55,7 @@ public:
         // 130: Sensor parameters
         //
         k_param_compass_enabled = 130,
+        k_param_steering_learn,
 
         // 140: battery controls
         k_param_battery_monitoring = 140,
@@ -205,6 +206,7 @@ public:
     AP_Float    auto_kickstart;
     AP_Float    turn_circle;
     AP_Float    turn_max_g;
+    AP_Int8     steering_learn;
 
     // RC channels
     RC_Channel      rc_1;

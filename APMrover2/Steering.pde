@@ -268,3 +268,40 @@ static void demo_servos(uint8_t i) {
         i--;
     }
 }
+
+
+/*
+  learning of TURN_CIRCLE in STEERING mode
+ */
+static void steering_learning(void)
+{
+    /*
+      only do learning when we are moving at least at 2m/s, and do not
+      have saturated steering
+     */
+    if (abs(channel_steer->servo_out) >= 4490 ||
+        abs(channel_steer->servo_out) < 100 ||
+        g_gps->status() < GPS::GPS_OK_FIX_3D ||
+        g_gps->ground_speed_cm < 100) {
+        return;
+    }
+    /*
+      the idea is to slowly adjust the turning circle 
+     */
+    float demanded = lateral_acceleration;
+    float actual = ins.get_accel().y;
+    if (fabsf(actual) < 0.1f) {
+        // too little acceleration to really measure accurately
+        return;
+    }
+    float ratio = demanded/actual;
+    if (ratio > 1.0f) {
+        g.turn_circle.set(g.turn_circle * 1.0005f);
+    } else {
+        g.turn_circle.set(g.turn_circle * 0.9995f);
+    }
+    if (fabs(learning.last_saved_value - g.turn_circle) > 0.05f) {
+        learning.last_saved_value = g.turn_circle;
+        g.turn_circle.save();
+    }
+}
