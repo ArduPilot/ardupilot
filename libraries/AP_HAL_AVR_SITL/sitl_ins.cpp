@@ -97,9 +97,11 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 				 rollRate, pitchRate, yawRate,
 				 &p, &q, &r);
 
-	// minimum noise levels are 2 bits
-	float accel_noise = 0.1;
-	float gyro_noise = ToRad(0.4);
+	// minimum noise levels are 2 bits, but averaged over many
+	// samples, giving around 0.01 m/s/s
+	float accel_noise = 0.01;
+        // minimum gyro noise is also less than 1 bit
+	float gyro_noise = ToRad(0.04);
 	if (_motors_on) {
 		// add extra noise when the motors are on
 		accel_noise += _sitl->accel_noise;
