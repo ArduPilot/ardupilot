@@ -21,6 +21,30 @@
 
 #include <AP_Param.h>
 
+#ifdef __CYGWIN__
+#include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+void print_trace() {
+    char pid_buf[30];
+    sprintf(pid_buf, "%d", getpid());
+    char name_buf[512];
+    name_buf[readlink("/proc/self/exe", name_buf, 511)]=0;
+    int child_pid = fork();
+    if (!child_pid) {           
+        dup2(2,1); // redirect output to stderr
+        fprintf(stdout,"stack trace for %s pid=%s\n",name_buf,pid_buf);
+        execlp("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, NULL);
+        abort(); /* If gdb failed to start */
+    } else {
+        waitpid(child_pid,NULL,0);
+    }
+}
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 using namespace AVR_SITL;
@@ -225,6 +249,7 @@ void SITL_State::_timer_handler(int signum)
     count++;
 	if (hal.scheduler->millis() - last_report > 1000) {
 		fprintf(stdout, "TH %u cps\n", count);
+	//	print_trace();
 		count = 0;
 		last_report = hal.scheduler->millis();
 	}
@@ -244,6 +269,7 @@ void SITL_State::_timer_handler(int signum)
 
 	if (_update_count == 0 && _sitl != NULL) {
 		_update_gps(0, 0, 0, 0, 0, 0, false);
+		_update_barometer(0);
 		_scheduler->timer_event();
         _scheduler->sitl_end_atomic();
 		in_timer = false;

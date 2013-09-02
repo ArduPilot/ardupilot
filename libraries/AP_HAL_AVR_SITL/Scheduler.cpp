@@ -8,6 +8,17 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#ifdef __CYGWIN__
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <assert.h> 
+#include <windows.h> 
+#include <string.h> 
+#include <memory.h> 
+#include <process.h> 
+#include <time.h>
+#endif
+
 using namespace AVR_SITL;
 
 extern const AP_HAL::HAL& hal;
@@ -27,21 +38,49 @@ bool SITLScheduler::_in_io_proc = false;
 
 struct timeval SITLScheduler::_sketch_start_time;
 
+#ifdef __CYGWIN__
+double SITLScheduler::_cyg_freq = 0;
+long SITLScheduler::_cyg_start = 0;
+#endif
+
 SITLScheduler::SITLScheduler()
 {}
 
 void SITLScheduler::init(void *unused) 
 {
 	gettimeofday(&_sketch_start_time,NULL);
+
+#ifdef __CYGWIN__
+	LARGE_INTEGER lFreq, lCnt;
+	QueryPerformanceFrequency(&lFreq);
+	_cyg_freq = (double)lFreq.LowPart;
+	QueryPerformanceCounter(&lCnt);
+	_cyg_start = lCnt.LowPart;
+#endif
+
 }
+#ifdef __CYGWIN__
+double SITLScheduler::_cyg_sec()
+{
+	LARGE_INTEGER lCnt;
+	long tcnt;
+	QueryPerformanceCounter(&lCnt);
+ 	tcnt = lCnt.LowPart - _cyg_start;
+ 	return ((double)tcnt) / _cyg_freq;
+}
+#endif
 
 uint32_t SITLScheduler::_micros() 
 {
+#ifdef __CYGWIN__
+	return (uint32_t)(_cyg_sec() * 1.0e6);
+#else   
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
 	return 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
 		      (_sketch_start_time.tv_sec +
 		       (_sketch_start_time.tv_usec*1.0e-6)));
+#endif
 }
 
 uint32_t SITLScheduler::micros() 
@@ -51,11 +90,16 @@ uint32_t SITLScheduler::micros()
 
 uint32_t SITLScheduler::millis() 
 {
+#ifdef __CYGWIN__
+	// 1000 ms in a second
+	return (uint32_t)(_cyg_sec() * 1000);
+#else
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
 	return 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
 		      (_sketch_start_time.tv_sec +
 		       (_sketch_start_time.tv_usec*1.0e-6)));
+#endif
 }
 
 void SITLScheduler::delay_microseconds(uint16_t usec) 
