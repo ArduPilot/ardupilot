@@ -45,6 +45,9 @@ public:
     // callable from interrupt handler
     static uint32_t _micros();
     static void timer_event() { _run_timer_procs(true); _run_io_procs(true); }
+#ifdef __CYGWIN__
+	static double   sec();
+#endif
 
 private:
     uint8_t _nested_atomic_ctr;
@@ -64,6 +67,10 @@ private:
     static uint8_t _num_io_procs;
     static bool    _in_timer_proc;
     static bool    _in_io_proc;
+#ifdef __CYGWIN__
+	static double freq;
+	static long start;
+#endif
 
     bool _initialized;
 
