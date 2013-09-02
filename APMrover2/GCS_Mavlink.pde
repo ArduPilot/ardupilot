@@ -240,7 +240,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
     mavlink_msg_nav_controller_output_send(
         chan,
         lateral_acceleration, // use nav_roll to hold demanded Y accel
-        ins.get_accel().y, // use nav_pitch to hold actual Y accel
+        g_gps->ground_speed_cm * 0.01f * ins.get_gyro().z, // use nav_pitch to hold actual Y accel
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
         wp_distance,

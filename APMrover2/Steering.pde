@@ -286,10 +286,16 @@ static void steering_learning(void)
         return;
     }
     /*
-      the idea is to slowly adjust the turning circle 
+      the idea is to slowly adjust the turning circle to bring the
+      actual and desired turn rates into line      
      */
     float demanded = lateral_acceleration;
-    float actual = ins.get_accel().y;
+    /*
+      for Y accel use the gyro times the velocity, as that is less
+      noise sensitive, and is a more direct measure of steering rate,
+      which is what we are really trying to control
+     */
+    float actual = ins.get_gyro().z * 0.01f * g_gps->ground_speed_cm;
     if (fabsf(actual) < 0.1f) {
         // too little acceleration to really measure accurately
         return;
