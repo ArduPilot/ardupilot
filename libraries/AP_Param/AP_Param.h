@@ -27,8 +27,20 @@
 // is constant and known at compile time
 #define AP_VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)
 
-// find the type of a variable given the class and element
-#define AP_CLASSTYPE(class, element) (((const class *) 1)->element.vtype)
+/**
+ * wraps a typename.
+ *
+ * typedef type_wrapper<X>::type t;
+ *   is semantically equivalent to
+ * typedef X t;
+ */
+template<typename T>
+struct type_wrapper {
+	typedef T type;
+};
+
+// find the ap_var_type of a variable given the class and element (i.e. member name)
+#define AP_CLASSTYPE(class, element) type_wrapper<__typeof__(class::element)>::type::vtype
 
 // declare a group var_info line
 #define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
