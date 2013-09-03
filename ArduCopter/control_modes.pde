@@ -282,6 +282,24 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 set_mode(AUTO);
             }
             break;
+
+        case AUX_SWITCH_AUTOTUNE:
+            // turn on auto tuner
+            switch(ch_flag) {
+                case AUX_SWITCH_LOW:
+                    // turn off tuning and return to standard pids
+                    auto_tune_stop();
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                    // stop tuning but remain with tuned pids
+                    auto_tune_suspend();
+                    break;
+                case AUX_SWITCH_HIGH:
+                    // start an auto tuning session
+                    auto_tune_start();
+                    break;
+            }
+            break;
     }
 }
 

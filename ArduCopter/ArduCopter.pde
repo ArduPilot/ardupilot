@@ -1684,6 +1684,11 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
                 roll_pitch_initialised = true;
             }
             break;
+
+        case ROLL_PITCH_AUTOTUNE:
+            // indicate we can enter this mode successfully
+            roll_pitch_initialised = true;
+            break;
     }
 
     // if initialisation has been successful update the yaw mode
@@ -1801,6 +1806,23 @@ void update_roll_pitch_mode(void)
         control_pitch = g.rc_2.control_in;
         get_roll_rate_stabilized_ef(g.rc_1.control_in);
         get_pitch_rate_stabilized_ef(g.rc_2.control_in);
+        break;
+
+    case ROLL_PITCH_AUTOTUNE:
+        // apply SIMPLE mode transform
+        if(ap.simple_mode && ap_system.new_radio_frame) {
+            update_simple_mode();
+        }
+
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+
+        // pass desired roll, pitch to stabilize attitude controllers
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
+
+        // copy user input for reporting purposes
+        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in);
         break;
     }
 

@@ -160,6 +160,50 @@ process_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
+struct PACKED log_AutoTune {
+    LOG_PACKET_HEADER;
+    uint8_t axis;           // roll or pitch
+    uint8_t tune_step;      // tuning PI or D up or down
+    float   rate_min;       // maximum achieved rotation rate
+    float   rate_max;       // maximum achieved rotation rate
+    float   new_gain_rp;       // newly calculated gain
+    float   new_gain_rd;       // newly calculated gain
+    float   new_gain_sp;       // newly calculated gain
+};
+
+// Write an Current data packet
+static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp)
+{
+    struct log_AutoTune pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
+        axis        : axis,
+        tune_step   : tune_step,
+        rate_min    : rate_min,
+        rate_max    : rate_max,
+        new_gain_rp  : new_gain_rp,
+        new_gain_rd  : new_gain_rd,
+        new_gain_sp  : new_gain_sp
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+struct PACKED log_AutoTuneDetails {
+    LOG_PACKET_HEADER;
+    int16_t angle_cd;       // lean angle in centi-degrees
+    float   rate_cds;       // current rotation rate in centi-degrees / second
+};
+
+// Write an Current data packet
+static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds)
+{
+    struct log_AutoTuneDetails pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
+        angle_cd    : angle_cd,
+        rate_cds    : rate_cds
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
     int16_t throttle_in;
@@ -714,6 +758,10 @@ static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
+    { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
+      "ATUN", "BBfffff",       "Axis,TuneStep,RateMin,RateMax,RPGain,RDGain,SPGain" },
+    { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
+      "ATDE", "cf",          "Angle,Rate" },
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hIhhhf",      "Thr,ThrInt,Volt,Curr,Vcc,CurrTot" },
 
@@ -807,6 +855,8 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_IMU() {}
 static void Log_Write_GPS() {}
+static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp) {}
+static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds) {}
 static void Log_Write_Current() {}
 static void Log_Write_Compass() {}
 static void Log_Write_Attitude() {}
