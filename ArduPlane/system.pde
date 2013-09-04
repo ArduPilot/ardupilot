@@ -44,7 +44,7 @@ MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 {
-    reboot_apm();
+    hal.scheduler->reboot(false);
     return 0;
 }
 
@@ -556,16 +556,6 @@ void flash_leds(bool on)
 uint16_t board_voltage(void)
 {
     return vcc_pin->read_latest();
-}
-
-
-/*
-  force a software reset of the APM
- */
-static void reboot_apm(void)
-{
-    hal.scheduler->reboot();
-    while (1);
 }
 
 
