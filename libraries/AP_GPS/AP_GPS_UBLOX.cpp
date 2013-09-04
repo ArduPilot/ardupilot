@@ -205,6 +205,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             Debug("Changing engine setting from %u to %u\n",
                   (unsigned)_buffer.nav_settings.dynModel, (unsigned)_nav_setting);
             _buffer.nav_settings.dynModel = _nav_setting;
+            _buffer.nav_settings.mask = 1; // only change dynamic model
             _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
                           &_buffer.nav_settings,
                           sizeof(_buffer.nav_settings));
