@@ -127,3 +127,14 @@ void set_compass_healthy(bool b)
     }
     ap.compass_status = b;
 }
+
+// ---------------------------------------------
+
+void set_pre_arm_check(bool b)
+{
+    if(ap.pre_arm_check != b) {
+        ap.pre_arm_check = b;
+        AP_Notify::flags.pre_arm_check = b;
+    }
+}
+

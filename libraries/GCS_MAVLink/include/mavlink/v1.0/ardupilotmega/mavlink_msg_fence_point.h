@@ -84,7 +84,7 @@ static inline uint16_t mavlink_msg_fence_point_pack(uint8_t system_id, uint8_t c
  * @brief Pack a fence_point message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -129,7 +129,7 @@ static inline uint16_t mavlink_msg_fence_point_pack_chan(uint8_t system_id, uint
 }
 
 /**
- * @brief Encode a fence_point struct into a message
+ * @brief Encode a fence_point struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -139,6 +139,20 @@ static inline uint16_t mavlink_msg_fence_point_pack_chan(uint8_t system_id, uint
 static inline uint16_t mavlink_msg_fence_point_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_fence_point_t* fence_point)
 {
 	return mavlink_msg_fence_point_pack(system_id, component_id, msg, fence_point->target_system, fence_point->target_component, fence_point->idx, fence_point->count, fence_point->lat, fence_point->lng);
+}
+
+/**
+ * @brief Encode a fence_point struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param fence_point C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_fence_point_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_fence_point_t* fence_point)
+{
+	return mavlink_msg_fence_point_pack_chan(system_id, component_id, chan, msg, fence_point->target_system, fence_point->target_component, fence_point->idx, fence_point->count, fence_point->lat, fence_point->lng);
 }
 
 /**

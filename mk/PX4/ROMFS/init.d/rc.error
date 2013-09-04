@@ -1,0 +1,7 @@
+echo "Error in startup"
+tone_alarm MNCC
+nshterm /dev/ttyACM0 &
+sleep 1
+nshterm /dev/ttyS0 &
+sleep 1
+exit

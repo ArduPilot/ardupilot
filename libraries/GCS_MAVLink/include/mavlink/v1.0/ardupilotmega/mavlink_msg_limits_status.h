@@ -99,7 +99,7 @@ static inline uint16_t mavlink_msg_limits_status_pack(uint8_t system_id, uint8_t
  * @brief Pack a limits_status message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param limits_state state of AP_Limits, (see enum LimitState, LIMITS_STATE)
  * @param last_trigger time of last breach in milliseconds since boot
@@ -153,7 +153,7 @@ static inline uint16_t mavlink_msg_limits_status_pack_chan(uint8_t system_id, ui
 }
 
 /**
- * @brief Encode a limits_status struct into a message
+ * @brief Encode a limits_status struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -163,6 +163,20 @@ static inline uint16_t mavlink_msg_limits_status_pack_chan(uint8_t system_id, ui
 static inline uint16_t mavlink_msg_limits_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_limits_status_t* limits_status)
 {
 	return mavlink_msg_limits_status_pack(system_id, component_id, msg, limits_status->limits_state, limits_status->last_trigger, limits_status->last_action, limits_status->last_recovery, limits_status->last_clear, limits_status->breach_count, limits_status->mods_enabled, limits_status->mods_required, limits_status->mods_triggered);
+}
+
+/**
+ * @brief Encode a limits_status struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param limits_status C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_limits_status_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_limits_status_t* limits_status)
+{
+	return mavlink_msg_limits_status_pack_chan(system_id, component_id, chan, msg, limits_status->limits_state, limits_status->last_trigger, limits_status->last_action, limits_status->last_recovery, limits_status->last_clear, limits_status->breach_count, limits_status->mods_enabled, limits_status->mods_required, limits_status->mods_triggered);
 }
 
 /**

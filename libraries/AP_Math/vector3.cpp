@@ -160,6 +160,67 @@ void Vector3<T>::rotate(enum Rotation rotation)
         tmp = z; z = x; x = -tmp;
         return;
     }
+    case ROTATION_PITCH_180_YAW_90: {
+        z = -z;
+        tmp = -x; x = -y; y = tmp;
+        return;
+    }
+    case ROTATION_PITCH_180_YAW_270: {
+        x = -x; z = -z;
+        tmp = x; x = y; y = -tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_PITCH_90: {
+        tmp = z; z = y; y = -tmp;
+        tmp = z; z = -x; x = tmp;
+        return;
+    }
+    case ROTATION_ROLL_180_PITCH_90: {
+        y = -y; z = -z;
+        tmp = z; z = -x; x = tmp;
+        return;
+    }
+    case ROTATION_ROLL_270_PITCH_90: {
+        tmp = z; z = -y; y = tmp;
+        tmp = z; z = -x; x = tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_PITCH_180: {
+        tmp = z; z = y; y = -tmp;
+        x = -x; z = -z;
+        return;
+    }
+    case ROTATION_ROLL_270_PITCH_180: {
+        tmp = z; z = -y; y = tmp;
+        x = -x; z = -z;
+        return;
+    }
+    case ROTATION_ROLL_90_PITCH_270: {
+        tmp = z; z = y; y = -tmp;
+        tmp = z; z = x; x = -tmp;
+        return;
+    }
+    case ROTATION_ROLL_180_PITCH_270: {
+        y = -y; z = -z;
+        tmp = z; z = x; x = -tmp;
+        return;
+    }
+    case ROTATION_ROLL_270_PITCH_270: {
+        tmp = z; z = -y; y = tmp;
+        tmp = z; z = x; x = -tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_PITCH_180_YAW_90: {
+        tmp = z; z = y; y = -tmp;
+        x = -x; z = -z;
+        tmp = x; x = -y; y = tmp;
+        return;
+    }
+    case ROTATION_ROLL_90_YAW_270: {
+        tmp = z; z = y; y = -tmp;
+        tmp = x; x = y; y = -tmp;
+        return;
+    }
     }
 }
 

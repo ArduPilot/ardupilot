@@ -25,6 +25,9 @@ uint8_t EmptyGPIO::read(uint8_t pin) {
 void EmptyGPIO::write(uint8_t pin, uint8_t value)
 {}
 
+void EmptyGPIO::toggle(uint8_t pin)
+{}
+
 /* Alternative interface: */
 AP_HAL::DigitalSource* EmptyGPIO::channel(uint16_t n) {
     return new EmptyDigitalSource(0);
@@ -52,3 +55,6 @@ void EmptyDigitalSource::write(uint8_t value) {
     _v = value;
 }
 
+void EmptyDigitalSource::toggle() {
+    _v = !_v;
+}

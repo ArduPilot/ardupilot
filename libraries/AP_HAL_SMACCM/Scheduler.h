@@ -88,7 +88,7 @@ public:
   void panic(const prog_char_t *errormsg);
 
   /** Reboot the firmware.  Not implemented. */
-  void reboot();
+  void reboot(bool hold_in_bootloader);
 
   /**
    * Run timed and deferred processes.  This should not be called from

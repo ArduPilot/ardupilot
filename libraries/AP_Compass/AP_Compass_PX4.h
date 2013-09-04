@@ -16,13 +16,11 @@ public:
     void        accumulate(void);
 
 private:
-    static int _mag_fd;
-    static Vector3f _sum;
-    static uint32_t _count;
-    static uint32_t _last_timer;
-    static uint64_t _last_timestamp;
-    static void _accumulate(void);
-    static void _compass_timer(uint32_t now);
+    int _mag_fd;
+    Vector3f _sum;
+    uint32_t _count;
+    uint64_t _last_timestamp;
+    bool _is_external;
 };
 
 #endif // AP_Compass_PX4_H

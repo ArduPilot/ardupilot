@@ -264,10 +264,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     while(1) {
         delay(100);
 
-        // Blink GPS LED if we don't have a fix
-        // ------------------------------------
-        update_GPS_light();
-
         g_gps->update();
 
         if (g_gps->new_data) {

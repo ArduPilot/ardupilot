@@ -64,6 +64,6 @@ void EmptyScheduler::panic(const prog_char_t *errormsg) {
     for(;;);
 }
 
-void EmptyScheduler::reboot() {
+void EmptyScheduler::reboot(bool hold_in_bootloader) {
     for(;;);
 }

@@ -1,12 +1,22 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 //  u-blox UBX GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
-//
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 //
 #include <stdint.h>
 
@@ -195,6 +205,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             Debug("Changing engine setting from %u to %u\n",
                   (unsigned)_buffer.nav_settings.dynModel, (unsigned)_nav_setting);
             _buffer.nav_settings.dynModel = _nav_setting;
+            _buffer.nav_settings.mask = 1; // only change dynamic model
             _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
                           &_buffer.nav_settings,
                           sizeof(_buffer.nav_settings));
@@ -292,6 +303,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 			// ask for nav settings every 20 seconds
 			Debug("Asking for engine setting\n");
 			_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
+            _fix_count = 0;
 		}
         return true;
     }

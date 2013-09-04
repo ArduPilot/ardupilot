@@ -72,7 +72,7 @@ static inline uint16_t mavlink_msg_memory_vect_pack(uint8_t system_id, uint8_t c
  * @brief Pack a memory_vect message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param address Starting address of the debug variables
  * @param ver Version code of the type variable. 0=unknown, type ignored and assumed int16_t. 1=as below
@@ -109,7 +109,7 @@ static inline uint16_t mavlink_msg_memory_vect_pack_chan(uint8_t system_id, uint
 }
 
 /**
- * @brief Encode a memory_vect struct into a message
+ * @brief Encode a memory_vect struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -119,6 +119,20 @@ static inline uint16_t mavlink_msg_memory_vect_pack_chan(uint8_t system_id, uint
 static inline uint16_t mavlink_msg_memory_vect_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_memory_vect_t* memory_vect)
 {
 	return mavlink_msg_memory_vect_pack(system_id, component_id, msg, memory_vect->address, memory_vect->ver, memory_vect->type, memory_vect->value);
+}
+
+/**
+ * @brief Encode a memory_vect struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param memory_vect C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_memory_vect_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_memory_vect_t* memory_vect)
+{
+	return mavlink_msg_memory_vect_pack_chan(system_id, component_id, chan, msg, memory_vect->address, memory_vect->ver, memory_vect->type, memory_vect->value);
 }
 
 /**

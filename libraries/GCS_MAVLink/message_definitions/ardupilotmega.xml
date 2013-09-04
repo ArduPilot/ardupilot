@@ -344,6 +344,22 @@
 	    <field type="float" name="distance">distance in meters</field>
 	    <field type="float" name="voltage">raw voltage if available, zero otherwise</field>
 	  </message>
+
+	  <message name="AIRSPEED_AUTOCAL" id="174">
+            <description>Airspeed auto-calibration</description>
+            <field type="float" name="vx">GPS velocity north m/s</field>
+            <field type="float" name="vy">GPS velocity east m/s</field>
+            <field type="float" name="vz">GPS velocity down m/s</field>
+            <field type="float" name="diff_pressure">Differential pressure pascals</field>
+            <field type="float" name="EAS2TAS">Estimated to true airspeed ratio</field>
+            <field type="float" name="ratio">Airspeed ratio</field>
+            <field type="float" name="state_x">EKF state x</field>
+            <field type="float" name="state_y">EKF state y</field>
+            <field type="float" name="state_z">EKF state z</field>
+            <field type="float" name="Pax">EKF Pax</field>
+            <field type="float" name="Pby">EKF Pby</field>
+            <field type="float" name="Pcz">EKF Pcz</field>
+          </message>
 	 
      </messages>
 </mavlink>

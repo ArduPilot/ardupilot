@@ -37,7 +37,7 @@ public:
     virtual void     system_initialized() = 0;
 
     virtual void     panic(const prog_char_t *errormsg) = 0;
-    virtual void     reboot() = 0;
+    virtual void     reboot(bool hold_in_bootloader) = 0;
 };
 
 #endif // __AP_HAL_SCHEDULER_H__

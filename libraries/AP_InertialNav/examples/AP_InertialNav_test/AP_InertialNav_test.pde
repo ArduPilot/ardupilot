@@ -17,10 +17,13 @@
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
+#include <AP_SpdHgtControl.h>
+#include <DataFlash.h>
 #include <AC_PID.h>             // PID library
 #include <APM_PI.h>             // PID library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
 #include <GCS_MAVLink.h>
+#include <AP_Notify.h>
 
 #include <AP_InertialNav.h>
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;

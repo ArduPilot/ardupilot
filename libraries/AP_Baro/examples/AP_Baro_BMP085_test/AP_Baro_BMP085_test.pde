@@ -16,6 +16,7 @@
 #include <Filter.h>
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>
+#include <AP_Notify.h>
 
 #include <AP_HAL_AVR.h>
 

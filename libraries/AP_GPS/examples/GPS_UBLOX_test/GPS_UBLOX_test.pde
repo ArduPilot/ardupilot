@@ -16,6 +16,7 @@
 #include <AP_HAL_PX4.h>
 #include <AP_GPS.h>
 #include <AP_Math.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

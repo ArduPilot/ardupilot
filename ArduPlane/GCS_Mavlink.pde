@@ -1235,8 +1235,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (packet.param1 == 1) {
-                reboot_apm();
+            if (packet.param1 == 1 || packet.param1 == 3) {
+                // when packet.param1 == 3 we reboot to hold in bootloader
+                hal.scheduler->reboot(packet.param1 == 3);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -2144,6 +2145,7 @@ static void mavlink_delay_cb()
         last_50hz = tnow;
         gcs_update();
         gcs_data_stream_send();
+        notify.update();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
@@ -2221,3 +2223,19 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     }
 }
 
+/*
+  send airspeed calibration data
+ */
+static void gcs_send_airspeed_calibration(const Vector3f &vg)
+{
+    if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
+        MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
+        airspeed.log_mavlink_send(MAVLINK_COMM_0, vg);
+    }
+    if (gcs3.initialised) {
+        if (comm_get_txspace(MAVLINK_COMM_1) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
+            MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
+            airspeed.log_mavlink_send(MAVLINK_COMM_1, vg);
+        }
+    }
+}

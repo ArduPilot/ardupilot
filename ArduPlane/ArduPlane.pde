@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.75beta1"
+#define THISFIRMWARE "ArduPlane V2.75beta2"
 /*
    Lead developer: Andrew Tridgell
  
@@ -70,6 +70,8 @@
 #include <AP_SpdHgtControl.h>
 #include <AP_TECS.h>
 
+#include <AP_Notify.h>      // Notify library
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -117,7 +119,7 @@ static Parameters g;
 
 // main loop scheduler
 static AP_Scheduler scheduler;
-
+ 
 // mapping between input channels
 static RCMapper rcmap;
 
@@ -126,6 +128,9 @@ static RC_Channel *channel_roll;
 static RC_Channel *channel_pitch;
 static RC_Channel *channel_throttle;
 static RC_Channel *channel_rudder;
+
+// notification object for LEDs, buzzers etc
+static AP_Notify notify;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -382,12 +387,6 @@ static struct {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// LED output
-////////////////////////////////////////////////////////////////////////////////
-// state of the GPS light (on/off)
-static bool GPS_light;
-
-////////////////////////////////////////////////////////////////////////////////
 // GPS variables
 ////////////////////////////////////////////////////////////////////////////////
 // This is used to scale GPS values for EEPROM storage
@@ -476,8 +475,7 @@ static struct {
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
 ////////////////////////////////////////////////////////////////////////////////
-AP_Airspeed airspeed;
-Airspeed_Calibration airspeed_calibration;
+AP_Airspeed airspeed(aparm);
 
 ////////////////////////////////////////////////////////////////////////////////
 // ACRO controller state
@@ -714,6 +712,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 }, // 20
+    { update_notify,          1,    100 },
     { one_second_loop,       50,   3900 },
     { check_long_failsafe,   15,   1000 },
     { airspeed_ratio_update, 50,   1000 },
@@ -733,6 +732,11 @@ void setup() {
 
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
+
+    // arduplane does not use arming nor pre-arm checks
+    notify.init();
+    AP_Notify::flags.armed = true;
+    AP_Notify::flags.pre_arm_check = true;
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
@@ -971,9 +975,18 @@ static void airspeed_ratio_update(void)
         g_gps->status() < GPS::GPS_OK_FIX_3D ||
         g_gps->ground_speed_cm < 400 ||
         airspeed.get_airspeed() < aparm.airspeed_min) {
+        // don't calibrate when not moving
         return;
     }
-    airspeed.update_calibration(g_gps->velocity_vector());
+    if (abs(ahrs.roll_sensor) > g.roll_limit_cd ||
+        ahrs.pitch_sensor > aparm.pitch_limit_max_cd ||
+        ahrs.pitch_sensor < aparm.pitch_limit_min_cd) {
+        // don't calibrate when going beyond normal flight envelope
+        return;
+    }
+    Vector3f vg = g_gps->velocity_vector();
+    airspeed.update_calibration(vg);
+    gcs_send_airspeed_calibration(vg);
 }
 
 
@@ -984,7 +997,6 @@ static void update_GPS(void)
 {
     static uint32_t last_gps_reading;
     g_gps->update();
-    update_GPS_light();
 
     if (g_gps->last_message_time_ms() != last_gps_reading) {
         last_gps_reading = g_gps->last_message_time_ms();

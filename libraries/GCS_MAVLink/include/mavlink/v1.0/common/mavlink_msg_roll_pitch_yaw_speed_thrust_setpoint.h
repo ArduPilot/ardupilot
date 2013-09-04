@@ -79,7 +79,7 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint_pack(uin
  * @brief Pack a roll_pitch_yaw_speed_thrust_setpoint message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp in milliseconds since system boot
  * @param roll_speed Desired roll angular speed in rad/s
@@ -121,7 +121,7 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint_pack_cha
 }
 
 /**
- * @brief Encode a roll_pitch_yaw_speed_thrust_setpoint struct into a message
+ * @brief Encode a roll_pitch_yaw_speed_thrust_setpoint struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -131,6 +131,20 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint_pack_cha
 static inline uint16_t mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_roll_pitch_yaw_speed_thrust_setpoint_t* roll_pitch_yaw_speed_thrust_setpoint)
 {
 	return mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint_pack(system_id, component_id, msg, roll_pitch_yaw_speed_thrust_setpoint->time_boot_ms, roll_pitch_yaw_speed_thrust_setpoint->roll_speed, roll_pitch_yaw_speed_thrust_setpoint->pitch_speed, roll_pitch_yaw_speed_thrust_setpoint->yaw_speed, roll_pitch_yaw_speed_thrust_setpoint->thrust);
+}
+
+/**
+ * @brief Encode a roll_pitch_yaw_speed_thrust_setpoint struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param roll_pitch_yaw_speed_thrust_setpoint C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_roll_pitch_yaw_speed_thrust_setpoint_t* roll_pitch_yaw_speed_thrust_setpoint)
+{
+	return mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint_pack_chan(system_id, component_id, chan, msg, roll_pitch_yaw_speed_thrust_setpoint->time_boot_ms, roll_pitch_yaw_speed_thrust_setpoint->roll_speed, roll_pitch_yaw_speed_thrust_setpoint->pitch_speed, roll_pitch_yaw_speed_thrust_setpoint->yaw_speed, roll_pitch_yaw_speed_thrust_setpoint->thrust);
 }
 
 /**

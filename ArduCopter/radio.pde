@@ -74,11 +74,10 @@ static void init_rc_out()
             g.esc_calibrate.set_and_save(1);
             // display message on console
             cliSerial->printf_P(PSTR("Entering ESC Calibration: please restart APM.\n"));
+            // turn on esc calibration notification
+            AP_Notify::flags.esc_calibration = true;
             // block until we restart
-            while(1) {
-                delay(200);
-                dancing_light();
-            }
+            while(1) { delay(5); }
         }else{
             cliSerial->printf_P(PSTR("ESC Calibration active: passing throttle through to ESCs.\n"));
             // clear esc flag

@@ -3,16 +3,15 @@
 # This helps when doing large merges
 # Andrew Tridgell, February 2013
 
+. config.mk
+
 set -e
 set -x
-
-. config.mk
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
 make px4-clean
 make px4
-make px4-io
 popd
 
 echo "Testing ArduCopter build"

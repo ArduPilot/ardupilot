@@ -98,15 +98,14 @@ build_arduplane() {
 	copyit $TMPDIR/ArduPlane.build/ArduPlane.hex $ddir $tag
 	touch $binaries/Plane/$tag
     done
-    test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
+    test -n "$PX4_ROOT" && {
 	echo "Building ArduPlane PX4 binaries"
 	ddir=$binaries/Plane/$hdate/PX4
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
-	    rsync ArduPlane.px4 px4fmu.px4 &&
-	    copyit px4fmu.px4 $ddir $tag &&
-	    copyit ArduPlane.px4 $ddir $tag
+	    copyit ArduPlane-v1.px4 $ddir $tag &&
+	    copyit ArduPlane-v2.px4 $ddir $tag
 	}
     }
     popd
@@ -130,16 +129,15 @@ build_arducopter() {
 	    touch $binaries/Copter/$tag
 	done
     done
-    test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
+    test -n "$PX4_ROOT" && {
 	for f in quad tri hexa y6 octa octa-quad heli quad-hil heli-hil; do
 	    echo "Building ArduCopter PX4-$f binaries"
 	    ddir="$binaries/Copter/$hdate/PX4-$f"
 	    skip_build $tag $ddir && continue
 	    make px4-clean || continue
 	    make px4-$f || continue
-	    rsync ArduCopter.px4 px4fmu.px4 &&
-	    copyit px4fmu.px4 $ddir $tag &&
-	    copyit ArduCopter.px4 $ddir $tag
+	    copyit ArduCopter-v1.px4 $ddir $tag &&
+	    copyit ArduCopter-v2.px4 $ddir $tag
 	done
     }
     popd
@@ -161,41 +159,18 @@ build_rover() {
 	copyit $TMPDIR/APMrover2.build/APMrover2.hex $ddir $tag
 	touch $binaries/Rover/$tag
     done
-    test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
+    test -n "$PX4_ROOT" && {
 	echo "Building APMrover2 PX4 binaries"
 	ddir=$binaries/Rover/$hdate/PX4
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
-	    rsync APMrover2.px4 px4fmu.px4 &&
-	    copyit px4fmu.px4 $ddir $tag &&
-	    copyit APMrover2.px4 $binaries/Rover/$hdate/PX4 $tag
+	    copyit APMrover2-v1.px4 $binaries/Rover/$hdate/PX4 $tag &&
+	    copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag 
 	}
     }
     popd
     git checkout master
-}
-
-# build PX4io firmware
-build_px4io() {
-    tag="$1"
-    test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
-	echo "Building PX4IO $tag firmware"
-	pushd $PX4_ROOT
-	checkout PX4IO $tag || return
-	ddir=$binaries/PX4IO/$hdate/PX4IO
-	skip_build $tag $ddir || {
-	    popd
-	    pushd ArduPlane
-	    make px4-clean &&
-	    make px4-io &&
-	    copyit px4io.bin $ddir $tag
-	    popd
-	}
-	pushd $PX4_ROOT
-	git checkout master
-	popd
-    }
 }
 
 for build in stable beta latest; do
@@ -203,7 +178,6 @@ for build in stable beta latest; do
     build_arducopter $build
     build_rover $build
 done
-build_px4io latest
 
 rm -rf $TMPDIR
 

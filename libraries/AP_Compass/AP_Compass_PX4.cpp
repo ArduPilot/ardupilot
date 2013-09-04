@@ -1,11 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_Compass_PX4.cpp - Arduino Library for PX4 magnetometer
  *
- *       This library is free software; you can redistribute it and / or
- *       modify it under the terms of the GNU Lesser General Public
- *       License as published by the Free Software Foundation; either
- *       version 2.1 of the License, or (at your option) any later version.
  */
 
 
@@ -26,12 +37,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-int AP_Compass_PX4::_mag_fd = -1;
-Vector3f AP_Compass_PX4::_sum;
-uint32_t AP_Compass_PX4::_count = 0;
-uint32_t AP_Compass_PX4::_last_timer = 0;
-uint64_t AP_Compass_PX4::_last_timestamp = 0;
-
 
 // Public Methods //////////////////////////////////////////////////////////////
 
@@ -49,32 +54,31 @@ bool AP_Compass_PX4::init(void)
 	/* set the driver to poll at 150Hz */
 	ioctl(_mag_fd, SENSORIOCSPOLLRATE, 150);
 
-    // average over up to 10 samples
-    ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 10);
+    // average over up to 20 samples
+    ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 20);
+
+    // remember if the compass is external
+	_is_external = (ioctl(_mag_fd, MAGIOCGEXTERNAL, 0) > 0);
 
     healthy = false;
     _count = 0;
     _sum.zero();
 
-    hal.scheduler->register_timer_process(_compass_timer);
-
-    // give the timer a chance to run, and gather one sample
+    // give the driver a chance to run, and gather one sample
     hal.scheduler->delay(40);
+    accumulate();
 
     return true;
 }
 
 bool AP_Compass_PX4::read(void)
 {
-    hal.scheduler->suspend_timer_procs();
-
     // try to accumulate one more sample, so we have the latest data
-    _accumulate();
+    accumulate();
 
     // consider the compass healthy if we got a reading in the last 0.2s
     healthy = (hrt_absolute_time() - _last_timestamp < 200000);
     if (!healthy || _count == 0) {
-        hal.scheduler->resume_timer_procs();
         return healthy;
     }
 
@@ -88,8 +92,14 @@ bool AP_Compass_PX4::read(void)
     // add user selectable orientation
     _sum.rotate((enum Rotation)_orientation.get());
 
-    // and add in AHRS_ORIENTATION setting
-    _sum.rotate(_board_orientation);
+    // override any user setting of COMPASS_EXTERNAL 
+    _external.set(_is_external);
+
+    if (!_external) {
+        // add in board orientation from AHRS
+        _sum.rotate(_board_orientation);
+    }
+
     _sum += _offset.get();
 
     // apply motor compensation
@@ -109,14 +119,12 @@ bool AP_Compass_PX4::read(void)
     _sum.zero();
     _count = 0;
 
-    hal.scheduler->resume_timer_procs();
-    
     last_update = _last_timestamp;
     
     return true;
 }
 
-void AP_Compass_PX4::_accumulate(void)
+void AP_Compass_PX4::accumulate(void)
 {
     struct mag_report mag_report;
     while (::read(_mag_fd, &mag_report, sizeof(mag_report)) == sizeof(mag_report) &&
@@ -125,21 +133,6 @@ void AP_Compass_PX4::_accumulate(void)
         _count++;
         _last_timestamp = mag_report.timestamp;
     }
-}
-
-void AP_Compass_PX4::accumulate(void)
-{
-    // let the timer do the work
-}
-
-void AP_Compass_PX4::_compass_timer(uint32_t now)
-{
-    // try to accumulate samples at 100Hz
-    if (now - _last_timer < 10000) {
-        return;
-    }
-    _last_timer = hal.scheduler->micros();
-    _accumulate();
 }
 
 #endif // CONFIG_HAL_BOARD

@@ -1,12 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*
  *  ArduCopter parameter definitions
  *
- *  This firmware is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
  */
 
 #define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} }
@@ -982,11 +992,11 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
     // @Group: SR0_
-    // @Path: ./GCS_Mavlink.pde
+    // @Path: ../GCS_Mavlink.pde
     GOBJECT(gcs0,                   "SR0_",     GCS_MAVLINK),
 
     // @Group: SR3_
-    // @Path: ./GCS_Mavlink.pde
+    // @Path: ../GCS_Mavlink.pde
     GOBJECT(gcs3,                   "SR3_",     GCS_MAVLINK),
 
     // @Group: AHRS_

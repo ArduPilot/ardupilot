@@ -79,7 +79,7 @@ static inline uint16_t mavlink_msg_mount_status_pack(uint8_t system_id, uint8_t 
  * @brief Pack a mount_status message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -121,7 +121,7 @@ static inline uint16_t mavlink_msg_mount_status_pack_chan(uint8_t system_id, uin
 }
 
 /**
- * @brief Encode a mount_status struct into a message
+ * @brief Encode a mount_status struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -131,6 +131,20 @@ static inline uint16_t mavlink_msg_mount_status_pack_chan(uint8_t system_id, uin
 static inline uint16_t mavlink_msg_mount_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_mount_status_t* mount_status)
 {
 	return mavlink_msg_mount_status_pack(system_id, component_id, msg, mount_status->target_system, mount_status->target_component, mount_status->pointing_a, mount_status->pointing_b, mount_status->pointing_c);
+}
+
+/**
+ * @brief Encode a mount_status struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param mount_status C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_mount_status_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_mount_status_t* mount_status)
+{
+	return mavlink_msg_mount_status_pack_chan(system_id, component_id, chan, msg, mount_status->target_system, mount_status->target_component, mount_status->pointing_a, mount_status->pointing_b, mount_status->pointing_c);
 }
 
 /**

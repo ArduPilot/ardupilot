@@ -1236,8 +1236,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (packet.param1 == 1) {
-                reboot_apm();
+            if (packet.param1 == 1 || packet.param1 == 3) {
+                // when packet.param1 == 3 we reboot to hold in bootloader
+                hal.scheduler->reboot(packet.param1 == 3);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -2161,6 +2162,7 @@ static void mavlink_delay_cb()
         gcs_check_input();
         gcs_data_stream_send();
         gcs_send_deferred();
+        notify.update();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;

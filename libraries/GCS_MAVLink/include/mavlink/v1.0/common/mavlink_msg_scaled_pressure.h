@@ -74,7 +74,7 @@ static inline uint16_t mavlink_msg_scaled_pressure_pack(uint8_t system_id, uint8
  * @brief Pack a scaled_pressure message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param press_abs Absolute pressure (hectopascal)
@@ -113,7 +113,7 @@ static inline uint16_t mavlink_msg_scaled_pressure_pack_chan(uint8_t system_id, 
 }
 
 /**
- * @brief Encode a scaled_pressure struct into a message
+ * @brief Encode a scaled_pressure struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -123,6 +123,20 @@ static inline uint16_t mavlink_msg_scaled_pressure_pack_chan(uint8_t system_id, 
 static inline uint16_t mavlink_msg_scaled_pressure_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_scaled_pressure_t* scaled_pressure)
 {
 	return mavlink_msg_scaled_pressure_pack(system_id, component_id, msg, scaled_pressure->time_boot_ms, scaled_pressure->press_abs, scaled_pressure->press_diff, scaled_pressure->temperature);
+}
+
+/**
+ * @brief Encode a scaled_pressure struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param scaled_pressure C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_scaled_pressure_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_scaled_pressure_t* scaled_pressure)
+{
+	return mavlink_msg_scaled_pressure_pack_chan(system_id, component_id, chan, msg, scaled_pressure->time_boot_ms, scaled_pressure->press_abs, scaled_pressure->press_diff, scaled_pressure->temperature);
 }
 
 /**

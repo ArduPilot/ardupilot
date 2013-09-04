@@ -1,12 +1,23 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_Motors.cpp - ArduCopter motors library
  *       Code by RandyMackay. DIYDrones.com
  *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  */
 
 #include "AP_Motors_Class.h"
@@ -79,6 +90,12 @@ void AP_Motors::Init()
 {
     // set-up throttle curve - motors classes will decide whether to use it based on _throttle_curve_enabled parameter
     setup_throttle_curve();
+};
+
+void AP_Motors::armed(bool arm)
+{
+    _armed = arm;
+    AP_Notify::flags.armed = _armed;
 };
 
 // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)

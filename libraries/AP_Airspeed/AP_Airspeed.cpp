@@ -1,12 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
- *   APM_Airspeed.cpp - airspeed (pitot) driver
- *
- *   This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public License
- *   as published by the Free Software Foundation; either version 2.1
- *   of the License, or (at your option) any later version.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+/*
+ *   APM_Airspeed.cpp - airspeed (pitot) driver
+ */
+
 
 #include <AP_HAL.h>
 #include <AP_Math.h>
@@ -66,7 +76,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
 
     // @Param: PIN
     // @DisplayName: Airspeed pin
-    // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 65 on the PX4 for an EagleTree I2C airspeed sensor.
+    // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 65 on the PX4 for an EagleTree or MEAS I2C airspeed sensor.
     // @User: Advanced
     AP_GROUPINFO("PIN",  4, AP_Airspeed, _pin, ARSPD_DEFAULT_PIN),
 
@@ -90,12 +100,17 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
 void AP_Airspeed::init()
 {
     _last_pressure = 0;
+    _calibration.init(_ratio);
+    _last_saved_ratio = _ratio;
+    _counter = 0;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (_pin == 65) {
         _ets_fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
         if (_ets_fd == -1) {
             hal.console->println("Failed to open ETS airspeed driver");
             _enable.set(0);
+            return;
         }
         if (OK != ioctl(_ets_fd, SENSORIOCSPOLLRATE, 100) ||
             OK != ioctl(_ets_fd, SENSORIOCSQUEUEDEPTH, 15)) {
@@ -111,10 +126,6 @@ void AP_Airspeed::init()
     }
 #endif
     _source = hal.analogin->channel(_pin);
-
-    _calibration.init(_ratio);
-    _last_saved_ratio = _ratio;
-    _counter = 0;
 }
 
 // read the airspeed sensor
@@ -130,11 +141,15 @@ float AP_Airspeed::get_pressure(void)
         float sum = 0;
         uint16_t count = 0;
         struct differential_pressure_s report;
+        static uint64_t last_timestamp;
 
-        while (::read(_ets_fd, &report, sizeof(report)) == sizeof(report)) {
+        while (::read(_ets_fd, &report, sizeof(report)) == sizeof(report) &&
+               report.timestamp != last_timestamp) {
             sum += report.differential_pressure_pa;
             count++;
+            last_timestamp = report.timestamp;
         }
+        // hal.console->printf("count=%u\n", (unsigned)count);
         if (count == 0) {
             return _last_pressure;
         }

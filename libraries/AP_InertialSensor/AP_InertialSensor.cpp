@@ -5,6 +5,7 @@
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
+#include <AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -148,20 +149,17 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
     hal.scheduler->delay(100);
     hal.console->printf_P(PSTR("Init Gyro"));
 
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
+
     // remove existing gyro offsets
     _gyro_offset = Vector3f(0,0,0);
 
     for(int8_t c = 0; c < 25; c++) {
-        // Mostly we are just flashing the LED's here
-        // to tell the user to keep the IMU still
-        FLASH_LEDS(true);
         hal.scheduler->delay(20);
 
         update();
         ins_gyro = get_gyro();
-
-        FLASH_LEDS(false);
-        hal.scheduler->delay(20);
     }
 
     // the strategy is to average 200 points over 1 second, then do it
@@ -184,11 +182,6 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
             update();
             ins_gyro = get_gyro();
             gyro_sum += ins_gyro;
-            if (i % 40 == 20) {
-                FLASH_LEDS(true);
-            } else if (i % 40 == 0) {
-                FLASH_LEDS(false);
-            }
             hal.scheduler->delay(5);
         }
         gyro_avg = gyro_sum / i;
@@ -203,7 +196,8 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
             // we want the average to be within 0.1 bit, which is 0.04 degrees/s
             last_average = (gyro_avg * 0.5) + (last_average * 0.5);
             _gyro_offset = last_average;
-
+            // stop flashing leds
+            AP_Notify::flags.initialising = false;
             // all done
             return;
         } else if (diff_norm < best_diff) {
@@ -212,6 +206,9 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
         }
         last_average = gyro_avg;
     }
+
+    // stop flashing leds
+    AP_Notify::flags.initialising = false;
 
     // we've kept the user waiting long enough - use the best pair we
     // found so far
@@ -245,6 +242,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 
     hal.console->printf_P(PSTR("Init Accel"));
 
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
+
     // clear accelerometer offsets and scaling
     _accel_offset = Vector3f(0,0,0);
     _accel_scale = Vector3f(1,1,1);
@@ -276,14 +276,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
             accel_offset = accel_offset * 0.9 + ins_accel * 0.1;
 
             // display some output to the user
-            if(flashcount == 5) {
-                hal.console->printf_P(PSTR("*"));
-                FLASH_LEDS(true);
-            }
-
             if(flashcount >= 10) {
+                hal.console->printf_P(PSTR("*"));
                 flashcount = 0;
-                FLASH_LEDS(false);
             }
             flashcount++;
         }
@@ -300,6 +295,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 
     // set the global accel offsets
     _accel_offset = accel_offset;
+
+    // stop flashing the leds
+    AP_Notify::flags.initialising = false;
 
     hal.console->printf_P(PSTR(" "));
 
