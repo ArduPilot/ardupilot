@@ -14,7 +14,8 @@
 
 #define APM_MAIN_PRIORITY    180
 #define APM_TIMER_PRIORITY   181
-#define APM_IO_PRIORITY       60
+#define APM_UART_PRIORITY     60
+#define APM_IO_PRIORITY       59
 #define APM_OVERTIME_PRIORITY 10
 #define APM_STARTUP_PRIORITY  10
 
@@ -64,9 +65,11 @@ private:
 
     pthread_t _timer_thread_ctx;
     pthread_t _io_thread_ctx;
+    pthread_t _uart_thread_ctx;
 
     void *_timer_thread(void);
     void *_io_thread(void);
+    void *_uart_thread(void);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
