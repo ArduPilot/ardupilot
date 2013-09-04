@@ -264,6 +264,9 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 // Used to track what bit we're sampling
 volatile uint8_t spektrum_bit_position;
 
+// Used to detect start of frame by measuring time from last byte
+volatile uint16_t spektrum_byte_last_received;
+
 // Points to the position in the frame where we're currently reading data
 volatile uint8_t spektrum_frame_pointer;
 
@@ -968,13 +971,19 @@ ISR( SPEKTRUM_INT_VECTOR )
         // Disable the output compare interrupt
         TIMSK1 &= ~(1 << SPEKTRUM_COMPARE_ENABLE);
 
-        // Check that the header is valid, 0x00 0x00 for >7 channels 11ms, 0x03 0x02 for <=7 channels 22ms
-        if ((spektrum_frame_pointer == 0 && (spektrum_frame[0] != 0x00 && spektrum_frame[0] != 0x03))
-         || (spektrum_frame_pointer == 1 && (spektrum_frame[1] != 0x00 && spektrum_frame[1] != 0x02))) {
-            // Reset frame pointer and return if it is not
+        // Check the time since last byte to verify that we are in sync with the frames, >8ms for first byte, <100us for all following
+        if ((spektrum_frame_pointer == 0 && SPEKTRUM_TIMER_CNT - spektrum_byte_last_received < ONE_US * 8000) ||
+            (spektrum_frame_pointer > 0 && SPEKTRUM_TIMER_CNT - spektrum_byte_last_received > ONE_US * 100)) {
+            // Reset frame pointer and return if we're not in sync
             spektrum_frame_pointer = 0;
+
+            // Save the time of byte receival, important that this is done after sync validation
+            spektrum_byte_last_received = SPEKTRUM_TIMER_CNT;
             return;
         }
+
+        // Save the time of byte receival, important that this is done after sync validation
+        spektrum_byte_last_received = SPEKTRUM_TIMER_CNT;
 
         // Check if we have received a full frame
         if (++spektrum_frame_pointer >= 16) {
