@@ -45,7 +45,7 @@ MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 {
-    reboot_apm();
+    hal.scheduler->reboot(false);
     return 0;
 }
 
@@ -511,15 +511,6 @@ print_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
-}
-
-/*
-  force a software reset of the APM
- */
-static void reboot_apm(void)
-{
-    hal.scheduler->reboot();
-    while (1);
 }
 
 /*
