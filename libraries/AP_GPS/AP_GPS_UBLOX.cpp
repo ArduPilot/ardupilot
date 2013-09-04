@@ -303,6 +303,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 			// ask for nav settings every 20 seconds
 			Debug("Asking for engine setting\n");
 			_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
+            _fix_count = 0;
 		}
         return true;
     }
