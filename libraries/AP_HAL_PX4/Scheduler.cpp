@@ -168,9 +168,9 @@ void PX4Scheduler::resume_timer_procs()
     }
 }
 
-void PX4Scheduler::reboot() 
+void PX4Scheduler::reboot(bool hold_in_bootloader) 
 {
-	systemreset(false);
+	systemreset(hold_in_bootloader);
 }
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)

@@ -35,7 +35,7 @@ public:
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     suspend_timer_procs();
     void     resume_timer_procs();
-    void     reboot();
+    void     reboot(bool hold_in_bootloader);
     void     panic(const prog_char_t *errormsg);
 
     bool     in_timerprocess();

@@ -246,7 +246,7 @@ void SMACCMScheduler::panic(const prog_char_t *errormsg)
     ;
 }
 
-void SMACCMScheduler::reboot()
+void SMACCMScheduler::reboot(bool hold_in_bootloader)
 {
   for(;;)
     ;

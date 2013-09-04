@@ -212,7 +212,7 @@ void AVRScheduler::panic(const prog_char_t* errormsg) {
     for(;;);
 }
 
-void AVRScheduler::reboot() {
+void AVRScheduler::reboot(bool hold_in_bootloader) {
     hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
     hal.scheduler->delay(100);
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2

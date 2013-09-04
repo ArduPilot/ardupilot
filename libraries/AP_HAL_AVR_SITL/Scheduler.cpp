@@ -161,7 +161,7 @@ void SITLScheduler::sitl_end_atomic() {
         _nested_atomic_ctr--;
 }   
 
-void SITLScheduler::reboot() 
+void SITLScheduler::reboot(bool hold_in_bootloader) 
 {
     hal.uartA->println_P(PSTR("REBOOT NOT IMPLEMENTED\r\n"));
 }
