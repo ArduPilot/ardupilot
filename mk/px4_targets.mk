@@ -86,6 +86,9 @@ px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) rm -f $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) cp px4io-v1.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
+	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
+	$(v) rm -f $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
+	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmu_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) echo "PX4IOv1 Firmware is in px4io-v1.bin"
 
 
@@ -97,6 +100,9 @@ px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) rm -f $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) cp px4io-v2.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
+	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
+	$(v) rm -f $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
+	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv2_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) echo "PX4IOv2 Firmware is in px4io-v2.bin"
 
 px4-io: px4-io-v1 px4-io-v2
