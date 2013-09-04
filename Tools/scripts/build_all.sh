@@ -3,6 +3,8 @@
 # This helps when doing large merges
 # Andrew Tridgell, November 2011
 
+. config.mk
+
 set -e
 set -x
 
@@ -43,7 +45,6 @@ for d in $examples; do
     popd
 done
 
-. config.mk
 test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
     ./Tools/scripts/build_all_px4.sh
 }

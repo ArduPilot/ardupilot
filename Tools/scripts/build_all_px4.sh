@@ -3,10 +3,10 @@
 # This helps when doing large merges
 # Andrew Tridgell, February 2013
 
+. config.mk
+
 set -e
 set -x
-
-. config.mk
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
