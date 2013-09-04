@@ -110,7 +110,7 @@ static void init_ardupilot()
 	// on the message set configured.
 	//
     // standard gps running
-    hal.uartB->begin(115200, 128, 16);
+    hal.uartB->begin(115200, 256, 16);
 
 	cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
 						 "\n\nFree RAM: %u\n"),
