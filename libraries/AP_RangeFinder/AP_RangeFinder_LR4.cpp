@@ -58,20 +58,17 @@ bool AP_RangeFinder_LR4::start_reading() {
     // send 'g' to start reading
     _port->print_P(PSTR("g"));
 
-    // loop until valid response received
-    while (true) {
-        if (_port->available()) {
-            tmp = _port->read();
+    // data available in port
+    if (_port->available()) {
+        tmp = _port->read();
 
-            // receiving 'ok'
-            if (tmp == 'o') {
-                return true;
-            }
-            // receiving 'badcmd'
-            else if (tmp == 'b') {
-                return false;
-            }
-            // otherwise receiving a leftover measurement
+        // receiving 'ok'
+        if (tmp == 'o') {
+            return true;
+        }
+        // receiving 'badcmd'
+        else if (tmp == 'b') {
+            return false;
         }
     }
 
@@ -85,20 +82,17 @@ bool AP_RangeFinder_LR4::stop_reading() {
     // send 's' to stop reading
     _port->print_P(PSTR("s"));
 
-    // loop until valid response received
-    while (true) {
-        if (_port->available()) {
-            tmp = _port->read();
+    // data available in port
+    if (_port->available()) {
+        tmp = _port->read();
 
-            // receiving 'ok'
-            if (tmp == 'o') {
-                return true;
-            }
-            // receiving 'badcmd'
-            else if (tmp == 'b') {
-                return false;
-            }
-            // otherwise receiving a leftover measurement
+        // receiving 'ok'
+        if (tmp == 'o') {
+            return true;
+        }
+        // receiving 'badcmd'
+        else if (tmp == 'b') {
+            return false;
         }
     }
 
@@ -107,46 +101,66 @@ bool AP_RangeFinder_LR4::stop_reading() {
 
 // read - return last value measured by sensor
 int AP_RangeFinder_LR4::read() {
-    uint8_t pos = 0;
-    char buf[5], tmp;
+    static uint8_t pos = 0;
+    static char buf[5];
     int val = 0;
+    char tmp;
     
     // attempt to start reading if not reading
     if (!reading) {
-        reading = start_reading();
+        if (_port->available()) {
+            tmp = _port->read();
+
+            // receiving 'ok'
+            if (tmp == 'o') {
+                reading = true;
+            }
+        }
+        else {
+            reading = start_reading();
+        }
     }
-    
+
     // currently reading
     if (reading) {
-        // flush previous results
-        _port->flush();
+        while (_port->available()) {
+            tmp = _port->read();
 
-        // loop until we obtain a valid 5-digit measurement
-        while (pos != 5) {
-            if (_port->available()) {
-                tmp = _port->read();
-
-                // if it is a digit
-                if (tmp >= '0' && tmp <= '9') {
-                    buf[pos++] = tmp;
+            // if it is a digit
+            if (tmp >= '0' && tmp <= '9') {
+                buf[pos++] = tmp;
+            }
+            else if (tmp == '\r') {
+                if (pos >= 5) {
+                    // complete 5-digit integer received, quit receive loop
+                    break;
+                }
+                else {
+                    // received incomplete integer, reset position
+                    pos = 0;
                 }
             }
         }
 
-        // convert result from string to integer
-        val = atoi(buf);
+        if (pos >= 5) {
+            // convert result from string to integer, then divide by 10 for cm
+            val = atoi(buf) / 10;
 
-        // ensure distance is within min and max
-        val = constrain_float(val, min_distance, max_distance);
+            // ensure distance is within min and max
+            val = constrain_float(val, min_distance, max_distance);
 
-        // apply mode (median?) filter?
-        // val = _mode_filter->apply(val);
-        
-        // reading = !stop_reading();
+            // apply mode (median?) filter?
+            // val = _mode_filter->apply(val);
+            
+            // reading = !stop_reading();
 
-        return val;
+            // reset position
+            pos = 0;
+
+            return val;
+        }
     }
 
-    // failed to start reading, return constant
+    // failed to get reading, return constant
     return -1;
 }

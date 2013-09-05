@@ -24,8 +24,12 @@ void setup() {
 }
 
 void loop() {
-    hal.console->print("distance: ");
-    hal.console->println(rf->read());
+    int result = 0;
+
+    if ((result = rf->read()) != -1) {
+        hal.console->print("distance: ");
+        hal.console->println(result);
+    }
 
     hal.scheduler->delay(100);
 }
