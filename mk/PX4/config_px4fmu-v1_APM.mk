@@ -20,6 +20,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/px4io
 MODULES		+= drivers/px4fmu
 MODULES		+= drivers/boards/px4fmu-v1
+MODULES		+= drivers/rgbled
 MODULES		+= drivers/l3gd20
 # MODULES		+= drivers/bma180
 MODULES		+= drivers/mpu6000
