@@ -86,7 +86,8 @@ then
    else
       echo Loading /etc/px4io/px4io.bin
       tone_alarm MBABGP
-      if px4io update /etc/px4io/px4io.bin > /fs/microsd/APM/px4io_update.log
+      echo Loading /etc/px4io/px4io.bin > /fs/microsd/APM/px4io_update.log
+      if px4io update /etc/px4io/px4io.bin
       then
       	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
       	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/APM/px4io_update.log
