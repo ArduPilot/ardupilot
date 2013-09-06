@@ -832,13 +832,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap,                "RCMAP_",         RCMapper),
 
-    // @Group: SR0_
-    // @Path: GCS_Mavlink.pde
-    GOBJECT(gcs0,                   "SR0_",     GCS_MAVLINK),
-
-    // @Group: SR3_
-    // @Path: GCS_Mavlink.pde
-    GOBJECT(gcs3,                   "SR3_",     GCS_MAVLINK),
+    GOBJECT(gcs0,                                   "SR0_",     GCS_MAVLINK),
+    GOBJECT(gcs3,                                   "SR3_",     GCS_MAVLINK),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
