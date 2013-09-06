@@ -85,22 +85,28 @@ rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 pushd PX4Firmware
 git fetch origin
 git reset --hard origin/master
+git show
 popd
 
 pushd PX4NuttX
 git fetch origin
 git reset --hard origin/master
+git show
 popd
 
 echo "Updating pymavlink"
 pushd mavlink/pymavlink
-git pr
+git fetch origin
+git reset --hard origin/master
+git show
 python setup.py build install --user
 popd
 
 echo "Updating MAVProxy"
 pushd MAVProxy
-git pr
+git fetch origin
+git reset --hard origin/master
+git show
 python setup.py build install --user
 popd
 
