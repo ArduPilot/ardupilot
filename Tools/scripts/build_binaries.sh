@@ -130,11 +130,12 @@ build_arducopter() {
 	done
     done
     test -n "$PX4_ROOT" && {
+	make px4-clean || return
 	for f in quad tri hexa y6 octa octa-quad heli quad-hil heli-hil; do
 	    echo "Building ArduCopter PX4-$f binaries"
 	    ddir="$binaries/Copter/$hdate/PX4-$f"
 	    skip_build $tag $ddir && continue
-	    make px4-clean || continue
+            rm -rf ../Build.ArduCopter
 	    make px4-$f || continue
 	    copyit ArduCopter-v1.px4 $ddir $tag &&
 	    copyit ArduCopter-v2.px4 $ddir $tag
