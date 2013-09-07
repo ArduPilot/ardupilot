@@ -45,6 +45,34 @@ then
    sh /etc/init.d/rc.error
 fi
 
+########################
+# PX4IO upgrade handling
+echo checking for /etc/px4io/px4io.bin
+if [ -f /etc/px4io/px4io.bin ]
+then
+   echo "Checking for new px4io firmware"
+   if cmp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
+   then
+      echo "No new px4io firmware"
+   else
+      echo Loading /etc/px4io/px4io.bin
+      tone_alarm MBABGP
+      echo Loading /etc/px4io/px4io.bin > /fs/microsd/px4io_update.log
+      if px4io update /etc/px4io/px4io.bin
+      then
+      	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
+      	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/px4io_update.log
+        tone_alarm MSPAA
+      else
+        echo Failed loading /etc/px4io/px4io.bin >> /fs/microsd/px4io_update.log
+        echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
+	echo "Failed to upgrade PX4IO firmware"
+        tone_alarm MNGGG
+      fi
+   fi
+fi
+
+
 if mkdir /fs/microsd/APM > /dev/null
 then
      echo "Created APM directory"
@@ -73,33 +101,6 @@ else
    fi
 fi
 
-
-########################
-# PX4IO upgrade handling
-echo checking for /etc/px4io/px4io.bin
-if [ -f /etc/px4io/px4io.bin ]
-then
-   echo "Checking for new px4io firmware"
-   if cmp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
-   then
-      echo "No new px4io firmware"
-   else
-      echo Loading /etc/px4io/px4io.bin
-      tone_alarm MBABGP
-      echo Loading /etc/px4io/px4io.bin > /fs/microsd/APM/px4io_update.log
-      if px4io update /etc/px4io/px4io.bin
-      then
-      	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
-      	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/APM/px4io_update.log
-        tone_alarm MSPAA
-      else
-        echo Failed loading /etc/px4io/px4io.bin >> /fs/microsd/APM/px4io_update.log
-        echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
-	echo "Failed to upgrade PX4IO firmware"
-        tone_alarm MNGGG
-      fi
-   fi
-fi
 
 echo "Starting APM sensors"
 echo "Starting APM sensors" > $logfile
