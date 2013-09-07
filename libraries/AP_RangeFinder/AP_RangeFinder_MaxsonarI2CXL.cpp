@@ -39,7 +39,7 @@ extern const AP_HAL::HAL& hal;
 
 // Constructor //////////////////////////////////////////////////////////////
 
-AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL( FilterInt16 *filter ) :
+AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(FilterInt16 *filter) :
     RangeFinder(NULL, filter),
     healthy(true),
     _addr(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)
