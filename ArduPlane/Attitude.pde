@@ -743,6 +743,10 @@ static void set_servos(void)
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
             channel_throttle->radio_out = channel_throttle->radio_in;
+        } else if (control_mode == GUIDED && 
+                   guided_throttle_passthru) {
+            // manual pass through of throttle while in GUIDED
+            channel_throttle->radio_out = channel_throttle->radio_in;
         } else {
             // normal throttle calculation based on servo_out
             channel_throttle->calc_pwm();

@@ -268,6 +268,9 @@ SITL sitl;
 static bool training_manual_roll;  // user has manual roll control
 static bool training_manual_pitch; // user has manual pitch control
 
+// should throttle be pass-thru in guided?
+static bool guided_throttle_passthru;
+
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////

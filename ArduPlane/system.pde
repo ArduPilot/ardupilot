@@ -343,6 +343,7 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case GUIDED:
+        guided_throttle_passthru = false;
         set_guided_WP();
         break;
 
