@@ -96,7 +96,7 @@ void loop(void)
         }
 
         if( user_input == 'r' || user_input == 'R' ) {
-			hal.scheduler->reboot();
+			hal.scheduler->reboot(false);
         }
     }
 }
