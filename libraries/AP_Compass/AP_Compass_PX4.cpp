@@ -89,13 +89,13 @@ bool AP_Compass_PX4::read(void)
     // a noop on most boards
     _sum.rotate(MAG_BOARD_ORIENTATION);
 
-    // add user selectable orientation
-    _sum.rotate((enum Rotation)_orientation.get());
-
     // override any user setting of COMPASS_EXTERNAL 
     _external.set(_is_external);
 
-    if (!_external) {
+    if (_external) {
+        // add user selectable orientation
+        _sum.rotate((enum Rotation)_orientation.get());
+    } else {
         // add in board orientation from AHRS
         _sum.rotate(_board_orientation);
     }
