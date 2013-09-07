@@ -51,6 +51,11 @@ AP_RangeFinder_LR4::AP_RangeFinder_LR4(AP_HAL::UARTDriver *uart, FilterInt16 *fi
 
 // Public Methods //////////////////////////////////////////////////////////////
 
+// do-nothing calculate scaler function to maintain compatibility with analog rangefinders
+float AP_RangeFinder_LR4::calculate_scaler(int sonar_type, float adc_refence_voltage) {
+    return 1.0f;
+}
+
 // take_reading - ask sensor to start making readings
 bool AP_RangeFinder_LR4::start_reading() {
     char tmp;
@@ -103,7 +108,7 @@ bool AP_RangeFinder_LR4::stop_reading() {
 int AP_RangeFinder_LR4::read() {
     static uint8_t pos = 0;
     static char buf[5];
-    int val = 0;
+    static int val = 0;
     char tmp;
     
     // attempt to start reading if not reading
@@ -144,10 +149,10 @@ int AP_RangeFinder_LR4::read() {
 
         if (pos >= 5) {
             // convert result from string to integer, then divide by 10 for cm
-            val = atoi(buf) / 10;
+            raw_value = atoi(buf) / 10;
 
             // ensure distance is within min and max
-            val = constrain_float(val, min_distance, max_distance);
+            val = constrain_float(raw_value, min_distance, max_distance);
 
             // apply mode (median?) filter?
             // val = _mode_filter->apply(val);
@@ -161,6 +166,6 @@ int AP_RangeFinder_LR4::read() {
         }
     }
 
-    // failed to get reading, return constant
-    return -1;
+    // failed to get reading, return previous value
+    return val;
 }

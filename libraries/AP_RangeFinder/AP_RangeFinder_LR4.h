@@ -14,6 +14,8 @@ class AP_RangeFinder_LR4 : public RangeFinder {
         bool start_reading();
         bool stop_reading();
         int read();
+
+        float calculate_scaler(int sonar_type, float adc_refence_voltage);
         
     protected:
         AP_HAL::UARTDriver* _port;
