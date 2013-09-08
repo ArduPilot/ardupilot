@@ -67,7 +67,11 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
 
     _set_filter_frequency(_mpu6000_filter);
 
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    return AP_PRODUCT_ID_PX4_V2;
+#else
     return AP_PRODUCT_ID_PX4;
+#endif
 }
 
 /*
