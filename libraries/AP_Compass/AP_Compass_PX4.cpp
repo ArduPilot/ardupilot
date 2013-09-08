@@ -44,21 +44,33 @@ bool AP_Compass_PX4::init(void)
 {
 	_mag_fd = open(MAG_DEVICE_PATH, O_RDONLY);
 	if (_mag_fd < 0) {
-        hal.console->printf("Unable to open " MAG_DEVICE_PATH);
+        hal.console->printf("Unable to open " MAG_DEVICE_PATH "\n");
         return false;
 	}
 
 	/* set the mag internal poll rate to at least 150Hz */
-	ioctl(_mag_fd, MAGIOCSSAMPLERATE, 150);
+	if (0 != ioctl(_mag_fd, MAGIOCSSAMPLERATE, 150)) {
+        hal.console->printf("Failed to setup compass sample rate\n");
+        return false;        
+    }
 
 	/* set the driver to poll at 150Hz */
-	ioctl(_mag_fd, SENSORIOCSPOLLRATE, 150);
+	if (0 != ioctl(_mag_fd, SENSORIOCSPOLLRATE, 150)) {
+        hal.console->printf("Failed to setup compass poll rate\n");
+        return false;                
+    }
 
     // average over up to 20 samples
-    ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 20);
+    if (ioctl(_mag_fd, SENSORIOCSQUEUEDEPTH, 20) != 0) {
+        hal.console->printf("Failed to setup compass queue\n");
+        return false;                
+    }
 
     // remember if the compass is external
 	_is_external = (ioctl(_mag_fd, MAGIOCGEXTERNAL, 0) > 0);
+    if (_is_external) {
+        hal.console->printf("Using external compass\n");
+    }
 
     healthy = false;
     _count = 0;
@@ -67,18 +79,26 @@ bool AP_Compass_PX4::init(void)
     // give the driver a chance to run, and gather one sample
     hal.scheduler->delay(40);
     accumulate();
-
+    if (_count == 0) {
+        hal.console->printf("Failed initial compass accumulate\n");        
+    }
     return true;
 }
 
 bool AP_Compass_PX4::read(void)
 {
+    bool was_healthy = healthy;
     // try to accumulate one more sample, so we have the latest data
     accumulate();
 
     // consider the compass healthy if we got a reading in the last 0.2s
     healthy = (hrt_absolute_time() - _last_timestamp < 200000);
     if (!healthy || _count == 0) {
+        if (was_healthy) {
+            hal.console->printf("Compass unhealthy deltat=%u _count=%u\n",
+                                (unsigned)(hrt_absolute_time() - _last_timestamp),
+                                (unsigned)_count);
+        }
         return healthy;
     }
 
