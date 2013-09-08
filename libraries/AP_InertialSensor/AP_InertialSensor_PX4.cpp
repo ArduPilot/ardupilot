@@ -60,11 +60,6 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  driver_rate);
     ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  driver_rate);
 
-    // ask for a 1 sample buffer. We're really only interested in the
-    // latest sample as the driver is doing the filtering for us
-    ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 1);
-    ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 1);
-
     _set_filter_frequency(_mpu6000_filter);
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
