@@ -523,10 +523,6 @@ static bool set_mode(uint8_t mode)
 
     // update flight mode
     if (success) {
-        if(ap.manual_attitude) {
-            // We are under manual attitude control so initialise nav parameter for when we next enter an autopilot mode
-            reset_nav_params();
-        }
         control_mode = mode;
         Log_Write_Mode(control_mode);
     }else{

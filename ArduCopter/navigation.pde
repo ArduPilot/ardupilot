@@ -89,6 +89,8 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_NONE:
             nav_initialised = true;
+            // initialise global navigation variables including wp_distance, nav_roll
+            reset_nav_params();
             break;
 
         case NAV_CIRCLE:
