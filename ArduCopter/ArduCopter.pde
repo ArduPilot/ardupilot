@@ -1431,8 +1431,11 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
 
     switch( new_yaw_mode ) {
         case YAW_HOLD:
+            yaw_initialised = true;
+            break;
         case YAW_ACRO:
             yaw_initialised = true;
+            acro_yaw_rate = 0;
             break;
         case YAW_LOOK_AT_NEXT_WP:
             if( ap.home_is_set ) {
@@ -1660,7 +1663,14 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 
     switch( new_roll_pitch_mode ) {
         case ROLL_PITCH_STABLE:
+            roll_pitch_initialised = true;
+            break;
         case ROLL_PITCH_ACRO:
+            // reset acro level rates
+            acro_roll_rate = 0;
+            acro_pitch_rate = 0;
+            roll_pitch_initialised = true;
+            break;
         case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
         case ROLL_PITCH_TOY:

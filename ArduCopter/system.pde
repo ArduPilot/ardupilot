@@ -360,10 +360,6 @@ static bool set_mode(uint8_t mode)
             set_roll_pitch_mode(ACRO_RP);
             set_throttle_mode(ACRO_THR);
             set_nav_mode(NAV_NONE);
-            // reset acro level rates
-            acro_roll_rate = 0;
-            acro_pitch_rate = 0;
-            acro_yaw_rate = 0;
             break;
 
         case STABILIZE:
