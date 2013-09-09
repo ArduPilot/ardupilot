@@ -55,7 +55,7 @@ public:
         // 130: Sensor parameters
         //
         k_param_compass_enabled = 130,
-        k_param_steering_learn,
+        k_param_steering_learn, // unused
 
         // 140: battery controls
         k_param_battery_monitoring = 140,
@@ -75,7 +75,7 @@ public:
         k_param_ch7_option,
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
-        k_param_turn_circle,
+        k_param_turn_circle, // unused
         k_param_turn_max_g,
 
         //
@@ -144,7 +144,7 @@ public:
         //
         // 240: PID Controllers
         k_param_pidNavSteer = 230,
-        k_param_pidServoSteer,
+        k_param_pidServoSteer, // unused
         k_param_pidSpeedThrottle,
 
         // high RC channels
@@ -160,6 +160,7 @@ public:
         k_param_compass,
         k_param_rcmap,
         k_param_L1_controller,
+        k_param_steerController,
 
         // 254,255: reserved
         };
@@ -204,9 +205,7 @@ public:
     AP_Int8	    ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
-    AP_Float    turn_circle;
     AP_Float    turn_max_g;
-    AP_Int8     steering_learn;
 
     // RC channels
     RC_Channel      rc_1;
@@ -270,7 +269,6 @@ public:
 
     // PID controllers
     //
-    PID         pidServoSteer;
     PID         pidSpeedThrottle;
 
     Parameters() :
@@ -296,7 +294,6 @@ public:
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-        pidServoSteer       (0.5,             0.1,             0.2,             2000),
         pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
         {}
 };

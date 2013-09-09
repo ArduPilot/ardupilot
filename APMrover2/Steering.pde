@@ -146,7 +146,6 @@ static void calc_lateral_acceleration()
 static void calc_nav_steer()
 {
     float speed = g_gps->ground_speed_cm * 0.01f;
-    float steer;
 
     if (speed < 1.0f) {
         // gps speed isn't very accurate at low speed
@@ -159,13 +158,7 @@ static void calc_nav_steer()
     // constrain to max G force
     lateral_acceleration = constrain_float(lateral_acceleration, -g.turn_max_g*GRAVITY_MSS, g.turn_max_g*GRAVITY_MSS);
 
-    // this is a linear approximation of the inverse steering
-    // equation for a rover. It returns steering as a proportion
-    // from -1 to 1
-    steer = 0.5 * lateral_acceleration * g.turn_circle / (speed*speed);
-    steer = constrain_float(steer, -1, 1);
-
-    channel_steer->servo_out = steer * 4500;
+    channel_steer->servo_out = steerController.get_steering_out(lateral_acceleration);
 }
 
 /*****************************************
@@ -269,45 +262,3 @@ static void demo_servos(uint8_t i) {
     }
 }
 
-
-/*
-  learning of TURN_CIRCLE in STEERING mode
- */
-static void steering_learning(void)
-{
-    /*
-      only do learning when we are moving at least at 2m/s, and do not
-      have saturated steering
-     */
-    if (abs(channel_steer->servo_out) >= 4490 ||
-        abs(channel_steer->servo_out) < 100 ||
-        g_gps->status() < GPS::GPS_OK_FIX_3D ||
-        g_gps->ground_speed_cm < 100) {
-        return;
-    }
-    /*
-      the idea is to slowly adjust the turning circle to bring the
-      actual and desired turn rates into line      
-     */
-    float demanded = lateral_acceleration;
-    /*
-      for Y accel use the gyro times the velocity, as that is less
-      noise sensitive, and is a more direct measure of steering rate,
-      which is what we are really trying to control
-     */
-    float actual = ins.get_gyro().z * 0.01f * g_gps->ground_speed_cm;
-    if (fabsf(actual) < 0.1f) {
-        // too little acceleration to really measure accurately
-        return;
-    }
-    float ratio = demanded/actual;
-    if (ratio > 1.0f) {
-        g.turn_circle.set(g.turn_circle * 1.0005f);
-    } else {
-        g.turn_circle.set(g.turn_circle * 0.9995f);
-    }
-    if (fabs(learning.last_saved_value - g.turn_circle) > 0.05f) {
-        learning.last_saved_value = g.turn_circle;
-        g.turn_circle.save();
-    }
-}

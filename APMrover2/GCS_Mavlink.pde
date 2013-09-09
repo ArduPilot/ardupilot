@@ -244,7 +244,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
         wp_distance,
-        g.turn_circle.get(),
+        0,
         groundspeed_error,
         nav_controller->crosstrack_error());
 }

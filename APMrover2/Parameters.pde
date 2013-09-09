@@ -414,22 +414,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(waypoint_radius,        "WP_RADIUS",        2.0f),
 
-    // @Param: TURN_CIRCLE
-    // @DisplayName: Turning circle
-    // @Description: The diameter of the turning circle in meters of the rover at low speed when wheels are turned to the maximum turn angle
-    // @Units: meters
-    // @Range: 0.5 50
-    // @Increment: 0.1
-    // @User: Standard
-	GSCALAR(turn_circle,            "TURN_CIRCLE",      1.5f),
-
-    // @Param: STEERING_LEARN
-    // @DisplayName: Steering learn enable
-    // @Description: When this option is enabled in STEERING mode the APM will try to learn the right tuning parameters for steering mode automatically while you are driving
-    // @User: Standard
-    // @Values: 0:Disabled,1:Enabled
-	GSCALAR(steering_learn,         "STEERING_LEARN",   0),
-
     // @Param: TURN_MAX_G
     // @DisplayName: Turning maximum G force
     // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
@@ -439,7 +423,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
 	GSCALAR(turn_max_g,             "TURN_MAX_G",      2.0f),
 
-	GGROUP(pidServoSteer,           "STEER2SRV_",   PID),
+    // @Group: STEER2SRV_
+    // @Path: ../libraries/APM_Control/AP_SteerController.cpp
+	GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
+
 	GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
 	// variables not in the g class which contain EEPROM saved variables

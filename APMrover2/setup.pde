@@ -506,9 +506,6 @@ static void report_gains()
 	cliSerial->printf_P(PSTR("Gains\n"));
 	print_divider();
 
-	cliSerial->printf_P(PSTR("servo steer:\n"));
-	print_PID(&g.pidServoSteer);
-
 	cliSerial->printf_P(PSTR("speed throttle:\n"));
 	print_PID(&g.pidSpeedThrottle);
 
