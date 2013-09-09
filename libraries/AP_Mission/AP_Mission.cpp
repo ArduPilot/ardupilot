@@ -82,12 +82,17 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
     temp = get_cmd_with_index(_cmd_index);
 
     if(temp.id <= MAV_CMD_NAV_LAST || _prev_index_overriden) {
-        return false;                       //no more commands for this leg
-    } else {
 
-        /*  This code is required to properly handle when there is a
-         *   conditional command prior to a DO_JUMP*/
-        if(temp.id == MAV_CMD_DO_JUMP && (temp.lat > 0 || temp.lat == -1)) {
+        return false;  //no more commands for this leg
+
+    } else if (temp.id == MAV_CMD_DO_JUMP && temp.p1 == _index[1]) {
+
+        return false;  //The DO_Jump has already been processed and is in the waypoint stack.
+
+    } else if (temp.id == MAV_CMD_DO_JUMP && (temp.lat > 0 || temp.lat == -1)) {
+        /* This is required when a condition command is prior to do_jump command, and the do_jump
+         * was not originally incorporated into the waypoint stack */
+
             uint8_t old_cmd_index = _cmd_index;
 
             if(change_waypoint_index(temp.p1)) {
@@ -95,12 +100,14 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
                     temp.lat--;
                     temp.lat=constrain_int16(temp.lat, 0, 100);
                     set_cmd_with_index(temp, old_cmd_index);
+                    return false;
                 }
-            } else { //Waypoint is already current, or do_jump was invalid.
+            } else { //do_jump was invalid.
                 _cmd_index++;
                 return false;
             }
-        }
+
+    } else {
 
         new_CMD=temp;
         _cmd_index++;
