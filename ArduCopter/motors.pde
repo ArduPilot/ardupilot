@@ -59,7 +59,7 @@ static void arm_motors_check()
         if (arming_counter == ARM_DELAY && !motors.armed()) {
             // run pre-arm-checks and display failures
             pre_arm_checks(true);
-            if(ap.pre_arm_check) {
+            if(ap.pre_arm_check && arm_checks(true)) {
                 init_arm_motors();
             }else{
                 // reset arming counter if pre-arm checks fail
@@ -327,6 +327,11 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // pass arming checks at least once
+    if (!arm_checks(display_failure)) {
+        return;
+    }
+
     // if we've gotten this far then pre arm checks have completed
     set_pre_arm_check(true);
 }
@@ -356,6 +361,27 @@ static void pre_arm_rc_checks()
 
     // if we've gotten this far rc is ok
     ap.pre_arm_rc_check = true;
+}
+
+// arm_checks - perform final checks before arming
+// always called just before arming.  Return true if ok to arm
+static bool arm_checks(bool display_failure)
+{
+    // succeed if arming checks are disabled
+    if(!g.arming_check_enabled) {
+        return true;
+    }
+
+    // check gps is ok if required
+    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good)) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
+        }
+        return false;
+    }
+
+    // if we've gotten this far all is ok
+    return true;
 }
 
 static void init_disarm_motors()
