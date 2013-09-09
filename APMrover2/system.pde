@@ -395,10 +395,6 @@ static void startup_INS_ground(bool force_accel_level)
              ins_sample_rate, 
              flash_leds);
 
-    // set a lower default filter frequency for rovers, due to very
-    // high vibration levels on rough surfaces
-    ins.set_default_filter(5);
-
     if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do

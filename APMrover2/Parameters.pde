@@ -511,4 +511,11 @@ static void load_parameters(void)
 
 	    cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
 	}
+
+    // set a lower default filter frequency for rovers, due to very
+    // high vibration levels on rough surfaces
+    ins.set_default_filter(5);
+
+    // set a more reasonable default NAVL1_PERIOD for rovers
+    L1_controller.set_default_period(6);
 }
