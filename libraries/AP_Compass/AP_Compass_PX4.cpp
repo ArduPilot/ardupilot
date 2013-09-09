@@ -48,14 +48,8 @@ bool AP_Compass_PX4::init(void)
         return false;
 	}
 
-	/* set the mag internal poll rate to at least 150Hz */
-	if (0 != ioctl(_mag_fd, MAGIOCSSAMPLERATE, 150)) {
-        hal.console->printf("Failed to setup compass sample rate\n");
-        return false;        
-    }
-
-	/* set the driver to poll at 150Hz */
-	if (0 != ioctl(_mag_fd, SENSORIOCSPOLLRATE, 150)) {
+	/* set the driver to poll at 100Hz */
+	if (0 != ioctl(_mag_fd, SENSORIOCSPOLLRATE, 100)) {
         hal.console->printf("Failed to setup compass poll rate\n");
         return false;                
     }
