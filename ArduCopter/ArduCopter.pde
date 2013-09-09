@@ -115,6 +115,9 @@
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
+#if SPRAYER == ENABLED
+#include <AC_Sprayer.h>         // crop sprayer library
+#endif
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
