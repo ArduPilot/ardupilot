@@ -170,7 +170,6 @@ steps = [
     'fly.ArduPlane',
     'logs.ArduPlane',
 
-    'build1280.APMrover2',
     'build2560.APMrover2',
     'build.APMrover2',
     'defaults.APMrover2',
@@ -225,9 +224,6 @@ def run_step(step):
 
     if step == 'build2560.ArduPlane':
         return util.build_AVR('ArduPlane', board='mega2560')
-
-    if step == 'build1280.APMrover2':
-        return util.build_AVR('APMrover2', board='mega')
 
     if step == 'build2560.APMrover2':
         return util.build_AVR('APMrover2', board='mega2560')
