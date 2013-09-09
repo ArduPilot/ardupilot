@@ -75,13 +75,14 @@
 #define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
 
 // Frame types
-#define QUAD_FRAME 0
-#define TRI_FRAME 1
-#define HEXA_FRAME 2
-#define Y6_FRAME 3
-#define OCTA_FRAME 4
-#define HELI_FRAME 5
-#define OCTA_QUAD_FRAME 6
+#define UNDEFINED_FRAME 0
+#define QUAD_FRAME 1
+#define TRI_FRAME 2
+#define HEXA_FRAME 3
+#define Y6_FRAME 4
+#define OCTA_FRAME 5
+#define HELI_FRAME 6
+#define OCTA_QUAD_FRAME 7
 
 #define PLUS_FRAME 0
 #define X_FRAME 1
