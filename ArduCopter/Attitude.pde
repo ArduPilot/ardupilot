@@ -96,24 +96,6 @@ get_stabilize_yaw(int32_t target_angle)
 }
 
 static void
-get_acro_roll(int32_t target_rate)
-{
-    target_rate = target_rate * g.acro_rp_p;
-
-    // set targets for rate controller
-    set_roll_rate_target(target_rate, BODY_FRAME);
-}
-
-static void
-get_acro_pitch(int32_t target_rate)
-{
-    target_rate = target_rate * g.acro_rp_p;
-
-    // set targets for rate controller
-    set_pitch_rate_target(target_rate, BODY_FRAME);
-}
-
-static void
 get_acro_yaw(int32_t target_rate)
 {
     target_rate = target_rate * g.acro_yaw_p;
