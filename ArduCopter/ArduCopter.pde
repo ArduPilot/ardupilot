@@ -380,8 +380,6 @@ static union {
     struct {
         uint8_t home_is_set         : 1; // 0
         uint8_t simple_mode         : 2; // 1,2  // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
-        uint8_t manual_attitude     : 1; // 3
-        uint8_t manual_throttle     : 1; // 4
 
         uint8_t pre_arm_rc_check    : 1; // 5    // true if rc input pre-arm checks have been completed successfully
         uint8_t pre_arm_check       : 1; // 6    // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
