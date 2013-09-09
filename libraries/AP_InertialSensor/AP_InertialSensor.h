@@ -131,6 +131,13 @@ public:
         _board_orientation = orientation;
     }
 
+    // override default filter frequency
+    void set_default_filter(float filter_hz) {
+        if (!_mpu6000_filter.load()) {
+            _mpu6000_filter.set(filter_hz);
+        }
+    }
+
 protected:
 
     // sensor specific init to be overwritten by descendant classes
