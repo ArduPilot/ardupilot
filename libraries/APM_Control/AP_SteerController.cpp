@@ -108,7 +108,7 @@ int32_t AP_SteerController::get_steering_out(float desired_accel)
 	if (ki_rate > 0) {
 		// only integrate if gain and time step are positive.
 		if (dt > 0) {
-		    float integrator_delta = rate_error * ki_rate * delta_time;
+		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			// prevent the integrator from increasing if steering defln demand is above the upper limit
 			if (_last_out < -45) {
                 integrator_delta = max(integrator_delta , 0);
@@ -123,7 +123,7 @@ int32_t AP_SteerController::get_steering_out(float desired_accel)
 	}
 	
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f / scaler;
+    float intLimScaled = _imax * 0.01f;
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
@@ -132,7 +132,7 @@ int32_t AP_SteerController::get_steering_out(float desired_accel)
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * _K_D * 45.0f) + _integrator + (desired_rate * kp_ff) ) * scaler;
+	_last_out = ( (rate_error * _K_D * 45.0f) + (desired_rate * kp_ff) ) * scaler + _integrator;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
