@@ -697,15 +697,87 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
 }
 
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+    // @Param: RAW_SENS
+    // @DisplayName: Raw sensors
+    // @Description: Raw sensors stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRateRawSensors,      0),
+
+    // @Param: EXT_STAT
+    // @DisplayName: Extended status
+    // @Description: Extended status stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
 	AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRateExtendedStatus,  0),
+
+    // @Param: RC_CHAN
+    // @DisplayName: RC Channel
+    // @Description: RC Channel stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRateRCChannels,      0),
+
+    // @Param: RAW_CTRL
+    // @DisplayName: Raw controllers
+    // @Description: Raw controllers stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
 	AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRateRawController,   0),
+
+    // @Param: POSITION
+    // @DisplayName: Position
+    // @Description: vehicle position stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
 	AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRatePosition,        0),
+
+    // @Param: EXTRA1
+    // @DisplayName: Extra1
+    // @Description: Extra1 stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
 	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1,          0),
+
+    // @Param: EXTRA2
+    // @DisplayName: Extra2
+    // @Description: Extra1 stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
 	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2,          0),
+
+    // @Param: EXTRA3
+    // @DisplayName: Extra3
+    // @Description: Extra3 stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
 	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3,          0),
+
+    // @Param: PARAMS
+    // @DisplayName: Parameters
+    // @Description: Parameters stream rate. This is the MAVLink target stream rate in Hz.
+    // @Units: Hz
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
 	AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRateParams,          0),
+
     AP_GROUPEND
 };
 
