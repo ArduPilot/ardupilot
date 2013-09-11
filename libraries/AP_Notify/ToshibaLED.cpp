@@ -90,6 +90,7 @@ void ToshibaLED::update_colours(void)
             case 0:
             case 3:
             case 6:
+                // red on
                 _red_des = TOSHIBA_LED_DIM;
                 _blue_des = TOSHIBA_LED_OFF;
                 _green_des = TOSHIBA_LED_OFF;
@@ -98,6 +99,7 @@ void ToshibaLED::update_colours(void)
             case 1:
             case 4:
             case 7:
+                // blue on
                 _red_des = TOSHIBA_LED_OFF;
                 _blue_des = TOSHIBA_LED_DIM;
                 _green_des = TOSHIBA_LED_OFF;
@@ -106,12 +108,42 @@ void ToshibaLED::update_colours(void)
             case 2:
             case 5:
             case 8:
+                // green on
                 _red_des = TOSHIBA_LED_OFF;
                 _blue_des = TOSHIBA_LED_OFF;
                 _green_des = TOSHIBA_LED_DIM;
                 break;
 
             case 9:
+                // all off
+                _red_des = TOSHIBA_LED_OFF;
+                _blue_des = TOSHIBA_LED_OFF;
+                _green_des = TOSHIBA_LED_OFF;
+                break;
+        }
+        // exit so no other status modify this pattern
+        return;
+    }
+
+    // failsafe patterns for radio and battery - single flash yellow
+    if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery) {
+        switch(step) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                // yellow on
+                _red_des = TOSHIBA_LED_DIM;
+                _blue_des = TOSHIBA_LED_OFF;
+                _green_des = TOSHIBA_LED_DIM;
+                break;
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+                // all off
                 _red_des = TOSHIBA_LED_OFF;
                 _blue_des = TOSHIBA_LED_OFF;
                 _green_des = TOSHIBA_LED_OFF;
@@ -145,7 +177,7 @@ void ToshibaLED::update_colours(void)
                 case 7:
                 case 8:
                 case 9:
-                    // even display blue light
+                    // all off
                     _red_des = TOSHIBA_LED_OFF;
                     _blue_des = TOSHIBA_LED_OFF;
                     _green_des = TOSHIBA_LED_OFF;
@@ -154,25 +186,25 @@ void ToshibaLED::update_colours(void)
         }
         return;
     }else{
-        // flash yellow if failing pre-arm checks
+        // double flash yellow if failing pre-arm checks
         if (!AP_Notify::flags.pre_arm_check) {
-            // flashing blue if no gps lock
             switch(step) {
                 case 0:
                 case 1:
-                case 2:
-                case 3:
                 case 4:
+                case 5:
+                    // yellow on
                     _red_des = TOSHIBA_LED_DIM;
                     _blue_des = TOSHIBA_LED_OFF;
                     _green_des = TOSHIBA_LED_DIM;
                     break;
-                case 5:
+                case 2:
+                case 3:
                 case 6:
                 case 7:
                 case 8:
                 case 9:
-                    // even display blue light
+                    // all off
                     _red_des = TOSHIBA_LED_OFF;
                     _blue_des = TOSHIBA_LED_OFF;
                     _green_des = TOSHIBA_LED_OFF;
@@ -192,6 +224,7 @@ void ToshibaLED::update_colours(void)
                     case 2:
                     case 3:
                     case 4:
+                        // blue on
                         _red_des = TOSHIBA_LED_OFF;
                         _blue_des = TOSHIBA_LED_DIM;
                         _green_des = TOSHIBA_LED_OFF;
@@ -201,7 +234,7 @@ void ToshibaLED::update_colours(void)
                     case 7:
                     case 8:
                     case 9:
-                        // even display blue light
+                        // all off
                         _red_des = TOSHIBA_LED_OFF;
                         _blue_des = TOSHIBA_LED_OFF;
                         _green_des = TOSHIBA_LED_OFF;
