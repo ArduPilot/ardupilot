@@ -517,5 +517,5 @@ static void load_parameters(void)
     ins.set_default_filter(5);
 
     // set a more reasonable default NAVL1_PERIOD for rovers
-    L1_controller.set_default_period(6);
+    L1_controller.set_default_period(11);
 }
