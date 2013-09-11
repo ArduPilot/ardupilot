@@ -267,6 +267,8 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #if SPRAYER == ENABLED
         case AUX_SWITCH_SPRAYER:
             sprayer.enable(ch_flag == AUX_SWITCH_HIGH);
+            // if we are disarmed the pilot must want to test the pump
+            sprayer.test_pump((ch_flag == AUX_SWITCH_HIGH) && !motors.armed());
             break;
 #endif
 
