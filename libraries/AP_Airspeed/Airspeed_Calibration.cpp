@@ -19,7 +19,7 @@ Airspeed_Calibration::Airspeed_Calibration(const AP_SpdHgtControl::AircraftParam
       0,   100,         0,
       0,     0,  0.000001f),
     Q0(0.01f),
-    Q1(0.000001f),
+    Q1(0.0000005f),
     state(0, 0, 0),
     DT(1),
     aparm(parms)
