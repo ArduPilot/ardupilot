@@ -2,21 +2,23 @@ ArduCopter Release Notes:
 ------------------------------------------------------------------
 ArduCopter 3.1-rc1 9-Sep-2013
 Improvements over 3.0.1
-1) Arm, Disarm, Land and Takeoff in Loiter and AltHold
-2) Improved Acro
+1) Support for Pixhawks board
+2) Arm, Disarm, Land and Takeoff in Loiter and AltHold
+3) Improved Acro
     a) ACRO_RP_P, ACRO_YAW_P parameters added to control speed of rotation
     b) ACRO_BAL_ROLL, ACRO_BAL_PITCH controls speed at which copter returns to level
     c) ACRO_TRAINER can be set to 0:disable trainer, 1:auto leveling when sticks released, 2:auto leveling and lean angle limited to ANGLE_MAX
     d) Ch7 & Ch8 switch to set ACRO_TRAINER options in-flight
-3) SPORT mode - equivalent of earth frame Acro with support for simple mode
-4) Sonar ground tracking improvements and bug fixes that reduce reaction to bad sonar data
-5) Safety improvements
+4) SPORT mode - equivalent of earth frame Acro with support for simple mode
+5) Sonar ground tracking improvements and bug fixes that reduce reaction to bad sonar data
+6) Safety improvements
       a) motors always spin when armed (speed can be controlled with MOT_SPIN_ARMED, set to 0 to disable)
       b) vehicle's maximum lean angle can be reduced (or increased) with the ANGLE_MAX parameter
       c) arming check that GPS hdop is > 2.0 (disable by setting GPS_HDOP parameter to 900)
-6) Bug fixes:
+7) Bug fixes:
       a) Optical flow sensor initialisation fix
       b) altitude control fix for Loiter_turns mission command (i.e. mission version of CIRCLE mode)
+      c) DO_SET_ROI fix (do not use "ROI")
 ------------------------------------------------------------------
 ArduCopter 3.0.1-rc2 / 3.0.1 11-Jul-2013
 Improvements over 3.0.1-rc1
