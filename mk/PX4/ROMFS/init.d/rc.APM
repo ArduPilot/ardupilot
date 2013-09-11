@@ -188,6 +188,14 @@ else
     fi
 fi
 
+# rgbled
+if rgbled start
+then
+   echo "rgbled started OK"
+else
+   echo "Failed to start rgbled driver" >> $logfile
+fi
+
 echo Starting ArduPilot
 echo Starting ArduPilot $deviceA $deviceC >> $logfile
 if ArduPilot -d $deviceA -d2 $deviceC start
