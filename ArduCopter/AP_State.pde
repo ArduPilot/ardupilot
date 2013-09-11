@@ -27,30 +27,30 @@ void set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void set_simple_mode(uint8_t t)
+void set_simple_mode(uint8_t b)
 {
-    if(ap.simple_mode != t){
-        if(t == 0){
+    if(ap.simple_mode != b){
+        if(b == 0){
             Log_Write_Event(DATA_SET_SIMPLE_OFF);
-        }else if(t == 1){
+        }else if(b == 1){
             Log_Write_Event(DATA_SET_SIMPLE_ON);
         }else{
             Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
         }
-        ap.simple_mode = t;
+        ap.simple_mode = b;
     }
 }
 
 // ---------------------------------------------
-static void set_failsafe_radio(bool mode)
+static void set_failsafe_radio(bool b)
 {
     // only act on changes
     // -------------------
-    if(ap.failsafe_radio != mode) {
+    if(ap.failsafe_radio != b) {
 
         // store the value so we don't trip the gate twice
         // -----------------------------------------------
-        ap.failsafe_radio = mode;
+        ap.failsafe_radio = b;
 
         if (ap.failsafe_radio == false) {
             // We've regained radio contact
@@ -61,6 +61,9 @@ static void set_failsafe_radio(bool mode)
             // ------------------------
             failsafe_radio_on_event();
         }
+
+        // update AP_Notify
+        AP_Notify::flags.failsafe_radio = b;
     }
 }
 
@@ -69,19 +72,20 @@ static void set_failsafe_radio(bool mode)
 void set_low_battery(bool b)
 {
     ap.low_battery = b;
+    AP_Notify::flags.failsafe_battery = b;
 }
 
 
 // ---------------------------------------------
-static void set_failsafe_gps(bool mode)
+static void set_failsafe_gps(bool b)
 {
-    ap.failsafe_gps = mode;
+    ap.failsafe_gps = b;
 }
 
 // ---------------------------------------------
-static void set_failsafe_gcs(bool mode)
+static void set_failsafe_gcs(bool b)
 {
-    ap.failsafe_gcs = mode;
+    ap.failsafe_gcs = b;
 }
 
 // ---------------------------------------------
