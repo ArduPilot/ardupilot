@@ -991,6 +991,8 @@ set_throttle_takeoff()
     if (g.pid_throttle_accel.get_integrator() < 0) {
         g.pid_throttle_accel.reset_I();
     }
+    // tell motors to do a slow start
+    motors.slow_start(true);
 }
 
 // get_throttle_accel - accelerometer based throttle controller
