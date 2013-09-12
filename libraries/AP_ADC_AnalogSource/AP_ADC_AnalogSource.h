@@ -15,6 +15,7 @@ public:
     float           read_latest(void);
     void            set_pin(uint8_t);
     float	    voltage_average();
+    float	    voltage_latest() { return voltage_average(); }
     float	    voltage_average_ratiometric() { return voltage_average(); }
 
     // stop pins not implemented on ADC yet
