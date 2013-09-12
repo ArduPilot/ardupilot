@@ -985,7 +985,7 @@ set_throttle_takeoff()
 {
     // set alt target
     if (controller_desired_alt < current_loc.alt) {
-        controller_desired_alt = current_loc.alt + 20;
+        controller_desired_alt = current_loc.alt + ALT_HOLD_TAKEOFF_JUMP;
     }
     // clear i term from acceleration controller
     if (g.pid_throttle_accel.get_integrator() < 0) {
