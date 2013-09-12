@@ -276,7 +276,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle that will be sent to the motors to keep them spinning
     // @Units: ms
-    // @Range: 0 1000
+    // @Range: 0 300
     // @Increment: 1
     // @User: Standard
     GSCALAR(throttle_min,   "THR_MIN",          MINIMUM_THROTTLE),
