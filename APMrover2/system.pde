@@ -479,11 +479,11 @@ void flash_leds(bool on)
 }
 
 /*
- * Read Vcc vs 1.1v internal reference
+ * Read board voltage in millivolts
  */
 uint16_t board_voltage(void)
 {
-    return vcc_pin->read_latest();
+    return vcc_pin->voltage_latest() * 1000;
 }
 
 static void
