@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @Param: SPIN_ARMED
     // @DisplayName: Motors always spin when armed
     // @Description: Controls whether motors always spin when armed
-    // @Values: 0:Do Not Spin,50:Slow,85:Medium,120:Fast
+    // @Values: 0:Do Not Spin,70:Slow,100:Medium,130:Fast
     AP_GROUPINFO("SPIN_ARMED", 4, AP_Motors, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
 
     AP_GROUPEND
