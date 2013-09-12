@@ -29,7 +29,7 @@ void AP_MotorsOcta::setup_motors()
     AP_MotorsMatrix::setup_motors();
 
     // hard coded config for supported frames
-    if( _frame_orientation == AP_MOTORS_PLUS_FRAME ) {
+    if( _flags.frame_orientation == AP_MOTORS_PLUS_FRAME ) {
         // plus frame set-up
         add_motor(AP_MOTORS_MOT_1,    0,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
         add_motor(AP_MOTORS_MOT_2,  180,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
@@ -40,7 +40,7 @@ void AP_MotorsOcta::setup_motors()
         add_motor(AP_MOTORS_MOT_7,  -90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7);
         add_motor(AP_MOTORS_MOT_8,   90,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
 
-    }else if( _frame_orientation == AP_MOTORS_V_FRAME ) {
+    }else if( _flags.frame_orientation == AP_MOTORS_V_FRAME ) {
         // V frame set-up
         add_motor_raw(AP_MOTORS_MOT_1,  1.0,  0.34, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7);
         add_motor_raw(AP_MOTORS_MOT_2, -1.0, -0.32, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);

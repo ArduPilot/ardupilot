@@ -62,8 +62,6 @@ AP_Motors::AP_Motors( RC_Channel* rc_roll, RC_Channel* rc_pitch, RC_Channel* rc_
     _rc_throttle(rc_throttle),
     _rc_yaw(rc_yaw),
     _speed_hz(speed_hz),
-    _armed(false),
-    _frame_orientation(0),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE)
@@ -94,8 +92,8 @@ void AP_Motors::Init()
 
 void AP_Motors::armed(bool arm)
 {
-    _armed = arm;
-    AP_Notify::flags.armed = _armed;
+    _flags.armed = arm;
+    AP_Notify::flags.armed = arm;
 };
 
 // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
@@ -123,6 +121,20 @@ void AP_Motors::throttle_pass_through()
         }
     }
 }
+
+// output - sends commands to the motors
+void AP_Motors::output()
+{
+    // update max throttle
+    update_max_throttle();
+
+    // output to motors
+    if (_flags.armed ) {
+        output_armed();
+    }else{
+        output_disarmed();
+    }
+};
 
 // setup_throttle_curve - used to linearlise thrust output by motors
 // returns true if set up successfully
@@ -159,4 +171,33 @@ bool AP_Motors::setup_throttle_curve()
     }
 
     return retval;
+}
+
+// slow_start - set to true to slew motors from current speed to maximum
+// Note: this must be set immediately before a step up in throttle
+void AP_Motors::slow_start(bool true_false)
+{
+    // set slow_start flag
+    _flags.slow_start = true;
+
+    // initialise maximum throttle to current throttle
+    _max_throttle = constrain_int16(_rc_throttle->servo_out, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
+}
+
+// update_max_throttle - updates the limits on _max_throttle if necessary taking into account slow_start_throttle flag
+void AP_Motors::update_max_throttle()
+{
+    // return max throttle if we're not slow_starting
+    if (!_flags.slow_start) {
+        return;
+    }
+
+    // increase slow start throttle
+    _max_throttle += AP_MOTOR_SLOW_START_INCREMENT;
+
+    // turn off slow start if we've reached max throttle
+    if (_max_throttle >= _rc_throttle->servo_out) {
+        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
+        _flags.slow_start = false;
+    }
 }
