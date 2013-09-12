@@ -586,7 +586,7 @@ void flash_leds(bool on)
  */
 uint16_t board_voltage(void)
 {
-    return board_vcc_analog_source->read_latest();
+    return board_vcc_analog_source->voltage_latest() * 1000;
 }
 
 //
