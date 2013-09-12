@@ -31,7 +31,7 @@ float ADCSource::voltage_latest() {
 float ADCSource::read_latest() {
     switch (_pin) {
     case ANALOG_INPUT_BOARD_VCC:
-        return 4900;
+        return 1023;
         
     case 0:
         return _sitlState->airspeed_pin_value;
