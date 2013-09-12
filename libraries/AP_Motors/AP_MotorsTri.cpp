@@ -132,20 +132,20 @@ void AP_MotorsTri::output_armed()
 
         // Tridge's stability patch
         if(motor_out[AP_MOTORS_MOT_1] > out_max) {
-            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_1] - out_max) >> 1;
-            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_1] - out_max) >> 1;
+            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_1] - out_max);
+            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_1] - out_max);
             motor_out[AP_MOTORS_MOT_1] = out_max;
         }
 
         if(motor_out[AP_MOTORS_MOT_2] > out_max) {
-            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_2] - out_max) >> 1;
-            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_2] - out_max) >> 1;
+            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_2] - out_max);
+            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_2] - out_max);
             motor_out[AP_MOTORS_MOT_2] = out_max;
         }
 
         if(motor_out[AP_MOTORS_MOT_4] > out_max) {
-            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_4] - out_max) >> 1;
-            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_4] - out_max) >> 1;
+            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_4] - out_max);
+            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_4] - out_max);
             motor_out[AP_MOTORS_MOT_4] = out_max;
         }
 
