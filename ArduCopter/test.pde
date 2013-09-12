@@ -347,7 +347,6 @@ test_motors(uint8_t argc, const Menu::arg *argv)
     motors.set_frame_orientation(g.frame_orientation);
     motors.set_min_throttle(g.throttle_min);
     motors.set_mid_throttle(g.throttle_mid);
-    motors.set_max_throttle(g.throttle_max);
 
     // enable motors
     init_rc_out();

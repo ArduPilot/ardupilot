@@ -57,7 +57,6 @@ static void init_rc_out()
     motors.set_frame_orientation(g.frame_orientation);
     motors.Init();                                              // motor initialisation
     motors.set_min_throttle(g.throttle_min);
-    motors.set_max_throttle(g.throttle_max);
 
     for(uint8_t i = 0; i < 5; i++) {
         delay(20);
