@@ -6,7 +6,6 @@
 #include <AP_HAL_PX4.h>
 #include <pthread.h>
 #include <uORB/uORB.h>
-#include <uORB/topics/battery_status.h>
 
 #define PX4_ANALOG_MAX_CHANNELS 16
 
@@ -17,6 +16,8 @@
 #define PX4_ANALOG_ORB_BATTERY_CURRENT_PIN     101
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define PX4_ANALOG_VCC_5V_PIN                4
+#define PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN       102
+#define PX4_ANALOG_ORB_SERVO_VRSSI_PIN         103
 #endif
 
 class PX4::PX4AnalogSource : public AP_HAL::AnalogSource {
@@ -57,7 +58,9 @@ public:
 private:
     int _adc_fd;
     int _battery_handle;
+    int _servorail_handle;
     uint64_t _battery_timestamp;
+    uint64_t _servorail_timestamp;
     PX4::PX4AnalogSource* _channels[PX4_ANALOG_MAX_CHANNELS];
     uint32_t _last_run;
 };

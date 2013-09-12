@@ -13,6 +13,8 @@
 #include <nuttx/analog/adc.h>
 #include <nuttx/config.h>
 #include <arch/board/board.h>
+#include <uORB/topics/battery_status.h>
+#include <uORB/topics/servorail_status.h>
 
 #define ANLOGIN_DEBUGGING 0
 
@@ -163,7 +165,8 @@ void PX4AnalogIn::init(void* machtnichts)
     if (_adc_fd == -1) {
         hal.scheduler->panic("Unable to open " ADC_DEVICE_PATH);
 	}
-    _battery_handle = orb_subscribe(ORB_ID(battery_status));
+    _battery_handle   = orb_subscribe(ORB_ID(battery_status));
+    _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
 }
 
 /*
@@ -208,13 +211,34 @@ void PX4AnalogIn::_timer_tick(void)
             for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
                 PX4::PX4AnalogSource *c = _channels[j];
                 if (c == NULL) continue;
-                if (c->_pin == PX4_ANALOG_BATTERY_VOLTAGE_PIN) {
+                if (c->_pin == PX4_ANALOG_ORB_BATTERY_VOLTAGE_PIN) {
                     c->_add_value(battery.voltage_v / PX4_VOLTAGE_SCALING);
                 }
-                if (c->_pin == PX4_ANALOG_BATTERY_CURRENT_PIN) {
+                if (c->_pin == PX4_ANALOG_ORB_BATTERY_CURRENT_PIN) {
                     // scale it back to voltage, knowing that the
                     // px4io code scales by 90.0/5.0
                     c->_add_value(battery.current_a * (5.0f/90.0f) / PX4_VOLTAGE_SCALING);
+                }
+            }
+        }
+    }
+#endif
+
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+    // check for new servorail data on FMUv2
+    if (_servorail_handle != -1) {
+        struct servorail_status_s servorail;
+        if (orb_copy(ORB_ID(servorail_status), _servorail_handle, &servorail) == OK &&
+            servorail.timestamp != _servorail_timestamp) {
+            _servorail_timestamp = servorail.timestamp;
+            for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
+                PX4::PX4AnalogSource *c = _channels[j];
+                if (c == NULL) continue;
+                if (c->_pin == PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN) {
+                    c->_add_value(servorail.voltage_v / PX4_VOLTAGE_SCALING);
+                }
+                if (c->_pin == PX4_ANALOG_ORB_SERVO_VRSSI_PIN) {
+                    c->_add_value(servorail.rssi_v / PX4_VOLTAGE_SCALING);
                 }
             }
         }
