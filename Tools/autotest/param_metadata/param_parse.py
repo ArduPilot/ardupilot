@@ -107,7 +107,7 @@ for library in libraries:
             debug("\n Processing file '%s'" % path)
             if path.endswith('.pde'):
                 if len(vehicles) != 1:
-                    error("Unable to handle multiple vehicles with .pde library")
+                    print("Unable to handle multiple vehicles with .pde library")
                     continue
                 libraryfname = os.path.join(vehicles[0].path, path)
             else:
