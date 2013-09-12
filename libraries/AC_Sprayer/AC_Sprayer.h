@@ -74,7 +74,7 @@ private:
     AP_Float        _speed_min;             // minimum speed in cm/s above which the sprayer will be started
 
     // flag bitmask
-    struct flag_type {
+    struct sprayer_flags_type {
         uint8_t spraying    : 1;            // 1 if we are currently spraying
         uint8_t testing     : 1;            // 1 if we are testing the sprayer and should output a minimum value
     } _flags;
