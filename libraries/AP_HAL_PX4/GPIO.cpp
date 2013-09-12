@@ -29,7 +29,7 @@ PX4GPIO::PX4GPIO()
 
 void PX4GPIO::init()
 {
-#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     _led_fd = open(LED_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
         hal.scheduler->panic("Unable to open " LED_DEVICE_PATH);
@@ -46,7 +46,7 @@ void PX4GPIO::init()
         hal.scheduler->panic("Unable to open /dev/tone_alarm");
     }
 
-#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
     if (_gpio_fmu_fd == -1) {
         hal.scheduler->panic("Unable to open GPIO");
@@ -119,7 +119,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 {
     switch (pin) {
 
-#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
         case HAL_GPIO_A_LED_PIN:    // Arming LED
             if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
@@ -189,33 +189,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 
 void PX4GPIO::toggle(uint8_t pin)
 {
-    switch (pin) {
-
-        case HAL_GPIO_A_LED_PIN:    // Arming LED
-            ioctl(_led_fd, LED_OFF, LED_RED);
-            ioctl(_led_fd, LED_ON, LED_RED);
-            break;
-
-        case HAL_GPIO_B_LED_PIN:    // not used yet 
-            break;
-
-        case HAL_GPIO_C_LED_PIN:    // GPS LED 
-            ioctl(_led_fd, LED_OFF, LED_BLUE);
-            ioctl(_led_fd, LED_ON, LED_BLUE);
-            break;
-
-        case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
-            ioctl(_tone_alarm_fd, TONE_SET_ALARM, 3);    // Alarm on !! 
-            ioctl(_tone_alarm_fd, TONE_SET_ALARM, 0);    // Alarm off !! 
-            break;
-
-#ifdef CONFIG_ARCH_BOARD_PX4IO_V1
-        case PX4_GPIO_EXT_RELAY_PIN: // Ext Relay 
-            ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1);
-            ioctl(_gpio_fd, GPIO_SET, GPIO_EXT_1);
-            break;
-#endif
-    }
+    write(pin, !read(pin));
 }
 
 /* Alternative interface: */

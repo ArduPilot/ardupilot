@@ -17,6 +17,7 @@
 #include <poll.h>
 
 #include "UARTDriver.h"
+#include "AnalogIn.h"
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
@@ -206,6 +207,9 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
     if (_failsafe != NULL) {
         _failsafe(tnow);
     }
+
+    // process analog input
+    ((PX4AnalogIn *)hal.analogin)->_timer_tick();
 
     _in_timer_proc = false;
 }

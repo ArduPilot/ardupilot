@@ -11,22 +11,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <nuttx/analog/adc.h>
+#include <nuttx/config.h>
+#include <arch/board/board.h>
 
 #define ANLOGIN_DEBUGGING 0
 
-// the airspeed port has some additional scaling applied to allow it
-// to go above 3.3V. This value was found by checking the ADC output
-// for a range of known inputs from 1.3V to 5.0V
-#define PX4_AIRSPEED_VOLTAGE_SCALING (6.76f/4096.0f)
-
-// the FMU battery mon port has some additional scaling to make it
-// safe for up to 18.68V.
-#define PX4_FMU_BATTERY_VOLTAGE_SCALING (18.68f/4096.0f)
-
-// pin4 in the SPI port is analog input 13, marked as analog3 on the
-// PX4IO schematic v1.3, and is scaled quite strangely
-#define PX4_ANALOG3_VOLTAGE_SCALING (16.88f/4096.0f)
-
+// base voltage scaling for 12 bit 3.3V ADC
 #define PX4_VOLTAGE_SCALING (3.3f/4096.0f)
 
 #if ANLOGIN_DEBUGGING
@@ -37,13 +27,39 @@
 
 extern const AP_HAL::HAL& hal;
 
-using namespace PX4;
+/*
+  scaling table between ADC count and actual input voltage, to account
+  for voltage dividers on the board. 
+ */
+static const struct {
+    uint8_t pin;
+    float scaling;
+} pin_scaling[] = {
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+    // PX4 has 4 FMU analog input pins
+    { 10, (5.7*3.3)/4096 }, // FMU battery on multi-connector pin 5,
+                            // 5.7:1 scaling
+    { 11,  6.6f/4096  }, // analog airspeed input, 2:1 scaling
+    { 12,  3.3f/4096  }, // analog2, on SPI port pin 3
+    { 13, 16.8f/4096  }, // analog3, on SPI port pin 4
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    { 2,   3.3f/4096  },    // 3DR Brick voltage, usually 10.1:1
+                            // scaled from battery voltage
+    { 3,   3.3f/4096  },    // 3DR Brick current, usually 17:1 scaled
+                            // for APM_PER_VOLT
+    { 4,   6.6f/4096  },    // VCC 5V rail sense
+    { 10,  3.3f/4096  },    // spare ADC
+    { 11,  3.3f/4096  },    // spare ADC
+    { 12,  3.3f/4096  },    // spare ADC
+    { 13,  3.3f/4096  },    // AUX ADC pin 4
+    { 14,  3.3f/4096  },    // AUX ADC pin 3
+    { 15,  6.6f/4096  },    // analog airspeed sensor, 2:1 scaling
+#else
+#error "Unknown board type for AnalogIn scaling"
+#endif
+};
 
-int PX4AnalogIn::_adc_fd;
-uint32_t PX4AnalogIn::_last_run;
-PX4AnalogSource* PX4AnalogIn::_channels[PX4_ANALOG_MAX_CHANNELS] = {};
-int PX4AnalogIn::_battery_handle = -1;
-uint64_t PX4AnalogIn::_battery_timestamp;
+using namespace PX4;
 
 PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
@@ -52,6 +68,11 @@ PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
     _sum_count(0),
     _sum_value(0)
 {
+#ifdef PX4_ANALOG_VCC_5V_PIN
+    if (_pin == ANALOG_INPUT_BOARD_VCC) {
+        _pin = PX4_ANALOG_VCC_5V_PIN;
+    }
+#endif
 }
 
 float PX4AnalogSource::read_average() 
@@ -73,20 +94,35 @@ float PX4AnalogSource::read_latest()
 }
 
 /*
+  return scaling from ADC count to Volts
+ */
+float PX4AnalogSource::_pin_scaler(void)
+{
+    float scaling = PX4_VOLTAGE_SCALING;
+    uint8_t num_scalings = sizeof(pin_scaling)/sizeof(pin_scaling[0]);
+    for (uint8_t i=0; i<num_scalings; i++) {
+        if (pin_scaling[i].pin == _pin) {
+            scaling = pin_scaling[i].scaling;
+            break;
+        }
+    }
+    return scaling;
+}
+
+/*
   return voltage in Volts
  */
 float PX4AnalogSource::voltage_average()
 {
-    if (_pin == PX4_ANALOG_FMU_BATTERY) {
-        return PX4_FMU_BATTERY_VOLTAGE_SCALING * read_average();
-    }
-    if (_pin == PX4_ANALOG_AIRSPEED_PIN) {
-        return PX4_AIRSPEED_VOLTAGE_SCALING * read_average();
-    }
-    if (_pin == PX4_ANALOG_ANALOG3_PIN) {
-        return PX4_ANALOG3_VOLTAGE_SCALING * read_average();
-    }
-    return PX4_VOLTAGE_SCALING * read_average();
+    return _pin_scaler() * read_average();
+}
+
+/*
+  return voltage in Volts
+ */
+float PX4AnalogSource::voltage_latest()
+{
+    return _pin_scaler() * read_latest();
 }
 
 void PX4AnalogSource::set_pin(uint8_t pin)
@@ -103,6 +139,9 @@ void PX4AnalogSource::set_pin(uint8_t pin)
     hal.scheduler->resume_timer_procs();
 }
 
+/*
+  apply a reading in ADC counts
+ */
 void PX4AnalogSource::_add_value(float v)
 {
     _latest_value = v;
@@ -125,15 +164,15 @@ void PX4AnalogIn::init(void* machtnichts)
         hal.scheduler->panic("Unable to open " ADC_DEVICE_PATH);
 	}
     _battery_handle = orb_subscribe(ORB_ID(battery_status));
-    hal.scheduler->register_timer_process(_analogin_timer);
 }
 
 /*
   called at 1kHz
  */
-void PX4AnalogIn::_analogin_timer(uint32_t now)
+void PX4AnalogIn::_timer_tick(void)
 {
     // read adc at 100Hz
+    uint32_t now = hal.scheduler->micros();
     uint32_t delta_t = now - _last_run;
     if (delta_t < 10000) {
         return;
@@ -159,7 +198,8 @@ void PX4AnalogIn::_analogin_timer(uint32_t now)
         }
     }
 
-    // check for new battery data
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+    // check for new battery data on FMUv1
     if (_battery_handle != -1) {
         struct battery_status_s battery;
         if (orb_copy(ORB_ID(battery_status), _battery_handle, &battery) == OK &&
@@ -179,6 +219,8 @@ void PX4AnalogIn::_analogin_timer(uint32_t now)
             }
         }
     }
+#endif
+
 }
 
 AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin) 
