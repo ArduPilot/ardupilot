@@ -303,7 +303,7 @@ static void pre_arm_checks(bool display_failure)
     }
 #endif
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     // check board voltage
     if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
         if (display_failure) {
