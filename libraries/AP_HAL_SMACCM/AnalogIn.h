@@ -11,6 +11,7 @@ public:
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    float voltage_latest();
     float voltage_average_ratiometric() { return voltage_average(); }
     void set_stop_pin(uint8_t p) {}
     void set_settle_time(uint16_t settle_time_ms) {}
