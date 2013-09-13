@@ -93,6 +93,7 @@ public:
         k_param_takeoff_throttle_delay,
         k_param_skip_gyro_cal,
         k_param_auto_fbw_steer,
+        k_param_waypoint_max_radius,
 
         // 110: Telemetry control
         //
@@ -295,6 +296,7 @@ public:
     AP_Int8 command_total;
     AP_Int8 command_index;
     AP_Int16 waypoint_radius;
+    AP_Int16 waypoint_max_radius;
     AP_Int16 loiter_radius;
 
 #if GEOFENCE_ENABLED == ENABLED

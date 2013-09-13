@@ -389,6 +389,15 @@ static bool verify_nav_wp()
     hold_course_cd = -1;
 
     nav_controller->update_waypoint(prev_WP, next_WP);
+
+    // see if the user has specified a maximum distance to waypoint
+    if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {
+        if (location_passed_point(current_loc, prev_WP, next_WP)) {
+            // this is needed to ensure completion of the waypoint
+            prev_WP = current_loc;
+        }
+        return false;
+    }
     
     if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
