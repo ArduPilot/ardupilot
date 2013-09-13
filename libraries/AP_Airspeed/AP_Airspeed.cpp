@@ -42,7 +42,11 @@ extern const AP_HAL::HAL& hal;
  #include <systemlib/airspeed.h>
  #include <drivers/drv_airspeed.h>
  #include <uORB/topics/differential_pressure.h>
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
  #define ARSPD_DEFAULT_PIN 11
+#else
+ #define ARSPD_DEFAULT_PIN 15
+#endif
 #else
  #define ARSPD_DEFAULT_PIN 0
 #endif
@@ -76,7 +80,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
 
     // @Param: PIN
     // @DisplayName: Airspeed pin
-    // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 65 on the PX4 for an EagleTree or MEAS I2C airspeed sensor.
+    // @Description: The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 15 on the Pixhawk for the analog airspeed port. Set to 65 on the PX4 or Pixhawk for an EagleTree or MEAS I2C airspeed sensor.
     // @User: Advanced
     AP_GROUPINFO("PIN",  4, AP_Airspeed, _pin, ARSPD_DEFAULT_PIN),
 
@@ -161,6 +165,7 @@ float AP_Airspeed::get_pressure(void)
     if (_source == NULL) {
         return 0;
     }
+    _source->set_pin(_pin);
     _last_pressure = _source->voltage_average_ratiometric() * SCALING_OLD_CALIBRATION;
     return _last_pressure;
 }
