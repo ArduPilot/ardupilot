@@ -25,12 +25,13 @@
 #include <AP_Math.h>
 #include <AP_AHRS.h>
 #include <AP_Param.h>
+#include <AP_Vehicle.h>
 #include <AP_SpdHgtControl.h>
 #include <DataFlash.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-	AP_TECS(AP_AHRS &ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
+	AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
 		_ahrs(ahrs),
 		aparm(parms)
 		{
@@ -97,7 +98,7 @@ private:
 	// reference to the AHRS object
     AP_AHRS &_ahrs;
 
-	const AP_SpdHgtControl::AircraftParameters &aparm;
+	const AP_Vehicle::FixedWing &aparm;
 
 	// TECS tuning parameters
 	AP_Float _hgtCompFiltOmega;
