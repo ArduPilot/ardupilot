@@ -26,7 +26,7 @@
 
 #include <DataFlash.h>
 #include <APM_Control.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
