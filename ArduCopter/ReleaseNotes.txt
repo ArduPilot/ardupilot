@@ -12,13 +12,15 @@ Improvements over 3.0.1
 4) SPORT mode - equivalent of earth frame Acro with support for simple mode
 5) Sonar ground tracking improvements and bug fixes that reduce reaction to bad sonar data
 6) Safety improvements
-      a) motors always spin when armed (speed can be controlled with MOT_SPIN_ARMED, set to 0 to disable)
-      b) vehicle's maximum lean angle can be reduced (or increased) with the ANGLE_MAX parameter
-      c) arming check that GPS hdop is > 2.0 (disable by setting GPS_HDOP parameter to 900)
+    a) motors always spin when armed (speed can be controlled with MOT_SPIN_ARMED, set to 0 to disable)
+    b) vehicle's maximum lean angle can be reduced (or increased) with the ANGLE_MAX parameter
+    c) arming check that GPS hdop is > 2.0 (disable by setting GPS_HDOP parameter to 900)
+    d) slow take-off in AUTO, LOITER, ALTHOLD to reduce chance of motor/esc burn-out on large copters
 7) Bug fixes:
-      a) Optical flow sensor initialisation fix
-      b) altitude control fix for Loiter_turns mission command (i.e. mission version of CIRCLE mode)
-      c) DO_SET_ROI fix (do not use "ROI")
+    a) Optical flow sensor initialisation fix
+    b) altitude control fix for Loiter_turns mission command (i.e. mission version of CIRCLE mode)
+    c) DO_SET_ROI fix (do not use "ROI")
+8) Distribute Loiter & Navigation calcs over 4 cycles to reduce impact on a single 100hz loop
 ------------------------------------------------------------------
 ArduCopter 3.0.1-rc2 / 3.0.1 11-Jul-2013
 Improvements over 3.0.1-rc1
