@@ -5,7 +5,7 @@
 
 #include <AP_AHRS.h>
 #include <AP_Common.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 #include <math.h>
 
 class AP_SteerController {
