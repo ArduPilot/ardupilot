@@ -1054,206 +1054,222 @@ static void update_GPS(void)
     calc_gndspeed_undershoot();
 }
 
+/*
+  main handling for AUTO mode
+ */
+static void handle_auto_mode(void)
+{
+    switch(nav_command_ID) {
+    case MAV_CMD_NAV_TAKEOFF:
+        if (hold_course_cd == -1) {
+            // we don't yet have a heading to hold - just level
+            // the wings until we get up enough speed to get a GPS heading
+            nav_roll_cd = 0;
+        } else {
+            calc_nav_roll();
+            // during takeoff use the level flight roll limit to
+            // prevent large course corrections
+            nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+        }
+        
+        if (airspeed.use()) {
+            calc_nav_pitch();
+            if (nav_pitch_cd < takeoff_pitch_cd)
+                nav_pitch_cd = takeoff_pitch_cd;
+        } else {
+            nav_pitch_cd = (g_gps->ground_speed_cm / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
+        }
+        
+        // max throttle for takeoff
+        channel_throttle->servo_out = aparm.throttle_max;
+        break;
+
+    case MAV_CMD_NAV_LAND:
+        calc_nav_roll();
+        
+        if (land_complete) {
+            // during final approach constrain roll to the range
+            // allowed for level flight
+            nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+            
+            // hold pitch constant in final approach
+            nav_pitch_cd = g.land_pitch_cd;
+        } else {
+            calc_nav_pitch();
+            if (!airspeed.use()) {
+                // when not under airspeed control, don't allow
+                // down pitch in landing
+                nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
+            }
+        }
+        calc_throttle();
+        
+        if (land_complete) {
+            // we are in the final stage of a landing - force
+            // zero throttle
+            channel_throttle->servo_out = 0;
+        }
+        break;
+        
+    default:
+        // we are doing normal AUTO flight, the special cases
+        // are for takeoff and landing
+        hold_course_cd = -1;
+        land_complete = false;
+        calc_nav_roll();
+        calc_nav_pitch();
+        calc_throttle();
+        break;
+    }
+}
+
+/*
+  main flight mode dependent update code 
+ */
 static void update_flight_mode(void)
 {
-    if(control_mode == AUTO) {
+    enum FlightMode effective_mode = control_mode;
+    if (control_mode == AUTO && g.auto_fbw_steer) {
+        effective_mode = FLY_BY_WIRE_A;
+    }
 
-        switch(nav_command_ID) {
-        case MAV_CMD_NAV_TAKEOFF:
-            if (hold_course_cd == -1) {
-                // we don't yet have a heading to hold - just level
-                // the wings until we get up enough speed to get a GPS heading
-                nav_roll_cd = 0;
-            } else {
-                calc_nav_roll();
-                // during takeoff use the level flight roll limit to
-                // prevent large course corrections
-				nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
-            }
-
-            if (airspeed.use()) {
-                calc_nav_pitch();
-                if (nav_pitch_cd < takeoff_pitch_cd)
-                    nav_pitch_cd = takeoff_pitch_cd;
-            } else {
-                nav_pitch_cd = (g_gps->ground_speed_cm / (float)g.airspeed_cruise_cm) * takeoff_pitch_cd;
-                nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, takeoff_pitch_cd);
-            }
-
-            // max throttle for takeoff
-            channel_throttle->servo_out = aparm.throttle_max;
-
-            break;
-
-        case MAV_CMD_NAV_LAND:
-            calc_nav_roll();
-
-            if (land_complete) {
-                // during final approach constrain roll to the range
-                // allowed for level flight
-                nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
-
-                // hold pitch constant in final approach
-                nav_pitch_cd = g.land_pitch_cd;
-            } else {
-                calc_nav_pitch();
-                if (!airspeed.use()) {
-                    // when not under airspeed control, don't allow
-                    // down pitch in landing
-                    nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
-                }
-            }
-            calc_throttle();
-
-            if (land_complete) {
-                // we are in the final stage of a landing - force
-                // zero throttle
-                channel_throttle->servo_out = 0;
-            }
-            break;
-
-        default:
-            // we are doing normal AUTO flight, the special cases
-            // are for takeoff and landing
-            hold_course_cd = -1;
-            land_complete = false;
-            calc_nav_roll();
-            calc_nav_pitch();
-            calc_throttle();
-            break;
-        }
-    }else{
+    if (effective_mode != AUTO) {
         // hold_course is only used in takeoff and landing
         hold_course_cd = -1;
+    }
 
-        switch(control_mode) {
-        case RTL:
-        case LOITER:
-        case GUIDED:
-            calc_nav_roll();
-            calc_nav_pitch();
-            calc_throttle();
-            break;
+    switch (effective_mode) 
+    {
+    case AUTO:
+        handle_auto_mode();
+        break;
 
-        case TRAINING: {
-            training_manual_roll = false;
-            training_manual_pitch = false;
-
-            // if the roll is past the set roll limit, then
-            // we set target roll to the limit
-            if (ahrs.roll_sensor >= g.roll_limit_cd) {
-                nav_roll_cd = g.roll_limit_cd;
-            } else if (ahrs.roll_sensor <= -g.roll_limit_cd) {
-                nav_roll_cd = -g.roll_limit_cd;                
-            } else {
-                training_manual_roll = true;
-                nav_roll_cd = 0;
-            }
-
-            // if the pitch is past the set pitch limits, then
-            // we set target pitch to the limit
-            if (ahrs.pitch_sensor >= aparm.pitch_limit_max_cd) {
-                nav_pitch_cd = aparm.pitch_limit_max_cd;
-            } else if (ahrs.pitch_sensor <= aparm.pitch_limit_min_cd) {
-                nav_pitch_cd = aparm.pitch_limit_min_cd;
-            } else {
-                training_manual_pitch = true;
-                nav_pitch_cd = 0;
-            }
-            if (inverted_flight) {
-                nav_pitch_cd = -nav_pitch_cd;
-            }
-            break;
+    case RTL:
+    case LOITER:
+    case GUIDED:
+        calc_nav_roll();
+        calc_nav_pitch();
+        calc_throttle();
+        break;
+        
+    case TRAINING: {
+        training_manual_roll = false;
+        training_manual_pitch = false;
+        
+        // if the roll is past the set roll limit, then
+        // we set target roll to the limit
+        if (ahrs.roll_sensor >= g.roll_limit_cd) {
+            nav_roll_cd = g.roll_limit_cd;
+        } else if (ahrs.roll_sensor <= -g.roll_limit_cd) {
+            nav_roll_cd = -g.roll_limit_cd;                
+        } else {
+            training_manual_roll = true;
+            nav_roll_cd = 0;
         }
-
-        case ACRO: {
-            // handle locked/unlocked control
-            if (acro_state.locked_roll) {
-                nav_roll_cd = acro_state.locked_roll_err;
-            } else {
-                nav_roll_cd = ahrs.roll_sensor;
-            }
-            if (acro_state.locked_pitch) {
-                nav_pitch_cd = acro_state.locked_pitch_cd;
-            } else {
-                nav_pitch_cd = ahrs.pitch_sensor;
-            }
-            break;
+        
+        // if the pitch is past the set pitch limits, then
+        // we set target pitch to the limit
+        if (ahrs.pitch_sensor >= aparm.pitch_limit_max_cd) {
+            nav_pitch_cd = aparm.pitch_limit_max_cd;
+        } else if (ahrs.pitch_sensor <= aparm.pitch_limit_min_cd) {
+            nav_pitch_cd = aparm.pitch_limit_min_cd;
+        } else {
+            training_manual_pitch = true;
+            nav_pitch_cd = 0;
         }
-
-        case FLY_BY_WIRE_A: {
-            // set nav_roll and nav_pitch using sticks
-            nav_roll_cd  = channel_roll->norm_input() * g.roll_limit_cd;
-            nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
-            float pitch_input = channel_pitch->norm_input();
-            if (pitch_input > 0) {
-                nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
-            } else {
-                nav_pitch_cd = -(pitch_input * aparm.pitch_limit_min_cd);
-            }
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
-            if (inverted_flight) {
-                nav_pitch_cd = -nav_pitch_cd;
-            }
-            break;
+        if (inverted_flight) {
+            nav_pitch_cd = -nav_pitch_cd;
         }
+        break;
+    }
 
-        case FLY_BY_WIRE_B:
-            // Thanks to Yury MonZon for the altitude limit code!
+    case ACRO: {
+        // handle locked/unlocked control
+        if (acro_state.locked_roll) {
+            nav_roll_cd = acro_state.locked_roll_err;
+        } else {
+            nav_roll_cd = ahrs.roll_sensor;
+        }
+        if (acro_state.locked_pitch) {
+            nav_pitch_cd = acro_state.locked_pitch_cd;
+        } else {
+            nav_pitch_cd = ahrs.pitch_sensor;
+        }
+        break;
+    }
+
+    case FLY_BY_WIRE_A: {
+        // set nav_roll and nav_pitch using sticks
+        nav_roll_cd  = channel_roll->norm_input() * g.roll_limit_cd;
+        nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
+        float pitch_input = channel_pitch->norm_input();
+        if (pitch_input > 0) {
+            nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
+        } else {
+            nav_pitch_cd = -(pitch_input * aparm.pitch_limit_min_cd);
+        }
+        nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
+        if (inverted_flight) {
+            nav_pitch_cd = -nav_pitch_cd;
+        }
+        break;
+    }
+
+    case FLY_BY_WIRE_B:
+        // Thanks to Yury MonZon for the altitude limit code!
+        nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
+        update_fbwb_speed_height();
+        break;
+        
+    case CRUISE:
+        /*
+          in CRUISE mode we use the navigation code to control
+          roll when heading is locked. Heading becomes unlocked on
+          any aileron or rudder input
+        */
+        if ((channel_roll->control_in != 0 ||
+             channel_rudder->control_in != 0)) {                
+            cruise_state.locked_heading = false;
+            cruise_state.lock_timer_ms = 0;
+        }                 
+        
+        if (!cruise_state.locked_heading) {
             nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
-            update_fbwb_speed_height();
-            break;
-
-        case CRUISE:
-            /*
-              in CRUISE mode we use the navigation code to control
-              roll when heading is locked. Heading becomes unlocked on
-              any aileron or rudder input
-             */
-            if ((channel_roll->control_in != 0 ||
-                 channel_rudder->control_in != 0)) {                
-                cruise_state.locked_heading = false;
-                cruise_state.lock_timer_ms = 0;
-            }                 
-
-            if (!cruise_state.locked_heading) {
-                nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
-            } else {
-                calc_nav_roll();
-            }
-            update_fbwb_speed_height();
-            break;
-
-        case STABILIZE:
-            nav_roll_cd        = 0;
-            nav_pitch_cd       = 0;
-            // throttle is passthrough
-            break;
-
-        case CIRCLE:
-            // we have no GPS installed and have lost radio contact
-            // or we just want to fly around in a gentle circle w/o GPS,
-            // holding altitude at the altitude we set when we
-            // switched into the mode
-            nav_roll_cd  = g.roll_limit_cd / 3;
-            calc_nav_pitch();
-            calc_throttle();
-            break;
-
-        case MANUAL:
-            // servo_out is for Sim control only
-            // ---------------------------------
-            channel_roll->servo_out = channel_roll->pwm_to_angle();
-            channel_pitch->servo_out = channel_pitch->pwm_to_angle();
-            channel_rudder->servo_out = channel_rudder->pwm_to_angle();
-            break;
-            //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
-
-        case INITIALISING:
-        case AUTO:
-            // handled elsewhere
-            break;
+        } else {
+            calc_nav_roll();
         }
+        update_fbwb_speed_height();
+        break;
+        
+    case STABILIZE:
+        nav_roll_cd        = 0;
+        nav_pitch_cd       = 0;
+        // throttle is passthrough
+        break;
+        
+    case CIRCLE:
+        // we have no GPS installed and have lost radio contact
+        // or we just want to fly around in a gentle circle w/o GPS,
+        // holding altitude at the altitude we set when we
+        // switched into the mode
+        nav_roll_cd  = g.roll_limit_cd / 3;
+        calc_nav_pitch();
+        calc_throttle();
+        break;
+
+    case MANUAL:
+        // servo_out is for Sim control only
+        // ---------------------------------
+        channel_roll->servo_out = channel_roll->pwm_to_angle();
+        channel_pitch->servo_out = channel_pitch->pwm_to_angle();
+        channel_rudder->servo_out = channel_rudder->pwm_to_angle();
+        break;
+        //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
+        
+    case INITIALISING:
+        // handled elsewhere
+        break;
     }
 }
 

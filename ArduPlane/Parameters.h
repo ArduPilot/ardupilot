@@ -92,6 +92,7 @@ public:
         k_param_relay,
         k_param_takeoff_throttle_delay,
         k_param_skip_gyro_cal,
+        k_param_auto_fbw_steer,
 
         // 110: Telemetry control
         //
@@ -281,6 +282,7 @@ public:
 
     // skip gyro calibration
     AP_Int8  skip_gyro_cal;
+    AP_Int8  auto_fbw_steer;
 
     // Estimation
     //
