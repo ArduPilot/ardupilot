@@ -28,7 +28,7 @@
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Notify.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 
 
 
