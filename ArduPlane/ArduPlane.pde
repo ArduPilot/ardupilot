@@ -67,6 +67,7 @@
 #include <AP_L1_Control.h>
 #include <AP_RCMapper.h>        // RC input mapping library
 
+#include <AP_Vehicle.h>
 #include <AP_SpdHgtControl.h>
 #include <AP_TECS.h>
 
@@ -81,8 +82,8 @@
 // Local modules
 #include "defines.h"
 
-// key aircraft parameters passed to the speed/height controller
-static AP_SpdHgtControl::AircraftParameters aparm;
+// key aircraft parameters passed to multiple libraries
+static AP_Vehicle::FixedWing aparm;
 
 #include "Parameters.h"
 #include "GCS.h"
