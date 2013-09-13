@@ -38,7 +38,6 @@ void setup()
     motors.set_update_rate(490);
     motors.set_frame_orientation(AP_MOTORS_X_FRAME);
     motors.set_min_throttle(130);
-    motors.set_max_throttle(850);
     motors.Init();      // initialise motors
 
     if (rc3.radio_min == 0) {
