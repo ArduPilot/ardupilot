@@ -293,10 +293,6 @@ static void startup_ground(void)
     ahrs2.set_fast_gains(true);
 #endif
 
-    // when we re-calibrate the gyros,
-    // all previous I values are invalid
-    reset_I_all();
-
     // set landed flag
     set_land_complete(true);
 }
