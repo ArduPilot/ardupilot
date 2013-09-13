@@ -23,7 +23,7 @@
 #include <SITL.h>
 #include <AP_Buffer.h>
 #include <AP_Notify.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 #include <DataFlash.h>
 
 #include <AP_HAL_AVR.h>
