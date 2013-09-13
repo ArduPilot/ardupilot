@@ -30,7 +30,7 @@
 #include <Filter.h>
 #include <AP_Buffer.h>
 #include <AP_Airspeed.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 #include <AP_Notify.h>
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
@@ -43,7 +43,7 @@ AP_ADC_ADS7844 apm1_adc;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-static AP_SpdHgtControl::AircraftParameters aparm;
+static AP_Vehicle::FixedWing aparm;
 
 AP_Airspeed airspeed(aparm);
 

@@ -14,7 +14,7 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor - fill in all the initial values
-Airspeed_Calibration::Airspeed_Calibration(const AP_SpdHgtControl::AircraftParameters &parms) :
+Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms) :
     P(100,   0,         0,
       0,   100,         0,
       0,     0,  0.000001f),
@@ -119,18 +119,27 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
         // auto-calibration not enabled
         return;
     }
+
+    // set state.z based on current ratio, this allows the operator to
+    // override the current ratio in flight with autocal, which is
+    // very useful both for testing and to force a reasonable value. 
+    float ratio = constrain_float(_ratio, 1.0f, 4.0f);
+
+    _calibration.state.z = 1.0 / sqrtf(ratio);
+
     // calculate true airspeed, assuming a airspeed ratio of 1.0
     float dpress = get_differential_pressure();
     float true_airspeed = sqrtf(dpress) * _EAS2TAS;
-    float ratio = _calibration.update(true_airspeed, vground);
 
-    if (isnan(ratio) || isinf(ratio)) {
+    float zratio = _calibration.update(true_airspeed, vground);
+
+    if (isnan(zratio) || isinf(zratio)) {
         return;
     }
 
     // this constrains the resulting ratio to between 1.0 and 4.0
-    ratio = constrain_float(ratio, 0.5f, 1.0f);
-    _ratio.set(1/sq(ratio));
+    zratio = constrain_float(zratio, 0.5f, 1.0f);
+    _ratio.set(1/sq(zratio));
     if (_counter > 60) {
         if (_last_saved_ratio > 1.05f*_ratio || 
             _last_saved_ratio < 0.95f*_ratio) {
