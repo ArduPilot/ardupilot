@@ -66,9 +66,11 @@ using namespace PX4;
 PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
     _value(initial_value),
+    _value_ratiometric(initial_value),
     _latest_value(initial_value),
     _sum_count(0),
-    _sum_value(0)
+    _sum_value(0),
+    _sum_ratiometric(0)
 {
 #ifdef PX4_ANALOG_VCC_5V_PIN
     if (_pin == ANALOG_INPUT_BOARD_VCC) {
@@ -84,7 +86,9 @@ float PX4AnalogSource::read_average()
     }
     hal.scheduler->suspend_timer_procs();
     _value = _sum_value / _sum_count;
+    _value_ratiometric = _sum_ratiometric / _sum_count;
     _sum_value = 0;
+    _sum_ratiometric = 0;
     _sum_count = 0;
     hal.scheduler->resume_timer_procs();
     return _value;
@@ -120,6 +124,16 @@ float PX4AnalogSource::voltage_average()
 }
 
 /*
+  return voltage in Volts, assuming a ratiometric sensor powered by
+  the 5V rail
+ */
+float PX4AnalogSource::voltage_average_ratiometric()
+{
+    voltage_average();
+    return _pin_scaler() * _value_ratiometric;
+}
+
+/*
   return voltage in Volts
  */
 float PX4AnalogSource::voltage_latest()
@@ -135,22 +149,32 @@ void PX4AnalogSource::set_pin(uint8_t pin)
     hal.scheduler->suspend_timer_procs();
     _pin = pin;
     _sum_value = 0;
+    _sum_ratiometric = 0;
     _sum_count = 0;
     _latest_value = 0;
     _value = 0;
+    _value_ratiometric = 0;
     hal.scheduler->resume_timer_procs();
 }
 
 /*
   apply a reading in ADC counts
  */
-void PX4AnalogSource::_add_value(float v)
+void PX4AnalogSource::_add_value(float v, uint16_t vcc5V_mV)
 {
     _latest_value = v;
     _sum_value += v;
+    if (vcc5V_mV == 0) {
+        _sum_ratiometric += v;
+    } else {
+        // this compensates for changes in the 5V rail relative to the
+        // 3.3V reference used by the ADC.
+        _sum_ratiometric += v * 5000 / vcc5V_mV;
+    }
     _sum_count++;
     if (_sum_count == 254) {
         _sum_value /= 2;
+        _sum_ratiometric /= 2;
         _sum_count /= 2;
     }
 }
@@ -182,12 +206,22 @@ void PX4AnalogIn::_timer_tick(void)
     }
     _last_run = now;
 
-    struct adc_msg_s buf_adc[8];
+    struct adc_msg_s buf_adc[PX4_ANALOG_MAX_CHANNELS];
 
     /* read all channels available */
     int ret = read(_adc_fd, &buf_adc, sizeof(buf_adc));
     if (ret > 0) {
+        uint16_t vcc5V_mV = 0;
         // match the incoming channels to the currently active pins
+        for (uint8_t i=0; i<ret/sizeof(buf_adc[0]); i++) {
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+            if (buf_adc[i].am_channel == 4) {
+                // record the Vcc value for later use in
+                // voltage_average_ratiometric()
+                vcc5V_mV = buf_adc[i].am_data * 6600 / 4096;
+            }
+#endif
+        }
         for (uint8_t i=0; i<ret/sizeof(buf_adc[0]); i++) {
             Debug("chan %u value=%u\n",
                   (unsigned)buf_adc[i].am_channel,
@@ -195,7 +229,7 @@ void PX4AnalogIn::_timer_tick(void)
             for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
                 PX4::PX4AnalogSource *c = _channels[j];
                 if (c != NULL && buf_adc[i].am_channel == c->_pin) {
-                    c->_add_value(buf_adc[i].am_data);
+                    c->_add_value(buf_adc[i].am_data, vcc5V_mV);
                 }
             }
         }
@@ -212,12 +246,12 @@ void PX4AnalogIn::_timer_tick(void)
                 PX4::PX4AnalogSource *c = _channels[j];
                 if (c == NULL) continue;
                 if (c->_pin == PX4_ANALOG_ORB_BATTERY_VOLTAGE_PIN) {
-                    c->_add_value(battery.voltage_v / PX4_VOLTAGE_SCALING);
+                    c->_add_value(battery.voltage_v / PX4_VOLTAGE_SCALING, 0);
                 }
                 if (c->_pin == PX4_ANALOG_ORB_BATTERY_CURRENT_PIN) {
                     // scale it back to voltage, knowing that the
                     // px4io code scales by 90.0/5.0
-                    c->_add_value(battery.current_a * (5.0f/90.0f) / PX4_VOLTAGE_SCALING);
+                    c->_add_value(battery.current_a * (5.0f/90.0f) / PX4_VOLTAGE_SCALING, 0);
                 }
             }
         }
@@ -235,10 +269,10 @@ void PX4AnalogIn::_timer_tick(void)
                 PX4::PX4AnalogSource *c = _channels[j];
                 if (c == NULL) continue;
                 if (c->_pin == PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN) {
-                    c->_add_value(servorail.voltage_v / PX4_VOLTAGE_SCALING);
+                    c->_add_value(servorail.voltage_v / PX4_VOLTAGE_SCALING, 0);
                 }
                 if (c->_pin == PX4_ANALOG_ORB_SERVO_VRSSI_PIN) {
-                    c->_add_value(servorail.rssi_v / PX4_VOLTAGE_SCALING);
+                    c->_add_value(servorail.rssi_v / PX4_VOLTAGE_SCALING, 0);
                 }
             }
         }

@@ -29,7 +29,7 @@ public:
     void set_pin(uint8_t p);
     float voltage_average();
     float voltage_latest();
-    float voltage_average_ratiometric() { return voltage_average(); }
+    float voltage_average_ratiometric();
 
     // stop pins not implemented on PX4 yet
     void set_stop_pin(uint8_t p) {}
@@ -41,10 +41,12 @@ private:
 
     // what value it has
     float _value;
+    float _value_ratiometric;
     float _latest_value;
     uint8_t _sum_count;
     float _sum_value;
-    void _add_value(float v);
+    float _sum_ratiometric;
+    void _add_value(float v, uint16_t vcc5V_mV);
     float _pin_scaler();
 };
 
