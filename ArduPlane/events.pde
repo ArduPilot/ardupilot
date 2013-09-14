@@ -18,16 +18,24 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
     case TRAINING:
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = 1;
-        set_mode(CIRCLE);
+        if(g.short_fs_action == 2) {
+            set_mode(FLY_BY_WIRE_A);
+        } else {
+            set_mode(CIRCLE);
+        }
         break;
 
     case AUTO:
     case GUIDED:
     case LOITER:
-        if(g.short_fs_action == 1) {
+        if(g.short_fs_action != 0) {
             failsafe.saved_mode = control_mode;
             failsafe.saved_mode_set = 1;
-            set_mode(CIRCLE);
+            if(g.short_fs_action == 2) {
+                set_mode(FLY_BY_WIRE_A);
+            } else {
+                set_mode(CIRCLE);
+            }
         }
         break;
 
@@ -56,13 +64,19 @@ static void failsafe_long_on_event(enum failsafe_state fstype)
     case CRUISE:
     case TRAINING:
     case CIRCLE:
-        set_mode(RTL);
+        if(g.long_fs_action == 2) {
+            set_mode(FLY_BY_WIRE_A);
+        } else {
+            set_mode(RTL);
+        }
         break;
 
     case AUTO:
     case GUIDED:
     case LOITER:
-        if(g.long_fs_action == 1) {
+        if(g.long_fs_action == 2) {
+            set_mode(FLY_BY_WIRE_A);
+        } else if (g.long_fs_action == 1) {
             set_mode(RTL);
         }
         break;

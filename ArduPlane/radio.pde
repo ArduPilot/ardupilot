@@ -131,12 +131,12 @@ static void control_failsafe(uint16_t pwm)
             // we detect a failsafe from radio
             // throttle has dropped below the mark
             failsafe.ch3_counter++;
-            if (failsafe.ch3_counter == 9) {
+            if (failsafe.ch3_counter == 10) {
                 gcs_send_text_fmt(PSTR("MSG FS ON %u"), (unsigned)pwm);
-            }else if(failsafe.ch3_counter == 10) {
                 failsafe.ch3_failsafe = true;
-            }else if (failsafe.ch3_counter > 10) {
-                failsafe.ch3_counter = 11;
+            }
+            if (failsafe.ch3_counter > 10) {
+                failsafe.ch3_counter = 10;
             }
 
         }else if(failsafe.ch3_counter > 0) {

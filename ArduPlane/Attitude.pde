@@ -51,6 +51,12 @@ static bool stick_mixing_enabled(void)
             return false;
         }
     }
+
+    if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
+        // don't do stick mixing in FBWA glide mode
+        return false;
+    }
+
     // non-auto mode. Always do stick mixing
     return true;
 }

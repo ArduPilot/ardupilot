@@ -1213,6 +1213,11 @@ static void update_flight_mode(void)
         if (inverted_flight) {
             nav_pitch_cd = -nav_pitch_cd;
         }
+        if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
+            // FBWA failsafe glide
+            nav_roll_cd = 0;
+            nav_pitch_cd = 0;
+        }
         break;
     }
 
