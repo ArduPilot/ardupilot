@@ -285,6 +285,23 @@ AP_GPS_UBLOX::_parse_gps(void)
         _vel_down   = _buffer.velned.ned_down;
         _new_speed = true;
         break;
+        //nothing planned at the moment with timegps
+    case MSG_TIMEGPS:
+        Debug("MSG_TIMEGPS");
+        //Debug("time: %lu, frac: %lu, week: %u, leap: %u, valid: %u, acc: %lu",_buffer.timegps.time, _buffer.timegps.fractional, _buffer.timegps.week, _buffer.timegps.leapS, _buffer.timegps.valid, _buffer.timegps.accuracyEstimate);
+        break;
+    case MSG_TIMEUTC:
+        Debug("MSG_TIMEUTC");
+        //Debug("time: %lu, acc: %lu, nano: %lu, year: %u, month: %u, day: %u, hour: %u, min: %u, sec: %u, valid: %u",_buffer.timeutc.time, _buffer.timeutc.accuracyEstimate, _buffer.timeutc.nanoS,_buffer.timeutc.year,_buffer.timeutc.month,_buffer.timeutc.day,_buffer.timeutc.hour,_buffer.timeutc.min,_buffer.timeutc.sec,_buffer.timeutc.valid);
+        year = _buffer.timeutc.year;
+        month = _buffer.timeutc.month;
+        day=_buffer.timeutc.day;
+        hour=_buffer.timeutc.hour;
+        minutes=_buffer.timeutc.min;
+        seconds=_buffer.timeutc.sec;
+        mseconds= _buffer.timeutc.nanoS/1e6;
+        _valid_time=_buffer.timeutc.valid;
+        break;
     default:
         Debug("Unexpected NAV message 0x%02x", (unsigned)_msg_id);
         if (++_disable_counter == 0) {
@@ -396,6 +413,7 @@ AP_GPS_UBLOX::_configure_gps(void)
     _configure_message_rate(CLASS_NAV, MSG_STATUS, 1);
     _configure_message_rate(CLASS_NAV, MSG_SOL, 1);
     _configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
+    _configure_message_rate(CLASS_NAV, MSG_TIMEUTC, 1);
 
     // ask for the current navigation settings
 	Debug("Asking for engine setting\n");

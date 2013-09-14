@@ -26,6 +26,7 @@
 #include "GPS.h"
 #include <AP_Common.h>
 #include "AP_GPS_MTK_Common.h"
+#include <inttypes.h>
 
 #define MTK_GPS_REVISION_V16  16
 #define MTK_GPS_REVISION_V19  19
@@ -43,6 +44,28 @@ public:
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
     virtual bool        read(void);
     static bool 		_detect(uint8_t );
+
+	//get Time e.g. 12:05:13.100=120513100
+    uint32_t getTimeUTC() {
+    	//there doesn't seem to be a valid flag as for Ublox, so just check if we have at least 2D_fix
+    	return status() >= GPS_OK_FIX_2D  ? (uint32_t)(((hour*(uint32_t)100+minutes)*(uint32_t)100+seconds)*(uint32_t)1000+mseconds)  : 0;
+    }
+
+	//get Date e.g. 2013/12/30 = 20131230
+	uint32_t getDateUTC(){
+		//there doesn't seem to be a valid flag as for Ublox, so just check if we have at least 2D_fix
+		return (status() >= GPS_OK_FIX_2D)  ? (uint32_t)((year*(uint32_t)100+month)*(uint32_t)100+day)  : 0;
+	}
+
+	//get DateTime Stamp e.g. 20131230120513100
+	virtual uint64_t getDateTimeUTC() {
+		return (status() >= GPS_OK_FIX_2D)  ? (uint64_t)getDateUTC()*(uint64_t)1e9+(uint64_t)getTimeUTC() : 0;
+	};
+
+	//get Unix time with milisecond precision e.g. 1370863126799
+	uint64_t getUnixTimeUTC() {
+		return (status() >= GPS_OK_FIX_2D)  ?  _mktime(year,month,day,hour,minutes,seconds)*(uint64_t)1000+mseconds : 0;
+	}
 
 private:
     struct PACKED diyd_mtk_msg {
@@ -81,7 +104,7 @@ private:
 	uint8_t			_mtk_revision;
 
     // Time from UNIX Epoch offset
-    long            _time_offset;
+    uint64_t            _time_offset;
     bool            _offset_calculated;
 
     // Receive buffer

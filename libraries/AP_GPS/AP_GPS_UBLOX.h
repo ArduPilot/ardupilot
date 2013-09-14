@@ -64,6 +64,26 @@ public:
 
     float       get_lag() { return 0.5; }   // ublox lag is lower than the default 1second
 
+	//get Time e.g. 12:05:13.100=120513100
+    uint32_t getTimeUTC() {
+    	return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ? (uint32_t)(((hour*(uint32_t)100+minutes)*(uint32_t)100+seconds)*(uint32_t)1000+mseconds) : 0 ;//((hour*100+minutes)*100+seconds)*1000+mseconds  : 0;
+    }
+
+	//get Date e.g. 2013/12/30 = 20131230
+	uint32_t getDateUTC(){
+		return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ? (uint32_t)((year*(uint32_t)100+month)*(uint32_t)100+day) : 0;
+	}
+
+	//get DateTime Stamp e.g. 20131230120513100
+	virtual uint64_t getDateTimeUTC() {
+		return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ? (uint64_t)getDateUTC()*(uint64_t)1e9+(uint64_t)getTimeUTC() : 0;
+	};
+
+	//get Unix time with milisecond precision e.g. 1370863126799
+	uint64_t getUnixTimeUTC() {
+		return ((_valid_time|0x07)==0x07)&&(status() >= GPS_OK_FIX_2D)  ?  _mktime(year,month,day,hour,minutes,seconds)*(uint64_t)1000+mseconds : 0;
+	}
+
 private:
     // u-blox UBX protocol essentials
     struct PACKED ubx_header {
@@ -150,12 +170,35 @@ private:
         uint32_t speed_accuracy;
         uint32_t heading_accuracy;
     };
+    struct PACKED ubx_nav_timegps {
+        uint32_t time;
+        uint32_t fractional;
+        int16_t week;
+        int8_t leapS;
+        int8_t valid;
+        int32_t accuracyEstimate;
+    };
+    struct PACKED ubx_nav_timeutc {
+        uint32_t time;
+        int32_t accuracyEstimate;
+        int32_t nanoS;
+        int16_t year;
+        int8_t month;
+        int8_t day;
+        int8_t hour;
+        int8_t min;
+        int8_t sec;
+        int8_t valid;
+
+    };
     // Receive buffer
     union PACKED {
         ubx_nav_posllh posllh;
         ubx_nav_status status;
         ubx_nav_solution solution;
         ubx_nav_velned velned;
+        ubx_nav_timegps timegps;
+        ubx_nav_timeutc timeutc;
         ubx_cfg_nav_settings nav_settings;
         uint8_t bytes[];
     } _buffer;
@@ -175,7 +218,9 @@ private:
         MSG_CFG_PRT = 0x00,
         MSG_CFG_RATE = 0x08,
         MSG_CFG_SET_RATE = 0x01,
-        MSG_CFG_NAV_SETTINGS = 0x24
+        MSG_CFG_NAV_SETTINGS = 0x24,
+        MSG_TIMEGPS = 0x20,
+        MSG_TIMEUTC = 0x21
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
@@ -212,6 +257,8 @@ private:
     bool            _new_speed;
 
     uint8_t         _disable_counter;
+
+    uint8_t 		_valid_time;
 
     // Buffer parse & GPS state update
     bool        _parse_gps();

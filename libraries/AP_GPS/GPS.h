@@ -110,6 +110,13 @@ public:
     int32_t speed_3d_cm;                ///< 3D speed in cm/sec (not always available)
     int16_t hdop;                       ///< horizontal dilution of precision in cm
     uint8_t num_sats;           ///< Number of visible satelites
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minutes;
+    uint8_t seconds;
+    int32_t mseconds;
 
     /// Set to true when new data arrives.  A client may set this
     /// to false in order to avoid processing data they have
@@ -158,6 +165,18 @@ public:
 	uint32_t last_message_time_ms(void) { return _idleTimer; }
 
 	// return true if the GPS supports raw velocity values
+
+	//get Time e.g. 12:05:13.100=120513100
+	virtual uint32_t getTimeUTC() {return 0;};
+
+	//get Date e.g. 2013/12/30 = 20131230
+	virtual uint32_t getDateUTC() {return 0;};
+
+	//get DateTime Stamp e.g. 20131230120513100
+	virtual uint64_t getDateTimeUTC() {return 0;};
+
+	//get Unix time with milisecond precision e.g. 1370863126799
+	virtual uint64_t getUnixTimeUTC() {return 0;}
 
 
 protected:
@@ -217,6 +236,11 @@ protected:
 
 	// detected baudrate
 	uint16_t _baudrate;
+
+    //utc to epoch time converter, copied from standard time.h
+    uint64_t _mktime(const unsigned int year0, const unsigned int mon0,
+	        const unsigned int day, const unsigned int hour,
+	        const unsigned int min, const unsigned int sec);
 
 private:
 

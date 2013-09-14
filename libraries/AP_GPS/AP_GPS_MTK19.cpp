@@ -20,12 +20,22 @@
 //
 //    GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.6, v1.7, v1.8, v1.9"
 //
-//   Note that this driver supports both the 1.6 and 1.9 protocol varients
+//   Note that this driver supports both the 1.6 and 1.9 protocol variants
 //
 
 #include <AP_HAL.h>
 #include "AP_GPS_MTK19.h"
 #include <stdint.h>
+#include <inttypes.h>
+
+#define MTK_DEBUGGING 0
+#if MTK_DEBUGGING
+ # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
+extern const AP_HAL::HAL& hal;
 
 // Public Methods //////////////////////////////////////////////////////////////
 void
@@ -169,13 +179,25 @@ restart:
             date                    = _buffer.msg.utc_date;
 
             // time from gps is UTC, but convert here to msToD
-            int32_t time_utc        = _buffer.msg.utc_time;
-            int32_t temp            = (time_utc/10000000);
+            uint32_t time_utc        = _buffer.msg.utc_time;
+            uint32_t temp            = (time_utc/10000000);
             time_utc               -= temp*10000000;
             time                    = temp * 3600000;
             temp                    = (time_utc/100000);
             time_utc               -= temp*100000;
             time                   += temp * 60000 + time_utc;
+
+            time_utc        = _buffer.msg.utc_time;
+            mseconds= time_utc%1000;
+            //eliminate mseconds, else we get erroneus data, cast error?
+            time_utc/=1000;
+            year = (unsigned int)(date%100+2000);
+            month = (unsigned int)(date/100)%100;
+            day=(unsigned int)(date/10000);
+            hour=(unsigned int)(time_utc/1e4);
+            minutes=(unsigned int)(time_utc/1e2)%100;
+            seconds=(unsigned int)(time_utc%100);
+
             parsed                  = true;
 
 #ifdef FAKE_GPS_LOCK_TIME

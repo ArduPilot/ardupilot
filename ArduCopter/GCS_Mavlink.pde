@@ -448,6 +448,15 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
         (int)(barometer.get_temperature()*10));
 }
 
+static void NOINLINE send_system_time(mavlink_channel_t chan)
+{
+    mavlink_msg_system_time_send(
+        chan,
+        g_gps->getUnixTimeUTC(),
+        millis());
+
+}
+
 static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
 {
     Vector3f mag_offsets = compass.get_offsets();
@@ -652,6 +661,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
 
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
+
+    case MSG_SYSTEM_TIME:
+        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+        send_system_time(chan);
+        break;
     }
 
     return true;
@@ -1010,6 +1024,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_GPS_RAW);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_LIMITS_STATUS);
+        send_message(MSG_SYSTEM_TIME);
     }
 
     if (gcs_out_of_time) return;
