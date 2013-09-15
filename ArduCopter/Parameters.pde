@@ -147,7 +147,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Battery capacity in milliamp-hours (mAh)
     // @Units: mAh
 	// @User: Standard
-    GSCALAR(pack_capacity,  "BATT_CAPACITY",    HIGH_DISCHARGE),
+    GSCALAR(pack_capacity,  "BATT_CAPACITY",    BATTERY_CAPACITY_DEFAULT),
 
     // @Param: MAG_ENABLE
     // @DisplayName: Enable Compass

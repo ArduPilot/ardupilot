@@ -370,8 +370,8 @@
 #ifndef CURR_AMPS_OFFSET
  # define CURR_AMPS_OFFSET               0.0f
 #endif
-#ifndef HIGH_DISCHARGE
- # define HIGH_DISCHARGE                 1760
+#ifndef BATTERY_CAPACITY_DEFAULT
+ # define BATTERY_CAPACITY_DEFAULT      3500
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
