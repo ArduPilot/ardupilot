@@ -690,7 +690,7 @@ static void mount_update(void)
  */
 static void failsafe_check(void)
 {
-	if (g.fs_gcs_enable) {
+	if (g.fs_gcs_enabled) {
         failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
     }
 }
