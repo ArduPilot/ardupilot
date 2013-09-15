@@ -44,6 +44,7 @@ AP_Compass_HIL *SITL_State::_compass;
 int SITL_State::_sitl_fd;
 SITL *SITL_State::_sitl;
 uint16_t SITL_State::pwm_output[11];
+uint16_t SITL_State::last_pwm_output[11];
 uint16_t SITL_State::pwm_input[8];
 bool SITL_State::pwm_valid;
 
@@ -340,11 +341,37 @@ void SITL_State::_fdm_input(void)
 }
 
 /*
+  apply servo rate filtering
+  This allows simulation of servo lag
+ */
+void SITL_State::_apply_servo_filter(float deltat)
+{
+    if (_sitl->servo_rate < 1.0f) {
+        // no limit
+        return;
+    }
+    // 1000 usec == 90 degrees
+    uint16_t max_change = deltat * _sitl->servo_rate * 1000 / 90;
+    if (max_change == 0) {
+        max_change = 1;
+    }
+    for (uint8_t i=0; i<11; i++) {
+        int16_t change = (int16_t)pwm_output[i] - (int16_t)last_pwm_output[i];
+        if (change > max_change) {
+            pwm_output[i] = last_pwm_output[i] + max_change;
+        } else if (change < -max_change) {
+            pwm_output[i] = last_pwm_output[i] - max_change;
+        }
+    }
+}
+
+
+/*
   send RC outputs to simulator
  */
 void SITL_State::_simulator_output(void)
 {
-	static uint32_t last_update;
+	static uint32_t last_update_usec;
 	struct {
 		uint16_t pwm[11];
 		uint16_t speed, direction, turbulance;
@@ -354,7 +381,7 @@ void SITL_State::_simulator_output(void)
 	 * to change */
 	uint8_t i;
 
-	if (last_update == 0) {
+	if (last_update_usec == 0) {
 		for (i=0; i<11; i++) {
 			pwm_output[i] = 1000;
 		}
@@ -366,6 +393,9 @@ void SITL_State::_simulator_output(void)
 			pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
 			pwm_output[7] = 1800;
 		}
+		for (i=0; i<11; i++) {
+            last_pwm_output[i] = pwm_output[i];
+        }
 	}
 
     if (_sitl == NULL) {
@@ -373,10 +403,14 @@ void SITL_State::_simulator_output(void)
     }
 
 	// output at chosen framerate
-	if (last_update != 0 && hal.scheduler->millis() - last_update < 1000/_framerate) {
+    uint32_t now = hal.scheduler->micros();
+	if (last_update_usec != 0 && now - last_update_usec < 1000000/_framerate) {
 		return;
 	}
-	last_update = hal.scheduler->millis();
+    float deltat = (now - last_update_usec) * 1.0e-6f;
+	last_update_usec = now;
+
+    _apply_servo_filter(deltat);
 
 	for (i=0; i<11; i++) {
 		if (pwm_output[i] == 0xFFFF) {
@@ -384,6 +418,7 @@ void SITL_State::_simulator_output(void)
 		} else {
 			control.pwm[i] = pwm_output[i];
 		}
+        last_pwm_output[i] = pwm_output[i];
 	}
 
 	if (_vehicle == ArduPlane) {

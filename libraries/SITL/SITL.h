@@ -52,6 +52,7 @@ public:
 	AP_Float mag_noise;   // in mag units (earth field is 818)
 	AP_Float aspd_noise;  // in m/s 
 	AP_Float mag_error;   // in degrees
+    AP_Float servo_rate;  // servo speed in degrees/second
 
 	AP_Float drift_speed; // degrees/second/minute
 	AP_Float drift_time;  // period in minutes

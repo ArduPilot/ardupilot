@@ -41,9 +41,9 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
     AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
+    AP_GROUPINFO("SERVO_RATE",    16, SITL,  servo_rate,  0),
     AP_GROUPEND
 };
-
 
 
 /* report SITL state via MAVLink */
