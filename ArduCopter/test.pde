@@ -9,7 +9,6 @@ static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
 #endif
 static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_compass(uint8_t argc,              const Menu::arg *argv);
-static int8_t   test_eedump(uint8_t argc,               const Menu::arg *argv);
 static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
@@ -52,7 +51,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
     {"battery",             test_battery},
     {"compass",             test_compass},
-    {"eedump",              test_eedump},
     {"gps",                 test_gps},
     {"ins",                 test_ins},
     {"logging",             test_logging},
@@ -237,22 +235,6 @@ test_compass(uint8_t argc, const Menu::arg *argv)
     cliSerial->println_P(PSTR("saving offsets"));
     compass.save_offsets();
     return (0);
-}
-
-static int8_t
-test_eedump(uint8_t argc, const Menu::arg *argv)
-{
-
-    // hexdump the EEPROM
-    for (uint16_t i = 0; i < EEPROM_MAX_ADDR; i += 16) {
-        cliSerial->printf_P(PSTR("%04x:"), i);
-        for (uint16_t j = 0; j < 16; j++)  {
-            int b = hal.storage->read_byte(i+j);
-            cliSerial->printf_P(PSTR(" %02x"), b);
-        }
-        cliSerial->println();
-    }
-    return(0);
 }
 
 static int8_t
