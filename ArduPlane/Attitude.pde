@@ -517,6 +517,27 @@ no_launch:
 }
 
 
+/**
+  Do we think we are flying?
+  This is a heuristic so it could be wrong in some cases.  In particular, if we don't have GPS lock we'll fall
+  back to only using altitude.  (This is probably more optimistic than what suppress_throttle wants...)
+*/
+static bool is_flying(void)
+{
+    // If we don't have a GPS lock then don't use GPS for this test
+    bool gpsMovement = (g_gps == NULL ||
+                        g_gps->status() < GPS::GPS_OK_FIX_2D ||
+                        g_gps->ground_speed_cm >= 500);
+    
+    bool airspeedMovement = !airspeed.use() || airspeed.get_airspeed() >= 5;
+    
+    // we're more than 5m from the home altitude
+    bool inAir = relative_altitude_abs_cm() > 500;
+
+    return inAir && gpsMovement && airspeedMovement;
+}
+
+
 /* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 
    Disable throttle if following conditions are met:

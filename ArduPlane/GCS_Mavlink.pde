@@ -25,7 +25,7 @@ static bool	gcs_out_of_time;
 static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    uint8_t system_status = MAV_STATE_ACTIVE;
+    uint8_t system_status = is_flying() ? MAV_STATE_ACTIVE : MAV_STATE_STANDBY;
     uint32_t custom_mode = control_mode;
     
     if (failsafe.state != FAILSAFE_NONE) {
