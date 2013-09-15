@@ -129,10 +129,7 @@ int32_t AP_SteerController::get_steering_out(float desired_accel)
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
 	
 	// Calculate the demanded control surface deflection
-	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
-	// path, but want a 1/speed^2 scaler applied to the rate error path. 
-	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * _K_D * 45.0f) + (desired_rate * kp_ff) ) * scaler + _integrator;
+	_last_out = (rate_error * _K_D * 4.0f) + (desired_rate * kp_ff) * scaler + _integrator;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
