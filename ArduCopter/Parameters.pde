@@ -578,7 +578,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LED_MODE
     // @DisplayName: Copter LED Mode
     // @Description: bitmap to control the copter led mode
-    // @Values: 0:Disabled,1:Enable,2:GPS On,4:Aux,8:Buzzer,16:Oscillate,32:Nav Blink,64:GPS Nav Blink
+    // @Values: 0:Disabled,1:Enable,3:GPS On,4:Aux,9:Buzzer,17:Oscillate,33:Nav Blink,65:GPS Nav Blink
     // @User: Standard
     GSCALAR(copter_leds_mode,       "LED_MODE",         9),
 
