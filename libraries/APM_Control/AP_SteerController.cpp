@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        4, AP_SteerController, _K_D,        0.02f),
+	AP_GROUPINFO("D",        4, AP_SteerController, _K_D,        0.005f),
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
