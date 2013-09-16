@@ -133,8 +133,8 @@ void location_update(struct Location &loc, float bearing, float distance)
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
     if (ofs_north != 0 || ofs_east != 0) {
-        float dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
-        float dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
+        int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
+        int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
         loc.lat += dlat;
         loc.lng += dlng;
     }
