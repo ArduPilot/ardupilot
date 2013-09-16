@@ -21,6 +21,14 @@ extern const AP_HAL::HAL& hal;
 GPS::GPS(void) :
 	// ensure all the inherited fields are zeroed
 	time(0),
+    date(0),
+    latitude(0),
+    longitude(0),
+    altitude_cm(0),
+    ground_speed_cm(0),
+    ground_course_cd(0),
+    speed_3d_cm(0),
+    hdop(0),
 	num_sats(0),
 	new_data(false),
 	fix(FIX_NONE),
