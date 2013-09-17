@@ -1010,7 +1010,7 @@ static void update_GPS(void)
     }
 
     // get position from AHRS
-    have_position = ahrs.get_position(current_loc);
+    have_position = ahrs.get_projected_position(current_loc);
 
     if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;
