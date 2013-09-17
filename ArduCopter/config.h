@@ -174,20 +174,10 @@
 // LED and IO Pins
 //
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- # define LED_ON           HIGH
- # define LED_OFF          LOW
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define LED_ON           LOW
- # define LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define LED_ON           LOW
- # define LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define LED_ON           LOW
- # define LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
- # define LED_ON           LOW
- # define LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  # define LED_ON           LOW
  # define LED_OFF          HIGH
