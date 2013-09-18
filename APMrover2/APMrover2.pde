@@ -585,10 +585,12 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    // arduplane does not use arming nor pre-arm checks
-    notify.init();
+    // rover does not use arming nor pre-arm checks
     AP_Notify::flags.armed = true;
     AP_Notify::flags.pre_arm_check = true;
+    AP_Notify::flags.failsafe_battery = false;
+
+    notify.init();
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
