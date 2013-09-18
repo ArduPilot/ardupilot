@@ -1,5 +1,9 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc2 18-Sep-2013
+Improvements over 3.1-rc1
+1) bug fix for MOT_SPIN_ARMED to allow it to be higher than 127
+------------------------------------------------------------------
 ArduCopter 3.1-rc1 9-Sep-2013
 Improvements over 3.0.1
 1) Support for Pixhawks board
@@ -21,6 +25,7 @@ Improvements over 3.0.1
     b) altitude control fix for Loiter_turns mission command (i.e. mission version of CIRCLE mode)
     c) DO_SET_ROI fix (do not use "ROI")
 8) Distribute Loiter & Navigation calcs over 4 cycles to reduce impact on a single 100hz loop
+9) RCMAP_ parameters allow remapping input channels 1 ~ 4
 ------------------------------------------------------------------
 ArduCopter 3.0.1-rc2 / 3.0.1 11-Jul-2013
 Improvements over 3.0.1-rc1
