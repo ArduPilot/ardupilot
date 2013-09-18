@@ -26,13 +26,13 @@ public:
     /// init - initialised the tone alarm
     bool init(void);
 
-    /// play_tune - play one of the pre-defined tunes
-    bool play_tune(const uint8_t tune_number);
-
     /// update - updates led according to timed_updated.  Should be called at 50Hz
     void update();
 
 private:
+    /// play_tune - play one of the pre-defined tunes
+    bool play_tune(const uint8_t tune_number);
+
     int _tonealarm_fd;      // file descriptor for the tone alarm
 
     /// tonealarm_type - bitmask of states we track
