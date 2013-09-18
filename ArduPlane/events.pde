@@ -112,6 +112,7 @@ void low_battery_event(void)
     set_mode(RTL);
     aparm.throttle_cruise.load();
     battery.low_batttery = true;
+    AP_Notify::flags.failsafe_battery = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
