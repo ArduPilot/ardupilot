@@ -122,41 +122,36 @@ bool AP_InertialNav::position_ok() const
 // check_gps - check if new gps readings have arrived and use them to correct position estimates
 void AP_InertialNav::check_gps()
 {
-    uint32_t gps_time;
     uint32_t now = hal.scheduler->millis();
 
-    if( _gps_ptr == NULL || *_gps_ptr == NULL )
-        return;
-
-    // get time according to the gps
-    gps_time = (*_gps_ptr)->time;
-
     // compare gps time to previous reading
-    if( gps_time != _gps_last_time ) {
-
-        // calculate time since last gps reading
-        float dt = (float)(now - _gps_last_update) * 0.001f;
+    if( _gps != NULL && _gps->time != _gps_last_time ) {
 
         // call position correction method
-        correct_with_gps((*_gps_ptr)->longitude, (*_gps_ptr)->latitude, dt);
+        correct_with_gps(now, _gps->longitude, _gps->latitude);
 
         // record gps time and system time of this update
-        _gps_last_time = gps_time;
-        _gps_last_update = now;
-    }
-
-    // clear position error if GPS updates stop arriving
-    if( now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS ) {
-        _position_error.x = 0;
-        _position_error.y = 0;
+        _gps_last_time = _gps->time;
+    }else{
+        // clear position error if GPS updates stop arriving
+        if (now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS) {
+            _position_error.x = 0;
+            _position_error.y = 0;
+        }
     }
 }
 
-// correct_with_gps - modifies accelerometer offsets using gps.  dt is time since last gps update
-void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
+// correct_with_gps - modifies accelerometer offsets using gps
+void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
 {
-    float x,y;
+    float dt,x,y;
     float hist_position_base_x, hist_position_base_y;
+
+    // calculate time since last gps reading
+    dt = (float)(now - _gps_last_update) * 0.001f;
+
+    // update last gps update time
+    _gps_last_update = now;
 
     // discard samples where dt is too large
     if( dt > 1.0f || dt == 0 || !_xy_enabled) {
@@ -167,19 +162,38 @@ void AP_InertialNav::correct_with_gps(int32_t lon, int32_t lat, float dt)
     x = (float)(lat - _base_lat) * LATLON_TO_CM;
     y = (float)(lon - _base_lon) * _lon_to_m_scaling;
 
-    // ublox gps positions are delayed by 400ms
-    // we store historical position at 10hz so 4 iterations ago
-    if( _hist_position_estimate_x.num_items() >= AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS ) {
-        hist_position_base_x = _hist_position_estimate_x.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
-        hist_position_base_y = _hist_position_estimate_y.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
+    // sanity check the gps position.  Relies on the main code calling GPS_Glitch::check_position() immediatley after a GPS update
+    if (_glitch_detector.glitching()) {
+        // failed sanity check so set position_error to zero
+        _position_error.x = 0;
+        _position_error.y = 0;
     }else{
-        hist_position_base_x = _position_base.x;
-        hist_position_base_y = _position_base.y;
+        // if our internal glitching flag (from previous iteration) is true we have just recovered from a glitch
+        // reset the inertial nav position and velocity to gps values
+        if (_flags.gps_glitching) {
+            set_position_xy(x,y);
+            set_velocity_xy(_gps->velocity_north() * 100.0f,_gps->velocity_east() * 100.0f);
+            _position_error.x = 0;
+            _position_error.y = 0;
+        }else{
+            // ublox gps positions are delayed by 400ms
+            // we store historical position at 10hz so 4 iterations ago
+            if( _hist_position_estimate_x.num_items() >= AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS ) {
+                hist_position_base_x = _hist_position_estimate_x.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
+                hist_position_base_y = _hist_position_estimate_y.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
+            }else{
+                hist_position_base_x = _position_base.x;
+                hist_position_base_y = _position_base.y;
+            }
+
+            // calculate error in position from gps with our historical estimate
+            _position_error.x = x - (hist_position_base_x + _position_correction.x);
+            _position_error.y = y - (hist_position_base_y + _position_correction.y);
+        }
     }
 
-    // calculate error in position from gps with our historical estimate
-    _position_error.x = x - (hist_position_base_x + _position_correction.x);
-    _position_error.y = y - (hist_position_base_y + _position_correction.y);
+    // update our internal record of glitching flag so that we can notice a change
+    _flags.gps_glitching = _glitch_detector.glitching();
 }
 
 // get accel based latitude
@@ -381,4 +395,23 @@ void AP_InertialNav::update_gains()
 void AP_InertialNav::set_velocity_z(float z )
 {
     _velocity.z = z;
+}
+
+// set_position_xy - sets inertial navigation position to given xy coordinates from home
+void AP_InertialNav::set_position_xy(float pos_x, float pos_y)
+{
+    // reset position from home
+    _position_base.x = pos_x;
+    _position_base.y = pos_y;
+    _position_correction.x = 0;
+    _position_correction.y = 0;
+
+    // clear historic estimates
+    _hist_position_estimate_x.clear();
+    _hist_position_estimate_y.clear();
+
+    // add new position for future use
+    _historic_xy_counter = 0;
+    _hist_position_estimate_x.add(_position_base.x);
+    _hist_position_estimate_y.add(_position_base.y);
 }
