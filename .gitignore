@@ -44,7 +44,8 @@ ArduCopter/Debug/
 ArduCopter/eeprom.bin
 ArduCopter/test/*
 build
-Build.Arducopter/*
+Build.ArduCopter/*
+Build.ArduPlane/*
 cmake_install.cmake
 CMakeCache.txt
 CMakeFiles
