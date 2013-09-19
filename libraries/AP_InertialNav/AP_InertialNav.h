@@ -69,8 +69,8 @@ public:
     int32_t     get_latitude() const;
     int32_t     get_longitude() const;
 
-    // set_current_position - all internal calculations are recorded as the distances from this point
-    void        set_current_position(int32_t lon, int32_t lat);
+    // set_home_position - all internal calculations are recorded as the distances from this point
+    void        set_home_position(int32_t lon, int32_t lat);
 
     // get latitude & longitude positions from base location (in cm)
     float       get_latitude_diff() const;

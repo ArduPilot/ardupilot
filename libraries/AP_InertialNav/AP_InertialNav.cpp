@@ -218,8 +218,8 @@ int32_t AP_InertialNav::get_longitude() const
     return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / _lon_to_m_scaling);
 }
 
-// set_current_position - all internal calculations are recorded as the distances from this point
-void AP_InertialNav::set_current_position(int32_t lon, int32_t lat)
+// set_home_position - all internal calculations are recorded as the distances from this point
+void AP_InertialNav::set_home_position(int32_t lon, int32_t lat)
 {
     // set base location
     _base_lon = lon;

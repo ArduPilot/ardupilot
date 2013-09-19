@@ -129,7 +129,7 @@ static void init_home()
     set_cmd_with_index(home, 0);
 
     // set inertial nav's home position
-    inertial_nav.set_current_position(g_gps->longitude, g_gps->latitude);
+    inertial_nav.set_home_position(g_gps->longitude, g_gps->latitude);
 
     if (g.log_bitmask & MASK_LOG_CMD)
         Log_Write_Cmd(0, &home);
