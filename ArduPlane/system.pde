@@ -170,9 +170,6 @@ static void init_ardupilot()
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
 
-    pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
-    pinMode(A_LED_PIN, OUTPUT);                         // GPS status LED
-    pinMode(B_LED_PIN, OUTPUT);                         // GPS status LED
     relay.init();
 
 #if FENCE_TRIGGERED_PIN > 0
@@ -439,11 +436,9 @@ static void startup_INS_ground(bool do_accel_init)
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
 
-    ins.init(style, 
-             ins_sample_rate,
-             flash_leds);
+    ins.init(style, ins_sample_rate);
     if (do_accel_init) {
-        ins.init_accel(flash_leds);
+        ins.init_accel();
         ahrs.set_trim(Vector3f(0, 0, 0));
     }
     ahrs.reset();
@@ -459,10 +454,6 @@ static void startup_INS_ground(bool do_accel_init)
     } else {
         gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
     }
-
-    digitalWrite(B_LED_PIN, LED_ON);                    // Set LED B high to indicate INS ready
-    digitalWrite(A_LED_PIN, LED_OFF);
-    digitalWrite(C_LED_PIN, LED_OFF);
 }
 
 // updates the status of the notify objects
@@ -519,16 +510,6 @@ static void check_usb_mux(void)
     }
 }
 
-
-/*
- *  called by gyro/accel init to flash LEDs so user
- *  has some mesmerising lights to watch while waiting
- */
-void flash_leds(bool on)
-{
-    digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
-    digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
-}
 
 /*
  * Read Vcc vs 1.1v internal reference

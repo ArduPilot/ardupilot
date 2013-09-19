@@ -469,8 +469,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     ahrs.set_wind_estimation(true);
 
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     ahrs.reset();
 
     print_hit_enter();
@@ -536,8 +535,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     // we need the AHRS initialised for this test
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     ahrs.reset();
 
     uint16_t counter = 0;
@@ -663,15 +661,11 @@ test_rawgps(uint8_t argc, const Menu::arg *argv)
     while(1) {
         // Blink Yellow LED if we are sending data to GPS
         if (hal.uartC->available()) {
-            digitalWrite(B_LED_PIN, LED_ON);
             hal.uartB->write(hal.uartC->read());
-            digitalWrite(B_LED_PIN, LED_OFF);
         }
         // Blink Red LED if we are receiving data from GPS
         if (hal.uartB->available()) {
-            digitalWrite(C_LED_PIN, LED_ON);
             hal.uartC->write(hal.uartB->read());
-            digitalWrite(C_LED_PIN, LED_OFF);
         }
         if(cliSerial->available() > 0) {
             return (0);

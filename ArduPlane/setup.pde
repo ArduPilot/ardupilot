@@ -397,11 +397,9 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
 
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+    ins.init(AP_InertialSensor::COLD_START, ins_sample_rate);
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    bool success = ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch);
+    bool success = ins.calibrate_accel(&interact, trim_roll, trim_pitch);
     if (success) {
         // reset ahrs's trim to suggested values from calibration routine
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
