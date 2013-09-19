@@ -765,11 +765,13 @@ static void do_yaw()
         yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
 
+    // Set clockwise / counter clockwise rotation. 0 = shortest, 1 = clockwise, 2 = counterclockwise
+    // https://pixhawk.ethz.ch/mavlink/ says we should use -1 and 1 for cw and ccw, but that would require signed int
+    nav_yaw_rot_dir=command_cond_queue.p1;
+
     // set yaw mode
     set_yaw_mode(YAW_LOOK_AT_HEADING);
 
-    // TO-DO: restore support for clockwise / counter clockwise rotation held in command_cond_queue.p1
-    // command_cond_queue.p1; // 0 = undefined, 1 = clockwise, -1 = counterclockwise
 }
 
 

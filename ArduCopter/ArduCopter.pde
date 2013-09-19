@@ -663,7 +663,6 @@ static uint8_t roll_pitch_mode;
 // The current desired control scheme for altitude hold
 static uint8_t throttle_mode;
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // flight specific
 ////////////////////////////////////////////////////////////////////////////////
@@ -726,7 +725,8 @@ static int32_t yaw_look_at_WP_bearing;
 static int32_t yaw_look_at_heading;
 // Deg/s we should turn
 static int16_t yaw_look_at_heading_slew;
-
+// The desired rotation direction for Yaw in auto modes
+static uint8_t nav_yaw_rot_dir;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1419,7 +1419,7 @@ static void update_GPS(void)
 // set_yaw_mode - update yaw mode and initialise any variables required
 bool set_yaw_mode(uint8_t new_yaw_mode)
 {
-    // boolean to ensure proper initialisation of throttle modes
+	// boolean to ensure proper initialisation of throttle modes
     bool yaw_initialised = false;
 
     // return immediately if no change
