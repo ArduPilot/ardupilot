@@ -528,6 +528,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 {
 	struct gps_data d;
 	char c;
+    Vector3f glitch_offsets = _sitl->gps_glitch;
 
 	// 5Hz, to match the real config in APM
 	if (hal.scheduler->millis() - gps_state.last_update < 200) {
@@ -541,9 +542,9 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
 	gps_state.last_update = hal.scheduler->millis();
 
-	d.latitude = latitude;
-	d.longitude = longitude;
-	d.altitude = altitude;
+	d.latitude = latitude + glitch_offsets.x;
+	d.longitude = longitude + glitch_offsets.y;
+	d.altitude = altitude + glitch_offsets.z;
 	d.speedN = speedN;
 	d.speedE = speedE;
 	d.speedD = speedD;

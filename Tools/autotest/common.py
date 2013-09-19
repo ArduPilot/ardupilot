@@ -223,3 +223,9 @@ def mission_count(filename):
     wploader.load(filename)
     num_wp = wploader.count()
     return num_wp
+
+def sim_location(mav):
+    '''return current simulator location'''
+    from pymavlink import mavutil
+    m = mav.recv_match(type='SIMSTATE', blocking=True)
+    return mavutil.location(m.lat*1.0e-7, m.lng*1.0e-7, 0, math.degrees(m.yaw))
