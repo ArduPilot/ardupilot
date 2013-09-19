@@ -66,12 +66,14 @@ static void read_battery(void)
         battery.last_time_ms = tnow;
     }
 
-    if (battery.voltage != 0 && 
+    if (!usb_connected &&
+        battery.voltage != 0 && 
         g.fs_batt_voltage > 0 && 
         battery.voltage < g.fs_batt_voltage) {
         low_battery_event();
     }
-    if (g.battery_monitoring == 4 && 
+    if (!usb_connected &&
+        g.battery_monitoring == 4 && 
         g.fs_batt_mah > 0 && 
         g.pack_capacity - battery.current_total_mah < g.fs_batt_mah) {
         low_battery_event();
