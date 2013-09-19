@@ -85,6 +85,7 @@
 // Application dependencies
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_GPS.h>             // ArduPilot GPS library
+#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
@@ -206,6 +207,7 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 
 // All GPS access should be through this pointer.
 static GPS         *g_gps;
+static GPS_Glitch   gps_glitch(g_gps);
 
 // flight modes convenience array
 static AP_Int8 *flight_modes = &g.flight_mode1;
@@ -765,7 +767,7 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-static AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
+static AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, g_gps, gps_glitch);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint navigation object
@@ -1385,6 +1387,9 @@ static void update_GPS(void)
 
         // for performance monitoring
         gps_fix_count++;
+
+        // run glitch protection
+        gps_glitch.check_position();
 
         // check if we can initialise home yet
         if (!ap.home_is_set) {
