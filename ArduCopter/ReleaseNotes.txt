@@ -3,6 +3,7 @@ ArduCopter Release Notes:
 ArduCopter 3.1-rc2 18-Sep-2013
 Improvements over 3.1-rc1
 1) bug fix for MOT_SPIN_ARMED to allow it to be higher than 127
+2) PX4/pixhawks auto-detect internal/external compass so COMPASS_ORIENT should be set to ORIENTATION_NONE if using GPS+compass module
 ------------------------------------------------------------------
 ArduCopter 3.1-rc1 9-Sep-2013
 Improvements over 3.0.1
