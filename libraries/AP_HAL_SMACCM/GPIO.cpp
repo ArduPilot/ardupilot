@@ -33,6 +33,11 @@ void SMACCMGPIO::toggle(uint8_t pin)
 {
 }
 
+bool SMACCMGPIO::usb_connected(void)
+{
+    return false;
+}
+
 /* Alternative interface: */
 AP_HAL::DigitalSource* SMACCMGPIO::channel(uint16_t n)
 {

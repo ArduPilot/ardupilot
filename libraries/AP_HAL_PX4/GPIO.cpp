@@ -16,6 +16,8 @@
 #include <drivers/drv_tone_alarm.h>
 #include <drivers/drv_gpio.h>
 #include <modules/px4iofirmware/protocol.h>
+#include <arch/board/board.h>
+#include <board_config.h>
 
 #define LOW     0
 #define HIGH    1
@@ -201,6 +203,14 @@ AP_HAL::DigitalSource* PX4GPIO::channel(uint16_t n) {
 bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
 {
     return true;
+}
+
+/*
+  return true when USB connected
+ */
+bool PX4GPIO::usb_connected(void)
+{
+    return stm32_gpioread(GPIO_OTGFS_VBUS);
 }
 
 

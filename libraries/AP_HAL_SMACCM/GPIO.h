@@ -30,6 +30,8 @@ public:
     bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
             uint8_t mode);
 
+    /* return true if USB cable is connected */
+    bool    usb_connected(void);
 };
 
 class SMACCM::SMACCMDigitalSource : public AP_HAL::DigitalSource {
