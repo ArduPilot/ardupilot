@@ -310,10 +310,8 @@ static AP_Camera camera(&relay);
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
 
-// APM2 only
-#if USB_MUX_PIN > 0
+// remember if USB is connected, so we can adjust baud rate
 static bool usb_connected;
-#endif
 
 /* Radio values
  *               Channel assignments
