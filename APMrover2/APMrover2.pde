@@ -305,10 +305,8 @@ AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
 
-// APM2 only
-#if USB_MUX_PIN > 0
+// if USB is connected
 static bool usb_connected;
-#endif
 
 /* Radio values
 		Channel assignments
