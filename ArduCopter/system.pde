@@ -75,14 +75,7 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-#if USB_MUX_PIN > 0
-    // on the APM2 board we have a mux thet switches UART0 between
-    // USB and the board header. If the right ArduPPM firmware is
-    // installed we can detect if USB is connected using the
-    // USB_MUX_PIN
-    pinMode(USB_MUX_PIN, INPUT);
-
-    ap_system.usb_connected = !digitalRead(USB_MUX_PIN);
+    ap_system.usb_connected = hal.gpio->usb_connected();
     if (!ap_system.usb_connected) {
         // USB is not connected, this means UART0 may be a Xbee, with
         // its darned bricking problem. We can't write to it for at
@@ -91,7 +84,6 @@ static void init_ardupilot()
         // added later
         delay(1000);
     }
-#endif
 
     // Console serial port
     //
@@ -144,14 +136,17 @@ static void init_ardupilot()
     // hal.scheduler->delay.
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
-#if USB_MUX_PIN > 0
+    ap_system.usb_connected = hal.gpio->usb_connected();
     if (!ap_system.usb_connected) {
         // we are not connected via USB, re-init UART0 with right
         // baud rate
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
-#else
-    // we have a 2nd serial port for telemetry
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+    // we have a 2nd serial port for telemetry on all boards except
+    // APM2. We actually do have one on APM2 but it isn't necessary as
+    // a MUX is used 
     hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
     gcs3.init(hal.uartC);
 #endif
@@ -216,9 +211,9 @@ static void init_ardupilot()
 #if CLI_ENABLED == ENABLED
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-#if USB_MUX_PIN == 0
-    hal.uartC->println_P(msg);
-#endif
+    if (gcs3.initialised) {
+        hal.uartC->println_P(msg);
+    }
 #endif // CLI_ENABLED
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -549,10 +544,9 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     return default_baud;
 }
 
-#if USB_MUX_PIN > 0
 static void check_usb_mux(void)
 {
-    bool usb_check = !digitalRead(USB_MUX_PIN);
+    bool usb_check = hal.gpio->usb_connected();
     if (usb_check == ap_system.usb_connected) {
         return;
     }
@@ -565,7 +559,6 @@ static void check_usb_mux(void)
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
 }
-#endif
 
 /*
  *  called by gyro/accel init to flash LEDs so user

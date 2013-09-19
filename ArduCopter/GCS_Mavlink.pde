@@ -488,25 +488,16 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
 static bool telemetry_delayed(mavlink_channel_t chan)
 {
     uint32_t tnow = millis() >> 10;
-    if (tnow > (uint8_t)g.telem_delay) {
+    if (tnow > (uint32_t)g.telem_delay) {
         return false;
     }
-#if USB_MUX_PIN > 0
-    if (chan == MAVLINK_COMM_0 && ap_system.usb_connected) {
-        // this is an APM2 with USB telemetry
+    if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
+        // this is USB telemetry, so won't be an Xbee
         return false;
     }
     // we're either on the 2nd UART, or no USB cable is connected
-    // we need to delay telemetry
+    // we need to delay telemetry by the TELEM_DELAY time
     return true;
-#else
-    if (chan == MAVLINK_COMM_0) {
-        // we're on the USB port
-        return false;
-    }
-    // don't send telemetry yet
-    return true;
-#endif
 }
 
 
@@ -2168,9 +2159,7 @@ static void mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
     }
-#if USB_MUX_PIN > 0
     check_usb_mux();
-#endif
 
     in_mavlink_delay = false;
 }

@@ -1292,9 +1292,7 @@ static void slow_loop()
         if(g.radio_tuning > 0)
             tuning();
 
-#if USB_MUX_PIN > 0
         check_usb_mux();
-#endif
         break;
 
     default:
