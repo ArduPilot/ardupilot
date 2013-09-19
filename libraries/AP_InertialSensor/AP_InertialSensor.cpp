@@ -10,8 +10,6 @@
 extern const AP_HAL::HAL& hal;
 
 
-#define FLASH_LEDS(on) do { if (flash_leds_cb != NULL) flash_leds_cb(on); } while (0)
-
 #define SAMPLE_UNIT 1
 
 // Class level parameters
@@ -102,8 +100,7 @@ AP_InertialSensor::AP_InertialSensor() :
 
 void
 AP_InertialSensor::init( Start_style style,
-                         Sample_rate sample_rate,
-                         void (*flash_leds_cb)(bool on))
+                         Sample_rate sample_rate)
 {
     _product_id = _init_sensor(sample_rate);
 
@@ -116,7 +113,7 @@ AP_InertialSensor::init( Start_style style,
 
     if (WARM_START != style) {
         // do cold-start calibration for gyro only
-        _init_gyro(flash_leds_cb);
+        _init_gyro();
     }
 }
 
@@ -130,16 +127,16 @@ void AP_InertialSensor::_save_parameters()
 }
 
 void
-AP_InertialSensor::init_gyro(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::init_gyro()
 {
-    _init_gyro(flash_leds_cb);
+    _init_gyro();
 
     // save calibration
     _save_parameters();
 }
 
 void
-AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::_init_gyro()
 {
     Vector3f last_average, best_avg;
     Vector3f ins_gyro;
@@ -219,16 +216,16 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
 
 
 void
-AP_InertialSensor::init_accel(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::init_accel()
 {
-    _init_accel(flash_leds_cb);
+    _init_accel();
 
     // save calibration
     _save_parameters();
 }
 
 void
-AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::_init_accel()
 {
     int8_t flashcount = 0;
     Vector3f ins_accel;
@@ -310,10 +307,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 // http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
 // original sketch available at
 // http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
-bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
-                            AP_InertialSensor_UserInteract* interact,
-                            float &trim_roll,
-                            float &trim_pitch)
+bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact,
+                                        float &trim_roll,
+                                        float &trim_pitch)
 {
     Vector3f samples[6];
     Vector3f new_offsets;

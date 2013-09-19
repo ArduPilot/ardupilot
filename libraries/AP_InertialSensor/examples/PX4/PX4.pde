@@ -120,10 +120,6 @@ void display_offsets_and_scaling()
                     gyro_offsets.z);
 }
 
-static void flash_leds(bool on) {
-	// no LEDs yet on PX4
-}
-
 void run_level()
 {
     // clear off any input in the buffer
@@ -143,7 +139,7 @@ void run_level()
     }
 
     // run accel level
-    ins.init_accel(flash_leds);
+    ins.init_accel();
 
     // display results
     display_offsets_and_scaling();

@@ -49,21 +49,19 @@ public:
     /// @param style	The initialisation startup style.
     ///
     virtual void init( Start_style style,
-                       Sample_rate sample_rate,
-                       void        (*flash_leds_cb)(bool on));
+                       Sample_rate sample_rate);
 
     /// Perform cold startup initialisation for just the accelerometers.
     ///
     /// @note This should not be called unless ::init has previously
     ///       been called, as ::init may perform other work.
     ///
-    virtual void init_accel(void (*flash_leds_cb)(bool on));
+    virtual void init_accel();
 
 #if !defined( __AVR_ATmega1280__ )
     // perform accelerometer calibration including providing user instructions
     // and feedback
-    virtual bool calibrate_accel(void (*flash_leds_cb)(bool on),
-                                 AP_InertialSensor_UserInteract *interact,
+    virtual bool calibrate_accel(AP_InertialSensor_UserInteract *interact,
                                  float& trim_roll,
                                  float& trim_pitch);
 #endif
@@ -79,7 +77,7 @@ public:
     /// @note This should not be called unless ::init has previously
     ///       been called, as ::init may perform other work
     ///
-    virtual void init_gyro(void (*flash_leds_cb)(bool on));
+    virtual void init_gyro(void);
 
     /// Fetch the current gyro values
     ///
@@ -144,9 +142,9 @@ protected:
     virtual uint16_t        _init_sensor( Sample_rate sample_rate ) = 0;
 
     // no-save implementations of accel and gyro initialisation routines
-    virtual void  _init_accel(void (*flash_leds_cb)(bool on) = NULL);
+    virtual void  _init_accel();
 
-    virtual void _init_gyro(void (*flash_leds_cb)(bool on) = NULL);
+    virtual void _init_gyro();
 
 #if !defined( __AVR_ATmega1280__ )
     // Calibration routines borrowed from Rolfe Schmidt
