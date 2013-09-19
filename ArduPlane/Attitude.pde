@@ -475,6 +475,7 @@ static bool auto_takeoff_check(void)
         goto no_launch;
     }
 
+    // we've reached the acceleration threshold, so start the timer
     if (!launchTimerStarted) {
         launchTimerStarted = true;
         last_tkoff_arm_time = now;

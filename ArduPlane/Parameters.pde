@@ -113,7 +113,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 15
     // @Increment: 1
     // @User: User
-    GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  0),
+    GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  2),
 
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
