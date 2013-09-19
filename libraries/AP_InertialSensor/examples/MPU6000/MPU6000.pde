@@ -32,8 +32,7 @@ void setup(void)
 #endif
 
     ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ,
-			 NULL);
+			 AP_InertialSensor::RATE_100HZ);
 
     // display initial values
     display_offsets_and_scaling();
@@ -97,7 +96,7 @@ void run_calibration()
 
 #if !defined( __AVR_ATmega1280__ )
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    ins.calibrate_accel(NULL, &interact, roll_trim, pitch_trim);
+    ins.calibrate_accel(&interact, roll_trim, pitch_trim);
 #else
 	hal.console->println_P(PSTR("calibrate_accel not available on 1280"));
 #endif
