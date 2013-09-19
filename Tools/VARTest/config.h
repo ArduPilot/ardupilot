@@ -55,11 +55,6 @@
 # define CONFIG_BARO     AP_BARO_MS5611
 # define CONFIG_MS5611_SERIAL AP_BARO_MS5611_SPI
 
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
 # define SLIDE_SWITCH_PIN (-1)
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
