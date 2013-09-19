@@ -178,9 +178,6 @@ static void init_ardupilot()
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
-	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
-	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
-	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
 #if SLIDE_SWITCH_PIN > 0
 	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
 #endif
@@ -203,7 +200,6 @@ static void init_ardupilot()
 	//
 #if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
 	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
-		digitalWrite(A_LED_PIN,LED_ON);		// turn on setup-mode LED
 		cliSerial->printf_P(PSTR("\n"
 							 "Entering interactive setup mode...\n"
 							 "\n"
@@ -373,21 +369,16 @@ static void startup_INS_ground(bool force_accel_level)
     ahrs.init();
 	ahrs.set_fly_forward(true);
 	ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate, 
-             flash_leds);
+             ins_sample_rate);
 
     if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
         // levelling on each boot, and instead rely on the user to do
         // it once via the ground station	
-        ins.init_accel(flash_leds);
+        ins.init_accel();
         ahrs.set_trim(Vector3f(0, 0, 0));
 	}
     ahrs.reset();
-
-	digitalWrite(B_LED_PIN, LED_ON);		// Set LED B high to indicate INS ready
-	digitalWrite(A_LED_PIN, LED_OFF);
-	digitalWrite(C_LED_PIN, LED_OFF);
 }
 
 // updates the notify state
@@ -446,16 +437,6 @@ static void check_usb_mux(void)
 }
 
 
-
-/*
-  called by gyro/accel init to flash LEDs so user
-  has some mesmerising lights to watch while waiting
- */
-void flash_leds(bool on)
-{
-    digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
-    digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
-}
 
 /*
  * Read board voltage in millivolts

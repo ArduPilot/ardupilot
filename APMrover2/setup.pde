@@ -411,10 +411,9 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     cliSerial->println_P(PSTR("Initialising gyros"));
     ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    if(ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch)) {
+    if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
         // reset ahrs's trim to suggested values from calibration routine
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
@@ -428,9 +427,8 @@ setup_level(uint8_t argc, const Menu::arg *argv)
     cliSerial->println_P(PSTR("Initialising gyros"));
     ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
-    ins.init_accel(flash_leds);
+             ins_sample_rate);
+    ins.init_accel();
     ahrs.set_trim(Vector3f(0, 0, 0));
     return(0);
 }

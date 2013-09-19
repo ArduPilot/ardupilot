@@ -371,8 +371,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 	ahrs.init();
     ahrs.set_fly_forward(true);
 	ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate, 
-             flash_leds);
+             ins_sample_rate);
     ahrs.reset();
 
 	print_hit_enter();
@@ -437,8 +436,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     // we need the AHRS initialised for this test
 	ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate, 
-             flash_leds);
+             ins_sample_rate);
     ahrs.reset();
 
 	int counter = 0;
