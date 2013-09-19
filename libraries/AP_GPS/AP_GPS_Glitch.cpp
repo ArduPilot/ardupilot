@@ -1,0 +1,93 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+
+
+#include <AP_Common.h>
+#include <AP_Math.h>
+#include <AP_HAL.h>
+#include <AP_Notify.h>
+#include "AP_GPS_Glitch.h"
+
+extern const AP_HAL::HAL& hal;
+
+// constuctor
+GPS_Glitch::GPS_Glitch(GPS*& gps) :
+    _gps(gps)
+{
+    _flags.enabled = true;
+}
+
+// check_position - returns true if gps position is acceptable, false if not
+void GPS_Glitch::check_position()
+{
+    uint32_t now = hal.scheduler->millis(); // current system time
+    float sane_dt;                  // time since last sane gps reading
+    float accel_based_distance;     // movement based on max acceleration
+    Location curr_pos;              // our current position estimate
+    Location gps_pos;               // gps reported position
+    float distance_cm;              // distance from gps to current position estimate in cm
+    bool all_ok;                    // true if the new gps position passes sanity checks
+
+    // exit immediately if we don't have gps lock
+    if (_gps == NULL || _gps->status() != GPS::GPS_OK_FIX_3D) {
+        _flags.glitching = true;
+        _flags.recovered = false;
+        return;
+    }
+
+    // if not initialised or disabled update last good position and exit
+    if (!_flags.initialised || !_flags.enabled) {
+        _last_good_update = now;
+        _last_good_lat = _gps->latitude;
+        _last_good_lon = _gps->longitude;
+        _last_good_vel.x = _gps->velocity_north();
+        _last_good_vel.y = _gps->velocity_east();
+        _flags.initialised = true;
+        _flags.glitching = false;
+        _flags.recovered = false;
+        return;
+    }
+
+    // calculate time since last sane gps reading in ms
+    sane_dt = (now - _last_good_update) / 1000.0f;
+
+    // project forward our position from last known velocity
+    curr_pos.lat = _last_good_lat;
+    curr_pos.lng = _last_good_lon;
+    location_offset(curr_pos, _last_good_vel.x * sane_dt, _last_good_vel.y * sane_dt);
+
+    // calculate distance from recent gps position to current estimate
+    gps_pos.lat = _gps->latitude;
+    gps_pos.lng = _gps->longitude;
+    distance_cm = get_distance_cm(curr_pos, gps_pos);
+
+    // all ok if within a given hardcoded radius
+    if (distance_cm <= GPS_GLITCH_MIN_RADIUS_CM) {
+        all_ok = true;
+    }else{
+        // or if within the maximum distance we could have moved based on our acceleration
+        accel_based_distance = 0.5f * GPS_GLITCH_MAX_ACCEL_CMSS * sane_dt * sane_dt;
+        all_ok = (distance_cm <= accel_based_distance);
+    }
+
+    // store updates to gps position
+    if (all_ok) {
+        // position is acceptable
+        _last_good_update = now;
+        _last_good_lat = _gps->latitude;
+        _last_good_lon = _gps->longitude;
+        _last_good_vel.x = _gps->velocity_north();
+        _last_good_vel.y = _gps->velocity_east();
+        // if we were glitching, we have now recovered
+        _flags.recovered = _flags.glitching;
+    }else{
+        _flags.recovered = false;
+    }
+
+    // To-Do: we need to stop consumer from seeing 'recovered' flag multiple times because GPS updates
+    // are much slower than inertial updates
+    
+    // update glitching flag
+    _flags.glitching = !all_ok;
+}
+
