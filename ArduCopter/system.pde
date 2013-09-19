@@ -273,8 +273,7 @@ static void startup_ground(void)
     // Warm up and read Gyro offsets
     // -----------------------------
     ins.init(AP_InertialSensor::COLD_START,
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
  #if CLI_ENABLED == ENABLED
     report_ins();
  #endif
@@ -558,16 +557,6 @@ static void check_usb_mux(void)
     } else {
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
-}
-
-/*
- *  called by gyro/accel init to flash LEDs so user
- *  has some mesmerising lights to watch while waiting
- */
-void flash_leds(bool on)
-{
-    //digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
-    //digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
 /*

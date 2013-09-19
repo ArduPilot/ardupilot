@@ -1188,7 +1188,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.param1 == 1 ||
                 packet.param2 == 1 ||
                 packet.param3 == 1) {
-                ins.init_accel(flash_leds);
+                ins.init_accel();
                 ahrs.set_trim(Vector3f(0,0,0));             // clear out saved trim
             }
             if (packet.param4 == 1) {
@@ -1198,7 +1198,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 float trim_roll, trim_pitch;
                 // this blocks
                 AP_InertialSensor_UserInteract_MAVLink interact(chan);
-                if(ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch)) {
+                if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                 }

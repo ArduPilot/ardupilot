@@ -177,8 +177,7 @@ test_compass(uint8_t argc, const Menu::arg *argv)
 
     // we need the AHRS initialised for this test
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     ahrs.reset();
     int16_t counter = 0;
     float heading = 0;
@@ -277,8 +276,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
     ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     cliSerial->printf_P(PSTR("...done\n"));
 
     delay(50);
