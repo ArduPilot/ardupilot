@@ -75,8 +75,7 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-    ap_system.usb_connected = hal.gpio->usb_connected();
-    if (!ap_system.usb_connected) {
+    if (!hal.gpio->usb_connected()) {
         // USB is not connected, this means UART0 may be a Xbee, with
         // its darned bricking problem. We can't write to it for at
         // least one second after powering up. Simplest solution for
@@ -136,12 +135,10 @@ static void init_ardupilot()
     // hal.scheduler->delay.
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
-    ap_system.usb_connected = hal.gpio->usb_connected();
-    if (!ap_system.usb_connected) {
-        // we are not connected via USB, re-init UART0 with right
-        // baud rate
-        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
-    }
+    // we start by assuming USB connected, as we initialed the serial
+    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
+    ap_system.usb_connected = true;
+    check_usb_mux();
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_APM2
     // we have a 2nd serial port for telemetry on all boards except
@@ -552,11 +549,18 @@ static void check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     ap_system.usb_connected = usb_check;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    // the APM2 has a MUX setup where the first serial port switches
+    // between USB and a TTL serial connection. When on USB we use
+    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
+    // at SERIAL3_BAUD.
     if (ap_system.usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
+#endif
 }
 
 /*
