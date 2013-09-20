@@ -154,7 +154,8 @@ static void stabilize_stick_mixing_fbw()
         control_mode == FLY_BY_WIRE_A ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
-        control_mode == TRAINING) {
+        control_mode == TRAINING ||
+        (control_mode == AUTO && g.auto_fbw_steer)) {
         return;
     }
     // do FBW style stick mixing. We don't treat it linearly
