@@ -316,7 +316,7 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
         case 'f': {
             float v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%f"), v);
+            port->printf_P(PSTR("%.6f"), v);
             ofs += sizeof(v);
             break;
         }
