@@ -434,6 +434,14 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
 
 static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
 {
+    // run this message at a much lower rate - otherwise it
+    // pointlessly wastes quite a lot of bandwidth
+    static uint8_t counter;
+    if (counter++ < 10) {
+        return;
+    }
+    counter = 0;
+
     Vector3f mag_offsets = compass.get_offsets();
     Vector3f accel_offsets = ins.get_accel_offsets();
     Vector3f gyro_offsets = ins.get_gyro_offsets();
