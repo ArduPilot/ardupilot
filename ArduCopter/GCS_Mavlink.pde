@@ -304,6 +304,7 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 
 }
 
+#if HIL_MODE != HIL_MODE_DISABLED
 static void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
     // normalized values scaled to -10000 to 10000
@@ -374,6 +375,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
  #endif
 #endif
 }
+#endif // HIL_MODE
 
 static void NOINLINE send_radio_in(mavlink_channel_t chan)
 {
@@ -555,8 +557,10 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         break;
 
     case MSG_SERVO_OUT:
+#if HIL_MODE != HIL_MODE_DISABLED
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         send_servo_out(chan);
+#endif
         break;
 
     case MSG_RADIO_IN:
