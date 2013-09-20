@@ -710,7 +710,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { gcs_data_stream_send,   1,   3000 },
     { update_mount,           1,   1500 },
     { update_events,		 15,   1500 },
-    { check_usb_mux,          5,   1000 },
+    { check_usb_mux,          5,    200 },
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 }, // 20
