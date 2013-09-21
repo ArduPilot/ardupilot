@@ -35,7 +35,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include "print_vprintf.h"
+#include "utility/print_vprintf.h"
 #include "UARTDriver.h"
 #include "SITL_State.h"
 

@@ -5,8 +5,8 @@
 
 #include <limits.h>
 #include <stdarg.h>
+#include "utility/print_vprintf.h"
 #include "Console.h"
-#include "print_vprintf.h"
 
 using namespace AVR_SITL;
 
