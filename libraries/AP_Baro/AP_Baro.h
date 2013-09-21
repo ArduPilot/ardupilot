@@ -18,11 +18,12 @@ public:
 
     virtual bool            init()=0;
     virtual uint8_t         read() = 0;
-    virtual float           get_pressure() = 0;
-    virtual float           get_temperature() = 0;
 
-    virtual int32_t         get_raw_pressure() = 0;
-    virtual int32_t         get_raw_temp() = 0;
+    // pressure in Pascal. Divide by 100 for millibars or hectopascals
+    virtual float           get_pressure() = 0;
+
+    // temperature in degrees C
+    virtual float           get_temperature() = 0;
 
     // accumulate a reading - overridden in some drivers
     virtual void            accumulate(void) {}
@@ -49,10 +50,14 @@ public:
     // going up
     float           get_climb_rate(void);
 
+    // ground temperature in degrees C
     // the ground values are only valid after calibration
     float           get_ground_temperature(void) {
         return _ground_temperature.get();
     }
+
+    // ground pressure in Pascal
+    // the ground values are only valid after calibration
     float           get_ground_pressure(void) {
         return _ground_pressure.get();
     }

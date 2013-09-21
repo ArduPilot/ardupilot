@@ -22,7 +22,7 @@
  *       Chip Select pin: Analog2 (provisional until Jordi defines the pin)!!
  *
  *       Variables:
- *               Temp : Calculated temperature (in Celsius degrees * 100)
+ *               Temp : Calculated temperature (in Celsius degrees)
  *               Press : Calculated pressure   (in mbar units * 100)
  *
  *
@@ -404,7 +404,7 @@ void AP_Baro_MS5611::_calculate()
     }
 
     P = (D1*SENS/2097152 - OFF)/32768;
-    Temp = TEMP + 2000;
+    Temp = (TEMP + 2000) * 0.01f;
     Press = P;
 }
 
@@ -415,16 +415,7 @@ float AP_Baro_MS5611::get_pressure()
 
 float AP_Baro_MS5611::get_temperature()
 {
-    // callers want the temperature in 0.1C units
-    return Temp/10;
+    // temperature in degrees C units
+    return Temp;
 }
-
-int32_t AP_Baro_MS5611::get_raw_pressure() {
-    return _raw_press;
-}
-
-int32_t AP_Baro_MS5611::get_raw_temp() {
-    return _raw_temp;
-}
-
 

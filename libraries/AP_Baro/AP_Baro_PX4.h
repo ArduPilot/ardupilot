@@ -12,8 +12,6 @@ public:
     uint8_t read();
     float get_pressure();
     float get_temperature();
-    int32_t get_raw_pressure();
-    int32_t get_raw_temp();
 
 private:
     float _temperature;

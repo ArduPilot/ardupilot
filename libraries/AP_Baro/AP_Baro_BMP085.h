@@ -22,9 +22,6 @@ public:
     float           get_pressure();
     float           get_temperature();
 
-    int32_t         get_raw_pressure();
-    int32_t         get_raw_temp();
-
 private:
     int32_t         RawPress;
     int32_t         RawTemp;

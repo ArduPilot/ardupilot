@@ -141,7 +141,7 @@ uint8_t AP_Baro_BMP085::read()
     }
     _last_update = hal.scheduler->millis();
 
-    Temp = _temp_sum / _count;
+    Temp = 0.1f * _temp_sum / _count;
     Press = _press_sum / _count;
 
     _pressure_samples = _count;
@@ -158,14 +158,6 @@ float AP_Baro_BMP085::get_pressure() {
 
 float AP_Baro_BMP085::get_temperature() {
     return Temp;
-}
-
-int32_t AP_Baro_BMP085::get_raw_pressure() {
-    return RawPress;
-}
-
-int32_t AP_Baro_BMP085::get_raw_temp() {
-    return RawTemp;
 }
 
 // Private functions: /////////////////////////////////////////////////////////

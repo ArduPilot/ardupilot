@@ -77,10 +77,7 @@ public:
     bool            init();
     uint8_t         read();
     float           get_pressure(); // in mbar*100 units
-    float           get_temperature(); // in celsius degrees * 100 units
-
-    int32_t         get_raw_pressure();
-    int32_t         get_raw_temp();
+    float           get_temperature(); // in celsius degrees
 
     void            _calculate();
 

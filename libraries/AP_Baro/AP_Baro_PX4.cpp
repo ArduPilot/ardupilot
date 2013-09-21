@@ -52,7 +52,7 @@ uint8_t AP_Baro_PX4::read(void)
     }
 
     _pressure    = (_pressure_sum / _sum_count) * 100.0f;
-    _temperature = (_temperature_sum / _sum_count) * 10.0f;
+    _temperature = _temperature_sum / _sum_count;
     _pressure_samples = _sum_count;
     _last_update = (uint32_t)_last_timestamp/1000;
     _pressure_sum = 0;
@@ -80,14 +80,6 @@ float AP_Baro_PX4::get_pressure() {
 }
 
 float AP_Baro_PX4::get_temperature() {
-    return _temperature;
-}
-
-int32_t AP_Baro_PX4::get_raw_pressure() {
-    return _pressure;
-}
-
-int32_t AP_Baro_PX4::get_raw_temp() {
     return _temperature;
 }
 

@@ -115,7 +115,7 @@ void AP_Baro::calibrate()
     }
 
     _ground_pressure.set_and_save(ground_pressure);
-    _ground_temperature.set_and_save(ground_temperature / 10.0f);
+    _ground_temperature.set_and_save(ground_temperature);
 }
 
 // return current altitude estimate relative to time that calibrate()
