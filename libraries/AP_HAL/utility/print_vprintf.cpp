@@ -173,7 +173,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                 flt_oper:
                         float value = va_arg(ap,double);
                         if (!(flags & FL_PREC))
-                                prec = 7;
+                                prec = 6;
                         flags &= ~(FL_FLTEXP | FL_FLTFIX);
                         if (c == 'e') {
                                 flags |= FL_FLTEXP;
@@ -284,7 +284,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                                 s->write('.');
                                         flags = (n <= exp && n > exp - ndigs)
                                                 ? buf[exp - n + 1] : '0';
-                                        if (--n < -prec)
+                                        if (--n < -prec || flags == 0)
                                                 break;
                                         s->write(flags);
                                 } while (1);
@@ -294,7 +294,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                         {
                                                 flags = '1';
                                         }
-                                s->write(flags);
+                                if (flags) s->write(flags);
         
                         } else {                                /* 'e(E)' format        */
 
