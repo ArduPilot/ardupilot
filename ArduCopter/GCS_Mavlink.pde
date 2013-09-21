@@ -445,9 +445,9 @@ static void NOINLINE send_raw_imu2(mavlink_channel_t chan)
     mavlink_msg_scaled_pressure_send(
         chan,
         millis(),
-        (float)barometer.get_pressure()/100.0f,
-        (float)(barometer.get_pressure() - barometer.get_ground_pressure())/100.0f,
-        (int)(barometer.get_temperature()*10));
+        barometer.get_pressure()*0.01f, // hectopascal
+        (barometer.get_pressure() - barometer.get_ground_pressure())*0.01f, // hectopascal
+        (int16_t)(barometer.get_temperature()*100)); // 0.01 degrees C
 }
 
 static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
@@ -461,8 +461,8 @@ static void NOINLINE send_raw_imu3(mavlink_channel_t chan)
                                     mag_offsets.y,
                                     mag_offsets.z,
                                     compass.get_declination(),
-                                    barometer.get_raw_pressure(),
-                                    barometer.get_raw_temp(),
+                                    barometer.get_pressure(),
+                                    barometer.get_temperature()*100,
                                     gyro_offsets.x,
                                     gyro_offsets.y,
                                     gyro_offsets.z,

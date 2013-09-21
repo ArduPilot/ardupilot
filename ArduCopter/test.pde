@@ -95,8 +95,9 @@ test_baro(uint8_t argc, const Menu::arg *argv)
             cliSerial->println_P(PSTR("not healthy"));
         } else {
             cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),
-                            alt / 100.0,
-                            barometer.get_pressure(), 0.1*barometer.get_temperature());
+                                alt / 100.0,
+                                barometer.get_pressure(), 
+                                barometer.get_temperature());
         }
         if(cliSerial->available() > 0) {
             return (0);
