@@ -39,45 +39,17 @@
 
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
 #include <AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 
 #include "ftoa_engine.h"
 #include "xtoa_fast.h"
-#include "ntz.h"
 
 #include "print_vprintf.h"
 
-// workaround for GCC bug c++/34734
-#undef PROGMEM 
-#define PROGMEM __attribute__(( section(".progmem.data") )) 
-#undef PSTR 
-#if __AVR__ && __GNUC__ == 4 && __GNUC_MINOR > 5
-/* Need const type for progmem: new for avr-gcc 4.6 */
-#define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
-#else
-#define PSTR(s) (__extension__({static const prog_char __c[] PROGMEM = (s); &__c[0];})) 
-#endif
-
-#ifdef GETBYTE
-#undef GETBYTE
-#endif
-#define GETBYTE(flag, mask, pnt)        ({                              \
-                        unsigned char __c;                              \
-                        asm (                                           \
-                             "sbrc      %2,%3   \n\t"                   \
-                             "lpm       %0,Z+   \n\t"                   \
-                             "sbrs      %2,%3   \n\t"                   \
-                             "ld        %0,Z+   "                       \
-                             : "=r" (__c),                              \
-                               "+z" (pnt)                               \
-                             : "r" (flag),                              \
-                               "I" (ntz(mask))                          \
-                        );                                              \
-                        __c;                                            \
-                })
+#define GETBYTE(flag, mask, pnt) ((flag)&(mask)?pgm_read_byte(pnt++):*pnt++)
 
 #define FL_ZFILL	0x01
 #define FL_PLUS		0x02
@@ -104,7 +76,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
         unsigned char flags;
         unsigned char width;
         unsigned char prec;
-        unsigned char buf[11];  /* size for -1 in octal, without '\0'   */
+        unsigned char buf[13];
 
         for (;;) {
 
@@ -199,25 +171,30 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                         flags &= ~FL_FLTUPP;
 
                 flt_oper:
+                        float value = va_arg(ap,double);
                         if (!(flags & FL_PREC))
-                                prec = 6;
+                                prec = 7;
                         flags &= ~(FL_FLTEXP | FL_FLTFIX);
-                        if (c == 'e')
+                        if (c == 'e') {
                                 flags |= FL_FLTEXP;
-                        else if (c == 'f')
+                        } else if (c == 'f') {
                                 flags |= FL_FLTFIX;
-                        else if (prec > 0)
+                        } else if (prec > 0)
                                 prec -= 1;
+                        if ((flags & FL_FLTFIX) && fabsf(value) > 9999999) {
+                                flags = (flags & ~FL_FLTFIX) | FL_FLTEXP;
+                        }
 
                         if (flags & FL_FLTFIX) {
                                 vtype = 7;              /* 'prec' arg for 'ftoa_engine' */
                                 ndigs = prec < 60 ? prec + 1 : 60;
                         } else {
-                                if (prec > 7) prec = 7;
+                                if (prec > 10) prec = 10;
                                 vtype = prec;
                                 ndigs = 0;
                         }
-                        exp = ftoa_engine(va_arg(ap,double), (char *)buf, vtype, ndigs);
+                        memset(buf, 0, sizeof(buf));
+                        exp = ftoa_engine(value, (char *)buf, vtype, ndigs);
                         vtype = buf[0];
     
                         sign = 0;
@@ -229,7 +206,6 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 sign = ' ';
 
                         if (vtype & (FTOA_NAN | FTOA_INF)) {
-                                const char *p;
                                 ndigs = sign ? 4 : 3;
                                 if (width > ndigs) {
                                         width -= ndigs;
@@ -243,7 +219,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 }
                                 if (sign)
                                         s->write(sign);
-                                p = PSTR("inf");
+                                const prog_char_t *p = PSTR("inf");
                                 if (vtype & FTOA_NAN)
                                         p = PSTR("nan");
                                 while ( (ndigs = pgm_read_byte((const prog_char *)p)) != 0) {
@@ -520,4 +496,3 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
         } /* for (;;) */
 }
 
-#endif

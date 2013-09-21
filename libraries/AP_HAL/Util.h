@@ -8,17 +8,17 @@
 
 class AP_HAL::Util {
 public:
-    virtual int snprintf(char* str, size_t size,
-            const char *format, ...) = 0;
+    int snprintf(char* str, size_t size,
+                 const char *format, ...);
 
-    virtual int snprintf_P(char* str, size_t size,
-            const prog_char_t *format, ...) = 0;
+    int snprintf_P(char* str, size_t size,
+                   const prog_char_t *format, ...);
 
-    virtual int vsnprintf(char* str, size_t size,
-            const char *format, va_list ap) = 0;
+    int vsnprintf(char* str, size_t size,
+                  const char *format, va_list ap);
 
-    virtual int vsnprintf_P(char* str, size_t size,
-            const prog_char_t *format, va_list ap) = 0;
+    int vsnprintf_P(char* str, size_t size,
+                    const prog_char_t *format, va_list ap);
 
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade

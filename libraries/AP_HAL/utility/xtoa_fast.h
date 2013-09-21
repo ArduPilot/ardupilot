@@ -1,4 +1,7 @@
-/* Copyright (c) 2007, Dmitry Xmelkov
+/*
+   Adapted from avr-libc:
+
+   Copyright (c) 2005, Dmitry Xmelkov
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -26,29 +29,16 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: ntz.h 1217 2007-02-18 13:18:05Z dmix $	*/
+/* $Id: xtoa_fast.h 1223 2007-02-18 13:33:09Z dmix $	*/
 
-#ifndef	_NTZ_H
-#define	_NTZ_H
+#ifndef	_XTOA_FAST_H_
+#define _XTOA_FAST_H_
 
-/* Number of Tail Zeros:  ntz(x)= (ffs(x) ? ffs(x)-1 : 16)
-   It works with all: cpp, gcc and gas expressions.	*/
-#define ntz(x)	\
-	( (1 & (((x) & 1) == 0))        \
-	+ (1 & (((x) & 3) == 0))        \
-    	+ (1 & (((x) & 7) == 0))        \
-        + (1 & (((x) & 017) == 0))      \
-        + (1 & (((x) & 037) == 0))      \
-	+ (1 & (((x) & 077) == 0))      \
-	+ (1 & (((x) & 0177) == 0))     \
-	+ (1 & (((x) & 0377) == 0))     \
-	+ (1 & (((x) & 0777) == 0))     \
-	+ (1 & (((x) & 01777) == 0))    \
-	+ (1 & (((x) & 03777) == 0))    \
-	+ (1 & (((x) & 07777) == 0))    \
-	+ (1 & (((x) & 017777) == 0))   \
-	+ (1 & (((x) & 037777) == 0))   \
-	+ (1 & (((x) & 077777) == 0))   \
-	+ (1 & (((x) & 0177777) == 0)) )
+/* Internal function for use from `printf'.	*/
+char *ultoa_invert (uint32_t val, char *s, uint8_t base);
 
-#endif	/* !_NTZ_H */
+/* Next flags are to use with `base'. Unused fields are reserved.	*/
+#define XTOA_PREFIX	0x0100	/* put prefix for octal or hex	*/
+#define XTOA_UPPER	0x0200	/* use upper case letters	*/
+
+#endif	/* _XTOA_FAST_H_ */
