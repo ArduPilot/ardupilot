@@ -51,8 +51,6 @@ public:
 private:
     const char *_devpath;
     int _fd;
-    void _vprintf(const char *fmt, va_list ap);
-    void _internal_vprintf(const char *fmt, va_list ap);
 
     bool _nonblocking_writes;
 
