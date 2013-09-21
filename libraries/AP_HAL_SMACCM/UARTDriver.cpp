@@ -102,11 +102,8 @@ void SMACCMUARTDriver::_printf_P(const prog_char *fmt, ...)
   va_end(ap);
 }
 
-void SMACCMUARTDriver::vprintf(const char *pstr, va_list ap)
-{
-  char buf[128];
-  vsnprintf(buf, sizeof(buf), pstr, ap);
-  print(buf);
+void SMACCMUARTDriver::vprintf(const char *fmt, va_list ap) {
+    print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
 }
 
 void SMACCMUARTDriver::vprintf_P(const prog_char *pstr, va_list ap)
