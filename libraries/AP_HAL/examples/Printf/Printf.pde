@@ -30,7 +30,26 @@ static const struct {
     { "%.1f", 3.71f, "3.7" },
     { "%.1f", 3.75f, "3.8" },
     { "%.2f", 3.75f, "3.75" },
-    { "%.7f", 3.75f, "3.7500000" }
+    { "%.7f", 3.75f, "3.750000" },
+    { "%f", 10.4f, "10.40000" },
+    { "%f", 10.6f, "10.60000" },
+    { "%f", 1020.4f, "1020.400" },
+    { "%f", 1030.6f, "1030.600" },
+    { "%f", 10304052.6f, "1.0304053e+07" },
+    { "%f", 103040501.6f, "1.0304050e+08" },
+    { "%f", 1030405023.6f, "1.0304050e+09" },
+    { "%f", -1030.6f, "-1030.600" },
+    { "%f", -10304052.6f, "-1.0304053e+07" },
+    { "%f", -103040501.6f, "-1.0304050e+08" },
+    { "%f", -1030405023.6f, "-1.0304050e+09" },
+    { "%e", 103040501.6f, "1.0304050e+08" },
+    { "%g", 103040501.6f, "1.030405e+08" },
+    { "%e", -103040501.6f, "-1.0304050e+08" },
+    { "%g", -103040501.6f, "-1.030405e+08" },
+    { "%.0f", 10.4f, "10" },
+    { "%.0f", 10.6f, "11" },
+    { "%.1f", 10.4f, "10.4" },
+    { "%.1f", 10.6f, "10.6" },
 };
 
 static void test_printf(void)
@@ -42,10 +61,11 @@ static void test_printf(void)
     for (i=0; i<sizeof(float_tests)/sizeof(float_tests[0]); i++) {
         hal.util->snprintf(buf, sizeof(buf), float_tests[i].fmt, float_tests[i].v);
         if (strcmp(buf, float_tests[i].result) != 0) {
-            hal.console->printf("Failed float_tests[%u] '%s' -> '%s'\n", 
+            hal.console->printf("Failed float_tests[%u] '%s' -> '%s' should be '%s'\n", 
                                 (unsigned)i, 
                                 float_tests[i].fmt,
-                                buf);
+                                buf,
+                                float_tests[i].result);
             failures++;
         }
     }
