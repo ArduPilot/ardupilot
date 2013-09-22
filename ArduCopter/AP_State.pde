@@ -80,6 +80,9 @@ void set_low_battery(bool b)
 static void set_failsafe_gps(bool b)
 {
     ap.failsafe_gps = b;
+
+    // update AP_Notify
+    AP_Notify::flags.failsafe_gps = b;
 }
 
 // ---------------------------------------------

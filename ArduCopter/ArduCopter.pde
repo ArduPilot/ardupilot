@@ -1388,8 +1388,9 @@ static void update_GPS(void)
         // for performance monitoring
         gps_fix_count++;
 
-        // run glitch protection
+        // run glitch protection and update AP_Notify
         gps_glitch.check_position();
+        AP_Notify::flags.gps_glitching = gps_glitch.glitching();
 
         // check if we can initialise home yet
         if (!ap.home_is_set) {
