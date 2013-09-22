@@ -219,7 +219,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: CIRCLE_RADIUS
     // @DisplayName: Circle radius
-    // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
+    // @Description: Defines the radius of the circle in Circle flight mode. A positive radius projects the center point forward, negative uses current position as center point and moves copter backward before circling. Zero is stationary panorama mode.
     // @Units: Meters
     // @Range: 1 127
     // @Increment: 1
