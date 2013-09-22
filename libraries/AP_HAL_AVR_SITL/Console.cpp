@@ -5,7 +5,6 @@
 
 #include <limits.h>
 #include <stdarg.h>
-#include "utility/print_vprintf.h"
 #include "Console.h"
 
 using namespace AVR_SITL;
@@ -35,48 +34,6 @@ size_t SITLConsoleDriver::backend_read(uint8_t *data, size_t len)
 size_t SITLConsoleDriver::backend_write(const uint8_t *data, size_t len) 
 {
 	return 0;
-}
-
-// SITLConsoleDriver private method implementations ////////////////////////////
-
-// BetterStream method implementations /////////////////////////////////////////
-void SITLConsoleDriver::print_P(const prog_char_t *s) 
-{
-        char    c;
-        while ('\0' != (c = pgm_read_byte((const prog_char *)s++)))
-                write(c);
-}
-
-void SITLConsoleDriver::println_P(const prog_char_t *s) 
-{
-        print_P(s);
-        println();
-}
-
-void SITLConsoleDriver::printf(const char *fmt, ...) 
-{
-        va_list ap;
-        va_start(ap, fmt);
-        vprintf(fmt, ap);
-        va_end(ap);
-}
-
-void SITLConsoleDriver::vprintf(const char *fmt, va_list ap) 
-{
-        print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
-}
-
-void SITLConsoleDriver::_printf_P(const prog_char *fmt, ...) 
-{
-        va_list ap;
-        va_start(ap, fmt);
-        vprintf_P(fmt, ap);
-        va_end(ap);
-}
-
-void SITLConsoleDriver::vprintf_P(const prog_char *fmt, va_list ap) 
-{
-        print_vprintf((AP_HAL::Print*)this, 1, fmt, ap);
 }
 
 // Stream method implementations /////////////////////////////////////////
