@@ -32,6 +32,9 @@ void EmptyScheduler::register_delay_callback(AP_HAL::Proc k,
 void EmptyScheduler::register_timer_process(AP_HAL::TimedProc k)
 {}
 
+void EmptyScheduler::register_io_process(AP_HAL::TimedProc k)
+{}
+
 void EmptyScheduler::register_timer_failsafe(AP_HAL::TimedProc,
             uint32_t period_us)
 {}
