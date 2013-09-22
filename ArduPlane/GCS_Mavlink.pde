@@ -1809,6 +1809,44 @@ mission_failed:
     }
 #endif // GEOFENCE_ENABLED
 
+    // receive a rally point from GCS and store in EEPROM
+    case MAVLINK_MSG_ID_RALLY_POINT: {
+        mavlink_rally_point_t packet;
+        mavlink_msg_rally_point_decode(msg, &packet);
+        if (mavlink_check_target(packet.target_system, packet.target_component))
+            break;
+        
+        if (packet.count != g.rally_total) {
+            send_text_P(SEVERITY_LOW,PSTR("bad rally point message"));
+        } else {
+            RallyLocation rally_point;
+            rally_point.lat = packet.lat;
+            rally_point.lng = packet.lng;
+            rally_point.alt = packet.alt;
+            rally_point.break_alt = packet.break_alt;
+            rally_point.land_dir = packet.land_dir;
+            rally_point.flags = packet.flags;
+            set_rally_point_with_index(rally_point, packet.idx);
+        }
+        break;
+    }
+
+    //send a rally point to the GCS
+    case MAVLINK_MSG_ID_RALLY_FETCH_POINT: {
+        mavlink_rally_fetch_point_t packet;
+        mavlink_msg_rally_fetch_point_decode(msg, &packet);
+        if (mavlink_check_target(packet.target_system, packet.target_component))
+            break;
+        if (packet.idx > g.rally_total) {
+            send_text_P(SEVERITY_LOW, PSTR("bad rally point"));   
+        } else {
+            RallyLocation rally_point = get_rally_point_with_index(packet.idx);
+            mavlink_msg_rally_point_send(chan, msg->sysid, msg->compid, packet.idx, g.rally_total, rally_point.lat, rally_point.lng, rally_point.alt, rally_point.break_alt, rally_point.land_dir, rally_point.flags);
+        }
+
+        break;
+    }    
+
     case MAVLINK_MSG_ID_PARAM_SET:
     {
         AP_Param                  *vp;

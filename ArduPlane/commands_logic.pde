@@ -233,18 +233,26 @@ static void do_RTL(void)
 {
     control_mode    = RTL;
     prev_WP = current_loc;
-    next_WP = home;
+
+    if ((unsigned) g.rally_total.get() < 1) {
+        next_WP = home;
+
+        // Altitude to hold over home
+        // Set by configuration tool
+        // -------------------------
+        next_WP.alt = read_alt_to_hold();
+
+    } else { //we have setup Rally points: use them instead of Home for RTL
+        RallyLocation ral_loc = find_best_rally_point();
+
+        next_WP = rally_location_to_location(ral_loc);
+    }
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
     }
-
-    // Altitude to hold over home
-    // Set by configuration tool
-    // -------------------------
-    next_WP.alt = read_alt_to_hold();
 
     setup_glide_slope();
 

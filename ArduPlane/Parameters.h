@@ -241,6 +241,8 @@ public:
         k_param_L1_controller,
         k_param_rcmap,
         k_param_TECS_controller,
+        
+        k_param_rally_total,
 
         //
         // 240: PID Controllers
@@ -307,6 +309,8 @@ public:
     AP_Int16 fence_minalt;    // meters
     AP_Int16 fence_maxalt;    // meters
 #endif
+
+    AP_Int8 rally_total;
 
     // Fly-by-wire
     //

@@ -219,7 +219,12 @@ enum log_messages {
 #define FENCE_WP_SIZE sizeof(Vector2l)
 #define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
 
-#define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // -
+// rally points shoehorned between fence points and waypoints
+#define MAX_RALLYPOINTS 10
+#define RALLY_WP_SIZE 15
+#define RALLY_START_BYTE (FENCE_START_BYTE-(MAX_RALLYPOINTS*RALLY_WP_SIZE))
+
+#define MAX_WAYPOINTS  ((RALLY_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // -
                                                                           // 1
                                                                           // to
                                                                           // be
