@@ -16,7 +16,6 @@
 #include <termios.h>
 #include <drivers/drv_hrt.h>
 #include <assert.h>
-#include "utility/print_vprintf.h"
 
 using namespace PX4;
 
@@ -129,40 +128,6 @@ void PX4UARTDriver::set_blocking_writes(bool blocking)
     _nonblocking_writes = !blocking;
 }
 bool PX4UARTDriver::tx_pending() { return false; }
-
-/* PX4 implementations of BetterStream virtual methods */
-void PX4UARTDriver::print_P(const prog_char_t *pstr) {
-	print(pstr);
-}
-
-void PX4UARTDriver::println_P(const prog_char_t *pstr) {
-	println(pstr);
-}
-
-void PX4UARTDriver::printf(const char *fmt, ...) 
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-}
-
-void PX4UARTDriver::vprintf(const char *fmt, va_list ap) {
-    print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
-}
-
-void PX4UARTDriver::_printf_P(const prog_char *fmt, ...) 
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf_P(fmt, ap);
-    va_end(ap);
-}
-
-void PX4UARTDriver::vprintf_P(const prog_char *fmt, va_list ap) {
-    print_vprintf((AP_HAL::Print*)this, 1, fmt, ap);
-}
-
 
 /*
   buffer handling macros
