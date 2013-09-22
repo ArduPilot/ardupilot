@@ -28,9 +28,8 @@
 
 #include <AP_HAL.h>
 #include <AP_Math.h>
-
-#include "utility/print_vprintf.h"
 #include "UARTDriver.h"
+
 using namespace AP_HAL_AVR;
 
 #define FS_MAX_PORTS 4
@@ -254,40 +253,6 @@ void AVRUARTDriver::_freeBuffer(Buffer *buffer)
 		free(buffer->bytes);
 		buffer->bytes = NULL;
 	}
-}
-
-// BetterStream method implementations /////////////////////////////////////////
-void AVRUARTDriver::print_P(const prog_char_t *s) {
-        char    c;
-        while ('\0' != (c = pgm_read_byte((const prog_char *)s++)))
-                write(c);
-}
-
-void AVRUARTDriver::println_P(const prog_char_t *s) {
-        print_P(s);
-        println();
-}
-
-void AVRUARTDriver::printf(const char *fmt, ...) {
-        va_list ap;
-        va_start(ap, fmt);
-        vprintf(fmt, ap);
-        va_end(ap);
-}
-
-void AVRUARTDriver::vprintf(const char *fmt, va_list ap) {
-        print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
-}
-
-void AVRUARTDriver::_printf_P(const prog_char *fmt, ...) {
-        va_list ap;
-        va_start(ap, fmt);
-        vprintf_P(fmt, ap);
-        va_end(ap);
-}
-
-void AVRUARTDriver::vprintf_P(const prog_char *fmt, va_list ap) {
-        print_vprintf((AP_HAL::Print*)this, 1, fmt, ap);
 }
 
 #endif
