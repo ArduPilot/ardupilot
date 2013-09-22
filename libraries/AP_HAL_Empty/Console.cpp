@@ -24,36 +24,6 @@ size_t EmptyConsoleDriver::backend_write(const uint8_t *data, size_t len) {
     return 0;
 }
 
-void EmptyConsoleDriver::print_P(const prog_char_t *pstr) {
-    _d->print_P(pstr);
-}
-
-void EmptyConsoleDriver::println_P(const prog_char_t *pstr) {
-    _d->println_P(pstr);
-}
-
-void EmptyConsoleDriver::printf(const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-}
-
-void EmptyConsoleDriver::_printf_P(const prog_char *fmt, ...) {
-    va_list ap;
-    va_start(ap,fmt);
-    vprintf_P(fmt, ap);
-    va_end(ap);
-}
-
-void EmptyConsoleDriver::vprintf(const char *fmt, va_list ap) {
-    _d->vprintf(fmt, ap);
-}
-
-void EmptyConsoleDriver::vprintf_P(const prog_char *fmt, va_list ap) {
-    _d->vprintf_P(fmt, ap);
-}
-
 int16_t EmptyConsoleDriver::available() {
     return _d->available();
 }
