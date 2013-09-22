@@ -181,7 +181,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 flags |= FL_FLTFIX;
                         } else if (prec > 0)
                                 prec -= 1;
-                        if ((flags & FL_FLTFIX) && fabsf(value) > 9999999) {
+                        if ((flags & FL_FLTFIX) && fabs(value) > 9999999) {
                                 flags = (flags & ~FL_FLTFIX) | FL_FLTEXP;
                         }
 
