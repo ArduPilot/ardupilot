@@ -62,42 +62,6 @@ size_t SMACCMConsoleDriver::backend_write(const uint8_t *data, size_t len)
    return len;
  }
 
-void SMACCMConsoleDriver::print_P(const prog_char_t *pstr)
-{
-  _d->print_P(pstr);
-}
-
-void SMACCMConsoleDriver::println_P(const prog_char_t *pstr)
-{
-  _d->println_P(pstr);
-}
-
-void SMACCMConsoleDriver::printf(const char *pstr, ...)
-{
-  va_list ap;
-  va_start(ap, pstr);
-  _d->vprintf(pstr, ap);
-  va_end(ap);
-}
-
-void SMACCMConsoleDriver::_printf_P(const prog_char *pstr, ...)
-{
-  va_list ap;
-  va_start(ap, pstr);
-  _d->vprintf_P(pstr, ap);
-  va_end(ap);
-}
-
-void SMACCMConsoleDriver::vprintf(const char *pstr, va_list ap)
-{
-  _d->vprintf(pstr, ap);
-}
-
-void SMACCMConsoleDriver::vprintf_P(const prog_char *pstr, va_list ap)
-{
-  _d->vprintf(pstr, ap);
-}
-
 int16_t SMACCMConsoleDriver::available()
 {
   if (_user_backend) {
