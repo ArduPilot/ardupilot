@@ -1818,31 +1818,16 @@ mission_failed:
             if (var_type == AP_PARAM_FLOAT) {
                 ((AP_Float *)vp)->set_and_save(packet.param_value);
             } else if (var_type == AP_PARAM_INT32) {
-#if LOGGING_ENABLED == ENABLED
-                if (g.log_bitmask != 0) {
-                    Log_Write_Data(DATA_MAVLINK_FLOAT, ((AP_Int32 *)vp)->get());
-                }
-#endif
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
                 v = constrain_float(v, -2147483648.0, 2147483647.0);
                 ((AP_Int32 *)vp)->set_and_save(v);
             } else if (var_type == AP_PARAM_INT16) {
-#if LOGGING_ENABLED == ENABLED
-                if (g.log_bitmask != 0) {
-                    Log_Write_Data(DATA_MAVLINK_INT16, (int16_t)((AP_Int16 *)vp)->get());
-                }
-#endif
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
                 v = constrain_float(v, -32768, 32767);
                 ((AP_Int16 *)vp)->set_and_save(v);
             } else if (var_type == AP_PARAM_INT8) {
-#if LOGGING_ENABLED == ENABLED
-                if (g.log_bitmask != 0) {
-                    Log_Write_Data(DATA_MAVLINK_INT8, (int8_t)((AP_Int8 *)vp)->get());
-                }
-#endif
                 if (packet.param_value < 0) rounding_addition = -rounding_addition;
                 float v = packet.param_value+rounding_addition;
                 v = constrain_float(v, -128, 127);
