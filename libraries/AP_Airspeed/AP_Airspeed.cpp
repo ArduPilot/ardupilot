@@ -47,6 +47,8 @@ extern const AP_HAL::HAL& hal;
 #else
  #define ARSPD_DEFAULT_PIN 15
 #endif
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+ #define ARSPD_DEFAULT_PIN 16
 #else
  #define ARSPD_DEFAULT_PIN 0
 #endif
