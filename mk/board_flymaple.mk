@@ -90,12 +90,6 @@ else
 v =
 endif
 
-# Maple library
-# Unlike AP on Arduino, AP on Flymaple uses parts of the core
-ifeq ($(LIBMAPLE_PATH),)
-LIBMAPLE_PATH := /usr/local/src/libmaple
-endif
-
 COREOBJS = $(LIBMAPLE_PATH)/build/libmaple/*.o $(LIBMAPLE_PATH)/build/libmaple/usb/stm32f1/*.o $(LIBMAPLE_PATH)/build/libmaple/stm32f1/*.o $(LIBMAPLE_PATH)/build/libmaple/usb/usb_lib/*.o $(LIBMAPLE_PATH)/build/libmaple/usb/usb_lib/*.o $(LIBMAPLE_PATH)/build/libmaple/stm32f1/performance/*.o $(LIBMAPLE_PATH)/build/wirish/*.o $(LIBMAPLE_PATH)/build/wirish/boards/maple/*.o $(LIBMAPLE_PATH)/build/wirish/stm32f1/*.o $(LIBMAPLE_PATH)/build/libraries/Wire/*.o
 COREINCLUDES = -I$(LIBMAPLE_PATH)/libmaple/include/libmaple -I$(LIBMAPLE_PATH)/wirish/include/wirish -I$(LIBMAPLE_PATH)/libraries  -I$(LIBMAPLE_PATH)/libmaple/include/libmaple -I$(LIBMAPLE_PATH)/wirish/include/wirish -I$(LIBMAPLE_PATH)/libraries   -I$(LIBMAPLE_PATH)/libmaple/include -I$(LIBMAPLE_PATH)/libmaple/stm32f1/include -I$(LIBMAPLE_PATH)/wirish/include -I$(LIBMAPLE_PATH)/wirish/boards/maple/include  -I$(LIBMAPLE_PATH)/libraries/Wire
 
@@ -138,7 +132,7 @@ print-%:
 
 .PHONY: upload
 upload: $(SKETCHBIN)
-	/usr/local/src/flymaple/libmaple/support/scripts/reset.py && sleep 1 &&  $(UPLOADER) -a1 -d $(USBID) -D $(SKETCHBIN) -R
+	$(LIBMAPLE_PATH)/support/scripts/reset.py && sleep 1 &&  $(UPLOADER) -a1 -d $(USBID) -D $(SKETCHBIN) -R
 
 debug:
 	$(AVARICE) --mkII --capture --jtag usb :4242 & \
