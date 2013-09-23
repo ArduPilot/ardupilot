@@ -158,32 +158,16 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
         comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
     }
 
-    // check if user wants throttle compensation
-    if( !strcmp_P(argv[1].str, PSTR("t")) || !strcmp_P(argv[1].str, PSTR("T")) ) {
-        comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
-    }
-
-    // check if user wants current compensation
-    if( !strcmp_P(argv[1].str, PSTR("c")) || !strcmp_P(argv[1].str, PSTR("C")) ) {
-        comp_type = AP_COMPASS_MOT_COMP_CURRENT;
-    }
-
     // check if radio is calibration
     pre_arm_rc_checks();
     if(!ap.pre_arm_rc_check) {
-        cliSerial->print_P(PSTR("radio not calibrated, exiting"));
+        cliSerial->print_P(PSTR("radio not calibrated\n"));
         return 0;
     }
 
     // check compass is enabled
     if( !g.compass_enabled ) {
-        cliSerial->print_P(PSTR("compass disabled, exiting"));
-        return 0;
-    }
-
-    // check if we have a current monitor
-    if( comp_type == AP_COMPASS_MOT_COMP_CURRENT && g.battery_monitoring != BATT_MONITOR_VOLTAGE_AND_CURRENT ) {
-        cliSerial->print_P(PSTR("current monitor disabled, exiting"));
+        cliSerial->print_P(PSTR("compass disabled\n"));
         return 0;
     }
 
@@ -197,7 +181,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     // print warning that motors will spin
     // ask user to raise throttle
     // inform how to stop test
-    cliSerial->print_P(PSTR("This records the impact on the compass of running the motors.  The motors will spin!\nHold throttle low, then raise to mid for 5 sec, then quickly back to low.\nAt any time you may press any key to exit.\n\nmeasuring compass vs "));
+    cliSerial->print_P(PSTR("This records the impact on the compass of running the motors.  Motors will spin!\nHold throttle low, then raise to mid for 5 sec, then quickly back to low.\nPress any key to exit.\n\nmeasuring compass vs "));
 
     // inform what type of compensation we are attempting
     if( comp_type == AP_COMPASS_MOT_COMP_CURRENT ) {
@@ -220,7 +204,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
     // exit immediately if throttle is not zero
     if( g.rc_3.control_in != 0 ) {
-        cliSerial->print_P(PSTR("throttle not zero, exiting\n"));
+        cliSerial->print_P(PSTR("throttle not zero\n"));
         return 0;
     }
 
@@ -233,7 +217,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
     // exit immediately if the compass is not healthy
     if( !compass.healthy ) {
-        cliSerial->print_P(PSTR("compass not healthy, exiting\n"));
+        cliSerial->print_P(PSTR("check compass\n"));
         return 0;
     }
 
@@ -323,7 +307,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
                 print_counter++;
                 if(print_counter >= 50) {
                     print_counter = 0;
-                    cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)current_amps1, (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
+                    display_compassmot_info(motor_impact, motor_compensation);
                 }
             }
         }else{
@@ -342,7 +326,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     }
 
     // print one more time so the last thing printed matches what appears in the report_compass
-    cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)current_amps1, (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
+    display_compassmot_info(motor_impact, motor_compensation);
 
     // set and save motor compensation
     if( updated ) {
@@ -369,6 +353,13 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     report_compass();
 
     return 0;
+}
+
+// display_compassmot_info - displays a status line for compassmot process
+static void display_compassmot_info(Vector3f& motor_impact, Vector3f& motor_compensation)
+{
+    // print one more time so the last thing printed matches what appears in the report_compass
+    cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)current_amps1, (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
 }
 
 static int8_t
