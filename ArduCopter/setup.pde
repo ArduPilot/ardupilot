@@ -23,7 +23,6 @@ static int8_t   setup_factory           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_set               (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_show              (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_sonar             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_tune              (uint8_t argc, const Menu::arg *argv);
 
 
 // Command/function table for the setup menu
@@ -50,7 +49,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"set",                         setup_set},
     {"show",                        setup_show},
     {"sonar",                       setup_sonar},
-    {"tune",                        setup_tune}
 };
 
 // Create the setup menu object.
@@ -1002,14 +1000,6 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
     }
 
     report_sonar();
-    return 0;
-}
-
-static int8_t
-setup_tune(uint8_t argc, const Menu::arg *argv)
-{
-    g.radio_tuning.set_and_save(argv[1].i);
-    report_tuning();
     return 0;
 }
 

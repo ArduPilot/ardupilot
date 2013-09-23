@@ -23,8 +23,6 @@ static int8_t   test_shell(uint8_t argc,                const Menu::arg *argv);
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 #endif
-//static int8_t	test_toy(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_tuning(uint8_t argc,               const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -65,8 +63,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
     {"sonar",               test_sonar},
 #endif
-//	{"toy",			        test_toy},
-    {"tune",                test_tuning}
 };
 
 // A Macro to create the Menu
@@ -512,72 +508,6 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 #endif
-
-/*
-//static int8_t
-//test_toy(uint8_t argc, const Menu::arg *argv)
-{
-
- 	for(altitude_error = 2000; altitude_error > -100; altitude_error--){
- 		int16_t temp = get_desired_climb_rate();
-		cliSerial->printf("%ld, %d\n", altitude_error, temp);
-	}
- 	return 0;
-}
-{	wp_distance = 0;
-	int16_t max_speed = 0;
-
- 	for(int16_t i = 0; i < 200; i++){
-	 	int32_t temp = 2 * 100 * (wp_distance - wp_nav.get_waypoint_radius());
-		max_speed = sqrtf((float)temp);
-		max_speed = min(max_speed, wp_nav.get_horizontal_speed());
-		cliSerial->printf("Zspeed: %ld, %d, %ld\n", temp, max_speed, wp_distance);
-	 	wp_distance += 100;
-	}
- 	return 0;
- }
-//*/
-
-/*static int8_t
- *  //test_toy(uint8_t argc, const Menu::arg *argv)
- *  {
- *       int16_t yaw_rate;
- *       int16_t roll_rate;
- *       g.rc_1.control_in = -2500;
- *       g.rc_2.control_in = 2500;
- *
- *       g.toy_yaw_rate = 3;
- *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
- *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
- *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
- *
- *       g.toy_yaw_rate = 2;
- *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
- *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
- *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
- *
- *       g.toy_yaw_rate = 1;
- *       yaw_rate = g.rc_1.control_in / g.toy_yaw_rate;
- *       roll_rate = ((int32_t)g.rc_2.control_in * (yaw_rate/100)) /40;
- *       cliSerial->printf("yaw_rate, %d, roll_rate, %d\n", yaw_rate, roll_rate);
- *  }*/
-
-static int8_t
-test_tuning(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-
-    while(1) {
-        delay(200);
-        read_radio();
-        tuning();
-        cliSerial->printf_P(PSTR("tune: %1.3f\n"), tuning_value);
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
 
 static void print_hit_enter()
 {
