@@ -57,7 +57,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
- # define CONFIG_PUSHBUTTON DISABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
  # ifdef APM2_BETA_HARDWARE
@@ -68,13 +67,11 @@
  # endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define CONFIG_IMU_TYPE   CONFIG_IMU_SITL
- # define CONFIG_PUSHBUTTON DISABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define CONFIG_IMU_TYPE   CONFIG_IMU_PX4
  # define CONFIG_BARO       AP_BARO_PX4
- # define CONFIG_PUSHBUTTON DISABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
@@ -82,7 +79,6 @@
  # define CONFIG_BARO       AP_BARO_MS5611
  # define CONFIG_MS5611_SERIAL AP_BARO_MS5611_I2C
  # define CONFIG_ADC        DISABLED
- # define CONFIG_PUSHBUTTON DISABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
  # define MAGNETOMETER ENABLED
 #endif
@@ -170,32 +166,27 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
  # define LED_ON           HIGH
  # define LED_OFF          LOW
- # define PUSHBUTTON_PIN   41
  # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
  # define BATTERY_CURR_PIN      1      // Battery current on A1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define PUSHBUTTON_PIN   (-1)
  # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
  # define BATTERY_CURR_PIN      2      // Battery current on A2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define PUSHBUTTON_PIN   (-1)
  # define BATTERY_VOLT_PIN 1      // Battery voltage on A1
  # define BATTERY_CURR_PIN 2      // Battery current on A2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define PUSHBUTTON_PIN   (-1)
  # define BATTERY_VOLT_PIN -1
  # define BATTERY_CURR_PIN -1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
 // XXX these are just copied, may not make sense
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define PUSHBUTTON_PIN   (-1)
  # define BATTERY_VOLT_PIN -1
  # define BATTERY_CURR_PIN -1
 #endif
@@ -231,14 +222,6 @@
  #define COPTER_LED_8 AN15      // Motor LED
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Pushbutton & Relay
-//
-
-#ifndef CONFIG_PUSHBUTTON
- # define CONFIG_PUSHBUTTON ENABLED
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Barometer
