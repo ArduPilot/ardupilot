@@ -118,6 +118,19 @@
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
  # define SERIAL0_BAUD 115200
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+// Flymaple board pin 20 is connected to the external battery supply
+// via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k, 
+// but the actual installed resistors are not so.
+// So the divider ratio is 5.70588 = (24000+5100)/5100
+ # define BATTERY_VOLT_PIN      20
+ # define BATTERY_MONITORING  3
+ # define VOLT_DIV_RATIO   5.70588
+ # define BATTERY_CURR_PIN      19
+ # define CONFIG_INS_TYPE CONFIG_INS_FLYMAPLE
+ # define CONFIG_BARO AP_BARO_BMP085
+ # define CONFIG_COMPASS  AP_COMPASS_HMC5843
+ # define SERIAL0_BAUD 115200
 #endif
 
 
@@ -175,6 +188,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
+#ifndef BATTERY_MONITORING
+ #define BATTERY_MONITORING 0
+#endif
+
 #ifndef VOLT_DIV_RATIO
  # define VOLT_DIV_RATIO                 3.56   // This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
 //# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
