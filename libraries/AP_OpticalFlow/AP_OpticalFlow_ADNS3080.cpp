@@ -466,7 +466,7 @@ void AP_OpticalFlow_ADNS3080::print_pixel_data()
             }
             isFirstPixel = false;
             pixelValue = ( regValue << 2 );
-            hal.console->print(pixelValue,DEC);
+            hal.console->print(pixelValue,BASE_DEC);
             if( j!= ADNS3080_PIXELS_X-1 )
                 hal.console->print_P(PSTR(","));
             hal.scheduler->delay_microseconds(50);
