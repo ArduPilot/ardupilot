@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @Units: seconds
 	// @Increment: 0.1
 	// @User: Advanced
-	AP_GROUPINFO("TCONST",      0, AP_SteerController, _tau,       0.5f),
+	AP_GROUPINFO("TCONST",      0, AP_SteerController, _tau,       0.75f),
 
 	// @Param: P
 	// @DisplayName: Steering turning gain
