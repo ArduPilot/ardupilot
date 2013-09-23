@@ -45,6 +45,16 @@ for d in $examples; do
     popd
 done
 
+test -d ../libmaple && {
+echo "Testing flymaple build"
+for d in ArduPlane ArduCopter APMrover2; do
+    pushd $d
+    make clean
+    make flymaple
+    popd
+done
+}
+
 test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
     ./Tools/scripts/build_all_px4.sh
 }
