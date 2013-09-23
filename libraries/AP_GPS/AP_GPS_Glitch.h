@@ -31,13 +31,13 @@ public:
     void    enable(bool true_or_false) { _enabled = true_or_false; }
 
     // enabled - returns true if glitch detection is enabled
-    bool    enabled() { return _enabled; }
+    bool    enabled() const { return _enabled; }
 
     // glitching - returns true if we are experiencing a glitch
-    bool    glitching() { return _flags.glitching; }
+    bool    glitching() const { return _flags.glitching; }
 
     // last_good_update - returns system time of the last good update
-    uint32_t last_good_update() { return _last_good_update; }
+    uint32_t last_good_update() const { return _last_good_update; }
 
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
