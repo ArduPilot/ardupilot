@@ -1390,7 +1390,14 @@ static void update_GPS(void)
 
         // run glitch protection and update AP_Notify
         gps_glitch.check_position();
-        AP_Notify::flags.gps_glitching = gps_glitch.glitching();
+        if (AP_Notify::flags.gps_glitching != gps_glitch.glitching()) {
+            if (gps_glitch.glitching()) {
+                Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
+            }else{
+                Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
+            }
+            AP_Notify::flags.gps_glitching = gps_glitch.glitching();
+        }
 
         // check if we can initialise home yet
         if (!ap.home_is_set) {

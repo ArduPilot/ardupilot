@@ -436,6 +436,7 @@ enum ap_message {
 #define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
 #define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
 #define ERROR_SUBSYSTEM_FLGHT_MODE          10
+#define ERROR_SUBSYSTEM_GPS                 11
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -446,6 +447,8 @@ enum ap_message {
 #define ERROR_CODE_FAILSAFE_OCCURRED        1
 // subsystem specific error codes -- compass
 #define ERROR_CODE_COMPASS_FAILED_TO_READ   2
+// subsystem specific error codes -- gps
+#define ERROR_CODE_GPS_GLITCH               2
 
 
 
