@@ -30,6 +30,10 @@ private:
     uint8_t			_count;
     float           Temp;
     float           Press;
+    // Flymaple has no EOC pin, so use times instead
+    uint32_t        _last_press_read_command_time;
+    uint32_t        _last_temp_read_command_time;
+
     
     // State machine
     uint8_t                         BMP085_State;
