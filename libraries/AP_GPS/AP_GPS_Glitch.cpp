@@ -27,7 +27,6 @@ GPS_Glitch::GPS_Glitch(GPS*& gps) :
     _gps(gps)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    _enabled = true;
 }
 
 // check_position - returns true if gps position is acceptable, false if not
