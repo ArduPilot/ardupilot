@@ -37,6 +37,11 @@ endif
 ifeq ($(HAL_BOARD),HAL_BOARD_PX4)
 include $(MK_DIR)/board_px4.mk
 endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
+include $(MK_DIR)/board_flymaple.mk
+endif
+
 endif
 
 endif
