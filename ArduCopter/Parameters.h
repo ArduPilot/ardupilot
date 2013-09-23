@@ -97,7 +97,8 @@ public:
         k_param_gpslock_limit,          // deprecated - remove
         k_param_geofence_limit,         // deprecated - remove
         k_param_altitude_limit,         // deprecated - remove
-        k_param_fence,                  // 69
+        k_param_fence,
+        k_param_gps_glitch,             // 70
 
         //
         // 80: Heli

@@ -1039,6 +1039,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(fence,      "FENCE_",   AC_Fence),
 #endif
 
+    // @Group: GPSGLITCH_
+    // @Path: ../libraries/AP_GPS/AP_GPS_Glitch.cpp
+    GOBJECT(gps_glitch,      "GPSGLITCH_",   GPS_Glitch),
+
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
