@@ -416,6 +416,7 @@ enum ap_message {
 #define CONFIG_IMU_MPU6000 2
 #define CONFIG_IMU_SITL    3
 #define CONFIG_IMU_PX4     4
+#define CONFIG_IMU_FLYMAPLE 5
 
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2

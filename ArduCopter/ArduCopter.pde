@@ -79,6 +79,7 @@
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_SMACCM.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_FLYMAPLE.h>
 #include <AP_HAL_Empty.h>
 
 // Application dependencies
@@ -223,7 +224,9 @@ static AP_InertialSensor_Oilpan ins(&adc);
 static AP_InertialSensor_Stub ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
 static AP_InertialSensor_PX4 ins;
- #endif
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
+AP_InertialSensor_Flymaple ins;
+#endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
