@@ -31,7 +31,6 @@ void GPS_Glitch::check_position()
     // exit immediately if we don't have gps lock
     if (_gps == NULL || _gps->status() != GPS::GPS_OK_FIX_3D) {
         _flags.glitching = true;
-        _flags.recovered = false;
         return;
     }
 
@@ -44,7 +43,6 @@ void GPS_Glitch::check_position()
         _last_good_vel.y = _gps->velocity_east();
         _flags.initialised = true;
         _flags.glitching = false;
-        _flags.recovered = false;
         return;
     }
 
@@ -78,14 +76,7 @@ void GPS_Glitch::check_position()
         _last_good_lon = _gps->longitude;
         _last_good_vel.x = _gps->velocity_north();
         _last_good_vel.y = _gps->velocity_east();
-        // if we were glitching, we have now recovered
-        _flags.recovered = _flags.glitching;
-    }else{
-        _flags.recovered = false;
     }
-
-    // To-Do: we need to stop consumer from seeing 'recovered' flag multiple times because GPS updates
-    // are much slower than inertial updates
     
     // update glitching flag
     _flags.glitching = !all_ok;
