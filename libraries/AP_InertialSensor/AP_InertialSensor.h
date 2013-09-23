@@ -189,5 +189,6 @@ protected:
 #include "AP_InertialSensor_PX4.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
+#include "AP_InertialSensor_Flymaple.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__
