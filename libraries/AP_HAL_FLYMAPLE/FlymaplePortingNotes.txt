@@ -1,0 +1,126 @@
+2013-09-23
+
+These notes describe the steps take to port ArduPilot to the Flymaple platform
+http://www.open-drone.org/flymaple
+
+Flymaple has an ARM based Cortex-3 STM32F103RE, 72MHz processor with 10DOF builtin sensors
+
+
+Implementation
+
+Unlike the Arduino versions of ArduPlane, the Flymaple port uses portions of
+the libmaple library, including the stm32f1 core and some other libaries like
+Wire, HardwareTimer, HArdwareSPI etc.
+
+Most of the changes are confined to new directory libraries/AP_HAL_FLYMAPLE
+which contains the Flymaple specific code. All the HAL modules have
+been ported, sometimes based on HAL_AVR, sometimes HAL_PX4:
+AnalogIn
+AnalogSource
+Console
+GPIO
+I2CDriver
+RCInput
+RCOoutput
+Scheduler
+Semaphores
+SPIDriver
+Storage
+UARTDriver
+Utility
+
+The implementation of Storage uses EEPROM emulation code that uses 2 pages of
+Flymaple FLASH ROM as EEPROM. It was copied from
+AeroQuad_v3.2 to libraries/AP_HAL_FLYMAPLE/utility and slightly modified:
+libraries/AP_HAL_FLYMAPLE/utility/EEPROM.*
+libraries/AP_HAL_FLYMAPLE/utility/flash_stm32.*
+
+Unlike other HAL ports, the namespace for Flymaple defined in
+AP_HAL_FLYMAPLE_Namespace.h has a more extensive name: 'AP_HAL_FLYMAPLE_NS' else
+get complaints from gcc 4.4.1 caused by collisions with other class names.
+
+New board makefile mk/board/flymaple.mk, plus some other minor changes in
+mk/*.mk
+
+In other parts of the ArduPlane tree, the changes have been #ifdefed for
+Flymaple except:
+
+- ArduPlane/compat.pde
+All the wiring compatibility functions have been inline-d, else get
+contamination of the namespace at link time (multiple definitions of delay()
+etc)
+
+- libraries/AP_Compass/AP_Compass_HMC5843.cpp
+- libraries/AP_Compass/Compass.h
+- libraries/AP_Baro/AP_Baro_BMP085.cpp
+Minor changes to raw data fetches to make them 32bit compatible. Should not
+affect other platforms.
+
+Some other minor edits to eliminate compiler warnings
+
+Resource usage
+Resources on the Flymaple board have been allocated by the HAL:
+
+Pins
+0	GPS Rx in
+6	Receiver PPM in
+7	GCS Rx in
+8	GCS Tx out
+15	3.3V board VCC analog in
+16	Airspeed analog in (if available)
+19	Battery current analog in (if available)
+20	Battery voltage analog in (on-board divider connected to board VIN)
+
+Timers
+SysTick	100Hz normal timers
+1	RCInput
+2	Failsafe timer
+3,4	RCOut
+8	not used
+
+Installation on Linux
+
+Tested with:
+libmaple https://github.com/leaflabs/libmaple http://leaflabs.com/docs/unix-toolchain.html
+arm-none-eabi-g++ toolchain, version 4.4.1
+on OpenSuSE 12.3
+Mission Planner 1.2.78
+
+You need a number of additional resources to build ArduPlane for Flymaple. I
+have assumed that you will install them in your home directory, but they can really
+go anywhere provided you make the appropriate changes
+
+cd ~
+git clone https://github.com/leaflabs/libmaple.git
+cd libmaple
+wget http://static.leaflabs.com/pub/codesourcery/gcc-arm-none-eabi-latest-linux32.tar.gz
+tar xvzf gcc-arm-none-eabi-latest-linux32.tar.gz
+export PATH=$PATH:~/libmaple/arm/bin
+
+edit ArduPlane/config.mk to be something like:
+#config.mk START
+# Select maple_RET6 for Flymaple
+BOARD = maple_RET6
+# HAL_BOARD determines default HAL target.
+HAL_BOARD ?= HAL_BOARD_FLYMAPLE
+# The communication port used to communicate with the Flymaple
+PORT = /dev/ttyACM0
+# You must provide the path to the libmaple library directory:
+LIBMAPLE_PATH = $(HOME)/libmaple
+# Also, the ARM compiler tools MUST be in your current PATH
+#config.mk END
+
+Remaining issues:
+
+1. For reasons I do not yet understand, the magnetic heading reported by
+ArduPlance is 90 degrees away from what I think it should be.
+The sensors on the Flymaple are all aligned with the nominal X, Y and Z axes
+collinear. Pitch and roll axes point to the _corners_ of the board, not the
+flat sides as might be considered normal for a sensor board.
+Orientation is set to NONE, and yes, the reading of compass sensor registers
+is in teh right order for the HMC5883.
+
+2. Many alignment warnings emitted by the compiler from libraries/GCS_MAVLink
+protocol.h eg:
+mnt/disk2/src/ArduPlane-2.74b/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h: In function 'uint16_t _MAV_RETURN_uint16_t(const mavlink_message_t*, uint8_t)':
+/mnt/disk2/src/ArduPlane-2.74b/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h:267: warning: cast from 'const char*' to 'const uint16_t*' increases required alignment of target type
