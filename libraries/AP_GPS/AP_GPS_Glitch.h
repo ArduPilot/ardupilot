@@ -28,16 +28,19 @@ public:
     void    check_position();
 
     // enable - enable or disable gps sanity checking
-    void    enable(bool true_or_false) { _flags.enabled = true_or_false; }
+    void    enable(bool true_or_false) { _enabled = true_or_false; }
 
     // enabled - returns true if glitch detection is enabled
-    bool    enabled() { return _flags.enabled; }
+    bool    enabled() { return _enabled; }
 
     // glitching - returns true if we are experiencing a glitch
     bool    glitching() { return _flags.glitching; }
 
     // last_good_update - returns system time of the last good update
     uint32_t last_good_update() { return _last_good_update; }
+
+    // class level parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
@@ -47,9 +50,11 @@ private:
     /// structure for holding flags
     struct GPS_Glitch_flags {
         uint8_t initialised : 1; // 1 if we have received at least one good gps lock
-        uint8_t enabled     : 1; // 1 if we are enabled
         uint8_t glitching   : 1; // 1 if we are experiencing a gps glitch
     } _flags;
+
+    // parameters
+    AP_Int8     _enabled;           // top level enable/disable control
 
     // gps sanity check variables
     uint32_t    _last_good_update;  // system time of last gps update that passed checks

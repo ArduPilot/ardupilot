@@ -10,11 +10,24 @@
 
 extern const AP_HAL::HAL& hal;
 
+// table of user settable parameters
+const AP_Param::GroupInfo GPS_Glitch::var_info[] PROGMEM = {
+    // @Param: ENABLE
+    // @DisplayName: GPS Glitch protection enable/disable
+    // @Description: Allows you to enable (1) or disable (0) gps glitch protection
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("ENABLE",      0,  GPS_Glitch,   _enabled,   1),
+
+    AP_GROUPEND
+};
+
 // constuctor
 GPS_Glitch::GPS_Glitch(GPS*& gps) :
     _gps(gps)
 {
-    _flags.enabled = true;
+    AP_Param::setup_object_defaults(this, var_info);
+    _enabled = true;
 }
 
 // check_position - returns true if gps position is acceptable, false if not
@@ -35,7 +48,7 @@ void GPS_Glitch::check_position()
     }
 
     // if not initialised or disabled update last good position and exit
-    if (!_flags.initialised || !_flags.enabled) {
+    if (!_flags.initialised || !_enabled) {
         _last_good_update = now;
         _last_good_lat = _gps->latitude;
         _last_good_lon = _gps->longitude;
