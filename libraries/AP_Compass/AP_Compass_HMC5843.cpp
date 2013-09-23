@@ -92,13 +92,13 @@ bool AP_Compass_HMC5843::read_raw()
     }
 
     int16_t rx, ry, rz;
-    rx = (int16_t)(buff[0] << 8) | buff[1];
+    rx = (((int16_t)buff[0]) << 8) | buff[1];
     if (product_id == AP_COMPASS_TYPE_HMC5883L) {
-        rz = (int16_t)(buff[2] << 8) | buff[3];
-        ry = (int16_t)(buff[4] << 8) | buff[5];
+        rz = (((int16_t)buff[2]) << 8) | buff[3];
+        ry = (((int16_t)buff[4]) << 8) | buff[5];
     } else {
-        ry = (int16_t)(buff[2] << 8) | buff[3];
-        rz = (int16_t)(buff[4] << 8) | buff[5];
+        ry = (((int16_t)buff[2]) << 8) | buff[3];
+        rz = (((int16_t)buff[4]) << 8) | buff[5];
     }
     if (rx == -4096 || ry == -4096 || rz == -4096) {
         // no valid data available
