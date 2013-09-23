@@ -682,7 +682,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Controls enabling monitoring of the battery's voltage and current
     // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
     // @User: Standard
-    GSCALAR(battery_monitoring,     "BATT_MONITOR",   0),
+    GSCALAR(battery_monitoring,     "BATT_MONITOR",   BATTERY_MONITORING),
 
     // @Param: VOLT_DIVIDER
     // @DisplayName: Voltage Divider
