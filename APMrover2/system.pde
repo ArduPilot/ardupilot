@@ -176,12 +176,6 @@ static void init_ardupilot()
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
-#if SLIDE_SWITCH_PIN > 0
-	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
-#endif
-#if CONFIG_PUSHBUTTON == ENABLED
-	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
-#endif
     relay.init();
 
     /*
@@ -196,24 +190,11 @@ static void init_ardupilot()
 	// the system in an odd state, we don't let the user exit the top
 	// menu; they must reset in order to fly.
 	//
-#if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
-	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
-		cliSerial->printf_P(PSTR("\n"
-							 "Entering interactive setup mode...\n"
-							 "\n"
-							 "If using the Arduino Serial Monitor, ensure Line Ending is set to Carriage Return.\n"
-							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
-							 "Visit the 'setup' menu for first-time configuration.\n"));
-        cliSerial->println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
-        run_cli(&cliSerial);
-	}
-#else
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
     if (gcs3.initialised) {
         hal.uartC->println_P(msg);
     }
-#endif // CLI_ENABLED
 
 	startup_ground();
 
