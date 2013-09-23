@@ -85,6 +85,24 @@ void ToneAlarm_PX4::update()
             play_tune(TONE_BATTERY_WARNING_FAST_TUNE);
         }
     }
+
+    // check gps glitch
+    if (flags.gps_glitching != AP_Notify::flags.gps_glitching) {
+        flags.gps_glitching = AP_Notify::flags.gps_glitching;
+        if (flags.gps_glitching) {
+            // gps glitch warning tune
+            play_tune(TONE_GPS_WARNING_TUNE);
+        }
+    }
+
+    // check gps failsafe
+    if (flags.failsafe_gps != AP_Notify::flags.failsafe_gps) {
+        flags.failsafe_gps = AP_Notify::flags.failsafe_gps;
+        if (flags.failsafe_gps) {
+            // gps glitch warning tune
+            play_tune(TONE_GPS_WARNING_TUNE);
+        }
+    }
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
