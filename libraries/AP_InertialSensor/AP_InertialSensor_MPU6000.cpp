@@ -419,18 +419,14 @@ void AP_InertialSensor_MPU6000::_poll_data(uint32_t now)
  */
 void AP_InertialSensor_MPU6000::_read_data_from_timerprocess()
 {
-    static uint8_t semfail_ctr = 0;
-    bool got = _spi_sem->take_nonblocking();
-    if (!got) { 
-        semfail_ctr++;
-        if (semfail_ctr > 100) {
-            hal.scheduler->panic(PSTR("PANIC: failed to take SPI semaphore "
-                        "100 times in AP_InertialSensor_MPU6000::"
-                        "_read_data_from_timerprocess"));
-        }
+    if (!_spi_sem->take_nonblocking()) {
+        /*
+          the semaphore being busy is an expected condition when the
+          mainline code is calling num_samples_available() which will
+          grab the semaphore. We return now and rely on the mainline
+          code grabbing the latest sample.
+         */
         return;
-    } else {
-        semfail_ctr = 0;
     }   
 
     _last_sample_time_micros = hal.scheduler->micros();
