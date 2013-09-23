@@ -77,6 +77,11 @@
 # define CONFIG_COMPASS  AP_COMPASS_PX4
 # define BATTERY_PIN_1	  -1
 # define CURRENT_PIN_1	  -1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+# define CONFIG_INS_TYPE   CONFIG_INS_FLYMAPLE
+# define CONFIG_COMPASS  AP_COMPASS_HMC5843
+# define BATTERY_PIN_1     20
+# define CURRENT_PIN_1	   19
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
