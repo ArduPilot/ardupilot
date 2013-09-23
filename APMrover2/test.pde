@@ -308,7 +308,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 
 	cliSerial->printf_P(PSTR("Control CH "));
 
-	cliSerial->println(MODE_CHANNEL, DEC);
+	cliSerial->println(MODE_CHANNEL, BASE_DEC);
 
 	while(1){
 		delay(20);
