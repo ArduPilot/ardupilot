@@ -2,6 +2,16 @@
 #
 # Build ArduPlane for Flymaple http://www.open-drone.org/flymaple
 
+# cope with relative paths
+ifeq ($(wildcard $(LIBMAPLE_PATH)/wirish),)
+LIBMAPLE_PATH := $(shell cd $(SKETCHBOOK)/../libmaple && pwd)
+endif
+
+ifeq ($(wildcard $(LIBMAPLE_PATH)/wirish),)
+$(error ERROR: failed to find libmaple - please see libraries/AP_HAL_FLYMAPLE/FlymaplePortingNotes.txt)
+endif
+
+
 TOOLCHAIN = ARM
 
 #include $(MK_DIR)/find_arduino.mk
