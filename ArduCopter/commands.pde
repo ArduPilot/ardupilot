@@ -69,7 +69,6 @@ static void set_cmd_with_index(struct Location temp, int i)
 {
 
     i = constrain_int16(i, 0, g.command_total.get());
-    //cliSerial->printf("set_command: %d with id: %d\n", i, temp.id);
 
     // store home as 0 altitude!!!
     // Home is always a MAV_CMD_NAV_WAYPOINT (16)

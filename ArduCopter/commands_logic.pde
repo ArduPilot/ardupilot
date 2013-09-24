@@ -797,7 +797,6 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
-    //cliSerial->printf("cond dist :%d\n", (int)condition_value);
     if (wp_distance < max(condition_value,0)) {
         condition_value = 0;
         return true;
@@ -864,27 +863,20 @@ static void do_jump()
     // when in use, it contains the current remaining jumps
     static int8_t jump = -10;                                                                   // used to track loops in jump command
 
-    //cliSerial->printf("do Jump: %d\n", jump);
-
     if(jump == -10) {
-        //cliSerial->printf("Fresh Jump\n");
         // we use a locally stored index for jump
         jump = command_cond_queue.lat;
     }
-    //cliSerial->printf("Jumps left: %d\n",jump);
 
     if(jump > 0) {
-        //cliSerial->printf("Do Jump to %d\n",command_cond_queue.p1);
         jump--;
         change_command(command_cond_queue.p1);
 
     } else if (jump == 0) {
-        //cliSerial->printf("Did last jump\n");
         // we're done, move along
         jump = -11;
 
     } else if (jump == -1) {
-        //cliSerial->printf("jumpForever\n");
         // repeat forever
         change_command(command_cond_queue.p1);
     }

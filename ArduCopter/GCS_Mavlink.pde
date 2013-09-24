@@ -993,7 +993,6 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
         send_message(MSG_RAW_IMU3);
-        //cliSerial->printf("mav1 %d\n", (int)streamRateRawSensors.get());
     }
 
     if (gcs_out_of_time) return;
@@ -1017,7 +1016,6 @@ GCS_MAVLINK::data_stream_send(void)
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
-        //cliSerial->printf("mav4 %d\n", (int)streamRateRawController.get());
     }
 
     if (gcs_out_of_time) return;
@@ -1025,7 +1023,6 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
         send_message(MSG_RADIO_IN);
-        //cliSerial->printf("mav5 %d\n", (int)streamRateRCChannels.get());
     }
 
     if (gcs_out_of_time) return;
@@ -1033,14 +1030,12 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
-        //cliSerial->printf("mav6 %d\n", (int)streamRateExtra1.get());
     }
 
     if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
-        //cliSerial->printf("mav7 %d\n", (int)streamRateExtra2.get());
     }
 
     if (gcs_out_of_time) return;

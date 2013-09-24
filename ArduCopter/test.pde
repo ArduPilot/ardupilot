@@ -24,21 +24,6 @@ static int8_t   test_shell(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 #endif
 
-// This is the help function
-// PSTR is an AVR macro to read strings from flash memory
-// printf_P is a version of printf that reads from flash memory
-/*static int8_t	help_test(uint8_t argc,             const Menu::arg *argv)
- *  {
- *       cliSerial->printf_P(PSTR("\n"
- *                                                "Commands:\n"
- *                                                "  radio\n"
- *                                                "  servos\n"
- *                                                "  g_gps\n"
- *                                                "  imu\n"
- *                                                "  battery\n"
- *                                                "\n"));
- *  }*/
-
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
@@ -424,20 +409,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
                         g.rc_6.control_in,
                         g.rc_7.control_in);
 
-        //cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d\n"), (g.rc_1.servo_out / 100), (g.rc_2.servo_out / 100), g.rc_3.servo_out, (g.rc_4.servo_out / 100));
-
-        /*cliSerial->printf_P(PSTR(	"min: %d"
-         *                                               "\t in: %d"
-         *                                               "\t pwm_in: %d"
-         *                                               "\t sout: %d"
-         *                                               "\t pwm_out %d\n"),
-         *                                               g.rc_3.radio_min,
-         *                                               g.rc_3.control_in,
-         *                                               g.rc_3.radio_in,
-         *                                               g.rc_3.servo_out,
-         *                                               g.rc_3.pwm_out
-         *                                               );
-         */
         if(cliSerial->available() > 0) {
             return (0);
         }

@@ -765,7 +765,6 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 
     if(g.rc_1.radio_in < 500) {
         while(1) {
-            //cliSerial->printf_P(PSTR("\nNo radio; Check connectors."));
             delay(1000);
             // stop here
         }
@@ -1179,16 +1178,6 @@ static void report_gyro()
 /***************************************************************************/
 // CLI utilities
 /***************************************************************************/
-
-/*static void
- *  print_PID(PI * pid)
- *  {
- *       cliSerial->printf_P(PSTR("P: %4.2f, I:%4.2f, IMAX:%ld\n"),
- *                                               pid->kP(),
- *                                               pid->kI(),
- *                                               (long)pid->imax());
- *  }
- */
 
 static void
 print_radio_values()

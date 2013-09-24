@@ -14,8 +14,6 @@ static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in te
 static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
-// PSTR is an AVR macro to read strings from flash memory
-// printf_P is a version of print_f that reads from flash memory
 static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf_P(PSTR("Commands:\n"
