@@ -479,7 +479,7 @@ static bool set_mode(uint8_t mode)
         Log_Write_Mode(control_mode);
     }else{
         // Log error that we failed to enter desired flight mode
-        Log_Write_Error(ERROR_SUBSYSTEM_FLGHT_MODE,mode);
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
     }
 
     // return success or failure
