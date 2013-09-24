@@ -6,7 +6,6 @@
 static int8_t   setup_accel_scale       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compassmot        (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_declination       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_erase             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_frame             (uint8_t argc, const Menu::arg *argv);
  #if FRAME_CONFIG == HELI_FRAME
@@ -30,7 +29,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"accel",                       setup_accel_scale},
     {"compass",                     setup_compass},
     {"compassmot",                  setup_compassmot},
-    {"declination",                 setup_declination},
     {"erase",                       setup_erase},
     {"frame",                       setup_frame},
  #if FRAME_CONFIG == HELI_FRAME
@@ -337,14 +335,6 @@ static void display_compassmot_info(Vector3f& motor_impact, Vector3f& motor_comp
 {
     // print one more time so the last thing printed matches what appears in the report_compass
     cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)current_amps1, (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
-}
-
-static int8_t
-setup_declination(uint8_t argc, const Menu::arg *argv)
-{
-    compass.set_declination(radians(argv[1].f));
-    report_compass();
-    return 0;
 }
 
 static int8_t
