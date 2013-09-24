@@ -1821,7 +1821,6 @@ void update_roll_pitch_mode(void)
 	#if FRAME_CONFIG != HELI_FRAME
     if(g.rc_3.control_in == 0 && control_mode <= ACRO) {
         reset_rate_I();
-        reset_stability_I();
     }
 	#endif //HELI_FRAME
 
