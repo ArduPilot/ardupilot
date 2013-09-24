@@ -419,9 +419,6 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
-#if defined( __AVR_ATmega2560__ )       // determines if optical flow code is included
- #define OPTFLOW                        ENABLED
-#endif
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
  # define OPTFLOW                       DISABLED
 #endif
