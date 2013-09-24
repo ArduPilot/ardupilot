@@ -1910,11 +1910,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             throttle_initialised = true;
             break;
-
-        default:
-            // To-Do: log an error message to the dataflash or tlogs instead of printing to the serial port
-            cliSerial->printf_P(PSTR("Unsupported throttle mode: %d!!"),new_throttle_mode);
-            break;
     }
 
     // update the throttle mode
