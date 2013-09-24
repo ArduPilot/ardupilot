@@ -110,6 +110,29 @@ LIBMAPLE_PATH = $(HOME)/libmaple
 # Also, the ARM compiler tools MUST be in your current PATH
 #config.mk END
 
+Interrupt disabling on ARM
+
+On AVR, ISRs run by default with the global interrupt enable flag disabled, 
+whereas mainline code runs by default with global interrupt enable flag 
+*enabled*. Which means that cli()/sei() in an ISR will have a different effect 
+to cli()sei() in mainline code. Thats why code that *might* run in an ISR must 
+use the special idiom: so that it restores the flag to the state it was before 
+the critical block
+
+On ARM, the global interrupt disable flag PRIMASK is not altered behind your 
+back by hardware. By default its always clear (ie enabled) even in ISRs. A 
+different mechanism prevents ISRs from being reinterrupted. This means that 
+non-nested noInterrupts()/interrupts() will always leave the PRIMASK as it was 
+(interrupts enabled) when the critical block started, whether in ISRs or 
+mainline code.
+
+Conclusion:
+
+On AVR, cli()/sei() is dangerous both in ISRs *and* when nested.
+
+On ARM, noInterrupts()/interrupts() is only dangerous when nested.
+
+
 Remaining issues:
 
 1. For reasons I do not yet understand, the magnetic heading reported by
