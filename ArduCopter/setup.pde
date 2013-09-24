@@ -14,7 +14,6 @@ static int8_t   setup_frame             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_gyro              (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_heli              (uint8_t argc, const Menu::arg *argv);
  #endif
-static int8_t   setup_accel             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_flightmodes       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_optflow           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_radio             (uint8_t argc, const Menu::arg *argv);
@@ -40,7 +39,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"gyro",                        setup_gyro},
     {"heli",                        setup_heli},
  #endif
-    {"level",                       setup_accel},
     {"modes",                       setup_flightmodes},
     {"optflow",                     setup_optflow},
     {"radio",                       setup_radio},
@@ -642,18 +640,6 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
     return(0);
 }
 #endif // FRAME_CONFIG == HELI
-
-static int8_t
-setup_accel(uint8_t argc, const Menu::arg *argv)
-{
-    ahrs.init();
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate);
-    ins.init_accel();
-    ahrs.set_trim(Vector3f(0,0,0));     // clear out saved trim
-    report_ins();
-    return(0);
-}
 
 static int8_t
 setup_flightmodes(uint8_t argc, const Menu::arg *argv)
