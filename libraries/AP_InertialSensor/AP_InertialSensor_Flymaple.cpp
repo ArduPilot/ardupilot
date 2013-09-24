@@ -190,9 +190,13 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     uint8_t buffer[8];
     if (hal.i2c->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 8, buffer) == 0)
     {
-        int16_t x = -((((int16_t)buffer[1]) << 8) | buffer[0]);    // X axis
-        int16_t y = (((int16_t)buffer[3]) << 8) | buffer[2];    // Y axis
-        int16_t z = -((((int16_t)buffer[5]) << 8) | buffer[4]);    // Z axis
+        // The order is a bit wierd here since the standard we have adopted for Flymaple 
+        // sensor orientation is different to what the board designers intended
+        // Caution, to support alternative chip orientations on other bords, may 
+        // need to add a chip orientation rotate
+        int16_t y = ((((int16_t)buffer[1]) << 8) | buffer[0]);     // chip X axis
+        int16_t x = (((int16_t)buffer[3]) << 8) | buffer[2];       // chip Y axis
+        int16_t z = -((((int16_t)buffer[5]) << 8) | buffer[4]);    // chip Z axis
         _accel_sum += Vector3f(x, y, z);
         _accel_sum_count++;
         _last_accel_timestamp = hal.scheduler->micros();
@@ -201,9 +205,9 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     // Read gyro
     if (hal.i2c->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)
     {
-        int16_t x = (((int16_t)buffer[0]) << 8) | buffer[1];    // X axis
-        int16_t y = (((int16_t)buffer[2]) << 8) | buffer[3];    // Y axis
-        int16_t z = -((((int16_t)buffer[4]) << 8) | buffer[5]);    // Z axis
+        int16_t y = -(((int16_t)buffer[0]) << 8) | buffer[1];    // chip X axis
+        int16_t x = -(((int16_t)buffer[2]) << 8) | buffer[3];    // chip Y axis
+        int16_t z = -((((int16_t)buffer[4]) << 8) | buffer[5]); // chip Z axis
         _gyro_sum += Vector3f(x, y, z);
         _gyro_sum_count++;
         _last_gyro_timestamp = hal.scheduler->micros();

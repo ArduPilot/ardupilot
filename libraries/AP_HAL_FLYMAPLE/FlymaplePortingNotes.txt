@@ -96,6 +96,7 @@ cd libmaple
 wget http://static.leaflabs.com/pub/codesourcery/gcc-arm-none-eabi-latest-linux32.tar.gz
 tar xvzf gcc-arm-none-eabi-latest-linux32.tar.gz
 export PATH=$PATH:~/libmaple/arm/bin
+make
 
 edit ArduPlane/config.mk to be something like:
 #config.mk START
@@ -107,7 +108,8 @@ HAL_BOARD ?= HAL_BOARD_FLYMAPLE
 PORT = /dev/ttyACM0
 # You must provide the path to the libmaple library directory:
 LIBMAPLE_PATH = $(HOME)/libmaple
-# Also, the ARM compiler tools MUST be in your current PATH
+# Also, the ARM compiler tools MUST be in your current PATH like:
+# export PATH=$PATH:~/libmaple/arm/bin
 #config.mk END
 
 Interrupt disabling on ARM
@@ -132,6 +134,54 @@ On AVR, cli()/sei() is dangerous both in ISRs *and* when nested.
 
 On ARM, noInterrupts()/interrupts() is only dangerous when nested.
 
+Sensor Orientation
+
+The Flymaple board has no clear indication about which way is meant to be
+'forward' or 'right', so we have adopted the following convention:
+
+Aircraft 'Forward' is in the direction of the arrow marked 'Pitch' on the board, ie
+towards pin 0.
+
+Aircraft 'Right' is towards the bottom right corner of the board, towards pin 20 and
+the 5V regulator
+
+Aircraft 'Down' is away from the copper side of the board: 'right way up' is with
+component side up.
+
+Here in SE Queensland, in the southern hemisphere, the local mag field is 
+substantially vertical (down? is that correct?), and so the following simple 
+tests of the board should give the following results, using the mavproxy 
+graphing tools, and with a board orientation parameter of none:
+
+The aircraft coordinate system of ardupilot is:
+
+X +ve forward
+Y +ve right
+Z +ve down
+
+Compass
+Orientation                               Results
+Level, right way up                       Z -ve
+Left side down                            Y +ve
+Nose up                                   X +ve
+(ie positive when that axis is pointing away from the earth, at least where I 
+am)
+
+Accelerometer
+Orientation                               Results
+Level, right way up                       Z -ve
+Left side down                            Y +ve
+Nose up                                   X +ve
+(ie positive when that axis is pointing away from the earth, and consistent 
+with compass in southern hemisphere)
+
+Gyro
+Rotation                                  Results
+Yawing to right                           Z +ve
+Rolling to right                          X +ve
+Pitching up                               Y +ve
+
+(ie right hand curl rule relative to the given axis)
 
 Remaining issues:
 
