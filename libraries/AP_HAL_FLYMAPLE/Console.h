@@ -6,7 +6,7 @@
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEConsoleDriver : public AP_HAL::ConsoleDriver {
 public:
-    FLYMAPLEConsoleDriver(void* notused);
+    FLYMAPLEConsoleDriver(void* baseuartdriver);
     void init(void* machtnichts);
     void backend_open();
     void backend_close();
@@ -19,6 +19,7 @@ public:
 
     size_t write(uint8_t c);
 private:
+    AP_HAL::UARTDriver* _base_uart;
 };
 
 #endif // __AP_HAL_FLYMAPLE_CONSOLE_H__

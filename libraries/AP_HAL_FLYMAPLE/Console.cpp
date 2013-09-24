@@ -14,6 +14,8 @@
  */
 /*
   Flymaple port by Mike McCauley
+  This is just a thin wrapper around teh UART driver.
+  On Flymaple, the AP Console outputs to a Flymaple UART Serial port, not the SerialUSB port.
  */
 
 #include <AP_HAL.h>
@@ -35,8 +37,9 @@ using namespace AP_HAL_FLYMAPLE_NS;
 FLYMAPLEConsoleDriver::FLYMAPLEConsoleDriver(void* notused)
 {}
 
-void FLYMAPLEConsoleDriver::init(void* machtnichts)
+void FLYMAPLEConsoleDriver::init(void* base_uart)
 {
+    _base_uart = (AP_HAL::UARTDriver*) base_uart;
 }
 
 void FLYMAPLEConsoleDriver::backend_open()
@@ -54,21 +57,19 @@ size_t FLYMAPLEConsoleDriver::backend_write(const uint8_t *data, size_t len) {
 }
 
 int16_t FLYMAPLEConsoleDriver::available() {
-    return SerialUSB.available();
+    return _base_uart->available();
 }
 
 int16_t FLYMAPLEConsoleDriver::txspace() {
-    // REVISIT mikem
-    return 0;
+    return _base_uart->txspace();
 }
 
 int16_t FLYMAPLEConsoleDriver::read() {
-    return SerialUSB.read();
+    return _base_uart->read();
 }
 
 size_t FLYMAPLEConsoleDriver::write(uint8_t c) {
-    SerialUSB.write(c);
-    return 1;
+    return _base_uart->write(c);
 }
 
 #endif

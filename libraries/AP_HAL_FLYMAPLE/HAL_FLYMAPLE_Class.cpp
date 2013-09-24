@@ -24,13 +24,13 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 class HardwareSerial;
-extern HardwareSerial Serial1;
-extern HardwareSerial Serial2;
-extern HardwareSerial Serial3;
+extern HardwareSerial Serial1; // Serial1 is labelled "COM1" on Flymaple pins 7 and 8
+extern HardwareSerial Serial2; // Serial2 is Flymaple pins 0 and 1
+extern HardwareSerial Serial3; // Serial3 is labelled "GPS" on Flymaple pins 29 and 30
 
-static FLYMAPLEUARTDriver uartADriver(&Serial1); // "COM1"
-static FLYMAPLEUARTDriver uartBDriver(&Serial2);
-static FLYMAPLEUARTDriver uartCDriver(&Serial3); // "GPS"
+static FLYMAPLEUARTDriver uartADriver(&Serial1); // AP Console and highspeed mavlink
+static FLYMAPLEUARTDriver uartBDriver(&Serial2); // AP GPS connection
+static FLYMAPLEUARTDriver uartCDriver(&Serial3); // Optional AP telemetry radio
 static FLYMAPLESemaphore  i2cSemaphore;
 static FLYMAPLEI2CDriver  i2cDriver(&i2cSemaphore);
 static FLYMAPLESPIDeviceManager spiDeviceManager;
@@ -66,7 +66,11 @@ void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
     scheduler->init(NULL);
-    console->init(NULL);
+
+    /* uartA is the serial port used for the console, so lets make sure
+     * it is initialized at boot */
+    uartA->begin(115200);
+    console->init(uartA);
 
     /* The AVR RCInput drivers take an AP_HAL_AVR::ISRRegistry*
      * as the init argument */
