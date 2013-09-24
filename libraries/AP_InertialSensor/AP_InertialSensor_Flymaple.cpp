@@ -194,8 +194,8 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         // sensor orientation is different to what the board designers intended
         // Caution, to support alternative chip orientations on other bords, may 
         // need to add a chip orientation rotate
-        int16_t y = ((((int16_t)buffer[1]) << 8) | buffer[0]);     // chip X axis
-        int16_t x = (((int16_t)buffer[3]) << 8) | buffer[2];       // chip Y axis
+        int16_t y = -((((int16_t)buffer[1]) << 8) | buffer[0]);    // chip X axis
+        int16_t x = -((((int16_t)buffer[3]) << 8) | buffer[2]);    // chip Y axis
         int16_t z = -((((int16_t)buffer[5]) << 8) | buffer[4]);    // chip Z axis
         _accel_sum += Vector3f(x, y, z);
         _accel_sum_count++;
