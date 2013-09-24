@@ -205,9 +205,9 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     // Read gyro
     if (hal.i2c->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)
     {
-        int16_t y = -(((int16_t)buffer[0]) << 8) | buffer[1];    // chip X axis
-        int16_t x = -(((int16_t)buffer[2]) << 8) | buffer[3];    // chip Y axis
-        int16_t z = -((((int16_t)buffer[4]) << 8) | buffer[5]); // chip Z axis
+        int16_t y = -((((int16_t)buffer[0]) << 8) | buffer[1]);    // chip X axis
+        int16_t x = -((((int16_t)buffer[2]) << 8) | buffer[3]);    // chip Y axis
+        int16_t z = -((((int16_t)buffer[4]) << 8) | buffer[5]);    // chip Z axis
         _gyro_sum += Vector3f(x, y, z);
         _gyro_sum_count++;
         _last_gyro_timestamp = hal.scheduler->micros();
