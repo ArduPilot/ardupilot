@@ -4,7 +4,6 @@
 
 // Functions called from the setup menu
 static int8_t   setup_accel_scale       (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_batt_monitor      (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compassmot        (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_declination       (uint8_t argc, const Menu::arg *argv);
@@ -29,7 +28,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     // command			function called
     // =======          ===============
     {"accel",                       setup_accel_scale},
-    {"battery",                     setup_batt_monitor},
     {"compass",                     setup_compass},
     {"compassmot",                  setup_compassmot},
     {"declination",                 setup_declination},
@@ -87,23 +85,6 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     }
     report_ins();
     return(0);
-}
-
-static int8_t
-setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
-{
-    if (!strcmp_P(argv[1].str, PSTR("off"))) {
-        g.battery_monitoring.set_and_save(0);
-
-    } else if(argv[1].i > 0 && argv[1].i <= 4) {
-        g.battery_monitoring.set_and_save(argv[1].i);
-
-    } else {
-        cliSerial->printf_P(PSTR("\nOp: off, 3-4"));
-    }
-
-    report_batt_monitor();
-    return 0;
 }
 
 static int8_t
