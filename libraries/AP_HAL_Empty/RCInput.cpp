@@ -3,10 +3,13 @@
 
 using namespace Empty;
 EmptyRCInput::EmptyRCInput()
-{}
+{
+  init_overrides(NULL, 0);
+}
 
 void EmptyRCInput::init(void* machtnichts)
-{}
+{
+}
 
 uint8_t EmptyRCInput::valid_channels() {
     return 0;
@@ -25,14 +28,4 @@ uint8_t EmptyRCInput::read(uint16_t* periods, uint8_t len) {
     return len;
 }
 
-bool EmptyRCInput::set_overrides(int16_t *overrides, uint8_t len) {
-    return true;
-}
-
-bool EmptyRCInput::set_override(uint8_t channel, int16_t override) {
-    return true;
-}
-
-void EmptyRCInput::clear_overrides()
-{}
 

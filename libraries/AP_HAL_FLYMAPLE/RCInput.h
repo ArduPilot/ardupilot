@@ -33,9 +33,8 @@ public:
     uint16_t read(uint8_t ch);
     uint8_t read(uint16_t* periods, uint8_t len);
 
-    bool set_overrides(int16_t *overrides, uint8_t len);
-    bool set_override(uint8_t channel, int16_t override);
-    void clear_overrides();
+protected:
+    virtual void set_overrides_valid() { _valid_channels = 1; }
 
 private:
     /* private callback for input capture ISR */

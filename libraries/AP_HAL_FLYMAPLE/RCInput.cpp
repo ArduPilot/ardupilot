@@ -37,7 +37,13 @@ volatile uint8_t  FLYMAPLERCInput::_valid_channels = 0;
 #define FLYMAPLE_RC_INPUT_PIN 6
 
 FLYMAPLERCInput::FLYMAPLERCInput()
-{}
+{
+  init_overrides(_override, FLYMAPLE_RC_INPUT_NUM_CHANNELS);
+}
+
+uint8_t FLYMAPLERCInput::valid_channels() {
+    return _valid_channels;
+}
 
 void FLYMAPLERCInput::_timer_capt_cb(void)
 {
@@ -106,10 +112,6 @@ void FLYMAPLERCInput::init(void* machtnichts)
     timer_resume(tdev); // reenabled
 }
 
-uint8_t FLYMAPLERCInput::valid_channels() {
-    return _valid_channels;
-}
-
 /* constrain captured pulse to be between min and max pulsewidth. */
 static inline uint16_t constrain_pulse(uint16_t p) {
     if (p > RC_INPUT_MAX_PULSEWIDTH) return RC_INPUT_MAX_PULSEWIDTH;
@@ -156,33 +158,6 @@ uint8_t FLYMAPLERCInput::read(uint16_t* periods, uint8_t len) {
     uint8_t v = _valid_channels;
     _valid_channels = 0;
     return v;
-}
-
-bool FLYMAPLERCInput::set_overrides(int16_t *overrides, uint8_t len) {
-    bool res = false;
-    for (uint8_t i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
-    }
-    return res;
-}
-
-bool FLYMAPLERCInput::set_override(uint8_t channel, int16_t override) {
-    if (override < 0) return false; /* -1: no change. */
-    if (channel < FLYMAPLE_RC_INPUT_NUM_CHANNELS) {
-        _override[channel] = override;
-        if (override != 0) {
-            _valid_channels = 1;
-            return true;
-        }
-    }
-    return false;
-}
-
-void FLYMAPLERCInput::clear_overrides()
-{
-    for (uint8_t i = 0; i < FLYMAPLE_RC_INPUT_NUM_CHANNELS; i++) {
-        _override[i] = 0;
-    }
 }
 
 #endif

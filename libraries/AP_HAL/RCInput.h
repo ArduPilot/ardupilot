@@ -38,15 +38,29 @@ public:
      *  v == -1 -> no change to this channel
      *  v == 0  -> do not override this channel
      *  v > 0   -> set v as override.
+     *
+     * This implementation is shared for most HALs.  If some HAL needs to customize, just change to be virtual.
+     *
+     * @return true only if we are now overriding any channels
+     *
      */
-
-    /* set_overrides: array starts at ch 0, for len channels */
-    virtual bool set_overrides(int16_t *overrides, uint8_t len) = 0;
+    bool set_overrides(int16_t *overrides, uint8_t len);
     /* set_override: set just a specific channel */
-    virtual bool set_override(uint8_t channel, int16_t override) = 0;
+    bool set_override(uint8_t channel, int16_t override);
     /* clear_overrides: equivelant to setting all overrides to 0 */
-    virtual void clear_overrides() = 0;
+    void clear_overrides();
 
+protected:
+    /** Subclasses must call this from their init() or constructor to provide storage for override data */
+    void init_overrides(uint16_t *buffer, uint8_t max_channels);
+
+    /** Allow subclasses to update valid_channels based on overrides */
+    virtual void set_overrides_valid() {}
+
+private:
+    /* override state */
+    uint16_t *_overrides; 
+    uint8_t max_channels;
 };
 
 #endif // __AP_HAL_RC_INPUT_H__

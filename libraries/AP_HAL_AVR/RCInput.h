@@ -23,7 +23,7 @@ public:
      * Could be less than or greater than 8 depending on your incoming radio
      * or PPM stream
      */
-    uint8_t  valid_channels();
+    virtual uint8_t  valid_channels();
 
     /**
      * read(uint8_t):
@@ -44,14 +44,17 @@ public:
      *  v == -1 -> no change to this channel
      *  v == 0  -> do not override this channel
      *  v > 0   -> set v as override.
+     * set_overrides: array starts at ch 0, for len channels 
+     * @return true only if we are now overriding any channels
      */
-
-    /* set_overrides: array starts at ch 0, for len channels */
     bool set_overrides(int16_t *overrides, uint8_t len);
     /* set_override: set just a specific channel */
     bool set_override(uint8_t channel, int16_t override);
     /* clear_overrides: equivelant to setting all overrides to 0 */
     void clear_overrides();
+
+protected:
+    virtual void set_overrides_valid() { _valid_channels = 1; }
 
 private:
     /* private callback for input capture ISR */
@@ -70,9 +73,10 @@ class AP_HAL_AVR::APM2RCInput : public AP_HAL::RCInput {
     uint8_t  valid_channels();
     uint16_t read(uint8_t ch);
     uint8_t  read(uint16_t* periods, uint8_t len);
-    bool set_overrides(int16_t *overrides, uint8_t len);
-    bool set_override(uint8_t channel, int16_t override);
-    void clear_overrides();
+
+protected:
+    virtual void set_overrides_valid() { _valid_channels = 1; }
+
 private:
     /* private callback for input capture ISR */
     static void _timer5_capt_cb(void);
