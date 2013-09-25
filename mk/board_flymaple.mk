@@ -130,6 +130,8 @@ all: $(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 print-%:
 	echo "$*=$($*)"
 
+flymaple-upload: upload
+
 .PHONY: upload
 upload: $(SKETCHBIN)
 	$(LIBMAPLE_PATH)/support/scripts/reset.py && sleep 1 &&  $(UPLOADER) -a1 -d $(USBID) -D $(SKETCHBIN) -R
