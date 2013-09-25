@@ -23,6 +23,7 @@
 #include "UARTDriver.h"
 #include "FlymapleWirish.h"
 #include <HardwareSerial.h>
+#include <usart.h>
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
@@ -67,10 +68,9 @@ int16_t FLYMAPLEUARTDriver::available()
 
 int16_t FLYMAPLEUARTDriver::txspace() 
 { 
-    // txspace must return something sensible, else MAVlink wont s4nd out heartbeats
-    // but we cannot get the actual number from libmaple. 
-    // Actually libmaple usart is synchronous, so the number returned is irrelevant
-    return 1000;
+    // Get available space from guts of HardwareSerial
+    // CAUTION: dependent on implmentation of HardwareSerial
+    return _hws->c_dev()->rb->size - rb_full_count(_hws->c_dev()->rb);
 }
 
 int16_t FLYMAPLEUARTDriver::read() 
