@@ -11,6 +11,7 @@ extern const AP_HAL::HAL& hal;
 
 void PX4RCInput::init(void* unused)
 {
+	init_overrides(_override, RC_INPUT_MAX_CHANNELS);
 	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
 	if (_rc_sub == -1) {
@@ -49,37 +50,6 @@ uint8_t PX4RCInput::read(uint16_t* periods, uint8_t len)
 		periods[i] = read(i);
 	}
 	return len;
-}
-
-bool PX4RCInput::set_overrides(int16_t *overrides, uint8_t len) 
-{
-	bool res = false;
-	for (uint8_t i = 0; i < len; i++) {
-		res |= set_override(i, overrides[i]);
-	}
-	return res;
-}
-
-bool PX4RCInput::set_override(uint8_t channel, int16_t override) {
-	if (override < 0) {
-		return false; /* -1: no change. */
-	}
-	if (channel >= RC_INPUT_MAX_CHANNELS) {
-		return false;
-	}
-	_override[channel] = override;
-	if (override != 0) {
-		_override_valid = true;
-		return true;
-	}
-	return false;
-}
-
-void PX4RCInput::clear_overrides()
-{
-	for (uint8_t i = 0; i < RC_INPUT_MAX_CHANNELS; i++) {
-		set_override(i, 0);
-	}
 }
 
 void PX4RCInput::_timer_tick(void)

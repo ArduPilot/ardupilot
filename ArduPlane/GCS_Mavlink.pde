@@ -1911,7 +1911,8 @@ mission_failed:
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
 
-        hal.rcin->set_overrides(v, 8);
+        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
+        failsafe.rc_override_active = hal.rcin->set_overrides(v, 8);
 
         // a RC override message is consiered to be a 'heartbeat' from
         // the ground station for failsafe purposes

@@ -22,6 +22,7 @@ static inline uint16_t constrain_pulse(uint16_t p)
 
 SMACCMRCInput::SMACCMRCInput()
 {
+  init_overrides(_override, SMACCM_RCINPUT_CHANNELS);
 }
 
 void SMACCMRCInput::init(void *unused)
@@ -71,37 +72,6 @@ uint8_t SMACCMRCInput::read(uint16_t *periods, uint8_t len)
 
   timer_clear_ppm();
   return result;
-}
-
-bool SMACCMRCInput::set_overrides(int16_t *overrides, uint8_t len)
-{
-  bool result = false;
-
-  for (int i = 0; i < len; ++i)
-    result |= set_override(i, overrides[i]);
-
-  return result;
-}
-
-bool SMACCMRCInput::set_override(uint8_t channel, int16_t override)
-{
-  if (override < 0)
-    return false;
-
-  if (channel < SMACCM_RCINPUT_CHANNELS) {
-    _override[channel] = override;
-    if (override != 0) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-void SMACCMRCInput::clear_overrides()
-{
-  for (int i = 0; i < SMACCM_RCINPUT_CHANNELS; ++i)
-    _override[i] = 0;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SMACCM

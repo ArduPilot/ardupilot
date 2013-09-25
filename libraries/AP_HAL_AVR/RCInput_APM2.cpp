@@ -51,6 +51,9 @@ void APM2RCInput::_timer5_capt_cb(void) {
 
 void APM2RCInput::init(void* _isrregistry) {
     ISRRegistry* isrregistry = (ISRRegistry*) _isrregistry;
+
+    init_overrides(_override, AVR_RC_INPUT_NUM_CHANNELS);
+
     isrregistry->register_signal(ISR_REGISTRY_TIMER5_CAPT, _timer5_capt_cb);
 
     /* initialize overrides */
@@ -124,32 +127,6 @@ uint8_t APM2RCInput::read(uint16_t* periods, uint8_t len) {
     uint8_t v = _valid_channels;
     _valid_channels = 0;
     return v;
-}
-
-bool APM2RCInput::set_overrides(int16_t *overrides, uint8_t len) {
-    bool res = false;
-    for (int i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
-    }
-    return res;
-}
-
-bool APM2RCInput::set_override(uint8_t channel, int16_t override) {
-    if (override < 0) return false; /* -1: no change. */
-    if (channel < AVR_RC_INPUT_NUM_CHANNELS) {
-        _override[channel] = override;
-        if (override != 0) {
-            _valid_channels = 1;
-            return true;
-        }
-    }
-    return false;
-}
-
-void APM2RCInput::clear_overrides() {
-    for (int i = 0; i < AVR_RC_INPUT_NUM_CHANNELS; i++) {
-        _override[i] = 0;
-    }
 }
 
 #endif
