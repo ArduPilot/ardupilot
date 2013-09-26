@@ -80,11 +80,11 @@ Pins
 30      Telemetry Rx from radio on Serial3 on connector labelled "GPS". 5V tolerant.
 
 Timers
-SysTick	1000Hz normal timers
-1	RCInput
-2	1000Hz Failsafe timer
-3,4	RCOut
-8	not used by AP
+SysTick			1000Hz normal timers
+1 CH1			RCInput
+2 CH1			1000Hz Failsafe timer
+3 CH1-4, 4 CH1-2	RCOut
+8	   		not used by AP
 
 AP I2CDriver on Flymaple uses the libmaple Wire library, configured to clock
 at about 200kHz. The maximum possible Flymaple could support speed is limited
