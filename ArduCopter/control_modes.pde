@@ -62,6 +62,11 @@ static void read_aux_switches()
 {
     uint8_t switch_position;
 
+    // exit immediately during radio failsafe
+    if (failsafe.radio || failsafe.radio_counter != 0) {
+        return;
+    }
+
     // check if ch7 switch has changed position
     switch_position = read_3pos_switch(g.rc_7.radio_in);
     if (ap_system.CH7_flag != switch_position) {
