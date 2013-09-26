@@ -47,7 +47,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t system_status = ap.land_complete ? MAV_STATE_STANDBY : MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
     
-    if (ap.failsafe_radio == true)  {
+    if (failsafe.radio == true)  {
         system_status = MAV_STATE_CRITICAL;
     }
     
@@ -1873,9 +1873,9 @@ mission_failed:
         hal.rcin->set_overrides(v, 8);
 
         // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        ap.rc_override_active = true;
+        failsafe.rc_override_active = true;
         // a RC override message is consiered to be a 'heartbeat' from the ground station for failsafe purposes
-        last_heartbeat_ms = millis();
+        failsafe.last_heartbeat_ms = millis();
         break;
     }
 
@@ -1940,7 +1940,7 @@ mission_failed:
     {
         // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
         if(msg->sysid != g.sysid_my_gcs) break;
-        last_heartbeat_ms = millis();
+        failsafe.last_heartbeat_ms = millis();
         pmTest1++;
         break;
     }

@@ -46,13 +46,13 @@ static void set_failsafe_radio(bool b)
 {
     // only act on changes
     // -------------------
-    if(ap.failsafe_radio != b) {
+    if(failsafe.radio != b) {
 
         // store the value so we don't trip the gate twice
         // -----------------------------------------------
-        ap.failsafe_radio = b;
+        failsafe.radio = b;
 
-        if (ap.failsafe_radio == false) {
+        if (failsafe.radio == false) {
             // We've regained radio contact
             // ----------------------------
             failsafe_radio_off_event();
@@ -79,7 +79,7 @@ void set_low_battery(bool b)
 // ---------------------------------------------
 static void set_failsafe_gps(bool b)
 {
-    ap.failsafe_gps = b;
+    failsafe.gps = b;
 
     // update AP_Notify
     AP_Notify::flags.failsafe_gps = b;
@@ -88,7 +88,7 @@ static void set_failsafe_gps(bool b)
 // ---------------------------------------------
 static void set_failsafe_gcs(bool b)
 {
-    ap.failsafe_gcs = b;
+    failsafe.gcs = b;
 }
 
 // ---------------------------------------------

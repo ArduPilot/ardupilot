@@ -655,7 +655,7 @@ static bool verify_RTL()
             // check if we've loitered long enough
             if( millis() - rtl_loiter_start_time > (uint32_t)g.rtl_loiter_time.get() ) {
                 // initiate landing or descent
-                if(g.rtl_alt_final == 0 || ap.failsafe_radio) {
+                if(g.rtl_alt_final == 0 || failsafe.radio) {
                     // switch to loiter which restores horizontal control to pilot
                     // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
                     set_roll_pitch_mode(ROLL_PITCH_LOITER);

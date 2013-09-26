@@ -1094,7 +1094,7 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     int16_t desired_rate = 0;
 
     // throttle failsafe check
-    if( ap.failsafe_radio ) {
+    if( failsafe.radio ) {
         return 0;
     }
 
@@ -1298,7 +1298,7 @@ get_throttle_land()
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
         // disarm when the landing detector says we've landed and throttle is at min (or we're in failsafe so we have no pilot thorottle input)
-        if( ap.land_complete && (g.rc_3.control_in == 0 || ap.failsafe_radio) ) {
+        if( ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio) ) {
             init_disarm_motors();
         }
     }

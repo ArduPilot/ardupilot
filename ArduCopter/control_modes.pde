@@ -9,7 +9,7 @@ static void read_control_switch()
 
     // has switch moved?
     // ignore flight mode changes if in failsafe
-    if (oldSwitchPosition != switchPosition && !ap.failsafe_radio) {
+    if (oldSwitchPosition != switchPosition && !failsafe.radio) {
         switch_counter++;
         if(switch_counter >= CONTROL_SWITCH_COUNTER) {
             oldSwitchPosition       = switchPosition;

@@ -143,7 +143,7 @@ static void failsafe_gps_check()
     // check if all is well
     if( last_gps_update_ms < FAILSAFE_GPS_TIMEOUT_MS) {
         // check for recovery from gps failsafe
-        if( ap.failsafe_gps ) {
+        if( failsafe.gps ) {
             failsafe_gps_off_event();
             set_failsafe_gps(false);
         }
@@ -151,7 +151,7 @@ static void failsafe_gps_check()
     }
 
     // do nothing if gps failsafe already triggered or motors disarmed
-    if( ap.failsafe_gps || !motors.armed()) {
+    if( failsafe.gps || !motors.armed()) {
         return;
     }
 
@@ -186,17 +186,17 @@ static void failsafe_gcs_check()
     uint32_t last_gcs_update_ms;
 
     // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs
-    if( g.failsafe_gcs == FS_GCS_DISABLED || last_heartbeat_ms == 0 || !ap.rc_override_active) {
+    if( g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || !failsafe.rc_override_active) {
         return;
     }
 
     // calc time since last gcs update
-    last_gcs_update_ms = millis() - last_heartbeat_ms;
+    last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
 
     // check if all is well
     if( last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
         // check for recovery from gcs failsafe
-        if( ap.failsafe_gcs ) {
+        if (failsafe.gcs) {
             failsafe_gcs_off_event();
             set_failsafe_gcs(false);
         }
@@ -204,7 +204,7 @@ static void failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
-    if( ap.failsafe_gcs || !motors.armed()) {
+    if( failsafe.gcs || !motors.armed()) {
         return;
     }
 

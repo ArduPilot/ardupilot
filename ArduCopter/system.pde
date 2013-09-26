@@ -506,7 +506,7 @@ static void update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !ap.failsafe_radio) {
+        if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !failsafe.radio) {
             set_auto_armed(false);
         }
     }else{

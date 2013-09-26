@@ -392,11 +392,6 @@ static union {
         uint8_t logging_started     : 1; // 8    // true if dataflash logging has started
 
         uint8_t low_battery         : 1; // 9    // Used to track if the battery is low - LED output flashes when the batt is low
-        uint8_t failsafe_radio      : 1; // 10   // A status flag for the radio failsafe
-        uint8_t failsafe_batt       : 1; // 11   // A status flag for the battery failsafe
-        uint8_t failsafe_gps        : 1; // 12   // A status flag for the gps failsafe
-        uint8_t failsafe_gcs        : 1; // 13   // A status flag for the ground station failsafe
-        uint8_t rc_override_active  : 1; // 14   // true if rc control are overwritten by ground station
         uint8_t do_flip             : 1; // 15   // Used to enable flip code
         uint8_t takeoff_complete    : 1; // 16
         uint8_t land_complete       : 1; // 17   // true if we have detected a landing
@@ -433,6 +428,20 @@ static RCMapper rcmap;
 // receiver RSSI
 static uint8_t receiver_rssi;
 
+////////////////////////////////////////////////////////////////////////////////
+// Failsafe
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    uint8_t rc_override_active  : 1; // 0   // true if rc control are overwritten by ground station
+    uint8_t radio               : 1; // 1   // A status flag for the radio failsafe
+    uint8_t batt                : 1; // 2   // A status flag for the battery failsafe
+    uint8_t gps                 : 1; // 3   // A status flag for the gps failsafe
+    uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
+
+    int8_t radio_counter;                  // number of iterations with throttle below throttle_fs_value
+
+    uint32_t last_heartbeat_ms;             // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+} failsafe;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Motor Output
@@ -798,8 +807,6 @@ static int16_t superslow_loopCounter;
 static uint32_t rtl_loiter_start_time;
 // prevents duplicate GPS messages from entering system
 static uint32_t last_gps_time;
-// the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
-static uint32_t last_heartbeat_ms;
 
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
