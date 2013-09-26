@@ -525,7 +525,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
     mavproxy.send('rc 3 1500\n')
 
     # wait until 100m from home
-    if not wait_distance(mav, 100):
+    if not wait_distance(mav, 100, 5, 60):
         show_gps_and_sim_positions(mavproxy, False)
         return False
 
