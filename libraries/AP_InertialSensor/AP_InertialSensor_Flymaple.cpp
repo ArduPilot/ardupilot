@@ -153,6 +153,8 @@ bool AP_InertialSensor_Flymaple::update(void)
     }
     Vector3f accel_scale = _accel_scale.get();
 
+// FIXME:
+hal.gpio->write(4, 1);
     hal.scheduler->suspend_timer_procs();
 
     // base the time on the gyro timestamp, as that is what is
@@ -187,6 +189,9 @@ bool AP_InertialSensor_Flymaple::update(void)
     // Adjust for chip scaling to get radians/sec
     _gyro *= FLYMAPLE_GYRO_SCALE_R_S;
     _gyro -= _gyro_offset;
+
+// FIXME:
+hal.gpio->write(4, 0);
 
 #if 0
 // whats this all about????
@@ -251,8 +256,6 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         _gyro_sum_count++;
         _last_gyro_timestamp = hal.scheduler->micros();
     }
-// FIXME:
-hal.gpio->write(4, 0);
 
     _in_accumulate = false;
 }
