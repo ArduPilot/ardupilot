@@ -5,11 +5,6 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
-//#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
-//#define LOGGING_ENABLED       DISABLED            // disable logging to save code space
-//#define DMP_ENABLED           ENABLED             // use MPU6000's DMP instead of DCM for attitude estimation
-//#define SECONDARY_DMP_ENABLED ENABLED             // allows running DMP in parallel with DCM for testing purposes
-
 //#define FRAME_CONFIG QUAD_FRAME
 /*
  *  options:
@@ -21,6 +16,16 @@
  *  OCTA_QUAD_FRAME
  *  HELI_FRAME
  */
+
+// uncomment the lines below to save on flash space if compiling for the APM using Arduino IDE
+//#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
+//#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
+//#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
+//#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
+//#define DMP_ENABLED           ENABLED             // use MPU6000's DMP instead of DCM for attitude estimation
+//#define SECONDARY_DMP_ENABLED ENABLED             // allows running DMP in parallel with DCM for testing purposes
+
+//#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).
