@@ -8,6 +8,7 @@
 #include <AP_HAL_AVR.h>
 
 #include <AP_GPS.h>             // ArduPilot GPS library
+#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>            // ArduPilot Mega Barometer Library
@@ -42,11 +43,12 @@ AP_Baro_BMP085 baro;
 
 GPS *gps;
 AP_GPS_Auto auto_gps(&gps);
+GPS_Glitch   gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
 AP_AHRS_DCM ahrs(&ins, gps);
 
-AP_InertialNav inertialnav(&ahrs, &ins, &baro, &gps);
+AP_InertialNav inertialnav(&ahrs, &ins, &baro, gps, gps_glitch);
 
 uint32_t last_update;
 
@@ -66,7 +68,7 @@ void setup(void)
 
     inertialnav.init();
     inertialnav.set_velocity_xy(0,0);
-    inertialnav.set_current_position(0,0);
+    inertialnav.set_home_position(0,0);
 }
 
 void loop(void)
