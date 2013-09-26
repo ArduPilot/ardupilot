@@ -24,7 +24,6 @@ public:
 
 private:
     uint16_t        _init_sensor( Sample_rate sample_rate );
-    static		    void _ins_timer(uint32_t now);
     static          void _accumulate(void);
     uint64_t        _last_update_usec;
     float           _delta_time;

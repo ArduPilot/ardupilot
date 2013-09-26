@@ -46,9 +46,6 @@ In other parts of the ArduPlane tree, the changes have been #ifdefed for
 Flymaple except:
 
 - ArduPlane/compat.pde
-All the wiring compatibility functions have been inline-d, else get
-contamination of the namespace at link time (multiple definitions of delay()
-etc)
 
 - libraries/AP_Compass/AP_Compass_HMC5843.cpp
 - libraries/AP_Compass/Compass.h
@@ -58,6 +55,8 @@ affect other platforms.
 
 Some other minor edits to eliminate compiler warnings
 
+These changes have now all been included in the ardupilot mainline code.
+
 Resource usage
 Resources on the Flymaple board have been allocated by the HAL:
 
@@ -66,11 +65,13 @@ Pins
         GPS. 3.3V only, NOT 5V tolerant
 1       AP GPS on Flymaple Serial2  Tx out. This is where you connect the GPS.
 	3.3V
+5       I2C SCL. Do not use for GPIO.
 6	Receiver PPM in
 7	Console and Mavlink on Flymaple Serial1 Rx in. Also on connector
 	"COM1". 5V tolerant.
 8	Console and Mavlink on Flymaple Serial1 Tx out. Also on connector
 	"COM1". 3.3V
+9       I2C SDA. Do not use for GPIO
 15	3.3V board VCC analog in. Connect to 3.3V pin.
 16	Airspeed analog in (if available). 3.3V, NOT 5V tolerant.
 19	Battery current analog in (if available). 3.3V, NOT 5V tolerant.
@@ -85,8 +86,28 @@ SysTick	1000Hz normal timers
 3,4	RCOut
 8	not used by AP
 
+AP I2CDriver on Flymaple uses the libmaple Wire library, configured to clock
+at about 200kHz. The maximum possible Flymaple could support speed is limited
+by the BMP085 barometer to 400kHz.
+Current version of the Wire library is unfortunately
+bit-banged. This may change in the future.
+
+At 200kHz I2C speed, it takes 500us to read the 6 byte accelerometer
+buffer, and 500us to read the 6 byte gyro buffer.
+
 The SerialUSB (USB connection) to Flymaple is not used by AP. It can be used for
 debugging inside AP_HAL_FLYMAPLE, using SerialUSB.println().
+
+Sensor configuration
+
+The sensors are configured so:
+
+ADXL345 Accelerometer
+8g full scale, full resolution mode, 800Hz bandwidth, read at 1kHz sample rate
+per sec
+
+ITG3205 Gyro
+2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate, read at 1kHz sample rate
 
 Installation on Linux
 

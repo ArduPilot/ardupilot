@@ -27,7 +27,7 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-static TwoWire twowire(5, 9); // Flymaple has non-standard SCL, SDA
+static TwoWire twowire(5, 9, SOFT_FAST); // Flymaple has non-standard SCL, SDA, speed ~200kHz
 void FLYMAPLEI2CDriver::begin() 
 {
     twowire.begin();
