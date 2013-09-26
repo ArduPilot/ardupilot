@@ -48,13 +48,6 @@
  # define HAL_GPIO_C_LED_PIN        25
  # define HAL_GPIO_LED_ON           LOW
  # define HAL_GPIO_LED_OFF          HIGH
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
-// XXX these are just copied, may not make sense
- # define HAL_GPIO_A_LED_PIN        27
- # define HAL_GPIO_B_LED_PIN        26
- # define HAL_GPIO_C_LED_PIN        25
- # define HAL_GPIO_LED_ON           LOW
- # define HAL_GPIO_LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
  # define HAL_GPIO_A_LED_PIN        13
  # define HAL_GPIO_B_LED_PIN        13
