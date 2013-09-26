@@ -2177,6 +2177,12 @@ static void update_altitude()
 }
 
 static void tuning(){
+
+    // exit immediately when radio failsafe is invoked so tuning values are not set to zero
+    if (failsafe.radio || failsafe.radio_counter != 0) {
+        return;
+    }
+
     tuning_value = (float)g.rc_6.control_in / 1000.0f;
     g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);                   // 0 to 1
 
