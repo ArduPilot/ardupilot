@@ -282,7 +282,6 @@ enum ap_message {
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E
 #define LOG_COMPASS_MSG                 0x0F
-#define LOG_DMP_MSG                     0x10
 #define LOG_INAV_MSG                    0x11
 #define LOG_CAMERA_MSG                  0x12
 #define LOG_ERROR_MSG                   0x13

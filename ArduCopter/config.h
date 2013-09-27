@@ -1065,14 +1065,4 @@
   #  define CLI_ENABLED           ENABLED
 #endif
 
-// experimental mpu6000 DMP code
-#ifndef DMP_ENABLED
- # define DMP_ENABLED DISABLED
-#endif
-
-// experimental mpu6000 DMP code
-#ifndef SECONDARY_DMP_ENABLED
- # define SECONDARY_DMP_ENABLED DISABLED
-#endif
-
 #endif // __ARDUCOPTER_CONFIG_H__

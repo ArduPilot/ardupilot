@@ -666,33 +666,6 @@ static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, i
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_DMP {
-    LOG_PACKET_HEADER;
-    int16_t  dcm_roll;
-    int16_t  dmp_roll;
-    int16_t  dcm_pitch;
-    int16_t  dmp_pitch;
-    uint16_t dcm_yaw;
-    uint16_t dmp_yaw;
-};
-
-#if SECONDARY_DMP_ENABLED == ENABLED
-// Write a DMP attitude packet
-static void Log_Write_DMP()
-{
-    struct log_DMP pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_DMP_MSG),
-        dcm_roll    : (int16_t)ahrs.roll_sensor,
-        dmp_roll    : (int16_t)ahrs2.roll_sensor,
-        dcm_pitch   : (int16_t)ahrs.pitch_sensor,
-        dmp_pitch   : (int16_t)ahrs2.pitch_sensor,
-        dcm_yaw     : (uint16_t)ahrs.yaw_sensor,
-        dmp_yaw     : (uint16_t)ahrs2.yaw_sensor
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-#endif
-
 struct PACKED log_Camera {
     LOG_PACKET_HEADER;
     uint32_t gps_time;
@@ -792,8 +765,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "DFLT",  "Bf",         "Id,Value" },
     { LOG_PID_MSG, sizeof(log_PID),         
       "PID",   "Biiiiif",    "Id,Error,P,I,D,Out,Gain" },
-    { LOG_DMP_MSG, sizeof(log_DMP),         
-      "DMP",   "ccccCC",     "DCMRoll,DMPRoll,DCMPtch,DMPPtch,DCMYaw,DMPYaw" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
       "CAM",   "ILLeccC",    "GPSTime,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
@@ -852,9 +823,6 @@ static void Log_Write_Control_Tuning() {}
 static void Log_Write_Motors() {}
 static void Log_Write_Performance() {}
 static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {}
-#if SECONDARY_DMP_ENABLED == ENABLED
-static void Log_Write_DMP() {}
-#endif
 static void Log_Write_Camera() {}
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {

@@ -22,8 +22,6 @@
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
 //#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
-//#define DMP_ENABLED           ENABLED             // use MPU6000's DMP instead of DCM for attitude estimation
-//#define SECONDARY_DMP_ENABLED ENABLED             // allows running DMP in parallel with DCM for testing purposes
 
 //#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 

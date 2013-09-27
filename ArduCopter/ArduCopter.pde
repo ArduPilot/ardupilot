@@ -283,16 +283,7 @@ AP_GPS_None     g_gps_driver;
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
 
- #if DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
- #else
 static AP_AHRS_DCM ahrs(&ins, g_gps);
- #endif
-
-// ahrs2 object is the secondary ahrs to allow running DMP in parallel with DCM
-  #if SECONDARY_DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
-  #endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -1113,9 +1104,6 @@ static void fifty_hz_loop()
 # if HIL_MODE == HIL_MODE_DISABLED
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
         Log_Write_Attitude();
-#if SECONDARY_DMP_ENABLED == ENABLED
-        Log_Write_DMP();
-#endif
     }
 
     if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
@@ -1195,9 +1183,6 @@ static void medium_loop()
         if(motors.armed()) {
             if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
                 Log_Write_Attitude();
-#if SECONDARY_DMP_ENABLED == ENABLED
-                Log_Write_DMP();
-#endif
             }
             if (g.log_bitmask & MASK_LOG_MOTORS)
                 Log_Write_Motors();
@@ -2112,10 +2097,6 @@ static void read_AHRS(void)
 
     ahrs.update();
     omega = ins.get_gyro();
-
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.update();
-#endif
 }
 
 static void update_trig(void){

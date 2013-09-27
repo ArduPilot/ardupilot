@@ -73,9 +73,6 @@ static void init_compass()
         return;
     }
     ahrs.set_compass(&compass);
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.set_compass(&compass);
-#endif
 }
 
 static void init_optflow()
