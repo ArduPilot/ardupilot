@@ -219,6 +219,9 @@
  #define COPTER_LED_6 AN13      // Motor LED
  #define COPTER_LED_7 AN14      // Motor LED
  #define COPTER_LED_8 AN15      // Motor LED
+#else
+ // not supported yet on this board
+ #undef COPTER_LEDS
 #endif
 
 
