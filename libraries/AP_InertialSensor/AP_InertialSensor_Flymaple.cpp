@@ -36,12 +36,12 @@ uint32_t AP_InertialSensor_Flymaple::_gyro_samples;
 volatile bool AP_InertialSensor_Flymaple::_in_accumulate;
 uint64_t AP_InertialSensor_Flymaple::_last_accel_timestamp;
 uint64_t AP_InertialSensor_Flymaple::_last_gyro_timestamp;
-LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_x(0, 0);
-LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_y(0, 0);
-LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_z(0, 0);
-LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_x(0, 0);
-LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_y(0, 0);
-LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_z(0, 0);
+LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_x(800, 10);
+LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_y(800, 10);
+LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_z(800, 10);
+LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_x(800, 10);
+LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_y(800, 10);
+LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_z(800, 10);
 
 // This is how often we wish to make raw samples of the sensors in Hz
 const uint32_t  raw_sample_rate_hz = 800;
@@ -81,19 +81,19 @@ const uint32_t  raw_sample_interval_us = (1000000 / raw_sample_rate_hz);
 uint16_t AP_InertialSensor_Flymaple::_init_sensor( Sample_rate sample_rate ) 
 {
     // Sensors are raw sampled at 800Hz.
-    // Here we figure the divider to get the rate that update will be called
+    // Here we figure the divider to get the rate that update should be called
     switch (sample_rate) {
     case RATE_50HZ:
-        _sample_divider = 16;
+        _sample_divider = raw_sample_rate_hz / 50;
         _default_filter_hz = 10;
         break;
     case RATE_100HZ:
-        _sample_divider = 8;
+        _sample_divider = raw_sample_rate_hz / 100;
         _default_filter_hz = 20;
         break;
     case RATE_200HZ:
     default:
-        _sample_divider = 4;
+        _sample_divider = raw_sample_rate_hz / 200;
         _default_filter_hz = 20;
         break;
     }
