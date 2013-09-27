@@ -1,5 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
+#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS)
+
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
@@ -46,8 +49,9 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = ap.land_complete ? MAV_STATE_STANDBY : MAV_STATE_ACTIVE;
     uint32_t custom_mode = control_mode;
-    
-    if (failsafe.radio == true)  {
+
+    // set system as critical if any failsafe have triggered
+    if (failsafe.radio || failsafe.low_battery || failsafe.gps || failsafe.gcs)  {
         system_status = MAV_STATE_CRITICAL;
     }
     
@@ -133,60 +137,56 @@ static NOINLINE void send_limits_status(mavlink_channel_t chan)
 
 static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t packet_drops)
 {
-    uint32_t control_sensors_present = 0;
+    uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
 
+    // default sensors present
+    control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
+
     // first what sensors/controllers we have
-    control_sensors_present |= (1<<0); // 3D gyro present
-    control_sensors_present |= (1<<1); // 3D accelerometer present
     if (g.compass_enabled) {
-        control_sensors_present |= (1<<2); // compass present
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
     }
-    control_sensors_present |= (1<<3); // absolute pressure sensor present
     if (g_gps != NULL && g_gps->status() > GPS::NO_GPS) {
-        control_sensors_present |= (1<<5); // GPS present
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
-    control_sensors_present |= (1<<10); // 3D angular rate control
-    control_sensors_present |= (1<<11); // attitude stabilisation
-    control_sensors_present |= (1<<12); // yaw position
-    control_sensors_present |= (1<<13); // altitude control
-    control_sensors_present |= (1<<14); // X/Y position control
-    control_sensors_present |= (1<<15); // motor control
+#if OPTFLOW == ENABLED
+    if (g.optflow_enabled) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
 
-    // now what sensors/controllers are enabled
-
-    // first the sensors
-    control_sensors_enabled = control_sensors_present & 0x1FF;
-
-    // now the controllers
-    control_sensors_enabled = control_sensors_present & 0x1FF;
-
-    control_sensors_enabled |= (1<<10); // 3D angular rate control
-    control_sensors_enabled |= (1<<11); // attitude stabilisation
-    control_sensors_enabled |= (1<<13); // altitude control
-    control_sensors_enabled |= (1<<15); // motor control
+    // all present sensors enabled by default except compass, gps, alt and position control which we will set individually
+    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL);
 
     switch (control_mode) {
+    case ALT_HOLD:
     case AUTO:
-    case RTL:
-    case LOITER:
     case GUIDED:
+    case LOITER:
+    case RTL:
     case CIRCLE:
+    case LAND:
+    case OF_LOITER:
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
+        break;
     case POSITION:
-        control_sensors_enabled |= (1<<12); // yaw position
-        control_sensors_enabled |= (1<<14); // X/Y position control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
+        break;
+    case SPORT:
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     }
 
-    // at the moment all sensors/controllers are assumed healthy
-    control_sensors_health = control_sensors_present;
-
-    if (!compass.healthy) {
-        control_sensors_health &= ~(1<<2); // compass
+    // default to all healthy except compass and gps which we set individually
+    control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS);
+    if (compass.healthy && compass.use_for_yaw()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (!compass.use_for_yaw()) {
-        control_sensors_enabled &= ~(1<<2); // compass
+    if (g_gps != NULL && g_gps->status() > GPS::NO_GPS && !gps_glitch.glitching()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 
     int16_t battery_current = -1;
