@@ -44,10 +44,11 @@ float AP_InertialSensor_Stub::get_gyro_drift_rate(void) {
     // 0.5 degrees/second/minute
     return ToRad(0.5/60);
 }
-uint16_t AP_InertialSensor_Stub::num_samples_available()
+
+bool AP_InertialSensor_Stub::sample_available()
 {
     uint16_t ret = (hal.scheduler->millis() - _last_update_ms) 
         / _sample_period_ms;
     
-    return ret;
+    return ret > 0;
 }

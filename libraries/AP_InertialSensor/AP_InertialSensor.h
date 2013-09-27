@@ -118,8 +118,8 @@ public:
     // depends on what gyro chips are being used
     virtual float get_gyro_drift_rate(void) = 0;
 
-    // get number of samples read from the sensors
-    virtual uint16_t num_samples_available() = 0;
+    // true if a new sample is available from the sensors
+    virtual bool sample_available() = 0;
 
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];

@@ -360,16 +360,20 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         // clear out any existing samples from ins
         update();
 
-        // wait until we have 32 samples
-        while( num_samples_available() < 32 * SAMPLE_UNIT ) {
-            hal.scheduler->delay(10);
+        // average 32 samples
+        samples[i] = Vector3f();
+        uint8_t num_samples = 0;
+        while (num_samples < 32) {
+            if (sample_available()) {
+                // read samples from ins
+                update();
+                // capture sample
+                samples[i] += get_accel();
+                hal.scheduler->delay(10);
+                num_samples++;
+            }
         }
-
-        // read samples from ins
-        update();
-
-        // capture sample
-        samples[i] = get_accel();
+        samples[i] /= num_samples;
     }
 
     // run the calibration routine

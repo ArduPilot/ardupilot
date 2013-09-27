@@ -17,7 +17,7 @@ public:
     float	        get_delta_time();
     uint32_t        get_last_sample_time_micros();
     float           get_gyro_drift_rate();
-    uint16_t        num_samples_available();
+    bool            sample_available();
 
 protected:
     uint16_t        _init_sensor( Sample_rate sample_rate );

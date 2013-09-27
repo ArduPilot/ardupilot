@@ -142,14 +142,14 @@ void AP_InertialSensor_PX4::_get_sample(void)
 	}
 }
 
-uint16_t AP_InertialSensor_PX4::num_samples_available(void)
+bool AP_InertialSensor_PX4::sample_available(void)
 {
     uint64_t tnow = hrt_absolute_time();
     if (tnow - _last_sample_timestamp > _sample_time_usec) {
         _num_samples_available++;
         _last_sample_timestamp = tnow;
     }
-    return _num_samples_available;
+    return _num_samples_available > 0;
 }
 
 #endif // CONFIG_HAL_BOARD

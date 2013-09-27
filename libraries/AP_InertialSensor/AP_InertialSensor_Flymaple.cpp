@@ -120,7 +120,7 @@ void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
 
 bool AP_InertialSensor_Flymaple::update(void) 
 {
-    while (num_samples_available() == 0) {
+    while (sample_available() == false) {
         hal.scheduler->delay(1);
     }
     Vector3f accel_scale = _accel_scale.get();
@@ -221,10 +221,10 @@ void AP_InertialSensor_Flymaple::_ins_timer(uint32_t now)
     _accumulate();
 }
 
-uint16_t AP_InertialSensor_Flymaple::num_samples_available(void)
+bool AP_InertialSensor_Flymaple::sample_available(void)
 {
     _accumulate();
-    return min(_accel_sum_count, _gyro_sum_count) / _sample_divider;
+    return (min(_accel_sum_count, _gyro_sum_count) / _sample_divider) > 0;
 }
 
 #endif // CONFIG_HAL_BOARD

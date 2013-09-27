@@ -39,8 +39,8 @@ public:
     void                push_accel_offsets_to_dmp();
     void                set_dmp_accel_offsets(int16_t offsetX, int16_t offsetY, int16_t offsetZ);
 
-    // num_samples_available - get number of samples read from the sensors
-    uint16_t            num_samples_available();
+    // sample_available - true when a new sample is available
+    bool                sample_available();
 
     // get_delta_time returns the time period in seconds overwhich the sensor data was collected
     float            	get_delta_time();

@@ -164,7 +164,7 @@ void run_test()
     while( !hal.console->available() ) {
 
         // wait until we have a sample
-        while (ins.num_samples_available() == 0) {
+        while (ins.sample_available() == false) {
 			hal.scheduler->delay(1);
 		}
 

@@ -279,7 +279,7 @@ static volatile uint16_t _count;
 void AP_InertialSensor_MPU6000::wait_for_sample()
 {
     uint32_t tstart = hal.scheduler->micros();
-    while (num_samples_available() == 0) {
+    while (sample_available() == false) {
         uint32_t now = hal.scheduler->micros();
         uint32_t dt = now - tstart;
         if (dt > 50000) {
@@ -417,7 +417,7 @@ void AP_InertialSensor_MPU6000::_read_data_from_timerprocess()
     if (!_spi_sem->take_nonblocking()) {
         /*
           the semaphore being busy is an expected condition when the
-          mainline code is calling num_samples_available() which will
+          mainline code is calling sample_available() which will
           grab the semaphore. We return now and rely on the mainline
           code grabbing the latest sample.
          */
@@ -629,11 +629,11 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
     return ToRad(0.5/60);
 }
 
-// get number of samples read from the sensors
-uint16_t AP_InertialSensor_MPU6000::num_samples_available()
+// return true if a sample is available
+bool AP_InertialSensor_MPU6000::sample_available()
 {
     _poll_data(0);
-    return _count >> _sample_shift;
+    return (_count >> _sample_shift) > 0;
 }
 
 

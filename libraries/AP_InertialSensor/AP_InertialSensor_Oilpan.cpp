@@ -121,10 +121,10 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
     return ToRad(3.0/60);
 }
 
-// get number of samples read from the sensors
-uint16_t AP_InertialSensor_Oilpan::num_samples_available()
+// return true if a new sample is available
+bool AP_InertialSensor_Oilpan::sample_available()
 {
-    return _adc->num_samples_available(_sensors) / _sample_threshold;
+    return (_adc->num_samples_available(_sensors) / _sample_threshold) > 0;
 }
 #endif // CONFIG_HAL_BOARD
 
