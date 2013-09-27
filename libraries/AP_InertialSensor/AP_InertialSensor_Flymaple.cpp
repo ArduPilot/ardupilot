@@ -23,20 +23,30 @@
 
 #include <AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+
 #include "AP_InertialSensor_Flymaple.h"
 
 const extern AP_HAL::HAL& hal;
 
-
-Vector3f AP_InertialSensor_Flymaple::_accel_sum;
-uint32_t AP_InertialSensor_Flymaple::_accel_sum_count;
-Vector3f AP_InertialSensor_Flymaple::_gyro_sum;
-uint32_t AP_InertialSensor_Flymaple::_gyro_sum_count;
+/// Statics
+Vector3f AP_InertialSensor_Flymaple::_accel_filtered;
+uint32_t AP_InertialSensor_Flymaple::_accel_samples;
+Vector3f AP_InertialSensor_Flymaple::_gyro_filtered;
+uint32_t AP_InertialSensor_Flymaple::_gyro_samples;
 volatile bool AP_InertialSensor_Flymaple::_in_accumulate;
 uint64_t AP_InertialSensor_Flymaple::_last_accel_timestamp;
 uint64_t AP_InertialSensor_Flymaple::_last_gyro_timestamp;
-int AP_InertialSensor_Flymaple::_accel_fd;
-int AP_InertialSensor_Flymaple::_gyro_fd;
+LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_x(0, 0);
+LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_y(0, 0);
+LowPassFilter2p AP_InertialSensor_Flymaple::_accel_filter_z(0, 0);
+LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_x(0, 0);
+LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_y(0, 0);
+LowPassFilter2p AP_InertialSensor_Flymaple::_gyro_filter_z(0, 0);
+
+// This is how often we wish to make raw samples of the sensors in Hz
+const uint32_t  raw_sample_rate_hz = 800;
+// And the equivalent time between samples in microseconds
+const uint32_t  raw_sample_interval_us = (1000000 / raw_sample_rate_hz);
 
 ///////
 /// Accelerometer ADXL345 register definitions
@@ -70,18 +80,20 @@ int AP_InertialSensor_Flymaple::_gyro_fd;
 
 uint16_t AP_InertialSensor_Flymaple::_init_sensor( Sample_rate sample_rate ) 
 {
+    // Sensors are raw sampled at 800Hz.
+    // Here we figure the divider to get the rate that update will be called
     switch (sample_rate) {
     case RATE_50HZ:
-        _sample_divider = 4;
+        _sample_divider = 16;
         _default_filter_hz = 10;
         break;
     case RATE_100HZ:
-        _sample_divider = 2;
+        _sample_divider = 8;
         _default_filter_hz = 20;
         break;
     case RATE_200HZ:
     default:
-        _sample_divider = 1;
+        _sample_divider = 4;
         _default_filter_hz = 20;
         break;
     }
@@ -103,8 +115,8 @@ uint16_t AP_InertialSensor_Flymaple::_init_sensor( Sample_rate sample_rate )
     // In full resoution mode, the scale factor need not change
     hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATA_FORMAT, 0x08);
     hal.scheduler->delay(5);
-    // Normal power, 800Hz bandwidth:
-    hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_BW_RATE, 0x0e);
+    // Normal power, 800Hz Output Data Rate, 400Hz bandwidth:
+    hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_BW_RATE, 0x0d);
     hal.scheduler->delay(5);
     // Power up default is FIFO bypass mode. FIFO is not used by the chip
 
@@ -120,14 +132,15 @@ uint16_t AP_InertialSensor_Flymaple::_init_sensor( Sample_rate sample_rate )
     hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_SMPLRT_DIV, 0x0f);
     hal.scheduler->delay(1);
     // 2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate
+    // This is the least amount of filtering we can configure for this device
     hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_DLPF_FS, 0x18);
     hal.scheduler->delay(1);
     // No interrupts
     hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_INT_CFG, 0x00);
     hal.scheduler->delay(1);
 
-// FIXME:
-hal.gpio->pinMode(4, GPIO_OUTPUT);
+    // Set up the filter desired
+    _set_filter_frequency(_mpu6000_filter);
 
     return AP_PRODUCT_ID_FLYMAPLE;
 }
@@ -137,15 +150,20 @@ hal.gpio->pinMode(4, GPIO_OUTPUT);
  */
 void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
 {
-    if (filter_hz == 0) {
+    if (filter_hz == 0)
         filter_hz = _default_filter_hz;
-    }
 
-/// TODO ...
+    _accel_filter_x.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
+    _accel_filter_y.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
+    _accel_filter_z.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
+    _gyro_filter_x.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
+    _gyro_filter_y.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
+    _gyro_filter_z.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
 }
 
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
+// This takes about 20us to run
 bool AP_InertialSensor_Flymaple::update(void) 
 {
     while (sample_available() == false) {
@@ -153,6 +171,7 @@ bool AP_InertialSensor_Flymaple::update(void)
     }
     Vector3f accel_scale = _accel_scale.get();
 
+    // Not really needed since Flymaple _accumulate runs in the main thread
     hal.scheduler->suspend_timer_procs();
 
     // base the time on the gyro timestamp, as that is what is
@@ -160,13 +179,11 @@ bool AP_InertialSensor_Flymaple::update(void)
     _delta_time = (_last_gyro_timestamp - _last_update_usec) * 1.0e-6f;
     _last_update_usec = _last_gyro_timestamp;
 
-    _accel = _accel_sum / _accel_sum_count;
-    _accel_sum.zero();
-    _accel_sum_count = 0;
+    _accel = _accel_filtered;
+    _accel_samples = 0;
 
-    _gyro = _gyro_sum / _gyro_sum_count;
-    _gyro_sum.zero();
-    _gyro_sum_count = 0;
+    _gyro = _gyro_filtered;
+    _gyro_samples = 0;
 
     hal.scheduler->resume_timer_procs();
 
@@ -188,13 +205,11 @@ bool AP_InertialSensor_Flymaple::update(void)
     _gyro *= FLYMAPLE_GYRO_SCALE_R_S;
     _gyro -= _gyro_offset;
 
-#if 0
-// whats this all about????
     if (_last_filter_hz != _mpu6000_filter) {
         _set_filter_frequency(_mpu6000_filter);
         _last_filter_hz = _mpu6000_filter;
     }
-#endif
+
     return true;
 }
 
@@ -235,11 +250,9 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     uint8_t buffer[6];
     uint64_t now = hal.scheduler->micros();
     // This takes about 500us at 200kHz I2C speed
-    if (now > (_last_accel_timestamp + 1250) 
+    if (now > (_last_accel_timestamp + raw_sample_interval_us) 
         && hal.i2c->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 6, buffer) == 0)
     {
-// FIXME:
-hal.gpio->write(4, 1);
         // The order is a bit wierd here since the standard we have adopted for Flymaple 
         // sensor orientation is different to what the board designers intended
         // Caution, to support alternative chip orientations on other bords, may 
@@ -247,24 +260,27 @@ hal.gpio->write(4, 1);
         int16_t y = -((((int16_t)buffer[1]) << 8) | buffer[0]);    // chip X axis
         int16_t x = -((((int16_t)buffer[3]) << 8) | buffer[2]);    // chip Y axis
         int16_t z = -((((int16_t)buffer[5]) << 8) | buffer[4]);    // chip Z axis
-        _accel_sum += Vector3f(x, y, z);
-        _accel_sum_count++;
+        _accel_filtered = Vector3f(_accel_filter_x.apply(x),
+                                   _accel_filter_y.apply(y),
+                                   _accel_filter_z.apply(z));
+        _accel_samples++;
         _last_accel_timestamp = now;
-// FIXME:
-hal.gpio->write(4, 0);
     }
 
     // Read gyro
     now = hal.scheduler->micros();
     // This takes about 500us at 200kHz I2C speed
-    if (now > (_last_gyro_timestamp + 1250) 
+    if (now > (_last_gyro_timestamp + raw_sample_interval_us) 
         && hal.i2c->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)
     {
+        // See above re order of samples in buffer
         int16_t y = -((((int16_t)buffer[0]) << 8) | buffer[1]);    // chip X axis
         int16_t x = -((((int16_t)buffer[2]) << 8) | buffer[3]);    // chip Y axis
         int16_t z = -((((int16_t)buffer[4]) << 8) | buffer[5]);    // chip Z axis
-        _gyro_sum += Vector3f(x, y, z);
-        _gyro_sum_count++;
+        _gyro_filtered = Vector3f(_gyro_filter_x.apply(x),
+                                  _gyro_filter_y.apply(y),
+                                  _gyro_filter_z.apply(z));
+        _gyro_samples++;
         _last_gyro_timestamp = now;
     }
 
@@ -275,7 +291,7 @@ hal.gpio->write(4, 0);
 bool AP_InertialSensor_Flymaple::sample_available(void)
 {
     _accumulate();
-    return min(_accel_sum_count, _gyro_sum_count) > 0;
+    return min(_accel_samples, _gyro_samples) / _sample_divider > 0;
 }
 
 #endif // CONFIG_HAL_BOARD

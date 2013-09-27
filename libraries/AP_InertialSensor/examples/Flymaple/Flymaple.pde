@@ -17,6 +17,7 @@
 #include <AP_InertialSensor.h>
 #include <GCS_MAVLink.h>
 #include <AP_Notify.h>
+#include <Filter.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 AP_InertialSensor_Flymaple ins;
@@ -150,7 +151,7 @@ void run_test()
     Vector3f accel;
     Vector3f gyro;
     float length;
-	uint8_t counter = 0;
+	uint32_t counter = 0;
 
     // flush any user input
     while( hal.console->available() ) {
@@ -164,7 +165,7 @@ void run_test()
     while( !hal.console->available() ) {
 
         // wait until we have a sample
-        while (ins.num_samples_available() == 0) /* noop */ ;
+        while (ins.sample_available() == false) /* noop */ ;
 
         // read samples from ins
         ins.update();

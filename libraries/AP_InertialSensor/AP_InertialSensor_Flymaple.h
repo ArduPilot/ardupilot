@@ -8,6 +8,8 @@
 
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
+#include <Filter.h>
+#include <LowPassFilter2p.h>
 
 class AP_InertialSensor_Flymaple : public AP_InertialSensor
 {
@@ -27,10 +29,10 @@ private:
     static          void _accumulate(void);
     uint64_t        _last_update_usec;
     float           _delta_time;
-    static Vector3f	_accel_sum;
-    static uint32_t _accel_sum_count;
-    static Vector3f	_gyro_sum;
-    static uint32_t _gyro_sum_count;
+    static Vector3f	_accel_filtered;
+    static uint32_t _accel_samples;
+    static Vector3f	_gyro_filtered;
+    static uint32_t _gyro_samples;
     static volatile bool _in_accumulate;
     static uint64_t _last_accel_timestamp;
     static uint64_t _last_gyro_timestamp;
@@ -41,10 +43,13 @@ private:
     uint8_t _default_filter_hz;
 
     void _set_filter_frequency(uint8_t filter_hz);
-
-    // accelerometer and gyro driver handles
-    static int _accel_fd;
-    static int _gyro_fd;
+    // Low Pass filters for gyro and accel 
+    static LowPassFilter2p _accel_filter_x;
+    static LowPassFilter2p _accel_filter_y;
+    static LowPassFilter2p _accel_filter_z;
+    static LowPassFilter2p _gyro_filter_x;
+    static LowPassFilter2p _gyro_filter_y;
+    static LowPassFilter2p _gyro_filter_z;
 };
 #endif
 #endif // __AP_INERTIAL_SENSOR_FLYMAPLE_H__
