@@ -611,9 +611,8 @@ void loop()
 {
     uint32_t timer = millis();
 
-    // We want this to execute at 50Hz, but synchronised with the gyro/accel
-    uint16_t num_samples = ins.num_samples_available();
-    if (num_samples >= 1) {
+    // We want this to execute at 50Hz, synchronised with the gyro/accel
+    if (ins.sample_available()) {
 		delta_ms_fast_loop	= timer - fast_loopTimer;
 		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
 		fast_loopTimer      = timer;
