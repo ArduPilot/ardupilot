@@ -629,6 +629,10 @@ void loop()
 
         scheduler.run(19000U);
     }
+    if ((timer - fast_loopTimer) <= 19) {
+        // we have plenty of time - be friendly to multi-tasking OSes
+        hal.scheduler->delay(1);
+    }
 }
 
 // Main loop 50Hz
