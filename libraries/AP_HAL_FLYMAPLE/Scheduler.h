@@ -34,9 +34,9 @@ public:
     void     register_delay_callback(AP_HAL::Proc,
                 uint16_t min_time_ms);
 
-    void     register_timer_process(AP_HAL::TimedProc);
+    void     register_timer_process(AP_HAL::TimedProc, void *);
 
-    void     register_io_process(AP_HAL::TimedProc);
+    void     register_io_process(AP_HAL::TimedProc, void *);
 
     void     suspend_timer_procs();
     void     resume_timer_procs();
@@ -73,6 +73,7 @@ private:
     static volatile bool _timer_suspended;
     static volatile bool _timer_event_missed;
     static AP_HAL::TimedProc _timer_proc[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS];
+    static void * _timer_arg[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS];
     static uint8_t _num_timer_procs;
 };
 

@@ -41,6 +41,7 @@ volatile bool     FLYMAPLEScheduler::_timer_suspended = false;
 volatile bool     FLYMAPLEScheduler::_timer_event_missed = false;
 volatile bool     FLYMAPLEScheduler::_in_timer_proc = false;
 AP_HAL::TimedProc FLYMAPLEScheduler::_timer_proc[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+void *            FLYMAPLEScheduler::_timer_arg[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t           FLYMAPLEScheduler::_num_timer_procs = 0;
 
 FLYMAPLEScheduler::FLYMAPLEScheduler() :
@@ -108,7 +109,7 @@ void FLYMAPLEScheduler::register_delay_callback(AP_HAL::Proc proc, uint16_t min_
     _min_delay_cb_ms = min_time_ms;
 }
 
-void FLYMAPLEScheduler::register_timer_process(AP_HAL::TimedProc proc)
+void FLYMAPLEScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg)
 {
     for (int i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -121,6 +122,7 @@ void FLYMAPLEScheduler::register_timer_process(AP_HAL::TimedProc proc)
          * because that memory won't be used until _num_timer_procs is
          * incremented. */
         _timer_proc[_num_timer_procs] = proc;
+        _timer_arg[_num_timer_procs] = arg;
         /* _num_timer_procs is used from interrupt, and multiple bytes long. */
         noInterrupts();
         _num_timer_procs++;
@@ -128,7 +130,7 @@ void FLYMAPLEScheduler::register_timer_process(AP_HAL::TimedProc proc)
     }
 }
 
-void FLYMAPLEScheduler::register_io_process(AP_HAL::TimedProc k)
+void FLYMAPLEScheduler::register_io_process(AP_HAL::TimedProc k, void *arg)
 {
     // IO processes not supported on FLYMAPLE
 }
@@ -166,7 +168,7 @@ void FLYMAPLEScheduler::_failsafe_timer_event()
 {
     // run the failsafe, if one is setup
     if (_failsafe != NULL)
-        _failsafe(libmaple_micros());
+        _failsafe(NULL);
 }
 
 void FLYMAPLEScheduler::begin_atomic()
@@ -181,14 +183,13 @@ void FLYMAPLEScheduler::end_atomic()
 
 void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr) 
 {
-    uint32_t tnow = libmaple_micros();
     _in_timer_proc = true;
 
     if (!_timer_suspended) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](tnow);
+                _timer_proc[i](_timer_arg[i]);
             }
         }
     } else if (called_from_isr) {
