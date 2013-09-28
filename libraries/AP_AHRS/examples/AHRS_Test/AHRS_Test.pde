@@ -38,7 +38,7 @@ AP_InertialSensor_MPU6000 ins;
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins( &adc );
 #else
-AP_InertialSensor_Stub ins;
+AP_InertialSensor_HIL ins;
 #endif
 
 AP_Compass_HMC5843 compass;
