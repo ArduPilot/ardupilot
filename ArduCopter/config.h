@@ -81,6 +81,13 @@
  # define CONFIG_ADC        DISABLED
  # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ # define CONFIG_IMU_TYPE CONFIG_IMU_SITL
+ # define CONFIG_BARO AP_BARO_BMP085
+ # define CONFIG_COMPASS  AP_COMPASS_HMC5843
+ # define CONFIG_ADC        DISABLED
+ # define MAGNETOMETER ENABLED
+ # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -186,6 +193,11 @@
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
  # define BATTERY_VOLT_PIN      20
  # define BATTERY_CURR_PIN      19
+ # define LED_ON           LOW
+ # define LED_OFF          HIGH
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ # define BATTERY_VOLT_PIN      -1
+ # define BATTERY_CURR_PIN      -1
  # define LED_ON           LOW
  # define LED_OFF          HIGH
 #endif
