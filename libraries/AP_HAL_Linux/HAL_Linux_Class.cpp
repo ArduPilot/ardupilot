@@ -4,9 +4,6 @@
 #include "HAL_Linux_Class.h"
 #include "AP_HAL_Linux_Private.h"
 
-#include <AP_HAL_Empty.h>
-#include <AP_HAL_Empty_Private.h>
-
 #include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -14,14 +11,14 @@
 
 using namespace Linux;
 
-// only using 2 serial ports on Linux for now
+// 3 serial ports on Linux for now
 static LinuxUARTDriver uartADriver;
 static LinuxUARTDriver uartBDriver;
-static Empty::EmptyUARTDriver uartCDriver;
+static LinuxUARTDriver uartCDriver;
 
 static LinuxSemaphore  i2cSemaphore;
 static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
-static Empty::EmptySPIDeviceManager spiDeviceManager;
+static LinuxSPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
 static LinuxStorage storageDriver;
 static LinuxConsoleDriver consoleDriver(&uartADriver);
@@ -54,7 +51,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     /*
       parse command line options
      */
-    while ((opt = getopt(argc, argv, "A:B:h")) != -1) {
+    while ((opt = getopt(argc, argv, "A:B:C:h")) != -1) {
         switch (opt) {
         case 'A':
             uartADriver.set_device_path(optarg);
@@ -62,8 +59,11 @@ void HAL_Linux::init(int argc,char* const argv[]) const
         case 'B':
             uartBDriver.set_device_path(optarg);
             break;
+        case 'C':
+            uartCDriver.set_device_path(optarg);
+            break;
         case 'h':
-            printf("Usage: -A uartAPath -B uartAPath\n");
+            printf("Usage: -A uartAPath -B uartBPath -C uartCPath\n");
             exit(0);
         default:
             printf("Unknown option '%c'\n", (char)opt);
@@ -71,12 +71,10 @@ void HAL_Linux::init(int argc,char* const argv[]) const
         }
     }
 
-    /* initialize all drivers and private members here.
-     * up to the programmer to do this in the correct order.
-     * Scheduler should likely come first. */
     scheduler->init(NULL);
     uartA->begin(115200);
     i2c->begin();
+    spi->init(NULL);
 }
 
 const HAL_Linux AP_HAL_Linux;
