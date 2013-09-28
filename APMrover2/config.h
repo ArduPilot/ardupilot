@@ -82,6 +82,11 @@
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 # define BATTERY_PIN_1     20
 # define CURRENT_PIN_1	   19
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+# define CONFIG_INS_TYPE   CONFIG_INS_HIL
+# define CONFIG_COMPASS  AP_COMPASS_HMC5843
+# define BATTERY_PIN_1     -1
+# define CURRENT_PIN_1	   -1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
