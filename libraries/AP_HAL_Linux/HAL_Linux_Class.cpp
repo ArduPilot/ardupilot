@@ -20,7 +20,7 @@ static LinuxUARTDriver uartBDriver;
 static Empty::EmptyUARTDriver uartCDriver;
 
 static LinuxSemaphore  i2cSemaphore;
-static LinuxI2CDriver  i2cDriver(&i2cSemaphore);
+static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
 static Empty::EmptySPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
 static LinuxStorage storageDriver;
@@ -76,6 +76,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
      * Scheduler should likely come first. */
     scheduler->init(NULL);
     uartA->begin(115200);
+    i2c->begin();
 }
 
 const HAL_Linux AP_HAL_Linux;

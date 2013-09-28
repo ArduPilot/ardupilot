@@ -17,11 +17,10 @@ bool LinuxSemaphore::take(uint32_t timeout_ms) {
 }
 
 bool LinuxSemaphore::take_nonblocking() {
-    /* No syncronisation primitives to garuntee this is correct */
+    /* we need pthread semaphores here */
     if (!_taken) {
         _taken = true;
         return true;
-    } else {
-        return false;
     }
+    return false;
 }

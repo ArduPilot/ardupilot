@@ -11,7 +11,7 @@ public:
     bool take(uint32_t timeout_ms);
     bool take_nonblocking();
 private:
-    bool _taken;
+    volatile bool _taken;
 };
 
 #endif // __AP_HAL_LINUX_SEMAPHORE_H__
