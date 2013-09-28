@@ -246,18 +246,8 @@ AP_Compass_HMC5843::init()
 
 #if 0
         /* useful for debugging */
-        hal.console->print("mag_x: ");
-        hal.console->print(_mag_x);
-        hal.console->print(" mag_y: ");
-        hal.console->print(_mag_y);
-        hal.console->print(" mag_z: ");
-        hal.console->println(_mag_z);
-        hal.console->print("CalX: ");
-        hal.console->print(calibration[0]/good_count);
-        hal.console->print(" CalY: ");
-        hal.console->print(calibration[1]/good_count);
-        hal.console->print(" CalZ: ");
-        hal.console->println(calibration[2]/good_count);
+        hal.console->printf_P(PSTR("MagX: %d MagY: %d MagZ: %d\n"), (int)_mag_x, (int)_mag_y, (int)_mag_z);
+        hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), cal[0], cal[1], cal[2]);
 #endif
     }
 
