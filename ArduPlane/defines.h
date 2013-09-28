@@ -239,7 +239,7 @@ enum log_messages {
 // InertialSensor driver types
 #define CONFIG_INS_OILPAN  1
 #define CONFIG_INS_MPU6000 2
-#define CONFIG_INS_STUB    3
+#define CONFIG_INS_HIL     3
 #define CONFIG_INS_PX4     4
 #define CONFIG_INS_FLYMAPLE 5
 

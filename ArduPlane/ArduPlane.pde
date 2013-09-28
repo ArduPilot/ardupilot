@@ -246,8 +246,8 @@ AP_GPS_HIL      g_gps_driver;
 AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_PX4
 AP_InertialSensor_PX4 ins;
-#elif CONFIG_INS_TYPE == CONFIG_INS_STUB
-AP_InertialSensor_Stub ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_HIL
+AP_InertialSensor_HIL ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
 AP_InertialSensor_Oilpan ins( &apm1_adc );
 #elif CONFIG_INS_TYPE == CONFIG_INS_FLYMAPLE
