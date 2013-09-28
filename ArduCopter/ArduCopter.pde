@@ -222,7 +222,7 @@ static AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
 static AP_InertialSensor_Oilpan ins(&adc);
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
-static AP_InertialSensor_Stub ins;
+static AP_InertialSensor_HIL ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
 static AP_InertialSensor_PX4 ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
@@ -291,7 +291,7 @@ static AP_ADC_HIL              adc;
 static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
-static AP_InertialSensor_Stub  ins;
+static AP_InertialSensor_HIL   ins;
 static AP_AHRS_DCM             ahrs(&ins, g_gps);
 
 static int32_t gps_base_alt;
@@ -303,7 +303,7 @@ static SITL sitl;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 static AP_ADC_HIL              adc;
-static AP_InertialSensor_Stub  ins;
+static AP_InertialSensor_HIL   ins;
 static AP_AHRS_HIL             ahrs(&ins, g_gps);
 static AP_GPS_HIL              g_gps_driver;
 static AP_Compass_HIL          compass;                  // never used
