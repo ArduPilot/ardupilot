@@ -55,11 +55,11 @@ public:
 private:
     // individual drivers
     AP_BoardLED boardled;
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
-    ToshibaLED_I2C toshibaled;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ToshibaLED_PX4 toshibaled;
     ToneAlarm_PX4 tonealarm;
+#else
+    ToshibaLED_I2C toshibaled;
 #endif
 };
 
