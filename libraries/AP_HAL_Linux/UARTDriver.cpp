@@ -1,3 +1,7 @@
+#include <AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
 #include "UARTDriver.h"
 
 #include <stdio.h>
@@ -172,3 +176,5 @@ size_t LinuxUARTDriver::write(uint8_t c)
     }
     return 0;
 }
+
+#endif // CONFIG_HAL_BOARD

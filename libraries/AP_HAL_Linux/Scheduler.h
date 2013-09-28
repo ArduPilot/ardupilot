@@ -3,6 +3,8 @@
 #define __AP_HAL_LINUX_SCHEDULER_H__
 
 #include <AP_HAL_Linux.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <sys/time.h>
 #include <pthread.h>
 
@@ -24,8 +26,8 @@ public:
     void     register_delay_callback(AP_HAL::Proc,
                 uint16_t min_time_ms);
 
-    void     register_timer_process(AP_HAL::TimedProc);
-    void     register_io_process(AP_HAL::TimedProc);
+    void     register_timer_process(AP_HAL::TimedProc, void *arg);
+    void     register_io_process(AP_HAL::TimedProc, void *arg);
     void     suspend_timer_procs();
     void     resume_timer_procs();
 
@@ -58,10 +60,12 @@ private:
     volatile bool _timer_suspended;
 
     AP_HAL::TimedProc _timer_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
+    void * _timer_arg[LINUX_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
     volatile bool _in_timer_proc;
 
     AP_HAL::TimedProc _io_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
+    void * _io_arg[LINUX_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
 
@@ -78,5 +82,7 @@ private:
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
 };
+
+#endif // CONFIG_HAL_BOARD
 
 #endif // __AP_HAL_LINUX_SCHEDULER_H__

@@ -1,3 +1,6 @@
+#include <AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "Scheduler.h"
 #include "Storage.h"
@@ -81,7 +84,7 @@ void LinuxScheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void LinuxScheduler::register_timer_process(AP_HAL::TimedProc proc) 
+void LinuxScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg) 
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -91,13 +94,14 @@ void LinuxScheduler::register_timer_process(AP_HAL::TimedProc proc)
 
     if (_num_timer_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
         _timer_proc[_num_timer_procs] = proc;
+        _timer_arg[_num_timer_procs] = arg;
         _num_timer_procs++;
     } else {
         hal.console->printf("Out of timer processes\n");
     }
 }
 
-void LinuxScheduler::register_io_process(AP_HAL::TimedProc proc) 
+void LinuxScheduler::register_io_process(AP_HAL::TimedProc proc, void *arg) 
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -107,6 +111,7 @@ void LinuxScheduler::register_io_process(AP_HAL::TimedProc proc)
 
     if (_num_io_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
         _io_proc[_num_io_procs] = proc;
+        _io_arg[_num_io_procs] = arg;
         _num_io_procs++;
     } else {
         hal.console->printf("Out of IO processes\n");
@@ -145,7 +150,7 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](tnow);
+                _timer_proc[i](_timer_arg[i]);
             }
         }
     } else if (called_from_timer_thread) {
@@ -154,7 +159,7 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe(tnow);
+        _failsafe(NULL);
     }
 
     _in_timer_proc = false;
@@ -184,7 +189,7 @@ void LinuxScheduler::_run_io(void)
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i] != NULL) {
-                _io_proc[i](tnow);
+                _io_proc[i](_io_arg[i]);
             }
         }
     }
@@ -251,3 +256,5 @@ void LinuxScheduler::reboot(bool hold_in_bootloader)
 {
     for(;;);
 }
+
+#endif // CONFIG_HAL_BOARD
