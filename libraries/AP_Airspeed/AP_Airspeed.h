@@ -8,6 +8,10 @@
 #include <AP_Param.h>
 #include <GCS_MAVLink.h>
 #include <AP_Vehicle.h>
+#include <AP_Airspeed_Backend.h>
+#include <AP_Airspeed_analog.h>
+#include <AP_Airspeed_PX4.h>
+#include <AP_Airspeed_I2C.h>
 
 class Airspeed_Calibration {
 public:
@@ -37,9 +41,10 @@ class AP_Airspeed
 public:
     // constructor
     AP_Airspeed(const AP_Vehicle::FixedWing &parms) : 
-        _ets_fd(-1),
         _EAS2TAS(1.0f),
-        _calibration(parms)
+        _calibration(parms),
+        analog(_pin),
+        _healthy(false)
     {
 		AP_Param::setup_object_defaults(this, var_info);
     };
@@ -80,7 +85,7 @@ public:
 
     // return true if airspeed is enabled, and airspeed use is set
     bool        use(void) const {
-        return _enable && _use && _offset != 0;
+        return _enable && _use && _offset != 0 && _healthy;
     }
 
     // return true if airspeed is enabled
@@ -124,7 +129,6 @@ public:
 
 
 private:
-    AP_HAL::AnalogSource *_source;
     AP_Float        _offset;
     AP_Float        _ratio;
     AP_Int8         _use;
@@ -133,16 +137,22 @@ private:
     AP_Int8         _autocal;
     float           _raw_airspeed;
     float           _airspeed;
-    int			    _ets_fd;
     float			_last_pressure;
     float           _EAS2TAS;
+    bool		    _healthy;
 
     Airspeed_Calibration _calibration;
     float _last_saved_ratio;
     uint8_t _counter;
 
-    // return raw differential pressure in Pascal
     float get_pressure(void);
+
+    AP_Airspeed_Analog analog;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    AP_Airspeed_PX4    digital;
+#else
+    AP_Airspeed_I2C    digital;
+#endif
 };
 
 #endif // __AP_AIRSPEED_H__

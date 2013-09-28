@@ -29,7 +29,6 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
  #include <AP_ADC_AnalogSource.h>
  #define ARSPD_DEFAULT_PIN 64
- extern AP_ADC_ADS7844 apm1_adc;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #define ARSPD_DEFAULT_PIN 0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -49,6 +48,8 @@ extern const AP_HAL::HAL& hal;
 #endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
  #define ARSPD_DEFAULT_PIN 16
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ #define ARSPD_DEFAULT_PIN 65
 #else
  #define ARSPD_DEFAULT_PIN 0
 #endif
@@ -109,29 +110,9 @@ void AP_Airspeed::init()
     _calibration.init(_ratio);
     _last_saved_ratio = _ratio;
     _counter = 0;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    if (_pin == 65) {
-        _ets_fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
-        if (_ets_fd == -1) {
-            hal.console->println("Failed to open ETS airspeed driver");
-            _enable.set(0);
-            return;
-        }
-        if (OK != ioctl(_ets_fd, SENSORIOCSPOLLRATE, 100) ||
-            OK != ioctl(_ets_fd, SENSORIOCSQUEUEDEPTH, 15)) {
-            hal.console->println("Failed to setup ETS driver rate and queue");
-        }
-        return;
-    }
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    if (_pin == 64) {
-        _source = new AP_ADC_AnalogSource( &apm1_adc, 7, 1.0f);
-        return;
-    }
-#endif
-    _source = hal.analogin->channel(_pin);
+    
+    analog.init();
+    digital.init();
 }
 
 // read the airspeed sensor
@@ -140,36 +121,13 @@ float AP_Airspeed::get_pressure(void)
     if (!_enable) {
         return 0;
     }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    if (_ets_fd != -1) {
-        // read from the ETS airspeed sensor
-        float sum = 0;
-        uint16_t count = 0;
-        struct differential_pressure_s report;
-        static uint64_t last_timestamp;
-
-        while (::read(_ets_fd, &report, sizeof(report)) == sizeof(report) &&
-               report.timestamp != last_timestamp) {
-            sum += report.differential_pressure_pa;
-            count++;
-            last_timestamp = report.timestamp;
-        }
-        // hal.console->printf("count=%u\n", (unsigned)count);
-        if (count == 0) {
-            return _last_pressure;
-        }
-        _last_pressure = sum / count;
-        return _last_pressure;
+    float pressure = 0;
+    if (_pin == 65) {
+        _healthy = digital.get_differential_pressure(pressure);
+    } else {
+        _healthy = analog.get_differential_pressure(pressure);
     }
-#endif
-
-    if (_source == NULL) {
-        return 0;
-    }
-    _source->set_pin(_pin);
-    _last_pressure = _source->voltage_average_ratiometric() * SCALING_OLD_CALIBRATION;
-    return _last_pressure;
+    return pressure;
 }
 
 // calibrate the airspeed. This must be called at least once before
@@ -177,17 +135,28 @@ float AP_Airspeed::get_pressure(void)
 void AP_Airspeed::calibrate()
 {
     float sum = 0;
+    uint8_t count = 0;
     uint8_t c;
     if (!_enable) {
         return;
     }
     // discard first reading
     get_pressure();
-    for (c = 0; c < 10; c++) {
+    for (uint8_t i = 0; i < 10; i++) {
         hal.scheduler->delay(100);
-        sum += get_pressure();
+        float p = get_pressure();
+        if (_healthy) {
+            sum += p;
+            count++;
+        }
     }
-    float raw = sum/c;
+    if (count == 0) {
+        // unhealthy sensor
+        hal.console->printf_P(PSTR("Airspeed sensor unhealthy\n"));
+        _offset.set(0);
+        return;
+    }
+    float raw = sum/count;
     _offset.set_and_save(raw);
     _airspeed = 0;
     _raw_airspeed = 0;
@@ -200,8 +169,8 @@ void AP_Airspeed::read(void)
     if (!_enable) {
         return;
     }
-    float raw               = get_pressure();
-    airspeed_pressure       = max(raw - _offset, 0);
+    airspeed_pressure       = get_pressure();
+    airspeed_pressure       = max(airspeed_pressure - _offset, 0);
     _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
     _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
 }
