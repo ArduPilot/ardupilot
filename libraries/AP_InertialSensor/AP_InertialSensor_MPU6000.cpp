@@ -169,17 +169,6 @@ const int8_t AP_InertialSensor_MPU6000::_accel_data_sign[3]  = { 1, 1, -1 };
 
 const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 
-int16_t AP_InertialSensor_MPU6000::_mpu6000_product_id = AP_PRODUCT_ID_NONE;
-AP_HAL::DigitalSource *AP_InertialSensor_MPU6000::_drdy_pin = NULL;
-
-// time we start collecting sample (reset on update)
-// time latest sample was collected
-static volatile uint32_t _last_sample_time_micros = 0;
-
-/* Static SPI device driver */
-AP_HAL::SPIDeviceDriver* AP_InertialSensor_MPU6000::_spi = NULL;
-AP_HAL::Semaphore* AP_InertialSensor_MPU6000::_spi_sem = NULL;
-
 /*
  *  RM-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
  *  accel as 4096 LSB/mg at scale factor of +/- 8g (AFS_SEL==2)
@@ -188,10 +177,13 @@ AP_HAL::Semaphore* AP_InertialSensor_MPU6000::_spi_sem = NULL;
  *  variants however
  */
 
-AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000() : AP_InertialSensor()
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000() : 
+	AP_InertialSensor(),
+    _mpu6000_product_id(AP_PRODUCT_ID_NONE),
+    _drdy_pin(NULL),
+    _temp(0),
+    _initialised(false)
 {
-    _temp = 0;
-    _initialised = false;
 }
 
 uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
@@ -236,7 +228,7 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
     _read_data_transaction();
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(_poll_data);
+    hal.scheduler->register_timer_process(reinterpret_cast<AP_HAL::TimedProc>(&AP_InertialSensor_MPU6000::_poll_data), this);
 
 #if MPU6000_DEBUG
     _dump_registers();
@@ -362,7 +354,7 @@ bool AP_InertialSensor_MPU6000::_data_ready()
 /**
  * Timer process to poll for new data from the MPU6000.
  */
-void AP_InertialSensor_MPU6000::_poll_data(uint32_t now)
+void AP_InertialSensor_MPU6000::_poll_data(void)
 {
     if (_data_ready()) {
         if (hal.scheduler->in_timerprocess()) {
@@ -602,7 +594,7 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 // return true if a sample is available
 bool AP_InertialSensor_MPU6000::sample_available()
 {
-    _poll_data(0);
+    _poll_data();
     return (_count >> _sample_shift) > 0;
 }
 

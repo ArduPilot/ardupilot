@@ -35,19 +35,19 @@ protected:
 
 private:
 
-    static void                 _read_data_from_timerprocess();
-    static void                 _read_data_transaction();
-    static bool                 _data_ready();
-    static void                 _poll_data(uint32_t now);
-    static AP_HAL::DigitalSource *_drdy_pin;
-    static uint8_t              _register_read( uint8_t reg );
-    static bool _register_read_from_timerprocess( uint8_t reg, uint8_t *val );
-    static void                 register_write( uint8_t reg, uint8_t val );
+    void                 _read_data_from_timerprocess();
+    void                 _read_data_transaction();
+    bool                 _data_ready();
+    void                 _poll_data(void);
+    AP_HAL::DigitalSource *_drdy_pin;
+    uint8_t              _register_read( uint8_t reg );
+    bool _register_read_from_timerprocess( uint8_t reg, uint8_t *val );
+    void                 register_write( uint8_t reg, uint8_t val );
     void                        wait_for_sample();
     bool                        hardware_init(Sample_rate sample_rate);
 
-    static AP_HAL::SPIDeviceDriver *_spi;
-    static AP_HAL::Semaphore *_spi_sem;
+    AP_HAL::SPIDeviceDriver *_spi;
+    AP_HAL::Semaphore *_spi_sem;
 
     uint16_t					_num_samples;
 
@@ -65,9 +65,11 @@ private:
 
     static const uint8_t        _temp_data_index;
 
+    uint32_t _last_sample_time_micros;
+
     // ensure we can't initialise twice
     bool                        _initialised;
-    static int16_t              _mpu6000_product_id;
+    int16_t              _mpu6000_product_id;
 
     // how many hardware samples before we report a sample to the caller
     uint8_t _sample_shift;
