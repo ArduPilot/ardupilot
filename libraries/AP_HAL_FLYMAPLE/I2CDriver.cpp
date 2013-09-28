@@ -27,7 +27,8 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-static TwoWire twowire(5, 9, SOFT_FAST); // Flymaple has non-standard SCL, SDA, speed ~200kHz
+// We use a 0 delay to go as fast as we can with bitbanging
+static TwoWire twowire(5, 9, 0); // Flymaple has non-standard SCL, SDA, speed ~285kHz
 void FLYMAPLEI2CDriver::begin() 
 {
     twowire.begin();
