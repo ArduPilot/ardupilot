@@ -9,6 +9,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 
 #include <AP_Math.h>    // ArduPilot Mega Vector/Matrix math Library
