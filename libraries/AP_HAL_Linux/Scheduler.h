@@ -4,6 +4,14 @@
 
 #include <AP_HAL_Linux.h>
 #include <sys/time.h>
+#include <pthread.h>
+
+#define LINUX_SCHEDULER_MAX_TIMER_PROCS 10
+
+#define APM_LINUX_MAIN_PRIORITY    180
+#define APM_LINUX_TIMER_PRIORITY   181
+#define APM_LINUX_UART_PRIORITY     60
+#define APM_LINUX_IO_PRIORITY       59
 
 class Linux::LinuxScheduler : public AP_HAL::Scheduler {
 public:
@@ -37,6 +45,38 @@ public:
 
 private:
     struct timeval _sketch_start_time;    
+    void _timer_handler(int signum);
+
+    AP_HAL::Proc _delay_cb;
+    uint16_t _min_delay_cb_ms;
+
+    AP_HAL::TimedProc _failsafe;
+
+    bool _initialized;
+    volatile bool _timer_pending;
+
+    volatile bool _timer_suspended;
+
+    AP_HAL::TimedProc _timer_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
+    uint8_t _num_timer_procs;
+    volatile bool _in_timer_proc;
+
+    AP_HAL::TimedProc _io_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
+    uint8_t _num_io_procs;
+    volatile bool _in_io_proc;
+
+    volatile bool _timer_event_missed;
+
+    pthread_t _timer_thread_ctx;
+    pthread_t _io_thread_ctx;
+    pthread_t _uart_thread_ctx;
+
+    void *_timer_thread(void);
+    void *_io_thread(void);
+    void *_uart_thread(void);
+
+    void _run_timers(bool called_from_timer_thread);
+    void _run_io(void);
 };
 
 #endif // __AP_HAL_LINUX_SCHEDULER_H__
