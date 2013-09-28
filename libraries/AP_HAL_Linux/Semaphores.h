@@ -3,15 +3,18 @@
 #define __AP_HAL_LINUX_SEMAPHORE_H__
 
 #include <AP_HAL_Linux.h>
+#include <pthread.h>
 
 class Linux::LinuxSemaphore : public AP_HAL::Semaphore {
 public:
-    LinuxSemaphore() : _taken(false) {}
+    LinuxSemaphore() {
+        pthread_mutex_init(&_lock, NULL);
+    }
     bool give();
     bool take(uint32_t timeout_ms);
     bool take_nonblocking();
 private:
-    volatile bool _taken;
+    pthread_mutex_t _lock;
 };
 
 #endif // __AP_HAL_LINUX_SEMAPHORE_H__
