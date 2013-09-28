@@ -81,11 +81,7 @@ static volatile uint32_t _ch6_delta_time_start_micros = 0;
 // time latest sample was collected
 static volatile uint32_t _ch6_last_sample_time_micros = 0;
 
-AP_HAL::SPIDeviceDriver* AP_ADC_ADS7844::_spi = NULL;
-AP_HAL::Semaphore* AP_ADC_ADS7844::_spi_sem = NULL;
-
-
-void AP_ADC_ADS7844::read(uint32_t tnow)
+void AP_ADC_ADS7844::read(void)
 {
     static int semfail_ctr = 0;
     uint8_t ch;
@@ -175,7 +171,7 @@ void AP_ADC_ADS7844::Init()
 
     _ch6_last_sample_time_micros = hal.scheduler->micros();
 
-    hal.scheduler->register_timer_process( AP_ADC_ADS7844::read );
+    hal.scheduler->register_timer_process( reinterpret_cast<AP_HAL::TimedProc>(&AP_ADC_ADS7844::read), this );
     hal.scheduler->resume_timer_procs();
 
 }

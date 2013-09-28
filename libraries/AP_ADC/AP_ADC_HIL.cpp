@@ -30,8 +30,6 @@ const float AP_ADC_HIL::accelBias[3]    = {2025,2025,2025};
 const float AP_ADC_HIL::gyroScale[3] = {143.239, 139.746, 139.746};
 const float AP_ADC_HIL::accelScale[3] = {418,418,418}; // adcPerG
     
-uint16_t  AP_ADC_HIL::_count; // number of samples captured
-
 AP_ADC_HIL::AP_ADC_HIL()
 {
     // gyros set to zero for calibration
@@ -51,7 +49,7 @@ AP_ADC_HIL::AP_ADC_HIL()
 
 void AP_ADC_HIL::Init()
 {
-    hal.scheduler->register_timer_process( AP_ADC_HIL::read );
+    hal.scheduler->register_timer_process( reinterpret_cast<AP_HAL::TimedProc>(&AP_ADC_HIL::read), this);
 }
 
 // Read one channel value
