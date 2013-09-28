@@ -413,7 +413,7 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_INS_TYPE == CONFIG_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
@@ -432,7 +432,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
         }
     }
 }
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#endif // CONFIG_INS_TYPE
 
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)

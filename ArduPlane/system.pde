@@ -137,9 +137,9 @@ static void init_ardupilot()
     }
 #endif
 
- #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_INS_TYPE == CONFIG_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
     apm1_adc.Init();      // APM ADC library initialization
- #endif
+#endif
 
     // initialise airspeed sensor
     airspeed.init();

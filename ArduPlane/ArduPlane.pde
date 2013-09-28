@@ -181,10 +181,6 @@ static GPS         *g_gps;
 // flight modes convenience array
 static AP_Int8          *flight_modes = &g.flight_mode1;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 #if CONFIG_BARO == AP_BARO_BMP085
 static AP_Baro_BMP085 barometer;
 #elif CONFIG_BARO == AP_BARO_PX4
@@ -241,6 +237,10 @@ AP_GPS_HIL      g_gps_driver;
 #else
   #error Unrecognised GPS_PROTOCOL setting.
 #endif // GPS PROTOCOL
+
+#if CONFIG_INS_TYPE == CONFIG_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
+AP_ADC_ADS7844 apm1_adc;
+#endif
 
 #if CONFIG_INS_TYPE == CONFIG_INS_MPU6000
 AP_InertialSensor_MPU6000 ins;
