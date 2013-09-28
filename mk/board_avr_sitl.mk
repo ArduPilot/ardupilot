@@ -6,7 +6,7 @@ include $(MK_DIR)/find_tools.mk
 # Tool options
 #
 DEFINES         =   -DF_CPU=$(F_CPU)
-DEFINES        +=   -DSKETCH=\"$(SKETCH)\"
+DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DSKETCHNAME="\"$(SKETCH)\""
 DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
@@ -39,7 +39,7 @@ ifneq ($(SYSTYPE),Darwin)
 LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
-LIBS = -lm
+LIBS = -lm -lpthread
 
 ifeq ($(VERBOSE),)
 v = @
