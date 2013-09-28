@@ -154,6 +154,8 @@ DataFlash_APM2 DataFlash;
 DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static DataFlash_File DataFlash("/fs/microsd/APM/logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+static DataFlash_File DataFlash("/var/log/APM/logs");
 #else
 // no dataflash driver
 DataFlash_Empty DataFlash;
