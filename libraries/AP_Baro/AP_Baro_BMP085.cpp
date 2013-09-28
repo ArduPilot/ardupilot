@@ -49,28 +49,25 @@
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE || defined(APM2_BETA_HARDWARE)
 #include "AP_Baro_BMP085.h"
 
 extern const AP_HAL::HAL& hal;
 
 #define BMP085_ADDRESS 0x77  //(0xEE >> 1)
-#define BMP085_EOC 30        // End of conversion pin PC7
+#define BMP085_EOC 30        // End of conversion pin PC7 on APM1
 
 // the apm2 hardware needs to check the state of the
 // chip using a direct IO port
 // On APM2 prerelease hw, the data ready port is hooked up to PE7, which
 // is not available to the arduino digitalRead function.
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define BMP_DATA_READY() (PINE&0x80)
-#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-// No EOC connection from Baro on Flymaple
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
+#else
+// No EOC connection from Baro
 // Use times instead.
 // Temp conversion time is 4.5ms
 // Pressure conversion time is 25.5ms (for OVERSAMPLING=3)
 #define BMP_DATA_READY() (BMP085_State == 0 ? hal.scheduler->millis() > (_last_temp_read_command_time + 5) : hal.scheduler->millis() > (_last_press_read_command_time + 26))
-#else
-#define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
 #endif
 
 // oversampling 3 gives 26ms conversion time. We then average
@@ -280,4 +277,4 @@ void AP_Baro_BMP085::Calculate()
         _count /= 2;
     }
 }
-#endif // CONFIG_HAL_BOARD
+
