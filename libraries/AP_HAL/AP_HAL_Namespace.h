@@ -34,7 +34,7 @@ namespace AP_HAL {
 
     /* Typdefs for function pointers (Procedure, Timed Procedure) */
     typedef void(*Proc)(void);
-    typedef void(*TimedProc)(uint32_t);
+    typedef void(*TimedProc)(void *);
 
     /**
      * Global names for all of the existing SPI devices on all platforms.
