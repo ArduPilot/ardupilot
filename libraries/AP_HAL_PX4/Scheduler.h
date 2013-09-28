@@ -31,8 +31,8 @@ public:
     uint32_t micros();
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
-    void     register_timer_process(AP_HAL::TimedProc);
-    void     register_io_process(AP_HAL::TimedProc);
+    void     register_timer_process(AP_HAL::TimedProc, void *);
+    void     register_io_process(AP_HAL::TimedProc, void *);
     void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
     void     suspend_timer_procs();
     void     resume_timer_procs();
@@ -54,10 +54,12 @@ private:
     volatile bool _timer_suspended;
 
     AP_HAL::TimedProc _timer_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
+    void * _timer_arg[PX4_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
     volatile bool _in_timer_proc;
 
     AP_HAL::TimedProc _io_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
+    void * _io_arg[PX4_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
 

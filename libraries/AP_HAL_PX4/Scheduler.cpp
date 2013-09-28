@@ -128,7 +128,7 @@ void PX4Scheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc) 
+void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg) 
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -138,13 +138,14 @@ void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc)
 
     if (_num_timer_procs < PX4_SCHEDULER_MAX_TIMER_PROCS) {
         _timer_proc[_num_timer_procs] = proc;
+        _timer_arg[_num_timer_procs] = arg;
         _num_timer_procs++;
     } else {
         hal.console->printf("Out of timer processes\n");
     }
 }
 
-void PX4Scheduler::register_io_process(AP_HAL::TimedProc proc) 
+void PX4Scheduler::register_io_process(AP_HAL::TimedProc proc, void *arg) 
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -154,6 +155,7 @@ void PX4Scheduler::register_io_process(AP_HAL::TimedProc proc)
 
     if (_num_io_procs < PX4_SCHEDULER_MAX_TIMER_PROCS) {
         _io_proc[_num_io_procs] = proc;
+        _io_arg[_num_io_procs] = arg;
         _num_io_procs++;
     } else {
         hal.console->printf("Out of IO processes\n");
@@ -186,7 +188,6 @@ void PX4Scheduler::reboot(bool hold_in_bootloader)
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 {
-    uint32_t tnow = micros();
     if (_in_timer_proc) {
         return;
     }
@@ -196,7 +197,7 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](tnow);
+                _timer_proc[i](_timer_arg[i]);
             }
         }
     } else if (called_from_timer_thread) {
@@ -205,7 +206,7 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe(tnow);
+        _failsafe(NULL);
     }
 
     // process analog input
@@ -235,7 +236,6 @@ void *PX4Scheduler::_timer_thread(void)
 
 void PX4Scheduler::_run_io(void)
 {
-    uint32_t tnow = micros();
     if (_in_io_proc) {
         return;
     }
@@ -245,7 +245,7 @@ void PX4Scheduler::_run_io(void)
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i] != NULL) {
-                _io_proc[i](tnow);
+                _io_proc[i](_io_arg[i]);
             }
         }
     }
