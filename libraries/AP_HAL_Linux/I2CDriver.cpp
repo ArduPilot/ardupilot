@@ -104,9 +104,6 @@ uint8_t LinuxI2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
     if (!set_address(addr)) {
         return 1;
     }
-    if (write(addr, 0, NULL) != 0) {
-        return 1;
-    }
     if (::read(_fd, data, len) != len) {
         return 1;
     }

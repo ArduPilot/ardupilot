@@ -27,6 +27,7 @@ void LinuxScheduler::init(void* machtnichts)
     struct sched_param param;
 
     param.sched_priority = APM_LINUX_TIMER_PRIORITY;
+    pthread_attr_init(&thread_attr);
     (void)pthread_attr_setschedparam(&thread_attr, &param);
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
