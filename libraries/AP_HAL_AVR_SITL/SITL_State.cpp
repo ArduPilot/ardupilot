@@ -61,7 +61,7 @@ bool SITL_State::_motors_on;
 uint16_t SITL_State::airspeed_pin_value;
 
 AP_Baro_HIL *SITL_State::_barometer;
-AP_InertialSensor_Stub *SITL_State::_ins;
+AP_InertialSensor_HIL *SITL_State::_ins;
 SITLScheduler *SITL_State::_scheduler;
 AP_Compass_HIL *SITL_State::_compass;
 
@@ -170,7 +170,7 @@ void SITL_State::_sitl_setup(void)
 	// find the barometer object if it exists
 	_sitl = (SITL *)AP_Param::find_object("SIM_");
 	_barometer = (AP_Baro_HIL *)AP_Param::find_object("GND_");
-	_ins = (AP_InertialSensor_Stub *)AP_Param::find_object("INS_");
+	_ins = (AP_InertialSensor_HIL *)AP_Param::find_object("INS_");
 	_compass = (AP_Compass_HIL *)AP_Param::find_object("COMPASS_");
 
     if (_sitl != NULL) {
