@@ -264,7 +264,7 @@ bool AP_Baro_MS5611::init()
     _d1_count = 0;
     _d2_count = 0;
 
-    hal.scheduler->register_timer_process( AP_Baro_MS5611::_update );
+    hal.scheduler->register_timer_process( reinterpret_cast<AP_HAL::TimedProc>(&AP_Baro_MS5611::_update), this );
     _serial->sem_give();
 
     // wait for at least one value to be read
@@ -287,8 +287,9 @@ bool AP_Baro_MS5611::init()
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
 // temperature does not change so quickly...
-void AP_Baro_MS5611::_update(uint32_t tnow)
+void AP_Baro_MS5611::_update(void)
 {
+    uint32_t tnow = hal.scheduler->micros();
     // Throttle read rate to 100hz maximum.
     // note we use 9500us here not 10000us
     // the read rate will end up at exactly 100hz because the Periodic Timer fires at 1khz
