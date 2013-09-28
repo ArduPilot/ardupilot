@@ -988,6 +988,10 @@ void loop()
         uint32_t time_available = (timer + 10000) - micros();
         scheduler.run(time_available - 500);
     }
+    if ((timer - fast_loopTimer) < 8500) {
+        // we have plenty of time - be friendly to multi-tasking OSes
+        hal.scheduler->delay(1);
+    }
 }
 
 
