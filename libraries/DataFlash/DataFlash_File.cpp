@@ -28,21 +28,19 @@ extern const AP_HAL::HAL& hal;
 #define MAX_LOG_FILES 500U
 #define DATAFLASH_PAGE_SIZE 1024UL
 
-int DataFlash_File::_write_fd = -1;
-volatile bool DataFlash_File::_initialised = false;
-
-uint8_t *DataFlash_File::_writebuf = NULL;
-const uint16_t DataFlash_File::_writebuf_size = 4096;
-volatile uint16_t DataFlash_File::_writebuf_head = 0;
-volatile uint16_t DataFlash_File::_writebuf_tail = 0;
-uint32_t DataFlash_File::_last_write_time = 0;
-
 /*
   constructor
  */
 DataFlash_File::DataFlash_File(const char *log_directory) :
+    _write_fd(-1),
     _read_fd(-1),
-    _log_directory(log_directory)
+    _initialised(false),
+    _log_directory(log_directory),
+    _writebuf(NULL),
+    _writebuf_size(4096),
+    _writebuf_head(0),
+    _writebuf_tail(0),
+    _last_write_time(0)
 {}
 
 
@@ -65,7 +63,7 @@ void DataFlash_File::Init(void)
     }
     _writebuf_head = _writebuf_tail = 0;
     _initialised = true;
-    hal.scheduler->register_io_process(_io_timer);
+    hal.scheduler->register_io_process(reinterpret_cast<AP_HAL::TimedProc>(&DataFlash_File::_io_timer), this);
 }
 
 // return true for CardInserted() if we successfully initialised
@@ -409,7 +407,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
 }
 
 
-void DataFlash_File::_io_timer(uint32_t tnow)
+void DataFlash_File::_io_timer(void)
 {
     uint16_t _tail;
     if (_write_fd == -1 || !_initialised) {
@@ -419,6 +417,7 @@ void DataFlash_File::_io_timer(uint32_t tnow)
     if (nbytes == 0) {
         return;
     }
+    uint32_t tnow = hal.scheduler->micros();
     if (nbytes < 512 && 
         tnow - _last_write_time < 2000000UL) {
         // write in 512 byte chunks, but always write at least once
