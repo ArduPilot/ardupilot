@@ -4,6 +4,7 @@
 
 #include "Scheduler.h"
 #include "Storage.h"
+#include "UARTDriver.h"
 #include <unistd.h>
 #include <sys/time.h>
 #include <poll.h>
@@ -203,7 +204,10 @@ void *LinuxScheduler::_uart_thread(void)
     while (true) {
         poll(NULL, 0, 1);
 
-        // process any pending serial bytes: TODO
+        // process any pending serial bytes
+        ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
+        ((LinuxUARTDriver *)hal.uartB)->_timer_tick();
+        ((LinuxUARTDriver *)hal.uartC)->_timer_tick();
     }
     return NULL;
 }
