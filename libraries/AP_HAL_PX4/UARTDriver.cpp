@@ -120,13 +120,41 @@ void PX4UARTDriver::begin(uint32_t b)
 }
 
 
-void PX4UARTDriver::end() {}
+void PX4UARTDriver::end() 
+{
+    _initialised = false;
+    while (_in_timer) hal.scheduler->delay(1);
+    if (_fd != -1) {
+        close(_fd);
+        _fd = -1;
+    }
+    if (_readbuf) {
+        free(_readbuf);
+        _readbuf = NULL;
+    }
+    if (_writebuf) {
+        free(_writebuf);
+        _writebuf = NULL;
+    }
+    _readbuf_size = _writebuf_size = 0;
+    _writebuf_head = 0;
+    _writebuf_tail = 0;
+    _readbuf_head = 0;
+    _readbuf_tail = 0;
+}
+
 void PX4UARTDriver::flush() {}
-bool PX4UARTDriver::is_initialized() { return true; }
+
+bool PX4UARTDriver::is_initialized() 
+{ 
+    return _initialised; 
+}
+
 void PX4UARTDriver::set_blocking_writes(bool blocking) 
 {
     _nonblocking_writes = !blocking;
 }
+
 bool PX4UARTDriver::tx_pending() { return false; }
 
 /*
