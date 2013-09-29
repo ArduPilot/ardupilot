@@ -10,11 +10,6 @@
 
 #define LINUX_SCHEDULER_MAX_TIMER_PROCS 10
 
-#define APM_LINUX_MAIN_PRIORITY    180
-#define APM_LINUX_TIMER_PRIORITY   181
-#define APM_LINUX_UART_PRIORITY     60
-#define APM_LINUX_IO_PRIORITY       59
-
 class Linux::LinuxScheduler : public AP_HAL::Scheduler {
 public:
     LinuxScheduler();

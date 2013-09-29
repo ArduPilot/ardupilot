@@ -15,6 +15,11 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
+#define APM_LINUX_MAIN_PRIORITY    180
+#define APM_LINUX_TIMER_PRIORITY   182
+#define APM_LINUX_UART_PRIORITY    181
+#define APM_LINUX_IO_PRIORITY       59
+
 LinuxScheduler::LinuxScheduler()
 {}
 
@@ -26,6 +31,11 @@ void LinuxScheduler::init(void* machtnichts)
 
     pthread_attr_t thread_attr;
     struct sched_param param;
+
+    memset(&param, 0, sizeof(param));
+
+    param.sched_priority = APM_LINUX_MAIN_PRIORITY;
+    sched_setscheduler(0, SCHED_FIFO, &param);
 
     param.sched_priority = APM_LINUX_TIMER_PRIORITY;
     pthread_attr_init(&thread_attr);
