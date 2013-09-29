@@ -392,9 +392,9 @@ static bool verify_nav_wp()
 
     // see if the user has specified a maximum distance to waypoint
     if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {
-        if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        if (location_passed_point(current_loc, mission.prev_wp(), mission.after_wp())) {
             // this is needed to ensure completion of the waypoint
-            prev_WP = current_loc;
+            mission.override_prev_wp(current_loc);
         }
         return false;
     }
