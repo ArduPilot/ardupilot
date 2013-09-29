@@ -869,9 +869,18 @@ static void update_current_mode(void)
 
     case STEERING: {
         /*
-          in steering mode we control lateral acceleration directly
+          in steering mode we control lateral acceleration
+          directly. We first calculate the maximum lateral
+          acceleration at full steering lock for this speed. That is
+          V^2/R where R is the radius of turn. We get the radius of
+          turn from half the STEER2SRV_P.
          */
-        lateral_acceleration = g.turn_max_g * GRAVITY_MSS * (channel_steer->pwm_to_angle()/4500.0f);
+        float max_g_force = ground_speed * ground_speed / steerController.get_turn_radius();
+
+        // constrain to user set TURN_MAX_G
+        max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
+
+        lateral_acceleration = max_g_force * (channel_steer->pwm_to_angle()/4500.0f);
         calc_nav_steer();
 
         // and throttle gives speed in proportion to cruise speed
