@@ -66,6 +66,15 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",     5, AP_SteerController, _imax,        1500),
 
+	// @Param: MINSPD
+	// @DisplayName: Minimum speed
+	// @Description: This is the minimum assumed ground speed in meters/second for steering. Having a minimum speed prevents osciallations when the vehicle first starts moving. The vehicle can still driver slower than this limit, but the steering calculations will be done based on this minimum speed.
+	// @Range: 0 5
+	// @Increment: 0.1
+    // @Units: m/s
+	// @User: User
+	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    0.3f),
+
 	AP_GROUPEND
 };
 
@@ -84,9 +93,9 @@ int32_t AP_SteerController::get_steering_out(float desired_accel)
 	_last_t = tnow;
 
     float speed = _ahrs.groundspeed();
-    if (speed < 1.0e-6) {
-        // with no speed all we can do is center the steering
-        return 0;
+    if (speed < _minspeed) {
+        // assume a minimum speed. This stops osciallations when first starting to move
+        speed = _minspeed;
     }
 
     // this is a linear approximation of the inverse steering
