@@ -124,11 +124,11 @@ public:
 
         k_param_compass_enabled,
         k_param_compass,
-        k_param_battery_monitoring,
-        k_param_volt_div_ratio,
-        k_param_curr_amp_per_volt,
+        k_param_battery_monitoring, // unused
+        k_param_volt_div_ratio,     // unused
+        k_param_curr_amp_per_volt,  // unused
         k_param_input_voltage, // deprecated, can be deleted
-        k_param_pack_capacity,
+        k_param_pack_capacity,      // unused
         k_param_sonar_enabled,
         k_param_ahrs,  // AHRS group
         k_param_barometer,   // barometer ground calibration
@@ -160,9 +160,10 @@ public:
         //
         // Battery monitoring parameters
         //
-        k_param_rssi_pin = 167,
-        k_param_battery_volt_pin,
-        k_param_battery_curr_pin,   // 169
+        k_param_battery = 166,
+        k_param_rssi_pin,
+        k_param_battery_volt_pin,   // unused
+        k_param_battery_curr_pin,   // unused - 169
 
         //
         // 170: Radio settings
@@ -373,18 +374,11 @@ public:
 #endif
 
     AP_Int8 compass_enabled;
-    AP_Int8 battery_monitoring;                 // 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
-    AP_Float volt_div_ratio;
-    AP_Float curr_amp_per_volt;
-    AP_Float curr_amp_offset;
-    AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
     AP_Int8 rssi_pin;
-    AP_Int8 battery_volt_pin;
-    AP_Int8 battery_curr_pin;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;

@@ -104,14 +104,14 @@ static void failsafe_short_off_event()
 
 void low_battery_event(void)
 {
-    if (battery.low_batttery) {
+    if (failsafe.low_battery) {
         return;
     }
     gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
-                      battery.voltage, battery.current_total_mah);
+                      battery.voltage(), battery.current_total_mah());
     set_mode(RTL);
     aparm.throttle_cruise.load();
-    battery.low_batttery = true;
+    failsafe.low_battery = true;
     AP_Notify::flags.failsafe_battery = true;
 }
 

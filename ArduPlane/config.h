@@ -89,14 +89,10 @@
 // main board differences
 //
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
- # define BATTERY_CURR_PIN      1      // Battery current on A1
  # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
  # define CONFIG_BARO     AP_BARO_BMP085
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
- # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
  # ifdef APM2_BETA_HARDWARE
  #  define CONFIG_BARO     AP_BARO_BMP085
@@ -106,27 +102,15 @@
  # endif
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
- # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_HIL
  # define CONFIG_BARO     AP_BARO_HIL
  # define CONFIG_COMPASS  AP_COMPASS_HIL
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define BATTERY_VOLT_PIN      -1
- # define BATTERY_CURR_PIN      -1
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
  # define SERIAL0_BAUD 115200
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-// Flymaple board pin 20 is connected to the external battery supply
-// via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k, 
-// but the actual installed resistors are not so.
-// So the divider ratio is 5.70588 = (24000+5100)/5100
- # define BATTERY_VOLT_PIN      20
- # define BATTERY_MONITORING  3
- # define VOLT_DIV_RATIO   5.70588
- # define BATTERY_CURR_PIN      19
  # define CONFIG_INS_TYPE CONFIG_INS_FLYMAPLE
  # define CONFIG_BARO AP_BARO_BMP085
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
@@ -190,25 +174,6 @@
  # define SERIAL3_BAUD                    57600
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef BATTERY_MONITORING
- #define BATTERY_MONITORING 0
-#endif
-
-#ifndef VOLT_DIV_RATIO
- # define VOLT_DIV_RATIO                 3.56   // This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-//# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
-//# define VOLT_DIV_RATIO		4.127	// This is the proper value for the AttoPilot 13.6V/45A sensor
-
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
- # define CURR_AMP_PER_VOLT              27.32  // This is the proper value for the AttoPilot 50V/90A sensor
-//# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////

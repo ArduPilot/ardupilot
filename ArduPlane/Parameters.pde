@@ -677,54 +677,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
-    // @Param: BATT_MONITOR
-    // @DisplayName: Battery monitoring
-    // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
-    // @User: Standard
-    GSCALAR(battery_monitoring,     "BATT_MONITOR",   BATTERY_MONITORING),
-
-    // @Param: VOLT_DIVIDER
-    // @DisplayName: Voltage Divider
-    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_DIVIDER). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
-    // @User: Advanced
-    GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",   VOLT_DIV_RATIO),
-
-    // @Param: APM_PER_VOLT
-    // @DisplayName: Apms per volt
-    // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17.
-    // @Units: A/V
-    // @User: Standard
-    GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",   CURR_AMP_PER_VOLT),
-
-    // @Param: AMP_OFFSET
-    // @DisplayName: AMP offset
-    // @Description: Voltage offset at zero current on current sensor
-    // @Units: Volts
-    // @User: Standard
-    GSCALAR(curr_amp_offset,        "AMP_OFFSET",     0),
-
-    // @Param: BATT_CAPACITY
-    // @DisplayName: Battery capacity
-    // @Description: Capacity of the battery in mAh when full
-    // @Units: mAh
-    // @User: Standard
-    GSCALAR(pack_capacity,          "BATT_CAPACITY",  1760),
-
-    // @Param: BATT_VOLT_PIN
-    // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100. On the Pixhawk powered from the PM connector it should be set to 2.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk, 13:A13, 100:PX4
-    // @User: Standard
-    GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    BATTERY_VOLT_PIN),
-
-    // @Param: BATT_CURR_PIN
-    // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. On the Pixhawk powered from the PM connector it should be set to 3.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk, 12:A12, 101:PX4
-    // @User: Standard
-    GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    BATTERY_CURR_PIN),
-
     // @Param: RSSI_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum
@@ -887,6 +839,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
     GOBJECT(camera_mount2,           "MNT2_",       AP_Mount),
 #endif
+
+    // @Group: BATT_
+    // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
+    GOBJECT(battery,                "BATT_",       AP_BattMonitor),
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     // @Group: SIM_

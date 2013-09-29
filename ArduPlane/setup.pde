@@ -15,7 +15,6 @@ static int8_t   setup_set                               (uint8_t argc, const Men
 static int8_t   setup_erase                             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass                   (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_declination               (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_batt_monitor              (uint8_t argc, const Menu::arg *argv);
 
 
 // Command/function table for the setup menu
@@ -31,7 +30,6 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 #endif
     {"compass",                     setup_compass},
     {"declination",         setup_declination},
-    {"battery",                     setup_batt_monitor},
     {"show",                        setup_show},
 #if !defined( __AVR_ATmega1280__ )
     {"set",                         setup_set},
@@ -436,20 +434,6 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static int8_t
-setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
-{
-    if(argv[1].i >= 0 && argv[1].i <= 4) {
-        g.battery_monitoring.set_and_save(argv[1].i);
-
-    } else {
-        cliSerial->printf_P(PSTR("\nOptions: 3-4"));
-    }
-
-    report_batt_monitor();
-    return 0;
-}
-
 /***************************************************************************/
 // CLI reports
 /***************************************************************************/
@@ -459,9 +443,9 @@ static void report_batt_monitor()
     //print_blanks(2);
     cliSerial->printf_P(PSTR("Batt Mointor\n"));
     print_divider();
-    if(g.battery_monitoring == 0) cliSerial->printf_P(PSTR("Batt monitoring disabled"));
-    if(g.battery_monitoring == 3) cliSerial->printf_P(PSTR("Monitoring batt volts"));
-    if(g.battery_monitoring == 4) cliSerial->printf_P(PSTR("Monitoring volts and current"));
+    if(battery.monitoring() == AP_BATT_MONITOR_DISABLED) cliSerial->printf_P(PSTR("Batt monitoring disabled"));
+    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("Monitoring batt volts"));
+    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("Monitoring volts and current"));
     print_blanks(2);
 }
 static void report_radio()

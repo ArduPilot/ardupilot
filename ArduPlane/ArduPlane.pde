@@ -72,6 +72,7 @@
 #include <AP_TECS.h>
 
 #include <AP_Notify.h>      // Notify library
+#include <AP_BattMonitor.h> // Battery monitor library
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -299,9 +300,6 @@ static AP_HAL::AnalogSource *rssi_analog_source;
 
 static AP_HAL::AnalogSource *vcc_pin;
 
-static AP_HAL::AnalogSource * batt_volt_pin;
-static AP_HAL::AnalogSource * batt_curr_pin;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Relay
 ////////////////////////////////////////////////////////////////////////////////
@@ -375,6 +373,9 @@ static struct {
 
     // has the saved mode for failsafe been set?
     uint8_t saved_mode_set:1;
+
+    // flag to hold whether battery low voltage threshold has been breached
+    uint8_t low_battery:1;
 
     // saved flight mode
     enum FlightMode saved_mode;
@@ -465,20 +466,7 @@ static int32_t altitude_error_cm;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-static struct {
-    // Battery pack 1 voltage.  Initialized above the low voltage
-    // threshold to pre-load the filter and prevent low voltage events
-    // at startup.
-    float voltage;
-    // Battery pack 1 instantaneous currrent draw.  Amperes
-    float current_amps;
-    // Totalized current (Amp-hours) from battery 1
-    float current_total_mah;
-    // true when a low battery event has happened
-    bool low_batttery;
-    // time when current was last read
-    uint32_t last_time_ms;
-} battery;
+AP_BattMonitor battery;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
@@ -744,13 +732,12 @@ void setup() {
 
     notify.init();
 
+    battery.init();
+
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
-    batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
-    batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
-   
     init_ardupilot();
 
     // initialise the main loop scheduler
