@@ -1,3 +1,6 @@
+#include <AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "Semaphores.h"
 
@@ -26,3 +29,5 @@ bool LinuxSemaphore::take_nonblocking()
 {
     return pthread_mutex_trylock(&_lock) == 0;
 }
+
+#endif // CONFIG_HAL_BOARD
