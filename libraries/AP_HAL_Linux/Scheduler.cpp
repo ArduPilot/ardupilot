@@ -10,6 +10,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 using namespace Linux;
 
@@ -63,7 +64,21 @@ void LinuxScheduler::init(void* machtnichts)
 
 void LinuxScheduler::delay(uint16_t ms)
 {
-    usleep(ms * 1000);
+    if (_in_timer_proc) {
+        ::printf("ERROR: delay() from timer process\n");
+        return;
+    }
+    uint32_t start = millis();
+    
+    while ((millis() - start) < ms) {
+        // this yields the CPU to other apps
+        poll(NULL, 0, 1);
+        if (_min_delay_cb_ms <= ms) {
+            if (_delay_cb) {
+                _delay_cb();
+            }
+        }
+    }
 }
 
 uint32_t LinuxScheduler::millis() 
