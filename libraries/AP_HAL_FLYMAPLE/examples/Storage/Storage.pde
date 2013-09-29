@@ -9,7 +9,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-uint8_t fibs[] = { 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144 };
+uint8_t fibs[] = { 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 0 };
 
 void test_erase() {
     hal.console->printf_P(PSTR("erasing... "));
@@ -46,6 +46,9 @@ void test_readback() {
 void setup (void) {
     hal.scheduler->delay(5000);
     hal.console->printf_P(PSTR("Starting AP_HAL_FLYMAPLE::Storage test\r\n"));
+
+    hal.console->printf("test %d\n", i);
+    test_readback(); // Test what was left from the last run, possibly after power off
     test_erase();
     test_write();
     test_readback();
