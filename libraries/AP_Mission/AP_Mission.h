@@ -50,7 +50,7 @@ public:
 
     /*  Initialize the mission index and waypoint array with data in storage.
      *  Execute this first. */
-    void        init_commands();
+    void    init_commands();
 
     /*  Return the waypoints in the mission stack.
      *   prev_wp:    Behind the vehicle.
@@ -181,7 +181,7 @@ private:
     /*Starts from search_index, and searches forward (=1) or
      *  backward (=0) for the next navigation waypoint.  This function is mindful of DO_JUMP
      *  commands.  Returns the index of the found navigation waypoint.  */
-    uint8_t        _find_nav_index(uint8_t search_index);
+    uint8_t     _find_nav_index(uint8_t search_index);
 
     //Checks a navigation command for validity.
     bool        _check_nav_valid(const struct Location &temp);
@@ -196,19 +196,19 @@ private:
     void        _safe_home(struct Location &safe_home);
 
     //Current index for non navigation commands
-    uint8_t        _cmd_index;
+    uint8_t     _cmd_index;
 
     //A flag that marks if the mission is finished or invalid.
     bool        _mission_status;
 
     //The stack of indicies for prev, current, and after waypoints
-    uint8_t        _index[3];
+    uint8_t     _index[3];
     /*A flag that marks if the previous index was overridden.  Required to prevent non_nav
      *  commands from being executed when overriding the pre-programed mission sequence. */
     bool        _prev_index_overriden;
 
     // The home location.  Altitude does not include RTL altitude.
-    struct Location        _home;
+    struct Location _home;
 
     // Total number of commands in storage.
     AP_Int16        _cmd_max;

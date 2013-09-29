@@ -54,19 +54,19 @@ bool AP_Mission::increment_waypoint_index()
 bool AP_Mission::change_waypoint_index(uint8_t new_index)
 {
     //Current index is requested, no change.
-    if(new_index == _index[1]) {
+    if (new_index == _index[1]) {
         return false;
     }
 
     //Home is requested.
-    if(new_index == 0) {
+    if (new_index == 0) {
         goto_home();
         return true;
     }
 
     Location tmp=get_cmd_with_index(new_index);
-    if(_check_nav_valid(tmp)) {
-        if(_sync_waypoint_index(new_index)) {
+    if (_check_nav_valid(tmp)) {
+        if (_sync_waypoint_index(new_index)) {
             _nav_waypoints[0]=_current_loc;
             _prev_index_overriden = true;
             _mission_status = true;
@@ -81,7 +81,7 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
     struct Location temp;
     temp = get_cmd_with_index(_cmd_index);
 
-    if(temp.id <= MAV_CMD_NAV_LAST || _prev_index_overriden) {
+    if (temp.id <= MAV_CMD_NAV_LAST || _prev_index_overriden) {
 
         return false;  //no more commands for this leg
 
@@ -95,8 +95,8 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
 
             uint8_t old_cmd_index = _cmd_index;
 
-            if(change_waypoint_index(temp.p1)) {
-                if( temp.lat > 0) {
+            if (change_waypoint_index(temp.p1)) {
+                if ( temp.lat > 0) {
                     temp.lat--;
                     temp.lat=constrain_int16(temp.lat, 0, 100);
                     set_cmd_with_index(temp, old_cmd_index);
@@ -128,7 +128,7 @@ void AP_Mission::goto_home()
 
 bool AP_Mission::goto_location(const struct Location &wp)
 {
-    if(_check_nav_valid(wp)) {
+    if (_check_nav_valid(wp)) {
         _nav_waypoints[0] = _current_loc;
         _prev_index_overriden = true;
         _nav_waypoints[1] = wp;
@@ -197,11 +197,11 @@ bool AP_Mission::_sync_waypoint_index(const uint8_t &new_index)
 
 void AP_Mission::_sync_nav_waypoints(){
     //TODO: this could be optimimzed by making use of the fact some waypoints are already loaded.
-    for(int i=0; i<3; i++) {
+    for (uint8_t i=0; i<3; i++) {
         _nav_waypoints[i]=get_cmd_with_index(_index[i]);
 
         //Special handling for home, to ensure waypoint handed to vehicle is not 0 ft AGL.
-        if(_index[i] == 0 && _nav_waypoints[i].id != MAV_CMD_NAV_LAND) {
+        if (_index[i] == 0 && _nav_waypoints[i].id != MAV_CMD_NAV_LAND) {
             _safe_home(_nav_waypoints[i]);
         }
     }
@@ -222,7 +222,7 @@ uint8_t AP_Mission::_find_nav_index(uint8_t search_index)
     Location tmp;
     bool condition_cmd=false;
 
-    while(search_index <= _cmd_max && search_index >= 0) {
+    while (search_index <= _cmd_max && search_index >= 0) {
 
         tmp = get_cmd_with_index(search_index);
 
@@ -234,7 +234,7 @@ uint8_t AP_Mission::_find_nav_index(uint8_t search_index)
 
         //if there is a do_jump without a condition command preceding it, jump now.
         if (tmp.id == MAV_CMD_DO_JUMP && !condition_cmd) {
-            if(tmp.p1 <= command_total() && (tmp.lat > 0 || tmp.lat == -1) ) {
+            if (tmp.p1 <= command_total() && (tmp.lat > 0 || tmp.lat == -1) ) {
                 Location tmp_jump_to;
                 tmp_jump_to=get_cmd_with_index(tmp.p1);
 
@@ -289,7 +289,7 @@ struct Location AP_Mission::get_cmd_with_index_raw(int16_t i)
         memset(&temp, 0, sizeof(temp));
         temp.id = AP_MISSION_CMD_BLANK;
 
-    }else{
+    } else {
         // we can load a command, we don't process it yet
         // read WP position
         mem = (_start_byte) + (i * WP_SIZE);
