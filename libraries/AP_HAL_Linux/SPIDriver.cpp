@@ -72,18 +72,16 @@ AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
 
 void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
-    struct spi_ioc_transfer spi[len];
-    for (uint8_t i = 0; i < len ; i++) {
-        spi[i].tx_buf        = tx?(uint64_t)(tx + i):NULL;
-        spi[i].rx_buf        = rx?(uint64_t)(rx + i):NULL;
-        spi[i].len           = 1;
-        spi[i].delay_usecs   = 0;
-        spi[i].speed_hz      = _speed;
-        spi[i].bits_per_word = _bitsPerWord;
-        spi[i].cs_change     = 0;
-    }
+    struct spi_ioc_transfer spi[1];
+    spi[0].tx_buf        = (uint64_t)tx;
+    spi[0].rx_buf        = (uint64_t)rx;
+    spi[0].len           = len;
+    spi[0].delay_usecs   = 0;
+    spi[0].speed_hz      = _speed;
+    spi[0].bits_per_word = _bitsPerWord;
+    spi[0].cs_change     = 0;
  
-    ioctl(_fd, SPI_IOC_MESSAGE(len), &spi);
+    ioctl(_fd, SPI_IOC_MESSAGE(1), &spi);
 }
 
 
