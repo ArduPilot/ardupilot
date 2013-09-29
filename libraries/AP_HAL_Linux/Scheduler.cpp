@@ -64,10 +64,6 @@ void LinuxScheduler::init(void* machtnichts)
 
 void LinuxScheduler::delay(uint16_t ms)
 {
-    if (_in_timer_proc) {
-        ::printf("ERROR: delay() from timer process\n");
-        return;
-    }
     uint32_t start = millis();
     
     while ((millis() - start) < ms) {
@@ -154,6 +150,9 @@ void LinuxScheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe,
 void LinuxScheduler::suspend_timer_procs()
 {
     _timer_suspended = true;
+    while (_in_timer_proc) {
+        usleep(1);
+    }
 }
 
 void LinuxScheduler::resume_timer_procs()
