@@ -102,7 +102,7 @@ finish:
     // if device is working register the global static read function to
     // be called at 1khz
     if( retvalue ) {
-        hal.scheduler->register_timer_process(reinterpret_cast<AP_HAL::TimedProc>(&AP_OpticalFlow_ADNS3080::read), this);
+        hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_OpticalFlow_ADNS3080::read));
     }
 
     // resume timer
