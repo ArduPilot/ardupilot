@@ -50,16 +50,7 @@ static void read_battery(void)
 
     battery.read();
 
-    if (!usb_connected &&
-        battery.voltage() != 0 && 
-        g.fs_batt_voltage > 0 && 
-        battery.voltage() < g.fs_batt_voltage) {
-        low_battery_event();
-    }
-    if (!usb_connected &&
-        battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT &&
-        g.fs_batt_mah > 0 && 
-        battery.pack_capacity() - battery.current_total_mah() < g.fs_batt_mah) {
+    if (!usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         low_battery_event();
     }
 }

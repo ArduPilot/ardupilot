@@ -199,10 +199,6 @@ enum log_messages {
 #define ALTITUDE_HISTORY_LENGTH 8       //Number of (time,altitude) points to
                                         // regress a climb rate from
 
-
-#define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
-#define CURRENT_AMPS(x) (x->voltage_average()-g.curr_amp_offset)*g.curr_amp_per_volt
-
 #define AN4                     4
 #define AN5                     5
 
