@@ -13,7 +13,7 @@
   this failsafe_check function is called from the core timer interrupt
   at 1kHz.
  */
-void failsafe_check(void *arg)
+static void failsafe_check()
 {
     static uint16_t last_mainLoop_count;
     static uint32_t last_timestamp;

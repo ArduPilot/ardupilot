@@ -570,7 +570,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_events,         15,   1000 },
     { check_usb_mux,         15,   1000 },
     { mount_update,           1,    500 },
-    { failsafe_check,         5,    500 },
+    { gcs_failsafe_check,     5,    500 },
     { compass_accumulate,     1,    900 },
     { update_notify,          1,    100 },
     { one_second_loop,       50,   3000 }
@@ -695,7 +695,7 @@ static void mount_update(void)
 /*
   check for GCS failsafe - 10Hz
  */
-static void failsafe_check(void)
+static void gcs_failsafe_check(void)
 {
 	if (g.fs_gcs_enabled) {
         failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
