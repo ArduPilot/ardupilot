@@ -136,7 +136,6 @@ void AP_Airspeed::calibrate()
 {
     float sum = 0;
     uint8_t count = 0;
-    uint8_t c;
     if (!_enable) {
         return;
     }
