@@ -63,7 +63,7 @@ void DataFlash_File::Init(void)
     }
     _writebuf_head = _writebuf_tail = 0;
     _initialised = true;
-    hal.scheduler->register_io_process(reinterpret_cast<AP_HAL::TimedProc>(&DataFlash_File::_io_timer), this);
+    hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&DataFlash_File::_io_timer));
 }
 
 // return true for CardInserted() if we successfully initialised
