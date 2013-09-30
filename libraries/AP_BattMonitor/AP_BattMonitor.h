@@ -23,7 +23,7 @@
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define AP_BATT_VOLT_PIN                  13      // APM2.5/2.6 with 3dr power module
  # define AP_BATT_CURR_PIN                  12
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.0
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT   0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 // Flymaple board pin 20 is connected to the external battery supply
@@ -37,17 +37,17 @@
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define AP_BATT_VOLT_PIN                  2
  # define AP_BATT_CURR_PIN                  3
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.0
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define AP_BATT_VOLT_PIN                  1
- # define AP_BATT_CURR_PIN                  2
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.0
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  0
+ # define AP_BATT_VOLT_PIN                  13
+ # define AP_BATT_CURR_PIN                  12
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17
 #else
  # define AP_BATT_VOLT_PIN                  -1
  # define AP_BATT_CURR_PIN                  -1
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.0
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  0
 #endif
 
