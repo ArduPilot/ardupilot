@@ -59,6 +59,8 @@ pid_t SITL_State::_parent_pid;
 uint32_t SITL_State::_update_count;
 bool SITL_State::_motors_on;
 uint16_t SITL_State::airspeed_pin_value;
+uint16_t SITL_State::voltage_pin_value;
+uint16_t SITL_State::current_pin_value;
 
 AP_Baro_HIL *SITL_State::_barometer;
 AP_InertialSensor_HIL *SITL_State::_ins;
@@ -477,6 +479,15 @@ void SITL_State::_simulator_output(void)
 			}
 		}
 	}
+
+    float throttle = _motors_on?(control.pwm[2]-1000) / 1000.0f:0;
+    // lose 0.7V at full throttle
+    float voltage = 12.6 - 0.7f*throttle;
+    // assume 50A at full throttle
+    float current = 50.0 * throttle;
+    // assume 3DR power brick
+    voltage_pin_value = ((voltage / 10.1) / 5.0) * 1024;
+    current_pin_value = ((current / 17.0) / 5.0) * 1024;
 
 	// setup wind control
 	control.speed      = _sitl->wind_speed * 100;
