@@ -13,7 +13,6 @@ static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_adc(uint8_t argc,                  const Menu::arg *argv);
 #endif
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
 static int8_t   test_airspeed(uint8_t argc,     const Menu::arg *argv);
@@ -37,7 +36,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"radio",                       test_radio},
     {"passthru",            test_passthru},
     {"failsafe",            test_failsafe},
-    {"battery",     test_battery},
     {"relay",                       test_relay},
     {"waypoints",           test_wp},
     {"xbee",                        test_xbee},
@@ -247,43 +245,6 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
-}
-
-static int8_t
-test_battery(uint8_t argc, const Menu::arg *argv)
-{
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY || battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        print_hit_enter();
-
-        while(1) {
-            delay(100);
-            read_radio();
-            read_battery();
-            if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) {
-                cliSerial->printf_P(PSTR("V: %4.4f\n"),
-                                battery.voltage(),
-                                battery.current_amps(),
-                                battery.current_total_mah());
-            } else {
-                cliSerial->printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-                                battery.voltage(),
-                                battery.current_amps(),
-                                battery.current_total_mah());
-            }
-
-            // write out the servo PWM values
-            // ------------------------------
-            set_servos();
-
-            if(cliSerial->available() > 0) {
-                return (0);
-            }
-        }
-    } else {
-        cliSerial->printf_P(PSTR("Not enabled\n"));
-        return (0);
-    }
-
 }
 
 static int8_t
