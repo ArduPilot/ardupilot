@@ -31,7 +31,7 @@ void failsafe_disable()
 //
 //  failsafe_check - this function is called from the core timer interrupt at 1kHz.
 //
-void failsafe_check(void *arg)
+void failsafe_check()
 {
     uint32_t tnow = hal.scheduler->micros();
 
