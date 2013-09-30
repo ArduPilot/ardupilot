@@ -24,7 +24,7 @@
  # define AP_BATT_VOLT_PIN                  13      // APM2.5/2.6 with 3dr power module
  # define AP_BATT_CURR_PIN                  12
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT   0
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 // Flymaple board pin 20 is connected to the external battery supply
 // via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k, 
@@ -33,22 +33,29 @@
  # define AP_BATT_VOLT_PIN                  20
  # define AP_BATT_CURR_PIN                  19
  # define AP_BATT_VOLTDIVIDER_DEFAULT       5.70588
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  0
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+ // px4
+ # define AP_BATT_VOLT_PIN                  2
+ # define AP_BATT_CURR_PIN                  3
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+ // pixhawk
  # define AP_BATT_VOLT_PIN                  2
  # define AP_BATT_CURR_PIN                  3
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define AP_BATT_VOLT_PIN                  13
  # define AP_BATT_CURR_PIN                  12
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
 #else
  # define AP_BATT_VOLT_PIN                  -1
  # define AP_BATT_CURR_PIN                  -1
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  0
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
 #endif
 
 // Other values normally set directly by mission planner
@@ -58,7 +65,7 @@
 // # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 13.66  // Amp/Volt for AttoPilot 13.6V/45A sensor
 
 
-#define AP_BATT_CAPACITY_DEFAULT            1760
+#define AP_BATT_CAPACITY_DEFAULT            3300
 
 #define AP_BATT_INITIAL_VOLTAGE 99              // initial voltage set on start-up to avoid low voltage alarms
 
@@ -101,13 +108,13 @@ public:
 protected:
 
     /// parameters
-    AP_Int8     _monitoring;                 /// 0=disabled, 3=voltage only, 4=voltage and current
-    AP_Int8     _volt_pin;
-    AP_Int8     _curr_pin;
-    AP_Float    _volt_multiplier;
-    AP_Float    _curr_amp_per_volt;
-    AP_Float    _curr_amp_offset;
-    AP_Int32    _pack_capacity;              /// battery pack capacity less reserve
+    AP_Int8     _monitoring;                /// 0=disabled, 3=voltage only, 4=voltage and current
+    AP_Int8     _volt_pin;                  /// board pin used to measure battery voltage
+    AP_Int8     _curr_pin;                  /// board pin used to measure battery current
+    AP_Float    _volt_multiplier;           /// voltage on volt pin multiplied by this to calculate battery voltage
+    AP_Float    _curr_amp_per_volt;         /// voltage on current pin multiplied by this to calculate current in amps
+    AP_Float    _curr_amp_offset;           /// offset voltage that is subtracted from current pin before conversion to amps
+    AP_Int32    _pack_capacity;             /// battery pack capacity less reserve in mAh
 
     /// internal variables
     float       _voltage;                   /// last read voltage
