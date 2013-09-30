@@ -86,13 +86,13 @@ public:
     AP_HAL::AnalogSource* channel(int16_t n);
 
 protected: 
-    static FLYMAPLEAnalogSource* _create_channel(int16_t num);
-    static void _register_channel(FLYMAPLEAnalogSource*);
-    static void _timer_event(uint32_t);
-    static FLYMAPLEAnalogSource* _channels[FLYMAPLE_INPUT_MAX_CHANNELS];
-    static int16_t _num_channels;
-    static int16_t _active_channel;
-    static uint16_t _channel_repeat_count;
+    FLYMAPLEAnalogSource* _create_channel(int16_t num);
+    void _register_channel(FLYMAPLEAnalogSource*);
+    void _timer_event(void);
+    FLYMAPLEAnalogSource* _channels[FLYMAPLE_INPUT_MAX_CHANNELS];
+    int16_t _num_channels;
+    int16_t _active_channel;
+    uint16_t _channel_repeat_count;
 
 private:
     // On Flymaple, VCC measurement is at pin 20. VCC (=VIN) of 5V is only present

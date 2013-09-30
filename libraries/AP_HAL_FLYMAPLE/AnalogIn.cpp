@@ -32,19 +32,13 @@ extern const AP_HAL::HAL& hal;
  * This seems to be determined empirically */
 #define CHANNEL_READ_REPEAT 2
 
-/* Static variable instances */
-FLYMAPLEAnalogSource* FLYMAPLEAnalogIn::_channels[FLYMAPLE_INPUT_MAX_CHANNELS] = {NULL};
-int16_t FLYMAPLEAnalogIn::_num_channels = 0;
-int16_t FLYMAPLEAnalogIn::_active_channel = 0;
-uint16_t FLYMAPLEAnalogIn::_channel_repeat_count = 0;
-
 FLYMAPLEAnalogIn::FLYMAPLEAnalogIn() :
     _vcc(FLYMAPLEAnalogSource(ANALOG_INPUT_BOARD_VCC))
 {}
 
 void FLYMAPLEAnalogIn::init(void* machtnichts) {
     /* Register FLYMAPLEAnalogIn::_timer_event with the scheduler. */
-    hal.scheduler->register_timer_process(reinterpret_cast<AP_HAL::TimedProc>(&FLYMAPLEAnalogIn::_timer_event), this);
+    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&FLYMAPLEAnalogIn::_timer_event));
     /* Register each private channel with FLYMAPLEAnalogIn. */
     _register_channel(&_vcc);
 }
@@ -74,7 +68,7 @@ void FLYMAPLEAnalogIn::_register_channel(FLYMAPLEAnalogSource* ch) {
     regs->CR2 |= ADC_CR2_SWSTART;
 }
 
-void FLYMAPLEAnalogIn::_timer_event(uint32_t t) 
+void FLYMAPLEAnalogIn::_timer_event(void) 
 {
     adc_reg_map *regs = ADC1->regs;
     if (_channels[_active_channel]->_pin == ANALOG_INPUT_NONE) {

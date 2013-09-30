@@ -36,12 +36,11 @@ using namespace AP_HAL_FLYMAPLE_NS;
 
 extern const AP_HAL::HAL& hal;
 
-AP_HAL::TimedProc FLYMAPLEScheduler::_failsafe = NULL;
+AP_HAL::Proc FLYMAPLEScheduler::_failsafe = NULL;
 volatile bool     FLYMAPLEScheduler::_timer_suspended = false;
 volatile bool     FLYMAPLEScheduler::_timer_event_missed = false;
 volatile bool     FLYMAPLEScheduler::_in_timer_proc = false;
-AP_HAL::TimedProc FLYMAPLEScheduler::_timer_proc[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
-void *            FLYMAPLEScheduler::_timer_arg[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc FLYMAPLEScheduler::_timer_proc[FLYMAPLE_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t           FLYMAPLEScheduler::_num_timer_procs = 0;
 
 FLYMAPLEScheduler::FLYMAPLEScheduler() :
@@ -109,7 +108,7 @@ void FLYMAPLEScheduler::register_delay_callback(AP_HAL::Proc proc, uint16_t min_
     _min_delay_cb_ms = min_time_ms;
 }
 
-void FLYMAPLEScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg)
+void FLYMAPLEScheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
     for (int i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -122,7 +121,6 @@ void FLYMAPLEScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg
          * because that memory won't be used until _num_timer_procs is
          * incremented. */
         _timer_proc[_num_timer_procs] = proc;
-        _timer_arg[_num_timer_procs] = arg;
         /* _num_timer_procs is used from interrupt, and multiple bytes long. */
         noInterrupts();
         _num_timer_procs++;
@@ -130,12 +128,12 @@ void FLYMAPLEScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg
     }
 }
 
-void FLYMAPLEScheduler::register_io_process(AP_HAL::TimedProc k, void *arg)
+void FLYMAPLEScheduler::register_io_process(AP_HAL::MemberProc k)
 {
     // IO processes not supported on FLYMAPLE
 }
 
-void FLYMAPLEScheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us)
+void FLYMAPLEScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     /* XXX Assert period_us == 1000 */
     _failsafe = failsafe;
@@ -168,7 +166,7 @@ void FLYMAPLEScheduler::_failsafe_timer_event()
 {
     // run the failsafe, if one is setup
     if (_failsafe != NULL)
-        _failsafe(NULL);
+        _failsafe();
 }
 
 void FLYMAPLEScheduler::begin_atomic()
@@ -189,7 +187,7 @@ void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr)
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](_timer_arg[i]);
+                _timer_proc[i]();
             }
         }
     } else if (called_from_isr) {
