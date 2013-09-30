@@ -171,7 +171,7 @@ void AP_ADC_ADS7844::Init()
 
     _ch6_last_sample_time_micros = hal.scheduler->micros();
 
-    hal.scheduler->register_timer_process( reinterpret_cast<AP_HAL::TimedProc>(&AP_ADC_ADS7844::read), this );
+    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_ADC_ADS7844::read));
     hal.scheduler->resume_timer_procs();
 
 }
