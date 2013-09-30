@@ -64,10 +64,8 @@
 // # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 27.32  // Amp/Volt for AttoPilot 50V/90A sensor
 // # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 13.66  // Amp/Volt for AttoPilot 13.6V/45A sensor
 
-
 #define AP_BATT_CAPACITY_DEFAULT            3300
-
-#define AP_BATT_INITIAL_VOLTAGE 99              // initial voltage set on start-up to avoid low voltage alarms
+#define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
 
 class AP_BattMonitor
 {
@@ -85,9 +83,6 @@ public:
     /// monitoring - returns whether we are monitoring voltage only or voltage and current
     int8_t monitoring() const { return _monitoring; }
 
-    /// pack_capacity - battery pack capacity in mAh less reserve
-    float pack_capacity() const { return _pack_capacity; }
-
     /// Battery voltage.  Initialized to 99 to prevent low voltage events at startup
     float voltage() const { return _voltage; }
 
@@ -95,13 +90,13 @@ public:
     float current_amps() const { return _current_amps; }
 
     /// Total current drawn since start-up (Amp-hours)
-    float current_total_mah() const { return _current_total_mah; }
-
-    /// time when current was last read
-    uint32_t last_time_ms() const { return _last_time_ms; }
+    float current_total_mah() const { return _current_total_mah; }\
 
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
+
+    /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity
+    bool exhausted(float low_voltage, float min_capacity_mah);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -120,7 +115,8 @@ protected:
     float       _voltage;                   /// last read voltage
     float       _current_amps;              /// last read current drawn
     float       _current_total_mah;         /// total current drawn since startup (Amp-hours)
-    uint32_t    _last_time_ms;              /// time when current was last read
+    uint32_t    _last_time_micros;          /// time when current was last read
+    uint32_t    _low_voltage_start_ms;      /// time when voltage dropped below the minimum
 
     AP_HAL::AnalogSource *_volt_pin_analog_source;
     AP_HAL::AnalogSource *_curr_pin_analog_source;

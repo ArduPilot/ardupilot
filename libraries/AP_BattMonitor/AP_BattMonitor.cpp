@@ -60,7 +60,10 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
 // their values.
 //
 AP_BattMonitor::AP_BattMonitor(void) :
-    _voltage(AP_BATT_INITIAL_VOLTAGE)
+    _voltage(0),
+    _current_amps(0),
+    _current_total_mah(0),
+    _last_time_micros(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -78,7 +81,6 @@ void
 AP_BattMonitor::read()
 {
     if (_monitoring == AP_BATT_MONITOR_DISABLED) {
-        _voltage = 0;
         return;
     }
 
@@ -91,21 +93,54 @@ AP_BattMonitor::read()
 
     // read current
     if (_monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        uint32_t tnow = hal.scheduler->millis();
-        float dt = tnow - _last_time_ms;
+        uint32_t tnow = hal.scheduler->micros();
+        float dt = tnow - _last_time_micros;
         // this copes with changing the pin at runtime
         _curr_pin_analog_source->set_pin(_curr_pin);
         _current_amps = (_curr_pin_analog_source->voltage_average()-_curr_amp_offset)*_curr_amp_per_volt;
-        if (_last_time_ms != 0 && dt < 2000) {
+        if (_last_time_micros != 0 && dt < 2000000.0f) {
             // .0002778 is 1/3600 (conversion to hours)
-            _current_total_mah += _current_amps * dt * 0.0002778f;
+            _current_total_mah += _current_amps * dt * 0.2778f;
         }
-        _last_time_ms = tnow;
+        _last_time_micros = tnow;
     }
 }
 
 /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
 uint8_t AP_BattMonitor::capacity_remaining_pct() const
 {
-    return (100.0 * (_pack_capacity - _current_total_mah) / _pack_capacity);
+    return (100.0f * (_pack_capacity - _current_total_mah) / _pack_capacity);
+}
+
+/// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
+bool AP_BattMonitor::exhausted(float low_voltage, float min_capacity_mah)
+{
+    // return immediately if disabled
+    if (_monitoring == AP_BATT_MONITOR_DISABLED) {
+        return false;
+    }
+
+    // get current time
+    uint32_t tnow = hal.scheduler->millis();
+    
+    // check voltage
+    if ((_voltage != 0) && (low_voltage > 0) && (_voltage < low_voltage)) {
+        // this is the first time our voltage has dropped below minimum so start timer
+        if (_low_voltage_start_ms == 0) {
+            _low_voltage_start_ms = tnow;
+        }else if (tnow - _low_voltage_start_ms > AP_BATT_LOW_VOLT_TIMEOUT_MS) {
+            return true;
+        }
+    }else{
+        // acceptable voltage so reset timer
+        _low_voltage_start_ms = 0;
+    }
+
+    // check capacity if current monitoring is enabled
+    if ((_monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) && (min_capacity_mah>0) && (_pack_capacity - _current_total_mah < min_capacity_mah)) {
+        return true;
+    }
+
+    // if we've gotten this far battery is ok
+    return false;
 }
