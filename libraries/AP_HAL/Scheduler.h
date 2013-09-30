@@ -19,10 +19,10 @@ public:
                                              uint16_t min_time_ms) = 0;
 
     // register a high priority timer task
-    virtual void     register_timer_process(AP_HAL::TimedProc, void *) = 0;
+    virtual void     register_timer_process(AP_HAL::MemberProc) = 0;
 
     // register a low priority IO task
-    virtual void     register_io_process(AP_HAL::TimedProc, void *) = 0;
+    virtual void     register_io_process(AP_HAL::MemberProc) = 0;
 
     // suspend and resume both timer and IO processes
     virtual void     suspend_timer_procs() = 0;
@@ -30,7 +30,7 @@ public:
 
     virtual bool     in_timerprocess() = 0;
     
-    virtual void     register_timer_failsafe(AP_HAL::TimedProc,
+    virtual void     register_timer_failsafe(AP_HAL::Proc,
                                              uint32_t period_us) = 0;
 
     virtual bool     system_initializing() = 0;
