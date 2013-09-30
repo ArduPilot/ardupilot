@@ -35,7 +35,7 @@ bool AP_Airspeed_I2C::init(void)
     hal.scheduler->delay(10);
     _collect();
     if (_last_sample_time_ms != 0) {
-        hal.scheduler->register_timer_process(reinterpret_cast<AP_HAL::TimedProc>(&AP_Airspeed_I2C::_timer), this);
+        hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_Airspeed_I2C::_timer));
         return true;
     }
     return false;
