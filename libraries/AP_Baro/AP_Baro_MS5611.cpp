@@ -264,7 +264,7 @@ bool AP_Baro_MS5611::init()
     _d1_count = 0;
     _d2_count = 0;
 
-    hal.scheduler->register_timer_process( reinterpret_cast<AP_HAL::TimedProc>(&AP_Baro_MS5611::_update), this );
+    hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_update));
     _serial->sem_give();
 
     // wait for at least one value to be read
