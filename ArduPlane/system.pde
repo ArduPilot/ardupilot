@@ -171,7 +171,7 @@ static void init_ardupilot()
     relay.init();
 
 #if FENCE_TRIGGERED_PIN > 0
-    pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
+    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
     digitalWrite(FENCE_TRIGGERED_PIN, LOW);
 #endif
 
