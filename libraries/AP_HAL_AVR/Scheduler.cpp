@@ -20,12 +20,11 @@ extern const AP_HAL::HAL& hal;
 /* Static AVRScheduler variables: */
 AVRTimer AVRScheduler::_timer;
 
-AP_HAL::TimedProc AVRScheduler::_failsafe = NULL;
+AP_HAL::Proc AVRScheduler::_failsafe = NULL;
 volatile bool AVRScheduler::_timer_suspended = false;
 volatile bool AVRScheduler::_timer_event_missed = false;
 volatile bool AVRScheduler::_in_timer_proc = false;
-AP_HAL::TimedProc AVRScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
-void *AVRScheduler::_timer_arg[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc AVRScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t AVRScheduler::_num_timer_procs = 0;
 
 
@@ -89,7 +88,7 @@ void AVRScheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg) 
+void AVRScheduler::register_timer_process(AP_HAL::MemberProc proc) 
 {
     for (int i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -102,7 +101,6 @@ void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg)
          * because that memory won't be used until _num_timer_procs is
          * incremented. */
         _timer_proc[_num_timer_procs] = proc;
-        _timer_arg[_num_timer_procs] = arg;
         /* _num_timer_procs is used from interrupt, and multiple bytes long. */
         uint8_t sreg = SREG;
         cli();
@@ -112,12 +110,12 @@ void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg)
 
 }
 
-void AVRScheduler::register_io_process(AP_HAL::TimedProc proc, void *arg) 
+void AVRScheduler::register_io_process(AP_HAL::MemberProc proc) 
 {
     // IO processes not supported on AVR
 }
 
-void AVRScheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) {
+void AVRScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) {
     /* XXX Assert period_us == 1000 */
     _failsafe = failsafe;
 }
@@ -165,7 +163,7 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
         // block. If it does then we will recurse and die when
         // we run out of stack
         if (_failsafe != NULL) {
-            _failsafe(NULL);
+            _failsafe();
         }
         return;
     }
@@ -176,7 +174,7 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](_timer_arg[i]);
+                _timer_proc[i]();
             }
         }
     } else if (called_from_isr) {
@@ -185,7 +183,7 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe(NULL);
+        _failsafe();
     }
 
     _in_timer_proc = false;

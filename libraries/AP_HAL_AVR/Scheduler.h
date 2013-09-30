@@ -31,14 +31,14 @@ public:
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
 
-    void     register_timer_process(AP_HAL::TimedProc, void *);
-    void     register_io_process(AP_HAL::TimedProc, void *);
+    void     register_timer_process(AP_HAL::MemberProc);
+    void     register_io_process(AP_HAL::MemberProc);
     void     suspend_timer_procs();
     void     resume_timer_procs();
 
     bool     in_timerprocess();
 
-    void     register_timer_failsafe(AP_HAL::TimedProc, uint32_t period_us);
+    void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
     bool     system_initializing();
     void     system_initialized();
@@ -60,12 +60,11 @@ private:
     static void _timer_isr_event();
     static void _run_timer_procs(bool called_from_isr);
 
-    static AP_HAL::TimedProc _failsafe;
+    static AP_HAL::Proc _failsafe;
 
     static volatile bool _timer_suspended;
     static volatile bool _timer_event_missed;
-    static AP_HAL::TimedProc _timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS];
-    static void *_timer_arg[AVR_SCHEDULER_MAX_TIMER_PROCS];
+    static AP_HAL::MemberProc _timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS];
     static uint8_t _num_timer_procs;
 
 };
