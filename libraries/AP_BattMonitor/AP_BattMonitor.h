@@ -104,7 +104,7 @@ protected:
     AP_Int8     _monitoring;                 /// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8     _volt_pin;
     AP_Int8     _curr_pin;
-    AP_Float    _volt_div_ratio;
+    AP_Float    _volt_multiplier;
     AP_Float    _curr_amp_per_volt;
     AP_Float    _curr_amp_offset;
     AP_Int32    _pack_capacity;              /// battery pack capacity less reserve
@@ -115,8 +115,8 @@ protected:
     float       _current_total_mah;         /// total current drawn since startup (Amp-hours)
     uint32_t    _last_time_ms;              /// time when current was last read
 
-    static AP_HAL::AnalogSource *_volt_pin_analog_source;
-    static AP_HAL::AnalogSource *_curr_pin_analog_source;
+    AP_HAL::AnalogSource *_volt_pin_analog_source;
+    AP_HAL::AnalogSource *_curr_pin_analog_source;
 
 };
 #endif  // AP_BATTMONITOR_H

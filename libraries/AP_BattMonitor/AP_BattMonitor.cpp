@@ -3,10 +3,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// static methods
-AP_HAL::AnalogSource *AP_BattMonitor::_volt_pin_analog_source;
-AP_HAL::AnalogSource *AP_BattMonitor::_curr_pin_analog_source;
-
 const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @Param: BATT_MONITOR
     // @DisplayName: Battery monitoring
@@ -29,11 +25,11 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("CURR_PIN", 2, AP_BattMonitor, _curr_pin, AP_BATT_CURR_PIN),
 
-    // @Param: BATT_VOLTDIVIDER
-    // @DisplayName: Voltage Divider
-    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_DIVIDER). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
+    // @Param: BATT_VOLT_MULT
+    // @DisplayName: Voltage Multiplier
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
     // @User: Advanced
-    AP_GROUPINFO("VOLTDIVIDER", 3, AP_BattMonitor, _volt_div_ratio, AP_BATT_VOLTDIVIDER_DEFAULT),
+    AP_GROUPINFO("BATT_VOLT_MULT", 3, AP_BattMonitor, _volt_multiplier, AP_BATT_VOLTDIVIDER_DEFAULT),
 
     // @Param: BATT_APM_PERVOLT
     // @DisplayName: Apms per volt
@@ -90,7 +86,7 @@ AP_BattMonitor::read()
     if (_monitoring == AP_BATT_MONITOR_VOLTAGE_ONLY || _monitoring == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
         // this copes with changing the pin at runtime
         _volt_pin_analog_source->set_pin(_volt_pin);
-        _voltage = _volt_pin_analog_source->voltage_average() * _volt_div_ratio;
+        _voltage = _volt_pin_analog_source->voltage_average() * _volt_multiplier;
     }
 
     // read current
