@@ -107,7 +107,7 @@ void LinuxScheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void LinuxScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg) 
+void LinuxScheduler::register_timer_process(AP_HAL::MemberProc proc) 
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -117,14 +117,13 @@ void LinuxScheduler::register_timer_process(AP_HAL::TimedProc proc, void *arg)
 
     if (_num_timer_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
         _timer_proc[_num_timer_procs] = proc;
-        _timer_arg[_num_timer_procs] = arg;
         _num_timer_procs++;
     } else {
         hal.console->printf("Out of timer processes\n");
     }
 }
 
-void LinuxScheduler::register_io_process(AP_HAL::TimedProc proc, void *arg) 
+void LinuxScheduler::register_io_process(AP_HAL::MemberProc proc) 
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -134,15 +133,13 @@ void LinuxScheduler::register_io_process(AP_HAL::TimedProc proc, void *arg)
 
     if (_num_io_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
         _io_proc[_num_io_procs] = proc;
-        _io_arg[_num_io_procs] = arg;
         _num_io_procs++;
     } else {
         hal.console->printf("Out of IO processes\n");
     }
 }
 
-void LinuxScheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe,
-                                             uint32_t period_us)
+void LinuxScheduler::register_timer_failsafe(AP_HAL::MemberProc failsafe, uint32_t period_us)
 {
     _failsafe = failsafe;
 }
