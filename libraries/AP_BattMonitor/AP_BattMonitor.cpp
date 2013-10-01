@@ -100,7 +100,7 @@ AP_BattMonitor::read()
         _current_amps = (_curr_pin_analog_source->voltage_average()-_curr_amp_offset)*_curr_amp_per_volt;
         if (_last_time_micros != 0 && dt < 2000000.0f) {
             // .0002778 is 1/3600 (conversion to hours)
-            _current_total_mah += _current_amps * dt * 0.2778f;
+            _current_total_mah += _current_amps * dt * 0.0000002778f;
         }
         _last_time_micros = tnow;
     }

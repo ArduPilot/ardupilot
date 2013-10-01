@@ -90,7 +90,7 @@ public:
     float current_amps() const { return _current_amps; }
 
     /// Total current drawn since start-up (Amp-hours)
-    float current_total_mah() const { return _current_total_mah; }\
+    float current_total_mah() const { return _current_total_mah; }
 
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
