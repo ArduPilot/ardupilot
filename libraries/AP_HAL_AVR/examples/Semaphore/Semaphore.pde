@@ -82,19 +82,15 @@ void setup (void) {
         hal.scheduler->panic(PSTR("Error: No SPIDeviceDriver semaphore!"));
     }
 
-    hal.scheduler->register_timer_process(async_blinker, NULL);
+    hal.scheduler->register_timer_process(async_blinker);
 }
 
 
-static uint32_t async_last_run;
-
-void async_blinker(void *) 
-{
-    uint32_t now = hal.scheduler->millis();
-    if ((now - async_last_run) < 5)  {
+uint32_t async_last_run = 0;
+void async_blinker(uint32_t millis) {
+    if (async_last_run - millis < 5)  {
         return;
     }
-    async_last_run = now;
     
     if (sem->take_nonblocking()) {
         blink_a0();

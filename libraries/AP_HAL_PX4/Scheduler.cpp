@@ -128,7 +128,7 @@ void PX4Scheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc) 
+void PX4Scheduler::register_timer_process(AP_HAL::TimedProc proc) 
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -144,7 +144,7 @@ void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
-void PX4Scheduler::register_io_process(AP_HAL::MemberProc proc) 
+void PX4Scheduler::register_io_process(AP_HAL::TimedProc proc) 
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -160,7 +160,7 @@ void PX4Scheduler::register_io_process(AP_HAL::MemberProc proc)
     }
 }
 
-void PX4Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) 
+void PX4Scheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) 
 {
     _failsafe = failsafe;
 }
@@ -186,6 +186,7 @@ void PX4Scheduler::reboot(bool hold_in_bootloader)
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 {
+    uint32_t tnow = micros();
     if (_in_timer_proc) {
         return;
     }
@@ -195,7 +196,7 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i]();
+                _timer_proc[i](tnow);
             }
         }
     } else if (called_from_timer_thread) {
@@ -204,7 +205,7 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe();
+        _failsafe(tnow);
     }
 
     // process analog input
@@ -234,6 +235,7 @@ void *PX4Scheduler::_timer_thread(void)
 
 void PX4Scheduler::_run_io(void)
 {
+    uint32_t tnow = micros();
     if (_in_io_proc) {
         return;
     }
@@ -243,7 +245,7 @@ void PX4Scheduler::_run_io(void)
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i] != NULL) {
-                _io_proc[i]();
+                _io_proc[i](tnow);
             }
         }
     }

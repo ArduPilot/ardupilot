@@ -6,11 +6,11 @@
 #include <AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
-class AP_InertialSensor_HIL : public AP_InertialSensor
+class AP_InertialSensor_Stub : public AP_InertialSensor
 {
 public:
 
-    AP_InertialSensor_HIL();
+    AP_InertialSensor_Stub();
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();

@@ -2,9 +2,6 @@
 #ifndef __AP_HAL_NAMESPACE_H__
 #define __AP_HAL_NAMESPACE_H__
 
-#include "string.h"
-#include "utility/FastDelegate.h"
-
 namespace AP_HAL {
 
     /* Toplevel pure virtual class Hal.*/
@@ -35,13 +32,9 @@ namespace AP_HAL {
     class Stream;
     class BetterStream;
 
-    /* Typdefs for function pointers (Procedure, Member Procedure) 
-
-       For member functions we use the FastDelegate delegates class
-       which allows us to encapculate a member function as a type
-     */
+    /* Typdefs for function pointers (Procedure, Timed Procedure) */
     typedef void(*Proc)(void);
-    typedef fastdelegate::FastDelegate0<> MemberProc;
+    typedef void(*TimedProc)(uint32_t);
 
     /**
      * Global names for all of the existing SPI devices on all platforms.
@@ -58,7 +51,5 @@ namespace AP_HAL {
 
 }
 
-// macro to hide the details of AP_HAL::MemberProc
-#define AP_HAL_MEMBERPROC(func) fastdelegate::MakeDelegate(this, func)
 
 #endif // __AP_HAL_NAMESPACE_H__

@@ -87,7 +87,7 @@ public:
 
 private:
     /* Asynchronous handler functions: */
-    void                            _update();
+    static void                     _update(uint32_t );
     /* Asynchronous state: */
     static volatile bool            _updated;
     static volatile uint8_t         _d1_count;

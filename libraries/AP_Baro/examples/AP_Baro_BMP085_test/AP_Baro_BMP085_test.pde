@@ -19,10 +19,8 @@
 #include <AP_Notify.h>
 
 #include <AP_HAL_AVR.h>
-#include <AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux.h>
-#include <AP_HAL_Empty.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 /* Build this example sketch only for the APM1. */
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -51,7 +49,7 @@ void loop()
     static uint32_t last_print;
 
     // accumulate values at 100Hz
-    if ((hal.scheduler->micros()- timer) > 10000L) {
+    if ((hal.scheduler->micros()- timer) > 20000L) {
 	    bmp085.accumulate();
 	    timer = hal.scheduler->micros();
     }
@@ -80,7 +78,13 @@ void loop()
 			    (unsigned)bmp085.get_pressure_samples());
         hal.console->println();
     }
-    hal.scheduler->delay(1);
 }
+
+#else // Non-APM1
+#warning AP_Baro_BMP085_test built as stub for APM2
+const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+void setup() {}
+void loop() {}
+#endif
 
 AP_HAL_MAIN();

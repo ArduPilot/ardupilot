@@ -103,12 +103,12 @@ private:
     void        setGyroTemp(int16_t val) {
     }
     
-    // read function that pretends to capture new data
-    void read(void) {
+        // read function that pretends to capture new data
+    static void read(uint32_t tnow) {
        _count++;
     }
 
-    uint16_t  _count;                    // number of samples captured
+    static uint16_t  _count;                    // number of samples captured
 };
 
 #endif
