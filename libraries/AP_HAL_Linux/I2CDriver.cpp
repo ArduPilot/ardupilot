@@ -11,6 +11,9 @@
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
+#ifndef I2C_SMBUS_BLOCK_MAX
+#include <linux/i2c.h>
+#endif
 
 using namespace Linux;
 
@@ -91,12 +94,33 @@ uint8_t LinuxI2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
     return write(addr, len+1, buf);
 }
 
+/*
+  this is a copy of i2c_smbus_access() from i2c-dev.h. We need it for
+  platforms with older headers
+ */
+static inline __s32 _i2c_smbus_access(int file, char read_write, __u8 command, 
+                                      int size, union i2c_smbus_data *data)
+{
+	struct i2c_smbus_ioctl_data args;
+	args.read_write = read_write;
+	args.command = command;
+	args.size = size;
+	args.data = data;
+	return ioctl(file,I2C_SMBUS,&args);
+}
+
 uint8_t LinuxI2CDriver::writeRegister(uint8_t addr, uint8_t reg, uint8_t val)
 {
     if (!set_address(addr)) {
         return 1;
     }
-    return i2c_smbus_write_byte_data(_fd, reg, val);
+    union i2c_smbus_data data;
+    data.byte = val;
+    if (_i2c_smbus_access(_fd,I2C_SMBUS_WRITE, reg,
+                         I2C_SMBUS_BYTE_DATA, &data) == -1) {
+        return 1;
+    }
+    return 0;
 }
 
 uint8_t LinuxI2CDriver::read(uint8_t addr, uint8_t len, uint8_t* data)
@@ -132,11 +156,12 @@ uint8_t LinuxI2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data)
     if (!set_address(addr)) {
         return 1;
     }
-    int32_t v = i2c_smbus_read_byte_data(_fd, reg);
-    if (v == -1) {
+    union i2c_smbus_data v;
+    if (_i2c_smbus_access(_fd,I2C_SMBUS_READ, reg,
+                          I2C_SMBUS_BYTE_DATA, &v)) {
         return 1;
     }
-    *data = v & 0xFF;
+    *data = v.byte;
     return 0;
 }
 
