@@ -43,6 +43,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
     AP_GROUPINFO("SERVO_RATE",    16, SITL,  servo_rate,  0),
     AP_GROUPINFO("GPS_GLITCH",    17, SITL,  gps_glitch,  0),
+    AP_GROUPINFO("GPS_HZ",        18, SITL,  gps_hertz,  5),
     AP_GROUPEND
 };
 
