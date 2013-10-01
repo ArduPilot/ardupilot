@@ -12,9 +12,9 @@
 using namespace Linux;
 
 // 3 serial ports on Linux for now
-static LinuxUARTDriver uartADriver;
-static LinuxUARTDriver uartBDriver;
-static LinuxUARTDriver uartCDriver;
+static LinuxUARTDriver uartADriver(true);
+static LinuxUARTDriver uartBDriver(false);
+static LinuxUARTDriver uartCDriver(false);
 
 static LinuxSemaphore  i2cSemaphore;
 static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");

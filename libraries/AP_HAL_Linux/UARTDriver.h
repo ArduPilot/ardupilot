@@ -6,7 +6,7 @@
 
 class Linux::LinuxUARTDriver : public AP_HAL::UARTDriver {
 public:
-    LinuxUARTDriver();
+    LinuxUARTDriver(bool default_console);
     /* Linux implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
@@ -31,8 +31,10 @@ public:
 
 private:
     const char *device_path;
-    int _fd;
+    int _rd_fd;
+    int _wr_fd;
     bool _nonblocking_writes;
+    bool _console;
     volatile bool _initialised;
     volatile bool _in_timer;
 
