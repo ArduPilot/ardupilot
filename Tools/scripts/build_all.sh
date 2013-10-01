@@ -10,7 +10,7 @@ set -x
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
-for b in all apm2 apm2beta apm1-hil apm1-hilsensors apm2-hil apm2-hilsensors sitl sitl-mount sitl-newcontrollers; do
+for b in all apm2 apm2beta apm1-hil apm1-hilsensors apm2-hil apm2-hilsensors sitl sitl-mount sitl-newcontrollers linux; do
     pwd
     make clean
     make $b -j4
@@ -19,7 +19,7 @@ popd
 
 echo "Testing ArduCopter build"
 pushd ArduCopter
-for b in all apm2 apm1-hil apm2-hil sitl heli dmp; do
+for b in all apm2 apm1-hil apm2-hil sitl heli dmp linux; do
     pwd
     make clean
     make $b -j4
@@ -28,7 +28,7 @@ popd
 
 echo "Testing APMRover build"
 pushd APMrover2
-for b in all apm2 sitl apm2-hil; do
+for b in all apm2 sitl apm2-hil linux; do
     pwd
     make clean
     make $b -j4
@@ -50,7 +50,7 @@ echo "Testing flymaple build"
 for d in ArduPlane ArduCopter APMrover2; do
     pushd $d
     make clean
-    make flymaple
+    make flymaple -j4
     popd
 done
 }
