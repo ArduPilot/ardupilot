@@ -7,7 +7,6 @@
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
 static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
 #endif
-static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_compass(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
@@ -32,7 +31,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if HIL_MODE != HIL_MODE_ATTITUDE && HIL_MODE != HIL_MODE_SENSORS
     {"baro",                test_baro},
 #endif
-    {"battery",             test_battery},
     {"compass",             test_compass},
     {"gps",                 test_gps},
     {"ins",                 test_ins},
@@ -87,54 +85,6 @@ test_baro(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 #endif
-
-static int8_t
-test_battery(uint8_t argc, const Menu::arg *argv)
-{
-    // check if radio is calibration
-    pre_arm_rc_checks();
-    if(!ap.pre_arm_rc_check) {
-        cliSerial->print_P(PSTR("radio not calibrated, exiting"));
-        return(0);
-    }
-
-    cliSerial->printf_P(PSTR("\nCareful! Motors will spin! Press Enter to start.\n"));
-    while (cliSerial->read() != -1); /* flush */
-    while(!cliSerial->available()) { /* wait for input */
-        delay(100);
-    }
-    while (cliSerial->read() != -1); /* flush */
-    print_hit_enter();
-
-    // allow motors to spin
-    output_min();
-    motors.armed(true);
-
-    while(1) {
-        delay(100);
-        read_radio();
-        read_battery();
-        if (g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY) {
-            cliSerial->printf_P(PSTR("V: %4.4f\n"),
-                            battery_voltage1,
-                            current_amps1,
-                            current_total1);
-        } else {
-            cliSerial->printf_P(PSTR("V: %4.4f, A: %4.4f, Ah: %4.4f\n"),
-                            battery_voltage1,
-                            current_amps1,
-                            current_total1);
-        }
-        motors.throttle_pass_through();
-
-        if(cliSerial->available() > 0) {
-            motors.armed(false);
-            return (0);
-        }
-    }
-    motors.armed(false);
-    return (0);
-}
 
 static int8_t
 test_compass(uint8_t argc, const Menu::arg *argv)

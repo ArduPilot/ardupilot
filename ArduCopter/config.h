@@ -349,21 +349,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    10.5f
-#endif
-#ifndef VOLT_DIV_RATIO
- # define VOLT_DIV_RATIO                 3.56f
+#ifndef FS_BATT_VOLTAGE_DEFAULT
+ # define FS_BATT_VOLTAGE_DEFAULT       10.5f       // default battery voltage below which failsafe will be triggered
 #endif
 
-#ifndef CURR_AMP_PER_VOLT
- # define CURR_AMP_PER_VOLT              27.32f
-#endif
-#ifndef CURR_AMPS_OFFSET
- # define CURR_AMPS_OFFSET               0.0f
-#endif
-#ifndef BATTERY_CAPACITY_DEFAULT
- # define BATTERY_CAPACITY_DEFAULT      3500
+#ifndef FS_BATT_MAH_DEFAULT
+ # define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN

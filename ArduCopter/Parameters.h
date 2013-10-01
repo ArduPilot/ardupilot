@@ -90,7 +90,9 @@ public:
         k_param_arming_check_enabled,
         k_param_sprayer,
         k_param_angle_max,
-        k_param_gps_hdop_good,          // 35
+        k_param_gps_hdop_good,
+        k_param_battery,
+        k_param_fs_batt_mah,             // 37
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -135,24 +137,24 @@ public:
         // 140: Sensor parameters
         //
         k_param_imu = 140, // deprecated - can be deleted
-        k_param_battery_monitoring = 141,
-        k_param_volt_div_ratio,
-        k_param_curr_amp_per_volt,
+        k_param_battery_monitoring = 141,   // deprecated - can be deleted
+        k_param_volt_div_ratio, // deprecated - can be deleted
+        k_param_curr_amp_per_volt,  // deprecated - can be deleted
         k_param_input_voltage,  // deprecated - can be deleted
-        k_param_pack_capacity,
+        k_param_pack_capacity,  // deprecated - can be deleted
         k_param_compass_enabled,
         k_param_compass,
         k_param_sonar_enabled,
         k_param_frame_orientation,
         k_param_optflow_enabled,
-        k_param_low_voltage,
+        k_param_fs_batt_voltage,
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_sonar_type,
         k_param_super_simple = 155,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,
-        k_param_ahrs, // AHRS group
+        k_param_ahrs, // AHRS group // 159
 
         //
         // 160: Navigation parameters
@@ -174,8 +176,8 @@ public:
         //
         // Batery monitoring parameters
         //
-        k_param_battery_volt_pin = 168,
-        k_param_battery_curr_pin,   // 169
+        k_param_battery_volt_pin = 168, // deprecated - can be deleted
+        k_param_battery_curr_pin,   // 169 deprecated - can be deleted
 
         //
         // 170: Radio settings
@@ -281,26 +283,22 @@ public:
                                       // 2 = XLL (XL with 10m range)
                                       // 3 = HRLV
     AP_Float        sonar_gain;
-    AP_Int8         battery_monitoring;         // 0=disabled, 3=voltage only,
-                                                // 4=voltage and current
-    AP_Float        volt_div_ratio;
-    AP_Float        curr_amp_per_volt;
-    AP_Int16        pack_capacity;              // Battery pack capacity less reserve
+
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
+    AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
+    AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
+    
     AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value below which represent a good position
 
     AP_Int8         compass_enabled;
     AP_Int8         optflow_enabled;
-    AP_Float        low_voltage;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
     AP_Int8         copter_leds_mode;           // Operating mode of LED
                                                 // lighting system
 
-    AP_Int8         battery_volt_pin;
-    AP_Int8         battery_curr_pin;
     AP_Int8         rssi_pin;
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees
