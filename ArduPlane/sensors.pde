@@ -44,10 +44,6 @@ static void zero_airspeed(void)
 // should be called at 10hz
 static void read_battery(void)
 {
-    if(battery.monitoring() == AP_BATT_MONITOR_DISABLED) {
-        return;
-    }
-
     battery.read();
 
     if (!usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {

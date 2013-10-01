@@ -213,8 +213,8 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_health &= ~(1<<5); // GPS unhealthy
     }
 
-    uint16_t battery_current = -1;
-    uint8_t battery_remaining = -1;
+    int16_t battery_current = -1;
+    int8_t battery_remaining = -1;
 
     if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
         battery_remaining = battery.capacity_remaining_pct();
