@@ -55,6 +55,8 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _wr_fd = 1;
         rxS = 512;
         txS = 512;
+        fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
+        fcntl(_wr_fd, F_SETFL, fcntl(_wr_fd, F_GETFL, 0) | O_NONBLOCK);
     } else if (!_initialised) {
         if (device_path == NULL) {
             return;

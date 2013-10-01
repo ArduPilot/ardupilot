@@ -16,10 +16,10 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define APM_LINUX_MAIN_PRIORITY    180
-#define APM_LINUX_TIMER_PRIORITY   182
-#define APM_LINUX_UART_PRIORITY    181
-#define APM_LINUX_IO_PRIORITY       59
+#define APM_LINUX_TIMER_PRIORITY    13
+#define APM_LINUX_UART_PRIORITY     12
+#define APM_LINUX_MAIN_PRIORITY     11
+#define APM_LINUX_IO_PRIORITY       10
 
 LinuxScheduler::LinuxScheduler()
 {}
