@@ -139,7 +139,7 @@ void LinuxScheduler::register_io_process(AP_HAL::MemberProc proc)
     }
 }
 
-void LinuxScheduler::register_timer_failsafe(AP_HAL::MemberProc failsafe, uint32_t period_us)
+void LinuxScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     _failsafe = failsafe;
 }
@@ -163,7 +163,6 @@ void LinuxScheduler::resume_timer_procs()
 
 void LinuxScheduler::_run_timers(bool called_from_timer_thread)
 {
-    uint32_t tnow = micros();
     if (_in_timer_proc) {
         return;
     }
@@ -173,7 +172,7 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](_timer_arg[i]);
+                _timer_proc[i]();
             }
         }
     } else if (called_from_timer_thread) {
@@ -182,7 +181,7 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe(NULL);
+        _failsafe();
     }
 
     _in_timer_proc = false;
@@ -202,7 +201,6 @@ void *LinuxScheduler::_timer_thread(void)
 
 void LinuxScheduler::_run_io(void)
 {
-    uint32_t tnow = micros();
     if (_in_io_proc) {
         return;
     }
@@ -212,7 +210,7 @@ void LinuxScheduler::_run_io(void)
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i] != NULL) {
-                _io_proc[i](_io_arg[i]);
+                _io_proc[i]();
             }
         }
     }
