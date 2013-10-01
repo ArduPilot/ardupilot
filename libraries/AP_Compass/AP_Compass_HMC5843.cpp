@@ -246,18 +246,8 @@ AP_Compass_HMC5843::init()
 
 #if 0
         /* useful for debugging */
-        Serial.print("mag_x: ");
-        Serial.print(_mag_x);
-        Serial.print(" mag_y: ");
-        Serial.print(_mag_y);
-        Serial.print(" mag_z: ");
-        Serial.println(_mag_z);
-        Serial.print("CalX: ");
-        Serial.print(calibration[0]/good_count);
-        Serial.print(" CalY: ");
-        Serial.print(calibration[1]/good_count);
-        Serial.print(" CalZ: ");
-        Serial.println(calibration[2]/good_count);
+        hal.console->printf_P(PSTR("MagX: %d MagY: %d MagZ: %d\n"), (int)_mag_x, (int)_mag_y, (int)_mag_z);
+        hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), cal[0], cal[1], cal[2]);
 #endif
     }
 

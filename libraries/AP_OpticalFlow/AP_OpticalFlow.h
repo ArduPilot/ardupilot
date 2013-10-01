@@ -58,10 +58,10 @@ public:
     virtual void    set_field_of_view(const float fov) { field_of_view = fov; update_conversion_factors(); };
 
     // called by timer process to read sensor data from all attached sensors
-    static void     read(uint32_t now);
+    void     read();
 
     // read latest values from sensor and fill in x,y and totals.
-    virtual void    update(uint32_t now);
+    virtual void    update();
 
     // updates internal lon and lat with estimation based on optical flow
     virtual void    update_position(float roll, float pitch, float sin_yaw, float cos_yaw, float altitude);
@@ -86,7 +86,7 @@ public:
 protected:
     // pointer to the last instantiated optical flow sensor.  Will be turned
     // into a table if we ever add support for more than one sensor
-    static AP_OpticalFlow *  _sensor;
+    AP_OpticalFlow *  _sensor;
     enum Rotation            _orientation;
     // multiply this number by altitude and pixel change to get horizontal
     // move (in same units as altitude)
@@ -102,7 +102,7 @@ protected:
 private:
     // number of times we have been called by 1khz timer process.
     // We use this to throttle read down to 20hz
-    static uint8_t _num_calls;
+    uint8_t _num_calls;
 };
 
 #include "AP_OpticalFlow_ADNS3080.h"

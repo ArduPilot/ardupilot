@@ -960,30 +960,9 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(pi_loiter_lon,   "HLD_LON_", APM_PI),
 
-
-
-#if FRAME_CONFIG ==     SINGLE_FRAME
-    // @Group: SS1_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_1,    "SS1_", RC_Channel),
-    // @Group: SS2_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_2,    "SS2_", RC_Channel),
-    // @Group: SS3_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_3,    "SS3_", RC_Channel),
-    // @Group: SS4_
-    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(single_servo_4,    "SS4_", RC_Channel),
-
-
-#endif
+    // variables not in the g class which contain EEPROM saved variables
 
     // variables not in the g class which contain EEPROM saved variables
-	// variables not in the g class which contain EEPROM saved variables
-
-
-   
 #if CAMERA == ENABLED
     // @Group: CAM_
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp
@@ -1068,22 +1047,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: H_
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
     GOBJECT(motors, "H_",           AP_MotorsHeli),
-
 #else
-	#if FRAME_CONFIG ==     SINGLE_FRAME
-		// @Group: H_
-		// @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
-		GOBJECT(motors, "MOT_",           AP_MotorsSingle),
-	
-	#else
-		// @Group: MOT_
-		// @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
-		GOBJECT(motors, "MOT_",         AP_Motors),
-	#endif
+    // @Group: MOT_
+    // @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
+    GOBJECT(motors, "MOT_",         AP_Motors),
 #endif
 
-    
-	// @Group: RCMAP_
+    // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
 

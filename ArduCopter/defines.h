@@ -84,9 +84,6 @@
 #define HELI_FRAME 6
 #define OCTA_QUAD_FRAME 7
 
-#define SINGLE_FRAME 8   // add a singlecopter frame
-
-
 #define PLUS_FRAME 0
 #define X_FRAME 1
 #define V_FRAME 2

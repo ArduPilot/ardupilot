@@ -25,6 +25,8 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_Linux.h>
+#include <AP_HAL_Empty.h>
 #include <AP_ADC.h>
 #include <AP_ADC_AnalogSource.h>
 #include <Filter.h>
@@ -63,6 +65,7 @@ void loop(void)
         airspeed.read();
         hal.console->printf("airspeed %.2f\n", airspeed.get_airspeed());
     }
+    hal.scheduler->delay(1);
 }
 
 AP_HAL_MAIN();

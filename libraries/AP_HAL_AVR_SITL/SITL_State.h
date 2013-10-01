@@ -111,7 +111,7 @@ private:
     static bool _motors_on;
 
     static AP_Baro_HIL *_barometer;
-    static AP_InertialSensor_Stub *_ins;
+    static AP_InertialSensor_HIL *_ins;
     static SITLScheduler *_scheduler;
     static AP_Compass_HIL *_compass;
 

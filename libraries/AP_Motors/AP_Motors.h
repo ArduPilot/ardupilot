@@ -12,6 +12,5 @@
 #include "AP_MotorsOcta.h"
 #include "AP_MotorsOctaQuad.h"
 #include "AP_MotorsHeli.h"
-#include "AP_MotorsSingle.h" //add for singlecopter
 
 #endif // __AP_MOTORS_H__

@@ -22,6 +22,12 @@ public:
      */
 	int32_t get_steering_out(float desired_accel);
 
+    /*
+      return the steering radius (half diameter). Assumed to be half
+      the P value.
+     */
+    float get_turn_radius(void) const { return _K_P * 0.5f; }
+
 	void reset_I();
 
 	static const struct AP_Param::GroupInfo var_info[];
@@ -31,6 +37,7 @@ private:
 	AP_Float _K_P;
 	AP_Float _K_I;
 	AP_Float _K_D;
+	AP_Float _minspeed;
     AP_Int16  _imax;
 	uint32_t _last_t;
 	float _last_out;
