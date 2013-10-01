@@ -61,7 +61,7 @@ Menu::run(void)
             if (-1 == c)
                 continue;
             // carriage return -> process command
-            if ('\r' == c) {
+            if ('\r' == c || '\n' == c) {
                 _inbuf[len] = '\0';
                 _port->write('\r');
                 _port->write('\n');
