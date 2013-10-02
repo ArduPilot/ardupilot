@@ -38,6 +38,9 @@
 #define PACKED __attribute__((__packed__))
 #endif
 
+// this can be used to optimize individual functions
+#define OPTIMIZE(level) __attribute__((optimize(level)))
+
 // Make some dire warnings into errors
 //
 // Some warnings indicate questionable code; rather than let
