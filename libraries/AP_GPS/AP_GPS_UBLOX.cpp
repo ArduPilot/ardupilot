@@ -23,6 +23,7 @@
 #include <AP_HAL.h>
 
 #define UBLOX_DEBUGGING 0
+#define UBLOX_FAKE_3DLOCK 0
 
 extern const AP_HAL::HAL& hal;
 
@@ -77,6 +78,8 @@ AP_GPS_UBLOX::send_next_rate_update(void)
         // not enough space - do it next time
         return;
     }
+
+    //hal.console->printf_P(PSTR("next_rate: %u\n"), (unsigned)rate_update_step);
 
     switch (rate_update_step) {
     case 0:
@@ -296,6 +299,10 @@ AP_GPS_UBLOX::_parse_gps(void)
             next_fix = GPS::FIX_NONE;
             fix = GPS::FIX_NONE;
         }
+#if UBLOX_FAKE_3DLOCK
+        fix = GPS::FIX_3D;
+        next_fix = fix;
+#endif
         break;
     case MSG_SOL:
         Debug("MSG_SOL fix_status=%u fix_type=%u",
@@ -316,6 +323,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
         num_sats        = _buffer.solution.satellites;
         hdop            = _buffer.solution.position_DOP;
+#if UBLOX_FAKE_3DLOCK
+        next_fix = fix;
+        num_sats = 10;
+#endif
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
