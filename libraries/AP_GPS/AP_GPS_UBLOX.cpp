@@ -462,14 +462,9 @@ AP_GPS_UBLOX::_configure_gps(void)
     }
     _port->begin(38400U);
 
-    // ask for nav solutions at 5Hz
-    _configure_navigation_rate(200);
-
-    // ask for the messages we parse to be sent on every navigation solution
-    _configure_message_rate(CLASS_NAV, MSG_POSLLH, 1);
-    _configure_message_rate(CLASS_NAV, MSG_STATUS, 1);
-    _configure_message_rate(CLASS_NAV, MSG_SOL, 1);
-    _configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
+    // start the process of updating the GPS rates
+    need_rate_update = true;
+    rate_update_step = 0;
 
     // ask for the current navigation settings
 	Debug("Asking for engine setting\n");
