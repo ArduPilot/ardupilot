@@ -20,6 +20,7 @@
 /*
  *  this module deals with calculations involving struct Location
  */
+#include <AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
 
@@ -155,8 +156,12 @@ Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
  */
 int32_t wrap_360_cd(int32_t error)
 {
-    while (error > 36000) error -= 36000;
-    while (error < 0) error += 36000;
+    if (error > 360000 || error < -360000) {
+        // for very large numbers use modulus
+        error = error % 36000;
+    }
+    if (error > 36000) error -= 36000;
+    if (error < 0) error += 36000;
     return error;
 }
 
@@ -165,8 +170,12 @@ int32_t wrap_360_cd(int32_t error)
  */
 int32_t wrap_180_cd(int32_t error)
 {
-    while (error > 18000) error -= 36000;
-    while (error < -18000) error += 36000;
+    if (error > 360000 || error < -360000) {
+        // for very large numbers use modulus
+        error = error % 36000;
+    }
+    if (error > 18000) { error -= 36000; }
+    if (error < -18000) { error += 36000; }
     return error;
 }
 
@@ -175,8 +184,12 @@ int32_t wrap_180_cd(int32_t error)
  */
 float wrap_PI(float angle_in_radians)
 {
-    while (angle_in_radians > PI) angle_in_radians -= 2.0f*PI;
-    while (angle_in_radians < -PI) angle_in_radians += 2.0f*PI;
+    if (angle_in_radians > 10*PI || angle_in_radians < -10*PI) {
+        // for very large numbers use modulus
+        angle_in_radians = fmodf(angle_in_radians, 2*PI);
+    }
+    while (angle_in_radians > PI) angle_in_radians -= 2*PI;
+    while (angle_in_radians < -PI) angle_in_radians += 2*PI;
     return angle_in_radians;
 }
 
