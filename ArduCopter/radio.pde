@@ -33,6 +33,17 @@ static void init_rc_in()
     g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+#if FRAME_CONFIG == SINGLE_FRAME
+    // we set four servos to angle
+    g.single_servo_1.set_type(RC_CHANNEL_TYPE_ANGLE);
+    g.single_servo_2.set_type(RC_CHANNEL_TYPE_ANGLE);
+    g.single_servo_3.set_type(RC_CHANNEL_TYPE_ANGLE);
+    g.single_servo_4.set_type(RC_CHANNEL_TYPE_ANGLE);
+    g.single_servo_1.set_angle(DEFAULT_ANGLE_MAX);
+    g.single_servo_2.set_angle(DEFAULT_ANGLE_MAX);
+    g.single_servo_3.set_angle(DEFAULT_ANGLE_MAX);
+    g.single_servo_4.set_angle(DEFAULT_ANGLE_MAX);
+#endif
 
     //set auxiliary servo ranges
     g.rc_5.set_range(0,1000);
@@ -190,8 +201,8 @@ void aux_servos_update_fn()
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
  #endif
 
-// Tri's can use RC5, RC6, RC8 and higher
-#elif (FRAME_CONFIG == TRI_FRAME)
+// Tri's and Singles can use RC5, RC6, RC8 and higher
+#elif (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME)
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
  #else // APM1, APM2, SITL

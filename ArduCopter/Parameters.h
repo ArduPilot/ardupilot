@@ -261,6 +261,16 @@ public:
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p, // 244
 
+
+		//
+		//245: Singlecopter
+		//
+		k_param_single_servo_1 = 245, //
+        k_param_single_servo_2,
+        k_param_single_servo_3,
+        k_param_single_servo_4,
+
+
         // 254,255: reserved
     };
 
@@ -350,6 +360,10 @@ public:
     AP_Float        heli_roll_ff;												// roll rate feed-forward
     AP_Float        heli_yaw_ff;												// yaw rate feed-forward
 #endif
+#if FRAME_CONFIG ==     SINGLE_FRAME
+    // Single
+    RC_Channel      single_servo_1, single_servo_2, single_servo_3, single_servo_4;     // servos for four flaps
+#endif
 
     // RC channels
     RC_Channel              rc_1;
@@ -405,6 +419,12 @@ public:
         heli_servo_2        (CH_2),
         heli_servo_3        (CH_3),
         heli_servo_4        (CH_4),
+#endif
+#if FRAME_CONFIG ==     SINGLE_FRAME
+        single_servo_1        (CH_1),
+        single_servo_2        (CH_2),
+        single_servo_3        (CH_3),
+        single_servo_4        (CH_4),
 #endif
 
         rc_1                (CH_1),
