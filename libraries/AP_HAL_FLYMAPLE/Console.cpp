@@ -72,4 +72,8 @@ size_t FLYMAPLEConsoleDriver::write(uint8_t c) {
     return _base_uart->write(c);
 }
 
+size_t FLYMAPLEConsoleDriver::write(const uint8_t *buffer, size_t size) {
+    return _base_uart->write(buffer, size);
+}
+
 #endif
