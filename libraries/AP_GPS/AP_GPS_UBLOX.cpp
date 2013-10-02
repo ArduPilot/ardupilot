@@ -64,6 +64,45 @@ AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 	_new_speed = false;
 }
 
+/*
+  send the next step of rate updates to the GPS. This reconfigures the
+  GPS on the fly to have the right message rates. It needs to be
+  careful to only send a message if there is sufficient buffer space
+  available on the serial port to avoid it blocking the CPU
+ */
+void
+AP_GPS_UBLOX::send_next_rate_update(void)
+{
+    if (_port->txspace() < sizeof(struct ubx_header)+sizeof(struct ubx_cfg_nav_rate)+2) {
+        // not enough space - do it next time
+        return;
+    }
+
+    switch (rate_update_step) {
+    case 0:
+        _configure_navigation_rate(200);
+        break;
+    case 1:
+        _configure_message_rate(CLASS_NAV, MSG_POSLLH, 1);
+        break;
+    case 2:
+        _configure_message_rate(CLASS_NAV, MSG_STATUS, 1);
+        break;
+    case 3:
+        _configure_message_rate(CLASS_NAV, MSG_SOL, 1);
+        break;
+    case 4:
+        _configure_message_rate(CLASS_NAV, MSG_VELNED, 1);
+        break;
+    }
+    rate_update_step++;
+    if (rate_update_step > 4) {
+        need_rate_update = false;
+        rate_update_step = 0;
+    }
+}
+
+
 // Process bytes available from the stream
 //
 // The stream is assumed to contain only messages we recognise.  If it
@@ -79,6 +118,10 @@ AP_GPS_UBLOX::read(void)
     uint8_t data;
     int16_t numc;
     bool parsed = false;
+
+    if (need_rate_update) {
+        send_next_rate_update();
+    }
 
     numc = _port->available();
     for (int16_t i = 0; i < numc; i++) {        // Process bytes received
@@ -299,6 +342,17 @@ AP_GPS_UBLOX::_parse_gps(void)
     if (_new_position && _new_speed) {
         _new_speed = _new_position = false;
 		_fix_count++;
+        uint32_t new_fix_time = hal.scheduler->millis();
+
+        if (!need_rate_update && new_fix_time - _last_fix_time > 300 && _fix_count % 20 == 0) {
+            // the GPS is running slow. It possibly browned out and
+            // restarted with incorrect parameters. We will slowly
+            // send out new parameters to fix it
+            need_rate_update = true;
+            rate_update_step = 0;
+        }
+        _last_fix_time = new_fix_time;
+
 		if (_fix_count == 100) {
 			// ask for nav settings every 20 seconds
 			Debug("Asking for engine setting\n");
@@ -366,12 +420,24 @@ AP_GPS_UBLOX::_configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t
 }
 
 /*
+ *  configure a UBlox GPS navigation solution rate of 200ms
+ */
+void
+AP_GPS_UBLOX::_configure_navigation_rate(uint16_t rate_ms)
+{
+    struct ubx_cfg_nav_rate msg;
+    msg.measure_rate_ms = rate_ms;
+    msg.nav_rate        = 1;
+    msg.timeref         = 0;     // UTC time
+    _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
+}
+
+/*
  *  configure a UBlox GPS for the given message rate
  */
 void
 AP_GPS_UBLOX::_configure_gps(void)
 {
-    struct ubx_cfg_nav_rate msg;
     const unsigned baudrates[4] = {9600U, 19200U, 38400U, 57600U};
 
     // the GPS may be setup for a different baud rate. This ensures
@@ -385,11 +451,8 @@ AP_GPS_UBLOX::_configure_gps(void)
     }
     _port->begin(38400U);
 
-    // ask for navigation solutions every 200ms
-    msg.measure_rate_ms = 200;
-    msg.nav_rate        = 1;
-    msg.timeref         = 0;     // UTC time
-    _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
+    // ask for nav solutions at 5Hz
+    _configure_navigation_rate(200);
 
     // ask for the messages we parse to be sent on every navigation solution
     _configure_message_rate(CLASS_NAV, MSG_POSLLH, 1);
