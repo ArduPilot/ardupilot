@@ -482,7 +482,7 @@ void SITL_State::_simulator_output(void)
 
     float throttle = _motors_on?(control.pwm[2]-1000) / 1000.0f:0;
     // lose 0.7V at full throttle
-    float voltage = 12.6 - 0.7f*throttle;
+    float voltage = _sitl->batt_voltage - 0.7f*throttle;
     // assume 50A at full throttle
     float current = 50.0 * throttle;
     // assume 3DR power brick
