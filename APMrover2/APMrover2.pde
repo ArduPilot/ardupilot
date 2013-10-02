@@ -103,6 +103,7 @@
 #include "compat.h"
 
 #include <AP_Notify.h>      // Notify library
+#include <AP_BattMonitor.h> // Battery monitor library
 
 // Configuration
 #include "config.h"
@@ -274,9 +275,6 @@ AP_HAL::AnalogSource *rssi_analog_source;
 
 AP_HAL::AnalogSource *vcc_pin;
 
-AP_HAL::AnalogSource * batt_volt_pin;
-AP_HAL::AnalogSource * batt_curr_pin;
-
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
@@ -444,13 +442,7 @@ static int8_t CH7_wp_index;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery pack 1 voltage.  Initialized above the low voltage threshold to pre-load the filter and prevent low voltage events at startup.
-static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;
-// Battery pack 1 instantaneous currrent draw.  Amperes
-static float	current_amps1;
-// Totalized current (Amp-hours) from battery 1
-static float	current_total1;									
-
+static AP_BattMonitor battery;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
@@ -594,10 +586,10 @@ void setup() {
 
     notify.init();
 
+    battery.init();
+
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
-    batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
-    batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
 
 	init_ardupilot();
 
