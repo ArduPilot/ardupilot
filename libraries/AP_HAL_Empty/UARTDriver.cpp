@@ -20,3 +20,12 @@ int16_t EmptyUARTDriver::read() { return -1; }
 
 /* Empty implementations of Print virtual methods */
 size_t EmptyUARTDriver::write(uint8_t c) { return 0; }
+
+size_t EmptyUARTDriver::write(const uint8_t *buffer, size_t size)
+{
+    size_t n = 0;
+    while (size--) {
+        n += write(*buffer++);
+    }
+    return n;
+}
