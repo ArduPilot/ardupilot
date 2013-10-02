@@ -45,4 +45,9 @@ size_t PX4ConsoleDriver::write(uint8_t c) {
 	return _uart->write(c);
 }
 
+size_t PX4ConsoleDriver::write(const uint8_t *buffer, size_t size)
+{
+    return _uart->write(buffer, size);
+}
+
 #endif
