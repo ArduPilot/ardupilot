@@ -221,13 +221,6 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         battery_current = battery.current_amps() * 100;
     }
 
-    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) {
-        /*setting a out-of-range value.
-         *  It informs to external devices that
-         *  it cannot be calculated properly just by voltage*/
-        battery_remaining = 150;
-    }
-
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
