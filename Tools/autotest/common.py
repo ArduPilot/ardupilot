@@ -211,11 +211,11 @@ def save_wp(mavproxy, mav):
     mavproxy.send('rc 7 1000\n')
     mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
 
-def wait_mode(mav, mode):
-    '''wait for a flight mode to be engaged'''
+def wait_mode(mav, mode, timeout=None):
     print("Waiting for mode %s" % mode)
-    mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, blocking=True)
+    mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, timeout=timeout, blocking=True)
     print("Got mode %s" % mode)
+    return mav.flightmode
 
 def mission_count(filename):
     '''load a mission from a file and return number of waypoints'''
