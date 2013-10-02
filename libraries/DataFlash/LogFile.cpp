@@ -443,7 +443,7 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
 		}
         uint16_t new_page = GetPage();
         if (new_page != page) {
-            if (new_page == end_page || new_page == start_page) {
+            if (new_page == end_page+1 || new_page == start_page) {
                 return;
             }
             page = new_page;
