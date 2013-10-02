@@ -92,6 +92,7 @@ void DataFlash_Block::get_log_boundaries(uint16_t log_num, uint16_t & start_page
 
     if (df_BufferIdx != 0) {
         FinishWrite();
+        hal.scheduler->delay(100);
     }
 
     if(num == 1)
@@ -410,6 +411,7 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
 
     if (df_BufferIdx != 0) {
         FinishWrite();
+        hal.scheduler->delay(100);
     }
 
     StartRead(start_page);
