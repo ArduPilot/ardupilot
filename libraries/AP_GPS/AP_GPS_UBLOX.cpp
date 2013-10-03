@@ -74,7 +74,7 @@ AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 void
 AP_GPS_UBLOX::send_next_rate_update(void)
 {
-    if (_port->txspace() < sizeof(struct ubx_header)+sizeof(struct ubx_cfg_nav_rate)+2) {
+    if (_port->txspace() < (int16_t)(sizeof(struct ubx_header)+sizeof(struct ubx_cfg_nav_rate)+2)) {
         // not enough space - do it next time
         return;
     }
