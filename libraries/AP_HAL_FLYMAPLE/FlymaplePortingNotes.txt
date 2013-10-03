@@ -124,11 +124,10 @@ Mission Planner 1.2.78
 
 You need a number of additional resources to build ArduPlane for Flymaple. I
 have assumed that you will install them in your home directory, but they can really
-go anywhere provided you make the appropriate changes
+go anywhere provided you make the appropriate changes to PATH and config.mk
 
 cd ~
-git clone https://github.com/leaflabs/libmaple.git NO THIS IS WRONG: need
-mikems patched version
+git clone https://github.com/mikemccauley/libmaple.git 
 cd libmaple
 wget http://static.leaflabs.com/pub/codesourcery/gcc-arm-none-eabi-latest-linux32.tar.gz
 tar xvzf gcc-arm-none-eabi-latest-linux32.tar.gz
