@@ -438,16 +438,6 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 // CLI reports
 /***************************************************************************/
 
-static void report_batt_monitor()
-{
-    //print_blanks(2);
-    cliSerial->printf_P(PSTR("Batt Mointor\n"));
-    print_divider();
-    if(battery.monitoring() == AP_BATT_MONITOR_DISABLED) cliSerial->printf_P(PSTR("Batt monitoring disabled"));
-    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("Monitoring batt volts"));
-    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("Monitoring volts and current"));
-    print_blanks(2);
-}
 static void report_radio()
 {
     //print_blanks(2);

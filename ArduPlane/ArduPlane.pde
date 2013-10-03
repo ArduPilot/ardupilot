@@ -44,7 +44,6 @@
 #include <AP_ADC_AnalogSource.h>
 #include <AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
-#include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>     // Range finder library
 #include <Filter.h>                     // Filter library
@@ -266,6 +265,7 @@ static AP_TECS TECS_controller(ahrs, aparm);
 static AP_RollController  rollController(ahrs, aparm);
 static AP_PitchController pitchController(ahrs, aparm);
 static AP_YawController   yawController(ahrs, aparm);
+static AP_SteerController steerController(ahrs);
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -418,11 +418,6 @@ static bool have_position;
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
 
-// Direction held during phases of takeoff and landing
-// deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
-// this is a 0..36000 value, or -1 for disabled
-static int32_t hold_course_cd                 = -1;              // deg * 100 dir of plane
-
 // There may be two active commands in Auto mode.
 // This indicates the active navigation command by index number
 static uint8_t nav_command_index;
@@ -491,6 +486,24 @@ static struct {
     int32_t locked_heading_cd;
     uint32_t lock_timer_ms;
 } cruise_state;
+
+////////////////////////////////////////////////////////////////////////////////
+// ground steering controller state
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+	// Direction held during phases of takeoff and landing centidegrees
+	// A value of -1 indicates the course has not been set/is not in use
+	// this is a 0..36000 value, or -1 for disabled
+    int32_t hold_course_cd;
+
+    // locked_course and locked_course_cd are used in stabilize mode 
+    // when ground steering is active
+    bool locked_course;
+    float locked_course_err;
+} steer_state = {
+	hold_course_cd : -1,
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
@@ -1053,7 +1066,7 @@ static void handle_auto_mode(void)
 {
     switch(nav_command_ID) {
     case MAV_CMD_NAV_TAKEOFF:
-        if (hold_course_cd == -1) {
+        if (steer_state.hold_course_cd == -1) {
             // we don't yet have a heading to hold - just level
             // the wings until we get up enough speed to get a GPS heading
             nav_roll_cd = 0;
@@ -1107,7 +1120,7 @@ static void handle_auto_mode(void)
     default:
         // we are doing normal AUTO flight, the special cases
         // are for takeoff and landing
-        hold_course_cd = -1;
+        steer_state.hold_course_cd = -1;
         land_complete = false;
         calc_nav_roll();
         calc_nav_pitch();
@@ -1128,7 +1141,7 @@ static void update_flight_mode(void)
 
     if (effective_mode != AUTO) {
         // hold_course is only used in takeoff and landing
-        hold_course_cd = -1;
+        steer_state.hold_course_cd = -1;
     }
 
     switch (effective_mode) 

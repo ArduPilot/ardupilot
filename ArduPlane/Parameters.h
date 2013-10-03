@@ -94,6 +94,8 @@ public:
         k_param_skip_gyro_cal,
         k_param_auto_fbw_steer,
         k_param_waypoint_max_radius,
+        k_param_ground_steer_alt,        
+        k_param_ground_steer_dps,
 
         // 110: Telemetry control
         //
@@ -242,8 +244,8 @@ public:
         k_param_L1_controller,
         k_param_rcmap,
         k_param_TECS_controller,
-        
         k_param_rally_total,
+        k_param_steerController,
 
         //
         // 240: PID Controllers
@@ -254,7 +256,7 @@ public:
         k_param_pidServoRudder, // unused
         k_param_pidTeThrottle, // unused
         k_param_pidNavPitchAltitude, // unused
-        k_param_pidWheelSteer,
+        k_param_pidWheelSteer, // unused
 
         // 254,255: reserved
     };
@@ -275,6 +277,8 @@ public:
     AP_Float kff_rudder_mix;
     AP_Float kff_pitch_to_throttle;
     AP_Float kff_throttle_to_pitch;
+    AP_Float ground_steer_alt;
+    AP_Int16 ground_steer_dps;
 
     // speed used for speed scaling
     AP_Float scaling_speed;
@@ -411,9 +415,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux rc_12;
 #endif
-
-    // PID controllers
-    PID         pidWheelSteer;
+    uint8_t _dummy;
 
     Parameters() :
         // variable				default
@@ -436,11 +438,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12                                   (CH_12),
 #endif
-
-        // PID controller    initial P        initial I        initial D        initial imax
-        //-----------------------------------------------------------------------------------
-        pidWheelSteer         (0, 0, 0, 0)
-
+        _dummy(0)
         {}
 };
 

@@ -525,6 +525,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(acro_locking,             "ACRO_LOCKING",     0),
 
+    // @Param: GROUND_STEER_ALT
+    // @DisplayName: Ground steer altitude
+    // @Description: Altitude at which to use the ground steering controller on the rudder. If non-zero then the STEER2SRV controller will be used to control the rudder for altitudes within this limit of the home altitude.
+    // @Units: Meters
+    // @Range: -100 100
+    // @Increment: 0.1
+    // @User: Standard
+    GSCALAR(ground_steer_alt,         "GROUND_STEER_ALT",   0),
+
+    // @Param: GROUND_STEER_DPS
+    // @DisplayName: Ground steer rate
+    // @Description: Ground steering rate in degrees per second for full rudder stick deflection
+    // @Units: Meters
+    // @Range: 10 360
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(ground_steer_dps,         "GROUND_STEER_DPS",  90),
+
     // @Param: TRIM_AUTO
     // @DisplayName: Automatic trim adjustment
     // @Description: Set RC trim PWM levels to current levels when switching away from manual mode. When this option is enabled and you change from MANUAL to any other mode then the APM will take the current position of the control sticks as the trim values for aileron, elevator and rudder. It will use those to set RC1_TRIM, RC2_TRIM and RC4_TRIM. This option is disabled by default as if a pilot is not aware of this option and changes from MANUAL to another mode while control inputs are not centered then the trim could be changed to a dangerously bad value. You can enable this option to assist with trimming your plane, by enabling it before takeoff then switching briefly to MANUAL in flight, and seeing how the plane reacts. You can then switch back to FBWA, trim the surfaces then again test MANUAL mode. Each time you switch from MANUAL the APM will take your control inputs as the new trim. After you have good trim on your aircraft you can disable TRIM_AUTO for future flights.
@@ -785,8 +803,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
 #endif
 
-	GGROUP(pidWheelSteer,           "WHEELSTEER_",PID),
-
     // @Group: RLL2SRV_
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
 	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
@@ -798,6 +814,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
 	GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
+
+    // @Group: STEER2SRV_
+    // @Path: ../libraries/APM_Control/AP_SteerController.cpp
+	GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
 
 	// variables not in the g class which contain EEPROM saved variables
 
