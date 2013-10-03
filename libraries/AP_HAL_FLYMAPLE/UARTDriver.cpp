@@ -46,14 +46,15 @@ void FLYMAPLEUARTDriver::begin(uint32_t b)
 void FLYMAPLEUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
     // Our private buffer can only grow, never shrink
-    if (txS > _txBufSize)
+    // txS == 0 means no change to buffer size
+    if (txS && (txS > _txBufSize))
     {
 	if (_txBuf)
 	    free(_txBuf); // CAUTION: old contents lost
 	_txBuf = (uint8_t*)malloc(txS);
 	_txBufSize = txS;
     }
-    begin(b); // libmaple internal ring buffer reinititalised to defaults here
+    begin(b); // libmaple internal ring buffer reinitialised to defaults here
     if (_txBuf)
 	rb_init(_hws->c_dev()->rb, _txBufSize, _txBuf); // Get the ring buffer size we want
 }
