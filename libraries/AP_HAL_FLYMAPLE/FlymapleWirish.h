@@ -27,7 +27,7 @@
 #include <wirish.h>
 
 // This define is added by mikems patched version of libmaple
-#ifndef LIBMAPLE_VERSION_MAJOR
+#if LIBMAPLE_VERSION_MAJOR == 0 && LIBMAPLE_VERSION_MINOR < 100
 #error Incorrect version of libmaple. The version of libmaple you are using is incorrect, and will not work with ArduPilot Flymaple. Please see the FlymaplePortingNotes.txt in your ArduPilot distribution
 #endif
 
