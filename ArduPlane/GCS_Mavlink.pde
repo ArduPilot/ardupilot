@@ -1816,18 +1816,25 @@ mission_failed:
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         
-        if (packet.count != g.rally_total) {
-            send_text_P(SEVERITY_LOW,PSTR("bad rally point message"));
-        } else {
-            RallyLocation rally_point;
-            rally_point.lat = packet.lat;
-            rally_point.lng = packet.lng;
-            rally_point.alt = packet.alt;
-            rally_point.break_alt = packet.break_alt;
-            rally_point.land_dir = packet.land_dir;
-            rally_point.flags = packet.flags;
-            set_rally_point_with_index(rally_point, packet.idx);
+        if (packet.idx >= g.rally_total || 
+            packet.idx >= MAX_RALLYPOINTS) {
+            send_text_P(SEVERITY_LOW,PSTR("bad rally point message ID"));
+            break;
         }
+
+        if (packet.count != g.rally_total) {
+            send_text_P(SEVERITY_LOW,PSTR("bad rally point message count"));
+            break;
+        }
+
+        RallyLocation rally_point;
+        rally_point.lat = packet.lat;
+        rally_point.lng = packet.lng;
+        rally_point.alt = packet.alt;
+        rally_point.break_alt = packet.break_alt;
+        rally_point.land_dir = packet.land_dir;
+        rally_point.flags = packet.flags;
+        set_rally_point_with_index(packet.idx, rally_point);
         break;
     }
 
@@ -1838,12 +1845,19 @@ mission_failed:
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
         if (packet.idx > g.rally_total) {
-            send_text_P(SEVERITY_LOW, PSTR("bad rally point"));   
-        } else {
-            RallyLocation rally_point = get_rally_point_with_index(packet.idx);
-            mavlink_msg_rally_point_send(chan, msg->sysid, msg->compid, packet.idx, g.rally_total, rally_point.lat, rally_point.lng, rally_point.alt, rally_point.break_alt, rally_point.land_dir, rally_point.flags);
+            send_text_P(SEVERITY_LOW, PSTR("bad rally point index"));   
+            break;
+        }
+        RallyLocation rally_point;
+        if (!get_rally_point_with_index(packet.idx, rally_point)) {
+            send_text_P(SEVERITY_LOW, PSTR("failed to set rally point"));   
+            break;
         }
 
+        mavlink_msg_rally_point_send(chan, msg->sysid, msg->compid, packet.idx, 
+                                     g.rally_total, rally_point.lat, rally_point.lng, 
+                                     rally_point.alt, rally_point.break_alt, rally_point.land_dir, 
+                                     rally_point.flags);
         break;
     }    
 

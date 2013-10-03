@@ -5,88 +5,60 @@
  */
 
 //get a rally point
-static RallyLocation get_rally_point_with_index(unsigned i)
+static bool get_rally_point_with_index(unsigned i, RallyLocation &ret)
 {
-    uint16_t mem;
-    RallyLocation ret;
-
-    if (i > (unsigned) g.rally_total.get()) {
-        ret.lat = 0; ret.lng = 0; ret.alt = 0;
-        ret.land_dir = 0; ret.flags = 0;
-        return ret;
+    if (i >= (unsigned)g.rally_total) {
+        return false;
     }
-
-    //read rally point
-    mem = RALLY_START_BYTE + (i * RALLY_WP_SIZE);
-    ret.lat = hal.storage->read_dword(mem);
-    mem += sizeof(uint32_t);
-    ret.lng = hal.storage->read_dword(mem);
-    mem += sizeof(uint32_t);
-    ret.alt = hal.storage->read_word(mem);
-    mem += sizeof(int16_t);
-    ret.break_alt = hal.storage->read_word(mem);
-    mem += sizeof(int16_t);
-    ret.land_dir = hal.storage->read_word(mem);
-    mem += sizeof(uint16_t);
-    ret.flags = hal.storage->read_byte(mem);
-
-    return ret;    
+    hal.storage->read_block(&ret, RALLY_START_BYTE + (i * sizeof(RallyLocation)), sizeof(RallyLocation));
+    if (ret.lat == 0 && ret.lng == 0) {
+        // sanity check ...
+        return false;
+    }
+    return true; 
 }
 
 //save a rally point
-static void set_rally_point_with_index(RallyLocation &rallyLoc, unsigned i)
+static bool set_rally_point_with_index(unsigned i, const RallyLocation &rallyLoc)
 {
-    uint16_t mem;
-
-    if (i >= (unsigned) g.rally_total.get()) {
+    if (i >= (unsigned) g.rally_total) {
         //not allowed
-        return;
+        return false;
     }
 
     if (i >= MAX_RALLYPOINTS) {
         //also not allowed
-        return;
+        return false;
     }
-
-    mem = RALLY_START_BYTE + (i * RALLY_WP_SIZE);
-
-    hal.storage->write_dword(mem, rallyLoc.lat);
-    mem += sizeof(uint32_t);
-    hal.storage->write_dword(mem, rallyLoc.lng);
-    mem += sizeof(uint32_t);
-    hal.storage->write_word(mem, rallyLoc.alt);
-    mem += sizeof(int16_t);
-    hal.storage->write_word(mem, rallyLoc.break_alt);
-    mem += sizeof(int16_t);
-    hal.storage->write_word(mem, rallyLoc.land_dir);
-    mem += sizeof(uint32_t);
-    hal.storage->write_byte(mem, rallyLoc.flags);
+    hal.storage->write_block(RALLY_START_BYTE + (i * sizeof(RallyLocation)), &rallyLoc, sizeof(RallyLocation));
+    return true;
 }
 
-//'best' means 'closest to my current location' for now.
-RallyLocation find_best_rally_point() {
-    RallyLocation ret;
-    RallyLocation next_rally;
-    Location rally_loc;
-    float dis;
-    float min_dis = 999999999.9f;
+// 'best' means 'closest to Location loc' for now.
+static bool find_best_rally_point(const Location &myloc, const Location &homeloc, RallyLocation &ret) 
+{
+    float min_dis = -1;
 
-    for (unsigned i = 0; i < (unsigned) g.rally_total.get(); i++) {
-        next_rally = get_rally_point_with_index(i);
-        rally_loc = rally_location_to_location(next_rally);
-        dis = get_distance(current_loc, rally_loc);
+    for (unsigned i = 0; i < (unsigned) g.rally_total; i++) {
+        RallyLocation next_rally;
+        if (!get_rally_point_with_index(i, next_rally)) {
+            continue;
+        }
+        Location rally_loc = rally_location_to_location(next_rally, homeloc);
+        float dis = get_distance(myloc, rally_loc);
 
-        if (dis < min_dis) {
+        if (dis < min_dis || min_dis < 0) {
             min_dis = dis;
             ret = next_rally;
         }
     }
 
-    return ret;
+    return min_dis >= 0;
 }
 
-//translate a RallyLocation to a Location
-Location rally_location_to_location (const RallyLocation &r_loc) {
+// translate a RallyLocation to a Location
+static Location rally_location_to_location(const RallyLocation &r_loc, const Location &homeloc) 
+{
     Location ret;
 
     ret.id = MAV_CMD_NAV_LOITER_UNLIM;
@@ -95,7 +67,7 @@ Location rally_location_to_location (const RallyLocation &r_loc) {
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
     //for the PX4, though.  This line will need to be updated when that happens:
-    ret.alt = r_loc.alt + home.alt;
+    ret.alt = r_loc.alt + homeloc.alt;
 
     ret.lat = r_loc.lat;
     ret.lng = r_loc.lng;

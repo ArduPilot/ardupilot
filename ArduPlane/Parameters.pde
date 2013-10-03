@@ -231,7 +231,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: FENCE_TOTAL
     // @DisplayName: Fence Total
     // @Description: Number of geofence points currently loaded
-    // @User: Standard
+    // @User: Advanced
     GSCALAR(fence_total,            "FENCE_TOTAL",    0),
 
     // @Param: FENCE_CHANNEL
@@ -262,7 +262,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RALLY_TOTAL
     // @DisplayName: Rally Total
     // @Description: Number of rally points currently loaded
-    // @User: Standard
+    // @User: Advanced
     GSCALAR(rally_total,            "RALLY_TOTAL",    0),
 
     // @Param: ARSPD_FBW_MIN
