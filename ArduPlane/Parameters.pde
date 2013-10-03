@@ -259,6 +259,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
 #endif
 
+    // @Param: RALLY_TOTAL
+    // @DisplayName: Rally Total
+    // @Description: Number of rally points currently loaded
+    // @User: Standard
+    GSCALAR(rally_total,            "RALLY_TOTAL",    0),
+
     // @Param: ARSPD_FBW_MIN
     // @DisplayName: Fly By Wire Minimum Airspeed
     // @Description: Airspeed corresponding to minimum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.
