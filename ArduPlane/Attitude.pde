@@ -106,6 +106,24 @@ static void stabilize_pitch(float speed_scaler)
 }
 
 /*
+  perform stick mixing on one channel
+  This type of stick mixing reduces the influence of the auto
+  controller as it increases the influence of the users stick input,
+  allowing the user full deflection if needed
+ */
+static void stick_mix_channel(RC_Channel *channel)
+{
+    float ch_inf;
+        
+    ch_inf = (float)channel->radio_in - (float)channel->radio_trim;
+    ch_inf = fabsf(ch_inf);
+    ch_inf = min(ch_inf, 400.0);
+    ch_inf = ((400.0 - ch_inf) / 400.0);
+    channel->servo_out *= ch_inf;
+    channel->servo_out += channel->pwm_to_angle();
+}
+
+/*
   this gives the user control of the aircraft in stabilization modes
  */
 static void stabilize_stick_mixing_direct()
@@ -118,29 +136,8 @@ static void stabilize_stick_mixing_direct()
         control_mode == TRAINING) {
         return;
     }
-    // do direct stick mixing on aileron/elevator
-    float ch1_inf;
-    float ch2_inf;
-        
-    ch1_inf = (float)channel_roll->radio_in - (float)channel_roll->radio_trim;
-    ch1_inf = fabsf(ch1_inf);
-    ch1_inf = min(ch1_inf, 400.0);
-    ch1_inf = ((400.0 - ch1_inf) /400.0);
-        
-    ch2_inf = (float)channel_pitch->radio_in - channel_pitch->radio_trim;
-    ch2_inf = fabsf(ch2_inf);
-    ch2_inf = min(ch2_inf, 400.0);
-    ch2_inf = ((400.0 - ch2_inf) /400.0);
-        
-    // scale the sensor input based on the stick input
-    // -----------------------------------------------
-    channel_roll->servo_out  *= ch1_inf;
-    channel_pitch->servo_out *= ch2_inf;
-    
-    // Mix in stick inputs
-    // -------------------
-    channel_roll->servo_out  +=     channel_roll->pwm_to_angle();
-    channel_pitch->servo_out +=    channel_pitch->pwm_to_angle();
+    stick_mix_channel(channel_roll);
+    stick_mix_channel(channel_pitch);
 }
 
 /*
@@ -398,7 +395,7 @@ static void calc_nav_yaw_course(void)
     int32_t bearing_error_cd = nav_controller->bearing_error_cd();
     channel_rudder->servo_out = steerController.get_steering_out_angle_error(bearing_error_cd);
     if (stick_mixing_enabled()) {
-        channel_rudder->servo_out += channel_rudder->pwm_to_angle();
+        stick_mix_channel(channel_rudder);
     }
     channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
 }
@@ -427,8 +424,10 @@ static void calc_nav_yaw_ground(void)
         steer_state.locked_course_err = 0;
     }
     if (!steer_state.locked_course) {
+        // use a rate controller at the pilot specified rate
         channel_rudder->servo_out = steerController.get_steering_out_rate(steer_rate);
     } else {
+        // use a error controller on the summed error
         steer_state.locked_course_err += ahrs.get_gyro().z * 0.02f;
         int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
         channel_rudder->servo_out = steerController.get_steering_out_angle_error(yaw_error_cd);
