@@ -384,6 +384,7 @@ static void calc_nav_yaw_coordinated(float speed_scaler)
 
     // add in rudder mixing from roll
     channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;
+    channel_rudder->servo_out += channel_rudder->control_in;
     channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
 }
 
@@ -407,13 +408,20 @@ static void calc_nav_yaw_course(void)
  */
 static void calc_nav_yaw_ground(void)
 {
+    if (g_gps->ground_speed_cm < 100 && 
+        channel_throttle->control_in == 0) {
+        // manual rudder control while still
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
+        channel_rudder->servo_out = channel_rudder->control_in;
+        return;
+    }
+
     float steer_rate = (channel_rudder->control_in/4500.0f) * g.ground_steer_dps;
     if (steer_rate != 0) {
         // pilot is giving rudder input
         steer_state.locked_course = false;        
-    } else if (!steer_state.locked_course || 
-               (g_gps->ground_speed_cm < 50 && 
-                channel_throttle->control_in == 0)) {
+    } else if (!steer_state.locked_course) {
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
         steer_state.locked_course_err = 0;
