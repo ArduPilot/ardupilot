@@ -86,14 +86,15 @@ SysTick			1000Hz normal timers
 3 CH1-4, 4 CH1-2	RCOut
 8	   		not used by AP
 
-AP I2CDriver on Flymaple uses the libmaple Wire library, configured to clock
-at about 200kHz. The maximum possible Flymaple could support speed is limited
-by the BMP085 barometer to 400kHz.
-Current version of the Wire library is unfortunately
-bit-banged. This may change in the future.
+The I2CDriver on Flymaple uses the libmaple i2c low level hardware I2C
+library, configuredfor high speed (400kHz).
 
-At 200kHz I2C speed, it takes 500us to read the 6 byte accelerometer
-buffer, and 500us to read the 6 byte gyro buffer.
+As at 2013-10-03, there is a bug in the libmaple git master code, that causes
+a crash in the I2C interrupt handler. Therfore it is necessary to use the
+patched version of libmaple referred to below.
+
+At 400kHz I2C speed, it takes 500us to read both the 6 byte accelerometer
+buffer and the the 6 byte gyro buffer.
 
 The SerialUSB (USB connection) to Flymaple is not used by AP. It can be used for
 debugging inside AP_HAL_FLYMAPLE, using SerialUSB.println().
@@ -109,10 +110,14 @@ per sec
 ITG3205 Gyro
 2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate, read at 1kHz sample rate
 
+The gyro and accelerometers are sampled at about 800Hz in
+AP_InertialSensor_Flymaple.cpp, with the samples passed through a software
+2-pole low pass filter, to produce filtered data for the main loop.
+
 Installation on Linux
 
 Tested with:
-libmaple https://github.com/leaflabs/libmaple http://leaflabs.com/docs/unix-toolchain.html
+libmaple patched library based on https://github.com/leaflabs/libmaple http://leaflabs.com/docs/unix-toolchain.html
 arm-none-eabi-g++ toolchain, version 4.4.1
 on OpenSuSE 12.3
 Mission Planner 1.2.78
@@ -122,7 +127,8 @@ have assumed that you will install them in your home directory, but they can rea
 go anywhere provided you make the appropriate changes
 
 cd ~
-git clone https://github.com/leaflabs/libmaple.git
+git clone https://github.com/leaflabs/libmaple.git NO THIS IS WRONG: need
+mikems patched version
 cd libmaple
 wget http://static.leaflabs.com/pub/codesourcery/gcc-arm-none-eabi-latest-linux32.tar.gz
 tar xvzf gcc-arm-none-eabi-latest-linux32.tar.gz
