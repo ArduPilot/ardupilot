@@ -195,7 +195,7 @@ static void stabilize_stick_mixing_fbw()
  */
 static void stabilize_yaw(float speed_scaler)
 {
-    bool ground_steering = fabsf(relative_altitude()) < g.ground_steer_alt;
+    bool ground_steering = (channel_roll->control_in == 0 && fabsf(relative_altitude()) < g.ground_steer_alt);
 
     if (steer_state.hold_course_cd != -1 && ground_steering) {
         calc_nav_yaw_course();
