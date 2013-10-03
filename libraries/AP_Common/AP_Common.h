@@ -97,7 +97,7 @@ struct Location {
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
-struct RallyLocation {
+struct PACKED RallyLocation {
     int32_t lat;        //Latitude * 10^7
     int32_t lng;        //Longitude * 10^7
     int16_t alt;        //transit altitude (and loiter altitude) in meters;
