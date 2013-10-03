@@ -28,6 +28,8 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
+extern const AP_HAL::HAL& hal;
+
 FLYMAPLEUARTDriver::FLYMAPLEUARTDriver(HardwareSerial* hws):
     _hws(hws),
     _txBuf(NULL),
@@ -37,6 +39,8 @@ FLYMAPLEUARTDriver::FLYMAPLEUARTDriver(HardwareSerial* hws):
 void FLYMAPLEUARTDriver::begin(uint32_t b) 
 {
     _hws->begin(b);
+    if (_txBuf)
+	rb_init(_hws->c_dev()->rb, _txBufSize, _txBuf); // Get the ring buffer size we want
 }
 
 void FLYMAPLEUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
