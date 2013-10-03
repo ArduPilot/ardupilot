@@ -201,6 +201,31 @@ enum MAV_COMPONENT
 };
 #endif
 
+/** @brief These encode the sensors whose status is sent as part of the SYS_STATUS message. */
+#ifndef HAVE_ENUM_MAV_SYS_STATUS_SENSOR
+#define HAVE_ENUM_MAV_SYS_STATUS_SENSOR
+enum MAV_SYS_STATUS_SENSOR
+{
+	MAV_SYS_STATUS_SENSOR_3D_GYRO=1, /* 0x01 3D gyro | */
+	MAV_SYS_STATUS_SENSOR_3D_ACCEL=2, /* 0x02 3D accelerometer | */
+	MAV_SYS_STATUS_SENSOR_3D_MAG=4, /* 0x04 3D magnetometer | */
+	MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE=8, /* 0x08 absolute pressure | */
+	MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE=16, /* 0x10 differential pressure | */
+	MAV_SYS_STATUS_SENSOR_GPS=32, /* 0x20 GPS | */
+	MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW=64, /* 0x40 optical flow | */
+	MAV_SYS_STATUS_SENSOR_VISION_POSITION=128, /* 0x80 computer vision position | */
+	MAV_SYS_STATUS_SENSOR_LASER_POSITION=256, /* 0x100 laser based position | */
+	MAV_SYS_STATUS_SENSOR_EXTERNAL_GROUND_TRUTH=512, /* 0x200 external ground truth (Vicon or Leica) | */
+	MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL=1024, /* 0x400 3D angular rate control | */
+	MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION=2048, /* 0x800 attitude stabilization | */
+	MAV_SYS_STATUS_SENSOR_YAW_POSITION=4096, /* 0x1000 yaw position | */
+	MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL=8192, /* 0x2000 z/altitude control | */
+	MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL=16384, /* 0x4000 x/y position control | */
+	MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS=32768, /* 0x8000 motor outputs / control | */
+	MAV_SYS_STATUS_SENSOR_ENUM_END=32769, /*  | */
+};
+#endif
+
 /** @brief  */
 #ifndef HAVE_ENUM_MAV_FRAME
 #define HAVE_ENUM_MAV_FRAME
