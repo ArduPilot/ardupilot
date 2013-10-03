@@ -18,9 +18,22 @@ public:
 
     /*
       return a steering servo output from -4500 to 4500 given a
-      desired lateral acceleration rate in m/s/s.
+      desired lateral acceleration rate in m/s/s. Positive lateral
+      acceleration is to the right.
      */
-	int32_t get_steering_out(float desired_accel);
+	int32_t get_steering_out_lat_accel(float desired_accel);
+
+    /*
+      return a steering servo output from -4500 to 4500 given a
+      desired yaw rate in degrees/sec. Positive yaw is to the right.
+     */
+	int32_t get_steering_out_rate(float desired_rate);
+
+    /*
+      return a steering servo output from -4500 to 4500 given a
+      yaw error in centi-degrees
+     */
+	int32_t get_steering_out_angle_error(int32_t angle_err);
 
     /*
       return the steering radius (half diameter). Assumed to be half
