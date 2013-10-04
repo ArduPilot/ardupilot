@@ -283,6 +283,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
+#if AUTOTUNE == ENABLED
         case AUX_SWITCH_AUTOTUNE:
             // turn on auto tuner
             switch(ch_flag) {
@@ -300,6 +301,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     break;
             }
             break;
+#endif
     }
 }
 

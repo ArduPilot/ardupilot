@@ -398,8 +398,10 @@ static void init_disarm_motors()
 
     g.throttle_cruise.save();
 
+#if AUTOTUNE == ENABLED
     // save auto tuned parameters
     auto_tune_save_tuning_gains();
+#endif
 
     // we are not in the air
     set_takeoff_complete(false);

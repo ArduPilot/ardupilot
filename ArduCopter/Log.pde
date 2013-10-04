@@ -160,6 +160,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
+#if AUTOTUNE == ENABLED
 struct PACKED log_AutoTune {
     LOG_PACKET_HEADER;
     uint8_t axis;           // roll or pitch
@@ -203,6 +204,7 @@ static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
@@ -758,10 +760,12 @@ static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
+#if AUTOTUNE == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
       "ATUN", "BBfffff",       "Axis,TuneStep,RateMin,RateMax,RPGain,RDGain,SPGain" },
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
       "ATDE", "cf",          "Angle,Rate" },
+#endif
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hIhhhf",      "Thr,ThrInt,Volt,Curr,Vcc,CurrTot" },
 
@@ -855,8 +859,10 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_IMU() {}
 static void Log_Write_GPS() {}
+#if AUTOTUNE == ENABLED
 static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp) {}
 static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds) {}
+#endif
 static void Log_Write_Current() {}
 static void Log_Write_Compass() {}
 static void Log_Write_Attitude() {}

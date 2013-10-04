@@ -1,5 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if AUTOTUNE == ENABLED
 /*
     Auto tuning works in this way:
         i) set up 3-position ch7 or ch8 switch to "AutoTune"
@@ -564,3 +565,4 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
         }
     }
 }
+#endif  // AUTOTUNE == ENABLED

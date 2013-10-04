@@ -1685,10 +1685,12 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             }
             break;
 
+#if AUTOTUNE == ENABLED
         case ROLL_PITCH_AUTOTUNE:
             // indicate we can enter this mode successfully
             roll_pitch_initialised = true;
             break;
+#endif
     }
 
     // if initialisation has been successful update the yaw mode
@@ -1808,6 +1810,7 @@ void update_roll_pitch_mode(void)
         get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         break;
 
+#if AUTOTUNE == ENABLED
     case ROLL_PITCH_AUTOTUNE:
         // apply SIMPLE mode transform
         if(ap.simple_mode && ap_system.new_radio_frame) {
@@ -1824,6 +1827,7 @@ void update_roll_pitch_mode(void)
         // copy user input for reporting purposes
         get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in);
         break;
+#endif
     }
 
 	#if FRAME_CONFIG != HELI_FRAME
