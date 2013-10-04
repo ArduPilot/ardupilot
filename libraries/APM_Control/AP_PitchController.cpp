@@ -176,7 +176,12 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 */
 int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
 {
-    return _get_rate_out(desired_rate, scaler, false, 0);
+    float aspeed;
+	if (!_ahrs.airspeed_estimate(&aspeed)) {
+	    // If no airspeed available use average of min and max
+        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+	}
+    return _get_rate_out(desired_rate, scaler, false, aspeed);
 }
 
 /*
@@ -217,17 +222,6 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 		rate_offset = -rate_offset;
 	}
     return rate_offset;
-}
-
-/*
-  get the rate offset in degrees/second needed for pitch in body frame
-  to maintain height in a coordinated turn.
- */
-float AP_PitchController::get_coordination_rate_offset(void) const
-{
-    float aspeed;
-    bool inverted;
-    return _get_coordination_rate_offset(aspeed, inverted);
 }
 
 // Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500

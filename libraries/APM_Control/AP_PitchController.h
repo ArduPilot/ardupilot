@@ -19,7 +19,6 @@ public:
 
 	int32_t get_rate_out(float desired_rate, float scaler);
 	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
-    float   get_coordination_rate_offset(void) const;
 
 	void reset_I();
 
