@@ -875,9 +875,11 @@ static void update_current_mode(void)
         lateral_acceleration = max_g_force * (channel_steer->pwm_to_angle()/4500.0f);
         calc_nav_steer();
 
-        // and throttle gives speed in proportion to cruise speed
-        throttle_nudge = 0;
-        calc_throttle(channel_throttle->pwm_to_angle() * 0.01 * g.speed_cruise);
+        // and throttle gives speed in proportion to cruise speed, up
+        // to 50% throttle, then uses nudging above that.
+        float target_speed = channel_throttle->pwm_to_angle() * 0.01 * 2 * g.speed_cruise;
+        target_speed = constrain_float(target_speed, 0, g.speed_cruise);
+        calc_throttle(target_speed);
         break;
     }
 
