@@ -115,6 +115,7 @@ public:
         k_param_flybywire_climb_rate,
         k_param_acro_roll_rate,
         k_param_acro_pitch_rate,
+        k_param_acro_locking,
 
         //
         // 130: Sensor parameters
@@ -350,6 +351,7 @@ public:
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
     AP_Int16 acro_pitch_rate;
+    AP_Int8  acro_locking;
 
     // Misc
     //

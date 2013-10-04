@@ -257,7 +257,7 @@ static void stabilize_acro(float speed_scaler)
     /*
       check for special roll handling near the pitch poles
      */
-    if (roll_rate == 0) {
+    if (g.acro_locking && roll_rate == 0) {
         /*
           we have no roll stick input, so we will enter "roll locked"
           mode, and hold the roll we had when the stick was released
@@ -284,7 +284,7 @@ static void stabilize_acro(float speed_scaler)
         channel_roll->servo_out  = rollController.get_rate_out(roll_rate,  speed_scaler);
     }
 
-    if (pitch_rate == 0) {
+    if (g.acro_locking && pitch_rate == 0) {
         /*
           user has zero pitch stick input, so we lock pitch at the
           point they release the stick
@@ -308,11 +308,9 @@ static void stabilize_acro(float speed_scaler)
     }
 
     /*
-      call the normal yaw stabilize for now. This allows for manual
-      rudder input, plus automatic coordinated turn handling. For
-      knife-edge we'll need to do something quite different
+      manual rudder for now
      */
-    stabilize_yaw(speed_scaler);
+    channel_rudder->servo_out = channel_rudder->control_in;
 }
 
 /*
