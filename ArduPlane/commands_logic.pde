@@ -152,7 +152,7 @@ static void handle_no_commands()
 {
     struct Location tmp;
 
-    gcs_send_text_fmt(PSTR("Returning to Home"));
+    gcs_send_text_fmt(PSTR("Out of Commands!"));
     tmp = rally_find_best_location(current_loc,mission.get_home());
     mission.goto_location(tmp);
     process_waypoint();
