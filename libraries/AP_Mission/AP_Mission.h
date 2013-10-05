@@ -75,6 +75,9 @@ public:
     *  Returns false if a non_nav command is requested or error. */
     bool        change_waypoint_index(uint8_t new_index);
 
+
+    void        stage_waypoint_index(uint8_t new_index);
+
     /*Gets a new command associated with current leg of the mission.
      *  Each time this is called a new command is returned.
      *  Returns false if error or if there are no more commands.  */

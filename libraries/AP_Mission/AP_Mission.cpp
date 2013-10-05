@@ -76,6 +76,17 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
     return false;
 }
 
+void AP_Mission::stage_waypoint_index(uint8_t new_index) 
+{
+    Location tmp=get_cmd_with_index(new_index);
+
+    if (_check_nav_valid(tmp)) {
+        _index[1] = new_index;
+        _index[2] = _find_nav_index(new_index);
+    }
+
+}
+
 bool AP_Mission::get_new_cmd(struct Location &new_CMD)
 {
     struct Location temp;
