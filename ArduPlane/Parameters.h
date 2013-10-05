@@ -245,13 +245,9 @@ public:
         k_param_L1_controller,
         k_param_rcmap,
         k_param_TECS_controller,
-<<<<<<< HEAD
         k_param_rally_total,
         k_param_steerController,
-=======
-        k_param_mission,
->>>>>>> Plane: integration with AP_Mission
-
+        
         //
         // 240: PID Controllers
         k_param_pidNavRoll = 240, // unused
@@ -263,6 +259,10 @@ public:
         k_param_pidNavPitchAltitude, // unused
         k_param_pidWheelSteer, // unused
 
+        //
+        // 250: other objects
+        k_param_mission = 250,
+        
         // 254,255: reserved
     };
 
