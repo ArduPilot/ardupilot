@@ -25,10 +25,15 @@ extern const AP_HAL::HAL& hal;
 
 void AP_Mission::init_commands()
 {
-    uint8_t tmp_index=_find_nav_index(1);
-    change_waypoint_index(tmp_index);
-    _prev_index_overriden= false;
-    _mission_status = true;
+        uint8_t tmp_index = _find_nav_index(1);
+
+        if (tmp_index > 0) {
+            change_waypoint_index(tmp_index);
+            _prev_index_overriden= false;
+            _mission_status = true;
+        } else {
+            _mission_status = false;
+        }
 }
 
 bool AP_Mission::increment_waypoint_index()
