@@ -34,13 +34,13 @@ void AP_Mission::init_commands()
 bool AP_Mission::increment_waypoint_index()
 {
     //Check if the current and after waypoint is home, if so the mission is complete.
-    if (_index[1] == 0 && _index[2] == 0) {
+    if (_index[2] == 0) {
         _mission_status = false;
         return false;
     }
 
     _index[0]=_index[1];
-    _prev_index_overriden= false;
+    _prev_index_overriden = false;
 
     if (_sync_waypoint_index(_index[2])) {
         _mission_status = true;
@@ -58,9 +58,9 @@ bool AP_Mission::change_waypoint_index(uint8_t new_index)
         return false;
     }
 
-    //Home is requested.
+    //Mission Reset is Requested.
     if (new_index == 0) {
-        goto_home();
+        init_commands();
         return true;
     }
 
