@@ -550,7 +550,12 @@ static float sin_pitch;
 ////////////////////////////////////////////////////////////////////////////////
 // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
-static int32_t initial_simple_bearing;
+static float simple_cos_yaw = 1.0;
+static float simple_sin_yaw;
+static int32_t super_simple_last_bearing;
+static float super_simple_cos_yaw = 1.0;
+static float super_simple_sin_yaw;
+
 
 // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
 static int32_t initial_armed_bearing;
@@ -1733,9 +1738,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
@@ -1760,9 +1763,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE_OF:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
@@ -1780,9 +1781,8 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_LOITER:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
+
         // copy user input for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
@@ -1800,9 +1800,8 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_SPORT:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
+
         // copy user input for reporting purposes
         control_roll = g.rc_1.control_in;
         control_pitch = g.rc_2.control_in;
@@ -1842,46 +1841,61 @@ void update_roll_pitch_mode(void)
     }
 }
 
-// new radio frame is used to make sure we only call this at 50hz
+static void
+init_simple_bearing()
+{
+    // capture current cos_yaw and sin_yaw values
+    simple_cos_yaw = cos_yaw;
+    simple_sin_yaw = sin_yaw;
+
+    // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
+    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
+    super_simple_cos_yaw = simple_cos_yaw;
+    super_simple_sin_yaw = simple_sin_yaw;
+
+    // log the simple bearing to dataflash
+    if (g.log_bitmask != 0) {
+        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
+    }
+}
+
+// update_simple_mode - rotates pilot input if we are in simple mode
 void update_simple_mode(void)
 {
-    static uint8_t simple_counter = 0;             // State machine counter for Simple Mode
-    static float simple_sin_y=0, simple_cos_x=0;
+    float rollx, pitchx;
 
-    // used to manage state machine
-    // which improves speed of function
-    simple_counter++;
-
-    int16_t delta = wrap_360_cd(ahrs.yaw_sensor - initial_simple_bearing)/100;
-
-    if (simple_counter == 1) {
-        // roll
-        simple_cos_x = sinf(radians(90 - delta));
-
-    }else if (simple_counter > 2) {
-        // pitch
-        simple_sin_y = cosf(radians(90 - delta));
-        simple_counter = 0;
+    // exit immediately if no new radio frame or not in simple mode
+    if (ap.simple_mode == 0 || !ap_system.new_radio_frame) {
+        return;
     }
 
-    // Rotate input by the initial bearing
-    int16_t _roll   = g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
-    int16_t _pitch  = -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
+    if (ap.simple_mode == 1) {
+        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
+        rollx = g.rc_1.control_in*simple_cos_yaw - g.rc_2.control_in*simple_sin_yaw;
+        pitchx = g.rc_1.control_in*simple_sin_yaw + g.rc_2.control_in*simple_cos_yaw;
+    }else{
+        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
+        rollx = g.rc_1.control_in*super_simple_cos_yaw - g.rc_2.control_in*super_simple_sin_yaw;
+        pitchx = g.rc_1.control_in*super_simple_sin_yaw + g.rc_2.control_in*super_simple_cos_yaw;
+    }
 
-    g.rc_1.control_in = _roll;
-    g.rc_2.control_in = _pitch;
+    // rotate roll, pitch input from north facing to vehicle's perspective
+    g.rc_1.control_in = rollx*cos_yaw + pitchx*sin_yaw;
+    g.rc_2.control_in = -rollx*sin_yaw + pitchx*cos_yaw;
 }
 
 // update_super_simple_bearing - adjusts simple bearing based on location
 // should be called after home_bearing has been updated
-void update_super_simple_bearing()
+void update_super_simple_bearing(bool force_update)
 {
-    // are we in SUPERSIMPLE mode?
-    if(ap.simple_mode == 2 || (ap.simple_mode && g.super_simple)) {
-        // get distance to home
-        if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
-            // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = wrap_360_cd(home_bearing+18000);
+    // check if we are in super simple mode and at least 10m from home
+    if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
+        // check the bearing to home has changed by at least 5 degrees
+        if (labs(super_simple_last_bearing - home_bearing) > 500) {
+            super_simple_last_bearing = home_bearing;
+            float angle_rad = radians((super_simple_last_bearing+18000)/100);
+            super_simple_cos_yaw = cosf(angle_rad);
+            super_simple_sin_yaw = sinf(angle_rad);
         }
     }
 }

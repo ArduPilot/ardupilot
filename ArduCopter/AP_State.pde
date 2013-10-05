@@ -35,6 +35,8 @@ void set_simple_mode(uint8_t b)
         }else if(b == 1){
             Log_Write_Event(DATA_SET_SIMPLE_ON);
         }else{
+            // initialise super simple heading
+            update_super_simple_bearing(true);
             Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
         }
         ap.simple_mode = b;
