@@ -47,7 +47,9 @@ public:
 private:
     HardwareSerial*    _hws;
     uint8_t*           _txBuf; // If need more than libmaple usart driver buffer of 63
-    uint16_t           _txBufSize; // Allocated space in _txBuf
+    uint16_t           _txBufSize; // Allocated space in _rxBuf
+    uint8_t*           _rxBuf; // If need more than libmaple usart driver buffer of 63
+    uint16_t           _rxBufSize; // Allocated space in _rxBuf
 };
 
 #endif // __AP_HAL_FLYMAPLE_UARTDRIVER_H__

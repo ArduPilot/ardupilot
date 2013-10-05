@@ -120,162 +120,6 @@ arm-none-eabi-g++ toolchain, version 4.4.1
 on OpenSuSE 12.3
 Mission Planner 1.2.78
 
-You need a number of additional resources to build ArduPlaneardupilot tree, the changes have been #ifdefed for
-Flymaple:
-
-- libraries/AP_Compass/AP_Compass_HMC5843.cpp
-- libraries/AP_Compass/Compass.h
-- libraries/AP_Baro/AP_Baro_BMP085.cpp
-Minor changes to raw data fetches to make them 32bit compatible. Should not
-affect other platforms.
-
-Some other minor edits to eliminate compiler warnings
-
-These changes have now all been included in the ardupilot mainline code.
-
-Resource usage
-Resources on the Flymaple board have been allocated by the HAL:
-
-Pins
-0	AP GPS on Flymaple Serial2  Rx in. This is where you connect the
-        GPS. 3.3V only, NOT 5V tolerant
-1       AP GPS on Flymaple Serial2  Tx out. This is where you connect the GPS.
-	3.3V
-5       I2C SCL. Do not use for GPIO.
-6	Receiver PPM in
-7	Console and Mavlink on Flymaple Serial1 Rx in. Also on connector
-	"COM1". 5V tolerant.
-8	Console and Mavlink on Flymaple Serial1 Tx out. Also on connector
-	"COM1". 3.3V
-9       I2C SDA. Do not use for GPIO
-15	3.3V board VCC analog in. Connect to 3.3V pin.
-16	Airspeed analog in (if available). 3.3V, NOT 5V tolerant.
-19	Battery current analog in (if available). 3.3V, NOT 5V tolerant.
-20	Battery voltage analog in (on-board divider connected to board VIN)
-29	Telemetry Tx to radio on Serial3 on connector labelled "GPS". 3.3V
-30      Telemetry Rx from radio on Serial3 on connector labelled "GPS". 5V tolerant.
-
-Timers
-SysTick			1000Hz normal timers
-1 CH1			RCInput
-2 CH1			1000Hz Failsafe timer
-3 CH1-4, 4 CH1-2	RCOut
-8	   		not used by AP
-
-The I2CDriver on Flymaple uses the libmaple i2c low level hardware I2C
-library, configuredfor high speed (400kHz).
-
-As at 2013-10-03, there is a bug in the libmaple git master code, that causes
-a crash in the I2C interrupt handler. Therfore it is necessary to use the
-patched version of libmaple referred to below.
-
-At 400kHz I2C speed, it takes 500us to read both the 6 byte accelerometer
-buffer and the the 6 byte gyro buffer.
-
-The SerialUSB (USB connection) to Flymaple is not used by AP. It can be used for
-debugging inside AP_HAL_FLYMAPLE, using SerialUSB.println().
-
-Sensor configuration
-
-The sensors are configured so:
-
-ADXL345 Accelerometer
-8g full scale, full resolution mode, 800Hz bandwidth, read at 1kHz sample rate
-per sec
-
-ITG3205 Gyro
-2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate, read at 1kHz sample rate
-
-The gyro and accelerometers are sampled at about 800Hz in
-AP_InertialSensor_Flymaple.cpp, with the samples passed through a software
-2-pole low pass filter, to produce filtered data for the main loop.
-
-Installation on Linux
-
-Tested with:
-libmaple patched library based on https://github.com/leaflabs/libmaple http://leaflabs.com/docs/unix-toolchain.html
-arm-none-eabi-g++ toolchain, version 4.4.1
-on OpenSuSE 12.3
-Mission Planner 1.2.78
-
-You need a number of additional resources to build ArduPlanardupilot tree, the changes have been #ifdefed for
-Flymaple:
-
-- libraries/AP_Compass/AP_Compass_HMC5843.cpp
-- libraries/AP_Compass/Compass.h
-- libraries/AP_Baro/AP_Baro_BMP085.cpp
-Minor changes to raw data fetches to make them 32bit compatible. Should not
-affect other platforms.
-
-Some other minor edits to eliminate compiler warnings
-
-These changes have now all been included in the ardupilot mainline code.
-
-Resource usage
-Resources on the Flymaple board have been allocated by the HAL:
-
-Pins
-0	AP GPS on Flymaple Serial2  Rx in. This is where you connect the
-        GPS. 3.3V only, NOT 5V tolerant
-1       AP GPS on Flymaple Serial2  Tx out. This is where you connect the GPS.
-	3.3V
-5       I2C SCL. Do not use for GPIO.
-6	Receiver PPM in
-7	Console and Mavlink on Flymaple Serial1 Rx in. Also on connector
-	"COM1". 5V tolerant.
-8	Console and Mavlink on Flymaple Serial1 Tx out. Also on connector
-	"COM1". 3.3V
-9       I2C SDA. Do not use for GPIO
-15	3.3V board VCC analog in. Connect to 3.3V pin.
-16	Airspeed analog in (if available). 3.3V, NOT 5V tolerant.
-19	Battery current analog in (if available). 3.3V, NOT 5V tolerant.
-20	Battery voltage analog in (on-board divider connected to board VIN)
-29	Telemetry Tx to radio on Serial3 on connector labelled "GPS". 3.3V
-30      Telemetry Rx from radio on Serial3 on connector labelled "GPS". 5V tolerant.
-
-Timers
-SysTick			1000Hz normal timers
-1 CH1			RCInput
-2 CH1			1000Hz Failsafe timer
-3 CH1-4, 4 CH1-2	RCOut
-8	   		not used by AP
-
-The I2CDriver on Flymaple uses the libmaple i2c low level hardware I2C
-library, configuredfor high speed (400kHz).
-
-As at 2013-10-03, there is a bug in the libmaple git master code, that causes
-a crash in the I2C interrupt handler. Therfore it is necessary to use the
-patched version of libmaple referred to below.
-
-At 400kHz I2C speed, it takes 500us to read both the 6 byte accelerometer
-buffer and the the 6 byte gyro buffer.
-
-The SerialUSB (USB connection) to Flymaple is not used by AP. It can be used for
-debugging inside AP_HAL_FLYMAPLE, using SerialUSB.println().
-
-Sensor configuration
-
-The sensors are configured so:
-
-ADXL345 Accelerometer
-8g full scale, full resolution mode, 800Hz bandwidth, read at 1kHz sample rate
-per sec
-
-ITG3205 Gyro
-2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate, read at 1kHz sample rate
-
-The gyro and accelerometers are sampled at about 800Hz in
-AP_InertialSensor_Flymaple.cpp, with the samples passed through a software
-2-pole low pass filter, to produce filtered data for the main loop.
-
-Installation on Linux
-
-Tested with:
-libmaple patched library based on https://github.com/leaflabs/libmaple http://leaflabs.com/docs/unix-toolchain.html
-arm-none-eabi-g++ toolchain, version 4.4.1
-on OpenSuSE 12.3
-Mission Planner 1.2.78
-
 You need a number of additional resources to build ardupilot for Flymaple. I
 have assumed that you will install them in your home directory, but they can really
 go anywhere provided you make the appropriate changes to PATH and config.mk
@@ -314,6 +158,17 @@ LIBMAPLE_PATH = $(HOME)/libmaple
 cd ArduPlane
 make flymaple
 make upload
+
+Libmaple fork
+
+Correct compilation and operation of the Flymaple port depends on
+using the fork of libmaple from https://github.com/mikemccauley/libmaple.git 
+
+The changes relative to the libmaple master are:
+
+- Add LIBMAPLE_VERSION_MAJOR and LIBMAPLE_VERSION_MINOR for version detection
+- Add TX ring buffer and interrupt handler to usart.c
+- Fix a bug in I2C interrupt handler that would crash in master mode
 
 Interrupt disabling on ARM
 
