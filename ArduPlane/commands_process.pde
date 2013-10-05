@@ -4,10 +4,21 @@
 //----------------------------------------
 void change_waypoint(uint8_t new_waypoint_index)
 {
-    if (mission.change_waypoint_index(new_waypoint_index)) {
-        process_waypoint();
+    if (new_waypoint_index == 0) {
+        gcs_send_text_fmt(PSTR("Received Request - reset mission"));
+    }
+
+    if (control_mode == AUTO) {
+
+        if (mission.change_waypoint_index(new_waypoint_index)) {
+            process_waypoint();
+        } else {
+            gcs_send_text_P(SEVERITY_LOW,PSTR("Error Changing Command!"));
+        }
+
     } else {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Error Changing Command!"));
+
+        mission.stage_waypoint_index(new_waypoint_index);
     }
 }
 
