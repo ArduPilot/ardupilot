@@ -38,6 +38,9 @@
 #define PACKED __attribute__((__packed__))
 #endif
 
+// this can be used to optimize individual functions
+#define OPTIMIZE(level) __attribute__((optimize(level)))
+
 // Make some dire warnings into errors
 //
 // Some warnings indicate questionable code; rather than let
@@ -92,6 +95,17 @@ struct Location {
     int32_t alt;                                        ///< param 2 - Altitude in centimeters (meters * 100)
     int32_t lat;                                        ///< param 3 - Lattitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
+};
+
+struct PACKED RallyLocation {
+    int32_t lat;        //Latitude * 10^7
+    int32_t lng;        //Longitude * 10^7
+    int16_t alt;        //transit altitude (and loiter altitude) in meters;
+    int16_t break_alt;  //when autolanding, break out of loiter at this alt (meters) 
+    uint16_t land_dir;   //when the time comes to auto-land, try to land in this direction (centidegrees)
+    uint8_t flags;      //bit 0 = seek favorable winds when choosing a landing poi
+                        //bit 1 = do auto land after arriving
+                        //all other bits are for future use.
 };
 
 //@}

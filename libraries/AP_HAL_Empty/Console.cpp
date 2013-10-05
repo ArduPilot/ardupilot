@@ -40,3 +40,12 @@ size_t EmptyConsoleDriver::write(uint8_t c) {
     return _d->write(c);
 }
 
+
+size_t EmptyConsoleDriver::write(const uint8_t *buffer, size_t size)
+{
+    size_t n = 0;
+    while (size--) {
+        n += write(*buffer++);
+    }
+    return n;
+}

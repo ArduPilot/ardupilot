@@ -9,6 +9,10 @@
 #endif
 #include <math.h>
 
+#ifndef M_PI_2
+    #define M_PI_2 ((float)asin(1))
+#endif
+
 /**
  * @file mavlink_conversions.h
  *

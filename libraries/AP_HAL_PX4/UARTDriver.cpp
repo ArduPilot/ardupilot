@@ -23,8 +23,13 @@ extern const AP_HAL::HAL& hal;
 
 PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
 	_devpath(devpath),
-    _perf_uart(perf_alloc(PC_ELAPSED, perf_name))
-{}
+    _fd(-1),
+    _baudrate(57600),
+    _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
+    _initialised(false),
+    _in_timer(false)
+{
+}
 
 
 extern const AP_HAL::HAL& hal;
@@ -35,58 +40,28 @@ extern const AP_HAL::HAL& hal;
 
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
-	if (!_initialised) {
-        uint8_t retries = 0;
-        while (retries < 5) {
-            _fd = open(_devpath, O_RDWR);
-            if (_fd != -1) {
-                break;
-            }
-            // sleep a bit and retry. There seems to be a NuttX bug
-            // that can cause ttyACM0 to not be available immediately,
-            // but a small delay can fix it
-            hal.scheduler->delay(100);
-            retries++;
-        }
-		if (_fd == -1) {
-			fprintf(stdout, "Failed to open UART device %s - %s\n",
-				_devpath, strerror(errno));
-			return;
-		}
-		if (retries != 0) {
-			fprintf(stdout, "WARNING: took %u retries to open UART %s\n", 
-                    (unsigned)retries, _devpath);
-			return;
-		}
-
-        if (rxS == 0) {
-            rxS = 128;
-        }
-        // on PX4 we have enough memory to have a larger transmit
-        // buffer for all ports. This means we don't get delays while
-        // waiting to write GPS config packets
-        if (txS < 512) {
-            txS = 512;
-        }
-	}
-
-    _initialised = false;
-    while (_in_timer) hal.scheduler->delay(1);
-
-	if (b != 0) {
-		// set the baud rate
-		struct termios t;
-		tcgetattr(_fd, &t);
-		cfsetspeed(&t, b);
-		// disable LF -> CR/LF
-		t.c_oflag &= ~ONLCR;
-		tcsetattr(_fd, TCSANOW, &t);
-	}
+    // on PX4 we have enough memory to have a larger transmit and
+    // receive buffer for all ports. This means we don't get delays
+    // while waiting to write GPS config packets
+    if (txS < 512) {
+        txS = 512;
+    }
+    if (rxS < 512) {
+        rxS = 512;
+    }
 
     /*
       allocate the read buffer
+      we allocate buffers before we successfully open the device as we
+      want to allocate in the early stages of boot, and cause minimum
+      thrashing of the heap once we are up. The ttyACM0 driver may not
+      connect for some time after boot
      */
 	if (rxS != 0 && rxS != _readbuf_size) {
+        _initialised = false;
+        while (_in_timer) {
+            hal.scheduler->delay(1);
+        }
 		_readbuf_size = rxS;
 		if (_readbuf != NULL) {
 			free(_readbuf);
@@ -96,10 +71,18 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		_readbuf_tail = 0;
 	}
 
+    if (b != 0) {
+        _baudrate = b;
+    }
+
     /*
       allocate the write buffer
      */
 	if (txS != 0 && txS != _writebuf_size) {
+        _initialised = false;
+        while (_in_timer) {
+            hal.scheduler->delay(1);
+        }
 		_writebuf_size = txS;
 		if (_writebuf != NULL) {
 			free(_writebuf);
@@ -109,7 +92,24 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		_writebuf_tail = 0;
 	}
 
-    if (_writebuf_size != 0 && _readbuf_size != 0) {
+	if (_fd == -1) {
+        _fd = open(_devpath, O_RDWR);
+		if (_fd == -1) {
+			return;
+		}
+	}
+
+	if (_baudrate != 0) {
+		// set the baud rate
+		struct termios t;
+		tcgetattr(_fd, &t);
+		cfsetspeed(&t, _baudrate);
+		// disable LF -> CR/LF
+		t.c_oflag &= ~ONLCR;
+		tcsetattr(_fd, TCSANOW, &t);
+	}
+
+    if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {
         _initialised = true;
     }
 }
@@ -117,6 +117,27 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 void PX4UARTDriver::begin(uint32_t b) 
 {
 	begin(b, 0, 0);
+}
+
+
+/*
+  try to initialise the UART. This is used to cope with the way NuttX
+  handles /dev/ttyACM0 (the USB port). The port appears in /dev on
+  boot, but cannot be opened until a USB cable is connected and the
+  host starts the CDCACM communication.
+ */
+void PX4UARTDriver::try_initialise(void)
+{
+    if (_initialised) {
+        return;
+    }
+    if ((hal.scheduler->millis() - _last_initialise_attempt_ms) < 2000) {
+        return;
+    }
+    _last_initialise_attempt_ms = hal.scheduler->millis();
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED) {
+        begin(0);
+    }
 }
 
 
@@ -147,6 +168,7 @@ void PX4UARTDriver::flush() {}
 
 bool PX4UARTDriver::is_initialized() 
 { 
+    try_initialise();
     return _initialised; 
 }
 
@@ -172,6 +194,7 @@ bool PX4UARTDriver::tx_pending() { return false; }
 int16_t PX4UARTDriver::available() 
 { 
 	if (!_initialised) {
+        try_initialise();
 		return 0;
 	}
     uint16_t _tail;
@@ -184,6 +207,7 @@ int16_t PX4UARTDriver::available()
 int16_t PX4UARTDriver::txspace() 
 { 
 	if (!_initialised) {
+        try_initialise();
 		return 0;
 	}
     uint16_t _head;
@@ -196,7 +220,11 @@ int16_t PX4UARTDriver::txspace()
 int16_t PX4UARTDriver::read() 
 { 
 	uint8_t c;
-	if (!_initialised || _readbuf == NULL) {
+    if (!_initialised) {
+        try_initialise();
+        return -1;
+    }
+	if (_readbuf == NULL) {
 		return -1;
 	}
     if (BUF_EMPTY(_readbuf)) {
@@ -213,6 +241,7 @@ int16_t PX4UARTDriver::read()
 size_t PX4UARTDriver::write(uint8_t c) 
 { 
     if (!_initialised) {
+        try_initialise();
         return 0;
     }
     if (hal.scheduler->in_timerprocess()) {
@@ -238,6 +267,7 @@ size_t PX4UARTDriver::write(uint8_t c)
 size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
 {
 	if (!_initialised) {
+        try_initialise();
 		return 0;
 	}
     if (hal.scheduler->in_timerprocess()) {

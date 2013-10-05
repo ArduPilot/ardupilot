@@ -33,7 +33,6 @@ private:
     static uint32_t _accel_samples;
     static Vector3f	_gyro_filtered;
     static uint32_t _gyro_samples;
-    static volatile bool _in_accumulate;
     static uint64_t _last_accel_timestamp;
     static uint64_t _last_gyro_timestamp;
     uint8_t  _sample_divider;

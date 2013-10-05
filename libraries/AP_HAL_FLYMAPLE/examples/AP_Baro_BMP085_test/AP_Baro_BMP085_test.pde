@@ -13,6 +13,7 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_Buffer.h>
+#include <AP_Notify.h>
 #include <Filter.h>
 #include <AP_Baro.h>
 #include <GCS_MAVLink.h>

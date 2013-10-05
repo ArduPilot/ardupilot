@@ -117,6 +117,7 @@
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
+#include <AP_BattMonitor.h>     // Battery monitor library
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -375,19 +376,18 @@ static AP_RangeFinder_MaxsonarXL *sonar;
 static union {
     struct {
         uint8_t home_is_set         : 1; // 0
-        uint8_t simple_mode         : 2; // 1,2  // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
+        uint8_t simple_mode         : 2; // 1,2 // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
 
-        uint8_t pre_arm_rc_check    : 1; // 5    // true if rc input pre-arm checks have been completed successfully
-        uint8_t pre_arm_check       : 1; // 6    // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-        uint8_t auto_armed          : 1; // 7    // stops auto missions from beginning until throttle is raised
-        uint8_t logging_started     : 1; // 8    // true if dataflash logging has started
+        uint8_t pre_arm_rc_check    : 1; // 3   // true if rc input pre-arm checks have been completed successfully
+        uint8_t pre_arm_check       : 1; // 4   // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+        uint8_t auto_armed          : 1; // 5   // stops auto missions from beginning until throttle is raised
+        uint8_t logging_started     : 1; // 6   // true if dataflash logging has started
 
-        uint8_t low_battery         : 1; // 9    // Used to track if the battery is low - LED output flashes when the batt is low
-        uint8_t do_flip             : 1; // 15   // Used to enable flip code
-        uint8_t takeoff_complete    : 1; // 16
-        uint8_t land_complete       : 1; // 17   // true if we have detected a landing
-        uint8_t compass_status      : 1; // 18
-        uint8_t gps_status          : 1; // 19
+        uint8_t do_flip             : 1; // 7   // Used to enable flip code
+        uint8_t takeoff_complete    : 1; // 8
+        uint8_t land_complete       : 1; // 9   // true if we have detected a landing
+        uint8_t compass_status      : 1; // 10  // unused remove
+        uint8_t gps_status          : 1; // 11  // unused remove
     };
     uint32_t value;
 } ap;
@@ -425,7 +425,7 @@ static uint8_t receiver_rssi;
 static struct {
     uint8_t rc_override_active  : 1; // 0   // true if rc control are overwritten by ground station
     uint8_t radio               : 1; // 1   // A status flag for the radio failsafe
-    uint8_t batt                : 1; // 2   // A status flag for the battery failsafe
+    uint8_t low_battery         : 1; // 2   // A status flag for the battery failsafe
     uint8_t gps                 : 1; // 3   // A status flag for the gps failsafe
     uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
 
@@ -628,12 +628,7 @@ static int8_t aux_switch_wp_index;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery Voltage of battery, initialized above threshold for filter
-static float battery_voltage1 = LOW_VOLTAGE * 1.05f;
-// refers to the instant amp draw – based on an Attopilot Current sensor
-static float current_amps1;
-// refers to the total amps drawn – based on an Attopilot Current sensor
-static float current_total1;
+static AP_BattMonitor battery;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -903,6 +898,9 @@ void setup() {
     // initialise notify system
     notify.init();
 
+    // initialise battery monitor
+    battery.init();
+
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
     sonar_analog_source = new AP_ADC_AnalogSource(
@@ -918,8 +916,6 @@ void setup() {
 #endif
 
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
-    batt_volt_analog_source = hal.analogin->channel(g.battery_volt_pin);
-    batt_curr_analog_source = hal.analogin->channel(g.battery_curr_pin);
     board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
@@ -1130,9 +1126,7 @@ static void medium_loop()
         medium_loopCounter++;
 
         // read battery before compass because it may be used for motor interference compensation
-        if (g.battery_monitoring != 0) {
-            read_battery();
-        }
+        read_battery();
 
 #if HIL_MODE != HIL_MODE_ATTITUDE                                                               // don't execute in HIL mode
         if(g.compass_enabled) {
@@ -1694,6 +1688,13 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
                 roll_pitch_initialised = true;
             }
             break;
+
+#if AUTOTUNE == ENABLED
+        case ROLL_PITCH_AUTOTUNE:
+            // indicate we can enter this mode successfully
+            roll_pitch_initialised = true;
+            break;
+#endif
     }
 
     // if initialisation has been successful update the yaw mode
@@ -1812,6 +1813,25 @@ void update_roll_pitch_mode(void)
         get_roll_rate_stabilized_ef(g.rc_1.control_in);
         get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         break;
+
+#if AUTOTUNE == ENABLED
+    case ROLL_PITCH_AUTOTUNE:
+        // apply SIMPLE mode transform
+        if(ap.simple_mode && ap_system.new_radio_frame) {
+            update_simple_mode();
+        }
+
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+
+        // pass desired roll, pitch to stabilize attitude controllers
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
+
+        // copy user input for reporting purposes
+        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in);
+        break;
+#endif
     }
 
 	#if FRAME_CONFIG != HELI_FRAME

@@ -50,7 +50,7 @@ static void failsafe_radio_on_event()
             break;
         case LAND:
             // continue to land if battery failsafe is also active otherwise fall through to default handling
-            if (g.failsafe_battery_enabled && ap.low_battery) {
+            if (g.failsafe_battery_enabled && failsafe.low_battery) {
                 break;
             }
         default:
@@ -85,8 +85,13 @@ static void failsafe_radio_off_event()
 
 static void low_battery_event(void)
 {
+    // return immediately if low battery event has already been triggered
+    if (failsafe.low_battery) {
+        return;
+    }
+
     // failsafe check
-    if (g.failsafe_battery_enabled && !ap.low_battery && motors.armed()) {
+    if (g.failsafe_battery_enabled && motors.armed()) {
         switch(control_mode) {
             case STABILIZE:
             case ACRO:

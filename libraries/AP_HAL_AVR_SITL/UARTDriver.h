@@ -46,6 +46,7 @@ public:
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c);
+    size_t write(const uint8_t *buffer, size_t size);
 
     // file descriptor, exposed so SITL_State::loop_hook() can use it
 	int _fd;

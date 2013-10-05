@@ -41,20 +41,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
-    // @Param: BATT_VOLT_PIN
-    // @DisplayName: Battery Voltage sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100. On the Pixhawk powered from the PM connector it should be set to 2.
-    // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk, 13:A13, 100:PX4
-    // @User: Standard
-    GSCALAR(battery_volt_pin,    "BATT_VOLT_PIN",    1),
-
-    // @Param: BATT_CURR_PIN
-    // @DisplayName: Battery Current sensing pin
-    // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. On the Pixhawk by the PM connector it should be set to 3.
-    // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk, 12:A12, 101:PX4
-    // @User: Standard
-    GSCALAR(battery_curr_pin,    "BATT_CURR_PIN",    2),
-
     // @Param: SYSID_THIS_MAV
     // @DisplayName: MAVLink system ID
     // @Description: ID used in MAVLink protocol to identify this vehicle
@@ -96,32 +82,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     // @Values: 0:Disabled,1:Enabled
 	GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
-
-    // @Param: BATT_MONITOR
-    // @DisplayName: Battery monitoring
-    // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
-    // @User: Standard
-	GSCALAR(battery_monitoring,     "BATT_MONITOR",     DISABLED),
-
-    // @Param: VOLT_DIVIDER
-    // @DisplayName: Voltage Divider
-    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_DIVIDER). For the 3DR Power brick on APM2 or Pixhawk this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
-    // @User: Advanced
-	GSCALAR(volt_div_ratio,         "VOLT_DIVIDER",     VOLT_DIV_RATIO),
-
-    // @Param: AMP_PER_VOLT
-    // @DisplayName: Current Amps per volt
-    // @Description: Used to convert the voltage on the current sensing pin (BATT_CURR_PIN) to the actual current being consumed in amps. For the 3DR Power brick on APM2 or Pixhawk this should be set to 17
-    // @User: Advanced
-	GSCALAR(curr_amp_per_volt,      "AMP_PER_VOLT",     CURR_AMP_PER_VOLT),
-
-    // @Param: BATT_CAPACITY
-    // @DisplayName: Battery Capacity
-    // @Description: Battery capacity in milliamp-hours (mAh)
-    // @Units: mAh
-	// @User: Standard
-	GSCALAR(pack_capacity,          "BATT_CAPACITY",    HIGH_DISCHARGE),
 
 	// @Param: AUTO_TRIGGER_PIN
 	// @DisplayName: Auto mode trigger pin
@@ -493,9 +453,34 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(camera_mount,           "MNT_", AP_Mount),
 #endif
 
+    // @Group: BATT_
+    // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
+    GOBJECT(battery,                "BATT_",       AP_BattMonitor),
+
 	AP_VAREND
 };
 
+/*
+  This is a conversion table from old parameter values to new
+  parameter names. The startup code looks for saved values of the old
+  parameters and will copy them across to the new parameters if the
+  new parameter does not yet have a saved value. It then saves the new
+  value.
+
+  Note that this works even if the old parameter has been removed. It
+  relies on the old k_param index not being removed
+
+  The second column below is the index in the var_info[] table for the
+  old object. This should be zero for top level parameters.
+ */
+const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
+    { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
+    { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
+    { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
+    { Parameters::k_param_volt_div_ratio,     0,      AP_PARAM_FLOAT, "BATT_VOLT_MULT" },
+    { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
+    { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
+};
 
 static void load_parameters(void)
 {

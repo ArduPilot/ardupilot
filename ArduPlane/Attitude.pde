@@ -106,6 +106,24 @@ static void stabilize_pitch(float speed_scaler)
 }
 
 /*
+  perform stick mixing on one channel
+  This type of stick mixing reduces the influence of the auto
+  controller as it increases the influence of the users stick input,
+  allowing the user full deflection if needed
+ */
+static void stick_mix_channel(RC_Channel *channel)
+{
+    float ch_inf;
+        
+    ch_inf = (float)channel->radio_in - (float)channel->radio_trim;
+    ch_inf = fabsf(ch_inf);
+    ch_inf = min(ch_inf, 400.0);
+    ch_inf = ((400.0 - ch_inf) / 400.0);
+    channel->servo_out *= ch_inf;
+    channel->servo_out += channel->pwm_to_angle();
+}
+
+/*
   this gives the user control of the aircraft in stabilization modes
  */
 static void stabilize_stick_mixing_direct()
@@ -118,29 +136,8 @@ static void stabilize_stick_mixing_direct()
         control_mode == TRAINING) {
         return;
     }
-    // do direct stick mixing on aileron/elevator
-    float ch1_inf;
-    float ch2_inf;
-        
-    ch1_inf = (float)channel_roll->radio_in - (float)channel_roll->radio_trim;
-    ch1_inf = fabsf(ch1_inf);
-    ch1_inf = min(ch1_inf, 400.0);
-    ch1_inf = ((400.0 - ch1_inf) /400.0);
-        
-    ch2_inf = (float)channel_pitch->radio_in - channel_pitch->radio_trim;
-    ch2_inf = fabsf(ch2_inf);
-    ch2_inf = min(ch2_inf, 400.0);
-    ch2_inf = ((400.0 - ch2_inf) /400.0);
-        
-    // scale the sensor input based on the stick input
-    // -----------------------------------------------
-    channel_roll->servo_out  *= ch1_inf;
-    channel_pitch->servo_out *= ch2_inf;
-    
-    // Mix in stick inputs
-    // -------------------
-    channel_roll->servo_out  +=     channel_roll->pwm_to_angle();
-    channel_pitch->servo_out +=    channel_pitch->pwm_to_angle();
+    stick_mix_channel(channel_roll);
+    stick_mix_channel(channel_pitch);
 }
 
 /*
@@ -190,26 +187,23 @@ static void stabilize_stick_mixing_fbw()
 
 
 /*
-  stabilize the yaw axis
+  stabilize the yaw axis. There are 3 modes of operation:
+
+    - hold a specific heading with ground steering
+    - rate controlled with ground steering
+    - yaw control for coordinated flight    
  */
 static void stabilize_yaw(float speed_scaler)
 {
-    float ch4_inf = 1.0;
+    bool ground_steering = (channel_roll->control_in == 0 && fabsf(relative_altitude()) < g.ground_steer_alt);
 
-    if (stick_mixing_enabled()) {
-        // stick mixing performed for rudder for all cases including FBW
-        // important for steering on the ground during landing
-        // -----------------------------------------------
-        ch4_inf = (float)channel_rudder->radio_in - (float)channel_rudder->radio_trim;
-        ch4_inf = fabsf(ch4_inf);
-        ch4_inf = min(ch4_inf, 400.0);
-        ch4_inf = ((400.0 - ch4_inf) /400.0);
+    if (steer_state.hold_course_cd != -1 && ground_steering) {
+        calc_nav_yaw_course();
+    } else if (ground_steering) {
+        calc_nav_yaw_ground();
+    } else {
+        calc_nav_yaw_coordinated(speed_scaler);
     }
-
-    // Apply output to Rudder
-    calc_nav_yaw(speed_scaler, ch4_inf);
-    channel_rudder->servo_out *= ch4_inf;
-    channel_rudder->servo_out += channel_rudder->pwm_to_angle();
 }
 
 
@@ -257,7 +251,7 @@ static void stabilize_acro(float speed_scaler)
     /*
       check for special roll handling near the pitch poles
      */
-    if (roll_rate == 0) {
+    if (g.acro_locking && roll_rate == 0) {
         /*
           we have no roll stick input, so we will enter "roll locked"
           mode, and hold the roll we had when the stick was released
@@ -284,7 +278,7 @@ static void stabilize_acro(float speed_scaler)
         channel_roll->servo_out  = rollController.get_rate_out(roll_rate,  speed_scaler);
     }
 
-    if (pitch_rate == 0) {
+    if (g.acro_locking && pitch_rate == 0) {
         /*
           user has zero pitch stick input, so we lock pitch at the
           point they release the stick
@@ -308,11 +302,9 @@ static void stabilize_acro(float speed_scaler)
     }
 
     /*
-      call the normal yaw stabilize for now. This allows for manual
-      rudder input, plus automatic coordinated turn handling. For
-      knife-edge we'll need to do something quite different
+      manual rudder for now
      */
-    stabilize_yaw(speed_scaler);
+    channel_rudder->servo_out = channel_rudder->control_in;
 }
 
 /*
@@ -376,19 +368,11 @@ static void calc_throttle()
 * Calculate desired roll/pitch/yaw angles (in medium freq loop)
 *****************************************/
 
-//  Yaw is separated into a function for heading hold on rolling take-off
-// ----------------------------------------------------------------------
-static void calc_nav_yaw(float speed_scaler, float ch4_inf)
+/*
+  calculate yaw control for coordinated flight
+ */
+static void calc_nav_yaw_coordinated(float speed_scaler)
 {
-    if (hold_course_cd != -1) {
-        // steering on or close to ground
-        int32_t bearing_error_cd = nav_controller->bearing_error_cd();
-        channel_rudder->servo_out = g.pidWheelSteer.get_pid_4500(bearing_error_cd, speed_scaler) + 
-            g.kff_rudder_mix * channel_roll->servo_out;
-        channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
-        return;
-    }
-
     bool disable_integrator = false;
     if (control_mode == STABILIZE && channel_rudder->control_in != 0) {
         disable_integrator = true;
@@ -397,6 +381,57 @@ static void calc_nav_yaw(float speed_scaler, float ch4_inf)
 
     // add in rudder mixing from roll
     channel_rudder->servo_out += channel_roll->servo_out * g.kff_rudder_mix;
+    channel_rudder->servo_out += channel_rudder->control_in;
+    channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
+}
+
+/*
+  calculate yaw control for ground steering with specific course
+ */
+static void calc_nav_yaw_course(void)
+{
+    // holding a specific navigation course on the ground. Used in
+    // auto-takeoff and landing
+    int32_t bearing_error_cd = nav_controller->bearing_error_cd();
+    channel_rudder->servo_out = steerController.get_steering_out_angle_error(bearing_error_cd);
+    if (stick_mixing_enabled()) {
+        stick_mix_channel(channel_rudder);
+    }
+    channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
+}
+
+/*
+  calculate yaw control for ground steering
+ */
+static void calc_nav_yaw_ground(void)
+{
+    if (g_gps->ground_speed_cm < 100 && 
+        channel_throttle->control_in == 0) {
+        // manual rudder control while still
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
+        channel_rudder->servo_out = channel_rudder->control_in;
+        return;
+    }
+
+    float steer_rate = (channel_rudder->control_in/4500.0f) * g.ground_steer_dps;
+    if (steer_rate != 0) {
+        // pilot is giving rudder input
+        steer_state.locked_course = false;        
+    } else if (!steer_state.locked_course) {
+        // pilot has released the rudder stick or we are still - lock the course
+        steer_state.locked_course = true;
+        steer_state.locked_course_err = 0;
+    }
+    if (!steer_state.locked_course) {
+        // use a rate controller at the pilot specified rate
+        channel_rudder->servo_out = steerController.get_steering_out_rate(steer_rate);
+    } else {
+        // use a error controller on the summed error
+        steer_state.locked_course_err += ahrs.get_gyro().z * 0.02f;
+        int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
+        channel_rudder->servo_out = steerController.get_steering_out_angle_error(yaw_error_cd);
+    }
     channel_rudder->servo_out = constrain_int16(channel_rudder->servo_out, -4500, 4500);
 }
 
@@ -569,10 +604,10 @@ static bool suppress_throttle(void)
     if (control_mode==AUTO && takeoff_complete == false && auto_takeoff_check()) {
         // we're in auto takeoff 
         throttle_suppressed = false;
-        if (hold_course_cd != -1) {
+        if (steer_state.hold_course_cd != -1) {
             // update takeoff course hold, if already initialised
-            hold_course_cd = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course_cd);
+            steer_state.hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Holding course %ld"), steer_state.hold_course_cd);
         }
         return false;
     }

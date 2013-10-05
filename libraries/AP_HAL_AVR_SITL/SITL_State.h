@@ -44,6 +44,8 @@ public:
 
     // simulated airspeed
     static uint16_t airspeed_pin_value;
+    static uint16_t voltage_pin_value;
+    static uint16_t current_pin_value;
 
 private:
     void _parse_command_line(int argc, char * const argv[]);

@@ -127,7 +127,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     bool     updated = false;           // have we updated the compensation vector at least once
 
     // default compensation type to use current if possible
-    if( g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT ) {
+    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
         comp_type = AP_COMPASS_MOT_COMP_CURRENT;
     }else{
         comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
@@ -265,10 +265,10 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
                     updated = true;
                 }else{
                     // current based compensation if more than 3amps being drawn
-                    motor_impact_scaled = motor_impact / current_amps1;
+                    motor_impact_scaled = motor_impact / battery.current_amps();
 
                     // adjust the motor compensation to negate the impact if drawing over 3amps
-                    if( current_amps1 >= 3.0f ) {
+                    if( battery.current_amps() >= 3.0f ) {
                         motor_compensation = motor_compensation * 0.99f - motor_impact_scaled * 0.01f;
                         updated = true;
                     }
@@ -276,7 +276,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
                 // record maximum throttle and current
                 throttle_pct_max = max(throttle_pct_max, throttle_pct);
-                current_amps_max = max(current_amps_max, current_amps1);
+                current_amps_max = max(current_amps_max, battery.current_amps());
 
                 // display output at 1hz if throttle is above zero
                 print_counter++;
@@ -334,7 +334,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 static void display_compassmot_info(Vector3f& motor_impact, Vector3f& motor_compensation)
 {
     // print one more time so the last thing printed matches what appears in the report_compass
-    cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)current_amps1, (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
+    cliSerial->printf_P(PSTR("thr:%d cur:%4.2f mot x:%4.1f y:%4.1f z:%4.1f  comp x:%4.2f y:%4.2f z:%4.2f\n"),(int)g.rc_3.control_in, (float)battery.current_amps(), (float)motor_impact.x, (float)motor_impact.y, (float)motor_impact.z, (float)motor_compensation.x, (float)motor_compensation.y, (float)motor_compensation.z);
 }
 
 static int8_t
@@ -967,9 +967,9 @@ static void report_batt_monitor()
 {
     cliSerial->printf_P(PSTR("\nBatt Mon:\n"));
     print_divider();
-    if(g.battery_monitoring == BATT_MONITOR_DISABLED) print_enabled(false);
-    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("volts"));
-    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("volts and cur"));
+    if (battery.monitoring() == AP_BATT_MONITOR_DISABLED) print_enabled(false);
+    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("volts"));
+    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("volts and cur"));
     print_blanks(2);
 }
 

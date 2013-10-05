@@ -282,6 +282,36 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     wait_mode(mav, 'STABILIZE')
     return False
 
+def fly_battery_failsafe(mavproxy, mav, timeout=30):
+    # assume failure
+    success = False
+
+    # switch to loiter mode so that we hold position
+    mavproxy.send('switch 5\n')
+    wait_mode(mav, 'LOITER')
+    mavproxy.send("rc 3 1500\n")
+
+    # enable battery failsafe
+    mavproxy.send("param set FS_BATT_ENABLE 1\n")
+
+    # trigger low voltage
+    mavproxy.send('param set SIM_BATT_VOLTAGE 10\n')
+
+    # wait for LAND mode
+    if wait_mode(mav, 'LAND', timeout) == 'LAND':
+        success = True
+
+    # disable battery failsafe
+    mavproxy.send('param set FS_BATT_ENABLE 0\n')
+
+    # return status
+    if success:
+        print("Successfully entered LAND mode after battery failsafe")
+    else:
+        print("Failed to neter LAND mode after battery failsafe")
+
+    return success
+
 # fly_stability_patch - fly south, then hold loiter within 5m position and altitude and reduce 1 motor to 60% efficiency
 def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=10):
     '''hold loiter position'''
@@ -851,6 +881,17 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("#")
         if not fly_throttle_failsafe(mavproxy, mav):
             print("FS failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Battery failsafe
+        if not fly_battery_failsafe(mavproxy, mav):
+            print("battery failsafe failed")
             failed = True
 
         # Takeoff

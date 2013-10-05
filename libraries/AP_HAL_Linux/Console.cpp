@@ -36,7 +36,13 @@ int16_t LinuxConsoleDriver::read() {
     return _d->read();
 }
 
-size_t LinuxConsoleDriver::write(uint8_t c) {
-    return _d->write(c);
+size_t LinuxConsoleDriver::write(uint8_t c) 
+{
+        return _d->write(c);
 }
+
+size_t LinuxConsoleDriver::write(const uint8_t *buffer, size_t size) {
+    return _d->write(buffer, size);
+}
+
 

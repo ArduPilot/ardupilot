@@ -145,30 +145,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef BATTERY_EVENT
-# define BATTERY_EVENT			DISABLED
-#endif
-#ifndef LOW_VOLTAGE
-# define LOW_VOLTAGE			9.6
-#endif
-#ifndef VOLT_DIV_RATIO
-# define VOLT_DIV_RATIO			3.56	// This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
-# define CURR_AMP_PER_VOLT		27.32	// This is the proper value for the AttoPilot 50V/90A sensor
-#endif
-
-#ifndef CURR_AMPS_OFFSET
-# define CURR_AMPS_OFFSET		0.0
-#endif
-#ifndef HIGH_DISCHARGE
-# define HIGH_DISCHARGE		1760
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // INPUT_VOLTAGE
 //
 #ifndef INPUT_VOLTAGE

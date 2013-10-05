@@ -162,7 +162,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 */
 int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
 {
-    return _get_rate_out(desired_rate, scaler, true);
+    return _get_rate_out(desired_rate, scaler, false);
 }
 
 /*

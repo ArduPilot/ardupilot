@@ -174,6 +174,15 @@ size_t SITLUARTDriver::write(uint8_t c)
     return send(_fd, &c, 1, flags);
 }
 
+size_t SITLUARTDriver::write(const uint8_t *buffer, size_t size)
+{
+    size_t n = 0;
+    while (size--) {
+        n += write(*buffer++);
+    }
+    return n;
+}
+
 /*
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects

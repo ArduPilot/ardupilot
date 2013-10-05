@@ -43,6 +43,7 @@ public:
 
     /* FLYMAPLE implementations of Print virtual methods */
     size_t write(uint8_t c);
+    size_t write(const uint8_t *buffer, size_t size);
 private:
     HardwareSerial*    _hws;
     uint8_t*           _txBuf; // If need more than libmaple usart driver buffer of 63
