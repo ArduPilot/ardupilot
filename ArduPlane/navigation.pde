@@ -156,11 +156,7 @@ static void calc_altitude_error()
 
 static void update_loiter()
 {
-    if(control_mode == RTL) {
-        nav_controller->update_loiter(guided_WP, abs(g.loiter_radius), loiter.direction);
-    } else {
-        nav_controller->update_loiter(mission.current_wp(), abs(g.loiter_radius), loiter.direction);
-    }
+    nav_controller->update_loiter(mission.current_wp(), abs(g.loiter_radius), loiter.direction);
 }
 
 /*
