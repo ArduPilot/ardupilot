@@ -595,7 +595,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
 
 #fly_simple - assumes the simple bearing is initialised to be directly north
 #   flies a box with 100m west, 15 seconds north, 50 seconds east, 15 seconds south
-def fly_simple(mavproxy, mav, side=100, timeout=120):
+def fly_simple(mavproxy, mav, side=50, timeout=120):
 
     failed = False
 
@@ -611,35 +611,35 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1400\n')
 
-    # fly west 100m
-    print("# Flying west %u meters" % side)
+    # fly south 50m
+    print("# Flying south %u meters" % side)
     mavproxy.send('rc 1 1300\n')
     if not wait_distance(mav, side, 5, 60):
         failed = True
     mavproxy.send('rc 1 1500\n')
 
-    # fly north 15 seconds
-    print("# Flying north for 15 seconds")
+    # fly west 8 seconds
+    print("# Flying west for 8 seconds")
     mavproxy.send('rc 2 1300\n')
     tstart = time.time()
-    while time.time() < (tstart + 15):
+    while time.time() < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (time.time() - tstart)
         #print("%u" % delta)
     mavproxy.send('rc 2 1500\n')
 
-    # fly east 50 meters
-    print("# Flying east %u meters" % (side/2.0))
+    # fly north 25 meters
+    print("# Flying north %u meters" % (side/2.0))
     mavproxy.send('rc 1 1700\n')
     if not wait_distance(mav, side/2, 5, 60):
         failed = True
     mavproxy.send('rc 1 1500\n')
 
-    # fly south 15 seconds
-    print("# Flying south for 15 seconds")
+    # fly east 8 seconds
+    print("# Flying east for 8 seconds")
     mavproxy.send('rc 2 1700\n')
     tstart = time.time()
-    while time.time() < (tstart + 15):
+    while time.time() < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (time.time() - tstart)
         #print("%u" % delta)
@@ -652,8 +652,8 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
     hover(mavproxy, mav)
     return not failed
 
-#fly_super_simple - flies a circle around home for 60 seconds
-def fly_super_simple(mavproxy, mav, timeout=600):
+#fly_super_simple - flies a circle around home for 45 seconds
+def fly_super_simple(mavproxy, mav, timeout=45):
 
     failed = False
 
@@ -661,7 +661,7 @@ def fly_super_simple(mavproxy, mav, timeout=600):
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
 
-    # fly forward 50m
+    # fly forward 20m
     print("# Flying forward 20 meters")
     mavproxy.send('rc 2 1300\n')
     if not wait_distance(mav, 20, 5, 60):
