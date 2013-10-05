@@ -150,8 +150,11 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {
+    struct Location tmp;
+
     gcs_send_text_fmt(PSTR("Returning to Home"));
-    mission.goto_home();
+    tmp = rally_find_best_location(current_loc,mission.get_home());
+    mission.goto_location(tmp);
     process_waypoint();
 }
 
@@ -230,18 +233,9 @@ static bool verify_condition_command()          // Returns true if command compl
 
 static void do_RTL(void)
 {
-    struct Location tmp;
     control_mode    = RTL;
-    
-    tmp = rally_find_best_location(current_loc,home);
 
-    mission.set_home(tmp);
-    mission.goto_home(read_alt_to_hold());
-
-    guided_WP=mission.get_home();
-    guided_WP.alt=mission.get_home_hold_alt();
-    
-    mission.goto_location(guided_WP);
+    mission.goto_location(rally_find_best_location(current_loc, mission.get_home()));
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
