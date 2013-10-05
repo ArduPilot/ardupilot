@@ -147,13 +147,11 @@ static void handle_process_do_command()
 static void handle_no_commands()
 {
     gcs_send_text_fmt(PSTR("Returning to Home"));
-    next_nav_command = home;
-    next_nav_command.alt = read_alt_to_hold();
+    next_nav_command = rally_find_best_location(current_loc, home);
     next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
     nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
     non_nav_command_ID = WAIT_COMMAND;
     handle_process_nav_cmd();
-
 }
 
 /*******************************************************************************
@@ -233,18 +231,7 @@ static void do_RTL(void)
 {
     control_mode    = RTL;
     prev_WP = current_loc;
-
-    RallyLocation ral_loc;
-    if (find_best_rally_point(current_loc, home, ral_loc)) {
-        //we have setup Rally points: use them instead of Home for RTL
-        next_WP = rally_location_to_location(ral_loc, home);
-    } else {
-         next_WP = home;
-         // Altitude to hold over home
-         // Set by configuration tool
-         // -------------------------
-         next_WP.alt = read_alt_to_hold();
-    }
+    next_WP = rally_find_best_location(current_loc, home);
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
