@@ -1054,6 +1054,10 @@ static void update_GPS(void)
             do_take_picture();
         }
 #endif        
+
+        if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+            update_home();
+        }
     }
 
     calc_gndspeed_undershoot();

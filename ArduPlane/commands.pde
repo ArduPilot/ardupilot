@@ -205,7 +205,7 @@ static void set_guided_WP(void)
 
 // run this at setup on the ground
 // -------------------------------
-void init_home()
+static void init_home()
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
@@ -242,5 +242,15 @@ void init_home()
 
 }
 
-
-
+/*
+  update home location from GPS
+  this is called as long as we have 3D lock and the arming switch is
+  not pushed
+*/
+static void update_home()
+{
+    home.lng        = g_gps->longitude;                                 // Lon * 10**7
+    home.lat        = g_gps->latitude;                                  // Lat * 10**7
+    home.alt        = max(g_gps->altitude_cm, 0);
+    barometer.update_calibration();
+}
