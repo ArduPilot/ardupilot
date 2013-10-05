@@ -597,16 +597,19 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
 #   flies a box with 100m west, 15 seconds north, 50 seconds east, 15 seconds south
 def fly_simple(mavproxy, mav, side=100, timeout=120):
 
-    #set SIMPLE mode
+    failed = False
+
+    # hold position in loiter
+    mavproxy.send('switch 5\n') # loiter mode
+    wait_mode(mav, 'LOITER')
+
+    #set SIMPLE mode for all flight modes
     mavproxy.send('param set SIMPLE 63\n')
 
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1400\n')
-
-    tstart = time.time()
-    failed = False
 
     # fly west 100m
     print("# Flying west %u meters" % side)
@@ -644,6 +647,52 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
 
     #restore to default
     mavproxy.send('param set SIMPLE 0\n')
+
+    #hover in place
+    hover(mavproxy, mav)
+    return not failed
+
+#fly_super_simple - flies a circle around home for 60 seconds
+def fly_super_simple(mavproxy, mav, timeout=600):
+
+    failed = False
+
+    # hold position in loiter
+    mavproxy.send('switch 5\n') # loiter mode
+    wait_mode(mav, 'LOITER')
+
+    # fly forward 50m
+    print("# Flying forward 20 meters")
+    mavproxy.send('rc 2 1300\n')
+    if not wait_distance(mav, 20, 5, 60):
+        failed = True
+    mavproxy.send('rc 2 1500\n')
+
+    #set SUPER SIMPLE mode for all flight modes
+    mavproxy.send('param set SUPER_SIMPLE 63\n')
+
+    # switch to stabilize mode
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'STABILIZE')
+    mavproxy.send('rc 3 1400\n')
+
+    # start copter yawing slowly
+    mavproxy.send('rc 4 1550\n')
+
+    # roll left for timeout seconds
+    print("# rolling left from pilot's point of view for %u seconds" % timeout)
+    mavproxy.send('rc 1 1300\n')
+    tstart = time.time()
+    while time.time() < (tstart + timeout):
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        delta = (time.time() - tstart)
+
+    # stop rolling and yawing
+    mavproxy.send('rc 1 1500\n')
+    mavproxy.send('rc 4 1500\n')
+
+    #restore simple mode parameters to default
+    mavproxy.send('param set SUPER_SIMPLE 0\n')
 
     #hover in place
     hover(mavproxy, mav)
@@ -848,7 +897,7 @@ def fly_ArduCopter(viewerip=None, map=False):
 
         # Fly a square in Stabilize mode
         print("#")
-        print("########## Fly A square and save WPs with CH7 switch ##########")
+        print("########## Fly a square and save WPs with CH7 switch ##########")
         print("#")
         if not fly_square(mavproxy, mav):
             print("fly_square failed")
@@ -1010,6 +1059,24 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("#")
         print("########## Test RTL ##########")
         print("#")
+        if not fly_RTL(mavproxy, mav):
+            print("RTL failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Fly a circle in super simple mode
+        print("# Fly a circle in SUPER SIMPLE mode")
+        if not fly_super_simple(mavproxy, mav):
+            print("fly super simple failed")
+            failed = True
+
+        # RTL
+        print("# RTL #")
         if not fly_RTL(mavproxy, mav):
             print("RTL failed")
             failed = True
