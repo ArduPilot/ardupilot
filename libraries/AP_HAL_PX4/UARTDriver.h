@@ -26,9 +26,6 @@ public:
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 
-    volatile bool _initialised;
-    volatile bool _in_timer;
-
     void set_device_path(const char *path) {
 	    _devpath = path;
     }
@@ -42,6 +39,9 @@ public:
 private:
     const char *_devpath;
     int _fd;
+    uint32_t _baudrate;
+    volatile bool _initialised;
+    volatile bool _in_timer;
 
     bool _nonblocking_writes;
 
@@ -64,6 +64,9 @@ private:
     int _write_fd(const uint8_t *buf, uint16_t n);
     int _read_fd(uint8_t *buf, uint16_t n);
     uint64_t _last_write_time;
+
+    void try_initialise(void);
+    uint32_t _last_initialise_attempt_ms;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__
