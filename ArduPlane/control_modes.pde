@@ -44,7 +44,6 @@ static void read_control_switch()
     if (g.reset_mission_chan != 0 &&
         hal.rcin->read(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
         // reset to first waypoint in mission
-        mission.override_prev_wp(current_loc);
         change_waypoint(0);
     }
 
