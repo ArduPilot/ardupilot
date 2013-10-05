@@ -15,7 +15,6 @@ static EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static EmptySPIDeviceManager spiDeviceManager;
 static EmptyAnalogIn analogIn;
 static EmptyStorage storageDriver;
-static EmptyConsoleDriver consoleDriver(&uartADriver);
 static EmptyGPIO gpioDriver;
 static EmptyRCInput rcinDriver;
 static EmptyRCOutput rcoutDriver;
@@ -31,7 +30,7 @@ HAL_Empty::HAL_Empty() :
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
-        &consoleDriver,
+        &uartADriver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
