@@ -36,7 +36,6 @@ static FLYMAPLEI2CDriver  i2cDriver(&i2cSemaphore);
 static FLYMAPLESPIDeviceManager spiDeviceManager;
 static FLYMAPLEAnalogIn analogIn;
 static FLYMAPLEStorage storageDriver;
-static FLYMAPLEConsoleDriver consoleDriver(&uartADriver);
 static FLYMAPLEGPIO gpioDriver;
 static FLYMAPLERCInput rcinDriver;
 static FLYMAPLERCOutput rcoutDriver;
@@ -52,7 +51,7 @@ HAL_FLYMAPLE::HAL_FLYMAPLE() :
 	&spiDeviceManager,
 	&analogIn,
 	&storageDriver,
-        &consoleDriver,
+        &uartADriver,
 	&gpioDriver,
 	&rcinDriver,
 	&rcoutDriver,
@@ -70,7 +69,6 @@ void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
     /* uartA is the serial port used for the console, so lets make sure
      * it is initialized at boot */
     uartA->begin(115200);
-    console->init(uartA);
 
     /* The AVR RCInput drivers take an AP_HAL_AVR::ISRRegistry*
      * as the init argument */
