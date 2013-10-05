@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @Increment: 0.1
     // @Units: m/s
 	// @User: User
-	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    0.3f),
+	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
 
 	AP_GROUPEND
 };
