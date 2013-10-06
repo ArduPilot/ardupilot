@@ -53,6 +53,12 @@ static bool find_best_rally_point(const Location &myloc, const Location &homeloc
         }
     }
 
+    if (min_dis > g.rally_limit_km*1000.0f && 
+        get_distance(myloc, homeloc) < min_dis) {
+        // return false, which makes home be used instead
+        return false;
+    }
+
     return min_dis >= 0;
 }
 
