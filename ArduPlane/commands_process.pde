@@ -13,7 +13,7 @@ void change_waypoint(uint8_t new_waypoint_index)
         if (mission.change_waypoint_index(new_waypoint_index)) {
             process_waypoint();
         } else {
-            gcs_send_text_P(SEVERITY_LOW,PSTR("Error Changing Command!"));
+            gcs_send_text_fmt(PSTR("Change to command index %i FAILED"),new_waypoint_index);
         }
 
     } else {
