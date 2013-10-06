@@ -40,7 +40,7 @@ public:
     void     reboot(bool hold_in_bootloader);
 
 private:
-    struct timeval _sketch_start_time;    
+    struct timespec _sketch_start_time;    
     void _timer_handler(int signum);
 
     AP_HAL::Proc _delay_cb;

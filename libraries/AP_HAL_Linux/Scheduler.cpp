@@ -28,7 +28,7 @@ typedef void *(*pthread_startroutine_t)(void *);
 
 void LinuxScheduler::init(void* machtnichts)
 {
-    gettimeofday(&_sketch_start_time, NULL);
+    clock_gettime(CLOCK_MONOTONIC, &_sketch_start_time);
 
     pthread_attr_t thread_attr;
     struct sched_param param;
@@ -79,20 +79,20 @@ void LinuxScheduler::delay(uint16_t ms)
 
 uint32_t LinuxScheduler::millis() 
 {
-    struct timeval tp;
-    gettimeofday(&tp,NULL);
-    return 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1.0e3*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) - 
                   (_sketch_start_time.tv_sec +
-                   (_sketch_start_time.tv_usec*1.0e-6)));
+                   (_sketch_start_time.tv_nsec*1.0e-9)));
 }
 
 uint32_t LinuxScheduler::micros() 
 {
-    struct timeval tp;
-    gettimeofday(&tp,NULL);
-    return 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) - 
                   (_sketch_start_time.tv_sec +
-                   (_sketch_start_time.tv_usec*1.0e-6)));
+                   (_sketch_start_time.tv_nsec*1.0e-9)));
 }
 
 void LinuxScheduler::delay_microseconds(uint16_t us)
