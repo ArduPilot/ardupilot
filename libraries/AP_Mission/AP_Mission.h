@@ -35,7 +35,7 @@ class AP_Mission {
 
 public:
     AP_Mission(const struct Location &current_loc, 
-			   uint16_t start_byte,
+			   const uint16_t start_byte,
 			   const AP_Int32 &RTL_altitude_cm) :
         _start_byte(start_byte),
 		_RTL_altitude_cm(RTL_altitude_cm),
@@ -69,23 +69,26 @@ public:
 
     /*Sequencies the entire waypoint queue to the next waypoint.
      *  Returns false if there is an error.  */
-    bool        increment_waypoint_index();
+    bool    increment_waypoint_index();
 
     /* Forces a reset of the command queue to a specified waypoint.
     *  Returns false if a non_nav command is requested or error. */
-    bool        change_waypoint_index(uint8_t new_index);
+    bool    change_waypoint_index(const uint8_t new_index);
 
-
-    void        stage_waypoint_index(uint8_t new_index);
+    /* Changes the current index, to a specified value, new_index, but does not
+    * refresh the waypoint stack.  When a resume() is sent, the waypoint stack will be
+    * refreshed.  This is used if the vehicle code is in a mode other than auto, but
+    * the current waypoint wants to be staged, prior to going into auto. */
+    void    stage_waypoint_index(const uint8_t new_index);
 
     /*Gets a new command associated with current leg of the mission.
      *  Each time this is called a new command is returned.
      *  Returns false if error or if there are no more commands.  */
-    bool        get_new_cmd(struct Location &new_cmd);
+    bool    get_new_cmd(struct Location &new_cmd);
 
     /* Returns the overall health of the mission.  If the mission is complete, or
      * there is an error, this will return false. */
-    bool        get_status() const {
+    bool    get_status() const {
         return _mission_status;
     }
 
@@ -93,97 +96,103 @@ public:
 
     /* An override that sets the waypoint and command stack approprately for
      *  going home, to waypoint 0. */
-    void        goto_home();
+    void    goto_home();
 
     /* An override that sets the waypoint and command stack approprately for
      *  going to an arbritary location */
-    bool        goto_location(const struct Location &wp);
+    bool    goto_location(const struct Location &wp);
 
     /* Overrides the current waypoint altitude */
-    void        override_altitude(const int32_t &altitude) {
+    void    override_altitude(const int32_t &altitude) {
         _nav_waypoints[1].alt=altitude;
     }
 
     /* Resume the mission.  Used when transitioning into AUTO modes from other modes */
-    void        resume();
+    void    resume();
 
     /* Forces the previous wp to a defined location.  Typically used when transitioning into
-     *  another mode from AUTO. */
-    void        override_prev_wp(const struct Location &wp);
+     * another mode from AUTO, so the previous waypoint isn't leftover from a earlier time 
+     * in the mission. */
+    void    override_prev_wp(const struct Location &wp);
 
     /* Forces the current waypoint to a defined location. */
-    void        set_current_wp(const struct Location &wp) {
+    void    set_current_wp(const struct Location &wp) {
         _nav_waypoints[1] = wp;
     }
 
     /*---------------------Utility Methods------------------------------*/
 
     /*returns just the index.  */
-    uint8_t        waypoint_index() const {
-        return _index[1];
-    }
-    uint8_t        prev_waypoint_index() const {
+    uint8_t    prev_waypoint_index() const {
         return _index[0];
     }
-    uint8_t        after_waypoint_index() const {
+
+    uint8_t    waypoint_index() const {
+        return _index[1];
+    }
+
+    uint8_t    after_waypoint_index() const {
         return _index[2];
     }
 
     /*returns just the current command index.  */
-    uint8_t        command_index() const {
+    uint8_t    command_index() const {
         return _cmd_index;
     }
 
-    //gets the total number of commands in the mission.
-    uint8_t        command_total() const {
+    /* returns the total number of commands in the mission. */
+    uint8_t    command_total() const {
         return _cmd_max;
     }
 
     /*Sets the total number of commands in the mission.
      *  Used when a new mission is uploaded by a planner. */
-    void        set_command_total(uint8_t max_index);
+    void    set_command_total(uint8_t max_index);
 
     /*Sets the home location, and writes it to storage */
-    void        set_home(const struct Location &home);
+    void    set_home(const struct Location &home);
 
     /*Returns home location and altitudes */
-    struct Location         get_home() const {
+    struct Location get_home() const {
         return _home;
     }
-    int32_t        get_home_alt() const {
+
+    int32_t    get_home_alt() const {
         return _home.alt;
     }
 
     /* Returns altitude to RTL, specified in parameter */
-    int32_t        get_home_hold_alt() const {
+    int32_t    get_home_hold_alt() const {
 		if (_RTL_altitude_cm < 0) {
 			return _current_loc.alt;
 		}
         return (_home.alt + _RTL_altitude_cm);
     }
 
-
     //Low(er) level functions to store commands and waypoints into storage.
-    struct Location         get_cmd_with_index(int16_t inx);
-    struct Location         get_cmd_with_index_raw(int16_t inx);
-    void                    set_cmd_with_index(struct Location &temp, uint16_t inx);
-    uint16_t                _start_byte;
+    struct Location    get_cmd_with_index(int16_t inx);
+    struct Location    get_cmd_with_index_raw(int16_t inx);
+    void               set_cmd_with_index(struct Location &temp, uint16_t inx);
+    uint16_t           _start_byte;
 
     // this supports the Mission_* user settable parameters
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
 
-    /* nav_waypoints is a 3 element array that contain navigation waypoints.
+    /* nav_waypoints is a 3 element array that contains navigation waypoints.
      *  nav_waypoints[0]: Previous Waypoint
      *  nav_waypoints[1]: Current Waypoint, the vehicle is navigating towards this.
      *  nav_waypoints[2]: After Waypoint
      *  The vehicle is typically located between waypoints corresponding to indicies 0 and 1 */
-    struct Location        _nav_waypoints[3];
+    struct Location    _nav_waypoints[3];
 
-    /*Starts from search_index, and searches forward (=1) or
-     *  backward (=0) for the next navigation waypoint.  This function is mindful of DO_JUMP
-     *  commands.  Returns the index of the found navigation waypoint.  */
+    //The stack of corresponding indicies for prev, current, and after waypoints
+    uint8_t     _index[3];
+
+    /*Starts from search_index for the next navigation waypoint.  
+     * This function is mindful of DO_JUMP commands.
+     * Returns the index of the found navigation waypoint.  */
     uint8_t     _find_nav_index(uint8_t search_index);
 
     //Checks a navigation command for validity.
@@ -193,9 +202,10 @@ private:
      *  Returns false if it fails to rebase to the index.  */
     bool        _sync_waypoint_index(const uint8_t &new_index);
 
-    //Synchronizes the nav_waypoints array with the indicies in _index
+    // Just synchronizes the nav_waypoints array with the already existing indicies in _index
     void        _sync_nav_waypoints();
 
+    // Returns the home location with the specified RTL altitude applied
     void        _safe_home(struct Location &safe_home);
 
     //Current index for non navigation commands
@@ -204,8 +214,6 @@ private:
     //A flag that marks if the mission is finished or invalid.
     bool        _mission_status;
 
-    //The stack of indicies for prev, current, and after waypoints
-    uint8_t     _index[3];
     /*A flag that marks if the previous index was overridden.  Required to prevent non_nav
      *  commands from being executed when overriding the pre-programed mission sequence. */
     bool        _prev_index_overriden;

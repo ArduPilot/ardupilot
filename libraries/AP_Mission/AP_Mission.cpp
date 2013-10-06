@@ -129,6 +129,8 @@ bool AP_Mission::get_new_cmd(struct Location &new_CMD)
         _cmd_index++;
         return true;
     }
+
+    return false;
 }
 
 /*--------------------------Specific Purpose Methods-------------------*/
