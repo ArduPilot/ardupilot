@@ -96,6 +96,7 @@ public:
         k_param_waypoint_max_radius,
         k_param_ground_steer_alt,        
         k_param_ground_steer_dps,
+        k_param_rally_limit_km,
 
         // 110: Telemetry control
         //
@@ -316,6 +317,7 @@ public:
 #endif
 
     AP_Int8 rally_total;
+    AP_Float rally_limit_km;
 
     // Fly-by-wire
     //

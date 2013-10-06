@@ -89,26 +89,6 @@ void setup(void)
     hal.console->printf("printf %d %u %#x %p %f %S\n", -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
     hal.console->printf_P(PSTR("printf_P %d %u %#x %p %f %S\n"), -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
 
-#if 0
-// loopbacks make no sense with USB console on flymaple
-    hal.console->println("loopback for 10sec:");
-    stream_loopback(hal.console, 10000);
-    hal.console->println("loopback done");
-
-    hal.console->println("opening backend:");
-    
-    hal.console->backend_open();
-
-    const char hello[] = "hello world\r\n";
-    hal.console->backend_write((const uint8_t*)hello, strlen(hello));
-
-    hal.console->println("loopback for 10sec:");
-    stream_console_loopback(hal.console, hal.console, 10000);
-    hal.console->println("loopback done");
-
-    hal.console->backend_close();
-    hal.console->println("closed backend.");
-#endif
     hal.console->println("done.");
     for(;;);
 

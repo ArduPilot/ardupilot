@@ -32,7 +32,6 @@ namespace AP_HAL_FLYMAPLE_NS {
     class FLYMAPLEAnalogSource;
     class FLYMAPLEAnalogIn;
     class FLYMAPLEStorage;
-    class FLYMAPLEConsoleDriver;
     class FLYMAPLEGPIO;
     class FLYMAPLEDigitalSource;
     class FLYMAPLERCInput;

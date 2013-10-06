@@ -21,7 +21,11 @@ static void read_control_switch()
                 if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_SUPERSIMPLE_MODE) {
                     // set Simple mode using stored paramters from Mission planner
                     // rather than by the control switch
-                    set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+                    if (BIT_IS_SET(g.super_simple, switchPosition)) {
+                        set_simple_mode(2);
+                    }else{
+                        set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+                    }
                 }
             }
 
@@ -146,7 +150,12 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUX_SWITCH_SIMPLE_MODE:
+            // low = simple mode off, middle or high position turns simple mode on
+            set_simple_mode(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+            break;
+
         case AUX_SWITCH_SUPERSIMPLE_MODE:
+            // low = simple mode off, middle = simple mode, high = super simple mode
             set_simple_mode(ch_flag);
             break;
 

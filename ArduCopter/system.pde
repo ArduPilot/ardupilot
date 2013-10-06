@@ -480,15 +480,6 @@ static bool set_mode(uint8_t mode)
     return success;
 }
 
-static void
-init_simple_bearing()
-{
-    initial_simple_bearing = ahrs.yaw_sensor;
-    if (g.log_bitmask != 0) {
-        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
-    }
-}
-
 // update_auto_armed - update status of auto_armed flag
 static void update_auto_armed()
 {

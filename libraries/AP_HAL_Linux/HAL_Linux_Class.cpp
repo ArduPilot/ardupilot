@@ -21,7 +21,6 @@ static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
 static LinuxSPIDeviceManager spiDeviceManager;
 static LinuxAnalogIn analogIn;
 static LinuxStorage storageDriver;
-static LinuxConsoleDriver consoleDriver(&uartADriver);
 static LinuxGPIO gpioDriver;
 static LinuxRCInput rcinDriver;
 static LinuxRCOutput rcoutDriver;
@@ -37,7 +36,7 @@ HAL_Linux::HAL_Linux() :
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
-        &consoleDriver,
+        &uartADriver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,

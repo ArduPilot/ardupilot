@@ -53,6 +53,12 @@ static bool find_best_rally_point(const Location &myloc, const Location &homeloc
         }
     }
 
+    if (g.rally_limit_km > 0 && min_dis > g.rally_limit_km*1000.0f && 
+        get_distance(myloc, homeloc) < min_dis) {
+        // return false, which makes home be used instead
+        return false;
+    }
+
     return min_dis >= 0;
 }
 
@@ -74,3 +80,20 @@ static Location rally_location_to_location(const RallyLocation &r_loc, const Loc
 
     return ret;
 }
+
+// return best RTL location from current position
+static Location rally_find_best_location(const Location &myloc, const Location &homeloc)
+{
+    RallyLocation ral_loc;
+    Location ret;
+    if (find_best_rally_point(myloc, home, ral_loc)) {
+        //we have setup Rally points: use them instead of Home for RTL
+        ret = rally_location_to_location(ral_loc, home);
+    } else {
+        ret = homeloc;
+        // Altitude to hold over home
+        ret.alt = read_alt_to_hold();
+    }
+    return ret;
+}
+
