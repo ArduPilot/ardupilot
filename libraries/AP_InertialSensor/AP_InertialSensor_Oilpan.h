@@ -21,8 +21,8 @@ public:
     //uint32_t        get_last_sample_time_micros();  // last_sample_time - get time (in microseconds) that last sample was captured
     float           get_gyro_drift_rate();
 
-    // get number of samples read from the sensors
-    uint16_t        num_samples_available();
+    // sample_available() - true when a new sample is available
+    bool            sample_available();
 
 protected:
     uint16_t        _init_sensor(Sample_rate sample_rate);

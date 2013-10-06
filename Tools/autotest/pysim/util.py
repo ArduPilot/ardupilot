@@ -141,7 +141,7 @@ def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:
     '''launch mavproxy connected to a SIL instance'''
     import pexpect
     global close_list
-    MAVPROXY = os.getenv('MAVPROXY_CMD', reltopdir('../MAVProxy/mavproxy.py'))
+    MAVPROXY = os.getenv('MAVPROXY_CMD', 'mavproxy.py')
     cmd = MAVPROXY + ' --master=%s --out=127.0.0.1:14550' % master
     if setup:
         cmd += ' --setup'

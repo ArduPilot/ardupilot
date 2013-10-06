@@ -39,6 +39,10 @@ bool EmptyGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
     return true;
 }
 
+bool EmptyGPIO::usb_connected(void)
+{
+    return false;
+}
 
 EmptyDigitalSource::EmptyDigitalSource(uint8_t v) :
     _v(v)

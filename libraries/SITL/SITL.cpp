@@ -32,7 +32,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("GPS_DISABLE",4, SITL,  gps_disable, 0),
     AP_GROUPINFO("DRIFT_SPEED",5, SITL,  drift_speed, 0.2),
     AP_GROUPINFO("DRIFT_TIME", 6, SITL,  drift_time,  5),
-    AP_GROUPINFO("GPS_DELAY",  7, SITL,  gps_delay,   4),
+    AP_GROUPINFO("GPS_DELAY",  7, SITL,  gps_delay,   2),
     AP_GROUPINFO("ENGINE_MUL", 8, SITL,  engine_mul,  1),
     AP_GROUPINFO("WIND_SPD",   9, SITL,  wind_speed,  0),
     AP_GROUPINFO("WIND_DIR",  10, SITL,  wind_direction,  180),
@@ -41,9 +41,12 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),
     AP_GROUPINFO("MAG_ERROR",     15, SITL,  mag_error,  0),
+    AP_GROUPINFO("SERVO_RATE",    16, SITL,  servo_rate,  0),
+    AP_GROUPINFO("GPS_GLITCH",    17, SITL,  gps_glitch,  0),
+    AP_GROUPINFO("GPS_HZ",        18, SITL,  gps_hertz,  5),
+    AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6),
     AP_GROUPEND
 };
-
 
 
 /* report SITL state via MAVLink */

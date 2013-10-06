@@ -9,7 +9,7 @@ static void read_control_switch()
 
     // has switch moved?
     // ignore flight mode changes if in failsafe
-    if (oldSwitchPosition != switchPosition && !ap.failsafe_radio) {
+    if (oldSwitchPosition != switchPosition && !failsafe.radio && failsafe.radio_counter == 0) {
         switch_counter++;
         if(switch_counter >= CONTROL_SWITCH_COUNTER) {
             oldSwitchPosition       = switchPosition;
@@ -21,7 +21,11 @@ static void read_control_switch()
                 if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_SUPERSIMPLE_MODE) {
                     // set Simple mode using stored paramters from Mission planner
                     // rather than by the control switch
-                    set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+                    if (BIT_IS_SET(g.super_simple, switchPosition)) {
+                        set_simple_mode(2);
+                    }else{
+                        set_simple_mode(BIT_IS_SET(g.simple_modes, switchPosition));
+                    }
                 }
             }
 
@@ -61,6 +65,11 @@ static uint8_t read_3pos_switch(int16_t radio_in){
 static void read_aux_switches()
 {
     uint8_t switch_position;
+
+    // exit immediately during radio failsafe
+    if (failsafe.radio || failsafe.radio_counter != 0) {
+        return;
+    }
 
     // check if ch7 switch has changed position
     switch_position = read_3pos_switch(g.rc_7.radio_in);
@@ -141,7 +150,12 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUX_SWITCH_SIMPLE_MODE:
+            // low = simple mode off, middle or high position turns simple mode on
+            set_simple_mode(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+            break;
+
         case AUX_SWITCH_SUPERSIMPLE_MODE:
+            // low = simple mode off, middle = simple mode, high = super simple mode
             set_simple_mode(ch_flag);
             break;
 
@@ -277,6 +291,26 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 set_mode(AUTO);
             }
             break;
+
+#if AUTOTUNE == ENABLED
+        case AUX_SWITCH_AUTOTUNE:
+            // turn on auto tuner
+            switch(ch_flag) {
+                case AUX_SWITCH_LOW:
+                    // turn off tuning and return to standard pids
+                    auto_tune_stop();
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                    // stop tuning but remain with tuned pids
+                    auto_tune_suspend();
+                    break;
+                case AUX_SWITCH_HIGH:
+                    // start an auto tuning session
+                    auto_tune_start();
+                    break;
+            }
+            break;
+#endif
     }
 }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # home location lat, lon, alt, heading
-SIMHOME="-35.362938,149.165085,584,270"
+SIMHOME="-35.363261,149.165230,584,353"
 
 # check the instance number to allow for multiple copies of the sim running at once
 INSTANCE=0

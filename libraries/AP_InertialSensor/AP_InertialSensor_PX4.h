@@ -23,7 +23,7 @@ public:
     bool            update();
     float        	get_delta_time();
     float           get_gyro_drift_rate();
-    uint16_t        num_samples_available();
+    bool            sample_available();
 
 private:
     uint16_t _init_sensor( Sample_rate sample_rate );

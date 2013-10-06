@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.43beta3"
+#define THISFIRMWARE "ArduRover v2.43beta6"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -97,10 +97,13 @@
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 #include "compat.h"
 
 #include <AP_Notify.h>      // Notify library
+#include <AP_BattMonitor.h> // Battery monitor library
 
 // Configuration
 #include "config.h"
@@ -235,8 +238,10 @@ AP_GPS_HIL      g_gps_driver;
 AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_PX4
 AP_InertialSensor_PX4 ins;
-#elif CONFIG_INS_TYPE == CONFIG_INS_STUB
-AP_InertialSensor_Stub ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_HIL
+AP_InertialSensor_HIL ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_FLYMAPLE
+AP_InertialSensor_Flymaple ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
 AP_InertialSensor_Oilpan ins( &adc );
 #else
@@ -270,9 +275,6 @@ AP_HAL::AnalogSource *rssi_analog_source;
 
 AP_HAL::AnalogSource *vcc_pin;
 
-AP_HAL::AnalogSource * batt_volt_pin;
-AP_HAL::AnalogSource * batt_curr_pin;
-
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
 ////////////////////////////////////////////////////////////////////////////////
@@ -305,10 +307,8 @@ AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
 
-// APM2 only
-#if USB_MUX_PIN > 0
+// if USB is connected
 static bool usb_connected;
-#endif
 
 /* Radio values
 		Channel assignments
@@ -442,13 +442,7 @@ static int8_t CH7_wp_index;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery pack 1 voltage.  Initialized above the low voltage threshold to pre-load the filter and prevent low voltage events at startup.
-static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;
-// Battery pack 1 instantaneous currrent draw.  Amperes
-static float	current_amps1;
-// Totalized current (Amp-hours) from battery 1
-static float	current_total1;									
-
+static AP_BattMonitor battery;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation control variables
@@ -568,7 +562,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_events,         15,   1000 },
     { check_usb_mux,         15,   1000 },
     { mount_update,           1,    500 },
-    { failsafe_check,         5,    500 },
+    { gcs_failsafe_check,     5,    500 },
     { compass_accumulate,     1,    900 },
     { update_notify,          1,    100 },
     { one_second_loop,       50,   3000 }
@@ -585,15 +579,17 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    // arduplane does not use arming nor pre-arm checks
-    notify.init();
+    // rover does not use arming nor pre-arm checks
     AP_Notify::flags.armed = true;
     AP_Notify::flags.pre_arm_check = true;
+    AP_Notify::flags.failsafe_battery = false;
+
+    notify.init();
+
+    battery.init();
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
-    batt_volt_pin = hal.analogin->channel(g.battery_volt_pin);
-    batt_curr_pin = hal.analogin->channel(g.battery_curr_pin);
 
 	init_ardupilot();
 
@@ -608,9 +604,8 @@ void loop()
 {
     uint32_t timer = millis();
 
-    // We want this to execute at 50Hz, but synchronised with the gyro/accel
-    uint16_t num_samples = ins.num_samples_available();
-    if (num_samples >= 1) {
+    // We want this to execute at 50Hz, synchronised with the gyro/accel
+    if (ins.sample_available()) {
 		delta_ms_fast_loop	= timer - fast_loopTimer;
 		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
 		fast_loopTimer      = timer;
@@ -626,6 +621,10 @@ void loop()
 		fast_loopTimeStamp = millis();
 
         scheduler.run(19000U);
+    }
+    if ((timer - fast_loopTimer) <= 19) {
+        // we have plenty of time - be friendly to multi-tasking OSes
+        hal.scheduler->delay(1);
     }
 }
 
@@ -688,9 +687,11 @@ static void mount_update(void)
 /*
   check for GCS failsafe - 10Hz
  */
-static void failsafe_check(void)
+static void gcs_failsafe_check(void)
 {
-    failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
+	if (g.fs_gcs_enabled) {
+        failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
+    }
 }
 
 /*
@@ -860,14 +861,25 @@ static void update_current_mode(void)
 
     case STEERING: {
         /*
-          in steering mode we control lateral acceleration directly
+          in steering mode we control lateral acceleration
+          directly. We first calculate the maximum lateral
+          acceleration at full steering lock for this speed. That is
+          V^2/R where R is the radius of turn. We get the radius of
+          turn from half the STEER2SRV_P.
          */
-        lateral_acceleration = g.turn_max_g * GRAVITY_MSS * (channel_steer->pwm_to_angle()/4500.0f);
+        float max_g_force = ground_speed * ground_speed / steerController.get_turn_radius();
+
+        // constrain to user set TURN_MAX_G
+        max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
+
+        lateral_acceleration = max_g_force * (channel_steer->pwm_to_angle()/4500.0f);
         calc_nav_steer();
 
-        // and throttle gives speed in proportion to cruise speed
-        throttle_nudge = 0;
-        calc_throttle(channel_throttle->pwm_to_angle() * 0.01 * g.speed_cruise);
+        // and throttle gives speed in proportion to cruise speed, up
+        // to 50% throttle, then uses nudging above that.
+        float target_speed = channel_throttle->pwm_to_angle() * 0.01 * 2 * g.speed_cruise;
+        target_speed = constrain_float(target_speed, 0, g.speed_cruise);
+        calc_throttle(target_speed);
         break;
     }
 

@@ -96,11 +96,3 @@ float AP_Baro_HIL::get_pressure() {
 float AP_Baro_HIL::get_temperature() {
     return Temp;
 }
-
-int32_t AP_Baro_HIL::get_raw_pressure() {
-    return Press;
-}
-
-int32_t AP_Baro_HIL::get_raw_temp() {
-    return Temp;
-}

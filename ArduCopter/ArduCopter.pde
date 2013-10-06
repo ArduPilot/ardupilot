@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.1-rc1"
+#define THISFIRMWARE "ArduCopter V3.1-rc2"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -77,13 +77,15 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
-#include <AP_HAL_SMACCM.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 
 // Application dependencies
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_GPS.h>             // ArduPilot GPS library
+#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
@@ -115,6 +117,7 @@
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
+#include <AP_BattMonitor.h>     // Battery monitor library
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -205,6 +208,7 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 
 // All GPS access should be through this pointer.
 static GPS         *g_gps;
+static GPS_Glitch   gps_glitch(g_gps);
 
 // flight modes convenience array
 static AP_Int8 *flight_modes = &g.flight_mode1;
@@ -220,10 +224,12 @@ static AP_InertialSensor_MPU6000 ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
 static AP_InertialSensor_Oilpan ins(&adc);
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_SITL
-static AP_InertialSensor_Stub ins;
+static AP_InertialSensor_HIL ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_PX4
 static AP_InertialSensor_PX4 ins;
- #endif
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
+AP_InertialSensor_Flymaple ins;
+#endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
@@ -279,16 +285,7 @@ AP_GPS_None     g_gps_driver;
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
 
- #if DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_AHRS_MPU6000  ahrs(&ins, g_gps);               // only works with APM2
- #else
 static AP_AHRS_DCM ahrs(&ins, g_gps);
- #endif
-
-// ahrs2 object is the secondary ahrs to allow running DMP in parallel with DCM
-  #if SECONDARY_DMP_ENABLED == ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static AP_AHRS_MPU6000  ahrs2(&ins, g_gps);               // only works with APM2
-  #endif
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -296,7 +293,7 @@ static AP_ADC_HIL              adc;
 static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
-static AP_InertialSensor_Stub  ins;
+static AP_InertialSensor_HIL   ins;
 static AP_AHRS_DCM             ahrs(&ins, g_gps);
 
 static int32_t gps_base_alt;
@@ -308,7 +305,7 @@ static SITL sitl;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 static AP_ADC_HIL              adc;
-static AP_InertialSensor_Stub  ins;
+static AP_InertialSensor_HIL   ins;
 static AP_AHRS_HIL             ahrs(&ins, g_gps);
 static AP_GPS_HIL              g_gps_driver;
 static AP_Compass_HIL          compass;                  // never used
@@ -379,24 +376,18 @@ static AP_RangeFinder_MaxsonarXL *sonar;
 static union {
     struct {
         uint8_t home_is_set         : 1; // 0
-        uint8_t simple_mode         : 2; // 1,2  // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
+        uint8_t simple_mode         : 2; // 1,2 // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
 
-        uint8_t pre_arm_rc_check    : 1; // 5    // true if rc input pre-arm checks have been completed successfully
-        uint8_t pre_arm_check       : 1; // 6    // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-        uint8_t auto_armed          : 1; // 7    // stops auto missions from beginning until throttle is raised
-        uint8_t logging_started     : 1; // 8    // true if dataflash logging has started
+        uint8_t pre_arm_rc_check    : 1; // 3   // true if rc input pre-arm checks have been completed successfully
+        uint8_t pre_arm_check       : 1; // 4   // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+        uint8_t auto_armed          : 1; // 5   // stops auto missions from beginning until throttle is raised
+        uint8_t logging_started     : 1; // 6   // true if dataflash logging has started
 
-        uint8_t low_battery         : 1; // 9    // Used to track if the battery is low - LED output flashes when the batt is low
-        uint8_t failsafe_radio      : 1; // 10   // A status flag for the radio failsafe
-        uint8_t failsafe_batt       : 1; // 11   // A status flag for the battery failsafe
-        uint8_t failsafe_gps        : 1; // 12   // A status flag for the gps failsafe
-        uint8_t failsafe_gcs        : 1; // 13   // A status flag for the ground station failsafe
-        uint8_t rc_override_active  : 1; // 14   // true if rc control are overwritten by ground station
-        uint8_t do_flip             : 1; // 15   // Used to enable flip code
-        uint8_t takeoff_complete    : 1; // 16
-        uint8_t land_complete       : 1; // 17   // true if we have detected a landing
-        uint8_t compass_status      : 1; // 18
-        uint8_t gps_status          : 1; // 19
+        uint8_t do_flip             : 1; // 7   // Used to enable flip code
+        uint8_t takeoff_complete    : 1; // 8
+        uint8_t land_complete       : 1; // 9   // true if we have detected a landing
+        uint8_t compass_status      : 1; // 10  // unused remove
+        uint8_t gps_status          : 1; // 11  // unused remove
     };
     uint32_t value;
 } ap;
@@ -428,30 +419,40 @@ static RCMapper rcmap;
 // receiver RSSI
 static uint8_t receiver_rssi;
 
+////////////////////////////////////////////////////////////////////////////////
+// Failsafe
+////////////////////////////////////////////////////////////////////////////////
+static struct {
+    uint8_t rc_override_active  : 1; // 0   // true if rc control are overwritten by ground station
+    uint8_t radio               : 1; // 1   // A status flag for the radio failsafe
+    uint8_t low_battery         : 1; // 2   // A status flag for the battery failsafe
+    uint8_t gps                 : 1; // 3   // A status flag for the gps failsafe
+    uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
+
+    int8_t radio_counter;                  // number of iterations with throttle below throttle_fs_value
+
+    uint32_t last_heartbeat_ms;             // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+} failsafe;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Motor Output
 ////////////////////////////////////////////////////////////////////////////////
 #if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
-#endif
-#if FRAME_CONFIG == TRI_FRAME
+#elif FRAME_CONFIG == TRI_FRAME
  #define MOTOR_CLASS AP_MotorsTri
-#endif
-#if FRAME_CONFIG == HEXA_FRAME
+#elif FRAME_CONFIG == HEXA_FRAME
  #define MOTOR_CLASS AP_MotorsHexa
-#endif
-#if FRAME_CONFIG == Y6_FRAME
+#elif FRAME_CONFIG == Y6_FRAME
  #define MOTOR_CLASS AP_MotorsY6
-#endif
-#if FRAME_CONFIG == OCTA_FRAME
+#elif FRAME_CONFIG == OCTA_FRAME
  #define MOTOR_CLASS AP_MotorsOcta
-#endif
-#if FRAME_CONFIG == OCTA_QUAD_FRAME
+#elif FRAME_CONFIG == OCTA_QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsOctaQuad
-#endif
-#if FRAME_CONFIG == HELI_FRAME
+#elif FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli
+#else
+ #error Unrecognised frame type
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
@@ -549,7 +550,12 @@ static float sin_pitch;
 ////////////////////////////////////////////////////////////////////////////////
 // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
-static int32_t initial_simple_bearing;
+static float simple_cos_yaw = 1.0;
+static float simple_sin_yaw;
+static int32_t super_simple_last_bearing;
+static float super_simple_cos_yaw = 1.0;
+static float super_simple_sin_yaw;
+
 
 // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
 static int32_t initial_armed_bearing;
@@ -623,12 +629,7 @@ static int8_t aux_switch_wp_index;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery Voltage of battery, initialized above threshold for filter
-static float battery_voltage1 = LOW_VOLTAGE * 1.05f;
-// refers to the instant amp draw – based on an Attopilot Current sensor
-static float current_amps1;
-// refers to the total amps drawn – based on an Attopilot Current sensor
-static float current_total1;
+static AP_BattMonitor battery;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -762,7 +763,7 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-static AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, &g_gps);
+static AP_InertialNav inertial_nav(&ahrs, &ins, &barometer, g_gps, gps_glitch);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint navigation object
@@ -793,8 +794,6 @@ static int16_t superslow_loopCounter;
 static uint32_t rtl_loiter_start_time;
 // prevents duplicate GPS messages from entering system
 static uint32_t last_gps_time;
-// the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
-static uint32_t last_heartbeat_ms;
 
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
@@ -900,6 +899,9 @@ void setup() {
     // initialise notify system
     notify.init();
 
+    // initialise battery monitor
+    battery.init();
+
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
     sonar_analog_source = new AP_ADC_AnalogSource(
@@ -915,8 +917,6 @@ void setup() {
 #endif
 
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
-    batt_volt_analog_source = hal.analogin->channel(g.battery_volt_pin);
-    batt_curr_analog_source = hal.analogin->channel(g.battery_curr_pin);
     board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
@@ -964,7 +964,7 @@ void loop()
 
     // We want this to execute fast
     // ----------------------------
-    if (ins.num_samples_available() >= 1) {
+    if (ins.sample_available()) {
 
         // check loop time
         perf_info_check_loop_time(timer - fast_loopTimer);
@@ -989,6 +989,10 @@ void loop()
         // call until scheduler.tick() is called again
         uint32_t time_available = (timer + 10000) - micros();
         scheduler.run(time_available - 500);
+    }
+    if ((timer - fast_loopTimer) < 8500) {
+        // we have plenty of time - be friendly to multi-tasking OSes
+        hal.scheduler->delay(1);
     }
 }
 
@@ -1102,9 +1106,6 @@ static void fifty_hz_loop()
 # if HIL_MODE == HIL_MODE_DISABLED
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
         Log_Write_Attitude();
-#if SECONDARY_DMP_ENABLED == ENABLED
-        Log_Write_DMP();
-#endif
     }
 
     if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
@@ -1126,9 +1127,7 @@ static void medium_loop()
         medium_loopCounter++;
 
         // read battery before compass because it may be used for motor interference compensation
-        if (g.battery_monitoring != 0) {
-            read_battery();
-        }
+        read_battery();
 
 #if HIL_MODE != HIL_MODE_ATTITUDE                                                               // don't execute in HIL mode
         if(g.compass_enabled) {
@@ -1184,9 +1183,6 @@ static void medium_loop()
         if(motors.armed()) {
             if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
                 Log_Write_Attitude();
-#if SECONDARY_DMP_ENABLED == ENABLED
-                Log_Write_DMP();
-#endif
             }
             if (g.log_bitmask & MASK_LOG_MOTORS)
                 Log_Write_Motors();
@@ -1292,9 +1288,7 @@ static void slow_loop()
         if(g.radio_tuning > 0)
             tuning();
 
-#if USB_MUX_PIN > 0
         check_usb_mux();
-#endif
         break;
 
     default:
@@ -1384,6 +1378,17 @@ static void update_GPS(void)
 
         // for performance monitoring
         gps_fix_count++;
+
+        // run glitch protection and update AP_Notify
+        gps_glitch.check_position();
+        if (AP_Notify::flags.gps_glitching != gps_glitch.glitching()) {
+            if (gps_glitch.glitching()) {
+                Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
+            }else{
+                Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
+            }
+            AP_Notify::flags.gps_glitching = gps_glitch.glitching();
+        }
 
         // check if we can initialise home yet
         if (!ap.home_is_set) {
@@ -1684,6 +1689,13 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
                 roll_pitch_initialised = true;
             }
             break;
+
+#if AUTOTUNE == ENABLED
+        case ROLL_PITCH_AUTOTUNE:
+            // indicate we can enter this mode successfully
+            roll_pitch_initialised = true;
+            break;
+#endif
     }
 
     // if initialisation has been successful update the yaw mode
@@ -1726,9 +1738,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
@@ -1753,9 +1763,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE_OF:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
@@ -1773,9 +1781,8 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_LOITER:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
+
         // copy user input for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
@@ -1793,21 +1800,38 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_SPORT:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
+
         // copy user input for reporting purposes
         control_roll = g.rc_1.control_in;
         control_pitch = g.rc_2.control_in;
         get_roll_rate_stabilized_ef(g.rc_1.control_in);
         get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         break;
+
+#if AUTOTUNE == ENABLED
+    case ROLL_PITCH_AUTOTUNE:
+        // apply SIMPLE mode transform
+        if(ap.simple_mode && ap_system.new_radio_frame) {
+            update_simple_mode();
+        }
+
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+
+        // pass desired roll, pitch to stabilize attitude controllers
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
+
+        // copy user input for reporting purposes
+        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in);
+        break;
+#endif
     }
 
 	#if FRAME_CONFIG != HELI_FRAME
     if(g.rc_3.control_in == 0 && control_mode <= ACRO) {
         reset_rate_I();
-        reset_stability_I();
     }
 	#endif //HELI_FRAME
 
@@ -1817,46 +1841,61 @@ void update_roll_pitch_mode(void)
     }
 }
 
-// new radio frame is used to make sure we only call this at 50hz
+static void
+init_simple_bearing()
+{
+    // capture current cos_yaw and sin_yaw values
+    simple_cos_yaw = cos_yaw;
+    simple_sin_yaw = sin_yaw;
+
+    // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
+    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
+    super_simple_cos_yaw = simple_cos_yaw;
+    super_simple_sin_yaw = simple_sin_yaw;
+
+    // log the simple bearing to dataflash
+    if (g.log_bitmask != 0) {
+        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
+    }
+}
+
+// update_simple_mode - rotates pilot input if we are in simple mode
 void update_simple_mode(void)
 {
-    static uint8_t simple_counter = 0;             // State machine counter for Simple Mode
-    static float simple_sin_y=0, simple_cos_x=0;
+    float rollx, pitchx;
 
-    // used to manage state machine
-    // which improves speed of function
-    simple_counter++;
-
-    int16_t delta = wrap_360_cd(ahrs.yaw_sensor - initial_simple_bearing)/100;
-
-    if (simple_counter == 1) {
-        // roll
-        simple_cos_x = sinf(radians(90 - delta));
-
-    }else if (simple_counter > 2) {
-        // pitch
-        simple_sin_y = cosf(radians(90 - delta));
-        simple_counter = 0;
+    // exit immediately if no new radio frame or not in simple mode
+    if (ap.simple_mode == 0 || !ap_system.new_radio_frame) {
+        return;
     }
 
-    // Rotate input by the initial bearing
-    int16_t _roll   = g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
-    int16_t _pitch  = -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
+    if (ap.simple_mode == 1) {
+        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
+        rollx = g.rc_1.control_in*simple_cos_yaw - g.rc_2.control_in*simple_sin_yaw;
+        pitchx = g.rc_1.control_in*simple_sin_yaw + g.rc_2.control_in*simple_cos_yaw;
+    }else{
+        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
+        rollx = g.rc_1.control_in*super_simple_cos_yaw - g.rc_2.control_in*super_simple_sin_yaw;
+        pitchx = g.rc_1.control_in*super_simple_sin_yaw + g.rc_2.control_in*super_simple_cos_yaw;
+    }
 
-    g.rc_1.control_in = _roll;
-    g.rc_2.control_in = _pitch;
+    // rotate roll, pitch input from north facing to vehicle's perspective
+    g.rc_1.control_in = rollx*cos_yaw + pitchx*sin_yaw;
+    g.rc_2.control_in = -rollx*sin_yaw + pitchx*cos_yaw;
 }
 
 // update_super_simple_bearing - adjusts simple bearing based on location
 // should be called after home_bearing has been updated
-void update_super_simple_bearing()
+void update_super_simple_bearing(bool force_update)
 {
-    // are we in SUPERSIMPLE mode?
-    if(ap.simple_mode == 2 || (ap.simple_mode && g.super_simple)) {
-        // get distance to home
-        if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
-            // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = wrap_360_cd(home_bearing+18000);
+    // check if we are in super simple mode and at least 10m from home
+    if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
+        // check the bearing to home has changed by at least 5 degrees
+        if (labs(super_simple_last_bearing - home_bearing) > 500) {
+            super_simple_last_bearing = home_bearing;
+            float angle_rad = radians((super_simple_last_bearing+18000)/100);
+            super_simple_cos_yaw = cosf(angle_rad);
+            super_simple_sin_yaw = sinf(angle_rad);
         }
     }
 }
@@ -1896,11 +1935,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             reset_land_detector();  // initialise land detector
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             throttle_initialised = true;
-            break;
-
-        default:
-            // To-Do: log an error message to the dataflash or tlogs instead of printing to the serial port
-            cliSerial->printf_P(PSTR("Unsupported throttle mode: %d!!"),new_throttle_mode);
             break;
     }
 
@@ -2098,10 +2132,6 @@ static void read_AHRS(void)
 
     ahrs.update();
     omega = ins.get_gyro();
-
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.update();
-#endif
 }
 
 static void update_trig(void){
@@ -2162,6 +2192,12 @@ static void update_altitude()
 }
 
 static void tuning(){
+
+    // exit immediately when radio failsafe is invoked so tuning values are not set to zero
+    if (failsafe.radio || failsafe.radio_counter != 0) {
+        return;
+    }
+
     tuning_value = (float)g.rc_6.control_in / 1000.0f;
     g.rc_6.set_range(g.radio_tuning_low,g.radio_tuning_high);                   // 0 to 1
 

@@ -9,66 +9,24 @@
 #include <apps/nsh.h>
 #include <fcntl.h>
 #include "UARTDriver.h"
+#include <uORB/uORB.h>
+#include <uORB/topics/safety.h>
 
 extern const AP_HAL::HAL& hal;
-
-/*
-  implement vsnprintf with support for %S meaning a progmem string
- */
-static int libc_vsnprintf(char* str, size_t size, const char *fmt, va_list ap) 
-{
-    int i, ret;
-    char *fmt2 = (char *)fmt;
-    if (strstr(fmt2, "%S") != NULL) {
-        fmt2 = strdup(fmt);
-        for (i=0; fmt2[i]; i++) {
-            // cope with %S
-            if (fmt2[i] == '%' && fmt2[i+1] == 'S') {
-                fmt2[i+1] = 's';
-            }
-        }
-    }
-    ret = vsnprintf(str, size, fmt2, ap);
-    if (fmt2 != fmt) {
-        free(fmt2);
-    }
-    return ret;
-}
 
 #include "Util.h"
 using namespace PX4;
 
-int PX4Util::snprintf(char* str, size_t size, const char *format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-    int res = libc_vsnprintf(str, size, format, ap);
-    va_end(ap);
-    return res;
-}
-
-int PX4Util::snprintf_P(char* str, size_t size, const prog_char_t *format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-    int res = libc_vsnprintf(str, size, format, ap);
-    va_end(ap);
-    return res;
-}
-
-
-int PX4Util::vsnprintf(char* str, size_t size, const char *format, va_list ap)
-{
-    return libc_vsnprintf(str, size, format, ap);
-}
-
-int PX4Util::vsnprintf_P(char* str, size_t size, const prog_char_t *format,
-            va_list ap)
-{
-    return libc_vsnprintf(str, size, format, ap);
-}
-
 extern bool _px4_thread_should_exit;
+
+/*
+  constructor
+ */
+PX4Util::PX4Util(void) 
+{
+    _safety_handle = orb_subscribe(ORB_ID(safety));
+}
+
 
 /*
   start an instance of nsh
@@ -105,6 +63,30 @@ bool PX4Util::run_debug_shell(AP_HAL::BetterStream *stream)
 	// this shouldn't happen
 	hal.console->printf("shell exited\n");
 	return true;
+}
+
+/*
+  return state of safety switch
+ */
+enum PX4Util::safety_state PX4Util::safety_switch_state(void)
+{
+    if (_safety_handle == -1) {
+        _safety_handle = orb_subscribe(ORB_ID(safety));
+    }
+    if (_safety_handle == -1) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    struct safety_s safety;
+    if (orb_copy(ORB_ID(safety), _safety_handle, &safety) != OK) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    if (!safety.safety_switch_available) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    if (safety.safety_off) {
+        return AP_HAL::Util::SAFETY_ARMED;
+    }
+    return AP_HAL::Util::SAFETY_DISARMED;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

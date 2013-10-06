@@ -58,10 +58,12 @@ Menu::run(void)
         _port->printf_P(PSTR("%S] "), FPSTR(_prompt));
         for (;; ) {
             c = _port->read();
-            if (-1 == c)
+            if (-1 == c) {
+                hal.scheduler->delay(20);
                 continue;
+            }
             // carriage return -> process command
-            if ('\r' == c) {
+            if ('\r' == c || '\n' == c) {
                 _inbuf[len] = '\0';
                 _port->write('\r');
                 _port->write('\n');

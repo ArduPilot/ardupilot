@@ -158,7 +158,7 @@ static void calc_nav_steer()
     // constrain to max G force
     lateral_acceleration = constrain_float(lateral_acceleration, -g.turn_max_g*GRAVITY_MSS, g.turn_max_g*GRAVITY_MSS);
 
-    channel_steer->servo_out = steerController.get_steering_out(lateral_acceleration);
+    channel_steer->servo_out = steerController.get_steering_out_lat_accel(lateral_acceleration);
 }
 
 /*****************************************

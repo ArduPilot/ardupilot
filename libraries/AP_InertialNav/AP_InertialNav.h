@@ -7,6 +7,7 @@
 #include <AP_InertialSensor.h>          // ArduPilot Mega IMU Library
 #include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
 #include <AP_Buffer.h>                  // FIFO buffer library
+#include <AP_GPS_Glitch.h>              // GPS Glitch detection library
 
 #define AP_INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
 #define AP_INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
@@ -25,15 +26,16 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav( AP_AHRS* ahrs, AP_InertialSensor* ins, AP_Baro* baro, GPS** gps_ptr ) :
+    AP_InertialNav( AP_AHRS* ahrs, AP_InertialSensor* ins, AP_Baro* baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
         _ahrs(ahrs),
         _ins(ins),
         _baro(baro),
-        _gps_ptr(gps_ptr),
+        _gps(gps),
         _xy_enabled(false),
         _gps_last_update(0),
         _gps_last_time(0),
-        _baro_last_update(0)
+        _baro_last_update(0),
+        _glitch_detector(gps_glitch)
         {
             AP_Param::setup_object_defaults(this, var_info);
         }
@@ -57,8 +59,8 @@ public:
     // check_gps - check if new gps readings have arrived and use them to correct position estimates
     void        check_gps();
 
-    // correct_with_gps - modifies accelerometer offsets using gps.  dt is time since last gps update
-    void        correct_with_gps(int32_t lon, int32_t lat, float dt);
+    // correct_with_gps - modifies accelerometer offsets using gps.
+    void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
 
     // get_position - returns current position from home in cm
     Vector3f    get_position() const { return _position_base + _position_correction; }
@@ -67,8 +69,8 @@ public:
     int32_t     get_latitude() const;
     int32_t     get_longitude() const;
 
-    // set_current_position - all internal calculations are recorded as the distances from this point
-    void        set_current_position(int32_t lon, int32_t lat);
+    // set_home_position - all internal calculations are recorded as the distances from this point
+    void        set_home_position(int32_t lon, int32_t lat);
 
     // get latitude & longitude positions from base location (in cm)
     float       get_latitude_diff() const;
@@ -114,14 +116,22 @@ public:
     // public variables
     Vector3f                accel_correction_ef;        // earth frame accelerometer corrections. here for logging purposes only
 
+    // set_position_xy - sets inertial navigation position to given xy coordinates from home
+    void            set_position_xy(float pos_x, float pos_y);
+
 protected:
 
     void                    update_gains();             // update_gains - update gains from time constant (given in seconds)
 
+    // structure for holding flags
+    struct InertialNav_flags {
+        uint8_t gps_glitching   : 1;                    // 1 if glitch detector was previously indicating a gps glitch
+    } _flags;
+
     AP_AHRS*                _ahrs;                      // pointer to ahrs object
     AP_InertialSensor*      _ins;                       // pointer to inertial sensor
     AP_Baro*                _baro;                      // pointer to barometer
-    GPS**                   _gps_ptr;                   // pointer to pointer to gps
+    GPS*&                   _gps;                       // pointer to gps
 
     // XY Axis specific variables
     bool                    _xy_enabled;                // xy position estimates enabled
@@ -151,6 +161,9 @@ protected:
     Vector3f                _position_correction;       // sum of correction to _comp_h from delayed 1st order samples    
     Vector3f                _velocity;                  // latest velocity estimate (integrated from accelerometer values)
     Vector3f                _position_error;
+
+    // GPS Glitch detector
+    GPS_Glitch&             _glitch_detector;
 };
 
 #endif // __AP_INERTIALNAV_H__

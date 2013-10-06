@@ -172,9 +172,6 @@ static void init_arm_motors()
 
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.set_fast_gains(false);
-#endif
 
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
@@ -332,8 +329,11 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
-    // pass arming checks at least once
-    if (!arm_checks(display_failure)) {
+    // check gps is ok if required - note this same check is repeated again in arm_checks
+    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good)) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+        }
         return;
     }
 
@@ -377,10 +377,18 @@ static bool arm_checks(bool display_failure)
         return true;
     }
 
-    // check gps is ok if required
+    // check gps is ok if required - note this same check is also done in pre-arm checks
     if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good)) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
+        }
+        return false;
+    }
+
+    // check if safety switch has been pushed
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Safety Switch"));
         }
         return false;
     }
@@ -401,6 +409,11 @@ static void init_disarm_motors()
 
     g.throttle_cruise.save();
 
+#if AUTOTUNE == ENABLED
+    // save auto tuned parameters
+    auto_tune_save_tuning_gains();
+#endif
+
     // we are not in the air
     set_takeoff_complete(false);
 
@@ -410,9 +423,6 @@ static void init_disarm_motors()
 
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.set_fast_gains(true);
-#endif
 
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);

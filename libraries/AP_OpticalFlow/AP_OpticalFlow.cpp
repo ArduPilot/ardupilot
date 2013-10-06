@@ -23,13 +23,6 @@
 
 #define FORTYFIVE_DEGREES 0.78539816f
 
-// pointer to the last instantiated optical flow sensor.  Will be turned into
-// a table if we ever add support for more than one sensor
-AP_OpticalFlow* AP_OpticalFlow::_sensor = NULL;
-// number of times we have been called by 1khz timer process.
-// We use this to throttle read down to 20hz
-uint8_t AP_OpticalFlow::_num_calls;
-
 bool AP_OpticalFlow::init()
 {
     _orientation = ROTATION_NONE;
@@ -47,7 +40,7 @@ void AP_OpticalFlow::set_orientation(enum Rotation rotation)
 // parent method called at 1khz by periodic process
 // this is slowed down to 20hz and each instance's update function is called
 // (only one instance is supported at the moment)
-void AP_OpticalFlow::read(uint32_t now)
+void AP_OpticalFlow::read(void)
 {
     _num_calls++;
 
@@ -55,13 +48,13 @@ void AP_OpticalFlow::read(uint32_t now)
         _num_calls = 0;
         // call to update all attached sensors
         if( _sensor != NULL ) {
-            _sensor->update(now);
+            _sensor->update();
         }
     }
 };
 
 // read value from the sensor.  Should be overridden by derived class
-void AP_OpticalFlow::update(uint32_t now){ }
+void AP_OpticalFlow::update(void){ }
 
 // reads a value from the sensor (will be sensor specific)
 uint8_t AP_OpticalFlow::read_register(uint8_t address){ return 0; }

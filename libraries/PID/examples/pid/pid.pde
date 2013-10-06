@@ -52,7 +52,7 @@ void loop()
     long control= pid.get_pid(error, 1);
 
     hal.console->print("control: ");
-    hal.console->println(control,DEC);
+    hal.console->println(control,BASE_DEC);
 }
 
 AP_HAL_MAIN();

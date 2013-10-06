@@ -53,6 +53,7 @@ MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
 #MODULES		+= systemcmds/eeprom
+MODULES              += systemcmds/auth
 
 #
 # Library modules
@@ -61,6 +62,9 @@ MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
+MODULES	        += modules/libtomfastmath
+MODULES         += modules/libtomcrypt
+
 
 #
 # Transitional support - add commands from the NuttX export archive.

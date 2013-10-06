@@ -147,13 +147,11 @@ static void handle_process_do_command()
 static void handle_no_commands()
 {
     gcs_send_text_fmt(PSTR("Returning to Home"));
-    next_nav_command = home;
-    next_nav_command.alt = read_alt_to_hold();
+    next_nav_command = rally_find_best_location(current_loc, home);
     next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
     nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
     non_nav_command_ID = WAIT_COMMAND;
     handle_process_nav_cmd();
-
 }
 
 /*******************************************************************************
@@ -233,18 +231,13 @@ static void do_RTL(void)
 {
     control_mode    = RTL;
     prev_WP = current_loc;
-    next_WP = home;
+    next_WP = rally_find_best_location(current_loc, home);
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
     }
-
-    // Altitude to hold over home
-    // Set by configuration tool
-    // -------------------------
-    next_WP.alt = read_alt_to_hold();
 
     setup_glide_slope();
 
@@ -311,23 +304,23 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
     if (ahrs.yaw_initialised()) {
-        if (hold_course_cd == -1) {
+        if (steer_state.hold_course_cd == -1) {
             // save our current course to take off
-            hold_course_cd = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course_cd);
+            steer_state.hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Holding course %ld"), steer_state.hold_course_cd);
         }
     }
 
-    if (hold_course_cd != -1) {
+    if (steer_state.hold_course_cd != -1) {
         // call navigation controller for heading hold
-        nav_controller->update_heading_hold(hold_course_cd);
+        nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
         nav_controller->update_level_flight();        
     }
 
     // see if we have reached takeoff altitude
     if (adjusted_altitude_cm() > takeoff_altitude_cm) {
-        hold_course_cd = -1;
+        steer_state.hold_course_cd = -1;
         takeoff_complete = true;
         next_WP = prev_WP = current_loc;
         return true;
@@ -350,18 +343,18 @@ static bool verify_land()
 
         land_complete = true;
 
-        if (hold_course_cd == -1) {
+        if (steer_state.hold_course_cd == -1) {
             // we have just reached the threshold of to flare for landing.
             // We now don't want to do any radical
             // turns, as rolling could put the wings into the runway.
-            // To prevent further turns we set hold_course_cd to the
+            // To prevent further turns we set steer_state.hold_course_cd to the
             // current heading. Previously we set this to
             // crosstrack_bearing, but the xtrack bearing can easily
             // be quite large at this point, and that could induce a
             // sudden large roll correction which is very nasty at
             // this point in the landing.
-            hold_course_cd = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), hold_course_cd);
+            steer_state.hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), steer_state.hold_course_cd);
         }
 
         if (g_gps->ground_speed_cm*0.01f < 3.0) {
@@ -375,9 +368,9 @@ static bool verify_land()
         }
     }
 
-    if (hold_course_cd != -1) {
+    if (steer_state.hold_course_cd != -1) {
         // recalc bearing error with hold_course;
-        nav_controller->update_heading_hold(hold_course_cd);
+        nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
         nav_controller->update_waypoint(prev_WP, next_WP);
     }
@@ -386,7 +379,7 @@ static bool verify_land()
 
 static bool verify_nav_wp()
 {
-    hold_course_cd = -1;
+    steer_state.hold_course_cd = -1;
 
     nav_controller->update_waypoint(prev_WP, next_WP);
 

@@ -26,10 +26,9 @@ public:
     uint16_t            num_samples_available(const uint8_t *channel_numbers);
 
 private:
-    static void         read(uint32_t);
-    static AP_HAL::SPIDeviceDriver *_spi;
-    static AP_HAL::Semaphore  *_spi_sem;
-
+    void read(void);
+    AP_HAL::SPIDeviceDriver *_spi;
+    AP_HAL::Semaphore  *_spi_sem;
 };
 
 #endif

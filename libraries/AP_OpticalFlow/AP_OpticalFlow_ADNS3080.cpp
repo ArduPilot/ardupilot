@@ -102,7 +102,7 @@ finish:
     // if device is working register the global static read function to
     // be called at 1khz
     if( retvalue ) {
-        hal.scheduler->register_timer_process( AP_OpticalFlow_ADNS3080::read );
+        hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_OpticalFlow_ADNS3080::read));
     }
 
     // resume timer
@@ -194,7 +194,7 @@ AP_OpticalFlow_ADNS3080::reset()
 
 // read latest values from sensor and fill in x,y and totals
 void
-AP_OpticalFlow_ADNS3080::update(uint32_t now)
+AP_OpticalFlow_ADNS3080::update(void)
 {
     uint8_t motion_reg;
     surface_quality = read_register(ADNS3080_SQUAL);
@@ -466,7 +466,7 @@ void AP_OpticalFlow_ADNS3080::print_pixel_data()
             }
             isFirstPixel = false;
             pixelValue = ( regValue << 2 );
-            hal.console->print(pixelValue,DEC);
+            hal.console->print(pixelValue,BASE_DEC);
             if( j!= ADNS3080_PIXELS_X-1 )
                 hal.console->print_P(PSTR(","));
             hal.scheduler->delay_microseconds(50);

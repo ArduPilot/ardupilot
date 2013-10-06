@@ -14,8 +14,6 @@ static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in te
 static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
-// PSTR is an AVR macro to read strings from flash memory
-// printf_P is a version of print_f that reads from flash memory
 static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf_P(PSTR("Commands:\n"
@@ -75,15 +73,7 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-#if USB_MUX_PIN > 0
-    // on the APM2 board we have a mux thet switches UART0 between
-    // USB and the board header. If the right ArduPPM firmware is
-    // installed we can detect if USB is connected using the
-    // USB_MUX_PIN
-    pinMode(USB_MUX_PIN, INPUT);
-
-    ap_system.usb_connected = !digitalRead(USB_MUX_PIN);
-    if (!ap_system.usb_connected) {
+    if (!hal.gpio->usb_connected()) {
         // USB is not connected, this means UART0 may be a Xbee, with
         // its darned bricking problem. We can't write to it for at
         // least one second after powering up. Simplest solution for
@@ -91,7 +81,6 @@ static void init_ardupilot()
         // added later
         delay(1000);
     }
-#endif
 
     // Console serial port
     //
@@ -144,14 +133,15 @@ static void init_ardupilot()
     // hal.scheduler->delay.
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
-#if USB_MUX_PIN > 0
-    if (!ap_system.usb_connected) {
-        // we are not connected via USB, re-init UART0 with right
-        // baud rate
-        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
-    }
-#else
-    // we have a 2nd serial port for telemetry
+    // we start by assuming USB connected, as we initialed the serial
+    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
+    ap_system.usb_connected = true;
+    check_usb_mux();
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_APM2
+    // we have a 2nd serial port for telemetry on all boards except
+    // APM2. We actually do have one on APM2 but it isn't necessary as
+    // a MUX is used 
     hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
     gcs3.init(hal.uartC);
 #endif
@@ -216,9 +206,9 @@ static void init_ardupilot()
 #if CLI_ENABLED == ENABLED
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-#if USB_MUX_PIN == 0
-    hal.uartC->println_P(msg);
-#endif
+    if (gcs3.initialised) {
+        hal.uartC->println_P(msg);
+    }
 #endif // CLI_ENABLED
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -278,20 +268,13 @@ static void startup_ground(void)
     // Warm up and read Gyro offsets
     // -----------------------------
     ins.init(AP_InertialSensor::COLD_START,
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
  #if CLI_ENABLED == ENABLED
     report_ins();
  #endif
 
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
-
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.init(&timer_scheduler);
-    ahrs2.set_as_secondary(true);
-    ahrs2.set_fast_gains(true);
-#endif
 
     // set landed flag
     set_land_complete(true);
@@ -490,20 +473,11 @@ static bool set_mode(uint8_t mode)
         Log_Write_Mode(control_mode);
     }else{
         // Log error that we failed to enter desired flight mode
-        Log_Write_Error(ERROR_SUBSYSTEM_FLGHT_MODE,mode);
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
     }
 
     // return success or failure
     return success;
-}
-
-static void
-init_simple_bearing()
-{
-    initial_simple_bearing = ahrs.yaw_sensor;
-    if (g.log_bitmask != 0) {
-        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, initial_simple_bearing);
-    }
 }
 
 // update_auto_armed - update status of auto_armed flag
@@ -517,7 +491,7 @@ static void update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !ap.failsafe_radio) {
+        if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !failsafe.radio) {
             set_auto_armed(false);
         }
     }else{
@@ -549,32 +523,27 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     return default_baud;
 }
 
-#if USB_MUX_PIN > 0
 static void check_usb_mux(void)
 {
-    bool usb_check = !digitalRead(USB_MUX_PIN);
+    bool usb_check = hal.gpio->usb_connected();
     if (usb_check == ap_system.usb_connected) {
         return;
     }
 
     // the user has switched to/from the telemetry port
     ap_system.usb_connected = usb_check;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    // the APM2 has a MUX setup where the first serial port switches
+    // between USB and a TTL serial connection. When on USB we use
+    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
+    // at SERIAL3_BAUD.
     if (ap_system.usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
         hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
     }
-}
 #endif
-
-/*
- *  called by gyro/accel init to flash LEDs so user
- *  has some mesmerising lights to watch while waiting
- */
-void flash_leds(bool on)
-{
-    //digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
-    //digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
 }
 
 /*

@@ -92,13 +92,13 @@ bool AP_Compass_HMC5843::read_raw()
     }
 
     int16_t rx, ry, rz;
-    rx = (int16_t)(buff[0] << 8) | buff[1];
+    rx = (((int16_t)buff[0]) << 8) | buff[1];
     if (product_id == AP_COMPASS_TYPE_HMC5883L) {
-        rz = (int16_t)(buff[2] << 8) | buff[3];
-        ry = (int16_t)(buff[4] << 8) | buff[5];
+        rz = (((int16_t)buff[2]) << 8) | buff[3];
+        ry = (((int16_t)buff[4]) << 8) | buff[5];
     } else {
-        ry = (int16_t)(buff[2] << 8) | buff[3];
-        rz = (int16_t)(buff[4] << 8) | buff[5];
+        ry = (((int16_t)buff[2]) << 8) | buff[3];
+        rz = (((int16_t)buff[4]) << 8) | buff[5];
     }
     if (rx == -4096 || ry == -4096 || rz == -4096) {
         // no valid data available
@@ -246,18 +246,8 @@ AP_Compass_HMC5843::init()
 
 #if 0
         /* useful for debugging */
-        Serial.print("mag_x: ");
-        Serial.print(_mag_x);
-        Serial.print(" mag_y: ");
-        Serial.print(_mag_y);
-        Serial.print(" mag_z: ");
-        Serial.println(_mag_z);
-        Serial.print("CalX: ");
-        Serial.print(calibration[0]/good_count);
-        Serial.print(" CalY: ");
-        Serial.print(calibration[1]/good_count);
-        Serial.print(" CalZ: ");
-        Serial.println(calibration[2]/good_count);
+        hal.console->printf_P(PSTR("MagX: %d MagY: %d MagZ: %d\n"), (int)_mag_x, (int)_mag_y, (int)_mag_z);
+        hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), cal[0], cal[1], cal[2]);
 #endif
     }
 

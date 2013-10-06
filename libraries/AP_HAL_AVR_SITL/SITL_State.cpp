@@ -21,6 +21,30 @@
 
 #include <AP_Param.h>
 
+#ifdef __CYGWIN__
+#include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+void print_trace() {
+    char pid_buf[30];
+    sprintf(pid_buf, "%d", getpid());
+    char name_buf[512];
+    name_buf[readlink("/proc/self/exe", name_buf, 511)]=0;
+    int child_pid = fork();
+    if (!child_pid) {           
+        dup2(2,1); // redirect output to stderr
+        fprintf(stdout,"stack trace for %s pid=%s\n",name_buf,pid_buf);
+        execlp("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, NULL);
+        abort(); /* If gdb failed to start */
+    } else {
+        waitpid(child_pid,NULL,0);
+    }
+}
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 using namespace AVR_SITL;
@@ -35,15 +59,18 @@ pid_t SITL_State::_parent_pid;
 uint32_t SITL_State::_update_count;
 bool SITL_State::_motors_on;
 uint16_t SITL_State::airspeed_pin_value;
+uint16_t SITL_State::voltage_pin_value;
+uint16_t SITL_State::current_pin_value;
 
 AP_Baro_HIL *SITL_State::_barometer;
-AP_InertialSensor_Stub *SITL_State::_ins;
+AP_InertialSensor_HIL *SITL_State::_ins;
 SITLScheduler *SITL_State::_scheduler;
 AP_Compass_HIL *SITL_State::_compass;
 
 int SITL_State::_sitl_fd;
 SITL *SITL_State::_sitl;
 uint16_t SITL_State::pwm_output[11];
+uint16_t SITL_State::last_pwm_output[11];
 uint16_t SITL_State::pwm_input[8];
 bool SITL_State::pwm_valid;
 
@@ -145,7 +172,7 @@ void SITL_State::_sitl_setup(void)
 	// find the barometer object if it exists
 	_sitl = (SITL *)AP_Param::find_object("SIM_");
 	_barometer = (AP_Baro_HIL *)AP_Param::find_object("GND_");
-	_ins = (AP_InertialSensor_Stub *)AP_Param::find_object("INS_");
+	_ins = (AP_InertialSensor_HIL *)AP_Param::find_object("INS_");
 	_compass = (AP_Compass_HIL *)AP_Param::find_object("COMPASS_");
 
     if (_sitl != NULL) {
@@ -224,6 +251,7 @@ void SITL_State::_timer_handler(int signum)
     count++;
 	if (hal.scheduler->millis() - last_report > 1000) {
 		fprintf(stdout, "TH %u cps\n", count);
+	//	print_trace();
 		count = 0;
 		last_report = hal.scheduler->millis();
 	}
@@ -243,6 +271,7 @@ void SITL_State::_timer_handler(int signum)
 
 	if (_update_count == 0 && _sitl != NULL) {
 		_update_gps(0, 0, 0, 0, 0, 0, false);
+		_update_barometer(0);
 		_scheduler->timer_event();
         _scheduler->sitl_end_atomic();
 		in_timer = false;
@@ -340,11 +369,37 @@ void SITL_State::_fdm_input(void)
 }
 
 /*
+  apply servo rate filtering
+  This allows simulation of servo lag
+ */
+void SITL_State::_apply_servo_filter(float deltat)
+{
+    if (_sitl->servo_rate < 1.0f) {
+        // no limit
+        return;
+    }
+    // 1000 usec == 90 degrees
+    uint16_t max_change = deltat * _sitl->servo_rate * 1000 / 90;
+    if (max_change == 0) {
+        max_change = 1;
+    }
+    for (uint8_t i=0; i<11; i++) {
+        int16_t change = (int16_t)pwm_output[i] - (int16_t)last_pwm_output[i];
+        if (change > max_change) {
+            pwm_output[i] = last_pwm_output[i] + max_change;
+        } else if (change < -max_change) {
+            pwm_output[i] = last_pwm_output[i] - max_change;
+        }
+    }
+}
+
+
+/*
   send RC outputs to simulator
  */
 void SITL_State::_simulator_output(void)
 {
-	static uint32_t last_update;
+	static uint32_t last_update_usec;
 	struct {
 		uint16_t pwm[11];
 		uint16_t speed, direction, turbulance;
@@ -354,7 +409,7 @@ void SITL_State::_simulator_output(void)
 	 * to change */
 	uint8_t i;
 
-	if (last_update == 0) {
+	if (last_update_usec == 0) {
 		for (i=0; i<11; i++) {
 			pwm_output[i] = 1000;
 		}
@@ -366,6 +421,9 @@ void SITL_State::_simulator_output(void)
 			pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
 			pwm_output[7] = 1800;
 		}
+		for (i=0; i<11; i++) {
+            last_pwm_output[i] = pwm_output[i];
+        }
 	}
 
     if (_sitl == NULL) {
@@ -373,10 +431,14 @@ void SITL_State::_simulator_output(void)
     }
 
 	// output at chosen framerate
-	if (last_update != 0 && hal.scheduler->millis() - last_update < 1000/_framerate) {
+    uint32_t now = hal.scheduler->micros();
+	if (last_update_usec != 0 && now - last_update_usec < 1000000/_framerate) {
 		return;
 	}
-	last_update = hal.scheduler->millis();
+    float deltat = (now - last_update_usec) * 1.0e-6f;
+	last_update_usec = now;
+
+    _apply_servo_filter(deltat);
 
 	for (i=0; i<11; i++) {
 		if (pwm_output[i] == 0xFFFF) {
@@ -384,6 +446,7 @@ void SITL_State::_simulator_output(void)
 		} else {
 			control.pwm[i] = pwm_output[i];
 		}
+        last_pwm_output[i] = pwm_output[i];
 	}
 
 	if (_vehicle == ArduPlane) {
@@ -416,6 +479,15 @@ void SITL_State::_simulator_output(void)
 			}
 		}
 	}
+
+    float throttle = _motors_on?(control.pwm[2]-1000) / 1000.0f:0;
+    // lose 0.7V at full throttle
+    float voltage = _sitl->batt_voltage - 0.7f*throttle;
+    // assume 50A at full throttle
+    float current = 50.0 * throttle;
+    // assume 3DR power brick
+    voltage_pin_value = ((voltage / 10.1) / 5.0) * 1024;
+    current_pin_value = ((current / 17.0) / 5.0) * 1024;
 
 	// setup wind control
 	control.speed      = _sitl->wind_speed * 100;

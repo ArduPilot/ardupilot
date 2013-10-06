@@ -22,9 +22,6 @@ public:
     float           get_pressure();
     float           get_temperature();
 
-    int32_t         get_raw_pressure();
-    int32_t         get_raw_temp();
-
 private:
     int32_t         RawPress;
     int32_t         RawTemp;
@@ -33,6 +30,10 @@ private:
     uint8_t			_count;
     float           Temp;
     float           Press;
+    // Flymaple has no EOC pin, so use times instead
+    uint32_t        _last_press_read_command_time;
+    uint32_t        _last_temp_read_command_time;
+
     
     // State machine
     uint8_t                         BMP085_State;

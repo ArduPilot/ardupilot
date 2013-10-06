@@ -1094,7 +1094,7 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     int16_t desired_rate = 0;
 
     // throttle failsafe check
-    if( ap.failsafe_radio ) {
+    if( failsafe.radio ) {
         return 0;
     }
 
@@ -1298,7 +1298,7 @@ get_throttle_land()
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
         // disarm when the landing detector says we've landed and throttle is at min (or we're in failsafe so we have no pilot thorottle input)
-        if( ap.land_complete && (g.rc_3.control_in == 0 || ap.failsafe_radio) ) {
+        if( ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio) ) {
             init_disarm_motors();
         }
     }
@@ -1379,12 +1379,8 @@ get_throttle_surface_tracking(int16_t target_rate)
 static void reset_I_all(void)
 {
     reset_rate_I();
-    reset_stability_I();
     reset_throttle_I();
     reset_optflow_I();
-
-    // This is the only place we reset Yaw
-    g.pi_stabilize_yaw.reset_I();
 }
 
 static void reset_rate_I()
@@ -1406,7 +1402,6 @@ static void reset_throttle_I(void)
 {
     // For Altitude Hold
     g.pi_alt_hold.reset_I();
-    g.pid_throttle_rate.reset_I();
     g.pid_throttle_accel.reset_I();
 }
 
@@ -1414,12 +1409,4 @@ static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
     g.pid_throttle_accel.set_integrator(pilot_throttle-g.throttle_cruise);
-}
-
-static void reset_stability_I(void)
-{
-    // Used to balance a quad
-    // This only needs to be reset during Auto-leveling in flight
-    g.pi_stabilize_roll.reset_I();
-    g.pi_stabilize_pitch.reset_I();
 }
