@@ -21,6 +21,12 @@
 #undef millis
 #undef micros
 
+// Flymaple: Force init to be called *first*, i.e. before static object allocation.
+// Otherwise, statically allocated objects (eg SerialUSB) that need libmaple may fail.
+__attribute__((constructor)) void premain() {
+    init();
+}
+
 // Not declared in any libmaple headers :-(
 extern "C" 
 { 
