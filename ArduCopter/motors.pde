@@ -350,7 +350,7 @@ static void pre_arm_rc_checks()
     }
 
     // check if radio has been calibrated
-    if(!g.rc_3.radio_min.load()) {
+    if(!g.rc_3.radio_min.load() && !g.rc_3.radio_max.load()) {
         return;
     }
 
