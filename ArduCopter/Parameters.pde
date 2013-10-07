@@ -889,7 +889,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: HLD_LAT_P
     // @DisplayName: Loiter latitude position controller P gain
     // @Description: Loiter latitude position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
-    // @Range: 0.100 0.300
+    // @Range: 0.500 2.000
     // @User: Standard
 
     // @Param: HLD_LAT_I
@@ -909,7 +909,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: HLD_LON_P
     // @DisplayName: Loiter longitude position controller P gain
     // @Description: Loiter longitude position controller P gain.  Converts the distance (in the longitude direction) to the target location into a desired speed which is then passed to the loiter longitude rate controller
-    // @Range: 0.100 0.300
+    // @Range: 0.500 2.000
     // @User: Standard
 
     // @Param: HLD_LON_I
