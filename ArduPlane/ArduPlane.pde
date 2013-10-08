@@ -783,10 +783,8 @@ void loop()
         // the first call to the scheduler they won't run on a later
         // call until scheduler.tick() is called again
         scheduler.run(19000U);
-    }
-    if ((timer - fast_loopTimer_ms) <= 19) {
-        // we have plenty of time - be friendly to multi-tasking OSes
-        hal.scheduler->delay(1);
+    } else {
+        hal.scheduler->delay_microseconds(500);
     }
 }
 
