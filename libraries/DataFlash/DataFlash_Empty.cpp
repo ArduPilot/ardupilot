@@ -70,7 +70,10 @@ void DataFlash_Empty::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
 
 bool DataFlash_Empty::BlockRead(uint8_t BufferNum, uint16_t IntPageAdr,
         void *pBuffer, uint16_t size)
-{ return false; }
+{ 
+    memset(pBuffer, 0, size);
+    return false; 
+}
 
 // *** END OF INTERNAL FUNCTIONS ***
 
