@@ -953,40 +953,37 @@ static void perf_update(void)
 
 void loop()
 {
+    // wait for an INS sample
+    if (!ins.wait_for_sample(1000)) {
+        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_INS_DELAY);
+        return;
+    }
     uint32_t timer = micros();
 
-    // We want this to execute fast
-    // ----------------------------
-    if (ins.sample_available()) {
+    // check loop time
+    perf_info_check_loop_time(timer - fast_loopTimer);
 
-        // check loop time
-        perf_info_check_loop_time(timer - fast_loopTimer);
+    // used by PI Loops
+    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.f;
+    fast_loopTimer          = timer;
 
-        G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
-        fast_loopTimer          = timer;
+    // for mainloop failure monitoring
+    mainLoop_count++;
 
-        // for mainloop failure monitoring
-        mainLoop_count++;
+    // Execute the fast loop
+    // ---------------------
+    fast_loop();
 
-        // Execute the fast loop
-        // ---------------------
-        fast_loop();
+    // tell the scheduler one tick has passed
+    scheduler.tick();
 
-        // tell the scheduler one tick has passed
-        scheduler.tick();
-
-        // run all the tasks that are due to run. Note that we only
-        // have to call this once per loop, as the tasks are scheduled
-        // in multiples of the main loop tick. So if they don't run on
-        // the first call to the scheduler they won't run on a later
-        // call until scheduler.tick() is called again
-        uint32_t time_available = (timer + 10000) - micros();
-        scheduler.run(time_available - 500);
-    }
-    if ((timer - fast_loopTimer) < 8500) {
-        // we have plenty of time - be friendly to multi-tasking OSes
-        hal.scheduler->delay(1);
-    }
+    // run all the tasks that are due to run. Note that we only
+    // have to call this once per loop, as the tasks are scheduled
+    // in multiples of the main loop tick. So if they don't run on
+    // the first call to the scheduler they won't run on a later
+    // call until scheduler.tick() is called again
+    uint32_t time_available = (timer + 10000) - micros();
+    scheduler.run(time_available - 500);
 }
 
 

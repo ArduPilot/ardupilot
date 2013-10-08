@@ -449,6 +449,8 @@ enum ap_message {
 #define ERROR_CODE_COMPASS_FAILED_TO_READ   2
 // subsystem specific error codes -- gps
 #define ERROR_CODE_GPS_GLITCH               2
+// subsystem specific error codes -- main
+#define ERROR_CODE_INS_DELAY                1
 
 
 
