@@ -623,10 +623,8 @@ void loop()
 		fast_loopTimeStamp = millis();
 
         scheduler.run(19000U);
-    }
-    if ((timer - fast_loopTimer) <= 19) {
-        // we have plenty of time - be friendly to multi-tasking OSes
-        hal.scheduler->delay(1);
+    } else {
+        hal.scheduler->delay_microseconds(500);
     }
 }
 
