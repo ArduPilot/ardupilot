@@ -128,7 +128,7 @@ void AP_Compass_HMC5843::accumulate(void)
 	  return;
    }
 
-   if (!_i2c_sem->take(5)) {
+   if (!_i2c_sem->take(1)) {
        // the bus is busy - try again later
        return;
    }
