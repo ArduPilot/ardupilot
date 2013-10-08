@@ -604,28 +604,27 @@ void setup() {
  */
 void loop()
 {
+    // wait for an INS sample
+    if (!ins.wait_for_sample(1000)) {
+        return;
+    }
     uint32_t timer = millis();
 
-    // We want this to execute at 50Hz, synchronised with the gyro/accel
-    if (ins.sample_available()) {
-		delta_ms_fast_loop	= timer - fast_loopTimer;
-		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-		fast_loopTimer      = timer;
+    delta_ms_fast_loop	= timer - fast_loopTimer;
+    G_Dt                = (float)delta_ms_fast_loop / 1000.f;
+    fast_loopTimer      = timer;
 
-		mainLoop_count++;
+    mainLoop_count++;
 
-		// Execute the fast loop
-		// ---------------------
-		fast_loop();
+    // Execute the fast loop
+    // ---------------------
+    fast_loop();
 
-        // tell the scheduler one tick has passed
-        scheduler.tick();
-		fast_loopTimeStamp = millis();
+    // tell the scheduler one tick has passed
+    scheduler.tick();
+    fast_loopTimeStamp = millis();
 
-        scheduler.run(19000U);
-    } else {
-        hal.scheduler->delay(1);
-    }
+    scheduler.run(19000U);
 }
 
 // Main loop 50Hz
