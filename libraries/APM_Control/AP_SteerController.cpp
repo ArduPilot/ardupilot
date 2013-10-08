@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @Param: T_CONST
 	// @DisplayName: Steering Time Constant
-	// @Description: This controls the time constant in seconds from demanded to achieved bank angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
+	// @Description: This controls the time constant in seconds from demanded to achieved steering angle. A value of 0.75 is a good default and will work with nearly all rovers. Ground steering in aircraft needs a bit smaller time constant, and a value of 0.5 is recommended for best ground handling in fixed wing aircraft. A value of 0.75 means that the controller will try to correct any deviation between the desired and actual steering angle in 0.75 seconds. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the vehicle can achieve.
 	// @Range: 0.4 1.0
 	// @Units: seconds
 	// @Increment: 0.1
@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 
 	// @Param: MINSPD
 	// @DisplayName: Minimum speed
-	// @Description: This is the minimum assumed ground speed in meters/second for steering. Having a minimum speed prevents osciallations when the vehicle first starts moving. The vehicle can still driver slower than this limit, but the steering calculations will be done based on this minimum speed.
+	// @Description: This is the minimum assumed ground speed in meters/second for steering. Having a minimum speed prevents oscillations when the vehicle first starts moving. The vehicle can still driver slower than this limit, but the steering calculations will be done based on this minimum speed.
 	// @Range: 0 5
 	// @Increment: 0.1
     // @Units: m/s

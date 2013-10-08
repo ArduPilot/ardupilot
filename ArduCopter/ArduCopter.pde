@@ -183,6 +183,8 @@ static DataFlash_APM1 DataFlash;
 static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static DataFlash_File DataFlash("/fs/microsd/APM/logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+static DataFlash_File DataFlash("logs");
 #else
 static DataFlash_Empty DataFlash;
 #endif
@@ -229,6 +231,8 @@ static AP_InertialSensor_HIL ins;
 static AP_InertialSensor_PX4 ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
 AP_InertialSensor_Flymaple ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_L3G4200D
+AP_InertialSensor_L3G4200D ins;
 #endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -386,24 +390,15 @@ static union {
         uint8_t do_flip             : 1; // 7   // Used to enable flip code
         uint8_t takeoff_complete    : 1; // 8
         uint8_t land_complete       : 1; // 9   // true if we have detected a landing
-        uint8_t compass_status      : 1; // 10  // unused remove
-        uint8_t gps_status          : 1; // 11  // unused remove
+
+        uint8_t new_radio_frame     : 1; // 10      // Set true if we have new PWM data to act on from the Radio
+        uint8_t CH7_flag            : 2; // 11,12   // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH8_flag            : 2; // 13,14   // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t usb_connected       : 1; // 15      // true if APM is powered from USB connection
+        uint8_t yaw_stopped         : 1; // 16      // Used to manage the Yaw hold capabilities
     };
     uint32_t value;
 } ap;
-
-
-static struct AP_System{
-    uint8_t GPS_light               : 1; // 0   // Solid indicates we have full 3D lock and can navigate, flash = read
-    uint8_t arming_light            : 1; // 1   // Solid indicates armed state, flashing is disarmed, double flashing is disarmed and failing pre-arm checks
-    uint8_t new_radio_frame         : 1; // 2   // Set true if we have new PWM data to act on from the Radio
-    uint8_t CH7_flag                : 2; // 3,4 // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH8_flag                : 2; // 5,6 // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t usb_connected           : 1; // 7   // true if APM is powered from USB connection
-    uint8_t yaw_stopped             : 1; // 8   // Used to manage the Yaw hold capabilities
-    uint8_t                         : 7; // 9-15 // Fill bit field to 16 bits
-
-} ap_system;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Radio
@@ -964,40 +959,37 @@ static void perf_update(void)
 
 void loop()
 {
+    // wait for an INS sample
+    if (!ins.wait_for_sample(1000)) {
+        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_INS_DELAY);
+        return;
+    }
     uint32_t timer = micros();
 
-    // We want this to execute fast
-    // ----------------------------
-    if (ins.sample_available()) {
+    // check loop time
+    perf_info_check_loop_time(timer - fast_loopTimer);
 
-        // check loop time
-        perf_info_check_loop_time(timer - fast_loopTimer);
+    // used by PI Loops
+    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.f;
+    fast_loopTimer          = timer;
 
-        G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
-        fast_loopTimer          = timer;
+    // for mainloop failure monitoring
+    mainLoop_count++;
 
-        // for mainloop failure monitoring
-        mainLoop_count++;
+    // Execute the fast loop
+    // ---------------------
+    fast_loop();
 
-        // Execute the fast loop
-        // ---------------------
-        fast_loop();
+    // tell the scheduler one tick has passed
+    scheduler.tick();
 
-        // tell the scheduler one tick has passed
-        scheduler.tick();
-
-        // run all the tasks that are due to run. Note that we only
-        // have to call this once per loop, as the tasks are scheduled
-        // in multiples of the main loop tick. So if they don't run on
-        // the first call to the scheduler they won't run on a later
-        // call until scheduler.tick() is called again
-        uint32_t time_available = (timer + 10000) - micros();
-        scheduler.run(time_available - 500);
-    }
-    if ((timer - fast_loopTimer) < 8500) {
-        // we have plenty of time - be friendly to multi-tasking OSes
-        hal.scheduler->delay(1);
-    }
+    // run all the tasks that are due to run. Note that we only
+    // have to call this once per loop, as the tasks are scheduled
+    // in multiples of the main loop tick. So if they don't run on
+    // the first call to the scheduler they won't run on a later
+    // call until scheduler.tick() is called again
+    uint32_t time_available = (timer + 10000) - micros();
+    scheduler.run(time_available - 500);
 }
 
 
@@ -1231,9 +1223,6 @@ static void slow_loop()
 
         // check if we've lost contact with the ground station
         failsafe_gcs_check();
-
-        // record if the compass is healthy
-        set_compass_healthy(compass.healthy);
 
         if(superslow_loopCounter > 1200) {
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -1816,7 +1805,7 @@ void update_roll_pitch_mode(void)
 #if AUTOTUNE == ENABLED
     case ROLL_PITCH_AUTOTUNE:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
+        if(ap.simple_mode && ap.new_radio_frame) {
             update_simple_mode();
         }
 
@@ -1839,9 +1828,9 @@ void update_roll_pitch_mode(void)
     }
 	#endif //HELI_FRAME
 
-    if(ap_system.new_radio_frame) {
+    if(ap.new_radio_frame) {
         // clear new radio frame info
-        ap_system.new_radio_frame = false;
+        ap.new_radio_frame = false;
     }
 }
 
@@ -1869,7 +1858,7 @@ void update_simple_mode(void)
     float rollx, pitchx;
 
     // exit immediately if no new radio frame or not in simple mode
-    if (ap.simple_mode == 0 || !ap_system.new_radio_frame) {
+    if (ap.simple_mode == 0 || !ap.new_radio_frame) {
         return;
     }
 

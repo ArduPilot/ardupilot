@@ -258,10 +258,6 @@ size_t LinuxUARTDriver::write(uint8_t c)
     if (!_initialised) {
         return 0;
     }
-    if (hal.scheduler->in_timerprocess()) {
-        // not allowed from timers
-        return 0;
-    }
     uint16_t _head;
 
     while (BUF_SPACE(_writebuf) == 0) {
@@ -283,11 +279,6 @@ size_t LinuxUARTDriver::write(const uint8_t *buffer, size_t size)
     if (!_initialised) {
         return 0;
     }
-    if (hal.scheduler->in_timerprocess()) {
-        // not allowed from timers
-        return 0;
-    }
-
     if (!_nonblocking_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes

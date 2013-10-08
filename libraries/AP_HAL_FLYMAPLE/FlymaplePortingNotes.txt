@@ -8,7 +8,7 @@ Flymaple has an ARM based Cortex-3 STM32F103RE, 72MHz processor with 10DOF built
 
 Implementation
 
-Unlike the Arduino versions of ArduPlane, the Flymaple port uses portions of
+Unlike the Arduino versions of ardupilot, the Flymaple port uses portions of
 the libmaple library, including the stm32f1 core and some other libaries like
 Wire, HardwareTimer, HArdwareSPI etc.
 
@@ -42,10 +42,8 @@ get complaints from gcc 4.4.1 caused by collisions with other class names.
 New board makefile mk/board/flymaple.mk, plus some other minor changes in
 mk/*.mk
 
-In other parts of the ArduPlane tree, the changes have been #ifdefed for
-Flymaple except:
-
-- ArduPlane/compat.pde
+In other parts of the ardupilot tree, the changes have been #ifdefed for
+Flymaple:
 
 - libraries/AP_Compass/AP_Compass_HMC5843.cpp
 - libraries/AP_Compass/Compass.h
@@ -122,7 +120,7 @@ arm-none-eabi-g++ toolchain, version 4.4.1
 on OpenSuSE 12.3
 Mission Planner 1.2.78
 
-You need a number of additional resources to build ArduPlane for Flymaple. I
+You need a number of additional resources to build ardupilot for Flymaple. I
 have assumed that you will install them in your home directory, but they can really
 go anywhere provided you make the appropriate changes to PATH and config.mk
 
@@ -132,9 +130,18 @@ cd libmaple
 wget http://static.leaflabs.com/pub/codesourcery/gcc-arm-none-eabi-latest-linux32.tar.gz
 tar xvzf gcc-arm-none-eabi-latest-linux32.tar.gz
 export PATH=$PATH:~/libmaple/arm/bin
+cp main.cpp.example main.cpp
 make
+(at this stage you can test your flymaple CPU and the upload process with
+'make install', which will upload a simple LED blinking program to your
+Flymaple)
 
-edit ArduPlane/config.mk to be something like:
+Now download ardupilot:
+cd ~
+git clone https://github.com/diydrones/ardupilot.git
+cd ardupilot
+
+edit config.mk to be something like:
 #config.mk START
 # Select maple_RET6 for Flymaple
 BOARD = maple_RET6
@@ -147,6 +154,21 @@ LIBMAPLE_PATH = $(HOME)/libmaple
 # Also, the ARM compiler tools MUST be in your current PATH like:
 # export PATH=$PATH:~/libmaple/arm/bin
 #config.mk END
+
+cd ArduPlane
+make flymaple
+make upload
+
+Libmaple fork
+
+Correct compilation and operation of the Flymaple port depends on
+using the fork of libmaple from https://github.com/mikemccauley/libmaple.git 
+
+The changes relative to the libmaple master are:
+
+- Add LIBMAPLE_VERSION_MAJOR and LIBMAPLE_VERSION_MINOR for version detection
+- Add TX ring buffer and interrupt handler to usart.c
+- Fix a bug in I2C interrupt handler that would crash in master mode
 
 Interrupt disabling on ARM
 
@@ -221,15 +243,7 @@ Pitching up                               Y +ve
 
 Remaining issues:
 
-1. For reasons I do not yet understand, the magnetic heading reported by
-ArduPlance is 90 degrees away from what I think it should be.
-The sensors on the Flymaple are all aligned with the nominal X, Y and Z axes
-collinear. Pitch and roll axes point to the _corners_ of the board, not the
-flat sides as might be considered normal for a sensor board.
-Orientation is set to NONE, and yes, the reading of compass sensor registers
-is in teh right order for the HMC5883.
-
-2. Many alignment warnings emitted by the compiler from libraries/GCS_MAVLink
+1. Many alignment warnings emitted by the compiler from libraries/GCS_MAVLink
 protocol.h eg:
-mnt/disk2/src/ArduPlane-2.74b/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h: In function 'uint16_t _MAV_RETURN_uint16_t(const mavlink_message_t*, uint8_t)':
-/mnt/disk2/src/ArduPlane-2.74b/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h:267: warning: cast from 'const char*' to 'const uint16_t*' increases required alignment of target type
+/mnt/disk2/src/ardupilot/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h: In function 'double _MAV_RETURN_double(const mavlink_message_t*, uint8_t)':
+/mnt/disk2/src/ardupilot/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h:274: warning: cast from 'const char*' to 'const double*' increases required alignment of target type

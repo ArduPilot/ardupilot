@@ -123,22 +123,6 @@ void set_land_complete(bool b)
 
 // ---------------------------------------------
 
-void set_compass_healthy(bool b)
-{
-    if(ap.compass_status != b) {
-        if(b) {
-            // compass has just recovered so log to the dataflash
-            Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_ERROR_RESOLVED);
-        }else{
-            // compass has just failed so log an error to the dataflash
-            Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_COMPASS_FAILED_TO_READ);
-        }
-    }
-    ap.compass_status = b;
-}
-
-// ---------------------------------------------
-
 void set_pre_arm_check(bool b)
 {
     if(ap.pre_arm_check != b) {

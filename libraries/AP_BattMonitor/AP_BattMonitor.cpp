@@ -4,48 +4,48 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
-    // @Param: BATT_MONITOR
+    // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
     // @Values: 0:Disabled,3:Voltage Only,4:Voltage and Current
     // @User: Standard
     AP_GROUPINFO("MONITOR", 0, AP_BattMonitor, _monitoring, AP_BATT_MONITOR_DISABLED),
 
-    // @Param: BATT_VOLT_PIN
+    // @Param: VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100. On the Pixhawk powered from the PM connector it should be set to 2.
     // @Values: -1:Disabled, 0:A0, 1:A1, 2:Pixhawk, 13:A13, 100:PX4
     // @User: Standard
     AP_GROUPINFO("VOLT_PIN", 1, AP_BattMonitor, _volt_pin, AP_BATT_VOLT_PIN),
 
-    // @Param: BATT_CURR_PIN
+    // @Param: CURR_PIN
     // @DisplayName: Battery Current sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. On the Pixhawk powered from the PM connector it should be set to 3.
     // @Values: -1:Disabled, 1:A1, 2:A2, 3:Pixhawk, 12:A12, 101:PX4
     // @User: Standard
     AP_GROUPINFO("CURR_PIN", 2, AP_BattMonitor, _curr_pin, AP_BATT_CURR_PIN),
 
-    // @Param: BATT_VOLT_MULT
+    // @Param: VOLT_MULT
     // @DisplayName: Voltage Multiplier
     // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
     // @User: Advanced
     AP_GROUPINFO("VOLT_MULT", 3, AP_BattMonitor, _volt_multiplier, AP_BATT_VOLTDIVIDER_DEFAULT),
 
-    // @Param: BATT_APM_PERVOLT
+    // @Param: APM_PERVOLT
     // @DisplayName: Apms per volt
     // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17.
     // @Units: A/V
     // @User: Standard
     AP_GROUPINFO("AMP_PERVOLT", 4, AP_BattMonitor, _curr_amp_per_volt, AP_BATT_CURR_AMP_PERVOLT_DEFAULT),
 
-    // @Param: BATT_AMP_OFFSET
+    // @Param: AMP_OFFSET
     // @DisplayName: AMP offset
     // @Description: Voltage offset at zero current on current sensor
     // @Units: Volts
     // @User: Standard
     AP_GROUPINFO("AMP_OFFSET", 5, AP_BattMonitor, _curr_amp_offset, 0),
 
-    // @Param: BATT_CAPACITY
+    // @Param: CAPACITY
     // @DisplayName: Battery capacity
     // @Description: Capacity of the battery in mAh when full
     // @Units: mAh

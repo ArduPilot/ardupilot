@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduRover v2.43beta6"
+#define THISFIRMWARE "ArduRover v2.43beta7"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -167,6 +167,8 @@ static DataFlash_APM2 DataFlash;
 static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static DataFlash_File DataFlash("/fs/microsd/APM/logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+static DataFlash_File DataFlash("logs");
 #else
 DataFlash_Empty DataFlash;
 #endif
@@ -242,6 +244,8 @@ AP_InertialSensor_PX4 ins;
 AP_InertialSensor_HIL ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_FLYMAPLE
 AP_InertialSensor_Flymaple ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_L3G4200D
+AP_InertialSensor_L3G4200D ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
 AP_InertialSensor_Oilpan ins( &adc );
 #else
@@ -602,30 +606,27 @@ void setup() {
  */
 void loop()
 {
+    // wait for an INS sample
+    if (!ins.wait_for_sample(1000)) {
+        return;
+    }
     uint32_t timer = millis();
 
-    // We want this to execute at 50Hz, synchronised with the gyro/accel
-    if (ins.sample_available()) {
-		delta_ms_fast_loop	= timer - fast_loopTimer;
-		G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-		fast_loopTimer      = timer;
+    delta_ms_fast_loop	= timer - fast_loopTimer;
+    G_Dt                = (float)delta_ms_fast_loop / 1000.f;
+    fast_loopTimer      = timer;
 
-		mainLoop_count++;
+    mainLoop_count++;
 
-		// Execute the fast loop
-		// ---------------------
-		fast_loop();
+    // Execute the fast loop
+    // ---------------------
+    fast_loop();
 
-        // tell the scheduler one tick has passed
-        scheduler.tick();
-		fast_loopTimeStamp = millis();
+    // tell the scheduler one tick has passed
+    scheduler.tick();
+    fast_loopTimeStamp = millis();
 
-        scheduler.run(19000U);
-    }
-    if ((timer - fast_loopTimer) <= 19) {
-        // we have plenty of time - be friendly to multi-tasking OSes
-        hal.scheduler->delay(1);
-    }
+    scheduler.run(19000U);
 }
 
 // Main loop 50Hz

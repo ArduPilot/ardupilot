@@ -78,11 +78,19 @@ bool AP_Baro_BMP085::init()
 {
     uint8_t buff[22];
 
+    // get pointer to i2c bus semaphore
+    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+
+    // take i2c bus sempahore
+    if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER))
+        return false;
+
     hal.gpio->pinMode(BMP085_EOC, GPIO_INPUT);// End Of Conversion (PC7) input
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
         healthy = false;
+        i2c_sem->give();
         return false;
     }
 
@@ -110,6 +118,7 @@ bool AP_Baro_BMP085::init()
     RawTemp = 0;
 
     healthy = true;
+    i2c_sem->give();
     return true;
 }
 
@@ -117,9 +126,17 @@ bool AP_Baro_BMP085::init()
 // acumulate a new sensor reading
 void AP_Baro_BMP085::accumulate(void)
 {
+    // get pointer to i2c bus semaphore
+    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+
     if (!BMP_DATA_READY()) {
         return;
     }
+
+    // take i2c bus sempahore
+    if (!i2c_sem->take(1))
+        return;
+
     if (BMP085_State == 0) {
         ReadTemp();
     } else {
@@ -133,6 +150,8 @@ void AP_Baro_BMP085::accumulate(void)
     } else {
         Command_ReadPress();
     }
+
+    i2c_sem->give();
 }
 
 

@@ -90,8 +90,9 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
     }
     perf_begin(_perf_delay);
 	uint32_t start = micros();
-	while (micros() - start < usec) {
-		up_udelay(usec - (micros() - start));
+    uint32_t dt;
+	while ((dt=(micros() - start)) < usec) {
+		up_udelay(usec - dt);
 	}
     perf_end(_perf_delay);
 }
