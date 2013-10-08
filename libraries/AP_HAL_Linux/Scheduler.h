@@ -42,6 +42,7 @@ public:
 private:
     struct timespec _sketch_start_time;    
     void _timer_handler(int signum);
+    void _microsleep(uint32_t usec);
 
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
@@ -73,6 +74,7 @@ private:
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
+    void _setup_realtime(uint32_t size);
 };
 
 #endif // CONFIG_HAL_BOARD
