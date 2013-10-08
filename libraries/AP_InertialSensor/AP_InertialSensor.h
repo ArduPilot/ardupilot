@@ -121,6 +121,9 @@ public:
     // true if a new sample is available from the sensors
     virtual bool sample_available() = 0;
 
+    // wait for a sample to be available, with timeout in milliseconds
+    virtual bool wait_for_sample(uint16_t timeout_ms) = 0;
+
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
 

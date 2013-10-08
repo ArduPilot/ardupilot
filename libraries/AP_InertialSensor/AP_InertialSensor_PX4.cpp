@@ -152,5 +152,20 @@ bool AP_InertialSensor_PX4::sample_available(void)
     return _num_samples_available > 0;
 }
 
+bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
+{
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (sample_available()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // CONFIG_HAL_BOARD
 

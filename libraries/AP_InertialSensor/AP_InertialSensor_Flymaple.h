@@ -23,6 +23,7 @@ public:
     uint32_t        get_last_sample_time_micros();
     float           get_gyro_drift_rate();
     bool            sample_available();
+    bool            wait_for_sample(uint16_t timeout_ms);
 
 private:
     uint16_t        _init_sensor( Sample_rate sample_rate );

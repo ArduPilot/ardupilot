@@ -229,8 +229,8 @@ void AP_InertialSensor_L3G4200D::_set_filter_frequency(uint8_t filter_hz)
 
 bool AP_InertialSensor_L3G4200D::update(void) 
 {
-    while (sample_available() == false) {
-        hal.scheduler->delay(1);
+    if (!wait_for_sample(1000)) {
+        return false;
     }
     Vector3f accel_scale = _accel_scale.get();
 
@@ -347,6 +347,21 @@ bool AP_InertialSensor_L3G4200D::sample_available(void)
         return false;
     }
     return ((hal.scheduler->micros() - _last_sample_time) >= _sample_period_usec);
+}
+
+bool AP_InertialSensor_L3G4200D::wait_for_sample(uint16_t timeout_ms)
+{
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (sample_available()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 #endif // CONFIG_HAL_BOARD

@@ -364,16 +364,16 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         samples[i] = Vector3f();
         uint8_t num_samples = 0;
         while (num_samples < 32) {
-            if (sample_available()) {
-                // read samples from ins
-                update();
-                // capture sample
-                samples[i] += get_accel();
-                hal.scheduler->delay(10);
-                num_samples++;
-            } else {
-                hal.scheduler->delay_microseconds(500);
+            if (!wait_for_sample(1000)) {
+                interact->printf_P(PSTR("Failed to get INS sample\n"));
+                return false;
             }
+            // read samples from ins
+            update();
+            // capture sample
+            samples[i] += get_accel();
+            hal.scheduler->delay(10);
+            num_samples++;
         }
         samples[i] /= num_samples;
     }

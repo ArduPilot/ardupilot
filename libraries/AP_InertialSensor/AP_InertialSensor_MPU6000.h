@@ -27,6 +27,9 @@ public:
     // sample_available - true when a new sample is available
     bool                sample_available();
 
+    // wait for a sample to be available, with timeout in milliseconds
+    bool                wait_for_sample(uint16_t timeout_ms);
+
     // get_delta_time returns the time period in seconds overwhich the sensor data was collected
     float            	get_delta_time();
 
@@ -43,7 +46,6 @@ private:
     uint8_t              _register_read( uint8_t reg );
     bool _register_read_from_timerprocess( uint8_t reg, uint8_t *val );
     void                 register_write( uint8_t reg, uint8_t val );
-    void                        wait_for_sample();
     bool                        hardware_init(Sample_rate sample_rate);
 
     AP_HAL::SPIDeviceDriver *_spi;

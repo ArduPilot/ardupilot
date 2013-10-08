@@ -175,8 +175,8 @@ void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
 // This takes about 20us to run
 bool AP_InertialSensor_Flymaple::update(void) 
 {
-    while (sample_available() == false) {
-        hal.scheduler->delay(1);
+    if (!wait_for_sample(100)) {
+        return false;
     }
     Vector3f accel_scale = _accel_scale.get();
 
@@ -302,6 +302,21 @@ bool AP_InertialSensor_Flymaple::sample_available(void)
 {
     _accumulate();
     return min(_accel_samples, _gyro_samples) / _sample_divider > 0;
+}
+
+bool AP_InertialSensor_Flymaple::wait_for_sample(uint16_t timeout_ms)
+{
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (sample_available()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 #endif // CONFIG_HAL_BOARD
