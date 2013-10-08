@@ -371,6 +371,8 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 samples[i] += get_accel();
                 hal.scheduler->delay(10);
                 num_samples++;
+            } else {
+                hal.scheduler->delay_microseconds(500);
             }
         }
         samples[i] /= num_samples;
