@@ -784,7 +784,7 @@ void loop()
         // call until scheduler.tick() is called again
         scheduler.run(19000U);
     } else {
-        hal.scheduler->delay_microseconds(500);
+        hal.scheduler->delay(1);
     }
 }
 
