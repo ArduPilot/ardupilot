@@ -39,7 +39,7 @@ ifneq ($(SYSTYPE),Darwin)
 LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
-LIBS = -lm -lpthread
+LIBS ?= -lm -lpthread
 
 ifeq ($(VERBOSE),)
 v = @
