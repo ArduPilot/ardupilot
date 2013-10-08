@@ -73,22 +73,22 @@ static void read_aux_switches()
 
     // check if ch7 switch has changed position
     switch_position = read_3pos_switch(g.rc_7.radio_in);
-    if (ap_system.CH7_flag != switch_position) {
+    if (ap.CH7_flag != switch_position) {
         // set the CH7 flag
-        ap_system.CH7_flag = switch_position;
+        ap.CH7_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
+        do_aux_switch_function(g.ch7_option, ap.CH7_flag);
     }
 
     // check if Ch8 switch has changed position
     switch_position = read_3pos_switch(g.rc_8.radio_in);
-    if (ap_system.CH8_flag != switch_position) {
+    if (ap.CH8_flag != switch_position) {
         // set the CH8 flag
-        ap_system.CH8_flag = switch_position;
+        ap.CH8_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
+        do_aux_switch_function(g.ch8_option, ap.CH8_flag);
     }
 }
 
@@ -96,8 +96,8 @@ static void read_aux_switches()
 static void init_aux_switches()
 {
     // set the CH7 flag
-    ap_system.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
-    ap_system.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
+    ap.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
+    ap.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
 
     // init channel 7 options
     switch(g.ch7_option) {
@@ -108,7 +108,7 @@ static void init_aux_switches()
         case AUX_SWITCH_SUPERSIMPLE_MODE:
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_SPRAYER:
-            do_aux_switch_function(g.ch7_option, ap_system.CH7_flag);
+            do_aux_switch_function(g.ch7_option, ap.CH7_flag);
             break;
     }
     // init channel 8 option
@@ -120,7 +120,7 @@ static void init_aux_switches()
         case AUX_SWITCH_SUPERSIMPLE_MODE:
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_SPRAYER:
-            do_aux_switch_function(g.ch8_option, ap_system.CH8_flag);
+            do_aux_switch_function(g.ch8_option, ap.CH8_flag);
             break;
     }
 }

@@ -117,7 +117,7 @@ static void read_radio()
     static uint32_t last_update = 0;
     if (hal.rcin->valid_channels() > 0) {
         last_update = millis();
-        ap_system.new_radio_frame = true;
+        ap.new_radio_frame = true;
         uint16_t periods[8];
         hal.rcin->read(periods,8);
         g.rc_1.set_pwm(periods[rcmap.roll()-1]);

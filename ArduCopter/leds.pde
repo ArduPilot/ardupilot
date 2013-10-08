@@ -118,7 +118,7 @@ static void update_copter_leds(void)
 
     // AUX led control
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX) {
-        if (ap_system.CH7_flag) {
+        if (ap.CH7_flag) {
             copter_leds_aux_on();                                   //if sub-control of Ch7 is high, turn Aux LED on
         } else {
             copter_leds_aux_off();                                  //if sub-control of Ch7 is low, turn Aux LED off
