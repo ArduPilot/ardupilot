@@ -116,6 +116,12 @@ bool AP_Compass_HMC5843::read_raw()
 // accumulate a reading from the magnetometer
 void AP_Compass_HMC5843::accumulate(void)
 {
+    if (!_initialised) {
+        // someone has tried to enable a compass for the first time
+        // mid-flight .... we can't do that yet (especially as we won't
+        // have the right orientation!)
+        return;
+    }
    uint32_t tnow = hal.scheduler->micros();
    if (healthy && _accum_count != 0 && (tnow - _last_accum_time) < 13333) {
 	  // the compass gets new data at 75Hz
@@ -182,6 +188,7 @@ AP_Compass_HMC5843::init()
     }
 
     // determine if we are using 5843 or 5883L
+    _base_config = 0;
     if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
         !read_register(ConfigRegA, &_base_config)) {
         healthy = false;
