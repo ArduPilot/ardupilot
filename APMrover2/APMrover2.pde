@@ -242,6 +242,8 @@ AP_InertialSensor_PX4 ins;
 AP_InertialSensor_HIL ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_FLYMAPLE
 AP_InertialSensor_Flymaple ins;
+#elif CONFIG_INS_TYPE == CONFIG_INS_L3G4200D
+AP_InertialSensor_L3G4200D ins;
 #elif CONFIG_INS_TYPE == CONFIG_INS_OILPAN
 AP_InertialSensor_Oilpan ins( &adc );
 #else
