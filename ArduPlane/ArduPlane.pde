@@ -761,31 +761,31 @@ void setup() {
 
 void loop()
 {
-    uint32_t timer = millis();
-    // We want this to execute at 50Hz, synchronised with the gyro/accel
-    if (ins.sample_available()) {
-        delta_ms_fast_loop      = timer - fast_loopTimer_ms;
-        G_Dt                = delta_ms_fast_loop * 0.001f;
-        fast_loopTimer_ms   = timer;
-
-        mainLoop_count++;
-
-        // Execute the fast loop
-        // ---------------------
-        fast_loop();
-
-        // tell the scheduler one tick has passed
-        scheduler.tick();
-
-        // run all the tasks that are due to run. Note that we only
-        // have to call this once per loop, as the tasks are scheduled
-        // in multiples of the main loop tick. So if they don't run on
-        // the first call to the scheduler they won't run on a later
-        // call until scheduler.tick() is called again
-        scheduler.run(19000U);
-    } else {
-        hal.scheduler->delay(1);
+    // wait for an INS sample
+    if (!ins.wait_for_sample(1000)) {
+        return;
     }
+    uint32_t timer = millis();
+
+    delta_ms_fast_loop  = timer - fast_loopTimer_ms;
+    G_Dt                = delta_ms_fast_loop * 0.001f;
+    fast_loopTimer_ms   = timer;
+
+    mainLoop_count++;
+
+    // Execute the fast loop
+    // ---------------------
+    fast_loop();
+
+    // tell the scheduler one tick has passed
+    scheduler.tick();
+
+    // run all the tasks that are due to run. Note that we only
+    // have to call this once per loop, as the tasks are scheduled
+    // in multiples of the main loop tick. So if they don't run on
+    // the first call to the scheduler they won't run on a later
+    // call until scheduler.tick() is called again
+    scheduler.run(19500U);
 }
 
 // Main loop 50Hz
