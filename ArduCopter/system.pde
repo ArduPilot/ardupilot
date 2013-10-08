@@ -92,7 +92,7 @@ static void init_ardupilot()
     hal.uartA->begin(SERIAL0_BAUD, 256, 256);
 #else
     // use a bit less for non-HIL operation
-    hal.uartA->begin(SERIAL0_BAUD, 128, 128);
+    hal.uartA->begin(SERIAL0_BAUD, 512, 128);
 #endif
 
     // GPS serial port.
