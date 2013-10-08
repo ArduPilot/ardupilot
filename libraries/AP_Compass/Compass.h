@@ -32,7 +32,7 @@
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
+# define MAG_BOARD_ORIENTATION ROTATION_YAW_90
 #else
 # error "You must define a default compass orientation for this board"
 #endif
