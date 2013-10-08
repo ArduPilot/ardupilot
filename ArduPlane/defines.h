@@ -243,6 +243,7 @@ enum log_messages {
 #define CONFIG_INS_HIL     3
 #define CONFIG_INS_PX4     4
 #define CONFIG_INS_FLYMAPLE 5
+#define CONFIG_INS_L3G4200D 6
 
 // barometer driver types
 #define AP_BARO_BMP085   1
