@@ -324,18 +324,22 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
         num_samples_available = fifo_status & L3G4200D_REG_FIFO_SRC_ENTRIES_MASK;
     }
 
-    // read all the entries in one go, using AUTO_INCREMENT. This saves a lot of time on I2C setup
-    int16_t buffer[num_samples_available][3];
-    if (hal.i2c->readRegisters(L3G4200D_I2C_ADDRESS, L3G4200D_REG_XL | L3G4200D_REG_AUTO_INCREMENT, 
-                               sizeof(buffer), (uint8_t *)&buffer[0][0]) == 0) {
-        for (uint8_t i=0; i<num_samples_available; i++) {
-            _gyro_filtered = Vector3f(_gyro_filter_x.apply(buffer[i][0]), 
-                                      _gyro_filter_y.apply(-buffer[i][1]), 
-                                      _gyro_filter_z.apply(-buffer[i][2]));
+    if (num_samples_available > 0) {
+        // read all the entries in one go, using AUTO_INCREMENT. This saves a lot of time on I2C setup
+        int16_t buffer[num_samples_available][3];
+        if (hal.i2c->readRegisters(L3G4200D_I2C_ADDRESS, L3G4200D_REG_XL | L3G4200D_REG_AUTO_INCREMENT, 
+                                   sizeof(buffer), (uint8_t *)&buffer[0][0]) == 0) {
+            for (uint8_t i=0; i<num_samples_available; i++) {
+                _gyro_filtered = Vector3f(_gyro_filter_x.apply(buffer[i][0]), 
+                                          _gyro_filter_y.apply(-buffer[i][1]), 
+                                          _gyro_filter_z.apply(-buffer[i][2]));
+            }
         }
     }
 
-    _sample_available = true;
+    if (num_samples_available > 0) {
+        _sample_available = true;
+    }
 
     // give back i2c semaphore
     i2c_sem->give();
