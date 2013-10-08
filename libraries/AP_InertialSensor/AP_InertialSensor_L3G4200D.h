@@ -32,7 +32,8 @@ private:
     Vector3f        _gyro_filtered;
     uint32_t        _sample_period_usec;
     uint32_t        _last_sample_time;
-    volatile bool   _sample_available;
+    volatile uint32_t _gyro_samples_available;
+    volatile uint8_t  _gyro_samples_needed;
 
     // support for updating filter at runtime
     uint8_t         _last_filter_hz;

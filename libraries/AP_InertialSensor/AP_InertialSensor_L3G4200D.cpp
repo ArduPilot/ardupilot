@@ -86,7 +86,6 @@ const extern AP_HAL::HAL& hal;
 // constructor
 AP_InertialSensor_L3G4200D::AP_InertialSensor_L3G4200D() :
     AP_InertialSensor(),
-    _sample_available(false),
     _accel_filter_x(800, 10),
     _accel_filter_y(800, 10),
     _accel_filter_z(800, 10),
@@ -102,15 +101,18 @@ uint16_t AP_InertialSensor_L3G4200D::_init_sensor( Sample_rate sample_rate )
     case RATE_50HZ:
         _default_filter_hz = 10;
         _sample_period_usec = (1000*1000) / 50;
+        _gyro_samples_needed = 16;
         break;
     case RATE_100HZ:
         _default_filter_hz = 20;
         _sample_period_usec = (1000*1000) / 100;
+        _gyro_samples_needed = 8;
         break;
     case RATE_200HZ:
     default:
         _default_filter_hz = 20;
         _sample_period_usec = (1000*1000) / 200;
+        _gyro_samples_needed = 4;
         break;
     }
 
@@ -237,6 +239,7 @@ bool AP_InertialSensor_L3G4200D::update(void)
     hal.scheduler->suspend_timer_procs();
     _accel = _accel_filtered;
     _gyro = _gyro_filtered;
+    _gyro_samples_available = 0;
     hal.scheduler->resume_timer_procs();
 
     // add offsets and rotation
@@ -261,9 +264,6 @@ bool AP_InertialSensor_L3G4200D::update(void)
         _set_filter_frequency(_mpu6000_filter);
         _last_filter_hz = _mpu6000_filter;
     }
-
-    _sample_available = false;
-    _last_sample_time = hal.scheduler->micros();
 
     return true;
 }
@@ -333,12 +333,9 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
                 _gyro_filtered = Vector3f(_gyro_filter_x.apply(buffer[i][0]), 
                                           _gyro_filter_y.apply(-buffer[i][1]), 
                                           _gyro_filter_z.apply(-buffer[i][2]));
+                _gyro_samples_available++;
             }
         }
-    }
-
-    if (num_samples_available > 0) {
-        _sample_available = true;
     }
 
     // give back i2c semaphore
@@ -347,21 +344,21 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
 
 bool AP_InertialSensor_L3G4200D::sample_available(void)
 {
-    if (!_sample_available) {
-        return false;
-    }
-    return ((hal.scheduler->micros() - _last_sample_time) >= _sample_period_usec);
+    return (_gyro_samples_available >= _gyro_samples_needed);
 }
 
 bool AP_InertialSensor_L3G4200D::wait_for_sample(uint16_t timeout_ms)
 {
     if (sample_available()) {
+        _last_sample_time = hal.scheduler->micros();
         return true;
     }
     uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
         hal.scheduler->delay_microseconds(100);
+        _accumulate();
         if (sample_available()) {
+            _last_sample_time = hal.scheduler->micros();
             return true;
         }
     }
