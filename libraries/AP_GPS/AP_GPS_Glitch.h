@@ -13,8 +13,8 @@
 #include <AP_Math.h>
 #include <AP_GPS.h>
 
-#define GPS_GLITCH_MAX_ACCEL_CMSS   1000.0f // vehicle can accelerate at up to 10m/s/s in any direction
-#define GPS_GLITCH_MIN_RADIUS_CM    1000.0f // gps movement within 10m of current position are always ok
+#define GPS_GLITCH_ACCEL_MAX_CMSS   1000.0f // vehicle can accelerate at up to 10m/s/s in any direction
+#define GPS_GLITCH_RADIUS_CM        1000.0f // gps movement within 10m of current position are always ok
 
 /// @class	GPS_Glitch
 /// @brief	GPS Glitch protection class
@@ -55,6 +55,8 @@ private:
 
     // parameters
     AP_Int8     _enabled;           // top level enable/disable control
+    AP_Float    _radius_cm;         // radius in cm within which all new positions from GPS are accepted
+    AP_Float    _accel_max_cmss;    // vehicles maximum acceleration in cm/s/s
 
     // gps sanity check variables
     uint32_t    _last_good_update;  // system time of last gps update that passed checks
