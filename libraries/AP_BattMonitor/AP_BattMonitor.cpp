@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("VOLT_MULT", 3, AP_BattMonitor, _volt_multiplier, AP_BATT_VOLTDIVIDER_DEFAULT),
 
-    // @Param: APM_PERVOLT
+    // @Param: AMP_PERVOLT
     // @DisplayName: Apms per volt
     // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17.
     // @Units: A/V
