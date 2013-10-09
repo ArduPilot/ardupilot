@@ -6,16 +6,17 @@
         i) set up 3-position ch7 or ch8 switch to "AutoTune"
         2) take-off in stabilize mode, put the copter into a level hover and switch ch7/ch8 to high position to start tuning
         3) auto tuner brings roll and pitch level
-        4) auto tuner begins tuning roll right
-            a) invokes 90 deg/sec roll right
-            b) records maximum "forward" roll rate
+        4) the following procedure is run for roll and then pitch
+            a) invokes 90 deg/sec rate request
+            b) records maximum "forward" roll rate and bounce back rate
             c) when copter reaches 20 degrees or 1 second has passed, it commands level
-            d) records maximum "return" roll rate
-            e) tries to maintain level for 1 second
-            f) records maximum overshoot angle
-            g) roll rate gains are adjusted
-            h) state is updated to tune roll left
-        5) step #4 is repeated for roll-right, pitch-forward, pitch-back before returning to roll-right
+            d) tries to keep max rotation rate between 80% ~ 100% of requested rate (90deg/sec) by adjusting rate P
+            e) increases rate D until the bounce back becomes greater than 10% of requested rate (90deg/sec)
+            f) decreases rate D until the bounce back becomes less than 10% of requested rate (90deg/sec)
+            g) increases rate P until the max rotate rate becomes greater than the requeste rate (90deg/sec)
+            h) invokes a 20deg angle request on roll or pitch
+            i) increases stab P until the maximum angle becomes greater than 110% of the requested angle (20deg)
+            j) decreases stab P by 25%
     If pilot inputs any stick inputs these becomes the desired roll, pitch angles sent to the stabilize controller and the tuner is disabled until the sticks are put back into the middle for 1 second
 */
 
@@ -34,7 +35,7 @@
 #define AUTO_TUNE_RP_RATIO_FINAL            1.0f    // I is set 1x P after testing
 #define AUTO_TUNE_RD_MIN                    0.0f    // minimum Rate D value
 #define AUTO_TUNE_RD_MAX                    0.1f    // maximum Rate D value
-#define AUTO_TUNE_RP_MIN                   0.05f    // minimum Rate P value
+#define AUTO_TUNE_RP_MIN                   0.02f    // minimum Rate P value
 #define AUTO_TUNE_RP_MAX                    1.0f    // maximum Rate P value
 #define AUTO_TUNE_SP_MIN                    1.0f    // minimum Stab P value
 #define AUTO_TUNE_SP_MAX                   15.0f    // maximum Stab P value
@@ -394,13 +395,18 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
 
                 // do gain updates
                 if (auto_tune_state.tune_type == AUTO_TUNE_TYPE_RD_UP) {
-                    if (auto_tune_test_max > AUTO_TUNE_TARGET_RATE_CDS &&
-                            ((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp >= AUTO_TUNE_RP_MIN) ||
-                            (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp >= AUTO_TUNE_RP_MIN)) ) {
+                    if (auto_tune_test_max > AUTO_TUNE_TARGET_RATE_CDS) {
                         if (auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL) {
                             tune_roll_rp -= AUTO_TUNE_RP_STEP;
                         }else{
                             tune_pitch_rp -= AUTO_TUNE_RP_STEP;
+                        }
+                        // stop the auto tune if we have hit the minimum roll or pitch rate P
+                        if(((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp < AUTO_TUNE_RP_MIN) ||
+                            (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp < AUTO_TUNE_RP_MIN)) ) {
+                            Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
+                            auto_tune_stop();
+                            return;
                         }
                     }else if(auto_tune_test_max < AUTO_TUNE_TARGET_RATE_CDS*(1.0f-AUTO_TUNE_AGGRESSIVENESS*2.0f) && 
                             ((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp <= AUTO_TUNE_RP_MAX) ||
@@ -435,13 +441,18 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                         }
                     }
                 } else if (auto_tune_state.tune_type == AUTO_TUNE_TYPE_RD_DOWN) {
-                    if (auto_tune_test_max > AUTO_TUNE_TARGET_RATE_CDS && 
-                            ((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp >= AUTO_TUNE_RP_MIN) ||
-                            (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp >= AUTO_TUNE_RP_MIN)) ) {
+                    if (auto_tune_test_max > AUTO_TUNE_TARGET_RATE_CDS) {
                         if (auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL) {
                             tune_roll_rp -= AUTO_TUNE_RP_STEP;
                         }else{
                             tune_pitch_rp -= AUTO_TUNE_RP_STEP;
+                        }
+                        // stop the auto tune if we have hit the minimum roll or pitch rate P
+                        if(((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp < AUTO_TUNE_RP_MIN) ||
+                            (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp < AUTO_TUNE_RP_MIN)) ) {
+                            Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
+                            auto_tune_stop();
+                            return;
                         }
                     }else if(auto_tune_test_max < AUTO_TUNE_TARGET_RATE_CDS*(1-AUTO_TUNE_AGGRESSIVENESS*2.0f) && 
                             ((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp <= AUTO_TUNE_RP_MAX) ||
