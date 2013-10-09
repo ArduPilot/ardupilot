@@ -60,14 +60,13 @@ uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate )
     ioctl(_gyro_fd,  GYROIOCSSAMPLERATE,  driver_rate);
     ioctl(_gyro_fd,  SENSORIOCSPOLLRATE,  driver_rate);
 
-    // ask for a 1 sample buffer. We're really only interested in the
-    // latest sample as the driver is doing the filtering for us
-    ioctl(_accel_fd, SENSORIOCSQUEUEDEPTH, 1);
-    ioctl(_gyro_fd,  SENSORIOCSQUEUEDEPTH, 1);
-
     _set_filter_frequency(_mpu6000_filter);
 
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+    return AP_PRODUCT_ID_PX4_V2;
+#else
     return AP_PRODUCT_ID_PX4;
+#endif
 }
 
 /*
@@ -143,14 +142,29 @@ void AP_InertialSensor_PX4::_get_sample(void)
 	}
 }
 
-uint16_t AP_InertialSensor_PX4::num_samples_available(void)
+bool AP_InertialSensor_PX4::sample_available(void)
 {
     uint64_t tnow = hrt_absolute_time();
     if (tnow - _last_sample_timestamp > _sample_time_usec) {
         _num_samples_available++;
         _last_sample_timestamp = tnow;
     }
-    return _num_samples_available;
+    return _num_samples_available > 0;
+}
+
+bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
+{
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (sample_available()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 #endif // CONFIG_HAL_BOARD

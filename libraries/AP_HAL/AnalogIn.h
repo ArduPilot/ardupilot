@@ -28,6 +28,10 @@ public:
     // against a reference voltage
     virtual float voltage_average() = 0;
 
+    // return a voltage from 0.0 to 5.0V, scaled
+    // against a reference voltage
+    virtual float voltage_latest() = 0;
+
     // return a voltage from 0.0 to 5.0V, assuming a ratiometric
     // sensor
     virtual float voltage_average_ratiometric() = 0;

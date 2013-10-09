@@ -17,15 +17,6 @@ public:
     void set_blocking_writes(bool blocking);
     bool tx_pending();
 
-    /* PX4 implementations of BetterStream virtual methods */
-    void print_P(const prog_char_t *pstr);
-    void println_P(const prog_char_t *pstr);
-    void printf(const char *pstr, ...);
-    void _printf_P(const prog_char *pstr, ...);
-
-    void vprintf(const char* fmt, va_list ap);
-    void vprintf_P(const prog_char* fmt, va_list ap);
-
     /* PX4 implementations of Stream virtual methods */
     int16_t available();
     int16_t txspace();
@@ -34,9 +25,6 @@ public:
     /* PX4 implementations of Print virtual methods */
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
-
-    volatile bool _initialised;
-    volatile bool _in_timer;
 
     void set_device_path(const char *path) {
 	    _devpath = path;
@@ -51,8 +39,9 @@ public:
 private:
     const char *_devpath;
     int _fd;
-    void _vprintf(const char *fmt, va_list ap);
-    void _internal_vprintf(const char *fmt, va_list ap);
+    uint32_t _baudrate;
+    volatile bool _initialised;
+    volatile bool _in_timer;
 
     bool _nonblocking_writes;
 
@@ -75,6 +64,9 @@ private:
     int _write_fd(const uint8_t *buf, uint16_t n);
     int _read_fd(uint8_t *buf, uint16_t n);
     uint64_t _last_write_time;
+
+    void try_initialise(void);
+    uint32_t _last_initialise_attempt_ms;
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__

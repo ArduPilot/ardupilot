@@ -35,7 +35,7 @@ void roll_flip()
         if (roll < 4500) {
             // Roll control
 			roll_rate_target_bf     = 40000 * flip_dir;
-		    if(ap.manual_throttle){
+		    if(throttle_mode == THROTTLE_MANUAL || throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED){
     		    // increase throttle right before flip
                 set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
             }
@@ -52,7 +52,7 @@ void roll_flip()
 			    roll_rate_target_bf = 40000 * flip_dir;
 		    #endif
 		    // decrease throttle while inverted
-		    if(ap.manual_throttle){
+		    if(throttle_mode == THROTTLE_MANUAL || throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED){
                 set_throttle_out(g.rc_3.control_in - AAP_THR_DEC, false);
             }
         }else{
@@ -68,7 +68,7 @@ void roll_flip()
             // It will be handled by normal flight control loops
 
             // increase throttle to gain any lost alitude
-            if(ap.manual_throttle){
+            if(throttle_mode == THROTTLE_MANUAL || throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED){
                 set_throttle_out(g.rc_3.control_in + AAP_THR_INC, false);
             }
             flip_timer++;

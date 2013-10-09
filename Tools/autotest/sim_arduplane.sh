@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # home location lat, lon, alt, heading
-SIMHOME="-35.362938,149.165085,584,270"
+SIMHOME="-35.363261,149.165230,584,353"
 
 # check the instance number to allow for multiple copies of the sim running at once
 INSTANCE=0
@@ -62,4 +62,5 @@ popd
 # for example:
 # sim_arduplane.sh --out /dev/serial/by-id/usb-FTDI* --baudrate 57600 --map --console
 
+# mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
 mavproxy.py --master $MAVLINK_PORT --sitl $SIMOUT_PORT --out 127.0.0.1:14550 --out 127.0.0.1:14551 $*

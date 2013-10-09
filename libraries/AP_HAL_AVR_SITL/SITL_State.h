@@ -36,6 +36,7 @@ public:
     int gps_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
     static uint16_t pwm_output[11];
+    static uint16_t last_pwm_output[11];
     static uint16_t pwm_input[8];
     static bool pwm_valid;
     static void loop_hook(void);
@@ -43,6 +44,8 @@ public:
 
     // simulated airspeed
     static uint16_t airspeed_pin_value;
+    static uint16_t voltage_pin_value;
+    static uint16_t current_pin_value;
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
@@ -89,6 +92,7 @@ private:
 			    float airspeed);
     static void _fdm_input(void);
     static void _simulator_output(void);
+    static void _apply_servo_filter(float deltat);
     static uint16_t _airspeed_sensor(float airspeed);
     static float _gyro_drift(void);
     static float _rand_float(void);
@@ -109,7 +113,7 @@ private:
     static bool _motors_on;
 
     static AP_Baro_HIL *_barometer;
-    static AP_InertialSensor_Stub *_ins;
+    static AP_InertialSensor_HIL *_ins;
     static SITLScheduler *_scheduler;
     static AP_Compass_HIL *_compass;
 

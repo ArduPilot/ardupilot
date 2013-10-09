@@ -7,7 +7,6 @@
 #include <AP_HAL_PX4.h>
 #include "AP_HAL_PX4_Namespace.h"
 #include "HAL_PX4_Class.h"
-#include "Console.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include "Storage.h"
@@ -36,7 +35,6 @@ static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::EmptySPIDeviceManager spiDeviceManager;
 //static Empty::EmptyGPIO gpioDriver;
 
-static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
@@ -63,7 +61,7 @@ HAL_PX4::HAL_PX4() :
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */
-        &consoleDriver, /* console */
+        &uartADriver, /* console */
         &gpioDriver, /* gpio */
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
@@ -114,7 +112,6 @@ static int main_loop(int argc, char **argv)
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
-    hal.console->init((void*) hal.uartA);
     hal.scheduler->init(NULL);
     hal.rcin->init(NULL);
     hal.rcout->init(NULL);

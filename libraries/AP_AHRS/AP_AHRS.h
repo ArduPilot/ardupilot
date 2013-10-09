@@ -191,6 +191,14 @@ public:
     // return a ground vector estimate in meters/second, in North/East order
     Vector2f groundspeed_vector(void);
 
+    // return ground speed estimate in meters/second. Used by ground vehicles.
+    float groundspeed(void) const {
+        if (!_gps || _gps->status() <= GPS::NO_FIX) {
+            return 0.0f;
+        }
+        return _gps->ground_speed_cm * 0.01f;
+    }
+
     // return true if we will use compass for yaw
     virtual bool use_compass(void) const { return _compass && _compass->use_for_yaw(); }
 
@@ -276,7 +284,6 @@ protected:
 };
 
 #include <AP_AHRS_DCM.h>
-#include <AP_AHRS_MPU6000.h>
 #include <AP_AHRS_HIL.h>
 
 #endif // __AP_AHRS_H__

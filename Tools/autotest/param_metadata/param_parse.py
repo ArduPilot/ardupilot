@@ -104,12 +104,21 @@ for library in libraries:
         paths = library.Path.split(',')
         for path in paths:
             path = path.strip()
-            debug("\n Processing file %s" % path)
-            libraryfname = os.path.normpath(os.path.join(apm_path + '/libraries/' + path))
+            debug("\n Processing file '%s'" % path)
+            if path.endswith('.pde'):
+                if len(vehicles) != 1:
+                    print("Unable to handle multiple vehicles with .pde library")
+                    continue
+                libraryfname = os.path.join(vehicles[0].path, path)
+            else:
+                libraryfname = os.path.normpath(os.path.join(apm_path + '/libraries/' + path))
             if path and os.path.exists(libraryfname):
                 f = open(libraryfname)
                 p_text = f.read()
                 f.close()
+            else:
+                error("Path %s not found for library %s" % (path, library.name))
+                continue
             
             param_matches = prog_group_param.findall(p_text)
             debug("Found %u documented parameters" % len(param_matches))

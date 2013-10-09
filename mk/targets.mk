@@ -17,6 +17,14 @@ apm2: HAL_BOARD = HAL_BOARD_APM2
 apm2: TOOLCHAIN = AVR
 apm2: all
 
+flymaple: HAL_BOARD = HAL_BOARD_FLYMAPLE
+flymaple: TOOLCHAIN = ARM
+flymaple: all
+
+linux: HAL_BOARD = HAL_BOARD_LINUX
+linux: TOOLCHAIN = NATIVE
+linux: all
+
 empty: HAL_BOARD = HAL_BOARD_EMPTY
 empty: TOOLCHAIN = AVR
 empty: all

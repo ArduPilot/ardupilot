@@ -8,24 +8,40 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#ifdef __CYGWIN__
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <assert.h> 
+#include <windows.h> 
+#include <string.h> 
+#include <memory.h> 
+#include <process.h> 
+#include <time.h>
+#endif
+
 using namespace AVR_SITL;
 
 extern const AP_HAL::HAL& hal;
 
 
-AP_HAL::TimedProc SITLScheduler::_failsafe = NULL;
+AP_HAL::Proc SITLScheduler::_failsafe = NULL;
 volatile bool SITLScheduler::_timer_suspended = false;
 volatile bool SITLScheduler::_timer_event_missed = false;
 
-AP_HAL::TimedProc SITLScheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc SITLScheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t SITLScheduler::_num_timer_procs = 0;
 bool SITLScheduler::_in_timer_proc = false;
 
-AP_HAL::TimedProc SITLScheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc SITLScheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t SITLScheduler::_num_io_procs = 0;
 bool SITLScheduler::_in_io_proc = false;
 
 struct timeval SITLScheduler::_sketch_start_time;
+
+#ifdef __CYGWIN__
+double SITLScheduler::_cyg_freq = 0;
+long SITLScheduler::_cyg_start = 0;
+#endif
 
 SITLScheduler::SITLScheduler()
 {}
@@ -33,15 +49,38 @@ SITLScheduler::SITLScheduler()
 void SITLScheduler::init(void *unused) 
 {
 	gettimeofday(&_sketch_start_time,NULL);
+
+#ifdef __CYGWIN__
+	LARGE_INTEGER lFreq, lCnt;
+	QueryPerformanceFrequency(&lFreq);
+	_cyg_freq = (double)lFreq.LowPart;
+	QueryPerformanceCounter(&lCnt);
+	_cyg_start = lCnt.LowPart;
+#endif
+
 }
+#ifdef __CYGWIN__
+double SITLScheduler::_cyg_sec()
+{
+	LARGE_INTEGER lCnt;
+	long tcnt;
+	QueryPerformanceCounter(&lCnt);
+ 	tcnt = lCnt.LowPart - _cyg_start;
+ 	return ((double)tcnt) / _cyg_freq;
+}
+#endif
 
 uint32_t SITLScheduler::_micros() 
 {
+#ifdef __CYGWIN__
+	return (uint32_t)(_cyg_sec() * 1.0e6);
+#else   
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
 	return 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
 		      (_sketch_start_time.tv_sec +
 		       (_sketch_start_time.tv_usec*1.0e-6)));
+#endif
 }
 
 uint32_t SITLScheduler::micros() 
@@ -51,11 +90,16 @@ uint32_t SITLScheduler::micros()
 
 uint32_t SITLScheduler::millis() 
 {
+#ifdef __CYGWIN__
+	// 1000 ms in a second
+	return (uint32_t)(_cyg_sec() * 1000);
+#else
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
 	return 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
 		      (_sketch_start_time.tv_sec +
 		       (_sketch_start_time.tv_usec*1.0e-6)));
+#endif
 }
 
 void SITLScheduler::delay_microseconds(uint16_t usec) 
@@ -91,7 +135,7 @@ void SITLScheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void SITLScheduler::register_timer_process(AP_HAL::TimedProc proc) 
+void SITLScheduler::register_timer_process(AP_HAL::MemberProc proc) 
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -106,7 +150,7 @@ void SITLScheduler::register_timer_process(AP_HAL::TimedProc proc)
 
 }
 
-void SITLScheduler::register_io_process(AP_HAL::TimedProc proc) 
+void SITLScheduler::register_io_process(AP_HAL::MemberProc proc) 
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -121,7 +165,7 @@ void SITLScheduler::register_io_process(AP_HAL::TimedProc proc)
 
 }
 
-void SITLScheduler::register_timer_failsafe(AP_HAL::TimedProc failsafe, uint32_t period_us) 
+void SITLScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) 
 {
     _failsafe = failsafe;
 }
@@ -161,14 +205,13 @@ void SITLScheduler::sitl_end_atomic() {
         _nested_atomic_ctr--;
 }   
 
-void SITLScheduler::reboot() 
+void SITLScheduler::reboot(bool hold_in_bootloader) 
 {
     hal.uartA->println_P(PSTR("REBOOT NOT IMPLEMENTED\r\n"));
 }
 
 void SITLScheduler::_run_timer_procs(bool called_from_isr) 
 {
-    uint32_t tnow = _micros();
     if (_in_timer_proc) {
         // the timer calls took longer than the period of the
         // timer. This is bad, and may indicate a serious
@@ -181,7 +224,7 @@ void SITLScheduler::_run_timer_procs(bool called_from_isr)
         // block. If it does then we will recurse and die when
         // we run out of stack
         if (_failsafe != NULL) {
-            _failsafe(tnow);
+            _failsafe();
         }
         return;
     }
@@ -191,7 +234,7 @@ void SITLScheduler::_run_timer_procs(bool called_from_isr)
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](tnow);
+                _timer_proc[i]();
             }
         }
     } else if (called_from_isr) {
@@ -200,7 +243,7 @@ void SITLScheduler::_run_timer_procs(bool called_from_isr)
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe(tnow);
+        //_failsafe(NULL);
     }
 
     _in_timer_proc = false;
@@ -208,7 +251,6 @@ void SITLScheduler::_run_timer_procs(bool called_from_isr)
 
 void SITLScheduler::_run_io_procs(bool called_from_isr) 
 {
-    uint32_t tnow = _micros();
     if (_in_io_proc) {
         return;
     }
@@ -218,7 +260,7 @@ void SITLScheduler::_run_io_procs(bool called_from_isr)
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
             if (_io_proc[i] != NULL) {
-                _io_proc[i](tnow);
+                _io_proc[i]();
             }
         }
     } else if (called_from_isr) {

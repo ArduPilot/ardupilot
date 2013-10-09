@@ -9,6 +9,9 @@
 #include <AP_Param.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_Linux.h>
+#include <AP_HAL_PX4.h>
+#include <AP_HAL_Empty.h>
 #include <AP_Notify.h>          // Notify library
 #include <AP_BoardLED.h>        // Board LED library
 

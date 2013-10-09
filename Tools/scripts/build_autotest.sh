@@ -85,22 +85,28 @@ rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 pushd PX4Firmware
 git fetch origin
 git reset --hard origin/master
+git show
 popd
 
 pushd PX4NuttX
 git fetch origin
 git reset --hard origin/master
+git show
 popd
 
 echo "Updating pymavlink"
 pushd mavlink/pymavlink
-git pr
+git fetch origin
+git reset --hard origin/master
+git show
 python setup.py build install --user
 popd
 
 echo "Updating MAVProxy"
 pushd MAVProxy
-git pr
+git fetch origin
+git reset --hard origin/master
+git show
 python setup.py build install --user
 popd
 
@@ -130,6 +136,8 @@ echo $githash > "buildlogs/history/$hdate/githash.txt"
 (cd APM && Tools/scripts/build_parameters.sh)
 
 (cd APM && Tools/scripts/build_docs.sh)
+
+killall -9 JSBSim || /bin/true
 
 timelimit 5200 APM/Tools/autotest/autotest.py --timeout=5000 > buildlogs/autotest-output.txt 2>&1
 

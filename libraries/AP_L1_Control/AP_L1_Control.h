@@ -50,6 +50,13 @@ public:
 	void update_level_flight(void);
 	bool reached_loiter_target(void);
 
+    // set the default NAVL1_PERIOD
+    void set_default_period(float period) {
+        if (!_L1_period.load()) {
+            _L1_period.set(period);
+        }
+    }
+
 	// this supports the NAVl1_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -92,6 +92,11 @@ public:
         k_param_relay,
         k_param_takeoff_throttle_delay,
         k_param_skip_gyro_cal,
+        k_param_auto_fbw_steer,
+        k_param_waypoint_max_radius,
+        k_param_ground_steer_alt,        
+        k_param_ground_steer_dps,
+        k_param_rally_limit_km,
 
         // 110: Telemetry control
         //
@@ -113,6 +118,7 @@ public:
         k_param_flybywire_climb_rate,
         k_param_acro_roll_rate,
         k_param_acro_pitch_rate,
+        k_param_acro_locking,
 
         //
         // 130: Sensor parameters
@@ -122,11 +128,11 @@ public:
 
         k_param_compass_enabled,
         k_param_compass,
-        k_param_battery_monitoring,
-        k_param_volt_div_ratio,
-        k_param_curr_amp_per_volt,
+        k_param_battery_monitoring, // unused
+        k_param_volt_div_ratio,     // unused
+        k_param_curr_amp_per_volt,  // unused
         k_param_input_voltage, // deprecated, can be deleted
-        k_param_pack_capacity,
+        k_param_pack_capacity,      // unused
         k_param_sonar_enabled,
         k_param_ahrs,  // AHRS group
         k_param_barometer,   // barometer ground calibration
@@ -158,9 +164,10 @@ public:
         //
         // Battery monitoring parameters
         //
-        k_param_rssi_pin = 167,
-        k_param_battery_volt_pin,
-        k_param_battery_curr_pin,   // 169
+        k_param_battery = 166,
+        k_param_rssi_pin,
+        k_param_battery_volt_pin,   // unused
+        k_param_battery_curr_pin,   // unused - 169
 
         //
         // 170: Radio settings
@@ -238,6 +245,8 @@ public:
         k_param_L1_controller,
         k_param_rcmap,
         k_param_TECS_controller,
+        k_param_rally_total,
+        k_param_steerController,
 
         //
         // 240: PID Controllers
@@ -248,7 +257,7 @@ public:
         k_param_pidServoRudder, // unused
         k_param_pidTeThrottle, // unused
         k_param_pidNavPitchAltitude, // unused
-        k_param_pidWheelSteer,
+        k_param_pidWheelSteer, // unused
 
         // 254,255: reserved
     };
@@ -269,6 +278,8 @@ public:
     AP_Float kff_rudder_mix;
     AP_Float kff_pitch_to_throttle;
     AP_Float kff_throttle_to_pitch;
+    AP_Float ground_steer_alt;
+    AP_Int16 ground_steer_dps;
 
     // speed used for speed scaling
     AP_Float scaling_speed;
@@ -281,6 +292,7 @@ public:
 
     // skip gyro calibration
     AP_Int8  skip_gyro_cal;
+    AP_Int8  auto_fbw_steer;
 
     // Estimation
     //
@@ -293,6 +305,7 @@ public:
     AP_Int8 command_total;
     AP_Int8 command_index;
     AP_Int16 waypoint_radius;
+    AP_Int16 waypoint_max_radius;
     AP_Int16 loiter_radius;
 
 #if GEOFENCE_ENABLED == ENABLED
@@ -302,6 +315,9 @@ public:
     AP_Int16 fence_minalt;    // meters
     AP_Int16 fence_maxalt;    // meters
 #endif
+
+    AP_Int8 rally_total;
+    AP_Float rally_limit_km;
 
     // Fly-by-wire
     //
@@ -341,6 +357,7 @@ public:
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
     AP_Int16 acro_pitch_rate;
+    AP_Int8  acro_locking;
 
     // Misc
     //
@@ -369,18 +386,11 @@ public:
 #endif
 
     AP_Int8 compass_enabled;
-    AP_Int8 battery_monitoring;                 // 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
-    AP_Float volt_div_ratio;
-    AP_Float curr_amp_per_volt;
-    AP_Float curr_amp_offset;
-    AP_Int32 pack_capacity;                     // Battery pack capacity less reserve
     AP_Int8 rssi_pin;
-    AP_Int8 battery_volt_pin;
-    AP_Int8 battery_curr_pin;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
@@ -407,9 +417,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux rc_12;
 #endif
-
-    // PID controllers
-    PID         pidWheelSteer;
+    uint8_t _dummy;
 
     Parameters() :
         // variable				default
@@ -432,11 +440,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12                                   (CH_12),
 #endif
-
-        // PID controller    initial P        initial I        initial D        initial imax
-        //-----------------------------------------------------------------------------------
-        pidWheelSteer         (0, 0, 0, 0)
-
+        _dummy(0)
         {}
 };
 

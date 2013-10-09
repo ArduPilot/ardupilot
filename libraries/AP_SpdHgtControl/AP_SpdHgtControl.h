@@ -19,21 +19,6 @@
 
 class AP_SpdHgtControl {
 public:
-	/*
-	  these are key speed/height control parameters which are passed 
-	  to the controller at initialisation
-	 */
-	struct AircraftParameters {
-		AP_Int8 throttle_min;
-		AP_Int8 throttle_max;	
-		AP_Int8 throttle_slewrate;
-		AP_Int8 throttle_cruise;
-		AP_Int16 airspeed_min;
-		AP_Int16 airspeed_max;
-		AP_Int16 pitch_limit_max_cd;
-		AP_Int16 pitch_limit_min_cd;
-	};
-
 	// Update the internal state of the height and height rate estimator
 	// Update of the inertial speed rate estimate internal state
 	// Should be called at 50Hz or faster

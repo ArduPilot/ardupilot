@@ -59,7 +59,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 void AP_MotorsMatrix::set_frame_orientation( uint8_t new_orientation )
 {
     // return if nothing has changed
-    if( new_orientation == _frame_orientation ) {
+    if( new_orientation == _flags.frame_orientation ) {
         return;
     }
 
@@ -132,7 +132,14 @@ void AP_MotorsMatrix::output_armed()
 
     // Throttle is 0 to 1000 only
     // To-Do: we should not really be limiting this here because we don't "own" this _rc_throttle object
-    _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
+    if (_rc_throttle->servo_out < 0) {
+        _rc_throttle->servo_out = 0;
+        limit.throttle_lower = true;
+    }
+    if (_rc_throttle->servo_out > _max_throttle) {
+        _rc_throttle->servo_out = _max_throttle;
+        limit.throttle_upper = true;
+    }
 
     // capture desired roll, pitch, yaw and throttle from receiver
     _rc_roll->calc_pwm();

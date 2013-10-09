@@ -89,30 +89,10 @@
 // main board differences
 //
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- # define A_LED_PIN        37
- # define B_LED_PIN        36
- # define C_LED_PIN        35
- # define LED_ON           HIGH
- # define LED_OFF          LOW
- # define USB_MUX_PIN      -1
- # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
- # define BATTERY_CURR_PIN      1      // Battery current on A1
  # define CONFIG_INS_TYPE CONFIG_INS_OILPAN
  # define CONFIG_BARO     AP_BARO_BMP085
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
- # define LED_ON           LOW
- # define LED_OFF          HIGH
- #if TELEMETRY_UART2 == ENABLED
-  # define USB_MUX_PIN -1
- #else
-  # define USB_MUX_PIN 23
- #endif
- # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
- # define BATTERY_CURR_PIN      2      // Battery current on A2
  # define CONFIG_INS_TYPE CONFIG_INS_MPU6000
  # ifdef APM2_BETA_HARDWARE
  #  define CONFIG_BARO     AP_BARO_BMP085
@@ -122,29 +102,25 @@
  # endif
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
- # define LED_ON           LOW
- # define LED_OFF          HIGH
- # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
- # define BATTERY_CURR_PIN      2      // Battery current on A2
- # define CONFIG_INS_TYPE CONFIG_INS_STUB
+ # define CONFIG_INS_TYPE CONFIG_INS_HIL
  # define CONFIG_BARO     AP_BARO_HIL
  # define CONFIG_COMPASS  AP_COMPASS_HIL
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- # define A_LED_PIN        27
- # define B_LED_PIN        26
- # define C_LED_PIN        25
- # define LED_ON           LOW
- # define LED_OFF          HIGH
- # define USB_MUX_PIN -1
- # define BATTERY_VOLT_PIN      -1
- # define BATTERY_CURR_PIN      -1
  # define CONFIG_INS_TYPE CONFIG_INS_PX4
  # define CONFIG_BARO AP_BARO_PX4
  # define CONFIG_COMPASS  AP_COMPASS_PX4
  # define SERIAL0_BAUD 115200
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+ # define CONFIG_INS_TYPE CONFIG_INS_FLYMAPLE
+ # define CONFIG_BARO AP_BARO_BMP085
+ # define CONFIG_COMPASS  AP_COMPASS_HMC5843
+ # define SERIAL0_BAUD 115200
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ # define BATTERY_VOLT_PIN      -1
+ # define BATTERY_CURR_PIN      -1
+ # define CONFIG_INS_TYPE CONFIG_INS_L3G4200D
+ # define CONFIG_BARO     AP_BARO_BMP085
+ # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 #endif
 
 
@@ -169,7 +145,7 @@
  #undef CONFIG_BARO
  #define CONFIG_BARO AP_BARO_HIL
  #undef CONFIG_INS_TYPE
- #define CONFIG_INS_TYPE CONFIG_INS_STUB
+ #define CONFIG_INS_TYPE CONFIG_INS_HIL
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
 #endif
@@ -198,21 +174,6 @@
  # define SERIAL3_BAUD                    57600
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef VOLT_DIV_RATIO
- # define VOLT_DIV_RATIO                 3.56   // This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-//# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
-//# define VOLT_DIV_RATIO		4.127	// This is the proper value for the AttoPilot 13.6V/45A sensor
-
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
- # define CURR_AMP_PER_VOLT              27.32  // This is the proper value for the AttoPilot 50V/90A sensor
-//# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -708,5 +669,9 @@
 
 #ifndef SERIAL_BUFSIZE
  # define SERIAL_BUFSIZE 512
+#endif
+
+#ifndef SERIAL2_BUFSIZE
+ # define SERIAL2_BUFSIZE 256
 #endif
 

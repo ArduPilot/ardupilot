@@ -26,7 +26,7 @@
 
 #include <DataFlash.h>
 #include <APM_Control.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
@@ -115,21 +115,6 @@ void setup(void)
     stream_loopback(hal.console, 10000);
     hal.console->println("loopback done");
 
-    hal.console->println("opening backend:");
-    
-    hal.console->backend_open();
-
-    const char hello[] = "hello world\r\n";
-    hal.console->backend_write((const uint8_t*)hello, strlen(hello));
-
-    hal.console->println("loopback for 10sec:");
-    stream_console_loopback(hal.console, hal.console, 10000);
-    hal.console->println("loopback done");
-
-    hal.console->backend_close();
-    hal.console->println("closed backend.");
-
-    hal.console->println("done.");
     for(;;);
 
 }

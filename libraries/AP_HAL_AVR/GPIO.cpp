@@ -202,5 +202,18 @@ void AVRDigitalSource::toggle() {
     SREG = oldSREG;
 }
 
+/*
+  return true when USB is connected
+ */
+bool AVRGPIO::usb_connected(void)
+{
+#if HAL_GPIO_USB_MUX_PIN != -1
+    pinMode(HAL_GPIO_USB_MUX_PIN, GPIO_INPUT);
+    return !read(HAL_GPIO_USB_MUX_PIN);
+#else
+    return false;
+#endif
+}
+
 
 #endif

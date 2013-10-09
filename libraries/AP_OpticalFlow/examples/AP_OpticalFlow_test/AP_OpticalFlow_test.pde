@@ -58,16 +58,16 @@ void display_menu()
 void display_config()
 {
     hal.console->print("Config: ");
-    hal.console->print(flowSensor.read_register(ADNS3080_CONFIGURATION_BITS),BIN);
+    hal.console->print(flowSensor.read_register(ADNS3080_CONFIGURATION_BITS),BASE_BIN);
     hal.scheduler->delay_microseconds(50);
     hal.console->print(",");
-    hal.console->print(flowSensor.read_register(ADNS3080_EXTENDED_CONFIG),BIN);
+    hal.console->print(flowSensor.read_register(ADNS3080_EXTENDED_CONFIG),BASE_BIN);
     hal.scheduler->delay_microseconds(50);
     hal.console->println();
 
     // product id
     hal.console->print("\tproduct id:     ");
-    hal.console->print(flowSensor.read_register(ADNS3080_PRODUCT_ID),HEX);
+    hal.console->print(flowSensor.read_register(ADNS3080_PRODUCT_ID),BASE_HEX);
     hal.scheduler->delay_microseconds(50);
     hal.console->print(" (hex)");
     hal.console->println();
@@ -308,15 +308,15 @@ void display_motion()
 
         // x,y,squal
         hal.console->print("x/dx: ");
-        hal.console->print(flowSensor.x,DEC);
+        hal.console->print(flowSensor.x,BASE_DEC);
         hal.console->print("/");
-        hal.console->print(flowSensor.dx,DEC);
+        hal.console->print(flowSensor.dx,BASE_DEC);
         hal.console->print("\ty/dy: ");
-        hal.console->print(flowSensor.y,DEC);
+        hal.console->print(flowSensor.y,BASE_DEC);
         hal.console->print("/");
-        hal.console->print(flowSensor.dy,DEC);
+        hal.console->print(flowSensor.dy,BASE_DEC);
         hal.console->print("\tsqual:");
-        hal.console->print(flowSensor.surface_quality,DEC);
+        hal.console->print(flowSensor.surface_quality,BASE_DEC);
         hal.console->println();
         first_time = false;
 

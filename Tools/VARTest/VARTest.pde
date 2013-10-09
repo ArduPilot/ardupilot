@@ -30,6 +30,7 @@
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
 #include <AP_SpdHgtControl.h>
 #include <memcheck.h>
 

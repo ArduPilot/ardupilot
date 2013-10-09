@@ -60,61 +60,33 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 # define CONFIG_INS_TYPE   CONFIG_INS_OILPAN
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
-# define A_LED_PIN        37
-# define B_LED_PIN        36
-# define C_LED_PIN        35
-# define LED_ON           HIGH
-# define LED_OFF          LOW
-# define SLIDE_SWITCH_PIN 40
-# define PUSHBUTTON_PIN   41
-# define USB_MUX_PIN      -1
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define CONFIG_INS_TYPE   CONFIG_INS_MPU6000
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
-# define CONFIG_PUSHBUTTON DISABLED
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN 23
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-# define CONFIG_INS_TYPE CONFIG_INS_STUB
+# define CONFIG_INS_TYPE CONFIG_INS_HIL
 # define CONFIG_COMPASS  AP_COMPASS_HIL
-# define CONFIG_PUSHBUTTON DISABLED
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN -1
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 # define CONFIG_INS_TYPE   CONFIG_INS_PX4
 # define CONFIG_COMPASS  AP_COMPASS_PX4
-# define CONFIG_PUSHBUTTON DISABLED
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
-# define SLIDE_SWITCH_PIN (-1)
-# define PUSHBUTTON_PIN   (-1)
-# define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN -1
 # define BATTERY_PIN_1	  -1
 # define CURRENT_PIN_1	  -1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+# define CONFIG_INS_TYPE   CONFIG_INS_FLYMAPLE
+# define CONFIG_COMPASS  AP_COMPASS_HMC5843
+# define BATTERY_PIN_1     20
+# define CURRENT_PIN_1	   19
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+# define CONFIG_INS_TYPE   CONFIG_INS_L3G4200D
+# define CONFIG_COMPASS  AP_COMPASS_HMC5843
+# define BATTERY_PIN_1     -1
+# define CURRENT_PIN_1	   -1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -135,7 +107,7 @@
  #undef GPS_PROTOCOL
  #define GPS_PROTOCOL GPS_PROTOCOL_HIL
  #undef CONFIG_INS_TYPE
- #define CONFIG_INS_TYPE CONFIG_INS_STUB
+ #define CONFIG_INS_TYPE CONFIG_INS_HIL
  #undef  CONFIG_COMPASS
  #define CONFIG_COMPASS  AP_COMPASS_HIL
 #endif
@@ -170,30 +142,6 @@
 
 #ifndef TUNING_OPTION
 # define TUNING_OPTION		          TUN_NONE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef BATTERY_EVENT
-# define BATTERY_EVENT			DISABLED
-#endif
-#ifndef LOW_VOLTAGE
-# define LOW_VOLTAGE			9.6
-#endif
-#ifndef VOLT_DIV_RATIO
-# define VOLT_DIV_RATIO			3.56	// This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
-# define CURR_AMP_PER_VOLT		27.32	// This is the proper value for the AttoPilot 50V/90A sensor
-#endif
-
-#ifndef CURR_AMPS_OFFSET
-# define CURR_AMPS_OFFSET		0.0
-#endif
-#ifndef HIGH_DISCHARGE
-# define HIGH_DISCHARGE		1760
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

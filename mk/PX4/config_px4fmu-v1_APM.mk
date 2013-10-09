@@ -20,6 +20,7 @@ MODULES		+= drivers/led
 MODULES		+= drivers/px4io
 MODULES		+= drivers/px4fmu
 MODULES		+= drivers/boards/px4fmu-v1
+MODULES		+= drivers/rgbled
 MODULES		+= drivers/l3gd20
 # MODULES		+= drivers/bma180
 MODULES		+= drivers/mpu6000
@@ -50,6 +51,7 @@ MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
+MODULES         += systemcmds/auth
 
 #
 # Libraries
@@ -58,6 +60,8 @@ MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/uORB
 MODULES		+= lib/mathlib/math/filter
+MODULES	        += modules/libtomfastmath
+MODULES         += modules/libtomcrypt
 
 #
 # Transitional support - add commands from the NuttX export archive.

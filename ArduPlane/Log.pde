@@ -383,10 +383,10 @@ static void Log_Write_Current()
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
         throttle_in             : channel_throttle->control_in,
-        battery_voltage         : (int16_t)(battery.voltage * 100.0),
-        current_amps            : (int16_t)(battery.current_amps * 100.0),
+        battery_voltage         : (int16_t)(battery.voltage() * 100.0),
+        current_amps            : (int16_t)(battery.current_amps() * 100.0),
         board_voltage           : board_voltage(),
-        current_total           : battery.current_total_mah
+        current_total           : battery.current_total_mah()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }

@@ -1105,7 +1105,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     }
 
     // see if they are the same type
-    if (ptype == header.type) {
+    if (ptype == (ap_var_type)header.type) {
         // copy the value over only if the new parameter does not already
         // have the old value (via a default).
         if (memcmp(ap2, ap, sizeof(old_value)) != 0) {

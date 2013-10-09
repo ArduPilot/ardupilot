@@ -27,7 +27,7 @@ def get_default_params(atype):
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
-    dest = util.reltopdir('../buildlogs/%s.defaults.txt' % atype)
+    dest = util.reltopdir('../buildlogs/%s-defaults.parm' % atype)
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
@@ -170,7 +170,6 @@ steps = [
     'fly.ArduPlane',
     'logs.ArduPlane',
 
-    'build1280.APMrover2',
     'build2560.APMrover2',
     'build.APMrover2',
     'defaults.APMrover2',
@@ -225,9 +224,6 @@ def run_step(step):
 
     if step == 'build2560.ArduPlane':
         return util.build_AVR('ArduPlane', board='mega2560')
-
-    if step == 'build1280.APMrover2':
-        return util.build_AVR('APMrover2', board='mega')
 
     if step == 'build2560.APMrover2':
         return util.build_AVR('APMrover2', board='mega2560')
@@ -353,15 +349,15 @@ def write_fullresults():
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
-    results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
+    results.addfile('ArduPlane defaults', 'ArduPlane-defaults.parm')
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
-    results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
+    results.addfile('ArduCopter defaults', 'ArduCopter-defaults.parm')
     results.addfile('APMrover2 build log', 'APMrover2.txt')
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
-    results.addfile('APMrover2 defaults', 'APMrover2.defaults.txt')
+    results.addfile('APMrover2 defaults', 'APMrover2-defaults.parm')
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')

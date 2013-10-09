@@ -40,6 +40,7 @@ bool ToshibaLED_PX4::hw_init()
         hal.console->printf("Unable to open " RGBLED_DEVICE_PATH);
         return false;
     }
+    ioctl(_rgbled_fd, RGBLED_SET_MODE, (unsigned long)RGBLED_MODE_ON);
     return true;
 }
 

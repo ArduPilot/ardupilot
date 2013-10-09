@@ -18,16 +18,24 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
     case TRAINING:
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = 1;
-        set_mode(CIRCLE);
+        if(g.short_fs_action == 2) {
+            set_mode(FLY_BY_WIRE_A);
+        } else {
+            set_mode(CIRCLE);
+        }
         break;
 
     case AUTO:
     case GUIDED:
     case LOITER:
-        if(g.short_fs_action == 1) {
+        if(g.short_fs_action != 0) {
             failsafe.saved_mode = control_mode;
             failsafe.saved_mode_set = 1;
-            set_mode(CIRCLE);
+            if(g.short_fs_action == 2) {
+                set_mode(FLY_BY_WIRE_A);
+            } else {
+                set_mode(CIRCLE);
+            }
         }
         break;
 
@@ -56,13 +64,19 @@ static void failsafe_long_on_event(enum failsafe_state fstype)
     case CRUISE:
     case TRAINING:
     case CIRCLE:
-        set_mode(RTL);
+        if(g.long_fs_action == 2) {
+            set_mode(FLY_BY_WIRE_A);
+        } else {
+            set_mode(RTL);
+        }
         break;
 
     case AUTO:
     case GUIDED:
     case LOITER:
-        if(g.long_fs_action == 1) {
+        if(g.long_fs_action == 2) {
+            set_mode(FLY_BY_WIRE_A);
+        } else if (g.long_fs_action == 1) {
             set_mode(RTL);
         }
         break;
@@ -90,14 +104,15 @@ static void failsafe_short_off_event()
 
 void low_battery_event(void)
 {
-    if (battery.low_batttery) {
+    if (failsafe.low_battery) {
         return;
     }
     gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
-                      battery.voltage, battery.current_total_mah);
+                      battery.voltage(), battery.current_total_mah());
     set_mode(RTL);
     aparm.throttle_cruise.load();
-    battery.low_batttery = true;
+    failsafe.low_battery = true;
+    AP_Notify::flags.failsafe_battery = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

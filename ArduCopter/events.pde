@@ -50,7 +50,7 @@ static void failsafe_radio_on_event()
             break;
         case LAND:
             // continue to land if battery failsafe is also active otherwise fall through to default handling
-            if (g.failsafe_battery_enabled && ap.low_battery) {
+            if (g.failsafe_battery_enabled && failsafe.low_battery) {
                 break;
             }
         default:
@@ -85,8 +85,13 @@ static void failsafe_radio_off_event()
 
 static void low_battery_event(void)
 {
+    // return immediately if low battery event has already been triggered
+    if (failsafe.low_battery) {
+        return;
+    }
+
     // failsafe check
-    if (g.failsafe_battery_enabled && !ap.low_battery && motors.armed()) {
+    if (g.failsafe_battery_enabled && motors.armed()) {
         switch(control_mode) {
             case STABILIZE:
             case ACRO:
@@ -123,7 +128,6 @@ static void low_battery_event(void)
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 #if COPTER_LEDS == ENABLED
-    // Only Activate if a battery is connected to avoid alarm on USB only
     piezo_on();
 #endif // COPTER_LEDS
 }
@@ -139,12 +143,12 @@ static void failsafe_gps_check()
     }
 
     // calc time since last gps update
-    last_gps_update_ms = millis() - g_gps->last_fix_time;
+    last_gps_update_ms = millis() - gps_glitch.last_good_update();
 
     // check if all is well
     if( last_gps_update_ms < FAILSAFE_GPS_TIMEOUT_MS) {
         // check for recovery from gps failsafe
-        if( ap.failsafe_gps ) {
+        if( failsafe.gps ) {
             failsafe_gps_off_event();
             set_failsafe_gps(false);
         }
@@ -152,7 +156,7 @@ static void failsafe_gps_check()
     }
 
     // do nothing if gps failsafe already triggered or motors disarmed
-    if( ap.failsafe_gps || !motors.armed()) {
+    if( failsafe.gps || !motors.armed()) {
         return;
     }
 
@@ -187,17 +191,17 @@ static void failsafe_gcs_check()
     uint32_t last_gcs_update_ms;
 
     // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs
-    if( g.failsafe_gcs == FS_GCS_DISABLED || last_heartbeat_ms == 0 || !ap.rc_override_active) {
+    if( g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || !failsafe.rc_override_active) {
         return;
     }
 
     // calc time since last gcs update
-    last_gcs_update_ms = millis() - last_heartbeat_ms;
+    last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
 
     // check if all is well
     if( last_gcs_update_ms < FS_GCS_TIMEOUT_MS) {
         // check for recovery from gcs failsafe
-        if( ap.failsafe_gcs ) {
+        if (failsafe.gcs) {
             failsafe_gcs_off_event();
             set_failsafe_gcs(false);
         }
@@ -205,7 +209,7 @@ static void failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
-    if( ap.failsafe_gcs || !motors.armed()) {
+    if( failsafe.gcs || !motors.armed()) {
         return;
     }
 

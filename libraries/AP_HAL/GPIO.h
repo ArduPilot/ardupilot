@@ -37,6 +37,9 @@ public:
     /* Interrupt interface: */
     virtual bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
             uint8_t mode) = 0;
+
+    /* return true if USB cable is connected */
+    virtual bool    usb_connected(void) = 0;
 };
 
 #endif // __AP_HAL_GPIO_H__

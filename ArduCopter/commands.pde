@@ -69,7 +69,6 @@ static void set_cmd_with_index(struct Location temp, int i)
 {
 
     i = constrain_int16(i, 0, g.command_total.get());
-    //cliSerial->printf("set_command: %d with id: %d\n", i, temp.id);
 
     // store home as 0 altitude!!!
     // Home is always a MAV_CMD_NAV_WAYPOINT (16)
@@ -129,7 +128,7 @@ static void init_home()
     set_cmd_with_index(home, 0);
 
     // set inertial nav's home position
-    inertial_nav.set_current_position(g_gps->longitude, g_gps->latitude);
+    inertial_nav.set_home_position(g_gps->longitude, g_gps->latitude);
 
     if (g.log_bitmask & MASK_LOG_CMD)
         Log_Write_Cmd(0, &home);

@@ -121,8 +121,10 @@ static void control_failsafe(uint16_t pwm)
     if (failsafe.rc_override_active) {
         if (millis() - failsafe.last_heartbeat_ms > g.short_fs_timeout*1000) {
             failsafe.ch3_failsafe = true;
+            AP_Notify::flags.failsafe_radio = true;
         } else {
             failsafe.ch3_failsafe = false;
+            AP_Notify::flags.failsafe_radio = false;
         }
 
         //Check for failsafe and debounce funky reads
@@ -131,12 +133,13 @@ static void control_failsafe(uint16_t pwm)
             // we detect a failsafe from radio
             // throttle has dropped below the mark
             failsafe.ch3_counter++;
-            if (failsafe.ch3_counter == 9) {
+            if (failsafe.ch3_counter == 10) {
                 gcs_send_text_fmt(PSTR("MSG FS ON %u"), (unsigned)pwm);
-            }else if(failsafe.ch3_counter == 10) {
                 failsafe.ch3_failsafe = true;
-            }else if (failsafe.ch3_counter > 10) {
-                failsafe.ch3_counter = 11;
+                AP_Notify::flags.failsafe_radio = true;
+            }
+            if (failsafe.ch3_counter > 10) {
+                failsafe.ch3_counter = 10;
             }
 
         }else if(failsafe.ch3_counter > 0) {
@@ -150,6 +153,7 @@ static void control_failsafe(uint16_t pwm)
                 gcs_send_text_fmt(PSTR("MSG FS OFF %u"), (unsigned)pwm);
             } else if(failsafe.ch3_counter == 0) {
                 failsafe.ch3_failsafe = false;
+                AP_Notify::flags.failsafe_radio = false;
             }
         }
     }

@@ -5,12 +5,12 @@
 
 #include <AP_AHRS.h>
 #include <AP_Common.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 #include <math.h>
 
 class AP_RollController {
 public:
-	AP_RollController(AP_AHRS &ahrs, const AP_SpdHgtControl::AircraftParameters &parms) :
+	AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
 		aparm(parms),
         _ahrs(ahrs)
     { 
@@ -25,7 +25,7 @@ public:
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	const AP_SpdHgtControl::AircraftParameters &aparm;
+	const AP_Vehicle::FixedWing &aparm;
 	AP_Float _tau;
 	AP_Float _K_P;
 	AP_Float _K_I;

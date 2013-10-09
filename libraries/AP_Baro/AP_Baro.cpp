@@ -115,7 +115,18 @@ void AP_Baro::calibrate()
     }
 
     _ground_pressure.set_and_save(ground_pressure);
-    _ground_temperature.set_and_save(ground_temperature / 10.0f);
+    _ground_temperature.set_and_save(ground_temperature);
+}
+
+/**
+   update the barometer calibration
+   this updates the baro ground calibration to the current values. It
+   can be used before arming to keep the baro well calibrated
+*/
+void AP_Baro::update_calibration()
+{
+    _ground_pressure.set(get_pressure());
+    _ground_temperature.set(get_temperature());
 }
 
 // return current altitude estimate relative to time that calibrate()

@@ -25,12 +25,14 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_Linux.h>
+#include <AP_HAL_Empty.h>
 #include <AP_ADC.h>
 #include <AP_ADC_AnalogSource.h>
 #include <Filter.h>
 #include <AP_Buffer.h>
 #include <AP_Airspeed.h>
-#include <AP_SpdHgtControl.h>
+#include <AP_Vehicle.h>
 #include <AP_Notify.h>
 #include <DataFlash.h>
 #include <GCS_MAVLink.h>
@@ -43,7 +45,7 @@ AP_ADC_ADS7844 apm1_adc;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-static AP_SpdHgtControl::AircraftParameters aparm;
+static AP_Vehicle::FixedWing aparm;
 
 AP_Airspeed airspeed(aparm);
 
@@ -63,6 +65,7 @@ void loop(void)
         airspeed.read();
         hal.console->printf("airspeed %.2f\n", airspeed.get_airspeed());
     }
+    hal.scheduler->delay(1);
 }
 
 AP_HAL_MAIN();

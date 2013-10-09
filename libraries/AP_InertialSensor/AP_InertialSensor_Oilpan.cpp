@@ -1,8 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_Oilpan.h"
+
+const extern AP_HAL::HAL& hal;
 
 // ADC channel mappings on for the APM Oilpan
 // Sensors: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
@@ -121,10 +123,26 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
     return ToRad(3.0/60);
 }
 
-// get number of samples read from the sensors
-uint16_t AP_InertialSensor_Oilpan::num_samples_available()
+// return true if a new sample is available
+bool AP_InertialSensor_Oilpan::sample_available()
 {
-    return _adc->num_samples_available(_sensors) / _sample_threshold;
+    return (_adc->num_samples_available(_sensors) / _sample_threshold) > 0;
 }
+
+bool AP_InertialSensor_Oilpan::wait_for_sample(uint16_t timeout_ms)
+{
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (sample_available()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // CONFIG_HAL_BOARD
 

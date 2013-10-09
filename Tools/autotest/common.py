@@ -211,11 +211,11 @@ def save_wp(mavproxy, mav):
     mavproxy.send('rc 7 1000\n')
     mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
 
-def wait_mode(mav, mode):
-    '''wait for a flight mode to be engaged'''
+def wait_mode(mav, mode, timeout=None):
     print("Waiting for mode %s" % mode)
-    mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, blocking=True)
+    mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, timeout=timeout, blocking=True)
     print("Got mode %s" % mode)
+    return mav.flightmode
 
 def mission_count(filename):
     '''load a mission from a file and return number of waypoints'''
@@ -223,3 +223,9 @@ def mission_count(filename):
     wploader.load(filename)
     num_wp = wploader.count()
     return num_wp
+
+def sim_location(mav):
+    '''return current simulator location'''
+    from pymavlink import mavutil
+    m = mav.recv_match(type='SIMSTATE', blocking=True)
+    return mavutil.location(m.lat*1.0e-7, m.lng*1.0e-7, 0, math.degrees(m.yaw))

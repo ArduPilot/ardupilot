@@ -6,7 +6,6 @@ namespace AVR_SITL {
     class SITLUARTDriver;
     class SITLScheduler;
     class SITL_State;
-    class SITLConsoleDriver;
     class SITLEEPROMStorage;
     class SITLAnalogIn; 
     class SITLRCInput;

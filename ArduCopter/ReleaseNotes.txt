@@ -1,5 +1,45 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc3 09-Oct-2013
+Improvements over 3.1-rc2
+1) GPS Glitch protection - gps positions are compared with the previous gps position.  Position accepted if within 10m or copter could have reached the position with max accel of 10m/s/s.
+2) Bug fix for pixhawk SPI bus contention that could lead to corrupted accelerometer values on pixhawk resolved
+3) Auto Tuning (compile time option only add "#define AUTOTUNE ENABLED" to APM_Config.h and set CH7_Opt or CH8_Opt parameter to 17)
+4) CPU Performance improvement when reading from MPU6k for APM
+5) SUPER_SIMPLE parameter changed to a bit map to allow some flight modes to use super simpler while others use regular simple (MP release to allow easier selection will go out with AC3.1 official release)
+6) Safety changes:
+    a) safety button must be pushed before arming on pixhawk
+    b) RGB LED (aka toshiba led) changed so that disarmed flashes, armed is either blue (if no gps lock) or green (if gps lock)
+    c) sensor health bitmask sent to groundstations
+------------------------------------------------------------------
+ArduCopter 3.1-rc2 18-Sep-2013
+Improvements over 3.1-rc1
+1) bug fix for MOT_SPIN_ARMED to allow it to be higher than 127
+2) PX4/pixhawk auto-detect internal/external compass so COMPASS_ORIENT should be set to ORIENTATION_NONE if using GPS+compass module
+------------------------------------------------------------------
+ArduCopter 3.1-rc1 9-Sep-2013
+Improvements over 3.0.1
+1) Support for Pixhawks board
+2) Arm, Disarm, Land and Takeoff in Loiter and AltHold
+3) Improved Acro
+    a) ACRO_RP_P, ACRO_YAW_P parameters added to control speed of rotation
+    b) ACRO_BAL_ROLL, ACRO_BAL_PITCH controls speed at which copter returns to level
+    c) ACRO_TRAINER can be set to 0:disable trainer, 1:auto leveling when sticks released, 2:auto leveling and lean angle limited to ANGLE_MAX
+    d) Ch7 & Ch8 switch to set ACRO_TRAINER options in-flight
+4) SPORT mode - equivalent of earth frame Acro with support for simple mode
+5) Sonar ground tracking improvements and bug fixes that reduce reaction to bad sonar data
+6) Safety improvements
+    a) motors always spin when armed (speed can be controlled with MOT_SPIN_ARMED, set to 0 to disable)
+    b) vehicle's maximum lean angle can be reduced (or increased) with the ANGLE_MAX parameter
+    c) arming check that GPS hdop is > 2.0 (disable by setting GPS_HDOP parameter to 900)
+    d) slow take-off in AUTO, LOITER, ALTHOLD to reduce chance of motor/esc burn-out on large copters
+7) Bug fixes:
+    a) Optical flow sensor initialisation fix
+    b) altitude control fix for Loiter_turns mission command (i.e. mission version of CIRCLE mode)
+    c) DO_SET_ROI fix (do not use "ROI")
+8) Distribute Loiter & Navigation calcs over 4 cycles to reduce impact on a single 100hz loop
+9) RCMAP_ parameters allow remapping input channels 1 ~ 4
+------------------------------------------------------------------
 ArduCopter 3.0.1-rc2 / 3.0.1 11-Jul-2013
 Improvements over 3.0.1-rc1
 1) Rate Roll, Pitch and Yaw I fix when we hit motor limits
