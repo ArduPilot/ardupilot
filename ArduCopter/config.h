@@ -400,13 +400,13 @@
 #endif
 
 // expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 495 or < 165
+  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 544 or < 115
  #endif
-#else // APM1, PX4, SITL
+#else // PX4, SITL
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 795 or < 265
+  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
  #endif
 #endif
 
