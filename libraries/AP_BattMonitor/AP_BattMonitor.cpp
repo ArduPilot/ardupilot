@@ -27,13 +27,13 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
 
     // @Param: VOLT_MULT
     // @DisplayName: Voltage Multiplier
-    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the PX4 using the PX4IO power supply this should be set to 1.
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the Pixhawk with the 3DR 4in1 ESC this should be 12.02. For the PX4 using the PX4IO power supply this should be set to 1.
     // @User: Advanced
     AP_GROUPINFO("VOLT_MULT", 3, AP_BattMonitor, _volt_multiplier, AP_BATT_VOLTDIVIDER_DEFAULT),
 
     // @Param: AMP_PERVOLT
-    // @DisplayName: Apms per volt
-    // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17.
+    // @DisplayName: Amps per volt
+    // @Description: Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17. For the Pixhawk with the 3DR 4in1 ESC this should be 17.
     // @Units: A/V
     // @User: Standard
     AP_GROUPINFO("AMP_PERVOLT", 4, AP_BattMonitor, _curr_amp_per_volt, AP_BATT_CURR_AMP_PERVOLT_DEFAULT),
@@ -122,7 +122,7 @@ bool AP_BattMonitor::exhausted(float low_voltage, float min_capacity_mah)
 
     // get current time
     uint32_t tnow = hal.scheduler->millis();
-    
+
     // check voltage
     if ((_voltage != 0) && (low_voltage > 0) && (_voltage < low_voltage)) {
         // this is the first time our voltage has dropped below minimum so start timer
