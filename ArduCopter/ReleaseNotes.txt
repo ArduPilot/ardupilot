@@ -1,9 +1,21 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc3 09-Oct-2013
+Improvements over 3.1-rc2
+1) GPS Glitch protection - gps positions are compared with the previous gps position.  Position accepted if within 10m or copter could have reached the position with max accel of 10m/s/s.
+2) Bug fix for pixhawk SPI bus contention that could lead to corrupted accelerometer values on pixhawk resolved
+3) Auto Tuning (compile time option only add "#define AUTOTUNE ENABLED" to APM_Config.h and set CH7_Opt or CH8_Opt parameter to 17)
+4) CPU Performance improvement when reading from MPU6k for APM
+5) SUPER_SIMPLE parameter changed to a bit map to allow some flight modes to use super simpler while others use regular simple (MP release to allow easier selection will go out with AC3.1 official release)
+6) Safety changes:
+    a) safety button must be pushed before arming on pixhawk
+    b) RGB LED (aka toshiba led) changed so that disarmed flashes, armed is either blue (if no gps lock) or green (if gps lock)
+    c) sensor health bitmask sent to groundstations
+------------------------------------------------------------------
 ArduCopter 3.1-rc2 18-Sep-2013
 Improvements over 3.1-rc1
 1) bug fix for MOT_SPIN_ARMED to allow it to be higher than 127
-2) PX4/pixhawks auto-detect internal/external compass so COMPASS_ORIENT should be set to ORIENTATION_NONE if using GPS+compass module
+2) PX4/pixhawk auto-detect internal/external compass so COMPASS_ORIENT should be set to ORIENTATION_NONE if using GPS+compass module
 ------------------------------------------------------------------
 ArduCopter 3.1-rc1 9-Sep-2013
 Improvements over 3.0.1
