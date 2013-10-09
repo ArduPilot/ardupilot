@@ -227,11 +227,6 @@ float AP_InertialSensor_Flymaple::get_delta_time(void)
     return _delta_time;
 }
 
-uint32_t AP_InertialSensor_Flymaple::get_last_sample_time_micros(void) 
-{
-    return _last_update_usec;
-}
-
 float AP_InertialSensor_Flymaple::get_gyro_drift_rate(void) 
 {
     // Dont really know this for the ITG-3200.
