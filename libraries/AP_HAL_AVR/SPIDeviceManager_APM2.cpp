@@ -22,16 +22,14 @@ void APM2SPIDeviceManager::init(void* machtnichts) {
 
     /* mpu6k cs is on Arduino pin 53, PORTB0 */
     AVRDigitalSource* mpu6k_cs = new AVRDigitalSource(_BV(0), PB);
-    /* mpu6k: divide clock by 32 to 500khz
-     * spcr gets bit SPR1,  spsr gets bit SPI2X */
-    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, _BV(SPR1), _BV(SPI2X));
+    /* mpu6k: run clock at 8MHz */
+    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, 0, _BV(SPI2X));
     _mpu6k->init();
 
     /* ms5611 cs is on Arduino pin 40, PORTG1 */
     AVRDigitalSource* ms5611_cs = new AVRDigitalSource(_BV(1), PG);
-    /* ms5611: divide clock by 32 to 500khz
-     * spcr gets bit SPR1,  spsr gets bit SPI2X */
-    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, _BV(SPR1), _BV(SPI2X));
+    /* mpu6k: run clock at 8MHz */
+    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, 0, _BV(SPI2X));
     _ms5611->init();
    
     /* optflow cs is on Arduino pin A3, PORTF3 */
