@@ -24,7 +24,7 @@
  # define AP_BATT_VOLT_PIN                  13      // APM2.5/2.6 with 3dr power module
  # define AP_BATT_CURR_PIN                  12
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 // Flymaple board pin 20 is connected to the external battery supply
 // via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k, 
@@ -33,29 +33,29 @@
  # define AP_BATT_VOLT_PIN                  20
  # define AP_BATT_CURR_PIN                  19
  # define AP_BATT_VOLTDIVIDER_DEFAULT       5.70588
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
  // px4
  # define AP_BATT_VOLT_PIN                  100
  # define AP_BATT_CURR_PIN                  101
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
  // pixhawk
  # define AP_BATT_VOLT_PIN                  2
  # define AP_BATT_CURR_PIN                  3
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define AP_BATT_VOLT_PIN                  13
  # define AP_BATT_CURR_PIN                  12
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #else
  # define AP_BATT_VOLT_PIN                  -1
  # define AP_BATT_CURR_PIN                  -1
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  18.002
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0
 #endif
 
 // Other values normally set directly by mission planner
