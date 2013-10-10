@@ -69,6 +69,32 @@ inline uint8_t AVRSPI0DeviceDriver::_transfer(uint8_t data) {
     return read_spdr;
 }
 
+/**
+   a specialised transfer function for the MPU6k. This saves 2 usec
+   per byte
+ */
+void AVRSPI0DeviceDriver::_transfer15(const uint8_t *tx, uint8_t *rx) 
+{
+    spi0_transferflag = true;
+#define TRANSFER1(i) do { SPDR = tx[i];  while(!(SPSR & _BV(SPIF))); rx[i] = SPDR; } while(0)
+    TRANSFER1(0);
+    TRANSFER1(1);
+    TRANSFER1(2);
+    TRANSFER1(3);
+    TRANSFER1(4);
+    TRANSFER1(5);
+    TRANSFER1(6);
+    TRANSFER1(7);
+    TRANSFER1(8);
+    TRANSFER1(9);
+    TRANSFER1(10);
+    TRANSFER1(11);
+    TRANSFER1(12);
+    TRANSFER1(13);
+    TRANSFER1(14);
+    spi0_transferflag = false;
+}
+
 void AVRSPI0DeviceDriver::transfer(const uint8_t *tx, uint16_t len) {
     for (uint16_t i = 0; i < len; i++) {
             _transfer(tx[i]);
@@ -83,6 +109,12 @@ void AVRSPI0DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
             _transfer(tx[i]);
         }
     } else {
+        while (len >= 15) {
+            _transfer15(tx, rx);
+            tx += 15;
+            rx += 15;
+            len -= 15;
+        }
         for (uint16_t i = 0; i < len; i++) {
             rx[i] = _transfer(tx[i]);
         }
