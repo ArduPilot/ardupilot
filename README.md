@@ -4,11 +4,10 @@ You can find lots of development information at the [ArduPilot development site]
 
 ## Getting the source
 
-You can either download the source using the "ZIP" button at the top
-of the github page, or you can make a clone using git:
+Make a clone using git:
 
 ```
-git clone git://github.com/diydrones/ardupilot.git
+https://github.com/KSU-AIAA-Student-Chapter/ardupilot.git
 ```
 
 ## Prerequisites
