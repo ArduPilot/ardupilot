@@ -64,6 +64,42 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="APM_Config.h" />
+    <ClInclude Include="compat.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="defines.h" />
+    <ClInclude Include="GCS.h" />
+    <ClInclude Include="Parameters.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="APM_Config.h.reference" />
+    <None Include="ArduPlane.pde" />
+    <None Include="Attitude.pde" />
+    <None Include="climb_rate.pde" />
+    <None Include="commands.pde" />
+    <None Include="commands_logic.pde" />
+    <None Include="commands_process.pde" />
+    <None Include="compat.pde" />
+    <None Include="control_modes.pde" />
+    <None Include="createTags" />
+    <None Include="events.pde" />
+    <None Include="failsafe.pde" />
+    <None Include="GCS_Mavlink.pde" />
+    <None Include="geofence.pde" />
+    <None Include="Log.pde" />
+    <None Include="Makefile" />
+    <None Include="navigation.pde" />
+    <None Include="nocore.inoflag" />
+    <None Include="Parameters.pde" />
+    <None Include="radio.pde" />
+    <None Include="rally.pde" />
+    <None Include="sensors.pde" />
+    <None Include="setup.pde" />
+    <None Include="system.pde" />
+    <None Include="test.pde" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="command_description.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

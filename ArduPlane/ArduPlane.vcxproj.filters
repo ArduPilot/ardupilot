@@ -14,4 +14,54 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="APM_Config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="compat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="defines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GCS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Parameters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="APM_Config.h.reference" />
+    <None Include="ArduPlane.pde" />
+    <None Include="createTags" />
+    <None Include="Makefile" />
+    <None Include="nocore.inoflag" />
+    <None Include="Attitude.pde" />
+    <None Include="climb_rate.pde" />
+    <None Include="commands.pde" />
+    <None Include="commands_logic.pde" />
+    <None Include="commands_process.pde" />
+    <None Include="compat.pde" />
+    <None Include="control_modes.pde" />
+    <None Include="events.pde" />
+    <None Include="failsafe.pde" />
+    <None Include="GCS_Mavlink.pde" />
+    <None Include="geofence.pde" />
+    <None Include="Log.pde" />
+    <None Include="navigation.pde" />
+    <None Include="Parameters.pde" />
+    <None Include="radio.pde" />
+    <None Include="rally.pde" />
+    <None Include="sensors.pde" />
+    <None Include="setup.pde" />
+    <None Include="system.pde" />
+    <None Include="test.pde" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="command_description.txt" />
+  </ItemGroup>
 </Project>
