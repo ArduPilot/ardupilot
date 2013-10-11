@@ -800,8 +800,6 @@ static AP_HAL::AnalogSource* rssi_analog_source;
 
 
 // Input sources for battery voltage, battery current, board vcc
-static AP_HAL::AnalogSource* batt_volt_analog_source;
-static AP_HAL::AnalogSource* batt_curr_analog_source;
 static AP_HAL::AnalogSource* board_vcc_analog_source;
 
 
