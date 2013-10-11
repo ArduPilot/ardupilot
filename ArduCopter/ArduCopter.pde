@@ -863,21 +863,23 @@ AP_Param param_loader(var_info, WP_START_BYTE);
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+    { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
     { update_nav_mode,       1,     400 },
     { medium_loop,           2,     700 },
     { update_altitude,      10,    1000 },
-    { fifty_hz_loop,         2,     950 },
     { run_nav_updates,      10,     800 },
     { slow_loop,            10,     500 },
-    { gcs_check_input,	     2,     700 },
-    { gcs_send_heartbeat,  100,     700 },
-    { gcs_data_stream_send,  2,    1500 },
-    { gcs_send_deferred,     2,    1200 },
     { compass_accumulate,    2,     700 },
     { barometer_accumulate,  2,     900 },
-    { super_slow_loop,     100,    1100 },
     { update_notify,         2,     100 },
+    { super_slow_loop,     100,    1100 },
+    { gcs_check_input,	     2,     700 },
+    { gcs_send_heartbeat,  100,     700 },
+    { gcs_send_deferred,     2,    1200 },
+    { gcs_data_stream_send,  2,    1500 },
+    { camera_loop,           2,      50 },      // times not verified
+    { fifty_hz_logging_loop, 2,     220 },
     { perf_update,        1000,     500 }
 };
 
@@ -1050,9 +1052,9 @@ static void fast_loop()
 #endif
 }
 
-// stuff that happens at 50 hz
+// throttle_loop - should be run at 50 hz
 // ---------------------------
-static void fifty_hz_loop()
+static void throttle_loop()
 {
     // get altitude and climb rate from inertial lib
     read_inertial_altitude();
@@ -1074,13 +1076,12 @@ static void fifty_hz_loop()
 #ifdef USERHOOK_50HZLOOP
     USERHOOK_50HZLOOP
 #endif
+}
 
-
-#if HIL_MODE != HIL_MODE_DISABLED && FRAME_CONFIG != HELI_FRAME
-    // HIL for a copter needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
-#endif
-
+// camera features
+// should be run at 50hz
+static void camera_loop()
+{
 #if MOUNT == ENABLED
     // update camera mount's position
     camera_mount.update_mount_position();
@@ -1094,16 +1095,26 @@ static void fifty_hz_loop()
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
 #endif
+}
+
+// fifty_hz_logging_loop
+// should be run at 50hz
+static void fifty_hz_logging_loop()
+{
+#if HIL_MODE != HIL_MODE_DISABLED
+    // HIL for a copter needs very fast update of the servo values
+    gcs_send_message(MSG_RADIO_OUT);
+#endif
 
 # if HIL_MODE == HIL_MODE_DISABLED
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
         Log_Write_Attitude();
     }
 
-    if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
+    if (g.log_bitmask & MASK_LOG_IMU && motors.armed()) {
         DataFlash.Log_Write_IMU(&ins);
+    }
 #endif
-
 }
 
 // medium_loop - runs at 10hz
