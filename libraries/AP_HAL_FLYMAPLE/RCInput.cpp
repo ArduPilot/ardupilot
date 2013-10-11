@@ -82,22 +82,18 @@ void FLYMAPLERCInput::_timer_capt_cb(void)
         // sync pulse detected.  Pass through values if at least a minimum number of channels received
         if( channel_ctr >= FLYMAPLE_RC_INPUT_MIN_CHANNELS ) {
             _valid_channels = channel_ctr;
+	    // Clear any remaining channels, in case they were corrupted during a connect or something
+	    while (channel_ctr < FLYMAPLE_RC_INPUT_NUM_CHANNELS)
+		_pulse_capt[channel_ctr++] = 0;
         }
         channel_ctr = 0;
     } else {
         if (channel_ctr < FLYMAPLE_RC_INPUT_NUM_CHANNELS) {
-	    if (channel_ctr == 6)
-		// fixme:
-		digitalWrite(2, 1);
-
             _pulse_capt[channel_ctr] = pulse_width;
             channel_ctr++;
             if (channel_ctr == FLYMAPLE_RC_INPUT_NUM_CHANNELS) {
                 _valid_channels = FLYMAPLE_RC_INPUT_NUM_CHANNELS;
             }
-
-	    // FIXME
-	    digitalWrite(2, 0);
         }
     }
     previous_count = current_count;
