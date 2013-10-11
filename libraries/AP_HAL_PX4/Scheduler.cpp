@@ -84,10 +84,12 @@ uint32_t PX4Scheduler::millis()
 
 void PX4Scheduler::delay_microseconds(uint16_t usec) 
 {
+#if 0
     if (_in_timer_proc) {
         ::printf("ERROR: delay_microseconds() from timer process\n");
         return;
     }
+#endif
     perf_begin(_perf_delay);
 	uint32_t start = micros();
     uint32_t dt;
@@ -99,10 +101,12 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
 
 void PX4Scheduler::delay(uint16_t ms)
 {
+#if 0
     if (_in_timer_proc) {
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
+#endif
     perf_begin(_perf_delay);
 	uint64_t start = hrt_absolute_time();
     

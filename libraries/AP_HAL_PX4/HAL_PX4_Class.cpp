@@ -168,12 +168,14 @@ static int main_loop(int argc, char **argv)
 
         perf_end(perf_loop);
 
+#if 0
         if (hal.scheduler->in_timerprocess()) {
             // we are running when a timer process is running! This is
             // a scheduling error, and breaks the assumptions made in
             // our locking system
             ::printf("ERROR: timer processing running in loop()\n");
         }
+#endif
 
         /*
           give up 500 microseconds of time, to ensure drivers get a
