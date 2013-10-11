@@ -777,14 +777,8 @@ static int16_t pmTest1;
 // --------------
 // Time in microseconds of main control loop
 static uint32_t fast_loopTimer;
-// Counters for branching from 10 hz control loop
-static uint8_t medium_loopCounter;
-// Counters for branching from 3 1/3hz control loop
-static uint8_t slow_loopCounter;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
-// Counters for branching from 4 minute control loop used to save Compass offsets
-static int16_t superslow_loopCounter;
 // Loiter timer - Records how long we have been in loiter
 static uint32_t rtl_loiter_start_time;
 // prevents duplicate GPS messages from entering system
@@ -866,21 +860,43 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
     { update_nav_mode,       1,     400 },
-    { medium_loop,           2,     700 },
+    { update_batt_compass,  10,     700 },      // time not verified
+    { read_aux_switches,    10,     700 },      // time not verified
+    { arm_motors_check,     10,     100 },      // time not verified
+    { auto_trim,            10,     700 },      // time not verified
+    { update_toy_throttle,  10,     100 },      // time not verified
     { update_altitude,      10,    1000 },
     { run_nav_updates,      10,     800 },
-    { slow_loop,            10,     500 },
+    { three_hz_loop,        33,     500 },      // time not verified
     { compass_accumulate,    2,     700 },
     { barometer_accumulate,  2,     900 },
     { update_notify,         2,     100 },
-    { super_slow_loop,     100,    1100 },
+    { one_hz_loop,          100,   1100 },
     { gcs_check_input,	     2,     700 },
     { gcs_send_heartbeat,  100,     700 },
     { gcs_send_deferred,     2,    1200 },
     { gcs_data_stream_send,  2,    1500 },
-    { camera_loop,           2,      50 },      // times not verified
+    { update_copter_leds,   10,     700 },      // time not verified
+    { update_mount,          2,      50 },      // time not verified
+    { ten_hz_logging_loop,  10,     200 },      // time not verified
     { fifty_hz_logging_loop, 2,     220 },
-    { perf_update,        1000,     500 }
+    { read_receiver_rssi,   10,     700 },      // time not verified
+    { perf_update,        1000,     500 },
+#ifdef USERHOOK_FASTLOOP
+    { userhook_50Hz,         1,    100  },
+#endif
+#ifdef USERHOOK_50HZLOOP
+    { userhook_50Hz,         2,    100  },
+#endif
+#ifdef USERHOOK_MEDIUMLOOP
+    { userhook_MediumLoop,   10,    100 },
+#endif
+#ifdef USERHOOK_SLOWLOOP
+    { userhook_SlowLoop,     33,    100 },
+#endif
+#ifdef USERHOOK_SUPERSLOWLOOP
+    { userhook_SlowLoop,    100,    100 },
+#endif
 };
 
 
@@ -1045,11 +1061,6 @@ static void fast_loop()
 
     // update targets to rate controllers
     update_rate_contoller_targets();
-
-    // agmatthews - USERHOOKS
-#ifdef USERHOOK_FASTLOOP
-    USERHOOK_FASTLOOP
-#endif
 }
 
 // throttle_loop - should be run at 50 hz
@@ -1072,15 +1083,11 @@ static void throttle_loop()
 
     // check auto_armed status
     update_auto_armed();
-
-#ifdef USERHOOK_50HZLOOP
-    USERHOOK_50HZLOOP
-#endif
 }
 
-// camera features
+// update_mount - update camera mount position
 // should be run at 50hz
-static void camera_loop()
+static void update_mount()
 {
 #if MOUNT == ENABLED
     // update camera mount's position
@@ -1095,6 +1102,42 @@ static void camera_loop()
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
 #endif
+}
+
+// update_batt_compass - read battery and compass
+// should be called at 10hz
+static void update_batt_compass(void)
+{
+    // read battery before compass because it may be used for motor interference compensation
+    read_battery();
+
+#if HIL_MODE != HIL_MODE_ATTITUDE  // don't execute in HIL mode
+    if(g.compass_enabled) {
+        if (compass.read()) {
+            compass.null_offsets();
+        }
+        // log compass information
+        if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
+            Log_Write_Compass();
+        }
+    }
+#endif
+
+    // record throttle output
+    throttle_integrator += g.rc_3.servo_out;
+}
+
+// ten_hz_logging_loop
+// should be run at 10hz
+static void ten_hz_logging_loop()
+{
+    if(motors.armed()) {
+        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
+            Log_Write_Attitude();
+        }
+        if (g.log_bitmask & MASK_LOG_MOTORS)
+            Log_Write_Motors();
+    }
 }
 
 // fifty_hz_logging_loop
@@ -1117,188 +1160,29 @@ static void fifty_hz_logging_loop()
 #endif
 }
 
-// medium_loop - runs at 10hz
-static void medium_loop()
+// three_hz_loop - 3.3hz loop
+static void three_hz_loop()
 {
-    // This is the start of the medium (10 Hz) loop pieces
-    // -----------------------------------------
-    switch(medium_loopCounter) {
-
-    // This case reads from the battery and Compass
-    //---------------------------------------------
-    case 0:
-        medium_loopCounter++;
-
-        // read battery before compass because it may be used for motor interference compensation
-        read_battery();
-
-#if HIL_MODE != HIL_MODE_ATTITUDE                                                               // don't execute in HIL mode
-        if(g.compass_enabled) {
-            if (compass.read()) {
-                compass.null_offsets();
-            }
-            // log compass information
-            if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
-                Log_Write_Compass();
-            }
-        }
-#endif
-
-        // record throttle output
-        // ------------------------------
-        throttle_integrator += g.rc_3.servo_out;
-        break;
-
-    // This case reads rssi information and performs auto trim
-    //--------------------------------------------------------
-    case 1:
-        medium_loopCounter++;
-
-        // read receiver rssi information
-        read_receiver_rssi();
-
-        // auto_trim - stores roll and pitch radio inputs to ahrs
-        auto_trim();
-        break;
-
-    // This case deals with aux switches and toy mode's throttle
-    //----------------------------------------------------------
-    case 2:
-        medium_loopCounter++;
-
-        // check ch7 and ch8 aux switches
-        read_aux_switches();
-
-        if(control_mode == TOY_A) {
-            update_toy_throttle();
-
-            if(throttle_mode == THROTTLE_AUTO) {
-                update_toy_altitude();
-            }
-        }
-        break;
-
-    // This case deals with logging attitude and motor information to dataflash
-    // ------------------------------------------------------------------------
-    case 3:
-        medium_loopCounter++;
-
-        if(motors.armed()) {
-            if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
-                Log_Write_Attitude();
-            }
-            if (g.log_bitmask & MASK_LOG_MOTORS)
-                Log_Write_Motors();
-        }
-        break;
-
-    // This case deals with arming checks, copter LEDs and 10hz user hooks
-    // -------------------------------------------------------------------------------
-    case 4:
-        medium_loopCounter = 0;
-
-        // Check for motor arming or disarming
-        arm_motors_check();
-
-        // agmatthews - USERHOOKS
-#ifdef USERHOOK_MEDIUMLOOP
-        USERHOOK_MEDIUMLOOP
-#endif
-
-#if COPTER_LEDS == ENABLED
-        update_copter_leds();
-#endif
-        break;
-
-    default:
-        // this is just a catch all
-        // ------------------------
-        medium_loopCounter = 0;
-        break;
-    }
-}
-
-// slow_loop - 3.3hz loop
-static void slow_loop()
-{
-    // This is the slow (3 1/3 Hz) loop pieces
-    //----------------------------------------
-    switch (slow_loopCounter) {
-    case 0:
-        slow_loopCounter++;
-        superslow_loopCounter++;
-
-        // check if we've lost contact with the ground station
-        failsafe_gcs_check();
-
-        if(superslow_loopCounter > 1200) {
-#if HIL_MODE != HIL_MODE_ATTITUDE
-            if(g.rc_3.control_in == 0 && control_mode == STABILIZE && g.compass_enabled) {
-                compass.save_offsets();
-                superslow_loopCounter = 0;
-            }
-#endif
-        }
-
-        if(!motors.armed()) {
-            // check the user hasn't updated the frame orientation
-            motors.set_frame_orientation(g.frame_orientation);
-        }
+    // check if we've lost contact with the ground station
+    failsafe_gcs_check();
 
 #if AC_FENCE == ENABLED
-        // check if we have breached a fence
-        fence_check();
+    // check if we have breached a fence
+    fence_check();
 #endif // AC_FENCE_ENABLED
 
-        break;
-
-    case 1:
-        slow_loopCounter++;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
-#elif MOUNT == ENABLED
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
-#endif
-        enable_aux_servos();
-
-#if MOUNT == ENABLED
-        camera_mount.update_mount_type();
-#endif
-
-#if MOUNT2 == ENABLED
-        camera_mount2.update_mount_type();
-#endif
-
 #if SPRAYER == ENABLED
-        sprayer.update();
+    sprayer.update();
 #endif
 
-        // agmatthews - USERHOOKS
-#ifdef USERHOOK_SLOWLOOP
-        USERHOOK_SLOWLOOP
-#endif
+    update_events();
 
-        break;
-
-    case 2:
-        slow_loopCounter = 0;
-        update_events();
-
-        if(g.radio_tuning > 0)
-            tuning();
-
-        check_usb_mux();
-        break;
-
-    default:
-        slow_loopCounter = 0;
-        break;
-    }
+    if(g.radio_tuning > 0)
+        tuning();
 }
 
-// super_slow_loop - runs at 1Hz
-static void super_slow_loop()
+// one_hz_loop - runs at 1Hz
+static void one_hz_loop()
 {
     if (g.log_bitmask != 0) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
@@ -1320,16 +1204,31 @@ static void super_slow_loop()
     // auto disarm checks
     auto_disarm_check();
 
-    // make it possible to change orientation at runtime - useful
-    // during initial config
     if (!motors.armed()) {
+        // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
+
+        // check the user hasn't updated the frame orientation
+        motors.set_frame_orientation(g.frame_orientation);
     }
 
-    // agmatthews - USERHOOKS
-#ifdef USERHOOK_SUPERSLOWLOOP
-    USERHOOK_SUPERSLOWLOOP
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif MOUNT == ENABLED
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
 #endif
+
+    enable_aux_servos();
+
+#if MOUNT == ENABLED
+    camera_mount.update_mount_type();
+#endif
+
+#if MOUNT2 == ENABLED
+    camera_mount2.update_mount_type();
+#endif
+
+    check_usb_mux();
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz

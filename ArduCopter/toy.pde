@@ -20,9 +20,15 @@ static const int16_t toy_lookup[] = {
 //called at 10hz
 void update_toy_throttle()
 {
-    // look for a change in throttle position to exit throttle hold
-    if(abs(g.rc_3.control_in - saved_toy_throttle) > 40) {
-        throttle_mode   = THROTTLE_MANUAL;
+    if(control_mode == TOY_A) {
+        // look for a change in throttle position to exit throttle hold
+        if(abs(g.rc_3.control_in - saved_toy_throttle) > 40) {
+            throttle_mode   = THROTTLE_MANUAL;
+        }
+
+        if(throttle_mode == THROTTLE_AUTO) {
+            update_toy_altitude();
+        }
     }
 }
 
