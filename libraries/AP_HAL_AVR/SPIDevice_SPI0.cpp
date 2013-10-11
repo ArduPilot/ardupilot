@@ -134,4 +134,16 @@ uint8_t AVRSPI0DeviceDriver::transfer(uint8_t data) {
     return _transfer(data);
 }
 
+/**
+   allow on the fly bus speed changes for MPU6000
+ */
+void AVRSPI0DeviceDriver::set_bus_speed(AVRSPI0DeviceDriver::bus_speed speed) 
+{
+    if (speed == AVRSPI0DeviceDriver::SPI_SPEED_HIGH) {
+        _spcr = _spcr_highspeed;
+    } else {
+        _spcr = _spcr_lowspeed;
+    }
+}
+
 #endif

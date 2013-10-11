@@ -22,21 +22,22 @@ void APM2SPIDeviceManager::init(void* machtnichts) {
 
     /* mpu6k cs is on Arduino pin 53, PORTB0 */
     AVRDigitalSource* mpu6k_cs = new AVRDigitalSource(_BV(0), PB);
-    /* mpu6k: run clock at 8MHz */
-    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, 0, _BV(SPI2X));
+    /* mpu6k: run clock at 8MHz in high speed mode and 512kHz for low
+     * speed */
+    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, _BV(SPR1), 0, _BV(SPI2X));
     _mpu6k->init();
 
     /* ms5611 cs is on Arduino pin 40, PORTG1 */
     AVRDigitalSource* ms5611_cs = new AVRDigitalSource(_BV(1), PG);
-    /* mpu6k: run clock at 8MHz */
-    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, 0, _BV(SPI2X));
+    /* ms5611: run clock at 8MHz */
+    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, 0, 0, _BV(SPI2X));
     _ms5611->init();
    
     /* optflow cs is on Arduino pin A3, PORTF3 */
     AVRDigitalSource* optflow_cs = new AVRDigitalSource(_BV(3), PF);
     /* optflow: divide clock by 8 to 2Mhz
      * spcr gets bit SPR0, spsr gets bit SPI2X */
-    _optflow_spi0 = new AVRSPI0DeviceDriver(optflow_cs, _BV(SPR0), _BV(SPI2X));
+    _optflow_spi0 = new AVRSPI0DeviceDriver(optflow_cs, _BV(SPR0), _BV(SPR0), _BV(SPI2X));
     _optflow_spi0->init();
 
     /* Dataflash CS is on Arduino pin 28, PORTA6 */
