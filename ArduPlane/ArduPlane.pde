@@ -1324,7 +1324,23 @@ static void update_navigation()
 
 static void update_alt()
 {
-    // this function is in place to potentially add a sonar sensor in the future
+    // this function is in place to potentially add a range finder sensor in the future
+	// See the AP_RangeFinder Library.
+
+	//Modified for KSU-AIAA Team - Will Baldwin
+	//	Change Altitude Source automatically as altitude approches ground level
+	//		GPS Altitude
+	//		Baro Sensor Altitude
+	//		Long Range Sensor Altitude
+	//		Short Range Sensor Altitude
+	//
+	//		Pseudocode
+	//			if (shortrange.healthy) current_loc.alt = shortrange.altitude_cm						//Preferred
+	//			else if (long_rangeIR.healthy) current_loc.alt = longrange.altitude_cm
+	//			else if (barometer.healthy) current_loc.alt = barometer.altitude_cm
+	//			else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) current_loc.alt = g_gps->altitude_cm	//Last Resort
+
+
     //altitude_sensor = BARO;
 
     if (barometer.healthy) {
