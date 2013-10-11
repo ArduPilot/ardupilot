@@ -36,24 +36,27 @@ AP_HAL::Semaphore* AVRSPI0DeviceDriver::get_semaphore() {
     return &_semaphore;
 }
 
-inline void AVRSPI0DeviceDriver::_cs_assert() {
+void AVRSPI0DeviceDriver::_cs_assert() 
+{
     const uint8_t valid_spcr_mask = 
         (_BV(CPOL) | _BV(CPHA) | _BV(SPR1) | _BV(SPR0));
-    uint8_t new_spcr = SPCR | (_spcr & valid_spcr_mask);
+    uint8_t new_spcr = (SPCR & ~valid_spcr_mask) | (_spcr & valid_spcr_mask);
     SPCR = new_spcr;  
 
     const uint8_t valid_spsr_mask = _BV(SPI2X);
-    uint8_t new_spsr = SPSR | (_spsr & valid_spsr_mask);
+    uint8_t new_spsr = (SPSR & ~valid_spsr_mask) | (_spsr & valid_spsr_mask);
     SPSR = new_spsr;
 
     _cs_pin->write(0);
 }
 
-inline void AVRSPI0DeviceDriver::_cs_release() {
+void AVRSPI0DeviceDriver::_cs_release() 
+{
     _cs_pin->write(1);
 }
 
-inline uint8_t AVRSPI0DeviceDriver::_transfer(uint8_t data) {
+uint8_t AVRSPI0DeviceDriver::_transfer(uint8_t data) 
+{
     if (spi0_transferflag) {
         hal.scheduler->panic(PSTR("PANIC: SPI0 transfer collision"));
     }

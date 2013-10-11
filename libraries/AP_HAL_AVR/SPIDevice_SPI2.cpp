@@ -43,7 +43,7 @@ inline void AVRSPI2DeviceDriver::_cs_assert() {
     /* set the device UCSRnC configuration bits.
      * only sets data order, clock phase, and clock polarity bits (lowest
      * three bits)  */
-    const uint8_t new_ucsr2c = UCSR2C | (_ucsr2c & (0x07));
+    const uint8_t new_ucsr2c = (UCSR2C & ~0x07) | (_ucsr2c & (0x07));
     UCSR2C = new_ucsr2c;
     /* set the device baud rate */
     UBRR2 = _ubrr2;
