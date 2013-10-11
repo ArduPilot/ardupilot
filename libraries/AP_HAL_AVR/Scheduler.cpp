@@ -14,8 +14,13 @@ using namespace AP_HAL_AVR;
 extern const AP_HAL::HAL& hal;
 
 /* AVRScheduler timer interrupt period is controlled by TCNT2.
- * 256-62 gives a 1kHz period. */
-#define RESET_TCNT2_VALUE (256 - 62)
+ * 256-124 gives a 500Hz period for APM2
+ * 256-62 gives a 1kHz period for APM1. */
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+ # define RESET_TCNT2_VALUE (256 - 62)
+#else
+ # define RESET_TCNT2_VALUE (256 - 124)
+#endif
 
 /* Static AVRScheduler variables: */
 AVRTimer AVRScheduler::_timer;
