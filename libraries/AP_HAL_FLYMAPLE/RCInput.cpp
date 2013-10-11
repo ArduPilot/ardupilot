@@ -14,6 +14,8 @@
  */
 /*
   Flymaple port by Mike McCauley
+  Monitor a PPM-SUM input pin, and decode the channels based on pulse widths
+  Uses a timer to capture the time between negative transitions of the PPM-SUM pin
  */
 #include <AP_HAL.h>
 
@@ -34,11 +36,18 @@ extern const AP_HAL::HAL& hal;
 volatile uint16_t FLYMAPLERCInput::_pulse_capt[FLYMAPLE_RC_INPUT_NUM_CHANNELS] = {0};  
 volatile uint8_t  FLYMAPLERCInput::_valid_channels = 0;
 
+// Pin 6 is connected to timer 1 channel 1
 #define FLYMAPLE_RC_INPUT_PIN 6
+
+// This is the rollover count of the timer
+// each count is 0.5us, so 600000 = 30ms
+// We cant reliably measure intervals that exceed this time.
+#define FLYMAPLE_TIMER_RELOAD 60000
 
 FLYMAPLERCInput::FLYMAPLERCInput()
 {}
 
+// This interrupt triggers on a negative transiution of the PPM-SIM pin
 void FLYMAPLERCInput::_timer_capt_cb(void)
 {
     static int on = 0;
@@ -54,20 +63,22 @@ void FLYMAPLERCInput::_timer_capt_cb(void)
     uint16 current_count = timer_get_compare(tdev, timer_channel);
     uint32 sr = (tdev->regs).gen->SR;
     uint32 overcapture_mask = (1 << (TIMER_SR_CC1OF_BIT + timer_channel - 1));
-    bool overcapture = sr & overcapture_mask;
+
+    if (sr & overcapture_mask)
+    {
+	// Hmmm, lost an interrupt somewhere? Ignore this sample
+	(tdev->regs).gen->SR &= ~overcapture_mask; // Clear overcapture flag
+	return;
+    }
 
     uint16_t pulse_width;
     if (current_count < previous_count) {
-        /* counter rolls over at 40000 */
-        pulse_width = current_count + 40000 - previous_count;
+        pulse_width = current_count + FLYMAPLE_TIMER_RELOAD - previous_count;
     } else {
         pulse_width = current_count - previous_count;
     }
 
-    if (overcapture)
-	(tdev->regs).gen->SR &= ~overcapture_mask; // Clear overcapture mask
-
-    if (overcapture || pulse_width > 8000) {
+    if (pulse_width > 16000) { // 8ms
         // sync pulse detected.  Pass through values if at least a minimum number of channels received
         if( channel_ctr >= FLYMAPLE_RC_INPUT_MIN_CHANNELS ) {
             _valid_channels = channel_ctr;
@@ -75,15 +86,21 @@ void FLYMAPLERCInput::_timer_capt_cb(void)
         channel_ctr = 0;
     } else {
         if (channel_ctr < FLYMAPLE_RC_INPUT_NUM_CHANNELS) {
+	    if (channel_ctr == 6)
+		// fixme:
+		digitalWrite(2, 1);
+
             _pulse_capt[channel_ctr] = pulse_width;
             channel_ctr++;
             if (channel_ctr == FLYMAPLE_RC_INPUT_NUM_CHANNELS) {
                 _valid_channels = FLYMAPLE_RC_INPUT_NUM_CHANNELS;
             }
+
+	    // FIXME
+	    digitalWrite(2, 0);
         }
     }
     previous_count = current_count;
-
 }
 
 void FLYMAPLERCInput::init(void* machtnichts)
@@ -98,12 +115,14 @@ void FLYMAPLERCInput::init(void* machtnichts)
     uint8 timer_channel = PIN_MAP[FLYMAPLE_RC_INPUT_PIN].timer_channel;
     timer_pause(tdev); // disabled
     timer_set_prescaler(tdev, (CYCLES_PER_MICROSECOND/2) - 1); // 2MHz = 0.5us timer ticks
-    timer_set_reload(tdev, 40000);
-    (tdev->regs).gen->CCMR1 = TIMER_CCMR1_CC1S_INPUT_TI1; // no prescaler, input from T1, no filter
+    timer_set_reload(tdev, FLYMAPLE_TIMER_RELOAD-1);
+    // Without a filter, can get triggering on the wrong edge and otehr problems.
+    (tdev->regs).gen->CCMR1 = TIMER_CCMR1_CC1S_INPUT_TI1 | (3 << 4); // no prescaler, input from T1, filter internal clock, N=8
     (tdev->regs).gen->CCER  = TIMER_CCER_CC1P | TIMER_CCER_CC1E; // falling edge, enable capture
     timer_attach_interrupt(tdev, timer_channel, _timer_capt_cb);
     timer_generate_update(tdev);
     timer_resume(tdev); // reenabled
+    pinMode(2, OUTPUT);
 }
 
 uint8_t FLYMAPLERCInput::valid_channels() {
@@ -118,13 +137,16 @@ static inline uint16_t constrain_pulse(uint16_t p) {
 }
 
 uint16_t FLYMAPLERCInput::read(uint8_t ch) {
+    timer_dev *tdev = PIN_MAP[FLYMAPLE_RC_INPUT_PIN].timer_device;
+    uint8 timer_channel = PIN_MAP[FLYMAPLE_RC_INPUT_PIN].timer_channel;
+
     /* constrain ch */
     if (ch >= FLYMAPLE_RC_INPUT_NUM_CHANNELS) 
 	return 0;
     /* grab channel from isr's memory in critical section*/
-    noInterrupts();
+    timer_disable_irq(tdev, timer_channel);
     uint16_t capt = _pulse_capt[ch];
-    interrupts();
+    timer_enable_irq(tdev, timer_channel);
     _valid_channels = 0;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
@@ -134,15 +156,18 @@ uint16_t FLYMAPLERCInput::read(uint8_t ch) {
 }
 
 uint8_t FLYMAPLERCInput::read(uint16_t* periods, uint8_t len) {
+    timer_dev *tdev = PIN_MAP[FLYMAPLE_RC_INPUT_PIN].timer_device;
+    uint8 timer_channel = PIN_MAP[FLYMAPLE_RC_INPUT_PIN].timer_channel;
+
     /* constrain len */
     if (len > FLYMAPLE_RC_INPUT_NUM_CHANNELS) 
 	len = FLYMAPLE_RC_INPUT_NUM_CHANNELS;
     /* grab channels from isr's memory in critical section */
-    noInterrupts();
+    timer_disable_irq(tdev, timer_channel);
     for (uint8_t i = 0; i < len; i++) {
         periods[i] = _pulse_capt[i];
     }
-    interrupts();
+    timer_enable_irq(tdev, timer_channel);
     /* Outside of critical section, do the math (in place) to scale and
      * constrain the pulse. */
     for (uint8_t i = 0; i < len; i++) {
