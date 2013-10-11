@@ -66,6 +66,17 @@
 	      <param index="6">Empty</param>
 	      <param index="7">Empty</param>
 	    </entry>
+
+	    <entry name="MAV_CMD_DO_SET_CAM_TRIGG_DIST" value="206">
+	      <description>Mission command to set CAM_TRIGG_DIST for this flight</description>
+	      <param index="1">Camera trigger distance (meters)</param>
+	      <param index="2">Empty</param>
+	      <param index="3">Empty</param>
+	      <param index="4">Empty</param>
+	      <param index="5">Empty</param>
+	      <param index="6">Empty</param>
+	      <param index="7">Empty</param>
+	    </entry>
 	  </enum>
 
 	  <!-- fenced mode enums -->
