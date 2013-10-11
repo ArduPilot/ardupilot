@@ -858,28 +858,28 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
     { update_nav_mode,       1,     400 },
-    { update_batt_compass,  10,     700 },      // time not verified
-    { read_aux_switches,    10,     700 },      // time not verified
-    { arm_motors_check,     10,     100 },      // time not verified
-    { auto_trim,            10,     700 },      // time not verified
-    { update_toy_throttle,  10,     100 },      // time not verified
+    { update_batt_compass,  10,     720 },
+    { read_aux_switches,    10,      50 },
+    { arm_motors_check,     10,      10 },
+    { auto_trim,            10,     140 },
+    { update_toy_throttle,  10,      50 },
     { update_altitude,      10,    1000 },
     { run_nav_updates,      10,     800 },
-    { three_hz_loop,        33,     500 },      // time not verified
-    { compass_accumulate,    2,     700 },
-    { barometer_accumulate,  2,     900 },
+    { three_hz_loop,        33,      90 },
+    { compass_accumulate,    2,     420 },
+    { barometer_accumulate,  2,     250 },
     { update_notify,         2,     100 },
-    { one_hz_loop,          100,   1100 },
+    { one_hz_loop,         100,     420 },
     { gcs_check_input,	     2,     700 },
     { gcs_send_heartbeat,  100,     700 },
     { gcs_send_deferred,     2,    1200 },
     { gcs_data_stream_send,  2,    1500 },
-    { update_copter_leds,   10,     700 },      // time not verified
-    { update_mount,          2,      50 },      // time not verified
-    { ten_hz_logging_loop,  10,     200 },      // time not verified
+    { update_copter_leds,   10,      55 },
+    { update_mount,          2,    2000 },
+    { ten_hz_logging_loop,  10,     260 },
     { fifty_hz_logging_loop, 2,     220 },
-    { read_receiver_rssi,   10,     700 },      // time not verified
-    { perf_update,        1000,     500 },
+    { perf_update,        1000,     200 },
+    { read_receiver_rssi,   10,      50 },
 #ifdef USERHOOK_FASTLOOP
     { userhook_50Hz,         1,    100  },
 #endif
@@ -1001,7 +1001,7 @@ void loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     uint32_t time_available = (timer + 10000) - micros();
-    scheduler.run(time_available - 500);
+    scheduler.run(time_available - 300);
 }
 
 
@@ -1133,8 +1133,9 @@ static void ten_hz_logging_loop()
         if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
             Log_Write_Attitude();
         }
-        if (g.log_bitmask & MASK_LOG_MOTORS)
+        if (g.log_bitmask & MASK_LOG_MOTORS) {
             Log_Write_Motors();
+        }
     }
 }
 
