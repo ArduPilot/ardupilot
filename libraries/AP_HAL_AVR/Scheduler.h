@@ -46,6 +46,8 @@ public:
     void     panic(const prog_char_t *errormsg);
     void     reboot(bool hold_in_bootloader);
 
+    void     set_timer_speed(uint16_t timer_hz);
+
 private:
     static AVRTimer _timer;
 
@@ -66,6 +68,7 @@ private:
     static volatile bool _timer_event_missed;
     static AP_HAL::MemberProc _timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS];
     static uint8_t _num_timer_procs;
+    static volatile uint8_t _timer2_reset_value;
 
 };
 #endif // __AP_HAL_AVR_SCHEDULER_H__

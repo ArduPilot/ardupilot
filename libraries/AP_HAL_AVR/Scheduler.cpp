@@ -14,13 +14,9 @@ using namespace AP_HAL_AVR;
 extern const AP_HAL::HAL& hal;
 
 /* AVRScheduler timer interrupt period is controlled by TCNT2.
- * 256-124 gives a 500Hz period for APM2
- * 256-62 gives a 1kHz period for APM1. */
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- # define RESET_TCNT2_VALUE (256 - 62)
-#else
- # define RESET_TCNT2_VALUE (256 - 124)
-#endif
+ * 256-124 gives a 500Hz period
+ * 256-62 gives a 1kHz period. */
+volatile uint8_t AVRScheduler::_timer2_reset_value = (256 - 62);
 
 /* Static AVRScheduler variables: */
 AVRTimer AVRScheduler::_timer;
@@ -151,7 +147,7 @@ void AVRScheduler::_timer_isr_event() {
     // This approach also gives us a nice uniform spacing between
     // timer calls
 
-    TCNT2 = RESET_TCNT2_VALUE;
+    TCNT2 = _timer2_reset_value;
     sei();
     _run_timer_procs(true);
 }
@@ -240,6 +236,21 @@ void AVRScheduler::reboot(bool hold_in_bootloader) {
     for(;;);
 #endif
 
+}
+
+/**
+   set timer speed in Hz. Used by ArduCopter on APM2 to reduce the
+   cost of timer interrupts
+ */
+void AVRScheduler::set_timer_speed(uint16_t timer_hz)
+{
+    if (timer_hz > 1000) {
+        timer_hz = 1000;
+    }
+    if (timer_hz < 250) {
+        timer_hz = 250;
+    }
+    _timer2_reset_value = 256 - (62 * (1000 / timer_hz));
 }
 
 #endif
