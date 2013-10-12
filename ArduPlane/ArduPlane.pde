@@ -649,26 +649,26 @@ static int32_t offset_altitude_cm;
 ////////////////////////////////////////////////////////////////////////////////
 // The main loop execution time.  Seconds
 //This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-static float G_Dt                                               = 0.02;
+static float G_Dt                                               = 0.02f;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
-static int32_t perf_mon_timer;
+static uint32_t perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
-static int16_t G_Dt_max = 0;
+static uint32_t G_Dt_max = 0;
 // The number of gps fixes recorded in the current performance monitoring interval
 static uint8_t gps_fix_count = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
 ////////////////////////////////////////////////////////////////////////////////
-// Time in miliseconds of start of main control loop.  Milliseconds
-static uint32_t fast_loopTimer_ms;
+// Time in microseconds of start of main control loop
+static uint32_t fast_loopTimer_us;
 
 // Number of milliseconds used in last main loop cycle
-static uint8_t delta_ms_fast_loop;
+static uint32_t delta_us_fast_loop;
 
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
@@ -765,11 +765,11 @@ void loop()
     if (!ins.wait_for_sample(1000)) {
         return;
     }
-    uint32_t timer = millis();
+    uint32_t timer = hal.scheduler->micros();
 
-    delta_ms_fast_loop  = timer - fast_loopTimer_ms;
-    G_Dt                = delta_ms_fast_loop * 0.001f;
-    fast_loopTimer_ms   = timer;
+    delta_us_fast_loop  = timer - fast_loopTimer_us;
+    G_Dt                = delta_us_fast_loop * 1.0e-6f;
+    fast_loopTimer_us   = timer;
 
     mainLoop_count++;
 
@@ -785,7 +785,11 @@ void loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    scheduler.run(19500U);
+    uint32_t remaining = (timer + 20000) - hal.scheduler->micros();
+    if (remaining > 19500) {
+        remaining = 19500;
+    }
+    scheduler.run(remaining);
 }
 
 // Main loop 50Hz
@@ -793,8 +797,8 @@ static void fast_loop()
 {
     // This is the fast loop - we want it to execute at 50Hz if possible
     // -----------------------------------------------------------------
-    if (delta_ms_fast_loop > G_Dt_max)
-        G_Dt_max = delta_ms_fast_loop;
+    if (delta_us_fast_loop > G_Dt_max)
+        G_Dt_max = delta_us_fast_loop;
 
     // Read radio
     // ----------
