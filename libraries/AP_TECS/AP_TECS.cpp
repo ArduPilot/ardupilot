@@ -481,17 +481,33 @@ void AP_TECS::_update_pitch(void)
 	// Calculate Speed/Height Control Weighting
     // This is used to determine how the pitch control prioritises speed and height control
     // A weighting of 1 provides equal priority (this is the normal mode of operation)
-    // A SKE_weighting of 0 provides 100% priority to height control. This is used when no airspeed measurement is available
-	// A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected
-	// or during takeoff/climbout where a minimum pitch angle is set to ensure height is gained. In this instance, if airspeed
-	// rises above the demanded value, the pitch angle will be increased by the TECS controller.
+    // A SKE_weighting of 0 provides 100% priority to height control. This is used when no 
+    // airspeed measurement is available and in the final phase of landing
+	// A SKE_weighting of 2 provides 100% priority to speed control. This is used when an 
+    // underspeed condition is detected or during takeoff/climbout where a minimum pitch 
+    // angle is set to ensure height is gained. 
+    // In this instance, if airspeed rises above the demanded value, the pitch angle will be 
+    // increased by the TECS controller.
+    // During the approach phase of landing, the value of SKE_weighting is reduced at a 
+    // constant rate of 0.2/second to a minimum value of 0
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
 	if ( ( _underspeed || (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) ) && 
-		 _ahrs.airspeed_sensor_enabled() ) {
+	     _ahrs.airspeed_sensor_enabled() ) 
+    {
+		
 		SKE_weighting = 2.0f;
-	} else if (!_ahrs.airspeed_sensor_enabled()) {
+	} 
+    else if (!_ahrs.airspeed_sensor_enabled() || (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL)) 
+    {
 		SKE_weighting = 0.0f;
 	}
+    else if ( (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH) && 
+              _ahrs.airspeed_sensor_enabled() ) 
+    {
+		SKE_weighting = constrain_float((_SKE_weighting_prev - 0.02f), 0.0f, 2.0f);
+    }
+    _SKE_weighting_prev = SKE_weighting;
+
 	float SPE_weighting = 2.0f - SKE_weighting;
 
     // Calculate Specific Energy Balance demand, and error
