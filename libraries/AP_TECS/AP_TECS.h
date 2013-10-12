@@ -226,6 +226,9 @@ private:
 	// Time since last update of main TECS loop (seconds)
 	float _DT;
 
+	// Previous value of SKE_weighting
+	float _SKE_weighting_prev;
+
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(void);
 
