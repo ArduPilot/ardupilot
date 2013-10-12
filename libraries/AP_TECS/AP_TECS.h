@@ -95,6 +95,9 @@ private:
     // Last time update_pitch_throttle was called
     uint32_t _update_pitch_throttle_last_usec;
 
+    // Last time _apply_land_speed_incr was called
+    uint32_t _apply_lndspdincr_last_usec;
+
 	// reference to the AHRS object
     AP_AHRS &_ahrs;
 
@@ -229,6 +232,9 @@ private:
 	// Previous value of SKE_weighting
 	float _SKE_weighting_prev;
 
+	// Previous value of landing airspeed increment
+	float _aspd_land_incr;
+
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(void);
 
@@ -261,6 +267,9 @@ private:
 
 	// Calculate specific total energy rate limits
 	void _update_STE_rate_lim(void);
+
+	// Calculate increment in airspeed demand during landing
+	void _update_land_speed_incr(void);
 
     // declares a 5point average filter using floats
 	AverageFilterFloat_Size5 _vdot_filter;

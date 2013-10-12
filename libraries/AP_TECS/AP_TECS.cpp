@@ -233,6 +233,14 @@ void AP_TECS::_update_speed(void)
 
 void AP_TECS::_update_speed_demand(void)
 {
+	// Add an increment to the demanded airspeed during approach and landing
+    if ( (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH) || 
+         (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) )
+    {
+        _update_land_speed_incr();
+        _TAS_dem = _TAS_dem + _aspd_land_incr;
+    }
+
 	// Set the airspeed demand to the minimum value if an underspeed condition exists
 	// or a bad descent condition exists
 	// This will minimise the rate of descent resulting from an engine failure,
@@ -281,6 +289,7 @@ void AP_TECS::_update_speed_demand(void)
     // Constrain speed demand again to protect against bad values on initialisation.
     _TAS_dem_adj = constrain_float(_TAS_dem_adj, _TASmin, _TASmax);
     _TAS_dem_last = _TAS_dem;
+
 }
 
 void AP_TECS::_update_height_demand(void)
@@ -596,6 +605,22 @@ void AP_TECS::_update_STE_rate_lim(void)
 	// This is a trivial calculation at the moment but will get bigger once we start adding altitude effects
     _STEdot_max = _maxClimbRate * GRAVITY_MSS;
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
+}
+
+void AP_TECS::_update_land_speed_incr(void) 
+{
+    // Calculate time in seconds since last update and reset airspeed increment to zero if > 1 second
+    uint32_t now = hal.scheduler->micros();
+	float DT = max((now - _apply_lndspdincr_last_usec),0)*1.0e-6f;
+	if (DT > 5.0) {
+	    _aspd_land_incr = 0.0f;
+	}
+    // Calculate Increment on landing airspeed required to compensate for wind conditions
+    float temp = constrain_float(_integ5_state - _ahrs.groundspeed(), 0.0f, 15.0f);
+	// Calculate the increment to be added to the airspeed during approach and landing as 1/3 of the
+    // difference between the true airspeed and ground speed and apply a 5sec time constant LP filter
+    // to the increment
+    _aspd_land_incr = 0.0066666667f*temp + 0.98f*_aspd_land_incr;
 }
 
 void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
