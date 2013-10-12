@@ -1340,9 +1340,21 @@ static void update_alt()
 
     // Update the speed & height controller states
     if (auto_throttle_mode && !throttle_suppressed) {
+        AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
+        
+        if (control_mode==AUTO) {
+            if (takeoff_complete == false) {
+                flight_stage = AP_SpdHgtControl::FLIGHT_TAKEOFF;
+            } else if (nav_command_ID == MAV_CMD_NAV_LAND && land_complete == true) {
+                flight_stage = AP_SpdHgtControl::FLIGHT_LAND_FINAL;
+            } else if (nav_command_ID == MAV_CMD_NAV_LAND) {
+                flight_stage = AP_SpdHgtControl::FLIGHT_LAND_APPROACH; 
+            }
+        }
+
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,
-                                                 (control_mode==AUTO && takeoff_complete == false), 
+                                                 flight_stage,
                                                  takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  relative_altitude());
