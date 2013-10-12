@@ -812,13 +812,13 @@ static AP_HAL::AnalogSource* board_vcc_analog_source;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
+static AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
 #endif
 
 #if MOUNT2 == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
+static AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
