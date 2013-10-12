@@ -550,7 +550,7 @@ void AP_TECS::_update_pitch(void)
     {
     	temp += _PITCHminf * gainInv;
     }
-    _integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
+	_integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
 
     // Calculate pitch demand from specific energy balance signals
     _pitch_dem_unc = (temp + _integ7_state) / gainInv;
