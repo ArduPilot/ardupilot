@@ -874,7 +874,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { gcs_send_heartbeat,  100,     700 },
     { gcs_send_deferred,     2,    1200 },
     { gcs_data_stream_send,  2,    1500 },
+#if COPTER_LEDS == ENABLED
     { update_copter_leds,   10,      55 },
+#endif
     { update_mount,          2,    2000 },
     { ten_hz_logging_loop,  10,     260 },
     { fifty_hz_logging_loop, 2,     220 },
