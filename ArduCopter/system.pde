@@ -107,6 +107,14 @@ static void init_ardupilot()
                          "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    /*
+      run the timer a bit slower on APM2 to reduce the interrupt load
+      on the CPU
+     */
+    hal.scheduler->set_timer_speed(500);
+#endif
+
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
     //
