@@ -118,7 +118,6 @@ void FLYMAPLERCInput::init(void* machtnichts)
     timer_attach_interrupt(tdev, timer_channel, _timer_capt_cb);
     timer_generate_update(tdev);
     timer_resume(tdev); // reenabled
-    pinMode(2, OUTPUT);
 }
 
 uint8_t FLYMAPLERCInput::valid_channels() {
