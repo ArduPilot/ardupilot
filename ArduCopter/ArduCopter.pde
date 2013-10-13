@@ -879,7 +879,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #if COPTER_LEDS == ENABLED
     { update_copter_leds,   10,      55 },
 #endif
-    { update_mount,          2,    2000 },
+    { update_mount,          2,     450 },
     { ten_hz_logging_loop,  10,     260 },
     { fifty_hz_logging_loop, 2,     220 },
     { perf_update,        1000,     200 },
