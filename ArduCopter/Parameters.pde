@@ -245,7 +245,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 300
     // @Increment: 1
     // @User: Standard
-    GSCALAR(throttle_min,   "THR_MIN",          MINIMUM_THROTTLE),
+    GSCALAR(throttle_min,   "THR_MIN",          THR_MIN_DEFAULT),
 
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
@@ -254,7 +254,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
-    GSCALAR(throttle_max,   "THR_MAX",          MAXIMUM_THROTTLE),
+    GSCALAR(throttle_max,   "THR_MAX",          THR_MAX_DEFAULT),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
@@ -286,7 +286,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     // @Range: 300 700
     // @Increment: 1
-    GSCALAR(throttle_mid,        "THR_MID",    THR_MID),
+    GSCALAR(throttle_mid,        "THR_MID",    THR_MID_DEFAULT),
 
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1

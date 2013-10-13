@@ -502,14 +502,6 @@
  # define FS_THR_VALUE_DEFAULT             975
 #endif
 
-
-#ifndef MINIMUM_THROTTLE
- # define MINIMUM_THROTTLE       130
-#endif
-#ifndef MAXIMUM_THROTTLE
- # define MAXIMUM_THROTTLE       1000
-#endif
-
 #ifndef LAND_SPEED
  # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
 #endif
@@ -921,8 +913,19 @@
  # define THROTTLE_CRUISE       450             // default estimate of throttle required for vehicle to maintain a hover
 #endif
 
-#ifndef THR_MID
- # define THR_MID               500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#ifndef THR_MID_DEFAULT
+ # define THR_MID_DEFAULT       500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#endif
+
+#ifndef THR_MIN_DEFAULT
+ # define THR_MIN_DEFAULT       130             // minimum throttle sent to the motors when armed and pilot throttle above zero
+#endif
+#ifndef THR_MAX_DEFAULT
+ # define THR_MAX_DEFAULT       1000            // maximum throttle sent to the motors
+#endif
+
+#ifndef THROTTLE_IN_DEADBAND
+# define THROTTLE_IN_DEADBAND    100            // the throttle input channel's deadband in PWM
 #endif
 
 #ifndef ALT_HOLD_TAKEOFF_JUMP
