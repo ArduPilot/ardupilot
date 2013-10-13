@@ -76,11 +76,6 @@ static bool ran_overtime;
 
 extern const AP_HAL::HAL& hal;
 
-static void semaphore_yield(void *sem)
-{
-    sem_post((sem_t *)sem);
-}
-
 /*
   set the priority of the main APM task
  */
@@ -130,12 +125,9 @@ static int main_loop(int argc, char **argv)
 
     perf_counter_t perf_loop = perf_alloc(PC_ELAPSED, "APM_loop");
     perf_counter_t perf_overrun = perf_alloc(PC_COUNT, "APM_overrun");
-    sem_t loop_semaphore;
     struct hrt_call loop_call;
     struct hrt_call loop_overtime_call;
 
-    sem_init(&loop_semaphore, 0, 0);
-             
     thread_running = true;
 
     /*
@@ -179,11 +171,10 @@ static int main_loop(int argc, char **argv)
 
         /*
           give up 500 microseconds of time, to ensure drivers get a
-          chance to run. This gives us better timing performance than
-          a poll(NULL, 0, 1)
+          chance to run. This relies on the accurate semaphore wait
+          using hrt in semaphore.cpp
          */
-        hrt_call_after(&loop_call, 500, (hrt_callout)semaphore_yield, &loop_semaphore);
-        sem_wait(&loop_semaphore);
+        hal.scheduler->delay_microseconds(500);
     }
     thread_running = false;
     return 0;
