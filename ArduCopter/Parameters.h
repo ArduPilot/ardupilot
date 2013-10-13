@@ -290,7 +290,7 @@ public:
     
     AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
-    AP_Int16        gps_hdop_good;              // GPS Hdop value below which represent a good position
+    AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
     AP_Int8         optflow_enabled;

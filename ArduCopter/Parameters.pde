@@ -132,7 +132,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good
-    // @Description: GPS Hdop value below which represent a good position.  Used for pre-arm checks
+    // @Description: GPS Hdop value at or below this value represent a good position.  Used for pre-arm checks
     // @Range: 100 900
     // @User: Advanced
     GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
