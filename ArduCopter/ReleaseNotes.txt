@@ -1,5 +1,17 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc4 13-Oct-2013
+Improvements over 3.1-rc3
+1) Performance improvements to resolve APM alt hold issues for Octacopters:
+     a) SPI bus speed increased from 500khz to 8Mhz
+     b) Telemetry buffer increased to 512bytes
+     c) broke up medium and slow loops into individual scheduled tasks and increased priority of alt hold tasks
+2) AutoTune enabled by default
+3) Bug fix for Pixhawk USB connection
+4) GPS Glitch improvements:
+       a) added GPS glitch check to arming check
+       b) parameters for vehicle max acceleration (GPSGLITCH_ACCEL) and always-ok radius (GPSGLICH_RADIUS)
+------------------------------------------------------------------
 ArduCopter 3.1-rc3 09-Oct-2013
 Improvements over 3.1-rc2
 1) GPS Glitch protection - gps positions are compared with the previous gps position.  Position accepted if within 10m or copter could have reached the position with max accel of 10m/s/s.
