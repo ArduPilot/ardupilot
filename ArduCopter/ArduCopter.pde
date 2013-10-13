@@ -872,10 +872,10 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,  2,     250 },
     { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
-    { gcs_check_input,	     2,     700 },
-    { gcs_send_heartbeat,  100,     700 },
-    { gcs_send_deferred,     2,    1200 },
-    { gcs_data_stream_send,  2,    1500 },
+    { gcs_check_input,	     2,     550 },
+    { gcs_send_heartbeat,  100,     150 },
+    { gcs_send_deferred,     2,     720 },
+    { gcs_data_stream_send,  2,     950 },
 #if COPTER_LEDS == ENABLED
     { update_copter_leds,   10,      55 },
 #endif
