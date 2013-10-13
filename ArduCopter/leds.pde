@@ -60,7 +60,7 @@ static void update_copter_leds(void)
     // motor leds control
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_ENABLED) {
         if (motors.armed()) {
-            if (failsafe.low_battery) {
+            if (failsafe.battery) {
                 if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BATT_OSCILLATE) {
                     copter_leds_oscillate();                        //if motors are armed, but battery level is low, motor leds fast blink
                 } else {
