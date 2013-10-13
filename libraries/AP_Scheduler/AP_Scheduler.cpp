@@ -101,6 +101,8 @@ void AP_Scheduler::run(uint16_t time_available)
                                               (unsigned)time_taken,
                                               (unsigned)_task_time_allowed);
                     }
+                }
+                if (time_taken >= time_available) {
                     goto update_spare_ticks;
                 }
                 time_available -= time_taken;
