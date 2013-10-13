@@ -108,7 +108,7 @@ bool AP_InertialSensor_PX4::update(void)
         _last_filter_hz = _mpu6000_filter;
     }
 
-    _num_samples_available = 0;
+    _have_sample_available = false;
 
     return true;
 }
@@ -145,11 +145,11 @@ void AP_InertialSensor_PX4::_get_sample(void)
 bool AP_InertialSensor_PX4::sample_available(void)
 {
     uint64_t tnow = hrt_absolute_time();
-    if (tnow - _last_sample_timestamp > _sample_time_usec) {
-        _num_samples_available++;
-        _last_sample_timestamp = tnow;
+    while (tnow - _last_sample_timestamp > _sample_time_usec) {
+        _have_sample_available = true;
+        _last_sample_timestamp += _sample_time_usec;
     }
-    return _num_samples_available > 0;
+    return _have_sample_available;
 }
 
 bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
