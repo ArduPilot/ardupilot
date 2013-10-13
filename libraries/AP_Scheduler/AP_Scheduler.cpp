@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] PROGMEM = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
     // @Description: Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.
-    // @Values: 0:Disabled,1:ShowSlips,2:ShowOverruns
+    // @Values: 0:Disabled,2:ShowSlips,3:ShowOverruns
     // @User: Advanced
     AP_GROUPINFO("DEBUG",    0, AP_Scheduler, _debug, 0),
     AP_GROUPEND
