@@ -108,6 +108,7 @@ void auto_tune_restore_orig_pids()
     g.pid_rate_pitch.kI(orig_pitch_ri);
     g.pid_rate_pitch.kD(orig_pitch_rd);
     g.pi_stabilize_pitch.kP(orig_pitch_sp);
+    ap.disable_stab_rate_limit = false;
 }
 
 // auto_tune_load_tuned_pids - restore pids to their original values
@@ -122,6 +123,7 @@ void auto_tune_load_tuned_pids()
         g.pid_rate_pitch.kI(tune_pitch_rp*AUTO_TUNE_RP_RATIO_FINAL);
         g.pid_rate_pitch.kD(tune_pitch_rd);
         g.pi_stabilize_pitch.kP(tune_pitch_sp);
+        ap.disable_stab_rate_limit = false;
     }
 }
 
@@ -164,6 +166,7 @@ void auto_tune_stop()
     if (auto_tune_state.enabled) {
         auto_tune_state.enabled = false;
         auto_tune_state.active = false;
+        ap.disable_stab_rate_limit = false;
         if (roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
             set_roll_pitch_mode(ROLL_PITCH_STABLE); // restore roll-pitch mode
             rate_targets_frame = EARTH_FRAME;   // regular stabilize mode frame
@@ -260,6 +263,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                         g.pid_rate_pitch.kD(tune_pitch_rd);
                         g.pi_stabilize_pitch.kP(tune_pitch_sp);
                     }
+                    ap.disable_stab_rate_limit = true;  // disable rate limits
                 }
                 break;
 
@@ -376,7 +380,6 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
 
             case AUTO_TUNE_STEP_UPDATE_GAINS:
                 // restore pids to their original values
-                //auto_tune_restore_orig_pids();
                 g.pid_rate_roll.kP(orig_roll_rp);
                 g.pid_rate_roll.kI(orig_roll_rp*AUTO_TUNE_PI_RATIO_FOR_TESTING);
                 g.pid_rate_roll.kD(orig_roll_rd);
@@ -385,6 +388,9 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                 g.pid_rate_pitch.kI(orig_pitch_rp*AUTO_TUNE_PI_RATIO_FOR_TESTING);
                 g.pid_rate_pitch.kD(orig_pitch_rd);
                 g.pi_stabilize_pitch.kP(orig_pitch_sp);
+
+                // re-enable the rate limits
+                ap.disable_stab_rate_limit = false;
 
                 // logging
                 if (auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL) {

@@ -396,6 +396,8 @@ static union {
         uint8_t CH8_flag            : 2; // 13,14   // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
         uint8_t usb_connected       : 1; // 15      // true if APM is powered from USB connection
         uint8_t yaw_stopped         : 1; // 16      // Used to manage the Yaw hold capabilities
+
+        uint8_t disable_stab_rate_limit : 1; // 17  // disables limits rate request from the stability controller
     };
     uint32_t value;
 } ap;

@@ -31,11 +31,13 @@ get_stabilize_roll(int32_t target_angle)
     // angle error
     target_angle = wrap_180_cd(target_angle - ahrs.roll_sensor);
 
-    // limit the error we're feeding to the PID
-    target_angle = constrain_int32(target_angle, -g.angle_max, g.angle_max);
-
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_roll.kP() * target_angle;
+
+    // constrain the target rate
+    if (!ap.disable_stab_rate_limit) {
+        target_rate = constrain_int32(target_rate, -STABILIZE_RATE_LIMIT, STABILIZE_RATE_LIMIT);
+    }
 
     // set targets for rate controller
     set_roll_rate_target(target_rate, EARTH_FRAME);
@@ -47,11 +49,13 @@ get_stabilize_pitch(int32_t target_angle)
     // angle error
     target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
 
-    // limit the error we're feeding to the PID
-    target_angle            = constrain_int32(target_angle, -g.angle_max, g.angle_max);
-
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_pitch.kP() * target_angle;
+
+    // constrain the target rate
+    if (!ap.disable_stab_rate_limit) {
+        target_rate = constrain_int32(target_rate, -STABILIZE_RATE_LIMIT, STABILIZE_RATE_LIMIT);
+    }
 
     // set targets for rate controller
     set_pitch_rate_target(target_rate, EARTH_FRAME);

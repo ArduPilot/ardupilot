@@ -785,6 +785,10 @@
  # define STABILIZE_PITCH_IMAX   	0
 #endif
 
+#ifndef STABILIZE_RATE_LIMIT
+ # define STABILIZE_RATE_LIMIT      18000
+#endif
+
 #ifndef  STABILIZE_YAW_P
  # define STABILIZE_YAW_P           4.5f            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
