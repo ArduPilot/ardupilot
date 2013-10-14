@@ -83,7 +83,7 @@
 # define BATTERY_PIN_1     20
 # define CURRENT_PIN_1	   19
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-# define CONFIG_INS_TYPE   CONFIG_INS_HIL
+# define CONFIG_INS_TYPE   CONFIG_INS_L3G4200D
 # define CONFIG_COMPASS  AP_COMPASS_HMC5843
 # define BATTERY_PIN_1     -1
 # define CURRENT_PIN_1	   -1
@@ -142,30 +142,6 @@
 
 #ifndef TUNING_OPTION
 # define TUNING_OPTION		          TUN_NONE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef BATTERY_EVENT
-# define BATTERY_EVENT			DISABLED
-#endif
-#ifndef LOW_VOLTAGE
-# define LOW_VOLTAGE			9.6
-#endif
-#ifndef VOLT_DIV_RATIO
-# define VOLT_DIV_RATIO			3.56	// This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
-#endif
-
-#ifndef CURR_AMP_PER_VOLT
-# define CURR_AMP_PER_VOLT		27.32	// This is the proper value for the AttoPilot 50V/90A sensor
-#endif
-
-#ifndef CURR_AMPS_OFFSET
-# define CURR_AMPS_OFFSET		0.0
-#endif
-#ifndef HIGH_DISCHARGE
-# define HIGH_DISCHARGE		1760
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

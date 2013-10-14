@@ -38,6 +38,11 @@ public:
 
     virtual void     panic(const prog_char_t *errormsg) = 0;
     virtual void     reboot(bool hold_in_bootloader) = 0;
+
+    /**
+       optional function to set timer speed in Hz
+     */
+    virtual void     set_timer_speed(uint16_t speed_hz) {}
 };
 
 #endif // __AP_HAL_SCHEDULER_H__

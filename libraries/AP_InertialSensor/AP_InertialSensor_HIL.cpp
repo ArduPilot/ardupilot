@@ -37,9 +37,7 @@ bool AP_InertialSensor_HIL::update( void ) {
 float AP_InertialSensor_HIL::get_delta_time() {
     return _delta_time_usec * 1.0e-6;
 }
-uint32_t AP_InertialSensor_HIL::get_last_sample_time_micros() {
-    return _last_update_ms * 1000;
-}
+
 float AP_InertialSensor_HIL::get_gyro_drift_rate(void) {
     // 0.5 degrees/second/minute
     return ToRad(0.5/60);
@@ -51,4 +49,19 @@ bool AP_InertialSensor_HIL::sample_available()
         / _sample_period_ms;
     
     return ret > 0;
+}
+
+bool AP_InertialSensor_HIL::wait_for_sample(uint16_t timeout_ms)
+{
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay(1);
+        if (sample_available()) {
+            return true;
+        }
+    }
+    return false;
 }

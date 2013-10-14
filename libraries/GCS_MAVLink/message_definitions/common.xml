@@ -319,6 +319,57 @@
                     <description/>
                </entry>
           </enum>
+          <enum name="MAV_SYS_STATUS_SENSOR">
+               <description>These encode the sensors whose status is sent as part of the SYS_STATUS message.</description>
+               <entry value="1" name="MAV_SYS_STATUS_SENSOR_3D_GYRO">
+                    <description>0x01 3D gyro</description>
+               </entry>
+               <entry value="2" name="MAV_SYS_STATUS_SENSOR_3D_ACCEL">
+                    <description>0x02 3D accelerometer</description>
+               </entry>
+               <entry value="4" name="MAV_SYS_STATUS_SENSOR_3D_MAG">
+                    <description>0x04 3D magnetometer</description>
+               </entry>
+               <entry value="8" name="MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE">
+                    <description>0x08 absolute pressure</description>
+               </entry>
+               <entry value="16" name="MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE">
+                    <description>0x10 differential pressure</description>
+               </entry>
+               <entry value="32" name="MAV_SYS_STATUS_SENSOR_GPS">
+                    <description>0x20 GPS</description>
+               </entry>
+               <entry value="64" name="MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW">
+                    <description>0x40 optical flow</description>
+               </entry>
+               <entry value="128" name="MAV_SYS_STATUS_SENSOR_VISION_POSITION">
+                    <description>0x80 computer vision position</description>
+               </entry>
+               <entry value="256" name="MAV_SYS_STATUS_SENSOR_LASER_POSITION">
+                    <description>0x100 laser based position</description>
+               </entry>
+               <entry value="512" name="MAV_SYS_STATUS_SENSOR_EXTERNAL_GROUND_TRUTH">
+                    <description>0x200 external ground truth (Vicon or Leica)</description>
+               </entry>
+               <entry value="1024" name="MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL">
+                    <description>0x400 3D angular rate control</description>
+               </entry>
+               <entry value="2048" name="MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION">
+                    <description>0x800 attitude stabilization</description>
+               </entry>
+               <entry value="4096" name="MAV_SYS_STATUS_SENSOR_YAW_POSITION">
+                    <description>0x1000 yaw position</description>
+               </entry>
+               <entry value="8192" name="MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL">
+                    <description>0x2000 z/altitude control</description>
+               </entry>
+               <entry value="16384" name="MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL">
+                    <description>0x4000 x/y position control</description>
+               </entry>
+               <entry value="32768" name="MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS">
+                    <description>0x8000 motor outputs / control</description>
+               </entry>
+          </enum>
           <enum name="MAV_FRAME">
                <entry value="0" name="MAV_FRAME_GLOBAL">
                     <description>Global coordinate frame, WGS84 coordinate system. First value / x: latitude, second value / y: longitude, third value / z: positive altitude over mean sea level (MSL)</description>
@@ -909,9 +960,9 @@
           </message>
           <message id="1" name="SYS_STATUS">
                <description>The general system state. If the system is following the MAVLink standard, the system state is mainly defined by three orthogonal states/modes: The system mode, which is either LOCKED (motors shut down and locked), MANUAL (system under RC control), GUIDED (system with autonomous position control, position setpoint controlled manually) or AUTO (system guided by path/waypoint planner). The NAV_MODE defined the current flight state: LIFTOFF (often an open-loop maneuver), LANDING, WAYPOINTS or VECTOR. This represents the internal navigation state machine. The system status shows wether the system is currently active or not and if an emergency occured. During the CRITICAL and EMERGENCY states the MAV is still considered to be active, but should start emergency procedures autonomously. After a failure occured it should first move from active to critical to allow manual intervention and then move to emergency after a certain timeout.</description>
-               <field type="uint32_t" name="onboard_control_sensors_present" print_format="0x%04x">Bitmask showing which onboard controllers and sensors are present. Value of 0: not present. Value of 1: present. Indices: 0: 3D gyro, 1: 3D acc, 2: 3D mag, 3: absolute pressure, 4: differential pressure, 5: GPS, 6: optical flow, 7: computer vision position, 8: laser based position, 9: external ground-truth (Vicon or Leica). Controllers: 10: 3D angular rate control 11: attitude stabilization, 12: yaw position, 13: z/altitude control, 14: x/y position control, 15: motor outputs / control</field>
-               <field type="uint32_t" name="onboard_control_sensors_enabled" print_format="0x%04x">Bitmask showing which onboard controllers and sensors are enabled:  Value of 0: not enabled. Value of 1: enabled. Indices: 0: 3D gyro, 1: 3D acc, 2: 3D mag, 3: absolute pressure, 4: differential pressure, 5: GPS, 6: optical flow, 7: computer vision position, 8: laser based position, 9: external ground-truth (Vicon or Leica). Controllers: 10: 3D angular rate control 11: attitude stabilization, 12: yaw position, 13: z/altitude control, 14: x/y position control, 15: motor outputs / control</field>
-               <field type="uint32_t" name="onboard_control_sensors_health" print_format="0x%04x">Bitmask showing which onboard controllers and sensors are operational or have an error:  Value of 0: not enabled. Value of 1: enabled. Indices: 0: 3D gyro, 1: 3D acc, 2: 3D mag, 3: absolute pressure, 4: differential pressure, 5: GPS, 6: optical flow, 7: computer vision position, 8: laser based position, 9: external ground-truth (Vicon or Leica). Controllers: 10: 3D angular rate control 11: attitude stabilization, 12: yaw position, 13: z/altitude control, 14: x/y position control, 15: motor outputs / control</field>
+               <field type="uint32_t" name="onboard_control_sensors_present" print_format="0x%04x">Bitmask showing which onboard controllers and sensors are present. Value of 0: not present. Value of 1: present. Indices defined by ENUM MAV_SYS_STATUS_SENSOR</field>
+               <field type="uint32_t" name="onboard_control_sensors_enabled" print_format="0x%04x">Bitmask showing which onboard controllers and sensors are enabled:  Value of 0: not enabled. Value of 1: enabled. Indices defined by ENUM MAV_SYS_STATUS_SENSOR</field>
+               <field type="uint32_t" name="onboard_control_sensors_health" print_format="0x%04x">Bitmask showing which onboard controllers and sensors are operational or have an error:  Value of 0: not enabled. Value of 1: enabled. Indices defined by ENUM MAV_SYS_STATUS_SENSOR</field>
                <field type="uint16_t" name="load">Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000</field>
                <field type="uint16_t" name="voltage_battery">Battery voltage, in millivolts (1 = 1 millivolt)</field>
                <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>

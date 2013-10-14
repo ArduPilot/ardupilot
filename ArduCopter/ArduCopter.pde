@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.1-rc2"
+#define THISFIRMWARE "ArduCopter V3.1-rc4"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -117,6 +117,7 @@
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
+#include <AP_BattMonitor.h>     // Battery monitor library
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -182,6 +183,8 @@ static DataFlash_APM1 DataFlash;
 static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static DataFlash_File DataFlash("/fs/microsd/APM/logs");
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+static DataFlash_File DataFlash("logs");
 #else
 static DataFlash_Empty DataFlash;
 #endif
@@ -228,6 +231,8 @@ static AP_InertialSensor_HIL ins;
 static AP_InertialSensor_PX4 ins;
 #elif CONFIG_IMU_TYPE == CONFIG_IMU_FLYMAPLE
 AP_InertialSensor_Flymaple ins;
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_L3G4200D
+AP_InertialSensor_L3G4200D ins;
 #endif
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -375,35 +380,27 @@ static AP_RangeFinder_MaxsonarXL *sonar;
 static union {
     struct {
         uint8_t home_is_set         : 1; // 0
-        uint8_t simple_mode         : 2; // 1,2  // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
+        uint8_t simple_mode         : 2; // 1,2 // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
 
-        uint8_t pre_arm_rc_check    : 1; // 5    // true if rc input pre-arm checks have been completed successfully
-        uint8_t pre_arm_check       : 1; // 6    // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-        uint8_t auto_armed          : 1; // 7    // stops auto missions from beginning until throttle is raised
-        uint8_t logging_started     : 1; // 8    // true if dataflash logging has started
+        uint8_t pre_arm_rc_check    : 1; // 3   // true if rc input pre-arm checks have been completed successfully
+        uint8_t pre_arm_check       : 1; // 4   // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+        uint8_t auto_armed          : 1; // 5   // stops auto missions from beginning until throttle is raised
+        uint8_t logging_started     : 1; // 6   // true if dataflash logging has started
 
-        uint8_t low_battery         : 1; // 9    // Used to track if the battery is low - LED output flashes when the batt is low
-        uint8_t do_flip             : 1; // 15   // Used to enable flip code
-        uint8_t takeoff_complete    : 1; // 16
-        uint8_t land_complete       : 1; // 17   // true if we have detected a landing
-        uint8_t compass_status      : 1; // 18
-        uint8_t gps_status          : 1; // 19
+        uint8_t do_flip             : 1; // 7   // Used to enable flip code
+        uint8_t takeoff_complete    : 1; // 8
+        uint8_t land_complete       : 1; // 9   // true if we have detected a landing
+
+        uint8_t new_radio_frame     : 1; // 10      // Set true if we have new PWM data to act on from the Radio
+        uint8_t CH7_flag            : 2; // 11,12   // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH8_flag            : 2; // 13,14   // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t usb_connected       : 1; // 15      // true if APM is powered from USB connection
+        uint8_t yaw_stopped         : 1; // 16      // Used to manage the Yaw hold capabilities
+
+        uint8_t disable_stab_rate_limit : 1; // 17  // disables limits rate request from the stability controller
     };
     uint32_t value;
 } ap;
-
-
-static struct AP_System{
-    uint8_t GPS_light               : 1; // 0   // Solid indicates we have full 3D lock and can navigate, flash = read
-    uint8_t arming_light            : 1; // 1   // Solid indicates armed state, flashing is disarmed, double flashing is disarmed and failing pre-arm checks
-    uint8_t new_radio_frame         : 1; // 2   // Set true if we have new PWM data to act on from the Radio
-    uint8_t CH7_flag                : 2; // 3,4 // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH8_flag                : 2; // 5,6 // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t usb_connected           : 1; // 7   // true if APM is powered from USB connection
-    uint8_t yaw_stopped             : 1; // 8   // Used to manage the Yaw hold capabilities
-    uint8_t                         : 7; // 9-15 // Fill bit field to 16 bits
-
-} ap_system;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Radio
@@ -425,7 +422,7 @@ static uint8_t receiver_rssi;
 static struct {
     uint8_t rc_override_active  : 1; // 0   // true if rc control are overwritten by ground station
     uint8_t radio               : 1; // 1   // A status flag for the radio failsafe
-    uint8_t batt                : 1; // 2   // A status flag for the battery failsafe
+    uint8_t battery             : 1; // 2   // A status flag for the battery failsafe
     uint8_t gps                 : 1; // 3   // A status flag for the gps failsafe
     uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
 
@@ -550,7 +547,12 @@ static float sin_pitch;
 ////////////////////////////////////////////////////////////////////////////////
 // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
-static int32_t initial_simple_bearing;
+static float simple_cos_yaw = 1.0;
+static float simple_sin_yaw;
+static int32_t super_simple_last_bearing;
+static float super_simple_cos_yaw = 1.0;
+static float super_simple_sin_yaw;
+
 
 // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
 static int32_t initial_armed_bearing;
@@ -624,12 +626,7 @@ static int8_t aux_switch_wp_index;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery Voltage of battery, initialized above threshold for filter
-static float battery_voltage1 = LOW_VOLTAGE * 1.05f;
-// refers to the instant amp draw – based on an Attopilot Current sensor
-static float current_amps1;
-// refers to the total amps drawn – based on an Attopilot Current sensor
-static float current_total1;
+static AP_BattMonitor battery;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -782,14 +779,8 @@ static int16_t pmTest1;
 // --------------
 // Time in microseconds of main control loop
 static uint32_t fast_loopTimer;
-// Counters for branching from 10 hz control loop
-static uint8_t medium_loopCounter;
-// Counters for branching from 3 1/3hz control loop
-static uint8_t slow_loopCounter;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
-// Counters for branching from 4 minute control loop used to save Compass offsets
-static int16_t superslow_loopCounter;
 // Loiter timer - Records how long we have been in loiter
 static uint32_t rtl_loiter_start_time;
 // prevents duplicate GPS messages from entering system
@@ -811,8 +802,6 @@ static AP_HAL::AnalogSource* rssi_analog_source;
 
 
 // Input sources for battery voltage, battery current, board vcc
-static AP_HAL::AnalogSource* batt_volt_analog_source;
-static AP_HAL::AnalogSource* batt_curr_analog_source;
 static AP_HAL::AnalogSource* board_vcc_analog_source;
 
 
@@ -825,13 +814,13 @@ static AP_HAL::AnalogSource* board_vcc_analog_source;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
+static AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
 #endif
 
 #if MOUNT2 == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-static AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
+static AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -868,22 +857,48 @@ AP_Param param_loader(var_info, WP_START_BYTE);
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+    { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
     { update_nav_mode,       1,     400 },
-    { medium_loop,           2,     700 },
+    { update_batt_compass,  10,     720 },
+    { read_aux_switches,    10,      50 },
+    { arm_motors_check,     10,      10 },
+    { auto_trim,            10,     140 },
+    { update_toy_throttle,  10,      50 },
     { update_altitude,      10,    1000 },
-    { fifty_hz_loop,         2,     950 },
     { run_nav_updates,      10,     800 },
-    { slow_loop,            10,     500 },
-    { gcs_check_input,	     2,     700 },
-    { gcs_send_heartbeat,  100,     700 },
-    { gcs_data_stream_send,  2,    1500 },
-    { gcs_send_deferred,     2,    1200 },
-    { compass_accumulate,    2,     700 },
-    { barometer_accumulate,  2,     900 },
-    { super_slow_loop,     100,    1100 },
+    { three_hz_loop,        33,      90 },
+    { compass_accumulate,    2,     420 },
+    { barometer_accumulate,  2,     250 },
     { update_notify,         2,     100 },
-    { perf_update,        1000,     500 }
+    { one_hz_loop,         100,     420 },
+    { gcs_check_input,	     2,     550 },
+    { gcs_send_heartbeat,  100,     150 },
+    { gcs_send_deferred,     2,     720 },
+    { gcs_data_stream_send,  2,     950 },
+#if COPTER_LEDS == ENABLED
+    { update_copter_leds,   10,      55 },
+#endif
+    { update_mount,          2,     450 },
+    { ten_hz_logging_loop,  10,     260 },
+    { fifty_hz_logging_loop, 2,     220 },
+    { perf_update,        1000,     200 },
+    { read_receiver_rssi,   10,      50 },
+#ifdef USERHOOK_FASTLOOP
+    { userhook_50Hz,         1,    100  },
+#endif
+#ifdef USERHOOK_50HZLOOP
+    { userhook_50Hz,         2,    100  },
+#endif
+#ifdef USERHOOK_MEDIUMLOOP
+    { userhook_MediumLoop,   10,    100 },
+#endif
+#ifdef USERHOOK_SLOWLOOP
+    { userhook_SlowLoop,     33,    100 },
+#endif
+#ifdef USERHOOK_SUPERSLOWLOOP
+    { userhook_SlowLoop,    100,    100 },
+#endif
 };
 
 
@@ -898,6 +913,9 @@ void setup() {
 
     // initialise notify system
     notify.init();
+
+    // initialise battery monitor
+    battery.init();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
@@ -914,8 +932,6 @@ void setup() {
 #endif
 
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
-    batt_volt_analog_source = hal.analogin->channel(g.battery_volt_pin);
-    batt_curr_analog_source = hal.analogin->channel(g.battery_curr_pin);
     board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
@@ -959,40 +975,37 @@ static void perf_update(void)
 
 void loop()
 {
+    // wait for an INS sample
+    if (!ins.wait_for_sample(1000)) {
+        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_INS_DELAY);
+        return;
+    }
     uint32_t timer = micros();
 
-    // We want this to execute fast
-    // ----------------------------
-    if (ins.sample_available()) {
+    // check loop time
+    perf_info_check_loop_time(timer - fast_loopTimer);
 
-        // check loop time
-        perf_info_check_loop_time(timer - fast_loopTimer);
+    // used by PI Loops
+    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.f;
+    fast_loopTimer          = timer;
 
-        G_Dt                            = (float)(timer - fast_loopTimer) / 1000000.f;                  // used by PI Loops
-        fast_loopTimer          = timer;
+    // for mainloop failure monitoring
+    mainLoop_count++;
 
-        // for mainloop failure monitoring
-        mainLoop_count++;
+    // Execute the fast loop
+    // ---------------------
+    fast_loop();
 
-        // Execute the fast loop
-        // ---------------------
-        fast_loop();
+    // tell the scheduler one tick has passed
+    scheduler.tick();
 
-        // tell the scheduler one tick has passed
-        scheduler.tick();
-
-        // run all the tasks that are due to run. Note that we only
-        // have to call this once per loop, as the tasks are scheduled
-        // in multiples of the main loop tick. So if they don't run on
-        // the first call to the scheduler they won't run on a later
-        // call until scheduler.tick() is called again
-        uint32_t time_available = (timer + 10000) - micros();
-        scheduler.run(time_available - 500);
-    }
-    if ((timer - fast_loopTimer) < 8500) {
-        // we have plenty of time - be friendly to multi-tasking OSes
-        hal.scheduler->delay(1);
-    }
+    // run all the tasks that are due to run. Note that we only
+    // have to call this once per loop, as the tasks are scheduled
+    // in multiples of the main loop tick. So if they don't run on
+    // the first call to the scheduler they won't run on a later
+    // call until scheduler.tick() is called again
+    uint32_t time_available = (timer + 10000) - micros();
+    scheduler.run(time_available - 300);
 }
 
 
@@ -1050,16 +1063,11 @@ static void fast_loop()
 
     // update targets to rate controllers
     update_rate_contoller_targets();
-
-    // agmatthews - USERHOOKS
-#ifdef USERHOOK_FASTLOOP
-    USERHOOK_FASTLOOP
-#endif
 }
 
-// stuff that happens at 50 hz
+// throttle_loop - should be run at 50 hz
 // ---------------------------
-static void fifty_hz_loop()
+static void throttle_loop()
 {
     // get altitude and climb rate from inertial lib
     read_inertial_altitude();
@@ -1077,17 +1085,12 @@ static void fifty_hz_loop()
 
     // check auto_armed status
     update_auto_armed();
+}
 
-#ifdef USERHOOK_50HZLOOP
-    USERHOOK_50HZLOOP
-#endif
-
-
-#if HIL_MODE != HIL_MODE_DISABLED && FRAME_CONFIG != HELI_FRAME
-    // HIL for a copter needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
-#endif
-
+// update_mount - update camera mount position
+// should be run at 50hz
+static void update_mount()
+{
 #if MOUNT == ENABLED
     // update camera mount's position
     camera_mount.update_mount_position();
@@ -1101,205 +1104,88 @@ static void fifty_hz_loop()
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
 #endif
+}
+
+// update_batt_compass - read battery and compass
+// should be called at 10hz
+static void update_batt_compass(void)
+{
+    // read battery before compass because it may be used for motor interference compensation
+    read_battery();
+
+#if HIL_MODE != HIL_MODE_ATTITUDE  // don't execute in HIL mode
+    if(g.compass_enabled) {
+        if (compass.read()) {
+            compass.null_offsets();
+        }
+        // log compass information
+        if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
+            Log_Write_Compass();
+        }
+    }
+#endif
+
+    // record throttle output
+    throttle_integrator += g.rc_3.servo_out;
+}
+
+// ten_hz_logging_loop
+// should be run at 10hz
+static void ten_hz_logging_loop()
+{
+    if(motors.armed()) {
+        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
+            Log_Write_Attitude();
+        }
+        if (g.log_bitmask & MASK_LOG_MOTORS) {
+            Log_Write_Motors();
+        }
+    }
+}
+
+// fifty_hz_logging_loop
+// should be run at 50hz
+static void fifty_hz_logging_loop()
+{
+#if HIL_MODE != HIL_MODE_DISABLED
+    // HIL for a copter needs very fast update of the servo values
+    gcs_send_message(MSG_RADIO_OUT);
+#endif
 
 # if HIL_MODE == HIL_MODE_DISABLED
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
         Log_Write_Attitude();
     }
 
-    if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
+    if (g.log_bitmask & MASK_LOG_IMU && motors.armed()) {
         DataFlash.Log_Write_IMU(&ins);
-#endif
-
-}
-
-// medium_loop - runs at 10hz
-static void medium_loop()
-{
-    // This is the start of the medium (10 Hz) loop pieces
-    // -----------------------------------------
-    switch(medium_loopCounter) {
-
-    // This case reads from the battery and Compass
-    //---------------------------------------------
-    case 0:
-        medium_loopCounter++;
-
-        // read battery before compass because it may be used for motor interference compensation
-        if (g.battery_monitoring != 0) {
-            read_battery();
-        }
-
-#if HIL_MODE != HIL_MODE_ATTITUDE                                                               // don't execute in HIL mode
-        if(g.compass_enabled) {
-            if (compass.read()) {
-                compass.null_offsets();
-            }
-            // log compass information
-            if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
-                Log_Write_Compass();
-            }
-        }
-#endif
-
-        // record throttle output
-        // ------------------------------
-        throttle_integrator += g.rc_3.servo_out;
-        break;
-
-    // This case reads rssi information and performs auto trim
-    //--------------------------------------------------------
-    case 1:
-        medium_loopCounter++;
-
-        // read receiver rssi information
-        read_receiver_rssi();
-
-        // auto_trim - stores roll and pitch radio inputs to ahrs
-        auto_trim();
-        break;
-
-    // This case deals with aux switches and toy mode's throttle
-    //----------------------------------------------------------
-    case 2:
-        medium_loopCounter++;
-
-        // check ch7 and ch8 aux switches
-        read_aux_switches();
-
-        if(control_mode == TOY_A) {
-            update_toy_throttle();
-
-            if(throttle_mode == THROTTLE_AUTO) {
-                update_toy_altitude();
-            }
-        }
-        break;
-
-    // This case deals with logging attitude and motor information to dataflash
-    // ------------------------------------------------------------------------
-    case 3:
-        medium_loopCounter++;
-
-        if(motors.armed()) {
-            if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
-                Log_Write_Attitude();
-            }
-            if (g.log_bitmask & MASK_LOG_MOTORS)
-                Log_Write_Motors();
-        }
-        break;
-
-    // This case deals with arming checks, copter LEDs and 10hz user hooks
-    // -------------------------------------------------------------------------------
-    case 4:
-        medium_loopCounter = 0;
-
-        // Check for motor arming or disarming
-        arm_motors_check();
-
-        // agmatthews - USERHOOKS
-#ifdef USERHOOK_MEDIUMLOOP
-        USERHOOK_MEDIUMLOOP
-#endif
-
-#if COPTER_LEDS == ENABLED
-        update_copter_leds();
-#endif
-        break;
-
-    default:
-        // this is just a catch all
-        // ------------------------
-        medium_loopCounter = 0;
-        break;
     }
+#endif
 }
 
-// slow_loop - 3.3hz loop
-static void slow_loop()
+// three_hz_loop - 3.3hz loop
+static void three_hz_loop()
 {
-    // This is the slow (3 1/3 Hz) loop pieces
-    //----------------------------------------
-    switch (slow_loopCounter) {
-    case 0:
-        slow_loopCounter++;
-        superslow_loopCounter++;
-
-        // check if we've lost contact with the ground station
-        failsafe_gcs_check();
-
-        // record if the compass is healthy
-        set_compass_healthy(compass.healthy);
-
-        if(superslow_loopCounter > 1200) {
-#if HIL_MODE != HIL_MODE_ATTITUDE
-            if(g.rc_3.control_in == 0 && control_mode == STABILIZE && g.compass_enabled) {
-                compass.save_offsets();
-                superslow_loopCounter = 0;
-            }
-#endif
-        }
-
-        if(!motors.armed()) {
-            // check the user hasn't updated the frame orientation
-            motors.set_frame_orientation(g.frame_orientation);
-        }
+    // check if we've lost contact with the ground station
+    failsafe_gcs_check();
 
 #if AC_FENCE == ENABLED
-        // check if we have breached a fence
-        fence_check();
+    // check if we have breached a fence
+    fence_check();
 #endif // AC_FENCE_ENABLED
 
-        break;
-
-    case 1:
-        slow_loopCounter++;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
-#elif MOUNT == ENABLED
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
-#endif
-        enable_aux_servos();
-
-#if MOUNT == ENABLED
-        camera_mount.update_mount_type();
-#endif
-
-#if MOUNT2 == ENABLED
-        camera_mount2.update_mount_type();
-#endif
-
 #if SPRAYER == ENABLED
-        sprayer.update();
+    sprayer.update();
 #endif
 
-        // agmatthews - USERHOOKS
-#ifdef USERHOOK_SLOWLOOP
-        USERHOOK_SLOWLOOP
-#endif
+    update_events();
 
-        break;
-
-    case 2:
-        slow_loopCounter = 0;
-        update_events();
-
-        if(g.radio_tuning > 0)
-            tuning();
-
-        check_usb_mux();
-        break;
-
-    default:
-        slow_loopCounter = 0;
-        break;
-    }
+    if(g.radio_tuning > 0)
+        tuning();
 }
 
-// super_slow_loop - runs at 1Hz
-static void super_slow_loop()
+// one_hz_loop - runs at 1Hz
+static void one_hz_loop()
 {
     if (g.log_bitmask != 0) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
@@ -1321,16 +1207,31 @@ static void super_slow_loop()
     // auto disarm checks
     auto_disarm_check();
 
-    // make it possible to change orientation at runtime - useful
-    // during initial config
     if (!motors.armed()) {
+        // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
+
+        // check the user hasn't updated the frame orientation
+        motors.set_frame_orientation(g.frame_orientation);
     }
 
-    // agmatthews - USERHOOKS
-#ifdef USERHOOK_SUPERSLOWLOOP
-    USERHOOK_SUPERSLOWLOOP
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+#elif MOUNT == ENABLED
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
 #endif
+
+    enable_aux_servos();
+
+#if MOUNT == ENABLED
+    camera_mount.update_mount_type();
+#endif
+
+#if MOUNT2 == ENABLED
+    camera_mount2.update_mount_type();
+#endif
+
+    check_usb_mux();
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz
@@ -1690,6 +1591,13 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
                 roll_pitch_initialised = true;
             }
             break;
+
+#if AUTOTUNE == ENABLED
+        case ROLL_PITCH_AUTOTUNE:
+            // indicate we can enter this mode successfully
+            roll_pitch_initialised = true;
+            break;
+#endif
     }
 
     // if initialisation has been successful update the yaw mode
@@ -1732,9 +1640,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
@@ -1759,9 +1665,7 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_STABLE_OF:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
@@ -1779,9 +1683,8 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_LOITER:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
+
         // copy user input for reporting purposes
         control_roll            = g.rc_1.control_in;
         control_pitch           = g.rc_2.control_in;
@@ -1799,15 +1702,33 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_SPORT:
         // apply SIMPLE mode transform
-        if(ap.simple_mode && ap_system.new_radio_frame) {
-            update_simple_mode();
-        }
+        update_simple_mode();
+
         // copy user input for reporting purposes
         control_roll = g.rc_1.control_in;
         control_pitch = g.rc_2.control_in;
         get_roll_rate_stabilized_ef(g.rc_1.control_in);
         get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         break;
+
+#if AUTOTUNE == ENABLED
+    case ROLL_PITCH_AUTOTUNE:
+        // apply SIMPLE mode transform
+        if(ap.simple_mode && ap.new_radio_frame) {
+            update_simple_mode();
+        }
+
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+
+        // pass desired roll, pitch to stabilize attitude controllers
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
+
+        // copy user input for reporting purposes
+        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in);
+        break;
+#endif
     }
 
 	#if FRAME_CONFIG != HELI_FRAME
@@ -1816,52 +1737,67 @@ void update_roll_pitch_mode(void)
     }
 	#endif //HELI_FRAME
 
-    if(ap_system.new_radio_frame) {
+    if(ap.new_radio_frame) {
         // clear new radio frame info
-        ap_system.new_radio_frame = false;
+        ap.new_radio_frame = false;
     }
 }
 
-// new radio frame is used to make sure we only call this at 50hz
+static void
+init_simple_bearing()
+{
+    // capture current cos_yaw and sin_yaw values
+    simple_cos_yaw = cos_yaw;
+    simple_sin_yaw = sin_yaw;
+
+    // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
+    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
+    super_simple_cos_yaw = simple_cos_yaw;
+    super_simple_sin_yaw = simple_sin_yaw;
+
+    // log the simple bearing to dataflash
+    if (g.log_bitmask != 0) {
+        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
+    }
+}
+
+// update_simple_mode - rotates pilot input if we are in simple mode
 void update_simple_mode(void)
 {
-    static uint8_t simple_counter = 0;             // State machine counter for Simple Mode
-    static float simple_sin_y=0, simple_cos_x=0;
+    float rollx, pitchx;
 
-    // used to manage state machine
-    // which improves speed of function
-    simple_counter++;
-
-    int16_t delta = wrap_360_cd(ahrs.yaw_sensor - initial_simple_bearing)/100;
-
-    if (simple_counter == 1) {
-        // roll
-        simple_cos_x = sinf(radians(90 - delta));
-
-    }else if (simple_counter > 2) {
-        // pitch
-        simple_sin_y = cosf(radians(90 - delta));
-        simple_counter = 0;
+    // exit immediately if no new radio frame or not in simple mode
+    if (ap.simple_mode == 0 || !ap.new_radio_frame) {
+        return;
     }
 
-    // Rotate input by the initial bearing
-    int16_t _roll   = g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
-    int16_t _pitch  = -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
+    if (ap.simple_mode == 1) {
+        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
+        rollx = g.rc_1.control_in*simple_cos_yaw - g.rc_2.control_in*simple_sin_yaw;
+        pitchx = g.rc_1.control_in*simple_sin_yaw + g.rc_2.control_in*simple_cos_yaw;
+    }else{
+        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
+        rollx = g.rc_1.control_in*super_simple_cos_yaw - g.rc_2.control_in*super_simple_sin_yaw;
+        pitchx = g.rc_1.control_in*super_simple_sin_yaw + g.rc_2.control_in*super_simple_cos_yaw;
+    }
 
-    g.rc_1.control_in = _roll;
-    g.rc_2.control_in = _pitch;
+    // rotate roll, pitch input from north facing to vehicle's perspective
+    g.rc_1.control_in = rollx*cos_yaw + pitchx*sin_yaw;
+    g.rc_2.control_in = -rollx*sin_yaw + pitchx*cos_yaw;
 }
 
 // update_super_simple_bearing - adjusts simple bearing based on location
 // should be called after home_bearing has been updated
-void update_super_simple_bearing()
+void update_super_simple_bearing(bool force_update)
 {
-    // are we in SUPERSIMPLE mode?
-    if(ap.simple_mode == 2 || (ap.simple_mode && g.super_simple)) {
-        // get distance to home
-        if(home_distance > SUPER_SIMPLE_RADIUS) {        // 10m from home
-            // we reset the angular offset to be a vector from home to the quad
-            initial_simple_bearing = wrap_360_cd(home_bearing+18000);
+    // check if we are in super simple mode and at least 10m from home
+    if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
+        // check the bearing to home has changed by at least 5 degrees
+        if (labs(super_simple_last_bearing - home_bearing) > 500) {
+            super_simple_last_bearing = home_bearing;
+            float angle_rad = radians((super_simple_last_bearing+18000)/100);
+            super_simple_cos_yaw = cosf(angle_rad);
+            super_simple_sin_yaw = sinf(angle_rad);
         }
     }
 }

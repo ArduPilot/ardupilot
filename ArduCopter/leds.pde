@@ -60,7 +60,7 @@ static void update_copter_leds(void)
     // motor leds control
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_ENABLED) {
         if (motors.armed()) {
-            if (ap.low_battery) {
+            if (failsafe.battery) {
                 if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BATT_OSCILLATE) {
                     copter_leds_oscillate();                        //if motors are armed, but battery level is low, motor leds fast blink
                 } else {
@@ -118,7 +118,7 @@ static void update_copter_leds(void)
 
     // AUX led control
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX) {
-        if (ap_system.CH7_flag) {
+        if (ap.CH7_flag) {
             copter_leds_aux_on();                                   //if sub-control of Ch7 is high, turn Aux LED on
         } else {
             copter_leds_aux_off();                                  //if sub-control of Ch7 is low, turn Aux LED off

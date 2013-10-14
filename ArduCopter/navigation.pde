@@ -47,7 +47,7 @@ static void calc_distance_and_bearing()
         home_bearing = pv_get_bearing_cd(curr,Vector3f(0,0,0));
 
         // update super simple bearing (if required) because it relies on home_bearing
-        update_super_simple_bearing();
+        update_super_simple_bearing(false);
     }else{
         home_distance = 0;
         home_bearing = 0;

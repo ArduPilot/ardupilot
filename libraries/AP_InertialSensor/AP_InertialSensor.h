@@ -121,6 +121,9 @@ public:
     // true if a new sample is available from the sensors
     virtual bool sample_available() = 0;
 
+    // wait for a sample to be available, with timeout in milliseconds
+    virtual bool wait_for_sample(uint16_t timeout_ms) = 0;
+
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -190,5 +193,6 @@ protected:
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
 #include "AP_InertialSensor_Flymaple.h"
+#include "AP_InertialSensor_L3G4200D.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__

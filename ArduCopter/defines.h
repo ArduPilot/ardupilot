@@ -33,6 +33,7 @@
 #define ROLL_PITCH_TOY              4       // THOR This is the Roll and Pitch mode
 #define ROLL_PITCH_LOITER           5       // pilot inputs the desired horizontal velocities
 #define ROLL_PITCH_SPORT            6       // pilot inputs roll, pitch rotation rates in earth frame
+#define ROLL_PITCH_AUTOTUNE         7       // description of new roll-pitch mode
 
 #define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
 #define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation
@@ -68,6 +69,7 @@
 #define AUX_SWITCH_ACRO_TRAINER     14      // low = disabled, middle = leveled, high = leveled and limited
 #define AUX_SWITCH_SPRAYER          15      // enable/disable the crop sprayer
 #define AUX_SWITCH_AUTO             16      // change to auto flight mode
+#define AUX_SWITCH_AUTOTUNE         17      // auto tune
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
@@ -291,6 +293,8 @@ enum ap_message {
 #define LOG_DATA_INT32_MSG              0x16
 #define LOG_DATA_UINT32_MSG             0x17
 #define LOG_DATA_FLOAT_MSG              0x18
+#define LOG_AUTOTUNE_MSG                0x19
+#define LOG_AUTOTUNEDETAILS_MSG         0x1A
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
@@ -332,14 +336,11 @@ enum ap_message {
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
 #define DATA_SET_SUPERSIMPLE_ON         28
-
-// battery monitoring macros
-#define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
-#define CURRENT_AMPS(x) (x->voltage_average()-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
-
-#define BATT_MONITOR_DISABLED               0
-#define BATT_MONITOR_VOLTAGE_ONLY           3
-#define BATT_MONITOR_VOLTAGE_AND_CURRENT    4
+#define DATA_AUTOTUNE_ON                29
+#define DATA_AUTOTUNE_SUSPENDED         30
+#define DATA_AUTOTUNE_OFF               31
+#define DATA_AUTOTUNE_SAVEDGAINS        32
+#define DATA_AUTOTUNE_ABANDONED         33
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */
@@ -449,6 +450,8 @@ enum ap_message {
 #define ERROR_CODE_COMPASS_FAILED_TO_READ   2
 // subsystem specific error codes -- gps
 #define ERROR_CODE_GPS_GLITCH               2
+// subsystem specific error codes -- main
+#define ERROR_CODE_INS_DELAY                1
 
 
 

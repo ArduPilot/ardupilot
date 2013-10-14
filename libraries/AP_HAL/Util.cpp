@@ -15,6 +15,14 @@ public:
             return 0;
         }
     }
+    size_t write(const uint8_t *buffer, size_t size) {
+        size_t n = 0;
+        while (size--) {
+            n += write(*buffer++);
+        }
+        return n;
+    }
+
     size_t _offs; 
     char* const  _str;
     const size_t _size;

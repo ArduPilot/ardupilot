@@ -65,16 +65,27 @@ void APM1RCInput::init(void* _isrregistry) {
      * OCR4A: 40000, 0.5us tick => 2ms period / 50hz freq for outbound
      * fast PWM.
      */
-    TCCR4A = _BV(WGM40) | _BV(WGM41);
-    TCCR4B = _BV(WGM43) | _BV(WGM42) | _BV(CS41) | _BV(ICES4);
-    OCR4A  = 40000;
 
-    /* OCR4B and OCR4C will be used by RCOutput_APM1. init to nil output */
+    uint8_t oldSREG = SREG;
+    cli();
+    
+    /* Timer cleanup before configuring */
+    TCNT4 = 0;
+    TIFR4 = 0;
+
+    /* Set timer 8x prescaler fast PWM mode toggle compare at OCRA with rising edge input capture */
+    TCCR4A = _BV(WGM40) | _BV(WGM41);
+    TCCR4B |= _BV(WGM43) | _BV(WGM42) | _BV(CS41) | _BV(ICES4);
+    OCR4A  = 40000 - 1; // -1 to correct for wrap
+
+    /* OCR4B and OCR4C will be used by RCOutput_APM1. Init to 0xFFFF to prevent premature PWM output */
     OCR4B  = 0xFFFF;
     OCR4C  = 0xFFFF;
 
     /* Enable input capture interrupt */
     TIMSK4 |= _BV(ICIE4);
+    
+    SREG = oldSREG;    
 }
 
 uint8_t APM1RCInput::valid_channels() { return _valid_channels; }
@@ -91,9 +102,10 @@ uint16_t APM1RCInput::read(uint8_t ch) {
     /* constrain ch */
     if (ch >= AVR_RC_INPUT_NUM_CHANNELS) return 0;
     /* grab channel from isr's memory in critical section*/
+    uint8_t oldSREG = SREG;
     cli();
     uint16_t capt = _pulse_capt[ch];
-    sei();
+    SREG = oldSREG;
     _valid_channels = 0;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
@@ -106,11 +118,12 @@ uint8_t APM1RCInput::read(uint16_t* periods, uint8_t len) {
     /* constrain len */
     if (len > AVR_RC_INPUT_NUM_CHANNELS) { len = AVR_RC_INPUT_NUM_CHANNELS; }
     /* grab channels from isr's memory in critical section */
+    uint8_t oldSREG = SREG;
     cli();
     for (uint8_t i = 0; i < len; i++) {
         periods[i] = _pulse_capt[i];
     }
-    sei();
+    SREG = oldSREG;
     /* Outside of critical section, do the math (in place) to scale and
      * constrain the pulse. */
     for (uint8_t i = 0; i < len; i++) {

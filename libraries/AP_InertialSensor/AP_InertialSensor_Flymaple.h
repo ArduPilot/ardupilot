@@ -20,9 +20,9 @@ public:
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
     float        	get_delta_time();
-    uint32_t        get_last_sample_time_micros();
     float           get_gyro_drift_rate();
     bool            sample_available();
+    bool            wait_for_sample(uint16_t timeout_ms);
 
 private:
     uint16_t        _init_sensor( Sample_rate sample_rate );
@@ -33,7 +33,6 @@ private:
     static uint32_t _accel_samples;
     static Vector3f	_gyro_filtered;
     static uint32_t _gyro_samples;
-    static volatile bool _in_accumulate;
     static uint64_t _last_accel_timestamp;
     static uint64_t _last_gyro_timestamp;
     uint8_t  _sample_divider;

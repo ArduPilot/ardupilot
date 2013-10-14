@@ -329,8 +329,11 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
-    // pass arming checks at least once
-    if (!arm_checks(display_failure)) {
+    // check gps is ok if required - note this same check is repeated again in arm_checks
+    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching())) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+        }
         return;
     }
 
@@ -347,7 +350,7 @@ static void pre_arm_rc_checks()
     }
 
     // check if radio has been calibrated
-    if(!g.rc_3.radio_min.load()) {
+    if(!g.rc_3.radio_min.load() && !g.rc_3.radio_max.load()) {
         return;
     }
 
@@ -374,10 +377,18 @@ static bool arm_checks(bool display_failure)
         return true;
     }
 
-    // check gps is ok if required
-    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good)) {
+    // check gps is ok if required - note this same check is also done in pre-arm checks
+    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching())) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
+        }
+        return false;
+    }
+
+    // check if safety switch has been pushed
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Safety Switch"));
         }
         return false;
     }
@@ -397,6 +408,11 @@ static void init_disarm_motors()
     compass.save_offsets();
 
     g.throttle_cruise.save();
+
+#if AUTOTUNE == ENABLED
+    // save auto tuned parameters
+    auto_tune_save_tuning_gains();
+#endif
 
     // we are not in the air
     set_takeoff_complete(false);

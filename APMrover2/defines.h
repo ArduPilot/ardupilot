@@ -164,10 +164,6 @@ enum ap_message {
 // Climb rate calculations
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
-
-#define BATTERY_VOLTAGE(x) (x->voltage_average()*g.volt_div_ratio)
-#define CURRENT_AMPS(x) (x->voltage_average()-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
-
 #define RELAY_PIN 47
 
 
@@ -200,6 +196,8 @@ enum ap_message {
 #define CONFIG_INS_MPU6000 2
 #define CONFIG_INS_HIL     3
 #define CONFIG_INS_PX4     4
+#define CONFIG_INS_FLYMAPLE 5
+#define CONFIG_INS_L3G4200D 6
 
 // compass driver types
 #define AP_COMPASS_HMC5843   1

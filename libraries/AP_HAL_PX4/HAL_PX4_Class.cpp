@@ -7,7 +7,6 @@
 #include <AP_HAL_PX4.h>
 #include "AP_HAL_PX4_Namespace.h"
 #include "HAL_PX4_Class.h"
-#include "Console.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include "Storage.h"
@@ -36,7 +35,6 @@ static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::EmptySPIDeviceManager spiDeviceManager;
 //static Empty::EmptyGPIO gpioDriver;
 
-static PX4ConsoleDriver consoleDriver;
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
@@ -63,7 +61,7 @@ HAL_PX4::HAL_PX4() :
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */
-        &consoleDriver, /* console */
+        &uartADriver, /* console */
         &gpioDriver, /* gpio */
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
@@ -77,11 +75,6 @@ static int daemon_task;                /**< Handle of daemon task / thread */
 static bool ran_overtime;
 
 extern const AP_HAL::HAL& hal;
-
-static void semaphore_yield(void *sem)
-{
-    sem_post((sem_t *)sem);
-}
 
 /*
   set the priority of the main APM task
@@ -114,7 +107,6 @@ static int main_loop(int argc, char **argv)
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
-    hal.console->init((void*) hal.uartA);
     hal.scheduler->init(NULL);
     hal.rcin->init(NULL);
     hal.rcout->init(NULL);
@@ -133,12 +125,9 @@ static int main_loop(int argc, char **argv)
 
     perf_counter_t perf_loop = perf_alloc(PC_ELAPSED, "APM_loop");
     perf_counter_t perf_overrun = perf_alloc(PC_COUNT, "APM_overrun");
-    sem_t loop_semaphore;
     struct hrt_call loop_call;
     struct hrt_call loop_overtime_call;
 
-    sem_init(&loop_semaphore, 0, 0);
-             
     thread_running = true;
 
     /*
@@ -171,20 +160,21 @@ static int main_loop(int argc, char **argv)
 
         perf_end(perf_loop);
 
+#if 0
         if (hal.scheduler->in_timerprocess()) {
             // we are running when a timer process is running! This is
             // a scheduling error, and breaks the assumptions made in
             // our locking system
             ::printf("ERROR: timer processing running in loop()\n");
         }
+#endif
 
         /*
           give up 500 microseconds of time, to ensure drivers get a
-          chance to run. This gives us better timing performance than
-          a poll(NULL, 0, 1)
+          chance to run. This relies on the accurate semaphore wait
+          using hrt in semaphore.cpp
          */
-        hrt_call_after(&loop_call, 500, (hrt_callout)semaphore_yield, &loop_semaphore);
-        sem_wait(&loop_semaphore);
+        hal.scheduler->delay_microseconds(500);
     }
     thread_running = false;
     return 0;

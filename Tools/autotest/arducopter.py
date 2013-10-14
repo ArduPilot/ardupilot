@@ -74,7 +74,7 @@ def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1700):
     return True
 
 # loiter - fly south west, then hold loiter within 5m position and altitude
-def loiter(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=5):
+def loiter(mavproxy, mav, holdtime=15, maxaltchange=5, maxdistchange=5):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
@@ -281,6 +281,36 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     mavproxy.send('switch 6\n') # stabilize mode
     wait_mode(mav, 'STABILIZE')
     return False
+
+def fly_battery_failsafe(mavproxy, mav, timeout=30):
+    # assume failure
+    success = False
+
+    # switch to loiter mode so that we hold position
+    mavproxy.send('switch 5\n')
+    wait_mode(mav, 'LOITER')
+    mavproxy.send("rc 3 1500\n")
+
+    # enable battery failsafe
+    mavproxy.send("param set FS_BATT_ENABLE 1\n")
+
+    # trigger low voltage
+    mavproxy.send('param set SIM_BATT_VOLTAGE 10\n')
+
+    # wait for LAND mode
+    if wait_mode(mav, 'LAND', timeout) == 'LAND':
+        success = True
+
+    # disable battery failsafe
+    mavproxy.send('param set FS_BATT_ENABLE 0\n')
+
+    # return status
+    if success:
+        print("Successfully entered LAND mode after battery failsafe")
+    else:
+        print("Failed to neter LAND mode after battery failsafe")
+
+    return success
 
 # fly_stability_patch - fly south, then hold loiter within 5m position and altitude and reduce 1 motor to 60% efficiency
 def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=10):
@@ -565,9 +595,15 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
 
 #fly_simple - assumes the simple bearing is initialised to be directly north
 #   flies a box with 100m west, 15 seconds north, 50 seconds east, 15 seconds south
-def fly_simple(mavproxy, mav, side=100, timeout=120):
+def fly_simple(mavproxy, mav, side=50, timeout=120):
 
-    #set SIMPLE mode
+    failed = False
+
+    # hold position in loiter
+    mavproxy.send('switch 5\n') # loiter mode
+    wait_mode(mav, 'LOITER')
+
+    #set SIMPLE mode for all flight modes
     mavproxy.send('param set SIMPLE 63\n')
 
     # switch to stabilize mode
@@ -575,38 +611,35 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1400\n')
 
-    tstart = time.time()
-    failed = False
-
-    # fly west 100m
-    print("# Flying west %u meters" % side)
+    # fly south 50m
+    print("# Flying south %u meters" % side)
     mavproxy.send('rc 1 1300\n')
     if not wait_distance(mav, side, 5, 60):
         failed = True
     mavproxy.send('rc 1 1500\n')
 
-    # fly north 15 seconds
-    print("# Flying north for 15 seconds")
+    # fly west 8 seconds
+    print("# Flying west for 8 seconds")
     mavproxy.send('rc 2 1300\n')
     tstart = time.time()
-    while time.time() < (tstart + 15):
+    while time.time() < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (time.time() - tstart)
         #print("%u" % delta)
     mavproxy.send('rc 2 1500\n')
 
-    # fly east 50 meters
-    print("# Flying east %u meters" % (side/2.0))
+    # fly north 25 meters
+    print("# Flying north %u meters" % (side/2.0))
     mavproxy.send('rc 1 1700\n')
     if not wait_distance(mav, side/2, 5, 60):
         failed = True
     mavproxy.send('rc 1 1500\n')
 
-    # fly south 15 seconds
-    print("# Flying south for 15 seconds")
+    # fly east 8 seconds
+    print("# Flying east for 8 seconds")
     mavproxy.send('rc 2 1700\n')
     tstart = time.time()
-    while time.time() < (tstart + 15):
+    while time.time() < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (time.time() - tstart)
         #print("%u" % delta)
@@ -614,6 +647,52 @@ def fly_simple(mavproxy, mav, side=100, timeout=120):
 
     #restore to default
     mavproxy.send('param set SIMPLE 0\n')
+
+    #hover in place
+    hover(mavproxy, mav)
+    return not failed
+
+#fly_super_simple - flies a circle around home for 45 seconds
+def fly_super_simple(mavproxy, mav, timeout=45):
+
+    failed = False
+
+    # hold position in loiter
+    mavproxy.send('switch 5\n') # loiter mode
+    wait_mode(mav, 'LOITER')
+
+    # fly forward 20m
+    print("# Flying forward 20 meters")
+    mavproxy.send('rc 2 1300\n')
+    if not wait_distance(mav, 20, 5, 60):
+        failed = True
+    mavproxy.send('rc 2 1500\n')
+
+    #set SUPER SIMPLE mode for all flight modes
+    mavproxy.send('param set SUPER_SIMPLE 63\n')
+
+    # switch to stabilize mode
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'STABILIZE')
+    mavproxy.send('rc 3 1400\n')
+
+    # start copter yawing slowly
+    mavproxy.send('rc 4 1550\n')
+
+    # roll left for timeout seconds
+    print("# rolling left from pilot's point of view for %u seconds" % timeout)
+    mavproxy.send('rc 1 1300\n')
+    tstart = time.time()
+    while time.time() < (tstart + timeout):
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        delta = (time.time() - tstart)
+
+    # stop rolling and yawing
+    mavproxy.send('rc 1 1500\n')
+    mavproxy.send('rc 4 1500\n')
+
+    #restore simple mode parameters to default
+    mavproxy.send('param set SUPER_SIMPLE 0\n')
 
     #hover in place
     hover(mavproxy, mav)
@@ -818,7 +897,7 @@ def fly_ArduCopter(viewerip=None, map=False):
 
         # Fly a square in Stabilize mode
         print("#")
-        print("########## Fly A square and save WPs with CH7 switch ##########")
+        print("########## Fly a square and save WPs with CH7 switch ##########")
         print("#")
         if not fly_square(mavproxy, mav):
             print("fly_square failed")
@@ -851,6 +930,17 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("#")
         if not fly_throttle_failsafe(mavproxy, mav):
             print("FS failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Battery failsafe
+        if not fly_battery_failsafe(mavproxy, mav):
+            print("battery failsafe failed")
             failed = True
 
         # Takeoff
@@ -917,19 +1007,19 @@ def fly_ArduCopter(viewerip=None, map=False):
             print("takeoff failed")
             failed = True
 
-        # Loiter for 30 seconds
+        # Loiter for 15 seconds
         print("#")
-        print("########## Test Loiter for 30 seconds ##########")
+        print("########## Test Loiter for 15 seconds ##########")
         print("#")
-        if not loiter(mavproxy, mav, 30):
+        if not loiter(mavproxy, mav):
             print("loiter failed")
             failed = True
 
         # Loiter Climb
         print("#")
-        print("# Loiter - climb to 60m")
+        print("# Loiter - climb to 40m")
         print("#")
-        if not change_alt(mavproxy, mav, 60):
+        if not change_alt(mavproxy, mav, 40):
             print("change_alt failed")
             failed = True
 
@@ -969,6 +1059,24 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("#")
         print("########## Test RTL ##########")
         print("#")
+        if not fly_RTL(mavproxy, mav):
+            print("RTL failed")
+            failed = True
+
+        # Takeoff
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        # Fly a circle in super simple mode
+        print("# Fly a circle in SUPER SIMPLE mode")
+        if not fly_super_simple(mavproxy, mav):
+            print("fly super simple failed")
+            failed = True
+
+        # RTL
+        print("# RTL #")
         if not fly_RTL(mavproxy, mav):
             print("RTL failed")
             failed = True

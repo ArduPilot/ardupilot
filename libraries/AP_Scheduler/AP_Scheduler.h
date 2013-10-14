@@ -88,7 +88,7 @@ private:
 	uint16_t *_last_run;
 
 	// number of microseconds allowed for the current task
-	uint16_t _task_time_allowed;
+	uint32_t _task_time_allowed;
 
 	// the time in microseconds when the task started
 	uint32_t _task_time_started;

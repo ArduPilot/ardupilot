@@ -46,6 +46,9 @@ public:
     void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
 
+    // set camera trigger distance in a mission
+    void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
+
     // Update location of vehicle and return true if a picture should be taken
     bool update_location(const struct Location &loc);
 

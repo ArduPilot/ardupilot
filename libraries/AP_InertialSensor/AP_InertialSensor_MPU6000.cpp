@@ -179,10 +179,10 @@ const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000() : 
 	AP_InertialSensor(),
-    _mpu6000_product_id(AP_PRODUCT_ID_NONE),
     _drdy_pin(NULL),
     _temp(0),
-    _initialised(false)
+    _initialised(false),
+    _mpu6000_product_id(AP_PRODUCT_ID_NONE)
 {
 }
 
@@ -245,18 +245,19 @@ static volatile uint16_t _count;
 
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
-void AP_InertialSensor_MPU6000::wait_for_sample()
+bool AP_InertialSensor_MPU6000::wait_for_sample(uint16_t timeout_ms)
 {
-    uint32_t tstart = hal.scheduler->micros();
-    while (sample_available() == false) {
-        uint32_t now = hal.scheduler->micros();
-        uint32_t dt = now - tstart;
-        if (dt > 50000) {
-            hal.scheduler->panic(
-                    PSTR("PANIC: AP_InertialSensor_MPU6000::update "
-                        "waited 50ms for data from interrupt"));
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (sample_available()) {
+            return true;
         }
     }
+    return false;
 }
 
 bool AP_InertialSensor_MPU6000::update( void )
@@ -266,7 +267,9 @@ bool AP_InertialSensor_MPU6000::update( void )
     Vector3f accel_scale = _accel_scale.get();
 
     // wait for at least 1 sample
-    wait_for_sample();
+    if (!wait_for_sample(1000)) {
+        return false;
+    }
 
     // disable timer procs for mininum time
     hal.scheduler->suspend_timer_procs();
@@ -305,7 +308,9 @@ bool AP_InertialSensor_MPU6000::update( void )
 
     if (_last_filter_hz != _mpu6000_filter) {
         if (_spi_sem->take(10)) {
+            _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
             _set_filter_register(_mpu6000_filter, 0);
+            _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
             _spi_sem->give();
         }
     }
@@ -481,6 +486,9 @@ bool AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
         hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
     }
 
+    // initially run the bus at low speed (500kHz on APM2)
+    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries<5; tries++) {
@@ -571,6 +579,10 @@ bool AP_InertialSensor_MPU6000::hardware_init(Sample_rate sample_rate)
     // until we clear the interrupt
     register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
     hal.scheduler->delay(1);
+
+    // now that we have initialised, we set the SPI bus speed to high
+    // (8MHz on APM2)
+    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
 
     _spi_sem->give();
 

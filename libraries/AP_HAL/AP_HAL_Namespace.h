@@ -20,7 +20,6 @@ namespace AP_HAL {
     class AnalogSource;
     class AnalogIn;
     class Storage;
-    class ConsoleDriver;
     class DigitalSource;
     class GPIO;
     class RCInput;

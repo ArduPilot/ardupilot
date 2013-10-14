@@ -67,7 +67,7 @@ static void init_rc_out()
     g.rc_3.set_range_out(0,1000);
 
     // full throttle means to enter ESC calibration
-    if(g.rc_3.control_in >= (MAXIMUM_THROTTLE - 50)) {
+    if(g.rc_3.control_in >= (g.throttle_max - 50)) {
         if(g.esc_calibrate == 0) {
             // we will enter esc_calibrate mode on next reboot
             g.esc_calibrate.set_and_save(1);
@@ -117,7 +117,7 @@ static void read_radio()
     static uint32_t last_update = 0;
     if (hal.rcin->valid_channels() > 0) {
         last_update = millis();
-        ap_system.new_radio_frame = true;
+        ap.new_radio_frame = true;
         uint16_t periods[8];
         hal.rcin->read(periods,8);
         g.rc_1.set_pwm(periods[rcmap.roll()-1]);
@@ -130,11 +130,6 @@ static void read_radio()
         g.rc_6.set_pwm(periods[5]);
         g.rc_7.set_pwm(periods[6]);
         g.rc_8.set_pwm(periods[7]);
-
-#if FRAME_CONFIG != HELI_FRAME
-        // limit our input to 800 so we can still pitch and roll
-        g.rc_3.control_in = min(g.rc_3.control_in, MAXIMUM_THROTTLE);
-#endif
     }else{
         uint32_t elapsed = millis() - last_update;
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds

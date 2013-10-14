@@ -24,6 +24,7 @@ public:
     float        	get_delta_time();
     float           get_gyro_drift_rate();
     bool            sample_available();
+    bool            wait_for_sample(uint16_t timeout_ms);
 
 private:
     uint16_t _init_sensor( Sample_rate sample_rate );
@@ -35,7 +36,7 @@ private:
     uint64_t _last_accel_timestamp;
     uint64_t _last_gyro_timestamp;
     uint64_t _last_sample_timestamp;
-    uint16_t _num_samples_available;
+    bool     _have_sample_available;
     uint32_t _sample_time_usec;
 
     // support for updating filter at runtime

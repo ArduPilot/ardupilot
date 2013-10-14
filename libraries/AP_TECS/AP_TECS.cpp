@@ -309,7 +309,10 @@ void AP_TECS::_update_height_demand(void)
 
 void AP_TECS::_detect_underspeed(void) 
 {
-    if (((_integ5_state < _TASmin * 0.9f) && (_throttle_dem >= _THRmaxf * 0.95f)) || ((_integ3_state < _hgt_dem_adj) && _underspeed))
+    if (((_integ5_state < _TASmin * 0.9f) && 
+		 (_throttle_dem >= _THRmaxf * 0.95f) &&
+		 _flight_stage != AP_TECS::FLIGHT_LAND_FINAL) || 
+		((_integ3_state < _hgt_dem_adj) && _underspeed))
     {
         _underspeed = true;
     }
@@ -395,7 +398,7 @@ void AP_TECS::_update_throttle(void)
   		// Calculate integrator state, constraining state
 		// Set integrator to a max throttle value during climbout
         _integ6_state = _integ6_state + (_STE_error * _integGain) * _DT * K_STE2Thr;
-		if (_climbOutDem)
+		if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
 		{
 			_integ6_state = integ_max;
 		}
@@ -421,7 +424,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
 {
 	// Calculate throttle demand by interpolating between pitch and throttle limits
     float nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;	
-	if (_climbOutDem)
+	if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
 	{
 		_throttle_dem = _THRmaxf;
 	}
@@ -483,7 +486,8 @@ void AP_TECS::_update_pitch(void)
 	// or during takeoff/climbout where a minimum pitch angle is set to ensure height is gained. In this instance, if airspeed
 	// rises above the demanded value, the pitch angle will be increased by the TECS controller.
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-	if ( ( _underspeed || _climbOutDem ) && _ahrs.airspeed_sensor_enabled() ) {
+	if ( ( _underspeed || (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) ) && 
+		 _ahrs.airspeed_sensor_enabled() ) {
 		SKE_weighting = 2.0f;
 	} else if (!_ahrs.airspeed_sensor_enabled()) {
 		SKE_weighting = 0.0f;
@@ -556,7 +560,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 		_DT                = 0.1f; // when first starting TECS, use a
 								   // small time constant
 	}
-	else if (_climbOutDem)
+	else if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
 	{
 		_PITCHminf          = 0.000174533f * ptchMinCO_cd;
 		_THRminf            = _THRmaxf - 0.01f;
@@ -580,7 +584,7 @@ void AP_TECS::_update_STE_rate_lim(void)
 
 void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 									int32_t EAS_dem_cm, 
-									bool climbOutDem, 
+									enum FlightStage flight_stage,
 									int32_t ptchMinCO_cd, 
 									int16_t throttle_nudge,
 									float hgt_afe) 
@@ -600,7 +604,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _THRminf  = aparm.throttle_min * 0.01f;
 	_PITCHmaxf = 0.000174533f * aparm.pitch_limit_max_cd;
 	_PITCHminf = 0.000174533f * aparm.pitch_limit_min_cd;
-	_climbOutDem = climbOutDem;
+	_flight_stage = flight_stage;
 
 	// initialise selected states and variables if DT > 1 second or in climbout
 	_initialise_states(ptchMinCO_cd, hgt_afe);

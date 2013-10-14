@@ -33,6 +33,10 @@ public:
     // the callback is a delay() like routine
     void        calibrate();
 
+    // update the barometer calibration to the current pressure. Can
+    // be used for incremental preflight update of baro
+    void        update_calibration();
+
     // get current altitude in meters relative to altitude at the time
     // of the last calibrate() call
     float        get_altitude(void);

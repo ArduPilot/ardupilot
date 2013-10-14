@@ -13,7 +13,6 @@
 #include "AnalogIn.h"
 #include "UARTDriver.h"
 #include "Storage.h"
-#include "Console.h"
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "SITL_State.h"
@@ -26,7 +25,6 @@ using namespace AVR_SITL;
 
 static SITLScheduler sitlScheduler;
 static SITLEEPROMStorage sitlEEPROMStorage;
-static SITLConsoleDriver consoleDriver;
 static SITL_State sitlState;
 static SITLRCInput  sitlRCInput(&sitlState);
 static SITLRCOutput sitlRCOutput(&sitlState);
@@ -53,7 +51,7 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
         &emptySPI, /* spi */
         &sitlAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */
-        &consoleDriver, /* console */
+        &sitlUart0Driver, /* console */
         &emptyGPIO, /* gpio */
         &sitlRCInput,  /* rcinput */
         &sitlRCOutput, /* rcoutput */
@@ -67,7 +65,6 @@ void HAL_AVR_SITL::init(int argc, char * const argv[]) const
     _sitl_state->init(argc, argv);
     scheduler->init(NULL);
     uartA->begin(115200);
-    console->init((void*) uartA);
 
     rcin->init(NULL);
     rcout->init(NULL);

@@ -36,6 +36,12 @@ float ADCSource::read_latest() {
     case 0:
         return _sitlState->airspeed_pin_value;
 
+    case 12:
+        return _sitlState->current_pin_value;
+
+    case 13:
+        return _sitlState->voltage_pin_value;
+
     case ANALOG_INPUT_NONE:
     default:
         return 0.0;

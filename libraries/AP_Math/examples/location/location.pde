@@ -188,6 +188,64 @@ static void test_accuracy(void)
     }
 }
 
+static const struct {
+    int32_t v, wv;
+} wrap_180_tests[] = {
+    { 32000,            -4000 },
+    { 1500 + 100*36000,  1500 },
+    { -1500 - 100*36000, -1500 },
+};
+
+static const struct {
+    int32_t v, wv;
+} wrap_360_tests[] = {
+    { 32000,            32000 },
+    { 1500 + 100*36000,  1500 },
+    { -1500 - 100*36000, 34500 },
+};
+
+static const struct {
+    float v, wv;
+} wrap_PI_tests[] = {
+    { 0.2f*PI,            0.2f*PI },
+    { 0.2f*PI + 100*PI,  0.2f*PI },
+    { -0.2f*PI - 100*PI,  -0.2f*PI },
+};
+
+static void test_wrap_cd(void)
+{
+    for (uint8_t i=0; i<sizeof(wrap_180_tests)/sizeof(wrap_180_tests[0]); i++) {
+        int32_t r = wrap_180_cd(wrap_180_tests[i].v);
+        if (r != wrap_180_tests[i].wv) {
+            hal.console->printf("wrap_180: v=%ld wv=%ld r=%ld\n",
+                                (long)wrap_180_tests[i].v,
+                                (long)wrap_180_tests[i].wv,
+                                (long)r);
+        }
+    }
+
+    for (uint8_t i=0; i<sizeof(wrap_360_tests)/sizeof(wrap_360_tests[0]); i++) {
+        int32_t r = wrap_360_cd(wrap_360_tests[i].v);
+        if (r != wrap_360_tests[i].wv) {
+            hal.console->printf("wrap_360: v=%ld wv=%ld r=%ld\n",
+                                (long)wrap_360_tests[i].v,
+                                (long)wrap_360_tests[i].wv,
+                                (long)r);
+        }
+    }
+
+    for (uint8_t i=0; i<sizeof(wrap_PI_tests)/sizeof(wrap_PI_tests[0]); i++) {
+        float r = wrap_PI(wrap_PI_tests[i].v);
+        if (fabs(r - wrap_PI_tests[i].wv) > 0.001f) {
+            hal.console->printf("wrap_PI: v=%f wv=%f r=%f\n",
+                                wrap_PI_tests[i].v,
+                                wrap_PI_tests[i].wv,
+                                r);
+        }
+    }
+
+    hal.console->printf("wrap_cd tests done\n");
+}
 
 /*
  *  polygon tests
@@ -197,6 +255,7 @@ void setup(void)
     test_passed_waypoint();
     test_offset();
     test_accuracy();
+    test_wrap_cd();
 }
 
 void loop(void){}

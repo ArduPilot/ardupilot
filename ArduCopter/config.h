@@ -82,7 +82,7 @@
  # define MAGNETOMETER ENABLED
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- # define CONFIG_IMU_TYPE CONFIG_IMU_SITL
+ # define CONFIG_IMU_TYPE CONFIG_IMU_L3G4200D
  # define CONFIG_BARO AP_BARO_BMP085
  # define CONFIG_COMPASS  AP_COMPASS_HMC5843
  # define CONFIG_ADC        DISABLED
@@ -349,21 +349,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef LOW_VOLTAGE
- # define LOW_VOLTAGE                    10.5f
-#endif
-#ifndef VOLT_DIV_RATIO
- # define VOLT_DIV_RATIO                 3.56f
+#ifndef FS_BATT_VOLTAGE_DEFAULT
+ # define FS_BATT_VOLTAGE_DEFAULT       10.5f       // default battery voltage below which failsafe will be triggered
 #endif
 
-#ifndef CURR_AMP_PER_VOLT
- # define CURR_AMP_PER_VOLT              27.32f
-#endif
-#ifndef CURR_AMPS_OFFSET
- # define CURR_AMPS_OFFSET               0.0f
-#endif
-#ifndef BATTERY_CAPACITY_DEFAULT
- # define BATTERY_CAPACITY_DEFAULT      3500
+#ifndef FS_BATT_MAH_DEFAULT
+ # define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN
@@ -409,13 +400,13 @@
 #endif
 
 // expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 495 or < 165
+  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 544 or < 115
  #endif
-#else // APM1, PX4, SITL
+#else // PX4, SITL
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 795 or < 265
+  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
  #endif
 #endif
 
@@ -454,6 +445,12 @@
 #endif
 #ifndef OPTFLOW_IMAX
  #define OPTFLOW_IMAX 100
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  Auto Tuning
+#ifndef AUTOTUNE
+ # define AUTOTUNE  ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -503,14 +500,6 @@
 
 #ifndef FS_THR_VALUE_DEFAULT
  # define FS_THR_VALUE_DEFAULT             975
-#endif
-
-
-#ifndef MINIMUM_THROTTLE
- # define MINIMUM_THROTTLE       130
-#endif
-#ifndef MAXIMUM_THROTTLE
- # define MAXIMUM_THROTTLE       1000
 #endif
 
 #ifndef LAND_SPEED
@@ -788,6 +777,10 @@
  # define STABILIZE_PITCH_IMAX   	0
 #endif
 
+#ifndef STABILIZE_RATE_LIMIT
+ # define STABILIZE_RATE_LIMIT      18000
+#endif
+
 #ifndef  STABILIZE_YAW_P
  # define STABILIZE_YAW_P           4.5f            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
@@ -920,8 +913,19 @@
  # define THROTTLE_CRUISE       450             // default estimate of throttle required for vehicle to maintain a hover
 #endif
 
-#ifndef THR_MID
- # define THR_MID               500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#ifndef THR_MID_DEFAULT
+ # define THR_MID_DEFAULT       500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#endif
+
+#ifndef THR_MIN_DEFAULT
+ # define THR_MIN_DEFAULT       130             // minimum throttle sent to the motors when armed and pilot throttle above zero
+#endif
+#ifndef THR_MAX_DEFAULT
+ # define THR_MAX_DEFAULT       1000            // maximum throttle sent to the motors
+#endif
+
+#ifndef THROTTLE_IN_DEADBAND
+# define THROTTLE_IN_DEADBAND    100            // the throttle input channel's deadband in PWM
 #endif
 
 #ifndef ALT_HOLD_TAKEOFF_JUMP

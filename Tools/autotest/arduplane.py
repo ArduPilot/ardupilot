@@ -153,6 +153,9 @@ def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
     '''wait for level flight'''
     tstart = time.time()
     print("Waiting for level flight")
+    mavproxy.send('rc 1 1500\n')
+    mavproxy.send('rc 2 1500\n')
+    mavproxy.send('rc 4 1500\n')
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='ATTITUDE', blocking=True)
         roll = math.degrees(m.roll)
@@ -196,10 +199,13 @@ def axial_left_roll(mavproxy, mav, count=1):
         print("Starting roll")
         mavproxy.send('rc 1 1000\n')
         if not wait_roll(mav, -150, accuracy=90):
+            mavproxy.send('rc 1 1500\n')
             return False
         if not wait_roll(mav, 150, accuracy=90):
+            mavproxy.send('rc 1 1500\n')
             return False
         if not wait_roll(mav, 0, accuracy=90):
+            mavproxy.send('rc 1 1500\n')
             return False
         count -= 1
 

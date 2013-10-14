@@ -10,7 +10,6 @@ static int8_t	test_passthru(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
@@ -30,7 +29,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"radio",			test_radio},
 	{"passthru",		test_passthru},
 	{"failsafe",		test_failsafe},
-	{"battery",	test_battery},
 	{"relay",			test_relay},
 	{"waypoints",		test_wp},
 	{"modeswitch",		test_modeswitch},
@@ -209,43 +207,6 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
-}
-
-static int8_t
-test_battery(uint8_t argc, const Menu::arg *argv)
-{
-if (g.battery_monitoring == 3 || g.battery_monitoring == 4) {
-	print_hit_enter();
-
-	while(1){
-		delay(100);
-		read_radio();
-		read_battery();
-		if (g.battery_monitoring == 3){
-			cliSerial->printf_P(PSTR("V: %4.4f\n"),
-						battery_voltage1,
-						current_amps1,
-						current_total1);
-		} else {
-			cliSerial->printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-						battery_voltage1,
-						current_amps1,
-						current_total1);
-		}
-
-		// write out the servo PWM values
-		// ------------------------------
-		set_servos();
-
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
-} else {
-	cliSerial->printf_P(PSTR("Not enabled\n"));
-	return (0);
-}
-
 }
 
 static int8_t

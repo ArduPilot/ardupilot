@@ -9,6 +9,8 @@
 #include <apps/nsh.h>
 #include <fcntl.h>
 #include "UARTDriver.h"
+#include <uORB/uORB.h>
+#include <uORB/topics/safety.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -16,6 +18,15 @@ extern const AP_HAL::HAL& hal;
 using namespace PX4;
 
 extern bool _px4_thread_should_exit;
+
+/*
+  constructor
+ */
+PX4Util::PX4Util(void) 
+{
+    _safety_handle = orb_subscribe(ORB_ID(safety));
+}
+
 
 /*
   start an instance of nsh
@@ -52,6 +63,30 @@ bool PX4Util::run_debug_shell(AP_HAL::BetterStream *stream)
 	// this shouldn't happen
 	hal.console->printf("shell exited\n");
 	return true;
+}
+
+/*
+  return state of safety switch
+ */
+enum PX4Util::safety_state PX4Util::safety_switch_state(void)
+{
+    if (_safety_handle == -1) {
+        _safety_handle = orb_subscribe(ORB_ID(safety));
+    }
+    if (_safety_handle == -1) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    struct safety_s safety;
+    if (orb_copy(ORB_ID(safety), _safety_handle, &safety) != OK) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    if (!safety.safety_switch_available) {
+        return AP_HAL::Util::SAFETY_NONE;
+    }
+    if (safety.safety_off) {
+        return AP_HAL::Util::SAFETY_ARMED;
+    }
+    return AP_HAL::Util::SAFETY_DISARMED;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

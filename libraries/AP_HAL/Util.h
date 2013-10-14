@@ -25,6 +25,14 @@ public:
     // commands
     virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
 
+    enum safety_state {
+        SAFETY_NONE, SAFETY_DISARMED, SAFETY_ARMED
+    };
+
+    /*
+      return state of safety switch, if applicable
+     */
+    virtual enum safety_state safety_switch_state(void) { return SAFETY_NONE; }
 };
 
 #endif // __AP_HAL_UTIL_H__

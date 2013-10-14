@@ -21,9 +21,11 @@
 
 #include <AP_HAL_FLYMAPLE.h>
 
+#include <i2c.h>
+
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEI2CDriver : public AP_HAL::I2CDriver {
 public:
-    FLYMAPLEI2CDriver(AP_HAL::Semaphore* semaphore) : _semaphore(semaphore) {}
+    FLYMAPLEI2CDriver(AP_HAL::Semaphore* semaphore);
     void begin();
     void end();
     void setTimeout(uint16_t ms);
@@ -52,7 +54,11 @@ public:
     AP_HAL::Semaphore* get_semaphore() { return _semaphore; }
 
 private:
+    uint8_t            _lockup_count; // Bus error count
+    uint8_t            _transfer(i2c_msg *msgs, uint16 num);
+    void               _reset(); // Bus and device reset
     AP_HAL::Semaphore* _semaphore;
+    uint16_t           _timeout_ms;
 };
 
 #endif // __AP_HAL_FLYMAPLE_I2CDRIVER_H__
