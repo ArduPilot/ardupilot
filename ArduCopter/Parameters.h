@@ -80,6 +80,7 @@ public:
 
         k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
         k_param_rssi_pin,
+        k_param_rssi_rc,
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
@@ -300,6 +301,7 @@ public:
                                                 // lighting system
 
     AP_Int8         rssi_pin;
+    AP_Int8         rssi_rc;
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees
 

@@ -174,6 +174,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
+    // @Param: RSSI_RC
+    // @DisplayName: Receiver RSSI channel
+    // @Description: This selects a RC channel for the receiver RSSI strength. PWM of 1000 equals 0%, 2000 equals 100%
+    // @Values: -1:Disabled, 1:RC1, 2:RC2, 3:RC3 ect
+    // @User: Standard
+    GSCALAR(rssi_rc,            "RSSI_RC",         -1),
+
     // @Param: WP_YAW_BEHAVIOR
     // @DisplayName: Yaw behaviour during missions
     // @Description: Determines how the autopilot controls the yaw during missions and RTL
