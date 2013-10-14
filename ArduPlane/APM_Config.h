@@ -20,4 +20,4 @@
  *  // 2. HIL_MODE_SENSORS: full sensor simulation
  *
  */
-#define TELEMETRY_UART2 ENABLED  // solder bridge
+
