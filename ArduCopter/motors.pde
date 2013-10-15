@@ -330,7 +330,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // check gps is ok if required - note this same check is repeated again in arm_checks
-    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good)) {
+    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching())) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
         }
@@ -378,7 +378,7 @@ static bool arm_checks(bool display_failure)
     }
 
     // check gps is ok if required - note this same check is also done in pre-arm checks
-    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good)) {
+    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching())) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
         }

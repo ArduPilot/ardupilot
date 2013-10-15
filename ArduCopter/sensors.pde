@@ -110,8 +110,8 @@ static void read_battery(void)
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
     // we only check when we're not powered by USB to avoid false alarms during bench tests
-    if (!ap.usb_connected && !failsafe.low_battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-        low_battery_event();
+    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
+        failsafe_battery_event();
     }
 }
 

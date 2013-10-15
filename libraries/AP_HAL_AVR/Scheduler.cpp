@@ -14,8 +14,9 @@ using namespace AP_HAL_AVR;
 extern const AP_HAL::HAL& hal;
 
 /* AVRScheduler timer interrupt period is controlled by TCNT2.
+ * 256-124 gives a 500Hz period
  * 256-62 gives a 1kHz period. */
-#define RESET_TCNT2_VALUE (256 - 62)
+volatile uint8_t AVRScheduler::_timer2_reset_value = (256 - 62);
 
 /* Static AVRScheduler variables: */
 AVRTimer AVRScheduler::_timer;
@@ -37,8 +38,7 @@ AVRScheduler::AVRScheduler() :
 void AVRScheduler::init(void* _isrregistry) {
     ISRRegistry* isrregistry = (ISRRegistry*) _isrregistry;
 
-    /* _timer: sets up timer hardware to Arduino defaults, and
-     * uses TIMER0 to implement millis & micros */
+    /* _timer: sets up timer hardware to implement millis & micros. */
     _timer.init();
 
     /* TIMER2: Setup the overflow interrupt to occur at 1khz. */
@@ -50,6 +50,9 @@ void AVRScheduler::init(void* _isrregistry) {
     TIMSK2 = _BV(TOIE2);            /* Enable overflow interrupt*/
     /* Register _timer_isr_event to trigger on overflow */
     isrregistry->register_signal(ISR_REGISTRY_TIMER2_OVF, _timer_isr_event);   
+    
+    /* Turn on global interrupt flag, AVR interupt system will start from this point */
+    sei();
 }
 
 uint32_t AVRScheduler::micros() {
@@ -144,7 +147,7 @@ void AVRScheduler::_timer_isr_event() {
     // This approach also gives us a nice uniform spacing between
     // timer calls
 
-    TCNT2 = RESET_TCNT2_VALUE;
+    TCNT2 = _timer2_reset_value;
     sei();
     _run_timer_procs(true);
 }
@@ -233,6 +236,21 @@ void AVRScheduler::reboot(bool hold_in_bootloader) {
     for(;;);
 #endif
 
+}
+
+/**
+   set timer speed in Hz. Used by ArduCopter on APM2 to reduce the
+   cost of timer interrupts
+ */
+void AVRScheduler::set_timer_speed(uint16_t timer_hz)
+{
+    if (timer_hz > 1000) {
+        timer_hz = 1000;
+    }
+    if (timer_hz < 250) {
+        timer_hz = 250;
+    }
+    _timer2_reset_value = 256 - (62 * (1000 / timer_hz));
 }
 
 #endif

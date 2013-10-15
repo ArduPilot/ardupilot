@@ -89,15 +89,15 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         // blocking IO in the higher level calls
         fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
         
-        if (rxS == 0) {
-            rxS = 128;
+        if (rxS < 1024) {
+            rxS = 1024;
         }
 
         // we have enough memory to have a larger transmit buffer for
         // all ports. This means we don't get delays while waiting to
         // write GPS config packets
-        if (txS < 512) {
-            txS = 512;
+        if (txS < 1024) {
+            txS = 1024;
         }
     }
 

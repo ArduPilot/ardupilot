@@ -227,11 +227,6 @@ float AP_InertialSensor_Flymaple::get_delta_time(void)
     return _delta_time;
 }
 
-uint32_t AP_InertialSensor_Flymaple::get_last_sample_time_micros(void) 
-{
-    return _last_update_usec;
-}
-
 float AP_InertialSensor_Flymaple::get_gyro_drift_rate(void) 
 {
     // Dont really know this for the ITG-3200.
@@ -259,7 +254,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     // ADXL345 is in the default FIFO bypass mode, so the FIFO is not used
     uint8_t buffer[6];
     uint64_t now = hal.scheduler->micros();
-    // This takes about 500us at 200kHz I2C speed
+    // This takes about 250us at 400kHz I2C speed
     if ((now - _last_accel_timestamp) >= raw_sample_interval_us
         && hal.i2c->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 6, buffer) == 0)
     {
@@ -279,7 +274,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
 
     // Read gyro
     now = hal.scheduler->micros();
-    // This takes about 500us at 200kHz I2C speed
+    // This takes about 250us at 400kHz I2C speed
     if ((now - _last_gyro_timestamp) >= raw_sample_interval_us
         && hal.i2c->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)
     {

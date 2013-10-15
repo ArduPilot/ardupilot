@@ -340,6 +340,7 @@ enum ap_message {
 #define DATA_AUTOTUNE_SUSPENDED         30
 #define DATA_AUTOTUNE_OFF               31
 #define DATA_AUTOTUNE_SAVEDGAINS        32
+#define DATA_AUTOTUNE_ABANDONED         33
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */

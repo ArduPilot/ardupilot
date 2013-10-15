@@ -51,7 +51,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint32_t custom_mode = control_mode;
 
     // set system as critical if any failsafe have triggered
-    if (failsafe.radio || failsafe.low_battery || failsafe.gps || failsafe.gcs)  {
+    if (failsafe.radio || failsafe.battery || failsafe.gps || failsafe.gcs)  {
         system_status = MAV_STATE_CRITICAL;
     }
     
@@ -1408,6 +1408,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             param2 = tell_command.alt;
             param1 = tell_command.p1;
             break;
+
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            param1 = tell_command.alt;
+            break;
         }
 
         mavlink_msg_mission_item_send(chan,msg->sysid,
@@ -1708,6 +1712,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_SET_SERVO:
             tell_command.alt = packet.param2;
             tell_command.p1 = packet.param1;
+            break;
+
+        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            // use alt so we can support 32 bit values
+            tell_command.alt = packet.param1;
             break;
         }
 

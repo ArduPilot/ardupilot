@@ -43,7 +43,7 @@ inline void AVRSPI2DeviceDriver::_cs_assert() {
     /* set the device UCSRnC configuration bits.
      * only sets data order, clock phase, and clock polarity bits (lowest
      * three bits)  */
-    const uint8_t new_ucsr2c = UCSR2C | (_ucsr2c & (0x07));
+    const uint8_t new_ucsr2c = (UCSR2C & ~0x07) | (_ucsr2c & (0x07));
     UCSR2C = new_ucsr2c;
     /* set the device baud rate */
     UBRR2 = _ubrr2;
@@ -69,6 +69,34 @@ inline uint8_t AVRSPI2DeviceDriver::_transfer(uint8_t data) {
     return UDR2;
 }
 
+/**
+   a specialist transfer function for the APM1 ADC
+ */
+void AVRSPI2DeviceDriver::_transfer17(const uint8_t *tx, uint8_t *rx) 
+{
+#define TRANSFER1(i) do { while ( !( UCSR2A & _BV(UDRE2)) ); \
+        UDR2 = tx[i]; \
+        while ( !(UCSR2A & _BV(RXC2)) ) ; \
+        rx[i] = UDR2; } while (0)
+    TRANSFER1(0);
+    TRANSFER1(1);
+    TRANSFER1(2);
+    TRANSFER1(3);
+    TRANSFER1(4);
+    TRANSFER1(5);
+    TRANSFER1(6);
+    TRANSFER1(7);
+    TRANSFER1(8);
+    TRANSFER1(9);
+    TRANSFER1(10);
+    TRANSFER1(11);
+    TRANSFER1(12);
+    TRANSFER1(13);
+    TRANSFER1(14);
+    TRANSFER1(15);
+    TRANSFER1(16);
+}
+
 void AVRSPI2DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
         uint16_t len) {
     _cs_assert();
@@ -77,6 +105,12 @@ void AVRSPI2DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
             _transfer(tx[i]);
         }
     } else {
+        while (len >= 17) {
+            _transfer17(tx, rx);
+            tx += 17;
+            rx += 17;
+            len -= 17;
+        }
         for (uint16_t i = 0; i < len; i++) {
             rx[i] = _transfer(tx[i]);
         }

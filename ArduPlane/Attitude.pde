@@ -260,7 +260,7 @@ static void stabilize_acro(float speed_scaler)
             acro_state.locked_roll = true;
             acro_state.locked_roll_err = 0;
         } else {
-            acro_state.locked_roll_err += ahrs.get_gyro().x * 0.02f;
+            acro_state.locked_roll_err += ahrs.get_gyro().x * G_Dt;
         }
         int32_t roll_error_cd = -ToDeg(acro_state.locked_roll_err)*100;
         nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
@@ -428,7 +428,7 @@ static void calc_nav_yaw_ground(void)
         channel_rudder->servo_out = steerController.get_steering_out_rate(steer_rate);
     } else {
         // use a error controller on the summed error
-        steer_state.locked_course_err += ahrs.get_gyro().z * 0.02f;
+        steer_state.locked_course_err += ahrs.get_gyro().z * G_Dt;
         int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
         channel_rudder->servo_out = steerController.get_steering_out_angle_error(yaw_error_cd);
     }
@@ -460,7 +460,7 @@ static void throttle_slew_limit(int16_t last_throttle)
     // if slew limit rate is set to zero then do not slew limit
     if (aparm.throttle_slewrate) {                   
         // limit throttle change by the given percentage per second
-        float temp = aparm.throttle_slewrate * G_Dt * 0.01 * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
+        float temp = aparm.throttle_slewrate * G_Dt * 0.01f * fabsf(channel_throttle->radio_max - channel_throttle->radio_min);
         // allow a minimum change of 1 PWM per cycle
         if (temp < 1) {
             temp = 1;

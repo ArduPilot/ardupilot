@@ -74,7 +74,7 @@ def takeoff(mavproxy, mav, alt_min = 30, takeoff_throttle=1700):
     return True
 
 # loiter - fly south west, then hold loiter within 5m position and altitude
-def loiter(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=5):
+def loiter(mavproxy, mav, holdtime=15, maxaltchange=5, maxdistchange=5):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
@@ -1007,19 +1007,19 @@ def fly_ArduCopter(viewerip=None, map=False):
             print("takeoff failed")
             failed = True
 
-        # Loiter for 30 seconds
+        # Loiter for 15 seconds
         print("#")
-        print("########## Test Loiter for 30 seconds ##########")
+        print("########## Test Loiter for 15 seconds ##########")
         print("#")
-        if not loiter(mavproxy, mav, 30):
+        if not loiter(mavproxy, mav):
             print("loiter failed")
             failed = True
 
         # Loiter Climb
         print("#")
-        print("# Loiter - climb to 60m")
+        print("# Loiter - climb to 40m")
         print("#")
-        if not change_alt(mavproxy, mav, 60):
+        if not change_alt(mavproxy, mav, 40):
             print("change_alt failed")
             failed = True
 

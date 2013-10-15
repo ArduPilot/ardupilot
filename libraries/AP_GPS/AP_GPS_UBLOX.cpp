@@ -281,6 +281,11 @@ AP_GPS_UBLOX::_parse_gps(void)
         altitude_cm     = _buffer.posllh.altitude_msl / 10;
         fix             = next_fix;
         _new_position = true;
+#if UBLOX_FAKE_3DLOCK
+        longitude = 1491652300L;
+        latitude  = -353632610L;
+        altitude_cm = 58400;
+#endif
         break;
     case MSG_STATUS:
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
@@ -326,6 +331,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_FAKE_3DLOCK
         next_fix = fix;
         num_sats = 10;
+        hdop = 200;
 #endif
         break;
     case MSG_VELNED:

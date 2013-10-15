@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_RangeFinder_analog::var_info[] PROGMEM = {
 
     // @Param: PIN
     // @DisplayName: Sonar pin
-    // @Description: Analog pin that sonar is connected to. 
+    // @Description: Analog pin that sonar is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     AP_GROUPINFO("PIN",     0, AP_RangeFinder_analog, _pin, SONAR_DEFAULT_PIN),
 
     // @Param: SCALING

@@ -183,7 +183,7 @@ struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint32_t loop_time;
     uint16_t main_loop_count;
-    int16_t  g_dt_max;
+    uint32_t g_dt_max;
     uint8_t  renorm_count;
     uint8_t  renorm_blowup;
     uint8_t  gps_fix_count;
@@ -198,7 +198,7 @@ static void Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        loop_time       : millis()- perf_mon_timer,
+        loop_time       : millis() - perf_mon_timer,
         main_loop_count : mainLoop_count,
         g_dt_max        : G_Dt_max,
         renorm_count    : ahrs.renorm_range_count,
@@ -440,7 +440,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "ccC",        "Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "IHhBBBhhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,I2CErr" },
+      "PM",  "IHIBBBhhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,I2CErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 

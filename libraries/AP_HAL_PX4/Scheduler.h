@@ -74,6 +74,8 @@ private:
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
 
+    void delay_microseconds_semaphore(uint16_t us);
+
     perf_counter_t  _perf_timers;
     perf_counter_t  _perf_io_timers;
     perf_counter_t  _perf_delay;

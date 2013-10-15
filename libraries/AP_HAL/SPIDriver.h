@@ -26,6 +26,20 @@ public:
     virtual void cs_release() = 0;
     virtual uint8_t transfer (uint8_t data) = 0;
     virtual void transfer (const uint8_t *data, uint16_t len) = 0;
+
+    /**
+       optional set_bus_speed() interface. This can be used by drivers
+       to request higher speed for sensor registers once the sensor is
+       initialised. This is used by the MPU6000 driver which can
+       handle 20MHz for sensor register reads, but only 1MHz for other
+       registers.
+     */
+    enum bus_speed {
+        SPI_SPEED_LOW, SPI_SPEED_HIGH
+    };
+
+    virtual void set_bus_speed(enum bus_speed speed) {}
+    
 };
 
 #endif // __AP_HAL_SPI_DRIVER_H__

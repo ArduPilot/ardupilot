@@ -291,9 +291,7 @@ void AP_Baro_MS5611::_update(void)
 {
     uint32_t tnow = hal.scheduler->micros();
     // Throttle read rate to 100hz maximum.
-    // note we use 9500us here not 10000us
-    // the read rate will end up at exactly 100hz because the Periodic Timer fires at 1khz
-    if (tnow - _timer < 9500) {
+    if (tnow - _timer < 10000) {
         return;
     }
 

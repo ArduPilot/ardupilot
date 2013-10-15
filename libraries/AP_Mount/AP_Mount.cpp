@@ -216,11 +216,11 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id) :
+AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, const AP_AHRS &ahrs, uint8_t id) :
+    _ahrs(ahrs),
     _gps(gps)
 {
 	AP_Param::setup_object_defaults(this, var_info);
-    _ahrs = ahrs;
     _current_loc = current_loc;
 
     // default to zero angles
@@ -594,39 +594,31 @@ void
 AP_Mount::stabilize()
 {
 #if MNT_STABILIZE_OPTION == ENABLED
-    if (_ahrs) {
-        // only do the full 3D frame transform if we are doing pan control
-        if (_stab_pan) {
-            Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
-            Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
-            Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
-            m = _ahrs->get_dcm_matrix();
-            m.transpose();
-            cam.from_euler(_roll_control_angle, _tilt_control_angle, _pan_control_angle);
-            gimbal_target = m * cam;
-            gimbal_target.to_euler(&_roll_angle, &_tilt_angle, &_pan_angle);
-            _roll_angle  = _stab_roll ? degrees(_roll_angle) : degrees(_roll_control_angle);
-            _tilt_angle  = _stab_tilt ? degrees(_tilt_angle) : degrees(_tilt_control_angle);
-            _pan_angle   = degrees(_pan_angle);
-        } else {
-            // otherwise base mount roll and tilt on the ahrs
-            // roll/tilt attitude, plus any requested angle
-            _roll_angle  = degrees(_roll_control_angle);
-            _tilt_angle  = degrees(_tilt_control_angle);
-            _pan_angle   = degrees(_pan_control_angle);
-            if (_stab_roll) {
-                _roll_angle -= degrees(_ahrs->roll);
-            }
-            if (_stab_tilt) {
-                _tilt_angle -= degrees(_ahrs->pitch);
-            }
-        }
+    // only do the full 3D frame transform if we are doing pan control
+    if (_stab_pan) {
+        Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
+        Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
+        Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
+        m = _ahrs.get_dcm_matrix();
+        m.transpose();
+        cam.from_euler(_roll_control_angle, _tilt_control_angle, _pan_control_angle);
+        gimbal_target = m * cam;
+        gimbal_target.to_euler(&_roll_angle, &_tilt_angle, &_pan_angle);
+        _roll_angle  = _stab_roll ? degrees(_roll_angle) : degrees(_roll_control_angle);
+        _tilt_angle  = _stab_tilt ? degrees(_tilt_angle) : degrees(_tilt_control_angle);
+        _pan_angle   = degrees(_pan_angle);
     } else {
-#endif
+        // otherwise base mount roll and tilt on the ahrs
+        // roll/tilt attitude, plus any requested angle
         _roll_angle  = degrees(_roll_control_angle);
         _tilt_angle  = degrees(_tilt_control_angle);
         _pan_angle   = degrees(_pan_control_angle);
-#if MNT_STABILIZE_OPTION == ENABLED
+        if (_stab_roll) {
+            _roll_angle -= degrees(_ahrs.roll);
+        }
+        if (_stab_tilt) {
+            _tilt_angle -= degrees(_ahrs.pitch);
+        }
     }
 #endif
 }

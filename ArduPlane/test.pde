@@ -440,10 +440,8 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         delay(20);
-        if (millis() - fast_loopTimer_ms > 19) {
-            delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
-            G_Dt                            = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
-            fast_loopTimer_ms       = millis();
+        if (hal.scheduler->micros() - fast_loopTimer_us > 19000UL) {
+            fast_loopTimer_us       = hal.scheduler->micros();
 
             // INS
             // ---
@@ -506,10 +504,8 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         delay(20);
-        if (millis() - fast_loopTimer_ms > 19) {
-            delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
-            G_Dt                            = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
-            fast_loopTimer_ms       = millis();
+        if (hal.scheduler->micros() - fast_loopTimer_us > 19000UL) {
+            fast_loopTimer_us       = hal.scheduler->micros();
 
             // INS
             // ---

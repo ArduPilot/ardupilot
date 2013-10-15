@@ -71,9 +71,9 @@ static void set_failsafe_radio(bool b)
 
 
 // ---------------------------------------------
-void set_low_battery(bool b)
+void set_failsafe_battery(bool b)
 {
-    failsafe.low_battery = b;
+    failsafe.battery = b;
     AP_Notify::flags.failsafe_battery = b;
 }
 

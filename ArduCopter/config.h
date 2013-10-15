@@ -400,13 +400,13 @@
 #endif
 
 // expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 495 or < 165
+  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 544 or < 115
  #endif
-#else // APM1, PX4, SITL
+#else // PX4, SITL
  #ifndef COMPASS_MAGFIELD_EXPECTED
-  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 795 or < 265
+  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
  #endif
 #endif
 
@@ -450,7 +450,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  Auto Tuning
 #ifndef AUTOTUNE
- # define AUTOTUNE  DISABLED
+ # define AUTOTUNE  ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -500,14 +500,6 @@
 
 #ifndef FS_THR_VALUE_DEFAULT
  # define FS_THR_VALUE_DEFAULT             975
-#endif
-
-
-#ifndef MINIMUM_THROTTLE
- # define MINIMUM_THROTTLE       130
-#endif
-#ifndef MAXIMUM_THROTTLE
- # define MAXIMUM_THROTTLE       1000
 #endif
 
 #ifndef LAND_SPEED
@@ -785,6 +777,10 @@
  # define STABILIZE_PITCH_IMAX   	0
 #endif
 
+#ifndef STABILIZE_RATE_LIMIT
+ # define STABILIZE_RATE_LIMIT      18000
+#endif
+
 #ifndef  STABILIZE_YAW_P
  # define STABILIZE_YAW_P           4.5f            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
@@ -917,8 +913,19 @@
  # define THROTTLE_CRUISE       450             // default estimate of throttle required for vehicle to maintain a hover
 #endif
 
-#ifndef THR_MID
- # define THR_MID               500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#ifndef THR_MID_DEFAULT
+ # define THR_MID_DEFAULT       500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#endif
+
+#ifndef THR_MIN_DEFAULT
+ # define THR_MIN_DEFAULT       130             // minimum throttle sent to the motors when armed and pilot throttle above zero
+#endif
+#ifndef THR_MAX_DEFAULT
+ # define THR_MAX_DEFAULT       1000            // maximum throttle sent to the motors
+#endif
+
+#ifndef THROTTLE_IN_DEADBAND
+# define THROTTLE_IN_DEADBAND    100            // the throttle input channel's deadband in PWM
 #endif
 
 #ifndef ALT_HOLD_TAKEOFF_JUMP

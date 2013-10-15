@@ -18,7 +18,6 @@ public:
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
     float        	get_delta_time();    // get_delta_time returns the time period in seconds overwhich the sensor data was collected    
-    //uint32_t        get_last_sample_time_micros();  // last_sample_time - get time (in microseconds) that last sample was captured
     float           get_gyro_drift_rate();
 
     // sample_available() - true when a new sample is available

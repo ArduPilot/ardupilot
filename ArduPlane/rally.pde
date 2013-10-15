@@ -73,7 +73,7 @@ static Location rally_location_to_location(const RallyLocation &r_loc, const Loc
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
     //for the PX4, though.  This line will need to be updated when that happens:
-    ret.alt = r_loc.alt + homeloc.alt;
+    ret.alt = (r_loc.alt*100UL) + homeloc.alt;
 
     ret.lat = r_loc.lat;
     ret.lng = r_loc.lng;

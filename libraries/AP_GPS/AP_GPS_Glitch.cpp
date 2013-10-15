@@ -19,6 +19,24 @@ const AP_Param::GroupInfo GPS_Glitch::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("ENABLE",      0,  GPS_Glitch,   _enabled,   1),
 
+    // @Param: RADIUS
+    // @DisplayName: GPS glitch protection radius within which all new positions are accepted
+    // @Description: GPS glitch protection radius within which all new positions are accepted
+    // @Units: cm
+    // @Range: 0 5000
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("RADIUS",      1,  GPS_Glitch,   _radius_cm,   GPS_GLITCH_RADIUS_CM),
+
+    // @Param: ACCEL
+    // @DisplayName: GPS glitch protection's max vehicle acceleration assumption
+    // @Description: GPS glitch protection's max vehicle acceleration assumption
+    // @Units: cm/s/s
+    // @Range: 0 2000
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL",   2,  GPS_Glitch,   _accel_max_cmss,   GPS_GLITCH_ACCEL_MAX_CMSS),
+
     AP_GROUPEND
 };
 
@@ -72,11 +90,11 @@ void GPS_Glitch::check_position()
     distance_cm = get_distance_cm(curr_pos, gps_pos);
 
     // all ok if within a given hardcoded radius
-    if (distance_cm <= GPS_GLITCH_MIN_RADIUS_CM) {
+    if (distance_cm <= _radius_cm) {
         all_ok = true;
     }else{
         // or if within the maximum distance we could have moved based on our acceleration
-        accel_based_distance = 0.5f * GPS_GLITCH_MAX_ACCEL_CMSS * sane_dt * sane_dt;
+        accel_based_distance = 0.5f * _accel_max_cmss * sane_dt * sane_dt;
         all_ok = (distance_cm <= accel_based_distance);
     }
 

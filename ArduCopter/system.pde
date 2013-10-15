@@ -92,7 +92,7 @@ static void init_ardupilot()
     hal.uartA->begin(SERIAL0_BAUD, 256, 256);
 #else
     // use a bit less for non-HIL operation
-    hal.uartA->begin(SERIAL0_BAUD, 128, 128);
+    hal.uartA->begin(SERIAL0_BAUD, 512, 128);
 #endif
 
     // GPS serial port.
@@ -106,6 +106,14 @@ static void init_ardupilot()
     cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
                          "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    /*
+      run the timer a bit slower on APM2 to reduce the interrupt load
+      on the CPU
+     */
+    hal.scheduler->set_timer_speed(500);
+#endif
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
@@ -331,6 +339,11 @@ static bool set_mode(uint8_t mode)
     // boolean to record if flight mode could be set
     bool success = false;
     bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+
+    // return immediately if we are already in the desired mode
+    if (mode == control_mode) {
+        return true;
+    }
 
     switch(mode) {
         case ACRO:

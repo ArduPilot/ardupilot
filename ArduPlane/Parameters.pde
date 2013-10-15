@@ -374,7 +374,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THROTTLE_NUDGE
     // @DisplayName: Throttle nudge enable
-    // @Description: When enabled, this uses the throttle input in auto-throttle modes to 'nudge' the throttle to higher or lower values
+    // @Description: When enabled, this uses the throttle input in auto-throttle modes to 'nudge' the throttle or airspeed to higher or lower values. When you have an airspeed sensor the nudge affects the target airspeed, so that throttle inputs above 50% will increase the target airspeed from TRIM_ARSPD_CM up to a maximum of ARSPD_FBW_MAX. When no airspeed sensor is enabled the throttle nudge will push up the target throttle for throttle inputs above 50%.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     // @User: Standard
