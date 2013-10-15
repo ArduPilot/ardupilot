@@ -340,6 +340,11 @@ static bool set_mode(uint8_t mode)
     bool success = false;
     bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
+    // return immediately if we are already in the desired mode
+    if (mode == control_mode) {
+        return true;
+    }
+
     switch(mode) {
         case ACRO:
             success = true;
