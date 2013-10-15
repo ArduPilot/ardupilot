@@ -35,43 +35,58 @@ extern const AP_HAL::HAL& hal;
 FLYMAPLEUARTDriver::FLYMAPLEUARTDriver(HardwareSerial* hws):
     _hws(hws),
     _txBuf(NULL),
-    _txBufSize(63), // libmaple usart default driver buffer of 63
+    _txBufSize(63), // libmaple internal usart default driver buffer is 63
     _rxBuf(NULL),
-    _rxBufSize(63) // libmaple usart default driver buffer of 63
+    _rxBufSize(63)  // libmaple internal usart default driver buffer is 63
  {}
 
 void FLYMAPLEUARTDriver::begin(uint32_t b) 
 {
+    // Dont let the ISRs access the ring buffers until we are fully set up:
+    nvic_irq_disable(_hws->c_dev()->irq_num);
     _hws->begin(b);
     if (_txBuf)
 	rb_init(_hws->c_dev()->tx_rb, _txBufSize, _txBuf); // Get the TX ring buffer size we want
     if (_rxBuf)
 	rb_init(_hws->c_dev()->rb, _rxBufSize, _rxBuf); // Get the RX ring buffer size we want
+    nvic_irq_enable(_hws->c_dev()->irq_num);
 }
 
 void FLYMAPLEUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
     // Our private buffers can only grow, never shrink
     // rxS == 0 or txS == 0 means no change to buffer size
+    uint8_t* oldRxBuf = NULL;
+    uint8_t* oldTxBuf = NULL;
+    // Maybe a new TX buffer?
     if (txS && (txS > _txBufSize))
     {
-	if (_txBuf)
-	    free(_txBuf); // CAUTION: old contents lost
-	_txBuf = (uint8_t*)malloc(txS);
+	oldTxBuf = _txBuf;
+	_txBuf = (uint8_t*)malloc(txS); // Caution: old contents lost
 	_txBufSize = txS;
     }
+    // Maybe a new RX buffer?
     if (rxS && (rxS > _rxBufSize))
     {
-	if (_rxBuf)
-	    free(_rxBuf); // CAUTION: old contents lost
-	_rxBuf = (uint8_t*)malloc(rxS);
+	oldRxBuf = _rxBuf;
+	_rxBuf = (uint8_t*)malloc(rxS); // Caution: old contents lost
 	_rxBufSize = rxS;
     }
+
+    // Dont let the IRs access the ring buffers until we are fully set up:
+    nvic_irq_disable(_hws->c_dev()->irq_num);
     begin(b); // libmaple internal ring buffer reinitialised to defaults here
     if (_txBuf)
 	rb_init(_hws->c_dev()->tx_rb, _txBufSize, _txBuf); // Get the TX ring buffer size we want
     if (_rxBuf)
 	rb_init(_hws->c_dev()->rb, _rxBufSize, _rxBuf); // Get the RX ring buffer size we want
+    nvic_irq_enable(_hws->c_dev()->irq_num);
+
+    // Now its safe to free any old buffers
+    if (oldTxBuf)
+	free(oldTxBuf);
+    if (oldRxBuf)
+	free(oldRxBuf);
 }
 
 void FLYMAPLEUARTDriver::end() 

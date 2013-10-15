@@ -105,7 +105,7 @@ def wait_pitch(mav, pitch, accuracy, timeout=30):
         p = math.degrees(m.pitch)
         r = math.degrees(m.roll)
         print("Pitch %d Roll %d" % (p, r))
-        if math.fabs(r - pitch) <= accuracy:
+        if math.fabs(p - pitch) <= accuracy:
             print("Attained pitch %d" % pitch)
             return True
     print("Failed to attain pitch %d" % pitch)

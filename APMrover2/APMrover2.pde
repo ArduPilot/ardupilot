@@ -303,7 +303,7 @@ static struct 	Location current_loc;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
+AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
 #endif
 
 

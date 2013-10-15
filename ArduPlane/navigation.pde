@@ -209,7 +209,7 @@ static void update_fbwb_speed_height(void)
         elevator_input = -elevator_input;
     }
     
-    target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_ms_fast_loop * 0.1f;
+    target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_us_fast_loop * 0.0001f;
     
     if (elevator_input == 0.0f && last_elevator_input != 0.0f) {
         // the user has just released the elevator, lock in

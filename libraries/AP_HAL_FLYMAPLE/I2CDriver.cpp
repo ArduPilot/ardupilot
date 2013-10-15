@@ -14,6 +14,8 @@
  */
 /*
   Flymaple port by Mike McCauley
+  Uses the low level libmaple i2c library.
+  Caution: requires fixes against the libmaple git master as of 2013-10-10
  */
 #include <AP_HAL.h>
 
@@ -26,12 +28,9 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-// We use a 0 delay to go as fast as we can with bitbanging
-//static TwoWire twowire(5, 9, 0); // Flymaple has non-standard SCL, SDA, speed ~285kHz
-
 extern const AP_HAL::HAL& hal;
 
-// This is the instancxe of the libmaple I2C device to use
+// This is the instance of the libmaple I2C device to use
 #define FLYMAPLE_I2C_DEVICE I2C1
 
 FLYMAPLEI2CDriver::FLYMAPLEI2CDriver(AP_HAL::Semaphore* semaphore) 
@@ -104,22 +103,19 @@ uint8_t FLYMAPLEI2CDriver::readRegister(uint8_t addr, uint8_t reg, uint8_t* data
 uint8_t FLYMAPLEI2CDriver::readRegisters(uint8_t addr, uint8_t reg,
                               uint8_t len, uint8_t* data)
 {
-    // Write the desired register we wish to read
-    data[0] = reg; // Temp steal this
-    i2c_msg msgs[1];
+    // We conduct a write of the register number we want followed by a read
+    data[0] = reg; // Temporarily steal this for the write
+    i2c_msg msgs[2];
     msgs[0].addr = addr;
     msgs[0].flags = 0; // Write
     msgs[0].length = 1;
     msgs[0].data = data;
-    if (_transfer(msgs, 1))
-	return 1; // Fail
-
-    // Now read it
-    msgs[0].addr = addr;
-    msgs[0].flags = I2C_MSG_READ;
-    msgs[0].length = len;
-    msgs[0].data = data;
-    return _transfer(msgs, 1);
+    // Second transaction is a read
+    msgs[1].addr = addr;
+    msgs[1].flags = I2C_MSG_READ;
+    msgs[1].length = len;
+    msgs[1].data = data;
+    return _transfer(msgs, 2);
 }
 
 uint8_t FLYMAPLEI2CDriver::lockup_count() {
@@ -130,7 +126,7 @@ uint8_t            FLYMAPLEI2CDriver::_transfer(i2c_msg *msgs, uint16 num)
 {
     // ALERT: patch to libmaple required for this to work else
     // crashes next line due to a bug in latest git libmaple see http://forums.leaflabs.com/topic.php?id=13458
-    int32 result = i2c_master_xfer(I2C1, msgs, 1, _timeout_ms);
+    int32 result = i2c_master_xfer(I2C1, msgs, num, _timeout_ms);
     if (result != 0)
     {
 	// Some sort of I2C bus fault, or absent device, reinitialise the bus

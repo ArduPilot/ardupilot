@@ -36,7 +36,7 @@ private:
     uint64_t _last_accel_timestamp;
     uint64_t _last_gyro_timestamp;
     uint64_t _last_sample_timestamp;
-    uint16_t _num_samples_available;
+    bool     _have_sample_available;
     uint32_t _sample_time_usec;
 
     // support for updating filter at runtime

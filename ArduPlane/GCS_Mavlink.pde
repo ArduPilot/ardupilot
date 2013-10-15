@@ -2287,3 +2287,12 @@ static void gcs_send_airspeed_calibration(const Vector3f &vg)
         }
     }
 }
+
+/**
+   retry any deferred messages
+ */
+static void gcs_retry_deferred(void)
+{
+    gcs_send_message(MSG_RETRY_DEFERRED);
+}
+

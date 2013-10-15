@@ -649,26 +649,26 @@ static int32_t offset_altitude_cm;
 ////////////////////////////////////////////////////////////////////////////////
 // The main loop execution time.  Seconds
 //This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-static float G_Dt                                               = 0.02;
+static float G_Dt                                               = 0.02f;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
-static int32_t perf_mon_timer;
+static uint32_t perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
-static int16_t G_Dt_max = 0;
+static uint32_t G_Dt_max = 0;
 // The number of gps fixes recorded in the current performance monitoring interval
 static uint8_t gps_fix_count = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
 ////////////////////////////////////////////////////////////////////////////////
-// Time in miliseconds of start of main control loop.  Milliseconds
-static uint32_t fast_loopTimer_ms;
+// Time in microseconds of start of main control loop
+static uint32_t fast_loopTimer_us;
 
 // Number of milliseconds used in last main loop cycle
-static uint8_t delta_ms_fast_loop;
+static uint32_t delta_us_fast_loop;
 
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
@@ -678,13 +678,13 @@ static uint16_t mainLoop_count;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount(&current_loc, g_gps, &ahrs, 0);
+AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
 #endif
 
 #if MOUNT2 == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
+AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -692,34 +692,37 @@ AP_Mount camera_mount2(&current_loc, g_gps, &ahrs, 1);
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 20ms units) and the maximum time they are expected to take (in
-  microseconds)
+  scheduler table - all regular tasks are listed here, along with how
+  often they should be called (in 20ms units) and the maximum time
+  they are expected to take (in microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { update_speed_height,    1,    900 }, // 0
-    { update_flight_mode,     1,   1000 },
-    { stabilize,              1,   3200 },
-    { set_servos,             1,   1100 },
+    { read_radio,             1,    700 }, // 0
+    { check_short_failsafe,   1,   1000 },
+    { ahrs_update,            1,   6400 },
+    { update_speed_height,    1,   1600 },
+    { update_flight_mode,     1,   1400 },
+    { stabilize,              1,   3500 },
+    { set_servos,             1,   1600 },
     { read_control_switch,    7,   1000 },
-    { update_GPS,             5,   4000 },
-    { navigate,               5,   4800 },
-    { update_compass,         5,   1500 },
-    { read_airspeed,          5,   1500 },
+    { gcs_retry_deferred,     1,   1000 },
+    { update_GPS,             5,   3700 },
+    { navigate,               5,   3000 }, // 10
+    { update_compass,         5,   1200 },
+    { read_airspeed,          5,   1200 },
     { update_alt,             5,   3400 },
-    { calc_altitude_error,    5,   1000 }, // 10
-    { update_commands,        5,   7000 },
+    { calc_altitude_error,    5,   1000 },
+    { update_commands,        5,   5000 },
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
     { update_mount,           1,   1500 },
-    { update_events,		 15,   1500 },
-    { check_usb_mux,          5,    200 },
+    { update_events,		 15,   1500 }, // 20
+    { check_usb_mux,          5,    300 },
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
-    { barometer_accumulate,   1,    900 }, // 20
-    { update_notify,          1,    100 },
+    { barometer_accumulate,   1,    900 },
+    { update_notify,          1,    300 },
     { one_second_loop,       50,   3900 },
     { check_long_failsafe,   15,   1000 },
     { airspeed_ratio_update, 50,   1000 },
@@ -765,17 +768,13 @@ void loop()
     if (!ins.wait_for_sample(1000)) {
         return;
     }
-    uint32_t timer = millis();
+    uint32_t timer = hal.scheduler->micros();
 
-    delta_ms_fast_loop  = timer - fast_loopTimer_ms;
-    G_Dt                = delta_ms_fast_loop * 0.001f;
-    fast_loopTimer_ms   = timer;
+    delta_us_fast_loop  = timer - fast_loopTimer_us;
+    G_Dt                = delta_us_fast_loop * 1.0e-6f;
+    fast_loopTimer_us   = timer;
 
     mainLoop_count++;
-
-    // Execute the fast loop
-    // ---------------------
-    fast_loop();
 
     // tell the scheduler one tick has passed
     scheduler.tick();
@@ -785,28 +784,18 @@ void loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    scheduler.run(19500U);
+    uint32_t remaining = (timer + 20000) - hal.scheduler->micros();
+    if (remaining > 19500) {
+        remaining = 19500;
+    }
+    scheduler.run(remaining);
 }
 
-// Main loop 50Hz
-static void fast_loop()
+// update AHRS system
+static void ahrs_update()
 {
-    // This is the fast loop - we want it to execute at 50Hz if possible
-    // -----------------------------------------------------------------
-    if (delta_ms_fast_loop > G_Dt_max)
-        G_Dt_max = delta_ms_fast_loop;
-
-    // Read radio
-    // ----------
-    read_radio();
-
-    // try to send any deferred messages if the serial port now has
-    // some space available
-    gcs_send_message(MSG_RETRY_DEFERRED);
-
-    // check for loss of control signal failsafe condition
-    // ------------------------------------
-    check_short_failsafe();
+    if (delta_us_fast_loop > G_Dt_max)
+        G_Dt_max = delta_us_fast_loop;
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
@@ -1340,9 +1329,21 @@ static void update_alt()
 
     // Update the speed & height controller states
     if (auto_throttle_mode && !throttle_suppressed) {
+        AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
+        
+        if (control_mode==AUTO) {
+            if (takeoff_complete == false) {
+                flight_stage = AP_SpdHgtControl::FLIGHT_TAKEOFF;
+            } else if (nav_command_ID == MAV_CMD_NAV_LAND && land_complete == true) {
+                flight_stage = AP_SpdHgtControl::FLIGHT_LAND_FINAL;
+            } else if (nav_command_ID == MAV_CMD_NAV_LAND) {
+                flight_stage = AP_SpdHgtControl::FLIGHT_LAND_APPROACH; 
+            }
+        }
+
         SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,
-                                                 (control_mode==AUTO && takeoff_complete == false), 
+                                                 flight_stage,
                                                  takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  relative_altitude());

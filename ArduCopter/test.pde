@@ -90,6 +90,7 @@ static int8_t
 test_compass(uint8_t argc, const Menu::arg *argv)
 {
     uint8_t delta_ms_fast_loop;
+    uint8_t medium_loopCounter = 0;
 
     if (!g.compass_enabled) {
         cliSerial->printf_P(PSTR("Compass: "));

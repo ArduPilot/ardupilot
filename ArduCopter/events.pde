@@ -50,7 +50,7 @@ static void failsafe_radio_on_event()
             break;
         case LAND:
             // continue to land if battery failsafe is also active otherwise fall through to default handling
-            if (g.failsafe_battery_enabled && failsafe.low_battery) {
+            if (g.failsafe_battery_enabled && failsafe.battery) {
                 break;
             }
         default:
@@ -83,10 +83,10 @@ static void failsafe_radio_off_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
-static void low_battery_event(void)
+static void failsafe_battery_event(void)
 {
     // return immediately if low battery event has already been triggered
-    if (failsafe.low_battery) {
+    if (failsafe.battery) {
         return;
     }
 
@@ -121,7 +121,7 @@ static void low_battery_event(void)
     }
 
     // set the low battery flag
-    set_low_battery(true);
+    set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
     gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));

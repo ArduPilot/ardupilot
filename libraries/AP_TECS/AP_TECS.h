@@ -47,7 +47,7 @@ public:
 	// Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm, 
                                int32_t EAS_dem_cm, 
-                               bool climbOutDem, 
+                               enum FlightStage flight_stage,
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
 							   float hgt_afe);
@@ -190,7 +190,7 @@ private:
     bool _badDescent;
 
     // climbout mode
-    bool _climbOutDem;
+    enum FlightStage _flight_stage;
 
 	// throttle demand before limiting
 	float _throttle_dem_unc;

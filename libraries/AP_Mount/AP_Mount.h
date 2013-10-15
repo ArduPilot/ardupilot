@@ -32,7 +32,7 @@ class AP_Mount
 {
 public:
     //Constructor
-    AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id);
+    AP_Mount(const struct Location *current_loc, GPS *&gps, const AP_AHRS &ahrs, uint8_t id);
 
     //enums
     enum MountType {
@@ -80,7 +80,7 @@ private:
     float                           angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     //members
-    AP_AHRS *                       _ahrs; ///< Rotation matrix from earth to plane.
+    const AP_AHRS                   &_ahrs; ///< Rotation matrix from earth to plane.
     GPS *&                          _gps;
     const struct Location *         _current_loc;
     struct Location                 _target_GPS_location;

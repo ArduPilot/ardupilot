@@ -65,16 +65,27 @@ void APM2RCInput::init(void* _isrregistry) {
      * OCR5A: 40000, 0.5us tick => 2ms period / 50hz freq for outbound
      * fast PWM.
      */
-    TCCR5A = _BV(WGM50) | _BV(WGM51);
-    TCCR5B = _BV(WGM53) | _BV(WGM52) | _BV(CS51) | _BV(ICES5);
-    OCR5A  = 40000;
 
-    /* OCR5B and OCR5C will be used by RCOutput_APM2. init to nil output */
+    uint8_t oldSREG = SREG;
+    cli();
+    
+    /* Timer cleanup before configuring */
+    TCNT5 = 0;
+    TIFR5 = 0;
+    
+    /* Set timer 8x prescaler fast PWM mode toggle compare at OCRA with rising edge input capture */
+    TCCR5A = _BV(WGM50) | _BV(WGM51);
+    TCCR5B |= _BV(WGM53) | _BV(WGM52) | _BV(CS51) | _BV(ICES5);
+    OCR5A  = 40000 - 1; // -1 to correct for wrap
+
+    /* OCR5B and OCR5C will be used by RCOutput_APM2. Init to 0xFFFF to prevent premature PWM output */
     OCR5B  = 0xFFFF;
     OCR5C  = 0xFFFF;
 
     /* Enable input capture interrupt */
     TIMSK5 |= _BV(ICIE5);
+     
+    SREG = oldSREG;
 }
 
 uint8_t APM2RCInput::valid_channels() { return _valid_channels; }
@@ -91,9 +102,10 @@ uint16_t APM2RCInput::read(uint8_t ch) {
     /* constrain ch */
     if (ch >= AVR_RC_INPUT_NUM_CHANNELS) return 0;
     /* grab channel from isr's memory in critical section*/
+    uint8_t oldSREG = SREG;
     cli();
     uint16_t capt = _pulse_capt[ch];
-    sei();
+    SREG = oldSREG;
     _valid_channels = 0;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
@@ -106,11 +118,12 @@ uint8_t APM2RCInput::read(uint16_t* periods, uint8_t len) {
     /* constrain len */
     if (len > AVR_RC_INPUT_NUM_CHANNELS) { len = AVR_RC_INPUT_NUM_CHANNELS; }
     /* grab channels from isr's memory in critical section */
+    uint8_t oldSREG = SREG;
     cli();
     for (int i = 0; i < len; i++) {
         periods[i] = _pulse_capt[i];
     }
-    sei();
+    SREG = oldSREG;
     /* Outside of critical section, do the math (in place) to scale and
      * constrain the pulse. */
     for (int i = 0; i < len; i++) {
