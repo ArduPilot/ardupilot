@@ -80,7 +80,6 @@ public:
 
         k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
         k_param_rssi_pin,
-        k_param_rssi_rc,
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
@@ -94,6 +93,7 @@ public:
         k_param_gps_hdop_good,
         k_param_battery,
         k_param_fs_batt_mah,             // 37
+        k_param_rssi_rc,                 // 38
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove

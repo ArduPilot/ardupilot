@@ -97,6 +97,7 @@ public:
         k_param_ground_steer_alt,        
         k_param_ground_steer_dps,
         k_param_rally_limit_km,
+        k_param_rssi_rc,
 
         // 110: Telemetry control
         //
@@ -166,7 +167,6 @@ public:
         //
         k_param_battery = 166,
         k_param_rssi_pin,
-        k_param_rssi_rc,
         k_param_battery_volt_pin,   // unused
         k_param_battery_curr_pin,   // unused - 169
 
