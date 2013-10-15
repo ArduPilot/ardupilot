@@ -26,13 +26,14 @@ public:
 
 	/**
 	   stages of flight so the altitude controller can choose to
-	   prioritise height or speed
+	   prioritise height or speed or maximise range
 	 */
 	enum FlightStage {
 		FLIGHT_NORMAL        = 1,
 		FLIGHT_TAKEOFF       = 2,
 		FLIGHT_LAND_APPROACH = 3,
-		FLIGHT_LAND_FINAL    = 4
+		FLIGHT_LAND_FINAL    = 4,
+        FLIGHT_MAX_RANGE     = 5
 	};
 
 	// Update of the pitch and throttle demands
