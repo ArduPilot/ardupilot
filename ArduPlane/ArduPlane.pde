@@ -1328,8 +1328,13 @@ static void update_alt()
     geofence_check(true);
 
     // Update the speed & height controller states
-    if (auto_throttle_mode && !throttle_suppressed) {
-        AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
+    if (auto_throttle_mode && !throttle_suppressed) 
+    {
+        AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL; 
+        if (g.max_rng_mode) 
+        {
+            flight_stage = AP_SpdHgtControl::FLIGHT_MAX_RANGE;
+        }
         
         if (control_mode==AUTO) {
             if (takeoff_complete == false) {
