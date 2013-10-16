@@ -22,25 +22,15 @@ void APM2SPIDeviceManager::init(void* machtnichts) {
 
     /* mpu6k cs is on Arduino pin 53, PORTB0 */
     AVRDigitalSource* mpu6k_cs = new AVRDigitalSource(_BV(0), PB);
-<<<<<<< HEAD
     /* mpu6k: run clock at 8MHz in high speed mode and 512kHz for low
      * speed */
     _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, _BV(SPR1), 0, _BV(SPI2X));
-=======
-    /* mpu6k: run clock at 8MHz */
-    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, 0, _BV(SPI2X));
->>>>>>> HAL_AVR: spi3 at 8mhz for mpu6k and ms5611
     _mpu6k->init();
 
     /* ms5611 cs is on Arduino pin 40, PORTG1 */
     AVRDigitalSource* ms5611_cs = new AVRDigitalSource(_BV(1), PG);
-<<<<<<< HEAD
     /* ms5611: run clock at 8MHz */
     _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, 0, 0, _BV(SPI2X));
-=======
-    /* mpu6k: run clock at 8MHz */
-    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, 0, _BV(SPI2X));
->>>>>>> HAL_AVR: spi3 at 8mhz for mpu6k and ms5611
     _ms5611->init();
    
     /* optflow cs is on Arduino pin A3, PORTF3 */
