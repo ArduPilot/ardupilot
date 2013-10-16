@@ -98,6 +98,7 @@ public:
         k_param_ground_steer_dps,
         k_param_rally_limit_km,
         k_param_hil_err_limit,
+        k_param_max_rng_mode,
 
         // 110: Telemetry control
         //
@@ -403,6 +404,7 @@ public:
     AP_Float takeoff_throttle_min_accel;
     AP_Int8 takeoff_throttle_delay;
     AP_Int8 level_roll_limit;
+    AP_Int8 max_rng_mode;
 
     // RC channels
     RC_Channel rc_1;
