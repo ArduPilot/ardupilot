@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
     // @Description: This sets the equivalent airspeed to fly at for minimum sink rate. This only needs to be set if the maximum range flight mode is to be used. For most aircraft other than delta wings, this will be a speed just above stall. This parameter is only used to define the sink vs airspeed characteristics which are used to calculate the optimum airspeed. The slowest speed the aircraft will fly at is always determined by the ARSPD_FBW_MIN parameter.
 	// @Increment: 0.1
 	// @User: User
-    AP_GROUPINFO("MIN_SINK_SPD",  12, AP_TECS, _minSinkAirSpd, 10.0f),
+    AP_GROUPINFO("MIN_SINK_SP",  12, AP_TECS, _minSinkAirSpd, 10.0f),
 
     AP_GROUPEND
 };
