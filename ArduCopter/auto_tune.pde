@@ -37,7 +37,6 @@
 #define AUTO_TUNE_RD_MAX                  0.015f    // maximum Rate D value
 #define AUTO_TUNE_RP_MIN                   0.05f    // minimum Rate P value
 #define AUTO_TUNE_RP_MAX                   0.25f    // maximum Rate P value
-#define AUTO_TUNE_SP_MIN                    1.0f    // minimum Stab P value
 #define AUTO_TUNE_SP_MAX                   15.0f    // maximum Stab P value
 #define AUTO_TUNE_SUCCESS_COUNT                4    // how many successful iterations we need to freeze at current gains
 
@@ -435,6 +434,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_roll_rd >= AUTO_TUNE_RD_MAX) {
                                     tune_roll_rd = AUTO_TUNE_RD_MAX;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }else{
                                 tune_pitch_rd += AUTO_TUNE_RD_STEP*2.0f;
@@ -442,6 +442,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_pitch_rd >= AUTO_TUNE_RD_MAX) {
                                     tune_pitch_rd = AUTO_TUNE_RD_MAX;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }
                         }
@@ -481,6 +482,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_roll_rd <= AUTO_TUNE_RD_MIN) {
                                     tune_roll_rd = AUTO_TUNE_RD_MIN;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }else{
                                 tune_pitch_rd -= AUTO_TUNE_RD_STEP;
@@ -488,6 +490,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_pitch_rd <= AUTO_TUNE_RD_MIN) {
                                     tune_pitch_rd = AUTO_TUNE_RD_MIN;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }
                         }
@@ -507,6 +510,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_roll_rp >= AUTO_TUNE_RP_MAX) {
                                 tune_roll_rp = AUTO_TUNE_RP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }else{
                             tune_pitch_rp += AUTO_TUNE_RP_STEP;
@@ -514,6 +518,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_pitch_rp >= AUTO_TUNE_RP_MAX) {
                                 tune_pitch_rp = AUTO_TUNE_RP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }
                     }
@@ -533,6 +538,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_roll_sp >= AUTO_TUNE_SP_MAX) {
                                 tune_roll_sp = AUTO_TUNE_SP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }else{
                             tune_pitch_sp += AUTO_TUNE_SP_STEP;
@@ -540,6 +546,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_pitch_sp >= AUTO_TUNE_SP_MAX) {
                                 tune_pitch_sp = AUTO_TUNE_SP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }
                     }
