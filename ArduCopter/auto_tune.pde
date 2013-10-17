@@ -132,9 +132,8 @@ void auto_tune_start()
 {
     // check we are in stabilize mode
     if (control_mode == STABILIZE || control_mode == ALT_HOLD) {
-        // reset axis if this is our first time (i.e. we were not just suspended)
-        if (!auto_tune_state.active) {
-            auto_tune_state.active = true;
+        // reset axis if this is our first time
+        if (!auto_tune_state.enabled) {
             auto_tune_state.axis = AUTO_TUNE_AXIS_ROLL;
             auto_tune_state.positive_direction = false;
             auto_tune_state.step = AUTO_TUNE_STEP_WAITING_FOR_LEVEL;
@@ -155,6 +154,7 @@ void auto_tune_start()
         // set roll-pitch mode to our special auto tuning stabilize roll-pitch mode
         if (set_roll_pitch_mode(ROLL_PITCH_AUTOTUNE)) {
             auto_tune_state.enabled = true;
+            auto_tune_state.active = true;
             Log_Write_Event(DATA_AUTOTUNE_ON);
         }
     }
