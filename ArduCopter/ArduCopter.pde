@@ -1602,12 +1602,24 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 
     // if initialisation has been successful update the yaw mode
     if( roll_pitch_initialised ) {
+        exit_roll_pitch_mode(roll_pitch_mode);
         roll_pitch_mode = new_roll_pitch_mode;
     }
 
     // return success or failure
     return roll_pitch_initialised;
 }
+
+// exit_roll_pitch_mode - peforms any code required when exiting the current roll-pitch mode
+void exit_roll_pitch_mode(uint8_t old_roll_pitch_mode)
+{
+#if AUTOTUNE == ENABLED
+    if (old_roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
+        auto_tune_stop();
+    }
+#endif
+}
+
 
 // update_roll_pitch_mode - run high level roll and pitch controllers
 // 100hz update rate
