@@ -411,7 +411,7 @@ static void init_disarm_motors()
 
 #if AUTOTUNE == ENABLED
     // save auto tuned parameters
-    auto_tune_save_tuning_gains();
+    auto_tune_save_tuning_gains_and_reset();
 #endif
 
     // we are not in the air
