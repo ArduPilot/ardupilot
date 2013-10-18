@@ -300,7 +300,6 @@ static AP_GPS_HIL              g_gps_driver;
 static AP_InertialSensor_HIL   ins;
 static AP_AHRS_DCM             ahrs(&ins, g_gps);
 
-static int32_t gps_base_alt;
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
@@ -314,8 +313,6 @@ static AP_AHRS_HIL             ahrs(&ins, g_gps);
 static AP_GPS_HIL              g_gps_driver;
 static AP_Compass_HIL          compass;                  // never used
 static AP_Baro_HIL      barometer;
-
-static int32_t gps_base_alt;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
@@ -2089,7 +2086,7 @@ static void update_altitude()
 {
 #if HIL_MODE == HIL_MODE_ATTITUDE
     // we are in the SIM, fake out the baro and Sonar
-    baro_alt                = g_gps->altitude_cm - gps_base_alt;
+    baro_alt                = g_gps->altitude_cm;
 
     if(g.sonar_enabled) {
         sonar_alt           = baro_alt;
