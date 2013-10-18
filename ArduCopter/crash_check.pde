@@ -32,7 +32,7 @@ void crash_check()
     }
 
     // check angles
-    int32_t lean_max = g.angle_max + CRASH_CHECK_ANGLE_DEVIATION_CD;
+    int32_t lean_max = aparm.angle_max + CRASH_CHECK_ANGLE_DEVIATION_CD;
     if (labs(ahrs.roll_sensor) > lean_max || labs(ahrs.pitch_sensor) > lean_max) {
         inverted_count++;
 

@@ -20,6 +20,7 @@
  */
 
 #define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} }
+#define ASCALAR(v, name, def) { aparm.v.vtype, name, Parameters::k_param_ ## v, &aparm.v, {def_value : def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info : class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &v, {group_info : class::var_info} }
@@ -427,7 +428,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Maximum lean angle in all flight modes
     // @Range 1000 8000
     // @User: Advanced
-    GSCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
+    ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
     // @Param: ANGLE_RATE_MAX
     // @DisplayName: Angle Rate max

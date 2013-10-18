@@ -320,7 +320,6 @@ public:
     AP_Int8         rssi_pin;
     AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
-    AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees
     AP_Int32        angle_rate_max;             // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
     

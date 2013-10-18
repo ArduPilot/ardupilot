@@ -43,16 +43,16 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
     }
 
     // return filtered roll if no scaling required
-    if (g.angle_max == ROLL_PITCH_INPUT_MAX) {
+    if (aparm.angle_max == ROLL_PITCH_INPUT_MAX) {
         roll_out = (int16_t)roll_in_filtered;
         pitch_out = (int16_t)pitch_in_filtered;
         return;
     }
 
     // check if angle_max has been updated and redo scaler
-    if (g.angle_max != _angle_max) {
-        _angle_max = g.angle_max;
-        _scaler = (float)g.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    if (aparm.angle_max != _angle_max) {
+        _angle_max = aparm.angle_max;
+        _scaler = (float)aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
     }
 
     // convert pilot input to lean angle
@@ -65,6 +65,9 @@ get_stabilize_roll(int32_t target_angle)
 {
     // angle error
     target_angle = wrap_180_cd(target_angle - ahrs.roll_sensor);
+
+    // limit the error we're feeding to the PID
+    target_angle = constrain_int32(target_angle, -aparm.angle_max, aparm.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_roll.kP() * target_angle;
@@ -83,6 +86,9 @@ get_stabilize_pitch(int32_t target_angle)
 {
     // angle error
     target_angle            = wrap_180_cd(target_angle - ahrs.pitch_sensor);
+
+    // limit the error we're feeding to the PID
+    target_angle            = constrain_int32(target_angle, -aparm.angle_max, aparm.angle_max);
 
     // convert to desired rate
     int32_t target_rate = g.pi_stabilize_pitch.kP() * target_angle;
@@ -139,10 +145,10 @@ get_acro_level_rates()
     int32_t target_rate = 0;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (roll_angle > g.angle_max){
-            target_rate =  g.pi_stabilize_roll.get_p(g.angle_max-roll_angle);
-        }else if (roll_angle < -g.angle_max) {
-            target_rate =  g.pi_stabilize_roll.get_p(-g.angle_max-roll_angle);
+        if (roll_angle > aparm.angle_max){
+            target_rate =  g.pi_stabilize_roll.get_p(aparm.angle_max-roll_angle);
+        }else if (roll_angle < -aparm.angle_max) {
+            target_rate =  g.pi_stabilize_roll.get_p(-aparm.angle_max-roll_angle);
         }
     }
     roll_angle   = constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
@@ -156,10 +162,10 @@ get_acro_level_rates()
     target_rate = 0;
 
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (pitch_angle > g.angle_max){
-            target_rate =  g.pi_stabilize_pitch.get_p(g.angle_max-pitch_angle);
-        }else if (pitch_angle < -g.angle_max) {
-            target_rate =  g.pi_stabilize_pitch.get_p(-g.angle_max-pitch_angle);
+        if (pitch_angle > aparm.angle_max){
+            target_rate =  g.pi_stabilize_pitch.get_p(aparm.angle_max-pitch_angle);
+        }else if (pitch_angle < -aparm.angle_max) {
+            target_rate =  g.pi_stabilize_pitch.get_p(-aparm.angle_max-pitch_angle);
         }
     }
     pitch_angle  = constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
@@ -321,8 +327,8 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     acro_roll = wrap_180_cd(acro_roll);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_roll) > g.angle_max) {
-        acro_roll  = constrain_int32(acro_roll, -g.angle_max, g.angle_max);
+    if (labs(acro_roll) > aparm.angle_max) {
+        acro_roll  = constrain_int32(acro_roll, -aparm.angle_max, aparm.angle_max);
         angle_error = wrap_180_cd(acro_roll - ahrs.roll_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot
@@ -362,8 +368,8 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     acro_pitch = wrap_180_cd(acro_pitch);
 
     // ensure that we don't reach gimbal lock
-    if (labs(acro_pitch) > g.angle_max) {
-        acro_pitch  = constrain_int32(acro_pitch, -g.angle_max, g.angle_max);
+    if (labs(acro_pitch) > aparm.angle_max) {
+        acro_pitch  = constrain_int32(acro_pitch, -aparm.angle_max, aparm.angle_max);
         angle_error = wrap_180_cd(acro_pitch - ahrs.pitch_sensor);
     } else {
         // angle error with maximum of +- max_angle_overshoot

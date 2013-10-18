@@ -144,6 +144,9 @@
 #include "config.h"
 #include "config_channels.h"
 
+// key aircraft parameters passed to multiple libraries
+static AP_Vehicle::MultiCopter aparm;
+
 // Local modules
 #include "Parameters.h"
 #include "GCS.h"
@@ -1145,7 +1148,7 @@ static void one_hz_loop()
     wp_nav.set_althold_kP(g.pi_alt_hold.kP());
 
     // update latest lean angle to navigation controller
-    wp_nav.set_lean_angle_max(g.angle_max);
+    wp_nav.set_lean_angle_max(aparm.angle_max);
 
     // log battery info to the dataflash
     if (g.log_bitmask & MASK_LOG_CURRENT) {
