@@ -35,6 +35,13 @@ public:
         AP_Int16 pitch_limit_max_cd;
         AP_Int16 pitch_limit_min_cd;        
     };
+
+    /*
+      common parameters for multicopters
+     */
+    struct MultiCopter {
+        AP_Int16 angle_max;
+    };
 };
 
 #endif // AP_VEHICLE_H
