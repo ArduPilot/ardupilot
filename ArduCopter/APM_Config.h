@@ -22,7 +22,7 @@
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
 //#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
-#define AUTOTUNE              DISABLED            // disable the auto tune functionality to save 7k of flash
+//#define AUTOTUNE              DISABLED            // disable the auto tune functionality to save 7k of flash
 
 // redefine size of throttle deadband in pwm (0 ~ 1000)
 //#define THROTTLE_IN_DEADBAND   100
