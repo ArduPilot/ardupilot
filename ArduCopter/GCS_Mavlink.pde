@@ -515,6 +515,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         return false;
     }
 
+#if HIL_MODE != HIL_MODE_SENSORS
     // if we don't have at least 1ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
@@ -522,6 +523,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         gcs_out_of_time = true;
         return false;
     }
+#endif
 
     switch(id) {
     case MSG_HEARTBEAT:
@@ -1901,15 +1903,14 @@ mission_failed:
         float vel = pythagorous2(packet.vx, packet.vy);
         float cog = wrap_360_cd(ToDeg(atan2f(packet.vx, packet.vy)) * 100);
 
+		// if we are erasing the dataflash this object doesnt exist yet. as its called from delay_cb
+		if (g_gps == NULL)
+			break;
+		
         // set gps hil sensor
         g_gps->setHIL(packet.time_usec/1000,
                       packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
                       vel*1.0e-2, cog*1.0e-2, 0, 10);
-
-        if (gps_base_alt == 0) {
-            gps_base_alt = g_gps->altitude_cm;
-            current_loc.alt = 0;
-        }
 
         if (!ap.home_is_set) {
             init_home();
