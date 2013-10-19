@@ -40,6 +40,11 @@
 #define AUTO_TUNE_SP_MAX                   15.0f    // maximum Stab P value
 #define AUTO_TUNE_SUCCESS_COUNT                4    // how many successful iterations we need to freeze at current gains
 
+// Auto Tune message ids for ground station
+#define AUTO_TUNE_MESSAGE_STARTED 0
+#define AUTO_TUNE_MESSAGE_SUCCESS 1
+#define AUTO_TUNE_MESSAGE_FAILED 2
+
 enum AutoTuneTuneMode {
     AUTO_TUNE_MODE_UNINITIALISED = 0,
     AUTO_TUNE_MODE_TUNING = 1,
@@ -117,9 +122,6 @@ static void auto_tune_initialise()
     tune_pitch_rd = g.pid_rate_pitch.kD();
     tune_pitch_sp = g.pi_stabilize_pitch.kP();
 
-    // set roll-pitch mode to our special auto tuning stabilize roll-pitch mode
-    set_roll_pitch_mode(ROLL_PITCH_AUTOTUNE);
-
     Log_Write_Event(DATA_AUTOTUNE_INITIALISED);
 }
 
@@ -191,29 +193,27 @@ static void auto_tune_load_test_gains()
 // start an auto tuning session
 static void auto_tune_start()
 {
-    // check we are in stabilize mode
-    if (control_mode == STABILIZE || control_mode == ALT_HOLD) {
-        switch (auto_tune_state.mode) {
-            case AUTO_TUNE_MODE_UNINITIALISED:
-                // initialise gains and axis because this is our first time
-                auto_tune_initialise();
-                auto_tune_state.mode = AUTO_TUNE_MODE_TUNING;
-                break;
-            case AUTO_TUNE_MODE_TUNING:
-                // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
-                auto_tune_intra_test_gains();
-                set_roll_pitch_mode(ROLL_PITCH_AUTOTUNE);   // set roll-pitch mode to our special auto tuning stabilize roll-pitch mode
-                Log_Write_Event(DATA_AUTOTUNE_RESTART);
-                break;
-            case AUTO_TUNE_MODE_TESTING:
-                // we have completed a tune and are testing the new gains
-                auto_tune_load_tuned_gains();
-                Log_Write_Event(DATA_AUTOTUNE_TESTING);
-                break;
-            case AUTO_TUNE_MODE_FAILED:
-                Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
-                break;
-        }
+    switch (auto_tune_state.mode) {
+        case AUTO_TUNE_MODE_UNINITIALISED:
+            // initialise gains and axis because this is our first time
+            auto_tune_initialise();
+            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_STARTED);
+            auto_tune_state.mode = AUTO_TUNE_MODE_TUNING;
+            break;
+        case AUTO_TUNE_MODE_TUNING:
+            // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
+            auto_tune_intra_test_gains();
+            Log_Write_Event(DATA_AUTOTUNE_RESTART);
+            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_STARTED);
+            break;
+        case AUTO_TUNE_MODE_TESTING:
+            // we have completed a tune and are testing the new gains
+            auto_tune_load_tuned_gains();
+            Log_Write_Event(DATA_AUTOTUNE_TESTING);
+            break;
+        case AUTO_TUNE_MODE_FAILED:
+            Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
+            break;
     }
 }
 
@@ -221,10 +221,7 @@ static void auto_tune_start()
 static void auto_tune_stop()
 {
     ap.disable_stab_rate_limit = false;
-    if (roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
-        set_roll_pitch_mode(ROLL_PITCH_STABLE); // restore roll-pitch mode
-        rate_targets_frame = EARTH_FRAME;   // regular stabilize mode frame
-    }
+    rate_targets_frame = EARTH_FRAME;   // regular stabilize mode frame
     // restore pids to their original values
     auto_tune_restore_orig_gains();
     Log_Write_Event(DATA_AUTOTUNE_OFF);
@@ -243,6 +240,22 @@ static void auto_tune_save_tuning_gains_and_reset()
     }
     // reset state of autotune
     auto_tune_state.mode = AUTO_TUNE_MODE_UNINITIALISED;
+}
+
+// send message to ground station
+void auto_tune_update_gcs(uint8_t message_id)
+{
+    switch (message_id) {
+        case AUTO_TUNE_MESSAGE_STARTED:
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Started"));
+            break;
+        case AUTO_TUNE_MESSAGE_SUCCESS:
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Success"));
+            break;
+        case AUTO_TUNE_MESSAGE_FAILED:
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Failed"));
+            break;
+    }
 }
 
 // Auto tuning roll-pitch controller
@@ -437,7 +450,8 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp < AUTO_TUNE_RP_MIN)) ) {
                             auto_tune_state.mode = AUTO_TUNE_MODE_FAILED;
                             Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
-                            auto_tune_stop();
+                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_FAILED);
                             return;
                         }
                     }else if(auto_tune_test_max < AUTO_TUNE_TARGET_RATE_CDS*(1.0f-AUTO_TUNE_AGGRESSIVENESS*2.0f) && 
@@ -486,7 +500,8 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp < AUTO_TUNE_RP_MIN)) ) {
                             auto_tune_state.mode = AUTO_TUNE_MODE_FAILED;
                             Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
-                            auto_tune_stop();
+                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_FAILED);
                             return;
                         }
                     }else if(auto_tune_test_max < AUTO_TUNE_TARGET_RATE_CDS*(1-AUTO_TUNE_AGGRESSIVENESS*2.0f) && 
@@ -606,7 +621,8 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             tune_pitch_sp = min(tune_roll_sp, tune_pitch_sp);
                             // if we've just completed pitch we are done tuning and are moving onto testing
                             auto_tune_state.mode = AUTO_TUNE_MODE_TESTING;
-                            auto_tune_stop();
+                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_SUCCESS);
                         }
                     }
                 }

@@ -299,11 +299,14 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 case AUX_SWITCH_LOW:
                 case AUX_SWITCH_MIDDLE:
                     // turn off tuning and return to standard pids
-                    auto_tune_stop();
+                    if (roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
+                        set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                    }
                     break;
                 case AUX_SWITCH_HIGH:
                     // start an auto tuning session
-                    auto_tune_start();
+                    // set roll-pitch mode to our special auto tuning stabilize roll-pitch mode
+                    set_roll_pitch_mode(ROLL_PITCH_AUTOTUNE);
                     break;
             }
             break;

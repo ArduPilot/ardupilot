@@ -335,15 +335,15 @@ enum ap_message {
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
-#define DATA_SET_SUPERSIMPLE_ON         28
-#define DATA_AUTOTUNE_INITIALISED       29
-#define DATA_AUTOTUNE_OFF               30
-#define DATA_AUTOTUNE_RESTART           31
-#define DATA_AUTOTUNE_COMPLETE          32
-#define DATA_AUTOTUNE_ABANDONED         33
-#define DATA_AUTOTUNE_REACHED_LIMIT     34
-#define DATA_AUTOTUNE_TESTING           35
-#define DATA_AUTOTUNE_SAVEDGAINS        36
+#define DATA_SET_SUPERSIMPLE_ON         29
+#define DATA_AUTOTUNE_INITIALISED       30
+#define DATA_AUTOTUNE_OFF               31
+#define DATA_AUTOTUNE_RESTART           32
+#define DATA_AUTOTUNE_COMPLETE          33
+#define DATA_AUTOTUNE_ABANDONED         34
+#define DATA_AUTOTUNE_REACHED_LIMIT     35
+#define DATA_AUTOTUNE_TESTING           36
+#define DATA_AUTOTUNE_SAVEDGAINS        37
 
 
 

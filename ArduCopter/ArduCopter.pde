@@ -1594,8 +1594,11 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 
 #if AUTOTUNE == ENABLED
         case ROLL_PITCH_AUTOTUNE:
-            // indicate we can enter this mode successfully
-            roll_pitch_initialised = true;
+            // only enter autotune mode from stabilized roll-pitch mode
+            if (roll_pitch_mode == ROLL_PITCH_STABLE) {
+                roll_pitch_initialised = true;
+                auto_tune_start();
+            }
             break;
 #endif
     }
