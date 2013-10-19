@@ -33,10 +33,8 @@ void change_command(uint8_t cmd_index)
 // --------------------
 static void update_commands(void)
 {
-    if(control_mode == AUTO) {
-        if(home_is_set == true && g.command_total > 1) {
+    if(home_is_set == true && g.command_total > 1) {
             process_next_command();
-        }
     }
 }
 
