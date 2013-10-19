@@ -1091,7 +1091,7 @@ static void load_parameters(void)
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-
+        AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }
