@@ -39,6 +39,8 @@ void PX4Scheduler::init(void *unused)
 {
     _sketch_start_time = hrt_absolute_time();
 
+    _main_task_pid = getpid();
+
     // setup the timer thread - this will call tasks at 1kHz
 	pthread_attr_t thread_attr;
 	struct sched_param param;
@@ -113,12 +115,10 @@ void PX4Scheduler::delay_microseconds(uint16_t usec)
 
 void PX4Scheduler::delay(uint16_t ms)
 {
-#if 0
-    if (_in_timer_proc) {
+    if (in_timerprocess()) {
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
-#endif
     perf_begin(_perf_delay);
 	uint64_t start = hrt_absolute_time();
     
@@ -305,8 +305,9 @@ void PX4Scheduler::panic(const prog_char_t *errormsg)
     exit(1);
 }
 
-bool PX4Scheduler::in_timerprocess() {
-    return _in_timer_proc;
+bool PX4Scheduler::in_timerprocess() 
+{
+    return getpid() != _main_task_pid;
 }
 
 bool PX4Scheduler::system_initializing() {

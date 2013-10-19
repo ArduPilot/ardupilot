@@ -63,6 +63,7 @@ private:
 
     volatile bool _timer_event_missed;
 
+    pid_t _main_task_pid;
     pthread_t _timer_thread_ctx;
     pthread_t _io_thread_ctx;
     pthread_t _uart_thread_ctx;
