@@ -65,8 +65,8 @@ void read_receiver_rssi(void)
 	else if(g.rssi_rc != -1)
 	{
 		uint16_t pulsewidth = hal.rcin->read(g.rssi_rc - 1);
-                pulsewidth = constrain_int16(pulsewidth, 1000, 2000);
-		float ret = (pulsewidth - 1000) / 4;
+                pulsewidth = constrain_int16(pulsewidth, 800, 2000);
+		float ret = (pulsewidth - 800) / 4.7;
 		receiver_rssi = constrain_int16(ret, 0, 255);
 	}
 }
