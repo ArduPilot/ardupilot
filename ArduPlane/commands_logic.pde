@@ -13,8 +13,8 @@ handle_process_nav_cmd()
     // except in a takeoff 
     takeoff_complete = true;
 
-    gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),next_nav_command.id);
-    switch(next_nav_command.id) {
+    gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),mission.current_wp().id);
+    switch(mission.current_wp().id) {
 
     case MAV_CMD_NAV_TAKEOFF:
         do_takeoff();
@@ -150,12 +150,12 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {
-    gcs_send_text_fmt(PSTR("Returning to Home"));
-    next_nav_command = rally_find_best_location(current_loc, home);
-    next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
-    nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
-    non_nav_command_ID = WAIT_COMMAND;
-    handle_process_nav_cmd();
+    struct Location tmp;
+
+    gcs_send_text_fmt(PSTR("Out of Commands!"));
+    tmp = rally_find_best_location(current_loc,mission.get_home());
+    mission.goto_location(tmp);
+    process_waypoint();
 }
 
 /*******************************************************************************
@@ -168,7 +168,7 @@ should move onto the next mission element.
 
 static bool verify_nav_command()        // Returns true if command complete
 {
-    switch(nav_command_ID) {
+    switch(mission.current_wp().id) {
 
     case MAV_CMD_NAV_TAKEOFF:
         return verify_takeoff();
@@ -234,8 +234,8 @@ static bool verify_condition_command()          // Returns true if command compl
 static void do_RTL(void)
 {
     control_mode    = RTL;
-    prev_WP = current_loc;
-    next_WP = rally_find_best_location(current_loc, home);
+
+    mission.goto_location(rally_find_best_location(current_loc, mission.get_home()));
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
@@ -251,29 +251,27 @@ static void do_RTL(void)
 
 static void do_takeoff()
 {
-    set_next_WP(&next_nav_command);
+    setup_path();
     // pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-    takeoff_pitch_cd                = (int)next_nav_command.p1 * 100;
-    takeoff_altitude_cm     = next_nav_command.alt;
-    next_WP.lat             = home.lat + 1000;          // so we don't have bad calcs
-    next_WP.lng             = home.lng + 1000;          // so we don't have bad calcs
+    takeoff_pitch_cd                = (int)mission.current_wp().p1 * 100;
+    takeoff_altitude_cm     = mission.current_wp().alt;
     takeoff_complete        = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
     // Flag also used to override "on the ground" throttle disable
 }
 
 static void do_nav_wp()
 {
-    set_next_WP(&next_nav_command);
+    setup_path();
 }
 
 static void do_land()
 {
-    set_next_WP(&next_nav_command);
+    setup_path();
 }
 
-static void loiter_set_direction_wp(const struct Location *nav_command)
+static void loiter_set_direction_wp(const struct Location &nav_command)
 {
-    if (nav_command->options & MASK_OPTIONS_LOITER_DIRECTION) {
+    if (nav_command.options & MASK_OPTIONS_LOITER_DIRECTION) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -282,24 +280,24 @@ static void loiter_set_direction_wp(const struct Location *nav_command)
 
 static void do_loiter_unlimited()
 {
-    set_next_WP(&next_nav_command);
-    loiter_set_direction_wp(&next_nav_command);
+    setup_path();
+    loiter_set_direction_wp(mission.current_wp());
 }
 
 static void do_loiter_turns()
 {
-    set_next_WP(&next_nav_command);
-    loiter.total_cd = next_nav_command.p1 * 36000UL;
-    loiter_set_direction_wp(&next_nav_command);
+    setup_path();
+    loiter.total_cd = mission.current_wp().p1 * 36000UL;
+    loiter_set_direction_wp(mission.current_wp());
 }
 
 static void do_loiter_time()
 {
-    set_next_WP(&next_nav_command);
+    setup_path();
     // we set start_time_ms when we reach the waypoint
     loiter.start_time_ms = 0;
-    loiter.time_max_ms = next_nav_command.p1 * (uint32_t)1000;     // units are seconds
-    loiter_set_direction_wp(&next_nav_command);
+    loiter.time_max_ms = mission.current_wp().p1 * (uint32_t)1000;     // units are seconds
+    loiter_set_direction_wp(mission.current_wp());
 }
 
 /********************************************************************************/
@@ -326,7 +324,6 @@ static bool verify_takeoff()
     if (adjusted_altitude_cm() > takeoff_altitude_cm) {
         steer_state.hold_course_cd = -1;
         takeoff_complete = true;
-        next_WP = prev_WP = current_loc;
         return true;
     } else {
         return false;
@@ -343,7 +340,7 @@ static bool verify_land()
     // Set land_complete if we are within 2 seconds distance or within
     // 3 meters altitude of the landing point
     if ((wp_distance <= (g.land_flare_sec*g_gps->ground_speed_cm*0.01f))
-        || (adjusted_altitude_cm() <= next_WP.alt + g.land_flare_alt*100)) {
+        || (adjusted_altitude_cm() <= mission.current_wp().alt + g.land_flare_alt*100)) {
 
         land_complete = true;
 
@@ -372,11 +369,11 @@ static bool verify_land()
         }
     }
 
-    if (steer_state.hold_course_cd != -1) {
+    if (hold_course_cd != -1) {
         // recalc bearing error with hold_course;
         nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
-        nav_controller->update_waypoint(prev_WP, next_WP);
+        nav_controller->update_waypoint(mission.prev_wp(), mission.current_wp());
     }
     return false;
 }
@@ -385,29 +382,29 @@ static bool verify_nav_wp()
 {
     steer_state.hold_course_cd = -1;
 
-    nav_controller->update_waypoint(prev_WP, next_WP);
+    nav_controller->update_waypoint(mission.prev_wp(), mission.current_wp());
 
     // see if the user has specified a maximum distance to waypoint
     if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {
-        if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        if (location_passed_point(current_loc, mission.prev_wp(), mission.after_wp())) {
             // this is needed to ensure completion of the waypoint
-            prev_WP = current_loc;
+            mission.override_prev_wp(current_loc);
         }
         return false;
     }
     
     if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
-                          (unsigned)nav_command_index,
-                          (unsigned)get_distance(current_loc, next_WP));
+                          (unsigned)mission.waypoint_index(),
+                          (unsigned)get_distance(current_loc, mission.current_wp()));
         return true;
 	}
 
     // have we flown past the waypoint?
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+    if (location_passed_point(current_loc, mission.prev_wp(), mission.current_wp())) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
-                          (unsigned)nav_command_index,
-                          (unsigned)get_distance(current_loc, next_WP));
+                          (unsigned)mission.waypoint_index(),
+                          (unsigned)get_distance(current_loc, mission.current_wp()));
         return true;
     }
 
@@ -477,7 +474,7 @@ static void do_change_alt()
         condition_rate = -condition_rate;
     }
     target_altitude_cm      = adjusted_altitude_cm() + (condition_rate / 10);                  // Divide by ten for 10Hz update
-    next_WP.alt             = condition_value;                                                                  // For future nav calculations
+    mission.override_altitude(condition_value);                                                                  // For future nav calculations
     offset_altitude_cm      = 0;                                                                                        // For future nav calculations
 }
 
@@ -530,54 +527,13 @@ static void do_loiter_at_location()
     } else {
         loiter.direction = 1;
     }
-    next_WP = current_loc;
+    mission.goto_location(current_loc);
 }
 
 static void do_jump()
 {
-    if (next_nonnav_command.lat == 0) {
-        // the jump counter has reached zero - ignore
-        gcs_send_text_fmt(PSTR("Jumps left: 0 - skipping"));
-        return;
-    }
-    if (next_nonnav_command.p1 >= g.command_total) {
-        gcs_send_text_fmt(PSTR("Skipping invalid jump to %i"), next_nonnav_command.p1);
-        return;        
-    }
-
-    struct Location temp;
-    temp = get_cmd_with_index(g.command_index);
-
-    gcs_send_text_fmt(PSTR("Jump to WP %u. Jumps left: %d"),
-                      (unsigned)next_nonnav_command.p1,
-                      (int)next_nonnav_command.lat);
-    if (next_nonnav_command.lat > 0) {
-        // Decrement repeat counter
-        temp.lat                        = next_nonnav_command.lat - 1;                                          
-        set_cmd_with_index(temp, g.command_index);
-    }
-
-    nav_command_ID          = NO_COMMAND;
-    next_nav_command.id     = NO_COMMAND;
-    non_nav_command_ID      = NO_COMMAND;
-
-    gcs_send_text_fmt(PSTR("setting command index: %i"), next_nonnav_command.p1);
-    g.command_index.set_and_save(next_nonnav_command.p1);
-    nav_command_index       = next_nonnav_command.p1;
-    // Need to back "next_WP" up as it was set to the next waypoint following the jump
-    next_WP = prev_WP;
-
-    temp = get_cmd_with_index(g.command_index);
-
-    next_nav_command = temp;
-    nav_command_ID = next_nav_command.id;
-    non_nav_command_index = g.command_index;
-    non_nav_command_ID = WAIT_COMMAND;
-
-    if (g.log_bitmask & MASK_LOG_CMD) {
-        Log_Write_Cmd(g.command_index, &next_nav_command);
-    }
-    handle_process_nav_cmd();
+    process_waypoint();
+    gcs_send_text_P(SEVERITY_LOW,PSTR("Do_Jump!"));
 }
 
 static void do_change_speed()
@@ -604,14 +560,16 @@ static void do_change_speed()
 
 static void do_set_home()
 {
+    struct Location tmp;
+    
     if (next_nonnav_command.p1 == 1 && g_gps->status() == GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
-        home.id         = MAV_CMD_NAV_WAYPOINT;
-        home.lng        = next_nonnav_command.lng;                                      // Lon * 10**7
-        home.lat        = next_nonnav_command.lat;                                      // Lat * 10**7
-        home.alt        = max(next_nonnav_command.alt, 0);
-        home_is_set = true;
+        tmp.id         = MAV_CMD_NAV_WAYPOINT;
+        tmp.lng        = next_nonnav_command.lng;                                      // Lon * 10**7
+        tmp.lat        = next_nonnav_command.lat;                                      // Lat * 10**7
+        tmp.alt        = max(next_nonnav_command.alt, 0);
+        mission.set_home(tmp);
     }
 }
 
@@ -673,3 +631,5 @@ static void do_take_picture()
     }
 #endif
 }
+
+

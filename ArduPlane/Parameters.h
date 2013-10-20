@@ -226,8 +226,8 @@ public:
         // 220: Waypoint data
         //
         k_param_waypoint_mode = 220,
-        k_param_command_total,
-        k_param_command_index,
+        k_param_command_total, // unused
+        k_param_command_index, // unused
         k_param_waypoint_radius,
         k_param_loiter_radius,
         k_param_fence_action,
@@ -247,7 +247,7 @@ public:
         k_param_TECS_controller,
         k_param_rally_total,
         k_param_steerController,
-
+        
         //
         // 240: PID Controllers
         k_param_pidNavRoll = 240, // unused
@@ -259,6 +259,10 @@ public:
         k_param_pidNavPitchAltitude, // unused
         k_param_pidWheelSteer, // unused
 
+        //
+        // 250: other objects
+        k_param_mission = 250,
+        
         // 254,255: reserved
     };
 

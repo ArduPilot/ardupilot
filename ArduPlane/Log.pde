@@ -229,7 +229,7 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-        command_total       : g.command_total,
+        command_total       : mission.command_total(),
         command_number      : num,
         waypoint_id         : wp->id,
         waypoint_options    : wp->options,
@@ -281,14 +281,14 @@ static void Log_Write_Startup(uint8_t type)
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         startup_type    : type,
-        command_total   : g.command_total
+        command_total   : mission.command_total()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
     // write all commands to the dataflash as well
     struct Location cmd;
-    for (uint8_t i = 0; i <= g.command_total; i++) {
-        cmd = get_cmd_with_index(i);
+    for (uint8_t i = 0; i <= mission.command_total(); i++) {
+        cmd = mission.get_cmd_with_index(i);
         Log_Write_Cmd(i, &cmd);
     }
 }

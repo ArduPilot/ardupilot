@@ -75,7 +75,7 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
 extern bool geofence_breached(void);
 
 // function to change waypoint
-extern void change_command(uint8_t cmd_index);
+extern void change_waypoint(uint8_t cmd_index);
 
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
@@ -123,10 +123,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 			hal.console->println_P(PSTR("State DATA_LINK_LOSS"));
 			_state = STATE_DATA_LINK_LOSS;
 			if (_wp_comms_hold) {
-				if (_command_index != NULL) {
-					_saved_wp = _command_index->get();
+				if (!_mission.waypoint_index()) {
+					_saved_wp = _mission.waypoint_index();
 				}
-				change_command(_wp_comms_hold);
+				change_waypoint(_wp_comms_hold);
 			}
 			break;
 		}
@@ -134,10 +134,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 			hal.console->println_P(PSTR("State GPS_LOSS"));
 			_state = STATE_GPS_LOSS;
 			if (_wp_gps_loss) {
-				if (_command_index != NULL) {
-					_saved_wp = _command_index->get();
+				if (!_mission.waypoint_index()) {
+					_saved_wp = _mission.waypoint_index();
 				}
-				change_command(_wp_gps_loss);
+				change_waypoint(_wp_gps_loss);
 			}
 			break;
 		}
@@ -153,7 +153,7 @@ APM_OBC::check(APM_OBC::control_mode mode,
 			_state = STATE_AUTO;
 			hal.console->println_P(PSTR("GCS OK"));
 			if (_saved_wp != 0) {
-				change_command(_saved_wp);			
+				change_waypoint(_saved_wp);			
 				_saved_wp = 0;
 			}
 		}
@@ -169,7 +169,7 @@ APM_OBC::check(APM_OBC::control_mode mode,
 			hal.console->println_P(PSTR("GPS OK"));
 			_state = STATE_AUTO;
 			if (_saved_wp != 0) {
-				change_command(_saved_wp);			
+				change_waypoint(_saved_wp);			
 				_saved_wp = 0;
 			}
 		}

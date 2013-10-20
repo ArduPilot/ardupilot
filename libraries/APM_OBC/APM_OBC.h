@@ -22,8 +22,8 @@
 
 #include <AP_Common.h>
 #include <AP_Param.h>
+#include <AP_Mission.h>
 #include <inttypes.h>
-
 
 class APM_OBC
 {
@@ -42,7 +42,8 @@ public:
 	};
 
 	// Constructor
-	APM_OBC(void)
+	APM_OBC(AP_Mission &mission) :
+		_mission(mission)
 	{
 		AP_Param::setup_object_defaults(this, var_info);
 
@@ -51,10 +52,6 @@ public:
 		_state = STATE_PREFLIGHT;
 		_terminate.set(0);
 
-		// get a pointer to COMMAND_INDEX so we can resume a
-		// auto mission when a failsafe condition is resolved
-		enum ap_var_type var_type;
-		_command_index = (AP_Int8 *)AP_Param::find("CMD_INDEX", &var_type);
 		_saved_wp = 0;
 	}
 
@@ -92,11 +89,10 @@ private:
 
 	bool _heartbeat_pin_value;
 
-	// pointer to command index parameter in g
-	AP_Int8 *_command_index;
-
 	// saved waypoint for resuming mission
 	uint8_t _saved_wp;
+
+	AP_Mission &_mission;
 };
 
 // map from ArduPlane control_mode to APM_OBC::control_mode

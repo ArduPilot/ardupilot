@@ -179,20 +179,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(alt_offset, "ALT_OFFSET",                 0),
 
-    // @Param: CMD_TOTAL
-    // @DisplayName: Number of loaded mission items
-    // @Description: The number of mission mission items that has been loaded by the ground station. Do not change this manually.
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(command_total,          "CMD_TOTAL",      0),
-
-    // @Param: CMD_INDEX
-    // @DisplayName: Current mission command index
-    // @Description: The index of the currently running mission item. Do not change this manually.
-    // @Range: 1 255
-    // @User: Advanced
-    GSCALAR(command_index,          "CMD_INDEX",      0),
-
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint Radius
     // @Description: Defines the distance from a waypoint that when crossed indicates the waypoint has been completed. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete.
@@ -869,6 +855,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AP_TECS/AP_TECS.cpp
     GOBJECT(TECS_controller,         "TECS_",   AP_TECS),
 
+    // @Group: MISSION_
+    // @Path: ../libraries/AP_Mission/AP_Mission.cpp
+    GOBJECT(mission,                "CMD_",   AP_Mission),
+    
 #if MOUNT == ENABLED
     // @Group: MNT_
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
@@ -929,6 +919,9 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
     { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
     { Parameters::k_param_curr_amp_offset,    0,      AP_PARAM_FLOAT, "BATT_AMP_OFFSET" },
     { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
+    
+    { Parameters::k_param_RTL_altitude_cm, 0, AP_PARAM_FLOAT, "ALT_HOLD_RTL" },
+    { Parameters::k_param_command_total, 0, AP_PARAM_INT8,  "CMD_TOTAL" },
 };
 
 static void load_parameters(void)

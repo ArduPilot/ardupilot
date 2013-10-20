@@ -70,6 +70,7 @@
 #include <AP_SpdHgtControl.h>
 #include <AP_TECS.h>
 
+#include <AP_Mission.h>
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
 
@@ -98,14 +99,6 @@ static AP_Vehicle::FixedWing aparm;
 AP_HAL::BetterStream* cliSerial;
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Outback Challenge Failsafe Support
-////////////////////////////////////////////////////////////////////////////////
-#if OBC_FAILSAFE == ENABLED
-APM_OBC obc;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
@@ -293,6 +286,7 @@ static AP_Navigation *nav_controller = &L1_controller;
 // selected navigation controller
 static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Analog Inputs
 ////////////////////////////////////////////////////////////////////////////////
@@ -420,13 +414,12 @@ static bool have_position;
 // Location & Navigation
 ////////////////////////////////////////////////////////////////////////////////
 
-// There may be two active commands in Auto mode.
-// This indicates the active navigation command by index number
-static uint8_t nav_command_index;
-// This indicates the active non-navigation command by index number
-static uint8_t non_nav_command_index;
+// Direction held during phases of takeoff and landing
+// deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
+// this is a 0..36000 value, or -1 for disabled
+static int32_t hold_course_cd                 = -1;              // deg * 100 dir of plane
+
 // This is the command type (eg navigate to waypoint) of the active navigation command
-static uint8_t nav_command_ID          = NO_COMMAND;
 static uint8_t non_nav_command_ID      = NO_COMMAND;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -619,22 +612,21 @@ static int16_t condition_rate;
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
-// The home location used for RTL.  The location is set when we first get stable GPS lock
-static struct   Location home;
-// Flag for if we have g_gps lock and have set the home location
-static bool home_is_set;
-// The location of the previous waypoint.  Used for track following and altitude ramp calculations
-static struct   Location prev_WP;
 // The plane's current location
 static struct   Location current_loc;
-// The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
-static struct   Location next_WP;
 // The location of the active waypoint in Guided mode.
 static struct   Location guided_WP;
-// The location structure information from the Nav command being processed
-static struct   Location next_nav_command;
 // The location structure information from the Non-Nav command being processed
 static struct   Location next_nonnav_command;
+
+static AP_Mission mission(current_loc, WP_START_BYTE, g.RTL_altitude_cm);
+
+////////////////////////////////////////////////////////////////////////////////
+// Outback Challenge Failsafe Support
+////////////////////////////////////////////////////////////////////////////////
+#if OBC_FAILSAFE == ENABLED
+APM_OBC obc(mission);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude / Climb rate control
@@ -711,8 +703,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_compass,         5,   1200 },
     { read_airspeed,          5,   1200 },
     { update_alt,             5,   3400 },
-    { calc_altitude_error,    5,   1000 },
-    { update_commands,        5,   5000 },
+    { calc_altitude_error,    5,   1000 }, // 10
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
@@ -1057,7 +1048,7 @@ static void update_GPS(void)
  */
 static void handle_auto_mode(void)
 {
-    switch(nav_command_ID) {
+    switch(mission.current_wp().id) {
     case MAV_CMD_NAV_TAKEOFF:
         if (steer_state.hold_course_cd == -1) {
             // we don't yet have a heading to hold - just level
@@ -1319,7 +1310,7 @@ static void update_alt()
     if (barometer.healthy) {
         // alt_MSL centimeters (centimeters)
         current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
-        current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
+        current_loc.alt += g.altitude_mix * (read_barometer() + mission.get_home_alt());
     } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         // alt_MSL centimeters (centimeters)
         current_loc.alt = g_gps->altitude_cm;
@@ -1334,14 +1325,14 @@ static void update_alt()
         if (control_mode==AUTO) {
             if (takeoff_complete == false) {
                 flight_stage = AP_SpdHgtControl::FLIGHT_TAKEOFF;
-            } else if (nav_command_ID == MAV_CMD_NAV_LAND && land_complete == true) {
+            } else if (mission.current_wp().id == MAV_CMD_NAV_LAND && land_complete == true) {
                 flight_stage = AP_SpdHgtControl::FLIGHT_LAND_FINAL;
-            } else if (nav_command_ID == MAV_CMD_NAV_LAND) {
+            } else if (mission.current_wp().id == MAV_CMD_NAV_LAND) {
                 flight_stage = AP_SpdHgtControl::FLIGHT_LAND_APPROACH; 
             }
         }
 
-        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
+        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - mission.get_home_alt() + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  takeoff_pitch_cd,
@@ -1357,3 +1348,5 @@ static void update_alt()
 }
 
 AP_HAL_MAIN();
+
+

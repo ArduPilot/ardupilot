@@ -282,12 +282,12 @@ test_wp(uint8_t argc, const Menu::arg *argv)
         cliSerial->printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude_cm/100);
     }
 
-    cliSerial->printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
+    cliSerial->printf_P(PSTR("%d waypoints\n"), (int)mission.command_total());
     cliSerial->printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
     cliSerial->printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
-    for(uint8_t i = 0; i <= g.command_total; i++) {
-        struct Location temp = get_cmd_with_index(i);
+    for(uint8_t i = 0; i <= mission.command_total(); i++) {
+        struct Location temp = mission.get_cmd_with_index(i);
         test_wp_print(&temp, i);
     }
 
@@ -587,13 +587,13 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
     cliSerial->printf_P(PSTR("Uncalibrated relative airpressure\n"));
     print_hit_enter();
 
-    home.alt        = 0;
+    
     wp_distance = 0;
     init_barometer();
 
     while(1) {
         delay(100);
-        current_loc.alt = read_barometer() + home.alt;
+        current_loc.alt = read_barometer() + mission.get_home_alt();
 
         if (!barometer.healthy) {
             cliSerial->println_P(PSTR("not healthy"));
