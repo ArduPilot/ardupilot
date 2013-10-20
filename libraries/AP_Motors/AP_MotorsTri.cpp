@@ -102,15 +102,15 @@ void AP_MotorsTri::output_armed()
     // if we are not sending a throttle output, we cut the motors
     if(_rc_throttle->servo_out == 0) {
         // range check spin_when_armed
-        if (_spin_when_armed < 0) {
-            _spin_when_armed = 0;
+        if (_spin_when_armed_ramped < 0) {
+            _spin_when_armed_ramped = 0;
         }
-        if (_spin_when_armed > _min_throttle) {
-            _spin_when_armed = _min_throttle;
+        if (_spin_when_armed_ramped > _min_throttle) {
+            _spin_when_armed_ramped = _min_throttle;
         }
-        motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min + _spin_when_armed;
-        motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min + _spin_when_armed;
-        motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min + _spin_when_armed;
+        motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min + _spin_when_armed_ramped;
 
         // Every thing is limited
         limit.throttle_lower = true;
