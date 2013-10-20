@@ -347,8 +347,15 @@ static void startup_INS_ground(bool force_accel_level)
 
     ahrs.init();
 	ahrs.set_fly_forward(true);
-	ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate);
+
+    AP_InertialSensor::Start_style style;
+    if (g.skip_gyro_cal && !force_accel_level) {
+        style = AP_InertialSensor::WARM_START;
+    } else {
+        style = AP_InertialSensor::COLD_START;
+    }
+
+	ins.init(style, ins_sample_rate);
 
     if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
