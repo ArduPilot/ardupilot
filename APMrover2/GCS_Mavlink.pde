@@ -673,88 +673,90 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
     }
 }
 
+/*
+  default stream rates to 1Hz
+ */
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     // @Param: RAW_SENS
-    // @DisplayName: Raw sensors
-    // @Description: Raw sensors stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Raw sensor stream rate
+    // @Description: Raw sensor stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRateRawSensors,      0),
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  1),
 
     // @Param: EXT_STAT
-    // @DisplayName: Extended status
-    // @Description: Extended status stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extended status stream rate to ground station
+    // @Description: Extended status stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRateExtendedStatus,  0),
+    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  1),
 
     // @Param: RC_CHAN
-    // @DisplayName: RC Channel
-    // @Description: RC Channel stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: RC Channel stream rate to ground station
+    // @Description: RC Channel stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRateRCChannels,      0),
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  1),
 
     // @Param: RAW_CTRL
-    // @DisplayName: Raw controllers
-    // @Description: Raw controllers stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Raw Control stream rate to ground station
+    // @Description: Raw Control stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRateRawController,   0),
+    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  1),
 
     // @Param: POSITION
-    // @DisplayName: Position
-    // @Description: vehicle position stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Position stream rate to ground station
+    // @Description: Position stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRatePosition,        0),
+    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  1),
 
     // @Param: EXTRA1
-    // @DisplayName: Extra1
-    // @Description: Extra1 stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extra data type 1 stream rate to ground station
+    // @Description: Extra data type 1 stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1,          0),
+    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  1),
 
     // @Param: EXTRA2
-    // @DisplayName: Extra2
-    // @Description: Extra1 stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extra data type 2 stream rate to ground station
+    // @Description: Extra data type 2 stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2,          0),
+    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  1),
 
     // @Param: EXTRA3
-    // @DisplayName: Extra3
-    // @Description: Extra3 stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extra data type 3 stream rate to ground station
+    // @Description: Extra data type 3 stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3,          0),
+    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  1),
 
     // @Param: PARAMS
-    // @DisplayName: Parameters
-    // @Description: Parameters stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Parameter stream rate to ground station
+    // @Description: Parameter stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRateParams,          0),
-
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  10),
     AP_GROUPEND
 };
 
@@ -764,6 +766,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_send_timeout(1000), // 1 second
     waypoint_receive_timeout(1000) // 1 second
 {
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void
@@ -790,7 +793,8 @@ GCS_MAVLINK::update(void)
 	status.packet_rx_drop_count = 0;
 
     // process received bytes
-    while (comm_get_available(chan))
+    uint16_t nbytes = comm_get_available(chan);
+    for (uint16_t i=0; i<nbytes; i++)
     {
         uint8_t c = comm_receive_ch(chan);
 
@@ -846,8 +850,10 @@ GCS_MAVLINK::update(void)
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
-    AP_Int16 *stream_rates = &streamRateRawSensors;
-    float rate = (uint8_t)stream_rates[stream_num].get();
+    if (stream_num >= NUM_STREAMS) {
+        return false;
+    }
+    float rate = (uint8_t)streamRates[stream_num].get();
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
@@ -877,8 +883,8 @@ void
 GCS_MAVLINK::data_stream_send(void)
 {
     if (_queued_parameter != NULL) {
-        if (streamRateParams.get() <= 0) {
-            streamRateParams.set(50);
+        if (streamRates[STREAM_PARAMS].get() <= 0) {
+            streamRates[STREAM_PARAMS].set(10);
         }
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);
@@ -994,55 +1000,35 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             switch(packet.req_stream_id){
 
                 case MAV_DATA_STREAM_ALL:
-                    streamRateRawSensors.set_and_save_ifchanged(freq);
-                    streamRateExtendedStatus.set_and_save_ifchanged(freq);
-                    streamRateRCChannels.set_and_save_ifchanged(freq);
-                    streamRateRawController.set_and_save_ifchanged(freq);
-                    streamRatePosition.set_and_save_ifchanged(freq);
-                    streamRateExtra1.set_and_save_ifchanged(freq);
-                    streamRateExtra2.set_and_save_ifchanged(freq);
-                    streamRateExtra3.set_and_save_ifchanged(freq);
-                    break;
-
-                case MAV_DATA_STREAM_RAW_SENSORS:
-            if (freq <= 5) {
-                streamRateRawSensors.set_and_save_ifchanged(freq);
-            } else {
-                // We do not set and save this one so that if HIL is shut down incorrectly
-														// we will not continue to broadcast raw sensor data at 50Hz.
-                streamRateRawSensors = freq;
+            // note that we don't set STREAM_PARAMS - that is internal only
+            for (uint8_t i=0; i<STREAM_PARAMS; i++) {
+                streamRates[i].set_and_save_ifchanged(freq);
             }
                     break;
 
+                case MAV_DATA_STREAM_RAW_SENSORS:
+            streamRates[STREAM_RAW_SENSORS].set_and_save_ifchanged(freq);
+                    break;
                 case MAV_DATA_STREAM_EXTENDED_STATUS:
-                    streamRateExtendedStatus.set_and_save_ifchanged(freq);
+            streamRates[STREAM_EXTENDED_STATUS].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_RC_CHANNELS:
-                    streamRateRCChannels.set_and_save_ifchanged(freq);
+            streamRates[STREAM_RC_CHANNELS].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_RAW_CONTROLLER:
-                    streamRateRawController.set_and_save_ifchanged(freq);
+            streamRates[STREAM_RAW_CONTROLLER].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_POSITION:
-                    streamRatePosition.set_and_save_ifchanged(freq);
+            streamRates[STREAM_POSITION].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_EXTRA1:
-                    streamRateExtra1.set_and_save_ifchanged(freq);
+            streamRates[STREAM_EXTRA1].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_EXTRA2:
-                    streamRateExtra2.set_and_save_ifchanged(freq);
+            streamRates[STREAM_EXTRA2].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_EXTRA3:
-                    streamRateExtra3.set_and_save_ifchanged(freq);
-                    break;
-
-                default:
+            streamRates[STREAM_EXTRA3].set_and_save_ifchanged(freq);
                     break;
             }
             break;
