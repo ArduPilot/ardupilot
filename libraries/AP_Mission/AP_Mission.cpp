@@ -159,9 +159,13 @@ bool AP_Mission::goto_location(const struct Location &wp)
 
 void AP_Mission::resume()
 {
-    _sync_nav_waypoints();
-    _nav_waypoints[0]=_current_loc;
-    _prev_index_overriden = true;
+    if (_index[1] < _cmd_max) {
+        _sync_nav_waypoints();
+        _nav_waypoints[0]=_current_loc;
+        _prev_index_overriden = true;
+    } else {
+        init_commands();
+    }
 }
 
 void AP_Mission::override_prev_wp(const struct Location &wp)
@@ -181,6 +185,7 @@ void AP_Mission::set_command_total(uint8_t max_index)
 void AP_Mission::set_home(const struct Location &home)
 {
     _home=home;
+    _home.id=MAV_CMD_NAV_LOITER_UNLIM;
     set_cmd_with_index(_home,0);
 }
 
