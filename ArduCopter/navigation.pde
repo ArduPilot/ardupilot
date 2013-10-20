@@ -209,14 +209,21 @@ static void
 circle_set_center(const Vector3f current_position, float heading_in_radians)
 {
     float max_velocity;
-    float cir_radius = g.circle_radius * 100;
+    float cir_radius = g.circle_radius * 100.0f;
+    cir_radius = abs(cir_radius); // in case it is negative
 
+    // if radius is negative we use our current position for the center, otherwise
     // set circle center to circle_radius ahead of current position
-    circle_center.x = current_position.x + cir_radius * cos_yaw;
-    circle_center.y = current_position.y + cir_radius * sin_yaw;
+    if (g.circle_radius < 0.01) {
+        circle_center.x = current_position.x;
+        circle_center.y = current_position.y;
+    } else {
+        circle_center.x = current_position.x + cir_radius * cos_yaw;
+        circle_center.y = current_position.y + cir_radius * sin_yaw;
+    }
 
     // if we are doing a panorama set the circle_angle to the current heading
-    if( g.circle_radius <= 0 ) {
+    if( abs(g.circle_radius) <= 0.01 ) {
         circle_angle = heading_in_radians;
         circle_angular_velocity_max = ToRad(g.circle_rate);
         circle_angular_acceleration = circle_angular_velocity_max;  // reach maximum yaw velocity in 1 second
@@ -225,14 +232,14 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
         circle_angle = wrap_PI(heading_in_radians-PI);
 
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*g.circle_radius*100.0f)); 
+        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*cir_radius)); 
 
         // angular_velocity in radians per second
-        circle_angular_velocity_max = max_velocity/((float)g.circle_radius * 100.0f);
+        circle_angular_velocity_max = max_velocity / cir_radius;
         circle_angular_velocity_max = constrain_float(ToRad(g.circle_rate),-circle_angular_velocity_max,circle_angular_velocity_max);
 
         // angular_velocity in radians per second
-        circle_angular_acceleration = wp_nav.get_waypoint_acceleration()/((float)g.circle_radius * 100);
+        circle_angular_acceleration = wp_nav.get_waypoint_acceleration() / cir_radius;
         if (g.circle_rate < 0.0f) {
             circle_angular_acceleration = -circle_angular_acceleration;
         }
@@ -259,6 +266,7 @@ update_circle()
     // ensure enough time has passed since the last iteration
     if (dt >= 0.095f) {
         float cir_radius = g.circle_radius * 100;
+        cir_radius = abs(cir_radius); // in case it is negative, which only affects setting the circle center
         Vector3f circle_target;
 
         // range check dt
@@ -269,28 +277,40 @@ update_circle()
         // update time of circle call
         last_update = now;
 
-        // ramp up angular velocity to maximum
-        if (g.circle_rate >= 0) {
-            if (circle_angular_velocity < circle_angular_velocity_max) {
-                circle_angular_velocity += circle_angular_acceleration * dt;
-                circle_angular_velocity = constrain_float(circle_angular_velocity, 0, circle_angular_velocity_max);
-            }
-        }else{
-            if (circle_angular_velocity > circle_angular_velocity_max) {
-                circle_angular_velocity += circle_angular_acceleration * dt;
-                circle_angular_velocity = constrain_float(circle_angular_velocity, circle_angular_velocity_max, 0);
-            }
+		// if we have a negative radius then delay the circular motion until we've moved back from the center to the edge of the circle
+		bool delayTurn = false;
+		if ((g.circle_radius < -0.01) && (circle_angle_total == 0)) {
+			Vector3f curr = inertial_nav.get_position();
+			float distanceToCenter = pythagorous2(circle_center.x-curr.x,circle_center.y-curr.y);
+			if ((distanceToCenter/cir_radius)<0.98) {
+    			delayTurn = true;
+			}
+		}
+
+		if (!delayTurn) {
+			// ramp up angular velocity to maximum
+			if (g.circle_rate >= 0) {
+				if (circle_angular_velocity < circle_angular_velocity_max) {
+					circle_angular_velocity += circle_angular_acceleration * dt;
+					circle_angular_velocity = constrain_float(circle_angular_velocity, 0, circle_angular_velocity_max);
+				}
+			}else{
+				if (circle_angular_velocity > circle_angular_velocity_max) {
+					circle_angular_velocity += circle_angular_acceleration * dt;
+					circle_angular_velocity = constrain_float(circle_angular_velocity, circle_angular_velocity_max, 0);
+				}
+			}
+
+			// update the target angle
+			circle_angle += circle_angular_velocity * dt;
+			circle_angle = wrap_PI(circle_angle);
+
+			// update the total angle travelled
+			circle_angle_total += circle_angular_velocity * dt;
         }
 
-        // update the target angle
-        circle_angle += circle_angular_velocity * dt;
-        circle_angle = wrap_PI(circle_angle);
-
-        // update the total angle travelled
-        circle_angle_total += circle_angular_velocity * dt;
-
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if( g.circle_radius != 0.0 ) {
+        if( cir_radius > 0.01 ) {
             // calculate target position
             circle_target.x = circle_center.x + cir_radius * cosf(-circle_angle);
             circle_target.y = circle_center.y - cir_radius * sinf(-circle_angle);
