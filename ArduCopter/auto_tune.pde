@@ -236,6 +236,14 @@ static void auto_tune_save_tuning_gains_and_reset()
         g.pid_rate_pitch.save_gains();
         g.pi_stabilize_roll.save_gains();
         g.pi_stabilize_pitch.save_gains();
+        orig_roll_rp = g.pid_rate_roll.kP();
+        orig_roll_ri = g.pid_rate_roll.kI();
+        orig_roll_rd = g.pid_rate_roll.kD();
+        orig_roll_sp = g.pi_stabilize_roll.kP();
+        orig_pitch_rp = g.pid_rate_pitch.kP();
+        orig_pitch_ri = g.pid_rate_pitch.kI();
+        orig_pitch_rd = g.pid_rate_pitch.kD();
+        orig_pitch_sp = g.pi_stabilize_pitch.kP();
         Log_Write_Event(DATA_AUTOTUNE_SAVEDGAINS);
     }
     // reset state of autotune
