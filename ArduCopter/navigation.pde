@@ -196,7 +196,16 @@ static void reset_nav_params(void)
 // assumes it is called at 100hz so centi-degrees and update rate cancel each other out
 static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
 {
-    return wrap_360_cd(current_yaw + constrain_int16(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
+	int32_t slew_diff = constrain_int16(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec);
+	switch (nav_yaw_rot_dir){
+	case YAW_CW:
+		return current_yaw + abs(slew_diff);
+	case YAW_CCW:
+		return current_yaw - abs(slew_diff);
+	default:
+		return current_yaw + slew_diff;
+	}
+
 }
 
 
