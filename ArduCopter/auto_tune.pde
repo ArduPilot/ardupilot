@@ -191,30 +191,41 @@ static void auto_tune_load_test_gains()
 }
 
 // start an auto tuning session
-static void auto_tune_start()
+// returns true if we should change the roll-pitch mode to ROLL_PITCH_AUTOTUNE
+// To-Do: make autotune a flight mode so that this slightly non-intuitive returning of a flag is not required
+static bool auto_tune_start()
 {
+    bool requires_autotune_rp_mode = false;
+
     switch (auto_tune_state.mode) {
         case AUTO_TUNE_MODE_UNINITIALISED:
             // initialise gains and axis because this is our first time
             auto_tune_initialise();
             auto_tune_update_gcs(AUTO_TUNE_MESSAGE_STARTED);
             auto_tune_state.mode = AUTO_TUNE_MODE_TUNING;
+            requires_autotune_rp_mode = true;
             break;
         case AUTO_TUNE_MODE_TUNING:
             // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
             auto_tune_intra_test_gains();
             Log_Write_Event(DATA_AUTOTUNE_RESTART);
             auto_tune_update_gcs(AUTO_TUNE_MESSAGE_STARTED);
+            requires_autotune_rp_mode = true;
             break;
         case AUTO_TUNE_MODE_TESTING:
             // we have completed a tune and are testing the new gains
             auto_tune_load_tuned_gains();
             Log_Write_Event(DATA_AUTOTUNE_TESTING);
+            requires_autotune_rp_mode = false;
             break;
         case AUTO_TUNE_MODE_FAILED:
             Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
+            requires_autotune_rp_mode = false;
             break;
     }
+
+    // tell caller we require roll-pitch mode to be changed to ROLL_PITCH_AUTOTUNE
+    return requires_autotune_rp_mode;
 }
 
 // turn off tuning and return to standard pids
@@ -629,8 +640,9 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             tune_pitch_sp = min(tune_roll_sp, tune_pitch_sp);
                             // if we've just completed pitch we are done tuning and are moving onto testing
                             auto_tune_state.mode = AUTO_TUNE_MODE_TESTING;
-                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
                             auto_tune_update_gcs(AUTO_TUNE_MESSAGE_SUCCESS);
+                            Log_Write_Event(DATA_AUTOTUNE_COMPLETE);
+                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
                         }
                     }
                 }
