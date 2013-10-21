@@ -1591,8 +1591,8 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 
 #if AUTOTUNE == ENABLED
         case ROLL_PITCH_AUTOTUNE:
-            // only enter autotune mode from stabilized roll-pitch mode
-            if (roll_pitch_mode == ROLL_PITCH_STABLE) {
+            // only enter autotune mode from stabilized roll-pitch mode when armed and flying
+            if (roll_pitch_mode == ROLL_PITCH_STABLE && motors.armed() && !ap.land_complete) {
                 // auto_tune_start returns true if it wants the roll-pitch mode changed to autotune
                 roll_pitch_initialised = auto_tune_start();
             }
