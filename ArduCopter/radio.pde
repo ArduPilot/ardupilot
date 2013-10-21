@@ -130,6 +130,11 @@ static void read_radio()
         g.rc_6.set_pwm(periods[5]);
         g.rc_7.set_pwm(periods[6]);
         g.rc_8.set_pwm(periods[7]);
+
+        // flag we must have an rc receiver attached
+        if (!failsafe.rc_override_active) {
+            ap.rc_receiver_present = true;
+        }
     }else{
         uint32_t elapsed = millis() - last_update;
         // turn on throttle failsafe if no update from ppm encoder for 2 seconds
