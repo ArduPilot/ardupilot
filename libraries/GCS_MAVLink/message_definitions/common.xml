@@ -369,6 +369,9 @@
                <entry value="32768" name="MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS">
                     <description>0x8000 motor outputs / control</description>
                </entry>
+               <entry value="65536" name="MAV_SYS_STATUS_SENSOR_RC_RECEIVER">
+                    <description>0x10000 rc receiver</description>
+               </entry>
           </enum>
           <enum name="MAV_FRAME">
                <entry value="0" name="MAV_FRAME_GLOBAL">
