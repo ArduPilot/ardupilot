@@ -42,9 +42,6 @@ static void failsafe_check()
         last_timestamp = tnow;
         hal.rcin->clear_overrides();
         uint8_t start_ch = 0;
-        if (demoing_servos) {
-            start_ch = 1;
-        }
         for (uint8_t ch=start_ch; ch<4; ch++) {
             hal.rcout->write(ch, hal.rcin->read(ch));
         }
