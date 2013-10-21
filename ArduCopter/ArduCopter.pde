@@ -395,6 +395,8 @@ static union {
         uint8_t yaw_stopped         : 1; // 16      // Used to manage the Yaw hold capabilities
 
         uint8_t disable_stab_rate_limit : 1; // 17  // disables limits rate request from the stability controller
+
+        uint8_t rc_receiver_present : 1; // 18  // true if we have an rc receiver present (i.e. if we've ever received an update
     };
     uint32_t value;
 } ap;
