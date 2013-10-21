@@ -117,12 +117,14 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
         aspeed = 0.0f;
     }
 
-	// Multiply roll rate error by _ki_rate and integrate
+	// Multiply roll rate error by _ki_rate, apply scaler and integrate
+	// Scaler is applied before integrator so that integrator state relates directly to aileron deflection
+	// This means aileron trim offset doesn't change as the value of scaler changes with airspeed
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!disable_integrator && ki_rate > 0) {
 		//only integrate if gain and time step are positive and airspeed above min value.
 		if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
-		    float integrator_delta = rate_error * ki_rate * delta_time;
+		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
                 integrator_delta = max(integrator_delta , 0);
@@ -137,7 +139,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	}
 	
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f / scaler;
+    float intLimScaled = _imax * 0.01f;
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
@@ -146,7 +148,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * _K_D) + _integrator + (desired_rate * kp_ff) ) * scaler;
+	_last_out = ( (rate_error * _K_D) + (desired_rate * kp_ff) ) * scaler + _integrator;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
