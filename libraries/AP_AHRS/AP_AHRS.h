@@ -200,7 +200,7 @@ public:
     }
 
     // return true if we will use compass for yaw
-    virtual bool use_compass(void) const { return _compass && _compass->use_for_yaw(); }
+    virtual bool use_compass(void) { return _compass && _compass->use_for_yaw(); }
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) const {
