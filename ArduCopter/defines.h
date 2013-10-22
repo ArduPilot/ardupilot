@@ -70,6 +70,7 @@
 #define AUX_SWITCH_SPRAYER          15      // enable/disable the crop sprayer
 #define AUX_SWITCH_AUTO             16      // change to auto flight mode
 #define AUX_SWITCH_AUTOTUNE         17      // auto tune
+#define AUX_SWITCH_LAND             18      // change to LAND flight mode
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
