@@ -1356,7 +1356,7 @@ static void update_alt()
     if (auto_throttle_mode && !throttle_suppressed) 
     {
         AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL; 
-        if (g.max_rng_mode) 
+        if (g.max_rng_mode & !nav_controller->reached_loiter_target()) 
         {
             flight_stage = AP_SpdHgtControl::FLIGHT_MAX_RANGE;
         }
