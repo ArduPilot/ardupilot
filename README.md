@@ -87,9 +87,8 @@ few minutes in Linux, OS X, or Windows.
  4. In the `ardupilot` directory, run `vagrant up` from the command
  line.  This will create a new Ubuntu Linux VM.
 
- 5. Run `vagrant ssh -c
- "ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y"`.  This will
- install all the prerequisites for doing ardupilot development.
+ 5. Run `vagrant ssh -c "ardupilot/Tools/scripts/install-prereqs-ubuntu.sh -y"`.
+ This will install all the prerequisites for doing ardupilot development.
 
 You can now run `vagrant ssh` to log in to the development
 environment.  The `~/ardupilot` directory in the VM is actually the
@@ -105,18 +104,11 @@ $ vagrant ssh
 # make configure
 ```
 
-Now edit `ardupilot/config.mk` so it has the following line:
-
-```
-PX4_ROOT = ~/PX4-Firmware
-```
-
 Back at the terminal:
 
 ```
-# cd ArduCopter
 # make px4
-# make px4-upload (optional)
+# make px4-upload  # (optional)
 ```
 
 # User Technical Support
