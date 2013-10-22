@@ -675,8 +675,10 @@ float effHeadwind = _maxRngSpd*(1 - cos(driftAng)) + VwindTrackHead;
 // speed axis at the effective headwind value and the sink rate polar
 float bTangentCoef=-2*aPolarCoef*effHeadwind;
 float cTangentCoef = - cPolarCoef - bPolarCoef*effHeadwind;
-_maxRngSpd = (-bTangentCoef - sqrt(bTangentCoef*bTangentCoef -4*aPolarCoef*cTangentCoef))/(2*aPolarCoef);
-_maxRngSpd = constrain_float(_maxRngSpd , _TASmin , _TASmax);
+float maxRngSpdRaw = (-bTangentCoef - sqrt(bTangentCoef*bTangentCoef -4*aPolarCoef*cTangentCoef))/(2*aPolarCoef);
+
+// Respect airspeed limits and apply a 5sec time constant filter to filter gust effects
+_maxRngSpd = 0.98f*_maxRngSpd + 0.02f*constrain_float(maxRngSpdRaw , _TASmin , _TASmax);
 
 }
 
