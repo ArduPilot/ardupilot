@@ -2,6 +2,11 @@
 
 You can find lots of development information at the [ArduPilot development site](http://dev.ardupilot.com)
 
+#### To compile APM2.x Ardupilot after version 3.1 please follow the instructions found at 
+
+[Arduino Tools] (http://firmware.diydrones.com/Tools/Arduino/) 
+
+
 ## Getting the source
 
 You can either download the source using the "ZIP" button at the top
