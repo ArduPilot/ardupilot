@@ -126,19 +126,14 @@ void SITL_State::_gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
 /*
   return GPS time of week in milliseconds
  */
-static uint32_t millis_time_of_week(void)
+static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
 {
-	struct tm tm;
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	tm = *gmtime(&tv.tv_sec);
-	uint32_t tsec;
-	tsec = 
-		tm.tm_wday * 24 * 3600 + 
-		tm.tm_hour * 3600 +
-		tm.tm_min  * 60 +
-		tm.tm_sec;
-	return tsec + (tv.tv_usec/1000);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    const uint32_t epoch = 86400*(10*365 + (1980-1969)/4 + 1 + 6 - 2) - 15;
+    uint32_t epoch_seconds = tv.tv_sec - epoch;
+    *time_week = epoch_seconds / (86400*7UL);
+    *time_week_ms = (epoch_seconds % (86400*7UL))*1000 + tv.tv_usec/1000;
 }
 
 /*
@@ -197,9 +192,13 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	const uint8_t MSG_POSLLH = 0x2;
 	const uint8_t MSG_STATUS = 0x3;
 	const uint8_t MSG_VELNED = 0x12;
-        const uint8_t MSG_SOL = 0x6;
+    const uint8_t MSG_SOL = 0x6;
+    uint16_t time_week;
+    uint32_t time_week_ms;
 
-	pos.time = hal.scheduler->millis(); // FIX
+    gps_time(&time_week, &time_week_ms);
+
+	pos.time = time_week_ms;
 	pos.longitude = d->longitude * 1.0e7;
 	pos.latitude  = d->latitude * 1.0e7;
 	pos.altitude_ellipsoid = d->altitude*1000.0;
@@ -207,7 +206,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	pos.horizontal_accuracy = 5;
 	pos.vertical_accuracy = 10;
 
-	status.time = millis_time_of_week();
+	status.time = time_week_ms;
 	status.fix_type = d->have_lock?3:0;
 	status.fix_status = d->have_lock?1:0;
 	status.differential_status = 0;
@@ -215,7 +214,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	status.time_to_first_fix = 0;
 	status.uptime = hal.scheduler->millis();
 
-	velned.time = status.time;
+	velned.time = time_week_ms;
 	velned.ned_north = 100.0 * d->speedN;
 	velned.ned_east  = 100.0 * d->speedE;
 	velned.ned_down  = 100.0 * d->speedD;
@@ -232,6 +231,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	sol.fix_type = d->have_lock?3:0;
 	sol.fix_status = 221;
 	sol.satellites = d->have_lock?_sitl->gps_numsats:3;
+    sol.time = time_week_ms;
+    sol.week = time_week;
 
 	_gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
 	_gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
