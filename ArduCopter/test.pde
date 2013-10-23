@@ -285,7 +285,6 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
         while(1) {
             delay(200);
             optflow.update();
-            Log_Write_Optflow();
             cliSerial->printf_P(PSTR("x/dx: %d/%d\t y/dy %d/%d\t squal:%d\n"),
                             optflow.x,
                             optflow.dx,
