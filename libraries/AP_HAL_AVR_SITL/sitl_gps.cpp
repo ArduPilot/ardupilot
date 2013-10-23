@@ -299,14 +299,17 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
     p.fix_type      = d->have_lock?3:1;
 
 	// the spec is not very clear, but the time field seems to be
-	// seconds since the start of the day in UTC time, done in powers
-	// of 100.  Quite bizarre.
+	// milliseconds since the start of the day in UTC time,
+	// done in powers of 100. 
+	// The date is powers of 100 as well, but in days since 1/1/2000
 	struct tm tm;
 	struct timeval tv;
+
 	gettimeofday(&tv, NULL);
 	tm = *gmtime(&tv.tv_sec);
+    uint32_t hsec = (tv.tv_usec / (10000*20)) * 20; // always multiple of 20
 
-    p.utc_time = tm.tm_sec + tm.tm_min*100 + tm.tm_hour*100*100;
+    p.utc_time = hsec + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
 
     swap_uint32((uint32_t *)&p.latitude, 5);
     swap_uint32((uint32_t *)&p.utc_time, 1);
@@ -353,16 +356,18 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
     p.fix_type      = d->have_lock?3:1;
 
 	// the spec is not very clear, but the time field seems to be
-	// hundreadths of a second since the start of the day in UTC time,
+	// milliseconds since the start of the day in UTC time,
 	// done in powers of 100. 
-	// The data is powers of 100 as well, but in days since 1/1/2000
+	// The date is powers of 100 as well, but in days since 1/1/2000
 	struct tm tm;
 	struct timeval tv;
+
 	gettimeofday(&tv, NULL);
 	tm = *gmtime(&tv.tv_sec);
+    uint32_t hsec = (tv.tv_usec / (10000*20)) * 20; // always multiple of 20
 
-    p.utc_date = (tm.tm_year-2000) + tm.tm_mon*100 + tm.tm_mday*100*100;
-    p.utc_time = tv.tv_usec/10000 + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
+    p.utc_date = (tm.tm_year-100) + ((tm.tm_mon+1)*100) + (tm.tm_mday*100*100);
+    p.utc_time = hsec + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
 
 	p.hdop          = 115;
 
@@ -393,7 +398,7 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
 	    uint8_t ck_a;
 	    uint8_t ck_b;
     } p;
-
+    
 	p.preamble1     = 0xd1;
 	p.preamble2     = 0xdd;
 	p.size          = sizeof(p) - 5;
@@ -409,16 +414,18 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
     p.fix_type      = d->have_lock?3:1;
 
 	// the spec is not very clear, but the time field seems to be
-	// hundreadths of a second since the start of the day in UTC time,
+	// milliseconds since the start of the day in UTC time,
 	// done in powers of 100. 
-	// The data is powers of 100 as well, but in days since 1/1/2000
+	// The date is powers of 100 as well, but in days since 1/1/2000
 	struct tm tm;
 	struct timeval tv;
+
 	gettimeofday(&tv, NULL);
 	tm = *gmtime(&tv.tv_sec);
+    uint32_t millisec = (tv.tv_usec / (1000*200)) * 200; // always multiple of 200
 
-    p.utc_date = (tm.tm_year-2000) + tm.tm_mon*100 + tm.tm_mday*100*100;
-    p.utc_time = tv.tv_usec/10000 + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
+    p.utc_date = (tm.tm_year-100) + ((tm.tm_mon+1)*100) + (tm.tm_mday*100*100);
+    p.utc_time = millisec + tm.tm_sec*1000 + tm.tm_min*1000*100 + tm.tm_hour*1000*100*100;
 
 	p.hdop          = 115;
 
