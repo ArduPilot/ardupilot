@@ -58,8 +58,10 @@ void loop()
         hal.console->print(gps.num_sats, BASE_DEC);
         hal.console->print(" FIX:");
         hal.console->print(gps.fix, BASE_DEC);
+        hal.console->print(" WEEK:");
+        hal.console->print(gps.time_week, BASE_DEC);
         hal.console->print(" TIM:");
-        hal.console->print(gps.time, BASE_DEC);
+        hal.console->print(gps.time_week_ms, BASE_DEC);
         hal.console->println();
         gps.new_data = 0; // We have readed the data
     }

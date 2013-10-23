@@ -39,10 +39,11 @@ bool AP_GPS_HIL::read(void)
     return result;
 }
 
-void AP_GPS_HIL::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
+void AP_GPS_HIL::setHIL(uint64_t _time_epoch_ms, float _latitude, float _longitude, float _altitude,
                         float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
-    time                = _time;
+    time_week           = _time_epoch_ms / (86400*7*(uint64_t)1000);
+    time_week_ms        = _time_epoch_ms - time_week*(86400*7*(uint64_t)1000);
     latitude            = _latitude*1.0e7f;
     longitude           = _longitude*1.0e7f;
     altitude_cm         = _altitude*1.0e2f;

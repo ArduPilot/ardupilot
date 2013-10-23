@@ -244,8 +244,8 @@ bool AP_GPS_NMEA::_term_complete()
             if (_gps_data_good) {
                 switch (_sentence_type) {
                 case _GPS_SENTENCE_GPRMC:
-                    time                        = _new_time;
-                    date                        = _new_date;
+                    //time                        = _new_time;
+                    //date                        = _new_date;
                     latitude            = _new_latitude;
                     longitude           = _new_longitude;
                     ground_speed_cm     = _new_speed;
@@ -254,7 +254,7 @@ bool AP_GPS_NMEA::_term_complete()
                     break;
                 case _GPS_SENTENCE_GPGGA:
                     altitude_cm         = _new_altitude;
-                    time                        = _new_time;
+                    //time                        = _new_time;
                     latitude            = _new_latitude;
                     longitude           = _new_longitude;
                     num_sats            = _new_satellite_count;

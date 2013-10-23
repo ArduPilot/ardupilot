@@ -27,6 +27,8 @@
 #include "AP_GPS_MTK19.h"
 #include <stdint.h>
 
+extern const AP_HAL::HAL& hal;
+
 // Public Methods //////////////////////////////////////////////////////////////
 void
 AP_GPS_MTK19::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
@@ -49,11 +51,6 @@ AP_GPS_MTK19::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     // Set Nav Threshold to 0 m/s
     _port->print(MTK_NAVTHRES_OFF);
-
-    // set initial epoch code
-    _epoch = TIME_OF_DAY;
-    _time_offset = 0;
-    _offset_calculated = false;
 }
 
 // Process bytes available from the stream
@@ -166,16 +163,28 @@ restart:
             ground_course_cd        = _buffer.msg.ground_course;
             num_sats                = _buffer.msg.satellites;
             hdop                    = _buffer.msg.hdop;
-            date                    = _buffer.msg.utc_date;
+            
+            if (fix >= GPS::FIX_2D) {
+                if (_fix_counter == 0) {
+                    uint32_t bcd_time_ms;
+                    if (_mtk_revision == MTK_GPS_REVISION_V16) {
+                        bcd_time_ms = _buffer.msg.utc_time*10;
+                    } else {
+                        bcd_time_ms = _buffer.msg.utc_time;
+                    }
+                    _make_gps_time(_buffer.msg.utc_date, bcd_time_ms);
+                    _last_gps_time          = hal.scheduler->millis();
+                }
+                // the _fix_counter is to reduce the cost of the GPS
+                // BCD time conversion by only doing it every 10s
+                // between those times we use the HAL system clock as
+                // an offset from the last fix
+                _fix_counter++;
+                if (_fix_counter == 50) {
+                    _fix_counter = 0;
+                }
+            }
 
-            // time from gps is UTC, but convert here to msToD
-            int32_t time_utc        = _buffer.msg.utc_time;
-            int32_t temp            = (time_utc/10000000);
-            time_utc               -= temp*10000000;
-            time                    = temp * 3600000;
-            temp                    = (time_utc/100000);
-            time_utc               -= temp*100000;
-            time                   += temp * 60000 + time_utc;
             parsed                  = true;
 
 #ifdef FAKE_GPS_LOCK_TIME
