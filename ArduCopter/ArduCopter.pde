@@ -1300,6 +1300,10 @@ static void update_GPS(void)
                     // ap.home_is_set will be true so this will only happen once
                     ground_start_count = 0;
                     init_home();
+
+                    // set system clock for log timestamps
+                    hal.util->set_system_clock(g_gps->time_epoch_usec());
+
                     if (g.compass_enabled) {
                         // Set compass declination automatically
                         compass.set_initial_location(g_gps->latitude, g_gps->longitude);
