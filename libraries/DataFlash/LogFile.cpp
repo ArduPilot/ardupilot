@@ -606,7 +606,8 @@ void DataFlash_Class::Log_Write_GPS(const GPS *gps, int32_t relative_alt)
     struct log_GPS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
     	status        : (uint8_t)gps->status(),
-    	gps_time      : gps->time,
+    	gps_week_ms   : gps->time_week_ms,
+    	gps_week      : gps->time_week,
         num_sats      : gps->num_sats,
         hdop          : gps->hdop,
         latitude      : gps->latitude,
