@@ -50,9 +50,6 @@ AP_GPS_MTK::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     // Set Nav Threshold to 0 m/s
     _port->print(MTK_NAVTHRES_OFF);
-
-    // set initial epoch code
-    _epoch = TIME_OF_DAY;
 }
 
 // Process bytes available from the stream
@@ -162,14 +159,11 @@ restart:
             ground_course_cd    = _swapl(&_buffer.msg.ground_course) / 10000;
             num_sats            = _buffer.msg.satellites;
 
-            // time from gps is UTC, but convert here to msToD
-            int32_t time_utc    = _swapl(&_buffer.msg.utc_time);
-            int32_t temp = (time_utc/10000000);
-            time_utc -= temp*10000000;
-            time = temp * 3600000;
-            temp = (time_utc/100000);
-            time_utc -= temp*100000;
-            time += temp * 60000 + time_utc;
+            if (fix >= GPS::FIX_2D) {
+                _make_gps_time(0, _swapl(&_buffer.msg.utc_time)*10);
+            }
+            // we don't change _last_gps_time as we don't know the
+            // full date
 
             parsed = true;
         }

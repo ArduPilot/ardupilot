@@ -72,24 +72,6 @@ public:
         return _status;
     }
 
-    /// GPS time epoch codes
-    ///
-    enum        GPS_Time_Epoch {
-        TIME_OF_DAY     = 0,            ///<
-        TIME_OF_WEEK    = 1,            ///< Ublox
-        TIME_OF_YEAR    = 2,            ///< MTK, NMEA
-        UNIX_EPOCH              = 3                     ///< If available
-    };                                                                  ///< SIFR?
-
-
-    /// Query GPS time epoch
-    ///
-    /// @returns			Current GPS time epoch code
-    ///
-    GPS_Time_Epoch              epoch(void) {
-        return _epoch;
-    }
-
     /// Startup initialisation.
     ///
     /// This routine performs any one-off initialisation required to set the
@@ -100,8 +82,8 @@ public:
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting engine_setting = GPS_ENGINE_NONE) = 0;
 
     // Properties
-    uint32_t time;                      ///< GPS time (milliseconds from epoch)
-    uint32_t date;                      ///< GPS date (FORMAT TBD)
+    uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
+    uint16_t time_week;                 ///< GPS week number
     int32_t latitude;                   ///< latitude in degrees * 10,000,000
     int32_t longitude;                  ///< longitude in degrees * 10,000,000
     int32_t altitude_cm;                ///< altitude in cm
@@ -123,7 +105,7 @@ public:
     bool print_errors;          ///< deprecated
 
     // HIL support
-    virtual void setHIL(uint32_t time, float latitude, float longitude, float altitude,
+    virtual void setHIL(uint64_t time_epoch_ms, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
     // components of velocity in 2D, in m/s
@@ -156,6 +138,9 @@ public:
 
 	// the time we last processed a message in milliseconds
 	uint32_t last_message_time_ms(void) { return _idleTimer; }
+
+    // return last fix time since the 1/1/1970 in microseconds
+    uint64_t time_epoch_usec(void);
 
 	// return true if the GPS supports raw velocity values
 
@@ -198,9 +183,6 @@ protected:
     ///
     void                        _error(const char *msg);
 
-    /// Time epoch code for the gps in use
-    GPS_Time_Epoch _epoch;
-
     enum GPS_Engine_Setting _nav_setting;
 
     void _write_progstr_block(AP_HAL::UARTDriver *_fs, const prog_char *pstr, uint8_t size);
@@ -217,6 +199,12 @@ protected:
 
 	// detected baudrate
 	uint16_t _baudrate;
+
+    // the time we got the last GPS timestamp
+    uint32_t _last_gps_time;
+
+    // return time in seconds since GPS epoch given time components
+    void _make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
 
 private:
 

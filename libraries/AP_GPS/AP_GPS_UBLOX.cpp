@@ -54,8 +54,6 @@ AP_GPS_UBLOX::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     _port->flush();
 
-    _epoch = TIME_OF_WEEK;
-
     // configure the GPS for the messages we want
     _configure_gps();
 
@@ -275,7 +273,6 @@ AP_GPS_UBLOX::_parse_gps(void)
     switch (_msg_id) {
     case MSG_POSLLH:
         Debug("MSG_POSLLH next_fix=%u", next_fix);
-        time            = _buffer.posllh.time;
         longitude       = _buffer.posllh.longitude;
         latitude        = _buffer.posllh.latitude;
         altitude_cm     = _buffer.posllh.altitude_msl / 10;
@@ -328,6 +325,11 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
         num_sats        = _buffer.solution.satellites;
         hdop            = _buffer.solution.position_DOP;
+        if (next_fix >= GPS::FIX_2D) {
+            time_week_ms    = _buffer.solution.time;
+            time_week       = _buffer.solution.week;
+            _last_gps_time  = hal.scheduler->millis();
+        }
 #if UBLOX_FAKE_3DLOCK
         next_fix = fix;
         num_sats = 10;

@@ -20,8 +20,8 @@ extern const AP_HAL::HAL& hal;
 
 GPS::GPS(void) :
 	// ensure all the inherited fields are zeroed
-	time(0),
-    date(0),
+	time_week_ms(0),
+    time_week(0),
     latitude(0),
     longitude(0),
     altitude_cm(0),
@@ -35,6 +35,7 @@ GPS::GPS(void) :
 	valid_read(false),
 	last_fix_time(0),
 	_have_raw_velocity(false),
+    _last_gps_time(0),
 	_idleTimer(0),
 	_status(GPS::NO_FIX),
 	_last_ground_speed_cm(0),
@@ -112,7 +113,7 @@ GPS::update(void)
 }
 
 void
-GPS::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
+GPS::setHIL(uint64_t _time_epoch_ms, float _latitude, float _longitude, float _altitude,
             float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
 }
@@ -220,4 +221,66 @@ int16_t GPS::_swapi(const void *bytes) const
     u.b[1] = b[0];
 
     return(u.v);
+}
+
+/**
+   current time since the unix epoch in microseconds
+
+   This costs about 60 usec on AVR2560
+ */
+uint64_t GPS::time_epoch_usec(void)
+{
+    if (_last_gps_time == 0) {
+        return 0;
+    }
+    const uint64_t ms_per_week = 7000ULL*86400ULL;
+    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
+    uint64_t fix_time_ms = unix_offset + time_week*ms_per_week + time_week_ms;
+    // add in the milliseconds since the last fix
+    return (fix_time_ms + (hal.scheduler->millis() - _last_gps_time)) * 1000ULL;
+}
+
+
+/**
+   fill in time_week_ms and time_week from BCD date and time components
+   assumes MTK19 millisecond form of bcd_time
+
+   This function takes about 340 usec on the AVR2560
+ */
+void GPS::_make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
+{
+    uint8_t year, mon, day, hour, min, sec;
+    uint16_t msec;
+
+    year = bcd_date % 100;
+    mon  = (bcd_date / 100) % 100;
+    day  = bcd_date / 10000;
+    msec = bcd_milliseconds % 1000;
+
+    uint32_t v = bcd_milliseconds;
+    msec = v % 1000; v /= 1000;
+    sec  = v % 100; v /= 100;
+    min  = v % 100; v /= 100;
+    hour = v % 100; v /= 100;
+
+    int8_t rmon = mon - 2;
+    if (0 >= rmon) {    
+        rmon += 12;
+        year -= 1;
+    }
+
+    // get time in seconds since unix epoch
+    uint32_t ret = (year/4) - 15 + 367*rmon/12 + day;
+    ret += year*365 + 10501;
+    ret = ret*24 + hour;
+    ret = ret*60 + min;
+    ret = ret*60 + sec;
+
+    // convert to time since GPS epoch
+    ret -= 272764785UL;
+
+    // get GPS week and time
+    time_week = ret / (7*86400UL);
+    time_week_ms = (ret % (7*86400UL)) * 1000;
+    time_week_ms += msec;
 }

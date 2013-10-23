@@ -179,7 +179,7 @@ AP_GPS_SIRF::_parse_gps(void)
 {
     switch(_msg_id) {
     case MSG_GEONAV:
-        time                    = _swapl(&_buffer.nav.time);
+        //time                    = _swapl(&_buffer.nav.time);
         // parse fix type
         if (_buffer.nav.fix_invalid) {
             fix = GPS::FIX_NONE;

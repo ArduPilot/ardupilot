@@ -37,7 +37,8 @@ public:
 		GPS(),
 		_step(0),
 		_payload_counter(0),
-		_mtk_revision(0)
+		_mtk_revision(0),
+        _fix_counter(0)
 		{}
 
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting = GPS_ENGINE_NONE);
@@ -80,9 +81,7 @@ private:
     uint8_t         _payload_counter;
 	uint8_t			_mtk_revision;
 
-    // Time from UNIX Epoch offset
-    long            _time_offset;
-    bool            _offset_calculated;
+    uint8_t         _fix_counter;
 
     // Receive buffer
     union {
