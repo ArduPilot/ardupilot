@@ -334,6 +334,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         next_fix = fix;
         num_sats = 10;
         hdop = 200;
+        time_week = 1721;
+        time_week_ms = hal.scheduler->millis() + 3*60*60*1000 + 37000;
+        _last_gps_time  = hal.scheduler->millis();
 #endif
         break;
     case MSG_VELNED:
