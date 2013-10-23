@@ -89,4 +89,12 @@ enum PX4Util::safety_state PX4Util::safety_switch_state(void)
     return AP_HAL::Util::SAFETY_DISARMED;
 }
 
+void PX4Util::set_system_clock(uint64_t time_utc_usec)
+{
+    timespec ts;
+    ts.tv_sec = time_utc_usec/1.0e6;
+    ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
+    clock_settime(CLOCK_REALTIME, &ts);    
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
