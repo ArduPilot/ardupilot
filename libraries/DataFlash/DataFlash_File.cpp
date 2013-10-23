@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <AP_Math.h>
 #include <stdio.h>
+#include <time.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -395,10 +396,19 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
         if (filename != NULL) {
             size = _get_log_size(log_num);
             if (size != 0) {
-                port->printf_P(PSTR("Log %u in %s of size %u\n"), 
-                               (unsigned)log_num, 
-                               filename,
-                               (unsigned)size);
+                struct stat st;
+                if (stat(filename, &st) == 0) {
+                    struct tm *tm = gmtime(&st.st_mtime);
+                    port->printf_P(PSTR("Log %u in %s of size %u %u/%u/%u %u:%u\n"), 
+                                   (unsigned)log_num, 
+                                   filename,
+                                   (unsigned)size,
+                                   (unsigned)tm->tm_year+1900,
+                                   (unsigned)tm->tm_mon+1,
+                                   (unsigned)tm->tm_mday,
+                                   (unsigned)tm->tm_hour,
+                                   (unsigned)tm->tm_min);
+                }
             }
             free(filename);
         }
