@@ -1283,6 +1283,7 @@ static void update_GPS(void)
         if (AP_Notify::flags.gps_glitching != gps_glitch.glitching()) {
             if (gps_glitch.glitching()) {
                 Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Glitch detected"));
             }else{
                 Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
             }
