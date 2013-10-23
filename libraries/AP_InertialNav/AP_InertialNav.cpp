@@ -125,13 +125,13 @@ void AP_InertialNav::check_gps()
     uint32_t now = hal.scheduler->millis();
 
     // compare gps time to previous reading
-    if( _gps != NULL && _gps->time != _gps_last_time ) {
+    if( _gps != NULL && _gps->last_fix_time != _gps_last_time ) {
 
         // call position correction method
         correct_with_gps(now, _gps->longitude, _gps->latitude);
 
         // record gps time and system time of this update
-        _gps_last_time = _gps->time;
+        _gps_last_time = _gps->last_fix_time;
     }else{
         // clear position error if GPS updates stop arriving
         if (now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS) {
