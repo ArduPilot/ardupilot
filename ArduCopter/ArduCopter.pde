@@ -1263,12 +1263,12 @@ static void update_GPS(void)
 
     g_gps->update();
 
-    if (g_gps->new_data && last_gps_time != g_gps->time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
+    if (g_gps->new_data && last_gps_time != g_gps->last_fix_time && g_gps->status() >= GPS::GPS_OK_FIX_2D) {
         // clear new data flag
         g_gps->new_data = false;
 
         // save GPS time so we don't get duplicate reads
-        last_gps_time = g_gps->time;
+        last_gps_time = g_gps->last_fix_time;
 
         // log location if we have at least a 2D fix
         if (g.log_bitmask & MASK_LOG_GPS && motors.armed()) {
