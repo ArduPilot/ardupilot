@@ -418,7 +418,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
- # define OPTFLOW                       DISABLED
+ # define OPTFLOW                       ENABLED
 #endif
 #ifndef OPTFLOW_ORIENTATION
  # define OPTFLOW_ORIENTATION    AP_OPTICALFLOW_ADNS3080_PINS_FORWARD
