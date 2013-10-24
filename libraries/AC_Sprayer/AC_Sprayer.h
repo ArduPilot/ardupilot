@@ -34,6 +34,8 @@
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     // delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    // shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
 
+/// @class  AC_Sprayer
+/// @brief  Object managing a crop sprayer comprised of a spinner and a pump both controlled by pwm
 class AC_Sprayer {
 
 public:
