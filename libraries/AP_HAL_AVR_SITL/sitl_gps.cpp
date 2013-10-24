@@ -486,10 +486,10 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d)
     tm = gmtime(&tv.tv_sec);
 
     // format time string
-    snprintf(tstring, sizeof(tstring), "%02d%02d%05.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec*1.0e-6);
+    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec*1.0e-6);
 
     // format date string
-    snprintf(dstring, sizeof(dstring), "%02d%02d%02d", tm->tm_mday, tm->tm_mon, tm->tm_year % 100);
+    snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
 
     // format latitude
     double deg = fabs(d->latitude);
