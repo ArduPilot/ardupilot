@@ -38,6 +38,8 @@
 
 #include "AP_GPS_NMEA.h"
 
+extern const AP_HAL::HAL& hal;
+
 // SiRF init messages //////////////////////////////////////////////////////////
 //
 // Note that we will only see a SiRF in NMEA mode if we are explicitly configured
@@ -173,7 +175,7 @@ int16_t AP_GPS_NMEA::_from_hex(char a)
         return a - '0';
 }
 
-uint32_t AP_GPS_NMEA::_parse_decimal()
+uint32_t AP_GPS_NMEA::_parse_decimal_100()
 {
     char *p = _term;
     uint32_t ret = 100UL * atol(p);
@@ -190,7 +192,7 @@ uint32_t AP_GPS_NMEA::_parse_decimal()
 }
 
 /*
-  parse a NMEA latitude/longitude degree value. The result is in degrees*10e7
+  parse a NMEA latitude/longitude degree value. The result is in degrees*1e7
  */
 uint32_t AP_GPS_NMEA::_parse_degrees()
 {
@@ -250,6 +252,8 @@ bool AP_GPS_NMEA::_term_complete()
                     longitude           = _new_longitude;
                     ground_speed_cm     = _new_speed;
                     ground_course_cd    = _new_course;
+                    _make_gps_time(_new_date, _new_time * 10);
+                    _last_gps_time      = hal.scheduler->millis();
                     fix                 = GPS::FIX_3D;          // To-Do: add support for proper reporting of 2D and 3D fix
                     break;
                 case _GPS_SENTENCE_GPGGA:
@@ -318,14 +322,14 @@ bool AP_GPS_NMEA::_term_complete()
             _new_satellite_count = atol(_term);
             break;
         case _GPS_SENTENCE_GPGGA + 8: // HDOP (GGA)
-            _new_hdop = _parse_decimal();
+            _new_hdop = _parse_decimal_100();
             break;
 
         // time and date
         //
         case _GPS_SENTENCE_GPRMC + 1: // Time (RMC)
         case _GPS_SENTENCE_GPGGA + 1: // Time (GGA)
-            _new_time = _parse_decimal();
+            _new_time = _parse_decimal_100();
             break;
         case _GPS_SENTENCE_GPRMC + 9: // Date (GPRMC)
             _new_date = atol(_term);
@@ -352,18 +356,18 @@ bool AP_GPS_NMEA::_term_complete()
                 _new_longitude = -_new_longitude;
             break;
         case _GPS_SENTENCE_GPGGA + 9: // Altitude (GPGGA)
-            _new_altitude = _parse_decimal();
+            _new_altitude = _parse_decimal_100();
             break;
 
         // course and speed
         //
         case _GPS_SENTENCE_GPRMC + 7: // Speed (GPRMC)
         case _GPS_SENTENCE_GPVTG + 5: // Speed (VTG)
-            _new_speed = (_parse_decimal() * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
+            _new_speed = (_parse_decimal_100() * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
             break;
         case _GPS_SENTENCE_GPRMC + 8: // Course (GPRMC)
         case _GPS_SENTENCE_GPVTG + 1: // Course (VTG)
-            _new_course = _parse_decimal();
+            _new_course = _parse_decimal_100();
             break;
         }
     }

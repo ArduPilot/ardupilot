@@ -110,15 +110,15 @@ private:
     /// @returns		The value expressed by the string in _term,
     ///					multiplied by 100.
     ///
-    uint32_t    _parse_decimal();
+    uint32_t    _parse_decimal_100();
 
     /// Parses the current term as a NMEA-style degrees + minutes
     /// value with up to four decimal digits.
     ///
-    /// This gives a theoretical resolution limit of around 18cm.
+    /// This gives a theoretical resolution limit of around 1cm.
     ///
     /// @returns		The value expressed by the string in _term,
-    ///					multiplied by 10000.
+    ///					multiplied by 1e7.
     ///
     uint32_t    _parse_degrees();
 
