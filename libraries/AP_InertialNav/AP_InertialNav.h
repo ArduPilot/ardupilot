@@ -144,24 +144,6 @@ public:
      * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      */
     float       get_longitude_diff() const;
-    
-    /**
-     * get_latitude_velocity - returns the current velocity in latitude direction.
-     *
-     * @see get_velocity().x
-     *
-     * @return : latitude velocity in cm/s
-     */
-    float       get_latitude_velocity() const;
-
-    /**
-     * get_longitude_velocity - returns the current velocity in longitude direction.
-     *
-     * @see get_velocity().y
-     *
-     * @return : longitude velocity in cm/s
-     */
-    float       get_longitude_velocity() const;
 
     /**
      * get_velocity - returns the current velocity in cm/s
