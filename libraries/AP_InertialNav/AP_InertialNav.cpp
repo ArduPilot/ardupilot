@@ -175,9 +175,9 @@ void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
         }else{
             // ublox gps positions are delayed by 400ms
             // we store historical position at 10hz so 4 iterations ago
-            if( _hist_position_estimate_x.size() >= AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS ) {
-                hist_position_base_x = _hist_position_estimate_x.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
-                hist_position_base_y = _hist_position_estimate_y.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
+            if( _hist_position_estimate_x.is_full()) {
+                hist_position_base_x = _hist_position_estimate_x.front();
+                hist_position_base_y = _hist_position_estimate_y.front();
             }else{
                 hist_position_base_x = _position_base.x;
                 hist_position_base_y = _position_base.y;
