@@ -269,28 +269,6 @@ float AP_InertialNav::get_longitude_diff() const
     return (_position.y / _lon_to_cm_scaling);
 }
 
-// get velocity in latitude & longitude directions
-float AP_InertialNav::get_latitude_velocity() const
-{
-    // make sure we've been initialised
-    if( !_xy_enabled ) {
-        return 0;
-    }
-
-    return _velocity.x;
-    // Note: is +_velocity.x the output velocity in logs is in reverse direction from accel lat
-}
-
-float AP_InertialNav::get_longitude_velocity() const
-{
-    // make sure we've been initialised
-    if( !_xy_enabled ) {
-        return 0;
-    }
-
-    return _velocity.y;
-}
-
 // set_velocity_xy - set velocity in latitude & longitude directions (in cm/s)
 void AP_InertialNav::set_velocity_xy(float x, float y)
 {
