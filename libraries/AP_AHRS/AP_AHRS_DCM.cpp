@@ -289,7 +289,7 @@ bool AP_AHRS_DCM::have_gps(void) const
 }
 
 // return true if we should use the compass for yaw correction
-bool AP_AHRS_DCM::use_compass(void) const
+bool AP_AHRS_DCM::use_compass(void)
 {
     if (!_compass || !_compass->use_for_yaw()) {
         // no compass available
@@ -310,8 +310,13 @@ bool AP_AHRS_DCM::use_compass(void) const
     // prevent flyaways with very bad compass offsets
     int32_t error = abs(wrap_180_cd(yaw_sensor - _gps->ground_course_cd));
     if (error > 4500 && _wind.length() < _gps->ground_speed_cm*0.008f) {
-        // start using the GPS for heading
-        return false;
+        if (hal.scheduler->millis() - _last_consistent_heading > 2000) {
+            // start using the GPS for heading if the compass has been
+            // inconsistent with the GPS for 2 seconds
+            return false;
+        }
+    } else {
+        _last_consistent_heading = hal.scheduler->millis();
     }
 
     // use the compass

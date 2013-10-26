@@ -222,11 +222,6 @@ static void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
-	// Makes the servos wiggle
-	// step 1 = 1 wiggle
-	// -----------------------
-	demo_servos(1);
-
 	//IMU ground start
 	//------------------------
     //
@@ -240,10 +235,6 @@ static void startup_ground(void)
 	// initialize commands
 	// -------------------
 	init_commands();
-
-	// Makes the servos wiggle - 3 times signals ready to fly
-	// -----------------------
-	demo_servos(3);
 
     hal.uartA->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
@@ -341,14 +332,20 @@ static void startup_INS_ground(bool force_accel_level)
 
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
-	demo_servos(2);
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move vehicle"));
 	mavlink_delay(1000);
 
     ahrs.init();
 	ahrs.set_fly_forward(true);
-	ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate);
+
+    AP_InertialSensor::Start_style style;
+    if (g.skip_gyro_cal && !force_accel_level) {
+        style = AP_InertialSensor::WARM_START;
+    } else {
+        style = AP_InertialSensor::COLD_START;
+    }
+
+	ins.init(style, ins_sample_rate);
 
     if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer

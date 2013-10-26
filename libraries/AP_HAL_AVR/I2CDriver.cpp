@@ -133,7 +133,9 @@ uint8_t AVRI2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
     if (stat) goto error;
     return stat;
 error:
-    _lockup_count++;
+    if (!_ignore_errors) {
+        _lockup_count++;
+    }
     return stat;
 }
 

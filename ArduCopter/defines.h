@@ -70,6 +70,7 @@
 #define AUX_SWITCH_SPRAYER          15      // enable/disable the crop sprayer
 #define AUX_SWITCH_AUTO             16      // change to auto flight mode
 #define AUX_SWITCH_AUTOTUNE         17      // auto tune
+#define AUX_SWITCH_LAND             18      // change to LAND flight mode
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
@@ -258,6 +259,7 @@ enum ap_message {
     MSG_RAW_IMU2,
     MSG_RAW_IMU3,
     MSG_GPS_RAW,
+    MSG_SYSTEM_TIME,
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
@@ -335,12 +337,17 @@ enum ap_message {
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
-#define DATA_SET_SUPERSIMPLE_ON         28
-#define DATA_AUTOTUNE_ON                29
-#define DATA_AUTOTUNE_SUSPENDED         30
+#define DATA_SET_SUPERSIMPLE_ON         29
+#define DATA_AUTOTUNE_INITIALISED       30
 #define DATA_AUTOTUNE_OFF               31
-#define DATA_AUTOTUNE_SAVEDGAINS        32
-#define DATA_AUTOTUNE_ABANDONED         33
+#define DATA_AUTOTUNE_RESTART           32
+#define DATA_AUTOTUNE_COMPLETE          33
+#define DATA_AUTOTUNE_ABANDONED         34
+#define DATA_AUTOTUNE_REACHED_LIMIT     35
+#define DATA_AUTOTUNE_TESTING           36
+#define DATA_AUTOTUNE_SAVEDGAINS        37
+
+
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */

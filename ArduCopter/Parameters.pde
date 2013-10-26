@@ -241,7 +241,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
     // @Description: The minimum throttle that will be sent to the motors to keep them spinning
-    // @Units: ms
+    // @Units: pwm
     // @Range: 0 300
     // @Increment: 1
     // @User: Standard
@@ -250,7 +250,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: THR_MAX
     // @DisplayName: Maximum Throttle
     // @Description: The maximum throttle that will be sent to the motors
-    // @Units: ms
+    // @Units: pwm
     // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
@@ -267,7 +267,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on channel 3 below which throttle sailsafe triggers
     // @Range: 925 1100
-    // @Units: ms
+    // @Units: pwm
     // @Increment: 1
     // @User: Standard
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
@@ -276,7 +276,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle Trim
     // @Description: The autopilot's estimate of the throttle required to maintain a level hover.  Calculated automatically from the pilot's throttle input while in stabilize mode
     // @Range: 0 1000
-    // @Units: ms
+    // @Units: pwm
     // @User: Standard
     GSCALAR(throttle_cruise,        "TRIM_THROTTLE",    THROTTLE_CRUISE),
 
@@ -285,6 +285,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: The throttle output (0 ~ 1000) when throttle stick is in mid position.  Used to scale the manual throttle so that the mid throttle stick position is close to the throttle required to hover
     // @User: Standard
     // @Range: 300 700
+    // @Units: pwm
     // @Increment: 1
     GSCALAR(throttle_mid,        "THR_MID",    THR_MID_DEFAULT),
 
@@ -388,14 +389,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function if performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
@@ -586,7 +587,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
     // @Increment: 10
-    // @Units: ms
+    // @Units: pwm
     // @User: Standard
 
     // @Param: RATE_RLL_D
@@ -616,7 +617,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
     // @Increment: 10
-    // @Units: ms
+    // @Units: pwm
     // @User: Standard
 
     // @Param: RATE_PIT_D
@@ -646,7 +647,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 500
     // @Increment: 10
-    // @Units: ms
+    // @Units: pwm
     // @User: Standard
 
     // @Param: RATE_YAW_D
@@ -759,7 +760,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 500
-    // @Units: ms
+    // @Units: pwm
     // @User: Standard
 
     // @Param: THR_ACCEL_D
@@ -1112,7 +1113,7 @@ static void load_parameters(void)
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-
+        AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }

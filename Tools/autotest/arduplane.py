@@ -104,7 +104,7 @@ def fly_LOITER(mavproxy, mav, num_circles=4):
 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     final_alt = m.alt
-    print("Final altitude %u\n" % final_alt)
+    print("Final altitude %u initial %u\n" % (final_alt, initial_alt))
 
     mavproxy.send('mode FBWA\n')
     wait_mode(mav, 'FBWA')
@@ -136,7 +136,7 @@ def fly_CIRCLE(mavproxy, mav, num_circles=1):
 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     final_alt = m.alt
-    print("Final altitude %u\n" % final_alt)
+    print("Final altitude %u initial %u\n" % (final_alt, initial_alt))
 
     mavproxy.send('mode FBWA\n')
     wait_mode(mav, 'FBWA')
@@ -375,7 +375,7 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     final_alt = m.alt
-    print("Final altitude %u\n" % final_alt)
+    print("Final altitude %u initial %u\n" % (final_alt, initial_alt))
 
     # back to FBWA
     mavproxy.send('mode FBWA\n')

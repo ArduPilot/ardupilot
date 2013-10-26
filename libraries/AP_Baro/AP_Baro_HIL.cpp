@@ -19,6 +19,7 @@ uint8_t AP_Baro_HIL::read()
     uint8_t result = 0;
 
     if (_count != 0) {
+        hal.scheduler->suspend_timer_procs();
         result = 1;
         Press = ((float)_pressure_sum) / _count;
         Temp = ((float)_temperature_sum) / _count;
@@ -26,6 +27,7 @@ uint8_t AP_Baro_HIL::read()
         _count = 0;
         _pressure_sum = 0;
         _temperature_sum = 0;
+        hal.scheduler->resume_timer_procs();
     }
 
     return result;

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.75beta3"
+#define THISFIRMWARE "ArduPlane V2.75beta5"
 /*
    Lead developer: Andrew Tridgell
  
@@ -1026,6 +1026,9 @@ static void update_GPS(void)
 
             } else {
                 init_home();
+
+                // set system clock for log timestamps
+                hal.util->set_system_clock(g_gps->time_epoch_usec());
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically

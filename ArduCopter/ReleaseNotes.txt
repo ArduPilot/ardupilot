@@ -1,14 +1,26 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc5 22-Oct-2013
+Improvements over 3.1-rc4
+1) Pixhawk USB reliability improvements
+2) AutoTune changes:
+    a) enabled by default
+    b) status output to GCS
+    c) use 2 pos switch only
+3) ch7/ch8 LAND
+4) Tricopter stability patch improvements [thanks to texlan]
+5) safety improvements:
+    a) slower speed up of motors after arming
+    b) pre-arm check that copter is moving less than 50cm/s if arming in Loiter or fence enabled
+------------------------------------------------------------------
 ArduCopter 3.1-rc4 13-Oct-2013
 Improvements over 3.1-rc3
 1) Performance improvements to resolve APM alt hold issues for Octacopters:
      a) SPI bus speed increased from 500khz to 8Mhz
      b) Telemetry buffer increased to 512bytes
      c) broke up medium and slow loops into individual scheduled tasks and increased priority of alt hold tasks
-2) AutoTune enabled by default
-3) Bug fix for Pixhawk USB connection
-4) GPS Glitch improvements:
+2) Bug fix for Pixhawk USB connection
+3) GPS Glitch improvements:
        a) added GPS glitch check to arming check
        b) parameters for vehicle max acceleration (GPSGLITCH_ACCEL) and always-ok radius (GPSGLICH_RADIUS)
 ------------------------------------------------------------------

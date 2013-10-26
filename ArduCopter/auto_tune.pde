@@ -33,13 +33,24 @@
 #define AUTO_TUNE_SP_BACKOFF               0.75f    // back off on the Stab P tune
 #define AUTO_TUNE_PI_RATIO_FOR_TESTING      0.1f    // I is set 10x smaller than P during testing
 #define AUTO_TUNE_RP_RATIO_FINAL            1.0f    // I is set 1x P after testing
-#define AUTO_TUNE_RD_MIN                    0.0f    // minimum Rate D value
-#define AUTO_TUNE_RD_MAX                    0.1f    // maximum Rate D value
+#define AUTO_TUNE_RD_MIN                  0.004f    // minimum Rate D value
+#define AUTO_TUNE_RD_MAX                  0.015f    // maximum Rate D value
 #define AUTO_TUNE_RP_MIN                   0.02f    // minimum Rate P value
-#define AUTO_TUNE_RP_MAX                    1.0f    // maximum Rate P value
-#define AUTO_TUNE_SP_MIN                    1.0f    // minimum Stab P value
+#define AUTO_TUNE_RP_MAX                   0.25f    // maximum Rate P value
 #define AUTO_TUNE_SP_MAX                   15.0f    // maximum Stab P value
 #define AUTO_TUNE_SUCCESS_COUNT                4    // how many successful iterations we need to freeze at current gains
+
+// Auto Tune message ids for ground station
+#define AUTO_TUNE_MESSAGE_STARTED 0
+#define AUTO_TUNE_MESSAGE_SUCCESS 1
+#define AUTO_TUNE_MESSAGE_FAILED 2
+
+enum AutoTuneTuneMode {
+    AUTO_TUNE_MODE_UNINITIALISED = 0,
+    AUTO_TUNE_MODE_TUNING = 1,
+    AUTO_TUNE_MODE_TESTING = 2,
+    AUTO_TUNE_MODE_FAILED = 3
+};
 
 // things that can be tuned
 enum AutoTuneAxisType {
@@ -64,8 +75,7 @@ enum AutoTuneTuneType {
 
 // state
 struct auto_tune_state_struct {
-    uint8_t enabled             : 1;    // 0 = disabled, 1 = enabled
-    uint8_t active              : 1;    // 0 = inactive (temporarily suspended), 1 = actively tuning
+    AutoTuneTuneMode mode       : 2;    // see AutoTuneTuneMode for what modes are allowed
     uint8_t pilot_override      : 1;    // 1 = pilot is overriding controls so we suspend tuning temporarily
     AutoTuneAxisType axis       : 1;    // see AutoTuneAxisType for which things can be tuned
     uint8_t positive_direction  : 1;    // 0 = tuning in negative direction (i.e. left for roll), 1 = positive direction (i.e. right for roll)
@@ -74,19 +84,27 @@ struct auto_tune_state_struct {
 } auto_tune_state;
 
 // variables
-uint32_t auto_tune_override_time;   // the last time the pilot overrode the controls
-float auto_tune_test_min;           // the minimum angular rate achieved during TESTING_RATE step
-float auto_tune_test_max;           // the maximum angular rate achieved during TESTING_RATE step
-uint32_t auto_tune_timer;           // generic timer variable
-int8_t auto_tune_counter;                       // counter for tuning gains
-float orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_sp;    // backup of currently being tuned parameter values
-float orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_sp; // backup of currently being tuned parameter values
-float tune_roll_rp, tune_roll_rd, tune_roll_sp;    // currently being tuned parameter values
-float tune_pitch_rp, tune_pitch_rd, tune_pitch_sp;  // currently being tuned parameter values
+static uint32_t auto_tune_override_time;   // the last time the pilot overrode the controls
+static float auto_tune_test_min;           // the minimum angular rate achieved during TESTING_RATE step
+static float auto_tune_test_max;           // the maximum angular rate achieved during TESTING_RATE step
+static uint32_t auto_tune_timer;           // generic timer variable
+static int8_t auto_tune_counter;           // counter for tuning gains
+static float orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_sp;     // backup of currently being tuned parameter values
+static float orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_sp; // backup of currently being tuned parameter values
+static float tune_roll_rp, tune_roll_rd, tune_roll_sp;     // currently being tuned parameter values
+static float tune_pitch_rp, tune_pitch_rd, tune_pitch_sp;  // currently being tuned parameter values
 
 // store current pids as originals
-void auto_tune_save_orig_pids()
+static void auto_tune_initialise()
 {
+    // initialise gains and axis because this is our first time
+    auto_tune_state.axis = AUTO_TUNE_AXIS_ROLL;
+    auto_tune_state.positive_direction = false;
+    auto_tune_state.step = AUTO_TUNE_STEP_WAITING_FOR_LEVEL;
+    auto_tune_timer = millis();
+    auto_tune_state.tune_type = AUTO_TUNE_TYPE_RD_UP;
+
+    // backup original pids
     orig_roll_rp = g.pid_rate_roll.kP();
     orig_roll_ri = g.pid_rate_roll.kI();
     orig_roll_rd = g.pid_rate_roll.kD();
@@ -95,10 +113,37 @@ void auto_tune_save_orig_pids()
     orig_pitch_ri = g.pid_rate_pitch.kI();
     orig_pitch_rd = g.pid_rate_pitch.kD();
     orig_pitch_sp = g.pi_stabilize_pitch.kP();
+
+    // initialise tuned pid values
+    tune_roll_rp = g.pid_rate_roll.kP();
+    tune_roll_rd = g.pid_rate_roll.kD();
+    tune_roll_sp = g.pi_stabilize_roll.kP();
+    tune_pitch_rp = g.pid_rate_pitch.kP();
+    tune_pitch_rd = g.pid_rate_pitch.kD();
+    tune_pitch_sp = g.pi_stabilize_pitch.kP();
+
+    Log_Write_Event(DATA_AUTOTUNE_INITIALISED);
 }
 
-// auto_tune_restore_orig_pids - restore pids to their original values
-void auto_tune_restore_orig_pids()
+// auto_tune_intra_test_gains - gains used between tests
+static void auto_tune_intra_test_gains()
+{
+    // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
+    g.pid_rate_roll.kP(orig_roll_rp);
+    g.pid_rate_roll.kI(orig_roll_rp*AUTO_TUNE_PI_RATIO_FOR_TESTING);
+    g.pid_rate_roll.kD(orig_roll_rd);
+    g.pi_stabilize_roll.kP(orig_roll_sp);
+    g.pid_rate_pitch.kP(orig_pitch_rp);
+    g.pid_rate_pitch.kI(orig_pitch_rp*AUTO_TUNE_PI_RATIO_FOR_TESTING);
+    g.pid_rate_pitch.kD(orig_pitch_rd);
+    g.pi_stabilize_pitch.kP(orig_pitch_sp);
+
+    // re-enable the rate limits
+    ap.disable_stab_rate_limit = false;
+}
+
+// auto_tune_restore_orig_gains - restore pids to their original values
+static void auto_tune_restore_orig_gains()
 {
     g.pid_rate_roll.kP(orig_roll_rp);
     g.pid_rate_roll.kI(orig_roll_ri);
@@ -111,8 +156,8 @@ void auto_tune_restore_orig_pids()
     ap.disable_stab_rate_limit = false;
 }
 
-// auto_tune_load_tuned_pids - restore pids to their original values
-void auto_tune_load_tuned_pids()
+// auto_tune_load_tuned_pids - restore pids to their tuned values
+static void auto_tune_load_tuned_gains()
 {
     if (tune_roll_rp != 0 && tune_pitch_rp != 0) {
         g.pid_rate_roll.kP(tune_roll_rp);
@@ -127,76 +172,108 @@ void auto_tune_load_tuned_pids()
     }
 }
 
-// start an auto tuning session
-void auto_tune_start()
+// auto_tune_load_test_gains - load the to-be-tested gains for a single axis
+static void auto_tune_load_test_gains()
 {
-    // check we are in stabilize mode
-    if (control_mode == STABILIZE || control_mode == ALT_HOLD) {
-        // reset axis if this is our first time (i.e. we were not just suspended)
-        if (!auto_tune_state.active) {
-            auto_tune_state.active = true;
-            auto_tune_state.axis = AUTO_TUNE_AXIS_ROLL;
-            auto_tune_state.positive_direction = false;
-            auto_tune_state.step = AUTO_TUNE_STEP_WAITING_FOR_LEVEL;
-            auto_tune_timer = millis();
-            auto_tune_state.tune_type = AUTO_TUNE_TYPE_RD_UP;
-            auto_tune_save_orig_pids();
-            // initialise tuned pid values
-            tune_roll_rp = g.pid_rate_roll.kP();
-            tune_roll_rd = g.pid_rate_roll.kD();
-            tune_roll_sp = g.pi_stabilize_roll.kP();
-            tune_pitch_rp = g.pid_rate_pitch.kP();
-            tune_pitch_rd = g.pid_rate_pitch.kD();
-            tune_pitch_sp = g.pi_stabilize_pitch.kP();
-        }else{
-            // restarting from suspended state
-            auto_tune_restore_orig_pids();
-        }
-        // set roll-pitch mode to our special auto tuning stabilize roll-pitch mode
-        if (set_roll_pitch_mode(ROLL_PITCH_AUTOTUNE)) {
-            auto_tune_state.enabled = true;
-            Log_Write_Event(DATA_AUTOTUNE_ON);
-        }
+    // restore pids to their tuning values
+    if (auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL) {
+        g.pid_rate_roll.kP(tune_roll_rp);
+        g.pid_rate_roll.kI(tune_roll_rp*0.01f);
+        g.pid_rate_roll.kD(tune_roll_rd);
+        g.pi_stabilize_roll.kP(tune_roll_sp);
+    }else{
+        g.pid_rate_pitch.kP(tune_pitch_rp);
+        g.pid_rate_pitch.kI(tune_pitch_rp*0.01f);
+        g.pid_rate_pitch.kD(tune_pitch_rd);
+        g.pi_stabilize_pitch.kP(tune_pitch_sp);
     }
+    ap.disable_stab_rate_limit = true;  // disable rate limits
+}
+
+// start an auto tuning session
+// returns true if we should change the roll-pitch mode to ROLL_PITCH_AUTOTUNE
+// To-Do: make autotune a flight mode so that this slightly non-intuitive returning of a flag is not required
+static bool auto_tune_start()
+{
+    bool requires_autotune_rp_mode = false;
+
+    switch (auto_tune_state.mode) {
+        case AUTO_TUNE_MODE_UNINITIALISED:
+            // initialise gains and axis because this is our first time
+            auto_tune_initialise();
+            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_STARTED);
+            auto_tune_state.mode = AUTO_TUNE_MODE_TUNING;
+            requires_autotune_rp_mode = true;
+            break;
+        case AUTO_TUNE_MODE_TUNING:
+            // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
+            auto_tune_intra_test_gains();
+            Log_Write_Event(DATA_AUTOTUNE_RESTART);
+            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_STARTED);
+            requires_autotune_rp_mode = true;
+            break;
+        case AUTO_TUNE_MODE_TESTING:
+            // we have completed a tune and are testing the new gains
+            auto_tune_load_tuned_gains();
+            Log_Write_Event(DATA_AUTOTUNE_TESTING);
+            requires_autotune_rp_mode = false;
+            break;
+        case AUTO_TUNE_MODE_FAILED:
+            Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
+            requires_autotune_rp_mode = false;
+            break;
+    }
+
+    // tell caller we require roll-pitch mode to be changed to ROLL_PITCH_AUTOTUNE
+    return requires_autotune_rp_mode;
 }
 
 // turn off tuning and return to standard pids
-void auto_tune_stop()
+static void auto_tune_stop()
 {
-    if (auto_tune_state.enabled) {
-        auto_tune_state.enabled = false;
-        auto_tune_state.active = false;
-        ap.disable_stab_rate_limit = false;
-        if (roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
-            set_roll_pitch_mode(ROLL_PITCH_STABLE); // restore roll-pitch mode
-            rate_targets_frame = EARTH_FRAME;   // regular stabilize mode frame
-        }
-        // restore pids to their original values
-        auto_tune_restore_orig_pids();
-        Log_Write_Event(DATA_AUTOTUNE_OFF);
-    }
-}
-
-// stop tuning but remain with tuned pids
-void auto_tune_suspend()
-{
-    auto_tune_load_tuned_pids();
-    if (auto_tune_state.active) {
-        auto_tune_state.active = false;
-        Log_Write_Event(DATA_AUTOTUNE_SUSPENDED);
-    }
+    ap.disable_stab_rate_limit = false;
+    rate_targets_frame = EARTH_FRAME;   // regular stabilize mode frame
+    // restore pids to their original values
+    auto_tune_restore_orig_gains();
+    Log_Write_Event(DATA_AUTOTUNE_OFF);
 }
 
 // save discovered gains to eeprom if auto tuner is enabled (i.e. switch is in middle or high position)
-void auto_tune_save_tuning_gains()
+static void auto_tune_save_tuning_gains_and_reset()
 {
-    if (auto_tune_state.enabled) {
-        auto_tune_load_tuned_pids();
+    if (auto_tune_state.mode == AUTO_TUNE_MODE_TESTING) {
+        auto_tune_load_tuned_gains();
         g.pid_rate_roll.save_gains();
         g.pid_rate_pitch.save_gains();
         g.pi_stabilize_roll.save_gains();
         g.pi_stabilize_pitch.save_gains();
+        orig_roll_rp = g.pid_rate_roll.kP();
+        orig_roll_ri = g.pid_rate_roll.kI();
+        orig_roll_rd = g.pid_rate_roll.kD();
+        orig_roll_sp = g.pi_stabilize_roll.kP();
+        orig_pitch_rp = g.pid_rate_pitch.kP();
+        orig_pitch_ri = g.pid_rate_pitch.kI();
+        orig_pitch_rd = g.pid_rate_pitch.kD();
+        orig_pitch_sp = g.pi_stabilize_pitch.kP();
         Log_Write_Event(DATA_AUTOTUNE_SAVEDGAINS);
+    }
+    // reset state of autotune
+    auto_tune_state.mode = AUTO_TUNE_MODE_UNINITIALISED;
+}
+
+// send message to ground station
+void auto_tune_update_gcs(uint8_t message_id)
+{
+    switch (message_id) {
+        case AUTO_TUNE_MESSAGE_STARTED:
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Started"));
+            break;
+        case AUTO_TUNE_MESSAGE_SUCCESS:
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Success"));
+            break;
+        case AUTO_TUNE_MESSAGE_FAILED:
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("AutoTune: Failed"));
+            break;
     }
 }
 
@@ -208,8 +285,8 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
     float rotation_rate;        // rotation rate in radians/second
     int32_t lean_angle;
 
-    // exit immediately if not enabled or not actively tuning
-    if (!auto_tune_state.enabled || !auto_tune_state.active) {
+    // exit immediately if not actively tuning
+    if (!auto_tune_state.mode == AUTO_TUNE_MODE_TUNING) {
         return;
     }
 
@@ -217,7 +294,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
     if (pilot_roll_angle != 0 || pilot_pitch_angle != 0 ) {
         if (!auto_tune_state.pilot_override) {
             // restore pids to their original values
-            auto_tune_restore_orig_pids();
+            auto_tune_restore_orig_gains();
         }
         auto_tune_state.pilot_override = true;
         auto_tune_override_time = millis();
@@ -251,18 +328,8 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                     acro_roll_rate = roll_rate_target_bf;
                     acro_pitch_rate = pitch_rate_target_bf;
                     acro_yaw_rate = yaw_rate_target_bf;
-                    // restore pids to their tuning values
-                    if (auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL) {
-                        g.pid_rate_roll.kP(tune_roll_rp);
-                        g.pid_rate_roll.kI(tune_roll_rp*0.01f);
-                        g.pid_rate_roll.kD(tune_roll_rd);
-                        g.pi_stabilize_roll.kP(tune_roll_sp);
-                    }else{
-                        g.pid_rate_pitch.kP(tune_pitch_rp);
-                        g.pid_rate_pitch.kI(tune_pitch_rp*0.01f);
-                        g.pid_rate_pitch.kD(tune_pitch_rd);
-                        g.pi_stabilize_pitch.kP(tune_pitch_sp);
-                    }
+                    // restore pids to their to-be-tested values
+                    auto_tune_load_test_gains();
                     ap.disable_stab_rate_limit = true;  // disable rate limits
                 }
                 break;
@@ -379,18 +446,8 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                 break;
 
             case AUTO_TUNE_STEP_UPDATE_GAINS:
-                // restore pids to their original values
-                g.pid_rate_roll.kP(orig_roll_rp);
-                g.pid_rate_roll.kI(orig_roll_rp*AUTO_TUNE_PI_RATIO_FOR_TESTING);
-                g.pid_rate_roll.kD(orig_roll_rd);
-                g.pi_stabilize_roll.kP(orig_roll_sp);
-                g.pid_rate_pitch.kP(orig_pitch_rp);
-                g.pid_rate_pitch.kI(orig_pitch_rp*AUTO_TUNE_PI_RATIO_FOR_TESTING);
-                g.pid_rate_pitch.kD(orig_pitch_rd);
-                g.pi_stabilize_pitch.kP(orig_pitch_sp);
-
-                // re-enable the rate limits
-                ap.disable_stab_rate_limit = false;
+                // restore gains to their intra-test values
+                auto_tune_intra_test_gains();
 
                 // logging
                 if (auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL) {
@@ -410,8 +467,10 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                         // stop the auto tune if we have hit the minimum roll or pitch rate P
                         if(((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp < AUTO_TUNE_RP_MIN) ||
                             (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp < AUTO_TUNE_RP_MIN)) ) {
+                            auto_tune_state.mode = AUTO_TUNE_MODE_FAILED;
                             Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
-                            auto_tune_stop();
+                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_FAILED);
                             return;
                         }
                     }else if(auto_tune_test_max < AUTO_TUNE_TARGET_RATE_CDS*(1.0f-AUTO_TUNE_AGGRESSIVENESS*2.0f) && 
@@ -435,6 +494,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_roll_rd >= AUTO_TUNE_RD_MAX) {
                                     tune_roll_rd = AUTO_TUNE_RD_MAX;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }else{
                                 tune_pitch_rd += AUTO_TUNE_RD_STEP*2.0f;
@@ -442,6 +502,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_pitch_rd >= AUTO_TUNE_RD_MAX) {
                                     tune_pitch_rd = AUTO_TUNE_RD_MAX;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }
                         }
@@ -456,8 +517,10 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                         // stop the auto tune if we have hit the minimum roll or pitch rate P
                         if(((auto_tune_state.axis == AUTO_TUNE_AXIS_ROLL && tune_roll_rp < AUTO_TUNE_RP_MIN) ||
                             (auto_tune_state.axis == AUTO_TUNE_AXIS_PITCH && tune_pitch_rp < AUTO_TUNE_RP_MIN)) ) {
+                            auto_tune_state.mode = AUTO_TUNE_MODE_FAILED;
                             Log_Write_Event(DATA_AUTOTUNE_ABANDONED);
-                            auto_tune_stop();
+                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_FAILED);
                             return;
                         }
                     }else if(auto_tune_test_max < AUTO_TUNE_TARGET_RATE_CDS*(1-AUTO_TUNE_AGGRESSIVENESS*2.0f) && 
@@ -481,6 +544,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_roll_rd <= AUTO_TUNE_RD_MIN) {
                                     tune_roll_rd = AUTO_TUNE_RD_MIN;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }else{
                                 tune_pitch_rd -= AUTO_TUNE_RD_STEP;
@@ -488,6 +552,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                                 if (tune_pitch_rd <= AUTO_TUNE_RD_MIN) {
                                     tune_pitch_rd = AUTO_TUNE_RD_MIN;
                                     auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                                 }
                             }
                         }
@@ -507,6 +572,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_roll_rp >= AUTO_TUNE_RP_MAX) {
                                 tune_roll_rp = AUTO_TUNE_RP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }else{
                             tune_pitch_rp += AUTO_TUNE_RP_STEP;
@@ -514,6 +580,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_pitch_rp >= AUTO_TUNE_RP_MAX) {
                                 tune_pitch_rp = AUTO_TUNE_RP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }
                     }
@@ -533,6 +600,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_roll_sp >= AUTO_TUNE_SP_MAX) {
                                 tune_roll_sp = AUTO_TUNE_SP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }else{
                             tune_pitch_sp += AUTO_TUNE_SP_STEP;
@@ -540,6 +608,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             if (tune_pitch_sp >= AUTO_TUNE_SP_MAX) {
                                 tune_pitch_sp = AUTO_TUNE_SP_MAX;
                                 auto_tune_counter = AUTO_TUNE_SUCCESS_COUNT;
+                                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                             }
                         }
                     }
@@ -569,8 +638,11 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
                             tune_pitch_sp = tune_pitch_sp * AUTO_TUNE_SP_BACKOFF;
                             tune_roll_sp = min(tune_roll_sp, tune_pitch_sp);
                             tune_pitch_sp = min(tune_roll_sp, tune_pitch_sp);
-                            // if we've just completed pitch we are done so suspend tuning
-                            auto_tune_suspend();
+                            // if we've just completed pitch we are done tuning and are moving onto testing
+                            auto_tune_state.mode = AUTO_TUNE_MODE_TESTING;
+                            auto_tune_update_gcs(AUTO_TUNE_MESSAGE_SUCCESS);
+                            Log_Write_Event(DATA_AUTOTUNE_COMPLETE);
+                            set_roll_pitch_mode(ROLL_PITCH_STABLE);
                         }
                     }
                 }

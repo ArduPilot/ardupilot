@@ -55,8 +55,9 @@
 #define AP_MOTOR_THROTTLE_LIMIT     0x04
 #define AP_MOTOR_ANY_LIMIT          0xFF
 
-// slow start increment - max throttle increase per (100hz) iteration.  i.e. 10 = full speed in 1 second
-#define AP_MOTOR_SLOW_START_INCREMENT   10
+// slow start increments - throttle increase per (100hz) iteration.  i.e. 5 = full speed in 2 seconds
+#define AP_MOTOR_SLOW_START_INCREMENT           10      // max throttle ramp speed (i.e. motors can reach full throttle in 2 seconds)
+#define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   2       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 1 second)
 
 /// @class      AP_Motors
 class AP_Motors {
@@ -150,6 +151,7 @@ protected:
         uint8_t armed               : 1;    // 1 if the motors are armed, 0 if disarmed
         uint8_t frame_orientation   : 2;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3
         uint8_t slow_start          : 1;    // 1 if slow start is active
+        uint8_t slow_start_low_end  : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _flags;
 
     // parameters
@@ -166,5 +168,6 @@ protected:
     int16_t             _min_throttle;          // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;             // the estimated hover throttle in pwm (i.e. 1000 ~ 2000).  calculated from the THR_MID parameter
+    int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
 };
 #endif  // __AP_MOTORS_CLASS_H__

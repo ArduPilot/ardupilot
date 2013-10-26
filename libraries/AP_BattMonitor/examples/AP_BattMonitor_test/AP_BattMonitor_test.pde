@@ -25,6 +25,7 @@ void setup() {
 
     // initialise the battery monitor
     battery_mon.init();
+    battery_mon.set_monitoring(AP_BATT_MONITOR_VOLTAGE_AND_CURRENT);
 
     hal.scheduler->delay(1000);
     timer = hal.scheduler->millis();

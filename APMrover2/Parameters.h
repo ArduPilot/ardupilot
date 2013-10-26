@@ -50,6 +50,7 @@ public:
         k_param_serial0_baud,
         k_param_serial3_baud,
         k_param_telem_delay,
+        k_param_skip_gyro_cal,
 
         //
         // 130: Sensor parameters
@@ -186,6 +187,7 @@ public:
     AP_Int8	    serial0_baud;
     AP_Int8	    serial3_baud;
     AP_Int8     telem_delay;
+    AP_Int8     skip_gyro_cal;
 
     // sensor parameters
     AP_Int8	    compass_enabled; 

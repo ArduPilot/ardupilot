@@ -244,6 +244,7 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
 struct PACKED log_Camera {
     LOG_PACKET_HEADER;
     uint32_t gps_time;
+    uint16_t gps_week;
     int32_t  latitude;
     int32_t  longitude;
     int32_t  altitude;
@@ -258,7 +259,8 @@ static void Log_Write_Camera()
 #if CAMERA == ENABLED
     struct log_Camera pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
-        gps_time    : g_gps->time,
+        gps_time    : g_gps->time_week_ms,
+        gps_week    : g_gps->time_week,
         latitude    : current_loc.lat,
         longitude   : current_loc.lng,
         altitude    : current_loc.alt,
@@ -444,7 +446,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
-      "CAM", "ILLeccC",   "GPSTime,Lat,Lng,Alt,Roll,Pitch,Yaw" },
+      "CAM", "IHLLeccC",   "GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "BB",         "SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     

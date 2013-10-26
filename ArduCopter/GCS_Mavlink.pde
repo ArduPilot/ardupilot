@@ -158,6 +158,9 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
+    if (ap.rc_receiver_present) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
+    }
 
     // all present sensors enabled by default except altitude and position control which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL);
@@ -182,13 +185,16 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         break;
     }
 
-    // default to all healthy except compass and gps which we set individually
-    control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS);
+    // default to all healthy except compass, gps and receiver which we set individually
+    control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS & ~MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
     if (g.compass_enabled && compass.healthy && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
     if (g_gps != NULL && g_gps->status() > GPS::NO_GPS && !gps_glitch.glitching()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
+    }
+    if (ap.rc_receiver_present && !failsafe.radio) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
 
     int16_t battery_current = -1;
@@ -307,6 +313,14 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->ground_course_cd, // 1/100 degrees,
         g_gps->num_sats);
 
+}
+
+static void NOINLINE send_system_time(mavlink_channel_t chan)
+{
+    mavlink_msg_system_time_send(
+        chan,
+        g_gps->time_epoch_usec(),
+        hal.scheduler->millis());
 }
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -517,13 +531,15 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         return false;
     }
 
-    // if we don't have at least 1ms remaining before the main loop
+#if HIL_MODE != HIL_MODE_SENSORS
+    // if we don't have at least 250 micros remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (scheduler.time_available_usec() < 800 && motors.armed()) {
+    if (scheduler.time_available_usec() < 250 && motors.armed()) {
         gcs_out_of_time = true;
         return false;
     }
+#endif
 
     switch(id) {
     case MSG_HEARTBEAT:
@@ -559,6 +575,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
         send_gps_raw(chan);
+        break;
+
+    case MSG_SYSTEM_TIME:
+        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+        send_system_time(chan);
         break;
 
     case MSG_SERVO_OUT:
@@ -1048,6 +1069,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
+        send_message(MSG_SYSTEM_TIME);
     }
 }
 
@@ -1903,15 +1925,14 @@ mission_failed:
         float vel = pythagorous2(packet.vx, packet.vy);
         float cog = wrap_360_cd(ToDeg(atan2f(packet.vx, packet.vy)) * 100);
 
+		// if we are erasing the dataflash this object doesnt exist yet. as its called from delay_cb
+		if (g_gps == NULL)
+			break;
+		
         // set gps hil sensor
         g_gps->setHIL(packet.time_usec/1000,
                       packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
                       vel*1.0e-2, cog*1.0e-2, 0, 10);
-
-        if (gps_base_alt == 0) {
-            gps_base_alt = g_gps->altitude_cm;
-            current_loc.alt = 0;
-        }
 
         if (!ap.home_is_set) {
             init_home();

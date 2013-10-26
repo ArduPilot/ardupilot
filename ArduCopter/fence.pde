@@ -39,14 +39,12 @@ void fence_check()
                 if (GPS_ok()) {
                     // if we are within 100m of the fence, RTL
                     if( fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
-                        if(control_mode != RTL) {
-                            set_mode(RTL);
+                        if (!set_mode(RTL)) {
+                            set_mode(LAND);
                         }
                     }else{
                         // if more than 100m outside the fence just force a land
-                        if(control_mode != LAND) {
-                            set_mode(LAND);
-                        }
+                        set_mode(LAND);
                     }
                 }else{
                     // we have no GPS so LAND

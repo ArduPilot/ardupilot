@@ -164,8 +164,8 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 // engage RTL (if not possible we remain in current flight mode)
                 set_mode(RTL);
             }else{
-                // disengage RTL to previous flight mode if we are currently in RTL or loiter
-                if (control_mode == RTL || control_mode == LOITER) {
+                // return to flight mode switch's flight mode if we are currently in RTL
+                if (control_mode == RTL) {
                     reset_control_switch();
                 }
             }
@@ -289,6 +289,11 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUX_SWITCH_AUTO:
             if (ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(AUTO);
+            }else{
+                // return to flight mode switch's flight mode if we are currently in AUTO
+                if (control_mode == AUTO) {
+                    reset_control_switch();
+                }
             }
             break;
 
@@ -297,20 +302,31 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // turn on auto tuner
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
-                    // turn off tuning and return to standard pids
-                    auto_tune_stop();
-                    break;
                 case AUX_SWITCH_MIDDLE:
-                    // stop tuning but remain with tuned pids
-                    auto_tune_suspend();
+                    // turn off tuning and return to standard pids
+                    if (roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
+                        set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                    }
                     break;
                 case AUX_SWITCH_HIGH:
                     // start an auto tuning session
-                    auto_tune_start();
+                    // set roll-pitch mode to our special auto tuning stabilize roll-pitch mode
+                    set_roll_pitch_mode(ROLL_PITCH_AUTOTUNE);
                     break;
             }
             break;
 #endif
+
+        case AUX_SWITCH_LAND:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                set_mode(LAND);
+            }else{
+                // return to flight mode switch's flight mode if we are currently in LAND
+                if (control_mode == LAND) {
+                    reset_control_switch();
+                }
+            }
+            break;
     }
 }
 

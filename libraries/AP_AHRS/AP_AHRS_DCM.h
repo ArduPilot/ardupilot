@@ -71,7 +71,7 @@ public:
     // if we have an estimate
     bool airspeed_estimate(float *airspeed_ret);
 
-    bool            use_compass(void) const;
+    bool            use_compass(void);
 
 private:
     float _ki;
@@ -147,6 +147,7 @@ private:
     Vector3f _last_vel;
     uint32_t _last_wind_time;
     float _last_airspeed;
+    uint32_t _last_consistent_heading;
 
     // estimated wind in m/s
     Vector3f _wind;

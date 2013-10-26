@@ -292,7 +292,7 @@ static void pre_arm_checks(bool display_failure)
 
 #if AC_FENCE == ENABLED
     // check fence is initialised
-    if(!fence.pre_arm_check() || (((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) && g_gps->hdop > g.gps_hdop_good)) {
+    if(!fence.pre_arm_check() || (((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) && !pre_arm_gps_checks())) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
         }
@@ -330,7 +330,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // check gps is ok if required - note this same check is repeated again in arm_checks
-    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching())) {
+    if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
         }
@@ -368,6 +368,20 @@ static void pre_arm_rc_checks()
     ap.pre_arm_rc_check = true;
 }
 
+// performs pre_arm gps related checks and returns true if passed
+static bool pre_arm_gps_checks()
+{
+    float speed_cms = inertial_nav.get_velocity().length();     // speed according to inertial nav in cm/s
+
+    // ensure GPS is ok and our speed is below 50cm/s
+    if (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching() || speed_cms == 0 || speed_cms > PREARM_MAX_VELOCITY_CMS) {
+        return false;
+    }
+
+    // if we got here all must be ok
+    return true;
+}
+
 // arm_checks - perform final checks before arming
 // always called just before arming.  Return true if ok to arm
 static bool arm_checks(bool display_failure)
@@ -378,7 +392,7 @@ static bool arm_checks(bool display_failure)
     }
 
     // check gps is ok if required - note this same check is also done in pre-arm checks
-    if(mode_requires_GPS(control_mode) && (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching())) {
+    if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
         }
@@ -411,7 +425,7 @@ static void init_disarm_motors()
 
 #if AUTOTUNE == ENABLED
     // save auto tuned parameters
-    auto_tune_save_tuning_gains();
+    auto_tune_save_tuning_gains_and_reset();
 #endif
 
     // we are not in the air

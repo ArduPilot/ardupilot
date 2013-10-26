@@ -242,23 +242,4 @@ static void set_servos(void)
 #endif
 }
 
-static bool demoing_servos;
-
-static void demo_servos(uint8_t i) {
-
-    while(i > 0) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
-        demoing_servos = true;
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-        hal.rcout->write(1, 1400);
-        mavlink_delay(400);
-        hal.rcout->write(1, 1600);
-        mavlink_delay(200);
-        hal.rcout->write(1, 1500);
-#endif
-        demoing_servos = false;
-        mavlink_delay(400);
-        i--;
-    }
-}
 

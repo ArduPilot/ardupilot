@@ -213,6 +213,9 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
 void *LinuxScheduler::_timer_thread(void)
 {
     _setup_realtime(32768);
+    while (system_initializing()) {
+        poll(NULL, 0, 1);        
+    }
     while (true) {
         _microsleep(5000);
 
@@ -245,6 +248,9 @@ void LinuxScheduler::_run_io(void)
 void *LinuxScheduler::_uart_thread(void)
 {
     _setup_realtime(32768);
+    while (system_initializing()) {
+        poll(NULL, 0, 1);        
+    }
     while (true) {
         _microsleep(10000);
 
@@ -259,6 +265,9 @@ void *LinuxScheduler::_uart_thread(void)
 void *LinuxScheduler::_io_thread(void)
 {
     _setup_realtime(32768);
+    while (system_initializing()) {
+        poll(NULL, 0, 1);        
+    }
     while (true) {
         _microsleep(20000);
 

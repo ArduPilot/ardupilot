@@ -141,7 +141,8 @@ struct PACKED log_Parameter {
 struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint8_t  status;
-    uint32_t gps_time;
+    uint32_t gps_week_ms;
+    uint16_t gps_week;
     uint8_t  num_sats;
     int16_t  hdop;
     int32_t  latitude;
@@ -169,7 +170,7 @@ struct PACKED log_IMU {
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "BIBcLLeeEe", "Status,Time,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs" }, \
+      "GPS",  "BIHBcLLeeEe", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "ffffff",     "GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
