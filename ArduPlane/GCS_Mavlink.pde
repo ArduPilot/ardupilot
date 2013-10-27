@@ -947,7 +947,8 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
-    if (waypoint_receiving || _queued_parameter != NULL) {
+    if ((stream_num != STREAM_PARAMS) && 
+        (waypoint_receiving || _queued_parameter != NULL)) {
         rate *= 0.25;
     }
 
