@@ -654,8 +654,8 @@
  # define THR_MAX_DEFAULT       1000            // maximum throttle sent to the motors
 #endif
 
-#ifndef THROTTLE_IN_DEADBAND
-# define THROTTLE_IN_DEADBAND    100            // the throttle input channel's deadband in PWM
+#ifndef THR_DZ_DEFAULT
+# define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
 #endif
 
 #ifndef ALT_HOLD_P
