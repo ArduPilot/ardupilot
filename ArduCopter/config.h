@@ -756,10 +756,6 @@
  # define STABILIZE_PITCH_IMAX   	0
 #endif
 
-#ifndef STABILIZE_RATE_LIMIT
- # define STABILIZE_RATE_LIMIT      18000
-#endif
-
 #ifndef  STABILIZE_YAW_P
  # define STABILIZE_YAW_P           4.5f            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
@@ -783,6 +779,9 @@
 #endif
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
+#endif
+#ifndef ANGLE_RATE_MAX
+ # define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 #endif
 #ifndef RATE_ROLL_P
  # define RATE_ROLL_P        		0.150f
