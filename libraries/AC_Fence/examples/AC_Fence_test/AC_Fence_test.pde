@@ -55,7 +55,7 @@ AP_Compass_HMC5843 compass;
 AP_AHRS_DCM ahrs(&ins, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(&ahrs, &ins, &baro, gps, gps_glitch);
+AP_InertialNav inertial_nav(&ahrs, &baro, gps, gps_glitch);
 
 // Fence
 AC_Fence fence(&inertial_nav);

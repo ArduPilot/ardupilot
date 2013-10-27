@@ -66,13 +66,13 @@ public:
         return _ground_pressure.get();
     }
 
-    // get last time sample was taken
+    // get last time sample was taken (in ms)
     uint32_t        get_last_update() { return _last_update; };
 
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
-    uint32_t                            _last_update;
+    uint32_t                            _last_update; // in ms
     uint8_t                             _pressure_samples;
 
 private:
