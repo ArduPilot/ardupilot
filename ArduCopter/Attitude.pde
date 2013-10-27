@@ -36,7 +36,7 @@ get_stabilize_roll(int32_t target_angle)
 
     // constrain the target rate
     if (!ap.disable_stab_rate_limit) {
-        target_rate = constrain_int32(target_rate, -STABILIZE_RATE_LIMIT, STABILIZE_RATE_LIMIT);
+        target_rate = constrain_int32(target_rate, -g.angle_rate_max, g.angle_rate_max);
     }
 
     // set targets for rate controller
@@ -54,7 +54,7 @@ get_stabilize_pitch(int32_t target_angle)
 
     // constrain the target rate
     if (!ap.disable_stab_rate_limit) {
-        target_rate = constrain_int32(target_rate, -STABILIZE_RATE_LIMIT, STABILIZE_RATE_LIMIT);
+        target_rate = constrain_int32(target_rate, -g.angle_rate_max, g.angle_rate_max);
     }
 
     // set targets for rate controller
