@@ -548,27 +548,34 @@ static uint16_t			mainLoop_count;
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 20ms units) and the maximum time they are expected to take (in
-  microseconds)
+  scheduler table - all regular tasks should be listed here, along
+  with how often they should be called (in 20ms units) and the maximum
+  time they are expected to take (in microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+	{ read_radio,             1,   1000 },
+    { ahrs_update,            1,   6400 },
+    { read_sonars,            1,   2000 },
+    { update_current_mode,    1,   1000 },
+    { set_servos,             1,   1000 },
     { update_GPS,             5,   2500 },
     { navigate,               5,   1600 },
     { update_compass,         5,   2000 },
     { update_commands,        5,   1000 },
     { update_logging,         5,   1000 },
+    { gcs_retry_deferred,     1,   1000 },
+    { gcs_update,             1,   1700 },
+    { gcs_data_stream_send,   1,   3000 },
+    { read_control_switch,   15,   1000 },
+    { read_trim_switch,       5,   1000 },
     { read_battery,           5,   1000 },
     { read_receiver_rssi,     5,   1000 },
-    { read_trim_switch,       5,   1000 },
-    { read_control_switch,   15,   1000 },
     { update_events,         15,   1000 },
     { check_usb_mux,         15,   1000 },
-    { mount_update,           1,    500 },
-    { gcs_failsafe_check,     5,    500 },
+    { mount_update,           1,    600 },
+    { gcs_failsafe_check,     5,    600 },
     { compass_accumulate,     1,    900 },
-    { update_notify,          1,    100 },
+    { update_notify,          1,    300 },
     { one_second_loop,       50,   3000 }
 };
 
@@ -616,60 +623,33 @@ void loop()
     G_Dt                = (float)delta_ms_fast_loop / 1000.f;
     fast_loopTimer      = timer;
 
-    mainLoop_count++;
+	if (delta_ms_fast_loop > G_Dt_max)
+		G_Dt_max = delta_ms_fast_loop;
 
-    // Execute the fast loop
-    // ---------------------
-    fast_loop();
+    mainLoop_count++;
 
     // tell the scheduler one tick has passed
     scheduler.tick();
     fast_loopTimeStamp = millis();
 
-    scheduler.run(19000U);
+    scheduler.run(19500U);
 }
 
-// Main loop 50Hz
-static void fast_loop()
+// update AHRS system
+static void ahrs_update()
 {
-	// This is the fast loop - we want it to execute at 50Hz if possible
-	// -----------------------------------------------------------------
-	if (delta_ms_fast_loop > G_Dt_max)
-		G_Dt_max = delta_ms_fast_loop;
+#if HIL_MODE != HIL_MODE_DISABLED
+    // update hil before AHRS update
+    gcs_update();
+#endif
 
-	// Read radio
-	// ----------
-	read_radio();
-
-    // try to send any deferred messages if the serial port now has
-    // some space available
-    gcs_send_message(MSG_RETRY_DEFERRED);
-
-	#if HIL_MODE != HIL_MODE_DISABLED
-		// update hil before dcm update
-		gcs_update();
-	#endif
-
-	ahrs.update();
-
-    read_sonars();
+    ahrs.update();
 
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
         Log_Write_Attitude();
 
     if (g.log_bitmask & MASK_LOG_IMU)
         DataFlash.Log_Write_IMU(&ins);
-
-	// custom code/exceptions for flight modes
-	// ---------------------------------------
-	update_current_mode();
-
-	// write out the servo PWM values
-	// ------------------------------
-	set_servos();
-
-    gcs_update();
-    gcs_data_stream_send();
 }
 
 /*
