@@ -7,18 +7,20 @@ pkill -f runsim.py
 set -e
 set -x
 
+: ${APMTERM=xterm}
+
 autotest=$(dirname $(readlink -e $0))
 pushd $autotest/../../ArduPlane
 make clean sitl
 
 tfile=$(mktemp)
 echo r > $tfile
-#gnome-terminal -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
-gnome-terminal -e /tmp/ArduPlane.build/ArduPlane.elf
-#gnome-terminal -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf"
+#$APMTERM -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf" &
+$APMTERM -e /tmp/ArduPlane.build/ArduPlane.elf &
+#$APMTERM -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf" &
 sleep 2
 rm -f $tfile
-gnome-terminal -e '../Tools/autotest/jsbsim/runsim.py --home=-35.362938,149.165085,584,270 --vtail'
+$APMTERM -e '../Tools/autotest/jsbsim/runsim.py --home=-35.362938,149.165085,584,270 --vtail' &
 sleep 2
 popd
 

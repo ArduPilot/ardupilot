@@ -1,5 +1,7 @@
 #!/bin/bash
 
+: ${APMTERM=xterm}
+
 # home location lat, lon, alt, heading
 SIMHOME="-35.363261,149.165230,584,353"
 
@@ -46,12 +48,14 @@ make clean sitl
 
 tfile=$(mktemp)
 echo r > $tfile
-#gnome-terminal -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
-gnome-terminal -e "/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
-#gnome-terminal -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf"
+#$APMTERM -e "gdb -x $tfile --args /tmp/ArduPlane.build/ArduPlane.elf"
+#$APMTERM -e "/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE"
+$APMTERM -e "/tmp/ArduPlane.build/ArduPlane.elf -I$INSTANCE" &
+#$APMTERM -e "valgrind -q /tmp/ArduPlane.build/ArduPlane.elf"
 sleep 2
 rm -f $tfile
-gnome-terminal -e "../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT"
+#$APMTERM -e "../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT"
+$APMTERM -e "../Tools/autotest/jsbsim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT" &
 sleep 2
 popd
 
