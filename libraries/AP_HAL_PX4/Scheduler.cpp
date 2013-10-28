@@ -231,7 +231,7 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
 
 void *PX4Scheduler::_timer_thread(void)
 {
-    while (system_initializing()) {
+    while (!_hal_initialized) {
         poll(NULL, 0, 1);        
     }
     while (!_px4_thread_should_exit) {
@@ -272,7 +272,7 @@ void PX4Scheduler::_run_io(void)
 
 void *PX4Scheduler::_uart_thread(void)
 {
-    while (system_initializing()) {
+    while (!_hal_initialized) {
         poll(NULL, 0, 1);        
     }
     while (!_px4_thread_should_exit) {
@@ -288,7 +288,7 @@ void *PX4Scheduler::_uart_thread(void)
 
 void *PX4Scheduler::_io_thread(void)
 {
-    while (system_initializing()) {
+    while (!_hal_initialized) {
         poll(NULL, 0, 1);        
     }
     while (!_px4_thread_should_exit) {
