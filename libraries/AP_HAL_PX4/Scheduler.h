@@ -42,9 +42,11 @@ public:
     bool     in_timerprocess();
     bool     system_initializing();
     void     system_initialized();
-
+    void     hal_initialized() { _hal_initialized = true; }
+    
 private:
     bool _initialized;
+    volatile bool _hal_initialized;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
