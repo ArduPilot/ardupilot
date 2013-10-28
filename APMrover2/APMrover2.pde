@@ -523,7 +523,7 @@ static float G_Dt						= 0.02;
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
 static int32_t 	perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
-static int16_t 	G_Dt_max = 0;
+static uint32_t 	G_Dt_max;
 // The number of gps fixes recorded in the current performance monitoring interval
 static uint8_t 	gps_fix_count = 0;
 // A variable used by developers to track performanc metrics.
@@ -534,12 +534,10 @@ static int16_t pmTest1 = 0;
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
 ////////////////////////////////////////////////////////////////////////////////
-// Time in miliseconds of start of main control loop.  Milliseconds
-static uint32_t 	fast_loopTimer;
-// Time Stamp when fast loop was complete.  Milliseconds
-static uint32_t 	fast_loopTimeStamp;
+// Time in microseconds of start of main control loop. 
+static uint32_t 	fast_loopTimer_us;
 // Number of milliseconds used in last main loop cycle
-static uint8_t 		delta_ms_fast_loop;
+static uint32_t		delta_us_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
@@ -617,20 +615,19 @@ void loop()
     if (!ins.wait_for_sample(1000)) {
         return;
     }
-    uint32_t timer = millis();
+    uint32_t timer = hal.scheduler->micros();
 
-    delta_ms_fast_loop	= timer - fast_loopTimer;
-    G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-    fast_loopTimer      = timer;
+    delta_us_fast_loop	= timer - fast_loopTimer_us;
+    G_Dt                = delta_us_fast_loop * 1.0e-6f;
+    fast_loopTimer_us   = timer;
 
-	if (delta_ms_fast_loop > G_Dt_max)
-		G_Dt_max = delta_ms_fast_loop;
+	if (delta_us_fast_loop > G_Dt_max)
+		G_Dt_max = delta_us_fast_loop;
 
     mainLoop_count++;
 
     // tell the scheduler one tick has passed
     scheduler.tick();
-    fast_loopTimeStamp = millis();
 
     scheduler.run(19500U);
 }
@@ -767,7 +764,11 @@ static void one_second_loop(void)
     counter++;
 
     // write perf data every 20s
-    if (counter == 20) {
+    if (counter % 10 == 0) {
+        if (scheduler.debug() != 0) {
+            hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
+        }
+        G_Dt_max = 0;
         if (g.log_bitmask & MASK_LOG_PM)
             Log_Write_Performance();
         resetPerfData();
