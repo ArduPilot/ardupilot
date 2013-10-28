@@ -341,39 +341,32 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     uint8_t medium_loopCounter = 0;
 
 	while(1){
-		delay(20);
-		if (millis() - fast_loopTimer > 19) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
-			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-			fast_loopTimer		= millis();
+        ins.wait_for_sample(1000);
 
-			// INS
-			// ---
-			ahrs.update();
+        ahrs.update();
 
-			if(g.compass_enabled) {
-				medium_loopCounter++;
-				if(medium_loopCounter >= 5){
-					compass.read();
-                    medium_loopCounter = 0;
-				}
-			}
-
-			// We are using the IMU
-			// ---------------------
-            Vector3f gyros 	= ins.get_gyro();
-            Vector3f accels = ins.get_accel();
-			cliSerial->printf_P(PSTR("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n"),
+        if(g.compass_enabled) {
+            medium_loopCounter++;
+            if(medium_loopCounter >= 5){
+                compass.read();
+                medium_loopCounter = 0;
+            }
+        }
+        
+        // We are using the IMU
+        // ---------------------
+        Vector3f gyros 	= ins.get_gyro();
+        Vector3f accels = ins.get_accel();
+        cliSerial->printf_P(PSTR("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n"),
                             (int)ahrs.roll_sensor / 100,
                             (int)ahrs.pitch_sensor / 100,
                             (uint16_t)ahrs.yaw_sensor / 100,
                             gyros.x, gyros.y, gyros.z,
                             accels.x, accels.y, accels.z);
-		}
-		if(cliSerial->available() > 0){
-			return (0);
-		}
-	}
+    }
+    if(cliSerial->available() > 0){
+        return (0);
+    }
 }
 
 
@@ -408,32 +401,25 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     uint8_t medium_loopCounter = 0;
 
     while(1) {
-		delay(20);
-		if (millis() - fast_loopTimer > 19) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
-			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-			fast_loopTimer		= millis();
+        ins.wait_for_sample(1000);
+        ahrs.update();
 
-			// IMU
-			// ---
-			ahrs.update();
-
-            medium_loopCounter++;
-            if(medium_loopCounter >= 5){
-                if (compass.read()) {
-                    // Calculate heading
-                    Matrix3f m = ahrs.get_dcm_matrix();
-                    heading = compass.calculate_heading(m);
-                    compass.null_offsets();
-                }
-                medium_loopCounter = 0;
+        medium_loopCounter++;
+        if(medium_loopCounter >= 5){
+            if (compass.read()) {
+                // Calculate heading
+                Matrix3f m = ahrs.get_dcm_matrix();
+                heading = compass.calculate_heading(m);
+                compass.null_offsets();
             }
-
-			counter++;
-			if (counter>20) {
-                if (compass.healthy) {
-                    Vector3f maggy = compass.get_offsets();
-                    cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+            medium_loopCounter = 0;
+        }
+        
+        counter++;
+        if (counter>20) {
+            if (compass.healthy) {
+                Vector3f maggy = compass.get_offsets();
+                cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
                                     (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (int)compass.mag_x,
                                     (int)compass.mag_y,
@@ -441,12 +427,11 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                                     maggy.x,
                                     maggy.y,
                                     maggy.z);
-                } else {
-                    cliSerial->println_P(PSTR("compass not healthy"));
-                }
-                counter=0;
+            } else {
+                cliSerial->println_P(PSTR("compass not healthy"));
             }
-		}
+            counter=0;
+        }
         if (cliSerial->available() > 0) {
             break;
         }
