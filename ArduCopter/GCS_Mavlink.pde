@@ -1215,7 +1215,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 ahrs.set_trim(Vector3f(0,0,0));             // clear out saved trim
             } 
             if (packet.param3 == 1) {
-                init_barometer();                
+#if HIL_MODE != HIL_MODE_ATTITUDE
+                init_barometer();
+#endif
             }
             if (packet.param4 == 1) {
                 trim_radio();
