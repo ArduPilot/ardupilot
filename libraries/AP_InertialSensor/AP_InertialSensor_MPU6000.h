@@ -38,7 +38,6 @@ protected:
 
 private:
 
-    void                 _read_data_from_timerprocess();
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);
@@ -80,6 +79,9 @@ private:
     uint8_t _last_filter_hz;
 
     void _set_filter_register(uint8_t filter_hz, uint8_t default_filter);
+
+    uint16_t _error_count;
+    uint8_t _error_value;
 
 public:
 
