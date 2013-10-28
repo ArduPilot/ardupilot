@@ -20,17 +20,22 @@ void APM2SPIDeviceManager::init(void* machtnichts) {
      * the MS5611 CS pin works around the problem
      */
 
+    #define SPI0_SPCR_8MHz   0
+    #define SPI0_SPSR_8MHz   _BV(SPI2X)
+    #define SPI0_SPCR_500kHz _BV(SPR1)
+    #define SPI0_SPSR_500kHz _BV(SPI2X)
+
     /* mpu6k cs is on Arduino pin 53, PORTB0 */
     AVRDigitalSource* mpu6k_cs = new AVRDigitalSource(_BV(0), PB);
     /* mpu6k: run clock at 8MHz in high speed mode and 512kHz for low
      * speed */
-    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, _BV(SPR1), 0, _BV(SPI2X));
+    _mpu6k = new AVRSPI0DeviceDriver(mpu6k_cs, SPI0_SPCR_500kHz, SPI0_SPCR_500kHz, SPI0_SPSR_500kHz);
     _mpu6k->init();
 
     /* ms5611 cs is on Arduino pin 40, PORTG1 */
     AVRDigitalSource* ms5611_cs = new AVRDigitalSource(_BV(1), PG);
     /* ms5611: run clock at 8MHz */
-    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, 0, 0, _BV(SPI2X));
+    _ms5611 = new AVRSPI0DeviceDriver(ms5611_cs, SPI0_SPCR_500kHz, SPI0_SPCR_500kHz, SPI0_SPSR_500kHz);
     _ms5611->init();
    
     /* optflow cs is on Arduino pin A3, PORTF3 */
