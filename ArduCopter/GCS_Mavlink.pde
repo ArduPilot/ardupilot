@@ -1210,10 +1210,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
             if (packet.param1 == 1 ||
-                packet.param2 == 1 ||
-                packet.param3 == 1) {
+                packet.param2 == 1) {
                 ins.init_accel();
                 ahrs.set_trim(Vector3f(0,0,0));             // clear out saved trim
+            } 
+            if (packet.param3 == 1) {
+                init_barometer();                
             }
             if (packet.param4 == 1) {
                 trim_radio();
