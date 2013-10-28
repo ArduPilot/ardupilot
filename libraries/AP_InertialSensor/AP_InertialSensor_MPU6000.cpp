@@ -206,12 +206,17 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
         bool success = hardware_init(sample_rate);
         if (success) {
             hal.scheduler->delay(5+2);
+            if (!_spi_sem->take(100)) {
+                hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
+            }
             if (_data_ready()) {
+                _spi_sem->give();
                 break;
             } else {
                 hal.console->println_P(
                         PSTR("MPU6000 startup failed: no data ready"));
             }
+            _spi_sem->give();
         }
         if (tries++ > 5) {
             hal.scheduler->panic(PSTR("PANIC: failed to boot MPU6000 5 times")); 
@@ -331,29 +336,8 @@ bool AP_InertialSensor_MPU6000::_data_ready()
     if (_drdy_pin) {
         return _drdy_pin->read() != 0;
     }
-
-    if (hal.scheduler->in_timerprocess()) {
-        bool got = _spi_sem->take_nonblocking();
-        if (got) {
-            uint8_t status = _register_read(MPUREG_INT_STATUS);
-            _spi_sem->give();
-            return (status & BIT_RAW_RDY_INT) != 0;
-        } else {
-            return false;
-        }
-    } else {
-        bool got = _spi_sem->take(10);
-        if (got) {
-            uint8_t status = _register_read(MPUREG_INT_STATUS);
-            _spi_sem->give();
-            return (status & BIT_RAW_RDY_INT) != 0;
-        } else {
-            hal.scheduler->panic(
-                PSTR("PANIC: AP_InertialSensor_MPU6000::_data_ready failed to "
-                     "take SPI semaphore synchronously"));
-        }
-    }
-    return false;
+    uint8_t status = _register_read(MPUREG_INT_STATUS);
+    return (status & BIT_RAW_RDY_INT) != 0;
 }
 
 /**
@@ -361,59 +345,57 @@ bool AP_InertialSensor_MPU6000::_data_ready()
  */
 void AP_InertialSensor_MPU6000::_poll_data(void)
 {
-    if (_data_ready()) {
-        if (hal.scheduler->in_timerprocess()) {
-            _read_data_from_timerprocess();
-        } else {
-            /* Synchronous read - take semaphore */
-            bool got = _spi_sem->take(10);
-            if (got) {
+    if (hal.scheduler->in_timerprocess()) {
+        if (!_spi_sem->take_nonblocking()) {
+            /*
+              the semaphore being busy is an expected condition when the
+              mainline code is calling sample_available() which will
+              grab the semaphore. We return now and rely on the mainline
+              code grabbing the latest sample.
+            */
+            return;
+        }   
+        if (_data_ready()) {
+            _last_sample_time_micros = hal.scheduler->micros();
+            _read_data_transaction(); 
+        }
+        _spi_sem->give();
+    } else {
+        /* Synchronous read - take semaphore */
+        if (_spi_sem->take(10)) {
+            if (_data_ready()) {
                 _last_sample_time_micros = hal.scheduler->micros();
                 _read_data_transaction(); 
-                _spi_sem->give();
-            } else {
-                hal.scheduler->panic(
-                        PSTR("PANIC: AP_InertialSensor_MPU6000::_poll_data "
-                             "failed to take SPI semaphore synchronously"));
             }
+            _spi_sem->give();
+        } else {
+            hal.scheduler->panic(
+                PSTR("PANIC: AP_InertialSensor_MPU6000::_poll_data "
+                     "failed to take SPI semaphore synchronously"));
         }
     }
 }
 
-/*
- *  this is called from the _poll_data, in the timer process context.
- *  when the MPU6000 has new sensor data available and add it to _sum[] to
- *  ensure this is the case, these other devices must perform their spi reads
- *  after being called by the AP_TimerProcess.
- */
-void AP_InertialSensor_MPU6000::_read_data_from_timerprocess()
-{
-    if (!_spi_sem->take_nonblocking()) {
-        /*
-          the semaphore being busy is an expected condition when the
-          mainline code is calling sample_available() which will
-          grab the semaphore. We return now and rely on the mainline
-          code grabbing the latest sample.
-         */
-        return;
-    }   
-
-    _last_sample_time_micros = hal.scheduler->micros();
-    _read_data_transaction();
-
-    _spi_sem->give();
-}
-
 void AP_InertialSensor_MPU6000::_read_data_transaction() {
     /* one resister address followed by seven 2-byte registers */
-    uint8_t tx[15];
-    uint8_t rx[15];
-    memset(tx,0,15);
-    tx[0] = MPUREG_ACCEL_XOUT_H | 0x80;
-    _spi->transaction(tx, rx, 15);
+    uint8_t tx[16];
+    uint8_t rx[16];
+    memset(tx,0,16);
+    tx[0] = MPUREG_INT_STATUS | 0x80;
+    rx[1] = 0x42;
+    if (_error_count > 4) {
+        _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+    }
+    _spi->transaction(tx, rx, 16);
+
+    if (rx[1] != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT)) {
+        // possibly bad bus transaction
+        _error_count++;
+        _error_value = rx[1];
+    }
 
     for (uint8_t i = 0; i < 7; i++) {
-        _sum[i] += (int16_t)(((uint16_t)rx[2*i+1] << 8) | rx[2*i+2]);
+        _sum[i] += (int16_t)(((uint16_t)rx[2*i+2] << 8) | rx[2*i+3]);
     }   
     
     _count++;
