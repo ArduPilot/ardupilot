@@ -774,6 +774,9 @@ void loop()
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
     fast_loopTimer_us   = timer;
 
+    if (delta_us_fast_loop > G_Dt_max)
+        G_Dt_max = delta_us_fast_loop;
+
     mainLoop_count++;
 
     // tell the scheduler one tick has passed
@@ -794,9 +797,6 @@ void loop()
 // update AHRS system
 static void ahrs_update()
 {
-    if (delta_us_fast_loop > G_Dt_max)
-        G_Dt_max = delta_us_fast_loop;
-
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
     gcs_update();
@@ -950,7 +950,11 @@ static void one_second_loop()
     static uint8_t counter;
     counter++;
 
-    if (counter == 20) {
+    if (counter % 10 == 0) {
+        if (scheduler.debug() != 0) {
+            hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
+        }
+        G_Dt_max = 0;
         if (g.log_bitmask & MASK_LOG_PM)
             Log_Write_Performance();
         resetPerfData();
