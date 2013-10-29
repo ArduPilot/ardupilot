@@ -88,6 +88,10 @@ void AP_Baro_MS5611_SPI::init()
         return; /* never reached */
         
     }
+
+    // now that we have initialised, we set the SPI bus speed to high
+    // (8MHz on APM2)
+    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
 }
 
 uint16_t AP_Baro_MS5611_SPI::read_16bits(uint8_t reg)
