@@ -395,8 +395,6 @@ enum ap_message {
 #define RELAY_APM1_PIN 47
 #define RELAY_APM2_PIN 13
 
-#define PIEZO_PIN AN5           //Last pin on the back ADC connector
-
 // RADIANS
 #define RADX100 0.000174532925f
 #define DEGX100 5729.57795f
