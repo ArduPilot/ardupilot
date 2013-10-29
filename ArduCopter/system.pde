@@ -253,7 +253,7 @@ static void init_ardupilot()
     reset_control_switch();
     init_aux_switches();
 
-    startup_ground();
+    startup_ground(false);
 
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
@@ -266,7 +266,7 @@ static void init_ardupilot()
 //******************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //******************************************************************************
-static void startup_ground(void)
+static void startup_ground(bool force_gyro_cal)
 {
     gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
@@ -275,7 +275,7 @@ static void startup_ground(void)
 
     // Warm up and read Gyro offsets
     // -----------------------------
-    ins.init(AP_InertialSensor::COLD_START,
+    ins.init(force_gyro_cal?AP_InertialSensor::COLD_START:AP_InertialSensor::WARM_START,
              ins_sample_rate);
  #if CLI_ENABLED == ENABLED
     report_ins();
