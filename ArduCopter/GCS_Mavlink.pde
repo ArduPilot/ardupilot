@@ -194,6 +194,9 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     if (ap.rc_receiver_present && !failsafe.radio) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
+    if (!ins.healthy()) {
+        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+    }
 
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
