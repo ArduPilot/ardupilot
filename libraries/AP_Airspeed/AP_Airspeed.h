@@ -125,6 +125,9 @@ public:
 	// log data to MAVLink
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
+    // return health status of sensor
+    bool healthy(void) const { return _healthy; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 
