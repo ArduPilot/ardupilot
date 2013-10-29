@@ -351,12 +351,17 @@ void AP_InertialSensor_MPU6000::_read_data_transaction() {
     } rx, tx = { cmd : MPUREG_INT_STATUS | 0x80, };
     
     _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
-    
+
+    /*
+      detect a bad SPI bus transaction by looking for all 14 bytes
+      zero, or the wrong INT_STATUS register value. This is used to
+      detect a too high SPI bus speed.
+     */
     uint8_t i;
     for (i=0; i<14; i++) {
         if (rx.v[i] != 0) break;
     }
-    if (rx.int_status != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT) || i != 14) {
+    if ((rx.int_status&~0x6) != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT) || i == 14) {
         // likely a bad bus transaction
         if (++_error_count > 4) {
             _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
@@ -534,10 +539,6 @@ bool AP_InertialSensor_MPU6000::_hardware_init(Sample_rate sample_rate)
     // clear interrupt on any read, and hold the data ready pin high
     // until we clear the interrupt
     _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
-    hal.scheduler->delay(1);
-
-    // read INT status to clear the initial bits
-    _register_read(MPUREG_INT_STATUS);
 
     // now that we have initialised, we set the SPI bus speed to high
     // (8MHz on APM2)
