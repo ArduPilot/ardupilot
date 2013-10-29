@@ -1601,11 +1601,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // start waypoint receiving
         if (packet.start_index > g.command_total ||
-            packet.end_index > g.command_total ||
+            packet.end_index > MAX_WAYPOINTS ||
             packet.end_index < packet.start_index) {
             send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
             break;
         }
+        
+        if (packet.end_index>g.command_total)
+          g.command_total.set_and_save(packet.end_index);
 
         waypoint_timelast_receive = millis();
         waypoint_timelast_request = 0;
