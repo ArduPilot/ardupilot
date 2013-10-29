@@ -73,11 +73,7 @@ public:
         k_param_log_last_filenumber,            // *** Deprecated - remove
                                                 // with next eeprom number
                                                 // change
-        k_param_toy_yaw_rate,                           // THOR The memory
-                                                        // location for the
-                                                        // Yaw Rate 1 = fast,
-                                                        // 2 = med, 3 = slow
-
+        k_param_toy_yaw_rate,                   // deprecated - remove
         k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
         k_param_rssi_pin,
         k_param_throttle_accel_enabled,     // deprecated - remove
@@ -288,7 +284,7 @@ public:
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
-    
+
     AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
@@ -338,12 +334,6 @@ public:
     // Misc
     //
     AP_Int16        log_bitmask;
-
-    AP_Int8         toy_yaw_rate;                               // THOR The
-                                                                // Yaw Rate 1
-                                                                // = fast, 2 =
-                                                                // med, 3 =
-                                                                // slow
     AP_Int8         esc_calibrate;
     AP_Int8         radio_tuning;
     AP_Int16        radio_tuning_high;
@@ -358,7 +348,7 @@ public:
     RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
     AP_Float        heli_pitch_ff;												// pitch rate feed-forward
     AP_Float        heli_roll_ff;												// roll rate feed-forward
-    AP_Float        heli_yaw_ff;												// yaw rate feed-forward																			
+    AP_Float        heli_yaw_ff;												// yaw rate feed-forward
 #endif
 
     // RC channels
