@@ -156,6 +156,13 @@ public:
     const Vector3f&    get_velocity() const { return _velocity; }
 
     /**
+     * get_velocity_xy - returns the current horizontal velocity in cm/s
+     *
+     * @returns the current horizontal velocity in cm/s
+     */
+    float        get_velocity_xy();
+
+    /**
      * set_velocity_xy - overwrites the current horizontal velocity in cm/s
      *
      * @param x : latitude  velocity in cm/s
@@ -279,7 +286,7 @@ protected:
     int32_t                 _base_lat;                  // base latitude  (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
     int32_t                 _base_lon;                  // base longitude (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
     float                   _lon_to_cm_scaling;         // conversion of longitude to centimeters
-    
+
     // Z Axis specific variables
     AP_Float                _time_constant_z;           // time constant for vertical corrections in s
     float                   _k1_z;                      // gain for vertical position correction
