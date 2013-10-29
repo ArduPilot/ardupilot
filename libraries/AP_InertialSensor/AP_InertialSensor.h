@@ -139,6 +139,9 @@ public:
         }
     }
 
+    virtual uint16_t error_count(void) const { return 0; }
+    virtual bool healthy(void) const { return true; }
+
 protected:
 
     // sensor specific init to be overwritten by descendant classes
