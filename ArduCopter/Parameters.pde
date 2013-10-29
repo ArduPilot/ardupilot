@@ -346,13 +346,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
-    // @Param: TOY_RATE
-    // @DisplayName: Toy Yaw Rate
-    // @Description: Controls yaw rate in Toy mode.  Higher values will cause a slower yaw rate.  Do not set to zero!
-    // @User: Advanced
-    // @Range: 1 10
-    GSCALAR(toy_yaw_rate, "TOY_RATE",               1),
-
     // @Param: ESC
     // @DisplayName: ESC Calibration
     // @Description: Controls whether ArduCopter will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
