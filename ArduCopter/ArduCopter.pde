@@ -871,6 +871,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,  2,     250 },
     { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
+    { crash_check,          10,      20 },
     { gcs_check_input,	     2,     550 },
     { gcs_send_heartbeat,  100,     150 },
     { gcs_send_deferred,     2,     720 },
@@ -976,7 +977,7 @@ void loop()
 {
     // wait for an INS sample
     if (!ins.wait_for_sample(1000)) {
-        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_INS_DELAY);
+        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_MAIN_INS_DELAY);
         return;
     }
     uint32_t timer = micros();

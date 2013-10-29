@@ -445,6 +445,7 @@ enum ap_message {
 #define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
 #define ERROR_SUBSYSTEM_FLIGHT_MODE         10
 #define ERROR_SUBSYSTEM_GPS                 11
+#define ERROR_SUBSYSTEM_CRASH_CHECK         12
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -458,8 +459,9 @@ enum ap_message {
 // subsystem specific error codes -- gps
 #define ERROR_CODE_GPS_GLITCH               2
 // subsystem specific error codes -- main
-#define ERROR_CODE_INS_DELAY                1
-
+#define ERROR_CODE_MAIN_INS_DELAY           1
+// subsystem specific error codes -- crash checker
+#define ERROR_CODE_CRASH_CHECK_CRASH        1
 
 
 #endif // _DEFINES_H
