@@ -28,7 +28,7 @@ static void calc_position(){
 static void calc_distance_and_bearing()
 {
     Vector3f curr = inertial_nav.get_position();
-    
+
     // get target from loiter or wpinav controller
     if( nav_mode == NAV_LOITER || nav_mode == NAV_CIRCLE ) {
         wp_distance = wp_nav.get_distance_to_target();
@@ -164,16 +164,6 @@ static void update_nav_mode()
         log_counter = 0;
         Log_Write_Nav_Tuning();
     }
-
-    /*
-    // To-Do: check that we haven't broken toy mode
-    case TOY_A:
-    case TOY_M:
-        set_nav_mode(NAV_NONE);
-        update_nav_wp();
-        break;
-    }
-    */
 }
 
 // Keeps old data out of our calculation / logs
@@ -225,7 +215,7 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
         circle_angle = wrap_PI(heading_in_radians-PI);
 
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*g.circle_radius*100.0f)); 
+        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*g.circle_radius*100.0f));
 
         // angular_velocity in radians per second
         circle_angular_velocity_max = max_velocity/((float)g.circle_radius * 100.0f);

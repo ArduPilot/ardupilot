@@ -92,12 +92,6 @@ static void init_rc_out()
     if (ap.pre_arm_rc_check) {
         output_min();
     }
-
-#if TOY_EDF == ENABLED
-    // add access to CH8 and CH6
-    APM_RC.enable_out(CH_8);
-    APM_RC.enable_out(CH_6);
-#endif
 }
 
 // output_min - enable and output lowest possible value to motors

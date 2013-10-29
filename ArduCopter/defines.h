@@ -144,10 +144,10 @@
 #define POSITION 8                      // AUTO control
 #define LAND 9                          // AUTO control
 #define OF_LOITER 10                    // Hold a single location using optical flow sensor
-#define TOY_A 11                        // THOR Enum for Toy mode
-#define TOY_M 12                        // THOR Enum for Toy mode
+#define TOY 11                          // THOR Enum for Toy mode (Note: 12 is no longer used)
 #define SPORT 13                        // earth frame rate control
 #define NUM_MODES 14
+
 
 // CH_6 Tuning
 // -----------
