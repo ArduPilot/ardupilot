@@ -33,7 +33,7 @@ static void arm_motors_check()
         arming_counter = 0;
         return;
     }
-	
+
 	#if FRAME_CONFIG == HELI_FRAME
 	if ((motors.rsc_mode > 0) && (g.rc_8.control_in >= 10)){
 		arming_counter = 0;
@@ -41,11 +41,7 @@ static void arm_motors_check()
 	}
 	#endif  // HELI_FRAME
 
-#if TOY_EDF == ENABLED
-    int16_t tmp = g.rc_1.control_in;
-#else
     int16_t tmp = g.rc_4.control_in;
-#endif
 
     // full right
     if (tmp > 4000) {
@@ -233,7 +229,7 @@ static void pre_arm_checks(bool display_failure)
         }
         return;
     }
-    
+
     // pre-arm check to ensure ch7 and ch8 have different functions
     if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
         if (display_failure) {

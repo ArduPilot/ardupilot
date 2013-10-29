@@ -99,12 +99,6 @@
 #ifndef FRAME_ORIENTATION
  # define FRAME_ORIENTATION      X_FRAME
 #endif
-#ifndef TOY_EDF
- # define TOY_EDF        DISABLED
-#endif
-#ifndef TOY_MIXER
- # define TOY_MIXER      TOY_LINEAR_MIXER
-#endif
 
 /////////////////////////////////////////////////////////////////////////////////
 // TradHeli defaults
