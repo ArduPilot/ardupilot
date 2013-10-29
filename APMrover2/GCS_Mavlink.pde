@@ -161,6 +161,9 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     if (g_gps != NULL && g_gps->status() > GPS::NO_GPS) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+    if (!ins.healthy()) {
+        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+    }
 
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
