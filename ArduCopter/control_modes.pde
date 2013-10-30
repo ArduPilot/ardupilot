@@ -54,7 +54,7 @@ static void reset_control_switch()
     read_control_switch();
 }
 
-// read_3pos_switch 
+// read_3pos_switch
 static uint8_t read_3pos_switch(int16_t radio_in){
     if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
@@ -190,22 +190,37 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     return;
                 }
 
+				// we're on the ground
+				if((g.rc_3.control_in == 0) && (aux_switch_wp_index == 0)){
+					// nothing to do
+					return;
+				}
+
+                // initialise new waypoint to current location
+                Location new_wp;
+
                 if(aux_switch_wp_index == 0) {
                     // this is our first WP, let's save WP 1 as a takeoff
                     // increment index to WP index of 1 (home is stored at 0)
                     aux_switch_wp_index = 1;
 
-                    Location temp   = home;
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-                    temp.id = MAV_CMD_NAV_TAKEOFF;
-                    temp.alt = current_loc.alt;
+                    new_wp.id = MAV_CMD_NAV_TAKEOFF;
+                    new_wp.options = 0;
+                    new_wp.p1 = 0;
+                    new_wp.lat = 0;
+                    new_wp.lng = 0;
+                    new_wp.alt = max(current_loc.alt,100);
 
                     // save command:
                     // we use the current altitude to be the target for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.
                     // If we are above the altitude, we will skip the command.
-                    set_cmd_with_index(temp, aux_switch_wp_index);
+                    set_cmd_with_index(new_wp, aux_switch_wp_index);
                 }
+
+                // initialise new waypoint to current location
+                new_wp = current_loc;
 
                 // increment index
                 aux_switch_wp_index++;
@@ -216,14 +231,14 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
                 if(g.rc_3.control_in > 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-                    current_loc.id = MAV_CMD_NAV_WAYPOINT;
+                    new_wp.id = MAV_CMD_NAV_WAYPOINT;
                 }else{
-                    // set our location ID to 21, MAV_CMD_NAV_LAND
-                    current_loc.id = MAV_CMD_NAV_LAND;
+					// set our location ID to 21, MAV_CMD_NAV_LAND
+					new_wp.id = MAV_CMD_NAV_LAND;
                 }
 
                 // save command
-                set_cmd_with_index(current_loc, aux_switch_wp_index);
+                set_cmd_with_index(new_wp, aux_switch_wp_index);
 
                 // log event
                 Log_Write_Event(DATA_SAVEWP_ADD_WP);
