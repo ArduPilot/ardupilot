@@ -308,6 +308,11 @@ static AP_HAL::AnalogSource *rssi_analog_source;
 static AP_HAL::AnalogSource *vcc_pin;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Sonar
+////////////////////////////////////////////////////////////////////////////////
+static AP_RangeFinder_analog sonar;
+
+////////////////////////////////////////////////////////////////////////////////
 // Relay
 ////////////////////////////////////////////////////////////////////////////////
 static AP_Relay relay;
@@ -728,6 +733,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 },
     { update_notify,          1,    300 },
+    { read_sonars,            1,    500 },
     { one_second_loop,       50,   3900 },
     { check_long_failsafe,   15,   1000 },
     { airspeed_ratio_update, 50,   1000 },

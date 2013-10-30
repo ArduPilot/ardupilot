@@ -104,6 +104,9 @@ static void init_ardupilot()
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
+    // initialise sonar
+    init_sonar();
+
     // init the GCS
     gcs[0].init(hal.uartA);
     // Register mavlink_delay_cb, which will run anytime you have

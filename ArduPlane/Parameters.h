@@ -98,6 +98,7 @@ public:
         k_param_ground_steer_dps,
         k_param_rally_limit_km,
         k_param_hil_err_limit,
+        k_param_sonar,
 
         // 110: Telemetry control
         //
