@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @Param: TCRV_MAXPCT
     // @DisplayName: Thrust Curve max thrust percentage
     // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
-    // @Range: 20 80
+    // @Range: 50 100
     AP_GROUPINFO("TCRV_MAXPCT", 3, AP_Motors, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
     
     // @Param: SPIN_ARMED
