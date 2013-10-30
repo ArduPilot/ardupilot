@@ -178,7 +178,6 @@ static bool verify_nav_command()
         break;
 
     default:
-        //gcs_send_text_P(SEVERITY_HIGH,PSTR("<verify_must: default> No current Must commands"));
         return false;
         break;
     }
@@ -207,7 +206,6 @@ static bool verify_cond_command()
         break;
 
     default:
-        //gcs_send_text_P(SEVERITY_HIGH,PSTR("<verify_must: default> No current May commands"));
         return false;
         break;
     }
