@@ -140,6 +140,7 @@ enum ap_message {
     MSG_SIMSTATE,
     MSG_HWSTATUS,
     MSG_WIND,
+    MSG_RANGEFINDER,
     MSG_RETRY_DEFERRED // this must be last
 };
 
