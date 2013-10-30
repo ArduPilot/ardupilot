@@ -78,15 +78,13 @@ then
      echo "Created APM directory"
 fi
 
-uorb start
-if mpu6000 start
+if [ -f /bin/lsm303d ]
 then
-     echo "Detected FMUv1 board"
-     set BOARD FMUv1
-else
-     l3gd20 start
      echo "Detected FMUv2 board"
      set BOARD FMUv2
+else
+     echo "Detected FMUv1 board"
+     set BOARD FMUv1
 fi
 
 if [ -f /fs/microsd/APM/mavlink-ttys0 ]
@@ -99,6 +97,70 @@ else
    else
 	set deviceC /dev/ttyS1
    fi
+fi
+
+if uorb start
+then
+    echo "uorb started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+
+# try the px4io start twice. Some FMUv2 board don't
+# come up the first time
+set HAVE_PX4IO false
+if px4io start
+then
+    set HAVE_PX4IO true
+else
+    tone_alarm MNGG
+    sleep 2
+    if px4io start
+    then
+        set HAVE_PX4IO true
+        # play happy tune again
+	tone_alarm start
+    fi
+fi
+
+if [ $HAVE_PX4IO == true ]
+then
+    echo "PX4IO board OK"
+    echo "PX4IO board OK" >> $logfile
+    echo "Setting FMU mode_pwm"
+    fmu mode_pwm
+    if [ $BOARD == FMUv1 -a $deviceC == /dev/ttyS1 ]
+    then
+	# ttyS1 is used for PWM output for 4 extra channels
+	set deviceC /dev/ttyS2
+    fi
+else
+    echo "No PX4IO board found"
+    echo "No PX4IO board found" >> $logfile
+
+    if [ $BOARD == FMUv2 ]
+    then
+       sh /etc/init.d/rc.error
+    fi
+
+    if [ -f /fs/microsd/APM/mkblctrl ]
+    then
+   	echo "APM/mkblctrl found - switch to MK I2C ESCs"
+   	echo "APM/mkblctrl found - switch to MK I2C ESCs" >> $logfile
+	echo "Setting up mkblctrl driver"
+	echo "Setting up mkblctrl driver" >> $logfile
+	mkblctrl -mkmode x
+    fi
+
+    echo "Setting up PX4FMU direct mode"
+    fmu mode_pwm
+    if [ $BOARD == FMUv1 -a $deviceC == /dev/ttyS1 ]
+    then
+	# ttyS1 is used for PWM output when there
+	# is no IO board
+	set deviceC /dev/ttyS2
+    fi
 fi
 
 
@@ -127,11 +189,23 @@ then
     else
         sh /etc/init.d/rc.error
     fi
+    if mpu6000 start
+    then
+       echo "mpu6000  started OK"
+    else
+       sh /etc/init.d/rc.error
+    fi
 else
     echo "Starting FMUv2 sensors"
     if hmc5883 start
     then
         echo "Using external magnetometer"
+    fi
+    if l3gd20 start
+    then
+       echo "l3gd20 started OK"
+    else
+       sh /etc/init.d/rc.error
     fi
     if lsm303d start
     then
@@ -154,39 +228,6 @@ fi
 
 echo "Trying PX4IO board"
 echo "Trying PX4IO board" >> $logfile
-if px4io start
-then
-    echo "PX4IO board OK"
-    echo "PX4IO board OK" >> $logfile
-    echo "Setting FMU mode_pwm"
-    fmu mode_pwm
-    if [ $BOARD == FMUv1 -a $deviceC == /dev/ttyS1 ]
-    then
-	# ttyS1 is used for PWM output for 4 extra channels
-	set deviceC /dev/ttyS2
-    fi
-else
-    echo "No PX4IO board found"
-    echo "No PX4IO board found" >> $logfile
-
-    if [ -f /fs/microsd/APM/mkblctrl ]
-    then
-   	echo "APM/mkblctrl found - switch to MK I2C ESCs"
-   	echo "APM/mkblctrl found - switch to MK I2C ESCs" >> $logfile
-	echo "Setting up mkblctrl driver"
-	echo "Setting up mkblctrl driver" >> $logfile
-	mkblctrl -mkmode x
-    fi
-
-    echo "Setting up PX4FMU direct mode"
-    fmu mode_pwm
-    if [ $BOARD == FMUv1 -a $deviceC == /dev/ttyS1 ]
-    then
-	# ttyS1 is used for PWM output when there
-	# is no IO board
-	set deviceC /dev/ttyS2
-    fi
-fi
 
 # rgbled
 if rgbled start
