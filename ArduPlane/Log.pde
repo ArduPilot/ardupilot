@@ -337,9 +337,11 @@ struct PACKED log_Nav_Tuning {
     uint16_t nav_bearing_cd;
     int16_t altitude_error_cm;
     int16_t airspeed_cm;
+    float   altitude;
+    uint32_t groundspeed_cm;
 };
 
-// Write a navigation tuning packet. Total length : 18 bytes
+// Write a navigation tuning packe
 static void Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
@@ -349,7 +351,9 @@ static void Log_Write_Nav_Tuning()
         target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (uint16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)altitude_error_cm,
-        airspeed_cm         : (int16_t)airspeed.get_airspeed_cm()
+        airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
+        altitude            : barometer.get_altitude(),
+        groundspeed_cm      : g_gps->ground_speed_cm
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -452,7 +456,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "cccchhf",    "NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,AccY" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "CICCcc",     "Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd" },
+      "NTUN", "CICCccfI",   "Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_MODE_MSG, sizeof(log_Mode),             
       "MODE", "MB",         "Mode,ModeNum" },
     { LOG_CURRENT_MSG, sizeof(log_Current),             
