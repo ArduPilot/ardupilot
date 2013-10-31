@@ -34,17 +34,14 @@ static void init_rc_in()
     g.rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
     g.rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
-    //set auxiliary ranges
+    //set auxiliary servo ranges
     g.rc_5.set_range(0,1000);
     g.rc_6.set_range(0,1000);
     g.rc_7.set_range(0,1000);
     g.rc_8.set_range(0,1000);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
-#elif MOUNT == ENABLED
-    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
-#endif
+    // update assigned functions for auxiliary servos
+    aux_servos_update_fn();
 
     // set default dead zones
     default_dead_zones();
@@ -186,6 +183,55 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
         // pass through throttle
         g.rc_3.set_pwm(throttle_pwm);
     }
+}
+
+// aux_servos_update - update auxiliary servos assigned functions in case the user has changed them
+void aux_servos_update_fn()
+{
+// Quads can use RC5 and higher as auxiliary channels
+#if (FRAME_CONFIG == QUAD_FRAME)
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+ #else // APM1, APM2, SITL
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
+ #endif
+
+// Tri's can use RC5, RC6, RC8 and higher
+#elif (FRAME_CONFIG == TRI_FRAME)
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+ #else // APM1, APM2, SITL
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_8, &g.rc_10, &g.rc_11);
+ #endif
+
+// Hexa and Y6 can use RC7 and higher
+#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+ #else
+    update_aux_servo_function(&g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
+ #endif
+
+// Octa and X8 can use RC9 and higher
+#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+ #else
+    update_aux_servo_function(&g.rc_10, &g.rc_11);
+ #endif
+
+// Heli's can use RC5, RC6, RC7, not RC8, and higher
+#elif (FRAME_CONFIG == HELI_FRAME)
+ #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
+ #else // APM1, APM2, SITL
+    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_10, &g.rc_11);
+ #endif
+
+// throw compile error if frame type is unrecognise
+#else
+  #error Unrecognised frame type
+#endif
 }
 
 static void trim_radio()
