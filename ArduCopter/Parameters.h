@@ -370,11 +370,8 @@ public:
     RC_Channel_aux          rc_6;
     RC_Channel_aux          rc_7;
     RC_Channel_aux          rc_8;
-
-#if MOUNT == ENABLED
     RC_Channel_aux          rc_10;
     RC_Channel_aux          rc_11;
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux          rc_9;
@@ -430,12 +427,11 @@ public:
         rc_8                (CH_8),
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_9                (CH_9),
+#endif
         rc_10               (CH_10),
         rc_11               (CH_11),
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         rc_12               (CH_12),
-#elif MOUNT == ENABLED
-        rc_10               (CH_10),
-        rc_11               (CH_11),
 #endif
 
         // PID controller	initial P	        initial I		    initial D
