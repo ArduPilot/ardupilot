@@ -446,7 +446,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "ccC",        "Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "IHIBBBhhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,I2CErr" },
+      "PM",  "IHIBBBhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,I2CErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 

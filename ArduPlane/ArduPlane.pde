@@ -954,9 +954,9 @@ static void one_second_loop()
         if (scheduler.debug() != 0) {
             hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
         }
-        G_Dt_max = 0;
         if (g.log_bitmask & MASK_LOG_PM)
             Log_Write_Performance();
+        G_Dt_max = 0;
         resetPerfData();
     }
 
