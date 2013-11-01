@@ -186,6 +186,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     aux_switch_wp_index = 0;
                     g.command_total.set_and_save(1);
                     set_mode(RTL);  // if by chance we are unable to switch to RTL we just stay in AUTO and hope the GPS failsafe will take-over
+                    Log_Write_Event(DATA_SAVEWP_CLEAR_MISSION_RTL);
                     return;
                 }
 
@@ -224,6 +225,9 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 // save command
                 set_cmd_with_index(current_loc, aux_switch_wp_index);
 
+                // log event
+                Log_Write_Event(DATA_SAVEWP_ADD_WP);
+
                 // Cause the CopterLEDs to blink twice to indicate saved waypoint
                 copter_leds_nav_blink = 10;
             }
@@ -251,8 +255,10 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // enable or disable the fence
             if (ch_flag == AUX_SWITCH_HIGH) {
                 fence.enable(true);
+                Log_Write_Event(DATA_FENCE_ENABLE);
             }else{
                 fence.enable(false);
+                Log_Write_Event(DATA_FENCE_DISABLE);
             }
             break;
 #endif
@@ -268,12 +274,15 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
                     g.acro_trainer = ACRO_TRAINER_DISABLED;
+                    Log_Write_Event(DATA_ACRO_TRAINER_DISABLED);
                     break;
                 case AUX_SWITCH_MIDDLE:
                     g.acro_trainer = ACRO_TRAINER_LEVELING;
+                    Log_Write_Event(DATA_ACRO_TRAINER_LEVELING);
                     break;
                 case AUX_SWITCH_HIGH:
                     g.acro_trainer = ACRO_TRAINER_LIMITED;
+                    Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
                     break;
             }
             break;
@@ -337,6 +346,7 @@ static void save_trim()
     float roll_trim = ToRad((float)g.rc_1.control_in/100.0f);
     float pitch_trim = ToRad((float)g.rc_2.control_in/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
+    Log_Write_Event(DATA_SAVE_TRIM);
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions

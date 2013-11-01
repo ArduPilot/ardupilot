@@ -346,6 +346,14 @@ enum ap_message {
 #define DATA_AUTOTUNE_REACHED_LIMIT     35
 #define DATA_AUTOTUNE_TESTING           36
 #define DATA_AUTOTUNE_SAVEDGAINS        37
+#define DATA_SAVE_TRIM                  38
+#define DATA_SAVEWP_ADD_WP              39
+#define DATA_SAVEWP_CLEAR_MISSION_RTL   40
+#define DATA_FENCE_ENABLE               41
+#define DATA_FENCE_DISABLE              42
+#define DATA_ACRO_TRAINER_DISABLED      43
+#define DATA_ACRO_TRAINER_LEVELING      44
+#define DATA_ACRO_TRAINER_LIMITED       45
 
 
 
