@@ -1755,7 +1755,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			if(msg->sysid != g.sysid_my_gcs) break;
             last_heartbeat_ms = failsafe.rc_override_timer = millis();
             failsafe_trigger(FAILSAFE_EVENT_GCS, false);
-			pmTest1++;
             break;
         }
 

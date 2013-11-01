@@ -370,7 +370,6 @@ static void resetPerfData(void) {
 	ahrs.renorm_range_count 	= 0;
 	ahrs.renorm_blowup_count = 0;
 	gps_fix_count 			= 0;
-	pmTest1					= 0;
 	perf_mon_timer 			= millis();
 }
 
