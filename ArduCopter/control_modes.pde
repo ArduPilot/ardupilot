@@ -178,8 +178,8 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUX_SWITCH_SAVE_WP:
-            // save waypoint when switch is switched off
-            if (ch_flag == AUX_SWITCH_LOW) {
+            // save waypoint when switch is brought high
+            if (ch_flag == AUX_SWITCH_HIGH) {
 
                 // if in auto mode, reset the mission
                 if(control_mode == AUTO) {
