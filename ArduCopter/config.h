@@ -286,7 +286,7 @@
 //
 
 #ifndef CH7_OPTION
- # define CH7_OPTION            AUX_SWITCH_SAVE_WP
+ # define CH7_OPTION            AUX_SWITCH_DO_NOTHING
 #endif
 
 #ifndef CH8_OPTION
