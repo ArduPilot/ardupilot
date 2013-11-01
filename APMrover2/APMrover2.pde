@@ -526,10 +526,6 @@ static int32_t 	perf_mon_timer;
 static uint32_t 	G_Dt_max;
 // The number of gps fixes recorded in the current performance monitoring interval
 static uint8_t 	gps_fix_count = 0;
-// A variable used by developers to track performanc metrics.
-// Currently used to record the number of GCS heartbeat messages received
-static int16_t pmTest1 = 0;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
@@ -768,9 +764,9 @@ static void one_second_loop(void)
         if (scheduler.debug() != 0) {
             hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
         }
-        G_Dt_max = 0;
         if (g.log_bitmask & MASK_LOG_PM)
             Log_Write_Performance();
+        G_Dt_max = 0;
         resetPerfData();
     }
 
