@@ -279,7 +279,7 @@ void AP_InertialNav::set_velocity_xy(float x, float y)
 // set_velocity_xy - set velocity in latitude & longitude directions (in cm/s)
 float AP_InertialNav::get_velocity_xy()
 {
-	return safe_sqrt(_velocity.x + _velocity.y);
+	return safe_sqrt(_velocity.x * _velocity.x + _velocity.y * _velocity.y);
 }
 
 //
