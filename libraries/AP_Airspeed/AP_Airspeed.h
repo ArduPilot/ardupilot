@@ -106,7 +106,7 @@ public:
     // return the differential pressure in Pascal for the last
     // airspeed reading. Used by the calibration code
     float get_differential_pressure(void) const {
-        return max(_last_pressure - _offset, 0);
+        return max(_last_pressure, 0);
     }
 
     // set the apparent to true airspeed ratio
