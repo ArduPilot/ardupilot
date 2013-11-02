@@ -389,8 +389,16 @@ static bool pre_arm_gps_checks()
 static bool arm_checks(bool display_failure)
 {
     // succeed if arming checks are disabled
-    if(!g.arming_check_enabled) {
+    if (!g.arming_check_enabled) {
         return true;
+    }
+
+    // check throttle is above failsafe throttle
+    if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr below FS"));
+        }
+        return false;
     }
 
     // check gps is ok if required - note this same check is also done in pre-arm checks
