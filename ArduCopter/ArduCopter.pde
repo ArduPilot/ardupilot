@@ -1741,7 +1741,7 @@ void update_roll_pitch_mode(void)
         get_stabilize_pitch(control_pitch);
 
         // copy user input for reporting purposes
-        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in);
+        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in, g.rc_4.control_in);
         break;
 #endif
     }
