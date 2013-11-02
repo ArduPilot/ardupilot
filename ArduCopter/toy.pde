@@ -14,8 +14,8 @@ get_yaw_toy()
 	// Gain scheduling for Yaw input -
 	// we reduce the yaw input based on the velocity of the copter
 	// 0 = full control, 600cm/s = 20% control
-    toy_gain = min(inertial_nav.get_velocity_xy(), 600);
-    toy_gain = 1.0 - (toy_gain / 750.0);
+    toy_gain = min(inertial_nav.get_velocity_xy(), 700);
+    toy_gain = 1.0 - (toy_gain / 800.0);
 	get_yaw_rate_stabilized_ef((float)control_roll * toy_gain);
 }
 
