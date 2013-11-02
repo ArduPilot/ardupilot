@@ -99,15 +99,6 @@ get_stabilize_yaw(int32_t target_angle)
     set_yaw_rate_target(target_rate, EARTH_FRAME);
 }
 
-static void
-get_acro_yaw(int32_t target_rate)
-{
-    target_rate = target_rate * g.acro_yaw_p;
-
-    // set targets for rate controller
-    set_yaw_rate_target(target_rate, BODY_FRAME);
-}
-
 // get_acro_level_rates - calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
 static void
 get_acro_level_rates()
