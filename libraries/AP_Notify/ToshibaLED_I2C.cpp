@@ -45,9 +45,8 @@ bool ToshibaLED_I2C::hw_init()
     bool ret = (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_ENABLE, 0x03) == 0);
 
     // update the red, green and blue values to zero
-    ret &= (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, TOSHIBA_LED_OFF) == 0);
-    ret &= (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM1, TOSHIBA_LED_OFF) == 0);
-    ret &= (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM2, TOSHIBA_LED_OFF) == 0);
+    uint8_t val[3] = { TOSHIBA_LED_OFF, TOSHIBA_LED_OFF, TOSHIBA_LED_OFF };
+    ret &= (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
 
     // re-enable recording of i2c lockup errors
     hal.i2c->ignore_errors(false);
@@ -69,13 +68,9 @@ bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
         return false;
     }
 
-    bool success = true;
     // update the red value
-    success &= (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM2, red>>4) == 0);
-    // update the green value
-    success &= (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM1, green>>4) == 0);
-    // update the blue value
-    success &= (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, blue>>4) == 0);
+    uint8_t val[3] = { (uint8_t)(blue>>4), (uint8_t)(green>>4), (uint8_t)(red>>4) };
+    bool success = (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
 
     // give back i2c semaphore
     i2c_sem->give();
