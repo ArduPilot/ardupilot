@@ -418,6 +418,16 @@ static bool set_mode(uint8_t mode)
             }
             break;
 
+		case TAKEOFF:
+            if (GPS_ok() || ignore_checks) {
+				success = true;
+				set_yaw_mode(YAW_HOLD);
+				set_roll_pitch_mode(GUIDED_RP);
+				set_throttle_mode(THROTTLE_TAKEOFF);
+				set_nav_mode(GUIDED_NAV);
+			}
+            break;
+
         case LAND:
             success = true;
             do_land(NULL);  // land at current location
@@ -597,6 +607,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case SPORT:
         port->print_P(PSTR("SPORT"));
+        break;
+    case TAKEOFF:
+        port->print_P(PSTR("TAKEOFF"));
         break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);

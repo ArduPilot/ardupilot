@@ -110,7 +110,7 @@
   # define RATE_PITCH_D       			0
   # define HELI_PITCH_FF				0
   # define HELI_ROLL_FF					0
-  # define HELI_YAW_FF					0  
+  # define HELI_YAW_FF					0
   # define STABILIZE_THROTTLE			THROTTLE_MANUAL
   # define MPU6K_FILTER                 10
 #endif
@@ -577,7 +577,7 @@
 // AUTO Mode
 // Note: Auto mode yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL     
+ # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
 #ifndef AUTO_RP
@@ -903,6 +903,10 @@
 #ifndef ALT_HOLD_TAKEOFF_JUMP
  # define ALT_HOLD_TAKEOFF_JUMP 20              // jump in altitude target when taking off in Loiter or AltHold flight modes
 #endif
+#ifndef TAKEOFF_ALTITUDE
+ # define TAKEOFF_ALTITUDE 250              // jump in altitude target when taking off in Loiter or AltHold flight modes
+#endif
+
 
 #ifndef ALT_HOLD_P
  # define ALT_HOLD_P            1.0f

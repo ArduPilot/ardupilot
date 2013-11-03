@@ -40,6 +40,7 @@
 #define THROTTLE_HOLD                       2   // alt hold plus pilot input of climb rate
 #define THROTTLE_AUTO                       3   // auto pilot altitude controller with target altitude held in next_WP.alt
 #define THROTTLE_LAND                       4   // landing throttle controller
+#define THROTTLE_TAKEOFF                    5   // landing throttle controller
 
 
 // sonar - for use with CONFIG_SONAR_SOURCE
@@ -144,7 +145,8 @@
 #define POSITION 8                      // AUTO control
 #define LAND 9                          // AUTO control
 #define OF_LOITER 10                    // Hold a single location using optical flow sensor
-#define TOY 11                          // THOR Enum for Toy mode (Note: 12 is no longer used)
+#define TOY 11                          // Toy mode (Note: 12 is no longer used)
+#define TAKEOFF 12                      //
 #define SPORT 13                        // earth frame rate control
 #define NUM_MODES 14
 
@@ -205,7 +207,7 @@
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
-#define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last 
+#define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
 
 // TOY mixing options
