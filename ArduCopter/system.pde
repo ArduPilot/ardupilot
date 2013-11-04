@@ -455,7 +455,8 @@ static bool set_mode(uint8_t mode)
             set_yaw_mode(YAW_TOY);
             set_roll_pitch_mode(ROLL_PITCH_TOY);
             set_nav_mode(NAV_NONE);
-            set_throttle_mode(THROTTLE_HOLD);
+            //set_throttle_mode(THROTTLE_HOLD);
+            set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
             break;
 
         case SPORT:
