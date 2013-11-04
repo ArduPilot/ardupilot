@@ -622,10 +622,10 @@ void DataFlash_Class::Log_Write_GPS(const GPS *gps, int32_t relative_alt)
 
 
 // Write an raw accel/gyro data packet
-void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor *ins)
+void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 {
-    Vector3f gyro = ins->get_gyro();
-    Vector3f accel = ins->get_accel();
+    Vector3f gyro = ins.get_gyro();
+    Vector3f accel = ins.get_accel();
     struct log_IMU pkt = {
         LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
         gyro_x  : gyro.x,
