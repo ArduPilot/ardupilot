@@ -819,6 +819,10 @@ static AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
 static AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
 #endif
 
+#if GIMBAL == ENABLED
+static int8_t gimbal_mode;
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // AC_Fence library to reduce fly-aways
 ////////////////////////////////////////////////////////////////////////////////
@@ -1096,6 +1100,10 @@ static void update_mount()
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
 #endif
+
+#if GIMBAL == ENABLED
+    update_gimbal_control();
+#endif
 }
 
 // update_batt_compass - read battery and compass
@@ -1363,6 +1371,9 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
         case YAW_LOOK_AT_HOME:
             if( ap.home_is_set ) {
                 yaw_initialised = true;
+                yaw_look_at_WP.x = 0;
+                yaw_look_at_WP.y = 0;
+                yaw_look_at_WP.z = 0;
             }
             break;
         case YAW_LOOK_AHEAD:
@@ -1395,7 +1406,7 @@ void update_yaw_mode(void)
     switch(yaw_mode) {
 
     case YAW_HOLD:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }
@@ -1409,7 +1420,7 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_NEXT_WP:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }else{
@@ -1426,7 +1437,7 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_LOCATION:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }
@@ -1440,7 +1451,7 @@ void update_yaw_mode(void)
         break;
 
     case YAW_CIRCLE:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }
@@ -1454,7 +1465,7 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_HOME:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }else{
@@ -1470,7 +1481,7 @@ void update_yaw_mode(void)
         break;
 
     case YAW_LOOK_AT_HEADING:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }else{
@@ -1481,7 +1492,7 @@ void update_yaw_mode(void)
         break;
 
 	case YAW_LOOK_AHEAD:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }
@@ -1490,7 +1501,7 @@ void update_yaw_mode(void)
         break;
 
     case YAW_TOY:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }
@@ -1498,7 +1509,7 @@ void update_yaw_mode(void)
         break;
 
     case YAW_RESETTOARMEDYAW:
-        // if we are landed reset yaw target to current heading
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }else{

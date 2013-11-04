@@ -259,6 +259,11 @@ static void init_ardupilot()
     Log_Write_Startup();
 #endif
 
+
+#if GIMBAL == ENABLED
+	setup_gimbal_control();
+#endif
+
     cliSerial->print_P(PSTR("\nReady to FLY "));
 }
 
