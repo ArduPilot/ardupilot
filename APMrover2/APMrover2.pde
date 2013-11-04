@@ -252,7 +252,7 @@ AP_InertialSensor_Oilpan ins( &adc );
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM ahrs(&ins, g_gps);
+AP_AHRS_DCM ahrs(ins, g_gps);
 
 static AP_L1_Control L1_controller(ahrs);
 
@@ -642,7 +642,7 @@ static void ahrs_update()
         Log_Write_Attitude();
 
     if (g.log_bitmask & MASK_LOG_IMU)
-        DataFlash.Log_Write_IMU(&ins);
+        DataFlash.Log_Write_IMU(ins);
 }
 
 /*
