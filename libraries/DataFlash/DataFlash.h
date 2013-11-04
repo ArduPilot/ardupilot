@@ -151,6 +151,7 @@ struct PACKED log_GPS {
     int32_t  altitude;
     uint32_t ground_speed;
     int32_t  ground_course;
+    float    vel_z;
 };
 
 struct PACKED log_Message {
@@ -160,6 +161,7 @@ struct PACKED log_Message {
 
 struct PACKED log_IMU {
     LOG_PACKET_HEADER;
+    uint32_t timestamp;
     float gyro_x, gyro_y, gyro_z;
     float accel_x, accel_y, accel_z;
 };
@@ -170,9 +172,9 @@ struct PACKED log_IMU {
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "BIHBcLLeeEe", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs" }, \
+      "GPS",  "BIHBcLLeeEef", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VelZ" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "ffffff",     "GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+      "IMU",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message" }
 
