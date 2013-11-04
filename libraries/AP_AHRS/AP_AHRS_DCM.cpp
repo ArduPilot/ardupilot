@@ -367,7 +367,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             _gps_last_update = _gps->last_fix_time;
             new_value = true;
             float gps_course_rad = ToRad(_gps->ground_course_cd * 0.01f);
-            float yaw_error_rad = gps_course_rad - yaw;
+            float yaw_error_rad = wrap_PI(gps_course_rad - yaw);
             yaw_error = sinf(yaw_error_rad);
 
             /* reset yaw to match GPS heading under any of the
