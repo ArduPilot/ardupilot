@@ -83,7 +83,7 @@ get_stabilize_yaw(int32_t target_angle)
 
     // do not use rate controllers for helicotpers with external gyros
 #if FRAME_CONFIG == HELI_FRAME
-    if(motors.ext_gyro_enabled) {
+    if(motors.ext_gyro_enabled()) {
         g.rc_4.servo_out = constrain_int32(target_rate, -4500, 4500);
     }
 #endif
@@ -294,7 +294,7 @@ get_roll_rate_stabilized_ef(int32_t stick_angle)
     }
 
 #if FRAME_CONFIG == HELI_FRAME
-    if (!motors.motor_runup_complete) {
+    if (!motors.motor_runup_complete()) {
         angle_error = 0;
     }
 #else      
@@ -335,7 +335,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
     }
 
 #if FRAME_CONFIG == HELI_FRAME
-    if (!motors.motor_runup_complete) {
+    if (!motors.motor_runup_complete()) {
         angle_error = 0;
     }
 #else       
@@ -373,7 +373,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
 #if FRAME_CONFIG == HELI_FRAME
-    if (!motors.motor_runup_complete) {
+    if (!motors.motor_runup_complete()) {
     	angle_error = 0;
     }
 #else   
@@ -443,7 +443,7 @@ void
 run_rate_controllers()
 {
 #if FRAME_CONFIG == HELI_FRAME          // helicopters only use rate controllers for yaw and only when not using an external gyro
-    if(!motors.ext_gyro_enabled) {
+    if(!motors.ext_gyro_enabled()) {
         heli_integrated_swash_controller(roll_rate_target_bf, pitch_rate_target_bf);
         g.rc_4.servo_out = get_heli_rate_yaw(yaw_rate_target_bf);
     }
@@ -780,7 +780,7 @@ static int16_t get_angle_boost(int16_t throttle)
 {
     float angle_boost_factor = cos_pitch_x * cos_roll_x;
     angle_boost_factor = 1.0f - constrain_float(angle_boost_factor, .5f, 1.0f);
-    int16_t throttle_above_mid = max(throttle - motors.throttle_mid,0);
+    int16_t throttle_above_mid = max(throttle - motors.get_collective_mid(),0);
 
     // to allow logging of angle boost
     angle_boost = throttle_above_mid*angle_boost_factor;
@@ -900,7 +900,7 @@ get_throttle_accel(int16_t z_target_accel)
     } else {
         // Avoid harshing the mechanics pushing into the ground
         // stab_col_min should gently push down on the ground
-        output =  constrain_float(p+i+d+g.throttle_cruise, motors.stab_col_min*10, motors.stab_col_max*10);
+        output =  constrain_float(p+i+d+g.throttle_cruise, motors.get_manual_collective_min(), motors.get_manual_collective_max());
     }   
 #else   
     output =  constrain_float(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
