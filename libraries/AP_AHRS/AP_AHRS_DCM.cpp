@@ -561,14 +561,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // calculate the error term in earth frame.
     Vector3f GA_b = _ra_sum / (_ra_deltat * GRAVITY_MSS);
-    float length = GA_b.length();
-    if (length > 1.0f) {
-        GA_b /= length;
-        if (GA_b.is_inf()) {
-            // wait for some non-zero acceleration information
-            return;
-        }
+    GA_b.normalize();
+    if (GA_b.is_inf()) {
+        // wait for some non-zero acceleration information
+        return;
     }
+
     Vector3f error = GA_b % GA_e;
 
 #define YAW_INDEPENDENT_DRIFT_CORRECTION 0
