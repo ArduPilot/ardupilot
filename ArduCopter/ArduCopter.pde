@@ -289,7 +289,7 @@ AP_GPS_None     g_gps_driver;
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
 
-static AP_AHRS_DCM ahrs(&ins, g_gps);
+static AP_AHRS_DCM ahrs(ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -298,7 +298,7 @@ static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
 static AP_InertialSensor_HIL   ins;
-static AP_AHRS_DCM             ahrs(&ins, g_gps);
+static AP_AHRS_DCM             ahrs(ins, g_gps);
 
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -309,7 +309,7 @@ static SITL sitl;
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 static AP_ADC_HIL              adc;
 static AP_InertialSensor_HIL   ins;
-static AP_AHRS_HIL             ahrs(&ins, g_gps);
+static AP_AHRS_HIL             ahrs(ins, g_gps);
 static AP_GPS_HIL              g_gps_driver;
 static AP_Compass_HIL          compass;                  // never used
 static AP_Baro_HIL      barometer;
@@ -1150,7 +1150,7 @@ static void fifty_hz_logging_loop()
     }
 
     if (g.log_bitmask & MASK_LOG_IMU && motors.armed()) {
-        DataFlash.Log_Write_IMU(&ins);
+        DataFlash.Log_Write_IMU(ins);
     }
 #endif
 }
