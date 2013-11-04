@@ -48,10 +48,10 @@ AP_AHRS_DCM::update(void)
     float delta_t;
 
     // tell the IMU to grab some data
-    _ins->update();
+    _ins.update();
 
     // ask the IMU how much time this sensor reading represents
-    delta_t = _ins->get_delta_time();
+    delta_t = _ins.get_delta_time();
 
     // if the update call took more than 0.2 seconds then discard it,
     // otherwise we may move too far. This happens when arming motors 
@@ -61,10 +61,6 @@ AP_AHRS_DCM::update(void)
         _ra_deltat = 0;
         return;
     }
-
-    // Get current values for gyros
-    _gyro_vector  = _ins->get_gyro();
-    _accel_vector = _ins->get_accel();
 
     // Integrate the DCM matrix using gyro inputs
     matrix_update(delta_t);
@@ -91,7 +87,7 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     // and including the P terms would give positive feedback into
     // the _P_gain() calculation, which can lead to a very large P
     // value
-    _omega = _gyro_vector + _omega_I;
+    _omega = _ins.get_gyro() + _omega_I;
 
     _dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * _G_Dt);
 }
@@ -461,7 +457,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     temp_dcm.rotateXY(_trim);
 
     // rotate accelerometer values into the earth frame
-    _accel_ef = temp_dcm * _accel_vector;
+    _accel_ef = temp_dcm * _ins.get_accel();
 
     // integrate the accel vector in the earth frame between GPS readings
     _ra_sum += _accel_ef * deltat;
@@ -625,7 +621,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (_flags.fly_forward && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D && 
         _gps->ground_speed_cm < GPS_SPEED_MIN && 
-        _accel_vector.x >= 7 &&
+        _ins.get_accel().x >= 7 &&
 	    pitch_sensor > -3000 && pitch_sensor < 3000) {
             // assume we are in a launch acceleration, and reduce the
             // rp gain by 50% to reduce the impact of GPS lag on

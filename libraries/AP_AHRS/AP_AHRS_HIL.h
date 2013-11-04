@@ -5,7 +5,7 @@ class AP_AHRS_HIL : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_HIL(AP_InertialSensor *ins, GPS *&gps) : 
+    AP_AHRS_HIL(AP_InertialSensor &ins, GPS *&gps) : 
 	    AP_AHRS(ins, gps),
 	    _drift()
 		{}
@@ -21,7 +21,7 @@ public:
 
     // Methods
     void update(void) {
-        _ins->update();
+        _ins.update();
     }
     
     void setHil(float roll, float pitch, float yaw,
