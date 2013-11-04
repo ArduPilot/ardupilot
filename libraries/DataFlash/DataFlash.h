@@ -46,7 +46,7 @@ public:
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
-    void Log_Write_IMU(const AP_InertialSensor *ins);
+    void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
