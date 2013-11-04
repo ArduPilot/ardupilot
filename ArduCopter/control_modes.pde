@@ -16,8 +16,14 @@ static void read_control_switch()
             switch_counter          = 0;
 
             // set flight mode and simple mode setting
-            if (set_mode(flight_modes[switchPosition])) {
+            int8_t new_mode = flight_modes[switchPosition];
 
+			// don't permit auto takeoff unless we are anticipating it.
+            if(new_mode == TAKEOFF && g.rc_3.control_in == 0) {
+            	new_mode = STABILIZE;
+            }
+
+            if (set_mode(new_mode)) {
                 if(g.ch7_option != AUX_SWITCH_SIMPLE_MODE && g.ch8_option != AUX_SWITCH_SIMPLE_MODE && g.ch7_option != AUX_SWITCH_SUPERSIMPLE_MODE && g.ch8_option != AUX_SWITCH_SUPERSIMPLE_MODE) {
                     // set Simple mode using stored paramters from Mission planner
                     // rather than by the control switch

@@ -427,9 +427,9 @@ static bool set_mode(uint8_t mode)
             if (GPS_ok() || ignore_checks) {
 				success = true;
 				set_yaw_mode(YAW_HOLD);
-				set_roll_pitch_mode(GUIDED_RP);
+				set_roll_pitch_mode(LOITER_RP);
 				set_throttle_mode(THROTTLE_TAKEOFF);
-				set_nav_mode(GUIDED_NAV);
+				set_nav_mode(LOITER_NAV);
 			}
             break;
 

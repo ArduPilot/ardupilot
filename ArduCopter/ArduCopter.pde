@@ -1844,14 +1844,13 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             break;
 
         case THROTTLE_TAKEOFF:
+            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
+            wp_nav.set_desired_alt(controller_desired_alt);                                 // same as above but for loiter controller
+
         	set_takeoff_complete(false);
         	set_auto_armed(true);
-
-            wp_nav.set_desired_alt(TAKEOFF_ALTITUDE); // convert to param
-            motors.slow_start(true);
-
-			reset_throttle_I();
-			set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
+			// clear i term when we're taking off
+			set_throttle_takeoff();
             throttle_initialised = true;
             break;
 
@@ -2007,14 +2006,15 @@ void update_throttle_mode(void)
         break;
 
     case THROTTLE_TAKEOFF:
-    	if(wp_nav.get_desired_alt() == 0){
+    	if(wp_nav.get_desired_alt() <= 0){
     		wp_nav.set_desired_alt(TAKEOFF_ALTITUDE);
     	}
 		get_throttle_althold_with_slew(wp_nav.get_desired_alt(), -wp_nav.get_descent_velocity(), wp_nav.get_climb_velocity());
 		set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
 
 		if(current_loc.alt > (TAKEOFF_ALTITUDE - 20) && (g.rc_3.control_in > 500)){
-			set_mode(LOITER);
+			//set_mode(LOITER);
+			throttle_mode = THROTTLE_HOLD;
 		}
 		break;
 
