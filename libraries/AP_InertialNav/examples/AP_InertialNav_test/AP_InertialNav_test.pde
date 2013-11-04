@@ -46,7 +46,7 @@ AP_GPS_Auto auto_gps(&gps);
 GPS_Glitch   gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(&ins, gps);
+AP_AHRS_DCM ahrs(ins, gps);
 
 AP_InertialNav inertialnav(&ahrs, &baro, gps, gps_glitch);
 
