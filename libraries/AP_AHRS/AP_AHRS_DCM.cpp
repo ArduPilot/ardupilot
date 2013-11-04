@@ -351,6 +351,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             }
             new_value = true;
             yaw_error = yaw_error_compass();
+
+            // also update the _gps_last_update, so if we later
+            // disable the compass due to significant yaw error we
+            // don't suddenly change yaw with a reset
+            _gps_last_update = _gps->last_fix_time;
         }
     } else if (_flags.fly_forward && have_gps()) {
         /*
