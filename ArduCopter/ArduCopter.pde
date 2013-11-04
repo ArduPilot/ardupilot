@@ -1844,8 +1844,9 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             break;
 
         case THROTTLE_TAKEOFF:
-            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
-            wp_nav.set_desired_alt(controller_desired_alt);                                 // same as above but for loiter controller
+            //controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
+            //wp_nav.set_desired_alt(controller_desired_alt);                                 // same as above but for loiter controller
+			wp_nav.set_desired_alt(TAKEOFF_ALTITUDE); // convert to param
 
         	set_takeoff_complete(false);
         	set_auto_armed(true);
