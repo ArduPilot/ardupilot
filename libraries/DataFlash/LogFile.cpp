@@ -616,7 +616,8 @@ void DataFlash_Class::Log_Write_GPS(const GPS *gps, int32_t relative_alt)
         altitude      : gps->altitude_cm,
         ground_speed  : gps->ground_speed_cm,
         ground_course : gps->ground_course_cd,
-        vel_z         : gps->velocity_down()
+        vel_z         : gps->velocity_down(),
+        apm_time      : hal.scheduler->millis()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
