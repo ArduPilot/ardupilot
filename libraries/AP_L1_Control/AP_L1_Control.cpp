@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
 int32_t AP_L1_Control::nav_roll_cd(void) const
 {
 	float ret;	
-	ret = degrees(atanf(_latAccDem * 0.101972f) * 100.0f); // 0.101972 = 1/9.81
+	ret = cosf(_ahrs.pitch)*degrees(atanf(_latAccDem * 0.101972f) * 100.0f); // 0.101972 = 1/9.81
 	ret = constrain_float(ret, -9000, 9000);
 	return ret;
 }
