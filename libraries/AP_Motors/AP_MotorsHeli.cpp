@@ -30,108 +30,109 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
-    // @Description: This is the angular location of swash servo #1.
+    // @Description: Angular location of swash servo #1
     // @Range: -180 180
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV1_POS", 1,      AP_MotorsHeli,  servo1_pos, -60),
+    AP_GROUPINFO("SV1_POS", 1,      AP_MotorsHeli,  servo1_pos, AP_MOTORS_HELI_SERVO1_POS),
 
     // @Param: SV2_POS
     // @DisplayName: Servo 2 Position
-    // @Description: This is the angular location of swash servo #2.
+    // @Description: Angular location of swash servo #2
     // @Range: -180 180
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV2_POS", 2,      AP_MotorsHeli,  servo2_pos,  60),
+    AP_GROUPINFO("SV2_POS", 2,      AP_MotorsHeli,  servo2_pos,  AP_MOTORS_HELI_SERVO2_POS),
 
     // @Param: SV3_POS
     // @DisplayName: Servo 3 Position
-    // @Description: This is the angular location of swash servo #3.
+    // @Description: Angular location of swash servo #3
     // @Range: -180 180
     // @Units: Degrees
     // @User: Standard
     // @Increment: 1
-    AP_GROUPINFO("SV3_POS", 3,      AP_MotorsHeli,  servo3_pos,  180),
+    AP_GROUPINFO("SV3_POS", 3,      AP_MotorsHeli,  servo3_pos,  AP_MOTORS_HELI_SERVO3_POS),
 
     // @Param: ROL_MAX
-    // @DisplayName: Maximum Roll Angle
-    // @Description: This is the maximum allowable roll of the swash plate.
+    // @DisplayName: Swash Roll Angle Max
+    // @Description: Maximum roll angle of the swash plate
     // @Range: 0 18000
-    // @Units: Degrees
-    // @Increment: 1
+    // @Units: Centi-Degrees
+    // @Increment: 100
     // @User: Advanced
-    AP_GROUPINFO("ROL_MAX", 4,      AP_MotorsHeli,  roll_max,    4500),
+    AP_GROUPINFO("ROL_MAX", 4,      AP_MotorsHeli,  roll_max,    AP_MOTORS_HELI_SWASH_ROLL_MAX),
 
     // @Param: PIT_MAX
-    // @DisplayName: Maximum Pitch Angle
-    // @Description: This is the maximum allowable pitch of the swash plate.
+    // @DisplayName: Swash Pitch Angle Max
+    // @Description: Maximum pitch angle of the swash plate
     // @Range: 0 18000
-    // @Units: Degrees
-    // @Increment: 1
+    // @Units: Centi-Degrees
+    // @Increment: 100
     // @User: Advanced
-    AP_GROUPINFO("PIT_MAX", 5,      AP_MotorsHeli,  pitch_max,   4500),
+    AP_GROUPINFO("PIT_MAX", 5,      AP_MotorsHeli,  pitch_max,   AP_MOTORS_HELI_SWASH_PITCH_MAX),
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
-    // @Description: This controls the lowest possible servo position for the swashplate.
+    // @Description: Lowest possible servo position for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("COL_MIN", 6,      AP_MotorsHeli,  collective_min, 1250),
+    AP_GROUPINFO("COL_MIN", 6,      AP_MotorsHeli,  collective_min, AP_MOTORS_HELI_COLLECTIVE_MIN),
 
     // @Param: COL_MAX
     // @DisplayName: Collective Pitch Maximum
-    // @Description: This controls the highest possible servo position for the swashplate.
+    // @Description: Highest possible servo position for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("COL_MAX", 7,      AP_MotorsHeli,  collective_max, 1750),
+    AP_GROUPINFO("COL_MAX", 7,      AP_MotorsHeli,  collective_max, AP_MOTORS_HELI_COLLECTIVE_MAX),
 
     // @Param: COL_MID
     // @DisplayName: Collective Pitch Mid-Point
-    // @Description: This is the swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades).
+    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("COL_MID", 8,      AP_MotorsHeli,  collective_mid, 1500),
+    AP_GROUPINFO("COL_MID", 8,      AP_MotorsHeli,  collective_mid, AP_MOTORS_HELI_COLLECTIVE_MID),
 
     // @Param: GYR_ENABLE
     // @DisplayName: External Gyro Enabled
-    // @Description: Setting this to Enabled(1) will enable an external rudder gyro control which means outputting a gain on channel 7 and using a simpler heading control algorithm. Setting this to Disabled(0) will disable the external gyro gain on channel 7 and revert to a more complex yaw control algorithm.
+    // @Description: Enabled/Disable an external rudder gyro connected to channel 7.  With no external gyro a more complex yaw controller is used
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("GYR_ENABLE",      9,      AP_MotorsHeli,  ext_gyro_enabled, 0),
 
     // @Param: SWASH_TYPE
-    // @DisplayName: Swash Plate Type
-    // @Description: Setting this to 0 will configure for a 3-servo CCPM. Setting this to 1 will configure for mechanically mixed "H1".
+    // @DisplayName: Swash Type
+    // @Description: Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
+    // @Values: 0:3-Servo CCPM, 1:H1 Mechanical Mixing
     // @User: Standard
     AP_GROUPINFO("SWASH_TYPE",      10,     AP_MotorsHeli,  swash_type, AP_MOTORS_HELI_SWASH_CCPM),
 
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
-    // @Description: This is the PWM which is passed to the external gyro when external gyro is enabled.
+    // @Description: PWM sent to the external gyro on Ch7
     // @Range: 1000 2000
     // @Units: PWM
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("GYR_GAIN",        11,     AP_MotorsHeli,  ext_gyro_gain, 1350),
+    AP_GROUPINFO("GYR_GAIN",        11,     AP_MotorsHeli,  ext_gyro_gain, AP_MOTORS_HELI_EXT_GYRO_GAIN),
 
     // @Param: SV_MAN
     // @DisplayName: Manual Servo Mode
-    // @Description: Setting this to Enabled(1) will pass radio inputs directly to servos. Setting this to Disabled(0) will enable Arducopter control of servos.  This is only meant to be used by the Mission Planner using swash plate set-up.
+    // @Description: Pass radio inputs directly to servos for set-up. Do not set this manually!
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("SV_MAN",          12,     AP_MotorsHeli,  servo_manual,  0),
 
     // @Param: PHANG
     // @DisplayName: Swashplate Phase Angle Compensation
-    // @Description: This corrects for phase angle errors of the helicopter main rotor head.  For example if pitching the swash forward also induces a roll, that effect can be offset with this parameter.
+    // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
     // @Units: Degrees
     // @User: Advanced
@@ -140,58 +141,58 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: COLYAW
     // @DisplayName: Collective-Yaw Mixing
-    // @Description: This is a feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
+    // @Description: Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     // @Range: -10 10
     AP_GROUPINFO("COLYAW",          14,     AP_MotorsHeli,  collective_yaw_effect, 0),
 
     // @Param: GOV_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
-    // @Description: This is the PWM which is passed to the external motor governor when external governor is enabled.
+    // @Description: PWM passed to the external motor governor when external governor is enabled
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("GOV_SETPOINT", 15, AP_MotorsHeli, ext_gov_setpoint, 1500),
+    AP_GROUPINFO("GOV_SETPOINT", 15, AP_MotorsHeli, ext_gov_setpoint, AP_MOTORS_HELI_EXT_GOVERNOR_SETPOINT),
 
     // @Param: RSC_MODE
     // @DisplayName: Rotor Speed Control Mode
-    // @Description: This sets which ESC control mode is active.
-    // @Range: 1 3
+    // @Description: Which main rotor ESC control mode is active
+    // @Values: 1:Ch8 passthrough, 2:External Governor
     // @User: Standard
-    AP_GROUPINFO("RSC_MODE", 16, AP_MotorsHeli, rsc_mode, 1),
+    AP_GROUPINFO("RSC_MODE", 16, AP_MotorsHeli, rsc_mode, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH),
 
     // @Param: RSC_RATE
     // @DisplayName: RSC Ramp Rate
-    // @Description: This sets the time the RSC takes to ramp up to full speed (Soft Start).
+    // @Description: The time in 100th seconds the RSC takes to ramp up to speed
     // @Range: 0 6000
-    // @Units: Seconds
+    // @Units: 100ths of Seconds
     // @User: Standard
-    AP_GROUPINFO("RSC_RATE", 17, AP_MotorsHeli, rsc_ramp_up_rate, 1000),
+    AP_GROUPINFO("RSC_RATE", 17, AP_MotorsHeli, rsc_ramp_up_rate, AP_MOTORS_HELI_RSC_RATE),
 
     // @Param: FLYBAR_MODE
     // @DisplayName: Flybar Mode Selector
-    // @Description: This sets which acro mode is active. (0) is Flybarless (1) is Mechanical Flybar
-    // @Range: 0 1
+    // @Description: Flybar present or not.  Affects attitude controller used during ACRO flight mode
+    // @Range: 0:NoFlybar 1:Flybar
     // @User: Standard
-    AP_GROUPINFO("FLYBAR_MODE", 18, AP_MotorsHeli, flybar_mode, 0),
+    AP_GROUPINFO("FLYBAR_MODE", 18, AP_MotorsHeli, flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
 	
 	// @Param: STAB_COL_MIN
     // @DisplayName: Stabilize Throttle Minimum
-    // @Description: This is the minimum collective setpoint in Stabilize Mode
+    // @Description: Minimum collective position while flying in Stabilize Mode
     // @Range: 0 50
-    // @Units: 1%
+    // @Units: Percent
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STAB_COL_MIN", 19, AP_MotorsHeli, stab_col_min, 0),
+    AP_GROUPINFO("STAB_COL_MIN", 19, AP_MotorsHeli, stab_col_min, AP_MOTORS_HELI_STAB_COL_MIN),
 	
 	// @Param: STAB_COL_MAX
     // @DisplayName: Stabilize Throttle Maximum
-    // @Description: This is the maximum collective setpoint in Stabilize Mode
+    // @Description: Maximum collective position while flying in Stabilize Mode
     // @Range: 50 100
-    // @Units: 1%
+    // @Units: Percent
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("STAB_COL_MAX", 20, AP_MotorsHeli, stab_col_max, 100),
+    AP_GROUPINFO("STAB_COL_MAX", 20, AP_MotorsHeli, stab_col_max, AP_MOTORS_HELI_STAB_COL_MAX),
 
     AP_GROUPEND
 };
@@ -545,7 +546,7 @@ static long map(long x, long in_min, long in_max, long out_min, long out_max)
 void AP_MotorsHeli::rsc_control() {
 
     if (armed() && (rsc_ramp >= rsc_ramp_up_rate)){                     // rsc_ramp will never increase if rsc_mode = 0
-        if (motor_runup_timer < MOTOR_RUNUP_TIME){                      // therefore motor_runup_complete can never be true
+        if (motor_runup_timer < AP_MOTORS_HELI_MOTOR_RUNUP_TIME){       // therefore motor_runup_complete can never be true
             motor_runup_timer++;
         } else {
             motor_runup_complete = true;
@@ -558,7 +559,7 @@ void AP_MotorsHeli::rsc_control() {
 
     switch ( rsc_mode ) {
 
-    case AP_MOTORSHELI_RSC_MODE_CH8_PASSTHROUGH:
+    case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
         if( armed() && (_rc_8->radio_in > (_rc_8->radio_min + 10))) {
             if (rsc_ramp < rsc_ramp_up_rate) {
                 rsc_ramp++;
@@ -576,7 +577,7 @@ void AP_MotorsHeli::rsc_control() {
         hal.rcout->write(AP_MOTORS_HELI_EXT_RSC, rsc_output);
         break;
 
-    case AP_MOTORSHELI_RSC_MODE_EXT_GOV:
+    case AP_MOTORS_HELI_RSC_MODE_EXT_GOVERNOR:
 
         if( armed() && _rc_8->control_in > 100) {
             if (rsc_ramp < rsc_ramp_up_rate) {
