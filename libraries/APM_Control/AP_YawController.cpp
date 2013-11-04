@@ -106,7 +106,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	float omega_z = _ahrs.get_gyro().z;
 	
 	// Get the accln vector (m/s^2)
-	float accel_y = _ahrs.get_ins()->get_accel().y;
+	float accel_y = _ahrs.get_ins().get_accel().y;
 
 	// Subtract the steady turn component of rate from the measured rate
 	// to calculate the rate relative to the turn requirement in degrees/sec
