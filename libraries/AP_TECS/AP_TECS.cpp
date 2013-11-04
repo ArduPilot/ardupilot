@@ -176,7 +176,7 @@ void AP_TECS::update_50hz(float hgt_afe)
         // Get DCM
         const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
 	    // Calculate speed rate of change
-	    temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins()->get_accel().x;
+	    temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
 	    // take 5 point moving average
         _vel_dot = _vdot_filter.apply(temp);
     } else {
