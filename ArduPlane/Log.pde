@@ -438,7 +438,7 @@ static void Log_Write_GPS(void)
 
 static void Log_Write_IMU() 
 {
-    DataFlash.Log_Write_IMU(&ins);
+    DataFlash.Log_Write_IMU(ins);
 }
 
 static const struct LogStructure log_structure[] PROGMEM = {
