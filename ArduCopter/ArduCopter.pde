@@ -1626,7 +1626,7 @@ void update_roll_pitch_mode(void)
 
 #if FRAME_CONFIG == HELI_FRAME
         // ACRO does not get SIMPLE mode ability
-        if (motors.flybar_mode == 1) {
+        if (motors.has_flybar()) {
             g.rc_1.servo_out = g.rc_1.control_in;
             g.rc_2.servo_out = g.rc_2.control_in;
         }else{
@@ -1850,6 +1850,11 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         // reset some variables used for logging
         desired_climb_rate = 0;
         nav_throttle = 0;
+
+#if FRAME_CONFIG == HELI_FRAME
+        // use reduced collective range if in manual throttle mode
+        motors.set_collective_for_manual_control(throttle_mode == THROTTLE_MANUAL || throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED);
+#endif
     }
 
     // return success or failure
@@ -1867,13 +1872,9 @@ void update_throttle_mode(void)
         return;
 
 #if FRAME_CONFIG == HELI_FRAME
-
-	if (control_mode == STABILIZE){
-		motors.stab_throttle = true;
-	} else {
-		motors.stab_throttle = false;
-	}
+	// check if we are flying
     check_dynamic_flight();
+
     // allow swash collective to move if we are in manual throttle modes, even if disarmed
     if( !motors.armed() ) {
         if ( !(throttle_mode == THROTTLE_MANUAL) && !(throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED)){
@@ -1881,7 +1882,6 @@ void update_throttle_mode(void)
             return;
         }
     }
-
 #else // HELI_FRAME
 
 // do not run throttle controllers if motors disarmed
@@ -1907,7 +1907,7 @@ void update_throttle_mode(void)
 
             // update estimate of throttle cruise
 			#if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.coll_out);
+            update_throttle_cruise(motors.get_collective_out());
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
             // check if we've taken off yet
@@ -1932,7 +1932,7 @@ void update_throttle_mode(void)
 
             // update estimate of throttle cruise
             #if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.coll_out);
+            update_throttle_cruise(motors.get_collective_out());
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
             if (!ap.takeoff_complete && motors.armed()) {
@@ -1997,7 +1997,7 @@ void update_throttle_mode(void)
         }else{
 #if FRAME_CONFIG == HELI_FRAME
             // collective pitch should not be full negative to avoid harshing the mechanics. Use Stab Coll Min.
-            set_throttle_out(motors.stab_col_min*10, false);
+            set_throttle_out(motors.get_manual_collective_min(), false);
 #else
             // pilot's throttle must be at zero so keep motors off
             set_throttle_out(0, false);
@@ -2212,7 +2212,7 @@ static void tuning(){
 
 #if FRAME_CONFIG == HELI_FRAME
     case CH6_HELI_EXTERNAL_GYRO:
-        motors.ext_gyro_gain = tuning_value;
+        motors.ext_gyro_gain(tuning_value);
         break;
 #endif
 

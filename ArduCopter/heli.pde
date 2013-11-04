@@ -20,7 +20,7 @@ static struct {
 // should be called at 50hz
 static void check_dynamic_flight(void)
 {
-    if (!motors.armed() || throttle_mode == THROTTLE_LAND || !motors.motor_runup_complete) {
+    if (!motors.armed() || throttle_mode == THROTTLE_LAND || !motors.motor_runup_complete()) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
         return;
@@ -89,7 +89,7 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
     if (roll_pid_saturated){
         roll_i = g.pid_rate_roll.get_integrator();                                                      // Locked Integrator due to PID saturation on previous cycle
     } else {
-        if (motors.flybar_mode == 1) {												                    // Mechanical Flybars get regular integral for rate auto trim
+        if (motors.has_flybar()) {                                                                      // Mechanical Flybars get regular integral for rate auto trim
             if (target_roll_rate > -50 && target_roll_rate < 50){								        // Frozen at high rates
                 roll_i = g.pid_rate_roll.get_i(roll_rate_error, G_Dt);
             } else {
@@ -107,7 +107,7 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
     if (pitch_pid_saturated){
         pitch_i = g.pid_rate_pitch.get_integrator();                                                    // Locked Integrator due to PID saturation on previous cycle
     } else {
-        if (motors.flybar_mode == 1) {												                    // Mechanical Flybars get regular integral for rate auto trim
+        if (motors.has_flybar()) {                                                                      // Mechanical Flybars get regular integral for rate auto trim
             if (target_pitch_rate > -50 && target_pitch_rate < 50){								        // Frozen at high rates
                 pitch_i = g.pid_rate_pitch.get_i(pitch_rate_error, G_Dt);
             } else {

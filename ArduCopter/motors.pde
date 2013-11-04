@@ -34,12 +34,13 @@ static void arm_motors_check()
         return;
     }
 
-	#if FRAME_CONFIG == HELI_FRAME
-	if ((motors.rsc_mode > 0) && (g.rc_8.control_in >= 10)){
-		arming_counter = 0;
-		return;
-	}
-	#endif  // HELI_FRAME
+    #if FRAME_CONFIG == HELI_FRAME
+    // heli specific arming check
+    if (!motors.allow_arming()){
+        arming_counter = 0;
+        return;
+    }
+    #endif  // HELI_FRAME
 
     int16_t tmp = g.rc_4.control_in;
 

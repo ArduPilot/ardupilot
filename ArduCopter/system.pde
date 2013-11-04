@@ -170,11 +170,6 @@ static void init_ardupilot()
     }
 #endif
 
-#if FRAME_CONFIG == HELI_FRAME
-    motors.servo_manual = false;
-    motors.init_swash();              // heli initialisation
-#endif
-
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
 
@@ -498,13 +493,15 @@ static void update_auto_armed()
         
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && g.rc_3.control_in != 0 && motors.motor_runup_complete) {
+        if(motors.armed() && g.rc_3.control_in != 0 && motors.motor_runup_complete()) {
+            set_auto_armed(true);
+        }
 #else
         // if motors are armed and throttle is above zero auto_armed should be true
         if(motors.armed() && g.rc_3.control_in != 0) {
-#endif // HELI_FRAME
             set_auto_armed(true);
         }
+#endif // HELI_FRAME
     }
 }
 
