@@ -615,7 +615,8 @@ void DataFlash_Class::Log_Write_GPS(const GPS *gps, int32_t relative_alt)
         rel_altitude  : relative_alt,
         altitude      : gps->altitude_cm,
         ground_speed  : gps->ground_speed_cm,
-        ground_course : gps->ground_course_cd
+        ground_course : gps->ground_course_cd,
+        vel_z         : gps->velocity_down()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -624,10 +625,11 @@ void DataFlash_Class::Log_Write_GPS(const GPS *gps, int32_t relative_alt)
 // Write an raw accel/gyro data packet
 void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 {
-    Vector3f gyro = ins.get_gyro();
-    Vector3f accel = ins.get_accel();
+    const Vector3f &gyro = ins.get_gyro();
+    const Vector3f &accel = ins.get_accel();
     struct log_IMU pkt = {
         LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
+        timestamp : hal.scheduler->millis(),
         gyro_x  : gyro.x,
         gyro_y  : gyro.y,
         gyro_z  : gyro.z,
