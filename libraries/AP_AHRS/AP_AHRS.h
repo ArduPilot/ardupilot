@@ -37,7 +37,7 @@ class AP_AHRS
 {
 public:
     // Constructor
-    AP_AHRS(AP_InertialSensor *ins, GPS *&gps) :
+    AP_AHRS(AP_InertialSensor &ins, GPS *&gps) :
         _ins(ins),
         _gps(gps)
     {
@@ -49,7 +49,7 @@ public:
         // prone than the APM1, so we should have a lower ki,
         // which will make us less prone to increasing omegaI
         // incorrectly due to sensor noise
-        _gyro_drift_limit = ins->get_gyro_drift_rate();
+        _gyro_drift_limit = ins.get_gyro_drift_rate();
 
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
@@ -78,7 +78,7 @@ public:
     // allow for runtime change of orientation
     // this makes initial config easier
     void set_orientation() {
-        _ins->set_board_orientation((enum Rotation)_board_orientation.get());
+        _ins.set_board_orientation((enum Rotation)_board_orientation.get());
         if (_compass != NULL) {
             _compass->set_board_orientation((enum Rotation)_board_orientation.get());
         }
@@ -88,7 +88,7 @@ public:
         _airspeed = airspeed;
     }
 
-    AP_InertialSensor* get_ins() const {
+    const AP_InertialSensor &get_ins() const {
 	    return _ins;
     }
 
@@ -263,7 +263,7 @@ protected:
 
     // note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
     //       IMU under us without our noticing.
-    AP_InertialSensor   *_ins;
+    AP_InertialSensor   &_ins;
     GPS                 *&_gps;
 
     // a vector to capture the difference between the controller and body frames

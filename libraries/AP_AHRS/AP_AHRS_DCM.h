@@ -25,7 +25,7 @@ class AP_AHRS_DCM : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_DCM(AP_InertialSensor *ins, GPS *&gps) :
+    AP_AHRS_DCM(AP_InertialSensor &ins, GPS *&gps) :
         AP_AHRS(ins, gps),
         _last_declination(0),
         _mag_earth(1,0)
@@ -91,9 +91,6 @@ private:
 
     // primary representation of attitude
     Matrix3f _dcm_matrix;
-
-    Vector3f _gyro_vector;                      // Store the gyros turn rate in a vector
-    Vector3f _accel_vector;                     // current accel vector
 
     Vector3f _omega_P;                          // accel Omega proportional correction
     Vector3f _omega_yaw_P;                      // proportional yaw correction
