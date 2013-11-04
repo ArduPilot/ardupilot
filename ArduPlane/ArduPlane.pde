@@ -162,6 +162,10 @@ DataFlash_Empty DataFlash;
 #endif
 #endif
 
+// scaled roll limit based on pitch
+static int32_t roll_limit_cd;
+static int32_t pitch_limit_min_cd;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
 ////////////////////////////////////////////////////////////////////////////////
@@ -809,6 +813,10 @@ static void ahrs_update()
 
     if (g.log_bitmask & MASK_LOG_IMU)
         Log_Write_IMU();
+
+    // calculate a scaled roll limit based on current pitch
+    roll_limit_cd = g.roll_limit_cd * cosf(ahrs.pitch);
+    pitch_limit_min_cd = aparm.pitch_limit_min_cd * fabsf(cosf(ahrs.roll));
 }
 
 /*
@@ -980,9 +988,9 @@ static void airspeed_ratio_update(void)
         // don't calibrate when not moving
         return;
     }
-    if (abs(ahrs.roll_sensor) > g.roll_limit_cd ||
+    if (abs(ahrs.roll_sensor) > roll_limit_cd ||
         ahrs.pitch_sensor > aparm.pitch_limit_max_cd ||
-        ahrs.pitch_sensor < aparm.pitch_limit_min_cd) {
+        ahrs.pitch_sensor < pitch_limit_min_cd) {
         // don't calibrate when going beyond normal flight envelope
         return;
     }
@@ -1164,10 +1172,10 @@ static void update_flight_mode(void)
         
         // if the roll is past the set roll limit, then
         // we set target roll to the limit
-        if (ahrs.roll_sensor >= g.roll_limit_cd) {
-            nav_roll_cd = g.roll_limit_cd;
-        } else if (ahrs.roll_sensor <= -g.roll_limit_cd) {
-            nav_roll_cd = -g.roll_limit_cd;                
+        if (ahrs.roll_sensor >= roll_limit_cd) {
+            nav_roll_cd = roll_limit_cd;
+        } else if (ahrs.roll_sensor <= -roll_limit_cd) {
+            nav_roll_cd = -roll_limit_cd;                
         } else {
             training_manual_roll = true;
             nav_roll_cd = 0;
@@ -1177,8 +1185,8 @@ static void update_flight_mode(void)
         // we set target pitch to the limit
         if (ahrs.pitch_sensor >= aparm.pitch_limit_max_cd) {
             nav_pitch_cd = aparm.pitch_limit_max_cd;
-        } else if (ahrs.pitch_sensor <= aparm.pitch_limit_min_cd) {
-            nav_pitch_cd = aparm.pitch_limit_min_cd;
+        } else if (ahrs.pitch_sensor <= pitch_limit_min_cd) {
+            nav_pitch_cd = pitch_limit_min_cd;
         } else {
             training_manual_pitch = true;
             nav_pitch_cd = 0;
@@ -1206,15 +1214,15 @@ static void update_flight_mode(void)
 
     case FLY_BY_WIRE_A: {
         // set nav_roll and nav_pitch using sticks
-        nav_roll_cd  = channel_roll->norm_input() * g.roll_limit_cd;
-        nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd, g.roll_limit_cd);
+        nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         float pitch_input = channel_pitch->norm_input();
         if (pitch_input > 0) {
             nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
         } else {
-            nav_pitch_cd = -(pitch_input * aparm.pitch_limit_min_cd);
+            nav_pitch_cd = -(pitch_input * pitch_limit_min_cd);
         }
-        nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
+        nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
         if (inverted_flight) {
             nav_pitch_cd = -nav_pitch_cd;
         }
@@ -1228,7 +1236,7 @@ static void update_flight_mode(void)
 
     case FLY_BY_WIRE_B:
         // Thanks to Yury MonZon for the altitude limit code!
-        nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
+        nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
         update_fbwb_speed_height();
         break;
         
@@ -1245,7 +1253,7 @@ static void update_flight_mode(void)
         }                 
         
         if (!cruise_state.locked_heading) {
-            nav_roll_cd = channel_roll->norm_input() * g.roll_limit_cd;
+            nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
         } else {
             calc_nav_roll();
         }
@@ -1263,7 +1271,7 @@ static void update_flight_mode(void)
         // or we just want to fly around in a gentle circle w/o GPS,
         // holding altitude at the altitude we set when we
         // switched into the mode
-        nav_roll_cd  = g.roll_limit_cd / 3;
+        nav_roll_cd  = roll_limit_cd / 3;
         calc_nav_pitch();
         calc_throttle();
         break;

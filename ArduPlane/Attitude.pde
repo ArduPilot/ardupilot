@@ -167,8 +167,8 @@ static void stabilize_stick_mixing_fbw()
     } else if (roll_input < -0.5f) {
         roll_input = (3*roll_input + 1);
     }
-    nav_roll_cd += roll_input * g.roll_limit_cd;
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    nav_roll_cd += roll_input * roll_limit_cd;
+    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
     
     float pitch_input = channel_pitch->norm_input();
     if (fabsf(pitch_input) > 0.5f) {
@@ -180,9 +180,9 @@ static void stabilize_stick_mixing_fbw()
     if (pitch_input > 0) {
         nav_pitch_cd += pitch_input * aparm.pitch_limit_max_cd;
     } else {
-        nav_pitch_cd += -(pitch_input * aparm.pitch_limit_min_cd);
+        nav_pitch_cd += -(pitch_input * pitch_limit_min_cd);
     }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
 
@@ -441,14 +441,14 @@ static void calc_nav_pitch()
     // Calculate the Pitch of the plane
     // --------------------------------
     nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
 
 static void calc_nav_roll()
 {
     nav_roll_cd = nav_controller->nav_roll_cd();
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 }
 
 
