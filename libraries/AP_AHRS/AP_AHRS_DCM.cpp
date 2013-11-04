@@ -551,9 +551,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (_flags.correct_centrifugal && (_have_gps_lock || _flags.fly_forward)) {
         float v_scale = gps_gain.get()/(_ra_deltat*GRAVITY_MSS);
         Vector3f vdelta = (velocity - _last_velocity) * v_scale;
-        // limit vertical acceleration correction to 0.5 gravities. The
-        // barometer sometimes gives crazy acceleration changes. 
-        vdelta.z = constrain_float(vdelta.z, -0.5f, 0.5f);
         GA_e += vdelta;
         GA_e.normalize();
         if (GA_e.is_inf()) {
