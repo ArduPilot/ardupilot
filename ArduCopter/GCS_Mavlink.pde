@@ -1052,7 +1052,8 @@ GCS_MAVLINK::data_stream_send(void)
     if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
+        send_message(MSG_NAV_CONTROLLER_OUTPUT);
+        send_message(MSG_ATTITUDE);
     }
 
     if (gcs_out_of_time) return;
