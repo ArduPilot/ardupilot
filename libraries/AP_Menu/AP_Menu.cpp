@@ -80,10 +80,16 @@ Menu::_check_for_input(void)
     return false;
 }
 
+// display the prompt
+void
+Menu::_display_prompt(void)
+{
+    _port->printf_P(PSTR("%S] "), FPSTR(_prompt));    
+}
 
 // run the menu
 bool
-Menu::_run_command(void)
+Menu::_run_command(bool prompt_on_enter)
 {
     int8_t ret;
     uint8_t i;
@@ -109,7 +115,9 @@ Menu::_run_command(void)
     
     if (_argv[0].str == NULL) {
         // we got a blank line, re-display the prompt
-        _port->printf_P(PSTR("%S] "), FPSTR(_prompt));
+        if (prompt_on_enter) {
+            _display_prompt();
+        }
         return false;
     }
     
@@ -167,16 +175,20 @@ Menu::run(void)
 
     _allocate_buffers();
 
+    _display_prompt();
+
     // loop performing commands
     for (;;) {
 
         // run the pre-prompt function, if one is defined
-        if ((NULL != _ppfunc) && !_ppfunc())
-            return;
+        if (NULL != _ppfunc) {
+            if (!_ppfunc())
+                return;
+            _display_prompt();
+        }
 
         // loop reading characters from the input
         _input_len = 0;
-        _port->printf_P(PSTR("%S] "), FPSTR(_prompt));
 
         for (;; ) {
             if (_check_for_input()) {
@@ -186,7 +198,9 @@ Menu::run(void)
         }
 
         // we have a full command to run
-        if (_run_command()) break;
+        if (_run_command(false)) break;
+
+        _display_prompt();
     }    
 }
 
@@ -202,7 +216,7 @@ Menu::check_input(void)
     _allocate_buffers();
 
     if (_check_for_input()) {
-        return _run_command();
+        return _run_command(true);
     }    
 
     return false;
