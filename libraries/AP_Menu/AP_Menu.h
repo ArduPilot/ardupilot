@@ -109,6 +109,11 @@ public:
     /// menu runner
     void        run(void);
 
+    /// check for new input on the port. Can be used
+    /// to allow for the menu to operate asynchronously
+    /// this will return true if the user asked to exit the menu
+    bool        check_input(void);
+
 private:
     /// Implements the default 'help' command.
     ///
@@ -135,6 +140,16 @@ private:
     // allocate inbuf and args buffers
     void _allocate_buffers(void);
 
+    // number of characters read so far from the port
+    uint8_t                 _input_len;
+
+    // check for next input character
+    bool                    _check_for_input(void);
+
+    // run one full entered command. 
+    // return true if the menu loop should exit
+    bool                    _run_command(void);
+    
 	// port to run on
 	static AP_HAL::BetterStream  *_port;
 };
