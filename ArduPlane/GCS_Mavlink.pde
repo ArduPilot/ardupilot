@@ -279,6 +279,11 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
+    static uint32_t last_send_time;
+    if (last_send_time != 0 && last_send_time == g_gps->last_fix_time) {
+        return;
+    }
+    last_send_time = g_gps->last_fix_time;
     mavlink_msg_gps_raw_int_send(
         chan,
         g_gps->last_fix_time*(uint64_t)1000,
