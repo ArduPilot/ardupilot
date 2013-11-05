@@ -17,8 +17,8 @@
 extern const AP_HAL::HAL& hal;
 
 // statics
-char Menu::_inbuf[MENU_COMMANDLINE_MAX];
-Menu::arg Menu::_argv[MENU_ARGS_MAX + 1];
+char *Menu::_inbuf;
+Menu::arg *Menu::_argv;
 AP_HAL::BetterStream *Menu::_port;
 
 
@@ -27,8 +27,14 @@ Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entri
     _prompt(prompt),
     _commands(commands),
     _entries(entries),
-    _ppfunc(ppfunc)
+    _ppfunc(ppfunc),
+    _commandline_max(MENU_COMMANDLINE_MAX),
+    _args_max(MENU_ARGS_MAX)
 {
+    // the buffers are initially NULL, then they are allocated on
+    // first use
+    _inbuf = NULL;
+    _argv = NULL;
 }
 
 // run the menu
@@ -45,6 +51,8 @@ Menu::run(void)
 		// default to main serial port
 		_port = hal.console;
 	}
+
+    _allocate_buffers();
 
     // loop performing commands
     for (;;) {
@@ -167,4 +175,35 @@ Menu::_call(uint8_t n, uint8_t argc)
 
     fn = (func)pgm_read_pointer(&_commands[n].func);
     return(fn(argc, &_argv[0]));
+}
+
+/**
+   set limits on max args and command line length
+*/
+void
+Menu::set_limits(uint8_t commandline_max, uint8_t args_max)
+{
+    if (_inbuf != NULL) {
+        delete[] _inbuf;
+        _inbuf = NULL;
+    }
+    if (_argv != NULL) {
+        delete[] _argv;
+        _argv = NULL;
+    }
+    // remember limits, the buffers will be allocated by allocate_buffers()
+    _commandline_max = commandline_max;
+    _args_max = args_max;
+}
+
+void
+Menu::_allocate_buffers(void)
+{
+    /* only allocate if the buffers are NULL */
+    if (_inbuf == NULL) {
+        _inbuf = new char[_commandline_max];
+    }
+    if (_argv == NULL) {
+        _argv = new arg[_args_max+1];
+    }
 }
