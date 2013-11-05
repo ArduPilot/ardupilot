@@ -254,16 +254,29 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
-    mavlink_msg_nav_controller_output_send(
-        chan,
-        nav_roll / 1.0e2f,
-        nav_pitch / 1.0e2f,
-        wp_bearing / 1.0e2f,
-        wp_bearing / 1.0e2f,
-        wp_distance / 1.0e2f,
-        altitude_error / 1.0e2f,
-        0,
-        0);
+	if(manual_flight_mode(control_mode)){
+		mavlink_msg_nav_controller_output_send(
+			chan,
+			control_roll / 1.0e2f,
+			control_pitch / 1.0e2f,
+			home_bearing / 1.0e2f,
+			home_bearing / 1.0e2f,
+			home_distance / 1.0e2f,
+			0,
+			0,
+			0);
+	}else{
+		mavlink_msg_nav_controller_output_send(
+			chan,
+			nav_roll / 1.0e2f,
+			nav_pitch / 1.0e2f,
+			wp_bearing / 1.0e2f,
+			wp_bearing / 1.0e2f,
+			wp_distance / 1.0e2f,
+			altitude_error / 1.0e2f,
+			0,
+			0);
+    }
 }
 
 static void NOINLINE send_ahrs(mavlink_channel_t chan)
