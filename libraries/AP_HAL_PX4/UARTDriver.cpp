@@ -418,6 +418,11 @@ void PX4UARTDriver::_timer_tick(void)
 
     if (!_initialised) return;
 
+    // don't try IO on a disconnected USB port
+    if (strcmp(_devpath, "/dev/ttyACM0") == 0 && !hal.gpio->usb_connected()) {
+        return;
+    }
+
     _in_timer = true;
 
     // write any pending bytes
