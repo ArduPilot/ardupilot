@@ -276,7 +276,7 @@ void *PX4Scheduler::_uart_thread(void)
         poll(NULL, 0, 1);        
     }
     while (!_px4_thread_should_exit) {
-        poll(NULL, 0, 1);
+        delay_microseconds_semaphore(1000);
 
         // process any pending serial bytes
         ((PX4UARTDriver *)hal.uartA)->_timer_tick();
