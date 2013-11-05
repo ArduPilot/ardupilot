@@ -202,8 +202,10 @@ Menu::_allocate_buffers(void)
     /* only allocate if the buffers are NULL */
     if (_inbuf == NULL) {
         _inbuf = new char[_commandline_max];
+        memset(_inbuf, 0, _commandline_max);
     }
     if (_argv == NULL) {
         _argv = new arg[_args_max+1];
+        memset(_argv, 0, (_args_max+1) * sizeof(_argv[0]));
     }
 }
