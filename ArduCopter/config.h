@@ -532,6 +532,12 @@
 // Flight mode roll, pitch, yaw, throttle and navigation definitions
 
 // Stabilize Mode
+#ifndef STABILIZE_YAW
+ # define STABILIZE_YAW           	YAW_HOLD
+#endif
+#ifndef STABILIZE_RP
+ # define STABILIZE_RP           	ROLL_PITCH_STABLE
+#endif
 #ifndef STABILIZE_THR
  # define STABILIZE_THR           	THROTTLE_MANUAL_TILT_COMPENSATED
 #endif

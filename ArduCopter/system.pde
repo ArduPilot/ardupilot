@@ -352,8 +352,8 @@ static bool set_mode(uint8_t mode)
 
         case STABILIZE:
             success = true;
-            set_yaw_mode(YAW_HOLD);
-            set_roll_pitch_mode(ROLL_PITCH_STABLE);
+            set_yaw_mode(STABILIZE_YAW);
+            set_roll_pitch_mode(STABILIZE_RP);
             set_throttle_mode(STABILIZE_THR);
             set_nav_mode(NAV_NONE);
             break;
