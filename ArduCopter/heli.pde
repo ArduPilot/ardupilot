@@ -68,6 +68,9 @@ void init_rate_controllers()
    // rate_pitch_filter.set_cutoff_frequency(0.01f, 0.1f);
 }
 
+// heli_integrated_swash_controller - convert desired roll and pitch rate to roll and pitch swash angles
+// should be called at 100hz
+// output placed directly into g.rc_1.servo_out and g.rc_2.servo_out
 static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t target_pitch_rate)
 {
     int32_t         roll_p, roll_i, roll_d, roll_ff;            // used to capture pid values for logging
@@ -76,13 +79,13 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
     int32_t         roll_rate_error, pitch_rate_error;          // simply target_rate - current_rate
     int32_t         roll_output, pitch_output;                  // output from pid controller
     static bool     roll_pid_saturated, pitch_pid_saturated;    // tracker from last loop if the PID was saturated
-    
+
     current_roll_rate = (omega.x * DEGX100);                    // get current roll rate
     current_pitch_rate = (omega.y * DEGX100);                   // get current pitch rate
-	
+
     roll_rate_error = target_roll_rate - current_roll_rate;
     pitch_rate_error = target_pitch_rate - current_pitch_rate;
-    
+
     roll_p = g.pid_rate_roll.get_p(roll_rate_error);
     pitch_p = g.pid_rate_pitch.get_p(pitch_rate_error);
 
@@ -103,7 +106,7 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
             }
         }
     }
-    
+
     if (pitch_pid_saturated){
         pitch_i = g.pid_rate_pitch.get_integrator();                                                    // Locked Integrator due to PID saturation on previous cycle
     } else {
@@ -121,11 +124,11 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
             }
         }
     }
-	
-	roll_d = g.pid_rate_roll.get_d(target_roll_rate, G_Dt);
-	pitch_d = g.pid_rate_pitch.get_d(target_pitch_rate, G_Dt);
-    
-	roll_ff = g.heli_roll_ff * target_roll_rate;
+
+    roll_d = g.pid_rate_roll.get_d(target_roll_rate, G_Dt);
+    pitch_d = g.pid_rate_pitch.get_d(target_pitch_rate, G_Dt);
+
+    roll_ff = g.heli_roll_ff * target_roll_rate;
     pitch_ff = g.heli_pitch_ff * target_pitch_rate;
 
     // Joly, I think your PC and CC code goes here
@@ -148,26 +151,26 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
     }
 
     g.rc_1.servo_out = roll_output;
-	g.rc_2.servo_out = pitch_output;
+    g.rc_2.servo_out = pitch_output;
 }
 
 static int16_t
 get_heli_rate_yaw(int32_t target_rate)
 {
     int32_t         p,i,d,ff;               // used to capture pid values for logging
-	int32_t         current_rate;           // this iteration's rate
+    int32_t         current_rate;           // this iteration's rate
     int32_t         rate_error;
     int32_t         output;
     static bool     pid_saturated;          // tracker from last loop if the PID was saturated
 
     current_rate = (omega.z * DEGX100);                         // get current rate
-	
+
     // rate control
     rate_error = target_rate - current_rate;
 
     // separately calculate p, i, d values for logging
     p = g.pid_rate_yaw.get_p(rate_error);
-    
+
     if (pid_saturated){
         i = g.pid_rate_yaw.get_integrator();                    // Locked Integrator due to PID saturation on previous cycle
     } else {
@@ -175,11 +178,11 @@ get_heli_rate_yaw(int32_t target_rate)
     }
 
     d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
-	
-	ff = g.heli_yaw_ff*target_rate;
+
+    ff = g.heli_yaw_ff*target_rate;
 
     output = p + i + d + ff;
-    
+
     if (labs(output) > 4500){
         output = constrain_int32(output, -4500, 4500);          // constrain output
         pid_saturated = true;                                   // freeze integrator next cycle
