@@ -1084,6 +1084,11 @@ static void throttle_loop()
 
     // check auto_armed status
     update_auto_armed();
+
+#if FRAME_CONFIG == HELI_FRAME
+    // update trad heli swash plate movement
+    heli_update_landing_swash();
+#endif
 }
 
 // update_mount - update camera mount position
@@ -1909,6 +1914,8 @@ void update_throttle_mode(void)
             update_throttle_cruise(motors.get_collective_out());
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
+            #endif  //HELI_FRAME
+
             // check if we've taken off yet
             if (!ap.takeoff_complete && motors.armed()) {
                 if (pilot_throttle_scaled > g.throttle_cruise) {
@@ -1916,7 +1923,6 @@ void update_throttle_mode(void)
                     set_takeoff_complete(true);
                 }
             }
-			#endif  //HELI_FRAME            
         }
         set_target_alt_for_reporting(0);
         break;
@@ -1934,13 +1940,14 @@ void update_throttle_mode(void)
             update_throttle_cruise(motors.get_collective_out());
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
+            #endif  //HELI_FRAME
+
             if (!ap.takeoff_complete && motors.armed()) {
                 if (pilot_throttle_scaled > g.throttle_cruise) {
                     // we must be in the air by now
                     set_takeoff_complete(true);
                 }
             }
-			#endif  //HELI_FRAME
         }
         set_target_alt_for_reporting(0);
         break;

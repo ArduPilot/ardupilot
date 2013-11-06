@@ -204,4 +204,30 @@ get_heli_rate_yaw(int32_t target_rate)
 	return output;                                              // output control
 }
 
-#endif  // FRAME_CONFIG == TRAD_HELI
+// heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
+// should be called soon after update_land_detector in main code
+static void heli_update_landing_swash()
+{
+    switch(throttle_mode) {
+        case THROTTLE_MANUAL:
+        case THROTTLE_MANUAL_TILT_COMPENSATED:
+        case THROTTLE_MANUAL_HELI:
+            // manual modes always uses full swash range
+            motors.set_collective_for_landing(false);
+            break;
+
+        case THROTTLE_LAND:
+            // landing always uses limit swash range
+            motors.set_collective_for_landing(true);
+            break;
+
+        case THROTTLE_HOLD:
+        case THROTTLE_AUTO:
+        default:
+            // auto and hold use limited swash when landed
+            motors.set_collective_for_landing(ap.land_complete || !ap.auto_armed);
+            break;
+    }
+}
+
+#endif  // FRAME_CONFIG == HELI_FRAME
