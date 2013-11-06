@@ -893,6 +893,9 @@ static void update_logging(void)
 {
     if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
+
+    if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_IMU))
+        Log_Write_IMU();
     
     if (g.log_bitmask & MASK_LOG_CTUN)
         Log_Write_Control_Tuning();
