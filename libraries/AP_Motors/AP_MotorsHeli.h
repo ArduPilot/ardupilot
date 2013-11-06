@@ -40,7 +40,7 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
 
-// swash min and max position (expressed as percentage) while in stabilize mode
+// swash min and max position while in stabilize mode (as a number from 0 ~ 1000)
 #define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MIN    0
 #define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MAX    100
 
@@ -101,7 +101,6 @@ public:
 
         // initialise flags
         _heliflags.swash_initialised = 0;
-        _heliflags.manual_collective = 0;
         _heliflags.landing_collective = 0;
         _heliflags.motor_runup_complete = 0;
     };
@@ -139,14 +138,14 @@ public:
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() { return _flybar_mode; }
 
+    // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the move_swash function
+    int16_t get_pilot_desired_collective(int16_t control_in);
+
     // get_collective_mid - returns collective mid position as a number from 0 ~ 1000
     int16_t get_collective_mid() { return  _collective_mid; }
 
     // get_collective_out - returns collective position from last output as a number from 0 ~ 1000
     int16_t get_collective_out() { return _collective_out; }
-
-    // set_collective_for_manual_control - limits collective to reduced range for stabilize (i.e. manual) flying
-    void set_collective_for_manual_control(bool true_false) { _heliflags.manual_collective = true_false; }
 
     // get min/max collective when controlled manually as a number from 0 ~ 1000 (note that parameter is stored as percentage)
     int16_t get_manual_collective_min() { return _manual_collective_min*10; }
@@ -194,7 +193,6 @@ private:
     // flags bitmask
     struct heliflags_type {
         uint8_t swash_initialised       : 1;    // true if swash has been initialised
-        uint8_t manual_collective       : 1;    // true if pilot is manually controlling the collective.  If true then we reduce the swash range
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
         uint8_t motor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
     } _heliflags;
