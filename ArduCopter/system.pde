@@ -327,6 +327,7 @@ static bool manual_flight_mode(uint8_t mode) {
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
+// optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was succesfully set
 // STABILIZE, ACRO, SPORT and LAND can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 static bool set_mode(uint8_t mode)
@@ -353,7 +354,7 @@ static bool set_mode(uint8_t mode)
             success = true;
             set_yaw_mode(YAW_HOLD);
             set_roll_pitch_mode(ROLL_PITCH_STABLE);
-            set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
+            set_throttle_mode(STABILIZE_THR);
             set_nav_mode(NAV_NONE);
             break;
 

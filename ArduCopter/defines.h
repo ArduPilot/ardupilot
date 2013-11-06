@@ -40,6 +40,7 @@
 #define THROTTLE_HOLD                       2   // alt hold plus pilot input of climb rate
 #define THROTTLE_AUTO                       3   // auto pilot altitude controller with target altitude held in next_WP.alt
 #define THROTTLE_LAND                       4   // landing throttle controller
+#define THROTTLE_MANUAL_HELI                5   // pilot manually controlled throttle for traditional helicopters
 
 
 // sonar - for use with CONFIG_SONAR_SOURCE
