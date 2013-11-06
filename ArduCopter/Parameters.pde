@@ -434,6 +434,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Rate Pitch Feed Forward
     // @Description: Rate Pitch Feed Forward (for TradHeli Only)
     // @Range: 0 10
+    // @Increment: 0.01
     // @User: Standard
 	GSCALAR(heli_pitch_ff, "RATE_PIT_FF",            HELI_PITCH_FF),
 
@@ -441,6 +442,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Rate Roll Feed Forward
     // @Description: Rate Roll Feed Forward (for TradHeli Only)
     // @Range: 0 10
+    // @Increment: 0.01
     // @User: Standard
 	GSCALAR(heli_roll_ff, "RATE_RLL_FF",            HELI_ROLL_FF),
 
@@ -448,6 +450,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Rate Yaw Feed Forward
     // @Description: Rate Yaw Feed Forward (for TradHeli Only)
     // @Range: 0 10
+    // @Increment: 0.01
     // @User: Standard
 	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
 #endif
