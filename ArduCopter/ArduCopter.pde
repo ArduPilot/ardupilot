@@ -656,11 +656,11 @@ static int32_t baro_alt;
 // Each Flight mode is a unique combination of these modes
 //
 // The current desired control scheme for Yaw
-static uint8_t yaw_mode;
+static uint8_t yaw_mode = STABILIZE_YAW;
 // The current desired control scheme for roll and pitch / navigation
-static uint8_t roll_pitch_mode;
+static uint8_t roll_pitch_mode = STABILIZE_RP;
 // The current desired control scheme for altitude hold
-static uint8_t throttle_mode;
+static uint8_t throttle_mode = STABILIZE_THR;
 
 
 ////////////////////////////////////////////////////////////////////////////////
