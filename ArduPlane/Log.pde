@@ -166,6 +166,8 @@ struct PACKED log_Attitude {
     int16_t roll;
     int16_t pitch;
     uint16_t yaw;
+    uint16_t error_rp;
+    uint16_t error_yaw;
 };
 
 // Write an attitude packet. Total length : 10 bytes
@@ -176,7 +178,9 @@ static void Log_Write_Attitude(void)
         time_ms : hal.scheduler->millis(),
         roll  : (int16_t)ahrs.roll_sensor,
         pitch : (int16_t)ahrs.pitch_sensor,
-        yaw   : (uint16_t)ahrs.yaw_sensor
+        yaw   : (uint16_t)ahrs.yaw_sensor,
+        error_rp  : (uint16_t)(ahrs.get_error_rp() * 100),
+        error_yaw : (uint16_t)(ahrs.get_error_yaw() * 100)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -450,7 +454,7 @@ static void Log_Write_IMU()
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
-      "ATT", "IccC",        "TimeMS,Roll,Pitch,Yaw" },
+      "ATT", "IccCCC",        "TimeMS,Roll,Pitch,Yaw,ErrorRP,ErrorYaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IHIBBBhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,I2CErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
