@@ -317,6 +317,21 @@ bool AP_MotorsHeli::allow_arming()
     return true;
 }
 
+// get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the move_swash function
+int16_t AP_MotorsHeli::get_pilot_desired_collective(int16_t control_in)
+{
+    // return immediately if reduce collective range for manual flight has not been configured
+    if (_manual_collective_min == 0 && _manual_collective_max == 100) {
+        return control_in;
+    }
+
+    // scale 
+    int16_t collective_out;
+    collective_out = _manual_collective_min*10 + control_in * _collective_scalar_manual;
+    collective_out = constrain_int16(collective_out, 0, 1000);
+    return collective_out;
+}
+
 //
 // protected methods
 //
@@ -497,9 +512,6 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
         // scale collective pitch
         _collective_out = constrain_int16(coll_in, 0, 1000);
-        if (_heliflags.manual_collective){
-            _collective_out = _collective_out * _collective_scalar_manual + _manual_collective_min*10;
-        }
         coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
 	
         // rudder feed forward based on collective
