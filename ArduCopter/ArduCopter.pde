@@ -869,6 +869,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
     { barometer_accumulate,  2,     250 },
+#if FRAME_CONFIG == HELI_FRAME
+    { check_dynamic_flight,  2,     100 },
+#endif
     { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
     { crash_check,          10,      20 },
@@ -1805,6 +1808,12 @@ void update_super_simple_bearing(bool force_update)
     }
 }
 
+// throttle_mode_manual - returns true if the throttle is directly controlled by the pilot
+bool throttle_mode_manual(uint8_t thr_mode)
+{
+    return (thr_mode == THROTTLE_MANUAL || thr_mode == THROTTLE_MANUAL_TILT_COMPENSATED || thr_mode == THROTTLE_MANUAL_HELI);
+}
+
 // set_throttle_mode - sets the throttle mode and initialises any variables as required
 bool set_throttle_mode( uint8_t new_throttle_mode )
 {
@@ -1829,7 +1838,7 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_AUTO:
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
             wp_nav.set_desired_alt(controller_desired_alt);                                 // same as above but for loiter controller
-            if ( throttle_mode <= THROTTLE_MANUAL_TILT_COMPENSATED ) {      // reset the alt hold I terms if previous throttle mode was manual
+            if (throttle_mode_manual(throttle_mode)) {  // reset the alt hold I terms if previous throttle mode was manual
                 reset_throttle_I();
                 set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
             }
@@ -1841,6 +1850,14 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
             controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
             throttle_initialised = true;
             break;
+
+#if FRAME_CONFIG == HELI_FRAME
+        case THROTTLE_MANUAL_HELI:
+            throttle_accel_deactivate();                // this controller does not use accel based throttle controller
+            altitude_error = 0;                         // clear altitude error reported to GCS
+            throttle_initialised = true;
+            break;
+#endif
     }
 
     // update the throttle mode
@@ -1850,11 +1867,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         // reset some variables used for logging
         desired_climb_rate = 0;
         nav_throttle = 0;
-
-#if FRAME_CONFIG == HELI_FRAME
-        // use reduced collective range if in manual throttle mode
-        motors.set_collective_for_manual_control(throttle_mode == THROTTLE_MANUAL || throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED);
-#endif
     }
 
     // return success or failure
@@ -1871,28 +1883,15 @@ void update_throttle_mode(void)
     if(ap.do_flip)     // this is pretty bad but needed to flip in AP modes.
         return;
 
-#if FRAME_CONFIG == HELI_FRAME
-	// check if we are flying
-    check_dynamic_flight();
-
-    // allow swash collective to move if we are in manual throttle modes, even if disarmed
-    if( !motors.armed() ) {
-        if ( !(throttle_mode == THROTTLE_MANUAL) && !(throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED)){
-            throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
-            return;
-        }
-    }
-#else // HELI_FRAME
-
-// do not run throttle controllers if motors disarmed
+#if FRAME_CONFIG != HELI_FRAME
+    // do not run throttle controllers if motors disarmed
     if( !motors.armed() ) {
         set_throttle_out(0, false);
         throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         set_target_alt_for_reporting(0);
         return;
     }
-
-#endif // HELI_FRAME
+#endif // FRAME_CONFIG != HELI_FRAME
 
     switch(throttle_mode) {
 
@@ -2013,6 +2012,20 @@ void update_throttle_mode(void)
         get_throttle_land();
         set_target_alt_for_reporting(0);
         break;
+
+#if FRAME_CONFIG == HELI_FRAME
+    case THROTTLE_MANUAL_HELI:
+        // trad heli manual throttle controller
+        // send pilot's output directly to swash plate
+        pilot_throttle_scaled = motors.get_pilot_desired_collective(g.rc_3.control_in);
+        set_throttle_out(pilot_throttle_scaled, false);
+
+        // update estimate of throttle cruise
+        update_throttle_cruise(motors.get_collective_out());
+        set_target_alt_for_reporting(0);
+        break;
+#endif // HELI_FRAME
+
     }
 }
 

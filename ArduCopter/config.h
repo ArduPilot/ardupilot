@@ -111,7 +111,7 @@
   # define HELI_PITCH_FF                0
   # define HELI_ROLL_FF                 0
   # define HELI_YAW_FF                  0  
-  # define STABILIZE_THROTTLE           THROTTLE_MANUAL
+  # define STABILIZE_THR                THROTTLE_MANUAL_HELI
   # define MPU6K_FILTER                 10
 #endif
 
@@ -530,6 +530,11 @@
 
 
 // Flight mode roll, pitch, yaw, throttle and navigation definitions
+
+// Stabilize Mode
+#ifndef STABILIZE_THR
+ # define STABILIZE_THR           	THROTTLE_MANUAL_TILT_COMPENSATED
+#endif
 
 // Acro Mode
 #ifndef ACRO_YAW
