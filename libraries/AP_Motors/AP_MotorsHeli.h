@@ -40,9 +40,12 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
 
-// swash min and max position while in stabilize mode (as a number from 0 ~ 1000)
+// swash min and max position while in stabilize mode (as a number from 0 ~ 100)
 #define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MIN    0
 #define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MAX    100
+
+// swash min while landed or landing (as a number from 0 ~ 1000
+#define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
 
 // default external gyro gain (ch7 out)
 #define AP_MOTORS_HELI_EXT_GYRO_GAIN            1350
@@ -155,7 +158,7 @@ public:
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
     // return true if the main rotor is up to speed
-    bool motor_runup_complete() { return _heliflags.motor_runup_complete; }
+    bool motor_runup_complete();
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -218,6 +221,7 @@ private:
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int8         _manual_collective_min;     // Minimum collective position while pilot directly controls the collective
     AP_Int8         _manual_collective_max;     // Maximum collective position while pilot directly controls the collective
+    AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
