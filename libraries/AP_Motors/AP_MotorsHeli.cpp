@@ -175,8 +175,8 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0:NoFlybar 1:Flybar
     // @User: Standard
     AP_GROUPINFO("FLYBAR_MODE", 18, AP_MotorsHeli,  _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
-	
-	// @Param: STAB_COL_MIN
+
+    // @Param: STAB_COL_MIN
     // @DisplayName: Stabilize Throttle Minimum
     // @Description: Minimum collective position while pilot directly controls collective
     // @Range: 0 50
@@ -185,7 +185,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("STAB_COL_MIN", 19, AP_MotorsHeli, _manual_collective_min, AP_MOTORS_HELI_MANUAL_COLLECTIVE_MIN),
 	
-	// @Param: STAB_COL_MAX
+    // @Param: STAB_COL_MAX
     // @DisplayName: Stabilize Throttle Maximum
     // @Description: Maximum collective position while pilot directly controls collective
     // @Range: 50 100
@@ -193,6 +193,15 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("STAB_COL_MAX", 20, AP_MotorsHeli, _manual_collective_max, AP_MOTORS_HELI_MANUAL_COLLECTIVE_MAX),
+
+    // @Param: LAND_COL_MIN
+    // @DisplayName: Landing Collective Minimum
+    // @Description: Minimum collective position while landed or landing
+    // @Range: 0 500
+    // @Units: pwm
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LAND_COL_MIN", 21, AP_MotorsHeli, _land_collective_min, AP_MOTORS_HELI_LAND_COLLECTIVE_MIN),
 
     AP_GROUPEND
 };
@@ -246,6 +255,12 @@ void AP_MotorsHeli::output_min()
 {
     // move swash to mid
     move_swash(0,0,500,0);
+
+    // override limits flags
+    limit.roll_pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = true;
+    limit.throttle_upper = false;
 }
 
 
@@ -330,6 +345,17 @@ int16_t AP_MotorsHeli::get_pilot_desired_collective(int16_t control_in)
     collective_out = _manual_collective_min*10 + control_in * _collective_scalar_manual;
     collective_out = constrain_int16(collective_out, 0, 1000);
     return collective_out;
+}
+
+// return true if the main rotor is up to speed
+bool AP_MotorsHeli::motor_runup_complete()
+{
+    // if we have no control of motors, assume pilot has spun them up
+    if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_NONE) {
+        return true;
+    }
+
+    return _heliflags.motor_runup_complete;
 }
 
 //
@@ -486,6 +512,12 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     int16_t yaw_offset = 0;
     int16_t coll_out_scaled;
 
+    // initialize limits flag
+    limit.roll_pitch = false;
+    limit.yaw = false;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
+
     if (_servo_manual == 1) {      // are we in manual servo mode? (i.e. swash set-up mode)?
         // check if we need to free up the swash
         if (_heliflags.swash_initialised) {
@@ -505,13 +537,44 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         // coming into this equation at 4500 or less, and based on the original assumption of the
         // total _servo_x.servo_out range being -4500 to 4500.
         roll_out = roll_out * _roll_scaler;
-        roll_out = constrain_int16(roll_out, (int16_t)-_roll_max, (int16_t)_roll_max);
+        if (roll_out < -_roll_max) {
+            roll_out = -_roll_max;
+            limit.roll_pitch = true;
+        }
+        if (roll_out > _roll_max) {
+            roll_out = _roll_max;
+            limit.roll_pitch = true;
+        }
 
+        // scale pitch and update limits
         pitch_out = pitch_out * _pitch_scaler;
-        pitch_out = constrain_int16(pitch_out, (int16_t)-_pitch_max, (int16_t)_pitch_max);
+        if (pitch_out < -_pitch_max) {
+            pitch_out = -_pitch_max;
+            limit.roll_pitch = true;
+        }
+        if (pitch_out > _pitch_max) {
+            pitch_out = _pitch_max;
+            limit.roll_pitch = true;
+        }
+
+        // constrain collective input
+        _collective_out = coll_in;
+        if (_collective_out <= 0) {
+            _collective_out = 0;
+            limit.throttle_lower = true;
+        }
+        if (_collective_out >= 1000) {
+            _collective_out = 1000;
+            limit.throttle_upper = true;
+        }
+
+        // ensure not below landed/landing collective
+        if (_heliflags.landing_collective && _collective_out < _land_collective_min) {
+            _collective_out = _land_collective_min;
+            limit.throttle_lower = true;
+        }
 
         // scale collective pitch
-        _collective_out = constrain_int16(coll_in, 0, 1000);
         coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
 	
         // rudder feed forward based on collective
@@ -529,6 +592,16 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     }
     _servo_3->servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_servo_3->radio_trim-1500);
     _servo_4->servo_out = yaw_out + yaw_offset;
+
+    // constrain yaw and update limits
+    if (_servo_4->servo_out < -4500) {
+        _servo_4->servo_out = -4500;
+        limit.yaw = true;
+    }
+    if (_servo_4->servo_out > 4500) {
+        _servo_4->servo_out = 4500;
+        limit.yaw = true;
+    }
 
     // use servo_out to calculate pwm_out and radio_out
     _servo_1->calc_pwm();
