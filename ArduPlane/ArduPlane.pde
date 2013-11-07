@@ -1309,6 +1309,12 @@ static void update_navigation()
     case LOITER:
     case RTL:
     case GUIDED:
+        // allow loiter direction to be changed in flight
+        if (g.loiter_radius < 0) {
+            loiter.direction = -1;
+        } else {
+            loiter.direction = 1;
+        }
         update_loiter();
         break;
 
