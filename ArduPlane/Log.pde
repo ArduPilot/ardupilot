@@ -427,7 +427,6 @@ struct PACKED log_Compass {
 static void Log_Write_Compass()
 {
     Vector3f mag_offsets = compass.get_offsets();
-    Vector3f mag_motor_offsets = compass.get_motor_offsets();
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
         time_ms         : hal.scheduler->millis(),
