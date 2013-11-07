@@ -252,6 +252,8 @@ bool AP_InertialSensor_MPU6000::update( void )
         return false;
     }
 
+    _previous_accel = _accel;
+
     // disable timer procs for mininum time
     hal.scheduler->suspend_timer_procs();
     _gyro  = Vector3f(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
