@@ -58,22 +58,24 @@
 #define AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
 
 // default external gyro gain (ch7 out)
-#define AP_MOTORS_HELI_CH7_PWM_SETPOINT                 1350
+#define AP_MOTORS_HELI_EXT_GYRO_GAIN            1350
 
 // minimum outputs for direct drive motors
-#define AP_MOTOR_HELI_TAIL_TYPE_DIRECTDRIVE_PWM_MIN     1000
+#define AP_MOTOR_HELI_DIRECTDRIVE_DEFAULT       500
 
 
 // main rotor speed control types (ch8 out)
-#define AP_MOTORS_HELI_RSC_MODE_NONE            0       // main rotor ESC is directly connected to receiver
-#define AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH 1       // main rotor ESC is connected to RC8 (out) but pilot still directly controls speed with a passthrough from CH8 (in)
-#define AP_MOTORS_HELI_RSC_MODE_EXT_GOVERNOR    2       // main rotor ESC is connected to RC8 and controlled by arducopter
+#define AP_MOTORS_HELI_RSC_MODE_NONE            0       // main rotor ESC is directly connected to receiver, pilot controls ESC speed through transmitter directly
+#define AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH 1       // main rotor ESC is connected to RC8 (out), pilot desired rotor speed provided by CH8 input
+#define AP_MOTORS_HELI_RSC_MODE_SETPOINT        2       // main rotor ESC is connected to RC8 (out), desired speed is held in RSC_SETPOINT parameter
 
-// default main rotor governor set-point (ch8 out)
-#define AP_MOTORS_HELI_EXT_GOVERNOR_SETPOINT    1500
+// default main rotor speed (ch8 out) as a number from 0 ~ 1000
+#define AP_MOTORS_HELI_RSC_SETPOINT             500
 
-// default main rotor ramp up rate in 100th of seconds
-#define AP_MOTORS_HELI_RSC_RATE                 1000    // 1000 = 10 seconds
+// default main rotor ramp up time in seconds
+#define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 seconds (most people use exterrnal govenors so we can ramp up output to rotor quickly)
+#define AP_MOTORS_HELI_TAIL_RAMP_INCREMENT      5       // 5 is 2 seconds for direct drive tail rotor to reach to full speed (5 = (2sec*100hz)/1000)
+
 // motor run-up time default in 100th of seconds
 #define AP_MOTORS_HELI_MOTOR_RUNUP_TIME         500     // 500 = 5 seconds
 
@@ -92,27 +94,29 @@ public:
                    RC_Channel*      rc_pitch,
                    RC_Channel*      rc_throttle,
                    RC_Channel*      rc_yaw,
-                   RC_Channel*      rc_8,
+                   RC_Channel*      servo_aux,
+                   RC_Channel*      servo_rotor,
                    RC_Channel*      swash_servo_1,
                    RC_Channel*      swash_servo_2,
                    RC_Channel*      swash_servo_3,
                    RC_Channel*      yaw_servo,
                    uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
+        _servo_aux(servo_aux),
+        _servo_rsc(servo_rotor),
         _servo_1(swash_servo_1),
         _servo_2(swash_servo_2),
         _servo_3(swash_servo_3),
         _servo_4(yaw_servo),
-        _rc_8(rc_8),
         _roll_scaler(1),
         _pitch_scaler(1),
         _collective_scalar(1),
         _collective_scalar_manual(1),
         _collective_out(0),
         _collective_mid_pwm(0),
-        _rsc_output(0),
-        _rsc_ramp(0),
-        _motor_runup_timer(0)
+        _rotor_out(0),
+        _rsc_ramp_increment(0.0f),
+        _tail_direct_drive_out(0)
     {
 		AP_Param::setup_object_defaults(this, var_info);
 
@@ -148,9 +152,9 @@ public:
     // _tail_type - returns the tail type (servo, servo with ext gyro, direct drive var pitch, direct drive fixed pitch)
     int16_t tail_type() { return _tail_type; }
 
-    // ch7_pwm_setpoint - gets and sets pwm output on ch7 (for gyro gain or direct drive tail motors)
-    int16_t ch7_pwm_setpoint() { return _ch7_pwm_setpoint; }
-    void ch7_pwm_setpoint(int16_t pwm) { _ch7_pwm_setpoint = pwm; }
+    // ext_gyro_gain - gets and sets external gyro gain as a pwm (1000~2000)
+    int16_t ext_gyro_gain() { return _ext_gyro_gain; }
+    void ext_gyro_gain(int16_t pwm) { _ext_gyro_gain = pwm; }
 
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() { return _flybar_mode; }
@@ -173,6 +177,9 @@ public:
 
     // return true if the main rotor is up to speed
     bool motor_runup_complete();
+
+    // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
+    void recalc_scalers();
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -197,15 +204,32 @@ private:
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     void calculate_roll_pitch_collective_factors();
 
-    // rsc_control - update value to send to main rotor's ESC
-    void rsc_control();
+    // rsc_control - main function to update values to send to main rotor and tail rotor ESCs
+    void rsc_control(int16_t desired_rotor_speed);
+
+    // rotor_ramp - ramps rotor towards target. result put rotor_out and sent to ESC
+    void rotor_ramp(int16_t rotor_target);
+
+    // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
+    // results put into _tail_direct_drive_out and sent to ESC
+    void tail_ramp(int16_t tail_target);
+
+    // return true if the tail rotor is up to speed
+    bool tail_rotor_runup_complete();
+
+    // write_rsc - outputs pwm onto output rsc channel (ch8).  servo_out parameter is of the range 0 ~ 1000
+    void write_rsc(int16_t servo_out);
+
+    // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
+    void write_aux(int16_t servo_out);
 
     // external objects we depend upon
-    RC_Channel      *_servo_1;
-    RC_Channel      *_servo_2;
-    RC_Channel      *_servo_3;
-    RC_Channel      *_servo_4;
-    RC_Channel      *_rc_8;
+    RC_Channel      *_servo_aux;                // output to ext gyro gain and tail direct drive esc (ch7)
+    RC_Channel      *_servo_rsc;                // output to main rotor esc (ch8)
+    RC_Channel      *_servo_1;                  // swash plate servo #1
+    RC_Channel      *_servo_2;                  // swash plate servo #2
+    RC_Channel      *_servo_3;                  // swash plate servo #3
+    RC_Channel      *_servo_4;                  // tail servo
 
     // flags bitmask
     struct heliflags_type {
@@ -225,17 +249,18 @@ private:
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
-    AP_Int16        _ch7_pwm_setpoint;          // PWM sent to Ch7 for ext gyro gain or direct drive variable pitch motor
+    AP_Int16        _ext_gyro_gain;             // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     AP_Int8         _servo_manual;              // Pass radio inputs directly to servos during set-up through mission planner
     AP_Int16        _phase_angle;               // Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     AP_Int16        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.    
-    AP_Int16        _ext_gov_setpoint;          // PWM passed to the external motor governor when external governor is enabledv
-    AP_Int8         _rsc_mode;                  // Sets which main rotor ESC control mode is active
-    AP_Int16        _rsc_ramp_up_rate;          // The time in 100th seconds the RSC takes to ramp up to speed
+    AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
+    AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
+    AP_Int8         _rsc_ramp_time;             // Time in seconds to ramp up the main rotor to full speed
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int8         _manual_collective_min;     // Minimum collective position while pilot directly controls the collective
     AP_Int8         _manual_collective_max;     // Maximum collective position while pilot directly controls the collective
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
+    AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
@@ -247,9 +272,9 @@ private:
     float           _collective_scalar_manual;  // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
     int16_t         _collective_out;            // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm;        // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _rsc_output;                // final output to the external motor governor 1000-2000
-    int16_t         _rsc_ramp;                  // current state of ramping
-    int16_t         _motor_runup_timer;         // timer to determine if motor has run up fully
+    float           _rotor_out;                 // output to the rotor (0 ~ 1000)
+    float           _rsc_ramp_increment;        // the amount we can increase the rotor output during each 100hz iteration
+    int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
 };
 
 #endif  // AP_MOTORSHELI
