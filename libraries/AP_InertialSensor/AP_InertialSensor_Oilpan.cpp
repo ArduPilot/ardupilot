@@ -89,6 +89,8 @@ bool AP_InertialSensor_Oilpan::update()
     _gyro.z *= _gyro_gain_z;
     _gyro -= gyro_offset;
 
+    _previous_accel = _accel;
+
     _accel  = Vector3f(_sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET),
                        _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET),
                        _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET));

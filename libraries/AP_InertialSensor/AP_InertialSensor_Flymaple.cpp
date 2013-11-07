@@ -188,6 +188,8 @@ bool AP_InertialSensor_Flymaple::update(void)
     _delta_time = (_last_gyro_timestamp - _last_update_usec) * 1.0e-6f;
     _last_update_usec = _last_gyro_timestamp;
 
+    _previous_accel = _accel;
+
     _accel = _accel_filtered;
     _accel_samples = 0;
 

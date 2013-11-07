@@ -90,6 +90,8 @@ bool AP_InertialSensor_PX4::update(void)
     // get the latest sample from the sensor drivers
     _get_sample();
 
+    _previous_accel = _accel;
+
     _accel = _accel_in;
     _gyro  = _gyro_in;
 
@@ -171,6 +173,29 @@ bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
         }
     }
     return false;
+}
+
+/**
+   try to detect bad accel/gyro sensors
+ */
+bool AP_InertialSensor_PX4::healthy(void) const
+{
+    uint64_t tnow = hrt_absolute_time();
+    if ((tnow - _last_accel_timestamp) > 2*_sample_time_usec) {
+        // accels have not updated
+        return false;
+    }
+    if ((tnow - _last_gyro_timestamp) > 2*_sample_time_usec) {
+        // gyros have not updated
+        return false;
+    }
+    if (fabs(_accel.x) > 30 && fabs(_accel.y) > 30 && fabs(_accel.z) > 30 &&
+        (_previous_accel - _accel).length() < 0.01f) {
+        // unchanging accel, large in all 3 axes. This is a likely
+        // accelerometer failure of the LSM303d
+        return false;
+    }
+    return true;
 }
 
 #endif // CONFIG_HAL_BOARD
