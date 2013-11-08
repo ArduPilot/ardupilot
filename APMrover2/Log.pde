@@ -479,7 +479,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
-    cliSerial->printf_P(PSTR("\n" THISFIRMWARE
+    cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"),
                         (unsigned) memcheck_available_memory());
 
@@ -496,6 +496,7 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 static void start_logging() 
 {
     DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
+    DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
 }
 
 #else // LOGGING_ENABLED
