@@ -59,15 +59,6 @@ static void check_dynamic_flight(void)
     }
 }
 
-// init_rate_controllers - set-up filters for rate controller inputs
-void init_rate_controllers()
-{
-   // initalise low pass filters on rate controller inputs
-   // 1st parameter is time_step, 2nd parameter is time_constant
-   // rate_roll_filter.set_cutoff_frequency(0.01f, 0.1f);
-   // rate_pitch_filter.set_cutoff_frequency(0.01f, 0.1f);
-}
-
 // heli_integrated_swash_controller - convert desired roll and pitch rate to roll and pitch swash angles
 // should be called at 100hz
 // output placed directly into g.rc_1.servo_out and g.rc_2.servo_out
