@@ -1478,8 +1478,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_msg_param_request_list_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
-        // Start sending parameters - next call to ::update will kick the first one out
+        // mark the firmware version in the tlog
+        send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
 
+        // Start sending parameters - next call to ::update will kick the first one out
         _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
         _queued_parameter_index = 0;
         _queued_parameter_count = _count_parameters();
