@@ -58,7 +58,7 @@
 #define AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
 
 // default external gyro gain (ch7 out)
-#define AP_MOTORS_HELI_EXT_GYRO_GAIN            1350
+#define AP_MOTORS_HELI_EXT_GYRO_GAIN            350
 
 // minimum outputs for direct drive motors
 #define AP_MOTOR_HELI_DIRECTDRIVE_DEFAULT       500

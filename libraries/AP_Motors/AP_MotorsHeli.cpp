@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
     // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
-    // @Range: 1000 2000
+    // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
@@ -317,7 +317,7 @@ void AP_MotorsHeli::output_test()
 
     // external gyro
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
-        hal.rcout->write(AP_MOTORS_HELI_AUX, _ext_gyro_gain);
+        write_aux(_ext_gyro_gain);
     }
 
     // servo 4
@@ -650,7 +650,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
     // output gain to exernal gyro
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
-        hal.rcout->write(AP_MOTORS_HELI_AUX, _ext_gyro_gain);
+        write_aux(_ext_gyro_gain);
     }
 
     // to be compatible with other frame types
