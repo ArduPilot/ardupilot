@@ -225,4 +225,29 @@ static void heli_update_landing_swash()
     }
 }
 
+// heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
+static void heli_update_rotor_speed_targets()
+{
+    // get rotor control method
+    uint8_t rsc_control_mode = motors.get_rsc_mode();
+
+    switch (rsc_control_mode) {
+        case AP_MOTORS_HELI_RSC_MODE_NONE:
+            // even though pilot passes rotors speed directly to rotor ESC via receiver, motor lib needs to know if
+            // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
+        case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
+            // pass through pilot desired rotor speed
+            motors.set_desired_rotor_speed(g.rc_8.control_in);
+            break;
+        case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
+            // pass setpoint through as desired rotor speed
+            if (g.rc_8.control_in > 0) {
+                motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
+            }else{
+                motors.set_desired_rotor_speed(0);
+            }
+            break;
+    }
+}
+
 #endif  // FRAME_CONFIG == HELI_FRAME

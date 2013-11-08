@@ -114,6 +114,7 @@ public:
         _collective_scalar_manual(1),
         _collective_out(0),
         _collective_mid_pwm(0),
+        _rotor_desired(0),
         _rotor_out(0),
         _rsc_ramp_increment(0.0f),
         _tail_direct_drive_out(0)
@@ -175,6 +176,15 @@ public:
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
+    // get_rsc_mode - gets the rotor speed control method (AP_MOTORS_HELI_RSC_MODE_NONE, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH or AP_MOTORS_HELI_RSC_MODE_SETPOINT)
+    uint8_t get_rsc_mode() { return _rsc_mode; }
+
+    // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1000)
+    int16_t get_rsc_setpoint() { return _rsc_setpoint; }
+
+    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
+    void set_desired_rotor_speed(int16_t desired_speed);
+
     // return true if the main rotor is up to speed
     bool motor_runup_complete();
 
@@ -205,7 +215,7 @@ private:
     void calculate_roll_pitch_collective_factors();
 
     // rsc_control - main function to update values to send to main rotor and tail rotor ESCs
-    void rsc_control(int16_t desired_rotor_speed);
+    void rsc_control();
 
     // rotor_ramp - ramps rotor towards target. result put rotor_out and sent to ESC
     void rotor_ramp(int16_t rotor_target);
@@ -272,7 +282,8 @@ private:
     float           _collective_scalar_manual;  // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
     int16_t         _collective_out;            // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm;        // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    float           _rotor_out;                 // output to the rotor (0 ~ 1000)
+    int16_t         _rotor_desired;             // latest desired rotor speed from pilot
+    float           _rotor_out;                 // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
     float           _rsc_ramp_increment;        // the amount we can increase the rotor output during each 100hz iteration
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
 };

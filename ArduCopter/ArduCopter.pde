@@ -1086,6 +1086,9 @@ static void throttle_loop()
     update_auto_armed();
 
 #if FRAME_CONFIG == HELI_FRAME
+    // update rotor speed
+    heli_update_rotor_speed_targets();
+
     // update trad heli swash plate movement
     heli_update_landing_swash();
 #endif

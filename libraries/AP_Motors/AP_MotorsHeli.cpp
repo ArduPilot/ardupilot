@@ -361,6 +361,12 @@ int16_t AP_MotorsHeli::get_pilot_desired_collective(int16_t control_in)
     return collective_out;
 }
 
+// set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
+void AP_MotorsHeli::set_desired_rotor_speed(int16_t desired_speed)
+{
+    _rotor_desired = desired_speed;
+}
+
 // return true if the main rotor is up to speed
 bool AP_MotorsHeli::motor_runup_complete()
 {
@@ -398,7 +404,6 @@ void AP_MotorsHeli::output_armed()
         _rc_yaw->servo_out = _rc_yaw->control_in;
     }
 
-    //static int counter = 0;
     _rc_roll->calc_pwm();
     _rc_pitch->calc_pwm();
     _rc_throttle->calc_pwm();
@@ -406,8 +411,8 @@ void AP_MotorsHeli::output_armed()
 
     move_swash( _rc_roll->servo_out, _rc_pitch->servo_out, _rc_throttle->servo_out, _rc_yaw->servo_out );
 
-    // To-Do: clean-up the passing in of the desired rotor speed
-    rsc_control(_servo_rsc->control_in);
+    // update rotor and direct drive esc speeds
+    rsc_control();
 }
 
 // output_disarmed - sends commands to the motors
@@ -657,7 +662,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
 // rsc_control - update value to send to tail and main rotor's ESC
 // desired_rotor_speed is a desired speed from 0 to 1000
-void AP_MotorsHeli::rsc_control(int16_t desired_rotor_speed)
+void AP_MotorsHeli::rsc_control()
 {
     // if disarmed output minimums
     if (!armed()) {
@@ -674,63 +679,13 @@ void AP_MotorsHeli::rsc_control(int16_t desired_rotor_speed)
         return;
     }
 
-    // handle simpler case of pilot directly controlling main rotor
-    if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_NONE) {
-        switch (_tail_type) {
-            // return immediately if no direct drive tail motor
-            case AP_MOTORS_HELI_TAILTYPE_SERVO:
-            case AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO:
-            default:
-                return;
-                break;
-
-            // direct drive variable pitch tail
-            case AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_VARPITCH:
-                if (desired_rotor_speed > 0) {
-                    // ramp up tail if main rotor on
-                    tail_ramp(_direct_drive_setpoint);
-                }else{
-                    // ramp down tail rotor if main rotor off
-                    tail_ramp(0);
-                }
-                return;
-                break;
-
-            // direct drive fixed pitch tail
-            case AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH:
-                // output fixed-pitch speed control if Ch8 is high
-                if (desired_rotor_speed > 0) {
-                    // copy yaw output to tail esc
-                    write_aux(_servo_4->servo_out);
-                }else{
-                    write_aux(0);
-                }
-                return;
-                break;
-        }
-        return;
-    }
-
-    // handle more complex case of channel 8 passthrough and external governor
-    int16_t temp_rotor_speed;
-    if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH) {
-        temp_rotor_speed = desired_rotor_speed;
-    }else{
-        // rotor speed is predefined set-point
-        if (desired_rotor_speed > 0) {
-            temp_rotor_speed = _rsc_setpoint;
-        }else{
-            temp_rotor_speed = 0;
-        }
-    }
-
     // ramp up or down main rotor and tail
-    if (temp_rotor_speed > 0) {
+    if (_rotor_desired > 0) {
         // ramp up tail rotor (this does nothing if not using direct drive variable pitch tail)
         tail_ramp(_direct_drive_tailspeed);
         // note: this always returns true if not using direct drive variable pitch tail
         if (tail_rotor_runup_complete()) {
-            rotor_ramp(temp_rotor_speed);
+            rotor_ramp(_rotor_desired);
         }
     }else{
         // shutting down main rotor
@@ -744,7 +699,7 @@ void AP_MotorsHeli::rsc_control(int16_t desired_rotor_speed)
     // direct drive fixed pitch tail servo gets copy of yaw servo out (ch4) while main rotor is running
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH) {
         // output fixed-pitch speed control if Ch8 is high
-        if (temp_rotor_speed > 0 || _rotor_out > 0) {
+        if (_rotor_desired > 0 || _rotor_out > 0) {
             // copy yaw output to tail esc
             write_aux(_servo_4->servo_out);
         }else{
