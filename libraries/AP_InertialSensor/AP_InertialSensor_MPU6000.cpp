@@ -217,7 +217,10 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
      * its caller. */
     _last_sample_time_micros = hal.scheduler->micros();
     hal.scheduler->delay(10);
-    _read_data_transaction();
+    if (_spi_sem->take(100)) {
+        _read_data_transaction();
+        _spi_sem->give();
+    }
 
     // start the timer process to read samples
     hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU6000::_poll_data));
