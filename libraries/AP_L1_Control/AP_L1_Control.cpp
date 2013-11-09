@@ -1,5 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <AP_HAL.h>
 #include "AP_L1_Control.h"
 
 extern const AP_HAL::HAL& hal;
@@ -279,7 +280,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float velTangent = xtrackVelCap * float(loiter_direction);
 	
     //Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
-    if ( velTangent < 0.0f ) {
+    if (ltrackVelCap < 0.0f && velTangent < 0.0f) {
         latAccDemCircPD =  max(latAccDemCircPD, 0.0f);
 	}
 	
@@ -289,10 +290,10 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	//Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
 	float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);
 	
-	// Perform switchover between 'capture' and 'circle' modes at the point where the commands cross over to achieve a seamless transfer
+	// Perform switchover between 'capture' and 'circle' modes at the
+	// point where the commands cross over to achieve a seamless transfer
 	// Only fly 'capture' mode if outside the circle
-	if ((latAccDemCap < latAccDemCirc && loiter_direction > 0 && xtrackErrCirc > 0.0f) || 
-        (latAccDemCap > latAccDemCirc && loiter_direction < 0 && xtrackErrCirc > 0.0f)) {
+	if (xtrackErrCirc > 0.0f && loiter_direction * latAccDemCap < loiter_direction * latAccDemCirc) {
 		_latAccDem = latAccDemCap;
 		_WPcircle = false;
 		_bearing_error = Nu; // angle between demanded and achieved velocity vector, +ve to left of track
