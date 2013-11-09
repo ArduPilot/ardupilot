@@ -260,7 +260,8 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	
 	// Perform switchover between 'capture' and 'circle' modes at the point where the commands cross over to achieve a seamless transfer
 	// Only fly 'capture' mode if outside the circle
-	if ((latAccDemCap < latAccDemCirc && loiter_direction > 0 && xtrackErrCirc > 0.0f) | (latAccDemCap > latAccDemCirc && loiter_direction < 0 && xtrackErrCirc > 0.0f)) {
+	if ((latAccDemCap < latAccDemCirc && loiter_direction > 0 && xtrackErrCirc > 0.0f) || 
+        (latAccDemCap > latAccDemCirc && loiter_direction < 0 && xtrackErrCirc > 0.0f)) {
 		_latAccDem = latAccDemCap;
 		_WPcircle = false;
 		_bearing_error = Nu; // angle between demanded and achieved velocity vector, +ve to left of track
