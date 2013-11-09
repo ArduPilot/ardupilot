@@ -453,7 +453,26 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 0.01
     // @User: Standard
 	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
+
+    // @Param: STAB_COL_MIN
+    // @DisplayName: Heli Stabilize Throttle Collective Minimum
+    // @Description: Helicopter's minimum collective position while pilot directly controls collective in stabilize mode
+    // @Range: 0 500
+    // @Units: pwm
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(heli_stab_col_min, "STAB_COL_MIN", HELI_STAB_COLLECTIVE_MIN_DEFAULT),
+
+    // @Param: STAB_COL_MAX
+    // @DisplayName: Stabilize Throttle Maximum
+    // @Description: Helicopter's maximum collective position while pilot directly controls collective in stabilize mode
+    // @Range: 500 1000
+    // @Units: pwm
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(heli_stab_col_max, "STAB_COL_MAX", HELI_STAB_COLLECTIVE_MAX_DEFAULT),
 #endif
+
 #if FRAME_CONFIG ==     SINGLE_FRAME
     // @Group: SS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp

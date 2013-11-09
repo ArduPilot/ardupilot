@@ -170,23 +170,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("FLYBAR_MODE", 18, AP_MotorsHeli,  _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
 
-    // @Param: STAB_COL_MIN
-    // @DisplayName: Stabilize Throttle Minimum
-    // @Description: Minimum collective position while pilot directly controls collective
-    // @Range: 0 50
-    // @Units: Percent
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("STAB_COL_MIN", 19, AP_MotorsHeli, _manual_collective_min, AP_MOTORS_HELI_MANUAL_COLLECTIVE_MIN),
-	
-    // @Param: STAB_COL_MAX
-    // @DisplayName: Stabilize Throttle Maximum
-    // @Description: Maximum collective position while pilot directly controls collective
-    // @Range: 50 100
-    // @Units: Percent
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("STAB_COL_MAX", 20, AP_MotorsHeli, _manual_collective_max, AP_MOTORS_HELI_MANUAL_COLLECTIVE_MAX),
+    // 19,20 - was STAB_COL_MIN, STAB_COL_MAX now moved to main code's parameter list
 
     // @Param: LAND_COL_MIN
     // @DisplayName: Landing Collective Minimum
@@ -354,21 +338,6 @@ bool AP_MotorsHeli::allow_arming()
     return true;
 }
 
-// get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the move_swash function
-int16_t AP_MotorsHeli::get_pilot_desired_collective(int16_t control_in)
-{
-    // return immediately if reduce collective range for manual flight has not been configured
-    if (_manual_collective_min == 0 && _manual_collective_max == 100) {
-        return control_in;
-    }
-
-    // scale 
-    int16_t collective_out;
-    collective_out = _manual_collective_min*10 + control_in * _collective_scalar_manual;
-    collective_out = constrain_int16(collective_out, 0, 1000);
-    return collective_out;
-}
-
 // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
 void AP_MotorsHeli::set_desired_rotor_speed(int16_t desired_speed)
 {
@@ -490,7 +459,6 @@ void AP_MotorsHeli::init_swash()
     _roll_scaler = (float)_roll_max/4500.0f;
     _pitch_scaler = (float)_pitch_max/4500.0f;
     _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
-    _collective_scalar_manual = ((float)(_manual_collective_max - _manual_collective_min))/100.0f;
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();

@@ -112,7 +112,6 @@ public:
         _roll_scaler(1),
         _pitch_scaler(1),
         _collective_scalar(1),
-        _collective_scalar_manual(1),
         _collective_out(0),
         _collective_mid_pwm(0),
         _rotor_desired(0),
@@ -163,18 +162,11 @@ public:
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() { return _flybar_mode; }
 
-    // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the move_swash function
-    int16_t get_pilot_desired_collective(int16_t control_in);
-
     // get_collective_mid - returns collective mid position as a number from 0 ~ 1000
     int16_t get_collective_mid() { return  _collective_mid; }
 
     // get_collective_out - returns collective position from last output as a number from 0 ~ 1000
     int16_t get_collective_out() { return _collective_out; }
-
-    // get min/max collective when controlled manually as a number from 0 ~ 1000 (note that parameter is stored as percentage)
-    int16_t get_manual_collective_min() { return _manual_collective_min*10; }
-    int16_t get_manual_collective_max() { return _manual_collective_max*10; }
 
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
@@ -271,8 +263,6 @@ private:
     AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
-    AP_Int8         _manual_collective_min;     // Minimum collective position while pilot directly controls the collective
-    AP_Int8         _manual_collective_max;     // Maximum collective position while pilot directly controls the collective
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
 
