@@ -73,7 +73,8 @@
 #define AP_MOTORS_HELI_RSC_SETPOINT             500
 
 // default main rotor ramp up time in seconds
-#define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 seconds (most people use exterrnal govenors so we can ramp up output to rotor quickly)
+#define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
+#define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
 #define AP_MOTORS_HELI_TAIL_RAMP_INCREMENT      5       // 5 is 2 seconds for direct drive tail rotor to reach to full speed (5 = (2sec*100hz)/1000)
 
 // motor run-up time default in 100th of seconds
@@ -117,6 +118,8 @@ public:
         _rotor_desired(0),
         _rotor_out(0),
         _rsc_ramp_increment(0.0f),
+        _rsc_runup_increment(0.0f),
+        _rotor_speed_estimate(0.0f),
         _tail_direct_drive_out(0)
     {
 		AP_Param::setup_object_defaults(this, var_info);
@@ -265,7 +268,8 @@ private:
     AP_Int16        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.    
     AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
-    AP_Int8         _rsc_ramp_time;             // Time in seconds to ramp up the main rotor to full speed
+    AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
+    AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int8         _manual_collective_min;     // Minimum collective position while pilot directly controls the collective
     AP_Int8         _manual_collective_max;     // Maximum collective position while pilot directly controls the collective
@@ -285,6 +289,8 @@ private:
     int16_t         _rotor_desired;             // latest desired rotor speed from pilot
     float           _rotor_out;                 // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
     float           _rsc_ramp_increment;        // the amount we can increase the rotor output during each 100hz iteration
+    float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
+    float           _rotor_speed_estimate;      // estimated speed of the main rotor (0~1000)
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
 };
 
