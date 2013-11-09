@@ -199,11 +199,19 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: RSC_RAMP_TIME
     // @DisplayName: RSC Ramp Time
-    // @Description: Time in seconds for the main rotor to reach full speed
+    // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
     // @Range: 0 60
     // @Units: Seconds
     // @User: Standard
     AP_GROUPINFO("RSC_RAMP_TIME", 22, AP_MotorsHeli,_rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
+
+    // @Param: RSC_RUNUP_TIME
+    // @DisplayName: RSC Runup Time
+    // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
+    // @Range: 0 60
+    // @Units: Seconds
+    // @User: Standard
+    AP_GROUPINFO("RSC_RUNUP_TIME", 23, AP_MotorsHeli,_rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 
     // @Param: TAIL_SPEED
     // @DisplayName: Direct Drive VarPitch Tail ESC speed
@@ -387,6 +395,14 @@ void AP_MotorsHeli::recalc_scalers()
     }
     _rsc_ramp_increment = 1000.0f / (_rsc_ramp_time * 100.0f);
 
+    // recalculate rotor runup increment
+    if (_rsc_runup_time <= 0 ) {
+        _rsc_runup_time = 1;
+    }
+    if (_rsc_runup_time < _rsc_ramp_time) {
+        _rsc_runup_time = _rsc_ramp_time;
+    }
+    _rsc_runup_increment = 1000.0f / (_rsc_runup_time * 100.0f);
 }
 
 //
@@ -674,6 +690,7 @@ void AP_MotorsHeli::rsc_control()
         // shut down main rotor
         if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE) {
             _rotor_out = 0;
+            _rotor_speed_estimate = 0;
             write_rsc(_rotor_out);
         }
         return;
@@ -691,7 +708,7 @@ void AP_MotorsHeli::rsc_control()
         // shutting down main rotor
         rotor_ramp(0);
         // if completed shutting down main motor then shut-down tail rotor.  Note: this does nothing if not using direct drive vairable pitch tail
-        if (_rotor_out == 0) {
+        if (_rotor_speed_estimate <= 0) {
             tail_ramp(0);
         }
     }
@@ -699,7 +716,7 @@ void AP_MotorsHeli::rsc_control()
     // direct drive fixed pitch tail servo gets copy of yaw servo out (ch4) while main rotor is running
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH) {
         // output fixed-pitch speed control if Ch8 is high
-        if (_rotor_desired > 0 || _rotor_out > 0) {
+        if (_rotor_desired > 0 || _rotor_speed_estimate > 0) {
             // copy yaw output to tail esc
             write_aux(_servo_4->servo_out);
         }else{
@@ -712,8 +729,6 @@ void AP_MotorsHeli::rsc_control()
 // result put in _rotor_out and sent to ESC
 void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
 {
-    bool ramp_down = false;     // true if we are ramping down so that we immediately output the target to the rotor ESC
-
     // return immediately if not ramping required
     if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_NONE) {
         _rotor_out = rotor_target;
@@ -723,36 +738,44 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
     // range check rotor_target
     rotor_target = constrain_int16(rotor_target,0,1000);
 
-    // ramp towards target
+    // initialise rotor_out to our estimated rotor speed
+    _rotor_out = _rotor_speed_estimate;
+
+    // ramp rotor esc output towards target
     if (_rotor_out < rotor_target) {
+        // ramp up slowly to target
         _rotor_out += _rsc_ramp_increment;
         if (_rotor_out > rotor_target) {
             _rotor_out = rotor_target;
         }
-    }else if(_rotor_out > rotor_target) {
-        _rotor_out -= _rsc_ramp_increment;
-        if (_rotor_out < rotor_target) {
+    }else{
+        // ramping down happens instantly
             _rotor_out = rotor_target;
         }
-        ramp_down = true;
+
+    // ramp rotor speed estimate towards rotor out
+    if (_rotor_speed_estimate < _rotor_out) {
+        _rotor_speed_estimate += _rsc_runup_increment;
+        if (_rotor_speed_estimate > _rotor_out) {
+            _rotor_speed_estimate = _rotor_out;
+    }
+    }else{
+        _rotor_speed_estimate -= _rsc_runup_increment;
+        if (_rotor_speed_estimate < _rotor_out) {
+            _rotor_speed_estimate = _rotor_out;
+        }
     }
 
     // set runup complete flag
-    if (!_heliflags.motor_runup_complete && rotor_target > 0 && _rotor_out >= rotor_target) {
+    if (!_heliflags.motor_runup_complete && rotor_target > 0 && _rotor_speed_estimate >= rotor_target) {
         _heliflags.motor_runup_complete = true;
     }
-    if (_heliflags.motor_runup_complete && rotor_target == 0 && _rotor_out <= 0) {
+    if (_heliflags.motor_runup_complete && rotor_target == 0 && _rotor_speed_estimate <= 0) {
         _heliflags.motor_runup_complete = false;
     }
 
     // output to rsc servo
-    if (ramp_down) {
-        // if ramping down we immediately output the target to the motors
-        // the _rotor_out is just an estimate of how fast the rotor is actually spinning
-        write_rsc(rotor_target);
-    }else{
         write_rsc(_rotor_out);
-    }
 }
 
 // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
