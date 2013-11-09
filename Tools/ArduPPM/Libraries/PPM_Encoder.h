@@ -6,6 +6,7 @@
 
 // By: John Arne Birkeland - 2012
 // APM v1.x adaptation and "difficult" receiver testing by Olivier ADLER
+// Spektrum satellite support added by Jimmy 'Kwarf' Bergström
 // -------------------------------------------------------------
 
 
@@ -146,6 +147,9 @@
 //         - if channel 5-8 are disconnected: set it to last value
 //         - permanent LED error condition indication is only triggered when throttle is set low (or all channels are disconnected)
 
+// 28-08-2013
+// V2.4.0pre - Spektrum satellite support
+
 
 // -------------------------------------------------------------
 
@@ -188,7 +192,7 @@
 #endif
 
 // Version stamp for firmware hex file ( decode hex file using <avr-objdump -s file.hex> and look for "ArduPPM" string )
-const char ver[15] = "ArduPPMv2.3.16"; 
+const char ver[17] = "ArduPPMv2.4.0pre";
 
 // -------------------------------------------------------------
 // INPUT MODE
@@ -246,6 +250,28 @@ volatile uint8_t servo_input_mode = JUMPER_SELECT_MODE;
 
 // CH5 power on values (mode selection channel)
 #define PPM_CH5_MODE_4        ONE_US * 1555 - PPM_PRE_PULSE
+
+// -------------------------------------------------------------
+// SPEKTRUM SATELLITE VALUES
+// -------------------------------------------------------------
+
+// Timer ticks between each bit to sample, this value was calculated from 115200 baud and then measured and adjusted for delays in interrupts
+#define SPEKTRUM_DELAY_BIT_PERIOD         12
+
+// Delay from the start bit falling edge to the first data bit sample point, calculated and adjusted like the one above
+#define SPEKTRUM_DELAY_INT_TO_FIRST_BIT    4
+
+// Used to track what bit we're sampling
+volatile uint8_t spektrum_bit_position;
+
+// Used to detect start of frame by measuring time from last byte
+volatile uint16_t spektrum_byte_last_received;
+
+// Points to the position in the frame where we're currently reading data
+volatile uint8_t spektrum_frame_pointer;
+
+// Contains the entire frame, when this is full with valid bytes the channel values are moved to the ppm array
+volatile uint8_t spektrum_frame[16];
 
 // -------------------------------------------------------------
 // PPM OUTPUT SETTINGS
@@ -375,6 +401,12 @@ volatile uint8_t disconnected_channels;
 #define PPM_COMPARE_ENABLE    OCIE1A
 #define PPM_COMPARE_FORCE_MATCH    FOC1A
 
+#define SPEKTRUM_TIMER_CNT    TCNT1
+#define SPEKTRUM_INT_VECTOR   TIMER1_COMPB_vect
+#define SPEKTRUM_COMPARE      OCR1B
+#define SPEKTRUM_COMPARE_CLEAR_FLAG  OCF1B
+#define SPEKTRUM_COMPARE_ENABLE    OCIE1B
+
 #define    USB_DDR            DDRC
 #define    USB_PORT           PORTC
 #define    USB_PIN            PC2
@@ -428,6 +460,12 @@ void EVENT_USB_Device_Disconnect(void)
 #define PPM_COMPARE_FLAG      COM1B0
 #define PPM_COMPARE_ENABLE    OCIE1B
 #define PPM_COMPARE_FORCE_MATCH    FOC1B
+
+#define SPEKTRUM_TIMER_CNT    TCNT1
+#define SPEKTRUM_INT_VECTOR   TIMER1_COMPA_vect
+#define SPEKTRUM_COMPARE      OCR1A
+#define SPEKTRUM_COMPARE_CLEAR_FLAG  OCF1A
+#define SPEKTRUM_COMPARE_ENABLE    OCIE1A
 
 #else
 #error NO SUPPORTED DEVICE FOUND! (ATmega16u2 / ATmega32u2 / ATmega328p)
@@ -641,6 +679,39 @@ ISR( SERVO_INT_VECTOR )
         }
         #endif
         
+        // Leave interrupt
+        return;
+    }
+    // ------------------------------------------------------------------------------
+    // Spektrum satellite mode (software UART reception at 115200 baud on channel 1)
+    // ------------------------------------------------------------------------------
+    if (servo_input_mode == SPEKTRUM_MODE) {
+        // We want to detect the start bit (high to low transition)
+        if (SERVO_INPUT & 1) {
+            // Leave interrupt if RX is high
+            return;
+        }
+
+        // We need to run the PPM output because we use that timer for bit sampling
+        if (!ppm_generator_active) {
+            ppm_start();
+        }
+
+        // Start bit detected, disable the pin change interrupt, we will sample the byte using a timer
+        PCICR &= ~(1 << SERVO_INT_ENABLE);
+
+        // Reset the bit position indicator
+        spektrum_bit_position = 0;
+
+        // Set the output compare interrupt to trigger at the first data bit
+        SPEKTRUM_COMPARE = SPEKTRUM_TIMER_CNT + SPEKTRUM_DELAY_INT_TO_FIRST_BIT;
+
+        // Clear any pending compare interrupt
+        TIFR1 = (1 << SPEKTRUM_COMPARE_CLEAR_FLAG);
+
+        // Enable the output compare interrupt
+        TIMSK1 |= (1 << SPEKTRUM_COMPARE_ENABLE);
+
         // Leave interrupt
         return;
     }
@@ -875,6 +946,98 @@ ISR( PPM_INT_VECTOR, ISR_NOBLOCK )
 // ------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------
+// SPEKTRUM SAT READ - TIMER1 COMPARE INTERRUPT
+// ------------------------------------------------------------------------------
+ISR( SPEKTRUM_INT_VECTOR )
+{
+    // Set the output compare interrupt to trigger at the middle of the next bit
+    SPEKTRUM_COMPARE = SPEKTRUM_TIMER_CNT + SPEKTRUM_DELAY_BIT_PERIOD;
+
+    // Shift in the current bit in the buffer, LSB first so shift right and insert at the top
+    spektrum_frame[spektrum_frame_pointer] >>= 1;
+    spektrum_frame[spektrum_frame_pointer] |= (SERVO_INPUT & 1) << 7;
+
+    // Check if we have received all 8 bits
+    if (++spektrum_bit_position >= 8) {
+        // Reset the bit position
+        spektrum_bit_position = 0;
+
+        // Clear the pin change interrupt flag
+        PCIFR = (1 << SERVO_INT_CLEAR_FLAG);
+
+        // Enable the pin change interrupt again to wait for a new start bit
+        PCICR |= (1 << SERVO_INT_ENABLE);
+
+        // Disable the output compare interrupt
+        TIMSK1 &= ~(1 << SPEKTRUM_COMPARE_ENABLE);
+
+        // Check the time since last byte to verify that we are in sync with the frames, >8ms for first byte, <100us for all following
+        if ((spektrum_frame_pointer == 0 && SPEKTRUM_TIMER_CNT - spektrum_byte_last_received < ONE_US * 8000) ||
+            (spektrum_frame_pointer > 0 && SPEKTRUM_TIMER_CNT - spektrum_byte_last_received > ONE_US * 100)) {
+            // Reset frame pointer and return if we're not in sync
+            spektrum_frame_pointer = 0;
+
+            // Save the time of byte receival, important that this is done after sync validation
+            spektrum_byte_last_received = SPEKTRUM_TIMER_CNT;
+            return;
+        }
+
+        // Save the time of byte receival, important that this is done after sync validation
+        spektrum_byte_last_received = SPEKTRUM_TIMER_CNT;
+
+        // Check if we have received a full frame
+        if (++spektrum_frame_pointer >= 16) {
+            // Reset Watchdog Timer
+            wdt_reset();
+
+            #if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+            // Toggle RX LED when finished receiving frame
+            PIND |= (1<< PD4);
+            #endif
+
+            // Set servo input missing flag false to indicate that we have received servo input signals
+            servo_input_missing = false;
+
+            for (uint8_t i = 2; i < 15; i += 2) {
+                uint16_t data = (spektrum_frame[i] << 8) | spektrum_frame[i + 1];
+
+                // Fetch the channel number, 4 bits located above the 10 value bits (0 index)
+                uint16_t channel = (data & 0x3C00) >> 10;
+
+                // Adjust spektrum mapping to APM (remember 0 index)
+                if (channel == 0)
+                    channel = 2;
+                else if (channel == 1)
+                    channel = 0;
+                else if (channel == 2)
+                    channel = 1;
+
+                // Make sure the channel is not out of range (remember 0 index, 0-7)
+                if (channel > SERVO_CHANNELS - 1)
+                    continue;
+
+                // Convert 0-7 channel number to array position
+                channel += (channel + 1);
+
+                // Store the channel value (10 bits)
+                ppm[channel] = ONE_US * (1000 + (data & 0x3FF)) - PPM_PRE_PULSE;
+
+                // Count valid signals to mark channel active
+                if (servo_input_connected[channel] < SERVO_INPUT_CONNECTED_VALUE) {
+                    servo_input_connected[channel]++;
+                }
+
+                // Reset ppm single channel fail-safe timeout
+                ppm_timeout[channel] = 0;
+            }
+
+            spektrum_frame_pointer = 0;
+        }
+    }
+}
+// ------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------
 // PPM READ - INTERRUPT SAFE PPM SERVO CHANNEL READ
 // ------------------------------------------------------------------------------
 uint16_t ppm_read_channel( uint8_t channel )
@@ -940,7 +1103,7 @@ void ppm_encoder_init( void )
     #endif
      
 
-    // USE JUMPER TO CHECK FOR PWM OR PPM PASSTROUGH MODE (channel 2&3 shorted)
+    // USE JUMPER TO CHECK FOR PWM OR PPM PASSTROUGH MODE (channel 2&3 shorted) OR SPEKTRUM MODE (channel 3&4 shorted)
     // ------------------------------------------------------------------------------
     if( servo_input_mode == JUMPER_SELECT_MODE )
     {
@@ -981,8 +1144,45 @@ void ppm_encoder_init( void )
         if( ( SERVO_INPUT & (1 << 2) ) == 0 ) channel3_status++;
 
         // Set servo input mode based on channel3_status
-        if( channel3_status == 3 ) servo_input_mode = PPM_PASSTROUGH_MODE;
-        else servo_input_mode = SERVO_PWM_MODE;
+        if (channel3_status == 3)
+        {
+            servo_input_mode = PPM_PASSTROUGH_MODE;
+        }
+        else
+        {
+            // Reset channel3_status just to be sure
+            channel3_status = 0;
+
+            // Set channel 4 to output
+            SERVO_DDR |= (1 << 3);
+
+            // Set channel 4 output low
+            SERVO_PORT &= ~(1 << 3);
+
+             // Increment channel3_status if channel 3 is set low by channel 4
+            if( ( SERVO_INPUT & (1 << 2) ) == 0 ) channel3_status++;
+
+            // Set channel 4 output high
+            SERVO_PORT |= (1 << 3);
+
+            _delay_us (10);
+
+            // Increment channel3_status if channel 3 is set high by channel 4
+            if( ( SERVO_INPUT & (1 << 2) ) != 0 ) channel3_status++;
+
+            // Set channel 4 output low
+            SERVO_PORT &= ~(1 << 3);
+
+            _delay_us (10);
+
+            // Increment channel3_status if channel 3 is set low by channel 4
+            if( ( SERVO_INPUT & (1 << 2) ) == 0 ) channel3_status++;
+
+            if (channel3_status == 3)
+                servo_input_mode = SPEKTRUM_MODE;
+            else
+                servo_input_mode = SERVO_PWM_MODE;
+        }
 
     }
 
@@ -1008,7 +1208,7 @@ void ppm_encoder_init( void )
 #endif
 
      // PPM PASS-THROUGH MODE
-    if( servo_input_mode == PPM_PASSTROUGH_MODE )
+    if( servo_input_mode == PPM_PASSTROUGH_MODE || servo_input_mode == SPEKTRUM_MODE )
     {
         // Set servo input interrupt pin mask to servo input channel 1
         SERVO_INT_MASK = 0x01;
