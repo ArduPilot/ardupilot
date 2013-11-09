@@ -2,6 +2,8 @@
 
 #include "AP_L1_Control.h"
 
+extern const AP_HAL::HAL& hal;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
     // @Param: PERIOD
@@ -83,6 +85,26 @@ float AP_L1_Control::crosstrack_error(void) const
 	return _crosstrack_error;
 }
 
+/**
+   prevent indecision in our turning by using our previous turn
+   decision if we are in a narrow angle band pointing away from the
+   target and the turn angle has changed sign
+ */
+void AP_L1_Control::_prevent_indecision(float &Nu)
+{
+    const float Nu_limit = 0.9f*M_PI;
+    if (fabs(Nu) > Nu_limit &&
+        fabs(_last_Nu) > Nu_limit &&
+        fabsf(wrap_180_cd(_target_bearing_cd - _ahrs.yaw_sensor)) > 12000 &&
+        Nu * _last_Nu < 0.0f) {
+        // we are moving away from the target waypoint and pointing
+        // away from the waypoint (not flying backwards). The sign
+        // of Nu has also changed, which means we are
+        // oscillating in our decision about which way to go
+        Nu = _last_Nu;
+    }
+}
+
 // update L1 control for waypoint navigation
 // this function costs about 3.5 milliseconds on a AVR2560
 void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP)
@@ -144,15 +166,18 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		//Otherwise do normal L1 guidance
 	float WP_A_dist = A_air.length();
 	float alongTrackDist = A_air * AB;
-	if (WP_A_dist > _L1_dist && alongTrackDist/max(WP_A_dist, 1.0f) < -0.7071f) {
-
+	if (WP_A_dist > _L1_dist && alongTrackDist/max(WP_A_dist, 1.0f) < -0.7071f) 
+    {
 		//Calc Nu to fly To WP A
 		Vector2f A_air_unit = (A_air).normalized(); // Unit vector from WP A to aircraft
 		xtrackVel = _groundspeed_vector % (-A_air_unit); // Velocity across line
 		ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
 		Nu = atan2f(xtrackVel,ltrackVel);
+
+        _prevent_indecision(Nu);
+
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
-		
+
 	} else { //Calc Nu to fly along AB line
 			
 		//Calculate Nu2 angle (angle of velocity vector relative to line connecting waypoints)
@@ -168,6 +193,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		Nu = Nu1 + Nu2;
 		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
 	}	
+
+    _last_Nu = Nu;
 			
 	//Limit Nu to +-pi
 	Nu = constrain_float(Nu, -1.5708f, +1.5708f);
@@ -229,7 +256,11 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	float xtrackVelCap = A_air_unit % _groundspeed_vector; // Velocity across line - perpendicular to radial inbound to WP
 	float ltrackVelCap = - (_groundspeed_vector * A_air_unit); // Velocity along line - radial inbound to WP
 	float Nu = atan2f(xtrackVelCap,ltrackVelCap);
-	Nu = constrain_float(Nu, -1.5708f, +1.5708f); //Limit Nu to +- Pi/2
+
+    _prevent_indecision(Nu);
+    _last_Nu = Nu;
+
+	Nu = constrain_float(Nu, -M_PI_2, M_PI_2); //Limit Nu to +- Pi/2
 
 	//Calculate lat accln demand to capture center_WP (use L1 guidance law)
 	float latAccDemCap = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
@@ -241,7 +272,7 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 	// keep crosstrack error for reporting
 	_crosstrack_error = xtrackErrCirc;
 	
-	//Calculate PD control correction to circle waypoint
+	//Calculate PD control correction to circle waypoint_ahrs.roll
 	float latAccDemCircPD = (xtrackErrCirc * Kx + xtrackVelCirc * Kv);
 	
 	//Calculate tangential velocity
@@ -310,7 +341,7 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 	_bearing_error = Nu; // bearing error angle (radians), +ve to left of track
 
 	// Limit Nu to +-pi
-	Nu = constrain_float(Nu, -1.5708f, +1.5708f);
+	Nu = constrain_float(Nu, -M_PI_2, M_PI_2);
 	_latAccDem = 2.0f*sinf(Nu)*VomegaA;
 }
 
