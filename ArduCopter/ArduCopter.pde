@@ -2027,7 +2027,7 @@ void update_throttle_mode(void)
     case THROTTLE_MANUAL_HELI:
         // trad heli manual throttle controller
         // send pilot's output directly to swash plate
-        pilot_throttle_scaled = motors.get_pilot_desired_collective(g.rc_3.control_in);
+        pilot_throttle_scaled = get_pilot_desired_collective(g.rc_3.control_in);
         set_throttle_out(pilot_throttle_scaled, false);
 
         // update estimate of throttle cruise

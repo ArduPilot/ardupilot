@@ -16,6 +16,21 @@ static struct {
     uint8_t dynamic_flight  : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
 } heli_flags;
 
+// get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the g.rc_3.servo_out function
+static int16_t get_pilot_desired_collective(int16_t control_in)
+{
+    // return immediately if reduce collective range for manual flight has not been configured
+    if (g.heli_stab_col_min == 0 && g.heli_stab_col_max == 1000) {
+        return control_in;
+    }
+
+    // scale pilot input to reduced collective range
+    float scalar = ((float)(g.heli_stab_col_max - g.heli_stab_col_min))/1000.0f;
+    int16_t collective_out = g.heli_stab_col_min + control_in * scalar;
+    collective_out = constrain_int16(collective_out, 0, 1000);
+    return collective_out;
+}
+
 // heli_check_dynamic_flight - updates the dynamic_flight flag based on our horizontal velocity
 // should be called at 50hz
 static void check_dynamic_flight(void)
