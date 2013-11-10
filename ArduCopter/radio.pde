@@ -23,12 +23,7 @@ static void init_rc_in()
     // set rc channel ranges
     g.rc_1.set_angle(ROLL_PITCH_INPUT_MAX);
     g.rc_2.set_angle(ROLL_PITCH_INPUT_MAX);
-#if FRAME_CONFIG == HELI_FRAME
-    // we do not want to limit the movment of the heli's swash plate
-    g.rc_3.set_range(0, 1000);
-#else
     g.rc_3.set_range(g.throttle_min, g.throttle_max);
-#endif
     g.rc_4.set_angle(4500);
 
     g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
