@@ -115,6 +115,7 @@
   # define MPU6K_FILTER                 10
   # define HELI_STAB_COLLECTIVE_MIN_DEFAULT   0
   # define HELI_STAB_COLLECTIVE_MAX_DEFAULT   1000
+  # define THR_MIN_DEFAULT              0
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////
