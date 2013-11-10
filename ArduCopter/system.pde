@@ -243,6 +243,11 @@ static void init_ardupilot()
     reset_control_switch();
     init_aux_switches();
 
+#if FRAME_CONFIG == HELI_FRAME
+    // trad heli specific initialisation
+    heli_init();
+#endif
+
     startup_ground(true);
 
 #if LOGGING_ENABLED == ENABLED
