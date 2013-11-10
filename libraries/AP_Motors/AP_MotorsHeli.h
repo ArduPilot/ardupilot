@@ -186,6 +186,9 @@ public:
     // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
     void recalc_scalers();
 
+    // get_phase_angle - returns phase angle
+    int16_t get_phase_angle() { return _phase_angle; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
