@@ -917,17 +917,7 @@ get_throttle_accel(int16_t z_target_accel)
 
     d = g.pid_throttle_accel.get_d(z_accel_error, .01f);
 
-#if FRAME_CONFIG == HELI_FRAME
-    if (ap.takeoff_complete == true){
-        output =  constrain_float(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
-    } else {
-        // Avoid harshing the mechanics pushing into the ground
-        // stab_col_min should gently push down on the ground
-        output =  constrain_float(p+i+d+g.throttle_cruise, motors.get_manual_collective_min(), motors.get_manual_collective_max());
-    }   
-#else   
     output =  constrain_float(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
-#endif // HELI_FRAME         
 
 #if LOGGING_ENABLED == ENABLED
     // log output if PID loggins is on and we are tuning the yaw
