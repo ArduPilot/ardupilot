@@ -116,6 +116,12 @@
   # define HELI_STAB_COLLECTIVE_MIN_DEFAULT   0
   # define HELI_STAB_COLLECTIVE_MAX_DEFAULT   1000
   # define THR_MIN_DEFAULT              0
+  # ifndef HELI_CC_COMP
+    #define HELI_CC_COMP DISABLED
+  #endif
+  # ifndef HELI_PIRO_COMP
+    #define HELI_PIRO_COMP DISABLED
+  #endif
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////

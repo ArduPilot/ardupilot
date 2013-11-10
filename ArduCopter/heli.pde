@@ -16,6 +16,18 @@ static struct {
     uint8_t dynamic_flight  : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
 } heli_flags;
 
+#if HELI_CC_COMP == ENABLED
+static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
+#endif
+
+// heli_init - perform any special initialisation required for the tradheli
+static void heli_init()
+{
+#if HELI_CC_COMP == ENABLED
+    rate_dynamics_filter.set_cutoff_frequency(0.01f, 4.0f);
+#endif
+}
+
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the g.rc_3.servo_out function
 static int16_t get_pilot_desired_collective(int16_t control_in)
 {
@@ -141,6 +153,75 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
     
     roll_output = roll_p + roll_i + roll_d + roll_ff;
     pitch_output = pitch_p + pitch_i + pitch_d + pitch_ff;
+
+#if HELI_CC_COMP == ENABLED
+// Do cross-coupling compensation for low rpm helis
+// Credit: Jolyon Saunders
+// Note: This is not widely tested at this time.  Will not be used by default yet.
+    float cc_axis_ratio = 2.0f; // Ratio of compensation on pitch vs roll axes. Number >1 means pitch is affected more than roll
+    float cc_kp = 0.0002f;      // Compensation p term. Setting this to zero gives h_phang only, while increasing it will increase the p term of correction
+    float cc_kd = 0.127f;       // Compensation d term, scaled. This accounts for flexing of the blades, dampers etc. Originally was (motors.ext_gyro_gain * 0.0001)
+    float cc_angle, cc_total_output;
+    uint32_t cc_roll_d, cc_pitch_d, cc_sum_d;
+    int32_t cc_scaled_roll;
+    int32_t cc_roll_output;     // Used to temporarily hold output while rotation is being calculated
+    int32_t cc_pitch_output;    // Used to temporarily hold output while rotation is being calculated
+    static int32_t last_roll_output = 0;
+    static int32_t last_pitch_output = 0;
+
+    cc_scaled_roll  = roll_output / cc_axis_ratio; // apply axis ratio to roll
+    cc_total_output = safe_sqrt(cc_scaled_roll * cc_scaled_roll + pitch_output * pitch_output) * cc_kp;
+    
+    // find the delta component
+    cc_roll_d  = (roll_output - last_roll_output) / cc_axis_ratio;
+    cc_pitch_d = pitch_output - last_pitch_output;
+    cc_sum_d = safe_sqrt(cc_roll_d * cc_roll_d + cc_pitch_d * cc_pitch_d);
+
+    // do the magic.
+    cc_angle = cc_kd * cc_sum_d * cc_total_output - cc_total_output * motors.get_phase_angle();
+
+    // smooth angle variations, apply constraints
+    cc_angle = rate_dynamics_filter.apply(cc_angle);
+    cc_angle = constrain_float(cc_angle, -90.0f, 0.0f);
+    cc_angle = radians(cc_angle);
+
+    // Make swash rate vector
+    Vector2f swashratevector;
+    swashratevector.x = cosf(cc_angle);
+    swashratevector.y = sinf(cc_angle);
+    swashratevector.normalize();
+
+    // rotate the output
+    cc_roll_output  = roll_output;
+    cc_pitch_output = pitch_output;
+    roll_output     = - (cc_pitch_output * swashratevector.y - cc_roll_output * swashratevector.x);
+    pitch_output    =    cc_pitch_output * swashratevector.x + cc_roll_output * swashratevector.y;
+
+    // make current outputs old, for next iteration
+    last_roll_output  = cc_roll_output;
+    last_pitch_output = cc_pitch_output;
+# endif // HELI_CC_COMP   
+    
+#if HELI_PIRO_COMP == ENABLED
+    if (control_mode <= ACRO){
+    
+        int32_t         piro_roll_i, piro_pitch_i;            // used to hold i term while doing prio comp
+    
+        piro_roll_i  = roll_i;
+        piro_pitch_i = pitch_i;
+
+        Vector2f yawratevector;
+        yawratevector.x     = cos(-omega.z/100);
+        yawratevector.y     = sin(-omega.z/100);
+        yawratevector.normalize();
+            
+        roll_i      = piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y;
+        pitch_i     = piro_pitch_i * yawratevector.x + piro_roll_i * yawratevector.y;
+
+        g.pid_rate_pitch.set_integrator(pitch_i);
+        g.pid_rate_roll.set_integrator(roll_i); 
+    }
+#endif //HELI_PIRO_COMP   
 
     if (labs(roll_output) > 4500){
         roll_output = constrain_int32(roll_output, -4500, 4500);         // constrain output
