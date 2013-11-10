@@ -187,9 +187,15 @@ get_roll_rate_stabilized_bf(int32_t stick_angle)
     // don't let angle error grow too large
     angle_error = constrain_float(angle_error, -MAX_ROLL_OVERSHOOT, MAX_ROLL_OVERSHOOT);
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete()) {
+           angle_error = 0;
+    }
+#else
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
+#endif // HELI_FRAME
 }
 
 // Pitch with rate input and stabilized in the body frame
@@ -226,9 +232,15 @@ get_pitch_rate_stabilized_bf(int32_t stick_angle)
     // don't let angle error grow too large
     angle_error = constrain_float(angle_error, -MAX_PITCH_OVERSHOOT, MAX_PITCH_OVERSHOOT);
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete()) {
+           angle_error = 0;
+    }
+#else
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
+#endif // HELI_FRAME
 }
 
 // Yaw with rate input and stabilized in the body frame
@@ -265,9 +277,15 @@ get_yaw_rate_stabilized_bf(int32_t stick_angle)
     // don't let angle error grow too large
     angle_error = constrain_float(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors.motor_runup_complete()) {
+           angle_error = 0;
+    }
+#else
     if (!motors.armed() || g.rc_3.servo_out == 0) {
         angle_error = 0;
     }
+#endif // HELI_FRAME
 }
 
 // Roll with rate input and stabilized in the earth frame
