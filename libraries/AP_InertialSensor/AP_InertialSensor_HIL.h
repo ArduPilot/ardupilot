@@ -20,7 +20,7 @@ public:
     bool            wait_for_sample(uint16_t timeout_ms);
     void            set_accel(const Vector3f &accel);
     void            set_gyro(const Vector3f &gyro);
-    bool            healthy(void) const;
+    bool            healthy(void);
 
 protected:
     uint16_t        _init_sensor( Sample_rate sample_rate );

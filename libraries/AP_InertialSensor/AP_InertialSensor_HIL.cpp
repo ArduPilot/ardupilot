@@ -80,7 +80,7 @@ void AP_InertialSensor_HIL::set_gyro(const Vector3f &gyro)
 /**
    try to detect bad accel/gyro sensors
  */
-bool AP_InertialSensor_HIL::healthy(void) const
+bool AP_InertialSensor_HIL::healthy(void)
 {
     uint32_t tnow = hal.scheduler->micros();
     if ((tnow - _last_accel_usec) > 40000) {

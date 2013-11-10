@@ -140,7 +140,7 @@ public:
     }
 
     virtual uint16_t error_count(void) const { return 0; }
-    virtual bool healthy(void) const { return true; }
+    virtual bool healthy(void) { return true; }
 
 protected:
 

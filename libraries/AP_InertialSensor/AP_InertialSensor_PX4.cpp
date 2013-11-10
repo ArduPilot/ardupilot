@@ -131,6 +131,10 @@ void AP_InertialSensor_PX4::_get_sample(void)
     struct accel_report	accel_report;
     struct gyro_report	gyro_report;
 
+    if (_accel_fd == -1 || _gyro_fd == -1) {
+        return;
+    }
+
     while (::read(_accel_fd, &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
         accel_report.timestamp != _last_accel_timestamp) {        
         _accel_in = Vector3f(accel_report.x, accel_report.y, accel_report.z);
@@ -178,9 +182,22 @@ bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
 /**
    try to detect bad accel/gyro sensors
  */
-bool AP_InertialSensor_PX4::healthy(void) const
+bool AP_InertialSensor_PX4::healthy(void)
 {
+    if (_sample_time_usec == 0) {
+        // not initialised yet, show as healthy to prevent scary GCS
+        // warnings
+        return true;
+    }
     uint64_t tnow = hrt_absolute_time();
+
+    if ((tnow - _last_accel_timestamp) > 2*_sample_time_usec ||
+        (tnow - _last_gyro_timestamp) > 2*_sample_time_usec) {
+        // see if new samples are available
+        _get_sample();
+        tnow = hrt_absolute_time();
+    }
+
     if ((tnow - _last_accel_timestamp) > 2*_sample_time_usec) {
         // accels have not updated
         return false;

@@ -34,7 +34,7 @@ public:
     float            	get_delta_time();
 
     uint16_t error_count(void) const { return _error_count; }
-    bool healthy(void) const { return _error_count <= 4; }
+    bool healthy(void) { return _error_count <= 4; }
 
 protected:
     uint16_t                    _init_sensor( Sample_rate sample_rate );
