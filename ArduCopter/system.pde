@@ -253,7 +253,7 @@ static void init_ardupilot()
     reset_control_switch();
     init_aux_switches();
 
-    startup_ground(false);
+    startup_ground(true);
 
 #if LOGGING_ENABLED == ENABLED
     Log_Write_Startup();
