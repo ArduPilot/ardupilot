@@ -325,7 +325,7 @@ static bool manual_flight_mode(uint8_t mode) {
     switch(mode) {
         case ACRO:
         case STABILIZE:
-        case TOY:
+        case DRIFT:
         case SPORT:
             return true;
         default:
@@ -348,6 +348,8 @@ static bool set_mode(uint8_t mode)
     if (mode == control_mode) {
         return true;
     }
+
+	//print_flight_mode(cliSerial,mode);
 
     switch(mode) {
         case ACRO:
@@ -455,10 +457,10 @@ static bool set_mode(uint8_t mode)
             }
             break;
 
-        case TOY:
+        case DRIFT:
             success = true;
-            set_yaw_mode(YAW_TOY);
-            set_roll_pitch_mode(ROLL_PITCH_TOY);
+            set_yaw_mode(YAW_DRIFT);
+            set_roll_pitch_mode(ROLL_PITCH_DRIFT);
             set_nav_mode(NAV_NONE);
             //set_throttle_mode(THROTTLE_HOLD);
             set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
@@ -608,8 +610,8 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case OF_LOITER:
         port->print_P(PSTR("OF_LOITER"));
         break;
-    case TOY:
-        port->print_P(PSTR("TOY"));
+    case DRIFT:
+        port->print_P(PSTR("DRIFT"));
         break;
     case SPORT:
         port->print_P(PSTR("SPORT"));
@@ -621,4 +623,5 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
+    //port->print_P(PSTR("\n"));
 }
