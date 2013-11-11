@@ -46,7 +46,7 @@ public:
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
-    void Log_Write_IMU(const AP_InertialSensor *ins);
+    void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -151,6 +151,8 @@ struct PACKED log_GPS {
     int32_t  altitude;
     uint32_t ground_speed;
     int32_t  ground_course;
+    float    vel_z;
+    uint32_t apm_time;
 };
 
 struct PACKED log_Message {
@@ -160,6 +162,7 @@ struct PACKED log_Message {
 
 struct PACKED log_IMU {
     LOG_PACKET_HEADER;
+    uint32_t timestamp;
     float gyro_x, gyro_y, gyro_z;
     float accel_x, accel_y, accel_z;
 };
@@ -170,9 +173,9 @@ struct PACKED log_IMU {
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "BIHBcLLeeEe", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs" }, \
+      "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "ffffff",     "GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+      "IMU",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message" }
 

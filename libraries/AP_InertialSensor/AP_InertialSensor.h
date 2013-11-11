@@ -83,8 +83,8 @@ public:
     ///
     /// @returns	vector of rotational rates in radians/sec
     ///
-    Vector3f            get_gyro(void) const { return _gyro; }
-    void                set_gyro(Vector3f gyro) { _gyro = gyro; }
+    const Vector3f     &get_gyro(void) const { return _gyro; }
+    virtual void       set_gyro(const Vector3f &gyro) {}
 
     // set gyro offsets in radians/sec
     Vector3f get_gyro_offsets(void) { return _gyro_offset; }
@@ -94,8 +94,8 @@ public:
     ///
     /// @returns	vector of current accelerations in m/s/s
     ///
-    Vector3f            get_accel(void) const { return _accel; }
-    void                set_accel(Vector3f accel) { _accel = accel; }
+    const Vector3f     &get_accel(void) const { return _accel; }
+    virtual void       set_accel(const Vector3f &accel) {}
 
     // get accel offsets in m/s/s
     Vector3f get_accel_offsets() { return _accel_offset; }
@@ -139,6 +139,9 @@ public:
         }
     }
 
+    virtual uint16_t error_count(void) const { return 0; }
+    virtual bool healthy(void) { return true; }
+
 protected:
 
     // sensor specific init to be overwritten by descendant classes
@@ -167,6 +170,9 @@ protected:
 
     // Most recent accelerometer reading obtained by ::update
     Vector3f _accel;
+
+    // previous accelerometer reading obtained by ::update
+    Vector3f _previous_accel;
 
     // Most recent gyro reading obtained by ::update
     Vector3f _gyro;

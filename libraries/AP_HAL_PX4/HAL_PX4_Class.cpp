@@ -120,6 +120,8 @@ static int main_loop(int argc, char **argv)
      */
     set_priority(APM_STARTUP_PRIORITY);
 
+    schedulerInstance.hal_initialized();
+
     setup();
     hal.scheduler->system_initialized();
 

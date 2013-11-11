@@ -910,7 +910,6 @@ def fly_ArduCopter(viewerip=None, map=False):
 
         print("Save landing WP")
         save_wp(mavproxy, mav)
-        mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
 
         # save the stored mission to file
         print("# Save out the CH7 mission to file")

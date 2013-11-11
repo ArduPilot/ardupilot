@@ -36,7 +36,7 @@ get_stabilize_roll(int32_t target_angle)
 
     // constrain the target rate
     if (!ap.disable_stab_rate_limit) {
-        target_rate = constrain_int32(target_rate, -STABILIZE_RATE_LIMIT, STABILIZE_RATE_LIMIT);
+        target_rate = constrain_int32(target_rate, -g.angle_rate_max, g.angle_rate_max);
     }
 
     // set targets for rate controller
@@ -54,7 +54,7 @@ get_stabilize_pitch(int32_t target_angle)
 
     // constrain the target rate
     if (!ap.disable_stab_rate_limit) {
-        target_rate = constrain_int32(target_rate, -STABILIZE_RATE_LIMIT, STABILIZE_RATE_LIMIT);
+        target_rate = constrain_int32(target_rate, -g.angle_rate_max, g.angle_rate_max);
     }
 
     // set targets for rate controller
@@ -97,15 +97,6 @@ get_stabilize_yaw(int32_t target_angle)
 
     // set targets for rate controller
     set_yaw_rate_target(target_rate, EARTH_FRAME);
-}
-
-static void
-get_acro_yaw(int32_t target_rate)
-{
-    target_rate = target_rate * g.acro_yaw_p;
-
-    // set targets for rate controller
-    set_yaw_rate_target(target_rate, BODY_FRAME);
 }
 
 // get_acro_level_rates - calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
@@ -988,9 +979,8 @@ static void
 set_throttle_takeoff()
 {
     // set alt target
-    if (controller_desired_alt < current_loc.alt) {
-        controller_desired_alt = current_loc.alt + ALT_HOLD_TAKEOFF_JUMP;
-    }
+    controller_desired_alt = current_loc.alt + ALT_HOLD_TAKEOFF_JUMP;
+
     // clear i term from acceleration controller
     if (g.pid_throttle_accel.get_integrator() < 0) {
         g.pid_throttle_accel.reset_I();

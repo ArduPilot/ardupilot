@@ -16,7 +16,7 @@
 #include "DataFlash.h"
 
 #define DF_PAGE_SIZE 512
-#define DF_NUM_PAGES 4096
+#define DF_NUM_PAGES 16384
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,6 +36,7 @@ void DataFlash_SITL::Init(void)
 			write(flash_fd, fill, DF_PAGE_SIZE*DF_NUM_PAGES);
 			free(fill);
 		}
+        ftruncate(flash_fd, DF_PAGE_SIZE*DF_NUM_PAGES);
 	}
 	df_PageSize = DF_PAGE_SIZE;
 

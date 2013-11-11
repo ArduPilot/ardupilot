@@ -326,9 +326,16 @@ AP_GPS_UBLOX::_parse_gps(void)
         num_sats        = _buffer.solution.satellites;
         hdop            = _buffer.solution.position_DOP;
         if (next_fix >= GPS::FIX_2D) {
+            _last_gps_time  = hal.scheduler->millis();
+            if (time_week == _buffer.solution.week &&
+                time_week_ms + 200 == _buffer.solution.time) {
+                // we got a 5Hz update. This relies on the way
+                // that uBlox gives timestamps that are always
+                // multiples of 200 for 5Hz
+                _last_5hz_time = _last_gps_time;
+            }
             time_week_ms    = _buffer.solution.time;
             time_week       = _buffer.solution.week;
-            _last_gps_time  = hal.scheduler->millis();
         }
 #if UBLOX_FAKE_3DLOCK
         next_fix = fix;
@@ -364,16 +371,14 @@ AP_GPS_UBLOX::_parse_gps(void)
     if (_new_position && _new_speed) {
         _new_speed = _new_position = false;
 		_fix_count++;
-        uint32_t new_fix_time = hal.scheduler->millis();
-
-        if (!need_rate_update && new_fix_time - _last_fix_time > 300 && _fix_count % 20 == 0) {
+        if ((hal.scheduler->millis() - _last_5hz_time) > 15000U && !need_rate_update) {
             // the GPS is running slow. It possibly browned out and
             // restarted with incorrect parameters. We will slowly
             // send out new parameters to fix it
             need_rate_update = true;
             rate_update_step = 0;
+            _last_5hz_time = hal.scheduler->millis();
         }
-        _last_fix_time = new_fix_time;
 
 		if (_fix_count == 100) {
 			// ask for nav settings every 20 seconds
@@ -475,6 +480,7 @@ AP_GPS_UBLOX::_configure_gps(void)
 
     // start the process of updating the GPS rates
     need_rate_update = true;
+    _last_5hz_time = hal.scheduler->millis();
     rate_update_step = 0;
 
     // ask for the current navigation settings

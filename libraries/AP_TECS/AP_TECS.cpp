@@ -176,7 +176,7 @@ void AP_TECS::update_50hz(float hgt_afe)
         // Get DCM
         const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
 	    // Calculate speed rate of change
-	    temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins()->get_accel().x;
+	    temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
 	    // take 5 point moving average
         _vel_dot = _vdot_filter.apply(temp);
     } else {
@@ -651,6 +651,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	log_tuning.thr      = _throttle_dem;
 	log_tuning.ptch     = _pitch_dem;
 	log_tuning.dspd_dem = _TAS_rate_dem;
+	log_tuning.time_ms  = hal.scheduler->millis();
 }
 
 // log the contents of the log_tuning structure to dataflash

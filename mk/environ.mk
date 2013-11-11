@@ -4,6 +4,9 @@
 #
 SYSTYPE			:=	$(shell uname)
 
+GIT_VERSION := $(shell git rev-parse HEAD | cut -c1-8)
+EXTRAFLAGS += -DGIT_VERSION="\"$(GIT_VERSION)\""
+
 # force LANG to C so awk works sanely on MacOS
 export LANG=C
 

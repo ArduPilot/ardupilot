@@ -279,7 +279,7 @@ void auto_tune_update_gcs(uint8_t message_id)
 
 // Auto tuning roll-pitch controller
 static void
-get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch_angle)
+get_autotune_roll_pitch_controller(int16_t pilot_roll_angle, int16_t pilot_pitch_angle, int16_t pilot_yaw_command)
 {
     int32_t target_roll_rate, target_pitch_rate;
     float rotation_rate;        // rotation rate in radians/second
@@ -291,7 +291,7 @@ get_autotune_roll_pitch_controller(int32_t pilot_roll_angle, int32_t pilot_pitch
     }
 
     // check for pilot override
-    if (pilot_roll_angle != 0 || pilot_pitch_angle != 0 ) {
+    if (pilot_roll_angle != 0 || pilot_pitch_angle != 0 || pilot_yaw_command != 0) {
         if (!auto_tune_state.pilot_override) {
             // restore pids to their original values
             auto_tune_restore_orig_gains();

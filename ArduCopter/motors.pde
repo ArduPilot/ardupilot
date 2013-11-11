@@ -33,7 +33,7 @@ static void arm_motors_check()
         arming_counter = 0;
         return;
     }
-	
+
 	#if FRAME_CONFIG == HELI_FRAME
 	if ((motors.rsc_mode > 0) && (g.rc_8.control_in >= 10)){
 		arming_counter = 0;
@@ -41,11 +41,7 @@ static void arm_motors_check()
 	}
 	#endif  // HELI_FRAME
 
-#if TOY_EDF == ENABLED
-    int16_t tmp = g.rc_1.control_in;
-#else
     int16_t tmp = g.rc_4.control_in;
-#endif
 
     // full right
     if (tmp > 4000) {
@@ -151,8 +147,10 @@ static void init_arm_motors()
 
     // Reset home position
     // -------------------
-    if(ap.home_is_set)
+    if (ap.home_is_set) {
         init_home();
+        calc_distance_and_bearing();
+    }
 
     // all I terms are invalid
     // -----------------------
@@ -160,7 +158,7 @@ static void init_arm_motors()
 
     if(did_ground_start == false) {
         did_ground_start = true;
-        startup_ground();
+        startup_ground(true);
     }
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -231,7 +229,7 @@ static void pre_arm_checks(bool display_failure)
         }
         return;
     }
-    
+
     // pre-arm check to ensure ch7 and ch8 have different functions
     if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
         if (display_failure) {
@@ -387,8 +385,16 @@ static bool pre_arm_gps_checks()
 static bool arm_checks(bool display_failure)
 {
     // succeed if arming checks are disabled
-    if(!g.arming_check_enabled) {
+    if (!g.arming_check_enabled) {
         return true;
+    }
+
+    // check throttle is above failsafe throttle
+    if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr below FS"));
+        }
+        return false;
     }
 
     // check gps is ok if required - note this same check is also done in pre-arm checks

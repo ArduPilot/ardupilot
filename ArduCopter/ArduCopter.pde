@@ -141,7 +141,7 @@
 static AP_HAL::BetterStream* cliSerial;
 
 // N.B. we need to keep a static declaration which isn't guarded by macros
-// at the top to cooperate with the prototype mangler. 
+// at the top to cooperate with the prototype mangler.
 
 ////////////////////////////////////////////////////////////////////////////////
 // AP_HAL instance
@@ -289,7 +289,7 @@ AP_GPS_None     g_gps_driver;
   #error Unrecognised GPS_PROTOCOL setting.
  #endif // GPS PROTOCOL
 
-static AP_AHRS_DCM ahrs(&ins, g_gps);
+static AP_AHRS_DCM ahrs(ins, g_gps);
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -298,7 +298,7 @@ static AP_Baro_HIL      barometer;
 static AP_Compass_HIL          compass;
 static AP_GPS_HIL              g_gps_driver;
 static AP_InertialSensor_HIL   ins;
-static AP_AHRS_DCM             ahrs(&ins, g_gps);
+static AP_AHRS_DCM             ahrs(ins, g_gps);
 
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -309,7 +309,7 @@ static SITL sitl;
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 static AP_ADC_HIL              adc;
 static AP_InertialSensor_HIL   ins;
-static AP_AHRS_HIL             ahrs(&ins, g_gps);
+static AP_AHRS_HIL             ahrs(ins, g_gps);
 static AP_GPS_HIL              g_gps_driver;
 static AP_Compass_HIL          compass;                  // never used
 static AP_Baro_HIL      barometer;
@@ -648,8 +648,6 @@ static float target_sonar_alt;      // desired altitude in cm above the ground
 // The altitude as reported by Baro in cm – Values can be quite high
 static int32_t baro_alt;
 
-static int16_t saved_toy_throttle;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // flight modes
@@ -718,7 +716,6 @@ static uint32_t throttle_integrator;
 ////////////////////////////////////////////////////////////////////////////////
 // The Commanded Yaw from the autopilot.
 static int32_t nav_yaw;
-static uint8_t yaw_timer;
 // Yaw will point at this location if yaw_mode is set to YAW_LOOK_AT_LOCATION
 static Vector3f yaw_look_at_WP;
 // bearing from current location to the yaw_look_at_WP
@@ -867,7 +864,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_aux_switches,    10,      50 },
     { arm_motors_check,     10,      10 },
     { auto_trim,            10,     140 },
-    { update_toy_throttle,  10,      50 },
     { update_altitude,      10,    1000 },
     { run_nav_updates,      10,     800 },
     { three_hz_loop,        33,      90 },
@@ -875,6 +871,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,  2,     250 },
     { update_notify,         2,     100 },
     { one_hz_loop,         100,     420 },
+    { crash_check,          10,      20 },
     { gcs_check_input,	     2,     550 },
     { gcs_send_heartbeat,  100,     150 },
     { gcs_send_deferred,     2,     720 },
@@ -950,7 +947,7 @@ static void compass_accumulate(void)
 {
     if (g.compass_enabled) {
         compass.accumulate();
-    }    
+    }
 }
 
 /*
@@ -966,7 +963,7 @@ static void perf_update(void)
     if (g.log_bitmask & MASK_LOG_PM)
         Log_Write_Performance();
     if (scheduler.debug()) {
-        cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"), 
+        cliSerial->printf_P(PSTR("PERF: %u/%u %lu\n"),
                             (unsigned)perf_info_get_num_long_running(),
                             (unsigned)perf_info_get_num_loops(),
                             (unsigned long)perf_info_get_max_time());
@@ -980,7 +977,7 @@ void loop()
 {
     // wait for an INS sample
     if (!ins.wait_for_sample(1000)) {
-        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_INS_DELAY);
+        Log_Write_Error(ERROR_SUBSYSTEM_MAIN, ERROR_CODE_MAIN_INS_DELAY);
         return;
     }
     uint32_t timer = micros();
@@ -1082,10 +1079,6 @@ static void throttle_loop()
     // check if we've landed
     update_land_detector();
 
-#if TOY_EDF == ENABLED
-    edf_toy();
-#endif
-
     // check auto_armed status
     update_auto_armed();
 }
@@ -1161,7 +1154,7 @@ static void fifty_hz_logging_loop()
     }
 
     if (g.log_bitmask & MASK_LOG_IMU && motors.armed()) {
-        DataFlash.Log_Write_IMU(&ins);
+        DataFlash.Log_Write_IMU(ins);
     }
 #endif
 }
@@ -1218,12 +1211,8 @@ static void one_hz_loop()
         motors.set_frame_orientation(g.frame_orientation);
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
-#elif MOUNT == ENABLED
-    update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
-#endif
-
+    // update assigned functions and enable auxiliar servos
+    aux_servos_update_fn();
     enable_aux_servos();
 
 #if MOUNT == ENABLED
@@ -1325,7 +1314,7 @@ static void update_GPS(void)
         if (camera.update_location(current_loc) == true) {
             do_take_picture();
         }
-#endif                
+#endif
     }
 
     // check for loss of gps
@@ -1504,19 +1493,13 @@ void update_yaw_mode(void)
         get_look_ahead_yaw(g.rc_4.control_in);
         break;
 
-#if TOY_LOOKUP == TOY_EXTERNAL_MIXER
     case YAW_TOY:
         // if we are landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
-        }else{
-            // update to allow external roll/yaw mixing
-            // keep heading always pointing at home with no pilot input allowed
-            nav_yaw = get_yaw_slew(nav_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
         }
-        get_stabilize_yaw(nav_yaw);
+        get_yaw_toy();
         break;
-#endif
 
     case YAW_RESETTOARMEDYAW:
         // if we are landed reset yaw target to current heading
@@ -1550,7 +1533,7 @@ uint8_t get_wp_yaw_mode(bool rtl)
             if( rtl ) {
                 return YAW_HOLD;
             }else{
-                return YAW_LOOK_AT_NEXT_WP; 
+                return YAW_LOOK_AT_NEXT_WP;
             }
             break;
 
@@ -1697,10 +1680,8 @@ void update_roll_pitch_mode(void)
         get_stabilize_pitch(get_of_pitch(control_pitch));
         break;
 
-    // THOR
-    // a call out to the main toy logic
     case ROLL_PITCH_TOY:
-        roll_pitch_toy();
+        get_roll_pitch_toy();
         break;
 
     case ROLL_PITCH_LOITER:
@@ -1748,7 +1729,7 @@ void update_roll_pitch_mode(void)
         get_stabilize_pitch(control_pitch);
 
         // copy user input for reporting purposes
-        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in);
+        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in, g.rc_4.control_in);
         break;
 #endif
     }
@@ -1892,7 +1873,7 @@ void update_throttle_mode(void)
 	} else {
 		motors.stab_throttle = false;
 	}
-    
+
     // allow swash collective to move if we are in manual throttle modes, even if disarmed
     if( !motors.armed() ) {
         if ( !(throttle_mode == THROTTLE_MANUAL) && !(throttle_mode == THROTTLE_MANUAL_TILT_COMPENSATED)){
@@ -1910,7 +1891,7 @@ void update_throttle_mode(void)
         set_target_alt_for_reporting(0);
         return;
     }
-    
+
 #endif // HELI_FRAME
 
     switch(throttle_mode) {

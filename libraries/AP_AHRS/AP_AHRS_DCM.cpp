@@ -48,10 +48,10 @@ AP_AHRS_DCM::update(void)
     float delta_t;
 
     // tell the IMU to grab some data
-    _ins->update();
+    _ins.update();
 
     // ask the IMU how much time this sensor reading represents
-    delta_t = _ins->get_delta_time();
+    delta_t = _ins.get_delta_time();
 
     // if the update call took more than 0.2 seconds then discard it,
     // otherwise we may move too far. This happens when arming motors 
@@ -61,10 +61,6 @@ AP_AHRS_DCM::update(void)
         _ra_deltat = 0;
         return;
     }
-
-    // Get current values for gyros
-    _gyro_vector  = _ins->get_gyro();
-    _accel_vector = _ins->get_accel();
 
     // Integrate the DCM matrix using gyro inputs
     matrix_update(delta_t);
@@ -91,7 +87,7 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     // and including the P terms would give positive feedback into
     // the _P_gain() calculation, which can lead to a very large P
     // value
-    _omega = _gyro_vector + _omega_I;
+    _omega = _ins.get_gyro() + _omega_I;
 
     _dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * _G_Dt);
 }
@@ -351,6 +347,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             }
             new_value = true;
             yaw_error = yaw_error_compass();
+
+            // also update the _gps_last_update, so if we later
+            // disable the compass due to significant yaw error we
+            // don't suddenly change yaw with a reset
+            _gps_last_update = _gps->last_fix_time;
         }
     } else if (_flags.fly_forward && have_gps()) {
         /*
@@ -362,7 +363,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             _gps_last_update = _gps->last_fix_time;
             new_value = true;
             float gps_course_rad = ToRad(_gps->ground_course_cd * 0.01f);
-            float yaw_error_rad = gps_course_rad - yaw;
+            float yaw_error_rad = wrap_PI(gps_course_rad - yaw);
             yaw_error = sinf(yaw_error_rad);
 
             /* reset yaw to match GPS heading under any of the
@@ -430,7 +431,55 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 }
 
 
+/**
+   return an accel vector delayed by AHRS_ACCEL_DELAY samples
+ */
+Vector3f AP_AHRS_DCM::ra_delayed(const Vector3f &ra)
+{
+    if (_ra_delay_length != _gps_delay.get()) {
+        // the AHRS_GPS_DELAY setting has changed
 
+        // constrain it between 0 and 5
+        if (_gps_delay.get() > 5) {
+            _gps_delay.set(5);
+        }
+        if (_gps_delay.get() < 0) {
+            _gps_delay.set(0);
+        }
+        if (_ra_delay_buffer != NULL) {
+            delete[] _ra_delay_buffer;
+            _ra_delay_buffer = NULL;
+        }
+
+        // allocate the new buffer
+        _ra_delay_length = _gps_delay.get();
+        if (_ra_delay_length != 0) {
+            _ra_delay_buffer = new Vector3f[_ra_delay_length];
+        }
+        _ra_delay_next = 0;
+        if (_ra_delay_buffer != NULL) {
+            // on size change prefill the buffer with the current value
+            for (uint8_t i=0; i<_ra_delay_length; i++) {
+                _ra_delay_buffer[i] = ra;
+            }
+        }
+    }
+    if (_ra_delay_buffer == NULL) {
+        // we're not doing any delay
+        return ra;
+    }
+
+    // get the old element, and then fill it with the new element
+    Vector3f ret = _ra_delay_buffer[_ra_delay_next];
+    _ra_delay_buffer[_ra_delay_next] = ra;
+
+    // move to the next element
+    _ra_delay_next++;
+    if (_ra_delay_next == _ra_delay_length) {
+        _ra_delay_next = 0;
+    }
+    return ret;
+}
 
 // perform drift correction. This function aims to update _omega_P and
 // _omega_I with our best estimate of the short term and long term
@@ -456,7 +505,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     temp_dcm.rotateXY(_trim);
 
     // rotate accelerometer values into the earth frame
-    _accel_ef = temp_dcm * _accel_vector;
+    _accel_ef = temp_dcm * _ins.get_accel();
 
     // integrate the accel vector in the earth frame between GPS readings
     _ra_sum += _accel_ef * deltat;
@@ -543,30 +592,35 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Vector3f GA_e;
     GA_e = Vector3f(0, 0, -1.0f);
 
+    bool using_gps_corrections = false;
     if (_flags.correct_centrifugal && (_have_gps_lock || _flags.fly_forward)) {
         float v_scale = gps_gain.get()/(_ra_deltat*GRAVITY_MSS);
         Vector3f vdelta = (velocity - _last_velocity) * v_scale;
-        // limit vertical acceleration correction to 0.5 gravities. The
-        // barometer sometimes gives crazy acceleration changes. 
-        vdelta.z = constrain_float(vdelta.z, -0.5f, 0.5f);
         GA_e += vdelta;
         GA_e.normalize();
         if (GA_e.is_inf()) {
             // wait for some non-zero acceleration information
             return;
         }
+        using_gps_corrections = true;
     }
 
     // calculate the error term in earth frame.
-    Vector3f GA_b = _ra_sum / (_ra_deltat * GRAVITY_MSS);
-    float length = GA_b.length();
-    if (length > 1.0f) {
-        GA_b /= length;
-        if (GA_b.is_inf()) {
-            // wait for some non-zero acceleration information
-            return;
-        }
+    _ra_sum /= (_ra_deltat * GRAVITY_MSS);
+
+    // get the delayed ra_sum to match the GPS lag
+    Vector3f GA_b;
+    if (using_gps_corrections) {
+        GA_b = ra_delayed(_ra_sum);
+    } else {
+        GA_b = _ra_sum;
     }
+    GA_b.normalize();
+    if (GA_b.is_inf()) {
+        // wait for some non-zero acceleration information
+        return;
+    }
+
     Vector3f error = GA_b % GA_e;
 
 #define YAW_INDEPENDENT_DRIFT_CORRECTION 0
@@ -600,8 +654,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
     }
 
-    // convert the error term to body frame
-    error = _dcm_matrix.mul_transpose(error);
+    // if ins is unhealthy then stop attitude drift correction and
+    // hope the gyros are OK for a while. Just slowly reduce _omega_P
+    // to prevent previous bad accels from throwing us off
+    if (!_ins.healthy()) {
+        error.zero();
+    } else {
+        // convert the error term to body frame
+        error = _dcm_matrix.mul_transpose(error);
+    }
 
     if (error.is_nan() || error.is_inf()) {
         // don't allow bad values
@@ -625,7 +686,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (_flags.fly_forward && _gps && _gps->status() >= GPS::GPS_OK_FIX_2D && 
         _gps->ground_speed_cm < GPS_SPEED_MIN && 
-        _accel_vector.x >= 7 &&
+        _ins.get_accel().x >= 7 &&
 	    pitch_sensor > -3000 && pitch_sensor < 3000) {
             // assume we are in a launch acceleration, and reduce the
             // rp gain by 50% to reduce the impact of GPS lag on

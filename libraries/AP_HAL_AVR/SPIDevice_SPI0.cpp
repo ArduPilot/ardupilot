@@ -76,7 +76,7 @@ uint8_t AVRSPI0DeviceDriver::_transfer(uint8_t data)
    a specialised transfer function for the MPU6k. This saves 2 usec
    per byte
  */
-void AVRSPI0DeviceDriver::_transfer15(const uint8_t *tx, uint8_t *rx) 
+void AVRSPI0DeviceDriver::_transfer16(const uint8_t *tx, uint8_t *rx) 
 {
     spi0_transferflag = true;
 #define TRANSFER1(i) do { SPDR = tx[i];  while(!(SPSR & _BV(SPIF))); rx[i] = SPDR; } while(0)
@@ -95,6 +95,7 @@ void AVRSPI0DeviceDriver::_transfer15(const uint8_t *tx, uint8_t *rx)
     TRANSFER1(12);
     TRANSFER1(13);
     TRANSFER1(14);
+    TRANSFER1(15);
     spi0_transferflag = false;
 }
 
@@ -112,11 +113,11 @@ void AVRSPI0DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
             _transfer(tx[i]);
         }
     } else {
-        while (len >= 15) {
-            _transfer15(tx, rx);
-            tx += 15;
-            rx += 15;
-            len -= 15;
+        while (len >= 16) {
+            _transfer16(tx, rx);
+            tx += 16;
+            rx += 16;
+            len -= 16;
         }
         for (uint16_t i = 0; i < len; i++) {
             rx[i] = _transfer(tx[i]);

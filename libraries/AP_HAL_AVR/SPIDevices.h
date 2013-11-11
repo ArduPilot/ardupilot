@@ -36,7 +36,7 @@ private:
     void _cs_release();
     uint8_t _transfer(uint8_t data);
     // used for MPU6k
-    void _transfer15(const uint8_t *tx, uint8_t *rx);
+    void _transfer16(const uint8_t *tx, uint8_t *rx);
 
     static AP_HAL_AVR::AVRSemaphore _semaphore;
 

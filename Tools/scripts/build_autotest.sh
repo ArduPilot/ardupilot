@@ -139,6 +139,6 @@ echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 killall -9 JSBSim || /bin/true
 
-timelimit 5200 APM/Tools/autotest/autotest.py --timeout=5000 > buildlogs/autotest-output.txt 2>&1
+timelimit 6500 APM/Tools/autotest/autotest.py --timeout=6000 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1

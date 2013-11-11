@@ -95,6 +95,10 @@ private:
     uint16_t GetFilePage();
     uint16_t GetFileNumber();
 
+    void _print_log_formats(uint8_t num_types, 
+                            const struct LogStructure *structure,
+                            AP_HAL::BetterStream *port);
+    
 protected:
     uint8_t df_manufacturer;
     uint16_t df_device;

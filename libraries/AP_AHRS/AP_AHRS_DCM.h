@@ -25,7 +25,7 @@ class AP_AHRS_DCM : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_DCM(AP_InertialSensor *ins, GPS *&gps) :
+    AP_AHRS_DCM(AP_InertialSensor &ins, GPS *&gps) :
         AP_AHRS(ins, gps),
         _last_declination(0),
         _mag_earth(1,0)
@@ -92,15 +92,18 @@ private:
     // primary representation of attitude
     Matrix3f _dcm_matrix;
 
-    Vector3f _gyro_vector;                      // Store the gyros turn rate in a vector
-    Vector3f _accel_vector;                     // current accel vector
-
     Vector3f _omega_P;                          // accel Omega proportional correction
     Vector3f _omega_yaw_P;                      // proportional yaw correction
     Vector3f _omega_I;                          // Omega Integrator correction
     Vector3f _omega_I_sum;
     float _omega_I_sum_time;
     Vector3f _omega;                            // Corrected Gyro_Vector data
+
+    // variables to cope with delaying the GA sum to match GPS lag
+    Vector3f ra_delayed(const Vector3f &ra);
+    uint8_t   _ra_delay_length;
+    uint8_t   _ra_delay_next;
+    Vector3f *_ra_delay_buffer;
 
     // P term gain based on spin rate
     float           _P_gain(float spin_rate);

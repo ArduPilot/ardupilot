@@ -140,8 +140,8 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: COLYAW
     // @DisplayName: Collective-Yaw Mixing
-    // @Description: This is a feed-forward compensation to automatically add rudder input when collective pitch is increased.
-    // @Range: 0 5
+    // @Description: This is a feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
+    // @Range: -10 10
     AP_GROUPINFO("COLYAW",          14,     AP_MotorsHeli,  collective_yaw_effect, 0),
 
     // @Param: GOV_SETPOINT

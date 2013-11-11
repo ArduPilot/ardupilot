@@ -149,8 +149,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
-	// @Description: Which navigation controller to enable
-	// @Values: 0:Legacy,1:L1Controller
+	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental conrtrollers will be added which are selected using this parameter.
+	// @Values: 0:Default,1:L1Controller
 	// @User: Standard
 	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
@@ -165,8 +165,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ALT_CTRL_ALG
     // @DisplayName: Altitude control algorithm
-    // @Description: This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). If you set it to 1 then you will get the old (deprecated) non-airspeed based algorithm. If you set it to 3 then you will get the old (deprecated) airspeed based algorithm. Setting it to 2 selects the new 'TECS' (total energy control system) altitude control, which currently is equivalent to setting 0. Note that TECS is able to handle aircraft both with and without an airspeed sensor.
-    // @Values: 0:Automatic,1:non-airspeed(deprecated),2:TECS,3:airspeed(deprecated)
+    // @Description: This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). From time to time we will add other experimental altitude control algorithms which will be seleted using this parameter.
+    // @Values: 0:Automatic
     // @User: Advanced
     GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
 
@@ -414,15 +414,17 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
-    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage then the plane will RTL
+    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage continuously for 10 seconds then the plane will switch to RTL mode
     // @Units: Volts
+    // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", 0),
 
     // @Param: FS_BATT_MAH
     // @DisplayName: Failsafe battery milliAmpHours
-    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the plane will RTL
+    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the plane will switch to RTL mode immediately
     // @Units: mAh
+    // @Increment: 50
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", 0),
 

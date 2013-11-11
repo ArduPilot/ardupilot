@@ -60,7 +60,10 @@ def deltree(path):
 
 def build_SIL(atype, target='sitl'):
     '''build desktop SIL'''
-    run_cmd("make clean %s" % target,
+    run_cmd("make clean",
+            dir=reltopdir(atype),
+            checkfail=True)
+    run_cmd("make %s" % target,
             dir=reltopdir(atype),
             checkfail=True)
     return True

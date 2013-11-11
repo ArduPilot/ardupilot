@@ -90,10 +90,15 @@ private:
 	AP_Float _L1_period;
 	// L1 tracking loop damping ratio
 	AP_Float _L1_damping;
-	
-	//Calculate the maximum of two floating point numbers
-	float _maxf(const float &num1, const float &num2) const;
 
+    // previous value of cross-track velocity
+    float _last_Nu;
+
+    // direction of last xtrack velocity - true positive
+    bool _xtrackVelPos;
+
+    // prevent indecision in waypoint tracking
+    void _prevent_indecision(float &Nu);
 };
 
 

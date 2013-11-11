@@ -62,9 +62,7 @@ uint16_t AP_InertialSensor_Oilpan::_init_sensor( Sample_rate sample_rate)
         break;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-    return AP_PRODUCT_ID_SITL;
-#elif defined(__AVR_ATmega1280__)
+#if defined(__AVR_ATmega1280__)
     return AP_PRODUCT_ID_APM1_1280;
 #else
     return AP_PRODUCT_ID_APM1_2560;
@@ -90,6 +88,8 @@ bool AP_InertialSensor_Oilpan::update()
     _gyro.y *= _gyro_gain_y;
     _gyro.z *= _gyro_gain_z;
     _gyro -= gyro_offset;
+
+    _previous_accel = _accel;
 
     _accel  = Vector3f(_sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET),
                        _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET),
