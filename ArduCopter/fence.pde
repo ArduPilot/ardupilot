@@ -35,22 +35,14 @@ void fence_check()
             if(manual_flight_mode(control_mode) && g.rc_3.control_in == 0 && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0)){
                 init_disarm_motors();
             }else{
-                // if we have a GPS
-                if (GPS_ok()) {
-                    // if we are within 100m of the fence, RTL
-                    if( fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
-                        if (!set_mode(RTL)) {
-                            set_mode(LAND);
-                        }
-                    }else{
-                        // if more than 100m outside the fence just force a land
+                // if we are within 100m of the fence, RTL
+                if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
+                    if (!set_mode(RTL)) {
                         set_mode(LAND);
                     }
                 }else{
-                    // we have no GPS so LAND
-                    if(control_mode != LAND) {
-                        set_mode(LAND);
-                    }
+                    // if more than 100m outside the fence just force a land
+                    set_mode(LAND);
                 }
             }
         }

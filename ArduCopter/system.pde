@@ -291,7 +291,7 @@ static void startup_ground(bool force_gyro_cal)
 // returns true if the GPS is ok and home position is set
 static bool GPS_ok()
 {
-    if (g_gps != NULL && ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D) {
+    if (g_gps != NULL && ap.home_is_set && g_gps->status() == GPS::GPS_OK_FIX_3D && !gps_glitch.glitching() && !failsafe.gps) {
         return true;
     }else{
         return false;
