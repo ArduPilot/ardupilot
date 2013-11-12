@@ -28,9 +28,7 @@ extern const AP_HAL::HAL& hal;
 
 
 const AP_Param::GroupInfo AP_MotorsSingle::var_info[] PROGMEM = {
-
-
- // 0 was used by TB_RATIO
+    // 0 was used by TB_RATIO
 
     // @Param: TCRV_ENABLE
     // @DisplayName: Thrust Curve Enable
@@ -49,30 +47,30 @@ const AP_Param::GroupInfo AP_MotorsSingle::var_info[] PROGMEM = {
     // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
     // @Range: 20 80
     AP_GROUPINFO("TCRV_MAXPCT", 3, AP_MotorsSingle, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
-    
+
     // @Param: SPIN_ARMED
     // @DisplayName: Motors always spin when armed
     // @Description: Controls whether motors always spin when armed (must be below THR_MIN)
     // @Values: 0:Do Not Spin,70:VerySlow,100:Slow,130:Medium,150:Fast
     AP_GROUPINFO("SPIN_ARMED", 5, AP_MotorsSingle, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
-    
+
     // @Param: REV_ROLL
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Opposite direction,1:Same direction
-    AP_GROUPINFO("REV_ROLL", 6, AP_MotorsSingle, _rev_roll, POSITIVE),
+    AP_GROUPINFO("REV_ROLL", 6, AP_MotorsSingle, _rev_roll, AP_MOTORS_SING_POSITIVE),
 
     // @Param: REV_PITCH
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Opposite direction,1:Same direction
-    AP_GROUPINFO("REV_PITCH", 7, AP_MotorsSingle, _rev_pitch, POSITIVE),
+    AP_GROUPINFO("REV_PITCH", 7, AP_MotorsSingle, _rev_pitch, AP_MOTORS_SING_POSITIVE),
 
 	// @Param: REV_ROLL
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
     // @Values: -1:Opposite direction,1:Same direction
-    AP_GROUPINFO("REV_YAW", 8, AP_MotorsSingle, _rev_yaw, POSITIVE),
+    AP_GROUPINFO("REV_YAW", 8, AP_MotorsSingle, _rev_yaw, AP_MOTORS_SING_POSITIVE),
 
 	// @Param: SV_SPEED
     // @DisplayName: Servo speed 
@@ -95,8 +93,7 @@ void AP_MotorsSingle::Init()
     motor_enabled[AP_MOTORS_MOT_1] = true;
     motor_enabled[AP_MOTORS_MOT_2] = true;
     motor_enabled[AP_MOTORS_MOT_3] = true;
-	motor_enabled[AP_MOTORS_MOT_4] = true;
-
+    motor_enabled[AP_MOTORS_MOT_4] = true;
 }
 
 // set update rate to motors - a value in hertz
@@ -112,8 +109,7 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
 	    1U << _motor_to_channel_map[AP_MOTORS_MOT_3] |
 		1U << _motor_to_channel_map[AP_MOTORS_MOT_4] ;
     hal.rcout->set_freq(mask, _servo_speed);
-	uint32_t mask2 =
-		1U << _motor_to_channel_map[AP_MOTORS_MOT_7];
+	uint32_t mask2 = 1U << _motor_to_channel_map[AP_MOTORS_MOT_7];
 	hal.rcout->set_freq(mask2, _speed_hz);
 }
 
@@ -156,9 +152,7 @@ void AP_MotorsSingle::output_armed()
     _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
 
     // capture desired throttle from receiver
-
     _rc_throttle->calc_pwm();
-
 
     // if we are not sending a throttle output, we cut the motors
     if(_rc_throttle->servo_out == 0) {
@@ -172,7 +166,7 @@ void AP_MotorsSingle::output_armed()
         
         motor_out[AP_MOTORS_MOT_7] = _rc_throttle->radio_min + _spin_when_armed;
     }else{
-        
+
 		//motor
 		motor_out[AP_MOTORS_MOT_7] = _rc_throttle->radio_out;
         //front
@@ -183,7 +177,7 @@ void AP_MotorsSingle::output_armed()
 		_servo3->servo_out = -_rev_roll*_rc_roll->servo_out + _rev_yaw*_rc_yaw->servo_out;
 		//left
 		_servo4->servo_out = -_rev_pitch*_rc_pitch->servo_out + _rev_yaw*_rc_yaw->servo_out;
-        
+
 		_servo1->calc_pwm();
 		_servo2->calc_pwm();
 		_servo3->calc_pwm();
@@ -194,10 +188,8 @@ void AP_MotorsSingle::output_armed()
 		motor_out[AP_MOTORS_MOT_3] = _servo3->radio_out;
 		motor_out[AP_MOTORS_MOT_4] = _servo4->radio_out;
 
-
         // adjust for throttle curve
         if( _throttle_curve_enabled ) {
-            
             motor_out[AP_MOTORS_MOT_7] = _throttle_curve.get_y(motor_out[AP_MOTORS_MOT_7]);
         }
 
@@ -252,5 +244,4 @@ void AP_MotorsSingle::output_test()
 	hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _servo2->radio_max);
 	hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_3], _servo3->radio_max);
 	hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _servo4->radio_max);
-
 }
