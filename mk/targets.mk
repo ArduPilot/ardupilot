@@ -34,7 +34,7 @@ empty: all
 %-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 
 # cope with copter and hil targets
-FRAMES = quad tri hexa y6 octa octa-quad heli
+FRAMES = quad tri hexa y6 octa octa-quad heli single
 BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 sitl flymaple linux
 
 define frame_template
