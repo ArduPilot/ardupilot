@@ -100,6 +100,14 @@ public:
         k_param_gps_glitch,             // 70
 
         //
+        // 75: Singlecopter
+        //
+        k_param_single_servo_1 = 75,
+        k_param_single_servo_2,
+        k_param_single_servo_3,
+        k_param_single_servo_4, // 78
+
+        //
         // 80: Heli
         //
         k_param_heli_servo_1 = 80,
@@ -260,16 +268,6 @@ public:
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p, // 244
-
-
-		//
-		//245: Singlecopter
-		//
-		k_param_single_servo_1 = 245, //
-        k_param_single_servo_2,
-        k_param_single_servo_3,
-        k_param_single_servo_4,
-
 
         // 254,255: reserved
     };
