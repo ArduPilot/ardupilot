@@ -118,8 +118,9 @@ build_arducopter() {
     checkout ArduCopter $tag || return
     echo "Building ArduCopter $tag binaries"
     pushd ArduCopter
+    frames="quad tri hexa y6 octa octa-quad heli"
     for b in apm1 apm2; do
-	for f in quad tri hexa y6 octa octa-quad heli quad-hil heli-hil; do
+	for f in $frames quad-hil heli-hil; do
 	    echo "Building ArduCopter $b-$f binaries"
 	    ddir="$binaries/Copter/$hdate/$b-$f"
 	    skip_build $tag $ddir && continue
@@ -131,7 +132,7 @@ build_arducopter() {
     done
     test -n "$PX4_ROOT" && {
 	make px4-clean || return
-	for f in quad tri hexa y6 octa octa-quad heli quad-hil heli-hil; do
+	for f in $frames quad-hil heli-hil; do
 	    echo "Building ArduCopter PX4-$f binaries"
 	    ddir="$binaries/Copter/$hdate/PX4-$f"
 	    skip_build $tag $ddir && continue
