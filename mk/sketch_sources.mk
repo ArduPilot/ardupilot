@@ -62,9 +62,12 @@ else
 v =
 endif
 
+showflags:
+	@echo "HAL_BOARD=$(HAL_BOARD) TOOLCHAIN=$(TOOLCHAIN) EXTRAFLAGS=$(EXTRAFLAGS)"
+
 #
 # Build the sketch.cpp file
-$(SKETCHCPP):	$(SKETCHCPP_SRC)
+$(SKETCHCPP): showflags $(SKETCHCPP_SRC)
 	@echo "building $(SKETCHCPP)"
 	$(RULEHDR)
 	$(v)$(AWK) -v mode=header '$(SKETCH_SPLITTER)'   $(SKETCHCPP_SRC) >  $@
