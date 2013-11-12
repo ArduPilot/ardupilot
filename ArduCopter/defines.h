@@ -86,6 +86,7 @@
 #define OCTA_FRAME 5
 #define HELI_FRAME 6
 #define OCTA_QUAD_FRAME 7
+#define SINGLE_FRAME 8
 
 #define PLUS_FRAME 0
 #define X_FRAME 1
