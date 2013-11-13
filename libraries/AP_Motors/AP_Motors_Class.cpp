@@ -31,25 +31,31 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @Param: TCRV_ENABLE
     // @DisplayName: Thrust Curve Enable
     // @Description: Controls whether a curve is used to linearize the thrust produced by the motors
+    // @User: Advanced
     // @Values: 0:Disabled,1:Enable
     AP_GROUPINFO("TCRV_ENABLE", 1, AP_Motors, _throttle_curve_enabled, THROTTLE_CURVE_ENABLED),
 
     // @Param: TCRV_MIDPCT
     // @DisplayName: Thrust Curve mid-point percentage
     // @Description: Set the pwm position that produces half the maximum thrust of the motors
+    // @User: Advanced
     // @Range: 20 80
+    // @Increment: 1
     AP_GROUPINFO("TCRV_MIDPCT", 2, AP_Motors, _throttle_curve_mid, THROTTLE_CURVE_MID_THRUST),
 
     // @Param: TCRV_MAXPCT
     // @DisplayName: Thrust Curve max thrust percentage
     // @Description: Set to the lowest pwm position that produces the maximum thrust of the motors.  Most motors produce maximum thrust below the maximum pwm value that they accept.
+    // @User: Advanced
     // @Range: 50 100
+    // @Increment: 1
     AP_GROUPINFO("TCRV_MAXPCT", 3, AP_Motors, _throttle_curve_max, THROTTLE_CURVE_MAX_THRUST),
     
     // @Param: SPIN_ARMED
     // @DisplayName: Motors always spin when armed
     // @Description: Controls whether motors always spin when armed (must be below THR_MIN)
     // @Values: 0:Do Not Spin,70:VerySlow,100:Slow,130:Medium,150:Fast
+    // @User: Standard
     AP_GROUPINFO("SPIN_ARMED", 5, AP_Motors, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
 
     AP_GROUPEND
