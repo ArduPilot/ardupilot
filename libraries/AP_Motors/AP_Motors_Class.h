@@ -46,7 +46,7 @@
 #define THROTTLE_CURVE_MID_THRUST   52  // throttle which produces 1/2 the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 #define THROTTLE_CURVE_MAX_THRUST   93  // throttle which produces the maximum thrust.  expressed as a percentage of the full throttle range (i.e 0 ~ 100)
 
-#define AP_MOTORS_SPIN_WHEN_ARMED   100 // spin motors at this PWM value when armed
+#define AP_MOTORS_SPIN_WHEN_ARMED   0   // spin motors at this PWM value when armed
 
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
