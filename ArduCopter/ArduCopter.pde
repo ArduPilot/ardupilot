@@ -1374,7 +1374,7 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
                 yaw_initialised = true;
             }
             break;
-        case YAW_TOY:
+        case YAW_DRIFT:
             yaw_initialised = true;
             break;
         case YAW_RESETTOARMEDYAW:
@@ -1493,12 +1493,12 @@ void update_yaw_mode(void)
         get_look_ahead_yaw(g.rc_4.control_in);
         break;
 
-    case YAW_TOY:
-        // if we are landed reset yaw target to current heading
+    case YAW_DRIFT:
+        // if we have landed reset yaw target to current heading
         if (ap.land_complete) {
             nav_yaw = ahrs.yaw_sensor;
         }
-        get_yaw_toy();
+        get_yaw_drift();
         break;
 
     case YAW_RESETTOARMEDYAW:
@@ -1570,7 +1570,7 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
             break;
         case ROLL_PITCH_AUTO:
         case ROLL_PITCH_STABLE_OF:
-        case ROLL_PITCH_TOY:
+        case ROLL_PITCH_DRIFT:
         case ROLL_PITCH_SPORT:
             roll_pitch_initialised = true;
             break;
@@ -1680,8 +1680,8 @@ void update_roll_pitch_mode(void)
         get_stabilize_pitch(get_of_pitch(control_pitch));
         break;
 
-    case ROLL_PITCH_TOY:
-        get_roll_pitch_toy();
+    case ROLL_PITCH_DRIFT:
+        get_roll_pitch_drift();
         break;
 
     case ROLL_PITCH_LOITER:

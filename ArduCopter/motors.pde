@@ -18,7 +18,7 @@ static void arm_motors_check()
         return;
     }
 
-    // allow arming/disarming in fully manual flight modes ACRO, STABILIZE, SPORT and TOY
+    // allow arming/disarming in fully manual flight modes ACRO, STABILIZE, SPORT and DRIFT
     if (manual_flight_mode(control_mode)) {
         allow_arming = true;
     }
