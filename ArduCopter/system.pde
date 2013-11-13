@@ -307,6 +307,7 @@ static bool mode_requires_GPS(uint8_t mode) {
         case RTL:
         case CIRCLE:
         case POSITION:
+        case DRIFT:
             return true;
         default:
             return false;
@@ -320,7 +321,7 @@ static bool manual_flight_mode(uint8_t mode) {
     switch(mode) {
         case ACRO:
         case STABILIZE:
-        case TOY:
+        case DRIFT:
         case SPORT:
             return true;
         default:
@@ -440,12 +441,12 @@ static bool set_mode(uint8_t mode)
             }
             break;
 
-        case TOY:
+        case DRIFT:
             success = true;
-            set_yaw_mode(YAW_TOY);
-            set_roll_pitch_mode(ROLL_PITCH_TOY);
+            set_yaw_mode(YAW_DRIFT);
+            set_roll_pitch_mode(ROLL_PITCH_DRIFT);
             set_nav_mode(NAV_NONE);
-            set_throttle_mode(THROTTLE_HOLD);
+            set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
             break;
 
         case SPORT:
@@ -592,8 +593,8 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case OF_LOITER:
         port->print_P(PSTR("OF_LOITER"));
         break;
-    case TOY:
-        port->print_P(PSTR("TOY"));
+    case DRIFT:
+        port->print_P(PSTR("DRIFT"));
         break;
     case SPORT:
         port->print_P(PSTR("SPORT"));
