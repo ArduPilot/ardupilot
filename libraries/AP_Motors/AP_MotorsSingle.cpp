@@ -152,7 +152,6 @@ void AP_MotorsSingle::output_min()
 void AP_MotorsSingle::output_armed()
 {
     int16_t out_min = _rc_throttle->radio_min + _min_throttle;
-    int16_t out_max = _rc_throttle->radio_max;
 
     // Throttle is 0 to 1000 only
     _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
