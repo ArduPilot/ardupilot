@@ -246,6 +246,14 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
+    // check accels and gyros are healthy
+    if(!ins.healthy()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not healthy"));
+        }
+        return;
+    }
+
     // check the compass is healthy
     if(!compass.healthy) {
         if (display_failure) {
