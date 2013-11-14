@@ -4,6 +4,11 @@
 //----------------------------------------
 static void change_command(uint8_t cmd_index)
 {
+    // check we are in AUTO mode
+    if (control_mode != AUTO) {
+        return;
+    }
+
     // limit range
     cmd_index = min(g.command_total - 1, cmd_index);
 
