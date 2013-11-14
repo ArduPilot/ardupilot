@@ -206,7 +206,7 @@ bool AP_InertialSensor_PX4::healthy(void)
         // gyros have not updated
         return false;
     }
-    if (fabs(_accel.x) > 30 && fabs(_accel.y) > 30 && fabs(_accel.z) > 30 &&
+    if (fabsf(_accel.x) > 30 && fabsf(_accel.y) > 30 && fabsf(_accel.z) > 30 &&
         (_previous_accel - _accel).length() < 0.01f) {
         // unchanging accel, large in all 3 axes. This is a likely
         // accelerometer failure of the LSM303d
