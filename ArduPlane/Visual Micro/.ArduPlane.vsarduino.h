@@ -238,6 +238,7 @@ static Location rally_location_to_location(const RallyLocation &r_loc, const Loc
 static Location rally_find_best_location(const Location &myloc, const Location &homeloc);
 static void init_barometer(void);
 static int32_t read_barometer(void);
+static int16_t read_range_finder_long(void);
 static void read_airspeed(void);
 static void zero_airspeed(void);
 static void read_battery(void);

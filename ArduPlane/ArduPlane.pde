@@ -299,14 +299,19 @@ static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 // Modified for KSU-AIAA Team - Will Baldwin
 ////////////////////////////////////////////////////////////////////////////////
 //
-ModeFilterInt16_Size3 renagefinder_mode_filter_long(1);
-ModeFilterInt16_Size3 renagefinder_mode_filter_short(1);
+ModeFilterInt16_Size3 rangefinder_mode_filter_long(1);
+ModeFilterInt16_Size3 rangefinder_mode_filter_short(1);
 #if CONFIG_RANGE_FINDER == ENABLED
+
 static AP_HAL::AnalogSource *rangefinder_analog_source_long;
 static AP_HAL::AnalogSource *rangefinder_analog_source_short;
 
 static AP_RangeFinder_SharpGP2Y *rangeFinderLong;
 static AP_RangeFinder_SharpGP2Y *rangeFinderShort;
+
+// The altitude as reported by range finder in cm – Values are 20 to 700 generally.
+static int16_t range_finder_alt;
+static uint8_t range_finder_alt_health;   // true if we can trust the altitude from the sonar
 #endif
 
 
@@ -764,7 +769,6 @@ void setup() {
 
 	//Modified for KSU-AIAA Team - Will Baldwin
 	#if CONFIG_RANGE_FINDER == ENABLED
-		#elif CONFIG_RANGE_FINDER_SOURCE == RANGE_FINDER_SOURCE_ANALOG_PINS
 			rangefinder_analog_source_long = hal.analogin->channel(CONFIG_RANGE_FINDER_SOURCE_LONG_ANALOG_PIN);
 			rangefinder_analog_source_short = hal.analogin->channel(CONFIG_RANGE_FINDER_SOURCE_SHORT_ANALOG_PIN);
 			rangeFinderLong = new AP_RangeFinder_SharpGP2Y(rangefinder_analog_source_long, &rangefinder_mode_filter_long);
@@ -1370,6 +1374,14 @@ static void update_alt()
 
     //altitude_sensor = BARO;
 
+
+	//ArduPlane:1375: error: request for member 'raw_value' in 'rangeFinderLong', which is of non-class type 'AP_RangeFinder_SharpGP2Y*'
+	//int rfl_altitude = 0;
+	//rfl_altitude = read_range_finder_long();
+
+	
+	current_loc.alt = rfl_altitude;
+
     if (barometer.healthy) {
         // alt_MSL centimeters (centimeters)
         current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
@@ -1395,7 +1407,7 @@ static void update_alt()
         }
     }
 
-    // tell AHRS the airspeed to true airspeed ratio
+    //// tell AHRS the airspeed to true airspeed ratio
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
 
