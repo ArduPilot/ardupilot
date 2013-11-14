@@ -417,8 +417,14 @@ static bool arm_checks(bool display_failure)
     return true;
 }
 
+// init_disarm_motors - disarm motors
 static void init_disarm_motors()
 {
+    // return immediately if we are already disarmed
+    if (!motors.armed()) {
+        return;
+    }
+
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
