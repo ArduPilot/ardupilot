@@ -39,6 +39,7 @@ private:
     void _transfer16(const uint8_t *tx, uint8_t *rx);
 
     static AP_HAL_AVR::AVRSemaphore _semaphore;
+    static bool _force_low_speed;
 
     AP_HAL_AVR::AVRDigitalSource *_cs_pin;
     const uint8_t _spcr_lowspeed;
