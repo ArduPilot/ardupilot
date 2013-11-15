@@ -211,13 +211,14 @@ static void init_arm_motors()
 static void pre_arm_checks(bool display_failure)
 {
     // exit immediately if we've already successfully performed the pre-arm check
-    if( ap.pre_arm_check ) {
+    if (ap.pre_arm_check) {
         return;
     }
 
     // succeed if pre arm checks are disabled
-    if(!g.arming_check_enabled) {
+    if(g.arming_check_enabled == ARMING_CHECK_NONE) {
         set_pre_arm_check(true);
+        set_pre_arm_rc_check(true);
         return;
     }
 
@@ -230,117 +231,135 @@ static void pre_arm_checks(bool display_failure)
         return;
     }
 
-    // pre-arm check to ensure ch7 and ch8 have different functions
-    if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Ch7&Ch8 Opt cannot be same"));
-        }
-        return;
-    }
-
-    // check accelerometers have been calibrated
-    if(!ins.calibrated()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
-        }
-        return;
-    }
-
-    // check accels and gyros are healthy
-    if(!ins.healthy()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not healthy"));
-        }
-        return;
-    }
-
-    // check the compass is healthy
-    if(!compass.healthy) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
-        }
-        return;
-    }
-
-    // check compass learning is on or offsets have been set
-    Vector3f offsets = compass.get_offsets();
-    if(!compass._learn && offsets.length() == 0) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
-        }
-        return;
-    }
-
-    // check for unreasonable compass offsets
-    if(offsets.length() > 500) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
-        }
-        return;
-    }
-
-    // check for unreasonable mag field length
-    float mag_field = pythagorous3(compass.mag_x, compass.mag_y, compass.mag_z);
-    if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
-        }
-        return;
-    }
-
-    // barometer health check
-    if(!barometer.healthy) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy"));
-        }
-        return;
-    }
-
-#if AC_FENCE == ENABLED
-    // check fence is initialised
-    if(!fence.pre_arm_check() || (((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) && !pre_arm_gps_checks())) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
-        }
-        return;
-    }
-#endif
-
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
-    // check board voltage
-    if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
-        }
-        return;
-    }
-#endif
-
-    // failsafe parameter checks
-    if (g.failsafe_throttle) {
-        // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
-        if (g.rc_3.radio_min <= g.failsafe_throttle_value+10 || g.failsafe_throttle_value < 910) {
+    // check Baro
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_BARO)) {
+        // barometer health check
+        if(!barometer.healthy) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy"));
             }
             return;
         }
     }
 
-    // lean angle parameter check
-    if (g.angle_max < 1000 || g.angle_max > 8000) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
+    // check Compass
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_COMPASS)) {
+        // check the compass is healthy
+        if(!compass.healthy) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
+            }
+            return;
         }
-        return;
+
+        // check compass learning is on or offsets have been set
+        Vector3f offsets = compass.get_offsets();
+        if(!compass._learn && offsets.length() == 0) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
+            }
+            return;
+        }
+
+        // check for unreasonable compass offsets
+        if(offsets.length() > 500) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
+            }
+            return;
+        }
+
+        // check for unreasonable mag field length
+        float mag_field = pythagorous3(compass.mag_x, compass.mag_y, compass.mag_z);
+        if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
+            }
+            return;
+        }
     }
 
-    // check gps is ok if required - note this same check is repeated again in arm_checks
-    if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+    // check GPS
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
+        // check gps is ok if required - note this same check is repeated again in arm_checks
+        if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+            }
+            return;
         }
-        return;
+
+#if AC_FENCE == ENABLED
+        // check fence is initialised
+        if(!fence.pre_arm_check() || (((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) && !pre_arm_gps_checks())) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+            }
+            return;
+        }
+#endif
+    }
+
+    // check INS
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_INS)) {
+        // check accelerometers have been calibrated
+        if(!ins.calibrated()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
+            }
+            return;
+        }
+
+        // check accels and gyros are healthy
+        if(!ins.healthy()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not healthy"));
+            }
+            return;
+        }
+    }
+
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+    // check board voltage
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_VOLTAGE)) {
+        if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
+            }
+            return;
+        }
+    }
+#endif
+
+    // check various parameter values
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_PARAMETERS)) {
+
+        // ensure ch7 and ch8 have different functions
+        if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Ch7&Ch8 Opt cannot be same"));
+            }
+            return;
+        }
+
+        // failsafe parameter checks
+        if (g.failsafe_throttle) {
+            // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
+            if (g.rc_3.radio_min <= g.failsafe_throttle_value+10 || g.failsafe_throttle_value < 910) {
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
+                }
+                return;
+            }
+        }
+
+        // lean angle parameter check
+        if (g.angle_max < 1000 || g.angle_max > 8000) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
+            }
+            return;
+        }
     }
 
     // if we've gotten this far then pre arm checks have completed
@@ -352,6 +371,12 @@ static void pre_arm_rc_checks()
 {
     // exit immediately if we've already successfully performed the pre-arm rc check
     if( ap.pre_arm_rc_check ) {
+        return;
+    }
+
+    // set rc-checks to success if RC checks are disabled
+    if ((g.arming_check_enabled != ARMING_CHECK_ALL) && !(g.arming_check_enabled & ARMING_CHECK_RC)) {
+        set_pre_arm_rc_check(true);
         return;
     }
 
@@ -371,7 +396,7 @@ static void pre_arm_rc_checks()
     }
 
     // if we've gotten this far rc is ok
-    ap.pre_arm_rc_check = true;
+    set_pre_arm_rc_check(true);
 }
 
 // performs pre_arm gps related checks and returns true if passed
@@ -393,24 +418,29 @@ static bool pre_arm_gps_checks()
 static bool arm_checks(bool display_failure)
 {
     // succeed if arming checks are disabled
-    if (!g.arming_check_enabled) {
+    if (g.arming_check_enabled == ARMING_CHECK_NONE) {
         return true;
     }
 
-    // check throttle is above failsafe throttle
-    if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr below FS"));
+    // check gps is ok if required - note this same check is also done in pre-arm checks
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
+        if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
+            }
+            return false;
         }
-        return false;
     }
 
-    // check gps is ok if required - note this same check is also done in pre-arm checks
-    if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
+    // check parameters
+    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_PARAMETERS)) {
+        // check throttle is above failsafe throttle
+        if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Thr below FS"));
+            }
+            return false;
         }
-        return false;
     }
 
     // check if safety switch has been pushed
