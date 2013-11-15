@@ -17,6 +17,7 @@ extern const AP_HAL::HAL& hal;
 #define SPI0_SCK_PIN  52
 
 AVRSemaphore AVRSPI0DeviceDriver::_semaphore;
+bool AVRSPI0DeviceDriver::_force_low_speed;
 
 static volatile bool spi0_transferflag = false;
 
@@ -40,6 +41,9 @@ void AVRSPI0DeviceDriver::_cs_assert()
 {
     const uint8_t valid_spcr_mask = 
         (_BV(CPOL) | _BV(CPHA) | _BV(SPR1) | _BV(SPR0));
+    if (_force_low_speed) {
+        _spcr = _spcr_lowspeed;
+    }
     uint8_t new_spcr = (SPCR & ~valid_spcr_mask) | (_spcr & valid_spcr_mask);
     SPCR = new_spcr;  
 
@@ -145,8 +149,10 @@ void AVRSPI0DeviceDriver::set_bus_speed(AVRSPI0DeviceDriver::bus_speed speed)
 {
     if (speed == AVRSPI0DeviceDriver::SPI_SPEED_HIGH) {
         _spcr = _spcr_highspeed;
+        _force_low_speed = false;
     } else {
         _spcr = _spcr_lowspeed;
+        _force_low_speed = true;
     }
 }
 
