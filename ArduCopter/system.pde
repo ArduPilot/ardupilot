@@ -329,7 +329,7 @@ static bool manual_flight_mode(uint8_t mode) {
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was succesfully set
-// STABILIZE, ACRO, SPORT and LAND can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+// ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 static bool set_mode(uint8_t mode)
 {
     // boolean to record if flight mode could be set
