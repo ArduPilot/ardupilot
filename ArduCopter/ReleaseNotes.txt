@@ -20,6 +20,8 @@ Improvements over 3.1-rc5
     d) detect Ublox GPS running at less than 5hz and resend configuration
     e) GPSGlitch acceptable radius reduced to 5m (stricter detection of glitches)
     f) range check roll, pitch input to ensure crazy radio values don't get through to stabilize controller
+    g) GPS failsafe options to trigger AltHold instead of LAND or to trigger LAND even if in flight mode that does not require GPS
+    h) Battery failsafe option to trigger RTL instead of LAND
 6) bug fixes:
     a) missing throttle controller initialisation would mean Stabilize mode's throttle could be non-tilt-compensated
     b) inertial nav baro and gps delay compensation fix (contribution from Neurocopter)
