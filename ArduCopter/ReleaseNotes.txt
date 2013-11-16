@@ -23,7 +23,7 @@ Improvements over 3.1-rc5
     g) GPS failsafe options to trigger AltHold instead of LAND or to trigger LAND even if in flight mode that does not require GPS
     h) Battery failsafe option to trigger RTL instead of LAND
     i) MOT_SPIN_ARMED set to zero by default
-6) bug fixes:
+6) Bug fixes:
     a) missing throttle controller initialisation would mean Stabilize mode's throttle could be non-tilt-compensated
     b) inertial nav baro and gps delay compensation fix (contribution from Neurocopter)
     c) GPS failsafe was invoking LAND mode which still used GPS for horizontal control
