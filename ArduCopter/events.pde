@@ -110,6 +110,16 @@ static void failsafe_battery_event(void)
                     }
                 }
                 break;
+            case AUTO:
+                // set mode to RTL or LAND
+                if (home_distance > wp_nav.get_waypoint_radius()) {
+                    if (!set_mode(RTL)) {
+                        set_mode(LAND);
+                    }
+                }else{
+                    set_mode(LAND);
+                }
+                break;
             default:
                 // set mode to RTL or LAND
                 if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_waypoint_radius()) {
