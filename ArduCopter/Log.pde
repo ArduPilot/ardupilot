@@ -276,7 +276,7 @@ static void Log_Write_Motors()
         motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
                          motors.motor_out[AP_MOTORS_MOT_2],
                          motors.motor_out[AP_MOTORS_MOT_4],
-                         motors.motor_out[g.rc_4.radio_out]}
+                         g.rc_4.radio_out}
 #else // QUAD frame
         motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
                          motors.motor_out[AP_MOTORS_MOT_2],
