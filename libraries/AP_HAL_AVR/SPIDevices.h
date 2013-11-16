@@ -14,9 +14,9 @@ public:
             uint8_t spsr
     ) :
         _cs_pin(cs_pin),
-        _spcr(spcr_lowspeed),
         _spcr_lowspeed(spcr_lowspeed),
         _spcr_highspeed(spcr_highspeed),
+        _spcr(spcr_lowspeed),
         _spsr(spsr)
     {}
 
