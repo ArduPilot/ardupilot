@@ -5,7 +5,7 @@
 #if FRAME_CONFIG == HELI_FRAME
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN
- #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      100     // we are in "dynamic flight" when the speed is over 1m/s for 2 seconds
+ #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      500     // we are in "dynamic flight" when the speed is over 1m/s for 2 seconds
 #endif
 
 // counter to control dynamic flight profile
@@ -148,8 +148,6 @@ static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t t
 
     roll_ff = g.heli_roll_ff * target_roll_rate;
     pitch_ff = g.heli_pitch_ff * target_pitch_rate;
-
-    // Joly, I think your PC and CC code goes here
     
     roll_output = roll_p + roll_i + roll_d + roll_ff;
     pitch_output = pitch_p + pitch_i + pitch_d + pitch_ff;
