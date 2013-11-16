@@ -19,44 +19,55 @@
  *  ArduCopter Version 3.0
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
- *  Based on code and ideas from the Arducopter team: Pat Hickey, Jose Julio, Jani Hirvinen, Andrew Tridgell, Justin Beech, Adam Rivera, Jean-Louis Naudin, Roberto Navoni
- *  Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier, Robert Lefebvre, Marco Robustini
+ *  Lead Tester:    Marco Robustini 
+ *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen, 
+                                                      Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
+                                                      Jean-Louis Naudin, Mike Smith, and more
+ *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
  *
- *  Special Thanks for Contributors (in alphabetical order by first name):
+ *  Special Thanks to contributors (in alphabetical order by first name):
  *
  *  Adam M Rivera		:Auto Compass Declination
  *  Amilcar Lucas		:Camera mount library
  *  Andrew Tridgell		:General development, Mavlink Support
  *  Angel Fernandez		:Alpha testing
- *  Doug Weibel			:Libraries
+ *  AndreasAntonopoulous:GeoFence
+ *  Arthur Benemann     :DroidPlanner GCS
+ *  Benjamin Pelletier  :Libraries
+ *  Bill King           :Single Copter
  *  Christof Schmid		:Alpha testing
+ *  Craig Elder         :Release Management, Support
  *  Dani Saez           :V Octo Support
+ *  Doug Weibel			:DCM, Libraries, Control law advice
  *  Gregory Fletcher	:Camera mount orientation math
  *  Guntars				:Arming safety suggestion
  *  HappyKillmore		:Mavlink GCS
- *  Hein Hollander      :Octo Support
+ *  Hein Hollander      :Octo Support, Heli Testing
  *  Igor van Airde      :Control Law optimization
- *  Leonard Hall 		:Flight Dynamics, Throttle, Loiter and Navigation Controllers
- *  Jonathan Challinger :Inertial Navigation
- *  Jean-Louis Naudin   :Auto Landing
- *  Max Levine			:Tri Support, Graphics
  *  Jack Dunkle			:Alpha testing
  *  James Goppert		:Mavlink Support
  *  Jani Hiriven		:Testing feedback
+ *  Jean-Louis Naudin   :Auto Landing
  *  John Arne Birkeland	:PPM Encoder
- *  Jose Julio			:Stabilization Control laws
+ *  Jose Julio			:Stabilization Control laws, MPU6k driver
+ *  Julian Oes          :Pixhawk
+ *  Jonathan Challinger :Inertial Navigation, CompassMot, Spin-When-Armed
+ *  Kevin Hester        :Andropilot GCS
+ *  Max Levine			:Tri Support, Graphics
+ *  Leonard Hall 		:Flight Dynamics, Throttle, Loiter and Navigation Controllers
  *  Marco Robustini		:Lead tester
  *  Michael Oborne		:Mission Planner GCS
- *  Mike Smith			:Libraries, Coding support
- *  Oliver				:Piezo support
- *  Olivier Adler       :PPM Encoder
- *  Robert Lefebvre		:Heli Support & LEDs
- *  Sandro Benigno      :Camera support
+ *  Mike Smith			:Pixhawk driver, coding support
+ *  Olivier Adler       :PPM Encoder, piezo buzzer
+ *  Pat Hickey          :Hardware Abstraaction Layer (HAL)
+ *  Robert Lefebvre		:Heli Support, Copter LEDs
+ *  Roberto Navoni      :Library testing, Porting to VRBrain
+ *  Sandro Benigno      :Camera support, MinimOSD
+ *  ..and many more.
  *
- *  And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
- *
- *  Requires modified "mrelax" version of Arduino, which can be found here:
- *  http://code.google.com/p/ardupilot-mega/downloads/list
+ *  Code commit statistics can be found here: https://github.com/diydrones/ardupilot/graphs/contributors
+ *  Wiki: http://copter.ardupilot.com/
+ *  Requires modified version of Arduino, which can be found here: http://ardupilot.com/downloads/?category=6
  *
  */
 
