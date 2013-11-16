@@ -362,9 +362,6 @@
 #endif
 
 // GPS failsafe
-#ifndef FS_GPS
- # define FS_GPS                        ENABLED
-#endif
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
 #endif
@@ -488,12 +485,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throttle Failsafe
 //
-// possible values for FS_THR parameter
-#define FS_THR_DISABLED                    0
-#define FS_THR_ENABLED_ALWAYS_RTL          1
-#define FS_THR_ENABLED_CONTINUE_MISSION    2
-#define FS_THR_ENABLED_ALWAYS_LAND         3
-
 #ifndef FS_THR_VALUE_DEFAULT
  # define FS_THR_VALUE_DEFAULT             975
 #endif

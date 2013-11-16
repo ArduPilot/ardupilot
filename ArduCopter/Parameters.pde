@@ -120,10 +120,10 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_GPS_ENABLE
     // @DisplayName: GPS Failsafe Enable
-    // @Description: Controls whether failsafe will be invoked when gps signal is lost
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Controls what action will be taken if GPS signal is lost for at least 5 seconds
+    // @Values: 0:Disabled,1:Land,2:AltHold,3:Land even from Stabilize
     // @User: Standard
-    GSCALAR(failsafe_gps_enabled, "FS_GPS_ENABLE", FS_GPS),
+    GSCALAR(failsafe_gps_enabled, "FS_GPS_ENABLE", FS_GPS_LAND),
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
