@@ -50,7 +50,7 @@ static void failsafe_radio_on_event()
             break;
         case LAND:
             // continue to land if battery failsafe is also active otherwise fall through to default handling
-            if (g.failsafe_battery_enabled && failsafe.battery) {
+            if (g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
                 break;
             }
         default:
@@ -91,7 +91,7 @@ static void failsafe_battery_event(void)
     }
 
     // failsafe check
-    if (g.failsafe_battery_enabled && motors.armed()) {
+    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
         switch(control_mode) {
             case STABILIZE:
             case ACRO:
@@ -100,22 +100,25 @@ static void failsafe_battery_event(void)
                 if (g.rc_3.control_in == 0) {
                     init_disarm_motors();
                 }else{
-                    set_mode(LAND);
+                    // set mode to RTL or LAND
+                    if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_waypoint_radius()) {
+                        if (!set_mode(RTL)) {
+                            set_mode(LAND);
+                        }
+                    }else{
+                        set_mode(LAND);
+                    }
                 }
                 break;
-            case AUTO:
-                // set_mode to RTL or LAND
-                if (home_distance > wp_nav.get_waypoint_radius()) {
+            default:
+                // set mode to RTL or LAND
+                if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_waypoint_radius()) {
                     if (!set_mode(RTL)) {
                         set_mode(LAND);
                     }
                 }else{
-                    // We have no GPS or are very close to home so we will land
                     set_mode(LAND);
                 }
-                break;
-            default:
-                set_mode(LAND);
                 break;
         }
     }
