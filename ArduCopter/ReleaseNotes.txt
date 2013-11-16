@@ -13,7 +13,7 @@ Improvements over 3.1-rc5
 2) SingleCopter airframe support (contribution from Bill King)
 3) Drift mode replaces TOY
 4) MPU6k SPI bus speed decreased to 500khz after 4 errors
-5) Safety improvements:
+5) Safety related changes:
     a) crash detector cuts motors if copter upside down for more than 2 seconds
     b) INS (accel and gyro) health check in pre-arm checks
     c) ARMING_CHECK allows turning on/off individual checks for baro, GPS, compass, parameters, board voltage, radio
@@ -22,6 +22,7 @@ Improvements over 3.1-rc5
     f) range check roll, pitch input to ensure crazy radio values don't get through to stabilize controller
     g) GPS failsafe options to trigger AltHold instead of LAND or to trigger LAND even if in flight mode that does not require GPS
     h) Battery failsafe option to trigger RTL instead of LAND
+    i) MOT_SPIN_ARMED set to zero by default
 6) bug fixes:
     a) missing throttle controller initialisation would mean Stabilize mode's throttle could be non-tilt-compensated
     b) inertial nav baro and gps delay compensation fix (contribution from Neurocopter)
