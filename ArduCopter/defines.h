@@ -485,6 +485,11 @@ enum ap_message {
 #define FS_THR_ENABLED_CONTINUE_MISSION    2
 #define FS_THR_ENABLED_ALWAYS_LAND         3
 
+// Battery failsafe definitions (FS_BATT_ENABLE parameter)
+#define FS_BATT_DISABLED                    0       // battery failsafe disabled
+#define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
+#define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
+
 // GPS Failsafe definitions (FS_GPS_ENABLE parameter)
 #define FS_GPS_DISABLED                     0       // GPS failsafe disabled
 #define FS_GPS_LAND                         1       // switch to LAND mode on GPS Failsafe

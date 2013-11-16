@@ -356,11 +356,6 @@
  # define BOARD_VOLTAGE_MAX             5800        // max board voltage in milli volts for pre-arm checks
 #endif
 
-// Battery failsafe
-#ifndef FS_BATTERY
- # define FS_BATTERY              DISABLED
-#endif
-
 // GPS failsafe
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS

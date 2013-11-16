@@ -164,7 +164,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
     // disable throttle and battery failsafe
     g.failsafe_throttle = FS_THR_DISABLED;
-    g.failsafe_battery_enabled = false;
+    g.failsafe_battery_enabled = FS_BATT_DISABLED;
 
     // read radio
     read_radio();
