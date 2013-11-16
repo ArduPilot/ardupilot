@@ -138,7 +138,7 @@ static void failsafe_gps_check()
     uint32_t last_gps_update_ms;
 
     // return immediately if gps failsafe is disabled or we have never had GPS lock
-    if (!g.failsafe_gps_enabled || !ap.home_is_set) {
+    if (g.failsafe_gps_enabled == FS_GPS_DISABLED || !ap.home_is_set) {
         // if we have just disabled the gps failsafe, ensure the gps failsafe event is cleared
         if (failsafe.gps) {
             failsafe_gps_off_event();
@@ -171,16 +171,14 @@ static void failsafe_gps_check()
     gcs_send_text_P(SEVERITY_LOW,PSTR("Lost GPS!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GPS, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    // take action based on flight mode
-    if(mode_requires_GPS(control_mode))
-        set_mode(LAND);
-
-    // land if circular fence is enabled
-#if AC_FENCE == ENABLED
-    if((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) {
-        set_mode(LAND);
+    // take action based on flight mode and FS_GPS_ENABLED parameter
+    if (mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) {
+        if (g.failsafe_gps_enabled == FS_GPS_ALTHOLD && !failsafe.radio) {
+            set_mode(ALT_HOLD);
+        }else{
+            set_mode(LAND);
+        }
     }
-#endif
 }
 
 // failsafe_gps_off_event - actions to take when GPS contact is restored
