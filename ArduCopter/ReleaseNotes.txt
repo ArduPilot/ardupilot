@@ -1,5 +1,30 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc6 16-Nov-2013
+Improvements over 3.1-rc5
+1) Heli improvements:
+    a) support for direct drive tails (uses TAIL_TYPE and TAIL_SPEED parameters)
+    b) smooth main rotor ramp-up for those without external govenor (RSC_RAMP_TIME)
+    c) internal estimate of rotor speed configurable with RSC_RUNUP_TIME parameter to ensure rotor at top speed before starting missions
+    d) LAND_COL_MIN collective position used when landed (reduces chance copter will push too hard into the ground when landing or before starting missions)
+    e) reduced collective while in stabilize mode (STAB_COL_MIN, STAB_COL_MAX) for more precise throttle control
+    f) external gyro parameter range changed from 1000~2000 to 0~1000 (more consistent with other parameters)
+    g) dynamic flight detector switches on/off leaky-i term depending on copter speed
+2) SingleCopter airframe support (contribution from Bill King)
+3) Drift mode replaces TOY
+4) MPU6k SPI bus speed decreased to 500khz after 4 errors
+5) Safety improvements:
+    a) crash detector cuts motors if copter upside down for more than 2 seconds
+    b) INS (accel and gyro) health check in pre-arm checks
+    c) ARMING_CHECK allows turning on/off individual checks for baro, GPS, compass, parameters, board voltage, radio
+    d) detect Ublox GPS running at less than 5hz and resend configuration
+    e) GPSGlitch acceptable radius reduced to 5m (stricter detection of glitches)
+    f) range check roll, pitch input to ensure crazy radio values don't get through to stabilize controller
+6) bug fixes:
+    a) missing throttle controller initialisation would mean Stabilize mode's throttle could be non-tilt-compensated
+    b) inertial nav baro and gps delay compensation fix (contribution from Neurocopter)
+    c) GPS failsafe was invoking LAND mode which still used GPS for horizontal control
+------------------------------------------------------------------
 ArduCopter 3.1-rc5 22-Oct-2013
 Improvements over 3.1-rc4
 1) Pixhawk USB reliability improvements
