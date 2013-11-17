@@ -129,7 +129,7 @@ static void control_failsafe(uint16_t pwm)
 
         //Check for failsafe and debounce funky reads
     } else if (g.throttle_fs_enabled) {
-        if (pwm < (unsigned)g.throttle_fs_value) {
+        if (throttle_failsafe_level()) {
             // we detect a failsafe from radio
             // throttle has dropped below the mark
             failsafe.ch3_counter++;
@@ -220,4 +220,18 @@ static void trim_radio()
     }
 
     trim_control_surfaces();
+}
+
+/*
+  return true if throttle level is below throttle failsafe threshold
+ */
+static bool throttle_failsafe_level(void)
+{
+    if (!g.throttle_fs_enabled) {
+        return false;
+    }
+    if (channel_throttle->get_reverse()) {
+        return channel_throttle->radio_in >= g.throttle_fs_value;
+    }
+    return channel_throttle->radio_in <= g.throttle_fs_value;
 }
