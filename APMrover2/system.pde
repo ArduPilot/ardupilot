@@ -252,6 +252,8 @@ static void set_mode(enum mode mode)
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
+    in_reverse = false;
+    g.pidSpeedThrottle.reset_I();
 
     if (control_mode != AUTO) {
         auto_triggered = false;

@@ -537,6 +537,9 @@ static uint32_t		delta_us_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
+// set if we are driving backwards
+static bool in_reverse;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
@@ -635,6 +638,12 @@ static void ahrs_update()
     // update hil before AHRS update
     gcs_update();
 #endif
+
+    // when in reverse we need to tell AHRS not to assume we are a
+    // 'fly forward' vehicle, otherwise it will see a large
+    // discrepancy between the mag and the GPS heading and will try to
+    // correct for it, leading to a large yaw error
+    ahrs.set_fly_forward(!in_reverse);
 
     ahrs.update();
 
@@ -860,7 +869,12 @@ static void update_current_mode(void)
         // and throttle gives speed in proportion to cruise speed, up
         // to 50% throttle, then uses nudging above that.
         float target_speed = channel_throttle->pwm_to_angle() * 0.01 * 2 * g.speed_cruise;
-        target_speed = constrain_float(target_speed, 0, g.speed_cruise);
+        in_reverse = (target_speed < 0);
+        if (in_reverse) {
+            target_speed = constrain_float(target_speed, -g.speed_cruise, 0);
+        } else {
+            target_speed = constrain_float(target_speed, 0, g.speed_cruise);
+        }
         calc_throttle(target_speed);
         break;
     }
@@ -875,6 +889,10 @@ static void update_current_mode(void)
          */
         channel_throttle->servo_out = channel_throttle->control_in;
         channel_steer->servo_out = channel_steer->pwm_to_angle();
+
+        // mark us as in_reverse when using a negative throttle to
+        // stop AHRS getting off
+        in_reverse = (channel_throttle->servo_out < 0);
         break;
 
     case HOLD:
