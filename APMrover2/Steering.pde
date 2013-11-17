@@ -75,13 +75,8 @@ static void calc_throttle(float target_speed)
         return;
     }
 
-    if (target_speed <= 0) {
-        // cope with zero requested speed
-        channel_throttle->servo_out = g.throttle_min.get();
-        return;
-    }
-
-    int throttle_target = g.throttle_cruise + throttle_nudge;  
+    float throttle_base = (fabsf(target_speed) / g.speed_cruise) * g.throttle_cruise;
+    int throttle_target = throttle_base + throttle_nudge;  
 
     /*
       reduce target speed in proportion to turning rate, up to the
@@ -102,7 +97,7 @@ static void calc_throttle(float target_speed)
     // reduce the target speed by the reduction factor
     target_speed *= reduction;
 
-    groundspeed_error = target_speed - ground_speed; 
+    groundspeed_error = fabsf(target_speed) - ground_speed; 
     
     throttle = throttle_target + (g.pidSpeedThrottle.get_pid(groundspeed_error * 100) / 100);
 
@@ -110,7 +105,11 @@ static void calc_throttle(float target_speed)
     // much faster response in turns
     throttle *= reduction;
 
-    channel_throttle->servo_out = constrain_int16(throttle, g.throttle_min.get(), g.throttle_max.get());
+    if (in_reverse) {
+        channel_throttle->servo_out = constrain_int16(-throttle, -g.throttle_max, -g.throttle_min);
+    } else {
+        channel_throttle->servo_out = constrain_int16(throttle, g.throttle_min, g.throttle_max);
+    }
 }
 
 /*****************************************
@@ -179,9 +178,15 @@ static void set_servos(void)
         }
 	} else {       
         channel_steer->calc_pwm();
-		channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
-                                                       g.throttle_min.get(), 
-                                                       g.throttle_max.get());
+        if (in_reverse) {
+            channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
+                                                          -g.throttle_max,
+                                                          -g.throttle_min);
+        } else {
+            channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
+                                                          g.throttle_min.get(), 
+                                                          g.throttle_max.get());
+        }
 
         if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
             // suppress throttle if in failsafe
