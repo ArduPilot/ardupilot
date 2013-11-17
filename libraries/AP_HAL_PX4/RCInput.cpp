@@ -85,13 +85,17 @@ void PX4RCInput::clear_overrides()
 void PX4RCInput::_timer_tick(void)
 {
 	perf_begin(_perf_rcin);
+	hrt_abstime hat = hrt_absolute_time();
 	bool rc_updated = false;
 	if (orb_check(_rc_sub, &rc_updated) == 0 && rc_updated) {
 		orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
 		_last_input = _rcin.timestamp;
-	} else if (hrt_absolute_time() - _last_input > 300000) {
-		// we've lost RC input, force channel 3 low
-		_rcin.values[2] = 900;
+	} else if (hat - _last_input > 300000) {
+		// we've lost RC input signal (not RX failsafe), force channel 3 low
+		// value should be lower than the "usual" fs value as the user will typically test fail-safe by switching of his TX
+		_rcin.values[2] = 800;
+		// touch timestamp, otherwise this data will be ignored (and the vehicle will go cross-country on RX failure)
+		_rcin.timestamp = hat;
 	}
 	perf_end(_perf_rcin);
 }
