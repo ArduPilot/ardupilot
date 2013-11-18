@@ -367,6 +367,14 @@ static void pre_arm_checks(bool display_failure)
             }
             return;
         }
+
+        // acro balance parameter check
+        if ((g.acro_balance_roll > g.pi_stabilize_roll.kP()) || (g.acro_balance_pitch > g.pi_stabilize_pitch.kP())) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: ACRO_BAL_ROLL/PITCH"));
+            }
+            return;
+        }
     }
 
     // if we've gotten this far then pre arm checks have completed
