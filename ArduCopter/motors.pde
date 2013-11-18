@@ -289,7 +289,7 @@ static void pre_arm_checks(bool display_failure)
     // check GPS
     if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
         // check gps is ok if required - note this same check is repeated again in arm_checks
-        if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
+        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
             }
@@ -439,7 +439,7 @@ static bool arm_checks(bool display_failure)
 
     // check gps is ok if required - note this same check is also done in pre-arm checks
     if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
-        if (mode_requires_GPS(control_mode) && !pre_arm_gps_checks()) {
+        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
             }
