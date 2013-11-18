@@ -208,7 +208,7 @@ static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds)
 
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
-    int16_t throttle_in;
+    int16_t throttle_out;
     uint32_t throttle_integrator;
     int16_t battery_voltage;
     int16_t current_amps;
@@ -221,7 +221,7 @@ static void Log_Write_Current()
 {
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-        throttle_in         : g.rc_3.control_in,
+        throttle_out        : g.rc_3.servo_out,
         throttle_integrator : throttle_integrator,
         battery_voltage     : (int16_t) (battery.voltage() * 100.0f),
         current_amps        : (int16_t) (battery.current_amps() * 100.0f),
@@ -769,7 +769,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ATDE", "cf",          "Angle,Rate" },
 #endif
     { LOG_CURRENT_MSG, sizeof(log_Current),             
-      "CURR", "hIhhhf",      "Thr,ThrInt,Volt,Curr,Vcc,CurrTot" },
+      "CURR", "hIhhhf",      "ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
 
 #if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
     { LOG_MOTORS_MSG, sizeof(log_Motors),       
