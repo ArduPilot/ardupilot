@@ -1219,8 +1219,15 @@ static void one_hz_loop()
     if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
         Log_Write_Current();
 
-    // perform pre-arm checks
-    pre_arm_checks(false);
+    // perform pre-arm checks & display failures every 30 seconds
+    static uint8_t pre_arm_display_counter = 15;
+    pre_arm_display_counter++;
+    if (pre_arm_display_counter >= 30) {
+        pre_arm_checks(true);
+        pre_arm_display_counter = 0;
+    }else{
+        pre_arm_checks(false);
+    }
 
     // auto disarm checks
     auto_disarm_check();
