@@ -133,10 +133,10 @@ void AP_InertialNav::check_gps()
         // record gps time and system time of this update
         _gps_last_time = _gps->last_fix_time;
     }else{
-        // clear position error if GPS updates stop arriving
+        // if GPS updates stop arriving degrade position error to 10% over 2 seconds (assumes 100hz update rate)
         if (now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS) {
-            _position_error.x = 0;
-            _position_error.y = 0;
+            _position_error.x *= 0.9886;
+            _position_error.y *= 0.9886;
         }
     }
 }
@@ -164,9 +164,9 @@ void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
 
     // sanity check the gps position.  Relies on the main code calling GPS_Glitch::check_position() immediatley after a GPS update
     if (_glitch_detector.glitching()) {
-        // failed sanity check so set position_error to zero
-        _position_error.x = 0;
-        _position_error.y = 0;
+        // failed sanity check so degrate position_error to 10% over 2 seconds (assumes 5hz update rate)
+        _position_error.x *= 0.7934;
+        _position_error.y *= 0.7934;
     }else{
         // if our internal glitching flag (from previous iteration) is true we have just recovered from a glitch
         // reset the inertial nav position and velocity to gps values
