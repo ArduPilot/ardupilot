@@ -168,11 +168,11 @@ struct PACKED log_Performance {
     uint32_t g_dt_max;
     uint8_t  renorm_count;
     uint8_t  renorm_blowup;
-    uint8_t  gps_fix_count;
     int16_t  gyro_drift_x;
     int16_t  gyro_drift_y;
     int16_t  gyro_drift_z;
     uint8_t  i2c_lockup_count;
+    uint16_t ins_error_count;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -185,11 +185,11 @@ static void Log_Write_Performance()
         g_dt_max        : G_Dt_max,
         renorm_count    : ahrs.renorm_range_count,
         renorm_blowup   : ahrs.renorm_blowup_count,
-        gps_fix_count   : gps_fix_count,
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
-        i2c_lockup_count: hal.i2c->lockup_count()
+        i2c_lockup_count: hal.i2c->lockup_count(),
+        ins_error_count  : ins.error_count()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -454,7 +454,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "ccC",        "Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "IHIBBBhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,I2CErr" },
+      "PM",  "IHIBBhhhBH", "LTime,MLC,gDt,RNCnt,RNBl,GDx,GDy,GDz,I2CErr,INSErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
