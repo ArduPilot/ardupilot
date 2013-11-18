@@ -3,7 +3,7 @@
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define AUTO_DISARMING_DELAY    25  // called at 1hz so 25 seconds
+#define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
@@ -88,19 +88,25 @@ static void arm_motors_check()
     }
 }
 
-// auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 25 seconds
+// auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
 // called at 1hz
 static void auto_disarm_check()
 {
     static uint8_t auto_disarming_counter;
 
-    if(manual_flight_mode(control_mode) && (g.rc_3.control_in == 0) && motors.armed()) {
+    // exit immediately if we are already disarmed or throttle is not zero
+    if (!motors.armed() || g.rc_3.control_in > 0) {
+        auto_disarming_counter = 0;
+        return;
+    }
+
+    // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
+    if(manual_flight_mode(control_mode) || (ap.land_complete && (control_mode == LOITER || control_mode == ALT_HOLD))) {
         auto_disarming_counter++;
 
-        if(auto_disarming_counter == AUTO_DISARMING_DELAY) {
+        if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
             init_disarm_motors();
-        }else if (auto_disarming_counter > AUTO_DISARMING_DELAY) {
-            auto_disarming_counter = AUTO_DISARMING_DELAY + 1;
+            auto_disarming_counter = 0;
         }
     }else{
         auto_disarming_counter = 0;
