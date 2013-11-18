@@ -66,6 +66,17 @@
 	      <param index="6">Empty</param>
 	      <param index="7">Empty</param>
 	    </entry>
+
+	    <entry name="MAV_CMD_DO_SET_CAM_TRIGG_DIST" value="206">
+	      <description>Mission command to set CAM_TRIGG_DIST for this flight</description>
+	      <param index="1">Camera trigger distance (meters)</param>
+	      <param index="2">Empty</param>
+	      <param index="3">Empty</param>
+	      <param index="4">Empty</param>
+	      <param index="5">Empty</param>
+	      <param index="6">Empty</param>
+	      <param index="7">Empty</param>
+	    </entry>
 	  </enum>
 
 	  <!-- fenced mode enums -->
@@ -79,6 +90,9 @@
 	    <entry name="FENCE_ACTION_REPORT" value="2">
 	      <description>Report fence breach, but don't take action</description>
 	    </entry>
+            <entry name="FENCE_ACTION_GUIDED_THR_PASS" value="3">
+              <description>Switched to guided mode to return point (fence point 0) with manual throttle control</description>
+            </entry>
 	  </enum>
 
 	  <enum name="FENCE_BREACH">
@@ -112,7 +126,15 @@
 		<entry name="LIMIT_GEOFENCE" value="2"> <description> disabled</description></entry>
 		<entry name="LIMIT_ALTITUDE" value="4"> <description> checking limits</description></entry>
 	</enum>
-	</enums>
+
+	<!-- RALLY flags - power of 2 (1,2,4,8,16,32,64,128) so we can send as a bitfield -->
+        <enum name="RALLY_FLAGS">
+          <description>Flags in RALLY_POINT message</description>
+          <entry name="FAVORABLE_WIND" value="1"> <description>Flag set when requiring favorable winds for landing. </description></entry>
+          <entry name="LAND_IMMEDIATELY" value="2"> <description>Flag set when plane is to immediately descend to break altitude and land without GCS intervention.  Flag not set when plane is to loiter at Rally point until commanded to land.</description></entry>
+	</enum>
+
+      </enums>
 
      <messages>
           <message id="150" name="SENSOR_OFFSETS">
@@ -267,8 +289,8 @@
             <field type="float" name="xgyro">Angular speed around X axis rad/s</field>
             <field type="float" name="ygyro">Angular speed around Y axis rad/s</field>
             <field type="float" name="zgyro">Angular speed around Z axis rad/s</field>
-            <field type="float" name="lat">Latitude in degrees</field>
-            <field type="float" name="lng">Longitude in degrees</field>
+            <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
+            <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
 	  </message>
 
 	  <message name="HWSTATUS" id="165">
@@ -344,6 +366,65 @@
 	    <field type="float" name="distance">distance in meters</field>
 	    <field type="float" name="voltage">raw voltage if available, zero otherwise</field>
 	  </message>
-	 
+
+	  <message name="AIRSPEED_AUTOCAL" id="174">
+            <description>Airspeed auto-calibration</description>
+            <field type="float" name="vx">GPS velocity north m/s</field>
+            <field type="float" name="vy">GPS velocity east m/s</field>
+            <field type="float" name="vz">GPS velocity down m/s</field>
+            <field type="float" name="diff_pressure">Differential pressure pascals</field>
+            <field type="float" name="EAS2TAS">Estimated to true airspeed ratio</field>
+            <field type="float" name="ratio">Airspeed ratio</field>
+            <field type="float" name="state_x">EKF state x</field>
+            <field type="float" name="state_y">EKF state y</field>
+            <field type="float" name="state_z">EKF state z</field>
+            <field type="float" name="Pax">EKF Pax</field>
+            <field type="float" name="Pby">EKF Pby</field>
+            <field type="float" name="Pcz">EKF Pcz</field>
+          </message>
+
+      <!-- rally point messages -->
+	  <message name="RALLY_POINT" id="175">
+	    <description>A rally point. Used to set a point when from GCS -> MAV. Also used to return a point from MAV -> GCS</description>
+	    <field name="target_system" type="uint8_t">System ID</field>      
+	    <field name="target_component" type="uint8_t">Component ID</field>
+	    <field name="idx" type="uint8_t">point index (first point is 0)</field>
+	    <field name="count" type="uint8_t">total number of points (for sanity checking)</field>
+	    <field name="lat" type="int32_t">Latitude of point in degrees * 1E7</field>
+            <field name="lng" type="int32_t">Longitude of point in degrees * 1E7</field>
+            <field name="alt" type="int16_t">Transit / loiter altitude in meters relative to home</field>
+            <!-- Path planned landings are still in the future, but we want these fields ready: -->
+            <field name="break_alt" type="int16_t">Break altitude in meters relative to home</field>
+            <field name="land_dir" type="uint16_t">Heading to aim for when landing. In centi-degrees.</field>
+            <field name="flags" type="uint8_t">See RALLY_FLAGS enum for definition of the bitmask.</field>
+	  </message>
+
+          <message name="RALLY_FETCH_POINT" id="176">
+            <description>Request a current rally point from MAV. MAV should respond with a RALLY_POINT message. MAV should not respond if the request is invalid.</description>
+            <field name="target_system" type="uint8_t">System ID</field>      
+            <field name="target_component" type="uint8_t">Component ID</field>
+            <field name="idx" type="uint8_t">point index (first point is 0)</field>
+          </message>
+
+<!-- Coming soon
+      <message name="RALLY_LAND_POINT" id="177"> 
+         <description>A rally landing point.  An aircraft loitering at a rally point may choose one of these points to land at.</description>
+         <field name="target_system" type="uint8_t">System ID</field>      
+	     <field name="target_component" type="uint8_t">Component ID</field>
+	     <field name="idx" type="uint8_t">point index (first point is 0)</field>
+	     <field name="count" type="uint8_t">total number of points (for sanity checking)</field>
+	     <field name="lat" type="int32_t">Latitude of point</field>
+         <field name="lng" type="int32_t">Longitude of point</field>
+         <field name="alt" type="uint16_t">Ground AGL (usually 0)</field>
+     </message>
+
+	   <message name="RALLY_LAND_FETCH_POINT" id="178">
+         <description>Request a current rally land point from MAV</description>
+	     <field name="target_system" type="uint8_t">System ID</field>      
+	     <field name="target_component" type="uint8_t">Component ID</field>
+	     <field name="idx" type="uint8_t">point index (first point is 0)</field>
+      </message>
+-->
+
      </messages>
 </mavlink>

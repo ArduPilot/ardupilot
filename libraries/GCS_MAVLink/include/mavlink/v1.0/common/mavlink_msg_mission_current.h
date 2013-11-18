@@ -59,7 +59,7 @@ static inline uint16_t mavlink_msg_mission_current_pack(uint8_t system_id, uint8
  * @brief Pack a mission_current message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param seq Sequence
  * @return length of the message in bytes (excluding serial stream start sign)
@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_mission_current_pack_chan(uint8_t system_id, 
 }
 
 /**
- * @brief Encode a mission_current struct into a message
+ * @brief Encode a mission_current struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -99,6 +99,20 @@ static inline uint16_t mavlink_msg_mission_current_pack_chan(uint8_t system_id, 
 static inline uint16_t mavlink_msg_mission_current_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_mission_current_t* mission_current)
 {
 	return mavlink_msg_mission_current_pack(system_id, component_id, msg, mission_current->seq);
+}
+
+/**
+ * @brief Encode a mission_current struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param mission_current C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_mission_current_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_mission_current_t* mission_current)
+{
+	return mavlink_msg_mission_current_pack_chan(system_id, component_id, chan, msg, mission_current->seq);
 }
 
 /**

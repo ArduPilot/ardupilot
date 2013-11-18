@@ -17,6 +17,7 @@
 #include <AP_ADC.h>
 #include <AP_InertialSensor.h>
 #include <GCS_MAVLink.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -78,7 +79,7 @@ void loop(void)
         }
 
         if( user_input == 'r' || user_input == 'R' ) {
-			hal.scheduler->reboot();
+			hal.scheduler->reboot(false);
         }
     }
 }
@@ -119,10 +120,6 @@ void display_offsets_and_scaling()
                     gyro_offsets.z);
 }
 
-static void flash_leds(bool on) {
-	// no LEDs yet on PX4
-}
-
 void run_level()
 {
     // clear off any input in the buffer
@@ -142,7 +139,7 @@ void run_level()
     }
 
     // run accel level
-    ins.init_accel(flash_leds);
+    ins.init_accel();
 
     // display results
     display_offsets_and_scaling();
@@ -167,7 +164,7 @@ void run_test()
     while( !hal.console->available() ) {
 
         // wait until we have a sample
-        while (ins.num_samples_available() == 0) {
+        while (ins.sample_available() == false) {
 			hal.scheduler->delay(1);
 		}
 

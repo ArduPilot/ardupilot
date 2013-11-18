@@ -13,6 +13,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_GPS.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -36,21 +37,23 @@ void loop()
     if (gps.new_data) {
         hal.console->print("gps:");
         hal.console->print(" Lat:");
-        hal.console->print((float)gps.latitude / T7, DEC);
+        hal.console->print((float)gps.latitude / T7, BASE_DEC);
         hal.console->print(" Lon:");
-        hal.console->print((float)gps.longitude / T7, DEC);
+        hal.console->print((float)gps.longitude / T7, BASE_DEC);
         hal.console->print(" Alt:");
-        hal.console->print((float)gps.altitude_cm / 100.0, DEC);
+        hal.console->print((float)gps.altitude_cm / 100.0, BASE_DEC);
         hal.console->print(" GSP:");
         hal.console->print(gps.ground_speed_cm / 100.0);
         hal.console->print(" COG:");
-        hal.console->print(gps.ground_course_cd / 100, DEC);
+        hal.console->print(gps.ground_course_cd / 100, BASE_DEC);
         hal.console->print(" SAT:");
-        hal.console->print(gps.num_sats, DEC);
+        hal.console->print(gps.num_sats, BASE_DEC);
         hal.console->print(" FIX:");
-        hal.console->print(gps.fix, DEC);
+        hal.console->print(gps.fix, BASE_DEC);
+        hal.console->print(" WEEK:");
+        hal.console->print(gps.time_week, BASE_DEC);
         hal.console->print(" TIM:");
-        hal.console->print(gps.time, DEC);
+        hal.console->print(gps.time_week_ms, BASE_DEC);
         hal.console->println();
         gps.new_data = 0; // We have readed the data
     }

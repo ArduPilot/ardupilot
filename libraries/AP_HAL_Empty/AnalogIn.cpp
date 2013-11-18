@@ -14,6 +14,10 @@ float EmptyAnalogSource::voltage_average() {
     return 5.0 * _v / 1024.0;
 }
 
+float EmptyAnalogSource::voltage_latest() {
+    return 5.0 * _v / 1024.0;
+}
+
 float EmptyAnalogSource::read_latest() {
     return _v;
 }

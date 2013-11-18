@@ -14,17 +14,18 @@ using namespace AP_HAL_AVR;
 extern const AP_HAL::HAL& hal;
 
 /* AVRScheduler timer interrupt period is controlled by TCNT2.
+ * 256-124 gives a 500Hz period
  * 256-62 gives a 1kHz period. */
-#define RESET_TCNT2_VALUE (256 - 62)
+volatile uint8_t AVRScheduler::_timer2_reset_value = (256 - 62);
 
 /* Static AVRScheduler variables: */
 AVRTimer AVRScheduler::_timer;
 
-AP_HAL::TimedProc AVRScheduler::_failsafe = NULL;
+AP_HAL::Proc AVRScheduler::_failsafe = NULL;
 volatile bool AVRScheduler::_timer_suspended = false;
 volatile bool AVRScheduler::_timer_event_missed = false;
 volatile bool AVRScheduler::_in_timer_proc = false;
-AP_HAL::TimedProc AVRScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
+AP_HAL::MemberProc AVRScheduler::_timer_proc[AVR_SCHEDULER_MAX_TIMER_PROCS] = {NULL};
 uint8_t AVRScheduler::_num_timer_procs = 0;
 
 
@@ -37,8 +38,7 @@ AVRScheduler::AVRScheduler() :
 void AVRScheduler::init(void* _isrregistry) {
     ISRRegistry* isrregistry = (ISRRegistry*) _isrregistry;
 
-    /* _timer: sets up timer hardware to Arduino defaults, and
-     * uses TIMER0 to implement millis & micros */
+    /* _timer: sets up timer hardware to implement millis & micros. */
     _timer.init();
 
     /* TIMER2: Setup the overflow interrupt to occur at 1khz. */
@@ -50,6 +50,9 @@ void AVRScheduler::init(void* _isrregistry) {
     TIMSK2 = _BV(TOIE2);            /* Enable overflow interrupt*/
     /* Register _timer_isr_event to trigger on overflow */
     isrregistry->register_signal(ISR_REGISTRY_TIMER2_OVF, _timer_isr_event);   
+    
+    /* Turn on global interrupt flag, AVR interupt system will start from this point */
+    sei();
 }
 
 uint32_t AVRScheduler::micros() {
@@ -88,7 +91,8 @@ void AVRScheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc) {
+void AVRScheduler::register_timer_process(AP_HAL::MemberProc proc) 
+{
     for (int i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
             return;
@@ -101,20 +105,20 @@ void AVRScheduler::register_timer_process(AP_HAL::TimedProc proc) {
          * incremented. */
         _timer_proc[_num_timer_procs] = proc;
         /* _num_timer_procs is used from interrupt, and multiple bytes long. */
+        uint8_t sreg = SREG;
         cli();
         _num_timer_procs++;
-        sei();
+        SREG = sreg;        
     }
 
 }
 
-void AVRScheduler::register_io_process(AP_HAL::TimedProc proc) 
+void AVRScheduler::register_io_process(AP_HAL::MemberProc proc) 
 {
     // IO processes not supported on AVR
 }
 
-void AVRScheduler::register_timer_failsafe(
-        AP_HAL::TimedProc failsafe, uint32_t period_us) {
+void AVRScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) {
     /* XXX Assert period_us == 1000 */
     _failsafe = failsafe;
 }
@@ -143,14 +147,13 @@ void AVRScheduler::_timer_isr_event() {
     // This approach also gives us a nice uniform spacing between
     // timer calls
 
-    TCNT2 = RESET_TCNT2_VALUE;
+    TCNT2 = _timer2_reset_value;
     sei();
     _run_timer_procs(true);
 }
 
 void AVRScheduler::_run_timer_procs(bool called_from_isr) {
 
-    uint32_t tnow = _timer.micros();
     if (_in_timer_proc) {
         // the timer calls took longer than the period of the
         // timer. This is bad, and may indicate a serious
@@ -163,7 +166,7 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
         // block. If it does then we will recurse and die when
         // we run out of stack
         if (_failsafe != NULL) {
-            _failsafe(tnow);
+            _failsafe();
         }
         return;
     }
@@ -174,7 +177,7 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
             if (_timer_proc[i] != NULL) {
-                _timer_proc[i](tnow);
+                _timer_proc[i]();
             }
         }
     } else if (called_from_isr) {
@@ -183,7 +186,7 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
-        _failsafe(tnow);
+        _failsafe();
     }
 
     _in_timer_proc = false;
@@ -212,7 +215,7 @@ void AVRScheduler::panic(const prog_char_t* errormsg) {
     for(;;);
 }
 
-void AVRScheduler::reboot() {
+void AVRScheduler::reboot(bool hold_in_bootloader) {
     hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
     hal.scheduler->delay(100);
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -233,6 +236,21 @@ void AVRScheduler::reboot() {
     for(;;);
 #endif
 
+}
+
+/**
+   set timer speed in Hz. Used by ArduCopter on APM2 to reduce the
+   cost of timer interrupts
+ */
+void AVRScheduler::set_timer_speed(uint16_t timer_hz)
+{
+    if (timer_hz > 1000) {
+        timer_hz = 1000;
+    }
+    if (timer_hz < 250) {
+        timer_hz = 250;
+    }
+    _timer2_reset_value = 256 - (62 * (1000 / timer_hz));
 }
 
 #endif

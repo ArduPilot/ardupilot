@@ -40,7 +40,7 @@ static int16_t read_sonar(void)
 
     int16_t temp_alt = sonar->read();
 
-    if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * 0.70f) {
+    if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * SONAR_RELIABLE_DISTANCE_PCT) {
         if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
             sonar_alt_health++;
         }
@@ -73,9 +73,6 @@ static void init_compass()
         return;
     }
     ahrs.set_compass(&compass);
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.set_compass(&compass);
-#endif
 }
 
 static void init_optflow()
@@ -102,44 +99,19 @@ static void init_optflow()
 
 // read_battery - check battery voltage and current and invoke failsafe if necessary
 // called at 10hz
-#define BATTERY_FS_COUNTER  100     // 100 iterations at 10hz is 10 seconds
 static void read_battery(void)
 {
-    static uint8_t low_battery_counter = 0;
+    battery.read();
 
-    if(g.battery_monitoring == BATT_MONITOR_DISABLED) {
-        battery_voltage1 = 0;
-        return;
-    }
-
-    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY || g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        batt_volt_analog_source->set_pin(g.battery_volt_pin);
-        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source);
-    }
-    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        static uint32_t last_time_ms;
-        uint32_t tnow = hal.scheduler->millis();
-        float dt_millis = tnow - last_time_ms;
-        current_amps1    = CURRENT_AMPS(batt_curr_analog_source);
-        if (last_time_ms != 0 && dt_millis < 2000) {
-            batt_curr_analog_source->set_pin(g.battery_curr_pin);
-            current_total1   += current_amps1 * 1000 * dt_millis * (1.0f/1000) * (1.0f/3600); //amps * amps to milliamps * milliseconds * milliseconds to seconds * seconds to hours
-        }
-        // update compass with current value
-        compass.set_current(current_amps1);
-        last_time_ms = tnow;
+    // update compass with current value
+    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+        compass.set_current(battery.current_amps());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
-    if (!ap.low_battery && ( battery_voltage1 < g.low_voltage || (g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT && current_total1 > g.pack_capacity))) {
-        low_battery_counter++;
-        if( low_battery_counter >= BATTERY_FS_COUNTER ) {
-            low_battery_counter = BATTERY_FS_COUNTER;   // ensure counter does not overflow
-            low_battery_event();
-        }
-    }else{
-        // reset low_battery_counter in case it was a temporary voltage dip
-        low_battery_counter = 0;
+    // we only check when we're not powered by USB to avoid false alarms during bench tests
+    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
+        failsafe_battery_event();
     }
 }
 

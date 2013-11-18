@@ -1,13 +1,21 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
  *       APM_BMP085.cpp - Arduino Library for BMP085 absolute pressure sensor
  *       Code by Jordi Mu�oz and Jose Julio. DIYDrones.com
- *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
- *
  *       Sensor is conected to I2C port
  *       Sensor End of Conversion (EOC) pin is PC7 (30)
  *
@@ -41,22 +49,25 @@
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || defined(APM2_BETA_HARDWARE)
 #include "AP_Baro_BMP085.h"
 
 extern const AP_HAL::HAL& hal;
 
 #define BMP085_ADDRESS 0x77  //(0xEE >> 1)
-#define BMP085_EOC 30        // End of conversion pin PC7
+#define BMP085_EOC 30        // End of conversion pin PC7 on APM1
 
 // the apm2 hardware needs to check the state of the
 // chip using a direct IO port
 // On APM2 prerelease hw, the data ready port is hooked up to PE7, which
 // is not available to the arduino digitalRead function.
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define BMP_DATA_READY() (PINE&0x80)
-#else
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
+#else
+// No EOC connection from Baro
+// Use times instead.
+// Temp conversion time is 4.5ms
+// Pressure conversion time is 25.5ms (for OVERSAMPLING=3)
+#define BMP_DATA_READY() (BMP085_State == 0 ? hal.scheduler->millis() > (_last_temp_read_command_time + 5) : hal.scheduler->millis() > (_last_press_read_command_time + 26))
 #endif
 
 // oversampling 3 gives 26ms conversion time. We then average
@@ -67,11 +78,19 @@ bool AP_Baro_BMP085::init()
 {
     uint8_t buff[22];
 
+    // get pointer to i2c bus semaphore
+    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+
+    // take i2c bus sempahore
+    if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER))
+        return false;
+
     hal.gpio->pinMode(BMP085_EOC, GPIO_INPUT);// End Of Conversion (PC7) input
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
         healthy = false;
+        i2c_sem->give();
         return false;
     }
 
@@ -87,6 +106,9 @@ bool AP_Baro_BMP085::init()
     mc = ((int16_t)buff[18] << 8) | buff[19];
     md = ((int16_t)buff[20] << 8) | buff[21];
 
+    _last_press_read_command_time = 0;
+    _last_temp_read_command_time = 0;
+
     //Send a command to read Temp
     Command_ReadTemp();
     
@@ -96,6 +118,7 @@ bool AP_Baro_BMP085::init()
     RawTemp = 0;
 
     healthy = true;
+    i2c_sem->give();
     return true;
 }
 
@@ -103,9 +126,17 @@ bool AP_Baro_BMP085::init()
 // acumulate a new sensor reading
 void AP_Baro_BMP085::accumulate(void)
 {
+    // get pointer to i2c bus semaphore
+    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+
     if (!BMP_DATA_READY()) {
         return;
     }
+
+    // take i2c bus sempahore
+    if (!i2c_sem->take(1))
+        return;
+
     if (BMP085_State == 0) {
         ReadTemp();
     } else {
@@ -119,6 +150,8 @@ void AP_Baro_BMP085::accumulate(void)
     } else {
         Command_ReadPress();
     }
+
+    i2c_sem->give();
 }
 
 
@@ -133,7 +166,7 @@ uint8_t AP_Baro_BMP085::read()
     }
     _last_update = hal.scheduler->millis();
 
-    Temp = _temp_sum / _count;
+    Temp = 0.1f * _temp_sum / _count;
     Press = _press_sum / _count;
 
     _pressure_samples = _count;
@@ -152,21 +185,15 @@ float AP_Baro_BMP085::get_temperature() {
     return Temp;
 }
 
-int32_t AP_Baro_BMP085::get_raw_pressure() {
-    return RawPress;
-}
-
-int32_t AP_Baro_BMP085::get_raw_temp() {
-    return RawTemp;
-}
-
 // Private functions: /////////////////////////////////////////////////////////
 
 // Send command to Read Pressure
 void AP_Baro_BMP085::Command_ReadPress()
 {
+    // Mode 0x34+(OVERSAMPLING << 6) is osrs=3 when OVERSAMPLING=3 => 25.5ms conversion time
     uint8_t res = hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4,
             0x34+(OVERSAMPLING << 6));
+    _last_press_read_command_time = hal.scheduler->millis();
     if (res != 0) {
         healthy = false;
     }
@@ -199,6 +226,7 @@ void AP_Baro_BMP085::Command_ReadTemp()
     if (hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4, 0x2E) != 0) {
         healthy = false;
     }
+    _last_temp_read_command_time = hal.scheduler->millis();
 }
 
 // Read Raw Temperature values
@@ -268,4 +296,4 @@ void AP_Baro_BMP085::Calculate()
         _count /= 2;
     }
 }
-#endif // CONFIG_HAL_BOARD
+

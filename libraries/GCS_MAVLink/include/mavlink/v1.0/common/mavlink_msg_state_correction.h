@@ -99,7 +99,7 @@ static inline uint16_t mavlink_msg_state_correction_pack(uint8_t system_id, uint
  * @brief Pack a state_correction message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param xErr x position error
  * @param yErr y position error
@@ -153,7 +153,7 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 }
 
 /**
- * @brief Encode a state_correction struct into a message
+ * @brief Encode a state_correction struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -163,6 +163,20 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 static inline uint16_t mavlink_msg_state_correction_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_state_correction_t* state_correction)
 {
 	return mavlink_msg_state_correction_pack(system_id, component_id, msg, state_correction->xErr, state_correction->yErr, state_correction->zErr, state_correction->rollErr, state_correction->pitchErr, state_correction->yawErr, state_correction->vxErr, state_correction->vyErr, state_correction->vzErr);
+}
+
+/**
+ * @brief Encode a state_correction struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param state_correction C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_state_correction_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_state_correction_t* state_correction)
+{
+	return mavlink_msg_state_correction_pack_chan(system_id, component_id, chan, msg, state_correction->xErr, state_correction->yErr, state_correction->zErr, state_correction->rollErr, state_correction->pitchErr, state_correction->yawErr, state_correction->vxErr, state_correction->vyErr, state_correction->vzErr);
 }
 
 /**

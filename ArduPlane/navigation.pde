@@ -60,7 +60,7 @@ static void navigate()
 
     // waypoint distance from plane
     // ----------------------------
-    wp_distance = get_distance(&current_loc, &next_WP);
+    wp_distance = get_distance(current_loc, next_WP);
 
     if (wp_distance < 0) {
         gcs_send_text_P(SEVERITY_HIGH,PSTR("WP error - distance < 0"));
@@ -86,10 +86,10 @@ static void calc_airspeed_errors()
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B || 
         control_mode == CRUISE) {
-        target_airspeed_cm = ((int32_t)(aparm.flybywire_airspeed_max -
-                                        aparm.flybywire_airspeed_min) *
+        target_airspeed_cm = ((int32_t)(aparm.airspeed_max -
+                                        aparm.airspeed_min) *
                               channel_throttle->control_in) +
-                             ((int32_t)aparm.flybywire_airspeed_min * 100);
+                             ((int32_t)aparm.airspeed_min * 100);
     }
 
     // Set target to current airspeed + ground speed undershoot,
@@ -107,11 +107,10 @@ static void calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > (aparm.flybywire_airspeed_max * 100))
-        target_airspeed_cm = (aparm.flybywire_airspeed_max * 100);
+    if (target_airspeed_cm > (aparm.airspeed_max * 100))
+        target_airspeed_cm = (aparm.airspeed_max * 100);
 
     airspeed_error_cm = target_airspeed_cm - aspeed_cm;
-    airspeed_energy_error = ((target_airspeed_cm * target_airspeed_cm) - (aspeed_cm*aspeed_cm))*0.00005;
 }
 
 static void calc_gndspeed_undershoot()
@@ -134,7 +133,11 @@ static void calc_altitude_error()
         control_mode == CRUISE) {
         return;
     }
-    if (offset_altitude_cm != 0) {
+    if (nav_controller->reached_loiter_target()) {
+        // once we reach a loiter target then lock to the final
+        // altitude target
+        target_altitude_cm = next_WP.alt;
+    } else if (offset_altitude_cm != 0) {
         // control climb/descent rate
         target_altitude_cm = next_WP.alt - (offset_altitude_cm*((float)(wp_distance-30) / (float)(wp_totalDistance-30)));
 
@@ -183,9 +186,9 @@ static void update_cruise()
     if (cruise_state.locked_heading) {
         next_WP = prev_WP;
         // always look 1km ahead
-        location_update(&next_WP, 
+        location_update(next_WP, 
                         cruise_state.locked_heading_cd*0.01f, 
-                        get_distance(&prev_WP, &current_loc) + 1000);
+                        get_distance(prev_WP, current_loc) + 1000);
         nav_controller->update_waypoint(prev_WP, next_WP);
     }
 }
@@ -206,7 +209,7 @@ static void update_fbwb_speed_height(void)
         elevator_input = -elevator_input;
     }
     
-    target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_ms_fast_loop * 0.1f;
+    target_altitude_cm += g.flybywire_climb_rate * elevator_input * delta_us_fast_loop * 0.0001f;
     
     if (elevator_input == 0.0f && last_elevator_input != 0.0f) {
         // the user has just released the elevator, lock in
@@ -230,7 +233,7 @@ static void setup_glide_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
-    wp_totalDistance        = get_distance(&current_loc, &next_WP);
+    wp_totalDistance        = get_distance(current_loc, next_WP);
     wp_distance             = wp_totalDistance;
 
     /*

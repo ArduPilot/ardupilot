@@ -16,13 +16,13 @@ public:
     virtual uint32_t micros() = 0;
     virtual void     delay_microseconds(uint16_t us) = 0;
     virtual void     register_delay_callback(AP_HAL::Proc,
-                        uint16_t min_time_ms) = 0;
+                                             uint16_t min_time_ms) = 0;
 
     // register a high priority timer task
-    virtual void     register_timer_process(AP_HAL::TimedProc) = 0;
+    virtual void     register_timer_process(AP_HAL::MemberProc) = 0;
 
     // register a low priority IO task
-    virtual void     register_io_process(AP_HAL::TimedProc) = 0;
+    virtual void     register_io_process(AP_HAL::MemberProc) = 0;
 
     // suspend and resume both timer and IO processes
     virtual void     suspend_timer_procs() = 0;
@@ -30,14 +30,19 @@ public:
 
     virtual bool     in_timerprocess() = 0;
     
-    virtual void     register_timer_failsafe(AP_HAL::TimedProc,
-                        uint32_t period_us) = 0;
+    virtual void     register_timer_failsafe(AP_HAL::Proc,
+                                             uint32_t period_us) = 0;
 
     virtual bool     system_initializing() = 0;
     virtual void     system_initialized() = 0;
 
     virtual void     panic(const prog_char_t *errormsg) = 0;
-    virtual void     reboot() = 0;
+    virtual void     reboot(bool hold_in_bootloader) = 0;
+
+    /**
+       optional function to set timer speed in Hz
+     */
+    virtual void     set_timer_speed(uint16_t speed_hz) {}
 };
 
 #endif // __AP_HAL_SCHEDULER_H__

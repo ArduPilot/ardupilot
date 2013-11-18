@@ -1,11 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       APM_Baro.cpp - barometer driver
  *
- *   This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public License
- *   as published by the Free Software Foundation; either version 2.1
- *   of the License, or (at your option) any later version.
  */
 
 #include <AP_Math.h>
@@ -104,7 +115,18 @@ void AP_Baro::calibrate()
     }
 
     _ground_pressure.set_and_save(ground_pressure);
-    _ground_temperature.set_and_save(ground_temperature / 10.0f);
+    _ground_temperature.set_and_save(ground_temperature);
+}
+
+/**
+   update the barometer calibration
+   this updates the baro ground calibration to the current values. It
+   can be used before arming to keep the baro well calibrated
+*/
+void AP_Baro::update_calibration()
+{
+    _ground_pressure.set(get_pressure());
+    _ground_temperature.set(get_temperature());
 }
 
 // return current altitude estimate relative to time that calibrate()
@@ -148,7 +170,7 @@ float AP_Baro::get_altitude(void)
 // assumes standard atmosphere lapse rate
 float AP_Baro::get_EAS2TAS(void)
 {
-    if ((abs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
+    if ((fabs(_altitude - _last_altitude_EAS2TAS) < 100.0f) && (_EAS2TAS != 0.0f)) {
         // not enough change to require re-calculating
         return _EAS2TAS;
     }

@@ -5,11 +5,10 @@
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
+#include <AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
-
-#define FLASH_LEDS(on) do { if (flash_leds_cb != NULL) flash_leds_cb(on); } while (0)
 
 #define SAMPLE_UNIT 1
 
@@ -17,8 +16,9 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Param: PRODUCT_ID
     // @DisplayName: IMU Product ID
-    // @Description: Which type of IMU is installed (read-only)
+    // @Description: Which type of IMU is installed (read-only). 
     // @User: Standard
+    // @Values: 0:Unknown,1:APM1-1280,2:APM1-2560,88:APM2,3:SITL,4:PX4v1,5:PX4v2,Flymaple:256,Linux:257
     AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _product_id,   0),
 
     // @Param: ACCSCAL_X
@@ -101,8 +101,7 @@ AP_InertialSensor::AP_InertialSensor() :
 
 void
 AP_InertialSensor::init( Start_style style,
-                         Sample_rate sample_rate,
-                         void (*flash_leds_cb)(bool on))
+                         Sample_rate sample_rate)
 {
     _product_id = _init_sensor(sample_rate);
 
@@ -115,7 +114,7 @@ AP_InertialSensor::init( Start_style style,
 
     if (WARM_START != style) {
         // do cold-start calibration for gyro only
-        _init_gyro(flash_leds_cb);
+        _init_gyro();
     }
 }
 
@@ -129,16 +128,16 @@ void AP_InertialSensor::_save_parameters()
 }
 
 void
-AP_InertialSensor::init_gyro(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::init_gyro()
 {
-    _init_gyro(flash_leds_cb);
+    _init_gyro();
 
     // save calibration
     _save_parameters();
 }
 
 void
-AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::_init_gyro()
 {
     Vector3f last_average, best_avg;
     Vector3f ins_gyro;
@@ -148,20 +147,17 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
     hal.scheduler->delay(100);
     hal.console->printf_P(PSTR("Init Gyro"));
 
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
+
     // remove existing gyro offsets
     _gyro_offset = Vector3f(0,0,0);
 
     for(int8_t c = 0; c < 25; c++) {
-        // Mostly we are just flashing the LED's here
-        // to tell the user to keep the IMU still
-        FLASH_LEDS(true);
         hal.scheduler->delay(20);
 
         update();
         ins_gyro = get_gyro();
-
-        FLASH_LEDS(false);
-        hal.scheduler->delay(20);
     }
 
     // the strategy is to average 200 points over 1 second, then do it
@@ -184,11 +180,6 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
             update();
             ins_gyro = get_gyro();
             gyro_sum += ins_gyro;
-            if (i % 40 == 20) {
-                FLASH_LEDS(true);
-            } else if (i % 40 == 0) {
-                FLASH_LEDS(false);
-            }
             hal.scheduler->delay(5);
         }
         gyro_avg = gyro_sum / i;
@@ -203,7 +194,8 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
             // we want the average to be within 0.1 bit, which is 0.04 degrees/s
             last_average = (gyro_avg * 0.5) + (last_average * 0.5);
             _gyro_offset = last_average;
-
+            // stop flashing leds
+            AP_Notify::flags.initialising = false;
             // all done
             return;
         } else if (diff_norm < best_diff) {
@@ -212,6 +204,9 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
         }
         last_average = gyro_avg;
     }
+
+    // stop flashing leds
+    AP_Notify::flags.initialising = false;
 
     // we've kept the user waiting long enough - use the best pair we
     // found so far
@@ -222,16 +217,16 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
 
 
 void
-AP_InertialSensor::init_accel(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::init_accel()
 {
-    _init_accel(flash_leds_cb);
+    _init_accel();
 
     // save calibration
     _save_parameters();
 }
 
 void
-AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::_init_accel()
 {
     int8_t flashcount = 0;
     Vector3f ins_accel;
@@ -244,6 +239,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
     hal.scheduler->delay(100);
 
     hal.console->printf_P(PSTR("Init Accel"));
+
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
 
     // clear accelerometer offsets and scaling
     _accel_offset = Vector3f(0,0,0);
@@ -276,14 +274,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
             accel_offset = accel_offset * 0.9 + ins_accel * 0.1;
 
             // display some output to the user
-            if(flashcount == 5) {
-                hal.console->printf_P(PSTR("*"));
-                FLASH_LEDS(true);
-            }
-
             if(flashcount >= 10) {
+                hal.console->printf_P(PSTR("*"));
                 flashcount = 0;
-                FLASH_LEDS(false);
             }
             flashcount++;
         }
@@ -301,6 +294,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
     // set the global accel offsets
     _accel_offset = accel_offset;
 
+    // stop flashing the leds
+    AP_Notify::flags.initialising = false;
+
     hal.console->printf_P(PSTR(" "));
 
 }
@@ -312,10 +308,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 // http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
 // original sketch available at
 // http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
-bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
-                            AP_InertialSensor_UserInteract* interact,
-                            float &trim_roll,
-                            float &trim_pitch)
+bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact,
+                                        float &trim_roll,
+                                        float &trim_pitch)
 {
     Vector3f samples[6];
     Vector3f new_offsets;
@@ -366,16 +361,22 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
         // clear out any existing samples from ins
         update();
 
-        // wait until we have 32 samples
-        while( num_samples_available() < 32 * SAMPLE_UNIT ) {
+        // average 32 samples
+        samples[i] = Vector3f();
+        uint8_t num_samples = 0;
+        while (num_samples < 32) {
+            if (!wait_for_sample(1000)) {
+                interact->printf_P(PSTR("Failed to get INS sample\n"));
+                return false;
+            }
+            // read samples from ins
+            update();
+            // capture sample
+            samples[i] += get_accel();
             hal.scheduler->delay(10);
+            num_samples++;
         }
-
-        // read samples from ins
-        update();
-
-        // capture sample
-        samples[i] = get_accel();
+        samples[i] /= num_samples;
     }
 
     // run the calibration routine

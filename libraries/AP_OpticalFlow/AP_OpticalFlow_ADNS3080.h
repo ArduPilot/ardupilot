@@ -94,7 +94,7 @@ public:
 
     // read latest values from sensor and fill in x,y and totals,
     // returns true on successful read
-    void    update(uint32_t now);
+    void    update(void);
 
     // ADNS3080 specific features
 

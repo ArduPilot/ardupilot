@@ -13,15 +13,13 @@ private:
     float Press;
     int32_t _pressure_sum;
     int32_t _temperature_sum;
-    uint8_t _count;
+    volatile uint8_t _count;
 
 public:
     bool init();
     uint8_t read();
     float get_pressure();
     float get_temperature();
-    int32_t get_raw_pressure();
-    int32_t get_raw_temp();
     void setHIL(float altitude_msl);
 };
 

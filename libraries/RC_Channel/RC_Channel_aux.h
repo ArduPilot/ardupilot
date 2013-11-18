@@ -33,21 +33,23 @@ public:
         k_aileron               = 4,            ///< aileron
         k_flaperon              = 5,            ///< flaperon (flaps and aileron combined, needs two independent servos one for each wing)
         k_mount_pan             = 6,            ///< mount yaw (pan)
-        k_mount_tilt    = 7,            ///< mount pitch (tilt)
-        k_mount_roll    = 8,            ///< mount roll
-        k_mount_open    = 9,            ///< mount open (deploy) / close (retract)
-        k_cam_trigger   = 10,           ///< camera trigger
+        k_mount_tilt            = 7,            ///< mount pitch (tilt)
+        k_mount_roll            = 8,            ///< mount roll
+        k_mount_open            = 9,            ///< mount open (deploy) / close (retract)
+        k_cam_trigger           = 10,           ///< camera trigger
         k_egg_drop              = 11,           ///< egg drop
-        k_mount2_pan    = 12,           ///< mount2 yaw (pan)
-        k_mount2_tilt   = 13,           ///< mount2 pitch (tilt)
-        k_mount2_roll   = 14,           ///< mount2 roll
-        k_mount2_open   = 15,           ///< mount2 open (deploy) / close (retract)
-		k_dspoiler1     = 16,           ///< differential spoiler 1 (left wing)
-		k_dspoiler2     = 17,           ///< differential spoiler 2 (right wing)
+        k_mount2_pan            = 12,           ///< mount2 yaw (pan)
+        k_mount2_tilt           = 13,           ///< mount2 pitch (tilt)
+        k_mount2_roll           = 14,           ///< mount2 roll
+        k_mount2_open           = 15,           ///< mount2 open (deploy) / close (retract)
+        k_dspoiler1             = 16,           ///< differential spoiler 1 (left wing)
+        k_dspoiler2             = 17,           ///< differential spoiler 2 (right wing)
         k_aileron_with_input    = 18,            ///< aileron, with rc input
         k_elevator              = 19,            ///< elevator
         k_elevator_with_input   = 20,            ///< elevator, with rc input
         k_rudder                = 21,            ///< secondary rudder channel
+        k_sprayer_pump          = 22,            ///< crop sprayer pump channel
+        k_sprayer_spinner       = 23,            ///< crop sprayer spinner channel
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 

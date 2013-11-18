@@ -1,12 +1,23 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_Compass_HIL.cpp - Arduino Library for HIL model of HMC5843 I2C Magnetometer
  *       Code by James Goppert. DIYDrones.com
  *
- *       This library is free software; you can redistribute it and / or
- *               modify it under the terms of the GNU Lesser General Public
- *               License as published by the Free Software Foundation; either
- *               version 2.1 of the License, or (at your option) any later version.
  */
 
 
@@ -91,8 +102,10 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
     // add user selectable orientation
     _hil_mag.rotate((enum Rotation)_orientation.get());
 
-    // and add in AHRS_ORIENTATION setting
-    _hil_mag.rotate(_board_orientation);
+    if (!_external) {
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        _hil_mag.rotate(_board_orientation);
+    }
 
     healthy = true;
 }

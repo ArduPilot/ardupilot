@@ -19,7 +19,11 @@ class AP_Navigation {
 public:
 	// return the desired roll angle in centi-degrees to move towards
 	// the target waypoint
-	virtual int32_t nav_roll_cd(void) = 0;
+	virtual int32_t nav_roll_cd(void) const = 0;
+
+	// return the desired lateral acceleration in m/s/s to move towards
+	// the target waypoint
+	virtual float lateral_acceleration(void) const = 0;
 
 	// note: all centi-degree values returned in AP_Navigation should
 	// be wrapped at -18000 to 18000 in centi-degrees.
@@ -28,27 +32,27 @@ public:
 	// using in centi-degrees. This is used to display an arrow on
 	// ground stations showing the effect of the cross-tracking in the
 	// controller
-	virtual int32_t nav_bearing_cd(void) = 0;
+	virtual int32_t nav_bearing_cd(void) const = 0;
 
 	// return the difference between the vehicles current course and
 	// the nav_bearing_cd() in centi-degrees. A positive value means
 	// the vehicle is tracking too far to the left of the correct
 	// bearing.
-	virtual int32_t bearing_error_cd(void) = 0;
+	virtual int32_t bearing_error_cd(void) const = 0;
 
 	// return the target bearing in centi-degrees. This is the bearing
 	// from the vehicles current position to the target waypoint. This
 	// should be calculated in the update_*() functions below.
-	virtual int32_t target_bearing_cd(void) = 0;
+	virtual int32_t target_bearing_cd(void) const = 0;
 
 	// return the crosstrack error in meters. This is the distance in
 	// the X-Y plane that we are off the desired track
-	virtual float crosstrack_error(void) = 0;
+	virtual float crosstrack_error(void) const = 0;
 	
 	// return the distance in meters at which a turn should commence
 	// to allow the vehicle to neatly move to the next track in the
 	// mission when approaching a waypoint
-	virtual float turn_distance(float wp_radius) = 0;
+	virtual float turn_distance(float wp_radius) const = 0;
 
 	// update the internal state of the navigation controller, given
 	// the previous and next waypoints. This is the step function for

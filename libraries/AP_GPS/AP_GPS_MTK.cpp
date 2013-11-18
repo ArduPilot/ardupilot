@@ -1,12 +1,22 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 //  DIYDrones Custom Mediatek GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
-//
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 //
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
@@ -40,9 +50,6 @@ AP_GPS_MTK::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     // Set Nav Threshold to 0 m/s
     _port->print(MTK_NAVTHRES_OFF);
-
-    // set initial epoch code
-    _epoch = TIME_OF_DAY;
 }
 
 // Process bytes available from the stream
@@ -152,14 +159,11 @@ restart:
             ground_course_cd    = _swapl(&_buffer.msg.ground_course) / 10000;
             num_sats            = _buffer.msg.satellites;
 
-            // time from gps is UTC, but convert here to msToD
-            int32_t time_utc    = _swapl(&_buffer.msg.utc_time);
-            int32_t temp = (time_utc/10000000);
-            time_utc -= temp*10000000;
-            time = temp * 3600000;
-            temp = (time_utc/100000);
-            time_utc -= temp*100000;
-            time += temp * 60000 + time_utc;
+            if (fix >= GPS::FIX_2D) {
+                _make_gps_time(0, _swapl(&_buffer.msg.utc_time)*10);
+            }
+            // we don't change _last_gps_time as we don't know the
+            // full date
 
             parsed = true;
         }

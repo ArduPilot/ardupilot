@@ -5,9 +5,9 @@ import sys, os, pexpect, socket
 import math, time, select, struct, signal, errno
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pysim'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
 
-import util, fgFDM, atexit, fdpexpect
+import util, atexit, fdpexpect
+from pymavlink import fgFDM
 
 class control_state(object):
     def __init__(self):
@@ -33,6 +33,7 @@ def jsb_set(variable, value):
 
 def setup_template(home):
     '''setup aircraft/Rascal/reset.xml'''
+    global opts
     v = home.split(',')
     if len(v) != 4:
         print("home should be lat,lng,alt,hdg - '%s'" % home)
@@ -49,6 +50,20 @@ def setup_template(home):
                                     'HEADING'   : str(heading) }
     open(reset, mode='w').write(xml)
     print("Wrote %s" % reset)
+
+    baseport = int(opts.simout.split(':')[1])
+
+    template = os.path.join('jsbsim', 'fgout_template.xml')
+    out      = os.path.join('jsbsim', 'fgout.xml')
+    xml = open(template).read() % { 'FGOUTPORT'  : str(baseport+3) }
+    open(out, mode='w').write(xml)
+    print("Wrote %s" % out)
+
+    template = os.path.join('jsbsim', 'rascal_test_template.xml')
+    out      = os.path.join('jsbsim', 'rascal_test.xml')
+    xml = open(template).read() % { 'JSBCONSOLEPORT'  : str(baseport+4) }
+    open(out, mode='w').write(xml)
+    print("Wrote %s" % out)
     
 
 def process_sitl_input(buf):

@@ -19,31 +19,27 @@
 
 class AP_SpdHgtControl {
 public:
-	/*
-	  these are key speed/height control parameters which are passed 
-	  to the controller at initialisation
-	 */
-	struct AircraftParameters {
-		AP_Int8 throttle_min;
-		AP_Int8 throttle_max;	
-		AP_Int8 throttle_slewrate;
-		AP_Int8 throttle_cruise;
-		AP_Int16 flybywire_airspeed_min;
-		AP_Int16 flybywire_airspeed_max;
-		AP_Int16 pitch_limit_max_cd;
-		AP_Int16 pitch_limit_min_cd;
-	};
-
 	// Update the internal state of the height and height rate estimator
 	// Update of the inertial speed rate estimate internal state
 	// Should be called at 50Hz or faster
 	virtual void update_50hz(float height_above_field) = 0;
 
+	/**
+	   stages of flight so the altitude controller can choose to
+	   prioritise height or speed
+	 */
+	enum FlightStage {
+		FLIGHT_NORMAL        = 1,
+		FLIGHT_TAKEOFF       = 2,
+		FLIGHT_LAND_APPROACH = 3,
+		FLIGHT_LAND_FINAL    = 4
+	};
+
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster
 	virtual void update_pitch_throttle( int32_t hgt_dem_cm,
 										int32_t EAS_dem_cm,
-										bool climbOutDem,
+										enum FlightStage flight_stage,
 										int32_t ptchMinCO_cd,
 										int16_t throttle_nudge,
                                         float hgt_afe) = 0;
@@ -68,6 +64,7 @@ public:
 	enum ControllerType {
 		CONTROLLER_TECS     = 1
 	};
+	
 
 };
 

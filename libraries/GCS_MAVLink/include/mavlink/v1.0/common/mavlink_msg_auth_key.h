@@ -59,7 +59,7 @@ static inline uint16_t mavlink_msg_auth_key_pack(uint8_t system_id, uint8_t comp
  * @brief Pack a auth_key message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param key key
  * @return length of the message in bytes (excluding serial stream start sign)
@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_auth_key_pack_chan(uint8_t system_id, uint8_t
 }
 
 /**
- * @brief Encode a auth_key struct into a message
+ * @brief Encode a auth_key struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -99,6 +99,20 @@ static inline uint16_t mavlink_msg_auth_key_pack_chan(uint8_t system_id, uint8_t
 static inline uint16_t mavlink_msg_auth_key_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_auth_key_t* auth_key)
 {
 	return mavlink_msg_auth_key_pack(system_id, component_id, msg, auth_key->key);
+}
+
+/**
+ * @brief Encode a auth_key struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param auth_key C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_auth_key_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_auth_key_t* auth_key)
+{
+	return mavlink_msg_auth_key_pack_chan(system_id, component_id, chan, msg, auth_key->key);
 }
 
 /**

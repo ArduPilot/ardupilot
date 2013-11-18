@@ -21,120 +21,6 @@
 
 #define HALF_SQRT_2 0.70710678118654757
 
-#define MATRIX_ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0,0, 1)
-#define MATRIX_ROTATION_YAW_45             Matrix3f(HALF_SQRT_2, -HALF_SQRT_2, 0, HALF_SQRT_2, HALF_SQRT_2, 0, 0, 0, 1)
-#define MATRIX_ROTATION_YAW_90             Matrix3f(0, -1, 0, 1, 0, 0, 0, 0, 1)
-#define MATRIX_ROTATION_YAW_135            Matrix3f(-HALF_SQRT_2, -HALF_SQRT_2, 0, HALF_SQRT_2, -HALF_SQRT_2, 0, 0, 0, 1)
-#define MATRIX_ROTATION_YAW_180            Matrix3f(-1, 0, 0, 0, -1, 0, 0, 0, 1)
-#define MATRIX_ROTATION_YAW_225            Matrix3f(-HALF_SQRT_2, HALF_SQRT_2, 0, -HALF_SQRT_2, -HALF_SQRT_2, 0, 0, 0, 1)
-#define MATRIX_ROTATION_YAW_270            Matrix3f(0, 1, 0, -1, 0, 0, 0, 0, 1)
-#define MATRIX_ROTATION_YAW_315            Matrix3f(HALF_SQRT_2, HALF_SQRT_2, 0, -HALF_SQRT_2, HALF_SQRT_2, 0, 0, 0, 1)
-#define MATRIX_ROTATION_ROLL_180           Matrix3f(1, 0, 0, 0, -1, 0, 0, 0, -1)
-#define MATRIX_ROTATION_ROLL_180_YAW_45    Matrix3f(HALF_SQRT_2, HALF_SQRT_2, 0, HALF_SQRT_2, -HALF_SQRT_2, 0, 0, 0, -1)
-#define MATRIX_ROTATION_ROLL_180_YAW_90    Matrix3f(0, 1, 0, 1, 0, 0, 0, 0, -1)
-#define MATRIX_ROTATION_ROLL_180_YAW_135   Matrix3f(-HALF_SQRT_2, HALF_SQRT_2, 0, HALF_SQRT_2, HALF_SQRT_2, 0, 0, 0, -1)
-#define MATRIX_ROTATION_PITCH_180          Matrix3f(-1, 0, 0, 0, 1, 0, 0, 0, -1)
-#define MATRIX_ROTATION_ROLL_180_YAW_225   Matrix3f(-HALF_SQRT_2, -HALF_SQRT_2, 0, -HALF_SQRT_2, HALF_SQRT_2, 0, 0, 0, -1)
-#define MATRIX_ROTATION_ROLL_180_YAW_270   Matrix3f(0, -1, 0, -1, 0, 0, 0, 0, -1)
-#define MATRIX_ROTATION_ROLL_180_YAW_315   Matrix3f(HALF_SQRT_2, -HALF_SQRT_2, 0, -HALF_SQRT_2, -HALF_SQRT_2, 0, 0, 0, -1)
-#define MATRIX_ROTATION_ROLL_90            Matrix3f(1, 0,  0,  0, 0, -1,  0,  1, 0)
-#define MATRIX_ROTATION_ROLL_90_YAW_45     Matrix3f(HALF_SQRT_2, 0, HALF_SQRT_2, HALF_SQRT_2, 0, -HALF_SQRT_2, 0, 1, 0)
-#define MATRIX_ROTATION_ROLL_90_YAW_90     Matrix3f(0, 0, 1, 1, 0, 0, 0, 1, 0)
-#define MATRIX_ROTATION_ROLL_90_YAW_135    Matrix3f(-HALF_SQRT_2, 0, HALF_SQRT_2, HALF_SQRT_2, 0, HALF_SQRT_2, 0, 1, 0)
-#define MATRIX_ROTATION_ROLL_270           Matrix3f(1, 0,  0,  0, 0,  1,  0, -1, 0)
-#define MATRIX_ROTATION_ROLL_270_YAW_45    Matrix3f(HALF_SQRT_2, 0, -HALF_SQRT_2, HALF_SQRT_2, 0, HALF_SQRT_2, 0, -1, 0)
-#define MATRIX_ROTATION_ROLL_270_YAW_90    Matrix3f(0, 0, -1, 1, 0, 0, 0, -1, 0)
-#define MATRIX_ROTATION_ROLL_270_YAW_135   Matrix3f(-HALF_SQRT_2, 0, -HALF_SQRT_2, HALF_SQRT_2, 0, -HALF_SQRT_2, 0, -1, 0)
-#define MATRIX_ROTATION_PITCH_90           Matrix3f(0, 0,  1,  0, 1,  0, -1,  0, 0)
-#define MATRIX_ROTATION_PITCH_270          Matrix3f(0, 0, -1,  0, 1,  0,  1,  0, 0)
-
-// fill in a matrix with a standard rotation
-template <typename T>
-void Matrix3<T>::rotation(enum Rotation r)
-{
-    switch (r) {
-    case ROTATION_NONE:
-    case ROTATION_MAX:
-        *this = MATRIX_ROTATION_NONE;
-        break;
-    case ROTATION_YAW_45:
-        *this = MATRIX_ROTATION_YAW_45;
-        break;
-    case ROTATION_YAW_90:
-        *this = MATRIX_ROTATION_YAW_90;
-        break;
-    case ROTATION_YAW_135:
-        *this = MATRIX_ROTATION_YAW_135;
-        break;
-    case ROTATION_YAW_180:
-        *this = MATRIX_ROTATION_YAW_180;
-        break;
-    case ROTATION_YAW_225:
-        *this = MATRIX_ROTATION_YAW_225;
-        break;
-    case ROTATION_YAW_270:
-        *this = MATRIX_ROTATION_YAW_270;
-        break;
-    case ROTATION_YAW_315:
-        *this = MATRIX_ROTATION_YAW_315;
-        break;
-    case ROTATION_ROLL_180:
-        *this = MATRIX_ROTATION_ROLL_180;
-        break;
-    case ROTATION_ROLL_180_YAW_45:
-        *this = MATRIX_ROTATION_ROLL_180_YAW_45;
-        break;
-    case ROTATION_ROLL_180_YAW_90:
-        *this = MATRIX_ROTATION_ROLL_180_YAW_90;
-        break;
-    case ROTATION_ROLL_180_YAW_135:
-        *this = MATRIX_ROTATION_ROLL_180_YAW_135;
-        break;
-    case ROTATION_PITCH_180:
-        *this = MATRIX_ROTATION_PITCH_180;
-        break;
-    case ROTATION_ROLL_180_YAW_225:
-        *this = MATRIX_ROTATION_ROLL_180_YAW_225;
-        break;
-    case ROTATION_ROLL_180_YAW_270:
-        *this = MATRIX_ROTATION_ROLL_180_YAW_270;
-        break;
-    case ROTATION_ROLL_180_YAW_315:
-        *this = MATRIX_ROTATION_ROLL_180_YAW_315;
-        break;
-    case ROTATION_ROLL_90:
-        *this = MATRIX_ROTATION_ROLL_90;
-        break;
-    case ROTATION_ROLL_90_YAW_45:
-        *this = MATRIX_ROTATION_ROLL_90_YAW_45;
-        break;
-    case ROTATION_ROLL_90_YAW_90:
-        *this = MATRIX_ROTATION_ROLL_90_YAW_90;
-        break;
-    case ROTATION_ROLL_90_YAW_135:
-        *this = MATRIX_ROTATION_ROLL_90_YAW_135;
-        break;
-    case ROTATION_ROLL_270:
-        *this = MATRIX_ROTATION_ROLL_270;
-        break;
-    case ROTATION_ROLL_270_YAW_45:
-        *this = MATRIX_ROTATION_ROLL_270_YAW_45;
-        break;
-    case ROTATION_ROLL_270_YAW_90:
-        *this = MATRIX_ROTATION_ROLL_270_YAW_90;
-        break;
-    case ROTATION_ROLL_270_YAW_135:
-        *this = MATRIX_ROTATION_ROLL_270_YAW_135;
-        break;
-    case ROTATION_PITCH_90:
-        *this = MATRIX_ROTATION_PITCH_90;
-        break;
-    case ROTATION_PITCH_270:
-        *this = MATRIX_ROTATION_PITCH_270;
-        break;
-    }
-}
-
 // create a rotation matrix given some euler angles
 // this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
 template <typename T>
@@ -193,6 +79,24 @@ void Matrix3<T>::rotate(const Vector3<T> &g)
     (*this) += temp_matrix;
 }
 
+// apply an additional rotation from a body frame gyro vector
+// to a rotation matrix.
+template <typename T>
+void Matrix3<T>::rotateXY(const Vector3<T> &g)
+{
+    Matrix3f temp_matrix;
+    temp_matrix.a.x = -a.z * g.y;
+    temp_matrix.a.y = a.z * g.x;
+    temp_matrix.a.z = a.x * g.y - a.y * g.x;
+    temp_matrix.b.x = -b.z * g.y;
+    temp_matrix.b.y = b.z * g.x;
+    temp_matrix.b.z = b.x * g.y - b.y * g.x;
+    temp_matrix.c.x = -c.z * g.y;
+    temp_matrix.c.y = c.z * g.x;
+    temp_matrix.c.z = c.x * g.y - c.y * g.x;
+
+    (*this) += temp_matrix;
+}
 
 // multiplication by a vector
 template <typename T>
@@ -254,9 +158,9 @@ void Matrix3<T>::zero(void)
 
 
 // only define for float
-template void Matrix3<float>::rotation(enum Rotation);
 template void Matrix3<float>::zero(void);
 template void Matrix3<float>::rotate(const Vector3<float> &g);
+template void Matrix3<float>::rotateXY(const Vector3<float> &g);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw);
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;

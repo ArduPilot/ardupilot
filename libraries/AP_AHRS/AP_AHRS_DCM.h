@@ -1,20 +1,31 @@
 #ifndef __AP_AHRS_DCM_H__
 #define __AP_AHRS_DCM_H__
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *  DCM based AHRS (Attitude Heading Reference System) interface for
  *  ArduPilot
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
  */
 
 class AP_AHRS_DCM : public AP_AHRS
 {
 public:
     // Constructors
-    AP_AHRS_DCM(AP_InertialSensor *ins, GPS *&gps) :
+    AP_AHRS_DCM(AP_InertialSensor &ins, GPS *&gps) :
         AP_AHRS(ins, gps),
         _last_declination(0),
         _mag_earth(1,0)
@@ -45,7 +56,7 @@ public:
     void            reset(bool recover_eulers = false);
 
     // dead-reckoning support
-    bool get_position(struct Location *loc);
+    bool get_position(struct Location &loc);
 
     // status reporting
     float           get_error_rp(void);
@@ -60,7 +71,7 @@ public:
     // if we have an estimate
     bool airspeed_estimate(float *airspeed_ret);
 
-    bool            use_compass(void) const;
+    bool            use_compass(void);
 
 private:
     float _ki;
@@ -81,15 +92,18 @@ private:
     // primary representation of attitude
     Matrix3f _dcm_matrix;
 
-    Vector3f _gyro_vector;                      // Store the gyros turn rate in a vector
-    Vector3f _accel_vector;                     // current accel vector
-
     Vector3f _omega_P;                          // accel Omega proportional correction
     Vector3f _omega_yaw_P;                      // proportional yaw correction
     Vector3f _omega_I;                          // Omega Integrator correction
     Vector3f _omega_I_sum;
     float _omega_I_sum_time;
     Vector3f _omega;                            // Corrected Gyro_Vector data
+
+    // variables to cope with delaying the GA sum to match GPS lag
+    Vector3f ra_delayed(const Vector3f &ra);
+    uint8_t   _ra_delay_length;
+    uint8_t   _ra_delay_next;
+    Vector3f *_ra_delay_buffer;
 
     // P term gain based on spin rate
     float           _P_gain(float spin_rate);
@@ -136,6 +150,7 @@ private:
     Vector3f _last_vel;
     uint32_t _last_wind_time;
     float _last_airspeed;
+    uint32_t _last_consistent_heading;
 
     // estimated wind in m/s
     Vector3f _wind;

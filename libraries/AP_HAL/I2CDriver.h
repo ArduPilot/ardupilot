@@ -32,7 +32,10 @@ public:
                                   uint8_t len, uint8_t* data) = 0;
 
     virtual uint8_t lockup_count() = 0;
+    void ignore_errors(bool b) { _ignore_errors = b; }
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
+protected:
+    bool _ignore_errors;
 };
 
 #endif // __AP_HAL_I2C_DRIVER_H__

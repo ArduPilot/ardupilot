@@ -5,8 +5,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include "GPIO.h"
-#include "defines.h"
-#include "config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -17,9 +15,12 @@
 #include <drivers/drv_led.h>
 #include <drivers/drv_tone_alarm.h>
 #include <drivers/drv_gpio.h>
+#include <modules/px4iofirmware/protocol.h>
+#include <arch/board/board.h>
+#include <board_config.h>
 
-#define LOW     1
-#define HIGH    0
+#define LOW     0
+#define HIGH    1
 
 extern const AP_HAL::HAL& hal;
 
@@ -30,6 +31,7 @@ PX4GPIO::PX4GPIO()
 
 void PX4GPIO::init()
 {
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     _led_fd = open(LED_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
         hal.scheduler->panic("Unable to open " LED_DEVICE_PATH);
@@ -40,21 +42,27 @@ void PX4GPIO::init()
     if (ioctl(_led_fd, LED_OFF, LED_RED) != 0) {
          hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
     }
-
+#endif
     _tone_alarm_fd = open("/dev/tone_alarm", O_WRONLY);
     if (_tone_alarm_fd == -1) {
         hal.scheduler->panic("Unable to open /dev/tone_alarm");
     }
 
-    _gpio_fd = open(GPIO_DEVICE_PATH, O_RDWR);
-    if (_gpio_fd == -1) {
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+    _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
+    if (_gpio_fmu_fd == -1) {
         hal.scheduler->panic("Unable to open GPIO");
     }
-    if (ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
+    if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO_1\n");
     }
+#endif
 
-
+    // also try to setup for the relay pins on the IO board
+    _gpio_io_fd = open(PX4IO_DEVICE_PATH, O_RDWR);
+    if (_gpio_io_fd == -1) {
+        hal.console->printf("GPIO: Unable to open px4io\n");
+    }
 }
 
 void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
@@ -67,17 +75,54 @@ int8_t PX4GPIO::analogPinToDigitalPin(uint8_t pin)
 
 
 uint8_t PX4GPIO::read(uint8_t pin) {
-    return 0;
+    uint32_t relays = 0;
+    switch (pin) {
+
+#ifdef GPIO_EXT_1
+        case PX4_GPIO_EXT_FMU_RELAY1_PIN:
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & GPIO_EXT_1)?HIGH:LOW;
+#endif
+
+#ifdef GPIO_EXT_2
+        case PX4_GPIO_EXT_FMU_RELAY2_PIN:
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & GPIO_EXT_2)?HIGH:LOW;
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER1
+        case PX4_GPIO_EXT_IO_RELAY1_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_POWER1)?HIGH:LOW;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER2
+        case PX4_GPIO_EXT_IO_RELAY2_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_POWER2)?HIGH:LOW;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC1
+        case PX4_GPIO_EXT_IO_ACC1_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_ACC1)?HIGH:LOW;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC2
+        case PX4_GPIO_EXT_IO_ACC2_PIN:
+            ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & PX4IO_P_SETUP_RELAYS_ACC2)?HIGH:LOW;
+#endif
+    }
 }
 
 void PX4GPIO::write(uint8_t pin, uint8_t value)
 {
-
-    //char *user_tune = "MBL4O6C";
-
     switch (pin) {
 
-        case A_LED_PIN:    // Arming LED
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+        case HAL_GPIO_A_LED_PIN:    // Arming LED
             if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
             } else {
@@ -85,16 +130,17 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case B_LED_PIN:    // not used yet 
+        case HAL_GPIO_B_LED_PIN:    // not used yet 
             break;
 
-        case C_LED_PIN:    // GPS LED 
+        case HAL_GPIO_C_LED_PIN:    // GPS LED 
             if (value == LOW) { 
                 ioctl(_led_fd, LED_OFF, LED_BLUE);
             } else { 
                 ioctl(_led_fd, LED_ON, LED_BLUE);
             }
             break;
+#endif
 
         case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
             if (value == LOW) { // this is inverted 
@@ -105,14 +151,47 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case PX4_GPIO_EXT_RELAY_PIN: // Ext Relay 
-            if (value == LOW) {
-                ioctl(_gpio_fd, GPIO_CLEAR, GPIO_EXT_1);
-            } else {
-                ioctl(_gpio_fd, GPIO_SET, GPIO_EXT_1);
-            }
+#ifdef GPIO_EXT_1
+        case PX4_GPIO_EXT_FMU_RELAY1_PIN:
+            ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_EXT_1);
             break;
+#endif
+
+#ifdef GPIO_EXT_2
+        case PX4_GPIO_EXT_FMU_RELAY2_PIN:
+            ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, GPIO_EXT_2);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER1
+        case PX4_GPIO_EXT_IO_RELAY1_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER1);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_POWER2
+        case PX4_GPIO_EXT_IO_RELAY2_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER2);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC1
+        case PX4_GPIO_EXT_IO_ACC1_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC1);
+            break;
+#endif
+
+#ifdef PX4IO_P_SETUP_RELAYS_ACC2
+        case PX4_GPIO_EXT_IO_ACC2_PIN:
+            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC2);
+            break;
+#endif
     }
+}
+
+void PX4GPIO::toggle(uint8_t pin)
+{
+    write(pin, !read(pin));
 }
 
 /* Alternative interface: */
@@ -124,6 +203,14 @@ AP_HAL::DigitalSource* PX4GPIO::channel(uint16_t n) {
 bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
 {
     return true;
+}
+
+/*
+  return true when USB connected
+ */
+bool PX4GPIO::usb_connected(void)
+{
+    return stm32_gpioread(GPIO_OTGFS_VBUS);
 }
 
 
@@ -140,6 +227,10 @@ uint8_t PX4DigitalSource::read() {
 
 void PX4DigitalSource::write(uint8_t value) {
     _v = value;
+}
+
+void PX4DigitalSource::toggle() {
+    _v = !_v;
 }
 
 #endif // CONFIG_HAL_BOARD

@@ -1,12 +1,23 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_MotorsMatrix.cpp - ArduCopter motors library
  *       Code by RandyMackay. DIYDrones.com
  *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  */
 #include <AP_HAL.h>
 #include "AP_MotorsMatrix.h"
@@ -48,7 +59,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 void AP_MotorsMatrix::set_frame_orientation( uint8_t new_orientation )
 {
     // return if nothing has changed
-    if( new_orientation == _frame_orientation ) {
+    if( new_orientation == _flags.frame_orientation ) {
         return;
     }
 
@@ -80,6 +91,12 @@ void AP_MotorsMatrix::output_min()
 {
     int8_t i;
 
+    // set limits flags
+    limit.roll_pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = true;
+    limit.throttle_upper = false;
+
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
@@ -89,16 +106,15 @@ void AP_MotorsMatrix::output_min()
     }
 }
 
-#ifdef AP_MOTORS_MATRIX_SCALING_STABILITY_PATCH
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 void AP_MotorsMatrix::output_armed()
 {
     int8_t i;
-    int16_t out_min = _rc_throttle->radio_min + _min_throttle;
-    int16_t out_max = _rc_throttle->radio_max;
-    int16_t out_mid = (out_min+out_max)/2;
-    int16_t out_max_range; // the is the allowable throttle out setting that allowes maximum roll, pitch and yaw range
+    int16_t out_min_pwm = _rc_throttle->radio_min + _min_throttle;      // minimum pwm value we can send to the motors
+    int16_t out_max_pwm = _rc_throttle->radio_max;                      // maximum pwm value we can send to the motors
+    int16_t out_mid_pwm = (out_min_pwm+out_max_pwm)/2;                  // mid pwm value we can send to the motors
+    int16_t out_best_thr_pwm;  // the is the best throttle we can come up which provides good control without climbing
     float rpy_scale = 1.0; // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
     int16_t rpy_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
@@ -106,14 +122,24 @@ void AP_MotorsMatrix::output_armed()
     int16_t rpy_low = 0;    // lowest motor value
     int16_t rpy_high = 0;   // highest motor value
     int16_t yaw_allowed;    // amount of yaw we can fit in
-    int16_t thr_adj;        // how far we move the throttle point from out_max_range
+    int16_t thr_adj;        // the difference between the pilot's desired throttle and out_best_thr_pwm (the throttle that is actually provided)
 
-    // initialize reached_limit flag
-    _reached_limit = AP_MOTOR_NO_LIMITS_REACHED;
+    // initialize limits flag
+    limit.roll_pitch = false;
+    limit.yaw = false;
+    limit.throttle_lower = false;
+    limit.throttle_upper = false;
 
     // Throttle is 0 to 1000 only
     // To-Do: we should not really be limiting this here because we don't "own" this _rc_throttle object
-    _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
+    if (_rc_throttle->servo_out < 0) {
+        _rc_throttle->servo_out = 0;
+        limit.throttle_lower = true;
+    }
+    if (_rc_throttle->servo_out > _max_throttle) {
+        _rc_throttle->servo_out = _max_throttle;
+        limit.throttle_upper = true;
+    }
 
     // capture desired roll, pitch, yaw and throttle from receiver
     _rc_roll->calc_pwm();
@@ -123,23 +149,34 @@ void AP_MotorsMatrix::output_armed()
 
     // if we are not sending a throttle output, we cut the motors
     if (_rc_throttle->servo_out == 0) {
+        // range check spin_when_armed
+        if (_spin_when_armed_ramped < 0) {
+             _spin_when_armed_ramped = 0;
+        }
+        if (_spin_when_armed_ramped > _min_throttle) {
+            _spin_when_armed_ramped = _min_throttle;
+        }
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            // spin motors at minimum
             if (motor_enabled[i]) {
-                motor_out[i]    = _rc_throttle->radio_min;
+                motor_out[i] = _rc_throttle->radio_min + _spin_when_armed_ramped;
             }
         }
 
         // Every thing is limited
-        _reached_limit |= AP_MOTOR_ROLLPITCH_LIMIT | AP_MOTOR_YAW_LIMIT | AP_MOTOR_THROTTLE_LIMIT;
+        limit.roll_pitch = true;
+        limit.yaw = true;
+        limit.throttle_lower = true;
 
     } else {
 
         // check if throttle is below limit
-        if (_rc_throttle->radio_out < out_min) {
-            _reached_limit |= AP_MOTOR_THROTTLE_LIMIT;
+        if (_rc_throttle->radio_out <= out_min_pwm) {       // perhaps being at min throttle itself is not a problem, only being under is
+            limit.throttle_lower = true;
         }
 
         // calculate roll and pitch for each motor
+        // set rpy_low and rpy_high to the lowest and highest values of the motors
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
                 rpy_out[i] = _rc_roll->pwm_out * _roll_factor[i] +
@@ -156,16 +193,21 @@ void AP_MotorsMatrix::output_armed()
             }
         }
 
-        // calculate throttle that gives most possible room for yaw (range 1000 ~ 2000)
-        // this value is either:
-        //      mid throttle - average of highest and lowest motor
-        //      the higher of the pilot's throttle input or hover-throttle -- this ensure we never increase the throttle above hover throttle unless the pilot has commanded that
+        // calculate throttle that gives most possible room for yaw (range 1000 ~ 2000) which is the lower of:
+        //      1. mid throttle - average of highest and lowest motor (this would give the maximum possible room margin above the highest motor and below the lowest)
+        //      2. the higher of:
+        //            a) the pilot's throttle input
+        //            b) the mid point between the pilot's input throttle and hover-throttle
+        //      Situation #2 ensure we never increase the throttle above hover throttle unless the pilot has commanded this.
+        //      Situation #2b allows us to raise the throttle above what the pilot commanded but not so far that it would actually cause the copter to rise.
+        //      We will choose #1 (the best throttle for yaw control) if that means reducing throttle to the motors (i.e. we favour reducing throttle *because* it provides better yaw control)
+        //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favour reducing throttle instead of better yaw control because the pilot has commanded it
         int16_t motor_mid = (rpy_low+rpy_high)/2;
-        out_max_range = min(out_mid - motor_mid, max(_rc_throttle->radio_out, (_rc_throttle->radio_out+_hover_out)/2));
+        out_best_thr_pwm = min(out_mid_pwm - motor_mid, max(_rc_throttle->radio_out, (_rc_throttle->radio_out+_hover_out)/2));
 
         // calculate amount of yaw we can fit into the throttle range
         // this is always equal to or less than the requested yaw from the pilot or rate controller
-        yaw_allowed = min(out_max - out_max_range, out_max_range - out_min) - (rpy_high-rpy_low)/2;
+        yaw_allowed = min(out_max_pwm - out_best_thr_pwm, out_best_thr_pwm - out_min_pwm) - (rpy_high-rpy_low)/2;
         yaw_allowed = max(yaw_allowed, AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM);
 
         if (_rc_yaw->pwm_out >= 0) {
@@ -173,7 +215,7 @@ void AP_MotorsMatrix::output_armed()
             if (yaw_allowed > _rc_yaw->pwm_out) {
                 yaw_allowed = _rc_yaw->pwm_out; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
             }else{
-                _reached_limit |= AP_MOTOR_YAW_LIMIT;
+                limit.yaw = true;
             }
         }else{
             // if yawing left
@@ -181,11 +223,13 @@ void AP_MotorsMatrix::output_armed()
             if( yaw_allowed < _rc_yaw->pwm_out ) {
                 yaw_allowed = _rc_yaw->pwm_out; // to-do: this is bad form for yaw_allows to change meaning to become the amount that we are going to output
             }else{
-                _reached_limit |= AP_MOTOR_YAW_LIMIT;
+                limit.yaw = true;
             }
         }
 
         // add yaw to intermediate numbers for each motor
+        rpy_low = 0;
+        rpy_high = 0;
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
                 rpy_out[i] =    rpy_out[i] +
@@ -203,39 +247,53 @@ void AP_MotorsMatrix::output_armed()
         }
 
         // check everything fits
-        thr_adj = _rc_throttle->radio_out - out_max_range;
+        thr_adj = _rc_throttle->radio_out - out_best_thr_pwm;
 
+        // calc upper and lower limits of thr_adj
+        int16_t thr_adj_max = out_max_pwm-(out_best_thr_pwm+rpy_high);
+
+        // if we are increasing the throttle (situation #2 above)..
         if (thr_adj > 0) {
             // increase throttle as close as possible to requested throttle
-            // without going over out_max
-            if (thr_adj > out_max-(rpy_high+out_max_range)){
-                thr_adj = out_max-(rpy_high+out_max_range);
+            // without going over out_max_pwm
+            if (thr_adj > thr_adj_max){
+                thr_adj = thr_adj_max;
                 // we haven't even been able to apply full throttle command
-                _reached_limit |= AP_MOTOR_THROTTLE_LIMIT;
+                limit.throttle_upper = true;
             }
         }else if(thr_adj < 0){
             // decrease throttle as close as possible to requested throttle
-            // without going under out_min or over out_max
-            // earlier code ensures we can't break both boundaryies
-            thr_adj = max(min(thr_adj,out_max-(rpy_high+out_max_range)), min(out_min-(rpy_low+out_max_range),0));
+            // without going under out_min_pwm or over out_max_pwm
+            // earlier code ensures we can't break both boundaries
+            int16_t thr_adj_min = min(out_min_pwm-(out_best_thr_pwm+rpy_low),0);
+            if (thr_adj > thr_adj_max) {
+                thr_adj = thr_adj_max;
+                limit.throttle_upper = true;
+            }
+            if (thr_adj < thr_adj_min) {
+                thr_adj = thr_adj_min;
+                limit.throttle_lower = true;
+            }
         }
 
         // do we need to reduce roll, pitch, yaw command
         // earlier code does not allow both limit's to be passed simultainiously with abs(_yaw_factor)<1
-        if ((rpy_low+out_max_range)+thr_adj < out_min){
-            rpy_scale = (float)(out_min-thr_adj-out_max_range)/rpy_low;
+        if ((rpy_low+out_best_thr_pwm)+thr_adj < out_min_pwm){
+            rpy_scale = (float)(out_min_pwm-thr_adj-out_best_thr_pwm)/rpy_low;
             // we haven't even been able to apply full roll, pitch and minimal yaw without scaling
-            _reached_limit |= AP_MOTOR_ROLLPITCH_LIMIT | AP_MOTOR_YAW_LIMIT;
-        }else if((rpy_high+out_max_range)+thr_adj > out_max){
-            rpy_scale = (float)(out_max-thr_adj-out_max_range)/rpy_high;
+            limit.roll_pitch = true;
+            limit.yaw = true;
+        }else if((rpy_high+out_best_thr_pwm)+thr_adj > out_max_pwm){
+            rpy_scale = (float)(out_max_pwm-thr_adj-out_best_thr_pwm)/rpy_high;
             // we haven't even been able to apply full roll, pitch and minimal yaw without scaling
-            _reached_limit |= AP_MOTOR_ROLLPITCH_LIMIT | AP_MOTOR_YAW_LIMIT;
+            limit.roll_pitch = true;
+            limit.yaw = true;
         }
 
         // add scaled roll, pitch, constrained yaw and throttle for each motor
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = out_max_range+thr_adj +
+                motor_out[i] = out_best_thr_pwm+thr_adj +
                                rpy_scale*rpy_out[i];
             }
         }
@@ -251,7 +309,7 @@ void AP_MotorsMatrix::output_armed()
         // clip motor output if required (shouldn't be)
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = constrain_int16(motor_out[i], out_min, out_max);
+                motor_out[i] = constrain_int16(motor_out[i], out_min_pwm, out_max_pwm);
             }
         }
     }
@@ -263,188 +321,6 @@ void AP_MotorsMatrix::output_armed()
         }
     }
 }
-#else
-// output_armed - sends commands to the motors
-void AP_MotorsMatrix::output_armed()
-{
-    int8_t i;
-    int16_t out_min = _rc_throttle->radio_min;
-    int16_t out_max = _rc_throttle->radio_max;
-    int16_t rc_yaw_constrained_pwm;
-    int16_t rc_yaw_excess;
-    int16_t upper_margin, lower_margin;
-    int16_t motor_adjustment = 0;
-    int16_t yaw_to_execute = 0;
-
-    // initialize reached_limit flag
-    _reached_limit = AP_MOTOR_NO_LIMITS_REACHED;
-
-    // Throttle is 0 to 1000 only
-    _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
-
-    // capture desired roll, pitch, yaw and throttle from receiver
-    _rc_roll->calc_pwm();
-    _rc_pitch->calc_pwm();
-    _rc_throttle->calc_pwm();
-    _rc_yaw->calc_pwm();
-
-    // if we are not sending a throttle output, we cut the motors
-    if(_rc_throttle->servo_out == 0) {
-        for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-            if( motor_enabled[i] ) {
-                motor_out[i]    = _rc_throttle->radio_min;
-            }
-        }
-        // if we have any roll, pitch or yaw input then it's breaching the limit
-        if( _rc_roll->pwm_out != 0 || _rc_pitch->pwm_out != 0 ) {
-            _reached_limit |= AP_MOTOR_ROLLPITCH_LIMIT;
-        }
-        if( _rc_yaw->pwm_out != 0 ) {
-            _reached_limit |= AP_MOTOR_YAW_LIMIT;
-        }
-    } else {    // non-zero throttle
-
-        out_min = _rc_throttle->radio_min + _min_throttle;
-
-        // initialise rc_yaw_contrained_pwm that we will certainly output and rc_yaw_excess that we will do on best-efforts basis.
-        // Note: these calculations and many others below depend upon _yaw_factors always being 0, -1 or 1.
-        if( _rc_yaw->pwm_out < -AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM ) {
-            rc_yaw_constrained_pwm = -AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
-            rc_yaw_excess = _rc_yaw->pwm_out+AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
-        }else if( _rc_yaw->pwm_out > AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM ) {
-            rc_yaw_constrained_pwm = AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
-            rc_yaw_excess = _rc_yaw->pwm_out-AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM;
-        }else{
-            rc_yaw_constrained_pwm = _rc_yaw->pwm_out;
-            rc_yaw_excess = 0;
-        }
-
-        // initialise upper and lower margins
-        upper_margin = lower_margin = out_max - out_min;
-
-        // add roll, pitch, throttle and constrained yaw for each motor
-        for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-            if( motor_enabled[i] ) {
-                motor_out[i] = _rc_throttle->radio_out +
-                               _rc_roll->pwm_out * _roll_factor[i] +
-                               _rc_pitch->pwm_out * _pitch_factor[i] +
-                               rc_yaw_constrained_pwm * _yaw_factor[i];
-
-                // calculate remaining room between fastest running motor and top of pwm range
-                if( out_max - motor_out[i] < upper_margin) {
-                    upper_margin = out_max - motor_out[i];
-                }
-                // calculate remaining room between slowest running motor and bottom of pwm range
-                if( motor_out[i] - out_min < lower_margin ) {
-                    lower_margin = motor_out[i] - out_min;
-                }
-            }
-        }
-
-        // if motors are running too fast and we have enough room below, lower overall throttle
-        if( upper_margin < 0 || lower_margin < 0 ) {
-
-            // calculate throttle adjustment that equalizes upper and lower margins.  We will never push the throttle beyond this point
-            motor_adjustment = (upper_margin - lower_margin) / 2;      // i.e. if overflowed by 20 on top, 30 on bottom, upper_margin = -20, lower_margin = -30.  will adjust motors -5.
-
-            // if we have overflowed on the top, reduce but no more than to the mid point
-            if( upper_margin < 0 ) {
-                motor_adjustment = max(upper_margin, motor_adjustment);
-            }
-
-            // if we have underflowed on the bottom, increase throttle but no more than to the mid point
-            if( lower_margin < 0 ) {
-                motor_adjustment = min(-lower_margin, motor_adjustment);
-            }
-        }
-
-        // move throttle up or down to to pull within tolerance
-        if( motor_adjustment != 0 ) {
-            for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-                if( motor_enabled[i] ) {
-                    motor_out[i] += motor_adjustment;
-                }
-            }
-
-            // we haven't even been able to apply roll, pitch and minimal yaw without adjusting throttle so mark all limits as breached
-            _reached_limit |= AP_MOTOR_ROLLPITCH_LIMIT | AP_MOTOR_YAW_LIMIT | AP_MOTOR_THROTTLE_LIMIT;
-        }
-
-        // if we didn't give all the yaw requested, calculate how much additional yaw we can add
-        if( rc_yaw_excess != 0 ) {
-
-            // try for everything
-            yaw_to_execute = rc_yaw_excess;
-
-            // loop through motors and reduce as necessary
-            for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-                if( motor_enabled[i] && _yaw_factor[i] != 0 ) {
-
-                    // calculate upper and lower margins for this motor
-                    upper_margin = max(0,out_max - motor_out[i]);
-                    lower_margin = max(0,motor_out[i] - out_min);
-
-                    // motor is increasing, check upper limit
-                    if( rc_yaw_excess > 0 && _yaw_factor[i] > 0 ) {
-                        yaw_to_execute = min(yaw_to_execute, upper_margin);
-                    }
-
-                    // motor is decreasing, check lower limit
-                    if( rc_yaw_excess > 0 && _yaw_factor[i] < 0 ) {
-                        yaw_to_execute = min(yaw_to_execute, lower_margin);
-                    }
-
-                    // motor is decreasing, check lower limit
-                    if( rc_yaw_excess < 0 && _yaw_factor[i] > 0 ) {
-                        yaw_to_execute = max(yaw_to_execute, -lower_margin);
-                    }
-
-                    // motor is increasing, check upper limit
-                    if( rc_yaw_excess < 0 && _yaw_factor[i] < 0 ) {
-                        yaw_to_execute = max(yaw_to_execute, -upper_margin);
-                    }
-                }
-            }
-            // check yaw_to_execute is reasonable
-            if( yaw_to_execute != 0 && ((yaw_to_execute>0 && rc_yaw_excess>0) || (yaw_to_execute<0 && rc_yaw_excess<0)) ) {
-                // add the additional yaw
-                for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-                    if( motor_enabled[i] ) {
-                        motor_out[i] += _yaw_factor[i] * yaw_to_execute;
-                    }
-                }
-            }
-            // mark yaw limit reached if we didn't get everything we asked for
-            if( yaw_to_execute != rc_yaw_excess ) {
-                _reached_limit |= AP_MOTOR_YAW_LIMIT;
-            }
-        }
-
-        // adjust for throttle curve
-        if( _throttle_curve_enabled ) {
-            for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-                if( motor_enabled[i] ) {
-                    motor_out[i] = _throttle_curve.get_y(motor_out[i]);
-                }
-            }
-        }
-
-        // clip motor output if required (shouldn't be)
-        for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-            if( motor_enabled[i] ) {
-                motor_out[i] = constrain_int16(motor_out[i], out_min, out_max);
-            }
-        }
-    }
-
-    // send output to each motor
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            hal.rcout->write(_motor_to_channel_map[i], motor_out[i]);
-        }
-    }
-}
-#endif  // AP_MOTORS_MATRIX_SCALING_STABILITY_PATCH
 
 // output_disarmed - sends commands to the motors
 void AP_MotorsMatrix::output_disarmed()

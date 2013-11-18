@@ -1,4 +1,18 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 //
 // NMEA parser, adapted by Michael Smith from TinyGPS v9:
@@ -7,15 +21,6 @@
 // Copyright (C) 2008-9 Mikal Hart
 // All rights reserved.
 //
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 2.1 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Lesser General Public License for more details.
 //
 
 /// @file	AP_GPS_NMEA.h
@@ -105,15 +110,15 @@ private:
     /// @returns		The value expressed by the string in _term,
     ///					multiplied by 100.
     ///
-    uint32_t    _parse_decimal();
+    uint32_t    _parse_decimal_100();
 
     /// Parses the current term as a NMEA-style degrees + minutes
     /// value with up to four decimal digits.
     ///
-    /// This gives a theoretical resolution limit of around 18cm.
+    /// This gives a theoretical resolution limit of around 1cm.
     ///
     /// @returns		The value expressed by the string in _term,
-    ///					multiplied by 10000.
+    ///					multiplied by 1e7.
     ///
     uint32_t    _parse_degrees();
 

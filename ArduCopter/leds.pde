@@ -1,160 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// update_board_leds - updates leds on board
-// should be called at 10hz
-static void update_board_leds()
+// updates the status of notify
+// should be called at 50hz
+static void update_notify()
 {
-    // we need to slow down the calls to the GPS and dancing lights to 3.33hz
-    static uint8_t counter = 0;
-    if(++counter >= 3){
-        counter = 0;
-    }
-
-    switch(led_mode) {
-    case NORMAL_LEDS:
-        update_arming_light();
-        if (counter == 0) {
-            update_GPS_light();
-        }
-        break;
-
-    case SAVE_TRIM_LEDS:
-        if (counter == 0) {
-            dancing_light();
-        }
-        break;
-    }
-}
-
-static void update_GPS_light(void)
-{
-    // GPS LED on if we have a fix or Blink GPS LED if we are receiving data
-    // ---------------------------------------------------------------------
-    switch (g_gps->status()) {
-        case GPS::NO_FIX:
-        case GPS::GPS_OK_FIX_2D:
-            // check if we've blinked since the last gps update
-            if (g_gps->valid_read) {
-                g_gps->valid_read = false;
-                ap_system.GPS_light = !ap_system.GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-                if (ap_system.GPS_light) {
-                    digitalWrite(C_LED_PIN, LED_OFF);
-                }else{
-                    digitalWrite(C_LED_PIN, LED_ON);
-                }
-            }
-            break;
-
-        case GPS::GPS_OK_FIX_3D:
-            if(ap.home_is_set) {
-                digitalWrite(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix AND home is set.
-            } else {
-                digitalWrite(C_LED_PIN, LED_OFF);
-            }
-            break;
-
-        default:
-            digitalWrite(C_LED_PIN, LED_OFF);
-            break;
-    }
-}
-
-static void update_arming_light(void)
-{
-    // counter to control state
-    static int8_t counter = 0;
-    counter++;
-
-    // disarmed
-    if(!motors.armed()) {
-        if(!ap.pre_arm_check) {
-            // failed pre-arm checks so double flash
-            switch(counter) {
-                case 0:
-                    ap_system.arming_light = true;
-                    break;
-                case 1:
-                    ap_system.arming_light = false;
-                    break;
-                case 2:
-                    ap_system.arming_light = true;
-                    break;
-                case 3:
-                case 4:
-                    ap_system.arming_light = false;
-                    break;
-                default:
-                    // reset counter to restart the sequence
-                    counter = -1;
-                    break;
-            }
-        }else{
-            // passed pre-arm checks so slower single flash
-            switch(counter) {
-                case 0:
-                case 1:
-                case 2:
-                    ap_system.arming_light = true;
-                    break;
-                case 3:
-                case 4:
-                case 5:
-                    ap_system.arming_light = false;
-                    break;
-                default:
-                    // reset counter to restart the sequence
-                    counter = -1;
-                    break;
-            }
-        }
-        // set arming led from arming_light flag
-        if(ap_system.arming_light) {
-            digitalWrite(A_LED_PIN, LED_ON);
-        }else{
-            digitalWrite(A_LED_PIN, LED_OFF);
-        }
-    }else{
-        // armed
-        if(!ap_system.arming_light) {
-            ap_system.arming_light = true;
-            digitalWrite(A_LED_PIN, LED_ON);
-        }
-    }
-}
-
-static void dancing_light()
-{
-    static uint8_t step;
-
-    if (step++ == 3)
-        step = 0;
-
-    switch(step)
-    {
-    case 0:
-        digitalWrite(C_LED_PIN, LED_OFF);
-        digitalWrite(A_LED_PIN, LED_ON);
-        break;
-
-    case 1:
-        digitalWrite(A_LED_PIN, LED_OFF);
-        digitalWrite(B_LED_PIN, LED_ON);
-        break;
-
-    case 2:
-        digitalWrite(B_LED_PIN, LED_OFF);
-        digitalWrite(C_LED_PIN, LED_ON);
-        break;
-    }
-}
-
-static void clear_leds()
-{
-    digitalWrite(A_LED_PIN, LED_OFF);
-    digitalWrite(B_LED_PIN, LED_OFF);
-    digitalWrite(C_LED_PIN, LED_OFF);
-    ap_system.arming_light = false;
-    led_mode = NORMAL_LEDS;
+    notify.update();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -210,7 +60,7 @@ static void update_copter_leds(void)
     // motor leds control
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_ENABLED) {
         if (motors.armed()) {
-            if (ap.low_battery) {
+            if (failsafe.battery) {
                 if (g.copter_leds_mode & COPTER_LEDS_BITMASK_BATT_OSCILLATE) {
                     copter_leds_oscillate();                        //if motors are armed, but battery level is low, motor leds fast blink
                 } else {
@@ -268,7 +118,7 @@ static void update_copter_leds(void)
 
     // AUX led control
     if (g.copter_leds_mode & COPTER_LEDS_BITMASK_AUX) {
-        if (ap_system.CH7_flag) {
+        if (ap.CH7_flag) {
             copter_leds_aux_on();                                   //if sub-control of Ch7 is high, turn Aux LED on
         } else {
             copter_leds_aux_off();                                  //if sub-control of Ch7 is low, turn Aux LED off

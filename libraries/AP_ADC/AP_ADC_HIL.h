@@ -1,15 +1,24 @@
 #ifndef AP_ADC_HIL_H
 #define AP_ADC_HIL_H
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*
  *       AP_ADC_HIL.h
  *       Author: James Goppert
  *
- *       License:
- *       This library is free software; you can redistribute it and/or
- *       modify it under the terms of the GNU Lesser General Public
- *       License as published by the Free Software Foundation; either
- *       version 2.1 of the License, or (at your option) any later version.
  */
 
 #include <inttypes.h>
@@ -94,12 +103,12 @@ private:
     void        setGyroTemp(int16_t val) {
     }
     
-        // read function that pretends to capture new data
-    static void read(uint32_t tnow) {
+    // read function that pretends to capture new data
+    void read(void) {
        _count++;
     }
 
-    static uint16_t  _count;                    // number of samples captured
+    uint16_t  _count;                    // number of samples captured
 };
 
 #endif

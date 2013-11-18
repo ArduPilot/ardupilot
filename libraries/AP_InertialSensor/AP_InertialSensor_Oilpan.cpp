@@ -1,8 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_Oilpan.h"
+
+const extern AP_HAL::HAL& hal;
 
 // ADC channel mappings on for the APM Oilpan
 // Sensors: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
@@ -60,9 +62,7 @@ uint16_t AP_InertialSensor_Oilpan::_init_sensor( Sample_rate sample_rate)
         break;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-    return AP_PRODUCT_ID_SITL;
-#elif defined(__AVR_ATmega1280__)
+#if defined(__AVR_ATmega1280__)
     return AP_PRODUCT_ID_APM1_1280;
 #else
     return AP_PRODUCT_ID_APM1_2560;
@@ -88,6 +88,8 @@ bool AP_InertialSensor_Oilpan::update()
     _gyro.y *= _gyro_gain_y;
     _gyro.z *= _gyro_gain_z;
     _gyro -= gyro_offset;
+
+    _previous_accel = _accel;
 
     _accel  = Vector3f(_sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET),
                        _sensor_signs[4] * (adc_values[4] - OILPAN_RAW_ACCEL_OFFSET),
@@ -121,10 +123,26 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
     return ToRad(3.0/60);
 }
 
-// get number of samples read from the sensors
-uint16_t AP_InertialSensor_Oilpan::num_samples_available()
+// return true if a new sample is available
+bool AP_InertialSensor_Oilpan::sample_available()
 {
-    return _adc->num_samples_available(_sensors) / _sample_threshold;
+    return (_adc->num_samples_available(_sensors) / _sample_threshold) > 0;
 }
+
+bool AP_InertialSensor_Oilpan::wait_for_sample(uint16_t timeout_ms)
+{
+    if (sample_available()) {
+        return true;
+    }
+    uint32_t start = hal.scheduler->millis();
+    while ((hal.scheduler->millis() - start) < timeout_ms) {
+        hal.scheduler->delay_microseconds(100);
+        if (sample_available()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #endif // CONFIG_HAL_BOARD
 

@@ -4,18 +4,19 @@
 //----------------------------------------
 static void change_command(uint8_t cmd_index)
 {
-    //cliSerial->printf("change_command: %d\n",cmd_index );
+    // check we are in AUTO mode
+    if (control_mode != AUTO) {
+        return;
+    }
+
     // limit range
     cmd_index = min(g.command_total - 1, cmd_index);
 
     // load command
     struct Location temp = get_cmd_with_index(cmd_index);
 
-    //cliSerial->printf("loading cmd: %d with id:%d\n", cmd_index, temp.id);
-
     // verify it's a nav command
     if(temp.id > MAV_CMD_NAV_LAST) {
-        //gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
 
     }else{
         // clear out command queue
@@ -32,13 +33,6 @@ static void change_command(uint8_t cmd_index)
 // called by 10 Hz loop
 static void update_commands()
 {
-    //cliSerial->printf("update_commands: %d\n",increment );
-    // A: if we do not have any commands there is nothing to do
-    // B: We have completed the mission, don't redo the mission
-    // XXX debug
-    //uint8_t tmp = g.command_index.get();
-    //cliSerial->printf("command_index %u \n", tmp);
-
     if(g.command_total <= 1)
         return;
 
@@ -184,17 +178,12 @@ static void exit_mission()
     // we are out of commands
     g.command_index = 255;
 
-    // if we are on the ground, enter stabilize, else Land
-    if(ap.land_complete) {
-        // we will disarm the motors after landing.
-    }else{
-        // If the approach altitude is valid (above 1m), do approach, else land
-        if(g.rtl_alt_final == 0) {
+    // if we are not on the ground switch to loiter or land
+    if(!ap.land_complete) {
+        // try to enter loiter but if that fails land
+        if (!set_mode(LOITER)) {
             set_mode(LAND);
-        }else{
-            set_mode(LOITER);
         }
     }
-
 }
 

@@ -1,23 +1,27 @@
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       ADC.cpp - Analog Digital Converter Base Class for Ardupilot Mega
  *       Code by James Goppert. DIYDrones.com
  *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  */
 
 #include "AP_OpticalFlow.h"
 
 #define FORTYFIVE_DEGREES 0.78539816f
-
-// pointer to the last instantiated optical flow sensor.  Will be turned into
-// a table if we ever add support for more than one sensor
-AP_OpticalFlow* AP_OpticalFlow::_sensor = NULL;
-// number of times we have been called by 1khz timer process.
-// We use this to throttle read down to 20hz
-uint8_t AP_OpticalFlow::_num_calls;
 
 bool AP_OpticalFlow::init()
 {
@@ -36,7 +40,7 @@ void AP_OpticalFlow::set_orientation(enum Rotation rotation)
 // parent method called at 1khz by periodic process
 // this is slowed down to 20hz and each instance's update function is called
 // (only one instance is supported at the moment)
-void AP_OpticalFlow::read(uint32_t now)
+void AP_OpticalFlow::read(void)
 {
     _num_calls++;
 
@@ -44,13 +48,13 @@ void AP_OpticalFlow::read(uint32_t now)
         _num_calls = 0;
         // call to update all attached sensors
         if( _sensor != NULL ) {
-            _sensor->update(now);
+            _sensor->update();
         }
     }
 };
 
 // read value from the sensor.  Should be overridden by derived class
-void AP_OpticalFlow::update(uint32_t now){ }
+void AP_OpticalFlow::update(void){ }
 
 // reads a value from the sensor (will be sensor specific)
 uint8_t AP_OpticalFlow::read_register(uint8_t address){ return 0; }

@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_setpoint_6dof_pack(uint8_t system_id, uint8_t
  * @brief Pack a setpoint_6dof message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param trans_x Translational Component in x
@@ -137,7 +137,7 @@ static inline uint16_t mavlink_msg_setpoint_6dof_pack_chan(uint8_t system_id, ui
 }
 
 /**
- * @brief Encode a setpoint_6dof struct into a message
+ * @brief Encode a setpoint_6dof struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -147,6 +147,20 @@ static inline uint16_t mavlink_msg_setpoint_6dof_pack_chan(uint8_t system_id, ui
 static inline uint16_t mavlink_msg_setpoint_6dof_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_setpoint_6dof_t* setpoint_6dof)
 {
 	return mavlink_msg_setpoint_6dof_pack(system_id, component_id, msg, setpoint_6dof->target_system, setpoint_6dof->trans_x, setpoint_6dof->trans_y, setpoint_6dof->trans_z, setpoint_6dof->rot_x, setpoint_6dof->rot_y, setpoint_6dof->rot_z);
+}
+
+/**
+ * @brief Encode a setpoint_6dof struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param setpoint_6dof C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_setpoint_6dof_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_setpoint_6dof_t* setpoint_6dof)
+{
+	return mavlink_msg_setpoint_6dof_pack_chan(system_id, component_id, chan, msg, setpoint_6dof->target_system, setpoint_6dof->trans_x, setpoint_6dof->trans_y, setpoint_6dof->trans_z, setpoint_6dof->rot_x, setpoint_6dof->rot_y, setpoint_6dof->rot_z);
 }
 
 /**

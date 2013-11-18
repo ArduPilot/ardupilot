@@ -16,13 +16,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-float AP_Baro_PX4::_pressure_sum;
-float AP_Baro_PX4::_temperature_sum;
-uint32_t AP_Baro_PX4::_sum_count;
-uint32_t AP_Baro_PX4::_last_timer;
-uint64_t AP_Baro_PX4::_last_timestamp;
-int AP_Baro_PX4::_baro_fd;
-
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Baro_PX4::init(void)
 {
@@ -35,13 +28,12 @@ bool AP_Baro_PX4::init(void)
         /* set the driver to poll at 150Hz */
         ioctl(_baro_fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_MAX);
 
-        // average over up to 10 samples
-        ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 10);
-
-        hal.scheduler->register_timer_process(_baro_timer);
+        // average over up to 20 samples
+        ioctl(_baro_fd, SENSORIOCSQUEUEDEPTH, 20);
 
         // give the timer a chance to run and gather one sample
         hal.scheduler->delay(40);
+        _accumulate();
     }
 
     return true;
@@ -50,28 +42,22 @@ bool AP_Baro_PX4::init(void)
 // Read the sensor
 uint8_t AP_Baro_PX4::read(void)
 {
-    hal.scheduler->suspend_timer_procs();
-
     // try to accumulate one more sample, so we have the latest data
     _accumulate();
 
     // consider the baro healthy if we got a reading in the last 0.2s
     healthy = (hrt_absolute_time() - _last_timestamp < 200000);
     if (!healthy || _sum_count == 0) {
-        hal.scheduler->resume_timer_procs();
         return healthy;
     }
 
-
     _pressure    = (_pressure_sum / _sum_count) * 100.0f;
-    _temperature = (_temperature_sum / _sum_count) * 10.0f;
+    _temperature = _temperature_sum / _sum_count;
     _pressure_samples = _sum_count;
     _last_update = (uint32_t)_last_timestamp/1000;
     _pressure_sum = 0;
     _temperature_sum = 0;
     _sum_count = 0;
-
-    hal.scheduler->resume_timer_procs();
 
     return 1;
 }
@@ -89,29 +75,11 @@ void AP_Baro_PX4::_accumulate(void)
     }
 }
 
-void AP_Baro_PX4::_baro_timer(uint32_t now)
-{
-    // accumulate samples at 100Hz
-    if (now - _last_timer < 10000) {
-        return;
-    }
-    _last_timer = hal.scheduler->micros();
-    _accumulate();
-}
-
 float AP_Baro_PX4::get_pressure() {
     return _pressure;
 }
 
 float AP_Baro_PX4::get_temperature() {
-    return _temperature;
-}
-
-int32_t AP_Baro_PX4::get_raw_pressure() {
-    return _pressure;
-}
-
-int32_t AP_Baro_PX4::get_raw_temp() {
     return _temperature;
 }
 

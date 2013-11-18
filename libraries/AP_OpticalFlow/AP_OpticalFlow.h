@@ -1,14 +1,23 @@
 #ifndef __AP_OPTICALFLOW_H__
 #define __AP_OPTICALFLOW_H__
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*
  *       AP_OpticalFlow.cpp - OpticalFlow Base Class for Ardupilot Mega
  *       Code by Randy Mackay. DIYDrones.com
- *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  *
  *       Methods:
  *               init() : initializate sensor and library.
@@ -49,10 +58,10 @@ public:
     virtual void    set_field_of_view(const float fov) { field_of_view = fov; update_conversion_factors(); };
 
     // called by timer process to read sensor data from all attached sensors
-    static void     read(uint32_t now);
+    void     read();
 
     // read latest values from sensor and fill in x,y and totals.
-    virtual void    update(uint32_t now);
+    virtual void    update();
 
     // updates internal lon and lat with estimation based on optical flow
     virtual void    update_position(float roll, float pitch, float sin_yaw, float cos_yaw, float altitude);
@@ -77,7 +86,7 @@ public:
 protected:
     // pointer to the last instantiated optical flow sensor.  Will be turned
     // into a table if we ever add support for more than one sensor
-    static AP_OpticalFlow *  _sensor;
+    AP_OpticalFlow *  _sensor;
     enum Rotation            _orientation;
     // multiply this number by altitude and pixel change to get horizontal
     // move (in same units as altitude)
@@ -93,7 +102,7 @@ protected:
 private:
     // number of times we have been called by 1khz timer process.
     // We use this to throttle read down to 20hz
-    static uint8_t _num_calls;
+    uint8_t _num_calls;
 };
 
 #include "AP_OpticalFlow_ADNS3080.h"

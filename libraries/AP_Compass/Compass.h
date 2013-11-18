@@ -25,12 +25,14 @@
 # define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SMACCM
-# define MAG_BOARD_ORIENTATION ROTATION_PITCH_180
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+# define MAG_BOARD_ORIENTATION ROTATION_YAW_90
 #else
 # error "You must define a default compass orientation for this board"
 #endif
@@ -197,6 +199,7 @@ protected:
     AP_Float _declination;
     AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
+    AP_Int8 _external;                          ///<compass is external
 
     bool _null_init_done;                           ///< first-time-around flag used by offset nulling
 

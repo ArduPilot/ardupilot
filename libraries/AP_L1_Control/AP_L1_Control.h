@@ -23,7 +23,7 @@
 
 class AP_L1_Control : public AP_Navigation {
 public:
-	AP_L1_Control(AP_AHRS *ahrs) :
+	AP_L1_Control(AP_AHRS &ahrs) :
 		_ahrs(ahrs)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
@@ -31,30 +31,38 @@ public:
 
 	/* see AP_Navigation.h for the definitions and units of these
 	 * functions */
-	int32_t nav_roll_cd(void);
+	int32_t nav_roll_cd(void) const;
+	float lateral_acceleration(void) const;
 
 	// return the desired track heading angle(centi-degrees)
-	int32_t nav_bearing_cd(void);
+	int32_t nav_bearing_cd(void) const;
 	
 	// return the heading error angle (centi-degrees) +ve to left of track
-	int32_t bearing_error_cd(void);
+	int32_t bearing_error_cd(void) const;
 
-	float crosstrack_error(void);
+	float crosstrack_error(void) const;
 
-	int32_t target_bearing_cd(void);
-	float turn_distance(float wp_radius);
+	int32_t target_bearing_cd(void) const;
+	float turn_distance(float wp_radius) const;
 	void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP);
 	void update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction);
 	void update_heading_hold(int32_t navigation_heading_cd);
 	void update_level_flight(void);
 	bool reached_loiter_target(void);
 
+    // set the default NAVL1_PERIOD
+    void set_default_period(float period) {
+        if (!_L1_period.load()) {
+            _L1_period.set(period);
+        }
+    }
+
 	// this supports the NAVl1_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 	// reference to the AHRS object
-    AP_AHRS *_ahrs;
+    AP_AHRS &_ahrs;
 
 	// lateral acceration in m/s required to fly to the 
 	// L1 reference point (+ve to right)
@@ -82,14 +90,15 @@ private:
 	AP_Float _L1_period;
 	// L1 tracking loop damping ratio
 	AP_Float _L1_damping;
-	
-    // Convert a 2D vector from latitude and longitude to planar
-    // coordinates based on a reference point
-	Vector2f _geo2planar(const Vector2f &ref, const Vector2f &wp) const;
 
-	//Calculate the maximum of two floating point numbers
-	float _maxf(const float &num1, const float &num2) const;
+    // previous value of cross-track velocity
+    float _last_Nu;
 
+    // direction of last xtrack velocity - true positive
+    bool _xtrackVelPos;
+
+    // prevent indecision in waypoint tracking
+    void _prevent_indecision(float &Nu);
 };
 
 

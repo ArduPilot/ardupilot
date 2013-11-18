@@ -8,8 +8,15 @@
 #include <AP_Param.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
+#include <Filter.h>
+#include <AP_ADC.h>
+#include <GCS_MAVLink.h>
+#include <AP_Declination.h>
 
 #include <AP_HAL_AVR.h>
+#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_Empty.h>
+
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 static const struct {
@@ -73,11 +80,11 @@ static void test_one_offset(const struct Location &loc,
 
     loc2 = loc;
     uint32_t t1 = hal.scheduler->micros();
-    location_offset(&loc2, ofs_north, ofs_east);
+    location_offset(loc2, ofs_north, ofs_east);
     hal.console->printf("location_offset took %u usec\n",
                         (unsigned)(hal.scheduler->micros() - t1));
-    dist2 = get_distance(&loc, &loc2);
-    bearing2 = get_bearing_cd(&loc, &loc2) * 0.01;
+    dist2 = get_distance(loc, loc2);
+    bearing2 = get_bearing_cd(loc, loc2) * 0.01;
     float brg_error = bearing2-bearing;
     if (brg_error > 180) {
         brg_error -= 360;
@@ -117,6 +124,129 @@ static void test_offset(void)
     }
 }
 
+
+/*
+  test position accuracy for floating point versus integer positions
+ */
+static void test_accuracy(void)
+{
+    struct Location loc;
+
+    loc.lat = 0.0e7f;
+    loc.lng = -120.0e7f;
+
+    struct Location loc2 = loc;
+    Vector2f v((loc.lat*1.0e-7f), (loc.lng*1.0e-7f));
+    Vector2f v2;
+
+    loc2 = loc;
+    loc2.lat += 10000000;
+    v2 = Vector2f(loc2.lat*1.0e-7f, loc2.lng*1.0e-7f);
+    hal.console->printf("1 degree lat dist=%.4f\n", get_distance(loc, loc2));
+
+    loc2 = loc;
+    loc2.lng += 10000000;
+    v2 = Vector2f(loc2.lat*1.0e-7f, loc2.lng*1.0e-7f);
+    hal.console->printf("1 degree lng dist=%.4f\n", get_distance(loc, loc2));
+
+    for (int32_t i=0; i<100; i++) {
+        loc2 = loc;
+        loc2.lat += i;
+        v2 = Vector2f((loc.lat+i)*1.0e-7f, loc.lng*1.0e-7f);
+        if (v2.x != v.x || v2.y != v.y) {
+            hal.console->printf("lat v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
+            break;
+        }
+    }
+    for (int32_t i=0; i<100; i++) {
+        loc2 = loc;
+        loc2.lng += i;
+        v2 = Vector2f(loc.lat*1.0e-7f, (loc.lng+i)*1.0e-7f);
+        if (v2.x != v.x || v2.y != v.y) {
+            hal.console->printf("lng v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
+            break;
+        }
+    }
+
+    for (int32_t i=0; i<100; i++) {
+        loc2 = loc;
+        loc2.lat -= i;
+        v2 = Vector2f((loc.lat-i)*1.0e-7f, loc.lng*1.0e-7f);
+        if (v2.x != v.x || v2.y != v.y) {
+            hal.console->printf("-lat v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
+            break;
+        }
+    }
+    for (int32_t i=0; i<100; i++) {
+        loc2 = loc;
+        loc2.lng -= i;
+        v2 = Vector2f(loc.lat*1.0e-7f, (loc.lng-i)*1.0e-7f);
+        if (v2.x != v.x || v2.y != v.y) {
+            hal.console->printf("-lng v2 != v at i=%d dist=%.4f\n", (int)i, get_distance(loc, loc2));
+            break;
+        }
+    }
+}
+
+static const struct {
+    int32_t v, wv;
+} wrap_180_tests[] = {
+    { 32000,            -4000 },
+    { 1500 + 100*36000,  1500 },
+    { -1500 - 100*36000, -1500 },
+};
+
+static const struct {
+    int32_t v, wv;
+} wrap_360_tests[] = {
+    { 32000,            32000 },
+    { 1500 + 100*36000,  1500 },
+    { -1500 - 100*36000, 34500 },
+};
+
+static const struct {
+    float v, wv;
+} wrap_PI_tests[] = {
+    { 0.2f*PI,            0.2f*PI },
+    { 0.2f*PI + 100*PI,  0.2f*PI },
+    { -0.2f*PI - 100*PI,  -0.2f*PI },
+};
+
+static void test_wrap_cd(void)
+{
+    for (uint8_t i=0; i<sizeof(wrap_180_tests)/sizeof(wrap_180_tests[0]); i++) {
+        int32_t r = wrap_180_cd(wrap_180_tests[i].v);
+        if (r != wrap_180_tests[i].wv) {
+            hal.console->printf("wrap_180: v=%ld wv=%ld r=%ld\n",
+                                (long)wrap_180_tests[i].v,
+                                (long)wrap_180_tests[i].wv,
+                                (long)r);
+        }
+    }
+
+    for (uint8_t i=0; i<sizeof(wrap_360_tests)/sizeof(wrap_360_tests[0]); i++) {
+        int32_t r = wrap_360_cd(wrap_360_tests[i].v);
+        if (r != wrap_360_tests[i].wv) {
+            hal.console->printf("wrap_360: v=%ld wv=%ld r=%ld\n",
+                                (long)wrap_360_tests[i].v,
+                                (long)wrap_360_tests[i].wv,
+                                (long)r);
+        }
+    }
+
+    for (uint8_t i=0; i<sizeof(wrap_PI_tests)/sizeof(wrap_PI_tests[0]); i++) {
+        float r = wrap_PI(wrap_PI_tests[i].v);
+        if (fabs(r - wrap_PI_tests[i].wv) > 0.001f) {
+            hal.console->printf("wrap_PI: v=%f wv=%f r=%f\n",
+                                wrap_PI_tests[i].v,
+                                wrap_PI_tests[i].wv,
+                                r);
+        }
+    }
+
+    hal.console->printf("wrap_cd tests done\n");
+}
+
 /*
  *  polygon tests
  */
@@ -124,6 +254,8 @@ void setup(void)
 {
     test_passed_waypoint();
     test_offset();
+    test_accuracy();
+    test_wrap_cd();
 }
 
 void loop(void){}

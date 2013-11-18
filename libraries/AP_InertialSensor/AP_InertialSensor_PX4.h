@@ -17,29 +17,33 @@ class AP_InertialSensor_PX4 : public AP_InertialSensor
 {
 public:
 
-    AP_InertialSensor_PX4() : AP_InertialSensor() {}
+    AP_InertialSensor_PX4() : 
+        AP_InertialSensor(),
+        _sample_time_usec(0),
+        _accel_fd(-1),
+        _gyro_fd(-1)
+        {}
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
     float        	get_delta_time();
-    uint32_t        get_last_sample_time_micros();
     float           get_gyro_drift_rate();
-    uint16_t        num_samples_available();
+    bool            sample_available();
+    bool            wait_for_sample(uint16_t timeout_ms);
+    bool            healthy(void);
 
 private:
-    uint16_t        _init_sensor( Sample_rate sample_rate );
-    static		    void _ins_timer(uint32_t now);
-    static          void _accumulate(void);
-    uint64_t        _last_update_usec;
-    float           _delta_time;
-    static Vector3f	_accel_sum;
-    static uint32_t _accel_sum_count;
-    static Vector3f	_gyro_sum;
-    static uint32_t _gyro_sum_count;
-    static volatile bool _in_accumulate;
-    static uint64_t _last_accel_timestamp;
-    static uint64_t _last_gyro_timestamp;
-    uint8_t  _sample_divider;
+    uint16_t _init_sensor( Sample_rate sample_rate );
+    void     _get_sample(void);
+    uint64_t _last_update_usec;
+    float    _delta_time;
+    Vector3f _accel_in;
+    Vector3f _gyro_in;
+    uint64_t _last_accel_timestamp;
+    uint64_t _last_gyro_timestamp;
+    uint64_t _last_sample_timestamp;
+    bool     _have_sample_available;
+    uint32_t _sample_time_usec;
 
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
@@ -48,8 +52,8 @@ private:
     void _set_filter_frequency(uint8_t filter_hz);
 
     // accelerometer and gyro driver handles
-    static int _accel_fd;
-    static int _gyro_fd;
+    int _accel_fd;
+    int _gyro_fd;
 };
 #endif
 #endif // __AP_INERTIAL_SENSOR_PX4_H__

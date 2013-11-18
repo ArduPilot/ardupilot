@@ -11,6 +11,7 @@
 #include <AP_HAL_AVR.h>
 
 #include <AP_GPS.h>             // ArduPilot GPS library
+#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>            // ArduPilot Mega Barometer Library
@@ -26,21 +27,20 @@
 #include <AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence.h>           // Fence library
 #include <GCS_MAVLink.h>
+#include <AP_Notify.h>
+#include <AP_Vehicle.h>
+#include <DataFlash.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // INS and Baro declaration
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
-#define A_LED_PIN 27
-#define C_LED_PIN 25
 AP_InertialSensor_MPU6000 ins;
 AP_Baro_MS5611 baro(&AP_Baro_MS5611::spi);
 
 #else
 
-#define A_LED_PIN 37
-#define C_LED_PIN 35
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins(&adc);
 AP_Baro_BMP085 baro;
@@ -49,12 +49,13 @@ AP_Baro_BMP085 baro;
 // GPS declaration
 GPS *gps;
 AP_GPS_Auto auto_gps(&gps);
+GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(&ins, gps);
+AP_AHRS_DCM ahrs(ins, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(&ahrs, &ins, &baro, &gps);
+AP_InertialNav inertial_nav(&ahrs, &baro, gps, gps_glitch);
 
 // Fence
 AC_Fence fence(&inertial_nav);

@@ -1,12 +1,22 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       RC_Channel.cpp - Radio library for Arduino
  *       Code by Jason Short. DIYDrones.com
- *
- *       This library is free software; you can redistribute it and / or
- *               modify it under the terms of the GNU Lesser General Public
- *               License as published by the Free Software Foundation; either
- *               version 2.1 of the License, or (at your option) any later version.
  *
  */
 
@@ -20,11 +30,10 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
-#define NUM_CHANNELS 8
 /// global array with pointers to all APM RC channels, will be used by AP_Mount
 /// and AP_Camera classes / It points to RC input channels, both APM1 and APM2
 /// only have 8 input channels.
-RC_Channel *RC_Channel::rc_ch[NUM_CHANNELS];
+RC_Channel *RC_Channel::rc_ch[RC_MAX_CHANNELS];
 
 const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MIN
@@ -369,4 +378,12 @@ void
 RC_Channel::enable_out()
 {
     hal.rcout->enable_ch(_ch_out);
+}
+
+RC_Channel *RC_Channel::rc_channel(uint8_t i)
+{
+    if (i >= RC_MAX_CHANNELS) {
+        return NULL;
+    }
+    return rc_ch[i];
 }

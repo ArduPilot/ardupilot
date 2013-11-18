@@ -50,18 +50,21 @@ public:
         k_param_serial0_baud,
         k_param_serial3_baud,
         k_param_telem_delay,
+        k_param_skip_gyro_cal,
 
         //
         // 130: Sensor parameters
         //
         k_param_compass_enabled = 130,
+        k_param_steering_learn, // unused
 
         // 140: battery controls
-        k_param_battery_monitoring = 140,
-        k_param_volt_div_ratio,
-        k_param_curr_amp_per_volt,
+        k_param_battery_monitoring = 140,   // deprecated, can be deleted
+        k_param_volt_div_ratio,     // deprecated, can be deleted
+        k_param_curr_amp_per_volt,  // deprecated, can be deleted
         k_param_input_voltage, // deprecated, can be deleted
-        k_param_pack_capacity,
+        k_param_pack_capacity,      // deprecated, can be deleted
+        k_param_battery,
 
         //
         // 150: Navigation parameters
@@ -74,6 +77,8 @@ public:
         k_param_ch7_option,
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
+        k_param_turn_circle, // unused
+        k_param_turn_max_g,
 
         //
         // 160: Radio settings
@@ -141,7 +146,7 @@ public:
         //
         // 240: PID Controllers
         k_param_pidNavSteer = 230,
-        k_param_pidServoSteer,
+        k_param_pidServoSteer, // unused
         k_param_pidSpeedThrottle,
 
         // high RC channels
@@ -156,6 +161,8 @@ public:
         k_param_ins,
         k_param_compass,
         k_param_rcmap,
+        k_param_L1_controller,
+        k_param_steerController,
 
         // 254,255: reserved
         };
@@ -172,8 +179,6 @@ public:
 
     // IO pins
     AP_Int8     rssi_pin;
-    AP_Int8     battery_volt_pin;
-    AP_Int8     battery_curr_pin;
 
 	// Telemetry control
 	//
@@ -182,26 +187,20 @@ public:
     AP_Int8	    serial0_baud;
     AP_Int8	    serial3_baud;
     AP_Int8     telem_delay;
+    AP_Int8     skip_gyro_cal;
 
     // sensor parameters
-    AP_Int8	    compass_enabled;
-
-    // battery controls
-    AP_Int8	    battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
-    AP_Float    volt_div_ratio;
-    AP_Float    curr_amp_per_volt;
-    AP_Int16    pack_capacity;		// Battery pack capacity less reserve    
+    AP_Int8	    compass_enabled; 
 
     // navigation parameters
     //
-    AP_Float    crosstrack_gain;
-    AP_Int16    crosstrack_entry_angle;
     AP_Float    speed_cruise;
     AP_Int8     speed_turn_gain;
     AP_Float    speed_turn_dist;    
     AP_Int8	    ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
+    AP_Float    turn_max_g;
 
     // RC channels
     RC_Channel      rc_1;
@@ -265,8 +264,6 @@ public:
 
     // PID controllers
     //
-    PID         pidNavSteer;
-    PID         pidServoSteer;
     PID         pidSpeedThrottle;
 
     Parameters() :
@@ -292,8 +289,6 @@ public:
 
         // PID controller    initial P        initial I        initial D        initial imax
         //-----------------------------------------------------------------------------------
-        pidNavSteer         (0.7,             0.1,             0.2,             2000),
-        pidServoSteer       (0.5,             0.1,             0.2,             2000),
         pidSpeedThrottle    (0.7,             0.2,             0.2,             4000)
         {}
 };

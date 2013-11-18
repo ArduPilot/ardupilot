@@ -15,7 +15,6 @@ static int8_t   setup_level         (uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination	(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_batt_monitor	(uint8_t argc, const Menu::arg *argv);
 
 // Command/function table for the setup menu
 static const struct Menu::command setup_menu_commands[] PROGMEM = {
@@ -30,7 +29,6 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 #endif
 	{"compass",			setup_compass},
 	{"declination",		setup_declination},
-	{"battery",			setup_batt_monitor},
 	{"show",			setup_show},
 #if !defined( __AVR_ATmega1280__ )
 	{"set",				setup_set},
@@ -109,7 +107,6 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_radio();
 	report_batt_monitor();
 	report_gains();
-	report_xtrack();
 	report_throttle();
 	report_modes();
 	report_compass();
@@ -412,10 +409,9 @@ setup_accel_scale(uint8_t argc, const Menu::arg *argv)
     cliSerial->println_P(PSTR("Initialising gyros"));
     ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    if(ins.calibrate_accel(flash_leds, &interact, trim_roll, trim_pitch)) {
+    if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
         // reset ahrs's trim to suggested values from calibration routine
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
@@ -429,9 +425,8 @@ setup_level(uint8_t argc, const Menu::arg *argv)
     cliSerial->println_P(PSTR("Initialising gyros"));
     ahrs.init();
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
-    ins.init_accel(flash_leds);
+             ins_sample_rate);
+    ins.init_accel();
     ahrs.set_trim(Vector3f(0, 0, 0));
     return(0);
 }
@@ -463,33 +458,19 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 	return 0;
 }
 
-static int8_t
-setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
-{
-	if(argv[1].i >= 0 && argv[1].i <= 4){
-		g.battery_monitoring.set_and_save(argv[1].i);
-
-	} else {
-		cliSerial->printf_P(PSTR("\nOptions: 3-4"));
-	}
-
-	report_batt_monitor();
-	return 0;
-}
-
 /***************************************************************************/
 // CLI reports
 /***************************************************************************/
 
 static void report_batt_monitor()
 {
-	//print_blanks(2);
-	cliSerial->printf_P(PSTR("Batt Mointor\n"));
-	print_divider();
-	if(g.battery_monitoring == 0)	cliSerial->printf_P(PSTR("Batt monitoring disabled"));
-	if(g.battery_monitoring == 3)	cliSerial->printf_P(PSTR("Monitoring batt volts"));
-	if(g.battery_monitoring == 4)	cliSerial->printf_P(PSTR("Monitoring volts and current"));
-	print_blanks(2);
+    //print_blanks(2);
+    cliSerial->printf_P(PSTR("Batt Mointor\n"));
+    print_divider();
+    if(battery.monitoring() == AP_BATT_MONITOR_DISABLED) cliSerial->printf_P(PSTR("Batt monitoring disabled"));
+    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_ONLY) cliSerial->printf_P(PSTR("Monitoring batt volts"));
+    if(battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) cliSerial->printf_P(PSTR("Monitoring volts and current"));
+    print_blanks(2);
 }
 static void report_radio()
 {
@@ -507,28 +488,9 @@ static void report_gains()
 	cliSerial->printf_P(PSTR("Gains\n"));
 	print_divider();
 
-	cliSerial->printf_P(PSTR("servo steer:\n"));
-	print_PID(&g.pidServoSteer);
-
-	cliSerial->printf_P(PSTR("nav steer:\n"));
-	print_PID(&g.pidNavSteer);
-
 	cliSerial->printf_P(PSTR("speed throttle:\n"));
 	print_PID(&g.pidSpeedThrottle);
 
-	print_blanks(2);
-}
-
-static void report_xtrack()
-{
-	//print_blanks(2);
-	cliSerial->printf_P(PSTR("Crosstrack\n"));
-	print_divider();
-	// radio
-	cliSerial->printf_P(PSTR("XTRACK: %4.2f\n"
-						 "XTRACK angle: %d\n"),
-						 (float)g.crosstrack_gain,
-						 (int)g.crosstrack_entry_angle);
 	print_blanks(2);
 }
 

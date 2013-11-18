@@ -4,6 +4,9 @@
 #
 SYSTYPE			:=	$(shell uname)
 
+GIT_VERSION := $(shell git rev-parse HEAD | cut -c1-8)
+EXTRAFLAGS += -DGIT_VERSION="\"$(GIT_VERSION)\""
+
 # force LANG to C so awk works sanely on MacOS
 export LANG=C
 
@@ -64,7 +67,15 @@ endif
 # Work out where we are going to be building things
 #
 TMPDIR			?=	/tmp
+
+ifneq ($(findstring px4, $(MAKECMDGOALS)),)
+# when building px4 we need all sources to be inside the sketchbook directory
+# as the NuttX build system relies on it
+BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
+else
 BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
+endif
+
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   # Workaround a $(abspath ) bug on cygwin
   ifeq ($(BUILDROOT),)
@@ -103,6 +114,10 @@ ifneq ($(findstring sitl, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_AVR_SITL
 endif
 
+ifneq ($(findstring linux, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+endif
+
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
 endif
@@ -113,6 +128,10 @@ endif
 
 ifneq ($(findstring apm2, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_APM2
+endif
+
+ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_FLYMAPLE
 endif
 
 # default to APM2

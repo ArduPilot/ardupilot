@@ -17,151 +17,40 @@ apm2: HAL_BOARD = HAL_BOARD_APM2
 apm2: TOOLCHAIN = AVR
 apm2: all
 
+flymaple: HAL_BOARD = HAL_BOARD_FLYMAPLE
+flymaple: TOOLCHAIN = ARM
+flymaple: all
+
+linux: HAL_BOARD = HAL_BOARD_LINUX
+linux: TOOLCHAIN = NATIVE
+linux: all
+
 empty: HAL_BOARD = HAL_BOARD_EMPTY
 empty: TOOLCHAIN = AVR
 empty: all
 
+# cope with HIL targets
+%-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
+%-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 
-nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
-nologging: all
+# cope with copter and hil targets
+FRAMES = quad tri hexa y6 octa octa-quad heli single
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 sitl flymaple linux
 
-nogps: EXTRAFLAGS += "-DGPS_PROTOCOL=GPS_PROTOCOL_NONE "
-nogps: nologging
+define frame_template
+$(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s/-/_/g)_FRAME "
+$(1)-$(2) : $(1)
+$(1)-$(2)-hil : $(1)-$(2)
+$(1)-$(2)-hilsensors : $(1)-$(2)
+$(1)-hil : $(1)
+$(1)-hilsensors : $(1)
+endef
 
-clidisabled-nologging: EXTRAFLAGS += "-DCLI_ENABLED=DISABLED "
-clidisabled-nologging: nologging
-
-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-hil: apm1
-
-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
-
-apm1-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-apm1-hil: apm1
-
-apm2-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-apm2-hil: apm2
-
-apm1-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
-apm1-hilsensors: apm1
-
-apm2-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
-apm2-hilsensors: apm2
-
-apm2-nologging: EXTRAFLAGS += "-DLOGGING_ENABLED=DISABLED "
-apm2-nologging: apm2
-
-heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
-heli: all
-
-dmp: EXTRAFLAGS += "-DDMP_ENABLED=ENABLED"
-dmp: apm2
-
-
-apm1-quad: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME "
-apm1-quad: apm1
-
-apm1-quad-hil: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME "
-apm1-quad-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-apm1-quad-hil: apm1
-
-apm1-tri: EXTRAFLAGS += "-DFRAME_CONFIG=TRI_FRAME "
-apm1-tri: apm1
-
-apm1-hexa: EXTRAFLAGS += "-DFRAME_CONFIG=HEXA_FRAME "
-apm1-hexa: apm1
-
-apm1-y6: EXTRAFLAGS += "-DFRAME_CONFIG=Y6_FRAME "
-apm1-y6: apm1
-
-apm1-octa: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
-apm1-octa: apm1
-
-apm1-octa-quad: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_QUAD_FRAME "
-apm1-octa-quad: apm1
-
-apm1-heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
-apm1-heli: apm1
-
-apm1-heli-hil: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
-apm1-heli-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-apm1-heli-hil: apm1
-
-
-apm2-quad: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME "
-apm2-quad: apm2
-
-apm2-quad-hil: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME "
-apm2-quad-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-apm2-quad-hil: apm2
-
-apm2-tri: EXTRAFLAGS += "-DFRAME_CONFIG=TRI_FRAME "
-apm2-tri: apm2
-
-apm2-hexa: EXTRAFLAGS += "-DFRAME_CONFIG=HEXA_FRAME "
-apm2-hexa: apm2
-
-apm2-y6: EXTRAFLAGS += "-DFRAME_CONFIG=Y6_FRAME "
-apm2-y6: apm2
-
-apm2-octa: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
-apm2-octa: apm2
-
-apm2-octa-quad: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_QUAD_FRAME "
-apm2-octa-quad: apm2
-
-apm2-heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
-apm2-heli: apm2
-
-apm2-heli-hil: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
-apm2-heli-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-apm2-heli-hil: apm2
-
-
-px4-quad: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME "
-px4-quad: px4
-
-px4-quad-hil: EXTRAFLAGS += "-DFRAME_CONFIG=QUAD_FRAME -DHIL_MODE=HIL_MODE_ATTITUDE "
-px4-quad-hil: px4
-
-px4-tri: EXTRAFLAGS += "-DFRAME_CONFIG=TRI_FRAME "
-px4-tri: px4
-
-px4-hexa: EXTRAFLAGS += "-DFRAME_CONFIG=HEXA_FRAME "
-px4-hexa: px4
-
-px4-y6: EXTRAFLAGS += "-DFRAME_CONFIG=Y6_FRAME "
-px4-y6: px4
-
-px4-octa: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
-px4-octa: px4
-
-px4-octa-quad: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_QUAD_FRAME "
-px4-octa-quad: px4
-
-px4-heli: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME "
-px4-heli: px4
-
-px4-heli-hil: EXTRAFLAGS += "-DFRAME_CONFIG=HELI_FRAME -DHIL_MODE=HIL_MODE_ATTITUDE "
-px4-heli-hil: px4
-
-px4-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_ATTITUDE "
-px4-hil: px4
-
-px4-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
-px4-hilsensors: px4
+# generate targets of the form BOARD-FRAME and BOARD-FRAME-HIL
+$(foreach board,$(BOARDS),$(foreach frame,$(FRAMES),$(eval $(call frame_template,$(board),$(frame)))))
 
 apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
 apm2beta: apm2
-
-sitl-octa: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
-sitl-octa: sitl
-
-sitl-hexa: EXTRAFLAGS += "-DFRAME_CONFIG=HEXA_FRAME "
-sitl-hexa: sitl
-
-sitl-y6: EXTRAFLAGS += "-DFRAME_CONFIG=OCTA_FRAME "
-sitl-y6: sitl
 
 obc-sitl: EXTRAFLAGS += "-DOBC_FAILSAFE=ENABLED "
 obc-sitl: EXTRAFLAGS += "-DSERIAL_BUFSIZE=512 "

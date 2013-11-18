@@ -13,7 +13,6 @@ static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
 static int8_t   test_adc(uint8_t argc,                  const Menu::arg *argv);
 #endif
 static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_battery(uint8_t argc,              const Menu::arg *argv);
 static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
 static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
 static int8_t   test_airspeed(uint8_t argc,     const Menu::arg *argv);
@@ -37,7 +36,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
     {"radio",                       test_radio},
     {"passthru",            test_passthru},
     {"failsafe",            test_failsafe},
-    {"battery",     test_battery},
     {"relay",                       test_relay},
     {"waypoints",           test_wp},
     {"xbee",                        test_xbee},
@@ -250,43 +248,6 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-test_battery(uint8_t argc, const Menu::arg *argv)
-{
-    if (g.battery_monitoring == 3 || g.battery_monitoring == 4) {
-        print_hit_enter();
-
-        while(1) {
-            delay(100);
-            read_radio();
-            read_battery();
-            if (g.battery_monitoring == 3) {
-                cliSerial->printf_P(PSTR("V: %4.4f\n"),
-                                battery.voltage,
-                                battery.current_amps,
-                                battery.current_total_mah);
-            } else {
-                cliSerial->printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-                                battery.voltage,
-                                battery.current_amps,
-                                battery.current_total_mah);
-            }
-
-            // write out the servo PWM values
-            // ------------------------------
-            set_servos();
-
-            if(cliSerial->available() > 0) {
-                return (0);
-            }
-        }
-    } else {
-        cliSerial->printf_P(PSTR("Not enabled\n"));
-        return (0);
-    }
-
-}
-
-static int8_t
 test_relay(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
@@ -373,7 +334,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 
     cliSerial->printf_P(PSTR("Control CH "));
 
-    cliSerial->println(FLIGHT_MODE_CHANNEL, DEC);
+    cliSerial->println(FLIGHT_MODE_CHANNEL, BASE_DEC);
 
     while(1) {
         delay(20);
@@ -413,7 +374,7 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#if CONFIG_INS_TYPE == CONFIG_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
@@ -432,7 +393,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
         }
     }
 }
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_APM1
+#endif // CONFIG_INS_TYPE
 
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
@@ -442,10 +403,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         delay(100);
-
-        // Blink GPS LED if we don't have a fix
-        // ------------------------------------
-        update_GPS_light();
 
         g_gps->update();
 
@@ -473,8 +430,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     ahrs.set_wind_estimation(true);
 
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     ahrs.reset();
 
     print_hit_enter();
@@ -484,10 +440,8 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         delay(20);
-        if (millis() - fast_loopTimer_ms > 19) {
-            delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
-            G_Dt                            = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
-            fast_loopTimer_ms       = millis();
+        if (hal.scheduler->micros() - fast_loopTimer_us > 19000UL) {
+            fast_loopTimer_us       = hal.scheduler->micros();
 
             // INS
             // ---
@@ -540,8 +494,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     // we need the AHRS initialised for this test
     ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
+             ins_sample_rate);
     ahrs.reset();
 
     uint16_t counter = 0;
@@ -551,10 +504,8 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
     while(1) {
         delay(20);
-        if (millis() - fast_loopTimer_ms > 19) {
-            delta_ms_fast_loop      = millis() - fast_loopTimer_ms;
-            G_Dt                            = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
-            fast_loopTimer_ms       = millis();
+        if (hal.scheduler->micros() - fast_loopTimer_us > 19000UL) {
+            fast_loopTimer_us       = hal.scheduler->micros();
 
             // INS
             // ---
@@ -648,8 +599,9 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
             cliSerial->println_P(PSTR("not healthy"));
         } else {
             cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),
-                            current_loc.alt / 100.0,
-                            barometer.get_pressure(), 0.1*barometer.get_temperature());
+                                current_loc.alt / 100.0,
+                                barometer.get_pressure(), 
+                                barometer.get_temperature());
         }
 
         if(cliSerial->available() > 0) {
@@ -667,15 +619,11 @@ test_rawgps(uint8_t argc, const Menu::arg *argv)
     while(1) {
         // Blink Yellow LED if we are sending data to GPS
         if (hal.uartC->available()) {
-            digitalWrite(B_LED_PIN, LED_ON);
             hal.uartB->write(hal.uartC->read());
-            digitalWrite(B_LED_PIN, LED_OFF);
         }
         // Blink Red LED if we are receiving data from GPS
         if (hal.uartB->available()) {
-            digitalWrite(C_LED_PIN, LED_ON);
             hal.uartC->write(hal.uartB->read());
-            digitalWrite(C_LED_PIN, LED_OFF);
         }
         if(cliSerial->available() > 0) {
             return (0);

@@ -116,6 +116,10 @@ static void handle_process_do_command()
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
         do_take_picture();
         break;
+
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        camera.set_trigger_distance(next_nonnav_command.alt);
+        break;
 #endif
 
 #if MOUNT == ENABLED
@@ -147,13 +151,11 @@ static void handle_process_do_command()
 static void handle_no_commands()
 {
     gcs_send_text_fmt(PSTR("Returning to Home"));
-    next_nav_command = home;
-    next_nav_command.alt = read_alt_to_hold();
+    next_nav_command = rally_find_best_location(current_loc, home);
     next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
     nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
     non_nav_command_ID = WAIT_COMMAND;
     handle_process_nav_cmd();
-
 }
 
 /*******************************************************************************
@@ -233,18 +235,13 @@ static void do_RTL(void)
 {
     control_mode    = RTL;
     prev_WP = current_loc;
-    next_WP = home;
+    next_WP = rally_find_best_location(current_loc, home);
 
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
     }
-
-    // Altitude to hold over home
-    // Set by configuration tool
-    // -------------------------
-    next_WP.alt = read_alt_to_hold();
 
     setup_glide_slope();
 
@@ -311,23 +308,23 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
     if (ahrs.yaw_initialised()) {
-        if (hold_course_cd == -1) {
+        if (steer_state.hold_course_cd == -1) {
             // save our current course to take off
-            hold_course_cd = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Holding course %ld"), hold_course_cd);
+            steer_state.hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Holding course %ld"), steer_state.hold_course_cd);
         }
     }
 
-    if (hold_course_cd != -1) {
+    if (steer_state.hold_course_cd != -1) {
         // call navigation controller for heading hold
-        nav_controller->update_heading_hold(hold_course_cd);
+        nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
         nav_controller->update_level_flight();        
     }
 
     // see if we have reached takeoff altitude
     if (adjusted_altitude_cm() > takeoff_altitude_cm) {
-        hold_course_cd = -1;
+        steer_state.hold_course_cd = -1;
         takeoff_complete = true;
         next_WP = prev_WP = current_loc;
         return true;
@@ -350,18 +347,18 @@ static bool verify_land()
 
         land_complete = true;
 
-        if (hold_course_cd == -1) {
+        if (steer_state.hold_course_cd == -1) {
             // we have just reached the threshold of to flare for landing.
             // We now don't want to do any radical
             // turns, as rolling could put the wings into the runway.
-            // To prevent further turns we set hold_course_cd to the
+            // To prevent further turns we set steer_state.hold_course_cd to the
             // current heading. Previously we set this to
             // crosstrack_bearing, but the xtrack bearing can easily
             // be quite large at this point, and that could induce a
             // sudden large roll correction which is very nasty at
             // this point in the landing.
-            hold_course_cd = ahrs.yaw_sensor;
-            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), hold_course_cd);
+            steer_state.hold_course_cd = ahrs.yaw_sensor;
+            gcs_send_text_fmt(PSTR("Land Complete - Hold course %ld"), steer_state.hold_course_cd);
         }
 
         if (g_gps->ground_speed_cm*0.01f < 3.0) {
@@ -375,9 +372,9 @@ static bool verify_land()
         }
     }
 
-    if (hold_course_cd != -1) {
+    if (steer_state.hold_course_cd != -1) {
         // recalc bearing error with hold_course;
-        nav_controller->update_heading_hold(hold_course_cd);
+        nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
         nav_controller->update_waypoint(prev_WP, next_WP);
     }
@@ -386,14 +383,23 @@ static bool verify_land()
 
 static bool verify_nav_wp()
 {
-    hold_course_cd = -1;
+    steer_state.hold_course_cd = -1;
 
     nav_controller->update_waypoint(prev_WP, next_WP);
+
+    // see if the user has specified a maximum distance to waypoint
+    if (g.waypoint_max_radius > 0 && wp_distance > (uint16_t)g.waypoint_max_radius) {
+        if (location_passed_point(current_loc, prev_WP, next_WP)) {
+            // this is needed to ensure completion of the waypoint
+            prev_WP = current_loc;
+        }
+        return false;
+    }
     
     if (wp_distance <= nav_controller->turn_distance(g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
-                          (unsigned)get_distance(&current_loc, &next_WP));
+                          (unsigned)get_distance(current_loc, next_WP));
         return true;
 	}
 
@@ -401,7 +407,7 @@ static bool verify_nav_wp()
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
                           (unsigned)nav_command_index,
-                          (unsigned)get_distance(&current_loc, &next_WP));
+                          (unsigned)get_distance(current_loc, next_WP));
         return true;
     }
 
@@ -616,15 +622,16 @@ static void do_set_servo()
 
 static void do_set_relay()
 {
-#if CONFIG_RELAY == ENABLED
     if (next_nonnav_command.p1 == 1) {
+        gcs_send_text_fmt(PSTR("Relay on"));
         relay.on();
     } else if (next_nonnav_command.p1 == 0) {
+        gcs_send_text_fmt(PSTR("Relay off"));
         relay.off();
     }else{
+        gcs_send_text_fmt(PSTR("Relay toggle"));
         relay.toggle();
     }
-#endif
 }
 
 static void do_repeat_servo(uint8_t channel, uint16_t servo_value,

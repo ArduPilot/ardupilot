@@ -16,19 +16,14 @@ extern const AP_HAL::HAL& hal;
  * This seems to be determined empirically */
 #define CHANNEL_READ_REPEAT 2
 
-/* Static variable instances */
-ADCSource* AVRAnalogIn::_channels[AVR_INPUT_MAX_CHANNELS] = {NULL};
-int16_t AVRAnalogIn::_num_channels = 0;
-int16_t AVRAnalogIn::_active_channel = 0;
-uint16_t AVRAnalogIn::_channel_repeat_count = 0;
-
 AVRAnalogIn::AVRAnalogIn() :
     _vcc(ADCSource(ANALOG_INPUT_BOARD_VCC))
 {}
 
-void AVRAnalogIn::init(void* machtnichts) {
+void AVRAnalogIn::init(void* machtnichts) 
+{
     /* Register AVRAnalogIn::_timer_event with the scheduler. */
-    hal.scheduler->register_timer_process(_timer_event);
+    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AVRAnalogIn::_timer_event));
     /* Register each private channel with AVRAnalogIn. */
     _register_channel(&_vcc);
 }
@@ -62,7 +57,7 @@ void AVRAnalogIn::_register_channel(ADCSource* ch) {
     }
 }
 
-void AVRAnalogIn::_timer_event(uint32_t t) 
+void AVRAnalogIn::_timer_event(void) 
 {
     if (_channels[_active_channel]->_pin == ANALOG_INPUT_NONE) {
         _channels[_active_channel]->new_sample(0);

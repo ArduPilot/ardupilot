@@ -19,6 +19,7 @@ uint8_t AP_Baro_HIL::read()
     uint8_t result = 0;
 
     if (_count != 0) {
+        hal.scheduler->suspend_timer_procs();
         result = 1;
         Press = ((float)_pressure_sum) / _count;
         Temp = ((float)_temperature_sum) / _count;
@@ -26,25 +27,57 @@ uint8_t AP_Baro_HIL::read()
         _count = 0;
         _pressure_sum = 0;
         _temperature_sum = 0;
+        hal.scheduler->resume_timer_procs();
     }
 
     return result;
 }
 
+// ==========================================================================
+// based on tables.cpp from http://www.pdas.com/atmosdownload.html
+
+/* 
+ Compute the temperature, density, and pressure in the standard atmosphere
+ Correct to 20 km.  Only approximate thereafter.
+*/
+static void SimpleAtmosphere(
+	const float alt,                           // geometric altitude, km.
+	float& sigma,                   // density/sea-level standard density
+	float& delta,                 // pressure/sea-level standard pressure
+	float& theta)           // temperature/sea-level standard temperature
+{
+  const float REARTH = 6369.0f;        // radius of the Earth (km)
+  const float GMR    = 34.163195f;     // gas constant
+  float h=alt*REARTH/(alt+REARTH);     // geometric to geopotential altitude
+
+  if (h<11.0)
+    {                                                          // Troposphere
+      theta=(288.15f-6.5f*h)/288.15f;
+      delta=powf(theta, GMR/6.5f);
+    }
+  else
+    {                                                         // Stratosphere
+      theta=216.65f/288.15f;
+      delta=0.2233611f*expf(-GMR*(h-11.0f)/216.65f);
+    }
+
+  sigma=delta/theta;
+}
+
+
 void AP_Baro_HIL::setHIL(float altitude_msl)
 {
-    // approximate a barometer. This uses the typical base pressure in
-    // Canberra, Australia
-    const float temperature = 312;
+    float sigma, delta, theta;
+    const float p0 = 101325;
 
-    float y = (altitude_msl - 584.0) / 29.271267;
-    y /= (temperature / 10.0) + 273.15;
-    y = 1.0/exp(y);
-    y *= 95446.0;
+    SimpleAtmosphere(altitude_msl*0.001, sigma, delta, theta);
+    float p = p0 * delta;
+    float T = 303.16 * theta - 273.16; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     _count++;
-    _pressure_sum += y;
-    _temperature_sum += temperature;
+    _pressure_sum += p;
+    _temperature_sum += T;
+
     if (_count == 128) {
         // we have summed 128 values. This only happens
         // when we stop reading the barometer for a long time
@@ -63,13 +96,5 @@ float AP_Baro_HIL::get_pressure() {
 }
 
 float AP_Baro_HIL::get_temperature() {
-    return Temp;
-}
-
-int32_t AP_Baro_HIL::get_raw_pressure() {
-    return Press;
-}
-
-int32_t AP_Baro_HIL::get_raw_temp() {
     return Temp;
 }

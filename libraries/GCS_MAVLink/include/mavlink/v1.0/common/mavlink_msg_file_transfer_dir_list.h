@@ -67,7 +67,7 @@ static inline uint16_t mavlink_msg_file_transfer_dir_list_pack(uint8_t system_id
  * @brief Pack a file_transfer_dir_list message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param transfer_uid Unique transfer ID
  * @param dir_path Directory path to list
@@ -101,7 +101,7 @@ static inline uint16_t mavlink_msg_file_transfer_dir_list_pack_chan(uint8_t syst
 }
 
 /**
- * @brief Encode a file_transfer_dir_list struct into a message
+ * @brief Encode a file_transfer_dir_list struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -111,6 +111,20 @@ static inline uint16_t mavlink_msg_file_transfer_dir_list_pack_chan(uint8_t syst
 static inline uint16_t mavlink_msg_file_transfer_dir_list_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_file_transfer_dir_list_t* file_transfer_dir_list)
 {
 	return mavlink_msg_file_transfer_dir_list_pack(system_id, component_id, msg, file_transfer_dir_list->transfer_uid, file_transfer_dir_list->dir_path, file_transfer_dir_list->flags);
+}
+
+/**
+ * @brief Encode a file_transfer_dir_list struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param file_transfer_dir_list C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_file_transfer_dir_list_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_file_transfer_dir_list_t* file_transfer_dir_list)
+{
+	return mavlink_msg_file_transfer_dir_list_pack_chan(system_id, component_id, chan, msg, file_transfer_dir_list->transfer_uid, file_transfer_dir_list->dir_path, file_transfer_dir_list->flags);
 }
 
 /**

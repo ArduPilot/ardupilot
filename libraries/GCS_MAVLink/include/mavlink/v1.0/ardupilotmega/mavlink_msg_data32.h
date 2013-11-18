@@ -67,7 +67,7 @@ static inline uint16_t mavlink_msg_data32_pack(uint8_t system_id, uint8_t compon
  * @brief Pack a data32 message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param type data type
  * @param len data length
@@ -101,7 +101,7 @@ static inline uint16_t mavlink_msg_data32_pack_chan(uint8_t system_id, uint8_t c
 }
 
 /**
- * @brief Encode a data32 struct into a message
+ * @brief Encode a data32 struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -111,6 +111,20 @@ static inline uint16_t mavlink_msg_data32_pack_chan(uint8_t system_id, uint8_t c
 static inline uint16_t mavlink_msg_data32_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_data32_t* data32)
 {
 	return mavlink_msg_data32_pack(system_id, component_id, msg, data32->type, data32->len, data32->data);
+}
+
+/**
+ * @brief Encode a data32 struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param data32 C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_data32_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_data32_t* data32)
+{
+	return mavlink_msg_data32_pack_chan(system_id, component_id, chan, msg, data32->type, data32->len, data32->data);
 }
 
 /**

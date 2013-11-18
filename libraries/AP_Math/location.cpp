@@ -20,48 +20,55 @@
 /*
  *  this module deals with calculations involving struct Location
  */
+#include <AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
 
 // radius of earth in meters
 #define RADIUS_OF_EARTH 6378100
 
-float longitude_scale(const struct Location *loc)
+// scaling factor from 1e-7 degrees to meters at equater
+// == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
+#define LOCATION_SCALING_FACTOR 0.011131884502145034f
+// inverse of LOCATION_SCALING_FACTOR
+#define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
+
+float longitude_scale(const struct Location &loc)
 {
     static int32_t last_lat;
     static float scale = 1.0;
-    if (labs(last_lat - loc->lat) < 100000) {
+    if (labs(last_lat - loc.lat) < 100000) {
         // we are within 0.01 degrees (about 1km) of the
         // same latitude. We can avoid the cos() and return
         // the same scale factor.
         return scale;
     }
-    scale = cosf((fabsf((float)loc->lat)/1.0e7f) * DEG_TO_RAD);
-    last_lat = loc->lat;
+    scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    last_lat = loc.lat;
     return scale;
 }
 
 
 
 // return distance in meters between two locations
-float get_distance(const struct Location *loc1, const struct Location *loc2)
+float get_distance(const struct Location &loc1, const struct Location &loc2)
 {
-    float dlat              = (float)(loc2->lat - loc1->lat);
-    float dlong             = ((float)(loc2->lng - loc1->lng)) * longitude_scale(loc2);
-    return pythagorous2(dlat, dlong) * 0.01113195f;
+    float dlat              = (float)(loc2.lat - loc1.lat);
+    float dlong             = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
+    return pythagorous2(dlat, dlong) * LOCATION_SCALING_FACTOR;
 }
 
 // return distance in centimeters to between two locations
-uint32_t get_distance_cm(const struct Location *loc1, const struct Location *loc2)
+uint32_t get_distance_cm(const struct Location &loc1, const struct Location &loc2)
 {
     return get_distance(loc1, loc2) * 100;
 }
 
 // return bearing in centi-degrees between two locations
-int32_t get_bearing_cd(const struct Location *loc1, const struct Location *loc2)
+int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
 {
-    int32_t off_x = loc2->lng - loc1->lng;
-    int32_t off_y = (loc2->lat - loc1->lat) / longitude_scale(loc2);
+    int32_t off_x = loc2.lng - loc1.lng;
+    int32_t off_y = (loc2.lat - loc1.lat) / longitude_scale(loc2);
     int32_t bearing = 9000 + atan2f(-off_y, off_x) * 5729.57795f;
     if (bearing < 0) bearing += 36000;
     return bearing;
@@ -87,7 +94,7 @@ bool location_passed_point(const struct Location &location,
         // two of the points are co-located.
         // If location is equal to point2 then say we have passed the
         // waypoint, otherwise say we haven't
-        if (get_distance(&location, &point2) == 0) {
+        if (get_distance(location, point2) == 0) {
             return true;
         }
         return false;
@@ -96,8 +103,8 @@ bool location_passed_point(const struct Location &location,
         // point2 then we are past the waypoint if the
         // distance from location to point1 is greater then
         // the distance from point2 to point1
-        return get_distance(&location, &point1) >
-               get_distance(&point2, &point1);
+        return get_distance(location, point1) >
+               get_distance(point2, point1);
 
     }
     if (degrees(angle) > 90) {
@@ -108,37 +115,40 @@ bool location_passed_point(const struct Location &location,
 
 /*
  *  extrapolate latitude/longitude given bearing and distance
- *  thanks to http://www.movable-type.co.uk/scripts/latlong.html
- *
- *  This function is precise, but costs about 1.7 milliseconds on an AVR2560
+ * Note that this function is accurate to about 1mm at a distance of 
+ * 100m. This function has the advantage that it works in relative
+ * positions, so it keeps the accuracy even when dealing with small
+ * distances and floating point numbers
  */
-void location_update(struct Location *loc, float bearing, float distance)
+void location_update(struct Location &loc, float bearing, float distance)
 {
-    float lat1 = radians(loc->lat*1.0e-7f);
-    float lon1 = radians(loc->lng*1.0e-7f);
-    float brng = radians(bearing);
-    float dr = distance/RADIUS_OF_EARTH;
-
-    float lat2 = asinf(sinf(lat1)*cosf(dr) +
-                       cosf(lat1)*sinf(dr)*cosf(brng));
-    float lon2 = lon1 + atan2f(sinf(brng)*sinf(dr)*cosf(lat1),
-                               cosf(dr)-sinf(lat1)*sinf(lat2));
-    loc->lat = degrees(lat2)*1.0e7f;
-    loc->lng = degrees(lon2)*1.0e7f;
+    float ofs_north = cosf(radians(bearing))*distance;
+    float ofs_east  = sinf(radians(bearing))*distance;
+    location_offset(loc, ofs_north, ofs_east);
 }
 
 /*
  *  extrapolate latitude/longitude given distances north and east
  *  This function costs about 80 usec on an AVR2560
  */
-void location_offset(struct Location *loc, float ofs_north, float ofs_east)
+void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
     if (ofs_north != 0 || ofs_east != 0) {
-        float dlat = ofs_north * 89.831520982f;
-        float dlng = (ofs_east * 89.831520982f) / longitude_scale(loc);
-        loc->lat += dlat;
-        loc->lng += dlng;
+        int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
+        int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
+        loc.lat += dlat;
+        loc.lng += dlng;
     }
+}
+
+/*
+  return the distance in meters in North/East plane as a N/E vector
+  from loc1 to loc2
+ */
+Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
+{
+    return Vector2f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1));
 }
 
 /*
@@ -146,8 +156,12 @@ void location_offset(struct Location *loc, float ofs_north, float ofs_east)
  */
 int32_t wrap_360_cd(int32_t error)
 {
-    while (error > 36000) error -= 36000;
-    while (error < 0) error += 36000;
+    if (error > 360000 || error < -360000) {
+        // for very large numbers use modulus
+        error = error % 36000;
+    }
+    if (error > 36000) error -= 36000;
+    if (error < 0) error += 36000;
     return error;
 }
 
@@ -156,8 +170,12 @@ int32_t wrap_360_cd(int32_t error)
  */
 int32_t wrap_180_cd(int32_t error)
 {
-    while (error > 18000) error -= 36000;
-    while (error < -18000) error += 36000;
+    if (error > 360000 || error < -360000) {
+        // for very large numbers use modulus
+        error = error % 36000;
+    }
+    if (error > 18000) { error -= 36000; }
+    if (error < -18000) { error += 36000; }
     return error;
 }
 
@@ -166,8 +184,12 @@ int32_t wrap_180_cd(int32_t error)
  */
 float wrap_PI(float angle_in_radians)
 {
-    while (angle_in_radians > PI) angle_in_radians -= 2.0f*PI;
-    while (angle_in_radians < -PI) angle_in_radians += 2.0f*PI;
+    if (angle_in_radians > 10*PI || angle_in_radians < -10*PI) {
+        // for very large numbers use modulus
+        angle_in_radians = fmodf(angle_in_radians, 2*PI);
+    }
+    while (angle_in_radians > PI) angle_in_radians -= 2*PI;
+    while (angle_in_radians < -PI) angle_in_radians += 2*PI;
     return angle_in_radians;
 }
 

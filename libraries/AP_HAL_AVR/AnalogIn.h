@@ -19,6 +19,7 @@ public:
     float read_latest();
     void set_pin(uint8_t p);
     float voltage_average();
+    float voltage_latest();
     float voltage_average_ratiometric();
     void set_stop_pin(uint8_t p);
     void set_settle_time(uint16_t settle_time_ms);    
@@ -69,13 +70,13 @@ public:
     AP_HAL::AnalogSource* channel(int16_t n);
 
 protected: 
-    static ADCSource* _create_channel(int16_t num);
-    static void _register_channel(ADCSource*);
-    static void _timer_event(uint32_t);
-    static ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];
-    static int16_t _num_channels;
-    static int16_t _active_channel;
-    static uint16_t _channel_repeat_count;
+    ADCSource* _create_channel(int16_t num);
+    void _register_channel(ADCSource*);
+    void _timer_event(void);
+    ADCSource* _channels[AVR_INPUT_MAX_CHANNELS];
+    int16_t _num_channels;
+    int16_t _active_channel;
+    uint16_t _channel_repeat_count;
 
 private:
     ADCSource _vcc;

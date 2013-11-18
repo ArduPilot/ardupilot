@@ -32,13 +32,6 @@ static void update_auto()
     }
 }
 
-// this is only used by an air-start
-static void reload_commands_airstart()
-{
-    init_commands();
-    decrement_cmd_index();
-}
-
 /*
   fetch a mission item from EEPROM
 */
@@ -127,13 +120,6 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
     hal.storage->write_dword(mem, temp.lng);
 }
 
-static void decrement_cmd_index()
-{
-    if (g.command_index > 0) {
-        g.command_index.set_and_save(g.command_index - 1);
-    }
-}
-
 static int32_t read_alt_to_hold()
 {
     if (g.RTL_altitude_cm < 0) {
@@ -219,7 +205,7 @@ static void set_guided_WP(void)
 
 // run this at setup on the ground
 // -------------------------------
-void init_home()
+static void init_home()
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
@@ -256,5 +242,15 @@ void init_home()
 
 }
 
-
-
+/*
+  update home location from GPS
+  this is called as long as we have 3D lock and the arming switch is
+  not pushed
+*/
+static void update_home()
+{
+    home.lng        = g_gps->longitude;                                 // Lon * 10**7
+    home.lat        = g_gps->latitude;                                  // Lat * 10**7
+    home.alt        = max(g_gps->altitude_cm, 0);
+    barometer.update_calibration();
+}

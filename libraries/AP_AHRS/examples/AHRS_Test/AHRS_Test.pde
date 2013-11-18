@@ -22,6 +22,9 @@
 #include <Filter.h>
 #include <SITL.h>
 #include <AP_Buffer.h>
+#include <AP_Notify.h>
+#include <AP_Vehicle.h>
+#include <DataFlash.h>
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
@@ -35,7 +38,7 @@ AP_InertialSensor_MPU6000 ins;
 AP_ADC_ADS7844 adc;
 AP_InertialSensor_Oilpan ins( &adc );
 #else
-AP_InertialSensor_Stub ins;
+AP_InertialSensor_HIL ins;
 #endif
 
 AP_Compass_HMC5843 compass;
@@ -45,33 +48,13 @@ GPS *g_gps;
 AP_GPS_Auto g_gps_driver(&g_gps);
 
 // choose which AHRS system to use
-AP_AHRS_DCM  ahrs(&ins, g_gps);
-//AP_AHRS_MPU6000  ahrs(&ins, g_gps);		// only works with APM2
+AP_AHRS_DCM  ahrs(ins, g_gps);
 
 AP_Baro_HIL barometer;
 
 
 #define HIGH 1
 #define LOW 0
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define A_LED_PIN        27
- # define C_LED_PIN        25
- # define LED_ON           LOW
- # define LED_OFF          HIGH
-#else
- # define A_LED_PIN        37
- # define C_LED_PIN        35
- # define LED_ON           HIGH
- # define LED_OFF          LOW
-#endif
-
-
-static void flash_leds(bool on)
-{
-    hal.gpio->write(A_LED_PIN, on ? LED_OFF : LED_ON);
-    hal.gpio->write(C_LED_PIN, on ? LED_ON : LED_OFF);
-}
 
 void setup(void)
 {
@@ -83,9 +66,8 @@ void setup(void)
 #endif
 
     ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ,
-			 flash_leds);
-    ins.init_accel(flash_leds);
+			 AP_InertialSensor::RATE_100HZ);
+    ins.init_accel();
 
     ahrs.init();
 

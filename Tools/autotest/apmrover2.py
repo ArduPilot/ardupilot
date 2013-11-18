@@ -81,7 +81,7 @@ def drive_APMrover2(viewerip=None, map=False):
     if viewerip:
         options += " --out=%s:14550" % viewerip
     if map:
-        options += ' --map --console'
+        options += ' --map'
 
     sil = util.start_SIL('APMrover2', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)

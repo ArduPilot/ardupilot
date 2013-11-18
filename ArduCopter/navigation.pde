@@ -1,31 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// update_navigation - invokes navigation routines
-// called at 10hz
-static void update_navigation()
-{
-    static uint32_t nav_last_update = 0;        // the system time of the last time nav was run update
-
-    // exit immediately if not auto_armed
-    if (!ap.auto_armed) {
-        return;
-    }
-
-    // check for inertial nav updates
-    if( inertial_nav.position_ok() ) {
-
-        // calculate time since nav controllers last ran
-        dTnav = (float)(millis() - nav_last_update)/ 1000.0f;
-        nav_last_update = millis();
-
-        // prevent runnup in dTnav value
-        dTnav = min(dTnav, 1.0f);
-
-        // run the navigation controllers
-        update_nav_mode();
-    }
-}
-
 // run_nav_updates - top level call for the autopilot
 // ensures calculations such as "distance to waypoint" are calculated before autopilot makes decisions
 // To-Do - rename and move this function to make it's purpose more clear
@@ -54,7 +28,7 @@ static void calc_position(){
 static void calc_distance_and_bearing()
 {
     Vector3f curr = inertial_nav.get_position();
-    
+
     // get target from loiter or wpinav controller
     if( nav_mode == NAV_LOITER || nav_mode == NAV_CIRCLE ) {
         wp_distance = wp_nav.get_distance_to_target();
@@ -68,15 +42,12 @@ static void calc_distance_and_bearing()
     }
 
     // calculate home distance and bearing
-    if( ap.home_is_set && (g_gps->status() == GPS::GPS_OK_FIX_3D || g_gps->status() == GPS::GPS_OK_FIX_2D)) {
+    if(GPS_ok()) {
         home_distance = pythagorous2(curr.x, curr.y);
         home_bearing = pv_get_bearing_cd(curr,Vector3f(0,0,0));
 
         // update super simple bearing (if required) because it relies on home_bearing
-        update_super_simple_bearing();
-    }else{
-        home_distance = 0;
-        home_bearing = 0;
+        update_super_simple_bearing(false);
     }
 }
 
@@ -115,6 +86,8 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_NONE:
             nav_initialised = true;
+            // initialise global navigation variables including wp_distance, nav_roll
+            reset_nav_params();
             break;
 
         case NAV_CIRCLE:
@@ -145,8 +118,16 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 }
 
 // update_nav_mode - run navigation controller based on nav_mode
+// called at 100hz
 static void update_nav_mode()
 {
+    static uint8_t log_counter;     // used to slow NTUN logging
+
+    // exit immediately if not auto_armed or inertial nav position bad
+    if (!ap.auto_armed || !inertial_nav.position_ok()) {
+        return;
+    }
+
     switch( nav_mode ) {
 
         case NAV_NONE:
@@ -155,12 +136,17 @@ static void update_nav_mode()
 
         case NAV_CIRCLE:
             // call circle controller which in turn calls loiter controller
-            update_circle(dTnav);
+            update_circle();
             break;
 
         case NAV_LOITER:
-            // call loiter controller
-            wp_nav.update_loiter();
+            // reset target if we are still on the ground
+            if (ap.land_complete) {
+                wp_nav.init_loiter_target(inertial_nav.get_position(),inertial_nav.get_velocity());
+            }else{
+                // call loiter controller
+                wp_nav.update_loiter();
+            }
             break;
 
         case NAV_WP:
@@ -169,20 +155,12 @@ static void update_nav_mode()
             break;
     }
 
-    // log to dataflash
-    if ((g.log_bitmask & MASK_LOG_NTUN) && nav_mode != NAV_NONE) {
+    // log to dataflash at 10hz
+    log_counter++;
+    if (log_counter >= 10 && (g.log_bitmask & MASK_LOG_NTUN) && nav_mode != NAV_NONE) {
+        log_counter = 0;
         Log_Write_Nav_Tuning();
     }
-
-    /*
-    // To-Do: check that we haven't broken toy mode
-    case TOY_A:
-    case TOY_M:
-        set_nav_mode(NAV_NONE);
-        update_nav_wp();
-        break;
-    }
-    */
 }
 
 // Keeps old data out of our calculation / logs
@@ -234,7 +212,7 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
         circle_angle = wrap_PI(heading_in_radians-PI);
 
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*g.circle_radius*100.0f)); 
+        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*g.circle_radius*100.0f));
 
         // angular_velocity in radians per second
         circle_angular_velocity_max = max_velocity/((float)g.circle_radius * 100.0f);
@@ -257,39 +235,57 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
 
 // update_circle - circle position controller's main call which in turn calls loiter controller with updated target position
 static void
-update_circle(float dt)
+update_circle()
 {
-    float cir_radius = g.circle_radius * 100;
-    Vector3f circle_target;
+    static float last_update;    // time of last circle call
 
-    // ramp up angular velocity to maximum
-    if (g.circle_rate >= 0) {
-        if (circle_angular_velocity < circle_angular_velocity_max) {
-            circle_angular_velocity += circle_angular_acceleration * dt;
-            circle_angular_velocity = constrain_float(circle_angular_velocity, 0, circle_angular_velocity_max);
+    // calculate dt
+    uint32_t now = hal.scheduler->millis();
+    float dt = (now - last_update) / 1000.0f;
+
+    // ensure enough time has passed since the last iteration
+    if (dt >= 0.095f) {
+        float cir_radius = g.circle_radius * 100;
+        Vector3f circle_target;
+
+        // range check dt
+        if (dt >= 1.0f) {
+            dt = 0;
         }
-    }else{
-        if (circle_angular_velocity > circle_angular_velocity_max) {
-            circle_angular_velocity += circle_angular_acceleration * dt;
-            circle_angular_velocity = constrain_float(circle_angular_velocity, circle_angular_velocity_max, 0);
+
+        // update time of circle call
+        last_update = now;
+
+        // ramp up angular velocity to maximum
+        if (g.circle_rate >= 0) {
+            if (circle_angular_velocity < circle_angular_velocity_max) {
+                circle_angular_velocity += circle_angular_acceleration * dt;
+                circle_angular_velocity = constrain_float(circle_angular_velocity, 0, circle_angular_velocity_max);
+            }
+        }else{
+            if (circle_angular_velocity > circle_angular_velocity_max) {
+                circle_angular_velocity += circle_angular_acceleration * dt;
+                circle_angular_velocity = constrain_float(circle_angular_velocity, circle_angular_velocity_max, 0);
+            }
         }
-    }
 
-    // update the target angle
-    circle_angle += circle_angular_velocity * dt;
-    circle_angle = wrap_PI(circle_angle);
+        // update the target angle
+        circle_angle += circle_angular_velocity * dt;
+        circle_angle = wrap_PI(circle_angle);
 
-    // update the total angle travelled
-    circle_angle_total += circle_angular_velocity * dt;
+        // update the total angle travelled
+        circle_angle_total += circle_angular_velocity * dt;
 
-    // if the circle_radius is zero we are doing panorama so no need to update loiter target
-    if( g.circle_radius != 0.0 ) {
-        // calculate target position
-        circle_target.x = circle_center.x + cir_radius * cosf(-circle_angle);
-        circle_target.y = circle_center.y - cir_radius * sinf(-circle_angle);
+        // if the circle_radius is zero we are doing panorama so no need to update loiter target
+        if( g.circle_radius != 0.0 ) {
+            // calculate target position
+            circle_target.x = circle_center.x + cir_radius * cosf(-circle_angle);
+            circle_target.y = circle_center.y - cir_radius * sinf(-circle_angle);
+            circle_target.z = wp_nav.get_desired_alt();
 
-        // re-use loiter position controller
-        wp_nav.set_loiter_target(circle_target);
+            // re-use loiter position controller
+            wp_nav.set_loiter_target(circle_target);
+        }
     }
 
     // call loiter controller

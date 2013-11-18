@@ -43,10 +43,10 @@ public:
     void ListAvailableLogs(AP_HAL::BetterStream *port);
 
 private:
-    static int _write_fd;
+    int _write_fd;
     int _read_fd;
     uint32_t _read_offset;
-    static volatile bool _initialised;
+    volatile bool _initialised;
     const char *_log_directory;
 
     /*
@@ -55,18 +55,18 @@ private:
     void ReadBlock(void *pkt, uint16_t size);
 
     // write buffer
-    static uint8_t *_writebuf;
-    static const uint16_t _writebuf_size;
-    static volatile uint16_t _writebuf_head;
-    static volatile uint16_t _writebuf_tail;
-    static uint32_t _last_write_time;
+    uint8_t *_writebuf;
+    const uint16_t _writebuf_size;
+    volatile uint16_t _writebuf_head;
+    volatile uint16_t _writebuf_tail;
+    uint32_t _last_write_time;
 
     /* construct a file name given a log number. Caller must free. */
     char *_log_file_name(uint16_t log_num);
     char *_lastlog_file_name(void);
     uint32_t _get_log_size(uint16_t log_num);
 
-    static void _io_timer(uint32_t now);
+    void _io_timer(void);
 };
 
 

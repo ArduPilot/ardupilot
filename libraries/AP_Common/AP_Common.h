@@ -1,11 +1,18 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-//
-// This is free software; you can redistribute it and/or modify it under
-// the terms of the GNU Lesser General Public License as published by the
-// Free Software Foundation; either version 2.1 of the License, or (at
-// your option) any later version.
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 ///
 /// @file       AP_Common.h
 /// @brief		Common definitions and utility routines for the ArduPilot
@@ -30,6 +37,9 @@
 #else
 #define PACKED __attribute__((__packed__))
 #endif
+
+// this can be used to optimize individual functions
+#define OPTIMIZE(level) __attribute__((optimize(level)))
 
 // Make some dire warnings into errors
 //
@@ -87,6 +97,17 @@ struct Location {
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
+struct PACKED RallyLocation {
+    int32_t lat;        //Latitude * 10^7
+    int32_t lng;        //Longitude * 10^7
+    int16_t alt;        //transit altitude (and loiter altitude) in meters;
+    int16_t break_alt;  //when autolanding, break out of loiter at this alt (meters) 
+    uint16_t land_dir;   //when the time comes to auto-land, try to land in this direction (centidegrees)
+    uint8_t flags;      //bit 0 = seek favorable winds when choosing a landing poi
+                        //bit 1 = do auto land after arriving
+                        //all other bits are for future use.
+};
+
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -104,6 +125,7 @@ struct Location {
 #define AP_PRODUCT_ID_APM1_2560         0x02    // APM1 with 2560 CPUs
 #define AP_PRODUCT_ID_SITL              0x03    // Software in the loop
 #define AP_PRODUCT_ID_PX4               0x04    // PX4 on NuttX
+#define AP_PRODUCT_ID_PX4_V2            0x05    // PX4 FMU2 on NuttX
 #define AP_PRODUCT_ID_APM2ES_REV_C4 0x14        // APM2 with MPU6000ES_REV_C4
 #define AP_PRODUCT_ID_APM2ES_REV_C5     0x15    // APM2 with MPU6000ES_REV_C5
 #define AP_PRODUCT_ID_APM2ES_REV_D6     0x16    // APM2 with MPU6000ES_REV_D6
@@ -115,5 +137,7 @@ struct Location {
 #define AP_PRODUCT_ID_APM2_REV_D7       0x57    // APM2 with MPU6000_REV_D7
 #define AP_PRODUCT_ID_APM2_REV_D8       0x58    // APM2 with MPU6000_REV_D8
 #define AP_PRODUCT_ID_APM2_REV_D9       0x59    // APM2 with MPU6000_REV_D9
+#define AP_PRODUCT_ID_FLYMAPLE          0x100   // Flymaple with ITG3205, ADXL345, HMC5883, BMP085
+#define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
 
 #endif // _AP_COMMON_H

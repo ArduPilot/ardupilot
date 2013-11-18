@@ -1,12 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_Compass_HMC5843.cpp - Arduino Library for HMC5843 I2C magnetometer
  *       Code by Jordi Muñoz and Jose Julio. DIYDrones.com
- *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  *
  *       Sensor is conected to I2C port
  *       Sensor is initialized in Continuos mode (10Hz)
@@ -82,13 +92,13 @@ bool AP_Compass_HMC5843::read_raw()
     }
 
     int16_t rx, ry, rz;
-    rx = (int16_t)(buff[0] << 8) | buff[1];
+    rx = (((int16_t)buff[0]) << 8) | buff[1];
     if (product_id == AP_COMPASS_TYPE_HMC5883L) {
-        rz = (int16_t)(buff[2] << 8) | buff[3];
-        ry = (int16_t)(buff[4] << 8) | buff[5];
+        rz = (((int16_t)buff[2]) << 8) | buff[3];
+        ry = (((int16_t)buff[4]) << 8) | buff[5];
     } else {
-        ry = (int16_t)(buff[2] << 8) | buff[3];
-        rz = (int16_t)(buff[4] << 8) | buff[5];
+        ry = (((int16_t)buff[2]) << 8) | buff[3];
+        rz = (((int16_t)buff[4]) << 8) | buff[5];
     }
     if (rx == -4096 || ry == -4096 || rz == -4096) {
         // no valid data available
@@ -106,13 +116,19 @@ bool AP_Compass_HMC5843::read_raw()
 // accumulate a reading from the magnetometer
 void AP_Compass_HMC5843::accumulate(void)
 {
+    if (!_initialised) {
+        // someone has tried to enable a compass for the first time
+        // mid-flight .... we can't do that yet (especially as we won't
+        // have the right orientation!)
+        return;
+    }
    uint32_t tnow = hal.scheduler->micros();
    if (healthy && _accum_count != 0 && (tnow - _last_accum_time) < 13333) {
 	  // the compass gets new data at 75Hz
 	  return;
    }
 
-   if (!_i2c_sem->take(5)) {
+   if (!_i2c_sem->take(1)) {
        // the bus is busy - try again later
        return;
    }
@@ -172,6 +188,7 @@ AP_Compass_HMC5843::init()
     }
 
     // determine if we are using 5843 or 5883L
+    _base_config = 0;
     if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
         !read_register(ConfigRegA, &_base_config)) {
         healthy = false;
@@ -236,18 +253,8 @@ AP_Compass_HMC5843::init()
 
 #if 0
         /* useful for debugging */
-        Serial.print("mag_x: ");
-        Serial.print(_mag_x);
-        Serial.print(" mag_y: ");
-        Serial.print(_mag_y);
-        Serial.print(" mag_z: ");
-        Serial.println(_mag_z);
-        Serial.print("CalX: ");
-        Serial.print(calibration[0]/good_count);
-        Serial.print(" CalY: ");
-        Serial.print(calibration[1]/good_count);
-        Serial.print(" CalZ: ");
-        Serial.println(calibration[2]/good_count);
+        hal.console->printf_P(PSTR("MagX: %d MagY: %d MagZ: %d\n"), (int)_mag_x, (int)_mag_y, (int)_mag_z);
+        hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), cal[0], cal[1], cal[2]);
 #endif
     }
 
@@ -330,8 +337,10 @@ bool AP_Compass_HMC5843::read()
     // add user selectable orientation
     rot_mag.rotate((enum Rotation)_orientation.get());
 
-    // add in board orientation from AHRS
-    rot_mag.rotate(_board_orientation);
+    if (!_external) {
+        // and add in AHRS_ORIENTATION setting if not an external compass
+        rot_mag.rotate(_board_orientation);
+    }
 
     rot_mag += _offset.get();
 

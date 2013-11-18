@@ -1,13 +1,23 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*
  *  main loop scheduler for APM
  *  Author: Andrew Tridgell, January 2013
  *
- *  This firmware is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
  */
 
 #ifndef AP_SCHEDULER_H
@@ -53,6 +63,11 @@ public:
     // return debug parameter
     uint8_t debug(void) { return _debug; }
 
+    // return load average, as a number between 0 and 1. 1 means
+    // 100% load. Calculated from how much spare time we have at the
+    // end of a run()
+    float load_average(uint32_t tick_time_usec) const;
+
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -73,10 +88,16 @@ private:
 	uint16_t *_last_run;
 
 	// number of microseconds allowed for the current task
-	uint16_t _task_time_allowed;
+	uint32_t _task_time_allowed;
 
 	// the time in microseconds when the task started
 	uint32_t _task_time_started;
+
+    // number of spare microseconds accumulated
+    uint32_t _spare_micros;
+
+    // number of ticks that _spare_micros is counted over
+    uint8_t _spare_ticks;
 };
 
 #endif // AP_SCHEDULER_H

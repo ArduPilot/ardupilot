@@ -54,6 +54,7 @@ SKETCHLIBSRCDIRS	:=	$(SKETCHLIBS) $(addsuffix /utility,$(SKETCHLIBS))
 SKETCHLIBSRCS		:=	$(wildcard $(foreach suffix,$(SRCSUFFIXES),$(addsuffix /$(suffix),$(SKETCHLIBSRCDIRS))))
 SKETCHLIBOBJS		:=	$(addsuffix .o,$(basename $(subst $(SKETCHBOOK),$(BUILDROOT),$(SKETCHLIBSRCS))))
 SKETCHLIBINCLUDES	:=	$(addprefix -I,$(SKETCHLIBS))
+SKETCHLIBSRCSRELATIVE	:=	$(subst $(SKETCHBOOK)/,,$(SKETCHLIBSRCS))
 
 ifeq ($(VERBOSE),)
 v = @
@@ -61,9 +62,12 @@ else
 v =
 endif
 
+showflags:
+	@echo "HAL_BOARD=$(HAL_BOARD) TOOLCHAIN=$(TOOLCHAIN) EXTRAFLAGS=$(EXTRAFLAGS)"
+
 #
 # Build the sketch.cpp file
-$(SKETCHCPP):	$(SKETCHCPP_SRC)
+$(SKETCHCPP): showflags $(SKETCHCPP_SRC)
 	@echo "building $(SKETCHCPP)"
 	$(RULEHDR)
 	$(v)$(AWK) -v mode=header '$(SKETCH_SPLITTER)'   $(SKETCHCPP_SRC) >  $@

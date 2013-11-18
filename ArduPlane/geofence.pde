@@ -180,7 +180,7 @@ static void geofence_check(bool altitude_check_only)
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
         if (geofence_state != NULL &&
-            g.fence_action == FENCE_ACTION_GUIDED &&
+            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) &&
             g.fence_channel != 0 &&
             control_mode == GUIDED &&
             g.fence_total >= 5 &&
@@ -213,7 +213,7 @@ static void geofence_check(bool altitude_check_only)
     } else if (geofence_check_maxalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MAXALT;
-    } else if (!altitude_check_only && ahrs.get_position(&loc)) {
+    } else if (!altitude_check_only && ahrs.get_projected_position(loc)) {
         Vector2l location;
         location.x = loc.lat;
         location.y = loc.lng;
@@ -264,6 +264,7 @@ static void geofence_check(bool altitude_check_only)
         break;
 
     case FENCE_ACTION_GUIDED:
+    case FENCE_ACTION_GUIDED_THR_PASS:
         // fly to the return point, with an altitude half way between
         // min and max
         if (g.fence_minalt >= g.fence_maxalt) {
@@ -286,6 +287,9 @@ static void geofence_check(bool altitude_check_only)
         }
 
         set_mode(GUIDED);
+        if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
+            guided_throttle_passthru = true;
+        }
         break;
     }
 

@@ -64,7 +64,7 @@ static inline uint16_t mavlink_msg_file_transfer_res_pack(uint8_t system_id, uin
  * @brief Pack a file_transfer_res message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param transfer_uid Unique transfer ID
  * @param result 0: OK, 1: not permitted, 2: bad path / file name, 3: no space left on device
@@ -97,7 +97,7 @@ static inline uint16_t mavlink_msg_file_transfer_res_pack_chan(uint8_t system_id
 }
 
 /**
- * @brief Encode a file_transfer_res struct into a message
+ * @brief Encode a file_transfer_res struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -107,6 +107,20 @@ static inline uint16_t mavlink_msg_file_transfer_res_pack_chan(uint8_t system_id
 static inline uint16_t mavlink_msg_file_transfer_res_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_file_transfer_res_t* file_transfer_res)
 {
 	return mavlink_msg_file_transfer_res_pack(system_id, component_id, msg, file_transfer_res->transfer_uid, file_transfer_res->result);
+}
+
+/**
+ * @brief Encode a file_transfer_res struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param file_transfer_res C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_file_transfer_res_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_file_transfer_res_t* file_transfer_res)
+{
+	return mavlink_msg_file_transfer_res_pack_chan(system_id, component_id, chan, msg, file_transfer_res->transfer_uid, file_transfer_res->result);
 }
 
 /**

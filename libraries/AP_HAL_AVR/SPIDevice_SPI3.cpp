@@ -44,11 +44,12 @@ AP_HAL::Semaphore* AVRSPI3DeviceDriver::get_semaphore() {
     return &_semaphore;
 }
 
-void AVRSPI3DeviceDriver::_cs_assert() {
+void AVRSPI3DeviceDriver::_cs_assert() 
+{
     /* set the device UCSRnC configuration bits.
      * only sets data order, clock phase, and clock polarity bits (lowest
      * three bits)  */
-    const uint8_t new_ucsr3c = UCSR3C | (_ucsr3c & (0x07));
+    const uint8_t new_ucsr3c = (UCSR3C & ~0x07) | (_ucsr3c & (0x07));
     UCSR3C = new_ucsr3c;
     /* set the device baud rate */
     UBRR3 = _ubrr3;

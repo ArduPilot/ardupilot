@@ -17,6 +17,8 @@
 #define RC_CHANNEL_TYPE_RANGE       1
 #define RC_CHANNEL_TYPE_ANGLE_RAW   2
 
+#define RC_MAX_CHANNELS 14
+
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel {
@@ -30,7 +32,9 @@ public:
         _high(1),
         _ch_out(ch_out) {
 		AP_Param::setup_object_defaults(this, var_info);
-        rc_ch[ch_out] = this;
+        if (ch_out < RC_MAX_CHANNELS) {
+            rc_ch[ch_out] = this;
+        }
     }
 
     // setup min and max radio values in CLI
@@ -103,7 +107,7 @@ public:
 
     static const struct AP_Param::GroupInfo         var_info[];
 
-    static RC_Channel *rc_channel(uint8_t i) { return rc_ch[i]; }
+    static RC_Channel *rc_channel(uint8_t i);
 
 private:
     AP_Int8         _reverse;
@@ -115,7 +119,7 @@ private:
     int16_t         _low_out;
     uint8_t         _ch_out;
 
-    static RC_Channel *rc_ch[8];
+    static RC_Channel *rc_ch[RC_MAX_CHANNELS];
 };
 
 // This is ugly, but it fixes poorly architected library
