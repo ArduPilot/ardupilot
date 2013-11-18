@@ -40,7 +40,6 @@ mav.log.raw
 status.txt
 *.exe
 *.dll
-*.obj
 *.zip
 *.pyc
 Make.dep
