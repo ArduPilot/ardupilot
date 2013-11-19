@@ -226,7 +226,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s
     // @Units: cm/s
-    // @Range: 20 200
+    // @Range: 30 200
     // @Increment: 10
     // @User: Standard
     GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
