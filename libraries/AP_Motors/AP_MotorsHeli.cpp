@@ -103,7 +103,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Param: TAIL_TYPE
     // @DisplayName: Tail Type
     // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected
-    // @Values: 0:Servo only,1:Servo w/ ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch
+    // @Values: 0:Servo only,1:Servo with ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch
     // @User: Standard
     AP_GROUPINFO("TAIL_TYPE",9,     AP_MotorsHeli,  _tail_type, AP_MOTORS_HELI_TAILTYPE_SERVO),
 
