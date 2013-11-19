@@ -51,6 +51,34 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
 
+	// @Param: RFNDR_L_ENABLE
+    // @DisplayName: Enable Range Finder Long GP2Y0A02YK0F
+    // @Description: Setting this to Enabled(1) will enable the Range Finder. Setting this to Disabled(0) will disable 
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(range_finder_long_enabled,  "RFNDR_L_ENABLE", DISABLED),
+
+	// @Param: RFNDR_S_ENABLE
+    // @DisplayName: Enable Range Finder Short GP2Y0A21YK
+    // @Description: Setting this to Enabled(1) will enable the Range Finder. Setting this to Disabled(0) will disable 
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(range_finder_short_enabled,  "RFNDR_S_ENABLE", DISABLED),
+
+    // @Param: RFNDR_L_TYPE
+    // @DisplayName: Range Finder Long type
+    // @Description: Used to adjust scaling to match the range finder used
+    // @Values: 0:XL-EZ0/XL-EZ4,1:LV-EZ0,2:XLL-EZ0,3:HRLV,4:AP_RANGEFINDER_LONG_GP2Y0A02YK0F,5:AP_RANGEFINDER_SHORT_GP2Y0A21YK
+    // @User: Standard
+    GSCALAR(range_finder_long_type,     "RFNDR_L_TYPE", AP_RANGEFINDER_LONG_GP2Y0A02YK0F),
+
+    // @Param: RFNDR_S_TYPE
+    // @DisplayName: Range Finder Long type
+    // @Description: Used to adjust scaling to match the range finder used
+    // @Values: 0:XL-EZ0/XL-EZ4,1:LV-EZ0,2:XLL-EZ0,3:HRLV,4:AP_RANGEFINDER_LONG_GP2Y0A02YK0F,5:AP_RANGEFINDER_SHORT_GP2Y0A21YK
+    // @User: Standard
+    GSCALAR(range_finder_short_type,     "RFNDR_S_TYPE", AP_RANGEFINDER_SHORT_GP2Y0A21YK),
+
     // @Param: KFF_RDDRMIX
     // @DisplayName: Rudder Mix
     // @Description: The amount of rudder mix to apply during aileron movement 0 = 0 %, 1 = 100%

@@ -39,8 +39,7 @@
 
 // Constructor //////////////////////////////////////////////////////////////
 
-AP_RangeFinder_SharpGP2Y::AP_RangeFinder_SharpGP2Y(AP_HAL::AnalogSource *source, FilterInt16 *filter) :
-    RangeFinder(source, filter)
+AP_RangeFinder_SharpGP2Y::AP_RangeFinder_SharpGP2Y(AP_HAL::AnalogSource *source, FilterInt16 *filter) : RangeFinder(source, filter)
 {
     max_distance = AP_RANGEFINDER_SHARPEGP2Y_MAX_DISTANCE;
     min_distance = AP_RANGEFINDER_SHARPEGP2Y_MIN_DISTANCE;

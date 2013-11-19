@@ -23,6 +23,37 @@ static int32_t read_barometer(void)
     return altitude_filter.apply(barometer.get_altitude() * 100.0);
 }
 
+
+// return range finder altitude in centimeters
+static int16_t read_range_finder_long(void)
+{
+#if CONFIG_RANGE_FINDER == ENABLED
+    // exit immediately if disabled
+	if( !g.range_finder_long_enabled ) /// reference parameters.h 
+	{
+        range_finder_alt_health = 0;
+        return 0;
+    }
+
+    int16_t temp_alt = rangeFinderLong->read();
+
+    if (temp_alt >= rangeFinderLong->min_distance && temp_alt <= rangeFinderLong->max_distance * RANGE_FINDER_RELIABLE_DISTANCE_PCT) 
+	{
+        if ( range_finder_alt_health < RANGE_FINDER_ALT_HEALTH_MAX ) 
+		{
+            range_finder_alt_health++;
+        }
+    }
+	else
+	{
+        range_finder_alt_health = 0;
+    }
+    return temp_alt;
+#else
+    return 0;
+#endif
+}
+
 /*
   ask airspeed sensor for a new value
  */

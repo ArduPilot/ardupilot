@@ -21,3 +21,39 @@
  *
  */
 
+//////////////////////////////////////////////////////////////////////////////
+// Range Finder
+// Will Baldwin
+//
+
+#ifndef CONFIG_RANGE_FINDER
+ #define CONFIG_RANGE_FINDER ENABLED
+#endif
+
+#ifndef CONFIG_RANGE_FINDER_SOURCE
+ #define CONFIG_RANGE_FINDER_SOURCE RANGE_FINDER_SOURCE_ANALOG_PINS
+#endif
+
+#ifndef CONFIG_RANGE_FINDER_SOURCE_LONG_ANALOG_PIN
+#define CONFIG_RANGE_FINDER_SOURCE_LONG_ANALOG_PIN 0
+#endif
+
+#ifndef CONFIG_RANGE_FINDER_SOURCE_SHORT_ANALOG_PIN
+#define CONFIG_RANGE_FINDER_SOURCE_SHORT_ANALOG_PIN 1
+#endif
+
+#ifndef RANGE_FINDER_ALT_HEALTH_MAX
+ #define RANGE_FINDER_ALT_HEALTH_MAX 3            // number of good reads that indicates a healthy RANGE_FINDER
+#endif
+
+#ifndef RANGE_FINDER_RELIABLE_DISTANCE_PCT
+ #define RANGE_FINDER_RELIABLE_DISTANCE_PCT 0.70f // we trust the RANGE_FINDER out to 70% of it's maximum range
+#endif
+
+#ifndef RANGE_FINDER_GAIN_DEFAULT
+ #define RANGE_FINDER_GAIN_DEFAULT 2.0            // gain for controlling how quickly RANGE_FINDER range adjusts target altitude (lower means slower reaction)
+#endif
+
+#ifndef THR_SURFACE_TRACKING_VELZ_MAX
+ #define THR_SURFACE_TRACKING_VELZ_MAX 150 		// max vertical speed change while surface tracking with RANGE_FINDER
+#endif

@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7DACB4B4-A241-46FB-9165-55A763102C29}</ProjectGuid>
+    <RootNamespace>ArduPlane</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ForcedIncludeFiles>C:\Users\wbaldwin\Documents\GitHub\ardupilot\ArduPlane\Visual Micro\.ArduPlane.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
+      <PreprocessorDefinitions>__AVR_ATmega328P__;ARDUINO=101;ARDUINO_MAIN;__AVR__;F_CPU=16000000L;__cplusplus;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\wbaldwin\Desktop\ArduPilot-Arduino-1.0.3-windows\hardware\arduino\cores\arduino;C:\Users\wbaldwin\Desktop\ArduPilot-Arduino-1.0.3-windows\hardware\arduino\variants\standard;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Common;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Common\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Progmem;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Progmem\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Menu;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Menu\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Param;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Param\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_GPS;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_GPS\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Baro;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Baro\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Compass;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Compass\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Math;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Math\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_ADC;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_ADC\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_ADC_AnalogSource;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_ADC_AnalogSource\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_InertialSensor;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_InertialSensor\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_AHRS;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_AHRS\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\RC_Channel;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\RC_Channel\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_RangeFinder;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_RangeFinder\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\Filter;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\Filter\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Buffer;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Buffer\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Relay;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Relay\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Camera;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Camera\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Airspeed;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Airspeed\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\memcheck;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\memcheck\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\APM_OBC;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\APM_OBC\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\APM_Control;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\APM_Control\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\GCS_MAVLink;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\GCS_MAVLink\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Mount;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Mount\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Declination;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Declination\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\DataFlash;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\DataFlash\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\SITL;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\SITL\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Scheduler;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Scheduler\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Navigation;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Navigation\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_L1_Control;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_L1_Control\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_RCMapper;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_RCMapper\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Vehicle;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Vehicle\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_SpdHgtControl;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_SpdHgtControl\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_TECS;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_TECS\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Notify;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_Notify\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_BattMonitor;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_BattMonitor\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_AVR;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_AVR\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_AVR_SITL;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_AVR_SITL\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_PX4;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_PX4\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_FLYMAPLE;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_FLYMAPLE\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_Linux;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_Linux\utility;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_Empty;C:\Users\wbaldwin\Documents\GitHub\ardupilot\libraries\AP_HAL_Empty\utility;c:\users\wbaldwin\desktop\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\;c:\users\wbaldwin\desktop\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\include\avr\;c:\users\wbaldwin\desktop\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\avr\;c:\users\wbaldwin\desktop\ardupilot-arduino-1.0.3-windows\hardware\tools\avr\lib\gcc\avr\4.3.2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="APM_Config.h" />
+    <ClInclude Include="compat.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="defines.h" />
+    <ClInclude Include="GCS.h" />
+    <ClInclude Include="Parameters.h" />
+    <ClInclude Include="Visual Micro\.ArduPlane.vsarduino.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="APM_Config.h.reference" />
+    <None Include="ArduPlane.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="Attitude.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="climb_rate.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="commands.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="commands_logic.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="commands_process.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="compat.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="control_modes.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="createTags" />
+    <None Include="events.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="failsafe.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="GCS_Mavlink.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="geofence.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="Log.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="Makefile" />
+    <None Include="navigation.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="nocore.inoflag" />
+    <None Include="Parameters.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="radio.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="rally.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="sensors.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="setup.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="system.pde">
+      <FileType>CppCode</FileType>
+    </None>
+    <None Include="test.pde">
+      <FileType>CppCode</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="command_description.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
