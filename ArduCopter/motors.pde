@@ -125,6 +125,9 @@ static void init_arm_motors()
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
 
+    // disable inertial nav errors temporarily
+    inertial_nav.ignore_next_error();
+
 #if LOGGING_ENABLED == ENABLED
     // start dataflash
     start_logging();
@@ -289,19 +292,13 @@ static void pre_arm_checks(bool display_failure)
     // check GPS
     if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
         // check gps is ok if required - note this same check is repeated again in arm_checks
-        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
-            }
+        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks(display_failure)) {
             return;
         }
 
 #if AC_FENCE == ENABLED
         // check fence is initialised
-        if(!fence.pre_arm_check() || (((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) && !pre_arm_gps_checks())) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
-            }
+        if(!fence.pre_arm_check() || (((fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) != 0) && !pre_arm_gps_checks(display_failure))) {
             return;
         }
 #endif
@@ -415,12 +412,23 @@ static void pre_arm_rc_checks()
 }
 
 // performs pre_arm gps related checks and returns true if passed
-static bool pre_arm_gps_checks()
+static bool pre_arm_gps_checks(bool display_failure)
 {
     float speed_cms = inertial_nav.get_velocity().length();     // speed according to inertial nav in cm/s
 
     // ensure GPS is ok and our speed is below 50cm/s
     if (!GPS_ok() || g_gps->hdop > g.gps_hdop_good || gps_glitch.glitching() || speed_cms == 0 || speed_cms > PREARM_MAX_VELOCITY_CMS) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+        }
+        return false;
+    }
+
+    // check for missed gps updates (i.e. not arriving at at least 4hz)
+    if (inertial_nav.error_count() > 0) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Slow GPS"));
+        }
         return false;
     }
 
@@ -439,10 +447,7 @@ static bool arm_checks(bool display_failure)
 
     // check gps is ok if required - note this same check is also done in pre-arm checks
     if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
-        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Bad GPS Pos"));
-            }
+        if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks(display_failure)) {
             return false;
         }
     }
@@ -483,6 +488,9 @@ static void init_disarm_motors()
 #endif
 
     motors.armed(false);
+
+    // disable inertial nav errors temporarily
+    inertial_nav.ignore_next_error();
 
     compass.save_offsets();
 
