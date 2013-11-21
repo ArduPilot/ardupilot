@@ -39,6 +39,11 @@ void AP_InertialNav::update(float dt)
         return;
     }
 
+    // decrement ignore error count if required
+    if (_flags.ignore_error > 0) {
+        _flags.ignore_error--;
+    }
+
     // check if new baro readings have arrived and use them to correct vertical accelerometer offsets.
     check_baro();
 
@@ -137,6 +142,10 @@ void AP_InertialNav::check_gps()
         if (now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS) {
             _position_error.x *= 0.9886;
             _position_error.y *= 0.9886;
+            // increment error count
+            if (_flags.ignore_error == 0 && _error_count < 255 && _xy_enabled) {
+                _error_count++;
+            }
         }
     }
 }
