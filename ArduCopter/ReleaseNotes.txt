@@ -1,5 +1,16 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc7 21-Nov-2013
+Changes from 3.1-rc6
+1) MOT_SPIN_ARMED default to 70
+2) Smoother inertial nav response to missed GPS messages
+3) Safety related changes
+    a) radio and battery failsafe disarm copter if landed in Loiter or AltHold (previously they would RTL)
+    b) Pre-Arm check failure warning output to ground station every 30 seconds until they pass
+    c) INS and inertial nav errors logged to dataflash's PM message
+    d) pre-arm check for slow GPS update rate (if arming in Loiter mode or circular fence enabled)
+    e) pre-arm check for ACRO_BAL_ROLL, ACRO_BAL_PITCH
+------------------------------------------------------------------
 ArduCopter 3.1-rc6 16-Nov-2013
 Improvements over 3.1-rc5
 1) Heli improvements:
