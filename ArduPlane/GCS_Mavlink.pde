@@ -485,11 +485,32 @@ static void NOINLINE send_ahrs(mavlink_channel_t chan)
         ahrs.get_error_yaw());
 }
 
+
+#if HIL_MODE != HIL_MODE_DISABLED
+/*
+  keep last HIL_STATE message to allow sending SIM_STATE
+ */
+static mavlink_hil_state_t last_hil_state;
+#endif
+
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     sitl.simstate_send(chan);
+#elif HIL_MODE != HIL_MODE_DISABLED
+    mavlink_msg_simstate_send(chan,
+                              last_hil_state.roll,
+                              last_hil_state.pitch,
+                              last_hil_state.yaw,
+                              last_hil_state.xacc*0.001*GRAVITY_MSS,
+                              last_hil_state.yacc*0.001*GRAVITY_MSS,
+                              last_hil_state.zacc*0.001*GRAVITY_MSS,
+                              last_hil_state.rollspeed,
+                              last_hil_state.pitchspeed,
+                              last_hil_state.yawspeed,
+                              last_hil_state.lat,
+                              last_hil_state.lon);
 #endif
 }
 
@@ -2013,6 +2034,8 @@ mission_failed:
     {
         mavlink_hil_state_t packet;
         mavlink_msg_hil_state_decode(msg, &packet);
+
+        last_hil_state = packet;
 
         float vel = pythagorous2(packet.vx, packet.vy);
         float cog = wrap_360_cd(ToDeg(atan2f(packet.vy, packet.vx)) * 100);
