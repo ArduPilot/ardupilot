@@ -4,7 +4,7 @@
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
 # To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
-# To enable mavlink on ttys0 add a /fs/microsd/APM/mavlink-ttys0 file
+# To enable uartD on FMUv1 on ttyS1 add a /fs/microsd/APM/uartD.en file
 
 set deviceA /dev/ttyACM0
 
@@ -87,16 +87,18 @@ else
      set BOARD FMUv1
 fi
 
-if [ -f /fs/microsd/APM/mavlink-ttys0 ]
+if [ $BOARD == FMUv1 ]
 then
-   set deviceC /dev/ttyS0
-else
-   if [ $BOARD == FMUv1 ]
+   set deviceC /dev/ttyS2
+   if [ -f /fs/microsd/APM/uartD.en ]
    then
-	set deviceC /dev/ttyS2
+      set deviceD /dev/ttyS1
    else
-	set deviceC /dev/ttyS1
+      set deviceD /dev/null
    fi
+else
+   set deviceC /dev/ttyS1
+   set deviceD /dev/ttyS2
 fi
 
 if uorb start
@@ -128,13 +130,6 @@ if [ $HAVE_PX4IO == true ]
 then
     echo "PX4IO board OK"
     echo "PX4IO board OK" >> $logfile
-    echo "Setting FMU mode_pwm"
-    fmu mode_pwm
-    if [ $BOARD == FMUv1 -a $deviceC == /dev/ttyS1 ]
-    then
-	# ttyS1 is used for PWM output for 4 extra channels
-	set deviceC /dev/ttyS2
-    fi
 else
     echo "No PX4IO board found"
     echo "No PX4IO board found" >> $logfile
@@ -152,15 +147,15 @@ else
 	echo "Setting up mkblctrl driver" >> $logfile
 	mkblctrl -mkmode x
     fi
+fi
 
-    echo "Setting up PX4FMU direct mode"
-    fmu mode_pwm
-    if [ $BOARD == FMUv1 -a $deviceC == /dev/ttyS1 ]
-    then
-	# ttyS1 is used for PWM output when there
-	# is no IO board
-	set deviceC /dev/ttyS2
-    fi
+if [ $BOARD == FMUv1 -a $deviceD == /dev/ttyS1 ]
+then
+        echo "Setting FMU mode_serial"
+        fmu mode_serial
+else
+        echo "Setting FMU mode_pwm"
+        fmu mode_pwm
 fi
 
 
@@ -238,20 +233,12 @@ else
 fi
 
 echo Starting ArduPilot
-echo Starting ArduPilot $deviceA $deviceC >> $logfile
-if ArduPilot -d $deviceA -d2 $deviceC start
+echo Starting ArduPilot $deviceA $deviceC $deviceD >> $logfile
+if ArduPilot -d $deviceA -d2 $deviceC -d3 $deviceD start
 then
     echo ArduPilot started OK
 else
     sh /etc/init.d/rc.error
-fi
-
-# if starting on the console, tell nsh to exit
-# this prevents it from chewing bytes
-if [ $deviceC == /dev/ttyS0 ]
-then
-	echo "Exiting from nsh shell"
-	exit
 fi
 
 echo "rc.APM finished"
