@@ -121,7 +121,7 @@ def convert_gpx():
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
         util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
-        util.run_cmd(util.reltopdir("../MAVProxy/tools/mavflightview.py") + " --imagefile=%s.png %s" % (m,m))
+        util.run_cmd("mavflightview.py --imagefile=%s.png %s" % (m,m))
     return True
 
 
