@@ -46,17 +46,20 @@ static PX4GPIO gpioDriver;
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
+#define UARTD_DEFAULT_DEVICE "/dev/null"
 
 // 3 UART drivers, for GPS plus two mavlink-enabled devices
 static PX4UARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "APM_uartA");
 static PX4UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
 static PX4UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
+static PX4UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "APM_uartD");
 
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
         &uartADriver,  /* uartA */
         &uartBDriver,  /* uartB */
         &uartCDriver,  /* uartC */
+        &uartDDriver,  /* uartD */
         &i2cDriver, /* i2c */
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
@@ -107,6 +110,7 @@ static int main_loop(int argc, char **argv)
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
+    hal.uartD->begin(57600);
     hal.scheduler->init(NULL);
     hal.rcin->init(NULL);
     hal.rcout->init(NULL);
@@ -188,6 +192,7 @@ void HAL_PX4::init(int argc, char * const argv[]) const
     int i;
     const char *deviceA = UARTA_DEFAULT_DEVICE;
     const char *deviceC = UARTC_DEFAULT_DEVICE;
+    const char *deviceD = UARTD_DEFAULT_DEVICE;
 
     if (argc < 1) {
         printf("%s: missing command (try '%s start')", 
@@ -206,8 +211,9 @@ void HAL_PX4::init(int argc, char * const argv[]) const
 
             uartADriver.set_device_path(deviceA);
             uartCDriver.set_device_path(deviceC);
-            printf("Starting %s on %s and %s\n", 
-                   SKETCHNAME, deviceA, deviceC);
+            uartDDriver.set_device_path(deviceD);
+            printf("Starting %s uartA=%s uartC=%s uartD=%s\n", 
+                   SKETCHNAME, deviceA, deviceC, deviceD);
 
             _px4_thread_should_exit = false;
             daemon_task = task_spawn_cmd(SKETCHNAME,
@@ -252,6 +258,17 @@ void HAL_PX4::init(int argc, char * const argv[]) const
                 deviceC = strdup(argv[i+1]);
             } else {
                 printf("missing parameter to -d2 DEVICE\n");
+                usage();
+                exit(1);
+            }
+        }
+
+        if (strcmp(argv[i], "-d3") == 0) {
+            // set uartD terminal device
+            if (argc > i + 1) {
+                deviceD = strdup(argv[i+1]);
+            } else {
+                printf("missing parameter to -d3 DEVICE\n");
                 usage();
                 exit(1);
             }
