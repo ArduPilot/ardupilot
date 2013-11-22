@@ -101,13 +101,14 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,         // stream rates for port0
-        k_param_gcs3,               // stream rates for port3
+        k_param_gcs0 = 110,         // stream rates for uartA
+        k_param_gcs1,               // stream rates for uartC
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial3_baud,
         k_param_telem_delay,
         k_param_serial0_baud,
+        k_param_gcs2,               // stream rates for uartD
 
         // 120: Fly-by-wire control
         //

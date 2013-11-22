@@ -105,7 +105,7 @@ static void init_ardupilot()
     barometer.init();
 
     // init the GCS
-    gcs0.init(hal.uartA);
+    gcs[0].init(hal.uartA);
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
@@ -118,7 +118,13 @@ static void init_ardupilot()
     // we have a 2nd serial port for telemetry
     hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
                      128, SERIAL2_BUFSIZE);
-    gcs3.init(hal.uartC);
+    gcs[1].init(hal.uartC);
+
+    if (num_gcs > 2) {
+        hal.uartD->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
+                         128, SERIAL2_BUFSIZE);        
+        gcs[2].init(hal.uartD);
+    }
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -130,7 +136,9 @@ static void init_ardupilot()
     } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
         do_erase_logs();
-        gcs0.reset_cli_timeout();
+        for (uint8_t i=0; i<num_gcs; i++) {
+            gcs[i].reset_cli_timeout();
+        }
     }
     if (g.log_bitmask != 0) {
         start_logging();
@@ -183,8 +191,11 @@ static void init_ardupilot()
 
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-    if (gcs3.initialised) {
+    if (gcs[1].initialised) {
         hal.uartC->println_P(msg);
+    }
+    if (num_gcs > 2 && gcs[2].initialised) {
+        hal.uartD->println_P(msg);
     }
 
     startup_ground();
