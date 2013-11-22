@@ -1,6 +1,6 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
-ArduCopter 3.1-rc7 21-Nov-2013
+ArduCopter 3.1-rc7 22-Nov-2013
 Changes from 3.1-rc6
 1) MOT_SPIN_ARMED default to 70
 2) Smoother inertial nav response to missed GPS messages
