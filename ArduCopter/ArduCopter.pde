@@ -1283,11 +1283,11 @@ static void update_GPS(void)
     g_gps->update();
 
     // logging and glitch protection run after every gps message
-    if ((g_gps->last_message_time_ms() != last_gps_reading) && motors.armed()) {
+    if (g_gps->last_message_time_ms() != last_gps_reading) {
         last_gps_reading = g_gps->last_message_time_ms();
 
         // log GPS message
-        if (g.log_bitmask & MASK_LOG_GPS) {
+        if ((g.log_bitmask & MASK_LOG_GPS) && motors.armed()) {
             DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
         }
 
