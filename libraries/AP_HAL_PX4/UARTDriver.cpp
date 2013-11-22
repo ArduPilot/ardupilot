@@ -40,6 +40,10 @@ extern const AP_HAL::HAL& hal;
 
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
+    if (strcmp(_devpath, "/dev/null") == 0) {
+        // leave uninitialised
+        return;
+    }
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
