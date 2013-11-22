@@ -32,6 +32,7 @@ HAL_Linux::HAL_Linux() :
         &uartADriver,
         &uartBDriver,
         &uartCDriver,
+        NULL,            /* no uartD */
         &i2cDriver,
         &spiDeviceManager,
         &analogIn,
