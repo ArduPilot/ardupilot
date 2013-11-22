@@ -8,8 +8,7 @@ Changes from 3.1-rc6
     a) radio and battery failsafe disarm copter if landed in Loiter or AltHold (previously they would RTL)
     b) Pre-Arm check failure warning output to ground station every 30 seconds until they pass
     c) INS and inertial nav errors logged to dataflash's PM message
-    d) pre-arm check for slow GPS update rate (if arming in Loiter mode or circular fence enabled)
-    e) pre-arm check for ACRO_BAL_ROLL, ACRO_BAL_PITCH
+    d) pre-arm check for ACRO_BAL_ROLL, ACRO_BAL_PITCH
 ------------------------------------------------------------------
 ArduCopter 3.1-rc6 16-Nov-2013
 Improvements over 3.1-rc5
