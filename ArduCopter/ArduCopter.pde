@@ -782,8 +782,6 @@ static AC_WPNav wp_nav(&inertial_nav, &ahrs, &g.pi_loiter_lat, &g.pi_loiter_lon,
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
 ////////////////////////////////////////////////////////////////////////////////
-// The number of GPS fixes we have had
-static uint8_t gps_fix_count;
 static int16_t pmTest1;
 
 // System Timers
@@ -981,7 +979,6 @@ static void perf_update(void)
                             (unsigned long)perf_info_get_max_time());
     }
     perf_info_reset();
-    gps_fix_count = 0;
     pmTest1 = 0;
 }
 
@@ -1312,9 +1309,6 @@ static void update_GPS(void)
     if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         // clear new data flag
         g_gps->new_data = false;
-
-        // for performance monitoring
-        gps_fix_count++;
 
         // check if we can initialise home yet
         if (!ap.home_is_set) {
