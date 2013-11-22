@@ -424,14 +424,6 @@ static bool pre_arm_gps_checks(bool display_failure)
         return false;
     }
 
-    // check for missed gps updates (i.e. not arriving at at least 4hz)
-    if (inertial_nav.error_count() > 0) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Slow GPS"));
-        }
-        return false;
-    }
-
     // if we got here all must be ok
     return true;
 }
