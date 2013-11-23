@@ -120,7 +120,7 @@ static void init_ardupilot()
                      128, SERIAL2_BUFSIZE);
     gcs[1].init(hal.uartC);
 
-    if (num_gcs > 2) {
+    if (hal.uartD != NULL) {
         hal.uartD->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
                          128, SERIAL2_BUFSIZE);        
         gcs[2].init(hal.uartD);
@@ -265,6 +265,9 @@ static void startup_ground(void)
     // ready to fly
     hal.uartA->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
+    }
 
 #if 0
     // leave GPS blocking until we have support for correct handling
