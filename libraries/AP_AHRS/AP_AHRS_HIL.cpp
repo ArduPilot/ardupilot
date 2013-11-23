@@ -36,3 +36,9 @@ AP_AHRS_HIL::setHil(float _roll, float _pitch, float _yaw,
 
     _dcm_matrix.from_euler(roll, pitch, yaw);
 }
+
+// reset the current attitude, used by HIL
+void reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
+{
+    // not implemented - use setHil()
+}
