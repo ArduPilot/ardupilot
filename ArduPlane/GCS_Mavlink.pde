@@ -2065,6 +2065,13 @@ mission_failed:
         barometer.setHIL(packet.alt*0.001f);
         compass.setHIL(packet.roll, packet.pitch, packet.yaw);
         airspeed.disable();
+
+        // cope with DCM getting badly off due to HIL lag
+        if (fabsf(packet.roll - ahrs.roll) > ToRad(5) ||
+            fabsf(packet.pitch - ahrs.pitch) > ToRad(5) ||
+            fabsf(packet.yaw - ahrs.yaw) > ToRad(5)) {
+            ahrs.reset_attitude(packet.roll, packet.pitch, packet.yaw);
+        }
         break;
     }
 #endif // HIL_MODE
