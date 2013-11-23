@@ -856,6 +856,10 @@ static void set_servos(void)
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED
+    // get the servos to the GCS immediately for HIL
+    if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN) {
+        send_radio_out(MAVLINK_COMM_0);
+    }
     if (!g.hil_servos) {
         return;
     }
@@ -887,7 +891,7 @@ static void set_servos(void)
  #endif
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     g.rc_12.output_ch(CH_12);
- # endif
+ #endif
 }
 
 static bool demoing_servos;
