@@ -55,6 +55,9 @@ public:
     void            update(void);
     void            reset(bool recover_eulers = false);
 
+    // reset the current attitude, used on new IMU calibration
+    void reset_attitude(const float &roll, const float &pitch, const float &yaw);
+
     // dead-reckoning support
     bool get_position(struct Location &loc);
 

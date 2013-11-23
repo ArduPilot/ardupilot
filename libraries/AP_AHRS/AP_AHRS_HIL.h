@@ -36,6 +36,10 @@ public:
     void reset(bool recover_eulers=false) {
     }
 
+    void reset_attitude(const float &_roll, const float &_pitch, const float &_yaw) {
+        // not implemented - use setHil()
+    }
+
     float get_error_rp(void) {
         return 0;
     }

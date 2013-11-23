@@ -117,6 +117,9 @@ public:
     // reset the current attitude, used on new IMU calibration
     virtual void reset(bool recover_eulers=false) = 0;
 
+    // reset the current attitude, used on new IMU calibration
+    virtual void reset_attitude(const float &roll, const float &pitch, const float &yaw) = 0;
+
     // how often our attitude representation has gone out of range
     uint8_t renorm_range_count;
 
