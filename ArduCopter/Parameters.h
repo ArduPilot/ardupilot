@@ -134,11 +134,12 @@ public:
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,
-        k_param_gcs3,
+        k_param_gcs1,
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial3_baud,
         k_param_telem_delay,
+        k_param_gcs2,
 
         //
         // 140: Sensor parameters

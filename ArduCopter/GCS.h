@@ -8,7 +8,9 @@
 #define __GCS_H
 
 #include <AP_HAL.h>
+#include <AP_Common.h>
 #include <GPS.h>
+#include <stdint.h>
 
 ///
 /// @class	GCS
@@ -39,7 +41,6 @@ public:
     ///
     void        init(AP_HAL::UARTDriver *port) {
         _port = port;
-        initialised = true;
     }
 
     /// Update GCS state.
@@ -58,6 +59,14 @@ public:
     /// @param	param		Explicit message parameter.
     ///
     void        send_message(enum ap_message id) {
+    }
+
+    /// Send a text message.
+    ///
+    /// @param	severity	A value describing the importance of the message.
+    /// @param	str			The text to be sent.
+    ///
+    void        send_text(gcs_severity severity, const char *str) {
     }
 
     /// Send a text message with a PSTR()
@@ -122,6 +131,10 @@ public:
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
 
+	// this costs us 51 bytes per instance, but means that low priority
+	// messages don't block the CPU
+    mavlink_statustext_t pending_status;
+
     // call to reset the timeout window for entering the cli
     void reset_cli_timeout();
 private:
@@ -140,6 +153,7 @@ private:
     uint16_t                    _queued_parameter_count; ///< saved count of
                                                          // parameters for
                                                          // queued send
+    uint32_t                    _queued_parameter_send_time_ms;
 
     /// Count the number of reportable parameters.
     ///
@@ -179,16 +193,8 @@ private:
     uint16_t        waypoint_send_timeout; // milliseconds
     uint16_t        waypoint_receive_timeout; // milliseconds
 
-    // data stream rates
-    AP_Int16        streamRateRawSensors;
-    AP_Int16        streamRateExtendedStatus;
-    AP_Int16        streamRateRCChannels;
-    AP_Int16        streamRateRawController;
-    AP_Int16        streamRatePosition;
-    AP_Int16        streamRateExtra1;
-    AP_Int16        streamRateExtra2;
-    AP_Int16        streamRateExtra3;
-    AP_Int16        streamRateParams;
+    // saveable rate of each stream
+    AP_Int16        streamRates[NUM_STREAMS];
 
     // number of 50Hz ticks until we next send this stream
     uint8_t         stream_ticks[NUM_STREAMS];

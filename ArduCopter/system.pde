@@ -134,7 +134,7 @@ static void init_ardupilot()
 #endif
 
     // init the GCS
-    gcs0.init(hal.uartA);
+    gcs[0].init(hal.uartA);
 
     // Register the mavlink service callback. This will run
     // anytime there are more than 5ms remaining in a call to
@@ -151,8 +151,12 @@ static void init_ardupilot()
     // APM2. We actually do have one on APM2 but it isn't necessary as
     // a MUX is used
     hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
-    gcs3.init(hal.uartC);
+    gcs[1].init(hal.uartC);
 #endif
+    if (hal.uartD != NULL) {
+        hal.uartD->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        gcs[2].init(hal.uartD);
+    }
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
@@ -166,7 +170,7 @@ static void init_ardupilot()
     } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
         do_erase_logs();
-        gcs0.reset_cli_timeout();
+        gcs[0].reset_cli_timeout();
     }
 #endif
 
@@ -209,8 +213,11 @@ static void init_ardupilot()
 #if CLI_ENABLED == ENABLED
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-    if (gcs3.initialised) {
+    if (gcs[1].initialised) {
         hal.uartC->println_P(msg);
+    }
+    if (num_gcs > 2 && gcs[2].initialised) {
+        hal.uartD->println_P(msg);
     }
 #endif // CLI_ENABLED
 

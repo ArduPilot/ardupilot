@@ -141,8 +141,9 @@ static void init_arm_motors()
     // mid-flight, so set the serial ports non-blocking once we arm
     // the motors
     hal.uartA->set_blocking_writes(false);
-    if (gcs3.initialised) {
-        hal.uartC->set_blocking_writes(false);
+    hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
     }
 
 #if COPTER_LEDS == ENABLED
