@@ -114,7 +114,7 @@ static void init_ardupilot()
     g.num_resets.set_and_save(g.num_resets+1);
 
 	// init the GCS
-	gcs0.init(hal.uartA);
+	gcs[0].init(hal.uartA);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -127,7 +127,13 @@ static void init_ardupilot()
 
     // we have a 2nd serial port for telemetry
     hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
-	gcs3.init(hal.uartC);
+	gcs[1].init(hal.uartC);
+
+    // we may have a 3rd serial port for telemetry
+    if (hal.uartD != NULL) {
+        hal.uartD->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+        gcs[2].init(hal.uartD);
+    }
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
@@ -192,8 +198,11 @@ static void init_ardupilot()
 	//
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-    if (gcs3.initialised) {
+    if (gcs[1].initialised) {
         hal.uartC->println_P(msg);
+    }
+    if (num_gcs > 2 && gcs[2].initialised) {
+        hal.uartD->println_P(msg);
     }
 
 	startup_ground();

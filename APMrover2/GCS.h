@@ -41,7 +41,6 @@ public:
 	///
 	void		init(AP_HAL::UARTDriver *port) {
         _port = port;
-        initialised = true;
     }
 
 	/// Update GCS state.
