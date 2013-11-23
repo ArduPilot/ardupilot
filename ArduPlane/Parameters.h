@@ -97,6 +97,7 @@ public:
         k_param_ground_steer_alt,        
         k_param_ground_steer_dps,
         k_param_rally_limit_km,
+        k_param_hil_err_limit,
 
         // 110: Telemetry control
         //
@@ -272,6 +273,10 @@ public:
     AP_Int8 serial0_baud;
     AP_Int8 serial3_baud;
     AP_Int8 telem_delay;
+
+#if HIL_MODE != HIL_MODE_DISABLED
+    AP_Float hil_err_limit;
+#endif
 
     // Feed-forward gains
     //

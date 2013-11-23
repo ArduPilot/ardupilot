@@ -2067,9 +2067,10 @@ mission_failed:
         airspeed.disable();
 
         // cope with DCM getting badly off due to HIL lag
-        if (fabsf(packet.roll - ahrs.roll) > ToRad(5) ||
-            fabsf(packet.pitch - ahrs.pitch) > ToRad(5) ||
-            fabsf(packet.yaw - ahrs.yaw) > ToRad(5)) {
+        if (g.hil_err_limit > 0 &&
+            (fabsf(packet.roll - ahrs.roll) > ToRad(g.hil_err_limit) ||
+             fabsf(packet.pitch - ahrs.pitch) > ToRad(g.hil_err_limit) ||
+             wrap_PI(fabsf(packet.yaw - ahrs.yaw)) > ToRad(g.hil_err_limit))) {
             ahrs.reset_attitude(packet.roll, packet.pitch, packet.yaw);
         }
         break;
