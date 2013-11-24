@@ -31,18 +31,24 @@ void SITL_State::_update_barometer(float altitude)
 {
 	static uint32_t last_update;
 
+	float sim_alt = altitude;
+
 	if (_barometer == NULL) {
 		// this sketch doesn't use a barometer
 		return;
 	}
 
 	// 80Hz, to match the real APM2 barometer
-	if (hal.scheduler->millis() - last_update < 12) {
+        uint32_t now = hal.scheduler->millis();
+	if ((now - last_update) < 12) {
 		return;
 	}
-	last_update = hal.scheduler->millis();
+	last_update = now;
 
-	_barometer->setHIL(altitude);
+	sim_alt += _sitl->baro_drift * now / 1000;
+	sim_alt += _sitl->baro_noise * _rand_float();
+
+	_barometer->setHIL(sim_alt);
 }
 
 #endif
