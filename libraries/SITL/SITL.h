@@ -46,7 +46,8 @@ public:
 	static const struct AP_Param::GroupInfo var_info[];
 
 	// noise levels for simulated sensors
-	AP_Float baro_noise;  // in Pascals
+	AP_Float baro_noise;  // in metres
+	AP_Float baro_drift;  // in metres per second
 	AP_Float gyro_noise;  // in degrees/second
 	AP_Float accel_noise; // in m/s/s
 	AP_Float aspd_noise;  // in m/s
