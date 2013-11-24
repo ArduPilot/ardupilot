@@ -11,6 +11,7 @@
 #include <AP_HAL_AVR.h>
 
 #include <AP_GPS.h>             // ArduPilot GPS library
+#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>            // ArduPilot Mega Barometer Library
@@ -20,6 +21,7 @@
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
 #include <AC_PID.h>             // PID library
 #include <APM_PI.h>             // PID library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
@@ -27,6 +29,7 @@
 #include <GCS_MAVLink.h>
 #include <RC_Channel.h>
 #include <AC_Sprayer.h>         // Crop Sprayer library
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -46,12 +49,13 @@ AP_Baro_BMP085 baro;
 // GPS declaration
 GPS *gps;
 AP_GPS_Auto auto_gps(&gps);
+GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(&ins, gps);
+AP_AHRS_DCM ahrs(ins, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(&ahrs, &ins, &baro, &gps);
+AP_InertialNav inertial_nav(&ahrs, &baro, gps, gps_glitch);
 
 // Sprayer
 AC_Sprayer sprayer(&inertial_nav);
@@ -70,8 +74,6 @@ void setup()
 
 void loop()
 {
-    uint16_t i;
-
     // repeated call sprayer at different velocities
     sprayer.update();
 }
