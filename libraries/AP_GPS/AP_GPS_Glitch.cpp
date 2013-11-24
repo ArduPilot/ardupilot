@@ -23,7 +23,7 @@ const AP_Param::GroupInfo GPS_Glitch::var_info[] PROGMEM = {
     // @DisplayName: GPS glitch protection radius within which all new positions are accepted
     // @Description: GPS glitch protection radius within which all new positions are accepted
     // @Units: cm
-    // @Range: 0 5000
+    // @Range: 100 2000
     // @Increment: 100
     // @User: Advanced
     AP_GROUPINFO("RADIUS",      1,  GPS_Glitch,   _radius_cm,   GPS_GLITCH_RADIUS_CM),
@@ -32,7 +32,7 @@ const AP_Param::GroupInfo GPS_Glitch::var_info[] PROGMEM = {
     // @DisplayName: GPS glitch protection's max vehicle acceleration assumption
     // @Description: GPS glitch protection's max vehicle acceleration assumption
     // @Units: cm/s/s
-    // @Range: 0 2000
+    // @Range: 100 2000
     // @Increment: 100
     // @User: Advanced
     AP_GROUPINFO("ACCEL",   2,  GPS_Glitch,   _accel_max_cmss,   GPS_GLITCH_ACCEL_MAX_CMSS),
