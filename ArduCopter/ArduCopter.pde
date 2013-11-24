@@ -2275,9 +2275,9 @@ static void tuning(){
 #endif
 
     case CH6_INAV_TC:
-        // To-Do: allowing tuning TC for xy and z separately
+        // To-Do: allowing tuning TC for xy and both GPS and Baro z components separately
         inertial_nav.set_time_constant_xy(tuning_value);
-        inertial_nav.set_time_constant_z(tuning_value);
+        inertial_nav.set_time_constant_z(tuning_value, -1);
         break;
 
     case CH6_DECLINATION:

@@ -10,16 +10,23 @@ const AP_Param::GroupInfo AP_InertialNav::var_info[] PROGMEM = {
     // @Param: TC_XY
     // @DisplayName: Horizontal Time Constant
     // @Description: Time constant for GPS and accel mixing. Higher TC decreases GPS impact on position estimate
-    // @Range: 0 10
+    // @Range: 0 30
     // @Increment: 0.1
     AP_GROUPINFO("TC_XY",   1, AP_InertialNav, _time_constant_xy, AP_INTERTIALNAV_TC_XY),
 
-    // @Param: TC_Z
-    // @DisplayName: Vertical Time Constant
+    // @Param: TC_BARO_Z
+    // @DisplayName: Vertical Time Constant, Barometer mixing
     // @Description: Time constant for baro and accel mixing. Higher TC decreases barometers impact on altitude estimate
-    // @Range: 0 10
+    // @Range: 0 30
     // @Increment: 0.1
-    AP_GROUPINFO("TC_Z",    2, AP_InertialNav, _time_constant_z, AP_INTERTIALNAV_TC_Z),
+    AP_GROUPINFO("TC_BARO_Z",    2, AP_InertialNav, _time_constant_b_z, AP_INTERTIALNAV_TC_BARO_Z),
+
+    // @Param: TC_GPS_Z
+    // @DisplayName: Vertical Time Constant, GPS mixing
+    // @Description: Time constant for gps and accel mixing. Higher TC decreases GPS impact on altitude estimate
+    // @Range: 0 30
+    // @Increment: 0.1
+    AP_GROUPINFO("TC_GPS_Z",    3, AP_InertialNav, _time_constant_g_z, AP_INTERTIALNAV_TC_GPS_Z),
 
     AP_GROUPEND
 };
@@ -44,6 +51,17 @@ void AP_InertialNav::update(float dt)
         _flags.ignore_error--;
     }
 
+    //HACK check whether time constants have changed and update gains
+    if (_time_constant_g_z != _last_tc_g_z || _time_constant_b_z != _last_tc_b_z) {
+        update_gains();
+        _position_error_gps.x = 0;
+        _position_error_gps.y = 0;
+        _position_error_gps.z = 0;
+        _position_error_b_z = 0;
+        _last_tc_g_z = _time_constant_g_z;
+        _last_tc_b_z = _time_constant_b_z;
+    }
+
     // check if new baro readings have arrived and use them to correct vertical accelerometer offsets.
     check_baro();
 
@@ -66,19 +84,22 @@ void AP_InertialNav::update(float dt)
     accel_ef.z = -accel_ef.z;
 
     float tmp = _k3_xy * dt;
-    accel_correction_ef.x += _position_error.x * tmp;
-    accel_correction_ef.y += _position_error.y * tmp;
-    accel_correction_ef.z += _position_error.z * _k3_z  * dt;
+    accel_correction_ef.x += _position_error_gps.x * tmp;
+    accel_correction_ef.y += _position_error_gps.y * tmp;
+    accel_correction_ef.z += _position_error_gps.z * _k3_g_z  * dt;
+    accel_correction_ef.z += _position_error_b_z   * _k3_b_z  * dt;
 
     tmp = _k2_xy * dt;
-    _velocity.x += _position_error.x * tmp;
-    _velocity.y += _position_error.y * tmp;
-    _velocity.z += _position_error.z * _k2_z  * dt;
+    _velocity.x += _position_error_gps.x * tmp;
+    _velocity.y += _position_error_gps.y * tmp;
+    _velocity.z += _position_error_gps.z * _k2_g_z  * dt;
+    _velocity.z += _position_error_b_z   * _k2_b_z  * dt;
 
     tmp = _k1_xy * dt;
-    _position_correction.x += _position_error.x * tmp;
-    _position_correction.y += _position_error.y * tmp;
-    _position_correction.z += _position_error.z * _k1_z  * dt;
+    _position_correction.x += _position_error_gps.x * tmp;
+    _position_correction.y += _position_error_gps.y * tmp;
+    _position_correction.z += _position_error_gps.z * _k1_g_z  * dt;
+    _position_correction.z += _position_error_b_z   * _k1_b_z  * dt;
 
     // calculate velocity increase adding new acceleration from accelerometers
     const Vector3f &velocity_increase = (accel_ef + accel_correction_ef) * dt;
@@ -93,14 +114,15 @@ void AP_InertialNav::update(float dt)
     _velocity += velocity_increase;
 
     // store 3rd order estimate (i.e. estimated vertical position) for future use
-    _hist_position_estimate_z.push_back(_position_base.z);
+    _hist_position_estimate_b_z.push_back(_position_base.z);
 
     // store 3rd order estimate (i.e. horizontal position) for future use at 10hz
     _historic_xy_counter++;
     if( _historic_xy_counter >= AP_INTERTIALNAV_SAVE_POS_AFTER_ITERATIONS ) {
         _historic_xy_counter = 0;
-        _hist_position_estimate_x.push_back(_position_base.x);
-        _hist_position_estimate_y.push_back(_position_base.y);
+        _hist_position_estimate_g_x.push_back(_position_base.x);
+        _hist_position_estimate_g_y.push_back(_position_base.y);
+        _hist_position_estimate_g_z.push_back(_position_base.z);
     }
 }
 
@@ -133,15 +155,16 @@ void AP_InertialNav::check_gps()
     if( _gps != NULL && _gps->last_fix_time != _gps_last_time ) {
 
         // call position correction method
-        correct_with_gps(now, _gps->longitude, _gps->latitude);
+        correct_with_gps(now, _gps->longitude, _gps->latitude, _gps->altitude_cm);
 
         // record gps time and system time of this update
         _gps_last_time = _gps->last_fix_time;
     }else{
         // if GPS updates stop arriving degrade position error to 10% over 2 seconds (assumes 100hz update rate)
         if (now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS) {
-            _position_error.x *= 0.9886;
-            _position_error.y *= 0.9886;
+            _position_error_gps.x *= 0.9886;
+            _position_error_gps.y *= 0.9886;
+            _position_error_gps.z *= 0.9886;
             // increment error count
             if (_flags.ignore_error == 0 && _error_count < 255 && _xy_enabled) {
                 _error_count++;
@@ -151,10 +174,10 @@ void AP_InertialNav::check_gps()
 }
 
 // correct_with_gps - modifies accelerometer offsets using gps
-void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
+void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat, int32_t alt)
 {
-    float dt,x,y;
-    float hist_position_base_x, hist_position_base_y;
+    float dt,x,y,z;
+    float hist_position_base_x, hist_position_base_y, hist_position_base_z;
 
     // calculate time since last gps reading
     dt = (float)(now - _gps_last_update) * 0.001f;
@@ -170,34 +193,43 @@ void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
     // calculate distance from base location
     x = (float)(lat - _base_lat) * LATLON_TO_CM;
     y = (float)(lon - _base_lon) * _lon_to_cm_scaling;
+    z = (float)(alt - _base_alt);
 
     // sanity check the gps position.  Relies on the main code calling GPS_Glitch::check_position() immediatley after a GPS update
     if (_glitch_detector.glitching()) {
         // failed sanity check so degrate position_error to 10% over 2 seconds (assumes 5hz update rate)
-        _position_error.x *= 0.7934;
-        _position_error.y *= 0.7934;
+        _position_error_gps.x *= 0.7934;
+        _position_error_gps.y *= 0.7934;
+        _position_error_gps.z *= 0.7934;
     }else{
         // if our internal glitching flag (from previous iteration) is true we have just recovered from a glitch
         // reset the inertial nav position and velocity to gps values
         if (_flags.gps_glitching) {
-            set_position_xy(x,y);
+            set_position(x,y,z);
+
             set_velocity_xy(_gps->velocity_north() * 100.0f,_gps->velocity_east() * 100.0f);
-            _position_error.x = 0;
-            _position_error.y = 0;
+            set_velocity_z(_gps->velocity_down() * -100.0f);
+
+            _position_error_gps.x = 0;
+            _position_error_gps.y = 0;
+            _position_error_gps.z = 0;
         }else{
             // ublox gps positions are delayed by 400ms
             // we store historical position at 10hz so 4 iterations ago
-            if( _hist_position_estimate_x.is_full()) {
-                hist_position_base_x = _hist_position_estimate_x.front();
-                hist_position_base_y = _hist_position_estimate_y.front();
+            if( _hist_position_estimate_g_x.is_full()) {
+                hist_position_base_x = _hist_position_estimate_g_x.front();
+                hist_position_base_y = _hist_position_estimate_g_y.front();
+                hist_position_base_z = _hist_position_estimate_g_z.front();
             }else{
                 hist_position_base_x = _position_base.x;
                 hist_position_base_y = _position_base.y;
+                hist_position_base_z = _position_base.z;
             }
 
             // calculate error in position from gps with our historical estimate
-            _position_error.x = x - (hist_position_base_x + _position_correction.x);
-            _position_error.y = y - (hist_position_base_y + _position_correction.y);
+            _position_error_gps.x = x - (hist_position_base_x + _position_correction.x);
+            _position_error_gps.y = y - (hist_position_base_y + _position_correction.y);
+            _position_error_gps.z = z - (hist_position_base_z + _position_correction.z);
         }
     }
 
@@ -228,11 +260,12 @@ int32_t AP_InertialNav::get_longitude() const
 }
 
 // set_home_position - all internal calculations are recorded as the distances from this point
-void AP_InertialNav::set_home_position(int32_t lon, int32_t lat)
+void AP_InertialNav::set_home_position(int32_t lon, int32_t lat, int32_t alt)
 {
     // set base location
     _base_lon = lon;
     _base_lat = lat;
+    _base_alt = alt;
 
     // set longitude to meters scaling to offset the shrinking longitude as we go towards the poles
     Location temp_loc;
@@ -243,14 +276,18 @@ void AP_InertialNav::set_home_position(int32_t lon, int32_t lat)
     // reset corrections to base position to zero
     _position_base.x = 0;
     _position_base.y = 0;
+    _position_base.z = 0;
     _position_correction.x = 0;
     _position_correction.y = 0;
+    _position_correction.z = 0;
     _position.x = 0;
     _position.y = 0;
+    _position.z = 0;
 
     // clear historic estimates
-    _hist_position_estimate_x.clear();
-    _hist_position_estimate_y.clear();
+    _hist_position_estimate_g_x.clear();
+    _hist_position_estimate_g_y.clear();
+    _hist_position_estimate_g_z.clear();
 
     // set xy as enabled
     _xy_enabled = true;
@@ -296,13 +333,22 @@ float AP_InertialNav::get_velocity_xy()
 //
 
 // set time constant - set timeconstant used by complementary filter
-void AP_InertialNav::set_time_constant_z( float time_constant_in_seconds )
+void AP_InertialNav::set_time_constant_z(float baro_tc_in_seconds, float gps_tc_in_seconds)
 {
-    // ensure it's a reasonable value
-    if( time_constant_in_seconds > 0 && time_constant_in_seconds < 30 ) {
-        _time_constant_z = time_constant_in_seconds;
-        update_gains();
+    uint8_t need_update = 0;
+    // ensure they're reasonable values, -1 is used as 'no change' (not error)
+    if( baro_tc_in_seconds > 0 && baro_tc_in_seconds < 30 ) {
+        _time_constant_b_z = baro_tc_in_seconds;
+        need_update = 1;
     }
+
+    if( gps_tc_in_seconds > 0 && gps_tc_in_seconds < 30 ) {
+        _time_constant_g_z = gps_tc_in_seconds;
+        need_update = 1;
+    }
+
+    if (need_update)
+        update_gains();
 }
 
 // check_baro - check if new baro readings have arrived and use them to correct vertical accelerometer offsets
@@ -343,14 +389,14 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
     // 3rd order samples (i.e. position from baro) are delayed by 150ms (15 iterations at 100hz)
     // so we should calculate error using historical estimates
     float hist_position_base_z;
-    if( _hist_position_estimate_z.is_full() ) {
-        hist_position_base_z = _hist_position_estimate_z.front();
+    if( _hist_position_estimate_b_z.is_full() ) {
+        hist_position_base_z = _hist_position_estimate_b_z.front();
     }else{
         hist_position_base_z = _position_base.z;
     }
 
     // calculate error in position from baro with our estimate
-    _position_error.z = baro_alt - (hist_position_base_z + _position_correction.z);
+    _position_error_b_z = baro_alt - (hist_position_base_z + _position_correction.z);
 }
 
 // set_altitude - set base altitude estimate in cm
@@ -377,14 +423,31 @@ void AP_InertialNav::update_gains()
         _k3_xy = 1 / (_time_constant_xy*_time_constant_xy*_time_constant_xy);
     }
 
-    // Z axis time constant
-    if( _time_constant_z == 0 ) {
-        _k1_z = _k2_z = _k3_z = 0;
+    // Z axis time constants
+    if( _time_constant_b_z == 0 ) {
+        _k1_b_z = _k2_b_z = _k3_b_z = 0;
     }else{
-        _k1_z = 3 / _time_constant_z;
-        _k2_z = 3 / (_time_constant_z*_time_constant_z);
-        _k3_z = 1 / (_time_constant_z*_time_constant_z*_time_constant_z);
+        _k1_b_z = 3 / _time_constant_b_z;
+        _k2_b_z = 3 / (_time_constant_b_z*_time_constant_b_z);
+        _k3_b_z = 1 / (_time_constant_b_z*_time_constant_b_z*_time_constant_b_z);
     }
+
+    if( _time_constant_g_z == 0 ) {
+        _k1_g_z = _k2_g_z = _k3_g_z = 0;
+    }else{
+        _k1_g_z = 3 / _time_constant_g_z;
+        _k2_g_z = 3 / (_time_constant_g_z*_time_constant_g_z);
+        _k3_g_z = 1 / (_time_constant_g_z*_time_constant_g_z*_time_constant_g_z);
+    }
+
+    // normalise Z gains so we don't double-count common error
+    _k1_g_z *= _k1_g_z / (_k1_g_z + _k1_b_z);
+    _k2_g_z *= _k2_g_z / (_k2_g_z + _k2_b_z);
+    _k3_g_z *= _k3_g_z / (_k3_g_z + _k3_b_z);
+
+    _k1_b_z *= _k1_b_z / (_k1_g_z + _k1_b_z);
+    _k2_b_z *= _k2_b_z / (_k2_g_z + _k2_b_z);
+    _k3_b_z *= _k3_b_z / (_k3_g_z + _k3_b_z);
 }
 
 // set_velocity_z - get latest climb rate (in cm/s)
@@ -393,21 +456,25 @@ void AP_InertialNav::set_velocity_z(float z )
     _velocity.z = z;
 }
 
-// set_position_xy - sets inertial navigation position to given xy coordinates from home
-void AP_InertialNav::set_position_xy(float x, float y)
+// set_position - sets inertial navigation position to given xy coordinates from home
+void AP_InertialNav::set_position(float x, float y, float z)
 {
     // reset position from home
     _position_base.x = x;
     _position_base.y = y;
+    _position_base.z = z;
     _position_correction.x = 0;
     _position_correction.y = 0;
+    _position_correction.z = 0;
 
     // clear historic estimates
-    _hist_position_estimate_x.clear();
-    _hist_position_estimate_y.clear();
+    _hist_position_estimate_g_x.clear();
+    _hist_position_estimate_g_y.clear();
+    _hist_position_estimate_g_z.clear();
 
     // add new position for future use
     _historic_xy_counter = 0;
-    _hist_position_estimate_x.push_back(_position_base.x);
-    _hist_position_estimate_y.push_back(_position_base.y);
+    _hist_position_estimate_g_x.push_back(_position_base.x);
+    _hist_position_estimate_g_y.push_back(_position_base.y);
+    _hist_position_estimate_g_z.push_back(_position_base.z);
 }

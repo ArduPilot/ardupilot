@@ -9,8 +9,9 @@
 #include <AP_Buffer.h>                  // FIFO buffer library
 #include <AP_GPS_Glitch.h>              // GPS Glitch detection library
 
-#define AP_INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
-#define AP_INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
+#define AP_INTERTIALNAV_TC_XY       2.5f // default time constant for complementary filter's X & Y axis
+#define AP_INTERTIALNAV_TC_BARO_Z   5.0f // default time constant for complementary filter's Z axis Barometer mixing
+#define AP_INTERTIALNAV_TC_GPS_Z    0.0f // default time constant for complementary filter's Z axis GPS mixing
 
 // #defines to control how often historical accel based positions are saved
 // so they can later be compared to laggy gps readings
@@ -52,7 +53,7 @@ public:
     /**
      * initializes the object.
      *
-     * AP_InertialNav::set_home_position(int32_t, int32_t) should be called later,
+     * AP_InertialNav::set_home_position(int32_t, int32_t, int32_t) should be called later,
      * to enable all "horizontal related" getter-methods.
      */
     void        init();
@@ -98,13 +99,14 @@ public:
      * @param now : current time since boot in milliseconds
      * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
+     * @param alt : altitude  in cm
      */
-    void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
+    void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat, int32_t alt);
 
     /**
      * get_position - returns the current position relative to the home location in cm.
      *
-     * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
+     * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t, int32_t)
      *
      * @return
      */
@@ -129,8 +131,9 @@ public:
      *
      * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
+     * @param alt : altitude  in cm
      */
-    void        set_home_position(int32_t lon, int32_t lat);
+    void        set_home_position(int32_t lon, int32_t lat, int32_t alt);
 
     /**
      * get_latitude_diff - returns the current latitude difference from the home location.
@@ -181,9 +184,10 @@ public:
      * smaller values means higher influence of barometer in altitude estimation
      * bigger values favor the integrated accelerometer data for altitude estimation
      *
-     * @param time_constant_in_seconds : constant in s; 0 < constant < 30 must hold
+     * @param baro_tc_in_seconds : constant in s; 0 < constant < 30;  -1 for 'no change'
+     * @param gps_tc_in_seconds  : constant in s; 0 < constant < 180; -1 for 'no change'
      */
-    void        set_time_constant_z( float time_constant_in_seconds );
+    void        set_time_constant_z(float baro_tc_in_seconds, float gps_tc_in_seconds);
 
     /**
      * altitude_ok - returns true if inertial based altitude and position can be trusted
@@ -265,14 +269,15 @@ protected:
     void                    update_gains();
 
     /**
-     * set_position_xy - overwrites the current position relative to the home location in cm
+     * set_position - overwrites the current position relative to the home location in cm
      *
-     * the home location was set with AP_InertialNav::set_home_location(int32_t, int32_t)
+     * the home location was set with AP_InertialNav::set_home_location(int32_t, int32_t, int32_t)
      *
      * @param x : relative latitude  position in cm
      * @param y : relative longitude position in cm
+     * @param z : relative altitude  position in cm
      */
-    void set_position_xy(float x, float y);
+    void set_position(float x, float y, float z);
 
     // structure for holding flags
     struct InertialNav_flags {
@@ -293,25 +298,35 @@ protected:
     uint32_t                _gps_last_update;           // system time of last gps update in ms
     uint32_t                _gps_last_time;             // time of last gps update according to the gps itself in ms
     uint8_t                 _historic_xy_counter;       // counter used to slow saving of position estimates for later comparison to gps
-    AP_BufferFloat_Size5    _hist_position_estimate_x;  // buffer of historic accel based position to account for gpslag
-    AP_BufferFloat_Size5    _hist_position_estimate_y;  // buffer of historic accel based position to account for gps lag
+    AP_BufferFloat_Size5    _hist_position_estimate_g_x;  // buffer of historic accel based position to account for gpslag
+    AP_BufferFloat_Size5    _hist_position_estimate_g_y;  // buffer of historic accel based position to account for gps lag
     int32_t                 _base_lat;                  // base latitude  (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
     int32_t                 _base_lon;                  // base longitude (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
+    int32_t                 _base_alt;                  // base altitude (home location) in cm
     float                   _lon_to_cm_scaling;         // conversion of longitude to centimeters
 
     // Z Axis specific variables
-    AP_Float                _time_constant_z;           // time constant for vertical corrections in s
-    float                   _k1_z;                      // gain for vertical position correction
-    float                   _k2_z;                      // gain for vertical velocity correction
-    float                   _k3_z;                      // gain for vertical accelerometer offset correction
+    AP_Float                _time_constant_b_z;           // time constant for vertical corrections in s
+    float                   _k1_b_z;                      // gain for vertical position correction
+    float                   _k2_b_z;                      // gain for vertical velocity correction
+    float                   _k3_b_z;                      // gain for vertical accelerometer offset correction
     uint32_t                _baro_last_update;          // time of last barometer update in ms
-    AP_BufferFloat_Size15   _hist_position_estimate_z;  // buffer of historic accel based altitudes to account for barometer lag
+    AP_BufferFloat_Size15   _hist_position_estimate_b_z;  // buffer of historic accel based altitudes to account for barometer lag
+    AP_Float                _time_constant_g_z;           // time constant for vertical corrections in s
+    float                   _k1_g_z;                      // gain for vertical position correction
+    float                   _k2_g_z;                      // gain for vertical velocity correction
+    float                   _k3_g_z;                      // gain for vertical accelerometer offset correction
+    AP_BufferFloat_Size15   _hist_position_estimate_g_z; //buffer of historic accel based altitutdes to account for GPS lag (TODO can probably tap the above)
+
+    float                   _last_tc_g_z;                 //Hack to detect changes in time constants to recalc gains
+    float                   _last_tc_b_z;
 
     // general variables
     Vector3f                _position_base;             // (uncorrected) position estimate in cm - relative to the home location (_base_lat, _base_lon, 0)
     Vector3f                _position_correction;       // sum of corrections to _position_base from delayed 1st order samples in cm
     Vector3f                _velocity;                  // latest velocity estimate (integrated from accelerometer values) in cm/s
-    Vector3f                _position_error;            // current position error in cm - is set by the check_* methods and used by update method to calculate the correction terms
+    Vector3f                _position_error_gps;        // current position error in cm - is set by the check_* methods and used by update method to calculate the correction terms
+    float                   _position_error_b_z;        // as above, z axis baro error
     Vector3f                _position;                  // sum(_position_base, _position_correction) - corrected position estimate in cm - relative to the home location (_base_lat, _base_lon, 0)
 
     // error handling
