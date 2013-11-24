@@ -23,6 +23,8 @@ extern const AP_HAL::HAL& hal;
 #include <stdint.h>
 #include <math.h>
 
+#include "Scheduler.h"
+
 /*
   setup the barometer with new input
   altitude is in meters
@@ -30,6 +32,8 @@ extern const AP_HAL::HAL& hal;
 void SITL_State::_update_barometer(float altitude)
 {
 	static uint32_t last_update;
+
+	float sim_alt = altitude;
 
 	if (_barometer == NULL) {
 		// this sketch doesn't use a barometer
@@ -42,7 +46,10 @@ void SITL_State::_update_barometer(float altitude)
 	}
 	last_update = hal.scheduler->millis();
 
-	_barometer->setHIL(altitude);
+	sim_alt += _sitl->baro_drift * _scheduler->millis() / 1000;
+	sim_alt += _sitl->baro_noise * _rand_float();
+
+	_barometer->setHIL(sim_alt);
 }
 
 #endif
