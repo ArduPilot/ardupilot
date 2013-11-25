@@ -400,7 +400,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Allows enabling or disabling of pre-arming checks of receiver, accelerometer, barometer, compass and GPS
     // @Values: 0:Disabled, 1:Enabled, -3:Skip Baro, -5:Skip Compass, -9:Skip GPS, -17:Skip INS, -33:Skip Parameters, -65:Skip RC, 127:Skip Voltage
     // @User: Standard
-    GSCALAR(arming_check_enabled, "ARMING_CHECK",   ARMING_CHECK_ALL),
+    GSCALAR(arming_check, "ARMING_CHECK",           ARMING_CHECK_ALL),
 
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max

@@ -83,7 +83,7 @@ public:
         k_param_circle_rate,
         k_param_sonar_gain,
         k_param_ch8_option,
-        k_param_arming_check_enabled,
+        k_param_arming_check,
         k_param_sprayer,
         k_param_angle_max,
         k_param_gps_hdop_good,
@@ -351,7 +351,7 @@ public:
     AP_Int8         frame_orientation;
     AP_Int8         ch7_option;
     AP_Int8         ch8_option;
-    AP_Int8         arming_check_enabled;
+    AP_Int8         arming_check;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

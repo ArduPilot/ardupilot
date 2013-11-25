@@ -226,7 +226,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // succeed if pre arm checks are disabled
-    if(g.arming_check_enabled == ARMING_CHECK_NONE) {
+    if(g.arming_check == ARMING_CHECK_NONE) {
         set_pre_arm_check(true);
         set_pre_arm_rc_check(true);
         return;
@@ -242,7 +242,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // check Baro
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_BARO)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         // barometer health check
         if(!barometer.healthy) {
             if (display_failure) {
@@ -253,7 +253,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // check Compass
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_COMPASS)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
         // check the compass is healthy
         if(!compass.healthy) {
             if (display_failure) {
@@ -290,7 +290,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // check GPS
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_GPS)) {
         // check gps is ok if required - note this same check is repeated again in arm_checks
         if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks(display_failure)) {
             return;
@@ -305,7 +305,7 @@ static void pre_arm_checks(bool display_failure)
     }
 
     // check INS
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_INS)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         // check accelerometers have been calibrated
         if(!ins.calibrated()) {
             if (display_failure) {
@@ -325,7 +325,7 @@ static void pre_arm_checks(bool display_failure)
 
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     // check board voltage
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_VOLTAGE)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if(board_voltage() < BOARD_VOLTAGE_MIN || board_voltage() > BOARD_VOLTAGE_MAX) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
@@ -336,7 +336,7 @@ static void pre_arm_checks(bool display_failure)
 #endif
 
     // check various parameter values
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_PARAMETERS)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
 
         // ensure ch7 and ch8 have different functions
         if ((g.ch7_option != 0 || g.ch8_option != 0) && g.ch7_option == g.ch8_option) {
@@ -387,7 +387,7 @@ static void pre_arm_rc_checks()
     }
 
     // set rc-checks to success if RC checks are disabled
-    if ((g.arming_check_enabled != ARMING_CHECK_ALL) && !(g.arming_check_enabled & ARMING_CHECK_RC)) {
+    if ((g.arming_check != ARMING_CHECK_ALL) && !(g.arming_check & ARMING_CHECK_RC)) {
         set_pre_arm_rc_check(true);
         return;
     }
@@ -433,19 +433,19 @@ static bool pre_arm_gps_checks(bool display_failure)
 static bool arm_checks(bool display_failure)
 {
     // succeed if arming checks are disabled
-    if (g.arming_check_enabled == ARMING_CHECK_NONE) {
+    if (g.arming_check == ARMING_CHECK_NONE) {
         return true;
     }
 
     // check gps is ok if required - note this same check is also done in pre-arm checks
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_GPS)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_GPS)) {
         if ((mode_requires_GPS(control_mode) || g.failsafe_gps_enabled == FS_GPS_LAND_EVEN_STABILIZE) && !pre_arm_gps_checks(display_failure)) {
             return false;
         }
     }
 
     // check parameters
-    if ((g.arming_check_enabled == ARMING_CHECK_ALL) || (g.arming_check_enabled & ARMING_CHECK_PARAMETERS)) {
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_PARAMETERS)) {
         // check throttle is above failsafe throttle
         if (g.failsafe_throttle != FS_THR_DISABLED && g.rc_3.radio_in < g.failsafe_throttle_value) {
             if (display_failure) {
