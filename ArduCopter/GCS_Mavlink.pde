@@ -981,6 +981,8 @@ GCS_MAVLINK::data_stream_send(void)
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);
         }
+        // don't send anything else at the same time as parameters
+        return;
     }
 
     if (gcs_out_of_time) return;
@@ -2201,9 +2203,6 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
             gcs[i].send_text_P(severity, str);
         }
     }
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message_P(str);
-#endif
 }
 
 /*
@@ -2219,9 +2218,6 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);
     va_end(arg_list);
-#if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
-#endif
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
     for (uint8_t i=1; i<num_gcs; i++) {
         if (gcs[i].initialised) {
