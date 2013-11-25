@@ -132,8 +132,11 @@
 #ifndef SERIAL0_BAUD
 # define SERIAL0_BAUD			115200
 #endif
-#ifndef SERIAL3_BAUD
-# define SERIAL3_BAUD			 57600
+#ifndef SERIAL1_BAUD
+# define SERIAL1_BAUD			 57600
+#endif
+#ifndef SERIAL2_BAUD
+# define SERIAL2_BAUD			 57600
 #endif
 
 #ifndef CH7_OPTION
