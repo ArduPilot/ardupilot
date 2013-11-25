@@ -51,6 +51,7 @@ print_log_menu(void)
         PLOG(COMPASS);
         PLOG(TECS);
         PLOG(CAMERA);
+        PLOG(RC);
  #undef PLOG
     }
 
@@ -142,6 +143,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(COMPASS);
         TARG(TECS);
         TARG(CAMERA);
+        TARG(RC);
  #undef TARG
     }
 
@@ -450,6 +452,12 @@ static void Log_Write_IMU()
     DataFlash.Log_Write_IMU(ins);
 }
 
+static void Log_Write_RC(void)
+{
+    DataFlash.Log_Write_RCIN();
+    DataFlash.Log_Write_SERVO();
+}
+
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
@@ -514,6 +522,7 @@ static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_Compass() {}
 static void Log_Write_GPS() {}
 static void Log_Write_IMU() {}
+static void Log_Write_RC() {}
 
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;

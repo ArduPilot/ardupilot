@@ -902,7 +902,11 @@ static void update_logging(void)
     
     if (g.log_bitmask & MASK_LOG_NTUN)
         Log_Write_Nav_Tuning();
+
+    if (g.log_bitmask & MASK_LOG_RC)
+        Log_Write_RC();
 }
+
 
 /*
   check for OBC failsafe check
