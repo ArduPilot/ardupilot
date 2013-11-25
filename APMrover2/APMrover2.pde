@@ -869,7 +869,7 @@ static void update_current_mode(void)
         // and throttle gives speed in proportion to cruise speed, up
         // to 50% throttle, then uses nudging above that.
         float target_speed = channel_throttle->pwm_to_angle() * 0.01 * 2 * g.speed_cruise;
-        in_reverse = (target_speed < 0);
+        set_reverse(target_speed < 0);
         if (in_reverse) {
             target_speed = constrain_float(target_speed, -g.speed_cruise, 0);
         } else {
@@ -892,7 +892,7 @@ static void update_current_mode(void)
 
         // mark us as in_reverse when using a negative throttle to
         // stop AHRS getting off
-        in_reverse = (channel_throttle->servo_out < 0);
+        set_reverse(channel_throttle->servo_out < 0);
         break;
 
     case HOLD:

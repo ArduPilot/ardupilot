@@ -242,6 +242,19 @@ static void startup_ground(void)
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
+/*
+  set the in_reverse flag
+  reset the throttle integrator if this changes in_reverse
+ */
+static void set_reverse(bool reverse)
+{
+    if (in_reverse == reverse) {
+        return;
+    }
+    g.pidSpeedThrottle.reset_I();    
+    in_reverse = reverse;
+}
+
 static void set_mode(enum mode mode)
 {       
 
@@ -252,7 +265,7 @@ static void set_mode(enum mode mode)
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
-    in_reverse = false;
+    set_reverse(false);
     g.pidSpeedThrottle.reset_I();
 
     if (control_mode != AUTO) {
