@@ -90,7 +90,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SONAR_GAIN
     // @DisplayName: Sonar gain
     // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
-    // @Range: 0.01 0.5
+    // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
     GSCALAR(sonar_gain,     "SONAR_GAIN",           SONAR_GAIN_DEFAULT),
@@ -615,7 +615,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_RLL_D
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.001 0.008
+    // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
     GGROUP(pid_rate_roll,     "RATE_RLL_", AC_PID),
@@ -645,7 +645,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.001 0.008
+    // @Range: 0.001 0.02
     // @Increment: 0.001
     // @User: Standard
     GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
@@ -667,7 +667,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_YAW_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 500
+    // @Range: 0 800
     // @Increment: 10
     // @Units: pwm
     // @User: Standard
@@ -675,7 +675,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_YAW_D
     // @DisplayName: Yaw axis rate controller D gain
     // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
-    // @Range: 0.000 0.001
+    // @Range: 0.000 0.02
     // @Increment: 0.001
     // @User: Standard
     GGROUP(pid_rate_yaw,      "RATE_YAW_", AC_PID),
