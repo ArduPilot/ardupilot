@@ -2184,7 +2184,7 @@ GCS_MAVLINK::queued_param_send()
 
     // use at most 30% of bandwidth on parameters. The constant 26 is
     // 1/(1000 * 1/8 * 0.001 * 0.3)
-    bytes_allowed = g.serial3_baud * (tnow - _queued_parameter_send_time_ms) * 26;
+    bytes_allowed = g.serial1_baud * (tnow - _queued_parameter_send_time_ms) * 26;
     if (bytes_allowed > comm_get_txspace(chan)) {
         bytes_allowed = comm_get_txspace(chan);
     }
