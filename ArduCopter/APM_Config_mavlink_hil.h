@@ -25,7 +25,7 @@
 // the loop port.  Alternatively, use a telemetry/HIL shim like FGShim
 // https://ardupilot-mega.googlecode.com/svn/Tools/trunk/FlightGear
 //
-// The buad rate is controlled by SERIAL3_BAUD in this mode.
+// The buad rate is controlled by SERIAL1_BAUD in this mode.
 
 #define HIL_PORT            3
 
