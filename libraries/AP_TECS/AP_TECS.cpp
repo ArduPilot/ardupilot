@@ -109,6 +109,13 @@ const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
 	// @User: User
     AP_GROUPINFO("SINK_MAX",  11, AP_TECS, _maxSinkRate, 5.0f),
 
+    // @Param: MIN_SINK_SPD
+    // @DisplayName: Minimum Sink Airspeed (metres/sec)
+    // @Description: This sets the equivalent airspeed to fly at for minimum sink rate. This only needs to be set if the maximum range flight mode is to be used. For most aircraft other than delta wings, this will be a speed just above stall. This parameter is only used to define the sink vs airspeed characteristics which are used to calculate the optimum airspeed. The slowest speed the aircraft will fly at is always determined by the ARSPD_FBW_MIN parameter.
+	// @Increment: 0.1
+	// @User: User
+    AP_GROUPINFO("MIN_SINK_SP",  12, AP_TECS, _minSinkAirSpd, 10.0f),
+
     AP_GROUPEND
 };
 
@@ -192,16 +199,9 @@ void AP_TECS::_update_speed(void)
 	float DT = max((now - _update_speed_last_usec),0)*1.0e-6f;
 	_update_speed_last_usec = now;	
 
-    // Convert equivalent airspeeds to true airspeeds
-
-    float EAS2TAS = _ahrs.get_EAS2TAS();
-    _TAS_dem  = _EAS_dem * EAS2TAS;
-    _TASmax   = aparm.airspeed_max * EAS2TAS;
-    _TASmin   = aparm.airspeed_min * EAS2TAS;
-
     // Reset states of time since last update is too large
     if (DT > 1.0) {
-        _integ5_state = (_EAS * EAS2TAS);
+        _integ5_state = (_EAS * _EAS2TAS);
         _integ4_state = 0.0f;
 		DT            = 0.1f; // when first starting TECS, use a
 							  // small time constant
@@ -217,7 +217,7 @@ void AP_TECS::_update_speed(void)
     // Implement a second order complementary filter to obtain a
     // smoothed airspeed estimate
     // airspeed estimate is held in _integ5_state
-    float aspdErr = (_EAS * EAS2TAS) - _integ5_state;
+    float aspdErr = (_EAS * _EAS2TAS) - _integ5_state;
     float integ4_input = aspdErr * _spdCompFiltOmega * _spdCompFiltOmega;
     // Prevent state from winding up
     if (_integ5_state < 3.1){
@@ -233,11 +233,20 @@ void AP_TECS::_update_speed(void)
 
 void AP_TECS::_update_speed_demand(void)
 {
+    // Add an increment to the demanded airspeed during approach and landing
+    if ( (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH) || 
+         (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) )
+    {
+        _update_land_speed_incr();
+        _TAS_dem = _TAS_dem + _aspd_land_incr;
+    }
+
 	// Set the airspeed demand to the minimum value if an underspeed condition exists
 	// or a bad descent condition exists
 	// This will minimise the rate of descent resulting from an engine failure,
 	// enable the maximum climb rate to be achieved and prevent continued full power descent
 	// into the ground due to an unachievable airspeed value
+
 	if ((_badDescent) || (_underspeed))
 	{
 		_TAS_dem     = _TASmin;
@@ -281,6 +290,7 @@ void AP_TECS::_update_speed_demand(void)
     // Constrain speed demand again to protect against bad values on initialisation.
     _TAS_dem_adj = constrain_float(_TAS_dem_adj, _TASmin, _TASmax);
     _TAS_dem_last = _TAS_dem;
+
 }
 
 void AP_TECS::_update_height_demand(void)
@@ -481,17 +491,33 @@ void AP_TECS::_update_pitch(void)
 	// Calculate Speed/Height Control Weighting
     // This is used to determine how the pitch control prioritises speed and height control
     // A weighting of 1 provides equal priority (this is the normal mode of operation)
-    // A SKE_weighting of 0 provides 100% priority to height control. This is used when no airspeed measurement is available
-	// A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected
-	// or during takeoff/climbout where a minimum pitch angle is set to ensure height is gained. In this instance, if airspeed
-	// rises above the demanded value, the pitch angle will be increased by the TECS controller.
+    // A SKE_weighting of 0 provides 100% priority to height control. This is used when no 
+    // airspeed measurement is available and in the final phase of landing
+	// A SKE_weighting of 2 provides 100% priority to speed control. This is used when an 
+    // underspeed condition is detected or during takeoff/climbout where a minimum pitch 
+    // angle is set to ensure height is gained. 
+    // In this instance, if airspeed rises above the demanded value, the pitch angle will be 
+    // increased by the TECS controller.
+    // During the approach phase of landing, the value of SKE_weighting is reduced at a 
+    // constant rate of 0.2/second to a minimum value of 0
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
 	if ( ( _underspeed || (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) ) && 
-		 _ahrs.airspeed_sensor_enabled() ) {
+	     _ahrs.airspeed_sensor_enabled() ) 
+    {
+		
 		SKE_weighting = 2.0f;
-	} else if (!_ahrs.airspeed_sensor_enabled()) {
+	} 
+    else if (!_ahrs.airspeed_sensor_enabled() || (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL)) 
+    {
 		SKE_weighting = 0.0f;
 	}
+    else if ( (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH) && 
+              _ahrs.airspeed_sensor_enabled() ) 
+    {
+		SKE_weighting = constrain_float((_SKE_weighting_prev - 0.02f), 0.0f, 2.0f);
+    }
+    _SKE_weighting_prev = SKE_weighting;
+
 	float SPE_weighting = 2.0f - SKE_weighting;
 
     // Calculate Specific Energy Balance demand, and error
@@ -515,9 +541,16 @@ void AP_TECS::_update_pitch(void)
     // Apply max and min values for integrator state that will allow for no more than 
 	// 5deg of saturation. This allows for some pitch variation due to gusts before the 
 	// integrator is clipped. Otherwise the effectiveness of the integrator will be reduced in turbulence
+    // During climbout/takeoff, bias the demanded pitch angle so that zero speed error produces a pitch angle 
+    // demand equal to the minimum value (which is )set by the mission plan during this mode). Otherwise the
+    // integrator has to catch up before the nose can be raised to reduce speed during climbout.
 	float gainInv = (_integ5_state * _timeConst * GRAVITY_MSS);
     float temp = SEB_error + SEBdot_error * _ptchDamp + SEBdot_dem * _timeConst;
-	_integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
+    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
+    {
+    	temp += _PITCHminf * gainInv;
+    }
+    _integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
 
     // Calculate pitch demand from specific energy balance signals
     _pitch_dem_unc = (temp + _integ7_state) / gainInv;
@@ -582,6 +615,74 @@ void AP_TECS::_update_STE_rate_lim(void)
     _STEdot_min = - _minSinkRate * GRAVITY_MSS;
 }
 
+void AP_TECS::_update_land_speed_incr(void) 
+{
+    // Calculate time in seconds since last update and reset airspeed increment to zero if > 1 second
+    uint32_t now = hal.scheduler->micros();
+	float DT = max((now - _apply_lndspdincr_last_usec),0)*1.0e-6f;
+	if (DT > 5.0) {
+	    _aspd_land_incr = 0.0f;
+	}
+    // Calculate Increment on landing airspeed required to compensate for wind conditions
+    float temp = constrain_float(_integ5_state - _ahrs.groundspeed(), 0.0f, 15.0f);
+	// Calculate the increment to be added to the airspeed during approach and landing as 1/3 of the
+    // difference between the true airspeed and ground speed and apply a 5sec time constant LP filter
+    // to the increment
+    _aspd_land_incr = 0.0066666667f*temp + 0.98f*_aspd_land_incr;
+}
+
+void AP_TECS::_update_max_rng_spd(void)
+{
+// Get the NED wind vector in m/s
+Vector3f wind3D = _ahrs.wind_estimate();
+
+// Specify the vertical air movement in m/s (positive is up)
+// Assume zero for initial implementation
+// TO-DO better wind estimator required as wind3D.z component not accurate enough
+// float VairRising = - wind3D.z / _EAS2TAS;
+float VairRising = 0.0;
+
+// Fit a quadratic to the minimum sink and maximum flight speed conditions.
+// This need only be done once on initialisation, or when
+// parameters are changed.
+float airSpdMinSinkSq = _minSinkAirSpd*_minSinkAirSpd;
+float aPolarCoef = (_maxSinkRate - _minSinkRate)/(2.0f*_minSinkAirSpd*aparm.airspeed_max - airSpdMinSinkSq - aparm.airspeed_max*aparm.airspeed_max);
+float bPolarCoef = -2.0f*aPolarCoef*_minSinkAirSpd;
+float cPolarCoefUncorr = - _minSinkRate - aPolarCoef*airSpdMinSinkSq - bPolarCoef*_minSinkAirSpd;
+
+// Correct sink polar for vertical air movement.
+float cPolarCoef = cPolarCoefUncorr + VairRising;
+
+// Specify track heading unit vector
+Vector2f trackVectUnit = _ahrs.groundspeed_vector();
+trackVectUnit = trackVectUnit.normalized();
+
+// Calculate the component of equivalent headwind against the track
+float VwindTrackHead = -(wind3D.x * trackVectUnit.x + wind3D.y * trackVectUnit.y) / _EAS2TAS;
+    
+// Calculate the component of equivalent wind across the track
+float VwindTrackAcross =  (trackVectUnit.x * wind3D.y + trackVectUnit.y*wind3D.x) / _EAS2TAS;
+    
+// Calculate drift angle
+_maxRngSpd = constrain_float(_maxRngSpd,_TASmin,_TASmax);
+float driftAng = atan(VwindTrackAcross/_maxRngSpd);
+    
+// Calculate the effective headwind
+float effHeadwind = _maxRngSpd*(1 - cos(driftAng)) + VwindTrackHead;
+    
+// Calculate the optimum airspeed by solving for the airspeed
+// coordinate of the tangent of a straight line that crosses the
+// speed axis at the effective headwind value and the sink rate polar
+float bTangentCoef=-2*aPolarCoef*effHeadwind;
+float cTangentCoef = - cPolarCoef - bPolarCoef*effHeadwind;
+float maxRngSpdRaw = (-bTangentCoef - sqrt(bTangentCoef*bTangentCoef -4*aPolarCoef*cTangentCoef))/(2*aPolarCoef);
+
+// Respect airspeed limits and apply a 5sec time constant filter to filter gust effects
+_maxRngSpd = 0.98f*_maxRngSpd + 0.02f*constrain_float(maxRngSpdRaw , _TASmin , _TASmax);
+
+}
+
+
 void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 									int32_t EAS_dem_cm, 
 									enum FlightStage flight_stage,
@@ -594,17 +695,32 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	_DT = max((now - _update_pitch_throttle_last_usec),0)*1.0e-6f;
 	_update_pitch_throttle_last_usec = now;	
 
-    // Update the speed estimate using a 2nd order complementary filter
-    _update_speed();
-
-	// Convert inputs
+	// Convert inputs to correct units
     _hgt_dem = hgt_dem_cm * 0.01f;
 	_EAS_dem = EAS_dem_cm * 0.01f;
     _THRmaxf  = aparm.throttle_max * 0.01f;
     _THRminf  = aparm.throttle_min * 0.01f;
 	_PITCHmaxf = 0.000174533f * aparm.pitch_limit_max_cd;
 	_PITCHminf = 0.000174533f * aparm.pitch_limit_min_cd;
+
+    // Convert equivalent airspeeds to true airspeeds
+    _EAS2TAS = _ahrs.get_EAS2TAS();
+    _TAS_dem  = _EAS_dem * _EAS2TAS;
+    _TASmax   = aparm.airspeed_max * _EAS2TAS;
+    _TASmin   = aparm.airspeed_min * _EAS2TAS;
+
 	_flight_stage = flight_stage;
+
+	// If the maximum range flight mode is selected, run the routine to calculate 
+    // the best airspeed and set the demand 
+    if (_flight_stage == AP_TECS::FLIGHT_MAX_RANGE)
+    {
+        _update_max_rng_spd();
+        _TAS_dem = _maxRngSpd;
+    }
+
+    // Update the speed estimate using a 2nd order complementary filter
+    _update_speed();
 
 	// initialise selected states and variables if DT > 1 second or in climbout
 	_initialise_states(ptchMinCO_cd, hgt_afe);

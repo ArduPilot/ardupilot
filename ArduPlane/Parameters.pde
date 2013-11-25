@@ -171,6 +171,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
 
+    // @Param: MAX_RANGE_MODE
+    // @DisplayName: Maximum Range Mode
+    // @Description: This enables an algorithm that casues the plane to fly at a speed that will maximise range. The airspeed will be automatically adjusted between ARSPD_FBW_MIN and ARSPD_FBW_MAX as the wind and direction of flight changes. The airspeed will be increased with a headwind or crosswind and reduced with a tailwind. The following parameters must be set properly to make us of this mode: TECS_SINK_MIN, TECS_SINK_MAX, TECS_MIN_SINK_SP, ARSPD_FBW_MIN and ARSPD_FBW_MAX. TECS_SINK_MIN is used to define the minimum sink rate in m/s of the aircraft with throttle closed and TECS_MIN_SINK_SP defines the speed in m/s that the aircraft needs to be flown at to achieve minimum sink. ARSPD_FBW_MAX defines the maximum safe airspeed in m/s of the aircraft with throttle off and TECS_SINK_MAX is the sink rate in m/s at that speed. In many cases the value for ARSPD_FBW_MIN will be set larger than TECS_MIN_SINK_SP as many aircraft cannot be flown safely at their minimum sink speed. The minimum and maximum speed demanded will always be constrained by ARSPD_FBW_MIN and ARSPD_FBW_MAX.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(max_rng_mode,        "MAX_RANGE_MODE", 0),
+
+
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
     // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission

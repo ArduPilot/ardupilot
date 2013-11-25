@@ -96,6 +96,9 @@ private:
     // Last time update_pitch_throttle was called
     uint32_t _update_pitch_throttle_last_usec;
 
+    // Last time _apply_land_speed_incr was called
+    uint32_t _apply_lndspdincr_last_usec;
+
 	// reference to the AHRS object
     AP_AHRS &_ahrs;
 
@@ -114,6 +117,7 @@ private:
     AP_Float _vertAccLim;
 	AP_Float _rollComp;
 	AP_Float _spdWeight;
+    AP_Float _minSinkAirSpd;
 	
 	// throttle demand in the range from 0.0 to 1.0
     float _throttle_dem;
@@ -227,6 +231,18 @@ private:
 	// Time since last update of main TECS loop (seconds)
 	float _DT;
 
+	// Previous value of SKE_weighting
+	float _SKE_weighting_prev;
+
+	// Previous value of landing airspeed increment
+	float _aspd_land_incr;
+
+	// TAS to fly at for maximum range (m/s)
+	float _maxRngSpd;
+
+	// conversion factor from EAS to TAS
+	float _EAS2TAS;
+
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(void);
 
@@ -259,6 +275,12 @@ private:
 
 	// Calculate specific total energy rate limits
 	void _update_STE_rate_lim(void);
+
+	// Calculate increment in airspeed demand during landing
+	void _update_land_speed_incr(void);
+
+	// Calculate increment in airspeed demand during landing
+	void _update_max_rng_spd(void);
 
     // declares a 5point average filter using floats
 	AverageFilterFloat_Size5 _vdot_filter;
