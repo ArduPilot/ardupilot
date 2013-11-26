@@ -20,8 +20,8 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE),
 
     // @Param: ACTION
-    // @DisplayName: Action to perform when the limit is breached
-    // @Description: What to do on fence breach
+    // @DisplayName: Fence Action
+    // @Description: What action should be taken when fence is breached
     // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
     AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
