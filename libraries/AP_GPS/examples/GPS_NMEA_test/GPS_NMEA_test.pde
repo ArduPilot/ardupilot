@@ -61,14 +61,15 @@ void loop()
         if (gps->fix) {
             hal.console->printf_P(
                 PSTR("Lat: %.7f Lon: %.7f Alt: %.2fm GSP: %.2fm/s "
-                    "CoG: %d SAT: %d TIM: %lu\r\n"),
-                          (float)gps->latitude / T7,
-                          (float)gps->longitude / T7,
-                          (float)gps->altitude_cm / 100.0,
-                          (float)gps->ground_speed_cm / 100.0,
-                          (int)gps->ground_course_cd / 100,
-                          gps->num_sats,
-                          gps->time);
+                    "CoG: %d SAT: %d TIM: %u/%lu\r\n"),
+                (float)gps->latitude / T7,
+                (float)gps->longitude / T7,
+                (float)gps->altitude_cm / 100.0,
+                (float)gps->ground_speed_cm / 100.0,
+                (int)gps->ground_course_cd / 100,
+                gps->num_sats,
+                gps->time_week,
+                gps->time_week_ms);
         } else {
             hal.console->println_P(PSTR("No fix"));
         }

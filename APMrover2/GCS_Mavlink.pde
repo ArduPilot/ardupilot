@@ -9,6 +9,9 @@ static bool in_mavlink_delay;
 // true when we have received at least 1 MAVLink packet
 static bool mavlink_active;
 
+// true if we are out of time in our event timeslice
+static bool	gcs_out_of_time;
+
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_## id ##_LEN) return false
 
@@ -158,6 +161,9 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     if (g_gps != NULL && g_gps->status() > GPS::NO_GPS) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+    if (!ins.healthy()) {
+        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+    }
 
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -246,6 +252,14 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->num_sats);
 }
 
+static void NOINLINE send_system_time(mavlink_channel_t chan)
+{
+    mavlink_msg_system_time_send(
+        chan,
+        g_gps->time_epoch_usec(),
+        hal.scheduler->millis());
+}
+
 
 #if HIL_MODE != HIL_MODE_DISABLED
 static void NOINLINE send_servo_out(mavlink_channel_t chan)
@@ -324,7 +338,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         (float)g_gps->ground_speed_cm / 100.0,
         (float)g_gps->ground_speed_cm / 100.0,
         (ahrs.yaw_sensor / 100) % 360,
-        (uint16_t)(100 * channel_throttle->norm_output()),
+        (uint16_t)(100 * fabsf(channel_throttle->norm_output())),
         current_loc.alt / 100.0,
         0);
 }
@@ -438,7 +452,7 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
-    mavlink_statustext_t *s = (chan == MAVLINK_COMM_0?&gcs0.pending_status:&gcs3.pending_status);
+    mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
     mavlink_msg_statustext_send(
         chan,
         s->severity,
@@ -468,6 +482,14 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
     if (telemetry_delayed(chan)) {
+        return false;
+    }
+
+    // if we don't have at least 1ms remaining before the main loop
+    // wants to fire then don't send a mavlink message. We want to
+    // prioritise the main flight control loop over communications
+    if (!in_mavlink_delay && scheduler.time_available_usec() < 1200) {
+        gcs_out_of_time = true;
         return false;
     }
 
@@ -509,6 +531,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_gps_raw(chan);
         break;
 
+    case MSG_SYSTEM_TIME:
+        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+        send_system_time(chan);
+        break;
+
     case MSG_SERVO_OUT:
 #if HIL_MODE != HIL_MODE_DISABLED
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
@@ -548,20 +575,12 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        if (chan == MAVLINK_COMM_0) {
-            gcs0.queued_param_send();
-        } else if (gcs3.initialised) {
-            gcs3.queued_param_send();
-        }
+        gcs[chan-MAVLINK_COMM_0].queued_param_send();
         break;
 
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        if (chan == MAVLINK_COMM_0) {
-            gcs0.queued_waypoint_send();
-        } else if (gcs3.initialised) {
-            gcs3.queued_waypoint_send();
-        }
+        gcs[chan-MAVLINK_COMM_0].queued_waypoint_send();
         break;
 
     case MSG_STATUSTEXT:
@@ -601,7 +620,7 @@ static struct mavlink_queue {
     enum ap_message deferred_messages[MAX_DEFERRED_MESSAGES];
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
-} mavlink_queue[2];
+} mavlink_queue[MAVLINK_COMM_NUM_BUFFERS];
 
 // send a message using mavlink
 static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
@@ -663,7 +682,7 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
 
     if (severity == SEVERITY_LOW) {
         // send via the deferred queuing system
-        mavlink_statustext_t *s = (chan == MAVLINK_COMM_0?&gcs0.pending_status:&gcs3.pending_status);
+        mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
         s->severity = (uint8_t)severity;
         strncpy((char *)s->text, str, sizeof(s->text));
         mavlink_send_message(chan, MSG_STATUSTEXT, 0);
@@ -673,88 +692,90 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
     }
 }
 
+/*
+  default stream rates to 1Hz
+ */
 const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     // @Param: RAW_SENS
-    // @DisplayName: Raw sensors
-    // @Description: Raw sensors stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Raw sensor stream rate
+    // @Description: Raw sensor stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRateRawSensors,      0),
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  1),
 
     // @Param: EXT_STAT
-    // @DisplayName: Extended status
-    // @Description: Extended status stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extended status stream rate to ground station
+    // @Description: Extended status stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRateExtendedStatus,  0),
+    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  1),
 
     // @Param: RC_CHAN
-    // @DisplayName: RC Channel
-    // @Description: RC Channel stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: RC Channel stream rate to ground station
+    // @Description: RC Channel stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRateRCChannels,      0),
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  1),
 
     // @Param: RAW_CTRL
-    // @DisplayName: Raw controllers
-    // @Description: Raw controllers stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Raw Control stream rate to ground station
+    // @Description: Raw Control stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRateRawController,   0),
+    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  1),
 
     // @Param: POSITION
-    // @DisplayName: Position
-    // @Description: vehicle position stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Position stream rate to ground station
+    // @Description: Position stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRatePosition,        0),
+    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  1),
 
     // @Param: EXTRA1
-    // @DisplayName: Extra1
-    // @Description: Extra1 stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extra data type 1 stream rate to ground station
+    // @Description: Extra data type 1 stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRateExtra1,          0),
+    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  1),
 
     // @Param: EXTRA2
-    // @DisplayName: Extra2
-    // @Description: Extra1 stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extra data type 2 stream rate to ground station
+    // @Description: Extra data type 2 stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRateExtra2,          0),
+    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  1),
 
     // @Param: EXTRA3
-    // @DisplayName: Extra3
-    // @Description: Extra3 stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Extra data type 3 stream rate to ground station
+    // @Description: Extra data type 3 stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRateExtra3,          0),
+    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  1),
 
     // @Param: PARAMS
-    // @DisplayName: Parameters
-    // @Description: Parameters stream rate. This is the MAVLink target stream rate in Hz.
+    // @DisplayName: Parameter stream rate to ground station
+    // @Description: Parameter stream rate to ground station
     // @Units: Hz
-    // @Range: 0 20
+    // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-	AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRateParams,          0),
-
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  10),
     AP_GROUPEND
 };
 
@@ -764,6 +785,7 @@ GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_send_timeout(1000), // 1 second
     waypoint_receive_timeout(1000) // 1 second
 {
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void
@@ -773,9 +795,17 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
     if (port == (AP_HAL::BetterStream*)hal.uartA) {
         mavlink_comm_0_port = port;
         chan = MAVLINK_COMM_0;
-    }else{
+        initialised = true;
+    } else if (port == (AP_HAL::BetterStream*)hal.uartC) {
         mavlink_comm_1_port = port;
         chan = MAVLINK_COMM_1;
+        initialised = true;
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    } else if (port == (AP_HAL::BetterStream*)hal.uartD) {
+        mavlink_comm_2_port = port;
+        chan = MAVLINK_COMM_2;
+        initialised = true;
+#endif
     }
     _queued_parameter = NULL;
     reset_cli_timeout();
@@ -790,7 +820,8 @@ GCS_MAVLINK::update(void)
 	status.packet_rx_drop_count = 0;
 
     // process received bytes
-    while (comm_get_available(chan))
+    uint16_t nbytes = comm_get_available(chan);
+    for (uint16_t i=0; i<nbytes; i++)
     {
         uint8_t c = comm_receive_ch(chan);
 
@@ -846,12 +877,15 @@ GCS_MAVLINK::update(void)
 // see if we should send a stream now. Called at 50Hz
 bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 {
-    AP_Int16 *stream_rates = &streamRateRawSensors;
-    float rate = (uint8_t)stream_rates[stream_num].get();
+    if (stream_num >= NUM_STREAMS) {
+        return false;
+    }
+    float rate = (uint8_t)streamRates[stream_num].get();
 
     // send at a much lower rate while handling waypoints and
     // parameter sends
-    if (waypoint_receiving || _queued_parameter != NULL) {
+    if ((stream_num != STREAM_PARAMS) && 
+        (waypoint_receiving || _queued_parameter != NULL)) {
         rate *= 0.25;
     }
 
@@ -876,14 +910,18 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 void
 GCS_MAVLINK::data_stream_send(void)
 {
+    gcs_out_of_time = false;
+
     if (_queued_parameter != NULL) {
-        if (streamRateParams.get() <= 0) {
-            streamRateParams.set(50);
+        if (streamRates[STREAM_PARAMS].get() <= 0) {
+            streamRates[STREAM_PARAMS].set(10);
         }
         if (stream_trigger(STREAM_PARAMS)) {
             send_message(MSG_NEXT_PARAM);
         }
     }
+
+    if (gcs_out_of_time) return;
 
     if (in_mavlink_delay) {
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -901,10 +939,14 @@ GCS_MAVLINK::data_stream_send(void)
         return;
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU3);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1);
@@ -914,33 +956,46 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_POSITION)) {
         // sent with GPS read
         send_message(MSG_LOCATION);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_RADIO_OUT);
         send_message(MSG_RADIO_IN);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
     }
 
+    if (gcs_out_of_time) return;
+
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
     }
+
+    if (gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
         send_message(MSG_HWSTATUS);
         send_message(MSG_RANGEFINDER);
+        send_message(MSG_SYSTEM_TIME);
     }
 }
 
@@ -994,55 +1049,35 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             switch(packet.req_stream_id){
 
                 case MAV_DATA_STREAM_ALL:
-                    streamRateRawSensors.set_and_save_ifchanged(freq);
-                    streamRateExtendedStatus.set_and_save_ifchanged(freq);
-                    streamRateRCChannels.set_and_save_ifchanged(freq);
-                    streamRateRawController.set_and_save_ifchanged(freq);
-                    streamRatePosition.set_and_save_ifchanged(freq);
-                    streamRateExtra1.set_and_save_ifchanged(freq);
-                    streamRateExtra2.set_and_save_ifchanged(freq);
-                    streamRateExtra3.set_and_save_ifchanged(freq);
-                    break;
-
-                case MAV_DATA_STREAM_RAW_SENSORS:
-            if (freq <= 5) {
-                streamRateRawSensors.set_and_save_ifchanged(freq);
-            } else {
-                // We do not set and save this one so that if HIL is shut down incorrectly
-														// we will not continue to broadcast raw sensor data at 50Hz.
-                streamRateRawSensors = freq;
+            // note that we don't set STREAM_PARAMS - that is internal only
+            for (uint8_t i=0; i<STREAM_PARAMS; i++) {
+                streamRates[i].set_and_save_ifchanged(freq);
             }
                     break;
 
+                case MAV_DATA_STREAM_RAW_SENSORS:
+            streamRates[STREAM_RAW_SENSORS].set_and_save_ifchanged(freq);
+                    break;
                 case MAV_DATA_STREAM_EXTENDED_STATUS:
-                    streamRateExtendedStatus.set_and_save_ifchanged(freq);
+            streamRates[STREAM_EXTENDED_STATUS].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_RC_CHANNELS:
-                    streamRateRCChannels.set_and_save_ifchanged(freq);
+            streamRates[STREAM_RC_CHANNELS].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_RAW_CONTROLLER:
-                    streamRateRawController.set_and_save_ifchanged(freq);
+            streamRates[STREAM_RAW_CONTROLLER].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_POSITION:
-                    streamRatePosition.set_and_save_ifchanged(freq);
+            streamRates[STREAM_POSITION].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_EXTRA1:
-                    streamRateExtra1.set_and_save_ifchanged(freq);
+            streamRates[STREAM_EXTRA1].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_EXTRA2:
-                    streamRateExtra2.set_and_save_ifchanged(freq);
+            streamRates[STREAM_EXTRA2].set_and_save_ifchanged(freq);
                     break;
-
                 case MAV_DATA_STREAM_EXTRA3:
-                    streamRateExtra3.set_and_save_ifchanged(freq);
-                    break;
-
-                default:
+            streamRates[STREAM_EXTRA3].set_and_save_ifchanged(freq);
                     break;
             }
             break;
@@ -1303,8 +1338,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_param_request_list_decode(msg, &packet);
             if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
-            // Start sending parameters - next call to ::update will kick the first one out
+            // mark the firmware version in the tlog
+            send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
 
+            // send system ID if we can
+            char sysid[40];
+            if (hal.util->get_system_id(sysid)) {
+                mavlink_send_text(chan, SEVERITY_LOW, sysid);
+            }
+
+            // Start sending parameters - next call to ::update will kick the first one out
             _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
             _queued_parameter_index = 0;
             _queued_parameter_count = _count_parameters();
@@ -1654,7 +1697,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else if (var_type == AP_PARAM_INT32) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
                     float v = packet.param_value+rounding_addition;
-                    v = constrain_float(v, -2147483648.0f, 2147483647.0f);
+                v = constrain_float(v, -2147483648.0, 2147483647.0);
 					((AP_Int32 *)vp)->set_and_save(v);
                 } else if (var_type == AP_PARAM_INT16) {
                     if (packet.param_value < 0) rounding_addition = -rounding_addition;
@@ -1723,7 +1766,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			if(msg->sysid != g.sysid_my_gcs) break;
             last_heartbeat_ms = failsafe.rc_override_timer = millis();
             failsafe_trigger(FAILSAFE_EVENT_GCS, false);
-			pmTest1++;
             break;
         }
 
@@ -1821,13 +1863,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     default:
         // forward unknown messages to the other link if there is one
-        if ((chan == MAVLINK_COMM_1 && gcs0.initialised) ||
-            (chan == MAVLINK_COMM_0 && gcs3.initialised)) {
-            mavlink_channel_t out_chan = (mavlink_channel_t)(((uint8_t)chan)^1);
-            // only forward if it would fit in our transmit buffer
+        for (uint8_t i=0; i<num_gcs; i++) {
+            if (gcs[i].initialised && i != (uint8_t)chan) {
+                mavlink_channel_t out_chan = (mavlink_channel_t)i;
+                // only forward if it would fit in the transmit buffer
             if (comm_get_txspace(out_chan) > ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
                 _mavlink_resend_uart(out_chan, msg);
             }
+        }
         }
         break;
 
@@ -1857,7 +1900,7 @@ GCS_MAVLINK::_count_parameters()
 void
 GCS_MAVLINK::queued_param_send()
 {
-    if (_queued_parameter == NULL) {
+    if (!initialised || _queued_parameter == NULL) {
         return;
     }
 
@@ -1867,7 +1910,7 @@ GCS_MAVLINK::queued_param_send()
 
     // use at most 30% of bandwidth on parameters. The constant 26 is
     // 1/(1000 * 1/8 * 0.001 * 0.3)
-    bytes_allowed = g.serial3_baud * (tnow - _queued_parameter_send_time_ms) * 26;
+    bytes_allowed = g.serial1_baud * (tnow - _queued_parameter_send_time_ms) * 26;
     if (bytes_allowed > comm_get_txspace(chan)) {
         bytes_allowed = comm_get_txspace(chan);
     }
@@ -1907,7 +1950,8 @@ GCS_MAVLINK::queued_param_send()
 void
 GCS_MAVLINK::queued_waypoint_send()
 {
-    if (waypoint_receiving &&
+    if (initialised &&
+        waypoint_receiving &&
         waypoint_request_i <= waypoint_request_last) {
         mavlink_msg_mission_request_send(
             chan,
@@ -1929,7 +1973,7 @@ void GCS_MAVLINK::reset_cli_timeout() {
 static void mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs0.initialised) return;
+    if (!gcs[0].initialised) return;
 
     in_mavlink_delay = true;
 
@@ -1959,9 +2003,10 @@ static void mavlink_delay_cb()
  */
 static void gcs_send_message(enum ap_message id)
 {
-    gcs0.send_message(id);
-    if (gcs3.initialised) {
-        gcs3.send_message(id);
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_message(id);
+        }
     }
 }
 
@@ -1970,9 +2015,10 @@ static void gcs_send_message(enum ap_message id)
  */
 static void gcs_data_stream_send(void)
 {
-    gcs0.data_stream_send();
-    if (gcs3.initialised) {
-        gcs3.data_stream_send();
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].data_stream_send();
+        }
     }
 }
 
@@ -1981,19 +2027,23 @@ static void gcs_data_stream_send(void)
  */
 static void gcs_update(void)
 {
-	gcs0.update();
-    if (gcs3.initialised) {
-        gcs3.update();
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].update();
+        }
     }
 }
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
-    gcs0.send_text_P(severity, str);
-    if (gcs3.initialised) {
-        gcs3.send_text_P(severity, str);
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_text_P(severity, str);
     }
+    }
+#if LOGGING_ENABLED == ENABLED
     DataFlash.Log_Write_Message_P(str);
+#endif
 }
 
 /*
@@ -2004,16 +2054,28 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
-    gcs0.pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf_P((char *)gcs0.pending_status.text,
-            sizeof(gcs0.pending_status.text), fmt, arg_list);
+    hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
+            sizeof(gcs[0].pending_status.text), fmt, arg_list);
     va_end(arg_list);
-    DataFlash.Log_Write_Message(gcs0.pending_status.text);
-    gcs3.pending_status = gcs0.pending_status;
+#if LOGGING_ENABLED == ENABLED
+    DataFlash.Log_Write_Message(gcs[0].pending_status.text);
+#endif
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
-    if (gcs3.initialised) {
-        mavlink_send_message(MAVLINK_COMM_1, MSG_STATUSTEXT, 0);
+    for (uint8_t i=1; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].pending_status = gcs[0].pending_status;
+            mavlink_send_message((mavlink_channel_t)i, MSG_STATUSTEXT, 0);
+        }
     }
 }
 
+
+/**
+   retry any deferred messages
+ */
+static void gcs_retry_deferred(void)
+{
+    gcs_send_message(MSG_RETRY_DEFERRED);
+}

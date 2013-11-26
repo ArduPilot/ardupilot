@@ -223,7 +223,7 @@ private:
 
     bool need_rate_update;
     uint8_t rate_update_step;
-    uint32_t _last_fix_time;
+    uint32_t _last_5hz_time;
 
     void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);

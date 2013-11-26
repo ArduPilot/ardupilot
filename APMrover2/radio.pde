@@ -53,8 +53,8 @@ static void read_radio()
 
 	channel_throttle->servo_out = channel_throttle->control_in;
 
-	if (channel_throttle->servo_out > 50) {
-        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((channel_throttle->norm_input()-0.5) / 0.5);
+	if (abs(channel_throttle->servo_out) > 50) {
+        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((fabsf(channel_throttle->norm_input())-0.5) / 0.5);
 	} else {
 		throttle_nudge = 0;
 	}

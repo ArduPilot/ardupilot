@@ -41,7 +41,6 @@ public:
 	///
 	void		init(AP_HAL::UARTDriver *port) {
         _port = port;
-        initialised = true;
     }
 
 	/// Update GCS state.
@@ -193,17 +192,8 @@ private:
 	uint16_t waypoint_send_timeout; // milliseconds
 	uint16_t waypoint_receive_timeout; // milliseconds
 
-	// data stream rates. The code assumes that
-    // streamRateRawSensors is the first
-	AP_Int16 streamRateRawSensors;
-	AP_Int16 streamRateExtendedStatus;
-	AP_Int16 streamRateRCChannels;
-	AP_Int16 streamRateRawController;
-	AP_Int16 streamRatePosition;
-	AP_Int16 streamRateExtra1;
-	AP_Int16 streamRateExtra2;
-	AP_Int16 streamRateExtra3;
-	AP_Int16 streamRateParams;
+    // saveable rate of each stream
+    AP_Int16        streamRates[NUM_STREAMS];
 
     // number of 50Hz ticks until we next send this stream
     uint8_t stream_ticks[NUM_STREAMS];

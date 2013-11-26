@@ -14,9 +14,9 @@ public:
             uint8_t spsr
     ) :
         _cs_pin(cs_pin),
-        _spcr(spcr_lowspeed),
         _spcr_lowspeed(spcr_lowspeed),
         _spcr_highspeed(spcr_highspeed),
+        _spcr(spcr_lowspeed),
         _spsr(spsr)
     {}
 
@@ -36,9 +36,10 @@ private:
     void _cs_release();
     uint8_t _transfer(uint8_t data);
     // used for MPU6k
-    void _transfer15(const uint8_t *tx, uint8_t *rx);
+    void _transfer16(const uint8_t *tx, uint8_t *rx);
 
     static AP_HAL_AVR::AVRSemaphore _semaphore;
+    static bool _force_low_speed;
 
     AP_HAL_AVR::AVRDigitalSource *_cs_pin;
     const uint8_t _spcr_lowspeed;

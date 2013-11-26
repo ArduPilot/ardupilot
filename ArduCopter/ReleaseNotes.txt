@@ -1,14 +1,64 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc7 22-Nov-2013
+Changes from 3.1-rc6
+1) MOT_SPIN_ARMED default to 70
+2) Smoother inertial nav response to missed GPS messages
+3) Safety related changes
+    a) radio and battery failsafe disarm copter if landed in Loiter or AltHold (previously they would RTL)
+    b) Pre-Arm check failure warning output to ground station every 30 seconds until they pass
+    c) INS and inertial nav errors logged to dataflash's PM message
+    d) pre-arm check for ACRO_BAL_ROLL, ACRO_BAL_PITCH
+------------------------------------------------------------------
+ArduCopter 3.1-rc6 16-Nov-2013
+Improvements over 3.1-rc5
+1) Heli improvements:
+    a) support for direct drive tails (uses TAIL_TYPE and TAIL_SPEED parameters)
+    b) smooth main rotor ramp-up for those without external govenor (RSC_RAMP_TIME)
+    c) internal estimate of rotor speed configurable with RSC_RUNUP_TIME parameter to ensure rotor at top speed before starting missions
+    d) LAND_COL_MIN collective position used when landed (reduces chance copter will push too hard into the ground when landing or before starting missions)
+    e) reduced collective while in stabilize mode (STAB_COL_MIN, STAB_COL_MAX) for more precise throttle control
+    f) external gyro parameter range changed from 1000~2000 to 0~1000 (more consistent with other parameters)
+    g) dynamic flight detector switches on/off leaky-i term depending on copter speed
+2) SingleCopter airframe support (contribution from Bill King)
+3) Drift mode replaces TOY
+4) MPU6k SPI bus speed decreased to 500khz after 4 errors
+5) Safety related changes:
+    a) crash detector cuts motors if copter upside down for more than 2 seconds
+    b) INS (accel and gyro) health check in pre-arm checks
+    c) ARMING_CHECK allows turning on/off individual checks for baro, GPS, compass, parameters, board voltage, radio
+    d) detect Ublox GPS running at less than 5hz and resend configuration
+    e) GPSGlitch acceptable radius reduced to 5m (stricter detection of glitches)
+    f) range check roll, pitch input to ensure crazy radio values don't get through to stabilize controller
+    g) GPS failsafe options to trigger AltHold instead of LAND or to trigger LAND even if in flight mode that does not require GPS
+    h) Battery failsafe option to trigger RTL instead of LAND
+    i) MOT_SPIN_ARMED set to zero by default
+6) Bug fixes:
+    a) missing throttle controller initialisation would mean Stabilize mode's throttle could be non-tilt-compensated
+    b) inertial nav baro and gps delay compensation fix (contribution from Neurocopter)
+    c) GPS failsafe was invoking LAND mode which still used GPS for horizontal control
+------------------------------------------------------------------
+ArduCopter 3.1-rc5 22-Oct-2013
+Improvements over 3.1-rc4
+1) Pixhawk USB reliability improvements
+2) AutoTune changes:
+    a) enabled by default
+    b) status output to GCS
+    c) use 2 pos switch only
+3) ch7/ch8 LAND
+4) Tricopter stability patch improvements [thanks to texlan]
+5) safety improvements:
+    a) slower speed up of motors after arming
+    b) pre-arm check that copter is moving less than 50cm/s if arming in Loiter or fence enabled
+------------------------------------------------------------------
 ArduCopter 3.1-rc4 13-Oct-2013
 Improvements over 3.1-rc3
 1) Performance improvements to resolve APM alt hold issues for Octacopters:
      a) SPI bus speed increased from 500khz to 8Mhz
      b) Telemetry buffer increased to 512bytes
      c) broke up medium and slow loops into individual scheduled tasks and increased priority of alt hold tasks
-2) AutoTune enabled by default
-3) Bug fix for Pixhawk USB connection
-4) GPS Glitch improvements:
+2) Bug fix for Pixhawk USB connection
+3) GPS Glitch improvements:
        a) added GPS glitch check to arming check
        b) parameters for vehicle max acceleration (GPSGLITCH_ACCEL) and always-ok radius (GPSGLICH_RADIUS)
 ------------------------------------------------------------------

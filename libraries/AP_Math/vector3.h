@@ -153,7 +153,7 @@ public:
     // zero the vector
     void zero()
     {
-        x = y = z = 0.0;
+        x = y = z = 0;
     }
 
     // returns the normalized version of this vector

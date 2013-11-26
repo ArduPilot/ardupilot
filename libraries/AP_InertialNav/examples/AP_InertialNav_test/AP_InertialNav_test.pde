@@ -46,9 +46,9 @@ AP_GPS_Auto auto_gps(&gps);
 GPS_Glitch   gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(&ins, gps);
+AP_AHRS_DCM ahrs(ins, gps);
 
-AP_InertialNav inertialnav(&ahrs, &ins, &baro, gps, gps_glitch);
+AP_InertialNav inertialnav(&ahrs, &baro, gps, gps_glitch);
 
 uint32_t last_update;
 
@@ -83,12 +83,10 @@ void loop(void)
 
     float dx =  inertialnav.get_latitude_diff();
     float dy =  inertialnav.get_longitude_diff();
-    float velx =  inertialnav.get_latitude_velocity();
-    float vely =  inertialnav.get_longitude_velocity();
 
     hal.console->printf_P(
-            PSTR("inertial nav pos: (%f,%f) velocity: (%f, %f)\r\n"),
-            dx, dy, velx, vely);
+            PSTR("inertial nav pos: (%f,%f)\r\n"),
+            dx, dy);
 }
 
 AP_HAL_MAIN();

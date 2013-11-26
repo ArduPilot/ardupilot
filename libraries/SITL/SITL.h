@@ -65,6 +65,7 @@ public:
     AP_Vector3f  gps_glitch;  // glitch offsets in lat, lon and altitude
     AP_Int8  gps_hertz;   // GPS update rate in Hz
     AP_Float batt_voltage; // battery voltage base
+    AP_Float accel_fail;  // accelerometer failure value
 
     // wind control
     AP_Float wind_speed;

@@ -94,7 +94,7 @@ static void init_ardupilot()
     // standard gps running
     hal.uartB->begin(115200, 256, 16);
 
-	cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
+	cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
 						 "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
                     
@@ -114,7 +114,7 @@ static void init_ardupilot()
     g.num_resets.set_and_save(g.num_resets+1);
 
 	// init the GCS
-	gcs0.init(hal.uartA);
+	gcs[0].init(hal.uartA);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -126,8 +126,16 @@ static void init_ardupilot()
     check_usb_mux();
 
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
-	gcs3.init(hal.uartC);
+    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD), 128, 128);
+	gcs[1].init(hal.uartC);
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // we may have a 3rd serial port for telemetry
+    if (hal.uartD != NULL) {
+        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD), 128, 128);
+        gcs[2].init(hal.uartD);
+    }
+#endif
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
@@ -192,8 +200,11 @@ static void init_ardupilot()
 	//
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-    if (gcs3.initialised) {
+    if (gcs[1].initialised) {
         hal.uartC->println_P(msg);
+    }
+    if (num_gcs > 2 && gcs[2].initialised) {
+        hal.uartD->println_P(msg);
     }
 
 	startup_ground();
@@ -222,11 +233,6 @@ static void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
-	// Makes the servos wiggle
-	// step 1 = 1 wiggle
-	// -----------------------
-	demo_servos(1);
-
 	//IMU ground start
 	//------------------------
     //
@@ -241,14 +247,23 @@ static void startup_ground(void)
 	// -------------------
 	init_commands();
 
-	// Makes the servos wiggle - 3 times signals ready to fly
-	// -----------------------
-	demo_servos(3);
-
     hal.uartA->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
 
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
+}
+
+/*
+  set the in_reverse flag
+  reset the throttle integrator if this changes in_reverse
+ */
+static void set_reverse(bool reverse)
+{
+    if (in_reverse == reverse) {
+        return;
+    }
+    g.pidSpeedThrottle.reset_I();    
+    in_reverse = reverse;
 }
 
 static void set_mode(enum mode mode)
@@ -261,6 +276,8 @@ static void set_mode(enum mode mode)
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
+    set_reverse(false);
+    g.pidSpeedThrottle.reset_I();
 
     if (control_mode != AUTO) {
         auto_triggered = false;
@@ -341,14 +358,20 @@ static void startup_INS_ground(bool force_accel_level)
 
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
-	demo_servos(2);
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move vehicle"));
 	mavlink_delay(1000);
 
     ahrs.init();
 	ahrs.set_fly_forward(true);
-	ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate);
+
+    AP_InertialSensor::Start_style style;
+    if (g.skip_gyro_cal && !force_accel_level) {
+        style = AP_InertialSensor::WARM_START;
+    } else {
+        style = AP_InertialSensor::COLD_START;
+    }
+
+	ins.init(style, ins_sample_rate);
 
     if (force_accel_level) {
         // when MANUAL_LEVEL is set to 1 we don't do accelerometer
@@ -373,7 +396,6 @@ static void resetPerfData(void) {
 	ahrs.renorm_range_count 	= 0;
 	ahrs.renorm_blowup_count = 0;
 	gps_fix_count 			= 0;
-	pmTest1					= 0;
 	perf_mon_timer 			= millis();
 }
 
@@ -394,7 +416,7 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     case 111:  return 111100;
     case 115:  return 115200;
     }
-    cliSerial->println_P(PSTR("Invalid SERIAL3_BAUD"));
+    cliSerial->println_P(PSTR("Invalid baudrate"));
     return default_baud;
 }
 
@@ -413,11 +435,11 @@ static void check_usb_mux(void)
     // the APM2 has a MUX setup where the first serial port switches
     // between USB and a TTL serial connection. When on USB we use
     // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL3_BAUD.
+    // at SERIAL1_BAUD.
     if (usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
     }
 #endif
 }

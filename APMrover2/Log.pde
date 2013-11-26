@@ -165,15 +165,14 @@ struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint32_t loop_time;
     uint16_t main_loop_count;
-    int16_t  g_dt_max;
+    uint32_t g_dt_max;
     uint8_t  renorm_count;
     uint8_t  renorm_blowup;
-    uint8_t  gps_fix_count;
     int16_t  gyro_drift_x;
     int16_t  gyro_drift_y;
     int16_t  gyro_drift_z;
-    int16_t  pm_test;
     uint8_t  i2c_lockup_count;
+    uint16_t ins_error_count;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -186,12 +185,11 @@ static void Log_Write_Performance()
         g_dt_max        : G_Dt_max,
         renorm_count    : ahrs.renorm_range_count,
         renorm_blowup   : ahrs.renorm_blowup_count,
-        gps_fix_count   : gps_fix_count,
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
-        pm_test         : pmTest1,
-        i2c_lockup_count: hal.i2c->lockup_count()
+        i2c_lockup_count: hal.i2c->lockup_count(),
+        ins_error_count  : ins.error_count()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -228,6 +226,7 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
 struct PACKED log_Camera {
     LOG_PACKET_HEADER;
     uint32_t gps_time;
+    uint16_t gps_week;
     int32_t  latitude;
     int32_t  longitude;
     int16_t  roll;
@@ -241,7 +240,8 @@ static void Log_Write_Camera()
 #if CAMERA == ENABLED
     struct log_Camera pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
-        gps_time    : g_gps->time,
+        gps_time    : g_gps->time_week_ms,
+        gps_week    : g_gps->time_week,
         latitude    : current_loc.lat,
         longitude   : current_loc.lng,
         roll        : (int16_t)ahrs.roll_sensor,
@@ -454,11 +454,11 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "ccC",        "Roll,Pitch,Yaw" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "IHhBBBhhhhB", "LTime,MLC,gDt,RNCnt,RNBl,GPScnt,GDx,GDy,GDz,PMT,I2CErr" },
+      "PM",  "IHIBBhhhBH", "LTime,MLC,gDt,RNCnt,RNBl,GDx,GDy,GDz,I2CErr,INSErr" },
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",   "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
-      "CAM", "ILLccC",   "GPSTime,Lat,Lng,Roll,Pitch,Yaw" },
+      "CAM", "IHLLeccC",   "GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "BB",         "SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
@@ -479,7 +479,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
-    cliSerial->printf_P(PSTR("\n" THISFIRMWARE
+    cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"),
                         (unsigned) memcheck_available_memory());
 
@@ -496,6 +496,13 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 static void start_logging() 
 {
     DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
+    DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
+
+    // write system identifier as well if available
+    char sysid[40];
+    if (hal.util->get_system_id(sysid)) {
+        DataFlash.Log_Write_Message(sysid);
+    }
 }
 
 #else // LOGGING_ENABLED

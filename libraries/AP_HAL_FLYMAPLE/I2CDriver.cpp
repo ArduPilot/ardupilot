@@ -127,11 +127,12 @@ uint8_t            FLYMAPLEI2CDriver::_transfer(i2c_msg *msgs, uint16 num)
     // ALERT: patch to libmaple required for this to work else
     // crashes next line due to a bug in latest git libmaple see http://forums.leaflabs.com/topic.php?id=13458
     int32 result = i2c_master_xfer(I2C1, msgs, num, _timeout_ms);
-    if (result != 0)
-    {
-	// Some sort of I2C bus fault, or absent device, reinitialise the bus
-	_reset();
-	_lockup_count++;
+    if (result != 0) {
+        // Some sort of I2C bus fault, or absent device, reinitialise the bus
+        _reset();
+        if (!_ignore_errors) {
+            _lockup_count++;
+        }
     }
     return result != 0;
 }

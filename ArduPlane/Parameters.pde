@@ -9,6 +9,7 @@
 #define ASCALAR(v, name, def) { aparm.v.vtype, name, Parameters::k_param_ ## v, &aparm.v, {def_value : def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info : class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info : class::var_info} }
+#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &v, {group_info : class::var_info} }
 
 const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
@@ -30,17 +31,26 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: SERIAL0_BAUD
     // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the main uart
+    // @Description: The baud rate used on the USB console
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
     // @User: Standard
     GSCALAR(serial0_baud,           "SERIAL0_BAUD",   SERIAL0_BAUD/1000),
 
-    // @Param: SERIAL3_BAUD
+    // @Param: SERIAL1_BAUD
     // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the telemetry port
+    // @Description: The baud rate used on the first telemetry port
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
     // @User: Standard
-    GSCALAR(serial3_baud,           "SERIAL3_BAUD",   SERIAL3_BAUD/1000),
+    GSCALAR(serial1_baud,           "SERIAL1_BAUD",   SERIAL1_BAUD/1000),
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Param: SERIAL2_BAUD
+    // @DisplayName: Telemetry Baud Rate
+    // @Description: The baud rate used on the second telemetry port
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+    // @User: Standard
+    GSCALAR(serial2_baud,           "SERIAL2_BAUD",   SERIAL2_BAUD/1000),
+#endif
 
     // @Param: TELEM_DELAY
     // @DisplayName: Telemetry startup delay 
@@ -149,8 +159,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
-	// @Description: Which navigation controller to enable
-	// @Values: 0:Legacy,1:L1Controller
+	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental conrtrollers will be added which are selected using this parameter.
+	// @Values: 0:Default,1:L1Controller
 	// @User: Standard
 	GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
@@ -165,8 +175,8 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ALT_CTRL_ALG
     // @DisplayName: Altitude control algorithm
-    // @Description: This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). If you set it to 1 then you will get the old (deprecated) non-airspeed based algorithm. If you set it to 3 then you will get the old (deprecated) airspeed based algorithm. Setting it to 2 selects the new 'TECS' (total energy control system) altitude control, which currently is equivalent to setting 0. Note that TECS is able to handle aircraft both with and without an airspeed sensor.
-    // @Values: 0:Automatic,1:non-airspeed(deprecated),2:TECS,3:airspeed(deprecated)
+    // @Description: This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). From time to time we will add other experimental altitude control algorithms which will be seleted using this parameter.
+    // @Values: 0:Automatic
     // @User: Advanced
     GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
 
@@ -414,15 +424,17 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
-    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage then the plane will RTL
+    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage continuously for 10 seconds then the plane will switch to RTL mode
     // @Units: Volts
+    // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", 0),
 
     // @Param: FS_BATT_MAH
     // @DisplayName: Failsafe battery milliAmpHours
-    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the plane will RTL
+    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the plane will switch to RTL mode immediately
     // @Units: mAh
+    // @Increment: 50
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", 0),
 
@@ -744,6 +756,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     GSCALAR(hil_servos,            "HIL_SERVOS",      0),
+
+    // @Param: HIL_ERR_LIMIT
+    // @DisplayName: Limit of error in HIL attitude before reset
+    // @Description: This controls the maximum error in degrees on any axis before HIL will reset the DCM attitude to match the HIL_STATE attitude. This limit will prevent poor timing on HIL from causing a major attitude error. If the value is zero then no limit applies.
+    // @Units: degrees
+    // @Range: 0 90
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
 #endif
 
     // barometer ground calibration. The GND_ prefix is chosen for
@@ -850,11 +871,17 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.pde
-    GOBJECT(gcs0,                                   "SR0_",     GCS_MAVLINK),
+    GOBJECTN(gcs[0], gcs0,        "SR0_",     GCS_MAVLINK),
 
-    // @Group: SR3_
+    // @Group: SR1_
     // @Path: GCS_Mavlink.pde
-    GOBJECT(gcs3,                                   "SR3_",     GCS_MAVLINK),
+    GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Group: SR2_
+    // @Path: GCS_Mavlink.pde
+    GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+#endif
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp

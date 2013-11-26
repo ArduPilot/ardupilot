@@ -103,8 +103,16 @@ public:
     ///
     Menu(const char *prompt, const struct command *commands, uint8_t entries, preprompt ppfunc = 0);
 
+    /// set command line length limit
+    void set_limits(uint8_t commandline_max, uint8_t args_max);
+
     /// menu runner
     void        run(void);
+
+    /// check for new input on the port. Can be used
+    /// to allow for the menu to operate asynchronously
+    /// this will return true if the user asked to exit the menu
+    bool        check_input(void);
 
 private:
     /// Implements the default 'help' command.
@@ -123,9 +131,27 @@ private:
     const uint8_t           _entries;                                                   ///< size of the menu
     const preprompt         _ppfunc;                                                    ///< optional pre-prompt action
 
-    static char             _inbuf[MENU_COMMANDLINE_MAX];       ///< input buffer
-    static arg              _argv[MENU_ARGS_MAX + 1];                   ///< arguments
+    static char             *_inbuf;       ///< input buffer
+    static arg              *_argv;       ///< arguments
 
+    uint8_t                 _commandline_max;
+    uint8_t                 _args_max;
+
+    // allocate inbuf and args buffers
+    void _allocate_buffers(void);
+
+    // number of characters read so far from the port
+    uint8_t                 _input_len;
+
+    // check for next input character
+    bool                    _check_for_input(void);
+
+    // run one full entered command. 
+    // return true if the menu loop should exit
+    bool                    _run_command(bool prompt_on_enter);
+
+    void                    _display_prompt();
+    
 	// port to run on
 	static AP_HAL::BetterStream  *_port;
 };

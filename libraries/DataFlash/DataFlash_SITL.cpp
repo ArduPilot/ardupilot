@@ -13,10 +13,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdint.h>
+#include <assert.h>
 #include "DataFlash.h"
 
 #define DF_PAGE_SIZE 512
-#define DF_NUM_PAGES 4096
+#define DF_NUM_PAGES 16384
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,6 +37,7 @@ void DataFlash_SITL::Init(void)
 			write(flash_fd, fill, DF_PAGE_SIZE*DF_NUM_PAGES);
 			free(fill);
 		}
+        ftruncate(flash_fd, DF_PAGE_SIZE*DF_NUM_PAGES);
 	}
 	df_PageSize = DF_PAGE_SIZE;
 
@@ -84,12 +86,14 @@ void DataFlash_SITL::WaitReady()
 
 void DataFlash_SITL::PageToBuffer(unsigned char BufferNum, uint16_t PageAdr)
 {
-	pread(flash_fd, buffer[BufferNum], DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
+    assert(PageAdr>=1);
+	pread(flash_fd, buffer[BufferNum], DF_PAGE_SIZE, (PageAdr-1)*DF_PAGE_SIZE);
 }
 
 void DataFlash_SITL::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait)
 {
-	pwrite(flash_fd, buffer[BufferNum], DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
+    assert(PageAdr>=1);
+	pwrite(flash_fd, buffer[BufferNum], DF_PAGE_SIZE, (PageAdr-1)*(uint32_t)DF_PAGE_SIZE);
 }
 
 void DataFlash_SITL::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data)
@@ -132,14 +136,16 @@ void DataFlash_SITL::PageErase (uint16_t PageAdr)
 {
 	uint8_t fill[DF_PAGE_SIZE];
 	memset(fill, 0xFF, sizeof(fill));
-	pwrite(flash_fd, fill, DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
+    assert(PageAdr>=1);
+	pwrite(flash_fd, fill, DF_PAGE_SIZE, (PageAdr-1)*DF_PAGE_SIZE);
 }
 
 void DataFlash_SITL::BlockErase (uint16_t BlockAdr)
 {
 	uint8_t fill[DF_PAGE_SIZE*8];
 	memset(fill, 0xFF, sizeof(fill));
-	pwrite(flash_fd, fill, DF_PAGE_SIZE*8, BlockAdr*DF_PAGE_SIZE*8);
+    assert(BlockAdr>=1);
+	pwrite(flash_fd, fill, DF_PAGE_SIZE*8, (BlockAdr-1)*DF_PAGE_SIZE*8);
 }
 
 

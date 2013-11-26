@@ -12,6 +12,16 @@ public:
 
     enum safety_state safety_switch_state(void);
 
+    /*
+      set system clock in UTC microseconds
+     */
+    void set_system_clock(uint64_t time_utc_usec);
+
+    /*
+      get system identifier (STM32 serial number)
+     */
+    bool get_system_id(char buf[40]);
+
 private:
     int _safety_handle;
 };

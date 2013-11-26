@@ -18,12 +18,17 @@ public:
     float           get_gyro_drift_rate();
     bool            sample_available();
     bool            wait_for_sample(uint16_t timeout_ms);
+    void            set_accel(const Vector3f &accel);
+    void            set_gyro(const Vector3f &gyro);
+    bool            healthy(void);
 
 protected:
     uint16_t        _init_sensor( Sample_rate sample_rate );
     uint32_t        _sample_period_ms;
     uint32_t        _last_update_ms;
     uint32_t        _delta_time_usec;
+    uint32_t        _last_accel_usec;
+    uint32_t        _last_gyro_usec;
 };
 
 #endif // __AP_INERTIAL_SENSOR_STUB_H__

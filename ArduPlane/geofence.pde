@@ -15,7 +15,7 @@
  *  We store a copy of the boundary in memory as we need to access it
  *  very quickly at runtime
  */
-static struct geofence_state {
+static struct GeofenceState {
     uint8_t num_points;
     bool boundary_uptodate;
     bool fence_triggered;
@@ -78,11 +78,11 @@ static void geofence_load(void)
     uint8_t i;
 
     if (geofence_state == NULL) {
-        if (memcheck_available_memory() < 512 + sizeof(struct geofence_state)) {
+        if (memcheck_available_memory() < 512 + sizeof(struct GeofenceState)) {
             // too risky to enable as we could run out of stack
             goto failed;
         }
-        geofence_state = (struct geofence_state *)calloc(1, sizeof(struct geofence_state));
+        geofence_state = (struct GeofenceState *)calloc(1, sizeof(struct GeofenceState));
         if (geofence_state == NULL) {
             // not much we can do here except disable it
             goto failed;

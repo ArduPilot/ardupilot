@@ -106,7 +106,7 @@ public:
     // return the differential pressure in Pascal for the last
     // airspeed reading. Used by the calibration code
     float get_differential_pressure(void) const {
-        return max(_last_pressure - _offset, 0);
+        return max(_last_pressure, 0);
     }
 
     // set the apparent to true airspeed ratio
@@ -124,6 +124,9 @@ public:
 
 	// log data to MAVLink
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
+
+    // return health status of sensor
+    bool healthy(void) const { return _healthy; }
 
     static const struct AP_Param::GroupInfo var_info[];
 

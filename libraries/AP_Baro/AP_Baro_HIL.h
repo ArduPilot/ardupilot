@@ -13,7 +13,7 @@ private:
     float Press;
     int32_t _pressure_sum;
     int32_t _temperature_sum;
-    uint8_t _count;
+    volatile uint8_t _count;
 
 public:
     bool init();

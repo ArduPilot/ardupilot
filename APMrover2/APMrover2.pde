@@ -252,7 +252,7 @@ AP_InertialSensor_Oilpan ins( &adc );
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM ahrs(&ins, g_gps);
+AP_AHRS_DCM ahrs(ins, g_gps);
 
 static AP_L1_Control L1_controller(ahrs);
 
@@ -270,8 +270,8 @@ SITL sitl;
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-GCS_MAVLINK	gcs0;
-GCS_MAVLINK	gcs3;
+static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
+static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
@@ -523,52 +523,56 @@ static float G_Dt						= 0.02;
 // Timer used to accrue data and trigger recording of the performanc monitoring log message
 static int32_t 	perf_mon_timer;
 // The maximum main loop execution time recorded in the current performance monitoring interval
-static int16_t 	G_Dt_max = 0;
+static uint32_t 	G_Dt_max;
 // The number of gps fixes recorded in the current performance monitoring interval
 static uint8_t 	gps_fix_count = 0;
-// A variable used by developers to track performanc metrics.
-// Currently used to record the number of GCS heartbeat messages received
-static int16_t pmTest1 = 0;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // System Timers
 ////////////////////////////////////////////////////////////////////////////////
-// Time in miliseconds of start of main control loop.  Milliseconds
-static uint32_t 	fast_loopTimer;
-// Time Stamp when fast loop was complete.  Milliseconds
-static uint32_t 	fast_loopTimeStamp;
+// Time in microseconds of start of main control loop. 
+static uint32_t 	fast_loopTimer_us;
 // Number of milliseconds used in last main loop cycle
-static uint8_t 		delta_ms_fast_loop;
+static uint32_t		delta_us_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
+
+// set if we are driving backwards
+static bool in_reverse;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 20ms units) and the maximum time they are expected to take (in
-  microseconds)
+  scheduler table - all regular tasks should be listed here, along
+  with how often they should be called (in 20ms units) and the maximum
+  time they are expected to take (in microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+	{ read_radio,             1,   1000 },
+    { ahrs_update,            1,   6400 },
+    { read_sonars,            1,   2000 },
+    { update_current_mode,    1,   1000 },
+    { set_servos,             1,   1000 },
     { update_GPS,             5,   2500 },
     { navigate,               5,   1600 },
     { update_compass,         5,   2000 },
     { update_commands,        5,   1000 },
     { update_logging,         5,   1000 },
+    { gcs_retry_deferred,     1,   1000 },
+    { gcs_update,             1,   1700 },
+    { gcs_data_stream_send,   1,   3000 },
+    { read_control_switch,   15,   1000 },
+    { read_trim_switch,       5,   1000 },
     { read_battery,           5,   1000 },
     { read_receiver_rssi,     5,   1000 },
-    { read_trim_switch,       5,   1000 },
-    { read_control_switch,   15,   1000 },
     { update_events,         15,   1000 },
     { check_usb_mux,         15,   1000 },
-    { mount_update,           1,    500 },
-    { gcs_failsafe_check,     5,    500 },
+    { mount_update,           1,    600 },
+    { gcs_failsafe_check,     5,    600 },
     { compass_accumulate,     1,    900 },
-    { update_notify,          1,    100 },
+    { update_notify,          1,    300 },
     { one_second_loop,       50,   3000 }
 };
 
@@ -610,66 +614,44 @@ void loop()
     if (!ins.wait_for_sample(1000)) {
         return;
     }
-    uint32_t timer = millis();
+    uint32_t timer = hal.scheduler->micros();
 
-    delta_ms_fast_loop	= timer - fast_loopTimer;
-    G_Dt                = (float)delta_ms_fast_loop / 1000.f;
-    fast_loopTimer      = timer;
+    delta_us_fast_loop	= timer - fast_loopTimer_us;
+    G_Dt                = delta_us_fast_loop * 1.0e-6f;
+    fast_loopTimer_us   = timer;
+
+	if (delta_us_fast_loop > G_Dt_max)
+		G_Dt_max = delta_us_fast_loop;
 
     mainLoop_count++;
 
-    // Execute the fast loop
-    // ---------------------
-    fast_loop();
-
     // tell the scheduler one tick has passed
     scheduler.tick();
-    fast_loopTimeStamp = millis();
 
-    scheduler.run(19000U);
+    scheduler.run(19500U);
 }
 
-// Main loop 50Hz
-static void fast_loop()
+// update AHRS system
+static void ahrs_update()
 {
-	// This is the fast loop - we want it to execute at 50Hz if possible
-	// -----------------------------------------------------------------
-	if (delta_ms_fast_loop > G_Dt_max)
-		G_Dt_max = delta_ms_fast_loop;
+#if HIL_MODE != HIL_MODE_DISABLED
+    // update hil before AHRS update
+    gcs_update();
+#endif
 
-	// Read radio
-	// ----------
-	read_radio();
+    // when in reverse we need to tell AHRS not to assume we are a
+    // 'fly forward' vehicle, otherwise it will see a large
+    // discrepancy between the mag and the GPS heading and will try to
+    // correct for it, leading to a large yaw error
+    ahrs.set_fly_forward(!in_reverse);
 
-    // try to send any deferred messages if the serial port now has
-    // some space available
-    gcs_send_message(MSG_RETRY_DEFERRED);
-
-	#if HIL_MODE != HIL_MODE_DISABLED
-		// update hil before dcm update
-		gcs_update();
-	#endif
-
-	ahrs.update();
-
-    read_sonars();
+    ahrs.update();
 
     if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
         Log_Write_Attitude();
 
     if (g.log_bitmask & MASK_LOG_IMU)
-        DataFlash.Log_Write_IMU(&ins);
-
-	// custom code/exceptions for flight modes
-	// ---------------------------------------
-	update_current_mode();
-
-	// write out the servo PWM values
-	// ------------------------------
-	set_servos();
-
-    gcs_update();
-    gcs_data_stream_send();
+        DataFlash.Log_Write_IMU(ins);
 }
 
 /*
@@ -787,9 +769,13 @@ static void one_second_loop(void)
     counter++;
 
     // write perf data every 20s
-    if (counter == 20) {
+    if (counter % 10 == 0) {
+        if (scheduler.debug() != 0) {
+            hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
+        }
         if (g.log_bitmask & MASK_LOG_PM)
             Log_Write_Performance();
+        G_Dt_max = 0;
         resetPerfData();
     }
 
@@ -832,6 +818,10 @@ static void update_GPS(void)
 
 			} else {
                 init_home();
+
+                // set system clock for log timestamps
+                hal.util->set_system_clock(g_gps->time_epoch_usec());
+
 				if (g.compass_enabled) {
 					// Set compass declination automatically
 					compass.set_initial_location(g_gps->latitude, g_gps->longitude);
@@ -879,7 +869,12 @@ static void update_current_mode(void)
         // and throttle gives speed in proportion to cruise speed, up
         // to 50% throttle, then uses nudging above that.
         float target_speed = channel_throttle->pwm_to_angle() * 0.01 * 2 * g.speed_cruise;
-        target_speed = constrain_float(target_speed, 0, g.speed_cruise);
+        set_reverse(target_speed < 0);
+        if (in_reverse) {
+            target_speed = constrain_float(target_speed, -g.speed_cruise, 0);
+        } else {
+            target_speed = constrain_float(target_speed, 0, g.speed_cruise);
+        }
         calc_throttle(target_speed);
         break;
     }
@@ -894,6 +889,10 @@ static void update_current_mode(void)
          */
         channel_throttle->servo_out = channel_throttle->control_in;
         channel_steer->servo_out = channel_steer->pwm_to_angle();
+
+        // mark us as in_reverse when using a negative throttle to
+        // stop AHRS getting off
+        set_reverse(channel_throttle->servo_out < 0);
         break;
 
     case HOLD:

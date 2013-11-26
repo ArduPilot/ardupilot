@@ -40,6 +40,7 @@ HAL_AVR_APM1::HAL_AVR_APM1() :
         &avrUart0Driver, /* phys UART0 -> uartA */
         &avrUart1Driver, /* phys UART1 -> uartB */
         &avrUart3Driver, /* phys UART3 -> uartC */
+        NULL, /* no uartD */
         &avrI2CDriver,
         &apm1SPIDriver,
         &avrAnalogIn,

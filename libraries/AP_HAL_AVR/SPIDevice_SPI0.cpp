@@ -17,6 +17,7 @@ extern const AP_HAL::HAL& hal;
 #define SPI0_SCK_PIN  52
 
 AVRSemaphore AVRSPI0DeviceDriver::_semaphore;
+bool AVRSPI0DeviceDriver::_force_low_speed;
 
 static volatile bool spi0_transferflag = false;
 
@@ -40,6 +41,9 @@ void AVRSPI0DeviceDriver::_cs_assert()
 {
     const uint8_t valid_spcr_mask = 
         (_BV(CPOL) | _BV(CPHA) | _BV(SPR1) | _BV(SPR0));
+    if (_force_low_speed) {
+        _spcr = _spcr_lowspeed;
+    }
     uint8_t new_spcr = (SPCR & ~valid_spcr_mask) | (_spcr & valid_spcr_mask);
     SPCR = new_spcr;  
 
@@ -76,7 +80,7 @@ uint8_t AVRSPI0DeviceDriver::_transfer(uint8_t data)
    a specialised transfer function for the MPU6k. This saves 2 usec
    per byte
  */
-void AVRSPI0DeviceDriver::_transfer15(const uint8_t *tx, uint8_t *rx) 
+void AVRSPI0DeviceDriver::_transfer16(const uint8_t *tx, uint8_t *rx) 
 {
     spi0_transferflag = true;
 #define TRANSFER1(i) do { SPDR = tx[i];  while(!(SPSR & _BV(SPIF))); rx[i] = SPDR; } while(0)
@@ -95,6 +99,7 @@ void AVRSPI0DeviceDriver::_transfer15(const uint8_t *tx, uint8_t *rx)
     TRANSFER1(12);
     TRANSFER1(13);
     TRANSFER1(14);
+    TRANSFER1(15);
     spi0_transferflag = false;
 }
 
@@ -112,11 +117,11 @@ void AVRSPI0DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
             _transfer(tx[i]);
         }
     } else {
-        while (len >= 15) {
-            _transfer15(tx, rx);
-            tx += 15;
-            rx += 15;
-            len -= 15;
+        while (len >= 16) {
+            _transfer16(tx, rx);
+            tx += 16;
+            rx += 16;
+            len -= 16;
         }
         for (uint16_t i = 0; i < len; i++) {
             rx[i] = _transfer(tx[i]);
@@ -144,8 +149,10 @@ void AVRSPI0DeviceDriver::set_bus_speed(AVRSPI0DeviceDriver::bus_speed speed)
 {
     if (speed == AVRSPI0DeviceDriver::SPI_SPEED_HIGH) {
         _spcr = _spcr_highspeed;
+        _force_low_speed = false;
     } else {
         _spcr = _spcr_lowspeed;
+        _force_low_speed = true;
     }
 }
 

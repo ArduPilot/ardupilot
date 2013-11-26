@@ -5,9 +5,7 @@
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_HIL::AP_InertialSensor_HIL() : AP_InertialSensor() {
-        Vector3f accels;
-        accels.z = -GRAVITY_MSS;
-        set_accel(accels);
+        _accel.z = -GRAVITY_MSS;
 }
 
 uint16_t AP_InertialSensor_HIL::_init_sensor( Sample_rate sample_rate ) {
@@ -64,4 +62,40 @@ bool AP_InertialSensor_HIL::wait_for_sample(uint16_t timeout_ms)
         }
     }
     return false;
+}
+
+void AP_InertialSensor_HIL::set_accel(const Vector3f &accel)
+{
+    _previous_accel = _accel;
+    _accel = accel;
+    _last_accel_usec = hal.scheduler->micros();
+}
+
+void AP_InertialSensor_HIL::set_gyro(const Vector3f &gyro)
+{
+    _gyro = gyro;
+    _last_gyro_usec = hal.scheduler->micros();
+}
+
+/**
+   try to detect bad accel/gyro sensors
+ */
+bool AP_InertialSensor_HIL::healthy(void)
+{
+    uint32_t tnow = hal.scheduler->micros();
+    if ((tnow - _last_accel_usec) > 40000) {
+        // accels have not updated
+        return false;
+    }
+    if ((tnow - _last_gyro_usec) > 40000) {
+        // gyros have not updated
+        return false;
+    }
+    if (fabs(_accel.x) > 30 && fabs(_accel.y) > 30 && fabs(_accel.z) > 30 &&
+        (_previous_accel - _accel).length() < 0.01f) {
+        // unchanging accel, large in all 3 axes. This is a likely
+        // accelerometer failure
+        return false;
+    }
+    return true;
 }

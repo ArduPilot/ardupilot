@@ -99,37 +99,40 @@
 #ifndef FRAME_ORIENTATION
  # define FRAME_ORIENTATION      X_FRAME
 #endif
-#ifndef TOY_EDF
- # define TOY_EDF        DISABLED
-#endif
-#ifndef TOY_MIXER
- # define TOY_MIXER      TOY_LINEAR_MIXER
-#endif
 
 /////////////////////////////////////////////////////////////////////////////////
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
-  # define RC_FAST_SPEED 				125
-  # define WP_YAW_BEHAVIOR_DEFAULT      YAW_LOOK_AT_HOME
-  # define RATE_INTEGRATOR_LEAK_RATE 	0.02f
-  # define RATE_ROLL_D    				0
-  # define RATE_PITCH_D       			0
-  # define HELI_PITCH_FF				0
-  # define HELI_ROLL_FF					0
-  # define HELI_YAW_FF					0  
-  # define STABILIZE_THROTTLE			THROTTLE_MANUAL
+  # define RC_FAST_SPEED                125
+  # define WP_YAW_BEHAVIOR_DEFAULT      WP_YAW_BEHAVIOR_LOOK_AHEAD
+  # define RATE_INTEGRATOR_LEAK_RATE    0.02f
+  # define RATE_ROLL_D                  0
+  # define RATE_PITCH_D                 0
+  # define HELI_PITCH_FF                0
+  # define HELI_ROLL_FF                 0
+  # define HELI_YAW_FF                  0  
+  # define STABILIZE_THR                THROTTLE_MANUAL_HELI
   # define MPU6K_FILTER                 10
+  # define HELI_STAB_COLLECTIVE_MIN_DEFAULT   0
+  # define HELI_STAB_COLLECTIVE_MAX_DEFAULT   1000
+  # define THR_MIN_DEFAULT              0
+  # ifndef HELI_CC_COMP
+    #define HELI_CC_COMP DISABLED
+  #endif
+  # ifndef HELI_PIRO_COMP
+    #define HELI_PIRO_COMP DISABLED
+  #endif
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////
 // Y6 defaults
 #if FRAME_CONFIG == Y6_FRAME
-  # define RATE_ROLL_P    				0.1f
-  # define RATE_ROLL_D    				0.006f
-  # define RATE_PITCH_P    				0.1f
-  # define RATE_PITCH_D    				0.006f
-  # define RATE_YAW_P    				0.150f
-  # define RATE_YAW_I    				0.015f
+  # define RATE_ROLL_P                  0.1f
+  # define RATE_ROLL_D                  0.006f
+  # define RATE_PITCH_P                 0.1f
+  # define RATE_PITCH_D                 0.006f
+  # define RATE_YAW_P                   0.150f
+  # define RATE_YAW_I                   0.015f
 #endif
 
 
@@ -173,31 +176,19 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
  # define LED_ON           HIGH
  # define LED_OFF          LOW
- # define BATTERY_VOLT_PIN      0      // Battery voltage on A0
- # define BATTERY_CURR_PIN      1      // Battery current on A1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define BATTERY_VOLT_PIN      1      // Battery voltage on A1
- # define BATTERY_CURR_PIN      2      // Battery current on A2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define BATTERY_VOLT_PIN 1      // Battery voltage on A1
- # define BATTERY_CURR_PIN 2      // Battery current on A2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define LED_ON           LOW
  # define LED_OFF          HIGH
- # define BATTERY_VOLT_PIN -1
- # define BATTERY_CURR_PIN -1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
- # define BATTERY_VOLT_PIN      20
- # define BATTERY_CURR_PIN      19
  # define LED_ON           LOW
  # define LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- # define BATTERY_VOLT_PIN      -1
- # define BATTERY_CURR_PIN      -1
  # define LED_ON           LOW
  # define LED_OFF          HIGH
 #endif
@@ -298,7 +289,7 @@
 //
 
 #ifndef CH7_OPTION
- # define CH7_OPTION            AUX_SWITCH_SAVE_WP
+ # define CH7_OPTION            AUX_SWITCH_DO_NOTHING
 #endif
 
 #ifndef CH8_OPTION
@@ -341,8 +332,11 @@
 #ifndef SERIAL0_BAUD
  # define SERIAL0_BAUD                   115200
 #endif
-#ifndef SERIAL3_BAUD
- # define SERIAL3_BAUD                    57600
+#ifndef SERIAL1_BAUD
+ # define SERIAL1_BAUD                    57600
+#endif
+#ifndef SERIAL2_BAUD
+ # define SERIAL2_BAUD                    57600
 #endif
 
 
@@ -365,15 +359,7 @@
  # define BOARD_VOLTAGE_MAX             5800        // max board voltage in milli volts for pre-arm checks
 #endif
 
-// Battery failsafe
-#ifndef FS_BATTERY
- # define FS_BATTERY              DISABLED
-#endif
-
 // GPS failsafe
-#ifndef FS_GPS
- # define FS_GPS                        ENABLED
-#endif
 #ifndef FAILSAFE_GPS_TIMEOUT_MS
  # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
 #endif
@@ -392,6 +378,11 @@
 #define FS_GCS_DISABLED                     0
 #define FS_GCS_ENABLED_ALWAYS_RTL           1
 #define FS_GCS_ENABLED_CONTINUE_MISSION     2
+
+// pre-arm check max velocity
+#ifndef PREARM_MAX_VELOCITY_CMS
+ # define PREARM_MAX_VELOCITY_CMS           50.0f   // vehicle must be travelling under 50cm/s before arming
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
@@ -413,7 +404,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
- # define OPTFLOW                       DISABLED
+ # define OPTFLOW                       ENABLED
 #endif
 #ifndef OPTFLOW_ORIENTATION
  # define OPTFLOW_ORIENTATION    AP_OPTICALFLOW_ADNS3080_PINS_FORWARD
@@ -492,12 +483,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throttle Failsafe
 //
-// possible values for FS_THR parameter
-#define FS_THR_DISABLED                    0
-#define FS_THR_ENABLED_ALWAYS_RTL          1
-#define FS_THR_ENABLED_CONTINUE_MISSION    2
-#define FS_THR_ENABLED_ALWAYS_LAND         3
-
 #ifndef FS_THR_VALUE_DEFAULT
  # define FS_THR_VALUE_DEFAULT             975
 #endif
@@ -511,20 +496,6 @@
 #ifndef LAND_DETECTOR_TRIGGER
  # define LAND_DETECTOR_TRIGGER 50    // number of 50hz iterations with near zero climb rate and low throttle that triggers landing complete.
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-// STARTUP BEHAVIOUR
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// GROUND_START_DELAY
-//
-#ifndef GROUND_START_DELAY
- # define GROUND_START_DELAY             3
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
@@ -557,6 +528,17 @@
 
 
 // Flight mode roll, pitch, yaw, throttle and navigation definitions
+
+// Stabilize Mode
+#ifndef STABILIZE_YAW
+ # define STABILIZE_YAW           	YAW_HOLD
+#endif
+#ifndef STABILIZE_RP
+ # define STABILIZE_RP           	ROLL_PITCH_STABLE
+#endif
+#ifndef STABILIZE_THR
+ # define STABILIZE_THR           	THROTTLE_MANUAL_TILT_COMPENSATED
+#endif
 
 // Acro Mode
 #ifndef ACRO_YAW
@@ -777,10 +759,6 @@
  # define STABILIZE_PITCH_IMAX   	0
 #endif
 
-#ifndef STABILIZE_RATE_LIMIT
- # define STABILIZE_RATE_LIMIT      18000
-#endif
-
 #ifndef  STABILIZE_YAW_P
  # define STABILIZE_YAW_P           4.5f            // increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
@@ -804,6 +782,9 @@
 #endif
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
+#endif
+#ifndef ANGLE_RATE_MAX
+ # define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 #endif
 #ifndef RATE_ROLL_P
  # define RATE_ROLL_P        		0.150f
@@ -1079,6 +1060,16 @@
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
   #  define CLI_ENABLED           ENABLED
+#endif
+
+/*
+  build a firmware version string.
+  GIT_VERSION comes from Makefile builds
+*/
+#ifndef GIT_VERSION
+#define FIRMWARE_STRING THISFIRMWARE
+#else
+#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
 #endif
 
 #endif // __ARDUCOPTER_CONFIG_H__

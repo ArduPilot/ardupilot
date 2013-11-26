@@ -40,6 +40,10 @@ extern const AP_HAL::HAL& hal;
 
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
+    if (strcmp(_devpath, "/dev/null") == 0) {
+        // leave uninitialised
+        return;
+    }
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
@@ -417,6 +421,11 @@ void PX4UARTDriver::_timer_tick(void)
     uint16_t n;
 
     if (!_initialised) return;
+
+    // don't try IO on a disconnected USB port
+    if (strcmp(_devpath, "/dev/ttyACM0") == 0 && !hal.gpio->usb_connected()) {
+        return;
+    }
 
     _in_timer = true;
 

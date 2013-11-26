@@ -150,16 +150,16 @@ void AP_MotorsMatrix::output_armed()
     // if we are not sending a throttle output, we cut the motors
     if (_rc_throttle->servo_out == 0) {
         // range check spin_when_armed
-        if (_spin_when_armed < 0) {
-             _spin_when_armed = 0;
+        if (_spin_when_armed_ramped < 0) {
+             _spin_when_armed_ramped = 0;
         }
-        if (_spin_when_armed > _min_throttle) {
-            _spin_when_armed = _min_throttle;
+        if (_spin_when_armed_ramped > _min_throttle) {
+            _spin_when_armed_ramped = _min_throttle;
         }
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             // spin motors at minimum
             if (motor_enabled[i]) {
-                motor_out[i] = _rc_throttle->radio_min + _spin_when_armed;
+                motor_out[i] = _rc_throttle->radio_min + _spin_when_armed_ramped;
             }
         }
 

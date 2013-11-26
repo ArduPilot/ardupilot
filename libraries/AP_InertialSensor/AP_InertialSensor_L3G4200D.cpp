@@ -236,6 +236,8 @@ bool AP_InertialSensor_L3G4200D::update(void)
     }
     Vector3f accel_scale = _accel_scale.get();
 
+    _previous_accel = _accel;
+
     hal.scheduler->suspend_timer_procs();
     _accel = _accel_filtered;
     _gyro = _gyro_filtered;

@@ -490,7 +490,12 @@ void SITL_State::_simulator_output(void)
     current_pin_value = ((current / 17.0) / 5.0) * 1024;
 
 	// setup wind control
-	control.speed      = _sitl->wind_speed * 100;
+    float wind_speed = _sitl->wind_speed * 100;
+    float altitude = _barometer?_barometer->get_altitude():0;
+    if (altitude < 60) {
+        wind_speed *= altitude / 60.0f;
+    }
+	control.speed      = wind_speed;
 	float direction = _sitl->wind_direction;
 	if (direction < 0) {
 		direction += 360;

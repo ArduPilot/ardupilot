@@ -32,6 +32,9 @@ This provides some support code and variables for MAVLink enabled sketches
 
 AP_HAL::BetterStream	*mavlink_comm_0_port;
 AP_HAL::BetterStream	*mavlink_comm_1_port;
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+AP_HAL::BetterStream	*mavlink_comm_2_port;
+#endif
 
 mavlink_system_t mavlink_system = {7,1,0,0};
 
@@ -73,6 +76,11 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 	case MAVLINK_COMM_1:
 		mavlink_comm_1_port->write(buf, len);
 		break;
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+	case MAVLINK_COMM_2:
+		mavlink_comm_2_port->write(buf, len);
+		break;
+#endif
 	default:
 		break;
 	}

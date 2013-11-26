@@ -49,6 +49,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @DisplayName: Battery capacity
     // @Description: Capacity of the battery in mAh when full
     // @Units: mAh
+    // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("CAPACITY", 6, AP_BattMonitor, _pack_capacity, AP_BATT_CAPACITY_DEFAULT),
 

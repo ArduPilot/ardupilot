@@ -17,7 +17,12 @@ class AP_InertialSensor_PX4 : public AP_InertialSensor
 {
 public:
 
-    AP_InertialSensor_PX4() : AP_InertialSensor() {}
+    AP_InertialSensor_PX4() : 
+        AP_InertialSensor(),
+        _sample_time_usec(0),
+        _accel_fd(-1),
+        _gyro_fd(-1)
+        {}
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
@@ -25,6 +30,7 @@ public:
     float           get_gyro_drift_rate();
     bool            sample_available();
     bool            wait_for_sample(uint16_t timeout_ms);
+    bool            healthy(void);
 
 private:
     uint16_t _init_sensor( Sample_rate sample_rate );

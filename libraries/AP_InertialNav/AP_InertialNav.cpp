@@ -31,24 +31,26 @@ void AP_InertialNav::init()
     update_gains();
 }
 
-// update - updates velocities and positions using latest info from ahrs, ins and barometer if new data is available;
+// update - updates velocities and positions using latest info from ahrs and barometer if new data is available;
 void AP_InertialNav::update(float dt)
 {
-    Vector3f accel_ef;
-    Vector3f velocity_increase;
-
     // discard samples where dt is too large
     if( dt > 0.1f ) {
         return;
     }
 
-    // check barometer
+    // decrement ignore error count if required
+    if (_flags.ignore_error > 0) {
+        _flags.ignore_error--;
+    }
+
+    // check if new baro readings have arrived and use them to correct vertical accelerometer offsets.
     check_baro();
 
-    // check gps
+    // check if new gps readings have arrived and use them to correct position estimates
     check_gps();
 
-    accel_ef = _ahrs->get_accel_ef();
+    Vector3f accel_ef = _ahrs->get_accel_ef();
 
     // remove influence of gravity
     accel_ef.z += GRAVITY_MSS;
@@ -79,23 +81,26 @@ void AP_InertialNav::update(float dt)
     _position_correction.z += _position_error.z * _k1_z  * dt;
 
     // calculate velocity increase adding new acceleration from accelerometers
-    velocity_increase = (accel_ef + accel_correction_ef) * dt;
+    const Vector3f &velocity_increase = (accel_ef + accel_correction_ef) * dt;
 
     // calculate new estimate of position
     _position_base += (_velocity + velocity_increase*0.5) * dt;
+
+    // update the corrected position estimate
+    _position = _position_base + _position_correction;
 
     // calculate new velocity
     _velocity += velocity_increase;
 
     // store 3rd order estimate (i.e. estimated vertical position) for future use
-    _hist_position_estimate_z.add(_position_base.z);
+    _hist_position_estimate_z.push_back(_position_base.z);
 
     // store 3rd order estimate (i.e. horizontal position) for future use at 10hz
     _historic_xy_counter++;
     if( _historic_xy_counter >= AP_INTERTIALNAV_SAVE_POS_AFTER_ITERATIONS ) {
         _historic_xy_counter = 0;
-        _hist_position_estimate_x.add(_position_base.x);
-        _hist_position_estimate_y.add(_position_base.y);
+        _hist_position_estimate_x.push_back(_position_base.x);
+        _hist_position_estimate_y.push_back(_position_base.y);
     }
 }
 
@@ -122,21 +127,25 @@ bool AP_InertialNav::position_ok() const
 // check_gps - check if new gps readings have arrived and use them to correct position estimates
 void AP_InertialNav::check_gps()
 {
-    uint32_t now = hal.scheduler->millis();
+    const uint32_t now = hal.scheduler->millis();
 
     // compare gps time to previous reading
-    if( _gps != NULL && _gps->time != _gps_last_time ) {
+    if( _gps != NULL && _gps->last_fix_time != _gps_last_time ) {
 
         // call position correction method
         correct_with_gps(now, _gps->longitude, _gps->latitude);
 
         // record gps time and system time of this update
-        _gps_last_time = _gps->time;
+        _gps_last_time = _gps->last_fix_time;
     }else{
-        // clear position error if GPS updates stop arriving
+        // if GPS updates stop arriving degrade position error to 10% over 2 seconds (assumes 100hz update rate)
         if (now - _gps_last_update > AP_INTERTIALNAV_GPS_TIMEOUT_MS) {
-            _position_error.x = 0;
-            _position_error.y = 0;
+            _position_error.x *= 0.9886;
+            _position_error.y *= 0.9886;
+            // increment error count
+            if (_flags.ignore_error == 0 && _error_count < 255 && _xy_enabled) {
+                _error_count++;
+            }
         }
     }
 }
@@ -160,13 +169,13 @@ void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
 
     // calculate distance from base location
     x = (float)(lat - _base_lat) * LATLON_TO_CM;
-    y = (float)(lon - _base_lon) * _lon_to_m_scaling;
+    y = (float)(lon - _base_lon) * _lon_to_cm_scaling;
 
     // sanity check the gps position.  Relies on the main code calling GPS_Glitch::check_position() immediatley after a GPS update
     if (_glitch_detector.glitching()) {
-        // failed sanity check so set position_error to zero
-        _position_error.x = 0;
-        _position_error.y = 0;
+        // failed sanity check so degrate position_error to 10% over 2 seconds (assumes 5hz update rate)
+        _position_error.x *= 0.7934;
+        _position_error.y *= 0.7934;
     }else{
         // if our internal glitching flag (from previous iteration) is true we have just recovered from a glitch
         // reset the inertial nav position and velocity to gps values
@@ -178,9 +187,9 @@ void AP_InertialNav::correct_with_gps(uint32_t now, int32_t lon, int32_t lat)
         }else{
             // ublox gps positions are delayed by 400ms
             // we store historical position at 10hz so 4 iterations ago
-            if( _hist_position_estimate_x.num_items() >= AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS ) {
-                hist_position_base_x = _hist_position_estimate_x.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
-                hist_position_base_y = _hist_position_estimate_y.peek(AP_INTERTIALNAV_GPS_LAG_IN_10HZ_INCREMENTS-1);
+            if( _hist_position_estimate_x.is_full()) {
+                hist_position_base_x = _hist_position_estimate_x.front();
+                hist_position_base_y = _hist_position_estimate_y.front();
             }else{
                 hist_position_base_x = _position_base.x;
                 hist_position_base_y = _position_base.y;
@@ -204,7 +213,7 @@ int32_t AP_InertialNav::get_latitude() const
         return 0;
     }
 
-    return _base_lat + (int32_t)((_position_base.x + _position_correction.x)/LATLON_TO_CM);
+    return _base_lat + (int32_t)(_position.x/LATLON_TO_CM);
 }
 
 // get accel based longitude
@@ -215,7 +224,7 @@ int32_t AP_InertialNav::get_longitude() const
         return 0;
     }
 
-    return _base_lon + (int32_t)((_position_base.y+_position_correction.y) / _lon_to_m_scaling);
+    return _base_lon + (int32_t)(_position.y / _lon_to_cm_scaling);
 }
 
 // set_home_position - all internal calculations are recorded as the distances from this point
@@ -229,13 +238,15 @@ void AP_InertialNav::set_home_position(int32_t lon, int32_t lat)
     Location temp_loc;
     temp_loc.lat = lat;
     temp_loc.lng = lon;
-    _lon_to_m_scaling = longitude_scale(temp_loc) * LATLON_TO_CM;
+    _lon_to_cm_scaling = longitude_scale(temp_loc) * LATLON_TO_CM;
 
     // reset corrections to base position to zero
     _position_base.x = 0;
     _position_base.y = 0;
     _position_correction.x = 0;
     _position_correction.y = 0;
+    _position.x = 0;
+    _position.y = 0;
 
     // clear historic estimates
     _hist_position_estimate_x.clear();
@@ -253,7 +264,7 @@ float AP_InertialNav::get_latitude_diff() const
         return 0;
     }
 
-    return ((_position_base.x+_position_correction.x)/LATLON_TO_CM);
+    return (_position.x/LATLON_TO_CM);
 }
 
 // get accel based longitude
@@ -264,29 +275,7 @@ float AP_InertialNav::get_longitude_diff() const
         return 0;
     }
 
-    return (_position_base.y+_position_correction.y) / _lon_to_m_scaling;
-}
-
-// get velocity in latitude & longitude directions
-float AP_InertialNav::get_latitude_velocity() const
-{
-    // make sure we've been initialised
-    if( !_xy_enabled ) {
-        return 0;
-    }
-
-    return _velocity.x;
-    // Note: is +_velocity.x the output velocity in logs is in reverse direction from accel lat
-}
-
-float AP_InertialNav::get_longitude_velocity() const
-{
-    // make sure we've been initialised
-    if( !_xy_enabled ) {
-        return 0;
-    }
-
-    return _velocity.y;
+    return (_position.y / _lon_to_cm_scaling);
 }
 
 // set_velocity_xy - set velocity in latitude & longitude directions (in cm/s)
@@ -294,6 +283,12 @@ void AP_InertialNav::set_velocity_xy(float x, float y)
 {
     _velocity.x = x;
     _velocity.y = y;
+}
+
+// set_velocity_xy - set velocity in latitude & longitude directions (in cm/s)
+float AP_InertialNav::get_velocity_xy()
+{
+	return safe_sqrt(_velocity.x * _velocity.x + _velocity.y * _velocity.y);
 }
 
 //
@@ -318,10 +313,10 @@ void AP_InertialNav::check_baro()
     if( _baro == NULL )
         return;
 
-    // calculate time since last baro reading
+    // calculate time since last baro reading (in ms)
     baro_update_time = _baro->get_last_update();
     if( baro_update_time != _baro_last_update ) {
-        float dt = (float)(baro_update_time - _baro_last_update) * 0.001f;
+        const float dt = (float)(baro_update_time - _baro_last_update) * 0.001f; // in seconds
         // call correction method
         correct_with_baro(_baro->get_altitude()*100, dt);
         _baro_last_update = baro_update_time;
@@ -333,7 +328,6 @@ void AP_InertialNav::check_baro()
 void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
 {
     static uint8_t first_reads = 0;
-    float hist_position_base_z;
 
     // discard samples where dt is too large
     if( dt > 0.5f ) {
@@ -348,8 +342,9 @@ void AP_InertialNav::correct_with_baro(float baro_alt, float dt)
 
     // 3rd order samples (i.e. position from baro) are delayed by 150ms (15 iterations at 100hz)
     // so we should calculate error using historical estimates
-    if( _hist_position_estimate_z.num_items() >= 15 ) {
-        hist_position_base_z = _hist_position_estimate_z.peek(14);
+    float hist_position_base_z;
+    if( _hist_position_estimate_z.is_full() ) {
+        hist_position_base_z = _hist_position_estimate_z.front();
     }else{
         hist_position_base_z = _position_base.z;
     }
@@ -363,6 +358,7 @@ void AP_InertialNav::set_altitude( float new_altitude)
 {
     _position_base.z = new_altitude;
     _position_correction.z = 0;
+    _position.z = new_altitude; // _position = _position_base + _position_correction
 }
 
 //
@@ -398,11 +394,11 @@ void AP_InertialNav::set_velocity_z(float z )
 }
 
 // set_position_xy - sets inertial navigation position to given xy coordinates from home
-void AP_InertialNav::set_position_xy(float pos_x, float pos_y)
+void AP_InertialNav::set_position_xy(float x, float y)
 {
     // reset position from home
-    _position_base.x = pos_x;
-    _position_base.y = pos_y;
+    _position_base.x = x;
+    _position_base.y = y;
     _position_correction.x = 0;
     _position_correction.y = 0;
 
@@ -412,6 +408,6 @@ void AP_InertialNav::set_position_xy(float pos_x, float pos_y)
 
     // add new position for future use
     _historic_xy_counter = 0;
-    _hist_position_estimate_x.add(_position_base.x);
-    _hist_position_estimate_y.add(_position_base.y);
+    _hist_position_estimate_x.push_back(_position_base.x);
+    _hist_position_estimate_y.push_back(_position_base.y);
 }

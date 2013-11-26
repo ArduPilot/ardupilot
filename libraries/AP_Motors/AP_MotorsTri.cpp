@@ -67,6 +67,8 @@ void AP_MotorsTri::enable()
 // output_min - sends minimum values out to the motors
 void AP_MotorsTri::output_min()
 {
+    // set lower limit flag
+    limit.throttle_lower = true;
     // fill the motor_out[] array for HIL use
     motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min;
     motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min;
@@ -85,6 +87,9 @@ void AP_MotorsTri::output_armed()
     int16_t out_min = _rc_throttle->radio_min + _min_throttle;
     int16_t out_max = _rc_throttle->radio_max;
 
+    // initialize lower limit flag
+    limit.throttle_lower = false;
+
     // Throttle is 0 to 1000 only
     _rc_throttle->servo_out = constrain_int16(_rc_throttle->servo_out, 0, _max_throttle);
 
@@ -97,19 +102,27 @@ void AP_MotorsTri::output_armed()
     // if we are not sending a throttle output, we cut the motors
     if(_rc_throttle->servo_out == 0) {
         // range check spin_when_armed
-        if (_spin_when_armed < 0) {
-            _spin_when_armed = 0;
+        if (_spin_when_armed_ramped < 0) {
+            _spin_when_armed_ramped = 0;
         }
-        if (_spin_when_armed > _min_throttle) {
-            _spin_when_armed = _min_throttle;
+        if (_spin_when_armed_ramped > _min_throttle) {
+            _spin_when_armed_ramped = _min_throttle;
         }
-        motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min + _spin_when_armed;
-        motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min + _spin_when_armed;
-        motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min + _spin_when_armed;
+        motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min + _spin_when_armed_ramped;
+
+        // Every thing is limited
+        limit.throttle_lower = true;
+		
     }else{
         int16_t roll_out            = (float)_rc_roll->pwm_out * 0.866f;
         int16_t pitch_out           = _rc_pitch->pwm_out / 2;
 
+        // check if throttle is below limit
+        if (_rc_throttle->radio_out <= out_min) {
+            limit.throttle_lower = true;
+        }
         //left front
         motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_out + roll_out + pitch_out;
         //right front
@@ -119,20 +132,20 @@ void AP_MotorsTri::output_armed()
 
         // Tridge's stability patch
         if(motor_out[AP_MOTORS_MOT_1] > out_max) {
-            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_1] - out_max) >> 1;
-            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_1] - out_max) >> 1;
+            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_1] - out_max);
+            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_1] - out_max);
             motor_out[AP_MOTORS_MOT_1] = out_max;
         }
 
         if(motor_out[AP_MOTORS_MOT_2] > out_max) {
-            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_2] - out_max) >> 1;
-            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_2] - out_max) >> 1;
+            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_2] - out_max);
+            motor_out[AP_MOTORS_MOT_4] -= (motor_out[AP_MOTORS_MOT_2] - out_max);
             motor_out[AP_MOTORS_MOT_2] = out_max;
         }
 
         if(motor_out[AP_MOTORS_MOT_4] > out_max) {
-            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_4] - out_max) >> 1;
-            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_4] - out_max) >> 1;
+            motor_out[AP_MOTORS_MOT_1] -= (motor_out[AP_MOTORS_MOT_4] - out_max);
+            motor_out[AP_MOTORS_MOT_2] -= (motor_out[AP_MOTORS_MOT_4] - out_max);
             motor_out[AP_MOTORS_MOT_4] = out_max;
         }
 

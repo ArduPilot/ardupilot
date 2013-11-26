@@ -24,6 +24,8 @@
 #include <AP_HAL.h>
 #include "AP_GPS_HIL.h"
 
+extern const AP_HAL::HAL& hal;
+
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_HIL::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 {
@@ -32,17 +34,23 @@ void AP_GPS_HIL::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting
 
 bool AP_GPS_HIL::read(void)
 {
+    if ((hal.scheduler->millis() - last_fix_time) < 200) {
+        // simulate a 5Hz GPS
+        return false;
+    }
     bool result = _updated;
 
     // return true once for each update pushed in
+    new_data = true;
     _updated = false;
     return result;
 }
 
-void AP_GPS_HIL::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
+void AP_GPS_HIL::setHIL(uint64_t _time_epoch_ms, float _latitude, float _longitude, float _altitude,
                         float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
-    time                = _time;
+    time_week           = _time_epoch_ms / (86400*7*(uint64_t)1000);
+    time_week_ms        = _time_epoch_ms - time_week*(86400*7*(uint64_t)1000);
     latitude            = _latitude*1.0e7f;
     longitude           = _longitude*1.0e7f;
     altitude_cm         = _altitude*1.0e2f;
@@ -51,7 +59,7 @@ void AP_GPS_HIL::setHIL(uint32_t _time, float _latitude, float _longitude, float
     speed_3d_cm         = _speed_3d*1.0e2f;
     num_sats            = _num_sats;
     fix                 = FIX_3D;
-    new_data            = true;
+    hdop                = 200;
     _updated            = true;
 }
 

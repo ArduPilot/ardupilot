@@ -43,8 +43,7 @@ static bool stick_mixing_enabled(void)
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
             geofence_stickmixing() &&
             failsafe.state == FAILSAFE_NONE &&
-            (g.throttle_fs_enabled == 0 || 
-             channel_throttle->radio_in >= g.throttle_fs_value)) {
+            !throttle_failsafe_level()) {
             // we're in an auto mode, and haven't triggered failsafe
             return true;
         } else {
@@ -167,8 +166,8 @@ static void stabilize_stick_mixing_fbw()
     } else if (roll_input < -0.5f) {
         roll_input = (3*roll_input + 1);
     }
-    nav_roll_cd += roll_input * g.roll_limit_cd;
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    nav_roll_cd += roll_input * roll_limit_cd;
+    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
     
     float pitch_input = channel_pitch->norm_input();
     if (fabsf(pitch_input) > 0.5f) {
@@ -180,9 +179,9 @@ static void stabilize_stick_mixing_fbw()
     if (pitch_input > 0) {
         nav_pitch_cd += pitch_input * aparm.pitch_limit_max_cd;
     } else {
-        nav_pitch_cd += -(pitch_input * aparm.pitch_limit_min_cd);
+        nav_pitch_cd += -(pitch_input * pitch_limit_min_cd);
     }
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
 
@@ -441,14 +440,14 @@ static void calc_nav_pitch()
     // Calculate the Pitch of the plane
     // --------------------------------
     nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, aparm.pitch_limit_min_cd.get(), aparm.pitch_limit_max_cd.get());
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
 
 static void calc_nav_roll()
 {
     nav_roll_cd = nav_controller->nav_roll_cd();
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.roll_limit_cd.get(), g.roll_limit_cd.get());
+    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 }
 
 
@@ -857,6 +856,10 @@ static void set_servos(void)
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED
+    // get the servos to the GCS immediately for HIL
+    if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN) {
+        send_radio_out(MAVLINK_COMM_0);
+    }
     if (!g.hil_servos) {
         return;
     }
@@ -888,7 +891,7 @@ static void set_servos(void)
  #endif
  #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     g.rc_12.output_ch(CH_12);
- # endif
+ #endif
 }
 
 static bool demoing_servos;

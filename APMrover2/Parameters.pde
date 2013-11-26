@@ -7,6 +7,7 @@
 #define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value:def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info:class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info:class::var_info} }
+#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &v, {group_info : class::var_info} }
 
 const AP_Param::Info var_info[] PROGMEM = {
 	GSCALAR(format_version,         "FORMAT_VERSION",   1),
@@ -55,17 +56,26 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: SERIAL0_BAUD
     // @DisplayName: USB Console Baud Rate
-    // @Description: The baud rate used on the first serial port
+    // @Description: The baud rate used on the USB console
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
     // @User: Standard
-	GSCALAR(serial0_baud,           "SERIAL0_BAUD",     SERIAL0_BAUD/1000),
+	GSCALAR(serial0_baud,           "SERIAL0_BAUD",     115),
 
-    // @Param: SERIAL3_BAUD
+    // @Param: SERIAL1_BAUD
     // @DisplayName: Telemetry Baud Rate
-    // @Description: The baud rate used on the telemetry port
+    // @Description: The baud rate used on the first telemetry port
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
     // @User: Standard
-	GSCALAR(serial3_baud,           "SERIAL3_BAUD",     SERIAL3_BAUD/1000),
+	GSCALAR(serial1_baud,           "SERIAL1_BAUD",     57),
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Param: SERIAL2_BAUD
+    // @DisplayName: Telemetry Baud Rate
+    // @Description: The baud rate used on the second telemetry port (where available)
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200
+    // @User: Standard
+	GSCALAR(serial2_baud,           "SERIAL2_BAUD",     57),
+#endif
 
     // @Param: TELEM_DELAY
     // @DisplayName: Telemetry startup delay 
@@ -75,6 +85,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 1
     GSCALAR(telem_delay,            "TELEM_DELAY",     0),
+
+    // @Param: SKIP_GYRO_CAL
+    // @DisplayName: Skip gyro calibration
+    // @Description: When enabled this tells the APM to skip the normal gyroscope calibration at startup, and instead use the saved gyro calibration from the last flight. You should only enable this if you are careful to check that your aircraft has good attitude control before flying, as some boards may have significantly different gyro calibration between boots, especially if the temperature changes a lot. If gyro calibration is skipped then APM relies on using the gyro drift detection code to get the right gyro calibration in the few minutes after it boots. This option is mostly useful where the requirement to hold the vehicle still while it is booting is a significant problem.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(skip_gyro_cal,           "SKIP_GYRO_CAL",   0),
 
     // @Param: MAG_ENABLED
     // @DisplayName: Magnetometer (compass) enabled
@@ -409,11 +426,17 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.pde
-	GOBJECT(gcs0,					"SR0_",     GCS_MAVLINK),
+    GOBJECTN(gcs[0], gcs0,        "SR0_",     GCS_MAVLINK),
 
-    // @Group: SR3_
+    // @Group: SR1_
     // @Path: GCS_Mavlink.pde
-	GOBJECT(gcs3,					"SR3_",     GCS_MAVLINK),
+    GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    // @Group: SR2_
+    // @Path: GCS_Mavlink.pde
+    GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+#endif
 
     // @Group: NAVL1_
     // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp

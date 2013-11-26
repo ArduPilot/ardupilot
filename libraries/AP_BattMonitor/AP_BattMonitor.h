@@ -83,6 +83,9 @@ public:
     /// monitoring - returns whether we are monitoring voltage only or voltage and current
     int8_t monitoring() const { return _monitoring; }
 
+    /// monitoring - returns whether we are monitoring voltage only or voltage and current
+    void set_monitoring(uint8_t mon) { _monitoring.set(mon); }
+
     /// Battery voltage.  Initialized to 99 to prevent low voltage events at startup
     float voltage() const { return _voltage; }
 
