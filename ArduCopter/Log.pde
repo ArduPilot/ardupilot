@@ -854,6 +854,12 @@ static void start_logging()
         ap.logging_started = true;
         DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
         DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
+
+        // write system identifier as well if available
+        char sysid[40];
+        if (hal.util->get_system_id(sysid)) {
+            DataFlash.Log_Write_Message(sysid);
+        }
     }
 }
 
