@@ -39,7 +39,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MIN
     // @DisplayName: RC min PWM
     // @Description: RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: ms
+    // @Units: pwm
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: TRIM
     // @DisplayName: RC trim PWM
     // @Description: RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: ms
+    // @Units: pwm
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: MAX
     // @DisplayName: RC max PWM
     // @Description: RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: ms
+    // @Units: pwm
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
@@ -78,6 +78,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
     // @Param: DZ
     // @DisplayName: RC dead-zone
     // @Description: dead zone around trim.
+    // @Units: pwm
+    // @Range: 0 200
     // @User: Advanced
     AP_GROUPINFO("DZ",   5, RC_Channel, _dead_zone, 0),
 
