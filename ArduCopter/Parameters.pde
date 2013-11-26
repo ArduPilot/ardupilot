@@ -68,7 +68,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: TELEM_DELAY
     // @DisplayName: Telemetry startup delay
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
-    // @User: Standard
+    // @User: Advanced
     // @Units: seconds
     // @Range: 0 10
     // @Increment: 1
@@ -84,7 +84,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
 
     // @Param: SONAR_ENABLE
-    // @DisplayName: Enable Sonar
+    // @DisplayName: Sonar enable/disable
     // @Description: Setting this to Enabled(1) will enable the sonar. Setting this to Disabled(0) will disable the sonar
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
@@ -150,14 +150,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
 
     // @Param: MAG_ENABLE
-    // @DisplayName: Enable Compass
+    // @DisplayName: Compass enable/disable
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
 
     // @Param: FLOW_ENABLE
-    // @DisplayName: Enable Optical Flow
+    // @DisplayName: Optical Flow enable/disable
     // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
@@ -265,7 +265,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: pwm
     // @Range: 0 1000
     // @Increment: 1
-    // @User: Standard
+    // @User: Advanced
     GSCALAR(throttle_max,   "THR_MAX",          THR_MAX_DEFAULT),
 
     // @Param: FS_THR_ENABLE
@@ -695,14 +695,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Loiter latitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the latitude direction
     // @Range: 0.1 6.0
     // @Increment: 0.1
-    // @User: Standard
+    // @User: Advanced
 
     // @Param: LOITER_LAT_I
     // @DisplayName: Loiter latitude rate controller I gain
     // @Description: Loiter latitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the latitude direction
     // @Range: 0.02 1.00
     // @Increment: 0.01
-    // @User: Standard
+    // @User: Advanced
 
     // @Param: LOITER_LAT_IMAX
     // @DisplayName: Loiter rate controller I gain maximum
@@ -710,14 +710,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 4500
     // @Increment: 10
     // @Units: Centi-Degrees
-    // @User: Standard
+    // @User: Advanced
 
     // @Param: LOITER_LAT_D
     // @DisplayName: Loiter latitude rate controller D gain
     // @Description: Loiter latitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
     // @Range: 0.0 0.6
     // @Increment: 0.01
-    // @User: Standard
+    // @User: Advanced
     GGROUP(pid_loiter_rate_lat,      "LOITER_LAT_",  AC_PID),
 
     // @Param: LOITER_LON_P
@@ -725,14 +725,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Loiter longitude rate controller P gain.  Converts the difference between desired speed and actual speed into a lean angle in the longitude direction
     // @Range: 0.1 6.0
     // @Increment: 0.1
-    // @User: Standard
+    // @User: Advanced
 
     // @Param: LOITER_LON_I
     // @DisplayName: Loiter longitude rate controller I gain
     // @Description: Loiter longitude rate controller I gain.  Corrects long-term difference in desired speed and actual speed in the longitude direction
     // @Range: 0.02 1.00
     // @Increment: 0.01
-    // @User: Standard
+    // @User: Advanced
 
     // @Param: LOITER_LON_IMAX
     // @DisplayName: Loiter longitude rate controller I gain maximum
@@ -740,14 +740,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 4500
     // @Increment: 10
     // @Units: Centi-Degrees
-    // @User: Standard
+    // @User: Advanced
 
     // @Param: LOITER_LON_D
     // @DisplayName: Loiter longituderate controller D gain
     // @Description: Loiter longitude rate controller D gain.  Compensates for short-term change in desired speed vs actual speed
     // @Range: 0.0 0.6
     // @Increment: 0.01
-    // @User: Standard
+    // @User: Advanced
     GGROUP(pid_loiter_rate_lon,      "LOITER_LON_",  AC_PID),
 
     // @Param: THR_RATE_P
