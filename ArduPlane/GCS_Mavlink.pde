@@ -1485,6 +1485,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // mark the firmware version in the tlog
         send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
 
+        // send system ID if we can
+        char sysid[40];
+        if (hal.util->get_system_id(sysid)) {
+            mavlink_send_text(chan, SEVERITY_LOW, sysid);
+        }
+
         // Start sending parameters - next call to ::update will kick the first one out
         _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
         _queued_parameter_index = 0;
