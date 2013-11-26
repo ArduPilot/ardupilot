@@ -46,13 +46,18 @@ public:
 	static const struct AP_Param::GroupInfo var_info[];
 
 	// noise levels for simulated sensors
-	AP_Float baro_noise;  // in Pascals
+	AP_Float baro_noise;  // in metres
+	AP_Float baro_drift;  // in metres per second
 	AP_Float gyro_noise;  // in degrees/second
 	AP_Float accel_noise; // in m/s/s
 	AP_Float aspd_noise;  // in m/s
 	AP_Float mag_noise;   // in mag units (earth field is 818)
 	AP_Float mag_error;   // in degrees
     AP_Float servo_rate;  // servo speed in degrees/second
+
+    AP_Float sonar_connected; // Analogue sonar connected to AnalogPin 0 (else airspeed)
+    AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
+    AP_Float sonar_noise; // in metres
 
 	AP_Float drift_speed; // degrees/second/minute
 	AP_Float drift_time;  // period in minutes
