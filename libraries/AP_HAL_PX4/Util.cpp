@@ -11,6 +11,7 @@
 #include "UARTDriver.h"
 #include <uORB/uORB.h>
 #include <uORB/topics/safety.h>
+#include <systemlib/otp.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -95,6 +96,29 @@ void PX4Util::set_system_clock(uint64_t time_utc_usec)
     ts.tv_sec = time_utc_usec/1.0e6;
     ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
     clock_settime(CLOCK_REALTIME, &ts);    
+}
+
+/*
+  display PX4 system identifer - board type and serial number
+ */
+bool PX4Util::get_system_id(char buf[40])
+{
+    uint8_t serialid[12];
+    memset(serialid, 0, sizeof(serialid));
+    val_read(serialid, (const void *)UDID_START, sizeof(serialid));
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+    const char *board_type = "PX4v1";
+#else
+    const char *board_type = "PX4v2";
+#endif
+    // this format is chosen to match the human_readable_serial()
+    // function in auth.c
+    snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
+             board_type,
+             (unsigned)serialid[0], (unsigned)serialid[1], (unsigned)serialid[2], (unsigned)serialid[3], 
+             (unsigned)serialid[4], (unsigned)serialid[5], (unsigned)serialid[6], (unsigned)serialid[7], 
+             (unsigned)serialid[8], (unsigned)serialid[9], (unsigned)serialid[10],(unsigned)serialid[11]); 
+    return true;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
