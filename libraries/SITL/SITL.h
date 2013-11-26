@@ -55,6 +55,8 @@ public:
 	AP_Float mag_error;   // in degrees
     AP_Float servo_rate;  // servo speed in degrees/second
 
+    AP_Float sonar_connected; // Analogue sonar connected to AnalogPin 0 (else airspeed)
+
 	AP_Float drift_speed; // degrees/second/minute
 	AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier

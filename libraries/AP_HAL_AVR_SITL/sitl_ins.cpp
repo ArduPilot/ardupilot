@@ -17,11 +17,13 @@
 #include <AP_Math.h>
 #include "../AP_Compass/AP_Compass.h"
 #include "../AP_Declination/AP_Declination.h"
+#include "../AP_RangeFinder/AP_RangeFinder.h"
 #include "../SITL/SITL.h"
 #include "Scheduler.h"
 #include <AP_Math.h>
 #include "../AP_ADC/AP_ADC.h"
 #include <SITL_State.h>
+
 
 using namespace AVR_SITL;
 
@@ -54,6 +56,25 @@ float SITL_State::_gyro_drift(void)
 
 }
 
+uint16_t SITL_State::_ground_sonar(float altitude)
+{
+	static float home_alt = -1;
+	// TODO Find the current sonar object and load these params from it
+	// rather than assuming XL type
+	float scaler = AP_RANGEFINDER_MAXSONARXL_SCALER;
+
+	if (home_alt == -1)
+		home_alt = altitude;
+
+	altitude = altitude - home_alt;
+	altitude = constrain_float(altitude,
+		AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE / 100.0f,
+		AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f);
+
+	// Altitude in in m, scaler relative to cm
+	return (uint16_t)(altitude * 100.0f / scaler);
+}
+
 /*
   setup the INS input channels with new input
 
@@ -84,7 +105,7 @@ float SITL_State::_gyro_drift(void)
 void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
 			     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
 			     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-			     float airspeed)
+			     float airspeed,	float altitude)
 {
 	double p, q, r;
 
@@ -128,7 +149,12 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 	_ins->set_gyro(Vector3f(p, q, r) + _ins->get_gyro_offsets());
 	_ins->set_accel(Vector3f(xAccel, yAccel, zAccel) + _ins->get_accel_offsets());
 
-	airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
+	// Airspeed and Sonar share the same analog pin.  Connection type is
+	// manually selected.  Crude..
+	if(_sitl->sonar_connected)
+		airspeed_pin_value = _ground_sonar(altitude);
+	else
+		airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
 }
 
 #endif
