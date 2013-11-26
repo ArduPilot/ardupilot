@@ -38,6 +38,15 @@ public:
       set system clock in UTC microseconds
      */
     virtual void set_system_clock(uint64_t time_utc_usec) {}
+
+    /*
+      get system identifier (eg. serial number)
+      return false if a system identifier is not available
+
+      Buf should be filled with a printable string and must be null
+      terminated
+     */
+    virtual bool get_system_id(char buf[40]) { return false; }
 };
 
 #endif // __AP_HAL_UTIL_H__
