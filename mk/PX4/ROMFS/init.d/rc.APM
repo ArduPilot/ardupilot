@@ -196,17 +196,33 @@ else
     then
         echo "Using external magnetometer"
     fi
-    if l3gd20 start
+    set HAVE_MPU6000 false          
+    if [ ! -f /fs/microsd/APM/LSM303D.en ]
     then
-       echo "l3gd20 started OK"
-    else
-       sh /etc/init.d/rc.error
-    fi
-    if lsm303d start
+        if mpu6000 start
+        then
+          set HAVE_MPU6000 true
+          echo "Found MPU6000"
+          echo "Found MPU6000" >> $logfile
+        else
+          echo "No MPU6000"
+          echo "No MPU6000" >> $logfile
+        fi
+    fi       
+    if [ $HAVE_MPU6000 == false ]
     then
-       echo "lsm303d started OK"
-    else
-       sh /etc/init.d/rc.error
+        if l3gd20 start
+        then
+           echo "l3gd20 started OK"
+        else
+           sh /etc/init.d/rc.error
+        fi
+        if lsm303d start
+        then
+           echo "lsm303d started OK"
+        else
+           sh /etc/init.d/rc.error
+        fi
     fi
 fi
 
