@@ -67,6 +67,12 @@ uint16_t SITL_State::_ground_sonar(float altitude)
 		home_alt = altitude;
 
 	altitude = altitude - home_alt;
+
+	altitude += _sitl->sonar_noise * _rand_float();
+
+	if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f)
+		altitude = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f;
+
 	altitude = constrain_float(altitude,
 		AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE / 100.0f,
 		AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f);
