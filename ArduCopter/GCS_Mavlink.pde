@@ -256,9 +256,9 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
         chan,
-        nav_roll / 1.0e2f,
-        nav_pitch / 1.0e2f,
-        wp_bearing / 1.0e2f,
+        control_roll / 1.0e2f,
+        control_pitch / 1.0e2f,
+        control_yaw / 1.0e2f,
         wp_bearing / 1.0e2f,
         wp_distance / 1.0e2f,
         altitude_error / 1.0e2f,

@@ -700,12 +700,6 @@ static struct   Location command_cond_queue;
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Roll/Pitch functions
 ////////////////////////////////////////////////////////////////////////////////
-// all angles are deg * 100 : target yaw angle
-// The Commanded ROll from the autopilot.
-static int32_t nav_roll;
-// The Commanded pitch from the autopilot. negative Pitch means go forward.
-static int32_t nav_pitch;
-
 // The Commanded ROll from the autopilot based on optical flow sensor.
 static int32_t of_roll;
 // The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
@@ -1687,14 +1681,10 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_AUTO:
         // copy latest output from nav controller to stabilize controller
-        nav_roll = wp_nav.get_desired_roll();
-        nav_pitch = wp_nav.get_desired_pitch();
-        get_stabilize_roll(nav_roll);
-        get_stabilize_pitch(nav_pitch);
-
-        // user input, although ignored is put into control_roll and pitch for reporting purposes
-        control_roll = g.rc_1.control_in;
-        control_pitch = g.rc_2.control_in;
+        control_roll = wp_nav.get_desired_roll();
+        control_pitch = wp_nav.get_desired_pitch();
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
         break;
 
     case ROLL_PITCH_STABLE_OF:
@@ -1717,19 +1707,15 @@ void update_roll_pitch_mode(void)
         // apply SIMPLE mode transform
         update_simple_mode();
 
-        // copy user input for reporting purposes
-        control_roll            = g.rc_1.control_in;
-        control_pitch           = g.rc_2.control_in;
-
         // update loiter target from user controls
-        wp_nav.move_loiter_target(control_roll, control_pitch,0.01f);
+        wp_nav.move_loiter_target(g.rc_1.control_in, g.rc_2.control_in, 0.01f);
 
         // copy latest output from nav controller to stabilize controller
-        nav_roll = wp_nav.get_desired_roll();
-        nav_pitch = wp_nav.get_desired_pitch();
+        control_roll = wp_nav.get_desired_roll();
+        control_pitch = wp_nav.get_desired_pitch();
 
-        get_stabilize_roll(nav_roll);
-        get_stabilize_pitch(nav_pitch);
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
         break;
 
     case ROLL_PITCH_SPORT:
