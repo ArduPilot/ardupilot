@@ -242,9 +242,9 @@ AP_Compass_HMC5843::init()
         cal[1] = fabsf(expected_yz / (float)_mag_y);
         cal[2] = fabsf(expected_yz / (float)_mag_z);
 
-        if (cal[0] > 0.7f && cal[0] < 1.3f &&
-            cal[1] > 0.7f && cal[1] < 1.3f &&
-            cal[2] > 0.7f && cal[2] < 1.3f) {
+        if (cal[0] > 0.7f && cal[0] < 1.35f &&
+            cal[1] > 0.7f && cal[1] < 1.35f &&
+            cal[2] > 0.7f && cal[2] < 1.35f) {
             good_count++;
             calibration[0] += cal[0];
             calibration[1] += cal[1];
