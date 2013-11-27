@@ -381,11 +381,11 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     int32_t target_rate = stick_angle * g.acro_yaw_p;
 
     // convert the input to the desired yaw rate
-    nav_yaw += target_rate * G_Dt;
-    nav_yaw = wrap_360_cd(nav_yaw);
+    control_yaw += target_rate * G_Dt;
+    control_yaw = wrap_360_cd(control_yaw);
 
     // calculate difference between desired heading and current heading
-    angle_error = wrap_180_cd(nav_yaw - ahrs.yaw_sensor);
+    angle_error = wrap_180_cd(control_yaw - ahrs.yaw_sensor);
 
     // limit the maximum overshoot
     angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
@@ -401,8 +401,8 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     }
 #endif // HELI_FRAME
 
-    // update nav_yaw to be within max_angle_overshoot of our current heading
-    nav_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
+    // update control_yaw to be within max_angle_overshoot of our current heading
+    control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
 
     // set earth frame targets for rate controller
 	set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
@@ -732,7 +732,7 @@ static void get_circle_yaw()
     // if circle radius is zero do panorama
     if( g.circle_radius == 0 ) {
         // slew yaw towards circle angle
-        nav_yaw = get_yaw_slew(nav_yaw, ToDeg(circle_angle)*100, AUTO_YAW_SLEW_RATE);
+        control_yaw = get_yaw_slew(control_yaw, ToDeg(circle_angle)*100, AUTO_YAW_SLEW_RATE);
     }else{
         look_at_yaw_counter++;
         if( look_at_yaw_counter >= 10 ) {
@@ -740,11 +740,11 @@ static void get_circle_yaw()
             yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
         }
         // slew yaw
-        nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
+        control_yaw = get_yaw_slew(control_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
     }
 
     // call stabilize yaw controller
-    get_stabilize_yaw(nav_yaw);
+    get_stabilize_yaw(control_yaw);
 }
 
 // get_look_at_yaw - updates bearing to location held in look_at_yaw_WP and calls stabilize yaw controller
@@ -760,20 +760,20 @@ static void get_look_at_yaw()
     }
 
     // slew yaw and call stabilize controller
-    nav_yaw = get_yaw_slew(nav_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
-    get_stabilize_yaw(nav_yaw);
+    control_yaw = get_yaw_slew(control_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
+    get_stabilize_yaw(control_yaw);
 }
 
 static void get_look_ahead_yaw(int16_t pilot_yaw)
 {
     // Commanded Yaw to automatically look ahead.
     if (g_gps->fix && g_gps->ground_speed_cm > YAW_LOOK_AHEAD_MIN_SPEED) {
-        nav_yaw = get_yaw_slew(nav_yaw, g_gps->ground_course_cd, AUTO_YAW_SLEW_RATE);
-        get_stabilize_yaw(wrap_360_cd(nav_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
+        control_yaw = get_yaw_slew(control_yaw, g_gps->ground_course_cd, AUTO_YAW_SLEW_RATE);
+        get_stabilize_yaw(wrap_360_cd(control_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
     }else{
-        nav_yaw += pilot_yaw * g.acro_yaw_p * G_Dt;
-        nav_yaw = wrap_360_cd(nav_yaw);
-        get_stabilize_yaw(nav_yaw);
+        control_yaw += pilot_yaw * g.acro_yaw_p * G_Dt;
+        control_yaw = wrap_360_cd(control_yaw);
+        get_stabilize_yaw(control_yaw);
     }
 }
 

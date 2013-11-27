@@ -15,7 +15,7 @@
 
 // Flight modes
 // ------------
-#define YAW_HOLD                        0       // heading hold at heading in nav_yaw but allow input from pilot
+#define YAW_HOLD                        0       // heading hold at heading in control_yaw but allow input from pilot
 #define YAW_ACRO                        1       // pilot controlled yaw using rate controller
 #define YAW_LOOK_AT_NEXT_WP             2       // point towards next waypoint (no pilot input accepted)
 #define YAW_LOOK_AT_LOCATION            3       // point towards a location held in yaw_look_at_WP (no pilot input accepted)

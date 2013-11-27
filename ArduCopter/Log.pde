@@ -450,7 +450,7 @@ static void Log_Write_Attitude()
         pitch       : (int16_t)ahrs.pitch_sensor,
         yaw_in      : (int16_t)g.rc_4.control_in,
         yaw         : (uint16_t)ahrs.yaw_sensor,
-        nav_yaw     : (uint16_t)nav_yaw
+        nav_yaw     : (uint16_t)control_yaw
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
