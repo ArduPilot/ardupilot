@@ -270,7 +270,7 @@ void AP_MotorsHeli::output_min()
 }
 
 
-// output_test - wiggle servos in order to show connections are correct
+// output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
 void AP_MotorsHeli::output_test()
 {
     int16_t i;
@@ -636,12 +636,6 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
         write_aux(_ext_gyro_gain);
     }
-
-    // to be compatible with other frame types
-    motor_out[AP_MOTORS_MOT_1] = _servo_1->radio_out;
-    motor_out[AP_MOTORS_MOT_2] = _servo_2->radio_out;
-    motor_out[AP_MOTORS_MOT_3] = _servo_3->radio_out;
-    motor_out[AP_MOTORS_MOT_4] = _servo_4->radio_out;
 }
 
 // rsc_control - update value to send to tail and main rotor's ESC
@@ -795,8 +789,6 @@ void AP_MotorsHeli::write_rsc(int16_t servo_out)
     _servo_rsc->servo_out = servo_out;
     _servo_rsc->calc_pwm();
     hal.rcout->write(AP_MOTORS_HELI_RSC, _servo_rsc->radio_out);
-    // put radio out into motors array for reporting purposes
-    motor_out[AP_MOTORS_MOT_8] = _servo_rsc->radio_out;
 }
 
 // write_aux - outputs pwm onto output aux channel (ch7)
@@ -806,6 +798,4 @@ void AP_MotorsHeli::write_aux(int16_t servo_out)
     _servo_aux->servo_out = servo_out;
     _servo_aux->calc_pwm();
     hal.rcout->write(AP_MOTORS_HELI_AUX, _servo_aux->radio_out);
-    // put radio out into motors array for reporting purposes
-    motor_out[AP_MOTORS_MOT_7] = _servo_aux->radio_out;
 }
