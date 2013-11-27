@@ -48,7 +48,7 @@ public:
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
-    void Log_Write_SERVO(void);
+    void Log_Write_RCOUT(void);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -182,7 +182,7 @@ struct PACKED log_RCIN {
     uint16_t chan8;
 };
 
-struct PACKED log_SERVO {
+struct PACKED log_RCOUT {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
     uint16_t chan1;
@@ -208,8 +208,8 @@ struct PACKED log_SERVO {
       "MSG",  "Z",     "Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
-    { LOG_SERVO_MSG, sizeof(log_SERVO), \
-      "SRVO",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }
+    { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
+      "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -218,7 +218,7 @@ struct PACKED log_SERVO {
 #define LOG_IMU_MSG		  131
 #define LOG_MESSAGE_MSG	  132
 #define LOG_RCIN_MSG      133
-#define LOG_SERVO_MSG     134
+#define LOG_RCOUT_MSG     134
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

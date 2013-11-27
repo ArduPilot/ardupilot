@@ -666,10 +666,10 @@ void DataFlash_Class::Log_Write_RCIN(void)
 }
 
 // Write an SERVO packet
-void DataFlash_Class::Log_Write_SERVO(void)
+void DataFlash_Class::Log_Write_RCOUT(void)
 {
-    struct log_SERVO pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_SERVO_MSG),
+    struct log_RCOUT pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
         timestamp     : hal.scheduler->millis(),
         chan1         : hal.rcout->read(0),
         chan2         : hal.rcout->read(1),
