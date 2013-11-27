@@ -890,7 +890,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_copter_leds,   10,      55 },
 #endif
     { update_mount,          2,     450 },
-    { ten_hz_logging_loop,  10,     260 },
+    { ten_hz_logging_loop,  10,     300 },
     { fifty_hz_logging_loop, 2,     220 },
     { perf_update,        1000,     200 },
     { read_receiver_rssi,   10,      50 },
@@ -1149,6 +1149,9 @@ static void ten_hz_logging_loop()
     if(motors.armed()) {
         if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
             Log_Write_Attitude();
+        }
+        if (g.log_bitmask & MASK_LOG_RCIN) {
+            DataFlash.Log_Write_RCIN();
         }
         if (g.log_bitmask & MASK_LOG_MOTORS) {
             Log_Write_Motors();

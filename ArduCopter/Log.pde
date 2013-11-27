@@ -40,6 +40,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_PM) cliSerial->printf_P(PSTR(" PM"));
         if (g.log_bitmask & MASK_LOG_CTUN) cliSerial->printf_P(PSTR(" CTUN"));
         if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf_P(PSTR(" NTUN"));
+        if (g.log_bitmask & MASK_LOG_RCIN) cliSerial->printf_P(PSTR(" RCIN"));
         if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf_P(PSTR(" IMU"));
         if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf_P(PSTR(" CMD"));
         if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf_P(PSTR(" CURRENT"));
@@ -131,7 +132,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(PM);
         TARG(CTUN);
         TARG(NTUN);
-        TARG(MODE);
+        TARG(RCIN);
         TARG(IMU);
         TARG(CMD);
         TARG(CURRENT);

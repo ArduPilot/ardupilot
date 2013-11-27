@@ -993,6 +993,9 @@
 #ifndef LOG_NTUN
  # define LOG_NTUN                      ENABLED
 #endif
+#ifndef LOG_RCIN
+ # define LOG_RCIN                      ENABLED
+#endif
 #ifndef LOG_IMU
  # define LOG_IMU                       DISABLED
 #endif
@@ -1034,6 +1037,7 @@
     LOGBIT(PM)              | \
     LOGBIT(CTUN)            | \
     LOGBIT(NTUN)            | \
+    LOGBIT(RCIN)            | \
     LOGBIT(IMU)             | \
     LOGBIT(CMD)             | \
     LOGBIT(CURRENT)         | \
