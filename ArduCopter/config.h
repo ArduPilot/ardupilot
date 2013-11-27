@@ -1007,8 +1007,8 @@
  # define LOG_CURRENT                   ENABLED
 #endif
 // quad motor PWMs
-#ifndef LOG_MOTORS
- # define LOG_MOTORS                    DISABLED
+#ifndef LOG_RCOUT
+ # define LOG_RCOUT                     DISABLED
 #endif
 // optical flow
 #ifndef LOG_OPTFLOW
@@ -1041,7 +1041,7 @@
     LOGBIT(IMU)             | \
     LOGBIT(CMD)             | \
     LOGBIT(CURRENT)         | \
-    LOGBIT(MOTORS)          | \
+    LOGBIT(RCOUT)           | \
     LOGBIT(OPTFLOW)         | \
     LOGBIT(PID)             | \
     LOGBIT(COMPASS)         | \

@@ -44,7 +44,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf_P(PSTR(" IMU"));
         if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf_P(PSTR(" CMD"));
         if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf_P(PSTR(" CURRENT"));
-        if (g.log_bitmask & MASK_LOG_MOTORS) cliSerial->printf_P(PSTR(" MOTORS"));
+        if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf_P(PSTR(" RCOUT"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
         if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
@@ -136,7 +136,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(IMU);
         TARG(CMD);
         TARG(CURRENT);
-        TARG(MOTORS);
+        TARG(RCOUT);
         TARG(OPTFLOW);
         TARG(PID);
         TARG(COMPASS);
@@ -228,62 +228,6 @@ static void Log_Write_Current()
         current_amps        : (int16_t) (battery.current_amps() * 100.0f),
         board_voltage       : board_voltage(),
         current_total       : battery.current_total_mah()
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
-struct PACKED log_Motors {
-    LOG_PACKET_HEADER;
-#if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
-    int16_t motor_out[8];
-#elif FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
-    int16_t motor_out[6];
-#elif FRAME_CONFIG == HELI_FRAME
-    int16_t motor_out[6];
-#else        // quads & TRI_FRAME
-    int16_t motor_out[4];
-#endif
-};
-
-// Write an Motors packet
-static void Log_Write_Motors()
-{
-    struct log_Motors pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MOTORS_MSG),
-#if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
-        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
-                         motors.motor_out[AP_MOTORS_MOT_2],
-                         motors.motor_out[AP_MOTORS_MOT_3],
-                         motors.motor_out[AP_MOTORS_MOT_4],
-                         motors.motor_out[AP_MOTORS_MOT_5],
-                         motors.motor_out[AP_MOTORS_MOT_6],
-                         motors.motor_out[AP_MOTORS_MOT_7],
-                         motors.motor_out[AP_MOTORS_MOT_8]}
-#elif FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
-        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
-                         motors.motor_out[AP_MOTORS_MOT_2],
-                         motors.motor_out[AP_MOTORS_MOT_3],
-                         motors.motor_out[AP_MOTORS_MOT_4],
-                         motors.motor_out[AP_MOTORS_MOT_5],
-                         motors.motor_out[AP_MOTORS_MOT_6]}
-#elif FRAME_CONFIG == HELI_FRAME
-        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
-                         motors.motor_out[AP_MOTORS_MOT_2],
-                         motors.motor_out[AP_MOTORS_MOT_3],
-                         motors.motor_out[AP_MOTORS_MOT_4],
-                         motors.motor_out[AP_MOTORS_MOT_7],
-                         motors.motor_out[AP_MOTORS_MOT_8]}
-#elif FRAME_CONFIG == TRI_FRAME
-        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
-                         motors.motor_out[AP_MOTORS_MOT_2],
-                         motors.motor_out[AP_MOTORS_MOT_4],
-                         g.rc_4.radio_out}
-#else // QUAD frame
-        motor_out   :   {motors.motor_out[AP_MOTORS_MOT_1],
-                         motors.motor_out[AP_MOTORS_MOT_2],
-                         motors.motor_out[AP_MOTORS_MOT_3],
-                         motors.motor_out[AP_MOTORS_MOT_4]}
-#endif
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -773,21 +717,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
 #endif
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hIhhhf",      "ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
-
-#if FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
-    { LOG_MOTORS_MSG, sizeof(log_Motors),       
-      "MOT",  "hhhhhhhh",    "Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,Mot7,Mot8" },
-#elif FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
-    { LOG_MOTORS_MSG, sizeof(log_Motors),       
-      "MOT",  "hhhhhh",      "Mot1,Mot2,Mot3,Mot4,Mot5,Mot6" },
-#elif FRAME_CONFIG == HELI_FRAME
-    { LOG_MOTORS_MSG, sizeof(log_Motors),       
-      "MOT",  "hhhhh",       "Mot1,Mot2,Mot3,Mot4,GGain" },
-#else
-    { LOG_MOTORS_MSG, sizeof(log_Motors),       
-      "MOT",  "hhhh",        "Mot1,Mot2,Mot3,Mot4" },
-#endif
-
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "hhBccffee",   "Dx,Dy,SQual,X,Y,Lat,Lng,Roll,Pitch" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
@@ -888,7 +817,6 @@ static void Log_Write_Event(uint8_t id){}
 static void Log_Write_Optflow() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Control_Tuning() {}
-static void Log_Write_Motors() {}
 static void Log_Write_Performance() {}
 static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {}
 static void Log_Write_Camera() {}

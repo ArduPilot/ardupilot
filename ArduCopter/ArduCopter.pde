@@ -1153,8 +1153,8 @@ static void ten_hz_logging_loop()
         if (g.log_bitmask & MASK_LOG_RCIN) {
             DataFlash.Log_Write_RCIN();
         }
-        if (g.log_bitmask & MASK_LOG_MOTORS) {
-            Log_Write_Motors();
+        if (g.log_bitmask & MASK_LOG_RCOUT) {
+            DataFlash.Log_Write_RCOUT();
         }
     }
 }
