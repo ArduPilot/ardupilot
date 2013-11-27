@@ -329,7 +329,7 @@ void AP_MotorsMatrix::output_disarmed()
     output_min();
 }
 
-// output_disarmed - sends commands to the motors
+// output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
 void AP_MotorsMatrix::output_test()
 {
     uint8_t min_order, max_order;
