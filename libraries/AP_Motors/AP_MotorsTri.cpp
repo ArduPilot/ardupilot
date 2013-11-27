@@ -69,7 +69,8 @@ void AP_MotorsTri::output_min()
 {
     // set lower limit flag
     limit.throttle_lower = true;
-    // fill the motor_out[] array for HIL use
+
+    // set all motors to minimum
     motor_out[AP_MOTORS_MOT_1] = _rc_throttle->radio_min;
     motor_out[AP_MOTORS_MOT_2] = _rc_throttle->radio_min;
     motor_out[AP_MOTORS_MOT_4] = _rc_throttle->radio_min;
@@ -114,7 +115,7 @@ void AP_MotorsTri::output_armed()
 
         // Every thing is limited
         limit.throttle_lower = true;
-		
+
     }else{
         int16_t roll_out            = (float)_rc_roll->pwm_out * 0.866f;
         int16_t pitch_out           = _rc_pitch->pwm_out / 2;
@@ -190,7 +191,7 @@ void AP_MotorsTri::output_disarmed()
     output_min();
 }
 
-// output_disarmed - sends commands to the motors
+// output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
 void AP_MotorsTri::output_test()
 {
     // Send minimum values to all motors
@@ -211,7 +212,6 @@ void AP_MotorsTri::output_test()
     hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min + _min_throttle);
     hal.scheduler->delay(300);
 
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], motor_out[AP_MOTORS_MOT_1]);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], motor_out[AP_MOTORS_MOT_2]);
-    hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], motor_out[AP_MOTORS_MOT_4]);
+    // Send minimum values to all motors
+    output_min();
 }
