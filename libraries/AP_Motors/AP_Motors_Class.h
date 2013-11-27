@@ -106,7 +106,7 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
 
-    // motor test
+    // output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
     virtual void        output_test() = 0;
 
     // throttle_pass_through - passes pilot's throttle input directly to all motors - dangerous but used for initialising ESCs
@@ -122,9 +122,6 @@ public:
     // slow_start - set to true to slew motors from current speed to maximum
     // Note: this must be set immediately before a step up in throttle
     void                slow_start(bool true_false);
-
-    // final output values sent to the motors.  public (for now) so that they can be access for logging
-    int16_t             motor_out[AP_MOTORS_MAX_NUM_MOTORS];
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
@@ -164,6 +161,7 @@ protected:
     // internal variables
     RC_Channel*         _rc_roll, *_rc_pitch, *_rc_throttle, *_rc_yaw;  // input in from users
     uint8_t             _motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS];        // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2
+    int16_t             motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final output values sent to the motors
     uint16_t            _speed_hz;              // speed in hz to send updates to motors
     int16_t             _min_throttle;          // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
