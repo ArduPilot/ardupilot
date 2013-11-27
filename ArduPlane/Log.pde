@@ -455,7 +455,7 @@ static void Log_Write_IMU()
 static void Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
-    DataFlash.Log_Write_SERVO();
+    DataFlash.Log_Write_RCOUT();
 }
 
 static const struct LogStructure log_structure[] PROGMEM = {
