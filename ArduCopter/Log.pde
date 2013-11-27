@@ -430,13 +430,12 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp)
 
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
-    int16_t roll_in;
+    int16_t control_roll;
     int16_t roll;
-    int16_t pitch_in;
+    int16_t control_pitch;
     int16_t pitch;
-    int16_t yaw_in;
+    uint16_t control_yaw;
     uint16_t yaw;
-    uint16_t nav_yaw;
 };
 
 // Write an attitude packet
@@ -444,13 +443,12 @@ static void Log_Write_Attitude()
 {
     struct log_Attitude pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        roll_in     : (int16_t)control_roll,
-        roll        : (int16_t)ahrs.roll_sensor,
-        pitch_in    : (int16_t)control_pitch,
-        pitch       : (int16_t)ahrs.pitch_sensor,
-        yaw_in      : (int16_t)g.rc_4.control_in,
-        yaw         : (uint16_t)ahrs.yaw_sensor,
-        nav_yaw     : (uint16_t)control_yaw
+        control_roll    : (int16_t)control_roll,
+        roll            : (int16_t)ahrs.roll_sensor,
+        control_pitch   : (int16_t)control_pitch,
+        pitch           : (int16_t)ahrs.pitch_sensor,
+        control_yaw     : (uint16_t)control_yaw,
+        yaw             : (uint16_t)ahrs.yaw_sensor
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -730,7 +728,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CMD_MSG, sizeof(log_Cmd),                 
       "CMD", "BBBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
-      "ATT", "cccccCC",      "RollIn,Roll,PitchIn,Pitch,YawIn,Yaw,NavYaw" },
+      "ATT", "ccccCC",       "DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw" },
     { LOG_INAV_MSG, sizeof(log_INAV),       
       "INAV", "cccfffiiff",  "BAlt,IAlt,IClb,ACorrX,ACorrY,ACorrZ,GLat,GLng,ILat,ILng" },
     { LOG_MODE_MSG, sizeof(log_Mode),
