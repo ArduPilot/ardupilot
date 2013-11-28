@@ -99,6 +99,9 @@ public:
         k_param_rally_limit_km,
         k_param_hil_err_limit,
 
+        // 100: Arming parameters
+        k_param_arming = 100,
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,         // stream rates for uartA

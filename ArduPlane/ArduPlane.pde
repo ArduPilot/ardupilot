@@ -73,6 +73,8 @@
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
 
+#include <AP_Arming.h>
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -693,6 +695,11 @@ AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Arming/Disarming mangement class
+////////////////////////////////////////////////////////////////////////////////
+AP_Arming arming(ahrs, barometer, home_is_set, gcs_send_text_P);
+
+////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -748,9 +755,6 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    // arduplane does not use arming nor pre-arm checks
-    AP_Notify::flags.armed = true;
-    AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
     notify.init();
@@ -762,6 +766,12 @@ void setup() {
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
+
+    //if no user intervention require to arm, then just arm already
+    //(maintain old behavior)
+    if (arming.arming_required() == AP_Arming::NO) {
+        arming.arm(AP_Arming::NONE);
+    }
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));

@@ -871,6 +871,24 @@ static void set_servos(void)
         channel_output_mixer(g.elevon_output, channel_pitch->radio_out, channel_roll->radio_out);
     }
 
+    //send throttle to 0 or MIN_PWM if not yet armed
+    if (!arming.is_armed()) {
+        //Some ESCs get noisy (beep error msgs) if PWM == 0.
+        //This little segment aims to avoid this.
+        switch (arming.arming_required()) { 
+            case AP_Arming::YES_MIN_PWM:
+                channel_throttle->radio_out = channel_throttle->radio_min;
+            break;
+            case AP_Arming::YES_ZERO_PWM:
+                channel_throttle->radio_out = 0;
+            break;
+            default:
+                //keep existing behavior: do nothing to radio_out
+                //(don't disarm throttle channel even if AP_Arming class is)
+            break;
+        }
+    }
+
     // send values to the PWM timers for output
     // ----------------------------------------
     channel_roll->output();

@@ -772,6 +772,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(camera,                  "CAM_", AP_Camera),
 #endif
 
+    // @Group: ARMING_
+    // @Path: ../libararies/AP_Arming/AP_Arming.cpp
+    GOBJECT(arming,                 "ARMING_", AP_Arming),
+
     // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
