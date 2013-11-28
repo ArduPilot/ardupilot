@@ -73,6 +73,8 @@
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
 
+#include <AP_Arming.h>
+
 // Pre-AP_HAL compatibility
 #include "compat.h"
 
@@ -693,6 +695,12 @@ AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Arming/Disarming mangement class
+////////////////////////////////////////////////////////////////////////////////
+AP_Arming arming((const AP_AHRS&) ahrs, barometer, hal, home_is_set,
+        gcs_send_text_P);
+
+////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -733,10 +741,35 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { airspeed_ratio_update, 50,   1000 },
     { update_logging,         5,   1200 },
     { read_receiver_rssi,     5,   1000 },
+    { rudder_arm_check,      10,    300 },
 };
 
 // setup the var_info table
 AP_Param param_loader(var_info, WP_START_BYTE);
+
+void enable_arm_checks_by_parameter() {
+    unsigned int checksEnabled = AP_Arming::ARMING_CHECK_NONE;
+    if (g.arm_check_all != 0) 
+        checksEnabled |= AP_Arming::ARMING_CHECK_ALL;
+    if (g.arm_check_baro != 0) 
+        checksEnabled |= AP_Arming::ARMING_CHECK_BARO;
+    if (g.arm_check_compass != 0) 
+        checksEnabled |= AP_Arming::ARMING_CHECK_COMPASS;    
+    if (g.arm_check_gps != 0)
+        checksEnabled |= AP_Arming::ARMING_CHECK_GPS;
+    if (g.arm_check_rc != 0)
+        checksEnabled |= AP_Arming::ARMING_CHECK_RC;
+    if (g.arm_check_battery != 0)
+        checksEnabled |= AP_Arming::ARMING_CHECK_BATTERY;
+    
+    arming.set_enabled_checks(checksEnabled);
+
+    //if no user intervention require to arm, then just arm already
+    //(maintain old behavior)
+    if (g.require_arming == 0) {
+        arming.arm(AP_Arming::NONE);
+    }
+}
 
 void setup() {
     // this needs to be the first call, as it fills memory with
@@ -748,9 +781,6 @@ void setup() {
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    // arduplane does not use arming nor pre-arm checks
-    AP_Notify::flags.armed = true;
-    AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
     notify.init();
@@ -762,6 +792,9 @@ void setup() {
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
+
+    //setup enabled arming checks based on parameters
+    enable_arm_checks_by_parameter();
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
@@ -797,6 +830,63 @@ void loop()
         remaining = 19500;
     }
     scheduler.run(remaining);
+}
+
+// check for pilot input on rudder stick for arming
+// called at 10 Hz
+static void rudder_arm_check() {
+    //TODO: ensure rudder arming disallowed during radio calibration
+
+    //TODO: waggle ailerons and rudder and beep after rudder arming
+    
+    static uint32_t rudder_arm_timer = 0;
+
+    if (arming.is_armed()) {
+        //already armed, no need to run remainder of this function
+        rudder_arm_timer = 0;
+        return;
+    } 
+
+    if (g.disable_rudder_arm == 1) {
+        //parameter disallows rudder arming
+        return;
+    }
+
+    //if throttle is not down, then pilot cannot rudder arm
+    if(g.rc_3.control_in > 0 ) {
+        rudder_arm_timer = 0;
+        return;
+    }
+
+    //if not in a 'manual' mode then disallow rudder arming
+    if (auto_throttle_mode ) {
+        rudder_arm_timer = 0;
+        return;      
+    }
+
+    // full left or right rudder starts arming counter
+    if (g.rc_4.control_in > 4000 
+            || g.rc_4.control_in < -4000) {
+        
+        uint32_t now = millis();
+
+        if (rudder_arm_timer == 0 || 
+              now - rudder_arm_timer < 3000) {
+
+            if (rudder_arm_timer == 0) rudder_arm_timer = now;
+        } else {
+            //time to arm!
+            if (arming.arm(AP_Arming::RUDDER)) {
+                //only log if arming was successful
+                Log_Arm_Disarm();
+            }                
+        }
+
+    }
+    else { //not at full left or right rudder
+        rudder_arm_timer = 0;
+        return;
+    }
 }
 
 // update AHRS system

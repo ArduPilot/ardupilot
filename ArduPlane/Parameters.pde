@@ -742,6 +742,62 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
+    // @Param: REQUIRE_AMRING
+    // @DisplayName: Require Arming Motors 
+    // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming.
+    // @Values: 0:Disabled,1: THR_MIN PWM when disarmed,2: 0 PWM when disarmed 
+    // @User: Advanced
+    GSCALAR(require_arming,         "REQUIRE_ARMING", 0),
+
+    // @Param: DISABLE_RUD_ARM
+    // @DisplayName: Disable Rudder Arming
+    // @Description: Do not allow arming via the rudder input stick.
+    // @Values: 0:Disabled (Rudder Arming Allowed),1:Enabled(No Rudder Arming)
+    // @User: Advanced
+    GSCALAR(disable_rudder_arm,     "DISABLE_RUD_ARM", 0),
+    
+    // @Param: ARMING_CHECK_ALL 
+    // @DisplayName: Arm Check All
+    // @Description: Perform all checks prior to arming motor. Note that changing this parameter requires a reboot before it will take effect.
+    // @Values: 0:Disabled, 1: Enabled
+    // @User: Standard
+    GSCALAR(arm_check_all,       "ARM_CHECK_ALL", 0),
+
+    // @Param: ARMING_CHECK_BARO
+    // @DisplayName: Arm Check Barometer
+    // @Description: Verify barometer health prior to arming motor. Note that changing this parameter requires a reboot before it will take effect.
+    // @Values: 0:Disabled, 1: Enabled
+    // @User: Advanced
+    GSCALAR(arm_check_baro,      "ARM_CHECK_BARO", 0),
+
+    // @Param: ARMING_CHECK_COMP
+    // @DisplayName: Arm Check Compass
+    // @Description: Verify compass health prior to arming motor. Note that changing this parameter requires a reboot before it will take effect.
+    // @Values: 0:Disabled, 1: Enabled
+    // @User: Advanced
+    GSCALAR(arm_check_compass,   "ARM_CHECK_COMP", 0),
+
+    // @Param: ARMING_CHECK_GPS 
+    // @DisplayName: Arm Check GPS
+    // @Description: Verify GPS health prior to arming motor. Note that changing this parameter requires a reboot before it will take effect.
+    // @Values: 0:Disabled, 1: Enabled
+    // @User: Advanced
+    GSCALAR(arm_check_gps,       "ARM_CHECK_GPS", 0),
+
+    // @Param: ARMING_CHECK_RC 
+    // @DisplayName: Arm Check RC
+    // @Description: Verify manual radio transmitter prior to arming motor. Note that changing this parameter requires a reboot before it will take effect.
+    // @Values: 0:Disabled, 1: Enabled
+    // @User: Advanced
+    GSCALAR(arm_check_rc,        "ARM_CHECK_RC", 0),
+
+    // @Param: ARMING_CHECK_BATT
+    // @DisplayName: Arm Check Battery
+    // @Description: Verify battery health prior to arming motor. Note that changing this parameter requires a reboot before it will take effect.
+    // @Values: 0:Disabled, 1: Enabled
+    // @User: Advanced
+    GSCALAR(arm_check_battery,   "ARM_CHECK_BATT", 0),
+
 #if HIL_MODE != HIL_MODE_DISABLED
     // @Param: HIL_SERVOS
     // @DisplayName: HIL Servos enable
