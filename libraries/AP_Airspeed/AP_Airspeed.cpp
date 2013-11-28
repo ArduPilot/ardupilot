@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #define ARSPD_DEFAULT_PIN 0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- #define ARSPD_DEFAULT_PIN 0
+ #define ARSPD_DEFAULT_PIN 1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
  #include <sys/stat.h>
  #include <sys/types.h>
