@@ -84,15 +84,4 @@ void loop()
     }
 }
 
-// print motor output
-void print_motor_output()
-{
-    int8_t i;
-    for(i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if( motors.motor_enabled[i] ) {
-            hal.console->printf("\t%d %d",i,motors.motor_out[i]);
-        }
-    }
-}
-
 AP_HAL_MAIN();
