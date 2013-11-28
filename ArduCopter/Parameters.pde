@@ -591,13 +591,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(acro_trainer,   "ACRO_TRAINER",     ACRO_TRAINER_LIMITED),
 
-    // @Param: LED_MODE
-    // @DisplayName: Copter LED Mode
-    // @Description: bitmap to control the copter led mode
-    // @Values: 0:Disabled,1:Enable,3:GPS On,4:Aux,9:Buzzer,17:Oscillate,33:Nav Blink,65:GPS Nav Blink
-    // @User: Standard
-    GSCALAR(copter_leds_mode,       "LED_MODE",         9),
-
     // PID controller
     //---------------
     // @Param: RATE_RLL_P

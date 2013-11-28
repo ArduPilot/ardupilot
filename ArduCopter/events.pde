@@ -164,9 +164,6 @@ static void failsafe_battery_event(void)
     gcs_send_text_P(SEVERITY_LOW,PSTR("Low Battery!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
-#if COPTER_LEDS == ENABLED
-    piezo_on();
-#endif // COPTER_LEDS
 }
 
 // failsafe_gps_check - check for gps failsafe

@@ -146,10 +146,6 @@ static void init_arm_motors()
         hal.uartD->set_blocking_writes(false);
     }
 
-#if COPTER_LEDS == ENABLED
-    piezo_beep_twice();
-#endif
-
     // Remember Orientation
     // --------------------
     init_simple_bearing();
@@ -187,10 +183,6 @@ static void init_arm_motors()
 
     // set hover throttle
     motors.set_mid_throttle(g.throttle_mid);
-
-#if COPTER_LEDS == ENABLED
-    piezo_beep_twice();
-#endif
 
     // Cancel arming if throttle is raised too high so that copter does not suddenly take off
     read_radio();
@@ -496,11 +488,7 @@ static void init_disarm_motors()
 
     // we are not in the air
     set_takeoff_complete(false);
-
-#if COPTER_LEDS == ENABLED
-    piezo_beep();
-#endif
-
+    
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
 

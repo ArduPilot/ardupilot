@@ -28,7 +28,6 @@
 //#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
 //#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
-//#define COPTER_LEDS           DISABLED            // disable external navigation leds to save 1k of flash
 //#define CONFIG_SONAR          DISABLED            // disable sonar to save 1k of flash
 
 // features below are disabled by default

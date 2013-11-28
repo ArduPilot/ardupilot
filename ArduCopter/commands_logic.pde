@@ -531,7 +531,6 @@ static bool verify_nav_wp()
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs_send_text_fmt(PSTR("Reached Command #%i"),command_nav_index);
-        copter_leds_nav_blink = 15;             // Cause the CopterLEDs to blink three times to indicate waypoint reached
         return true;
     }else{
         return false;

@@ -122,10 +122,6 @@ static void init_ardupilot()
 
     relay.init();
 
-#if COPTER_LEDS == ENABLED
-    copter_leds_init();
-#endif
-
     // load parameters from EEPROM
     load_parameters();
 

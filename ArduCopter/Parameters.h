@@ -162,7 +162,7 @@ public:
         k_param_sonar_type,
         k_param_super_simple = 155,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
-        k_param_copter_leds_mode,
+        k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
         k_param_ahrs, // AHRS group // 159
 
         //
@@ -308,8 +308,6 @@ public:
     AP_Int8         optflow_enabled;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
-    AP_Int8         copter_leds_mode;           // Operating mode of LED
-                                                // lighting system
 
     AP_Int8         rssi_pin;
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions

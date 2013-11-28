@@ -242,9 +242,6 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
                 // log event
                 Log_Write_Event(DATA_SAVEWP_ADD_WP);
-
-                // Cause the CopterLEDs to blink twice to indicate saved waypoint
-                copter_leds_nav_blink = 10;
             }
             break;
 

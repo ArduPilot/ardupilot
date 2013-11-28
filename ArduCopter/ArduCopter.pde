@@ -485,15 +485,6 @@ float tuning_value;
 // used to limit the rate that the pid controller output is logged so that it doesn't negatively affect performance
 static uint8_t pid_log_counter;
 
-////////////////////////////////////////////////////////////////////////////////
-// LED output
-////////////////////////////////////////////////////////////////////////////////
-// Blinking indicates GPS status
-static uint8_t copter_leds_GPS_blink;
-// Blinking indicates battery status
-static uint8_t copter_leds_motor_blink;
-// Navigation confirmation blinks
-static int8_t copter_leds_nav_blink;
 
 ////////////////////////////////////////////////////////////////////////////////
 // GPS variables
