@@ -42,10 +42,11 @@ public:
     static void loop_hook(void);
     uint16_t base_port(void) const { return _base_port; }
 
-    // simulated airspeed
-    static uint16_t airspeed_pin_value;
-    static uint16_t voltage_pin_value;
-    static uint16_t current_pin_value;
+    // simulated airspeed, sonar and battery monitor
+    static uint16_t sonar_pin_value;    // pin 0
+    static uint16_t airspeed_pin_value; // pin 1
+    static uint16_t voltage_pin_value;  // pin 13
+    static uint16_t current_pin_value;  // pin 12
 
 private:
     void _parse_command_line(int argc, char * const argv[]);

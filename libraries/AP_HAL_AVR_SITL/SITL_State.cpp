@@ -58,6 +58,7 @@ struct sockaddr_in SITL_State::_rcout_addr;
 pid_t SITL_State::_parent_pid;
 uint32_t SITL_State::_update_count;
 bool SITL_State::_motors_on;
+uint16_t SITL_State::sonar_pin_value;
 uint16_t SITL_State::airspeed_pin_value;
 uint16_t SITL_State::voltage_pin_value;
 uint16_t SITL_State::current_pin_value;

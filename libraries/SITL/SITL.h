@@ -55,7 +55,6 @@ public:
 	AP_Float mag_error;   // in degrees
     AP_Float servo_rate;  // servo speed in degrees/second
 
-    AP_Float sonar_connected; // Analogue sonar connected to AnalogPin 0 (else airspeed)
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
 

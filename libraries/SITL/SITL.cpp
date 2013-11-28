@@ -48,9 +48,8 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("ASPD_RND",      20, SITL,  aspd_noise,  0.5),
     AP_GROUPINFO("ACCEL_FAIL",    21, SITL,  accel_fail,  0),
     AP_GROUPINFO("BARO_DRIFT",    22, SITL,  baro_drift,  0),
-    AP_GROUPINFO("SONAR_CON",     23, SITL,  sonar_connected, 0),
-    AP_GROUPINFO("SONAR_GLITCH",  24, SITL,  sonar_glitch, 0),
-    AP_GROUPINFO("SONAR_RND",     25, SITL,  sonar_noise, 0),
+    AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
+    AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
     AP_GROUPEND
 };
 
