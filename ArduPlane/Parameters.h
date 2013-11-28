@@ -98,6 +98,14 @@ public:
         k_param_ground_steer_dps,
         k_param_rally_limit_km,
         k_param_hil_err_limit,
+        k_param_require_arming,
+        k_param_disable_rudder_arm,
+        k_param_arm_check_all,
+        k_param_arm_check_baro,
+        k_param_arm_check_compass,
+        k_param_arm_check_gps,
+        k_param_arm_check_rc,
+        k_param_arm_check_battery,
 
         // 110: Telemetry control
         //
@@ -368,6 +376,16 @@ public:
     AP_Int16 acro_roll_rate;
     AP_Int16 acro_pitch_rate;
     AP_Int8  acro_locking;
+
+    //Arming checks
+    AP_Int8 require_arming;
+    AP_Int8 disable_rudder_arm;
+    AP_Int8 arm_check_all;
+    AP_Int8 arm_check_baro;
+    AP_Int8 arm_check_compass;
+    AP_Int8 arm_check_gps;
+    AP_Int8 arm_check_rc;
+    AP_Int8 arm_check_battery;
 
     // Misc
     //
