@@ -30,6 +30,7 @@ void AP_Notify::init(void)
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
     externalled.init();
+    buzzer.init();
 #endif
 }
 
@@ -44,5 +45,6 @@ void AP_Notify::update(void)
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
     externalled.update();
+    buzzer.update();
 #endif
 }

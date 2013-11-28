@@ -25,6 +25,7 @@
 #include <ToshibaLED_PX4.h>
 #include <ToneAlarm_PX4.h>
 #include <ExternalLED.h>
+#include <Buzzer.h>
 
 class AP_Notify
 {
@@ -62,6 +63,7 @@ private:
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
     ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
+    Buzzer buzzer;
 #else
     ToshibaLED_I2C toshibaled;
 #endif
