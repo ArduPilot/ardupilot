@@ -24,6 +24,7 @@
 #include <ToshibaLED_I2C.h>
 #include <ToshibaLED_PX4.h>
 #include <ToneAlarm_PX4.h>
+#include <ExternalLED.h>
 
 class AP_Notify
 {
@@ -58,6 +59,9 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ToshibaLED_PX4 toshibaled;
     ToneAlarm_PX4 tonealarm;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
+    ToshibaLED_I2C toshibaled;
+    ExternalLED externalled;
 #else
     ToshibaLED_I2C toshibaled;
 #endif
