@@ -38,6 +38,7 @@ class AP_AHRS
 public:
     // Constructor
     AP_AHRS(AP_InertialSensor &ins, GPS *&gps) :
+        _compass(NULL),
         _ins(ins),
         _gps(gps)
     {
@@ -74,7 +75,10 @@ public:
         set_orientation();
     }
 
-
+    const Compass* get_compass() const {
+        return _compass;
+    }
+        
     // allow for runtime change of orientation
     // this makes initial config easier
     void set_orientation() {
@@ -86,6 +90,10 @@ public:
 
     void set_airspeed(AP_Airspeed *airspeed) {
         _airspeed = airspeed;
+    }
+
+    const GPS *get_gps() const {
+        return _gps;
     }
 
     const AP_InertialSensor &get_ins() const {
