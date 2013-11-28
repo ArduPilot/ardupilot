@@ -165,6 +165,7 @@ enum log_messages {
     LOG_RC_MSG,
     LOG_SONAR_MSG,
     LOG_COMPASS2_MSG,
+    LOG_ARM_DISARM_MSG,
     MAX_NUM_LOGS // always at the end
 };
 
@@ -183,6 +184,7 @@ enum log_messages {
 #define MASK_LOG_CAMERA                 (1<<12)
 #define MASK_LOG_RC                     (1<<13)
 #define MASK_LOG_SONAR                  (1<<14)
+#define MASK_LOG_ARM_DISARM             (1<<15)
 
 // Waypoint Modes
 // ----------------

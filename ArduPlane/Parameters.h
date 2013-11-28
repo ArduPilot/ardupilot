@@ -100,6 +100,9 @@ public:
         k_param_hil_err_limit,
         k_param_sonar,
 
+        // 100: Arming parameters
+        k_param_arming = 100,
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,         // stream rates for uartA

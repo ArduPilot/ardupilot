@@ -426,6 +426,13 @@ struct PACKED log_Current {
     float   current_total;
 };
 
+struct PACKED log_Arm_Disarm {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t  arm_state;
+    uint16_t arm_checks;
+};
+
 static void Log_Write_Current()
 {
     struct log_Current pkt = {
@@ -440,6 +447,15 @@ static void Log_Write_Current()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+static void Log_Arm_Disarm() {
+    struct log_Arm_Disarm pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
+        time_ms                 : hal.scheduler->millis(),
+        arm_state               : arming.is_armed(),
+        arm_checks              : arming.get_enabled_checks()      
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
 
 struct PACKED log_Compass {
     LOG_PACKET_HEADER;
@@ -529,6 +545,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "MAG", "Ihhhhhh",   "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ" },
     { LOG_COMPASS2_MSG, sizeof(log_Compass),             
       "MAG2", "Ihhhhhh",   "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ" },
+    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
+      "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     TECS_LOG_FORMAT(LOG_TECS_MSG),
 };
 
