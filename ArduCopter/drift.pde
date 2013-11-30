@@ -4,7 +4,9 @@
 // Drift Mode
 ////////////////////////////////////////////////////////////////////////////////
 
-#define SPEEDGAIN 14.0
+#ifndef DRIFT_SPEEDGAIN
+ # define DRIFT_SPEEDGAIN 14.0
+#endif
 
 // The function call for managing the flight mode drift
 static void
@@ -35,12 +37,12 @@ get_yaw_drift()
     pitch_vel = constrain_float(pitch_vel, -322, 322);
 
     // always limit roll
-    get_stabilize_roll(roll_vel * -SPEEDGAIN);
+    get_stabilize_roll(roll_vel * -DRIFT_SPEEDGAIN);
 
     if(control_pitch == 0){
         // .14/ (.03 * 100) = 4.6 seconds till full breaking
         breaker+= .03;
-        breaker = min(breaker, SPEEDGAIN);
+        breaker = min(breaker, DRIFT_SPEEDGAIN);
         // If we let go of sticks, bring us to a stop
         get_stabilize_pitch(pitch_vel * breaker);
     }else{
