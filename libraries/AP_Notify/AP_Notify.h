@@ -42,6 +42,9 @@ public:
         uint16_t failsafe_radio     : 1;    // 1 if radio failsafe
         uint16_t failsafe_battery   : 1;    // 1 if battery failsafe
         uint16_t failsafe_gps       : 1;    // 1 if gps failsafe
+
+        // additional flags
+        uint16_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
     };
 
     // the notify flags are static to allow direct class access
@@ -49,7 +52,7 @@ public:
     static struct notify_type flags;
 
     // initialisation
-    void init(void);
+    void init(bool enable_external_leds);
 
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);

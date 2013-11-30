@@ -20,8 +20,10 @@
 struct AP_Notify::notify_type AP_Notify::flags;
 
 // initialisation
-void AP_Notify::init(void)
+void AP_Notify::init(bool enable_external_leds)
 {
+    AP_Notify::flags.external_leds = enable_external_leds;
+
     boardled.init();
     toshibaled.init();
 
