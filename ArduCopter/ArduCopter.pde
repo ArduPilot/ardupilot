@@ -907,7 +907,7 @@ void setup() {
     AP_Param::setup_sketch_defaults();
 
     // initialise notify system
-    notify.init();
+    notify.init(true);
 
     // initialise battery monitor
     battery.init();
