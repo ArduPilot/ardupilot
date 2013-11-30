@@ -132,7 +132,7 @@ static RC_Channel *channel_pitch;
 static RC_Channel *channel_throttle;
 static RC_Channel *channel_rudder;
 
-// notification object for LEDs, buzzers etc
+// notification object for LEDs, buzzers etc (parameter set to false disables external leds)
 static AP_Notify notify;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -759,7 +759,7 @@ void setup() {
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
-    notify.init();
+    notify.init(false);
 
     battery.init();
 
