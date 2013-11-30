@@ -14,6 +14,7 @@ get_roll_pitch_drift()
 {
 }
 
+// get_yaw_drift - roll-pitch and yaw controller for drift mode
 static void
 get_yaw_drift()
 {
@@ -37,16 +38,19 @@ get_yaw_drift()
     pitch_vel = constrain_float(pitch_vel, -322, 322);
 
     // always limit roll
-    get_stabilize_roll(roll_vel * -DRIFT_SPEEDGAIN);
+    control_roll = roll_vel * -DRIFT_SPEEDGAIN;
+    get_stabilize_roll(control_roll);
 
     if(control_pitch == 0){
         // .14/ (.03 * 100) = 4.6 seconds till full breaking
         breaker+= .03;
         breaker = min(breaker, DRIFT_SPEEDGAIN);
         // If we let go of sticks, bring us to a stop
-        get_stabilize_pitch(pitch_vel * breaker);
+        control_pitch = pitch_vel * breaker;
     }else{
         breaker = 0.0;
-        get_stabilize_pitch(control_pitch);
     }
+
+    // stabilize pitch
+    get_stabilize_pitch(control_pitch);
 }
