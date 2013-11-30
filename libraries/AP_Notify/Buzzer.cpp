@@ -23,8 +23,13 @@
 
 extern const AP_HAL::HAL& hal;
 
-bool Buzzer::init()
+void Buzzer::init()
 {
+    // return immediately if disabled
+    if (!AP_Notify::flags.external_leds) {
+        return;
+    }
+
     // setup the pin and ensure it's off
     hal.gpio->pinMode(BUZZER_PIN, GPIO_OUTPUT);
     on(false);
@@ -33,12 +38,16 @@ bool Buzzer::init()
     // warning in plane and rover on every boot
     _flags.armed = AP_Notify::flags.armed;
     _flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
-    return true;
 }
 
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void Buzzer::update()
 {
+    // return immediately if disabled
+    if (!AP_Notify::flags.external_leds) {
+        return;
+    }
+
     // reduce 50hz call down to 10hz
     _counter++;
     if (_counter < 5) {

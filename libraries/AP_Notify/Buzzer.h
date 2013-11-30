@@ -22,6 +22,8 @@
 # define BUZZER_PIN     63      // pin 63 on APM1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define BUZZER_PIN    59      // pin 59 on APM2
+#else
+ # define BUZZER_PIN    0       // pin undefined on other boards
 #endif
 
 class Buzzer
@@ -31,7 +33,7 @@ public:
     Buzzer() : _counter(0), _pattern(NONE), _pattern_counter(0) {}
 
     /// init - initialise the buzzer
-    bool init(void);
+    void init(void);
 
     /// update - updates buzzer according to timed_updated.  Should be called at 50Hz
     void update();
