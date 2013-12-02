@@ -60,22 +60,22 @@ Resources on the Flymaple board have been allocated by the HAL:
 
 Pins
 0	AP GPS on Flymaple Serial2  Rx in. This is where you connect the
-        GPS. 3.3V only, NOT 5V tolerant
+        GPS. 3.3V input only, NOT 5V tolerant, use a voltage divider for 5V GPSs.
 1       AP GPS on Flymaple Serial2  Tx out. This is where you connect the GPS.
-	3.3V
+	3.3V output
 5       I2C SCL. Do not use for GPIO.
-6	Receiver PPM in
+6	Receiver PPM-SUM in. 
 7	Console and Mavlink on Flymaple Serial1 Rx in. Also on connector
-	"COM1". 5V tolerant.
+	"COM1". 5V input tolerant.
 8	Console and Mavlink on Flymaple Serial1 Tx out. Also on connector
-	"COM1". 3.3V
+	"COM1". 3.3V output.
 9       I2C SDA. Do not use for GPIO
 15	3.3V board VCC analog in. Connect to 3.3V pin.
 16	Airspeed analog in (if available). 3.3V, NOT 5V tolerant.
 19	Battery current analog in (if available). 3.3V, NOT 5V tolerant.
 20	Battery voltage analog in (on-board divider connected to board VIN)
-29	Telemetry Tx to radio on Serial3 on connector labelled "GPS". 3.3V
-30      Telemetry Rx from radio on Serial3 on connector labelled "GPS". 5V tolerant.
+29	Telemetry Tx to radio on Serial3 on connector labelled "GPS". 3.3V output
+30      Telemetry Rx from radio on Serial3 on connector labelled "GPS". 5V input tolerant.
 
 Timers
 SysTick			1000Hz normal timers
@@ -240,6 +240,44 @@ Rolling to right                          X +ve
 Pitching up                               Y +ve
 
 (ie right hand curl rule relative to the given axis)
+
+PPM-SUM receiver and transmitter channel assignments
+
+Pin 6 of the Flymaple is used for the PPM-SUM receiver input
+I used the DSM2 PPM+UART receiver product code LEM-CH6-PPM from www.lemon-rx.com:
+http://www.lemon-rx.com/shop/index.php?route=product/product&path=70&product_id=66
+(make sure you use one made after Oct 2013: earlier versions had a proprietary and
+incompatible PPM output).
+
+The raw channel numbers resulting from using this with my Spektrum DMS 6
+channel mode 2 transmitter are:
+
+Channel      Assignment
+1	     Throttle
+2	     Aileron/Roll
+3	     Elevator/Pitch
+4	     Rudder/Yaw
+5	     Gear/mode
+6	     Flap/learn
+
+With the following channels configured for APMrover:
+
+RCMAP_PITCH 	1
+RCMAP_ROLL	2
+RCMAP_THROTTLE	3
+RCMAP_YAW	4
+MODE_CH	    	5
+LEARN_CH	6
+
+with the RC servo ouputs on Flymaple J5:
+Transmitter channel 2 (steering)		PWM/AIN/D27
+Transmitter channel 3 (speed = motor ESC) 	PWM/AIN/D11
+
+This permits a single joystick (the right stick in my case) to be used to control the rover:
+elevator = speed control
+aileron  = steering
+gear     = mode
+flap     = learn
 
 Remaining issues:
 
