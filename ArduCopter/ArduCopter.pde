@@ -1686,8 +1686,12 @@ void update_roll_pitch_mode(void)
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
 
         // mix in user control with optical flow
-        get_stabilize_roll(get_of_roll(control_roll));
-        get_stabilize_pitch(get_of_pitch(control_pitch));
+        control_roll = get_of_roll(control_roll);
+        control_pitch = get_of_pitch(control_pitch);
+
+        // call stabilize controller
+        get_stabilize_roll(control_roll);
+        get_stabilize_pitch(control_pitch);
         break;
 
     case ROLL_PITCH_DRIFT:
