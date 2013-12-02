@@ -252,7 +252,7 @@ static void Log_Write_Optflow()
     struct log_Optflow pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
         dx              : optflow.dx,
-        dy              : optflow.dx,
+        dy              : optflow.dy,
         surface_quality : optflow.surface_quality,
         x_cm            : (int16_t) optflow.x_cm,
         y_cm            : (int16_t) optflow.y_cm,
