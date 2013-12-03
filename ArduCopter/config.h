@@ -356,6 +356,17 @@
  #endif
 #endif
 
+// max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+ #ifndef COMPASS_OFFSETS_MAX
+  # define COMPASS_OFFSETS_MAX          600         // PX4 onboard compass has high offsets
+ #endif
+#else   // APM1, APM2, SITL, FLYMAPLE, etc
+ #ifndef COMPASS_OFFSETS_MAX
+  # define COMPASS_OFFSETS_MAX          500
+ #endif
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
