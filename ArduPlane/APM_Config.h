@@ -57,3 +57,24 @@
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
  #define THR_SURFACE_TRACKING_VELZ_MAX 150 		// max vertical speed change while surface tracking with RANGE_FINDER
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Flash Sensor
+// Joel Cranmer
+//
+
+#ifndef CONFIG_FLASH_SENSOR
+ #define CONFIG_FLASH_SENSOR ENABLED
+#endif
+
+#ifndef CONFIG_FLASH_SENSOR_PIN
+ #define CONFIG_FLASH_SENSOR_PIN 5
+#endif
+
+#ifndef FLASH_SENSOR_HEALTHY_MAX
+ #define FLASH_SENSOR_HEALTHY_MAX 3		// Number of good reads that indicates a healthy FLASH_SENSOR
+#endif
+
+#ifndef FLASH_SENSOR_THRESHOLD
+ #define FLASH_SENSOR_THRESHOLD 3		// threshold voltage on the pin
+#endif

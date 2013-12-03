@@ -17,19 +17,26 @@ void AP_FlashSensor::send_telemetry()
 {
     // create a new message for queue with the current 
     // telemetry data and the image number
+
 }
 
-// return the result of Voltage greater than threshold
+// return true if the Voltage is greater than threshold voltage (set in ArduPlane/APM_Config.h)
 bool AP_FlashSensor::test_voltage()
 {
-    if (read_average() > flash_threshold_voltage)
+    if (read_average() > FLASH_SENSOR_TRESHOLD)
     {
-        frame_counter ++;
-        return true;
+        // another photo has been taken
+        if(!is_hot)
+        {
+            frame_counter ++;
+            // get current telemetry and que MavLink message
+            send_telemetry();
+        }
+        is_hot = true;
     }
     else
     {
-        return false;
+        is_hot = false;
     }
 }
 
