@@ -382,7 +382,10 @@ void AP_Mount::update_mount_position()
     case MAV_MOUNT_MODE_GPS_POINT:
     {
         if(_gps->fix) {
-            calc_GPS_target_angle(&_target_GPS_location);
+            if(_gps->new_data_mnt) {
+				calc_GPS_target_angle(&_target_GPS_location);
+				_gps->new_data_mnt = false;
+			}
             stabilize();
         }
         break;
@@ -593,68 +596,45 @@ AP_Mount::calc_GPS_target_angle(const struct Location *target)
 void
 AP_Mount::stabilize()
 {
-#if MNT_STABILIZE_OPTION == ENABLED
-    // only do the full 3D frame transform if we are doing pan control
-    if (_stab_pan) {
-        Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
-        Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
-        Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
-        m = _ahrs.get_dcm_matrix();
-        m.transpose();
-        cam.from_euler(_roll_control_angle, _tilt_control_angle, _pan_control_angle);
-        gimbal_target = m * cam;
-        gimbal_target.to_euler(&_roll_angle, &_tilt_angle, &_pan_angle);
-        _roll_angle  = _stab_roll ? degrees(_roll_angle) : degrees(_roll_control_angle);
-        _tilt_angle  = _stab_tilt ? degrees(_tilt_angle) : degrees(_tilt_control_angle);
-        _pan_angle   = degrees(_pan_angle);
-    } else {
-        // otherwise base mount roll and tilt on the ahrs
-        // roll/tilt attitude, plus any requested angle
-        _roll_angle  = degrees(_roll_control_angle);
-        _tilt_angle  = degrees(_tilt_control_angle);
-        _pan_angle   = degrees(_pan_control_angle);
-        if (_stab_roll) {
-            _roll_angle -= degrees(_ahrs.roll);
-        }
-        if (_stab_tilt) {
-            _tilt_angle -= degrees(_ahrs.pitch);
+    if (_ahrs) {
+        // only do the full 3D frame transform if we are doing pan control
+        if (_stab_pan) {
+            Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
+            Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
+            Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
+			bool input_change;     ///< Check if inputs have changed from last cycle. If the operator doesn't move the stick, then no change to the cam matrix. Plus it also works for calc_gps_target. 
+			if(_tilt_control_angle != _last_tilt_control_angle || _pan_control_angle != _last_pan_control_angle) {
+				input_change = true;
+				_last_tilt_control_angle = _tilt_control_angle;
+				_last_pan_control_angle = _pan_control_angle;				
+			}
+            m = _ahrs->get_dcm_matrix();
+            m.transpose();
+			if(input_change) {     ///< Check if inputs have changed from last cycle. If they haven't the the matrix remains the same.
+				cam.from_euler(_roll_control_angle, _tilt_control_angle, _pan_control_angle);
+				input_change = false;
+			}
+            gimbal_target = m * cam;
+            gimbal_target.to_euler(&_roll_angle, &_tilt_angle, &_pan_angle);
+            _roll_angle  = _stab_roll ? degrees(_roll_angle) : degrees(_roll_control_angle);
+            _tilt_angle  = _stab_tilt ? degrees(_tilt_angle) : degrees(_tilt_control_angle);
+            _pan_angle   = degrees(_pan_angle);
+        } else {
+            // otherwise base mount roll and tilt on the ahrs
+            // roll/tilt attitude, plus any requested angle
+            _roll_angle  = degrees(_roll_control_angle);
+            _tilt_angle  = degrees(_tilt_control_angle);
+            _pan_angle   = degrees(_pan_control_angle);
+            if (_stab_roll) {
+                _roll_angle -= degrees(_ahrs->roll);
+            }
+            if (_stab_tilt) {
+                _tilt_angle -= degrees(_ahrs->pitch);
+            }
         }
     }
-#endif
 }
-/*
- *  /// For testing and development. Called in the medium loop.
- *  void
- *  AP_Mount::debug_output()
- *  {   Serial3.print("current   -     ");
- *       Serial3.print("lat ");
- *       Serial3.print(_current_loc->lat);
- *       Serial3.print(",lon ");
- *       Serial3.print(_current_loc->lng);
- *       Serial3.print(",alt ");
- *       Serial3.println(_current_loc->alt);
- *
- *       Serial3.print("gps       -     ");
- *       Serial3.print("lat ");
- *       Serial3.print(_gps->latitude);
- *       Serial3.print(",lon ");
- *       Serial3.print(_gps->longitude);
- *       Serial3.print(",alt ");
- *       Serial3.print(_gps->altitude);
- *       Serial3.println();
- *
- *       Serial3.print("target   -      ");
- *       Serial3.print("lat ");
- *       Serial3.print(_target_GPS_location.lat);
- *       Serial3.print(",lon ");
- *       Serial3.print(_target_GPS_location.lng);
- *       Serial3.print(",alt ");
- *       Serial3.print(_target_GPS_location.alt);
- *       Serial3.print(" hdg to targ ");
- *       Serial3.print(degrees(_pan_control_angle));
- *       Serial3.println();
- *  }
- */
+
 /// saturate to the closest angle limit if outside of [min max] angle interval
 /// input angle is in degrees * 10
 int16_t

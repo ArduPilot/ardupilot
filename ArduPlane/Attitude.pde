@@ -534,7 +534,7 @@ static bool auto_takeoff_check(void)
     }
 
     // Check ground speed and time delay
-    if (((g_gps->ground_speed_cm > g.takeoff_throttle_min_speed*100.0f || g.takeoff_throttle_min_speed == 0.0)) && 
+    if ((g_gps->ground_speed_cm > g.takeoff_throttle_min_speed*100.0f || g.takeoff_throttle_min_speed == 0.0) && 
         ((now - last_tkoff_arm_time) >= min(uint16_t(g.takeoff_throttle_delay)*100,2500))) {
         gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), g_gps->ground_speed_cm*0.01f);
         launchTimerStarted = false;
@@ -611,13 +611,16 @@ static bool suppress_throttle(void)
         }
         return false;
     }
+/*  // If we are all ready at 10 m altitude, we must have flown there, so the throttle is already unsupressed.
+    // If its hand launched into a wind/slope the launch detector will start the motor and it will stay unsupressed.
+    // IMHU this condition has little if any value, but can cause an inadvertant motor start, so it's history ;)
     
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
         return false;
     }
-
+*/
     if (g_gps != NULL && 
         g_gps->status() >= GPS::GPS_OK_FIX_2D && 
         g_gps->ground_speed_cm >= 500) {

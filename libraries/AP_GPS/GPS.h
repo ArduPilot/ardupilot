@@ -97,6 +97,7 @@ public:
     /// to false in order to avoid processing data they have
     /// already seen.
     bool new_data;
+	bool new_data_mnt;
 
     Fix_Status fix;                        ///< 0 if we have no fix, 2 for 2D fix, 3 for 3D fix
     bool valid_read;                    ///< true if we have seen data from the GPS (use ::status instead)
