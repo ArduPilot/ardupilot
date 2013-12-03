@@ -38,6 +38,10 @@
 #define AP_MOTORS_X_FRAME           1
 #define AP_MOTORS_V_FRAME           2
 #define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
+#define AP_MOTORS_NEW_PLUS_FRAME    10  // NEW frames are same as original 4 but with motor orders changed to be clockwise from the front
+#define AP_MOTORS_NEW_X_FRAME       11
+#define AP_MOTORS_NEW_V_FRAME       12
+#define AP_MOTORS_NEW_H_FRAME       13   // same as X frame but motors spin in opposite direction
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
@@ -146,7 +150,7 @@ protected:
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed               : 1;    // 1 if the motors are armed, 0 if disarmed
-        uint8_t frame_orientation   : 2;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3
+        uint8_t frame_orientation   : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t slow_start          : 1;    // 1 if slow start is active
         uint8_t slow_start_low_end  : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _flags;
