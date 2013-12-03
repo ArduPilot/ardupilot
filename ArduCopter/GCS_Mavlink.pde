@@ -249,7 +249,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         g_gps->velocity_north() * 100,  // X speed cm/s (+ve North)
         g_gps->velocity_east()  * 100,  // Y speed cm/s (+ve East)
         g_gps->velocity_down()  * -100, // Z speed cm/s (+ve up)
-        g_gps->ground_course_cd);          // course in 1/100 degree
+        ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
