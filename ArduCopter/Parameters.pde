@@ -261,9 +261,9 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: THR_MAX
     // @DisplayName: Throttle Maximum
-    // @Description: The maximum throttle that will be sent to the motors
+    // @Description: The maximum throttle that will be sent to the motors.  This should normally be left as 1000.
     // @Units: Percent*10
-    // @Range: 0 1000
+    // @Range: 800 1000
     // @Increment: 1
     // @User: Advanced
     GSCALAR(throttle_max,   "THR_MAX",          THR_MAX_DEFAULT),
