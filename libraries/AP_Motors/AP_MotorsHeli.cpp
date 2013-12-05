@@ -700,11 +700,12 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
     // range check rotor_target
     rotor_target = constrain_int16(rotor_target,0,1000);
 
-    // initialise rotor_out to our estimated rotor speed
-    _rotor_out = _rotor_speed_estimate;
-
     // ramp rotor esc output towards target
     if (_rotor_out < rotor_target) {
+        // allow rotor out to jump to rotor's current speed
+        if (_rotor_out < _rotor_speed_estimate) {
+            _rotor_out = _rotor_speed_estimate;
+        }
         // ramp up slowly to target
         _rotor_out += _rsc_ramp_increment;
         if (_rotor_out > rotor_target) {
@@ -712,15 +713,15 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
         }
     }else{
         // ramping down happens instantly
-            _rotor_out = rotor_target;
-        }
+        _rotor_out = rotor_target;
+    }
 
     // ramp rotor speed estimate towards rotor out
     if (_rotor_speed_estimate < _rotor_out) {
         _rotor_speed_estimate += _rsc_runup_increment;
         if (_rotor_speed_estimate > _rotor_out) {
             _rotor_speed_estimate = _rotor_out;
-    }
+        }
     }else{
         _rotor_speed_estimate -= _rsc_runup_increment;
         if (_rotor_speed_estimate < _rotor_out) {
@@ -737,7 +738,7 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
     }
 
     // output to rsc servo
-        write_rsc(_rotor_out);
+    write_rsc(_rotor_out);
 }
 
 // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
