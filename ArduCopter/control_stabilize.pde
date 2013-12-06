@@ -14,9 +14,6 @@ static void stabilize_run()
     Vector3f rate_stab_ef_target;    // for yaw rate target
     int16_t target_roll, target_pitch;
 
-    // debug -- remove me!
-    cliSerial->printf_P(PSTR("\nstabilize_run!"));
-
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
