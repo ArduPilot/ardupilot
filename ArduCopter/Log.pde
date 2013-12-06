@@ -854,6 +854,9 @@ static void start_logging()
         ap.logging_started = true;
         DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
         DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
+
+        // log the flight mode
+        Log_Write_Mode(control_mode);
     }
 }
 
