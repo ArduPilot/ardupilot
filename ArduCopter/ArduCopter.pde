@@ -1422,6 +1422,13 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
 // 100hz update rate
 void update_yaw_mode(void)
 {
+    int16_t pilot_yaw = g.rc_4.control_in;
+
+    // do not process pilot's yaw input during radio failsafe
+    if (failsafe.radio) {
+        pilot_yaw = 0;
+    }
+
     switch(yaw_mode) {
 
     case YAW_HOLD:
@@ -1430,12 +1437,12 @@ void update_yaw_mode(void)
             nav_yaw = ahrs.yaw_sensor;
         }
         // heading hold at heading held in nav_yaw but allow input from pilot
-        get_yaw_rate_stabilized_ef(g.rc_4.control_in);
+        get_yaw_rate_stabilized_ef(pilot_yaw);
         break;
 
     case YAW_ACRO:
         // pilot controlled yaw using rate controller
-        get_yaw_rate_stabilized_bf(g.rc_4.control_in);
+        get_yaw_rate_stabilized_bf(pilot_yaw);
         break;
 
     case YAW_LOOK_AT_NEXT_WP:
@@ -1450,7 +1457,7 @@ void update_yaw_mode(void)
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if( g.rc_4.control_in != 0 ) {
+        if (pilot_yaw != 0) {
             set_yaw_mode(YAW_HOLD);
         }
         break;
@@ -1464,7 +1471,7 @@ void update_yaw_mode(void)
         get_look_at_yaw();
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if( g.rc_4.control_in != 0 ) {
+        if (pilot_yaw != 0) {
             set_yaw_mode(YAW_HOLD);
         }
         break;
@@ -1478,7 +1485,7 @@ void update_yaw_mode(void)
         get_circle_yaw();
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if( g.rc_4.control_in != 0 ) {
+        if (pilot_yaw != 0) {
             set_yaw_mode(YAW_HOLD);
         }
         break;
@@ -1494,7 +1501,7 @@ void update_yaw_mode(void)
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if( g.rc_4.control_in != 0 ) {
+        if (pilot_yaw != 0) {
             set_yaw_mode(YAW_HOLD);
         }
         break;
@@ -1516,7 +1523,7 @@ void update_yaw_mode(void)
             nav_yaw = ahrs.yaw_sensor;
         }
 		// Commanded Yaw to automatically look ahead.
-        get_look_ahead_yaw(g.rc_4.control_in);
+        get_look_ahead_yaw(pilot_yaw);
         break;
 
     case YAW_DRIFT:
@@ -1538,7 +1545,7 @@ void update_yaw_mode(void)
         get_stabilize_yaw(nav_yaw);
 
         // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if( g.rc_4.control_in != 0 ) {
+        if (pilot_yaw != 0) {
             set_yaw_mode(YAW_HOLD);
         }
 
