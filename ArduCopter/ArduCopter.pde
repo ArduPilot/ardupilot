@@ -108,6 +108,7 @@
 #include <AP_AHRS.h>
 #include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
+#include <AC_AttitudeControl.h>  // Attitude control library
 #include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder.h>     // Range finder library
@@ -485,6 +486,13 @@ static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4, &g.single_servo_1,
 #else
 static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Attitude controller
+////////////////////////////////////////////////////////////////////////////////
+AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.pi_stabilize_roll, g.pi_stabilize_pitch, g.pi_stabilize_yaw,
+                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw,
+                        g.rc_1.servo_out, g.rc_2.servo_out, g.rc_4.servo_out, g.rc_3.servo_out);
 
 ////////////////////////////////////////////////////////////////////////////////
 // PIDs
@@ -981,7 +989,7 @@ static void fast_loop()
     }
 
     // run low level rate controllers that only require IMU data
-    run_rate_controllers();
+    attitude_control.rate_controller_run();
 
     // write out the servo PWM values
     // ------------------------------
@@ -1004,13 +1012,8 @@ static void fast_loop()
     read_radio();
     read_control_switch();
 
-    // custom code/exceptions for flight modes
-    // ---------------------------------------
-    update_yaw_mode();
-    update_roll_pitch_mode();
-
-    // update targets to rate controllers
-    update_rate_contoller_targets();
+    // run the attitude controllers
+    update_flight_mode();
 }
 
 // throttle_loop - should be run at 50 hz
@@ -1587,6 +1590,60 @@ void exit_roll_pitch_mode(uint8_t old_roll_pitch_mode)
 #endif
 }
 
+// update_flight_mode - calls the appropriate attitude controllers based on flight mode
+// called at 100hz or more
+static void update_flight_mode()
+{
+    switch (control_mode) {
+        case ACRO:
+            acro_run();
+            break;
+
+        case STABILIZE:
+            stabilize_run();
+            break;
+
+        case ALT_HOLD:
+            althold_run();
+            break;
+
+        case AUTO:
+            auto_run();
+            break;
+
+        case CIRCLE:
+            circle_run();
+            break;
+
+        case LOITER:
+            loiter_run();
+            break;
+
+        case GUIDED:
+            guided_run();
+            break;
+
+        case LAND:
+            land_run();
+            break;
+
+        case RTL:
+            rtl_run();
+            break;
+
+        case OF_LOITER:
+            ofloiter_run();
+            break;
+
+        case DRIFT:
+            drift_run();
+            break;
+
+        case SPORT:
+            sport_run();
+            break;
+    }
+}
 
 // update_roll_pitch_mode - run high level roll and pitch controllers
 // 100hz update rate
@@ -1615,19 +1672,6 @@ void update_roll_pitch_mode(void)
         get_pitch_rate_stabilized_bf(g.rc_2.control_in);
         get_acro_level_rates();
 #endif  // HELI_FRAME
-        break;
-
-    case ROLL_PITCH_STABLE:
-        // apply SIMPLE mode transform
-        update_simple_mode();
-
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
-
-        // pass desired roll, pitch to stabilize attitude controllers
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
-
         break;
 
     case ROLL_PITCH_AUTO:

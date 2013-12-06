@@ -60,6 +60,15 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
     pitch_out = (int16_t)(pitch_in_filtered * _scaler);
 }
 
+// get_pilot_desired_heading - transform pilot's yaw input into a desired heading
+// returns desired angle in centi-degrees
+// To-Do: return heading as a float?
+static float get_pilot_desired_yaw_rate(int16_t stick_angle)
+{
+    // convert pilot input to the desired yaw rate
+    return stick_angle * g.acro_yaw_p;
+}
+
 static void
 get_stabilize_roll(int32_t target_angle)
 {
