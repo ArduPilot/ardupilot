@@ -4,6 +4,33 @@
 // should be called at 100hz or more
 static void acro_run()
 {
+    Vector3f rate_target;          // for roll, pitch, yaw body-frame rate targets
+
+    // convert the input to the desired body frame rate
+    rate_target.x = g.rc_1.control_in * g.acro_rp_p;
+    rate_target.y = g.rc_2.control_in * g.acro_rp_p;
+    rate_target.z = g.rc_4.control_in * g.acro_yaw_p;
+
+    // To-Do: handle acro trainer here?
+
+    // To-Do: handle helicopter
+
+    acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
+
+    // set targets for body frame rate controller
+    attitude_control.rate_stab_bf_targets(rate_target);
+
+    // convert stabilize rates to regular rates
+    // To-Do: replace G_Dt below
+    attitude_control.rate_stab_bf_to_rate_bf_roll(G_Dt);
+    attitude_control.rate_stab_bf_to_rate_bf_pitch(G_Dt);
+    attitude_control.rate_stab_bf_to_rate_bf_yaw(G_Dt);
+
+    // call get_acro_level_rates() here?
+
+    // To-Do: convert body-frame stabilized angles to earth frame angles and update controll_roll, pitch and yaw?
+
+    // body-frame rate controller is run directly from 100hz loop
 }
 
 // stabilize_run - runs the main stabilize controller
