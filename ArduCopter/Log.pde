@@ -788,6 +788,9 @@ static void start_logging()
         if (hal.util->get_system_id(sysid)) {
             DataFlash.Log_Write_Message(sysid);
         }
+
+        // log the flight mode
+        Log_Write_Mode(control_mode);
     }
 }
 
