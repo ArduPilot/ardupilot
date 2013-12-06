@@ -61,20 +61,16 @@ static void auto_run()
 {
     Vector3f angle_target;
 
-    // user input, although ignored is put into control_roll and pitch for reporting purposes
-    control_roll = g.rc_1.control_in;
-    control_pitch = g.rc_2.control_in;
-
     // copy latest output from nav controller to stabilize controller
-    angle_target.x = wp_nav.get_desired_roll();
-    angle_target.y = wp_nav.get_desired_pitch();
-
-    // To-Do: handle yaw
-    angle_target.z = control_yaw;
+    control_roll = wp_nav.get_desired_roll();
+    control_pitch = wp_nav.get_desired_pitch();
 
     // copy angle targets for reporting purposes
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
+    angle_target.x = control_roll;
+    angle_target.y = control_pitch;
+
+    // To-Do: handle pilot input for yaw and different methods to update yaw (ROI, face next wp)
+    angle_target.z = control_yaw;
 
     // To-Do: shorten below by moving these often used steps into a single function in the AC_AttitudeControl lib
 
