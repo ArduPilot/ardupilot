@@ -351,50 +351,6 @@ enum ap_message {
 #define DATA_ACRO_TRAINER_LEVELING      44
 #define DATA_ACRO_TRAINER_LIMITED       45
 
-
-
-/* ************************************************************** */
-/* Expansion PIN's that people can use for various things. */
-
-// AN0 - 7 are located at edge of IMU PCB "above" pressure sensor and
-// Expansion port
-// AN0 - 5 are also located next to voltage dividers and sliding SW2 switch
-// AN0 - 3 has 10kOhm resistor in serial, include 3.9kOhm to make it as
-// voltage divider
-// AN4 - 5 are direct GPIO pins from atmega1280 and they are the latest pins
-// next to SW2 switch
-// Look more ArduCopter Wiki for voltage dividers and other ports
-#define AN0  54  // resistor, vdiv use, divider 1 closest to relay
-#define AN1  55  // resistor, vdiv use, divider 2
-#define AN2  56  // resistor, vdiv use, divider 3
-#define AN3  57  // resistor, vdiv use, divider 4 closest to SW2
-#define AN4  58  // direct GPIO pin, default as analog input, next to SW2
-                 // switch
-#define AN5  59  // direct GPIO pin, default as analog input, next to SW2
-                 // switch
-#define AN6  60  // direct GPIO pin, default as analog input, close to
-                 // Pressure sensor, Expansion Ports
-#define AN7  61  // direct GPIO pin, default as analog input, close to
-                 // Pressure sensor, Expansion Ports
-
-// AN8 - 15 are located at edge of IMU PCB "above" pressure sensor and
-// Expansion port
-// AN8 - 15 PINs are not connected anywhere, they are located as last 8 pins
-// on edge of the board above Expansion Ports
-// even pins (8,10,12,14) are at edge of board, Odd pins (9,11,13,15) are on
-// inner row
-#define AN8  62  // NC
-#define AN9  63  // NC
-#define AN10  64 // NC
-#define AN11  65 // NC
-#define AN12  66 // NC
-#define AN13  67 // NC
-#define AN14  68 // NC
-#define AN15  69 // NC
-
-#define RELAY_APM1_PIN 47
-#define RELAY_APM2_PIN 13
-
 // RADIANS
 #define RADX100 0.000174532925f
 #define DEGX100 5729.57795f
