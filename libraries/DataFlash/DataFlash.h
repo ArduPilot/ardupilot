@@ -47,6 +47,7 @@ public:
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
+    void Log_Write_IMU2(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
     void Log_Write_Message(const char *message);
@@ -204,6 +205,8 @@ struct PACKED log_RCOUT {
       "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
+    { LOG_IMU2_MSG, sizeof(log_IMU), \
+      "IMU2",  "Iffffff",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -219,6 +222,7 @@ struct PACKED log_RCOUT {
 #define LOG_MESSAGE_MSG	  132
 #define LOG_RCIN_MSG      133
 #define LOG_RCOUT_MSG     134
+#define LOG_IMU2_MSG	  135
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
