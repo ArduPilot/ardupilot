@@ -178,7 +178,7 @@ bool AP_InertialSensor_Flymaple::update(void)
     if (!wait_for_sample(100)) {
         return false;
     }
-    Vector3f accel_scale = _accel_scale.get();
+    Vector3f accel_scale = _accel_scale[0].get();
 
     // Not really needed since Flymaple _accumulate runs in the main thread
     hal.scheduler->suspend_timer_procs();
@@ -188,33 +188,33 @@ bool AP_InertialSensor_Flymaple::update(void)
     _delta_time = (_last_gyro_timestamp - _last_update_usec) * 1.0e-6f;
     _last_update_usec = _last_gyro_timestamp;
 
-    _previous_accel = _accel;
+    _previous_accel[0] = _accel[0];
 
-    _accel = _accel_filtered;
+    _accel[0] = _accel_filtered;
     _accel_samples = 0;
 
-    _gyro = _gyro_filtered;
+    _gyro[0] = _gyro_filtered;
     _gyro_samples = 0;
 
     hal.scheduler->resume_timer_procs();
 
     // add offsets and rotation
-    _accel.rotate(_board_orientation);
+    _accel[0].rotate(_board_orientation);
 
     // Adjust for chip scaling to get m/s/s
-    _accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
+    _accel[0] *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
 
     // Now the calibration scale factor
-    _accel.x *= accel_scale.x;
-    _accel.y *= accel_scale.y;
-    _accel.z *= accel_scale.z;
-    _accel   -= _accel_offset;
+    _accel[0].x *= accel_scale.x;
+    _accel[0].y *= accel_scale.y;
+    _accel[0].z *= accel_scale.z;
+    _accel[0]   -= _accel_offset[0];
 
-    _gyro.rotate(_board_orientation);
+    _gyro[0].rotate(_board_orientation);
 
     // Adjust for chip scaling to get radians/sec
-    _gyro *= FLYMAPLE_GYRO_SCALE_R_S;
-    _gyro -= _gyro_offset;
+    _gyro[0] *= FLYMAPLE_GYRO_SCALE_R_S;
+    _gyro[0] -= _gyro_offset[0];
 
     if (_last_filter_hz != _mpu6000_filter) {
         _set_filter_frequency(_mpu6000_filter);

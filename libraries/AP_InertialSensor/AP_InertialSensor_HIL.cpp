@@ -5,7 +5,7 @@
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_HIL::AP_InertialSensor_HIL() : AP_InertialSensor() {
-        _accel.z = -GRAVITY_MSS;
+    _accel[0] = Vector3f(0, 0, -GRAVITY_MSS);
 }
 
 uint16_t AP_InertialSensor_HIL::_init_sensor( Sample_rate sample_rate ) {
@@ -66,14 +66,14 @@ bool AP_InertialSensor_HIL::wait_for_sample(uint16_t timeout_ms)
 
 void AP_InertialSensor_HIL::set_accel(const Vector3f &accel)
 {
-    _previous_accel = _accel;
-    _accel = accel;
+    _previous_accel[0] = _accel[0];
+    _accel[0] = accel;
     _last_accel_usec = hal.scheduler->micros();
 }
 
 void AP_InertialSensor_HIL::set_gyro(const Vector3f &gyro)
 {
-    _gyro = gyro;
+    _gyro[0] = gyro;
     _last_gyro_usec = hal.scheduler->micros();
 }
 
@@ -91,8 +91,8 @@ bool AP_InertialSensor_HIL::healthy(void) const
         // gyros have not updated
         return false;
     }
-    if (fabs(_accel.x) > 30 && fabs(_accel.y) > 30 && fabs(_accel.z) > 30 &&
-        (_previous_accel - _accel).length() < 0.01f) {
+    if (fabs(_accel[0].x) > 30 && fabs(_accel[0].y) > 30 && fabs(_accel[0].z) > 30 &&
+        (_previous_accel[0] - _accel[0]).length() < 0.01f) {
         // unchanging accel, large in all 3 axes. This is a likely
         // accelerometer failure
         return false;

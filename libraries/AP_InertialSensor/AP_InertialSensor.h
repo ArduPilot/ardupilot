@@ -7,6 +7,16 @@
 #define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
 #define AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET             250.0f
 
+/**
+   maximum number of INS instances available on this platform. If more
+   than 1 then redundent sensors may be available
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#define INS_MAX_INSTANCES 2
+#else
+#define INS_MAX_INSTANCES 1
+#endif
+
 #include <stdint.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
@@ -83,35 +93,36 @@ public:
     ///
     /// @returns	vector of rotational rates in radians/sec
     ///
-    const Vector3f     &get_gyro(void) const { return _gyro; }
+    const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
+    const Vector3f     &get_gyro(void) const { return get_gyro(0); }
     virtual void       set_gyro(const Vector3f &gyro) {}
 
     // set gyro offsets in radians/sec
-    Vector3f get_gyro_offsets(void) { return _gyro_offset; }
-    void     set_gyro_offsets(Vector3f offsets) { _gyro_offset.set(offsets); }
+    const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
+    const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(0); }
 
     /// Fetch the current accelerometer values
     ///
     /// @returns	vector of current accelerations in m/s/s
     ///
-    const Vector3f     &get_accel(void) const { return _accel; }
+    const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
+    const Vector3f     &get_accel(void) const { return get_accel(0); }
     virtual void       set_accel(const Vector3f &accel) {}
 
     // multi-device interface
-    virtual bool get_gyro_instance_health(uint8_t instance) const;
+    virtual bool get_gyro_health(uint8_t instance) const;
     virtual uint8_t get_gyro_count(void) const { return 1; };
-    virtual bool get_gyro_instance(uint8_t instance, Vector3f &gyro) const;
 
-    virtual bool get_accel_instance_health(uint8_t instance) const;
+    virtual bool get_accel_health(uint8_t instance) const;
     virtual uint8_t get_accel_count(void) const { return 1; };
-    virtual bool get_accel_instance(uint8_t instance, Vector3f &accel) const;
 
     // get accel offsets in m/s/s
-    Vector3f get_accel_offsets() { return _accel_offset; }
-    void     set_accel_offsets(Vector3f offsets) { _accel_offset.set(offsets); }
+    const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
+    const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(0); }
 
     // get accel scale
-    Vector3f get_accel_scale() { return _accel_scale; }
+    const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale[i]; }
+    const Vector3f &get_accel_scale(void) const { return get_accel_scale(0); }
 
     /* Update the sensor data, so that getters are nonblocking.
      * Returns a bool of whether data was updated or not.
@@ -175,21 +186,21 @@ protected:
     void  _save_parameters();
 
     // Most recent accelerometer reading obtained by ::update
-    Vector3f _accel;
+    Vector3f _accel[INS_MAX_INSTANCES];
 
     // previous accelerometer reading obtained by ::update
-    Vector3f _previous_accel;
+    Vector3f _previous_accel[INS_MAX_INSTANCES];
 
     // Most recent gyro reading obtained by ::update
-    Vector3f _gyro;
+    Vector3f _gyro[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _product_id;
 
     // accelerometer scaling and offsets
-    AP_Vector3f             _accel_scale;
-    AP_Vector3f             _accel_offset;
-    AP_Vector3f             _gyro_offset;
+    AP_Vector3f             _accel_scale[INS_MAX_INSTANCES];
+    AP_Vector3f             _accel_offset[INS_MAX_INSTANCES];
+    AP_Vector3f             _gyro_offset[INS_MAX_INSTANCES];
 
     // filtering frequency (0 means default)
     AP_Int8                 _mpu6000_filter;

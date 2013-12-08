@@ -255,30 +255,30 @@ bool AP_InertialSensor_MPU6000::update( void )
         return false;
     }
 
-    _previous_accel = _accel;
+    _previous_accel[0] = _accel[0];
 
     // disable timer procs for mininum time
     hal.scheduler->suspend_timer_procs();
-    _gyro  = Vector3f(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
-    _accel = Vector3f(_accel_sum.x, _accel_sum.y, _accel_sum.z);
+    _gyro[0]  = Vector3f(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
+    _accel[0] = Vector3f(_accel_sum.x, _accel_sum.y, _accel_sum.z);
     _num_samples = _sum_count;
     _accel_sum.zero();
     _gyro_sum.zero();
     _sum_count = 0;
     hal.scheduler->resume_timer_procs();
 
-    _gyro.rotate(_board_orientation);
-    _gyro *= _gyro_scale / _num_samples;
-    _gyro -= _gyro_offset;
+    _gyro[0].rotate(_board_orientation);
+    _gyro[0] *= _gyro_scale / _num_samples;
+    _gyro[0] -= _gyro_offset[0];
 
-    _accel.rotate(_board_orientation);
-    _accel *= MPU6000_ACCEL_SCALE_1G / _num_samples;
+    _accel[0].rotate(_board_orientation);
+    _accel[0] *= MPU6000_ACCEL_SCALE_1G / _num_samples;
 
-    Vector3f accel_scale = _accel_scale.get();
-    _accel.x *= accel_scale.x;
-    _accel.y *= accel_scale.y;
-    _accel.z *= accel_scale.z;
-    _accel -= _accel_offset;
+    Vector3f accel_scale = _accel_scale[0].get();
+    _accel[0].x *= accel_scale.x;
+    _accel[0].y *= accel_scale.y;
+    _accel[0].z *= accel_scale.z;
+    _accel[0] -= _accel_offset[0];
 
     if (_last_filter_hz != _mpu6000_filter) {
         if (_spi_sem->take(10)) {
