@@ -129,6 +129,7 @@
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
 #include <AP_BattMonitor.h>     // Battery monitor library
+#include <AP_EPM.h>				// EPM cargo gripper stuff
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -174,6 +175,8 @@ static AP_Scheduler scheduler;
 // AP_Notify instance
 static AP_Notify notify;
 
+// AP_EPM cargo gripper instance
+static AP_EPM EPM;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,6 +184,7 @@ static AP_Notify notify;
 ////////////////////////////////////////////////////////////////////////////////
 static void update_events(void);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
@@ -911,6 +915,9 @@ void setup() {
 
     // initialise battery monitor
     battery.init();
+	
+	// init EPM
+	EPM.init();
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
@@ -1236,6 +1243,11 @@ static void one_hz_loop()
 #endif
 
     check_usb_mux();
+	
+	if(g.EPM_Enable)
+		AP_Notify::flags.external_leds = false;
+	if(!g.EPM_Enable)
+		AP_Notify::flags.external_leds = true;
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz
@@ -1244,7 +1256,7 @@ static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
     static uint8_t of_log_counter = 0;
-
+	
     // if new data has arrived, process it
     if( optflow.last_update != last_of_update ) {
         last_of_update = optflow.last_update;
@@ -2218,6 +2230,7 @@ static void tuning(){
         // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
         wp_nav.set_horizontal_velocity(g.rc_6.control_in);
         break;
+	
 
     // Acro roll pitch gain
     case CH6_ACRO_RP_KP:
@@ -2232,6 +2245,13 @@ static void tuning(){
     case CH6_RELAY:
         if (g.rc_6.control_in > 525) relay.on();
         if (g.rc_6.control_in < 475) relay.off();
+        break;
+		
+		
+	case CH6_EPM:
+		if (g.rc_6.control_in > 600) EPM.on();
+        if (g.rc_6.control_in < 400) EPM.off();
+		if (g.rc_6.control_in < 600 && g.rc_6.control_in > 400) EPM.neutral();
         break;
 
 #if FRAME_CONFIG == HELI_FRAME
