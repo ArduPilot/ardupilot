@@ -132,6 +132,9 @@ public:
     // check if any elements are infinity
     bool is_inf(void) const;
 
+    // check if all elements are zero
+    bool is_zero(void) const { return x==0 && y == 0 && z == 0; }
+
     // rotate by a standard rotation
     void rotate(enum Rotation rotation);
 
