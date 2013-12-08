@@ -13,37 +13,45 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 
+#define PX4_MAX_INS_INSTANCES 2
+
 class AP_InertialSensor_PX4 : public AP_InertialSensor
 {
 public:
 
     AP_InertialSensor_PX4() : 
         AP_InertialSensor(),
-        _sample_time_usec(0),
-        _accel_fd(-1),
-        _gyro_fd(-1)
-        {}
+        _sample_time_usec(0)
+        {
+        }
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
     float        	get_delta_time();
     float           get_gyro_drift_rate();
-    bool            sample_available();
     bool            wait_for_sample(uint16_t timeout_ms);
-    bool            healthy(void);
+    bool            healthy(void) const;
+
+    // multi-device interface
+    bool get_gyro_instance_health(uint8_t instance) const;
+    uint8_t get_gyro_count(void) const;
+    bool get_gyro_instance(uint8_t instance, Vector3f &gyro) const;
+
+    bool get_accel_instance_health(uint8_t instance) const;
+    uint8_t get_accel_count(void) const;
+    bool get_accel_instance(uint8_t instance, Vector3f &accel) const;
 
 private:
     uint16_t _init_sensor( Sample_rate sample_rate );
     void     _get_sample(void);
-    uint64_t _last_update_usec;
-    float    _delta_time;
-    Vector3f _accel_in;
-    Vector3f _gyro_in;
-    uint64_t _last_accel_timestamp;
-    uint64_t _last_gyro_timestamp;
+    bool     _sample_available(void);
+    Vector3f _accel_in[PX4_MAX_INS_INSTANCES];
+    Vector3f _gyro_in[PX4_MAX_INS_INSTANCES];
+    uint64_t _last_accel_timestamp[PX4_MAX_INS_INSTANCES];
+    uint64_t _last_gyro_timestamp[PX4_MAX_INS_INSTANCES];
     uint64_t _last_sample_timestamp;
-    bool     _have_sample_available;
     uint32_t _sample_time_usec;
+    bool     _have_sample_available;
 
     // support for updating filter at runtime
     uint8_t _last_filter_hz;
@@ -51,9 +59,16 @@ private:
 
     void _set_filter_frequency(uint8_t filter_hz);
 
+    Vector3f _accel_data[PX4_MAX_INS_INSTANCES];
+    Vector3f _gyro_data[PX4_MAX_INS_INSTANCES];
+
+    Vector3f _previous_accels[PX4_MAX_INS_INSTANCES];
+
     // accelerometer and gyro driver handles
-    int _accel_fd;
-    int _gyro_fd;
+    uint8_t _num_accel_instances;
+    uint8_t _num_gyro_instances;
+    int _accel_fd[PX4_MAX_INS_INSTANCES];
+    int _gyro_fd[PX4_MAX_INS_INSTANCES];
 };
 #endif
 #endif // __AP_INERTIAL_SENSOR_PX4_H__
