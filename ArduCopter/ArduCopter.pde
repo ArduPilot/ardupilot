@@ -1160,6 +1160,7 @@ static void fifty_hz_logging_loop()
 
     if (g.log_bitmask & MASK_LOG_IMU && motors.armed()) {
         DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMU2(ins);
     }
 #endif
 }
