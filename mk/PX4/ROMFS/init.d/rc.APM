@@ -4,7 +4,10 @@
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
 # To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
-# To enable uartD on FMUv1 on ttyS1 add a /fs/microsd/APM/uartD.en file
+# To enable uartD on FMUv1 on ttyS1 add a /fs/microsd/APM/uartD.en
+# file
+
+# enable uartD by default on PX4v1
 
 set deviceA /dev/ttyACM0
 
@@ -190,39 +193,38 @@ then
     else
        sh /etc/init.d/rc.error
     fi
+    if l3gd20 start
+    then
+       echo "l3gd20 started OK"
+    else
+       echo "No l3gd20"
+       echo "No l3gd20" >> $logfile
+    fi
 else
     echo "Starting FMUv2 sensors"
     if hmc5883 start
     then
         echo "Using external magnetometer"
     fi
-    set HAVE_MPU6000 false          
-    if [ ! -f /fs/microsd/APM/LSM303D.en ]
+    if mpu6000 start
     then
-        if mpu6000 start
-        then
-          set HAVE_MPU6000 true
-          echo "Found MPU6000"
-          echo "Found MPU6000" >> $logfile
-        else
-          echo "No MPU6000"
-          echo "No MPU6000" >> $logfile
-        fi
-    fi       
-    if [ $HAVE_MPU6000 == false ]
+       echo "Found MPU6000"
+       echo "Found MPU6000" >> $logfile
+    else
+       echo "No MPU6000"
+       echo "No MPU6000" >> $logfile
+    fi
+    if l3gd20 start
     then
-        if l3gd20 start
-        then
-           echo "l3gd20 started OK"
-        else
-           sh /etc/init.d/rc.error
-        fi
-        if lsm303d start
-        then
-           echo "lsm303d started OK"
-        else
-           sh /etc/init.d/rc.error
-        fi
+       echo "l3gd20 started OK"
+    else
+       sh /etc/init.d/rc.error
+    fi
+    if lsm303d start
+    then
+       echo "lsm303d started OK"
+    else
+       sh /etc/init.d/rc.error
     fi
 fi
 
