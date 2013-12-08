@@ -708,10 +708,8 @@ void DataFlash_Class::Log_Write_IMU2(const AP_InertialSensor &ins)
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
         return;
     }
-    Vector3f gyro;
-    Vector3f accel;
-    ins.get_gyro_instance(1, gyro);
-    ins.get_accel_instance(1, accel);
+    const Vector3f &gyro = ins.get_gyro(1);
+    const Vector3f &accel = ins.get_accel(1);
     struct log_IMU pkt = {
         LOG_PACKET_HEADER_INIT(LOG_IMU2_MSG),
         timestamp : hal.scheduler->millis(),
