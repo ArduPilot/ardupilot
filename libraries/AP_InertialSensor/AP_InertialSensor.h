@@ -97,6 +97,15 @@ public:
     const Vector3f     &get_accel(void) const { return _accel; }
     virtual void       set_accel(const Vector3f &accel) {}
 
+    // multi-device interface
+    virtual bool get_gyro_instance_health(uint8_t instance) const;
+    virtual uint8_t get_gyro_count(void) const { return 1; };
+    virtual bool get_gyro_instance(uint8_t instance, Vector3f &gyro) const;
+
+    virtual bool get_accel_instance_health(uint8_t instance) const;
+    virtual uint8_t get_accel_count(void) const { return 1; };
+    virtual bool get_accel_instance(uint8_t instance, Vector3f &accel) const;
+
     // get accel offsets in m/s/s
     Vector3f get_accel_offsets() { return _accel_offset; }
     void     set_accel_offsets(Vector3f offsets) { _accel_offset.set(offsets); }
@@ -118,9 +127,6 @@ public:
     // depends on what gyro chips are being used
     virtual float get_gyro_drift_rate(void) = 0;
 
-    // true if a new sample is available from the sensors
-    virtual bool sample_available() = 0;
-
     // wait for a sample to be available, with timeout in milliseconds
     virtual bool wait_for_sample(uint16_t timeout_ms) = 0;
 
@@ -140,7 +146,7 @@ public:
     }
 
     virtual uint16_t error_count(void) const { return 0; }
-    virtual bool healthy(void) { return true; }
+    virtual bool healthy(void) const { return true; }
 
 protected:
 

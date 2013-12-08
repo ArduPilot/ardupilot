@@ -344,14 +344,14 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
     i2c_sem->give();
 }
 
-bool AP_InertialSensor_L3G4200D::sample_available(void)
+bool AP_InertialSensor_L3G4200D::_sample_available(void)
 {
     return (_gyro_samples_available >= _gyro_samples_needed);
 }
 
 bool AP_InertialSensor_L3G4200D::wait_for_sample(uint16_t timeout_ms)
 {
-    if (sample_available()) {
+    if (_sample_available()) {
         _last_sample_time = hal.scheduler->micros();
         return true;
     }
@@ -359,7 +359,7 @@ bool AP_InertialSensor_L3G4200D::wait_for_sample(uint16_t timeout_ms)
     while ((hal.scheduler->millis() - start) < timeout_ms) {
         hal.scheduler->delay_microseconds(100);
         _accumulate();
-        if (sample_available()) {
+        if (_sample_available()) {
             _last_sample_time = hal.scheduler->micros();
             return true;
         }

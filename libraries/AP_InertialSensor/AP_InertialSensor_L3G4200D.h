@@ -21,12 +21,12 @@ public:
     bool            update();
     float        	get_delta_time();
     float           get_gyro_drift_rate();
-    bool            sample_available();
     bool            wait_for_sample(uint16_t timeout_ms);
 
 private:
     uint16_t        _init_sensor( Sample_rate sample_rate );
     void             _accumulate(void);
+    bool            _sample_available();
     uint64_t        _last_update_usec;
     Vector3f        _accel_filtered;
     Vector3f        _gyro_filtered;

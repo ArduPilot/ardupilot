@@ -41,7 +41,7 @@ float AP_InertialSensor_HIL::get_gyro_drift_rate(void) {
     return ToRad(0.5/60);
 }
 
-bool AP_InertialSensor_HIL::sample_available()
+bool AP_InertialSensor_HIL::_sample_available()
 {
     uint16_t ret = (hal.scheduler->millis() - _last_update_ms) 
         / _sample_period_ms;
@@ -51,13 +51,13 @@ bool AP_InertialSensor_HIL::sample_available()
 
 bool AP_InertialSensor_HIL::wait_for_sample(uint16_t timeout_ms)
 {
-    if (sample_available()) {
+    if (_sample_available()) {
         return true;
     }
     uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
         hal.scheduler->delay(1);
-        if (sample_available()) {
+        if (_sample_available()) {
             return true;
         }
     }
@@ -80,7 +80,7 @@ void AP_InertialSensor_HIL::set_gyro(const Vector3f &gyro)
 /**
    try to detect bad accel/gyro sensors
  */
-bool AP_InertialSensor_HIL::healthy(void)
+bool AP_InertialSensor_HIL::healthy(void) const
 {
     uint32_t tnow = hal.scheduler->micros();
     if ((tnow - _last_accel_usec) > 40000) {

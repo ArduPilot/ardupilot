@@ -124,20 +124,20 @@ float AP_InertialSensor_Oilpan::get_gyro_drift_rate(void)
 }
 
 // return true if a new sample is available
-bool AP_InertialSensor_Oilpan::sample_available()
+bool AP_InertialSensor_Oilpan::_sample_available()
 {
     return (_adc->num_samples_available(_sensors) / _sample_threshold) > 0;
 }
 
 bool AP_InertialSensor_Oilpan::wait_for_sample(uint16_t timeout_ms)
 {
-    if (sample_available()) {
+    if (_sample_available()) {
         return true;
     }
     uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
         hal.scheduler->delay_microseconds(100);
-        if (sample_available()) {
+        if (_sample_available()) {
             return true;
         }
     }

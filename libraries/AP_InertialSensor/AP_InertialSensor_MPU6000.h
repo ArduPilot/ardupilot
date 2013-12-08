@@ -24,9 +24,6 @@ public:
     bool                update();
     float               get_gyro_drift_rate();
 
-    // sample_available - true when a new sample is available
-    bool                sample_available();
-
     // wait for a sample to be available, with timeout in milliseconds
     bool                wait_for_sample(uint16_t timeout_ms);
 
@@ -34,7 +31,7 @@ public:
     float            	get_delta_time();
 
     uint16_t error_count(void) const { return _error_count; }
-    bool healthy(void) { return _error_count <= 4; }
+    bool healthy(void) const { return _error_count <= 4; }
 
 protected:
     uint16_t                    _init_sensor( Sample_rate sample_rate );
@@ -42,6 +39,7 @@ protected:
 private:
     AP_HAL::DigitalSource *_drdy_pin;
 
+    bool                 _sample_available();
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);

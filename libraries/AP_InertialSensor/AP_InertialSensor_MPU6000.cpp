@@ -235,13 +235,13 @@ uint16_t AP_InertialSensor_MPU6000::_init_sensor( Sample_rate sample_rate )
 
 bool AP_InertialSensor_MPU6000::wait_for_sample(uint16_t timeout_ms)
 {
-    if (sample_available()) {
+    if (_sample_available()) {
         return true;
     }
     uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
         hal.scheduler->delay_microseconds(100);
-        if (sample_available()) {
+        if (_sample_available()) {
             return true;
         }
     }
@@ -319,7 +319,7 @@ void AP_InertialSensor_MPU6000::_poll_data(void)
         if (!_spi_sem->take_nonblocking()) {
             /*
               the semaphore being busy is an expected condition when the
-              mainline code is calling sample_available() which will
+              mainline code is calling wait_for_sample() which will
               grab the semaphore. We return now and rely on the mainline
               code grabbing the latest sample.
             */
@@ -563,7 +563,7 @@ float AP_InertialSensor_MPU6000::get_gyro_drift_rate(void)
 }
 
 // return true if a sample is available
-bool AP_InertialSensor_MPU6000::sample_available()
+bool AP_InertialSensor_MPU6000::_sample_available()
 {
     _poll_data();
     return (_sum_count >> _sample_shift) > 0;

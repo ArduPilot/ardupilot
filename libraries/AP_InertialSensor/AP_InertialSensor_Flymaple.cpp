@@ -295,7 +295,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     i2c_sem->give();
 }
 
-bool AP_InertialSensor_Flymaple::sample_available(void)
+bool AP_InertialSensor_Flymaple::_sample_available(void)
 {
     _accumulate();
     return min(_accel_samples, _gyro_samples) / _sample_divider > 0;
@@ -303,13 +303,13 @@ bool AP_InertialSensor_Flymaple::sample_available(void)
 
 bool AP_InertialSensor_Flymaple::wait_for_sample(uint16_t timeout_ms)
 {
-    if (sample_available()) {
+    if (_sample_available()) {
         return true;
     }
     uint32_t start = hal.scheduler->millis();
     while ((hal.scheduler->millis() - start) < timeout_ms) {
         hal.scheduler->delay_microseconds(100);
-        if (sample_available()) {
+        if (_sample_available()) {
             return true;
         }
     }
