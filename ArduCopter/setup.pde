@@ -183,7 +183,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     compass.read();
 
     // exit immediately if the compass is not healthy
-    if( !compass.healthy ) {
+    if( !compass.healthy() ) {
         cliSerial->print_P(PSTR("check compass\n"));
         return 0;
     }
@@ -208,7 +208,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     last_run_time = millis();
 
     // main run while there is no user input and the compass is healthy
-    while(!cliSerial->available() && compass.healthy) {
+    while(!cliSerial->available() && compass.healthy()) {
 
         // 50hz loop
         if( millis() - last_run_time > 20 ) {

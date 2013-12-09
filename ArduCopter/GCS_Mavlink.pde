@@ -182,7 +182,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
 
     // default to all healthy except compass, gps and receiver which we set individually
     control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS & ~MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
-    if (g.compass_enabled && compass.healthy && ahrs.use_compass()) {
+    if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
     if (g_gps != NULL && g_gps->status() > GPS::NO_GPS && !gps_glitch.glitching()) {
