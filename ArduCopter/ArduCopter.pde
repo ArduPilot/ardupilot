@@ -1158,10 +1158,8 @@ static void fifty_hz_logging_loop()
         Log_Write_Attitude();
     }
 
-    if (g.log_bitmask & MASK_LOG_IMU && motors.armed()) {
+    if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
         DataFlash.Log_Write_IMU(ins);
-        DataFlash.Log_Write_IMU2(ins);
-    }
 #endif
 }
 
