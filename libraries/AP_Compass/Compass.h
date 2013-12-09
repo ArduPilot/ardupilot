@@ -176,12 +176,11 @@ public:
     ///
     /// @param  offsets             Offsets multiplied by the throttle value and added to the raw mag_ values.
     ///
-    void set_motor_compensation(const Vector3f &motor_comp_factor);
+    void set_motor_compensation(const Vector3f &motor_comp_factor, uint8_t i=0);
 
     /// get motor compensation factors as a vector
-    const Vector3f& get_motor_compensation() const {
-        return _motor_compensation;
-    }
+    const Vector3f& get_motor_compensation(uint8_t i) const { return _motor_compensation[i]; }
+    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(0); }
 
     /// Saves the current motor compensation x/y/z values.
     ///
@@ -193,7 +192,8 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_motor_offsets() const { return _motor_offset; }
+    const Vector3f &get_motor_offsets(uint8_t i) const { return _motor_offset[i]; }
+    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(0); }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
@@ -236,8 +236,8 @@ protected:
 
     // motor compensation
     AP_Int8     _motor_comp_type;               // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
-    AP_Vector3f _motor_compensation;            // factors multiplied by throttle and added to compass outputs
-    Vector3f    _motor_offset;                  // latest compensation added to compass
+    AP_Vector3f _motor_compensation[COMPASS_MAX_INSTANCES]; // factors multiplied by throttle and added to compass outputs
+    Vector3f    _motor_offset[COMPASS_MAX_INSTANCES]; // latest compensation added to compass
     float       _thr_or_curr;                   // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
 
     // board orientation from AHRS

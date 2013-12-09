@@ -55,15 +55,13 @@ bool AP_Compass_HIL::read()
 
     // apply motor compensation
     if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
-        _motor_offset = _motor_compensation.get() * _thr_or_curr;
+        _motor_offset[0] = _motor_compensation[0].get() * _thr_or_curr;
     }else{
-        _motor_offset.x = 0;
-        _motor_offset.y = 0;
-        _motor_offset.z = 0;
+        _motor_offset[0].zero();
     }
 
     // return last values provided by setHIL function
-    _field[0] = _hil_mag + ofs + _motor_offset;
+    _field[0] = _hil_mag + ofs + _motor_offset[0];
 
     // values set by setHIL function
     last_update = hal.scheduler->micros();      // record time of update

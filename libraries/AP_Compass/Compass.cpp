@@ -83,7 +83,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Range: -1000 1000
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
-    AP_GROUPINFO("MOT",    7, Compass, _motor_compensation, 0),
+    AP_GROUPINFO("MOT",    7, Compass, _motor_compensation[0], 0),
 
     // @Param: ORIENT
     // @DisplayName: Compass orientation
@@ -100,6 +100,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
 #if COMPASS_MAX_INSTANCES > 1
     AP_GROUPINFO("OFS2",    10, Compass, _offset[1], 0),
+    AP_GROUPINFO("MOT2",    11, Compass, _motor_compensation[1], 0),
 #endif
 
     AP_GROUPEND
@@ -139,16 +140,18 @@ Compass::save_offsets()
 }
 
 void
-Compass::set_motor_compensation(const Vector3f &motor_comp_factor)
+Compass::set_motor_compensation(const Vector3f &motor_comp_factor, uint8_t i)
 {
-    _motor_compensation.set(motor_comp_factor);
+    _motor_compensation[i].set(motor_comp_factor);
 }
 
 void
 Compass::save_motor_compensation()
 {
     _motor_comp_type.save();
-    _motor_compensation.save();
+    for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
+        _motor_compensation[k].save();
+    }
 }
 
 void
