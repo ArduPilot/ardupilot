@@ -523,15 +523,12 @@ test_mag(uint8_t argc, const Menu::arg *argv)
             counter++;
             if (counter>20) {
                 if (compass.healthy) {
-                    Vector3f maggy = compass.get_offsets();
-                    cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                    (wrap_360_cd(ToDeg(heading) * 100)) /100,
-                                    (int)compass.mag_x,
-                                    (int)compass.mag_y,
-                                    (int)compass.mag_z,
-                                    maggy.x,
-                                    maggy.y,
-                                    maggy.z);
+                    const Vector3f &mag_ofs = compass.get_offsets();
+                    const Vector3f &mag = compass.get_field();
+                    cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+                                        (wrap_360_cd(ToDeg(heading) * 100)) /100,
+                                        mag.x, mag.y, mag.z,
+                                        mag_ofs.x, mag_ofs.y, mag_ofs.z);
                 } else {
                     cliSerial->println_P(PSTR("compass not healthy"));
                 }
