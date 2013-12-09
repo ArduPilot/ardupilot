@@ -189,9 +189,7 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
     }
 
     // store initial x,y,z compass values
-    compass_base.x = compass.mag_x;
-    compass_base.y = compass.mag_y;
-    compass_base.z = compass.mag_z;
+    compass_base = compass.get_field();
 
     // initialise motor compensation
     motor_compensation = Vector3f(0,0,0);
@@ -234,18 +232,14 @@ setup_compassmot(uint8_t argc, const Menu::arg *argv)
 
             // if throttle is zero, update base x,y,z values
             if( throttle_pct == 0.0f ) {
-                compass_base.x = compass_base.x * 0.99f + (float)compass.mag_x * 0.01f;
-                compass_base.y = compass_base.y * 0.99f + (float)compass.mag_y * 0.01f;
-                compass_base.z = compass_base.z * 0.99f + (float)compass.mag_z * 0.01f;
+                compass_base = compass_base * 0.99f + compass.get_field() * 0.01f;
 
                 // causing printing to happen as soon as throttle is lifted
                 print_counter = 49;
             }else{
 
                 // calculate diff from compass base and scale with throttle
-                motor_impact.x = compass.mag_x - compass_base.x;
-                motor_impact.y = compass.mag_y - compass_base.y;
-                motor_impact.z = compass.mag_z - compass_base.z;
+                motor_impact = compass.get_field() - compass_base;
 
                 // throttle based compensation
                 if( comp_type == AP_COMPASS_MOT_COMP_THROTTLE ) {
