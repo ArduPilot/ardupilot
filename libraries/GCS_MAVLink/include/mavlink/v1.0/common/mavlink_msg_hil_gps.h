@@ -9,7 +9,7 @@ typedef struct __mavlink_hil_gps_t
  int32_t lon; ///< Longitude (WGS84), in degrees * 1E7
  int32_t alt; ///< Altitude (WGS84), in meters * 1000 (positive for up)
  uint16_t eph; ///< GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
- uint16_t epv; ///< GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+ uint16_t epv; ///< GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  uint16_t vel; ///< GPS ground speed (m/s * 100). If unknown, set to: 65535
  int16_t vn; ///< GPS velocity in cm/s in NORTH direction in earth-fixed NED frame
  int16_t ve; ///< GPS velocity in cm/s in EAST direction in earth-fixed NED frame
@@ -59,7 +59,7 @@ typedef struct __mavlink_hil_gps_t
  * @param lon Longitude (WGS84), in degrees * 1E7
  * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
- * @param epv GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+ * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: 65535
  * @param vn GPS velocity in cm/s in NORTH direction in earth-fixed NED frame
  * @param ve GPS velocity in cm/s in EAST direction in earth-fixed NED frame
@@ -127,7 +127,7 @@ static inline uint16_t mavlink_msg_hil_gps_pack(uint8_t system_id, uint8_t compo
  * @param lon Longitude (WGS84), in degrees * 1E7
  * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
- * @param epv GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+ * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: 65535
  * @param vn GPS velocity in cm/s in NORTH direction in earth-fixed NED frame
  * @param ve GPS velocity in cm/s in EAST direction in earth-fixed NED frame
@@ -221,7 +221,7 @@ static inline uint16_t mavlink_msg_hil_gps_encode_chan(uint8_t system_id, uint8_
  * @param lon Longitude (WGS84), in degrees * 1E7
  * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
- * @param epv GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+ * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: 65535
  * @param vn GPS velocity in cm/s in NORTH direction in earth-fixed NED frame
  * @param ve GPS velocity in cm/s in EAST direction in earth-fixed NED frame
@@ -346,7 +346,7 @@ static inline uint16_t mavlink_msg_hil_gps_get_eph(const mavlink_message_t* msg)
 /**
  * @brief Get field epv from hil_gps message
  *
- * @return GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
+ * @return GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  */
 static inline uint16_t mavlink_msg_hil_gps_get_epv(const mavlink_message_t* msg)
 {
