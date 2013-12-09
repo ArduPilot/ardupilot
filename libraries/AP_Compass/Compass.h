@@ -100,11 +100,11 @@ public:
 
     /// Return the current field as a Vector3f
     const Vector3f &get_field(uint8_t i) const { return _field[i]; }
-    const Vector3f &get_field(void) const { return get_field(0); }
+    const Vector3f &get_field(void) const { return get_field(_get_primary()); }
 
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _healthy[i]; }
-    bool healthy(void) const { return healthy(0); }
+    bool healthy(void) const { return healthy(_get_primary()); }
 
     /// set the current field as a Vector3f
     void set_field(const Vector3f &field) { _field[0] = field; }
@@ -114,7 +114,7 @@ public:
     /// @returns                    The current compass offsets.
     ///
     const Vector3f &get_offsets(uint8_t i) const { return _offset[i]; }
-    const Vector3f &get_offsets(void) const { return get_offsets(0); }
+    const Vector3f &get_offsets(void) const { return get_offsets(_get_primary()); }
 
     /// Sets the initial location used to get declination
     ///
@@ -217,6 +217,8 @@ public:
     AP_Int8 _learn;                             ///<enable calibration learning
 
 protected:
+    virtual uint8_t _get_primary(void) const { return 0; }
+
     bool _healthy[COMPASS_MAX_INSTANCES];
     Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
 
