@@ -431,13 +431,14 @@ struct PACKED log_Compass {
 // Write a Compass packet. Total length : 15 bytes
 static void Log_Write_Compass()
 {
-    Vector3f mag_offsets = compass.get_offsets();
-    Vector3f mag_motor_offsets = compass.get_motor_offsets();
+    const Vector3f &mag_offsets = compass.get_offsets();
+    const Vector3f &mag_motor_offsets = compass.get_motor_offsets();
+    const Vector3f &mag = compass.get_field();
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
-        mag_x           : compass.mag_x,
-        mag_y           : compass.mag_y,
-        mag_z           : compass.mag_z,
+        mag_x           : (int16_t)mag.x,
+        mag_y           : (int16_t)mag.y,
+        mag_z           : (int16_t)mag.z,
         offset_x        : (int16_t)mag_offsets.x,
         offset_y        : (int16_t)mag_offsets.y,
         offset_z        : (int16_t)mag_offsets.z,
