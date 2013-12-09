@@ -316,16 +316,16 @@ bool AP_Compass_HMC5843::read()
 	   }
 	}
 
-	mag_x = _mag_x_accum * calibration[0] / _accum_count;
-	mag_y = _mag_y_accum * calibration[1] / _accum_count;
-	mag_z = _mag_z_accum * calibration[2] / _accum_count;
+	_field.x = _mag_x_accum * calibration[0] / _accum_count;
+	_field.y = _mag_y_accum * calibration[1] / _accum_count;
+	_field.z = _mag_z_accum * calibration[2] / _accum_count;
 	_accum_count = 0;
 	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
     last_update = hal.scheduler->micros(); // record time of update
 
     // rotate to the desired orientation
-    Vector3f rot_mag = Vector3f(mag_x,mag_y,mag_z);
+    Vector3f rot_mag = Vector3f(_field.x,_field.y,_field.z);
     if (product_id == AP_COMPASS_TYPE_HMC5883L) {
         rot_mag.rotate(ROTATION_YAW_90);
     }
@@ -354,9 +354,9 @@ bool AP_Compass_HMC5843::read()
         _motor_offset.z = 0;
     }
 
-    mag_x = rot_mag.x;
-    mag_y = rot_mag.y;
-    mag_z = rot_mag.z;
+    _field.x = rot_mag.x;
+    _field.y = rot_mag.y;
+    _field.z = rot_mag.z;
     healthy = true;
 
     return true;

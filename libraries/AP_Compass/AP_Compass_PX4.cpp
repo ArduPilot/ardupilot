@@ -121,14 +121,10 @@ bool AP_Compass_PX4::read(void)
         _motor_offset = _motor_compensation.get() * _thr_or_curr;
         _sum += _motor_offset;
     } else {
-        _motor_offset.x = 0;
-        _motor_offset.y = 0;
-        _motor_offset.z = 0;
+        _motor_offset.zero();
     }
     
-    mag_x = _sum.x;
-    mag_y = _sum.y;
-    mag_z = _sum.z;
+    _field = _sum;
     
     _sum.zero();
     _count = 0;

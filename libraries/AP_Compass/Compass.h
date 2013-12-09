@@ -41,9 +41,6 @@ class Compass
 {
 public:
     int16_t product_id;                         /// product id
-    int16_t mag_x;                      ///< magnetic field strength along the X axis
-    int16_t mag_y;                      ///< magnetic field strength along the Y axis
-    int16_t mag_z;                      ///< magnetic field strength along the Z axis
     uint32_t last_update;               ///< micros() time of last update
     bool healthy;                               ///< true if last read OK
 
@@ -61,6 +58,8 @@ public:
     /// Read the compass and update the mag_ variables.
     ///
     virtual bool read(void) = 0;
+
+    
 
     /// use spare CPU cycles to accumulate values from the compass if
     /// possible
@@ -86,6 +85,12 @@ public:
     /// ::null_offsets.
     ///
     void save_offsets();
+
+    /// Return the current field as a Vector3f
+    const Vector3f &get_field(void) const { return _field; }
+
+    /// set the current field as a Vector3f
+    void set_field(const Vector3f &field) { _field = field; }
 
     /// Returns the current offset values
     ///
@@ -194,6 +199,8 @@ public:
     AP_Int8 _learn;                             ///<enable calibration learning
 
 protected:
+    Vector3f _field;                            ///< magnetic field strength
+
     AP_Int8 _orientation;
     AP_Vector3f _offset;
     AP_Float _declination;
