@@ -47,7 +47,6 @@ public:
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
-    void Log_Write_IMU2(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
     void Log_Write_Message(const char *message);
