@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
   test CPU speed
@@ -37,6 +37,10 @@ static void show_sizes(void)
 	hal.console->printf("long long : %d\n", sizeof(long long));
 	hal.console->printf("bool      : %d\n", sizeof(bool));
 	hal.console->printf("void*     : %d\n", sizeof(void *));
+
+	hal.console->printf("printing NaN: %f\n", sqrt(-1.0f));
+	hal.console->printf("printing +Inf: %f\n", 1.0f/0.0f);
+	hal.console->printf("printing -Inf: %f\n", -1.0f/0.0f);
 }
 
 #define TENTIMES(x) do { x; x; x; x; x; x; x; x; x; x; } while (0)
@@ -93,7 +97,8 @@ static void show_timings(void)
 	TIMEIT("fadd", v_out += v_f, 100);
 	TIMEIT("fsub", v_out -= v_f, 100);
 	TIMEIT("fmul", v_out *= v_f, 100);
-	TIMEIT("fdiv", v_out /= v_f, 100);
+	TIMEIT("fdiv /=", v_out /= v_f, 100);
+    TIMEIT("fdiv 2/x", v_out = 2.0f/v_f, 100);
 
 	TIMEIT("dadd", v_out_d += v_d, 100);
 	TIMEIT("dsub", v_out_d -= v_d, 100);

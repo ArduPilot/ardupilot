@@ -12,6 +12,9 @@ typedef struct __mavlink_named_value_float_t
 #define MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN 18
 #define MAVLINK_MSG_ID_251_LEN 18
 
+#define MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_CRC 170
+#define MAVLINK_MSG_ID_251_CRC 170
+
 #define MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN 10
 
 #define MAVLINK_MESSAGE_INFO_NAMED_VALUE_FLOAT { \
@@ -39,28 +42,32 @@ static inline uint16_t mavlink_msg_named_value_float_pack(uint8_t system_id, uin
 						       uint32_t time_boot_ms, const char *name, float value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[18];
+	char buf[MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, value);
 	_mav_put_char_array(buf, 8, name, 10);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
 #else
 	mavlink_named_value_float_t packet;
 	packet.time_boot_ms = time_boot_ms;
 	packet.value = value;
 	mav_array_memcpy(packet.name, name, sizeof(char)*10);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_NAMED_VALUE_FLOAT;
-	return mavlink_finalize_message(msg, system_id, component_id, 18, 170);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
+#endif
 }
 
 /**
  * @brief Pack a named_value_float message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp (milliseconds since system boot)
  * @param name Name of the debug variable
@@ -72,25 +79,29 @@ static inline uint16_t mavlink_msg_named_value_float_pack_chan(uint8_t system_id
 						           uint32_t time_boot_ms,const char *name,float value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[18];
+	char buf[MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, value);
 	_mav_put_char_array(buf, 8, name, 10);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
 #else
 	mavlink_named_value_float_t packet;
 	packet.time_boot_ms = time_boot_ms;
 	packet.value = value;
 	mav_array_memcpy(packet.name, name, sizeof(char)*10);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 18);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_NAMED_VALUE_FLOAT;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 18, 170);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
+#endif
 }
 
 /**
- * @brief Encode a named_value_float struct into a message
+ * @brief Encode a named_value_float struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -100,6 +111,20 @@ static inline uint16_t mavlink_msg_named_value_float_pack_chan(uint8_t system_id
 static inline uint16_t mavlink_msg_named_value_float_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_named_value_float_t* named_value_float)
 {
 	return mavlink_msg_named_value_float_pack(system_id, component_id, msg, named_value_float->time_boot_ms, named_value_float->name, named_value_float->value);
+}
+
+/**
+ * @brief Encode a named_value_float struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param named_value_float C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_named_value_float_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_named_value_float_t* named_value_float)
+{
+	return mavlink_msg_named_value_float_pack_chan(system_id, component_id, chan, msg, named_value_float->time_boot_ms, named_value_float->name, named_value_float->value);
 }
 
 /**
@@ -115,17 +140,25 @@ static inline uint16_t mavlink_msg_named_value_float_encode(uint8_t system_id, u
 static inline void mavlink_msg_named_value_float_send(mavlink_channel_t chan, uint32_t time_boot_ms, const char *name, float value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[18];
+	char buf[MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, value);
 	_mav_put_char_array(buf, 8, name, 10);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, buf, 18, 170);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, buf, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, buf, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
+#endif
 #else
 	mavlink_named_value_float_t packet;
 	packet.time_boot_ms = time_boot_ms;
 	packet.value = value;
 	mav_array_memcpy(packet.name, name, sizeof(char)*10);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, (const char *)&packet, 18, 170);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, (const char *)&packet, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, (const char *)&packet, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
+#endif
 #endif
 }
 
@@ -177,6 +210,6 @@ static inline void mavlink_msg_named_value_float_decode(const mavlink_message_t*
 	named_value_float->value = mavlink_msg_named_value_float_get_value(msg);
 	mavlink_msg_named_value_float_get_name(msg, named_value_float->name);
 #else
-	memcpy(named_value_float, _MAV_PAYLOAD(msg), 18);
+	memcpy(named_value_float, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN);
 #endif
 }

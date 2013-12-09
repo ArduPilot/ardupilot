@@ -45,11 +45,12 @@ const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_Limit_Altitude::AP_Limit_Altitude(struct Location *current_loc) :
-    AP_Limit_Module(AP_LIMITS_ALTITUDE)     // enabled and required
+AP_Limit_Altitude::AP_Limit_Altitude(const struct Location *current_loc) :
+    AP_Limit_Module(AP_LIMITS_ALTITUDE),     // enabled and required
+    _current_loc(current_loc)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    _current_loc = current_loc;
+    //_current_loc = current_loc;
 }
 
 bool AP_Limit_Altitude::triggered()

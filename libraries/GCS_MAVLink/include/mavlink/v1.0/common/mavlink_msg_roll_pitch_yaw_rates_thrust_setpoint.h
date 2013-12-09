@@ -14,6 +14,9 @@ typedef struct __mavlink_roll_pitch_yaw_rates_thrust_setpoint_t
 #define MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN 20
 #define MAVLINK_MSG_ID_80_LEN 20
 
+#define MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_CRC 127
+#define MAVLINK_MSG_ID_80_CRC 127
+
 
 
 #define MAVLINK_MESSAGE_INFO_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT { \
@@ -45,14 +48,14 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_pack(uin
 						       uint32_t time_boot_ms, float roll_rate, float pitch_rate, float yaw_rate, float thrust)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[20];
+	char buf[MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, roll_rate);
 	_mav_put_float(buf, 8, pitch_rate);
 	_mav_put_float(buf, 12, yaw_rate);
 	_mav_put_float(buf, 16, thrust);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 20);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
 #else
 	mavlink_roll_pitch_yaw_rates_thrust_setpoint_t packet;
 	packet.time_boot_ms = time_boot_ms;
@@ -61,18 +64,22 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_pack(uin
 	packet.yaw_rate = yaw_rate;
 	packet.thrust = thrust;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 20);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT;
-	return mavlink_finalize_message(msg, system_id, component_id, 20, 127);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
+#endif
 }
 
 /**
  * @brief Pack a roll_pitch_yaw_rates_thrust_setpoint message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_boot_ms Timestamp in milliseconds since system boot
  * @param roll_rate Desired roll rate in radians per second
@@ -86,14 +93,14 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_pack_cha
 						           uint32_t time_boot_ms,float roll_rate,float pitch_rate,float yaw_rate,float thrust)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[20];
+	char buf[MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, roll_rate);
 	_mav_put_float(buf, 8, pitch_rate);
 	_mav_put_float(buf, 12, yaw_rate);
 	_mav_put_float(buf, 16, thrust);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 20);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
 #else
 	mavlink_roll_pitch_yaw_rates_thrust_setpoint_t packet;
 	packet.time_boot_ms = time_boot_ms;
@@ -102,15 +109,19 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_pack_cha
 	packet.yaw_rate = yaw_rate;
 	packet.thrust = thrust;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 20);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 20, 127);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
+#endif
 }
 
 /**
- * @brief Encode a roll_pitch_yaw_rates_thrust_setpoint struct into a message
+ * @brief Encode a roll_pitch_yaw_rates_thrust_setpoint struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -120,6 +131,20 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_pack_cha
 static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_roll_pitch_yaw_rates_thrust_setpoint_t* roll_pitch_yaw_rates_thrust_setpoint)
 {
 	return mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_pack(system_id, component_id, msg, roll_pitch_yaw_rates_thrust_setpoint->time_boot_ms, roll_pitch_yaw_rates_thrust_setpoint->roll_rate, roll_pitch_yaw_rates_thrust_setpoint->pitch_rate, roll_pitch_yaw_rates_thrust_setpoint->yaw_rate, roll_pitch_yaw_rates_thrust_setpoint->thrust);
+}
+
+/**
+ * @brief Encode a roll_pitch_yaw_rates_thrust_setpoint struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param roll_pitch_yaw_rates_thrust_setpoint C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_roll_pitch_yaw_rates_thrust_setpoint_t* roll_pitch_yaw_rates_thrust_setpoint)
+{
+	return mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_pack_chan(system_id, component_id, chan, msg, roll_pitch_yaw_rates_thrust_setpoint->time_boot_ms, roll_pitch_yaw_rates_thrust_setpoint->roll_rate, roll_pitch_yaw_rates_thrust_setpoint->pitch_rate, roll_pitch_yaw_rates_thrust_setpoint->yaw_rate, roll_pitch_yaw_rates_thrust_setpoint->thrust);
 }
 
 /**
@@ -137,14 +162,18 @@ static inline uint16_t mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_encode(u
 static inline void mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_send(mavlink_channel_t chan, uint32_t time_boot_ms, float roll_rate, float pitch_rate, float yaw_rate, float thrust)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[20];
+	char buf[MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN];
 	_mav_put_uint32_t(buf, 0, time_boot_ms);
 	_mav_put_float(buf, 4, roll_rate);
 	_mav_put_float(buf, 8, pitch_rate);
 	_mav_put_float(buf, 12, yaw_rate);
 	_mav_put_float(buf, 16, thrust);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT, buf, 20, 127);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT, buf, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT, buf, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
+#endif
 #else
 	mavlink_roll_pitch_yaw_rates_thrust_setpoint_t packet;
 	packet.time_boot_ms = time_boot_ms;
@@ -153,7 +182,11 @@ static inline void mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_send(mavlink
 	packet.yaw_rate = yaw_rate;
 	packet.thrust = thrust;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT, (const char *)&packet, 20, 127);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT, (const char *)&packet, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT, (const char *)&packet, MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
+#endif
 #endif
 }
 
@@ -227,6 +260,6 @@ static inline void mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_decode(const
 	roll_pitch_yaw_rates_thrust_setpoint->yaw_rate = mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_get_yaw_rate(msg);
 	roll_pitch_yaw_rates_thrust_setpoint->thrust = mavlink_msg_roll_pitch_yaw_rates_thrust_setpoint_get_thrust(msg);
 #else
-	memcpy(roll_pitch_yaw_rates_thrust_setpoint, _MAV_PAYLOAD(msg), 20);
+	memcpy(roll_pitch_yaw_rates_thrust_setpoint, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_ROLL_PITCH_YAW_RATES_THRUST_SETPOINT_LEN);
 #endif
 }

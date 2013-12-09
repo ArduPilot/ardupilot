@@ -1,7 +1,7 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	AP_Buffer.h
-/// @brief	fifo buffer template class
+/// @brief	fifo (queue) buffer template class
 
 #ifndef __AP_BUFFER_H__
 #define __AP_BUFFER_H__
@@ -12,56 +12,65 @@
 template <class T, uint8_t SIZE>
 class AP_Buffer {
 public:
-
-    // Constructor
+    
+    /// Constructor
+    ///
     AP_Buffer();
 
-    // clear - removes all points from the curve
-    virtual void clear();
+    /// clear - removes all elements from the queue
+    ///
+    void clear();
 
-    // add - adds an item to the buffer.  returns TRUE if successfully added
-    virtual bool add( T item );
+    /// push_back - adds an item to the end of the buffer.
+    /// If the buffer is full, the oldest element (i.e. the element at the begin) is removed
+    /// @param item
+    void push_back( const T &item );
 
-    // get - returns the next value in the buffer
-    virtual T get();
+    /// pop_front - removes an element from the begin of the buffer (i.e. the oldest element)
+    /// and returns it.  If the buffer is empty, 0 is returned
+    /// @return
+    T pop_front();
 
-    // peek - check what the next value in the buffer is but don't pull it off
-    virtual T peek(uint8_t position = 0);
+    /// peek - returns a reference to an element of the buffer
+    /// if position isn't valid (i.e. >= size()) 0 is returned
+    /// @param position : index of the element
+    /// "0" is the oldest, size()-1 is the newest
+    /// @return
+    const T& peek(uint8_t position) const;
 
-    // num_values - returns number of values in the buffer
-    virtual uint8_t num_items() { return _num_items; }
+    /// front - return a reference to the element at the begin of the queue (i.e. the oldest element)
+    /// If the queue is empty, 0 is returned.
+    /// @return : oldest element
+    const T& front() const { return this->peek(0); }
 
-    // print_buffer - display the contents of the buffer on the serial port
-    //virtual void print_buffer();
+    /// size - returns the number of elements in the queue
+    /// @return
+    uint8_t size() const { return _num_items; }
 
-protected:
+    /// is_full - return true if the queue is full (i.e. size() == SIZE)
+    /// @return
+    bool is_full() const { return _num_items >= SIZE; }
+
+    /// is_empty - returns true if the queue is empty
+    /// @return
+    bool is_empty() const { return _num_items == 0; }
+
+private:
     uint8_t     _num_items;             // number of items in the buffer
-    uint8_t     _head;                  // first item in the buffer (will be returned with the next get call)
+    uint8_t     _head;                  // first item in the buffer (will be returned with the next pop_front call)
     T           _buff[SIZE];            // x values of each point on the curve
 };
 
-// Typedef for convenience
-typedef AP_Buffer<uint8_t,8> AP_BufferUInt8_Size8;
-typedef AP_Buffer<uint8_t,16> AP_BufferUnt8_Size16;
-typedef AP_Buffer<uint8_t,32> AP_BufferUInt8_Size32;
-typedef AP_Buffer<uint8_t,64> AP_BufferUInt8_Size64;
-typedef AP_Buffer<uint8_t,128> AP_BufferUInt8_Size128;
-
+// Typedef for convenience - add more as needed
 typedef AP_Buffer<float,5> AP_BufferFloat_Size5;
-typedef AP_Buffer<float,10> AP_BufferFloat_Size10;
 typedef AP_Buffer<float,15> AP_BufferFloat_Size15;
-typedef AP_Buffer<float,20> AP_BufferFloat_Size20;
 
-// Constructor
 template <class T, uint8_t SIZE>
 AP_Buffer<T,SIZE>::AP_Buffer() :
-	_num_items(0)
+	_num_items(0), _head(0)
 {
-	// clear the buffer
-	clear();
-};
+}
 
-// clear - removes all points from the curve
 template <class T, uint8_t SIZE>
 void AP_Buffer<T,SIZE>::clear() {
 	// clear the curve
@@ -69,9 +78,8 @@ void AP_Buffer<T,SIZE>::clear() {
     _head = 0;
 }
 
-// add - adds an item to the buffer.  returns TRUE if successfully added
 template <class T, uint8_t SIZE>
-bool AP_Buffer<T,SIZE>::add( T item )
+void AP_Buffer<T,SIZE>::push_back( const T &item )
 {
     // determine position of new item
     uint8_t tail = _head + _num_items;
@@ -92,14 +100,10 @@ bool AP_Buffer<T,SIZE>::add( T item )
             _head = 0;
         }
     }
-
-    // indicate success
-    return true;
 }
 
-// get - returns the next value in the buffer
 template <class T, uint8_t SIZE>
-T AP_Buffer<T,SIZE>::get()
+T AP_Buffer<T,SIZE>::pop_front()
 {
 	T result;
 
@@ -123,15 +127,15 @@ T AP_Buffer<T,SIZE>::get()
     return result;
 }
 
-// peek - check what the next value in the buffer is but don't pull it off
 template <class T, uint8_t SIZE>
-T AP_Buffer<T,SIZE>::peek(uint8_t position)
+const T& AP_Buffer<T,SIZE>::peek(uint8_t position) const
 {
-    uint8_t j = _head+position;
+    uint8_t j = _head + position;
 
     // return zero if position is out of range
     if( position >= _num_items ) {
-        return 0;
+    	const static T r = 0;
+        return r;
     }
 
     // wrap around if necessary

@@ -4,7 +4,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
-#include "pins_arduino_mega.h"
+#include "utility/pins_arduino_mega.h"
 
 #include "GPIO.h"
 using namespace AP_HAL_AVR;
@@ -61,6 +61,11 @@ void AVRGPIO::pinMode(uint8_t pin, uint8_t mode) {
     }
 }
 
+int8_t AVRGPIO::analogPinToDigitalPin(uint8_t pin)
+{
+	return analogInputToDigitalPin(pin);
+}
+
 uint8_t AVRGPIO::read(uint8_t pin) {
     uint8_t bit = digitalPinToBitMask(pin);
     uint8_t port = digitalPinToPort(pin);
@@ -88,6 +93,23 @@ void AVRGPIO::write(uint8_t pin, uint8_t value) {
     } else {
         *out |= bit;
     }
+
+    SREG = oldSREG;
+}
+
+void AVRGPIO::toggle(uint8_t pin) {
+    uint8_t bit = digitalPinToBitMask(pin);
+    uint8_t port = digitalPinToPort(pin);
+    volatile uint8_t *out;
+
+    if (port == NOT_A_PIN) return;
+
+    out = portOutputRegister(port);
+
+    uint8_t oldSREG = SREG;
+    cli();
+
+    *out ^= bit;
 
     SREG = oldSREG;
 }
@@ -164,6 +186,33 @@ void AVRDigitalSource::write(uint8_t value) {
     }
 
     SREG = oldSREG;
+}
+
+void AVRDigitalSource::toggle() {
+    const uint8_t bit = _bit;
+    const uint8_t port = _port;
+    volatile uint8_t* out;
+    out = portOutputRegister(port);
+
+    uint8_t oldSREG = SREG;
+    cli();
+
+    *out ^= bit;
+
+    SREG = oldSREG;
+}
+
+/*
+  return true when USB is connected
+ */
+bool AVRGPIO::usb_connected(void)
+{
+#if HAL_GPIO_USB_MUX_PIN != -1
+    pinMode(HAL_GPIO_USB_MUX_PIN, GPIO_INPUT);
+    return !read(HAL_GPIO_USB_MUX_PIN);
+#else
+    return false;
+#endif
 }
 
 

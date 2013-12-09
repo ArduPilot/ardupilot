@@ -1,0 +1,262 @@
+#!nsh
+
+# APM startup script for NuttX on PX4
+
+# To disable APM startup add a /fs/microsd/APM/nostart file
+# To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
+# To enable uartD on FMUv1 on ttyS1 add a /fs/microsd/APM/uartD.en file
+
+set deviceA /dev/ttyACM0
+
+# check for an old file called APM, caused by 
+# a bug in an earlier firmware release
+if [ -f /fs/microsd/APM ]
+then
+   echo "APM file found - renaming"
+   mv /fs/microsd/APM /fs/microsd/APM.old
+fi
+
+if [ -f /fs/microsd/APM/nostart ]
+then
+   echo "APM/nostart found - skipping APM startup"
+   sh /etc/init.d/rc.error
+fi
+
+# mount binfs so we can find the built-in apps
+if [ -f /bin/reboot ]
+then
+	echo "binfs already mounted"
+else
+	echo "Mounting binfs"
+        if mount -t binfs /dev/null /bin
+        then
+                echo "binfs mounted OK"
+        else
+                sh /etc/init.d/rc.error
+        fi
+fi
+
+set sketch NONE
+set logfile /fs/microsd/APM/boot.log
+
+if [ ! -f /bin/ArduPilot ]
+then
+   echo "/bin/ardupilot not found"
+   sh /etc/init.d/rc.error
+fi
+
+########################
+# PX4IO upgrade handling
+echo checking for /etc/px4io/px4io.bin
+if [ -f /etc/px4io/px4io.bin ]
+then
+   echo "Checking for new px4io firmware"
+   if cmp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
+   then
+      echo "No new px4io firmware"
+   else
+      echo Loading /etc/px4io/px4io.bin
+      tone_alarm MBABGP
+      echo Loading /etc/px4io/px4io.bin > /fs/microsd/px4io_update.log
+      if px4io update /etc/px4io/px4io.bin
+      then
+      	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
+      	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/px4io_update.log
+        tone_alarm MSPAA
+      else
+        echo Failed loading /etc/px4io/px4io.bin >> /fs/microsd/px4io_update.log
+        echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
+	echo "Failed to upgrade PX4IO firmware"
+        tone_alarm MNGGG
+      fi
+   fi
+fi
+
+
+if mkdir /fs/microsd/APM > /dev/null
+then
+     echo "Created APM directory"
+fi
+
+if [ -f /bin/lsm303d ]
+then
+     echo "Detected FMUv2 board"
+     set BOARD FMUv2
+else
+     echo "Detected FMUv1 board"
+     set BOARD FMUv1
+fi
+
+if [ $BOARD == FMUv1 ]
+then
+   set deviceC /dev/ttyS2
+   if [ -f /fs/microsd/APM/uartD.en ]
+   then
+      set deviceD /dev/ttyS1
+   else
+      set deviceD /dev/null
+   fi
+else
+   set deviceC /dev/ttyS1
+   set deviceD /dev/ttyS2
+fi
+
+if uorb start
+then
+    echo "uorb started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+
+# try the px4io start twice. Some FMUv2 board don't
+# come up the first time
+set HAVE_PX4IO false
+if px4io start
+then
+    set HAVE_PX4IO true
+else
+    tone_alarm MNGG
+    sleep 2
+    if px4io start
+    then
+        set HAVE_PX4IO true
+        # play happy tune again
+	tone_alarm start
+    fi
+fi
+
+if [ $HAVE_PX4IO == true ]
+then
+    echo "PX4IO board OK"
+    echo "PX4IO board OK" >> $logfile
+else
+    echo "No PX4IO board found"
+    echo "No PX4IO board found" >> $logfile
+
+    if [ $BOARD == FMUv2 ]
+    then
+       sh /etc/init.d/rc.error
+    fi
+
+    if [ -f /fs/microsd/APM/mkblctrl ]
+    then
+   	echo "APM/mkblctrl found - switch to MK I2C ESCs"
+   	echo "APM/mkblctrl found - switch to MK I2C ESCs" >> $logfile
+	echo "Setting up mkblctrl driver"
+	echo "Setting up mkblctrl driver" >> $logfile
+	mkblctrl -mkmode x
+    fi
+fi
+
+if [ $BOARD == FMUv1 -a $deviceD == /dev/ttyS1 ]
+then
+        echo "Setting FMU mode_serial"
+        fmu mode_serial
+else
+        echo "Setting FMU mode_pwm"
+        fmu mode_pwm
+fi
+
+
+echo "Starting APM sensors"
+echo "Starting APM sensors" > $logfile
+if ms5611 start
+then
+    echo "ms5611 started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+if adc start
+then
+    echo "adc started OK"
+else
+    sh /etc/init.d/rc.error
+fi
+
+if [ $BOARD == FMUv1 ]
+then
+    echo "Starting FMUv1 sensors"
+    if hmc5883 start
+    then
+        echo "hmc5883 started OK"
+    else
+        sh /etc/init.d/rc.error
+    fi
+    if mpu6000 start
+    then
+       echo "mpu6000  started OK"
+    else
+       sh /etc/init.d/rc.error
+    fi
+else
+    echo "Starting FMUv2 sensors"
+    if hmc5883 start
+    then
+        echo "Using external magnetometer"
+    fi
+    set HAVE_MPU6000 false          
+    if [ ! -f /fs/microsd/APM/LSM303D.en ]
+    then
+        if mpu6000 start
+        then
+          set HAVE_MPU6000 true
+          echo "Found MPU6000"
+          echo "Found MPU6000" >> $logfile
+        else
+          echo "No MPU6000"
+          echo "No MPU6000" >> $logfile
+        fi
+    fi       
+    if [ $HAVE_MPU6000 == false ]
+    then
+        if l3gd20 start
+        then
+           echo "l3gd20 started OK"
+        else
+           sh /etc/init.d/rc.error
+        fi
+        if lsm303d start
+        then
+           echo "lsm303d started OK"
+        else
+           sh /etc/init.d/rc.error
+        fi
+    fi
+fi
+
+# optional ETS airspeed sensor
+if ets_airspeed start
+then
+    echo "Found ETS airspeed sensor" >> $logfile
+fi
+
+if meas_airspeed start
+then
+    echo "Found MEAS airspeed sensor" >> $logfile
+fi
+
+echo "Trying PX4IO board"
+echo "Trying PX4IO board" >> $logfile
+
+# rgbled
+if rgbled start
+then
+   echo "rgbled started OK"
+else
+   echo "Failed to start rgbled driver" >> $logfile
+fi
+
+echo Starting ArduPilot
+echo Starting ArduPilot $deviceA $deviceC $deviceD >> $logfile
+if ArduPilot -d $deviceA -d2 $deviceC -d3 $deviceD start
+then
+    echo ArduPilot started OK
+else
+    sh /etc/init.d/rc.error
+fi
+
+echo "rc.APM finished"
+echo "rc.APM finished" >> $logfile
+

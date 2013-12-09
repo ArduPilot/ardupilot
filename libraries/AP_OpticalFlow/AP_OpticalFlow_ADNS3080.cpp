@@ -1,12 +1,22 @@
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       AP_OpticalFlow_ADNS3080.cpp - ADNS3080 OpticalFlow Library for
  *       Ardupilot Mega
  *       Code by Randy Mackay. DIYDrones.com
- *
- *       This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) any later version.
  *
  */
 
@@ -46,17 +56,21 @@ AP_OpticalFlow_ADNS3080::init()
     // suspend timer while we set-up SPI communication
     hal.scheduler->suspend_timer_procs();
 
-    if( _reset_pin != 0)
+    // reset the device if the reset pin has been defined
+    if(_reset_pin != 0) {
         hal.gpio->pinMode(_reset_pin, GPIO_OUTPUT);
+    }
+
     // reset the device
     reset();
 
-    // check 3 times for the sensor on standard SPI bus
+    // get pointer to the spi bus
     _spi = hal.spi->device(AP_HAL::SPIDevice_ADNS3080_SPI0);
     if (_spi == NULL) {
         retvalue = false; goto finish;
     }
 
+    // check 3 times for the sensor on standard SPI bus
     while( retvalue == false && retry < 3 ) {
         if( read_register(ADNS3080_PRODUCT_ID) == 0x17 ) {
             retvalue = true;
@@ -65,11 +79,13 @@ AP_OpticalFlow_ADNS3080::init()
         retry++;
     }
 
-    // if not found, check 3 times on SPI3
+    // if not found, get pointer to the SPI3 bus
     _spi = hal.spi->device(AP_HAL::SPIDevice_ADNS3080_SPI3);
     if (_spi == NULL) {
         retvalue = false; goto finish;
     }
+
+    // check 3 times on SPI3
     retry = 0;
     while( retvalue == false && retry < 3 ) {
         if( read_register(ADNS3080_PRODUCT_ID) == 0x17 ) {
@@ -77,6 +93,7 @@ AP_OpticalFlow_ADNS3080::init()
         }
         retry++;
     }
+
     // If we fail to find on SPI3, no connection available.
     retvalue = false;
     _spi = NULL;
@@ -85,12 +102,7 @@ finish:
     // if device is working register the global static read function to
     // be called at 1khz
     if( retvalue ) {
-        hal.scheduler->register_timer_process( AP_OpticalFlow_ADNS3080::read );
-        _spi_sem = _spi->get_semaphore();
-        if (_spi_sem == NULL) {
-            hal.scheduler->panic(PSTR("PANIC: Got SPI Driver, but did not "
-                        "get valid SPI semaphore in AP_Optflow_ADNS3080"));
-        }
+        hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_OpticalFlow_ADNS3080::read));
     }
 
     // resume timer
@@ -103,9 +115,18 @@ finish:
 // Read a register from the sensor
 uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 {
-    if (_spi == NULL) return 0;
+    AP_HAL::Semaphore *spi_sem;
 
-    if (!_spi_sem->take_nonblocking()) {
+    // check that we have an spi bus
+    if (_spi == NULL) {
+        return 0;
+    }
+
+    // get spi bus semaphore
+    spi_sem = _spi->get_semaphore();
+
+    // try to get control of the spi bus
+    if (spi_sem == NULL || !spi_sem->take_nonblocking()) {
         return 0;
     }
 
@@ -118,7 +139,8 @@ uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 
     _spi->cs_release();
 
-    _spi_sem->give();
+    // release the spi bus
+    spi_sem->give();
 
     return result;
 }
@@ -126,9 +148,18 @@ uint8_t AP_OpticalFlow_ADNS3080::read_register(uint8_t address)
 // write a value to one of the sensor's registers
 void AP_OpticalFlow_ADNS3080::write_register(uint8_t address, uint8_t value)
 {
-    if (_spi == NULL) return;
+    AP_HAL::Semaphore *spi_sem;
 
-    if (!_spi_sem->take_nonblocking()) {
+    // check that we have an spi bus
+    if (_spi == NULL) {
+        return;
+    }
+
+    // get spi bus semaphore
+    spi_sem = _spi->get_semaphore();
+
+    // try to get control of the spi bus
+    if (spi_sem == NULL || !spi_sem->take_nonblocking()) {
         return;
     }
 
@@ -142,7 +173,8 @@ void AP_OpticalFlow_ADNS3080::write_register(uint8_t address, uint8_t value)
 
     _spi->cs_release();
 
-    _spi_sem->give();
+    // release the spi bus
+    spi_sem->give();
 }
 
 // reset sensor by holding a pin high (or is it low?) for 10us.
@@ -162,7 +194,7 @@ AP_OpticalFlow_ADNS3080::reset()
 
 // read latest values from sensor and fill in x,y and totals
 void
-AP_OpticalFlow_ADNS3080::update(uint32_t now)
+AP_OpticalFlow_ADNS3080::update(void)
 {
     uint8_t motion_reg;
     surface_quality = read_register(ADNS3080_SQUAL);
@@ -434,7 +466,7 @@ void AP_OpticalFlow_ADNS3080::print_pixel_data()
             }
             isFirstPixel = false;
             pixelValue = ( regValue << 2 );
-            hal.console->print(pixelValue,DEC);
+            hal.console->print(pixelValue,BASE_DEC);
             if( j!= ADNS3080_PIXELS_X-1 )
                 hal.console->print_P(PSTR(","));
             hal.scheduler->delay_microseconds(50);

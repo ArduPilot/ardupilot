@@ -126,17 +126,9 @@ enum ap_message {
     MSG_RETRY_DEFERRED // this must be last
 };
 
-enum gcs_severity {
-    SEVERITY_LOW=1,
-    SEVERITY_MEDIUM,
-    SEVERITY_HIGH,
-    SEVERITY_CRITICAL
-};
-
 //  Logging parameters
 #define LOG_INDEX_MSG			0xF0
 #define LOG_ATTITUDE_MSG		0x01
-#define LOG_GPS_MSG				0x02
 #define LOG_MODE_MSG			0X03
 #define LOG_CONTROL_TUNING_MSG	0X04
 #define LOG_NAV_TUNING_MSG		0X05

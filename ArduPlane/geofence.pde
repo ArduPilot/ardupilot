@@ -15,7 +15,7 @@
  *  We store a copy of the boundary in memory as we need to access it
  *  very quickly at runtime
  */
-static struct geofence_state {
+static struct GeofenceState {
     uint8_t num_points;
     bool boundary_uptodate;
     bool fence_triggered;
@@ -78,11 +78,11 @@ static void geofence_load(void)
     uint8_t i;
 
     if (geofence_state == NULL) {
-        if (memcheck_available_memory() < 512 + sizeof(struct geofence_state)) {
+        if (memcheck_available_memory() < 512 + sizeof(struct GeofenceState)) {
             // too risky to enable as we could run out of stack
             goto failed;
         }
-        geofence_state = (struct geofence_state *)calloc(1, sizeof(struct geofence_state));
+        geofence_state = (struct GeofenceState *)calloc(1, sizeof(struct GeofenceState));
         if (geofence_state == NULL) {
             // not much we can do here except disable it
             goto failed;
@@ -180,7 +180,7 @@ static void geofence_check(bool altitude_check_only)
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
         if (geofence_state != NULL &&
-            g.fence_action == FENCE_ACTION_GUIDED &&
+            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) &&
             g.fence_channel != 0 &&
             control_mode == GUIDED &&
             g.fence_total >= 5 &&
@@ -213,7 +213,7 @@ static void geofence_check(bool altitude_check_only)
     } else if (geofence_check_maxalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MAXALT;
-    } else if (!altitude_check_only && ahrs.get_position(&loc)) {
+    } else if (!altitude_check_only && ahrs.get_projected_position(loc)) {
         Vector2l location;
         location.x = loc.lat;
         location.y = loc.lng;
@@ -264,6 +264,7 @@ static void geofence_check(bool altitude_check_only)
         break;
 
     case FENCE_ACTION_GUIDED:
+    case FENCE_ACTION_GUIDED_THR_PASS:
         // fly to the return point, with an altitude half way between
         // min and max
         if (g.fence_minalt >= g.fence_maxalt) {
@@ -286,6 +287,9 @@ static void geofence_check(bool altitude_check_only)
         }
 
         set_mode(GUIDED);
+        if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
+            guided_throttle_passthru = true;
+        }
         break;
     }
 

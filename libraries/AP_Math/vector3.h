@@ -1,11 +1,20 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // Copyright 2010 Michael Smith, all rights reserved.
-
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 
 // Derived closely from:
 /****************************************
@@ -45,8 +54,12 @@
 #include <string.h>
 
 template <typename T>
+class Matrix3;
+
+template <typename T>
 class Vector3
 {
+
 public:
     T        x, y, z;
 
@@ -60,168 +73,115 @@ public:
     }
 
     // function call operator
-    void operator        ()(const T x0, const T y0, const T z0)
+    void operator ()(const T x0, const T y0, const T z0)
     {
         x= x0; y= y0; z= z0;
     }
 
     // test for equality
-    bool operator        ==(const Vector3<T> &v)
-    {
-        return (x==v.x && y==v.y && z==v.z);
-    }
+    bool operator ==(const Vector3<T> &v) const;
 
     // test for inequality
-    bool operator        !=(const Vector3<T> &v)
-    {
-        return (x!=v.x || y!=v.y || z!=v.z);
-    }
+    bool operator !=(const Vector3<T> &v) const;
 
     // negation
-    Vector3<T> operator        -(void) const
-    {
-        return Vector3<T>(-x,-y,-z);
-    }
+    Vector3<T> operator -(void) const;
 
     // addition
-    Vector3<T> operator        +(const Vector3<T> &v) const
-    {
-        return Vector3<T>(x+v.x, y+v.y, z+v.z);
-    }
+    Vector3<T> operator +(const Vector3<T> &v) const;
 
     // subtraction
-    Vector3<T> operator        -(const Vector3<T> &v) const
-    {
-        return Vector3<T>(x-v.x, y-v.y, z-v.z);
-    }
+    Vector3<T> operator -(const Vector3<T> &v) const;
 
     // uniform scaling
-    Vector3<T> operator        *(const T num) const
-    {
-        Vector3<T>        temp(*this);
-        return temp*=num;
-    }
+    Vector3<T> operator *(const T num) const;
 
     // uniform scaling
-    Vector3<T> operator        /(const T num) const
-    {
-        Vector3<T>        temp(*this);
-        return temp/=num;
-    }
+    Vector3<T> operator  /(const T num) const;
 
     // addition
-    Vector3<T> &operator        +=(const Vector3<T> &v)
-    {
-        x+=v.x; y+=v.y; z+=v.z;
-        return *this;
-    }
+    Vector3<T> &operator +=(const Vector3<T> &v);
 
     // subtraction
-    Vector3<T> &operator        -=(const Vector3<T> &v)
-    {
-        x-=v.x; y-=v.y; z-=v.z;
-        return *this;
-    }
+    Vector3<T> &operator -=(const Vector3<T> &v);
 
     // uniform scaling
-    Vector3<T> &operator        *=(const T num)
-    {
-        x*=num; y*=num; z*=num;
-        return *this;
-    }
+    Vector3<T> &operator *=(const T num);
 
     // uniform scaling
-    Vector3<T> &operator        /=(const T num)
-    {
-        x/=num; y/=num; z/=num;
-        return *this;
-    }
+    Vector3<T> &operator /=(const T num);
 
     // dot product
-    T operator                  *(const Vector3<T> &v) const;
+    T operator *(const Vector3<T> &v) const;
+
+    // multiply a row vector by a matrix, to give a row vector
+    Vector3<T> operator *(const Matrix3<T> &m) const;
+
+    // multiply a column vector by a row vector, returning a 3x3 matrix
+    Matrix3<T> mul_rowcol(const Vector3<T> &v) const;
 
     // cross product
-    Vector3<T> operator         %(const Vector3<T> &v) const;
+    Vector3<T> operator %(const Vector3<T> &v) const;
+
+    // computes the angle between this vector and another vector
+    float angle(const Vector3<T> &v2) const;
+
+    // check if any elements are NAN
+    bool is_nan(void) const;
+
+    // check if any elements are infinity
+    bool is_inf(void) const;
+
+    // rotate by a standard rotation
+    void rotate(enum Rotation rotation);
 
     // gets the length of this vector squared
-    T                           length_squared() const
+    T  length_squared() const
     {
         return (T)(*this * *this);
     }
 
     // gets the length of this vector
-    float           length(void) const;
+    float length(void) const;
 
     // normalizes this vector
-    void            normalize()
+    void normalize()
     {
-        *this/=length();
+        *this /= length();
     }
 
     // zero the vector
-    void        zero()
+    void zero()
     {
-        x = y = z = 0.0;
+        x = y = z = 0;
     }
 
     // returns the normalized version of this vector
-    Vector3<T>        normalized() const
+    Vector3<T> normalized() const
     {
         return *this/length();
     }
 
     // reflects this vector about n
-    void        reflect(const Vector3<T> &n)
+    void  reflect(const Vector3<T> &n)
     {
         Vector3<T>        orig(*this);
         project(n);
-        *this= *this*2 - orig;
+        *this = *this*2 - orig;
     }
 
     // projects this vector onto v
-    void        project(const Vector3<T> &v)
+    void project(const Vector3<T> &v)
     {
         *this= v * (*this * v)/(v*v);
     }
 
     // returns this vector projected onto v
-    Vector3<T>        projected(const Vector3<T> &v)
+    Vector3<T> projected(const Vector3<T> &v) const
     {
         return v * (*this * v)/(v*v);
     }
 
-    // computes the angle between 2 arbitrary vectors
-    T        angle(const Vector3<T> &v1, const Vector3<T> &v2)
-    {
-        return (T)acosf((v1*v2) / (v1.length()*v2.length()));
-    }
-
-    // computes the angle between this vector and another vector
-    T        angle(const Vector3<T> &v2)
-    {
-        return (T)acosf(((*this)*v2) / (this->length()*v2.length()));
-    }
-
-    // computes the angle between 2 arbitrary normalized vectors
-    T        angle_normalized(const Vector3<T> &v1, const Vector3<T> &v2)
-    {
-        return (T)acosf(v1*v2);
-    }
-
-    // check if any elements are NAN
-    bool        is_nan(void)
-    {
-        return isnan(x) || isnan(y) || isnan(z);
-    }
-
-    // check if any elements are infinity
-    bool        is_inf(void)
-    {
-        return isinf(x) || isinf(y) || isinf(z);
-    }
-
-    // rotate by a standard rotation
-    void        rotate(enum Rotation rotation);
 
 };
 

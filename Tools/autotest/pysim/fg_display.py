@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import socket, struct, time, math, errno
-import fgFDM
+from pymavlink import fgFDM
 
 class udp_socket(object):
     '''a UDP socket'''

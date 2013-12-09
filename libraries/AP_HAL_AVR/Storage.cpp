@@ -23,19 +23,25 @@ void AVREEPROMStorage::read_block(void *dst, uint16_t src, size_t n) {
 }
 
 void AVREEPROMStorage::write_byte(uint16_t loc, uint8_t value) {
-    eeprom_write_byte((uint8_t*)loc,value);
+    uint8_t b = eeprom_read_byte((uint8_t*)loc);
+    if (b != value) {
+        eeprom_write_byte((uint8_t*)loc, value);
+    }
 }
 
 void AVREEPROMStorage::write_word(uint16_t loc, uint16_t value) {
-    eeprom_write_word((uint16_t*)loc,value);
+    write_block(loc, &value, sizeof(value));
 }
 
 void AVREEPROMStorage::write_dword(uint16_t loc, uint32_t value) {
-    eeprom_write_dword((uint32_t*)loc,value);
+    write_block(loc, &value, sizeof(value));
 }
 
-void AVREEPROMStorage::write_block(uint16_t dst, void *src, size_t n) {
-    eeprom_write_block(src,(void*)dst,n);
+void AVREEPROMStorage::write_block(uint16_t dst, const void *src, size_t n) {
+    uint8_t *p = (uint8_t *)src;
+    while (n--) {
+        write_byte(dst++, *p++);
+    }
 }
 
 #endif

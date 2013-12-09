@@ -1,5 +1,237 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc8 9-Dec-2013
+Changes from 3.1-rc7
+1) add Y6 motor mapping with all top props CW, bottom pros CCW (set FRAME = 10)
+2) Safety Changes:
+    a) ignore yaw input during radio failsafe (previously the copter could return home spinning if yaw was full over at time of failsafe)
+    b) Reduce GPSGLITCH_RADIUS to 2m (was 5m) to catch glitches faster
+3) Bug fixes:
+    a) Optical flow SPI bus rates
+    b) TradHeli main rotor ramp up speed fix
+------------------------------------------------------------------
+ArduCopter 3.1-rc7 22-Nov-2013
+Changes from 3.1-rc6
+1) MOT_SPIN_ARMED default to 70
+2) Smoother inertial nav response to missed GPS messages
+3) Safety related changes
+    a) radio and battery failsafe disarm copter if landed in Loiter or AltHold (previously they would RTL)
+    b) Pre-Arm check failure warning output to ground station every 30 seconds until they pass
+    c) INS and inertial nav errors logged to dataflash's PM message
+    d) pre-arm check for ACRO_BAL_ROLL, ACRO_BAL_PITCH
+------------------------------------------------------------------
+ArduCopter 3.1-rc6 16-Nov-2013
+Improvements over 3.1-rc5
+1) Heli improvements:
+    a) support for direct drive tails (uses TAIL_TYPE and TAIL_SPEED parameters)
+    b) smooth main rotor ramp-up for those without external govenor (RSC_RAMP_TIME)
+    c) internal estimate of rotor speed configurable with RSC_RUNUP_TIME parameter to ensure rotor at top speed before starting missions
+    d) LAND_COL_MIN collective position used when landed (reduces chance copter will push too hard into the ground when landing or before starting missions)
+    e) reduced collective while in stabilize mode (STAB_COL_MIN, STAB_COL_MAX) for more precise throttle control
+    f) external gyro parameter range changed from 1000~2000 to 0~1000 (more consistent with other parameters)
+    g) dynamic flight detector switches on/off leaky-i term depending on copter speed
+2) SingleCopter airframe support (contribution from Bill King)
+3) Drift mode replaces TOY
+4) MPU6k SPI bus speed decreased to 500khz after 4 errors
+5) Safety related changes:
+    a) crash detector cuts motors if copter upside down for more than 2 seconds
+    b) INS (accel and gyro) health check in pre-arm checks
+    c) ARMING_CHECK allows turning on/off individual checks for baro, GPS, compass, parameters, board voltage, radio
+    d) detect Ublox GPS running at less than 5hz and resend configuration
+    e) GPSGlitch acceptable radius reduced to 5m (stricter detection of glitches)
+    f) range check roll, pitch input to ensure crazy radio values don't get through to stabilize controller
+    g) GPS failsafe options to trigger AltHold instead of LAND or to trigger LAND even if in flight mode that does not require GPS
+    h) Battery failsafe option to trigger RTL instead of LAND
+    i) MOT_SPIN_ARMED set to zero by default
+6) Bug fixes:
+    a) missing throttle controller initialisation would mean Stabilize mode's throttle could be non-tilt-compensated
+    b) inertial nav baro and gps delay compensation fix (contribution from Neurocopter)
+    c) GPS failsafe was invoking LAND mode which still used GPS for horizontal control
+------------------------------------------------------------------
+ArduCopter 3.1-rc5 22-Oct-2013
+Improvements over 3.1-rc4
+1) Pixhawk USB reliability improvements
+2) AutoTune changes:
+    a) enabled by default
+    b) status output to GCS
+    c) use 2 pos switch only
+3) ch7/ch8 LAND
+4) Tricopter stability patch improvements [thanks to texlan]
+5) safety improvements:
+    a) slower speed up of motors after arming
+    b) pre-arm check that copter is moving less than 50cm/s if arming in Loiter or fence enabled
+------------------------------------------------------------------
+ArduCopter 3.1-rc4 13-Oct-2013
+Improvements over 3.1-rc3
+1) Performance improvements to resolve APM alt hold issues for Octacopters:
+     a) SPI bus speed increased from 500khz to 8Mhz
+     b) Telemetry buffer increased to 512bytes
+     c) broke up medium and slow loops into individual scheduled tasks and increased priority of alt hold tasks
+2) Bug fix for Pixhawk USB connection
+3) GPS Glitch improvements:
+       a) added GPS glitch check to arming check
+       b) parameters for vehicle max acceleration (GPSGLITCH_ACCEL) and always-ok radius (GPSGLICH_RADIUS)
+------------------------------------------------------------------
+ArduCopter 3.1-rc3 09-Oct-2013
+Improvements over 3.1-rc2
+1) GPS Glitch protection - gps positions are compared with the previous gps position.  Position accepted if within 10m or copter could have reached the position with max accel of 10m/s/s.
+2) Bug fix for pixhawk SPI bus contention that could lead to corrupted accelerometer values on pixhawk resolved
+3) Auto Tuning (compile time option only add "#define AUTOTUNE ENABLED" to APM_Config.h and set CH7_Opt or CH8_Opt parameter to 17)
+4) CPU Performance improvement when reading from MPU6k for APM
+5) SUPER_SIMPLE parameter changed to a bit map to allow some flight modes to use super simpler while others use regular simple (MP release to allow easier selection will go out with AC3.1 official release)
+6) Safety changes:
+    a) safety button must be pushed before arming on pixhawk
+    b) RGB LED (aka toshiba led) changed so that disarmed flashes, armed is either blue (if no gps lock) or green (if gps lock)
+    c) sensor health bitmask sent to groundstations
+------------------------------------------------------------------
+ArduCopter 3.1-rc2 18-Sep-2013
+Improvements over 3.1-rc1
+1) bug fix for MOT_SPIN_ARMED to allow it to be higher than 127
+2) PX4/pixhawk auto-detect internal/external compass so COMPASS_ORIENT should be set to ORIENTATION_NONE if using GPS+compass module
+------------------------------------------------------------------
+ArduCopter 3.1-rc1 9-Sep-2013
+Improvements over 3.0.1
+1) Support for Pixhawks board
+2) Arm, Disarm, Land and Takeoff in Loiter and AltHold
+3) Improved Acro
+    a) ACRO_RP_P, ACRO_YAW_P parameters added to control speed of rotation
+    b) ACRO_BAL_ROLL, ACRO_BAL_PITCH controls speed at which copter returns to level
+    c) ACRO_TRAINER can be set to 0:disable trainer, 1:auto leveling when sticks released, 2:auto leveling and lean angle limited to ANGLE_MAX
+    d) Ch7 & Ch8 switch to set ACRO_TRAINER options in-flight
+4) SPORT mode - equivalent of earth frame Acro with support for simple mode
+5) Sonar ground tracking improvements and bug fixes that reduce reaction to bad sonar data
+6) Safety improvements
+    a) motors always spin when armed (speed can be controlled with MOT_SPIN_ARMED, set to 0 to disable)
+    b) vehicle's maximum lean angle can be reduced (or increased) with the ANGLE_MAX parameter
+    c) arming check that GPS hdop is > 2.0 (disable by setting GPS_HDOP parameter to 900)
+    d) slow take-off in AUTO, LOITER, ALTHOLD to reduce chance of motor/esc burn-out on large copters
+7) Bug fixes:
+    a) Optical flow sensor initialisation fix
+    b) altitude control fix for Loiter_turns mission command (i.e. mission version of CIRCLE mode)
+    c) DO_SET_ROI fix (do not use "ROI")
+8) Distribute Loiter & Navigation calcs over 4 cycles to reduce impact on a single 100hz loop
+9) RCMAP_ parameters allow remapping input channels 1 ~ 4
+------------------------------------------------------------------
+ArduCopter 3.0.1-rc2 / 3.0.1 11-Jul-2013
+Improvements over 3.0.1-rc1
+1) Rate Roll, Pitch and Yaw I fix when we hit motor limits
+2) pre-arm check changes:
+    a) double flash arming light when pre-arm checks fail
+    b) relax mag field checks to 35% min, 165% max of expected field
+3) loiter and auto changes:
+      a) reduced Loiter speed to 5 m/s
+      b) reduced WP_ACCEL to 1 m/s/s (was 2.5 m/s/s)
+      c) rounding error fix in loiter controller
+      d) bug fix to stopping point calculation for RTL and loiter during missions
+4) Stability Patch fix which was freezing Rate Taw I term and allowing uncommanded Yaw
+------------------------------------------------------------------
+ArduCopter 3.0.1-rc1 26-Jun-2013
+Improvements over 3.0.0
+1) bug fix to Fence checking position after GPS lock was lost
+2) bug fix to LAND so that it does not attempt to maintain horizontal position without GPS lock
+------------------------------------------------------------------
+ArduCopter 3.0.0 / 3.0.0-rc6 16-Jun-2013
+Improvements over 3.0.0-rc5
+1) bug fix to Circle mode's start position (was moving to last loiter target)
+2) WP_ACCEL parameter added to allow user to adjust acceleration during missions
+3) loiter acceleration set to half of LOIT_SPEED parameter value (was hard-coded)
+4) reduce AltHold P to 1.0 (was 2.0)
+------------------------------------------------------------------
+ArduCopter 3.0.0-rc5 04-Jun-2013
+Improvements over 3.0.0-rc4
+1) bug fix to LAND flight mode in which it could try to fly to mission's next waypoint location
+2) bug fix to Circle mode to allow counter-clockwise rotation
+3) bug fix to heading change in Loiter, RTL, Missions when pilot's throttle is zero
+4) bug fix for mission sticking at take-off command when pilot's throttle is zero
+5) bug fix for parameters not saving when new value is same as default value
+6) reduce pre-arm board min voltage check to 4.3V (was 4.5V)
+7) remove throttle controller's ability to limit lean angle in loiter, rtl, auto
+------------------------------------------------------------------
+ArduCopter 3.0.0-rc4 02-Jun-2013
+Improvements over 3.0.0-rc3
+1) loiter improvements:
+     i) repositioning enhanced with feed forward
+     ii) use tan to convert desired accel to lean angle
+2) stability patch improvements for high powered copters or those with roll-pitch rate gains set too high
+3) auto mode vertical speed fix (it was not reaching the desired speeds)
+4) alt hold smoothed by filtering feed forward input
+5) circle mode fix to initial position and smoother initialisation
+6) RTL returns to initial yaw heading before descending
+7) safe features:
+    i) check for gps lock when entering failsafe
+    ii) pre-arm check for mag field lenght
+    iii) pre-arm check for board voltage between 4.5v ~ 5.8V
+    iv) beep twice during arming
+    v) GPS failsafe enabled by default (will LAND if loses GPS in Loiter, AUTO, Guided modes)
+    vi) bug fix for alt-hold mode spinning motors before pilot has raised throttle
+8) bug fixes:
+    i) fixed position mode so it responding to pilot input
+    ii) baro cli test
+    iii) moved cli motor test to test sub menu and minor change to throttle output
+    iv) guided mode yaw control fix
+------------------------------------------------------------------
+ArduCopter 3.0.0-rc3 22-May-2013
+Improvements over 3.0.0-rc2
+1) bug fix for dataflash erasing unnecessarily
+2) smoother transition to waypoints, loiter:
+    intermediate point's speed initialised from copter's current speed
+3) Ch8 auxiliary function switch (same features as Ch7)
+4) safety checks:
+    Warning to GCS of reason for pre-arm check failure
+    ARMING_CHECK parameter added to allow disabling pre-arm checks
+    Added compass health and offset check to pre-arm check
+    compassmot procedure displays interference as percentage of total mag field
+5) WPNAV dataflash message combined into NTUN message
+6) allow TriCopters to use ESC calibration
+------------------------------------------------------------------
+ArduCopter 3.0.0-rc2 13-May-2013
+Improvements over 3.0.0-rc1:
+1) smoother transition to waypoints, loiter:
+    reduced loiter max acceleration to smooth waypoints
+    bug fix to uninitialised roll/pitch when entering RTL, AUTO, LOITER
+2) fast waypoints - copter does not stop at waypoints unless delay is specified
+3) WPNAV_LOIT_SPEED added to allow faster/slower loiter repositioning
+4) removed speed limits on auto missions
+5) enhance LAND mission command takes lat/lon coordinates
+6) bug fix for RTL not pointing home sometimes
+7) centrifugal correction disabled when copter is disarmed to stop HUD moving
+8) centrifugal correction disabled when sat count less than 6 (AHRS_GPS_MINSATS)
+9) compass calibration reliability improvements when run from mission planner
+10) bug fix to allow compassmot to be run from mission planner terminal screen
+11) add support for H-quad frame
+12) add COMPASS_ORIENT parameter to support external compass in any orientation
+------------------------------------------------------------------
+ArduCopter 3.0.0-rc1 01-May-2013
+Improvements over 2.9.1b:
+1) Inertial navigation for X & Y axis (Randy/Leonard/Jonathan)
+2) 3D waypoint navigation library (Leonard/Randy)
+    WPNAV_SPEED, WPNAV_SPEED_UP, WPNAV_SPEED_DN control target speeds during missions and RTL
+    WP_YAW_BEHAVIOR to allow disabling yaw during missions and RTL
+3) PX4 support (some features still not available) (Tridge/Pat/PX4Dev Team)
+4) Safety improvements:
+    Tin-can shaped fence (set FENCE_ENABLED to 1 and copter will RTL if alt > 150m or horizontal distance from home > 300m) (Randy/Tridge/Leonard)
+    GCS failsafe (set FS_GCS_ENABLED to 1 and if you are using a tablet to fly your copter it will RTL and return control to the radio 3 seconds after losing telemetry) (Randy)
+    pre-arm checks to ensure accelerometer and radio calibration has been performed before arming (Randy)
+5) motor interference compensation for compass (Jonathan/Randy)
+6) Circle mode improvements:
+    set CIRCLE_RADIUS to zero to do panorama shots in circle mode (copter does not move in a circle but instead slowly rotates)
+    CIRCLE_RATE parameter allows controlling direction and speed of rotation in CIRCLE mode and LOITER_TURNS (can also be adjusted in flight from CH6 knob)
+7) SONAR_GAIN parameter add to allow reducing the response to objects sensed by sonar (Randy)
+8) support for trapezoidal quads (aka V shaped or FPV quads) (Leonard/Craig)
+9) performance improvements to dataflash logging (Tridge)
+10) bug-fix to analog read which could cause bad sonar reads when using voltage or current monitor (Tridge)
+11) bug-fix to motors going to minimum when throttle is low while switching into Loiter, AUTO, RTL, ALT_HOLD (Jason/Randy)
+12) bug-fix for auto disarm sometimes disarming shortly after arming (Jason/SirAlex)
+------------------------------------------------------------------
+ArduCopter 2.9.1b 30-Feb-2013
+Improvements over 2.9.1:
+1) reduce INS_MPU6K_FILTER to 20hz
+2) reduce InertialNav Z-axis time constant to 5 (was 7)
+3) increased max InertialNav accel correction to 3 m/s (was 1m/s)
+4) bug fix for alt_hold being passed as int16_t to get_throttle_althold_with_slew
+5) bug fix for throttle after acro flip (was being kept at min throttle if pilot switched out of ACRO mode while inverted)
+6) reduce yaw_rate P default to 0.20 (was 0.25)
+------------------------------------------------------------------
 ArduCopter 2.9.1 & 2.9.1-rc2 01-Feb-2013
 Improvements over 2.9.1-rc1:
 1) small corretion to use of THR_MID to scale lower end of manual throttle between THR_MIN and 500 instead of 0 and 500

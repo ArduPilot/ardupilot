@@ -20,6 +20,7 @@ private:
     Vector3f _sum;
     uint32_t _count;
     uint64_t _last_timestamp;
+    bool _is_external;
 };
 
 #endif // AP_Compass_PX4_H

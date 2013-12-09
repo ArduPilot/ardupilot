@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @brief Imposes limits on location (geofence), altitude and other parameters.
 /// Each breach will trigger an action or set of actions to recover.
@@ -41,10 +41,10 @@ public:
     bool        enabled();
     bool        debug();
     bool        required();
-    AP_Int8     state();
-    AP_Int8     safetime();
-    AP_Int8     channel();
-    AP_Int8     recmode();
+    int8_t     state();
+    int8_t     safetime();
+    int8_t     channel();
+    int8_t     recmode();
 
     // module linked list management methods
     // pointer to the first module in linked list of modules

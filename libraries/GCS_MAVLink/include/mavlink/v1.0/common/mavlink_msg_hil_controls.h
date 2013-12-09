@@ -20,6 +20,9 @@ typedef struct __mavlink_hil_controls_t
 #define MAVLINK_MSG_ID_HIL_CONTROLS_LEN 42
 #define MAVLINK_MSG_ID_91_LEN 42
 
+#define MAVLINK_MSG_ID_HIL_CONTROLS_CRC 63
+#define MAVLINK_MSG_ID_91_CRC 63
+
 
 
 #define MAVLINK_MESSAGE_INFO_HIL_CONTROLS { \
@@ -63,7 +66,7 @@ static inline uint16_t mavlink_msg_hil_controls_pack(uint8_t system_id, uint8_t 
 						       uint64_t time_usec, float roll_ailerons, float pitch_elevator, float yaw_rudder, float throttle, float aux1, float aux2, float aux3, float aux4, uint8_t mode, uint8_t nav_mode)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[42];
+	char buf[MAVLINK_MSG_ID_HIL_CONTROLS_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_float(buf, 8, roll_ailerons);
 	_mav_put_float(buf, 12, pitch_elevator);
@@ -76,7 +79,7 @@ static inline uint16_t mavlink_msg_hil_controls_pack(uint8_t system_id, uint8_t 
 	_mav_put_uint8_t(buf, 40, mode);
 	_mav_put_uint8_t(buf, 41, nav_mode);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
 #else
 	mavlink_hil_controls_t packet;
 	packet.time_usec = time_usec;
@@ -91,18 +94,22 @@ static inline uint16_t mavlink_msg_hil_controls_pack(uint8_t system_id, uint8_t 
 	packet.mode = mode;
 	packet.nav_mode = nav_mode;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HIL_CONTROLS;
-	return mavlink_finalize_message(msg, system_id, component_id, 42, 63);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_HIL_CONTROLS_LEN, MAVLINK_MSG_ID_HIL_CONTROLS_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
+#endif
 }
 
 /**
  * @brief Pack a hil_controls message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  * @param roll_ailerons Control output -1 .. 1
@@ -122,7 +129,7 @@ static inline uint16_t mavlink_msg_hil_controls_pack_chan(uint8_t system_id, uin
 						           uint64_t time_usec,float roll_ailerons,float pitch_elevator,float yaw_rudder,float throttle,float aux1,float aux2,float aux3,float aux4,uint8_t mode,uint8_t nav_mode)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[42];
+	char buf[MAVLINK_MSG_ID_HIL_CONTROLS_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_float(buf, 8, roll_ailerons);
 	_mav_put_float(buf, 12, pitch_elevator);
@@ -135,7 +142,7 @@ static inline uint16_t mavlink_msg_hil_controls_pack_chan(uint8_t system_id, uin
 	_mav_put_uint8_t(buf, 40, mode);
 	_mav_put_uint8_t(buf, 41, nav_mode);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
 #else
 	mavlink_hil_controls_t packet;
 	packet.time_usec = time_usec;
@@ -150,15 +157,19 @@ static inline uint16_t mavlink_msg_hil_controls_pack_chan(uint8_t system_id, uin
 	packet.mode = mode;
 	packet.nav_mode = nav_mode;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HIL_CONTROLS;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 42, 63);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_HIL_CONTROLS_LEN, MAVLINK_MSG_ID_HIL_CONTROLS_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
+#endif
 }
 
 /**
- * @brief Encode a hil_controls struct into a message
+ * @brief Encode a hil_controls struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -168,6 +179,20 @@ static inline uint16_t mavlink_msg_hil_controls_pack_chan(uint8_t system_id, uin
 static inline uint16_t mavlink_msg_hil_controls_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_hil_controls_t* hil_controls)
 {
 	return mavlink_msg_hil_controls_pack(system_id, component_id, msg, hil_controls->time_usec, hil_controls->roll_ailerons, hil_controls->pitch_elevator, hil_controls->yaw_rudder, hil_controls->throttle, hil_controls->aux1, hil_controls->aux2, hil_controls->aux3, hil_controls->aux4, hil_controls->mode, hil_controls->nav_mode);
+}
+
+/**
+ * @brief Encode a hil_controls struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param hil_controls C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_hil_controls_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_hil_controls_t* hil_controls)
+{
+	return mavlink_msg_hil_controls_pack_chan(system_id, component_id, chan, msg, hil_controls->time_usec, hil_controls->roll_ailerons, hil_controls->pitch_elevator, hil_controls->yaw_rudder, hil_controls->throttle, hil_controls->aux1, hil_controls->aux2, hil_controls->aux3, hil_controls->aux4, hil_controls->mode, hil_controls->nav_mode);
 }
 
 /**
@@ -191,7 +216,7 @@ static inline uint16_t mavlink_msg_hil_controls_encode(uint8_t system_id, uint8_
 static inline void mavlink_msg_hil_controls_send(mavlink_channel_t chan, uint64_t time_usec, float roll_ailerons, float pitch_elevator, float yaw_rudder, float throttle, float aux1, float aux2, float aux3, float aux4, uint8_t mode, uint8_t nav_mode)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[42];
+	char buf[MAVLINK_MSG_ID_HIL_CONTROLS_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_float(buf, 8, roll_ailerons);
 	_mav_put_float(buf, 12, pitch_elevator);
@@ -204,7 +229,11 @@ static inline void mavlink_msg_hil_controls_send(mavlink_channel_t chan, uint64_
 	_mav_put_uint8_t(buf, 40, mode);
 	_mav_put_uint8_t(buf, 41, nav_mode);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, buf, 42, 63);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, buf, MAVLINK_MSG_ID_HIL_CONTROLS_LEN, MAVLINK_MSG_ID_HIL_CONTROLS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, buf, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
+#endif
 #else
 	mavlink_hil_controls_t packet;
 	packet.time_usec = time_usec;
@@ -219,7 +248,11 @@ static inline void mavlink_msg_hil_controls_send(mavlink_channel_t chan, uint64_
 	packet.mode = mode;
 	packet.nav_mode = nav_mode;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, (const char *)&packet, 42, 63);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, (const char *)&packet, MAVLINK_MSG_ID_HIL_CONTROLS_LEN, MAVLINK_MSG_ID_HIL_CONTROLS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_CONTROLS, (const char *)&packet, MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
+#endif
 #endif
 }
 
@@ -359,6 +392,6 @@ static inline void mavlink_msg_hil_controls_decode(const mavlink_message_t* msg,
 	hil_controls->mode = mavlink_msg_hil_controls_get_mode(msg);
 	hil_controls->nav_mode = mavlink_msg_hil_controls_get_nav_mode(msg);
 #else
-	memcpy(hil_controls, _MAV_PAYLOAD(msg), 42);
+	memcpy(hil_controls, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_HIL_CONTROLS_LEN);
 #endif
 }

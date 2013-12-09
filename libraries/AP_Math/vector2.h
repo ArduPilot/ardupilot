@@ -1,11 +1,20 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // Copyright 2010 Michael Smith, all rights reserved.
-
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 
 // Derived closely from:
 /****************************************
@@ -46,82 +55,55 @@ struct Vector2
     }
 
     // test for equality
-    bool operator==(const Vector2<T> &v)
-    {
-        return (x==v.x && y==v.y);
-    }
+    bool operator ==(const Vector2<T> &v) const;
 
     // test for inequality
-    bool operator!=(const Vector2<T> &v)
-    {
-        return (x!=v.x || y!=v.y);
-    }
+    bool operator !=(const Vector2<T> &v) const;
 
     // negation
-    Vector2<T> operator -(void) const
-    {
-        return Vector2<T>(-x, -y);
-    }
+    Vector2<T> operator -(void) const;
 
     // addition
-    Vector2<T> operator +(const Vector2<T> &v) const
-    {
-        return Vector2<T>(x+v.x, y+v.y);
-    }
+    Vector2<T> operator +(const Vector2<T> &v) const;
 
     // subtraction
-    Vector2<T> operator -(const Vector2<T> &v) const
-    {
-        return Vector2<T>(x-v.x, y-v.y);
-    }
+    Vector2<T> operator -(const Vector2<T> &v) const;
 
     // uniform scaling
-    Vector2<T> operator *(const T num) const
-    {
-        Vector2<T>        temp(*this);
-        return temp*=num;
-    }
+    Vector2<T> operator *(const T num) const;
 
     // uniform scaling
-    Vector2<T> operator /(const T num) const
-    {
-        Vector2<T>        temp(*this);
-        return temp/=num;
-    }
+    Vector2<T> operator  /(const T num) const;
 
     // addition
-    Vector2<T> &operator +=(const Vector2<T> &v)
-    {
-        x+=v.x; y+=v.y;
-        return *this;
-    }
+    Vector2<T> &operator +=(const Vector2<T> &v);
 
     // subtraction
-    Vector2<T> &operator -=(const Vector2<T> &v)
-    {
-        x-=v.x; y-=v.y;
-        return *this;
-    }
+    Vector2<T> &operator -=(const Vector2<T> &v);
 
     // uniform scaling
-    Vector2<T> &operator *=(const T num)
-    {
-        x*=num; y*=num;
-        return *this;
-    }
+    Vector2<T> &operator *=(const T num);
 
     // uniform scaling
-    Vector2<T> &operator /=(const T num)
-    {
-        x/=num; y/=num;
-        return *this;
-    }
+    Vector2<T> &operator /=(const T num);
 
     // dot product
-    T operator *(const Vector2<T> &v) const
-    {
-        return x*v.x + y*v.y;
-    }
+    T operator *(const Vector2<T> &v) const;
+
+    // cross product
+    T operator %(const Vector2<T> &v) const;
+
+    // computes the angle between this vector and another vector
+    float angle(const Vector2<T> &v2) const;
+
+    // computes the angle in radians between the origin and this vector
+    T angle(void) const;
+
+    // check if any elements are NAN
+    bool is_nan(void) const;
+
+    // check if any elements are infinity
+    bool is_inf(void) const;
 
     // gets the length of this vector squared
     T   length_squared() const
@@ -163,25 +145,6 @@ struct Vector2
     {
         return v * (*this * v)/(v*v);
     }
-
-    // computes the angle between 2 arbitrary vectors
-    T   angle(const Vector2<T> &v1, const Vector2<T> &v2)
-    {
-        return (T)acosf((v1*v2) / (v1.length()*v2.length()));
-    }
-
-    // computes the angle between this vector and another vector
-    T   angle(const Vector2<T> &v2)
-    {
-        return (T)acosf(((*this)*v2) / (this->length()*v2.length()));
-    }
-
-    // computes the angle between 2 normalized arbitrary vectors
-    T   angle_normalized(const Vector2<T> &v1, const Vector2<T> &v2)
-    {
-        return (T)acosf(v1*v2);
-    }
-
 };
 
 typedef Vector2<int16_t>        Vector2i;

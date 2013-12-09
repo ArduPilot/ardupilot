@@ -13,6 +13,9 @@ typedef struct __mavlink_change_operator_control_t
 #define MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN 28
 #define MAVLINK_MSG_ID_5_LEN 28
 
+#define MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_CRC 217
+#define MAVLINK_MSG_ID_5_CRC 217
+
 #define MAVLINK_MSG_CHANGE_OPERATOR_CONTROL_FIELD_PASSKEY_LEN 25
 
 #define MAVLINK_MESSAGE_INFO_CHANGE_OPERATOR_CONTROL { \
@@ -42,30 +45,34 @@ static inline uint16_t mavlink_msg_change_operator_control_pack(uint8_t system_i
 						       uint8_t target_system, uint8_t control_request, uint8_t version, const char *passkey)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[28];
+	char buf[MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN];
 	_mav_put_uint8_t(buf, 0, target_system);
 	_mav_put_uint8_t(buf, 1, control_request);
 	_mav_put_uint8_t(buf, 2, version);
 	_mav_put_char_array(buf, 3, passkey, 25);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 28);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
 #else
 	mavlink_change_operator_control_t packet;
 	packet.target_system = target_system;
 	packet.control_request = control_request;
 	packet.version = version;
 	mav_array_memcpy(packet.passkey, passkey, sizeof(char)*25);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 28);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL;
-	return mavlink_finalize_message(msg, system_id, component_id, 28, 217);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
+#endif
 }
 
 /**
  * @brief Pack a change_operator_control message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System the GCS requests control for
  * @param control_request 0: request control of this MAV, 1: Release control of this MAV
@@ -78,27 +85,31 @@ static inline uint16_t mavlink_msg_change_operator_control_pack_chan(uint8_t sys
 						           uint8_t target_system,uint8_t control_request,uint8_t version,const char *passkey)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[28];
+	char buf[MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN];
 	_mav_put_uint8_t(buf, 0, target_system);
 	_mav_put_uint8_t(buf, 1, control_request);
 	_mav_put_uint8_t(buf, 2, version);
 	_mav_put_char_array(buf, 3, passkey, 25);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 28);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
 #else
 	mavlink_change_operator_control_t packet;
 	packet.target_system = target_system;
 	packet.control_request = control_request;
 	packet.version = version;
 	mav_array_memcpy(packet.passkey, passkey, sizeof(char)*25);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 28);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 28, 217);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
+#endif
 }
 
 /**
- * @brief Encode a change_operator_control struct into a message
+ * @brief Encode a change_operator_control struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -108,6 +119,20 @@ static inline uint16_t mavlink_msg_change_operator_control_pack_chan(uint8_t sys
 static inline uint16_t mavlink_msg_change_operator_control_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_change_operator_control_t* change_operator_control)
 {
 	return mavlink_msg_change_operator_control_pack(system_id, component_id, msg, change_operator_control->target_system, change_operator_control->control_request, change_operator_control->version, change_operator_control->passkey);
+}
+
+/**
+ * @brief Encode a change_operator_control struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param change_operator_control C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_change_operator_control_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_change_operator_control_t* change_operator_control)
+{
+	return mavlink_msg_change_operator_control_pack_chan(system_id, component_id, chan, msg, change_operator_control->target_system, change_operator_control->control_request, change_operator_control->version, change_operator_control->passkey);
 }
 
 /**
@@ -124,19 +149,27 @@ static inline uint16_t mavlink_msg_change_operator_control_encode(uint8_t system
 static inline void mavlink_msg_change_operator_control_send(mavlink_channel_t chan, uint8_t target_system, uint8_t control_request, uint8_t version, const char *passkey)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[28];
+	char buf[MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN];
 	_mav_put_uint8_t(buf, 0, target_system);
 	_mav_put_uint8_t(buf, 1, control_request);
 	_mav_put_uint8_t(buf, 2, version);
 	_mav_put_char_array(buf, 3, passkey, 25);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL, buf, 28, 217);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL, buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL, buf, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
+#endif
 #else
 	mavlink_change_operator_control_t packet;
 	packet.target_system = target_system;
 	packet.control_request = control_request;
 	packet.version = version;
 	mav_array_memcpy(packet.passkey, passkey, sizeof(char)*25);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL, (const char *)&packet, 28, 217);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL, (const char *)&packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL, (const char *)&packet, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
+#endif
 #endif
 }
 
@@ -199,6 +232,6 @@ static inline void mavlink_msg_change_operator_control_decode(const mavlink_mess
 	change_operator_control->version = mavlink_msg_change_operator_control_get_version(msg);
 	mavlink_msg_change_operator_control_get_passkey(msg, change_operator_control->passkey);
 #else
-	memcpy(change_operator_control, _MAV_PAYLOAD(msg), 28);
+	memcpy(change_operator_control, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN);
 #endif
 }

@@ -91,15 +91,12 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // MAGNETOMETER                          OPTIONAL
-// MAG_ORIENTATION                       OPTIONAL
 //
 // Set MAGNETOMETER to ENABLED if you have a magnetometer attached.
-// Set MAG_ORIENTATION to reflect the orientation you have the magnetometer mounted with respect to ArduPilotMega
 //
 // The default assumes that a magnetometer is not connected.
 //
 //#define MAGNETOMETER		DISABLED
-//#define MAG_ORIENTATION	AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 //
 
 //////////////////////////////////////////////////////////////////////////////

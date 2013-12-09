@@ -8,7 +8,6 @@
 #include "../AP_HAL/SPIDriver.h"
 #include "../AP_HAL/AnalogIn.h"
 #include "../AP_HAL/Storage.h"
-#include "../AP_HAL/Console.h"
 #include "../AP_HAL/GPIO.h"
 #include "../AP_HAL/RCInput.h"
 #include "../AP_HAL/RCOutput.h"
@@ -18,11 +17,12 @@ public:
     HAL(AP_HAL::UARTDriver* _uartA,
         AP_HAL::UARTDriver* _uartB,
         AP_HAL::UARTDriver* _uartC,
+        AP_HAL::UARTDriver* _uartD,
         AP_HAL::I2CDriver*  _i2c,
         AP_HAL::SPIDeviceManager* _spi,
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
-        AP_HAL::ConsoleDriver* _console,
+        AP_HAL::UARTDriver* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
         AP_HAL::RCOutput*   _rcout,
@@ -32,6 +32,7 @@ public:
         uartA(_uartA),
         uartB(_uartB),
         uartC(_uartC),
+        uartD(_uartD),
         i2c(_i2c),
         spi(_spi),
         analogin(_analogin),
@@ -49,11 +50,12 @@ public:
     AP_HAL::UARTDriver* uartA;
     AP_HAL::UARTDriver* uartB;
     AP_HAL::UARTDriver* uartC;
+    AP_HAL::UARTDriver* uartD;
     AP_HAL::I2CDriver*  i2c;
     AP_HAL::SPIDeviceManager* spi;
     AP_HAL::AnalogIn*   analogin;
     AP_HAL::Storage*    storage;
-    AP_HAL::ConsoleDriver* console;
+    AP_HAL::UARTDriver* console;
     AP_HAL::GPIO*       gpio;
     AP_HAL::RCInput*    rcin;
     AP_HAL::RCOutput*   rcout;

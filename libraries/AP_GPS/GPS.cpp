@@ -1,10 +1,11 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 
 
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>
+#include <AP_Notify.h>
 #include "GPS.h"
 
 extern const AP_HAL::HAL& hal;
@@ -19,17 +20,28 @@ extern const AP_HAL::HAL& hal;
 
 GPS::GPS(void) :
 	// ensure all the inherited fields are zeroed
+	time_week_ms(0),
+    time_week(0),
+    latitude(0),
+    longitude(0),
+    altitude_cm(0),
+    ground_speed_cm(0),
+    ground_course_cd(0),
+    speed_3d_cm(0),
+    hdop(0),
 	num_sats(0),
 	new_data(false),
-	fix(false),
+	fix(FIX_NONE),
 	valid_read(false),
 	last_fix_time(0),
 	_have_raw_velocity(false),
+    _last_gps_time(0),
+	_idleTimer(0),
 	_status(GPS::NO_FIX),
 	_last_ground_speed_cm(0),
 	_velocity_north(0),
 	_velocity_east(0),
-	_velocity_down(0)	
+	_velocity_down(0)
 {
 }
 
@@ -44,9 +56,9 @@ GPS::update(void)
 
     tnow = hal.scheduler->millis();
 
-    // if we did not get a message, and the idle timer has expired, re-init
+    // if we did not get a message, and the idle timer of 1.2 seconds has expired, re-init
     if (!result) {
-        if ((tnow - _idleTimer) > idleTimeout) {
+        if ((tnow - _idleTimer) > 1200) {
             Debug("gps read timeout %lu %lu", (unsigned long)tnow, (unsigned long)_idleTimer);
             _status = NO_GPS;
 
@@ -56,7 +68,13 @@ GPS::update(void)
         }
     } else {
         // we got a message, update our status correspondingly
-        _status = fix ? GPS_OK : NO_FIX;
+        if (fix == FIX_3D) {
+            _status = GPS_OK_FIX_3D;
+        }else if (fix == FIX_2D) {
+            _status = GPS_OK_FIX_2D;
+        }else{
+            _status = NO_FIX;
+        }
 
         valid_read = true;
         new_data = true;
@@ -64,9 +82,9 @@ GPS::update(void)
         // reset the idle timer
         _idleTimer = tnow;
 
-        if (_status == GPS_OK) {
+        if (_status >= GPS_OK_FIX_2D) {
             last_fix_time = _idleTimer;
-            _last_ground_speed_cm = ground_speed;
+            _last_ground_speed_cm = ground_speed_cm;
 
             if (_have_raw_velocity) {
                 // the GPS is able to give us velocity numbers directly
@@ -74,8 +92,8 @@ GPS::update(void)
                 _velocity_east  = _vel_east * 0.01f;
                 _velocity_down  = _vel_down * 0.01f;
             } else {
-                float gps_heading = ToRad(ground_course * 0.01f);
-                float gps_speed   = ground_speed * 0.01f;
+                float gps_heading = ToRad(ground_course_cd * 0.01f);
+                float gps_speed   = ground_speed_cm * 0.01f;
                 float sin_heading, cos_heading;
 
                 cos_heading = cosf(gps_heading);
@@ -89,10 +107,13 @@ GPS::update(void)
             }
         }
     }
+
+    // update notify with gps status
+    AP_Notify::flags.gps_status = _status;
 }
 
 void
-GPS::setHIL(uint32_t _time, float _latitude, float _longitude, float _altitude,
+GPS::setHIL(uint64_t _time_epoch_ms, float _latitude, float _longitude, float _altitude,
             float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
 }
@@ -160,6 +181,7 @@ void GPS::_update_progstr(void)
 	if (nbytes > 16) {
 		nbytes = 16;
 	}
+	//hal.console->printf_P(PSTR("writing %u bytes\n"), (unsigned)nbytes);
 	_write_progstr_block(progstr_state.fs, q->pstr+q->ofs, nbytes);
 	q->ofs += nbytes;
 	if (q->ofs == q->size) {
@@ -169,4 +191,96 @@ void GPS::_update_progstr(void)
 			progstr_state.idx = 0;
 		}
 	}
+}
+
+int32_t GPS::_swapl(const void *bytes) const
+{
+    const uint8_t       *b = (const uint8_t *)bytes;
+    union {
+        int32_t v;
+        uint8_t b[4];
+    } u;
+
+    u.b[0] = b[3];
+    u.b[1] = b[2];
+    u.b[2] = b[1];
+    u.b[3] = b[0];
+
+    return(u.v);
+}
+
+int16_t GPS::_swapi(const void *bytes) const
+{
+    const uint8_t       *b = (const uint8_t *)bytes;
+    union {
+        int16_t v;
+        uint8_t b[2];
+    } u;
+
+    u.b[0] = b[1];
+    u.b[1] = b[0];
+
+    return(u.v);
+}
+
+/**
+   current time since the unix epoch in microseconds
+
+   This costs about 60 usec on AVR2560
+ */
+uint64_t GPS::time_epoch_usec(void)
+{
+    if (_last_gps_time == 0) {
+        return 0;
+    }
+    const uint64_t ms_per_week = 7000ULL*86400ULL;
+    const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
+    uint64_t fix_time_ms = unix_offset + time_week*ms_per_week + time_week_ms;
+    // add in the milliseconds since the last fix
+    return (fix_time_ms + (hal.scheduler->millis() - _last_gps_time)) * 1000ULL;
+}
+
+
+/**
+   fill in time_week_ms and time_week from BCD date and time components
+   assumes MTK19 millisecond form of bcd_time
+
+   This function takes about 340 usec on the AVR2560
+ */
+void GPS::_make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
+{
+    uint8_t year, mon, day, hour, min, sec;
+    uint16_t msec;
+
+    year = bcd_date % 100;
+    mon  = (bcd_date / 100) % 100;
+    day  = bcd_date / 10000;
+    msec = bcd_milliseconds % 1000;
+
+    uint32_t v = bcd_milliseconds;
+    msec = v % 1000; v /= 1000;
+    sec  = v % 100; v /= 100;
+    min  = v % 100; v /= 100;
+    hour = v % 100; v /= 100;
+
+    int8_t rmon = mon - 2;
+    if (0 >= rmon) {    
+        rmon += 12;
+        year -= 1;
+    }
+
+    // get time in seconds since unix epoch
+    uint32_t ret = (year/4) - 15 + 367*rmon/12 + day;
+    ret += year*365 + 10501;
+    ret = ret*24 + hour;
+    ret = ret*60 + min;
+    ret = ret*60 + sec;
+
+    // convert to time since GPS epoch
+    ret -= 272764785UL;
+
+    // get GPS week and time
+    time_week = ret / (7*86400UL);
+    time_week_ms = (ret % (7*86400UL)) * 1000;
+    time_week_ms += msec;
 }

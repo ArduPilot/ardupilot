@@ -31,6 +31,13 @@ float safe_sqrt(float v)
     return ret;
 }
 
+// a faster varient of atan.  accurate to 6 decimal places for values between -1 ~ 1 but then diverges quickly
+float fast_atan(float v)
+{
+    float v2 = v*v;
+    return (v*(1.6867629106f + v2*0.4378497304f)/(1.6867633134f + v2));
+}
+
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board
@@ -70,7 +77,15 @@ enum Rotation rotation_combination(enum Rotation r1, enum Rotation r2, bool *fou
 #endif
 
 // constrain a value
-float constrain(float amt, float low, float high) {
+float constrain_float(float amt, float low, float high) 
+{
+	// the check for NaN as a float prevents propogation of
+	// floating point errors through any function that uses
+	// constrain_float(). The normal float semantics already handle -Inf
+	// and +Inf
+	if (isnan(amt)) {
+		return (low+high)*0.5f;
+	}
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
 

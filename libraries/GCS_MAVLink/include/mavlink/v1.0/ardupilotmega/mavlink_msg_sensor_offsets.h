@@ -21,6 +21,9 @@ typedef struct __mavlink_sensor_offsets_t
 #define MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN 42
 #define MAVLINK_MSG_ID_150_LEN 42
 
+#define MAVLINK_MSG_ID_SENSOR_OFFSETS_CRC 134
+#define MAVLINK_MSG_ID_150_CRC 134
+
 
 
 #define MAVLINK_MESSAGE_INFO_SENSOR_OFFSETS { \
@@ -66,7 +69,7 @@ static inline uint16_t mavlink_msg_sensor_offsets_pack(uint8_t system_id, uint8_
 						       int16_t mag_ofs_x, int16_t mag_ofs_y, int16_t mag_ofs_z, float mag_declination, int32_t raw_press, int32_t raw_temp, float gyro_cal_x, float gyro_cal_y, float gyro_cal_z, float accel_cal_x, float accel_cal_y, float accel_cal_z)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[42];
+	char buf[MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN];
 	_mav_put_float(buf, 0, mag_declination);
 	_mav_put_int32_t(buf, 4, raw_press);
 	_mav_put_int32_t(buf, 8, raw_temp);
@@ -80,7 +83,7 @@ static inline uint16_t mavlink_msg_sensor_offsets_pack(uint8_t system_id, uint8_
 	_mav_put_int16_t(buf, 38, mag_ofs_y);
 	_mav_put_int16_t(buf, 40, mag_ofs_z);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
 #else
 	mavlink_sensor_offsets_t packet;
 	packet.mag_declination = mag_declination;
@@ -96,18 +99,22 @@ static inline uint16_t mavlink_msg_sensor_offsets_pack(uint8_t system_id, uint8_
 	packet.mag_ofs_y = mag_ofs_y;
 	packet.mag_ofs_z = mag_ofs_z;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_SENSOR_OFFSETS;
-	return mavlink_finalize_message(msg, system_id, component_id, 42, 134);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN, MAVLINK_MSG_ID_SENSOR_OFFSETS_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
+#endif
 }
 
 /**
  * @brief Pack a sensor_offsets message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param mag_ofs_x magnetometer X offset
  * @param mag_ofs_y magnetometer Y offset
@@ -128,7 +135,7 @@ static inline uint16_t mavlink_msg_sensor_offsets_pack_chan(uint8_t system_id, u
 						           int16_t mag_ofs_x,int16_t mag_ofs_y,int16_t mag_ofs_z,float mag_declination,int32_t raw_press,int32_t raw_temp,float gyro_cal_x,float gyro_cal_y,float gyro_cal_z,float accel_cal_x,float accel_cal_y,float accel_cal_z)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[42];
+	char buf[MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN];
 	_mav_put_float(buf, 0, mag_declination);
 	_mav_put_int32_t(buf, 4, raw_press);
 	_mav_put_int32_t(buf, 8, raw_temp);
@@ -142,7 +149,7 @@ static inline uint16_t mavlink_msg_sensor_offsets_pack_chan(uint8_t system_id, u
 	_mav_put_int16_t(buf, 38, mag_ofs_y);
 	_mav_put_int16_t(buf, 40, mag_ofs_z);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
 #else
 	mavlink_sensor_offsets_t packet;
 	packet.mag_declination = mag_declination;
@@ -158,15 +165,19 @@ static inline uint16_t mavlink_msg_sensor_offsets_pack_chan(uint8_t system_id, u
 	packet.mag_ofs_y = mag_ofs_y;
 	packet.mag_ofs_z = mag_ofs_z;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 42);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_SENSOR_OFFSETS;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 42, 134);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN, MAVLINK_MSG_ID_SENSOR_OFFSETS_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
+#endif
 }
 
 /**
- * @brief Encode a sensor_offsets struct into a message
+ * @brief Encode a sensor_offsets struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -176,6 +187,20 @@ static inline uint16_t mavlink_msg_sensor_offsets_pack_chan(uint8_t system_id, u
 static inline uint16_t mavlink_msg_sensor_offsets_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_sensor_offsets_t* sensor_offsets)
 {
 	return mavlink_msg_sensor_offsets_pack(system_id, component_id, msg, sensor_offsets->mag_ofs_x, sensor_offsets->mag_ofs_y, sensor_offsets->mag_ofs_z, sensor_offsets->mag_declination, sensor_offsets->raw_press, sensor_offsets->raw_temp, sensor_offsets->gyro_cal_x, sensor_offsets->gyro_cal_y, sensor_offsets->gyro_cal_z, sensor_offsets->accel_cal_x, sensor_offsets->accel_cal_y, sensor_offsets->accel_cal_z);
+}
+
+/**
+ * @brief Encode a sensor_offsets struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param sensor_offsets C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_sensor_offsets_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_sensor_offsets_t* sensor_offsets)
+{
+	return mavlink_msg_sensor_offsets_pack_chan(system_id, component_id, chan, msg, sensor_offsets->mag_ofs_x, sensor_offsets->mag_ofs_y, sensor_offsets->mag_ofs_z, sensor_offsets->mag_declination, sensor_offsets->raw_press, sensor_offsets->raw_temp, sensor_offsets->gyro_cal_x, sensor_offsets->gyro_cal_y, sensor_offsets->gyro_cal_z, sensor_offsets->accel_cal_x, sensor_offsets->accel_cal_y, sensor_offsets->accel_cal_z);
 }
 
 /**
@@ -200,7 +225,7 @@ static inline uint16_t mavlink_msg_sensor_offsets_encode(uint8_t system_id, uint
 static inline void mavlink_msg_sensor_offsets_send(mavlink_channel_t chan, int16_t mag_ofs_x, int16_t mag_ofs_y, int16_t mag_ofs_z, float mag_declination, int32_t raw_press, int32_t raw_temp, float gyro_cal_x, float gyro_cal_y, float gyro_cal_z, float accel_cal_x, float accel_cal_y, float accel_cal_z)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[42];
+	char buf[MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN];
 	_mav_put_float(buf, 0, mag_declination);
 	_mav_put_int32_t(buf, 4, raw_press);
 	_mav_put_int32_t(buf, 8, raw_temp);
@@ -214,7 +239,11 @@ static inline void mavlink_msg_sensor_offsets_send(mavlink_channel_t chan, int16
 	_mav_put_int16_t(buf, 38, mag_ofs_y);
 	_mav_put_int16_t(buf, 40, mag_ofs_z);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, buf, 42, 134);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, buf, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN, MAVLINK_MSG_ID_SENSOR_OFFSETS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, buf, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
+#endif
 #else
 	mavlink_sensor_offsets_t packet;
 	packet.mag_declination = mag_declination;
@@ -230,7 +259,11 @@ static inline void mavlink_msg_sensor_offsets_send(mavlink_channel_t chan, int16
 	packet.mag_ofs_y = mag_ofs_y;
 	packet.mag_ofs_z = mag_ofs_z;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, (const char *)&packet, 42, 134);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, (const char *)&packet, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN, MAVLINK_MSG_ID_SENSOR_OFFSETS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SENSOR_OFFSETS, (const char *)&packet, MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
+#endif
 #endif
 }
 
@@ -381,6 +414,6 @@ static inline void mavlink_msg_sensor_offsets_decode(const mavlink_message_t* ms
 	sensor_offsets->mag_ofs_y = mavlink_msg_sensor_offsets_get_mag_ofs_y(msg);
 	sensor_offsets->mag_ofs_z = mavlink_msg_sensor_offsets_get_mag_ofs_z(msg);
 #else
-	memcpy(sensor_offsets, _MAV_PAYLOAD(msg), 42);
+	memcpy(sensor_offsets, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN);
 #endif
 }

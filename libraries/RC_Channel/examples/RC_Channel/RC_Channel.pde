@@ -49,19 +49,19 @@ void setup()
     // set type of output, symmetrical angles or a number range;
     // XXX BROKEN
     rc_1.set_angle(4500);
-    rc_1.set_dead_zone(80);
+    rc_1.set_default_dead_zone(80);
     rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     // XXX BROKEN
     rc_2.set_angle(4500);
-    rc_2.set_dead_zone(80);
+    rc_2.set_default_dead_zone(80);
     rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     rc_3.set_range(0,1000);
-    rc_3.set_dead_zone(20);
+    rc_3.set_default_dead_zone(20);
 
     rc_4.set_angle(6000);
-    rc_4.set_dead_zone(500);
+    rc_4.set_default_dead_zone(500);
     rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     rc_5.set_range(0,1000);

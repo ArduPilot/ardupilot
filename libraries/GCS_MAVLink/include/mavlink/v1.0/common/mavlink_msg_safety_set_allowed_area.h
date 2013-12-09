@@ -18,6 +18,9 @@ typedef struct __mavlink_safety_set_allowed_area_t
 #define MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN 27
 #define MAVLINK_MSG_ID_54_LEN 27
 
+#define MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_CRC 15
+#define MAVLINK_MSG_ID_54_CRC 15
+
 
 
 #define MAVLINK_MESSAGE_INFO_SAFETY_SET_ALLOWED_AREA { \
@@ -57,7 +60,7 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_pack(uint8_t system_i
 						       uint8_t target_system, uint8_t target_component, uint8_t frame, float p1x, float p1y, float p1z, float p2x, float p2y, float p2z)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[27];
+	char buf[MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN];
 	_mav_put_float(buf, 0, p1x);
 	_mav_put_float(buf, 4, p1y);
 	_mav_put_float(buf, 8, p1z);
@@ -68,7 +71,7 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_pack(uint8_t system_i
 	_mav_put_uint8_t(buf, 25, target_component);
 	_mav_put_uint8_t(buf, 26, frame);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 27);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
 #else
 	mavlink_safety_set_allowed_area_t packet;
 	packet.p1x = p1x;
@@ -81,18 +84,22 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_pack(uint8_t system_i
 	packet.target_component = target_component;
 	packet.frame = frame;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 27);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA;
-	return mavlink_finalize_message(msg, system_id, component_id, 27, 15);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
+#endif
 }
 
 /**
  * @brief Pack a safety_set_allowed_area message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -110,7 +117,7 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_pack_chan(uint8_t sys
 						           uint8_t target_system,uint8_t target_component,uint8_t frame,float p1x,float p1y,float p1z,float p2x,float p2y,float p2z)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[27];
+	char buf[MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN];
 	_mav_put_float(buf, 0, p1x);
 	_mav_put_float(buf, 4, p1y);
 	_mav_put_float(buf, 8, p1z);
@@ -121,7 +128,7 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_pack_chan(uint8_t sys
 	_mav_put_uint8_t(buf, 25, target_component);
 	_mav_put_uint8_t(buf, 26, frame);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 27);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
 #else
 	mavlink_safety_set_allowed_area_t packet;
 	packet.p1x = p1x;
@@ -134,15 +141,19 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_pack_chan(uint8_t sys
 	packet.target_component = target_component;
 	packet.frame = frame;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 27);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 27, 15);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
+#endif
 }
 
 /**
- * @brief Encode a safety_set_allowed_area struct into a message
+ * @brief Encode a safety_set_allowed_area struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -152,6 +163,20 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_pack_chan(uint8_t sys
 static inline uint16_t mavlink_msg_safety_set_allowed_area_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_safety_set_allowed_area_t* safety_set_allowed_area)
 {
 	return mavlink_msg_safety_set_allowed_area_pack(system_id, component_id, msg, safety_set_allowed_area->target_system, safety_set_allowed_area->target_component, safety_set_allowed_area->frame, safety_set_allowed_area->p1x, safety_set_allowed_area->p1y, safety_set_allowed_area->p1z, safety_set_allowed_area->p2x, safety_set_allowed_area->p2y, safety_set_allowed_area->p2z);
+}
+
+/**
+ * @brief Encode a safety_set_allowed_area struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param safety_set_allowed_area C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_safety_set_allowed_area_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_safety_set_allowed_area_t* safety_set_allowed_area)
+{
+	return mavlink_msg_safety_set_allowed_area_pack_chan(system_id, component_id, chan, msg, safety_set_allowed_area->target_system, safety_set_allowed_area->target_component, safety_set_allowed_area->frame, safety_set_allowed_area->p1x, safety_set_allowed_area->p1y, safety_set_allowed_area->p1z, safety_set_allowed_area->p2x, safety_set_allowed_area->p2y, safety_set_allowed_area->p2z);
 }
 
 /**
@@ -173,7 +198,7 @@ static inline uint16_t mavlink_msg_safety_set_allowed_area_encode(uint8_t system
 static inline void mavlink_msg_safety_set_allowed_area_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint8_t frame, float p1x, float p1y, float p1z, float p2x, float p2y, float p2z)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[27];
+	char buf[MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN];
 	_mav_put_float(buf, 0, p1x);
 	_mav_put_float(buf, 4, p1y);
 	_mav_put_float(buf, 8, p1z);
@@ -184,7 +209,11 @@ static inline void mavlink_msg_safety_set_allowed_area_send(mavlink_channel_t ch
 	_mav_put_uint8_t(buf, 25, target_component);
 	_mav_put_uint8_t(buf, 26, frame);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, buf, 27, 15);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, buf, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, buf, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
+#endif
 #else
 	mavlink_safety_set_allowed_area_t packet;
 	packet.p1x = p1x;
@@ -197,7 +226,11 @@ static inline void mavlink_msg_safety_set_allowed_area_send(mavlink_channel_t ch
 	packet.target_component = target_component;
 	packet.frame = frame;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, (const char *)&packet, 27, 15);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, (const char *)&packet, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA, (const char *)&packet, MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
+#endif
 #endif
 }
 
@@ -315,6 +348,6 @@ static inline void mavlink_msg_safety_set_allowed_area_decode(const mavlink_mess
 	safety_set_allowed_area->target_component = mavlink_msg_safety_set_allowed_area_get_target_component(msg);
 	safety_set_allowed_area->frame = mavlink_msg_safety_set_allowed_area_get_frame(msg);
 #else
-	memcpy(safety_set_allowed_area, _MAV_PAYLOAD(msg), 27);
+	memcpy(safety_set_allowed_area, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN);
 #endif
 }

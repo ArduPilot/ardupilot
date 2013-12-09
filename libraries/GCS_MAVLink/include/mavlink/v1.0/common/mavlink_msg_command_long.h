@@ -20,6 +20,9 @@ typedef struct __mavlink_command_long_t
 #define MAVLINK_MSG_ID_COMMAND_LONG_LEN 33
 #define MAVLINK_MSG_ID_76_LEN 33
 
+#define MAVLINK_MSG_ID_COMMAND_LONG_CRC 152
+#define MAVLINK_MSG_ID_76_CRC 152
+
 
 
 #define MAVLINK_MESSAGE_INFO_COMMAND_LONG { \
@@ -63,7 +66,7 @@ static inline uint16_t mavlink_msg_command_long_pack(uint8_t system_id, uint8_t 
 						       uint8_t target_system, uint8_t target_component, uint16_t command, uint8_t confirmation, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[33];
+	char buf[MAVLINK_MSG_ID_COMMAND_LONG_LEN];
 	_mav_put_float(buf, 0, param1);
 	_mav_put_float(buf, 4, param2);
 	_mav_put_float(buf, 8, param3);
@@ -76,7 +79,7 @@ static inline uint16_t mavlink_msg_command_long_pack(uint8_t system_id, uint8_t 
 	_mav_put_uint8_t(buf, 31, target_component);
 	_mav_put_uint8_t(buf, 32, confirmation);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
 #else
 	mavlink_command_long_t packet;
 	packet.param1 = param1;
@@ -91,18 +94,22 @@ static inline uint16_t mavlink_msg_command_long_pack(uint8_t system_id, uint8_t 
 	packet.target_component = target_component;
 	packet.confirmation = confirmation;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_COMMAND_LONG;
-	return mavlink_finalize_message(msg, system_id, component_id, 33, 152);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
+#endif
 }
 
 /**
  * @brief Pack a command_long message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System which should execute the command
  * @param target_component Component which should execute the command, 0 for all components
@@ -122,7 +129,7 @@ static inline uint16_t mavlink_msg_command_long_pack_chan(uint8_t system_id, uin
 						           uint8_t target_system,uint8_t target_component,uint16_t command,uint8_t confirmation,float param1,float param2,float param3,float param4,float param5,float param6,float param7)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[33];
+	char buf[MAVLINK_MSG_ID_COMMAND_LONG_LEN];
 	_mav_put_float(buf, 0, param1);
 	_mav_put_float(buf, 4, param2);
 	_mav_put_float(buf, 8, param3);
@@ -135,7 +142,7 @@ static inline uint16_t mavlink_msg_command_long_pack_chan(uint8_t system_id, uin
 	_mav_put_uint8_t(buf, 31, target_component);
 	_mav_put_uint8_t(buf, 32, confirmation);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
 #else
 	mavlink_command_long_t packet;
 	packet.param1 = param1;
@@ -150,15 +157,19 @@ static inline uint16_t mavlink_msg_command_long_pack_chan(uint8_t system_id, uin
 	packet.target_component = target_component;
 	packet.confirmation = confirmation;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_COMMAND_LONG;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 33, 152);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
+#endif
 }
 
 /**
- * @brief Encode a command_long struct into a message
+ * @brief Encode a command_long struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -168,6 +179,20 @@ static inline uint16_t mavlink_msg_command_long_pack_chan(uint8_t system_id, uin
 static inline uint16_t mavlink_msg_command_long_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_command_long_t* command_long)
 {
 	return mavlink_msg_command_long_pack(system_id, component_id, msg, command_long->target_system, command_long->target_component, command_long->command, command_long->confirmation, command_long->param1, command_long->param2, command_long->param3, command_long->param4, command_long->param5, command_long->param6, command_long->param7);
+}
+
+/**
+ * @brief Encode a command_long struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param command_long C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_command_long_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_command_long_t* command_long)
+{
+	return mavlink_msg_command_long_pack_chan(system_id, component_id, chan, msg, command_long->target_system, command_long->target_component, command_long->command, command_long->confirmation, command_long->param1, command_long->param2, command_long->param3, command_long->param4, command_long->param5, command_long->param6, command_long->param7);
 }
 
 /**
@@ -191,7 +216,7 @@ static inline uint16_t mavlink_msg_command_long_encode(uint8_t system_id, uint8_
 static inline void mavlink_msg_command_long_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t command, uint8_t confirmation, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[33];
+	char buf[MAVLINK_MSG_ID_COMMAND_LONG_LEN];
 	_mav_put_float(buf, 0, param1);
 	_mav_put_float(buf, 4, param2);
 	_mav_put_float(buf, 8, param3);
@@ -204,7 +229,11 @@ static inline void mavlink_msg_command_long_send(mavlink_channel_t chan, uint8_t
 	_mav_put_uint8_t(buf, 31, target_component);
 	_mav_put_uint8_t(buf, 32, confirmation);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, buf, 33, 152);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, buf, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, buf, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
+#endif
 #else
 	mavlink_command_long_t packet;
 	packet.param1 = param1;
@@ -219,7 +248,11 @@ static inline void mavlink_msg_command_long_send(mavlink_channel_t chan, uint8_t
 	packet.target_component = target_component;
 	packet.confirmation = confirmation;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&packet, 33, 152);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&packet, MAVLINK_MSG_ID_COMMAND_LONG_LEN, MAVLINK_MSG_ID_COMMAND_LONG_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&packet, MAVLINK_MSG_ID_COMMAND_LONG_LEN);
+#endif
 #endif
 }
 
@@ -359,6 +392,6 @@ static inline void mavlink_msg_command_long_decode(const mavlink_message_t* msg,
 	command_long->target_component = mavlink_msg_command_long_get_target_component(msg);
 	command_long->confirmation = mavlink_msg_command_long_get_confirmation(msg);
 #else
-	memcpy(command_long, _MAV_PAYLOAD(msg), 33);
+	memcpy(command_long, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_COMMAND_LONG_LEN);
 #endif
 }

@@ -58,7 +58,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
     // @Param: MOTCT
     // @DisplayName: Motor interference compensation type
-    // @Description: Set motor interference compensation type to disabled, throttle or current
+    // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.
     // @Values: 0:Disabled,1:Use Throttle,2:Use Current
     // @Increment: 1
     AP_GROUPINFO("MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
@@ -67,20 +67,36 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Motor interference compensation for body frame X axis
     // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
 
     // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
     // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
 
     // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
     // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference
     // @Range: -1000 1000
+    // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
     AP_GROUPINFO("MOT",    7, Compass, _motor_compensation, 0),
+
+    // @Param: ORIENT
+    // @DisplayName: Compass orientation
+    // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270
+    AP_GROUPINFO("ORIENT", 8, Compass, _orientation, ROTATION_NONE),
+
+    // @Param: EXTERNAL
+    // @DisplayName: Compass is attached via an external cable
+    // @Description: Configure compass so it is attached externally. This is auto-detected on PX4, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option
+    // @Values: 0:Internal,1:External
+    // @User: Advanced
+    AP_GROUPINFO("EXTERNAL", 9, Compass, _external, 0),
 
     AP_GROUPEND
 };
@@ -91,7 +107,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
     product_id(AP_COMPASS_TYPE_UNKNOWN),
-    _orientation(ROTATION_NONE),
     _null_init_done(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -106,12 +121,6 @@ Compass::init()
 }
 
 void
-Compass::set_orientation(enum Rotation rotation)
-{
-    _orientation = rotation;
-}
-
-void
 Compass::set_offsets(const Vector3f &offsets)
 {
     _offset.set(offsets);
@@ -123,8 +132,8 @@ Compass::save_offsets()
     _offset.save();
 }
 
-Vector3f &
-Compass::get_offsets()
+const Vector3f &
+Compass::get_offsets() const
 {
     return _offset;
 }
@@ -159,83 +168,38 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
 }
 
 void
-Compass::set_declination(float radians)
+Compass::set_declination(float radians, bool save_to_eeprom)
 {
-    _declination.set_and_save(radians);
+    if (save_to_eeprom) {
+        _declination.set_and_save(radians);
+    }else{
+        _declination.set(radians);
+    }
 }
 
 float
-Compass::get_declination()
+Compass::get_declination() const
 {
     return _declination.get();
 }
 
-
+/*
+  calculate a compass heading given the attitude from DCM and the mag vector
+ */
 float
-Compass::calculate_heading(float roll, float pitch)
+Compass::calculate_heading(const Matrix3f &dcm_matrix) const
 {
-//  Note - This function implementation is deprecated
-//  The alternate implementation of this function using the dcm matrix is preferred
-    float headX;
-    float headY;
-    float cos_roll;
-    float sin_roll;
-    float cos_pitch;
-    float sin_pitch;
-    float heading;
+    float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
-    cos_roll = cosf(roll);
-    sin_roll = sinf(roll);
-    cos_pitch = cosf(pitch);
-    sin_pitch = sinf(pitch);
+    // Tilt compensated magnetic field Y component:
+    float headY = mag_y * dcm_matrix.c.z - mag_z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
-    headX = mag_x*cos_pitch + mag_y*sin_roll*sin_pitch + mag_z*cos_roll*sin_pitch;
-    // Tilt compensated magnetic field Y component:
-    headY = mag_y*cos_roll - mag_z*sin_roll;
-    // magnetic heading
-    heading = atan2f(-headY,headX);
+    float headX = mag_x * cos_pitch_sq - dcm_matrix.c.x * (mag_y * dcm_matrix.c.y + mag_z * dcm_matrix.c.z);
 
-    // Declination correction (if supplied)
-    if( fabsf(_declination) > 0.0f )
-    {
-        heading = heading + _declination;
-        if (heading > PI)    // Angle normalization (-180 deg, 180 deg)
-            heading -= (2.0f * PI);
-        else if (heading < -PI)
-            heading += (2.0f * PI);
-    }
-
-    return heading;
-}
-
-
-float
-Compass::calculate_heading(const Matrix3f &dcm_matrix)
-{
-    float headX;
-    float headY;
-    float cos_pitch = safe_sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
-    float heading;
-
-    // sinf(pitch) = - dcm_matrix(3,1)
-    // cosf(pitch)*sinf(roll) = - dcm_matrix(3,2)
-    // cosf(pitch)*cosf(roll) = - dcm_matrix(3,3)
-
-    if (cos_pitch == 0.0f) {
-        // we are pointing straight up or down so don't update our
-        // heading using the compass. Wait for the next iteration when
-        // we hopefully will have valid values again.
-        return 0;
-    }
-
-    // Tilt compensated magnetic field X component:
-    headX = mag_x*cos_pitch - mag_y*dcm_matrix.c.y*dcm_matrix.c.x/cos_pitch - mag_z*dcm_matrix.c.z*dcm_matrix.c.x/cos_pitch;
-    // Tilt compensated magnetic field Y component:
-    headY = mag_y*dcm_matrix.c.z/cos_pitch - mag_z*dcm_matrix.c.y/cos_pitch;
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    heading = constrain(atan2f(-headY,headX), -3.15f, 3.15f);
+    float heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
 
     // Declination correction (if supplied)
     if( fabsf(_declination) > 0.0f )

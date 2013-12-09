@@ -56,8 +56,8 @@ const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
 
 
 AP_Limit_Geofence::AP_Limit_Geofence(uint16_t efs, uint8_t f_wp_s,
-        uint8_t max_fp, GPS *&gps, struct Location *h_loc,
-        struct Location *c_loc) :
+        uint8_t max_fp, GPS *&gps, const struct Location *h_loc,
+        const struct Location *c_loc) :
     AP_Limit_Module(AP_LIMITS_GEOFENCE),
     _gps(gps),
     _current_loc(c_loc),
@@ -93,7 +93,7 @@ bool AP_Limit_Geofence::triggered() {
 
     // simple mode, pointers to current and home exist.
     if (_simple && _current_loc && _home) {
-        distance = (uint32_t) get_distance(_current_loc, _home);
+        distance = (uint32_t) get_distance(*_current_loc, *_home);
         if (distance > 0 &&  distance > (uint16_t) _radius) {
 
             // TRIGGER

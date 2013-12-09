@@ -17,6 +17,7 @@
 #define CH_9 8
 #define CH_10 9
 #define CH_11 10
+#define CH_12 11
 #endif
 
 

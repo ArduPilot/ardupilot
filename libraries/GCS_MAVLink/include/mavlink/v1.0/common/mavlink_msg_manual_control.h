@@ -15,6 +15,9 @@ typedef struct __mavlink_manual_control_t
 #define MAVLINK_MSG_ID_MANUAL_CONTROL_LEN 11
 #define MAVLINK_MSG_ID_69_LEN 11
 
+#define MAVLINK_MSG_ID_MANUAL_CONTROL_CRC 243
+#define MAVLINK_MSG_ID_69_CRC 243
+
 
 
 #define MAVLINK_MESSAGE_INFO_MANUAL_CONTROL { \
@@ -48,7 +51,7 @@ static inline uint16_t mavlink_msg_manual_control_pack(uint8_t system_id, uint8_
 						       uint8_t target, int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[11];
+	char buf[MAVLINK_MSG_ID_MANUAL_CONTROL_LEN];
 	_mav_put_int16_t(buf, 0, x);
 	_mav_put_int16_t(buf, 2, y);
 	_mav_put_int16_t(buf, 4, z);
@@ -56,7 +59,7 @@ static inline uint16_t mavlink_msg_manual_control_pack(uint8_t system_id, uint8_
 	_mav_put_uint16_t(buf, 8, buttons);
 	_mav_put_uint8_t(buf, 10, target);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 11);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
 #else
 	mavlink_manual_control_t packet;
 	packet.x = x;
@@ -66,18 +69,22 @@ static inline uint16_t mavlink_msg_manual_control_pack(uint8_t system_id, uint8_
 	packet.buttons = buttons;
 	packet.target = target;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 11);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_MANUAL_CONTROL;
-	return mavlink_finalize_message(msg, system_id, component_id, 11, 243);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN, MAVLINK_MSG_ID_MANUAL_CONTROL_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
+#endif
 }
 
 /**
  * @brief Pack a manual_control message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target The system to be controlled.
  * @param x X-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to forward(1000)-backward(-1000) movement on a joystick and the pitch of a vehicle.
@@ -92,7 +99,7 @@ static inline uint16_t mavlink_msg_manual_control_pack_chan(uint8_t system_id, u
 						           uint8_t target,int16_t x,int16_t y,int16_t z,int16_t r,uint16_t buttons)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[11];
+	char buf[MAVLINK_MSG_ID_MANUAL_CONTROL_LEN];
 	_mav_put_int16_t(buf, 0, x);
 	_mav_put_int16_t(buf, 2, y);
 	_mav_put_int16_t(buf, 4, z);
@@ -100,7 +107,7 @@ static inline uint16_t mavlink_msg_manual_control_pack_chan(uint8_t system_id, u
 	_mav_put_uint16_t(buf, 8, buttons);
 	_mav_put_uint8_t(buf, 10, target);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 11);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
 #else
 	mavlink_manual_control_t packet;
 	packet.x = x;
@@ -110,15 +117,19 @@ static inline uint16_t mavlink_msg_manual_control_pack_chan(uint8_t system_id, u
 	packet.buttons = buttons;
 	packet.target = target;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 11);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_MANUAL_CONTROL;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 11, 243);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN, MAVLINK_MSG_ID_MANUAL_CONTROL_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
+#endif
 }
 
 /**
- * @brief Encode a manual_control struct into a message
+ * @brief Encode a manual_control struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -128,6 +139,20 @@ static inline uint16_t mavlink_msg_manual_control_pack_chan(uint8_t system_id, u
 static inline uint16_t mavlink_msg_manual_control_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_manual_control_t* manual_control)
 {
 	return mavlink_msg_manual_control_pack(system_id, component_id, msg, manual_control->target, manual_control->x, manual_control->y, manual_control->z, manual_control->r, manual_control->buttons);
+}
+
+/**
+ * @brief Encode a manual_control struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param manual_control C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_manual_control_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_manual_control_t* manual_control)
+{
+	return mavlink_msg_manual_control_pack_chan(system_id, component_id, chan, msg, manual_control->target, manual_control->x, manual_control->y, manual_control->z, manual_control->r, manual_control->buttons);
 }
 
 /**
@@ -146,7 +171,7 @@ static inline uint16_t mavlink_msg_manual_control_encode(uint8_t system_id, uint
 static inline void mavlink_msg_manual_control_send(mavlink_channel_t chan, uint8_t target, int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[11];
+	char buf[MAVLINK_MSG_ID_MANUAL_CONTROL_LEN];
 	_mav_put_int16_t(buf, 0, x);
 	_mav_put_int16_t(buf, 2, y);
 	_mav_put_int16_t(buf, 4, z);
@@ -154,7 +179,11 @@ static inline void mavlink_msg_manual_control_send(mavlink_channel_t chan, uint8
 	_mav_put_uint16_t(buf, 8, buttons);
 	_mav_put_uint8_t(buf, 10, target);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, buf, 11, 243);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, buf, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN, MAVLINK_MSG_ID_MANUAL_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, buf, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
+#endif
 #else
 	mavlink_manual_control_t packet;
 	packet.x = x;
@@ -164,7 +193,11 @@ static inline void mavlink_msg_manual_control_send(mavlink_channel_t chan, uint8
 	packet.buttons = buttons;
 	packet.target = target;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, (const char *)&packet, 11, 243);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, (const char *)&packet, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN, MAVLINK_MSG_ID_MANUAL_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_MANUAL_CONTROL, (const char *)&packet, MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
+#endif
 #endif
 }
 
@@ -249,6 +282,6 @@ static inline void mavlink_msg_manual_control_decode(const mavlink_message_t* ms
 	manual_control->buttons = mavlink_msg_manual_control_get_buttons(msg);
 	manual_control->target = mavlink_msg_manual_control_get_target(msg);
 #else
-	memcpy(manual_control, _MAV_PAYLOAD(msg), 11);
+	memcpy(manual_control, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_MANUAL_CONTROL_LEN);
 #endif
 }

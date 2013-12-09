@@ -25,7 +25,12 @@ known_param_fields = [
              'User',                         
                       ]
 
+required_param_fields = [
+             'Description',
+             'DisplayName',
+             'User'
+                      ]
+
 known_group_fields = [
-                      'Path',
-                      'DisplayName',
+                      'Path'
                       ]

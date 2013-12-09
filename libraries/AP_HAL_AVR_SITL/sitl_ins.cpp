@@ -17,11 +17,13 @@
 #include <AP_Math.h>
 #include "../AP_Compass/AP_Compass.h"
 #include "../AP_Declination/AP_Declination.h"
+#include "../AP_RangeFinder/AP_RangeFinder.h"
 #include "../SITL/SITL.h"
 #include "Scheduler.h"
 #include <AP_Math.h>
 #include "../AP_ADC/AP_ADC.h"
 #include <SITL_State.h>
+
 
 using namespace AVR_SITL;
 
@@ -31,12 +33,12 @@ using namespace AVR_SITL;
 uint16_t SITL_State::_airspeed_sensor(float airspeed)
 {
 	const float airspeed_ratio = 1.9936;
-	const float airspeed_offset = 2820;
+	const float airspeed_offset = 2013;
 	float airspeed_pressure, airspeed_raw;
 
 	airspeed_pressure = (airspeed*airspeed) / airspeed_ratio;
 	airspeed_raw = airspeed_pressure + airspeed_offset;
-	return airspeed_raw;
+	return airspeed_raw/4;
 }
 
 
@@ -52,6 +54,31 @@ float SITL_State::_gyro_drift(void)
 	}
 	return (period - minutes) * ToRad(_sitl->drift_speed);
 
+}
+
+uint16_t SITL_State::_ground_sonar(float altitude)
+{
+	static float home_alt = -1;
+	// TODO Find the current sonar object and load these params from it
+	// rather than assuming XL type
+	float scaler = AP_RANGEFINDER_MAXSONARXL_SCALER;
+
+	if (home_alt == -1)
+		home_alt = altitude;
+
+	altitude = altitude - home_alt;
+
+	altitude += _sitl->sonar_noise * _rand_float();
+
+	if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f)
+		altitude = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f;
+
+	altitude = constrain_float(altitude,
+		AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE / 100.0f,
+		AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE / 100.0f);
+
+	// Altitude in in m, scaler relative to cm
+	return (uint16_t)(altitude * 100.0f / scaler);
 }
 
 /*
@@ -84,7 +111,7 @@ float SITL_State::_gyro_drift(void)
 void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
 			     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
 			     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-			     float airspeed)
+			     float airspeed,	float altitude)
 {
 	double p, q, r;
 
@@ -97,9 +124,11 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 				 rollRate, pitchRate, yawRate,
 				 &p, &q, &r);
 
-	// minimum noise levels are 2 bits
-	float accel_noise = 0.1;
-	float gyro_noise = ToRad(0.4);
+	// minimum noise levels are 2 bits, but averaged over many
+	// samples, giving around 0.01 m/s/s
+	float accel_noise = 0.01;
+        // minimum gyro noise is also less than 1 bit
+	float gyro_noise = ToRad(0.04);
 	if (_motors_on) {
 		// add extra noise when the motors are on
 		accel_noise += _sitl->accel_noise;
@@ -109,6 +138,12 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 	yAccel += accel_noise * _rand_float();
 	zAccel += accel_noise * _rand_float();
 
+        if (fabs(_sitl->accel_fail) > 1.0e-6) {
+            xAccel = _sitl->accel_fail;
+            yAccel = _sitl->accel_fail;
+            zAccel = _sitl->accel_fail;
+        }
+
 	p += gyro_noise * _rand_float();
 	q += gyro_noise * _rand_float();
 	r += gyro_noise * _rand_float();
@@ -117,10 +152,11 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 	q += _gyro_drift();
 	r += _gyro_drift();
 
-	_ins->set_gyro(Vector3f(p, q, r));
-	_ins->set_accel(Vector3f(xAccel, yAccel, zAccel));
+	_ins->set_gyro(Vector3f(p, q, r) + _ins->get_gyro_offsets());
+	_ins->set_accel(Vector3f(xAccel, yAccel, zAccel) + _ins->get_accel_offsets());
 
-	airspeed_pin_value = _airspeed_sensor(airspeed);
+        sonar_pin_value    = _ground_sonar(altitude);
+        airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
 }
 
 #endif

@@ -16,6 +16,9 @@ typedef struct __mavlink_global_vision_position_estimate_t
 #define MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN 32
 #define MAVLINK_MSG_ID_101_LEN 32
 
+#define MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_CRC 102
+#define MAVLINK_MSG_ID_101_CRC 102
+
 
 
 #define MAVLINK_MESSAGE_INFO_GLOBAL_VISION_POSITION_ESTIMATE { \
@@ -51,7 +54,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack(uint8_t 
 						       uint64_t usec, float x, float y, float z, float roll, float pitch, float yaw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[32];
+	char buf[MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN];
 	_mav_put_uint64_t(buf, 0, usec);
 	_mav_put_float(buf, 8, x);
 	_mav_put_float(buf, 12, y);
@@ -60,7 +63,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack(uint8_t 
 	_mav_put_float(buf, 24, pitch);
 	_mav_put_float(buf, 28, yaw);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
 #else
 	mavlink_global_vision_position_estimate_t packet;
 	packet.usec = usec;
@@ -71,18 +74,22 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack(uint8_t 
 	packet.pitch = pitch;
 	packet.yaw = yaw;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE;
-	return mavlink_finalize_message(msg, system_id, component_id, 32, 102);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
+#endif
 }
 
 /**
  * @brief Pack a global_vision_position_estimate message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param usec Timestamp (microseconds, synced to UNIX time or since system boot)
  * @param x Global X position
@@ -98,7 +105,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack_chan(uin
 						           uint64_t usec,float x,float y,float z,float roll,float pitch,float yaw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[32];
+	char buf[MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN];
 	_mav_put_uint64_t(buf, 0, usec);
 	_mav_put_float(buf, 8, x);
 	_mav_put_float(buf, 12, y);
@@ -107,7 +114,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack_chan(uin
 	_mav_put_float(buf, 24, pitch);
 	_mav_put_float(buf, 28, yaw);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
 #else
 	mavlink_global_vision_position_estimate_t packet;
 	packet.usec = usec;
@@ -118,15 +125,19 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack_chan(uin
 	packet.pitch = pitch;
 	packet.yaw = yaw;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 32);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 32, 102);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
+#endif
 }
 
 /**
- * @brief Encode a global_vision_position_estimate struct into a message
+ * @brief Encode a global_vision_position_estimate struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -136,6 +147,20 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_pack_chan(uin
 static inline uint16_t mavlink_msg_global_vision_position_estimate_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_global_vision_position_estimate_t* global_vision_position_estimate)
 {
 	return mavlink_msg_global_vision_position_estimate_pack(system_id, component_id, msg, global_vision_position_estimate->usec, global_vision_position_estimate->x, global_vision_position_estimate->y, global_vision_position_estimate->z, global_vision_position_estimate->roll, global_vision_position_estimate->pitch, global_vision_position_estimate->yaw);
+}
+
+/**
+ * @brief Encode a global_vision_position_estimate struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param global_vision_position_estimate C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_global_vision_position_estimate_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_global_vision_position_estimate_t* global_vision_position_estimate)
+{
+	return mavlink_msg_global_vision_position_estimate_pack_chan(system_id, component_id, chan, msg, global_vision_position_estimate->usec, global_vision_position_estimate->x, global_vision_position_estimate->y, global_vision_position_estimate->z, global_vision_position_estimate->roll, global_vision_position_estimate->pitch, global_vision_position_estimate->yaw);
 }
 
 /**
@@ -155,7 +180,7 @@ static inline uint16_t mavlink_msg_global_vision_position_estimate_encode(uint8_
 static inline void mavlink_msg_global_vision_position_estimate_send(mavlink_channel_t chan, uint64_t usec, float x, float y, float z, float roll, float pitch, float yaw)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[32];
+	char buf[MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN];
 	_mav_put_uint64_t(buf, 0, usec);
 	_mav_put_float(buf, 8, x);
 	_mav_put_float(buf, 12, y);
@@ -164,7 +189,11 @@ static inline void mavlink_msg_global_vision_position_estimate_send(mavlink_chan
 	_mav_put_float(buf, 24, pitch);
 	_mav_put_float(buf, 28, yaw);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, buf, 32, 102);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, buf, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, buf, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
+#endif
 #else
 	mavlink_global_vision_position_estimate_t packet;
 	packet.usec = usec;
@@ -175,7 +204,11 @@ static inline void mavlink_msg_global_vision_position_estimate_send(mavlink_chan
 	packet.pitch = pitch;
 	packet.yaw = yaw;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, (const char *)&packet, 32, 102);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, (const char *)&packet, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE, (const char *)&packet, MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
+#endif
 #endif
 }
 
@@ -271,6 +304,6 @@ static inline void mavlink_msg_global_vision_position_estimate_decode(const mavl
 	global_vision_position_estimate->pitch = mavlink_msg_global_vision_position_estimate_get_pitch(msg);
 	global_vision_position_estimate->yaw = mavlink_msg_global_vision_position_estimate_get_yaw(msg);
 #else
-	memcpy(global_vision_position_estimate, _MAV_PAYLOAD(msg), 32);
+	memcpy(global_vision_position_estimate, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN);
 #endif
 }

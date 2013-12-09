@@ -139,12 +139,12 @@ bool AP_Limits::required() {
 
 bool AP_Limits::check_all() {
     // required=false, means "all"
-    return (bool) check_triggered(false);
+    return check_triggered(false);
 }
 
 bool AP_Limits::check_required() {
     // required=true, means "only required modules"
-    return (bool) check_triggered(true);
+    return check_triggered(true);
 }
 
 bool AP_Limits::check_triggered(bool only_required) {
@@ -176,29 +176,29 @@ bool AP_Limits::check_triggered(bool only_required) {
 
     if (only_required) {
         // just modules that are both required AND triggered. (binary AND)
-        return (bool) (mods_required & mods_triggered);
+        return (mods_required & mods_triggered) != 0;
     } else {
-        return (bool) (mods_triggered);
+        return mods_triggered != 0;
     }
 }
 
-AP_Int8 AP_Limits::state() {
-    return _state;
+int8_t AP_Limits::state() {
+    return _state.get();
 }
 
-AP_Int8 AP_Limits::safetime() {
-    return _safetime;
+int8_t AP_Limits::safetime() {
+    return _safetime.get();
 }
 
 void AP_Limits::set_state(int s) {
-    _state = (int) s;
+    _state.set(s);
 }
 
 
-AP_Int8 AP_Limits::channel() {
-    return _channel;
+int8_t AP_Limits::channel() {
+    return _channel.get();
 }
 
-AP_Int8 AP_Limits::recmode() {
-    return _recmode;
+int8_t AP_Limits::recmode() {
+    return _recmode.get();
 }

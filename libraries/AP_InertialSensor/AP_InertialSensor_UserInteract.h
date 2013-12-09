@@ -8,7 +8,6 @@
 class AP_InertialSensor_UserInteract {
 public:
     virtual uint8_t blocking_read() = 0;
-    virtual void println_P(const prog_char_t *) = 0;
     virtual void _printf_P(const prog_char *, ...) = 0;
 };
 

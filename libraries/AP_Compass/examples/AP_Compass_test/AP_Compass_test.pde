@@ -9,6 +9,7 @@
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 
 #include <AP_Math.h>    // ArduPilot Mega Vector/Matrix math Library
@@ -33,7 +34,6 @@ void setup() {
     }
     hal.console->println("init done");
 
-    compass.set_orientation(AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD); // set compass's orientation on aircraft.
     compass.set_offsets(0,0,0); // set offsets to account for surrounding interference
     compass.set_declination(ToRad(0.0)); // set local difference between magnetic north and true north
 
@@ -77,7 +77,10 @@ void loop()
             hal.console->println("not healthy");
             return;
         }
-        heading = compass.calculate_heading(0,0); // roll = 0, pitch = 0 for this example
+	Matrix3f dcm_matrix;
+	// use roll = 0, pitch = 0 for this example
+	dcm_matrix.from_euler(0, 0, 0);
+        heading = compass.calculate_heading(dcm_matrix);
         compass.null_offsets();
 
         // capture min

@@ -1,0 +1,249 @@
+2013-09-23
+
+These notes describe the steps take to port ArduPilot to the Flymaple platform
+http://www.open-drone.org/flymaple
+
+Flymaple has an ARM based Cortex-3 STM32F103RE, 72MHz processor with 10DOF builtin sensors
+
+
+Implementation
+
+Unlike the Arduino versions of ardupilot, the Flymaple port uses portions of
+the libmaple library, including the stm32f1 core and some other libaries like
+Wire, HardwareTimer, HArdwareSPI etc.
+
+Most of the changes are confined to new directory libraries/AP_HAL_FLYMAPLE
+which contains the Flymaple specific code. All the HAL modules have
+been ported, sometimes based on HAL_AVR, sometimes HAL_PX4:
+AnalogIn
+AnalogSource
+Console
+GPIO
+I2CDriver
+RCInput
+RCOoutput
+Scheduler
+Semaphores
+SPIDriver
+Storage
+UARTDriver
+Utility
+
+The implementation of Storage uses EEPROM emulation code that uses 2 pages of
+Flymaple FLASH ROM as EEPROM. It was copied from
+AeroQuad_v3.2 to libraries/AP_HAL_FLYMAPLE/utility and slightly modified:
+libraries/AP_HAL_FLYMAPLE/utility/EEPROM.*
+libraries/AP_HAL_FLYMAPLE/utility/flash_stm32.*
+
+Unlike other HAL ports, the namespace for Flymaple defined in
+AP_HAL_FLYMAPLE_Namespace.h has a more extensive name: 'AP_HAL_FLYMAPLE_NS' else
+get complaints from gcc 4.4.1 caused by collisions with other class names.
+
+New board makefile mk/board/flymaple.mk, plus some other minor changes in
+mk/*.mk
+
+In other parts of the ardupilot tree, the changes have been #ifdefed for
+Flymaple:
+
+- libraries/AP_Compass/AP_Compass_HMC5843.cpp
+- libraries/AP_Compass/Compass.h
+- libraries/AP_Baro/AP_Baro_BMP085.cpp
+Minor changes to raw data fetches to make them 32bit compatible. Should not
+affect other platforms.
+
+Some other minor edits to eliminate compiler warnings
+
+These changes have now all been included in the ardupilot mainline code.
+
+Resource usage
+Resources on the Flymaple board have been allocated by the HAL:
+
+Pins
+0	AP GPS on Flymaple Serial2  Rx in. This is where you connect the
+        GPS. 3.3V only, NOT 5V tolerant
+1       AP GPS on Flymaple Serial2  Tx out. This is where you connect the GPS.
+	3.3V
+5       I2C SCL. Do not use for GPIO.
+6	Receiver PPM in
+7	Console and Mavlink on Flymaple Serial1 Rx in. Also on connector
+	"COM1". 5V tolerant.
+8	Console and Mavlink on Flymaple Serial1 Tx out. Also on connector
+	"COM1". 3.3V
+9       I2C SDA. Do not use for GPIO
+15	3.3V board VCC analog in. Connect to 3.3V pin.
+16	Airspeed analog in (if available). 3.3V, NOT 5V tolerant.
+19	Battery current analog in (if available). 3.3V, NOT 5V tolerant.
+20	Battery voltage analog in (on-board divider connected to board VIN)
+29	Telemetry Tx to radio on Serial3 on connector labelled "GPS". 3.3V
+30      Telemetry Rx from radio on Serial3 on connector labelled "GPS". 5V tolerant.
+
+Timers
+SysTick			1000Hz normal timers
+1 CH1			RCInput
+2 CH1			1000Hz Failsafe timer
+3 CH1-4, 4 CH1-2	RCOut
+8	   		not used by AP
+
+The I2CDriver on Flymaple uses the libmaple i2c low level hardware I2C
+library, configuredfor high speed (400kHz).
+
+As at 2013-10-03, there is a bug in the libmaple git master code, that causes
+a crash in the I2C interrupt handler. Therfore it is necessary to use the
+patched version of libmaple referred to below.
+
+At 400kHz I2C speed, it takes 500us to read both the 6 byte accelerometer
+buffer and the the 6 byte gyro buffer.
+
+The SerialUSB (USB connection) to Flymaple is not used by AP. It can be used for
+debugging inside AP_HAL_FLYMAPLE, using SerialUSB.println().
+
+Sensor configuration
+
+The sensors are configured so:
+
+ADXL345 Accelerometer
+8g full scale, full resolution mode, 800Hz bandwidth, read at 1kHz sample rate
+per sec
+
+ITG3205 Gyro
+2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate, read at 1kHz sample rate
+
+The gyro and accelerometers are sampled at about 800Hz in
+AP_InertialSensor_Flymaple.cpp, with the samples passed through a software
+2-pole low pass filter, to produce filtered data for the main loop.
+
+Installation on Linux
+
+Tested with:
+libmaple patched library based on https://github.com/leaflabs/libmaple http://leaflabs.com/docs/unix-toolchain.html
+arm-none-eabi-g++ toolchain, version 4.4.1
+on OpenSuSE 12.3
+Mission Planner 1.2.78
+
+You need a number of additional resources to build ardupilot for Flymaple. I
+have assumed that you will install them in your home directory, but they can really
+go anywhere provided you make the appropriate changes to PATH and config.mk
+
+cd ~
+git clone https://github.com/mikemccauley/libmaple.git 
+cd libmaple
+wget http://static.leaflabs.com/pub/codesourcery/gcc-arm-none-eabi-latest-linux32.tar.gz
+tar xvzf gcc-arm-none-eabi-latest-linux32.tar.gz
+export PATH=$PATH:~/libmaple/arm/bin
+cp main.cpp.example main.cpp
+make
+(at this stage you can test your flymaple CPU and the upload process with
+'make install', which will upload a simple LED blinking program to your
+Flymaple)
+
+Now download ardupilot:
+cd ~
+git clone https://github.com/diydrones/ardupilot.git
+cd ardupilot
+
+edit config.mk to be something like:
+#config.mk START
+# Select maple_RET6 for Flymaple
+BOARD = maple_RET6
+# HAL_BOARD determines default HAL target.
+HAL_BOARD ?= HAL_BOARD_FLYMAPLE
+# The communication port used to communicate with the Flymaple
+PORT = /dev/ttyACM0
+# You must provide the path to the libmaple library directory:
+LIBMAPLE_PATH = $(HOME)/libmaple
+# Also, the ARM compiler tools MUST be in your current PATH like:
+# export PATH=$PATH:~/libmaple/arm/bin
+#config.mk END
+
+cd ArduPlane
+make flymaple
+make upload
+
+Libmaple fork
+
+Correct compilation and operation of the Flymaple port depends on
+using the fork of libmaple from https://github.com/mikemccauley/libmaple.git 
+
+The changes relative to the libmaple master are:
+
+- Add LIBMAPLE_VERSION_MAJOR and LIBMAPLE_VERSION_MINOR for version detection
+- Add TX ring buffer and interrupt handler to usart.c
+- Fix a bug in I2C interrupt handler that would crash in master mode
+
+Interrupt disabling on ARM
+
+On AVR, ISRs run by default with the global interrupt enable flag disabled, 
+whereas mainline code runs by default with global interrupt enable flag 
+*enabled*. Which means that cli()/sei() in an ISR will have a different effect 
+to cli()sei() in mainline code. Thats why code that *might* run in an ISR must 
+use the special idiom: so that it restores the flag to the state it was before 
+the critical block
+
+On ARM, the global interrupt disable flag PRIMASK is not altered behind your 
+back by hardware. By default its always clear (ie enabled) even in ISRs. A 
+different mechanism prevents ISRs from being reinterrupted. This means that 
+non-nested noInterrupts()/interrupts() will always leave the PRIMASK as it was 
+(interrupts enabled) when the critical block started, whether in ISRs or 
+mainline code.
+
+Conclusion:
+
+On AVR, cli()/sei() is dangerous both in ISRs *and* when nested.
+
+On ARM, noInterrupts()/interrupts() is only dangerous when nested.
+
+Sensor Orientation
+
+The Flymaple board has no clear indication about which way is meant to be
+'forward' or 'right', so we have adopted the following convention:
+
+Aircraft 'Forward' is in the direction of the arrow marked 'Pitch' on the board, ie
+towards pin 0.
+
+Aircraft 'Right' is towards the bottom right corner of the board, towards pin 20 and
+the 5V regulator
+
+Aircraft 'Down' is away from the copper side of the board: 'right way up' is with
+component side up.
+
+Here in SE Queensland, in the southern hemisphere, the local mag field is 
+substantially vertical (down? is that correct?), and so the following simple 
+tests of the board should give the following results, using the mavproxy 
+graphing tools, and with a board orientation parameter of none:
+
+The aircraft coordinate system of ardupilot is:
+
+X +ve forward
+Y +ve right
+Z +ve down
+
+Compass
+Orientation                               Results
+Level, right way up                       Z -ve
+Left side down                            Y +ve
+Nose up                                   X +ve
+(ie positive when that axis is pointing away from the earth, at least where I 
+am)
+
+Accelerometer
+Orientation                               Results
+Level, right way up                       Z -ve
+Left side down                            Y +ve
+Nose up                                   X +ve
+(ie positive when that axis is pointing away from the earth, and consistent 
+with compass in southern hemisphere)
+
+Gyro
+Rotation                                  Results
+Yawing to right                           Z +ve
+Rolling to right                          X +ve
+Pitching up                               Y +ve
+
+(ie right hand curl rule relative to the given axis)
+
+Remaining issues:
+
+1. Many alignment warnings emitted by the compiler from libraries/GCS_MAVLink
+protocol.h eg:
+/mnt/disk2/src/ardupilot/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h: In function 'double _MAV_RETURN_double(const mavlink_message_t*, uint8_t)':
+/mnt/disk2/src/ardupilot/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h:274: warning: cast from 'const char*' to 'const double*' increases required alignment of target type

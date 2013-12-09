@@ -5,8 +5,7 @@ import util, time, os, sys, math
 import socket, struct
 import select, errno
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
-import fgFDM
+from pymavlink import fgFDM
 
 def sim_send(m, a):
     '''send flight information to mavproxy and flightgear'''
@@ -38,14 +37,14 @@ def sim_send(m, a):
         if not e.errno in [ errno.ECONNREFUSED ]:
             raise
 
-    buf = struct.pack('<16dI',
+    buf = struct.pack('<17dI',
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
-                      a.velocity.x, a.velocity.y,
+                      a.velocity.x, a.velocity.y, a.velocity.z,
                       a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
                       degrees(earth_rates.x), degrees(earth_rates.y), degrees(earth_rates.z),
                       degrees(roll), degrees(pitch), degrees(yaw),
                       math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),
-                      0x4c56414e)
+                      0x4c56414f)
     try:
         sim_out.send(buf)
     except socket.error as e:
@@ -106,8 +105,6 @@ for m in [ 'home' ]:
         parser.print_help()
         sys.exit(1)
 
-parent_pid = os.getppid()
-
 # UDP socket addresses
 fg_out_address  = interpret_address(opts.fgout)
 sim_out_address = interpret_address(opts.simout)
@@ -157,6 +154,7 @@ a.yaw = float(v[3])
 a.ground_level = a.home_altitude
 a.position.z = 0
 a.wind = util.Wind(opts.wind)
+a.set_yaw_degrees(a.yaw)
 
 print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.home_latitude,
@@ -178,10 +176,11 @@ while True:
     frame_count += 1
     t = time.time()
     if t - lastt > 1.0:
-        #print("%.2f fps zspeed=%.2f zaccel=%.2f h=%.1f a=%.1f yaw=%.1f yawrate=%.1f" % (
-         #   frame_count/(t-lastt),
-          #  a.velocity.z, a.accel.z, a.position.z, a.altitude,
-           # a.yaw, a.yaw_rate))
+#        print("%.2f fps sleepOverhead=%f zspeed=%.2f zaccel=%.2f h=%.1f a=%.1f yaw=%.1f" % (
+#            frame_count/(t-lastt),
+#            sleep_overhead,
+#            a.velocity.z, a.accelerometer.z, a.position.z, a.altitude,
+#            a.yaw))
         lastt = t
         frame_count = 0
     frame_end = time.time()
@@ -190,4 +189,4 @@ while True:
         dt -= sleep_overhead
         if dt > 0:
             time.sleep(dt)
-        sleep_overhead = 0.99*sleep_overhead + 0.01*(time.time() - frame_end)
+        sleep_overhead = 0.99*sleep_overhead + 0.01*(time.time() - frame_end - dt)

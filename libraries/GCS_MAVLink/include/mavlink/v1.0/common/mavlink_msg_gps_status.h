@@ -15,6 +15,9 @@ typedef struct __mavlink_gps_status_t
 #define MAVLINK_MSG_ID_GPS_STATUS_LEN 101
 #define MAVLINK_MSG_ID_25_LEN 101
 
+#define MAVLINK_MSG_ID_GPS_STATUS_CRC 23
+#define MAVLINK_MSG_ID_25_CRC 23
+
 #define MAVLINK_MSG_GPS_STATUS_FIELD_SATELLITE_PRN_LEN 20
 #define MAVLINK_MSG_GPS_STATUS_FIELD_SATELLITE_USED_LEN 20
 #define MAVLINK_MSG_GPS_STATUS_FIELD_SATELLITE_ELEVATION_LEN 20
@@ -52,14 +55,14 @@ static inline uint16_t mavlink_msg_gps_status_pack(uint8_t system_id, uint8_t co
 						       uint8_t satellites_visible, const uint8_t *satellite_prn, const uint8_t *satellite_used, const uint8_t *satellite_elevation, const uint8_t *satellite_azimuth, const uint8_t *satellite_snr)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[101];
+	char buf[MAVLINK_MSG_ID_GPS_STATUS_LEN];
 	_mav_put_uint8_t(buf, 0, satellites_visible);
 	_mav_put_uint8_t_array(buf, 1, satellite_prn, 20);
 	_mav_put_uint8_t_array(buf, 21, satellite_used, 20);
 	_mav_put_uint8_t_array(buf, 41, satellite_elevation, 20);
 	_mav_put_uint8_t_array(buf, 61, satellite_azimuth, 20);
 	_mav_put_uint8_t_array(buf, 81, satellite_snr, 20);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 101);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_GPS_STATUS_LEN);
 #else
 	mavlink_gps_status_t packet;
 	packet.satellites_visible = satellites_visible;
@@ -68,18 +71,22 @@ static inline uint16_t mavlink_msg_gps_status_pack(uint8_t system_id, uint8_t co
 	mav_array_memcpy(packet.satellite_elevation, satellite_elevation, sizeof(uint8_t)*20);
 	mav_array_memcpy(packet.satellite_azimuth, satellite_azimuth, sizeof(uint8_t)*20);
 	mav_array_memcpy(packet.satellite_snr, satellite_snr, sizeof(uint8_t)*20);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 101);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_GPS_STATUS_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_GPS_STATUS;
-	return mavlink_finalize_message(msg, system_id, component_id, 101, 23);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_GPS_STATUS_LEN, MAVLINK_MSG_ID_GPS_STATUS_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_GPS_STATUS_LEN);
+#endif
 }
 
 /**
  * @brief Pack a gps_status message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param satellites_visible Number of satellites visible
  * @param satellite_prn Global satellite ID
@@ -94,14 +101,14 @@ static inline uint16_t mavlink_msg_gps_status_pack_chan(uint8_t system_id, uint8
 						           uint8_t satellites_visible,const uint8_t *satellite_prn,const uint8_t *satellite_used,const uint8_t *satellite_elevation,const uint8_t *satellite_azimuth,const uint8_t *satellite_snr)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[101];
+	char buf[MAVLINK_MSG_ID_GPS_STATUS_LEN];
 	_mav_put_uint8_t(buf, 0, satellites_visible);
 	_mav_put_uint8_t_array(buf, 1, satellite_prn, 20);
 	_mav_put_uint8_t_array(buf, 21, satellite_used, 20);
 	_mav_put_uint8_t_array(buf, 41, satellite_elevation, 20);
 	_mav_put_uint8_t_array(buf, 61, satellite_azimuth, 20);
 	_mav_put_uint8_t_array(buf, 81, satellite_snr, 20);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 101);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_GPS_STATUS_LEN);
 #else
 	mavlink_gps_status_t packet;
 	packet.satellites_visible = satellites_visible;
@@ -110,15 +117,19 @@ static inline uint16_t mavlink_msg_gps_status_pack_chan(uint8_t system_id, uint8
 	mav_array_memcpy(packet.satellite_elevation, satellite_elevation, sizeof(uint8_t)*20);
 	mav_array_memcpy(packet.satellite_azimuth, satellite_azimuth, sizeof(uint8_t)*20);
 	mav_array_memcpy(packet.satellite_snr, satellite_snr, sizeof(uint8_t)*20);
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 101);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_GPS_STATUS_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_GPS_STATUS;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 101, 23);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_GPS_STATUS_LEN, MAVLINK_MSG_ID_GPS_STATUS_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_GPS_STATUS_LEN);
+#endif
 }
 
 /**
- * @brief Encode a gps_status struct into a message
+ * @brief Encode a gps_status struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -128,6 +139,20 @@ static inline uint16_t mavlink_msg_gps_status_pack_chan(uint8_t system_id, uint8
 static inline uint16_t mavlink_msg_gps_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_gps_status_t* gps_status)
 {
 	return mavlink_msg_gps_status_pack(system_id, component_id, msg, gps_status->satellites_visible, gps_status->satellite_prn, gps_status->satellite_used, gps_status->satellite_elevation, gps_status->satellite_azimuth, gps_status->satellite_snr);
+}
+
+/**
+ * @brief Encode a gps_status struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param gps_status C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_gps_status_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_gps_status_t* gps_status)
+{
+	return mavlink_msg_gps_status_pack_chan(system_id, component_id, chan, msg, gps_status->satellites_visible, gps_status->satellite_prn, gps_status->satellite_used, gps_status->satellite_elevation, gps_status->satellite_azimuth, gps_status->satellite_snr);
 }
 
 /**
@@ -146,14 +171,18 @@ static inline uint16_t mavlink_msg_gps_status_encode(uint8_t system_id, uint8_t 
 static inline void mavlink_msg_gps_status_send(mavlink_channel_t chan, uint8_t satellites_visible, const uint8_t *satellite_prn, const uint8_t *satellite_used, const uint8_t *satellite_elevation, const uint8_t *satellite_azimuth, const uint8_t *satellite_snr)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[101];
+	char buf[MAVLINK_MSG_ID_GPS_STATUS_LEN];
 	_mav_put_uint8_t(buf, 0, satellites_visible);
 	_mav_put_uint8_t_array(buf, 1, satellite_prn, 20);
 	_mav_put_uint8_t_array(buf, 21, satellite_used, 20);
 	_mav_put_uint8_t_array(buf, 41, satellite_elevation, 20);
 	_mav_put_uint8_t_array(buf, 61, satellite_azimuth, 20);
 	_mav_put_uint8_t_array(buf, 81, satellite_snr, 20);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_STATUS, buf, 101, 23);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_STATUS, buf, MAVLINK_MSG_ID_GPS_STATUS_LEN, MAVLINK_MSG_ID_GPS_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_STATUS, buf, MAVLINK_MSG_ID_GPS_STATUS_LEN);
+#endif
 #else
 	mavlink_gps_status_t packet;
 	packet.satellites_visible = satellites_visible;
@@ -162,7 +191,11 @@ static inline void mavlink_msg_gps_status_send(mavlink_channel_t chan, uint8_t s
 	mav_array_memcpy(packet.satellite_elevation, satellite_elevation, sizeof(uint8_t)*20);
 	mav_array_memcpy(packet.satellite_azimuth, satellite_azimuth, sizeof(uint8_t)*20);
 	mav_array_memcpy(packet.satellite_snr, satellite_snr, sizeof(uint8_t)*20);
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_STATUS, (const char *)&packet, 101, 23);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_STATUS, (const char *)&packet, MAVLINK_MSG_ID_GPS_STATUS_LEN, MAVLINK_MSG_ID_GPS_STATUS_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_STATUS, (const char *)&packet, MAVLINK_MSG_ID_GPS_STATUS_LEN);
+#endif
 #endif
 }
 
@@ -247,6 +280,6 @@ static inline void mavlink_msg_gps_status_decode(const mavlink_message_t* msg, m
 	mavlink_msg_gps_status_get_satellite_azimuth(msg, gps_status->satellite_azimuth);
 	mavlink_msg_gps_status_get_satellite_snr(msg, gps_status->satellite_snr);
 #else
-	memcpy(gps_status, _MAV_PAYLOAD(msg), 101);
+	memcpy(gps_status, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_GPS_STATUS_LEN);
 #endif
 }

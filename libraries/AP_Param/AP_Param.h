@@ -1,17 +1,27 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-//
-// This is free software; you can redistribute it and/or modify it under
-// the terms of the GNU Lesser General Public License as published by the
-// Free Software Foundation; either version 2.1 of the License, or (at
-// your option) any later version.
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//
 /// @file	AP_Param.h
 /// @brief	A system for managing and storing variables that are of
 ///			general interest to the system.
 
 #ifndef AP_PARAM_H
 #define AP_PARAM_H
+#include <AP_HAL.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
@@ -82,6 +92,12 @@ public:
             const float def_value;
         };
     };
+    struct ConversionInfo {
+        uint8_t old_key; // k_param_*
+        uint8_t old_group_element; // index in old object
+        enum ap_var_type type; // AP_PARAM_*
+        const char new_name[AP_MAX_NAME_SIZE+1];        
+    };
 
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
@@ -125,7 +141,7 @@ public:
     /// @param	buffer			The destination buffer
     /// @param	bufferSize		Total size of the destination buffer.
     ///
-    void copy_name_token(const ParamToken *token, char *buffer, size_t bufferSize, bool force_scalar=false);
+    void copy_name_token(const ParamToken &token, char *buffer, size_t bufferSize, bool force_scalar=false) const;
 
     /// Find a variable by name.
     ///
@@ -136,6 +152,7 @@ public:
     ///                         it does not exist.
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
+    static AP_Param * find_P(const prog_char_t *name, enum ap_var_type *ptype);
 
     /// Find a variable by index.
     ///
@@ -156,9 +173,11 @@ public:
 
     /// Save the current value of the variable to EEPROM.
     ///
+    /// @param  force_save     If true then force save even if default
+    ///
     /// @return                True if the variable was saved successfully.
     ///
-    bool save(void);
+    bool save(bool force_save=false);
 
     /// Load the variable from EEPROM.
     ///
@@ -186,12 +205,27 @@ public:
     // does not recurse into the sub-objects    
     static void         setup_sketch_defaults(void);
 
+    // convert old vehicle parameters to new object parameters
+    static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size);
+
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
 
     /// print the value of all variables
-    static void         show_all(void);
+    static void         show_all(AP_HAL::BetterStream *port);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const char *name,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const ParamToken &token,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
 
     /// Returns the first variable
     ///
@@ -209,7 +243,7 @@ public:
     static AP_Param *       next_scalar(ParamToken *token, enum ap_var_type *ptype);
 
     /// cast a variable to a float given its type
-    float                   cast_to_float(enum ap_var_type type);
+    float                   cast_to_float(enum ap_var_type type) const;
 
 private:
     /// EEPROM header
@@ -259,15 +293,15 @@ private:
                                     uint8_t                     group_shift,
                                     uint32_t *                  group_element,
                                     const struct GroupInfo **   group_ret,
-                                    uint8_t *                   idx);
+                                    uint8_t *                   idx) const;
     const struct Info *         find_var_info(
                                     uint32_t *                group_element,
                                     const struct GroupInfo ** group_ret,
                                     uint8_t *                 idx);
-    const struct Info *			find_var_info_token(const ParamToken *token,
+    const struct Info *			find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo **  group_ret,
-                                                    uint8_t *                  idx);
+                                                    uint8_t *                  idx) const;
     static const struct Info *  find_by_header_group(
                                     struct Param_header phdr, void **ptr,
                                     uint8_t vindex,
@@ -280,14 +314,14 @@ private:
     void                        add_vector3f_suffix(
                                     char *buffer,
                                     size_t buffer_size,
-                                    uint8_t idx);
+                                    uint8_t idx) const;
     static AP_Param *           find_group(
                                     const char *name,
                                     uint8_t vindex,
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
     static void                 write_sentinal(uint16_t ofs);
-    bool                        scan(
+    static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
     static uint8_t				type_size(enum ap_var_type type);
@@ -312,6 +346,9 @@ private:
     static const uint8_t        k_EEPROM_magic0      = 0x50;
     static const uint8_t        k_EEPROM_magic1      = 0x41; ///< "AP"
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
+
+    // convert old vehicle parameters to new object parameters
+    static void         convert_old_parameter(const struct ConversionInfo *info);
 };
 
 /// Template class for scalar variables.
@@ -330,21 +367,22 @@ public:
 
     /// Value getter
     ///
-    T get(void) const {
+    const T &get(void) const {
         return _value;
     }
 
     /// Value setter
     ///
-    void set(T v) {
+    void set(const T &v) {
         _value = v;
     }
 
     /// Combined set and save
     ///
-    bool set_and_save(T v) {
+    bool set_and_save(const T &v) {
+        bool force = (_value != v);
         set(v);
-        return save();
+        return save(force);
     }
 
     /// Combined set and save, but only does the save if the value if
@@ -352,38 +390,54 @@ public:
     /// scan(). This should only be used where we have not set() the
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
-    bool set_and_save_ifchanged(T v) {
+    bool set_and_save_ifchanged(const T &v) {
         if (v == _value) {
             return true;
         }
         set(v);
-        return save();
+        return save(true);
     }
 
     /// Conversion to T returns a reference to the value.
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator const T &() const {
         return _value;
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamT<T,PT>& operator= (AP_ParamT<T,PT>& v) {
-        return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamT<T,PT>& operator= (T v) {
+    AP_ParamT<T,PT>& operator= (const T &v) {
         _value = v;
+        return *this;
+    }
+
+    /// bit ops on parameters
+    ///
+    AP_ParamT<T,PT>& operator |=(const T &v) {
+        _value |= v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator &=(const T &v) {
+        _value &= v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator +=(const T &v) {
+        _value += v;
+        return *this;
+    }
+
+    AP_ParamT<T,PT>& operator -=(const T &v) {
+        _value -= v;
         return *this;
     }
 
     /// AP_ParamT types can implement AP_Param::cast_to_float
     ///
-    float cast_to_float(void) {
+    float cast_to_float(void) const {
         return (float)_value;
     }
 
@@ -409,40 +463,35 @@ public:
 
     /// Value getter
     ///
-    T        get(void) const {
+    const T &get(void) const {
         return _value;
     }
 
     /// Value setter
     ///
-    void        set(T v) {
+    void set(const T &v) {
         _value = v;
     }
 
     /// Combined set and save
     ///
-    bool        set_and_save(T v) {
+    bool set_and_save(const T &v) {
+        bool force = (_value != v);
         set(v);
-        return save();
+        return save(force);
     }
 
     /// Conversion to T returns a reference to the value.
     ///
     /// This allows the class to be used in many situations where the value would be legal.
     ///
-    operator T &() {
+    operator const T &() const {
         return _value;
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamV<T,PT>& operator        =(AP_ParamV<T,PT>& v) {
-        return v;
     }
 
     /// Copy assignment from T is equivalent to ::set.
     ///
-    AP_ParamV<T,PT>& operator        =(T v) {
+    AP_ParamV<T,PT>& operator=(const T &v) {
         _value = v;
         return *this;
     }
@@ -472,11 +521,11 @@ public:
     ///
     /// @note It would be nice to range-check i here, but then what would we return?
     ///
-    T & operator[](uint8_t i) {
+    const T & operator[](uint8_t i) {
         return _value[i];
     }
 
-    T & operator[](int8_t i) {
+    const T & operator[](int8_t i) {
         return _value[(uint8_t)i];
     }
 
@@ -496,16 +545,10 @@ public:
     ///
     /// @note   Attempts to set an index out of range are discarded.
     ///
-    void  set(uint8_t i, T v) {
+    void  set(uint8_t i, const T &v) {
         if (i < N) {
             _value[i] = v;
         }
-    }
-
-    /// Copy assignment from self does nothing.
-    ///
-    AP_ParamA<T,N,PT>& operator= (AP_ParamA<T,N,PT>& v) {
-        return v;
     }
 
 protected:

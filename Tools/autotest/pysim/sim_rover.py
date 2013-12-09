@@ -8,8 +8,6 @@ import util, time, os, sys, math
 import socket, struct
 import select, errno
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
-
 def sim_send(a):
     '''send flight information to mavproxy'''
     from math import degrees
@@ -17,14 +15,14 @@ def sim_send(a):
     earth_rates = util.BodyRatesToEarthRates(a.dcm, a.gyro)
     (roll, pitch, yaw) = a.dcm.to_euler()
 
-    buf = struct.pack('<16dI',
+    buf = struct.pack('<17dI',
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
-                      a.velocity.x, a.velocity.y,
+                      a.velocity.x, a.velocity.y, a.velocity.z,
                       a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
                       degrees(earth_rates.x), degrees(earth_rates.y), degrees(earth_rates.z),
                       degrees(roll), degrees(pitch), degrees(yaw),
                       math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),
-                      0x4c56414e)
+                      0x4c56414f)
     try:
         sim_out.send(buf)
     except socket.error as e:
@@ -76,6 +74,7 @@ parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
 parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=100)
+parser.add_option("--skid-steering", action='store_true', default=False, help="Use skid steering")
 
 (opts, args) = parser.parse_args()
 
@@ -84,8 +83,6 @@ for m in [ 'home' ]:
         print("Missing required option '%s'" % m)
         parser.print_help()
         sys.exit(1)
-
-parent_pid = os.getppid()
 
 # UDP socket addresses
 sim_out_address = interpret_address(opts.simout)
@@ -102,7 +99,7 @@ sim_out.connect(sim_out_address)
 sim_out.setblocking(0)
 
 # create the quadcopter model
-a = Rover()
+a = Rover(skid_steering=opts.skid_steering)
 
 # initial controls state
 state = ControlState()
@@ -120,6 +117,8 @@ a.altitude       = a.home_altitude
 a.yaw            = float(v[3])
 a.latitude = a.home_latitude
 a.longitude = a.home_longitude
+
+a.set_yaw_degrees(a.yaw)
 
 print("Starting at lat=%f lon=%f alt=%f heading=%.1f" % (
     a.home_latitude,

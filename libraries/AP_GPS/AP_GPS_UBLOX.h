@@ -1,28 +1,44 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 //  u-blox UBX GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
-//
+//  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
 #ifndef __AP_GPS_UBLOX_H__
 #define __AP_GPS_UBLOX_H__
 
 #include <AP_HAL.h>
+#include <AP_Common.h>
 #include "GPS.h"
 
 /*
- *  try to put a UBlox into binary mode. This is in two parts. First we
- *  send a PUBX asking the UBlox to receive NMEA and UBX, and send UBX,
- *  with a baudrate of 38400. Then we send a UBX message setting rate 1
- *  for the NAV_SOL message. The setup of NAV_SOL is to cope with
- *  configurations where all UBX binary message types are disabled.
+ *  try to put a UBlox into binary mode. This is in two parts. 
+ *
+ * First we send a ubx binary message that enables the NAV_SOL message
+ * at rate 1. Then we send a NMEA message to set the baud rate to our
+ * desired rate. The reason for doing the NMEA message second is if we
+ * send it first the second message will be ignored for a baud rate
+ * change.
+ * The reason we need the NAV_SOL rate message at all is some uBlox
+ * modules are configured with all ubx binary messages off, which
+ * would mean we would never detect it.
  */
-
-#define UBLOX_SET_BINARY "$PUBX,41,1,0003,0001,38400,0*26\n\265\142\006\001\003\000\001\006\001\022\117"
+#define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
 
 class AP_GPS_UBLOX : public GPS
 {
@@ -35,7 +51,9 @@ public:
 		_payload_counter(0),
 		_fix_count(0),
 		_disable_counter(0),
-		next_fix(false)
+		next_fix(GPS::FIX_NONE),
+        need_rate_update(false),
+        rate_update_step(0)
 		{}
 
     // Methods
@@ -50,25 +68,24 @@ public:
 
 private:
     // u-blox UBX protocol essentials
-	#pragma pack(push,1)
-    struct ubx_header {
+    struct PACKED ubx_header {
         uint8_t preamble1;
         uint8_t preamble2;
         uint8_t msg_class;
         uint8_t msg_id;
         uint16_t length;
     };
-    struct ubx_cfg_nav_rate {
+    struct PACKED ubx_cfg_nav_rate {
         uint16_t measure_rate_ms;
         uint16_t nav_rate;
         uint16_t timeref;
     };
-    struct ubx_cfg_msg_rate {
+    struct PACKED ubx_cfg_msg_rate {
         uint8_t msg_class;
         uint8_t msg_id;
         uint8_t rate;
     };
-    struct ubx_cfg_nav_settings {
+    struct PACKED ubx_cfg_nav_settings {
         uint16_t mask;
         uint8_t dynModel;
         uint8_t fixMode;
@@ -87,7 +104,7 @@ private:
         uint32_t res4;
     };
 
-    struct ubx_nav_posllh {
+    struct PACKED ubx_nav_posllh {
         uint32_t time;                                  // GPS msToW
         int32_t longitude;
         int32_t latitude;
@@ -96,7 +113,7 @@ private:
         uint32_t horizontal_accuracy;
         uint32_t vertical_accuracy;
     };
-    struct ubx_nav_status {
+    struct PACKED ubx_nav_status {
         uint32_t time;                                  // GPS msToW
         uint8_t fix_type;
         uint8_t fix_status;
@@ -105,7 +122,7 @@ private:
         uint32_t time_to_first_fix;
         uint32_t uptime;                                // milliseconds
     };
-    struct ubx_nav_solution {
+    struct PACKED ubx_nav_solution {
         uint32_t time;
         int32_t time_nsec;
         int16_t week;
@@ -124,7 +141,7 @@ private:
         uint8_t satellites;
         uint32_t res2;
     };
-    struct ubx_nav_velned {
+    struct PACKED ubx_nav_velned {
         uint32_t time;                                  // GPS msToW
         int32_t ned_north;
         int32_t ned_east;
@@ -136,7 +153,7 @@ private:
         uint32_t heading_accuracy;
     };
     // Receive buffer
-    union {
+    union PACKED {
         ubx_nav_posllh posllh;
         ubx_nav_status status;
         ubx_nav_solution solution;
@@ -144,7 +161,6 @@ private:
         ubx_cfg_nav_settings nav_settings;
         uint8_t bytes[];
     } _buffer;
-	#pragma pack(pop)
 
     enum ubs_protocol_bytes {
         PREAMBLE1 = 0xb5,
@@ -203,12 +219,18 @@ private:
     bool        _parse_gps();
 
     // used to update fix between status and position packets
-    bool        next_fix;
+    Fix_Status  next_fix;
 
+    bool need_rate_update;
+    uint8_t rate_update_step;
+    uint32_t _last_5hz_time;
+
+    void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_gps(void);
     void        _update_checksum(uint8_t *data, uint8_t len, uint8_t &ck_a, uint8_t &ck_b);
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint8_t size);
+    void		send_next_rate_update(void);
 
 };
 

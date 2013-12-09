@@ -32,13 +32,6 @@ static void update_auto()
     }
 }
 
-// this is only used by an air-start
-static void reload_commands_airstart()
-{
-    init_commands();
-    decrement_cmd_index();
-}
-
 /*
   fetch a mission item from EEPROM
 */
@@ -127,13 +120,6 @@ static void set_cmd_with_index(struct Location temp, int16_t i)
     hal.storage->write_dword(mem, temp.lng);
 }
 
-static void decrement_cmd_index()
-{
-    if (g.command_index > 0) {
-        g.command_index.set_and_save(g.command_index - 1);
-    }
-}
-
 static int32_t read_alt_to_hold()
 {
     if (g.RTL_altitude_cm < 0) {
@@ -147,7 +133,7 @@ static int32_t read_alt_to_hold()
  *  This function stores waypoint commands
  *  It looks to see what the next command type is and finds the last command.
  */
-static void set_next_WP(struct Location *wp)
+static void set_next_WP(const struct Location *wp)
 {
     // copy the current WP into the OldWP slot
     // ---------------------------------------
@@ -184,36 +170,22 @@ static void set_next_WP(struct Location *wp)
     // -----------------------------------------------
     target_altitude_cm = current_loc.alt;
 
-    if (prev_WP.id != MAV_CMD_NAV_TAKEOFF && 
-        prev_WP.alt != home.alt && 
-        (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND)) {
-        offset_altitude_cm = next_WP.alt - prev_WP.alt;
-    } else {
-        offset_altitude_cm = 0;        
-    }
-
     // zero out our loiter vals to watch for missed waypoints
-    loiter_delta            = 0;
-    loiter_sum                      = 0;
-    loiter_total            = 0;
+    loiter_angle_reset();
 
-    // this is handy for the groundstation
-    wp_totalDistance        = get_distance(&current_loc, &next_WP);
-    wp_distance             = wp_totalDistance;
-    target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);
-    nav_bearing_cd          = target_bearing_cd;
+    setup_glide_slope();
 
-    // to check if we have missed the WP
-    // ----------------------------
-    old_target_bearing_cd   = target_bearing_cd;
-
-    // set a new crosstrack bearing
-    // ----------------------------
-    reset_crosstrack();
+    loiter_angle_reset();
 }
 
 static void set_guided_WP(void)
 {
+    if (g.loiter_radius < 0) {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+
     // copy the current location into the OldWP slot
     // ---------------------------------------
     prev_WP = current_loc;
@@ -225,25 +197,15 @@ static void set_guided_WP(void)
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
     target_altitude_cm = current_loc.alt;
-    offset_altitude_cm = next_WP.alt - prev_WP.alt;
 
-    // this is handy for the groundstation
-    wp_totalDistance        = get_distance(&current_loc, &next_WP);
-    wp_distance             = wp_totalDistance;
-    target_bearing_cd       = get_bearing_cd(&current_loc, &next_WP);
+    setup_glide_slope();
 
-    // to check if we have missed the WP
-    // ----------------------------
-    old_target_bearing_cd = target_bearing_cd;
-
-    // set a new crosstrack bearing
-    // ----------------------------
-    reset_crosstrack();
+    loiter_angle_reset();
 }
 
 // run this at setup on the ground
 // -------------------------------
-void init_home()
+static void init_home()
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
@@ -260,7 +222,7 @@ void init_home()
     home.id         = MAV_CMD_NAV_WAYPOINT;
     home.lng        = g_gps->longitude;                                 // Lon * 10**7
     home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = max(g_gps->altitude, 0);
+    home.alt        = max(g_gps->altitude_cm, 0);
     home_is_set = true;
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
@@ -280,5 +242,15 @@ void init_home()
 
 }
 
-
-
+/*
+  update home location from GPS
+  this is called as long as we have 3D lock and the arming switch is
+  not pushed
+*/
+static void update_home()
+{
+    home.lng        = g_gps->longitude;                                 // Lon * 10**7
+    home.lat        = g_gps->latitude;                                  // Lat * 10**7
+    home.alt        = max(g_gps->altitude_cm, 0);
+    barometer.update_calibration();
+}

@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // Test for AP_GPS_NMEA
 //
@@ -13,6 +13,7 @@
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
 #include <AP_HAL_Empty.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -60,14 +61,15 @@ void loop()
         if (gps->fix) {
             hal.console->printf_P(
                 PSTR("Lat: %.7f Lon: %.7f Alt: %.2fm GSP: %.2fm/s "
-                    "CoG: %d SAT: %d TIM: %lu\r\n"),
-                          (float)gps->latitude / T7,
-                          (float)gps->longitude / T7,
-                          (float)gps->altitude / 100.0,
-                          (float)gps->ground_speed / 100.0,
-                          (int)gps->ground_course / 100,
-                          gps->num_sats,
-                          gps->time);
+                    "CoG: %d SAT: %d TIM: %u/%lu\r\n"),
+                (float)gps->latitude / T7,
+                (float)gps->longitude / T7,
+                (float)gps->altitude_cm / 100.0,
+                (float)gps->ground_speed_cm / 100.0,
+                (int)gps->ground_course_cd / 100,
+                gps->num_sats,
+                gps->time_week,
+                gps->time_week_ms);
         } else {
             hal.console->println_P(PSTR("No fix"));
         }

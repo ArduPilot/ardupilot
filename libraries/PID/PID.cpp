@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	PID.cpp
 /// @brief	Generic PID algorithm
@@ -86,6 +86,12 @@ float PID::get_pid(float error, float scaler)
     }
 
     return output;
+}
+
+int16_t PID::get_pid_4500(float error, float scaler)
+{
+	float v = get_pid(error, scaler);
+	return constrain_float(v, -4500, 4500);
 }
 
 void

@@ -60,7 +60,9 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_chan(mavlink_message_t* msg, ui
 						      uint8_t chan, uint8_t length);
 MAVLINK_HELPER uint16_t mavlink_finalize_message(mavlink_message_t* msg, uint8_t system_id, uint8_t component_id, 
 						 uint8_t length);
+#ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint8_t msgid, const char *packet, uint8_t length);
+#endif
 #endif // MAVLINK_CRC_EXTRA
 MAVLINK_HELPER uint16_t mavlink_msg_to_send_buffer(uint8_t *buffer, const mavlink_message_t *msg);
 MAVLINK_HELPER void mavlink_start_checksum(mavlink_message_t* msg);
@@ -160,7 +162,7 @@ static inline void byte_copy_8(char *dst, const char *src)
 /*
   like memcpy(), but if src is NULL, do a memset to zero
 */
-static void mav_array_memcpy(void *dest, const void *src, size_t n)
+static inline void mav_array_memcpy(void *dest, const void *src, size_t n)
 {
 	if (src == NULL) {
 		memset(dest, 0, n);

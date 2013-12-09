@@ -5,9 +5,9 @@ import sys, os, pexpect, socket
 import math, time, select, struct, signal, errno
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pysim'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', '..', 'mavlink', 'pymavlink'))
 
-import util, fgFDM, atexit, fdpexpect
+import util, atexit, fdpexpect
+from pymavlink import fgFDM
 
 class control_state(object):
     def __init__(self):
@@ -33,6 +33,7 @@ def jsb_set(variable, value):
 
 def setup_template(home):
     '''setup aircraft/Rascal/reset.xml'''
+    global opts
     v = home.split(',')
     if len(v) != 4:
         print("home should be lat,lng,alt,hdg - '%s'" % home)
@@ -49,6 +50,20 @@ def setup_template(home):
                                     'HEADING'   : str(heading) }
     open(reset, mode='w').write(xml)
     print("Wrote %s" % reset)
+
+    baseport = int(opts.simout.split(':')[1])
+
+    template = os.path.join('jsbsim', 'fgout_template.xml')
+    out      = os.path.join('jsbsim', 'fgout.xml')
+    xml = open(template).read() % { 'FGOUTPORT'  : str(baseport+3) }
+    open(out, mode='w').write(xml)
+    print("Wrote %s" % out)
+
+    template = os.path.join('jsbsim', 'rascal_test_template.xml')
+    out      = os.path.join('jsbsim', 'rascal_test.xml')
+    xml = open(template).read() % { 'JSBCONSOLEPORT'  : str(baseport+4) }
+    open(out, mode='w').write(xml)
+    print("Wrote %s" % out)
     
 
 def process_sitl_input(buf):
@@ -66,7 +81,23 @@ def process_sitl_input(buf):
     elevator = (pwm[1]-1500)/500.0
     throttle = (pwm[2]-1000)/1000.0
     rudder   = (pwm[3]-1500)/500.0
-               
+
+    if opts.elevon:
+        # fake an elevon plane
+        ch1 = aileron
+        ch2 = elevator
+        aileron  = (ch2-ch1)/2.0
+        # the minus does away with the need for RC2_REV=-1
+        elevator = -(ch2+ch1)/2.0
+
+    if opts.vtail:
+        # fake an elevon plane
+        ch1 = elevator
+        ch2 = rudder
+        # this matches VTAIL_OUTPUT==2
+        elevator = (ch2-ch1)/2.0
+        rudder   = (ch2+ch1)/2.0
+        
     if aileron != sitl_state.aileron:
         jsb_set('fcs/aileron-cmd-norm', aileron)
         sitl_state.aileron = aileron
@@ -101,13 +132,14 @@ def process_jsb_input(buf):
             if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
-    simbuf = struct.pack('<16dI',
+    simbuf = struct.pack('<17dI',
                          fdm.get('latitude', units='degrees'),
                          fdm.get('longitude', units='degrees'),
                          fdm.get('altitude', units='meters'),
                          fdm.get('psi', units='degrees'),
                          fdm.get('v_north', units='mps'),
                          fdm.get('v_east', units='mps'),
+                         fdm.get('v_down', units='mps'),
                          fdm.get('A_X_pilot', units='mpss'),
                          fdm.get('A_Y_pilot', units='mpss'),
                          fdm.get('A_Z_pilot', units='mpss'),
@@ -118,7 +150,7 @@ def process_jsb_input(buf):
                          fdm.get('theta', units='degrees'),
                          fdm.get('psi', units='degrees'),
                          fdm.get('vcas', units='mps'),
-                         0x4c56414e)
+                         0x4c56414f)
     try:
         sim_out.send(simbuf)
     except socket.error as e:
@@ -137,6 +169,8 @@ parser.add_option("--fgout",   help="FG display output (IP:port)",   default="12
 parser.add_option("--home",    type='string', help="home lat,lng,alt,hdg (required)")
 parser.add_option("--script",  type='string', help='jsbsim model script', default='jsbsim/rascal_test.xml')
 parser.add_option("--options", type='string', help='jsbsim startup options')
+parser.add_option("--elevon", action='store_true', default=False, help='assume elevon input')
+parser.add_option("--vtail", action='store_true', default=False, help='assume vtail input')
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 
 (opts, args) = parser.parse_args()

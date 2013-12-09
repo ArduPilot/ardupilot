@@ -1,12 +1,22 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 //  SiRF Binary GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith.
-//
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 //
 
 #include "AP_GPS_SIRF.h"
@@ -37,7 +47,6 @@ AP_GPS_SIRF::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     // send SiRF binary setup messages
     _write_progstr_block(_port, (const prog_char *)init_messages, sizeof(init_messages));
-    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
@@ -170,16 +179,22 @@ AP_GPS_SIRF::_parse_gps(void)
 {
     switch(_msg_id) {
     case MSG_GEONAV:
-        time                    = _swapl(&_buffer.nav.time);
-        //fix				= (0 == _buffer.nav.fix_invalid) && (FIX_3D == (_buffer.nav.fix_type & FIX_MASK));
-        fix                             = (0 == _buffer.nav.fix_invalid);
+        //time                    = _swapl(&_buffer.nav.time);
+        // parse fix type
+        if (_buffer.nav.fix_invalid) {
+            fix = GPS::FIX_NONE;
+        }else if ((_buffer.nav.fix_type & FIX_MASK) == FIX_3D) {
+            fix = GPS::FIX_3D;
+        }else{
+            fix = GPS::FIX_2D;
+        }
         latitude                = _swapl(&_buffer.nav.latitude);
         longitude               = _swapl(&_buffer.nav.longitude);
-        altitude                = _swapl(&_buffer.nav.altitude_msl);
-        ground_speed    = _swapi(&_buffer.nav.ground_speed);
+        altitude_cm             = _swapl(&_buffer.nav.altitude_msl);
+        ground_speed_cm         = _swapi(&_buffer.nav.ground_speed);
         // at low speeds, ground course wanders wildly; suppress changes if we are not moving
-        if (ground_speed > 50)
-            ground_course       = _swapi(&_buffer.nav.ground_course);
+        if (ground_speed_cm > 50)
+            ground_course_cd    = _swapi(&_buffer.nav.ground_course);
         num_sats                = _buffer.nav.satellites;
 
         return true;

@@ -20,7 +20,7 @@ uint16_t ppm_mark[ 8 ];
 
 
 void setup (void) {
-    hal.console->printf_P(PSTR("\fRC input jitter test - Do not move sticks: \r\n"));
+    hal.console->printf_P(PSTR("RC input jitter test - Do not move sticks:\n"));
  
     hal.scheduler->delay(2000);
     
@@ -86,8 +86,18 @@ void loop (void) {
         update = false;
         time_trigger = hal.scheduler->millis() + 5000;
 
+        uint32_t time = hal.scheduler->millis() / 1000;
+       
+        uint16_t hour = time / 3600;
+        time -= hour * 3600;
+
+        uint16_t minutte = time / 60;
+        time -= minutte * 60;
+        
+        uint16_t second = time;
+        
         //hal.console->printf_P( PSTR("%c%c%c\r\n"), 0x1B, 0x5B, 0x48 ); // Terminal home position
-        hal.console->printf_P( PSTR("--------------------------------------------\r\n") );
+        hal.console->printf_P( PSTR("\n< %.2u:%.2u:%.2u >------------------------------------- \n"), hour, minutte, second );
         for( uint8_t i = 0; i < 8; i++ )    
         {
             hal.console->printf_P( PSTR("ch%d: center:%d min:%d max:%d delta:%d"),
@@ -99,7 +109,7 @@ void loop (void) {
                 ppm_mark[ i ] = 0;
             }
 
-            hal.console->printf_P( PSTR("     \r\n") );
+            hal.console->printf_P( PSTR("\n") );
         }
     }
 

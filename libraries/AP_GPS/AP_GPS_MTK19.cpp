@@ -1,12 +1,22 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 //  DIYDrones Custom Mediatek GPS driver for ArduPilot and ArduPilotMega.
 //    Code by Michael Smith, Jordi Munoz and Jose Julio, Craig Elder, DIYDrones.com
-//
-//    This library is free software; you can redistribute it and / or
-//    modify it under the terms of the GNU Lesser General Public
-//    License as published by the Free Software Foundation; either
-//    version 2.1 of the License, or (at your option) any later version.
 //
 //    GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.6, v1.7, v1.8, v1.9"
 //
@@ -16,6 +26,8 @@
 #include <AP_HAL.h>
 #include "AP_GPS_MTK19.h"
 #include <stdint.h>
+
+extern const AP_HAL::HAL& hal;
 
 // Public Methods //////////////////////////////////////////////////////////////
 void
@@ -39,12 +51,6 @@ AP_GPS_MTK19::init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting nav_setting)
 
     // Set Nav Threshold to 0 m/s
     _port->print(MTK_NAVTHRES_OFF);
-
-    // set initial epoch code
-    _epoch = TIME_OF_DAY;
-    _time_offset = 0;
-    _offset_calculated = false;
-    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
@@ -136,8 +142,15 @@ restart:
 				goto restart;
             }
 
-            fix                     = ((_buffer.msg.fix_type == FIX_3D) ||
-                                       (_buffer.msg.fix_type == FIX_3D_SBAS));                   
+            // parse fix
+            if (_buffer.msg.fix_type == FIX_3D || _buffer.msg.fix_type == FIX_3D_SBAS) {
+                fix = GPS::FIX_3D;
+            }else if (_buffer.msg.fix_type == FIX_2D || _buffer.msg.fix_type == FIX_2D_SBAS) {
+                fix = GPS::FIX_2D;
+            }else{
+                fix = GPS::FIX_NONE;
+            }
+
             if (_mtk_revision == MTK_GPS_REVISION_V16) {
                 latitude            = _buffer.msg.latitude  * 10;  // V16, V17,V18 doc says *10e7 but device says otherwise
                 longitude           = _buffer.msg.longitude * 10;  // V16, V17,V18 doc says *10e7 but device says otherwise
@@ -145,21 +158,33 @@ restart:
 				latitude            = _buffer.msg.latitude;
 				longitude           = _buffer.msg.longitude;
 			}
-            altitude                = _buffer.msg.altitude;
-            ground_speed            = _buffer.msg.ground_speed;
-            ground_course           = _buffer.msg.ground_course;
+            altitude_cm             = _buffer.msg.altitude;
+            ground_speed_cm         = _buffer.msg.ground_speed;
+            ground_course_cd        = _buffer.msg.ground_course;
             num_sats                = _buffer.msg.satellites;
             hdop                    = _buffer.msg.hdop;
-            date                    = _buffer.msg.utc_date;
+            
+            if (fix >= GPS::FIX_2D) {
+                if (_fix_counter == 0) {
+                    uint32_t bcd_time_ms;
+                    if (_mtk_revision == MTK_GPS_REVISION_V16) {
+                        bcd_time_ms = _buffer.msg.utc_time*10;
+                    } else {
+                        bcd_time_ms = _buffer.msg.utc_time;
+                    }
+                    _make_gps_time(_buffer.msg.utc_date, bcd_time_ms);
+                    _last_gps_time          = hal.scheduler->millis();
+                }
+                // the _fix_counter is to reduce the cost of the GPS
+                // BCD time conversion by only doing it every 10s
+                // between those times we use the HAL system clock as
+                // an offset from the last fix
+                _fix_counter++;
+                if (_fix_counter == 50) {
+                    _fix_counter = 0;
+                }
+            }
 
-            // time from gps is UTC, but convert here to msToD
-            int32_t time_utc        = _buffer.msg.utc_time;
-            int32_t temp            = (time_utc/10000000);
-            time_utc               -= temp*10000000;
-            time                    = temp * 3600000;
-            temp                    = (time_utc/100000);
-            time_utc               -= temp*100000;
-            time                   += temp * 60000 + time_utc;
             parsed                  = true;
 
 #ifdef FAKE_GPS_LOCK_TIME

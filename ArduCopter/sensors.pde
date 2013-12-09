@@ -3,9 +3,6 @@
 // Sensors are not available in HIL_MODE_ATTITUDE
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
-static void ReadSCP1000(void) {
-}
-
  #if CONFIG_SONAR == ENABLED
 static void init_sonar(void)
 {
@@ -19,8 +16,8 @@ static void init_sonar(void)
 
 static void init_barometer(void)
 {
+    gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));
     barometer.calibrate();
-    ahrs.set_barometer(&barometer);
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
@@ -28,7 +25,7 @@ static void init_barometer(void)
 static int32_t read_barometer(void)
 {
     barometer.read();
-    return baro_filter.apply(barometer.get_altitude() * 100.0f);
+    return barometer.get_altitude() * 100.0f;
 }
 
 // return sonar altitude in centimeters
@@ -43,7 +40,7 @@ static int16_t read_sonar(void)
 
     int16_t temp_alt = sonar->read();
 
-    if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * 0.70f) {
+    if (temp_alt >= sonar->min_distance && temp_alt <= sonar->max_distance * SONAR_RELIABLE_DISTANCE_PCT) {
         if ( sonar_alt_health < SONAR_ALT_HEALTH_MAX ) {
             sonar_alt_health++;
         }
@@ -69,7 +66,6 @@ static int16_t read_sonar(void)
 
 static void init_compass()
 {
-    compass.set_orientation(MAG_ORIENTATION);                                                   // set compass's orientation on aircraft
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
         cliSerial->println_P(PSTR("COMPASS INIT ERROR"));
@@ -77,9 +73,6 @@ static void init_compass()
         return;
     }
     ahrs.set_compass(&compass);
-#if SECONDARY_DMP_ENABLED == ENABLED
-    ahrs2.set_compass(&compass);
-#endif
 }
 
 static void init_optflow()
@@ -106,39 +99,19 @@ static void init_optflow()
 
 // read_battery - check battery voltage and current and invoke failsafe if necessary
 // called at 10hz
-#define BATTERY_FS_COUNTER  100     // 100 iterations at 10hz is 10 seconds
 static void read_battery(void)
 {
-    static uint8_t low_battery_counter = 0;
+    battery.read();
 
-    if(g.battery_monitoring == BATT_MONITOR_DISABLED) {
-        battery_voltage1 = 0;
-        return;
-    }
-
-    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_ONLY || g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        batt_volt_analog_source->set_pin(g.battery_volt_pin);
-        battery_voltage1 = BATTERY_VOLTAGE(batt_volt_analog_source);
-    }
-    if(g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT) {
-        batt_curr_analog_source->set_pin(g.battery_curr_pin);
-        current_amps1    = CURRENT_AMPS(batt_curr_analog_source);
-        current_total1   += current_amps1 * 0.02778f;            // called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
-
-        // update compass with current value
-        compass.set_current(current_amps1);
+    // update compass with current value
+    if (battery.monitoring() == AP_BATT_MONITOR_VOLTAGE_AND_CURRENT) {
+        compass.set_current(battery.current_amps());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
-    if (!ap.low_battery && ( battery_voltage1 < g.low_voltage || (g.battery_monitoring == BATT_MONITOR_VOLTAGE_AND_CURRENT && current_total1 > g.pack_capacity))) {
-        low_battery_counter++;
-        if( low_battery_counter >= BATTERY_FS_COUNTER ) {
-            low_battery_counter = BATTERY_FS_COUNTER;   // ensure counter does not overflow
-            low_battery_event();
-        }
-    }else{
-        // reset low_battery_counter in case it was a temporary voltage dip
-        low_battery_counter = 0;
+    // we only check when we're not powered by USB to avoid false alarms during bench tests
+    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
+        failsafe_battery_event();
     }
 }
 
@@ -147,6 +120,6 @@ static void read_battery(void)
 void read_receiver_rssi(void)
 {
     rssi_analog_source->set_pin(g.rssi_pin);
-    float ret = rssi_analog_source->read_latest();
-    receiver_rssi = constrain(ret, 0, 255);
+    float ret = rssi_analog_source->voltage_average() * 50;
+    receiver_rssi = constrain_int16(ret, 0, 255);
 }

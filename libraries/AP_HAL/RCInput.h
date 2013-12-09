@@ -23,7 +23,7 @@ public:
      * Could be less than or greater than 8 depending on your incoming radio
      * or PPM stream
      */
-    virtual uint8_t  valid() = 0;
+    virtual uint8_t  valid_channels() = 0;
 
     /* Read a single channel at a time */
     virtual uint16_t read(uint8_t ch) = 0;

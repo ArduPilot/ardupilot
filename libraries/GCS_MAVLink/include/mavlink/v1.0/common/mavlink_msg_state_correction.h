@@ -18,6 +18,9 @@ typedef struct __mavlink_state_correction_t
 #define MAVLINK_MSG_ID_STATE_CORRECTION_LEN 36
 #define MAVLINK_MSG_ID_64_LEN 36
 
+#define MAVLINK_MSG_ID_STATE_CORRECTION_CRC 130
+#define MAVLINK_MSG_ID_64_CRC 130
+
 
 
 #define MAVLINK_MESSAGE_INFO_STATE_CORRECTION { \
@@ -57,7 +60,7 @@ static inline uint16_t mavlink_msg_state_correction_pack(uint8_t system_id, uint
 						       float xErr, float yErr, float zErr, float rollErr, float pitchErr, float yawErr, float vxErr, float vyErr, float vzErr)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[36];
+	char buf[MAVLINK_MSG_ID_STATE_CORRECTION_LEN];
 	_mav_put_float(buf, 0, xErr);
 	_mav_put_float(buf, 4, yErr);
 	_mav_put_float(buf, 8, zErr);
@@ -68,7 +71,7 @@ static inline uint16_t mavlink_msg_state_correction_pack(uint8_t system_id, uint
 	_mav_put_float(buf, 28, vyErr);
 	_mav_put_float(buf, 32, vzErr);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 36);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
 #else
 	mavlink_state_correction_t packet;
 	packet.xErr = xErr;
@@ -81,18 +84,22 @@ static inline uint16_t mavlink_msg_state_correction_pack(uint8_t system_id, uint
 	packet.vyErr = vyErr;
 	packet.vzErr = vzErr;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 36);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_STATE_CORRECTION;
-	return mavlink_finalize_message(msg, system_id, component_id, 36, 130);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_STATE_CORRECTION_LEN, MAVLINK_MSG_ID_STATE_CORRECTION_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
+#endif
 }
 
 /**
  * @brief Pack a state_correction message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param xErr x position error
  * @param yErr y position error
@@ -110,7 +117,7 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 						           float xErr,float yErr,float zErr,float rollErr,float pitchErr,float yawErr,float vxErr,float vyErr,float vzErr)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[36];
+	char buf[MAVLINK_MSG_ID_STATE_CORRECTION_LEN];
 	_mav_put_float(buf, 0, xErr);
 	_mav_put_float(buf, 4, yErr);
 	_mav_put_float(buf, 8, zErr);
@@ -121,7 +128,7 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 	_mav_put_float(buf, 28, vyErr);
 	_mav_put_float(buf, 32, vzErr);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 36);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
 #else
 	mavlink_state_correction_t packet;
 	packet.xErr = xErr;
@@ -134,15 +141,19 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 	packet.vyErr = vyErr;
 	packet.vzErr = vzErr;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 36);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_STATE_CORRECTION;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 36, 130);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_STATE_CORRECTION_LEN, MAVLINK_MSG_ID_STATE_CORRECTION_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
+#endif
 }
 
 /**
- * @brief Encode a state_correction struct into a message
+ * @brief Encode a state_correction struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -152,6 +163,20 @@ static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id,
 static inline uint16_t mavlink_msg_state_correction_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_state_correction_t* state_correction)
 {
 	return mavlink_msg_state_correction_pack(system_id, component_id, msg, state_correction->xErr, state_correction->yErr, state_correction->zErr, state_correction->rollErr, state_correction->pitchErr, state_correction->yawErr, state_correction->vxErr, state_correction->vyErr, state_correction->vzErr);
+}
+
+/**
+ * @brief Encode a state_correction struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param state_correction C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_state_correction_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_state_correction_t* state_correction)
+{
+	return mavlink_msg_state_correction_pack_chan(system_id, component_id, chan, msg, state_correction->xErr, state_correction->yErr, state_correction->zErr, state_correction->rollErr, state_correction->pitchErr, state_correction->yawErr, state_correction->vxErr, state_correction->vyErr, state_correction->vzErr);
 }
 
 /**
@@ -173,7 +198,7 @@ static inline uint16_t mavlink_msg_state_correction_encode(uint8_t system_id, ui
 static inline void mavlink_msg_state_correction_send(mavlink_channel_t chan, float xErr, float yErr, float zErr, float rollErr, float pitchErr, float yawErr, float vxErr, float vyErr, float vzErr)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[36];
+	char buf[MAVLINK_MSG_ID_STATE_CORRECTION_LEN];
 	_mav_put_float(buf, 0, xErr);
 	_mav_put_float(buf, 4, yErr);
 	_mav_put_float(buf, 8, zErr);
@@ -184,7 +209,11 @@ static inline void mavlink_msg_state_correction_send(mavlink_channel_t chan, flo
 	_mav_put_float(buf, 28, vyErr);
 	_mav_put_float(buf, 32, vzErr);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, buf, 36, 130);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, buf, MAVLINK_MSG_ID_STATE_CORRECTION_LEN, MAVLINK_MSG_ID_STATE_CORRECTION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, buf, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
+#endif
 #else
 	mavlink_state_correction_t packet;
 	packet.xErr = xErr;
@@ -197,7 +226,11 @@ static inline void mavlink_msg_state_correction_send(mavlink_channel_t chan, flo
 	packet.vyErr = vyErr;
 	packet.vzErr = vzErr;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, (const char *)&packet, 36, 130);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, (const char *)&packet, MAVLINK_MSG_ID_STATE_CORRECTION_LEN, MAVLINK_MSG_ID_STATE_CORRECTION_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_STATE_CORRECTION, (const char *)&packet, MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
+#endif
 #endif
 }
 
@@ -315,6 +348,6 @@ static inline void mavlink_msg_state_correction_decode(const mavlink_message_t* 
 	state_correction->vyErr = mavlink_msg_state_correction_get_vyErr(msg);
 	state_correction->vzErr = mavlink_msg_state_correction_get_vzErr(msg);
 #else
-	memcpy(state_correction, _MAV_PAYLOAD(msg), 36);
+	memcpy(state_correction, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_STATE_CORRECTION_LEN);
 #endif
 }

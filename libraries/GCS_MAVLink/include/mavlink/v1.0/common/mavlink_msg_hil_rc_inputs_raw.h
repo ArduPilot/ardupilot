@@ -23,6 +23,9 @@ typedef struct __mavlink_hil_rc_inputs_raw_t
 #define MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN 33
 #define MAVLINK_MSG_ID_92_LEN 33
 
+#define MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_CRC 54
+#define MAVLINK_MSG_ID_92_CRC 54
+
 
 
 #define MAVLINK_MESSAGE_INFO_HIL_RC_INPUTS_RAW { \
@@ -72,7 +75,7 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack(uint8_t system_id, uin
 						       uint64_t time_usec, uint16_t chan1_raw, uint16_t chan2_raw, uint16_t chan3_raw, uint16_t chan4_raw, uint16_t chan5_raw, uint16_t chan6_raw, uint16_t chan7_raw, uint16_t chan8_raw, uint16_t chan9_raw, uint16_t chan10_raw, uint16_t chan11_raw, uint16_t chan12_raw, uint8_t rssi)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[33];
+	char buf[MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_uint16_t(buf, 8, chan1_raw);
 	_mav_put_uint16_t(buf, 10, chan2_raw);
@@ -88,7 +91,7 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack(uint8_t system_id, uin
 	_mav_put_uint16_t(buf, 30, chan12_raw);
 	_mav_put_uint8_t(buf, 32, rssi);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
 #else
 	mavlink_hil_rc_inputs_raw_t packet;
 	packet.time_usec = time_usec;
@@ -106,18 +109,22 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack(uint8_t system_id, uin
 	packet.chan12_raw = chan12_raw;
 	packet.rssi = rssi;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW;
-	return mavlink_finalize_message(msg, system_id, component_id, 33, 54);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
+#endif
 }
 
 /**
  * @brief Pack a hil_rc_inputs_raw message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param time_usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  * @param chan1_raw RC channel 1 value, in microseconds
@@ -140,7 +147,7 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack_chan(uint8_t system_id
 						           uint64_t time_usec,uint16_t chan1_raw,uint16_t chan2_raw,uint16_t chan3_raw,uint16_t chan4_raw,uint16_t chan5_raw,uint16_t chan6_raw,uint16_t chan7_raw,uint16_t chan8_raw,uint16_t chan9_raw,uint16_t chan10_raw,uint16_t chan11_raw,uint16_t chan12_raw,uint8_t rssi)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[33];
+	char buf[MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_uint16_t(buf, 8, chan1_raw);
 	_mav_put_uint16_t(buf, 10, chan2_raw);
@@ -156,7 +163,7 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack_chan(uint8_t system_id
 	_mav_put_uint16_t(buf, 30, chan12_raw);
 	_mav_put_uint8_t(buf, 32, rssi);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
 #else
 	mavlink_hil_rc_inputs_raw_t packet;
 	packet.time_usec = time_usec;
@@ -174,15 +181,19 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack_chan(uint8_t system_id
 	packet.chan12_raw = chan12_raw;
 	packet.rssi = rssi;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 33);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 33, 54);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
+#endif
 }
 
 /**
- * @brief Encode a hil_rc_inputs_raw struct into a message
+ * @brief Encode a hil_rc_inputs_raw struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -192,6 +203,20 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_pack_chan(uint8_t system_id
 static inline uint16_t mavlink_msg_hil_rc_inputs_raw_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_hil_rc_inputs_raw_t* hil_rc_inputs_raw)
 {
 	return mavlink_msg_hil_rc_inputs_raw_pack(system_id, component_id, msg, hil_rc_inputs_raw->time_usec, hil_rc_inputs_raw->chan1_raw, hil_rc_inputs_raw->chan2_raw, hil_rc_inputs_raw->chan3_raw, hil_rc_inputs_raw->chan4_raw, hil_rc_inputs_raw->chan5_raw, hil_rc_inputs_raw->chan6_raw, hil_rc_inputs_raw->chan7_raw, hil_rc_inputs_raw->chan8_raw, hil_rc_inputs_raw->chan9_raw, hil_rc_inputs_raw->chan10_raw, hil_rc_inputs_raw->chan11_raw, hil_rc_inputs_raw->chan12_raw, hil_rc_inputs_raw->rssi);
+}
+
+/**
+ * @brief Encode a hil_rc_inputs_raw struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param hil_rc_inputs_raw C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_hil_rc_inputs_raw_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_hil_rc_inputs_raw_t* hil_rc_inputs_raw)
+{
+	return mavlink_msg_hil_rc_inputs_raw_pack_chan(system_id, component_id, chan, msg, hil_rc_inputs_raw->time_usec, hil_rc_inputs_raw->chan1_raw, hil_rc_inputs_raw->chan2_raw, hil_rc_inputs_raw->chan3_raw, hil_rc_inputs_raw->chan4_raw, hil_rc_inputs_raw->chan5_raw, hil_rc_inputs_raw->chan6_raw, hil_rc_inputs_raw->chan7_raw, hil_rc_inputs_raw->chan8_raw, hil_rc_inputs_raw->chan9_raw, hil_rc_inputs_raw->chan10_raw, hil_rc_inputs_raw->chan11_raw, hil_rc_inputs_raw->chan12_raw, hil_rc_inputs_raw->rssi);
 }
 
 /**
@@ -218,7 +243,7 @@ static inline uint16_t mavlink_msg_hil_rc_inputs_raw_encode(uint8_t system_id, u
 static inline void mavlink_msg_hil_rc_inputs_raw_send(mavlink_channel_t chan, uint64_t time_usec, uint16_t chan1_raw, uint16_t chan2_raw, uint16_t chan3_raw, uint16_t chan4_raw, uint16_t chan5_raw, uint16_t chan6_raw, uint16_t chan7_raw, uint16_t chan8_raw, uint16_t chan9_raw, uint16_t chan10_raw, uint16_t chan11_raw, uint16_t chan12_raw, uint8_t rssi)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[33];
+	char buf[MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN];
 	_mav_put_uint64_t(buf, 0, time_usec);
 	_mav_put_uint16_t(buf, 8, chan1_raw);
 	_mav_put_uint16_t(buf, 10, chan2_raw);
@@ -234,7 +259,11 @@ static inline void mavlink_msg_hil_rc_inputs_raw_send(mavlink_channel_t chan, ui
 	_mav_put_uint16_t(buf, 30, chan12_raw);
 	_mav_put_uint8_t(buf, 32, rssi);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW, buf, 33, 54);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW, buf, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW, buf, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
+#endif
 #else
 	mavlink_hil_rc_inputs_raw_t packet;
 	packet.time_usec = time_usec;
@@ -252,7 +281,11 @@ static inline void mavlink_msg_hil_rc_inputs_raw_send(mavlink_channel_t chan, ui
 	packet.chan12_raw = chan12_raw;
 	packet.rssi = rssi;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW, (const char *)&packet, 33, 54);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW, (const char *)&packet, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW, (const char *)&packet, MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
+#endif
 #endif
 }
 
@@ -425,6 +458,6 @@ static inline void mavlink_msg_hil_rc_inputs_raw_decode(const mavlink_message_t*
 	hil_rc_inputs_raw->chan12_raw = mavlink_msg_hil_rc_inputs_raw_get_chan12_raw(msg);
 	hil_rc_inputs_raw->rssi = mavlink_msg_hil_rc_inputs_raw_get_rssi(msg);
 #else
-	memcpy(hil_rc_inputs_raw, _MAV_PAYLOAD(msg), 33);
+	memcpy(hil_rc_inputs_raw, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN);
 #endif
 }

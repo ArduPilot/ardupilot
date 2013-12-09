@@ -26,7 +26,6 @@ static AVRI2CDriver     avrI2CDriver(&i2cSemaphore);
 static APM1SPIDeviceManager apm1SPIDriver;
 static AVRAnalogIn      avrAnalogIn;
 static AVREEPROMStorage avrEEPROMStorage;
-static AVRConsoleDriver consoleDriver;
 static AVRGPIO          avrGPIO;
 static APM1RCInput      apm1RCInput;
 static APM1RCOutput     apm1RCOutput;
@@ -41,11 +40,12 @@ HAL_AVR_APM1::HAL_AVR_APM1() :
         &avrUart0Driver, /* phys UART0 -> uartA */
         &avrUart1Driver, /* phys UART1 -> uartB */
         &avrUart3Driver, /* phys UART3 -> uartC */
+        NULL, /* no uartD */
         &avrI2CDriver,
         &apm1SPIDriver,
         &avrAnalogIn,
         &avrEEPROMStorage,
-        &consoleDriver,
+        &avrUart0Driver,
         &avrGPIO,
         &apm1RCInput,
         &apm1RCOutput,
@@ -60,7 +60,6 @@ void HAL_AVR_APM1::init(int argc, char * const argv[]) const {
     /* uartA is the serial port used for the console, so lets make sure
      * it is initialized at boot */
     uartA->begin(115200);
-    console->init((void*)uartA);
     /* The AVR RCInput drivers take an AP_HAL_AVR::ISRRegistry*
      * as the init argument */
     rcin->init((void*)&isrRegistry);

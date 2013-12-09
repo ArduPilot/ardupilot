@@ -8,23 +8,45 @@
 
 class AP_HAL::Util {
 public:
-    virtual int snprintf(char* str, size_t size,
-            const char *format, ...) = 0;
+    int snprintf(char* str, size_t size,
+                 const char *format, ...);
 
-    virtual int snprintf_P(char* str, size_t size,
-            const prog_char_t *format, ...) = 0;
+    int snprintf_P(char* str, size_t size,
+                   const prog_char_t *format, ...);
 
-    virtual int vsnprintf(char* str, size_t size,
-            const char *format, va_list ap) = 0;
+    int vsnprintf(char* str, size_t size,
+                  const char *format, va_list ap);
 
-    virtual int vsnprintf_P(char* str, size_t size,
-            const prog_char_t *format, va_list ap) = 0;
+    int vsnprintf_P(char* str, size_t size,
+                    const prog_char_t *format, va_list ap);
 
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
     // commands
     virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
 
+    enum safety_state {
+        SAFETY_NONE, SAFETY_DISARMED, SAFETY_ARMED
+    };
+
+    /*
+      return state of safety switch, if applicable
+     */
+    virtual enum safety_state safety_switch_state(void) { return SAFETY_NONE; }
+
+    /*
+      set system clock in UTC microseconds
+     */
+    virtual void set_system_clock(uint64_t time_utc_usec) {}
+
+    /*
+      get system identifier (eg. serial number)
+      return false if a system identifier is not available
+
+      Buf should be filled with a printable string and must be null
+      terminated
+     */
+    virtual bool get_system_id(char buf[40]) { return false; }
 };
 
 #endif // __AP_HAL_UTIL_H__

@@ -10,19 +10,20 @@ ifeq ($(SYSTYPE),Darwin)
   TOOLPATH :=  $(ARDUINOS)/hardware/tools/avr/bin
   # use BWK awk
   AWK =  awk
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 endif
 ifeq ($(SYSTYPE),Linux)
   # expect that tools are on the path
   TOOLPATH :=  $(subst :, ,$(PATH))
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 endif
 ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN) 
   TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
-
-ifeq ($(findstring CYGWIN, $(SYSTYPE)),) 
-FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
-else
-FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW) 
+  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
+  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 
 NATIVE_CXX     :=  g++
@@ -44,6 +45,16 @@ AVR_OBJCOPY :=  $(call FIND_TOOL,avr-objcopy)
 AVRDUDE      :=  $(call FIND_TOOL,avrdude)
 AVARICE      :=  $(call FIND_TOOL,avarice)
 
+# Tools for Maple/Flymaple
+# Toolchain is expected to be on the PATH
+ARM_CXX     :=  $(call FIND_TOOL,arm-none-eabi-g++)
+ARM_CC      :=  $(call FIND_TOOL,arm-none-eabi-gcc)
+ARM_AS      :=  $(call FIND_TOOL,arm-none-eabi-gcc)
+ARM_AR      :=  $(call FIND_TOOL,arm-none-eabi-ar)
+ARM_LD      :=  $(call FIND_TOOL,arm-none-eabi-g++)
+ARM_GDB     :=  $(call FIND_TOOL,arm-none-eabi-gdb)
+ARM_OBJCOPY :=  $(call FIND_TOOL,arm-none-eabi-objcopy)
+
 CXX = $($(TOOLCHAIN)_CXX)
 CC = $($(TOOLCHAIN)_CC)
 AS = $($(TOOLCHAIN)_AS)
@@ -53,7 +64,7 @@ GDB = $($(TOOLCHAIN)_GDB)
 OBJCOPY = $($(TOOLCHAIN)_OBJCOPY)
 
 ifeq ($(CXX),)
-$(error ERROR: cannot find the compiler tools anywhere on the path $(TOOLPATH))
+$(error ERROR: cannot find the compiler tools for $(TOOLCHAIN) anywhere on the path $(TOOLPATH))
 endif
 
 # Find awk

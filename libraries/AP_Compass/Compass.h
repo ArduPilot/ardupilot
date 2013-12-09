@@ -20,6 +20,23 @@
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 
+// setup default mag orientation for each board type
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+# define MAG_BOARD_ORIENTATION ROTATION_YAW_90
+#else
+# error "You must define a default compass orientation for this board"
+#endif
+
 class Compass
 {
 public:
@@ -51,28 +68,11 @@ public:
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
-    /// @param  roll                The current airframe roll angle.
-    /// @param  pitch               The current airframe pitch angle.
-    ///
-    /// @returns heading in radians
-    ///
-    float calculate_heading(float roll, float pitch);
-
-    /// Calculate the tilt-compensated heading_ variables.
-    ///
     /// @param dcm_matrix			The current orientation rotation matrix
     ///
     /// @returns heading in radians
     ///
-    float calculate_heading(const Matrix3f &dcm_matrix);
-
-    /// Set the compass orientation matrix, used to correct for
-    /// various compass mounting positions.
-    ///
-    /// @param  rotation_matrix     Rotation matrix to transform magnetometer readings
-    ///                             to the body frame.
-    ///
-    void set_orientation(enum Rotation rotation);
+    float calculate_heading(const Matrix3f &dcm_matrix) const;
 
     /// Sets the compass offset x/y/z values.
     ///
@@ -91,7 +91,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    Vector3f &get_offsets();
+    const Vector3f &get_offsets() const;
 
     /// Sets the initial location used to get declination
     ///
@@ -115,16 +115,17 @@ public:
     void null_offsets(void);
 
     /// return true if the compass should be used for yaw calculations
-    bool use_for_yaw(void) {
+    bool use_for_yaw(void) const {
         return healthy && _use_for_yaw;
     }
 
     /// Sets the local magnetic field declination.
     ///
     /// @param  radians             Local field declination.
+    /// @param save_to_eeprom       true to save to eeprom (false saves only to memory)
     ///
-    void set_declination(float radians);
-    float get_declination();
+    void set_declination(float radians, bool save_to_eeprom = true);
+    float get_declination() const;
 
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation) {
@@ -136,7 +137,7 @@ public:
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
     ///
     void motor_compensation_type(const uint8_t comp_type) {
-        if( comp_type >= AP_COMPASS_MOT_COMP_DISABLED && _motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
+        if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
             _motor_comp_type = (int8_t)comp_type;
             _thr_or_curr = 0;                               // set current current or throttle to zero
             set_motor_compensation(Vector3f(0,0,0));        // clear out invalid compensation vector
@@ -144,7 +145,7 @@ public:
     }
 
     /// get the motor compensation value.
-    uint8_t motor_compensation_type() {
+    uint8_t motor_compensation_type() const {
         return _motor_comp_type;
     }
 
@@ -155,7 +156,7 @@ public:
     void set_motor_compensation(const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    Vector3f& get_motor_compensation() {
+    const Vector3f& get_motor_compensation() const {
         return _motor_compensation;
     }
 
@@ -169,7 +170,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    Vector3f &get_motor_offsets() { return _motor_offset; }
+    const Vector3f &get_motor_offsets() const { return _motor_offset; }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
@@ -189,13 +190,16 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // settable parameters
+    AP_Int8 _learn;                             ///<enable calibration learning
+
 protected:
-    enum Rotation _orientation;
+    AP_Int8 _orientation;
     AP_Vector3f _offset;
     AP_Float _declination;
-    AP_Int8 _learn;                             ///<enable calibration learning
     AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
+    AP_Int8 _external;                          ///<compass is external
 
     bool _null_init_done;                           ///< first-time-around flag used by offset nulling
 

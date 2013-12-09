@@ -13,10 +13,14 @@
 #ifndef __AP_RELAY_H__
 #define __AP_RELAY_H__
 
+#include <AP_Param.h>
+
 /// @class	AP_Relay
 /// @brief	Class to manage the APM relay
 class AP_Relay {
 public:
+    AP_Relay();
+
     // setup the relay pin
     void        init();
 
@@ -29,11 +33,10 @@ public:
     // toggle the relay status
     void        toggle();
 
-    // set the relay status (on/off)
-    void        set(bool status);
+    static const struct AP_Param::GroupInfo        var_info[];
 
-    // get the relay status (on/off)
-    bool        get();
+private:
+    AP_Int8 _pin;
 };
 
 #endif /* AP_RELAY_H_ */

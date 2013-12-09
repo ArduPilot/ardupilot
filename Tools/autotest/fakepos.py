@@ -51,6 +51,7 @@ altitude = 600.0
 heading = 0.0
 speedN = 0
 speedE = 0.0
+speedD = 0.0
 xAccel = 0.0
 yAccel = 0.0
 zAccel = 0.0
@@ -61,7 +62,7 @@ rollDeg = 0.0
 pitchDeg = 0.0
 yawDeg = 0.0
 airspeed = 0
-magic = 0x4c56414e
+magic = 0x4c56414f
 
 deltaT = 0.005
 rollDeg = 45
@@ -85,9 +86,9 @@ while True:
     yAccel *= scale;
     zAccel *= scale;
 
-    buf = struct.pack('<16dI',
+    buf = struct.pack('<17dI',
                       latitude, longitude, altitude, heading,
-                      speedN, speedE,
+                      speedN, speedE, speedD,
                       xAccel, yAccel, zAccel,
                       rollRate, pitchRate, yawRate,
                       rollDeg, pitchDeg, yawDeg,

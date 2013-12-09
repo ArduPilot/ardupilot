@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /************************************************************
 * AP_mount -- library to control a 2 or 3 axis mount.		*
@@ -32,7 +32,7 @@ class AP_Mount
 {
 public:
     //Constructor
-    AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id);
+    AP_Mount(const struct Location *current_loc, GPS *&gps, const AP_AHRS &ahrs, uint8_t id);
 
     //enums
     enum MountType {
@@ -46,7 +46,7 @@ public:
     void                    configure_msg(mavlink_message_t* msg);
     void                    control_msg(mavlink_message_t* msg);
     void                    status_msg(mavlink_message_t* msg);
-    void                    set_roi_cmd(struct Location *target_loc);
+    void                    set_roi_cmd(const struct Location *target_loc);
     void                    configure_cmd();
     void                    control_cmd();
 
@@ -72,7 +72,7 @@ private:
     void                            set_GPS_target_location(Location targetGPSLocation); ///< used to tell the mount to track GPS location
 
     // internal methods
-    void                            calc_GPS_target_angle(struct Location *target);
+    void                            calc_GPS_target_angle(const struct Location *target);
     void                            stabilize();
     int16_t                         closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max);
     void                            move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);
@@ -80,7 +80,7 @@ private:
     float                           angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     //members
-    AP_AHRS *                       _ahrs; ///< Rotation matrix from earth to plane.
+    const AP_AHRS                   &_ahrs; ///< Rotation matrix from earth to plane.
     GPS *&                          _gps;
     const struct Location *         _current_loc;
     struct Location                 _target_GPS_location;

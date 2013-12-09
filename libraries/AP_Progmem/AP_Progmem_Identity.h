@@ -43,7 +43,7 @@ static inline size_t strnlen_P(const prog_char_t *str, size_t size)
 	return strnlen(str, size);
 }
 
-static inline int strncmp_P(const prog_char_t *str1, const prog_char_t *str2, size_t n)
+static inline int strncmp_P(const char *str1, const prog_char_t *str2, size_t n)
 {
 	return strncmp(str1, str2, n);
 }

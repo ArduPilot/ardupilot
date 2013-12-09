@@ -30,7 +30,7 @@ public:
     void write_byte(uint16_t loc, uint8_t value);
     void write_word(uint16_t loc, uint16_t value);
     void write_dword(uint16_t loc, uint32_t value);
-    void write_block(uint16_t dst, void* src, size_t n);
+    void write_block(uint16_t dst, const void* src, size_t n);
 
     void _timer_tick(void);
 
@@ -40,7 +40,7 @@ private:
     void _storage_create(void);
     void _storage_open(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
-    uint8_t _buffer[PX4_STORAGE_SIZE];
+    uint8_t _buffer[PX4_STORAGE_SIZE] __attribute__((aligned(4)));
     volatile uint32_t _dirty_mask;
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;

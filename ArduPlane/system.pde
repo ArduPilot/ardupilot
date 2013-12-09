@@ -44,7 +44,7 @@ MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
 {
-    reboot_apm();
+    hal.scheduler->reboot(false);
     return 0;
 }
 
@@ -70,24 +70,6 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 static void init_ardupilot()
 {
-#if USB_MUX_PIN > 0
-    // on the APM2 board we have a mux thet switches UART0 between
-    // USB and the board header. If the right ArduPPM firmware is
-    // installed we can detect if USB is connected using the
-    // USB_MUX_PIN
-    pinMode(USB_MUX_PIN, INPUT);
-
-    usb_connected = !digitalRead(USB_MUX_PIN);
-    if (!usb_connected) {
-        // USB is not connected, this means UART0 may be a Xbee, with
-        // its darned bricking problem. We can't write to it for at
-        // least one second after powering up. Simplest solution for
-        // now is to delay for 1 second. Something more elegant may be
-        // added later
-        delay(1000);
-    }
-#endif
-
     // Console serial port
     //
     // The console port buffers are defined to be sufficiently large to support
@@ -100,7 +82,7 @@ static void init_ardupilot()
     // standard gps running
     hal.uartB->begin(38400, 256, 16);
 
-    cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
+    cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
@@ -110,6 +92,8 @@ static void init_ardupilot()
     //
     load_parameters();
 
+    set_control_channels();
+
     // reset the uartA baud rate after parameter load
     hal.uartA->begin(map_baudrate(g.serial0_baud, SERIAL0_BAUD));
 
@@ -117,23 +101,34 @@ static void init_ardupilot()
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
 
+    // init baro before we start the GCS, so that the CLI baro test works
+    barometer.init();
+
+    // initialise sonar
+    init_sonar();
+
     // init the GCS
-    gcs0.init(hal.uartA);
+    gcs[0].init(hal.uartA);
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
 
-#if USB_MUX_PIN > 0
-    if (!usb_connected) {
-        // we are not connected via USB, re-init UART0 with right
-        // baud rate
-        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
-    }
-#else
+    // we start by assuming USB connected, as we initialed the serial
+    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
+    usb_connected = true;
+    check_usb_mux();
+
     // we have a 2nd serial port for telemetry
-    hal.uartC->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD),
-            128, SERIAL_BUFSIZE);
-    gcs3.init(hal.uartC);
+    hal.uartC->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD),
+                     128, SERIAL1_BUFSIZE);
+    gcs[1].init(hal.uartC);
+
+#if MAVLINK_COMM_NUM_BUFFERS > 2
+    if (hal.uartD != NULL) {
+        hal.uartD->begin(map_baudrate(g.serial2_baud, SERIAL2_BAUD),
+                         128, SERIAL2_BUFSIZE);        
+        gcs[2].init(hal.uartD);
+    }
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
@@ -146,23 +141,23 @@ static void init_ardupilot()
     } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
         do_erase_logs();
-        gcs0.reset_cli_timeout();
+        for (uint8_t i=0; i<num_gcs; i++) {
+            gcs[i].reset_cli_timeout();
+        }
     }
     if (g.log_bitmask != 0) {
-        DataFlash.start_new_log();
+        start_logging();
     }
 #endif
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if CONFIG_INS_TYPE == CONFIG_INS_OILPAN || CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    apm1_adc.Init();      // APM ADC library initialization
+#endif
 
- #if CONFIG_ADC == ENABLED
-    adc.Init();      // APM ADC library initialization
- #endif
-
-    barometer.init();
+    // initialise airspeed sensor
+    airspeed.init();
 
     if (g.compass_enabled==true) {
-        compass.set_orientation(MAG_ORIENTATION);                                                       // set compass's orientation on aircraft
         if (!compass.init() || !compass.read()) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
@@ -170,17 +165,9 @@ static void init_ardupilot()
             ahrs.set_compass(&compass);
         }
     }
-#endif
 
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
-
-#if APM_CONTROL == ENABLED
-    // the axis controllers need access to the AHRS system
-    g.rollController.set_ahrs(&ahrs);
-    g.pitchController.set_ahrs(&ahrs);
-    g.yawController.set_ahrs(&ahrs);
-#endif
 
 	// Do GPS init
 	g_gps = &g_gps_driver;
@@ -191,19 +178,13 @@ static void init_ardupilot()
     mavlink_system.compid = 1;          //MAV_COMP_ID_IMU;   // We do not check for comp id
     mavlink_system.type = MAV_TYPE_FIXED_WING;
 
-    // Set initial values for no override
-    rc_override_active = hal.rcin->set_overrides(rc_override, 8);
-
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up the timer libs
 
-    pinMode(C_LED_PIN, OUTPUT);                         // GPS status LED
-    pinMode(A_LED_PIN, OUTPUT);                         // GPS status LED
-    pinMode(B_LED_PIN, OUTPUT);                         // GPS status LED
     relay.init();
 
 #if FENCE_TRIGGERED_PIN > 0
-    pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
+    hal.gpio->pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
     digitalWrite(FENCE_TRIGGERED_PIN, LOW);
 #endif
 
@@ -215,49 +196,19 @@ static void init_ardupilot()
 
     const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
     cliSerial->println_P(msg);
-#if USB_MUX_PIN == 0
-    hal.uartC->println_P(msg);
-#endif
-
-    if (ENABLE_AIR_START == 1) {
-        // Perform an air start and get back to flying
-        gcs_send_text_P(SEVERITY_LOW,PSTR("<init_ardupilot> AIR START"));
-
-        // Get necessary data from EEPROM
-        //----------------
-        //read_EEPROM_airstart_critical();
-#if HIL_MODE != HIL_MODE_ATTITUDE
-        ahrs.init();
-        ahrs.set_fly_forward(true);
-
-        ins.init(AP_InertialSensor::WARM_START, 
-                 ins_sample_rate,
-                 flash_leds);
-
-#endif
-
-        // This delay is important for the APM_RC library to work.
-        // We need some time for the comm between the 328 and 1280 to be established.
-        int old_pulse = 0;
-        while (millis()<=1000 
-            && (abs(old_pulse - hal.rcin->read(g.flight_mode_channel)) > 5
-               || hal.rcin->read(g.flight_mode_channel) == 1000
-               || hal.rcin->read(g.flight_mode_channel) == 1200))
-        {
-            old_pulse = hal.rcin->read(g.flight_mode_channel);
-            delay(25);
-        }
-        g_gps->update();
-
-        if (g.log_bitmask & MASK_LOG_CMD)
-            Log_Write_Startup(TYPE_AIRSTART_MSG);
-        reload_commands_airstart();                     // Get set to resume AUTO from where we left off
-
-    }else {
-        startup_ground();
-        if (g.log_bitmask & MASK_LOG_CMD)
-            Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+    if (gcs[1].initialised) {
+        hal.uartC->println_P(msg);
     }
+    if (num_gcs > 2 && gcs[2].initialised) {
+        hal.uartD->println_P(msg);
+    }
+
+    startup_ground();
+    if (g.log_bitmask & MASK_LOG_CMD)
+        Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+
+    // choose the nav controller
+    set_nav_controller();
 
     set_mode(MANUAL);
 
@@ -283,7 +234,9 @@ static void startup_ground(void)
     // Makes the servos wiggle
     // step 1 = 1 wiggle
     // -----------------------
-    demo_servos(1);
+    if (!g.skip_gyro_cal) {
+        demo_servos(1);
+    }
 
     //INS ground start
     //------------------------
@@ -304,19 +257,28 @@ static void startup_ground(void)
 
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
-    demo_servos(3);
+    if (!g.skip_gyro_cal) {
+        demo_servos(3);
+    }
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    last_heartbeat_ms = millis();
+    failsafe.last_heartbeat_ms = millis();
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
+    hal.uartA->set_blocking_writes(false);
     hal.uartC->set_blocking_writes(false);
-    if (gcs3.initialised) {
-        hal.uartC->set_blocking_writes(false);
+    if (hal.uartD != NULL) {
+        hal.uartD->set_blocking_writes(false);
     }
+
+#if 0
+    // leave GPS blocking until we have support for correct handling
+    // of GPS config in uBlox when non-blocking
+    hal.uartB->set_blocking_writes(false);
+#endif
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
@@ -331,7 +293,6 @@ static void set_mode(enum FlightMode mode)
         trim_control_surfaces();
 
     control_mode = mode;
-    crash_timer = 0;
 
     switch(control_mode)
     {
@@ -340,7 +301,21 @@ static void set_mode(enum FlightMode mode)
     case STABILIZE:
     case TRAINING:
     case FLY_BY_WIRE_A:
+        break;
+
+    case ACRO:
+        acro_state.locked_roll = false;
+        acro_state.locked_pitch = false;
+        break;
+
+    case CRUISE:
+        cruise_state.locked_heading = false;
+        cruise_state.lock_timer_ms = 0;
+        target_altitude_cm = current_loc.alt;
+        break;
+
     case FLY_BY_WIRE_B:
+        target_altitude_cm = current_loc.alt;
         break;
 
     case CIRCLE:
@@ -349,10 +324,12 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case AUTO:
+        prev_WP = current_loc;
         update_auto();
         break;
 
     case RTL:
+        prev_WP = current_loc;
         do_RTL();
         break;
 
@@ -361,10 +338,12 @@ static void set_mode(enum FlightMode mode)
         break;
 
     case GUIDED:
+        guided_throttle_passthru = false;
         set_guided_WP();
         break;
 
     default:
+        prev_WP = current_loc;
         do_RTL();
         break;
     }
@@ -372,11 +351,20 @@ static void set_mode(enum FlightMode mode)
     // if in an auto-throttle mode, start with throttle suppressed for
     // safety. suppress_throttle() will unsupress it when appropriate
     if (control_mode == CIRCLE || control_mode >= FLY_BY_WIRE_B) {
+        auto_throttle_mode = true;
         throttle_suppressed = true;
+    } else {
+        auto_throttle_mode = false;        
+        throttle_suppressed = false;
     }
 
     if (g.log_bitmask & MASK_LOG_MODE)
         Log_Write_Mode(control_mode);
+
+    // reset attitude integrators on mode change
+    rollController.reset_I();
+    pitchController.reset_I();
+    yawController.reset_I();    
 }
 
 static void check_long_failsafe()
@@ -384,28 +372,32 @@ static void check_long_failsafe()
     uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS) {
-        if (rc_override_active && tnow - last_heartbeat_ms > FAILSAFE_LONG_TIME) {
+    if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS) {
+        if (failsafe.rc_override_active && (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        }
-        if(!rc_override_active && failsafe == FAILSAFE_SHORT && 
-           (tnow - ch3_failsafe_timer) > FAILSAFE_LONG_TIME) {
+        } else if (!failsafe.rc_override_active && 
+                   failsafe.state == FAILSAFE_SHORT && 
+           (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        }
-        if (g.gcs_heartbeat_fs_enabled && 
-            (tnow - last_heartbeat_ms) > FAILSAFE_LONG_TIME) {
+        } else if (g.gcs_heartbeat_fs_enabled && 
+            failsafe.last_heartbeat_ms != 0 &&
+            (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
     } else {
         // We do not change state but allow for user to change mode
-        if (failsafe == FAILSAFE_GCS && 
-            (tnow - last_heartbeat_ms) < FAILSAFE_SHORT_TIME) 
-            failsafe = FAILSAFE_NONE;
-        if (failsafe == FAILSAFE_LONG && rc_override_active && 
-            (tnow - last_heartbeat_ms) < FAILSAFE_SHORT_TIME) 
-            failsafe = FAILSAFE_NONE;
-        if (failsafe == FAILSAFE_LONG && !rc_override_active && !ch3_failsafe) 
-            failsafe = FAILSAFE_NONE;
+        if (failsafe.state == FAILSAFE_GCS && 
+            (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
+            failsafe.state = FAILSAFE_NONE;
+        } else if (failsafe.state == FAILSAFE_LONG && 
+                   failsafe.rc_override_active && 
+                   (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
+            failsafe.state = FAILSAFE_NONE;
+        } else if (failsafe.state == FAILSAFE_LONG && 
+                   !failsafe.rc_override_active && 
+                   !failsafe.ch3_failsafe) {
+            failsafe.state = FAILSAFE_NONE;
+        }
     }
 }
 
@@ -413,21 +405,21 @@ static void check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if(failsafe == FAILSAFE_NONE) {
-        if(ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
+    if(failsafe.state == FAILSAFE_NONE) {
+        if(failsafe.ch3_failsafe) {                                              // The condition is checked and the flag ch3_failsafe is set in radio.pde
             failsafe_short_on_event(FAILSAFE_SHORT);
         }
     }
 
-    if(failsafe == FAILSAFE_SHORT) {
-        if(!ch3_failsafe) {
+    if(failsafe.state == FAILSAFE_SHORT) {
+        if(!failsafe.ch3_failsafe) {
             failsafe_short_off_event();
         }
     }
 }
 
 
-static void startup_INS_ground(bool force_accel_level)
+static void startup_INS_ground(bool do_accel_init)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     while (!barometer.healthy) {
@@ -438,33 +430,29 @@ static void startup_INS_ground(bool force_accel_level)
     }
 #endif
 
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
-    mavlink_delay(500);
+    AP_InertialSensor::Start_style style;
+    if (g.skip_gyro_cal && !do_accel_init) {
+        style = AP_InertialSensor::WARM_START;
+    } else {
+        style = AP_InertialSensor::COLD_START;
+    }
 
-    // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
-    // -----------------------
-    demo_servos(2);
-    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
-    mavlink_delay(1000);
+    if (style == AP_InertialSensor::COLD_START) {
+        gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
+        mavlink_delay(100);
+    }
 
     ahrs.init();
     ahrs.set_fly_forward(true);
+    ahrs.set_wind_estimation(true);
 
-    ins.init(AP_InertialSensor::COLD_START, 
-             ins_sample_rate,
-             flash_leds);
-#if HIL_MODE == HIL_MODE_DISABLED
-    if (force_accel_level || g.manual_level == 0) {
-        // when MANUAL_LEVEL is set to 1 we don't do accelerometer
-        // levelling on each boot, and instead rely on the user to do
-        // it once via the ground station
-        ins.init_accel(flash_leds);
+    ins.init(style, ins_sample_rate);
+    if (do_accel_init) {
+        ins.init_accel();
         ahrs.set_trim(Vector3f(0, 0, 0));
     }
-#endif
     ahrs.reset();
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     // read Baro pressure at ground
     //-----------------------------
     init_barometer();
@@ -476,49 +464,21 @@ static void startup_INS_ground(bool force_accel_level)
     } else {
         gcs_send_text_P(SEVERITY_LOW,PSTR("NO airspeed"));
     }
-
-#endif
-    digitalWrite(B_LED_PIN, LED_ON);                    // Set LED B high to indicate INS ready
-    digitalWrite(A_LED_PIN, LED_OFF);
-    digitalWrite(C_LED_PIN, LED_OFF);
 }
 
-
-static void update_GPS_light(void)
+// updates the status of the notify objects
+// should be called at 50hz
+static void update_notify()
 {
-    // GPS LED on if we have a fix or Blink GPS LED if we are receiving data
-    // ---------------------------------------------------------------------
-    switch (g_gps->status()) {
-    case (2):
-        digitalWrite(C_LED_PIN, LED_ON);                  //Turn LED C on when gps has valid fix.
-        break;
-
-    case (1):
-        if (g_gps->valid_read == true) {
-            GPS_light = !GPS_light;                     // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-            if (GPS_light) {
-                digitalWrite(C_LED_PIN, LED_OFF);
-            } else {
-                digitalWrite(C_LED_PIN, LED_ON);
-            }
-            g_gps->valid_read = false;
-        }
-        break;
-
-    default:
-        digitalWrite(C_LED_PIN, LED_OFF);
-        break;
-    }
+    notify.update();
 }
-
 
 static void resetPerfData(void) {
     mainLoop_count                  = 0;
-    G_Dt_max                                = 0;
+    G_Dt_max                        = 0;
     ahrs.renorm_range_count         = 0;
-    ahrs.renorm_blowup_count = 0;
+    ahrs.renorm_blowup_count        = 0;
     gps_fix_count                   = 0;
-    pmTest1                                 = 0;
     perf_mon_timer                  = millis();
 }
 
@@ -539,92 +499,83 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     case 111:  return 111100;
     case 115:  return 115200;
     }
-    cliSerial->println_P(PSTR("Invalid SERIAL3_BAUD"));
+    cliSerial->println_P(PSTR("Invalid baudrate"));
     return default_baud;
 }
 
 
 static void check_usb_mux(void)
 {
-#if USB_MUX_PIN > 0
-    bool usb_check = !digitalRead(USB_MUX_PIN);
+    bool usb_check = hal.gpio->usb_connected();
     if (usb_check == usb_connected) {
         return;
     }
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    // the APM2 has a MUX setup where the first serial port switches
+    // between USB and a TTL serial connection. When on USB we use
+    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
+    // at SERIAL1_BAUD.
     if (usb_connected) {
         hal.uartA->begin(SERIAL0_BAUD);
     } else {
-        hal.uartA->begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD));
+        hal.uartA->begin(map_baudrate(g.serial1_baud, SERIAL1_BAUD));
     }
 #endif
 }
 
 
 /*
- *  called by gyro/accel init to flash LEDs so user
- *  has some mesmerising lights to watch while waiting
- */
-void flash_leds(bool on)
-{
-    digitalWrite(A_LED_PIN, on ? LED_OFF : LED_ON);
-    digitalWrite(C_LED_PIN, on ? LED_ON : LED_OFF);
-}
-
-/*
  * Read Vcc vs 1.1v internal reference
  */
 uint16_t board_voltage(void)
 {
-    return vcc_pin->read_latest();
-}
-
-
-/*
-  force a software reset of the APM
- */
-static void reboot_apm(void)
-{
-    hal.scheduler->reboot();
-    while (1);
+    return vcc_pin->voltage_latest() * 1000;
 }
 
 
 static void
-print_flight_mode(uint8_t mode)
+print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        cliSerial->println_P(PSTR("Manual"));
+        port->print_P(PSTR("Manual"));
         break;
     case CIRCLE:
-        cliSerial->println_P(PSTR("Circle"));
+        port->print_P(PSTR("Circle"));
         break;
     case STABILIZE:
-        cliSerial->println_P(PSTR("Stabilize"));
+        port->print_P(PSTR("Stabilize"));
         break;
     case TRAINING:
-        cliSerial->println_P(PSTR("Training"));
+        port->print_P(PSTR("Training"));
+        break;
+    case ACRO:
+        port->print_P(PSTR("ACRO"));
         break;
     case FLY_BY_WIRE_A:
-        cliSerial->println_P(PSTR("FBW_A"));
+        port->print_P(PSTR("FBW_A"));
         break;
     case FLY_BY_WIRE_B:
-        cliSerial->println_P(PSTR("FBW_B"));
+        port->print_P(PSTR("FBW_B"));
+        break;
+    case CRUISE:
+        port->print_P(PSTR("CRUISE"));
         break;
     case AUTO:
-        cliSerial->println_P(PSTR("AUTO"));
+        port->print_P(PSTR("AUTO"));
         break;
     case RTL:
-        cliSerial->println_P(PSTR("RTL"));
+        port->print_P(PSTR("RTL"));
         break;
     case LOITER:
-        cliSerial->println_P(PSTR("Loiter"));
+        port->print_P(PSTR("Loiter"));
         break;
     default:
-        cliSerial->println_P(PSTR("---"));
+        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
     }
 }
@@ -635,3 +586,19 @@ static void print_comma(void)
 }
 
 
+/*
+  write to a servo
+ */
+static void servo_write(uint8_t ch, uint16_t pwm)
+{
+#if HIL_MODE != HIL_MODE_DISABLED
+    if (!g.hil_servos) {
+        if (ch < 8) {
+            RC_Channel::rc_channel(ch)->radio_out = pwm;
+        }
+        return;
+    }
+#endif
+    hal.rcout->enable_ch(ch);
+    hal.rcout->write(ch, pwm);
+}

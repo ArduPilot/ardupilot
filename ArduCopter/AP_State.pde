@@ -14,21 +14,6 @@ void set_home_is_set(bool b)
 }
 
 // ---------------------------------------------
-void set_armed(bool b)
-{
-    // if no change, exit immediately
-    if( ap.armed == b )
-        return;
-
-    ap.armed = b;
-    if(b){
-        Log_Write_Event(DATA_ARMED);
-    }else{
-        Log_Write_Event(DATA_DISARMED);
-    }
-}
-
-// ---------------------------------------------
 void set_auto_armed(bool b)
 {
     // if no change, exit immediately
@@ -42,46 +27,70 @@ void set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void set_simple_mode(bool b)
+void set_simple_mode(uint8_t b)
 {
     if(ap.simple_mode != b){
-        if(b){
+        if(b == 0){
+            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+        }else if(b == 1){
             Log_Write_Event(DATA_SET_SIMPLE_ON);
         }else{
-            Log_Write_Event(DATA_SET_SIMPLE_OFF);
+            // initialise super simple heading
+            update_super_simple_bearing(true);
+            Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
         }
         ap.simple_mode = b;
     }
 }
 
 // ---------------------------------------------
-static void set_failsafe(bool mode)
+static void set_failsafe_radio(bool b)
 {
     // only act on changes
     // -------------------
-    if(ap.failsafe != mode) {
+    if(failsafe.radio != b) {
 
         // store the value so we don't trip the gate twice
         // -----------------------------------------------
-        ap.failsafe = mode;
+        failsafe.radio = b;
 
-        if (ap.failsafe == false) {
+        if (failsafe.radio == false) {
             // We've regained radio contact
             // ----------------------------
-            failsafe_off_event();
+            failsafe_radio_off_event();
         }else{
             // We've lost radio contact
             // ------------------------
-            failsafe_on_event();
+            failsafe_radio_on_event();
         }
+
+        // update AP_Notify
+        AP_Notify::flags.failsafe_radio = b;
     }
 }
 
 
 // ---------------------------------------------
-void set_low_battery(bool b)
+void set_failsafe_battery(bool b)
 {
-    ap.low_battery = b;
+    failsafe.battery = b;
+    AP_Notify::flags.failsafe_battery = b;
+}
+
+
+// ---------------------------------------------
+static void set_failsafe_gps(bool b)
+{
+    failsafe.gps = b;
+
+    // update AP_Notify
+    AP_Notify::flags.failsafe_gps = b;
+}
+
+// ---------------------------------------------
+static void set_failsafe_gcs(bool b)
+{
+    failsafe.gcs = b;
 }
 
 // ---------------------------------------------
@@ -106,54 +115,26 @@ void set_land_complete(bool b)
 
     if(b){
         Log_Write_Event(DATA_LAND_COMPLETE);
+    }else{
+        Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
 }
 
 // ---------------------------------------------
 
-void set_alt_change(uint8_t flag){
-
-    // if no change, exit immediately
-    if( alt_change_flag == flag ) {
-        return;
-    }
-
-    // update flag
-    alt_change_flag = flag;
-
-    if(flag == REACHED_ALT){
-        Log_Write_Event(DATA_REACHED_ALT);
-
-    }else if(flag == ASCENDING){
-        Log_Write_Event(DATA_ASCENDING);
-
-    }else if(flag == DESCENDING){
-        Log_Write_Event(DATA_DESCENDING);
-    }
-}
-
-void set_compass_healthy(bool b)
+void set_pre_arm_check(bool b)
 {
-    if(ap.compass_status != b){
-        if(false == b){
-            Log_Write_Event(DATA_LOST_COMPASS);
-        }
+    if(ap.pre_arm_check != b) {
+        ap.pre_arm_check = b;
+        AP_Notify::flags.pre_arm_check = b;
     }
-    ap.compass_status = b;
 }
 
-void set_gps_healthy(bool b)
+void set_pre_arm_rc_check(bool b)
 {
-    if(ap.gps_status != b){
-        if(false == b){
-            Log_Write_Event(DATA_LOST_GPS);
-        }
+    if(ap.pre_arm_rc_check != b) {
+        ap.pre_arm_rc_check = b;
     }
-    ap.gps_status = b;
 }
 
-void dump_state()
-{
-    cliSerial->printf("st: %u\n",ap.value);
-}

@@ -49,18 +49,12 @@
 # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
 # define CONFIG_PUSHBUTTON DISABLED
 # define CONFIG_RELAY      DISABLED
-# define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 # define CONFIG_PITOT_SOURCE PITOT_SOURCE_ANALOG_PIN
 # define MAGNETOMETER ENABLED
 # define CONFIG_BARO     AP_BARO_MS5611
 # define CONFIG_MS5611_SERIAL AP_BARO_MS5611_SPI
 
-# define A_LED_PIN        27
-# define B_LED_PIN        26
-# define C_LED_PIN        25
-# define LED_ON           LOW
-# define LED_OFF          HIGH
 # define SLIDE_SWITCH_PIN (-1)
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
@@ -223,10 +217,6 @@
 #ifndef MAGNETOMETER
 # define MAGNETOMETER			DISABLED
 #endif
-#ifndef MAG_ORIENTATION
-# define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////

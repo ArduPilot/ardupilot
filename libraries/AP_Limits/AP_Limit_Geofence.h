@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	limits.h
 /// @brief	Imposes limits on location (geofence), altitude and other parameters.
@@ -20,7 +20,7 @@
 class AP_Limit_Geofence : public AP_Limit_Module {
 
 public:
-    AP_Limit_Geofence(uint16_t eeprom_fence_start, uint8_t fpsize, uint8_t max_fp, GPS *&gps, struct Location *home_loc, struct Location *current_loc);
+    AP_Limit_Geofence(uint16_t eeprom_fence_start, uint8_t fpsize, uint8_t max_fp, GPS *&gps, const struct Location *home_loc, const struct Location *current_loc);
     bool        init();
     bool        triggered();
 
@@ -38,8 +38,8 @@ protected:
 
     // pointers to gps, current location and home
     GPS *&                  _gps;
-    struct Location *       _current_loc;
-    struct Location *       _home;
+    const struct Location *       _current_loc;
+    const struct Location *       _home;
 
 
     // Simple mode, just radius

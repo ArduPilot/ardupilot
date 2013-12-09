@@ -1,4 +1,3 @@
-
 #include "AnalogIn.h"
 
 using namespace Empty;
@@ -15,6 +14,10 @@ float EmptyAnalogSource::voltage_average() {
     return 5.0 * _v / 1024.0;
 }
 
+float EmptyAnalogSource::voltage_latest() {
+    return 5.0 * _v / 1024.0;
+}
+
 float EmptyAnalogSource::read_latest() {
     return _v;
 }
@@ -22,6 +25,11 @@ float EmptyAnalogSource::read_latest() {
 void EmptyAnalogSource::set_pin(uint8_t p)
 {}
 
+void EmptyAnalogSource::set_stop_pin(uint8_t p)
+{}
+
+void EmptyAnalogSource::set_settle_time(uint16_t settle_time_ms)
+{}
 
 EmptyAnalogIn::EmptyAnalogIn()
 {}
@@ -33,7 +41,4 @@ AP_HAL::AnalogSource* EmptyAnalogIn::channel(int16_t n) {
     return new EmptyAnalogSource(1.11);
 }
 
-AP_HAL::AnalogSource* EmptyAnalogIn::channel(int16_t n, float scale) {
-    return new EmptyAnalogSource(scale/2);
-}
 

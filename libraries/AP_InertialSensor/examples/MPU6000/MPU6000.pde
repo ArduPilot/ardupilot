@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 //
 // Simple test for the AP_InertialSensor driver.
@@ -15,29 +15,15 @@
 #include <AP_Param.h>
 #include <AP_ADC.h>
 #include <AP_InertialSensor.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define A_LED_PIN 27
-#define C_LED_PIN 25
-#else
-#define A_LED_PIN 37
-#define C_LED_PIN 35
-#endif
+#include <GCS_MAVLink.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 AP_InertialSensor_MPU6000 ins;
 
-static void flash_leds(bool on) {
-    hal.gpio->write(A_LED_PIN, on);
-    hal.gpio->write(C_LED_PIN, ~on);
-}
-
 void setup(void)
 {
     hal.console->println("AP_InertialSensor startup...");
-
-    hal.gpio->pinMode(A_LED_PIN, GPIO_OUTPUT);
-    hal.gpio->pinMode(C_LED_PIN, GPIO_OUTPUT);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
     // we need to stop the barometer from holding the SPI bus
@@ -46,8 +32,7 @@ void setup(void)
 #endif
 
     ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ,
-			 NULL);
+			 AP_InertialSensor::RATE_100HZ);
 
     // display initial values
     display_offsets_and_scaling();
@@ -95,7 +80,7 @@ void loop(void)
         }
 
         if( user_input == 'r' || user_input == 'R' ) {
-			hal.scheduler->reboot();
+			hal.scheduler->reboot(false);
         }
     }
 }
@@ -111,7 +96,7 @@ void run_calibration()
 
 #if !defined( __AVR_ATmega1280__ )
     AP_InertialSensor_UserInteractStream interact(hal.console);
-    ins.calibrate_accel(NULL, &interact, roll_trim, pitch_trim);
+    ins.calibrate_accel(&interact, roll_trim, pitch_trim);
 #else
 	hal.console->println_P(PSTR("calibrate_accel not available on 1280"));
 #endif
@@ -160,7 +145,7 @@ void run_level()
     }
 
     // run accel level
-    ins.init_accel(flash_leds);
+    ins.init_accel();
 
     // display results
     display_offsets_and_scaling();
@@ -185,7 +170,7 @@ void run_test()
     while( !hal.console->available() ) {
 
         // wait until we have a sample
-        while (ins.num_samples_available() == 0) /* noop */ ;
+        while (ins.sample_available() == false) /* noop */ ;
 
         // read samples from ins
         ins.update();

@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /// @file	GPS.h
 /// @brief	Interface definition for the various GPS drivers.
@@ -10,6 +10,7 @@
 
 #include <inttypes.h>
 #include <AP_Progmem.h>
+#include <AP_Math.h>
 
 /// @class	GPS
 /// @brief	Abstract base class for GPS receiver drivers.
@@ -34,7 +35,16 @@ public:
     enum GPS_Status {
         NO_GPS = 0,             ///< No GPS connected/detected
         NO_FIX = 1,             ///< Receiving valid GPS messages but no lock
-        GPS_OK = 2              ///< Receiving valid messages and locked
+        GPS_OK_FIX_2D = 2,      ///< Receiving valid messages and 2D lock
+        GPS_OK_FIX_3D = 3       ///< Receiving valid messages and 3D lock
+    };
+
+    /// Fix status codes
+    ///
+    enum Fix_Status {
+        FIX_NONE = 0,           ///< No fix
+        FIX_2D = 2,             ///< 2d fix
+        FIX_3D = 3,             ///< 3d fix
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -58,26 +68,8 @@ public:
     ///
     /// @returns			Current GPS status
     ///
-    GPS_Status          status(void) {
+    GPS_Status          status(void) const {
         return _status;
-    }
-
-    /// GPS time epoch codes
-    ///
-    enum        GPS_Time_Epoch {
-        TIME_OF_DAY     = 0,            ///<
-        TIME_OF_WEEK    = 1,            ///< Ublox
-        TIME_OF_YEAR    = 2,            ///< MTK, NMEA
-        UNIX_EPOCH              = 3                     ///< If available
-    };                                                                  ///< SIFR?
-
-
-    /// Query GPS time epoch
-    ///
-    /// @returns			Current GPS time epoch code
-    ///
-    GPS_Time_Epoch              epoch(void) {
-        return _epoch;
     }
 
     /// Startup initialisation.
@@ -90,14 +82,14 @@ public:
     virtual void        init(AP_HAL::UARTDriver *s, enum GPS_Engine_Setting engine_setting = GPS_ENGINE_NONE) = 0;
 
     // Properties
-    uint32_t time;                      ///< GPS time (milliseconds from epoch)
-    uint32_t date;                      ///< GPS date (FORMAT TBD)
+    uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
+    uint16_t time_week;                 ///< GPS week number
     int32_t latitude;                   ///< latitude in degrees * 10,000,000
     int32_t longitude;                  ///< longitude in degrees * 10,000,000
-    int32_t altitude;                   ///< altitude in cm
-    uint32_t ground_speed;      ///< ground speed in cm/sec
-    int32_t ground_course;      ///< ground course in 100ths of a degree
-    int32_t speed_3d;                   ///< 3D speed in cm/sec (not always available)
+    int32_t altitude_cm;                ///< altitude in cm
+    uint32_t ground_speed_cm;           ///< ground speed in cm/sec
+    int32_t ground_course_cd;           ///< ground course in 100ths of a degree
+    int32_t speed_3d_cm;                ///< 3D speed in cm/sec (not always available)
     int16_t hdop;                       ///< horizontal dilution of precision in cm
     uint8_t num_sats;           ///< Number of visible satelites
 
@@ -106,40 +98,36 @@ public:
     /// already seen.
     bool new_data;
 
-    // Deprecated properties
-    bool fix;                           ///< true if we have a position fix (use ::status instead)
+    Fix_Status fix;                        ///< 0 if we have no fix, 2 for 2D fix, 3 for 3D fix
     bool valid_read;                    ///< true if we have seen data from the GPS (use ::status instead)
 
     // Debug support
     bool print_errors;          ///< deprecated
 
     // HIL support
-    virtual void setHIL(uint32_t time, float latitude, float longitude, float altitude,
+    virtual void setHIL(uint64_t time_epoch_ms, float latitude, float longitude, float altitude,
                         float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
-    /// Time in milliseconds after which we will assume the GPS is no longer
-    /// sending us updates and attempt a re-init.
-    ///
-    /// 1200ms allows a small amount of slack over the worst-case 1Hz update
-    /// rate.
-    ///
-    uint32_t idleTimeout;
-
     // components of velocity in 2D, in m/s
-    float velocity_north(void) {
-        return _status == GPS_OK ? _velocity_north : 0;
+    float velocity_north(void) const {
+        return _status >= GPS_OK_FIX_2D ? _velocity_north : 0;
     }
-    float velocity_east(void)  {
-        return _status == GPS_OK ? _velocity_east  : 0;
+    float velocity_east(void)  const {
+        return _status >= GPS_OK_FIX_2D ? _velocity_east  : 0;
     }
-    float velocity_down(void)  {
-        return _status == GPS_OK ? _velocity_down  : 0;
+    float velocity_down(void)  const {
+        return _status >= GPS_OK_FIX_3D ? _velocity_down  : 0;
+    }
+
+    // GPS velocity vector as NED in m/s
+    Vector3f velocity_vector(void) const {
+        return Vector3f(_velocity_north, _velocity_east, _velocity_down);
     }
 
     // last ground speed in m/s. This can be used when we have no GPS
     // lock to return the last ground speed we had with lock
     float last_ground_speed(void) {
-        return _last_ground_speed_cm * 0.01;
+        return static_cast<float>(_last_ground_speed_cm) * 0.01;
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
@@ -147,6 +135,12 @@ public:
 
     // the time we got our last fix in system milliseconds
     uint32_t last_fix_time;
+
+	// the time we last processed a message in milliseconds
+	uint32_t last_message_time_ms(void) { return _idleTimer; }
+
+    // return last fix time since the 1/1/1970 in microseconds
+    uint64_t time_epoch_usec(void);
 
 	// return true if the GPS supports raw velocity values
 
@@ -168,14 +162,14 @@ protected:
     ///						long in the wrong byte order
     /// @returns			endian-swapped value
     ///
-    int32_t                             _swapl(const void *bytes);
+    int32_t                             _swapl(const void *bytes) const;
 
     /// perform an endian swap on an int
     ///
     /// @param	bytes		pointer to a buffer containing bytes representing an
     ///						int in the wrong byte order
     ///	@returns			endian-swapped value
-    int16_t                             _swapi(const void *bytes);
+    int16_t                             _swapi(const void *bytes) const;
 
     /// emit an error message
     ///
@@ -188,9 +182,6 @@ protected:
     ///       printf vs. the potential benefits
     ///
     void                        _error(const char *msg);
-
-    /// Time epoch code for the gps in use
-    GPS_Time_Epoch _epoch;
 
     enum GPS_Engine_Setting _nav_setting;
 
@@ -205,6 +196,15 @@ protected:
 
     // does this GPS support raw velocity numbers?
     bool _have_raw_velocity;
+
+	// detected baudrate
+	uint16_t _baudrate;
+
+    // the time we got the last GPS timestamp
+    uint32_t _last_gps_time;
+
+    // return time in seconds since GPS epoch given time components
+    void _make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
 
 private:
 
@@ -224,37 +224,5 @@ private:
     float _velocity_east;
     float _velocity_down;
 };
-
-inline int32_t
-GPS::_swapl(const void *bytes)
-{
-    const uint8_t       *b = (const uint8_t *)bytes;
-    union {
-        int32_t v;
-        uint8_t b[4];
-    } u;
-
-    u.b[0] = b[3];
-    u.b[1] = b[2];
-    u.b[2] = b[1];
-    u.b[3] = b[0];
-
-    return(u.v);
-}
-
-inline int16_t
-GPS::_swapi(const void *bytes)
-{
-    const uint8_t       *b = (const uint8_t *)bytes;
-    union {
-        int16_t v;
-        uint8_t b[2];
-    } u;
-
-    u.b[0] = b[1];
-    u.b[1] = b[0];
-
-    return(u.v);
-}
 
 #endif // __GPS_H__

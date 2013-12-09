@@ -19,6 +19,9 @@ typedef struct __mavlink_digicam_control_t
 #define MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN 13
 #define MAVLINK_MSG_ID_155_LEN 13
 
+#define MAVLINK_MSG_ID_DIGICAM_CONTROL_CRC 22
+#define MAVLINK_MSG_ID_155_CRC 22
+
 
 
 #define MAVLINK_MESSAGE_INFO_DIGICAM_CONTROL { \
@@ -60,7 +63,7 @@ static inline uint16_t mavlink_msg_digicam_control_pack(uint8_t system_id, uint8
 						       uint8_t target_system, uint8_t target_component, uint8_t session, uint8_t zoom_pos, int8_t zoom_step, uint8_t focus_lock, uint8_t shot, uint8_t command_id, uint8_t extra_param, float extra_value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[13];
+	char buf[MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN];
 	_mav_put_float(buf, 0, extra_value);
 	_mav_put_uint8_t(buf, 4, target_system);
 	_mav_put_uint8_t(buf, 5, target_component);
@@ -72,7 +75,7 @@ static inline uint16_t mavlink_msg_digicam_control_pack(uint8_t system_id, uint8
 	_mav_put_uint8_t(buf, 11, command_id);
 	_mav_put_uint8_t(buf, 12, extra_param);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 13);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
 #else
 	mavlink_digicam_control_t packet;
 	packet.extra_value = extra_value;
@@ -86,18 +89,22 @@ static inline uint16_t mavlink_msg_digicam_control_pack(uint8_t system_id, uint8
 	packet.command_id = command_id;
 	packet.extra_param = extra_param;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 13);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_DIGICAM_CONTROL;
-	return mavlink_finalize_message(msg, system_id, component_id, 13, 22);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN, MAVLINK_MSG_ID_DIGICAM_CONTROL_CRC);
+#else
+    return mavlink_finalize_message(msg, system_id, component_id, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
+#endif
 }
 
 /**
  * @brief Pack a digicam_control message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
- * @param chan The MAVLink channel this message was sent over
+ * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
@@ -116,7 +123,7 @@ static inline uint16_t mavlink_msg_digicam_control_pack_chan(uint8_t system_id, 
 						           uint8_t target_system,uint8_t target_component,uint8_t session,uint8_t zoom_pos,int8_t zoom_step,uint8_t focus_lock,uint8_t shot,uint8_t command_id,uint8_t extra_param,float extra_value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[13];
+	char buf[MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN];
 	_mav_put_float(buf, 0, extra_value);
 	_mav_put_uint8_t(buf, 4, target_system);
 	_mav_put_uint8_t(buf, 5, target_component);
@@ -128,7 +135,7 @@ static inline uint16_t mavlink_msg_digicam_control_pack_chan(uint8_t system_id, 
 	_mav_put_uint8_t(buf, 11, command_id);
 	_mav_put_uint8_t(buf, 12, extra_param);
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, 13);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
 #else
 	mavlink_digicam_control_t packet;
 	packet.extra_value = extra_value;
@@ -142,15 +149,19 @@ static inline uint16_t mavlink_msg_digicam_control_pack_chan(uint8_t system_id, 
 	packet.command_id = command_id;
 	packet.extra_param = extra_param;
 
-        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, 13);
+        memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
 #endif
 
 	msg->msgid = MAVLINK_MSG_ID_DIGICAM_CONTROL;
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 13, 22);
+#if MAVLINK_CRC_EXTRA
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN, MAVLINK_MSG_ID_DIGICAM_CONTROL_CRC);
+#else
+    return mavlink_finalize_message_chan(msg, system_id, component_id, chan, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
+#endif
 }
 
 /**
- * @brief Encode a digicam_control struct into a message
+ * @brief Encode a digicam_control struct
  *
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
@@ -160,6 +171,20 @@ static inline uint16_t mavlink_msg_digicam_control_pack_chan(uint8_t system_id, 
 static inline uint16_t mavlink_msg_digicam_control_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_digicam_control_t* digicam_control)
 {
 	return mavlink_msg_digicam_control_pack(system_id, component_id, msg, digicam_control->target_system, digicam_control->target_component, digicam_control->session, digicam_control->zoom_pos, digicam_control->zoom_step, digicam_control->focus_lock, digicam_control->shot, digicam_control->command_id, digicam_control->extra_param, digicam_control->extra_value);
+}
+
+/**
+ * @brief Encode a digicam_control struct on a channel
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message will be sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param digicam_control C-struct to read the message contents from
+ */
+static inline uint16_t mavlink_msg_digicam_control_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_digicam_control_t* digicam_control)
+{
+	return mavlink_msg_digicam_control_pack_chan(system_id, component_id, chan, msg, digicam_control->target_system, digicam_control->target_component, digicam_control->session, digicam_control->zoom_pos, digicam_control->zoom_step, digicam_control->focus_lock, digicam_control->shot, digicam_control->command_id, digicam_control->extra_param, digicam_control->extra_value);
 }
 
 /**
@@ -182,7 +207,7 @@ static inline uint16_t mavlink_msg_digicam_control_encode(uint8_t system_id, uin
 static inline void mavlink_msg_digicam_control_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint8_t session, uint8_t zoom_pos, int8_t zoom_step, uint8_t focus_lock, uint8_t shot, uint8_t command_id, uint8_t extra_param, float extra_value)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-	char buf[13];
+	char buf[MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN];
 	_mav_put_float(buf, 0, extra_value);
 	_mav_put_uint8_t(buf, 4, target_system);
 	_mav_put_uint8_t(buf, 5, target_component);
@@ -194,7 +219,11 @@ static inline void mavlink_msg_digicam_control_send(mavlink_channel_t chan, uint
 	_mav_put_uint8_t(buf, 11, command_id);
 	_mav_put_uint8_t(buf, 12, extra_param);
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, buf, 13, 22);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, buf, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN, MAVLINK_MSG_ID_DIGICAM_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, buf, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
+#endif
 #else
 	mavlink_digicam_control_t packet;
 	packet.extra_value = extra_value;
@@ -208,7 +237,11 @@ static inline void mavlink_msg_digicam_control_send(mavlink_channel_t chan, uint
 	packet.command_id = command_id;
 	packet.extra_param = extra_param;
 
-	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, (const char *)&packet, 13, 22);
+#if MAVLINK_CRC_EXTRA
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, (const char *)&packet, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN, MAVLINK_MSG_ID_DIGICAM_CONTROL_CRC);
+#else
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DIGICAM_CONTROL, (const char *)&packet, MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
+#endif
 #endif
 }
 
@@ -337,6 +370,6 @@ static inline void mavlink_msg_digicam_control_decode(const mavlink_message_t* m
 	digicam_control->command_id = mavlink_msg_digicam_control_get_command_id(msg);
 	digicam_control->extra_param = mavlink_msg_digicam_control_get_extra_param(msg);
 #else
-	memcpy(digicam_control, _MAV_PAYLOAD(msg), 13);
+	memcpy(digicam_control, _MAV_PAYLOAD(msg), MAVLINK_MSG_ID_DIGICAM_CONTROL_LEN);
 #endif
 }

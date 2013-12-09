@@ -1,11 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-//
-// This is free software; you can redistribute it and/or modify it under
-// the terms of the GNU Lesser General Public License as published by the
-// Free Software Foundation; either version 2.1 of the License, or (at
-// your option) any later version.
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//
 /// @file	ModeFilter.h
 /// @brief	A class to apply a mode filter which is basically picking the median value from the last x samples
 ///         the filter size (i.e buffer size) should always be an odd number
@@ -111,7 +120,7 @@ void ModeFilter<T,FILTER_SIZE>::        isort(T new_sample, bool drop_high)
         i = FilterWithBuffer<T,FILTER_SIZE>::sample_index-1;
 
         // if the next element is higher than our new sample, push it up one position
-        while( FilterWithBuffer<T,FILTER_SIZE>::samples[i-1] > new_sample && i > 0 ) {
+        while(i > 0 && FilterWithBuffer<T,FILTER_SIZE>::samples[i-1] > new_sample) {
             FilterWithBuffer<T,FILTER_SIZE>::samples[i] = FilterWithBuffer<T,FILTER_SIZE>::samples[i-1];
             i--;
         }

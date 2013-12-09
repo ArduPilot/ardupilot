@@ -1,84 +1,93 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-//Function that will read the radio data, limit servos and trigger a failsafe
-// ----------------------------------------------------------------------------
-static uint8_t failsafeCounter = 0;		// we wait a second to take over the throttle and send the rover circling
+/*
+  allow for runtime change of control channel ordering
+ */
+static void set_control_channels(void)
+{
+    channel_steer    = RC_Channel::rc_channel(rcmap.roll()-1);
+    channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
+    channel_learn    = RC_Channel::rc_channel(g.learn_channel-1);
 
+	// set rc channel ranges
+	channel_steer->set_angle(SERVO_MAX);
+	channel_throttle->set_angle(100);
+}
 
 static void init_rc_in()
 {
-	// set rc channel ranges
-	g.channel_steer.set_angle(SERVO_MAX);
-	g.channel_throttle.set_angle(100);
-
 	// set rc dead zones
-	g.channel_steer.set_dead_zone(60);
-	g.channel_throttle.set_dead_zone(6);
+	channel_steer->set_default_dead_zone(30);
+	channel_throttle->set_default_dead_zone(30);
 
 	//set auxiliary ranges
-	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
+    update_aux();
 }
 
 static void init_rc_out()
 {
-    hal.rcout->enable_ch(CH_1);
-    hal.rcout->enable_ch(CH_2);
-    hal.rcout->enable_ch(CH_3);
-    hal.rcout->enable_ch(CH_4);
-    hal.rcout->enable_ch(CH_5);
-    hal.rcout->enable_ch(CH_6);
-    hal.rcout->enable_ch(CH_7);
-    hal.rcout->enable_ch(CH_8);
+    for (uint8_t i=0; i<8; i++) {
+        RC_Channel::rc_channel(i)->enable_out();
+        RC_Channel::rc_channel(i)->output_trim();
+    }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	hal.rcout->write(CH_1, 	g.channel_steer.radio_trim);					// Initialization of servo outputs
-	hal.rcout->write(CH_3, 	g.channel_throttle.radio_trim);
-
-	hal.rcout->write(CH_5, 	g.rc_5.radio_trim);
-	hal.rcout->write(CH_6, 	g.rc_6.radio_trim);
-	hal.rcout->write(CH_7,   g.rc_7.radio_trim);
-    hal.rcout->write(CH_8,   g.rc_8.radio_trim);
-#else
-	hal.rcout->write(CH_1, 	1500);					// Initialization of servo outputs
-	hal.rcout->write(CH_2, 	1500);
-	hal.rcout->write(CH_3, 	1000);
-	hal.rcout->write(CH_4, 	1500);
-
-	hal.rcout->write(CH_5, 	1500);
-	hal.rcout->write(CH_6, 	1500);
-	hal.rcout->write(CH_7,   1500);
-    hal.rcout->write(CH_8,   2000);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_9,   g.rc_9.radio_trim);
 #endif
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_10,  g.rc_10.radio_trim);
+    servo_write(CH_11,  g.rc_11.radio_trim);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    servo_write(CH_12,  g.rc_12.radio_trim);
+#endif
 }
 
 static void read_radio()
 {
-    g.channel_steer.set_pwm(hal.rcin->read(CH_ROLL));
+    for (uint8_t i=0; i<8; i++) {
+        RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
+    }
 
-	g.channel_throttle.set_pwm(hal.rcin->read(CH_3));
-  	g.rc_5.set_pwm(hal.rcin->read(CH_5));
- 	g.rc_6.set_pwm(hal.rcin->read(CH_6));        
-	g.rc_7.set_pwm(hal.rcin->read(CH_7));
-	g.rc_8.set_pwm(hal.rcin->read(CH_8));
+	control_failsafe(channel_throttle->radio_in);
 
-	control_failsafe(g.channel_throttle.radio_in);
+	channel_throttle->servo_out = channel_throttle->control_in;
 
-	g.channel_throttle.servo_out = g.channel_throttle.control_in;
-
-	if (g.channel_throttle.servo_out > 50) {
-        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
+	if (abs(channel_throttle->servo_out) > 50) {
+        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((fabsf(channel_throttle->norm_input())-0.5) / 0.5);
 	} else {
 		throttle_nudge = 0;
 	}
 
-	/*
-	cliSerial->printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
-				g.rc_1.control_in,
-				g.rc_2.control_in,
-				g.rc_3.control_in,
-				g.rc_4.control_in);
-	*/
+    if (g.skid_steer_in) {
+        // convert the two radio_in values from skid steering values
+        /*
+          mixing rule:
+          steering = motor1 - motor2
+          throttle = 0.5*(motor1 + motor2)
+          motor1 = throttle + 0.5*steering
+          motor2 = throttle - 0.5*steering
+        */          
+
+        float motor1 = channel_steer->norm_input();
+        float motor2 = channel_throttle->norm_input();
+        float steering_scaled = motor1 - motor2;
+        float throttle_scaled = 0.5f*(motor1 + motor2);
+        int16_t steer = channel_steer->radio_trim;
+        int16_t thr   = channel_throttle->radio_trim;
+        if (steering_scaled > 0.0f) {
+            steer += steering_scaled*(channel_steer->radio_max-channel_steer->radio_trim);
+        } else {
+            steer += steering_scaled*(channel_steer->radio_trim-channel_steer->radio_min);
+        }
+        if (throttle_scaled > 0.0f) {
+            thr += throttle_scaled*(channel_throttle->radio_max-channel_throttle->radio_trim);
+        } else {
+            thr += throttle_scaled*(channel_throttle->radio_trim-channel_throttle->radio_min);
+        }
+        channel_steer->set_pwm(steer);
+        channel_throttle->set_pwm(thr);
+    }
 }
 
 static void control_failsafe(uint16_t pwm)
@@ -90,41 +99,9 @@ static void control_failsafe(uint16_t pwm)
 
 	// Check for failsafe condition based on loss of GCS control
 	if (rc_override_active) {
-		if(millis() - rc_override_fs_timer > FAILSAFE_SHORT_TIME) {
-			ch3_failsafe = true;
-		} else {
-			ch3_failsafe = false;
-		}
-
-	//Check for failsafe and debounce funky reads
+        failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
 	} else if (g.fs_throttle_enabled) {
-		if (pwm < (unsigned)g.fs_throttle_value){
-			// we detect a failsafe from radio
-			// throttle has dropped below the mark
-			failsafeCounter++;
-			if (failsafeCounter == 9){
-				gcs_send_text_fmt(PSTR("MSG FS ON %u"), (unsigned)pwm);
-			}else if(failsafeCounter == 10) {
-				ch3_failsafe = true;
-			}else if (failsafeCounter > 10){
-				failsafeCounter = 11;
-			}
-
-		}else if(failsafeCounter > 0){
-			// we are no longer in failsafe condition
-			// but we need to recover quickly
-			failsafeCounter--;
-			if (failsafeCounter > 3){
-				failsafeCounter = 3;
-			}
-			if (failsafeCounter == 1){
-				gcs_send_text_fmt(PSTR("MSG FS OFF %u"), (unsigned)pwm);
-			}else if(failsafeCounter == 0) {
-				ch3_failsafe = false;
-			}else if (failsafeCounter <0){
-				failsafeCounter = -1;
-			}
-		}
+        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, pwm < (uint16_t)g.fs_throttle_value);
 	}
 }
 
@@ -133,10 +110,10 @@ static void trim_control_surfaces()
 	read_radio();
 	// Store control surface trim values
 	// ---------------------------------
-    if (g.channel_steer.radio_in > 1400) {
-		g.channel_steer.radio_trim = g.channel_steer.radio_in;
+    if (channel_steer->radio_in > 1400) {
+		channel_steer->radio_trim = channel_steer->radio_in;
         // save to eeprom
-        g.channel_steer.save_eeprom();
+        channel_steer->save_eeprom();
     }
 }
 

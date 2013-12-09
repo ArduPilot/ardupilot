@@ -5,11 +5,10 @@
 
 #include <AP_Common.h>
 #include <AP_HAL.h>
+#include <AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
-
-#define FLASH_LEDS(on) do { if (flash_leds_cb != NULL) flash_leds_cb(on); } while (0)
 
 #define SAMPLE_UNIT 1
 
@@ -17,26 +16,27 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Param: PRODUCT_ID
     // @DisplayName: IMU Product ID
-    // @Description: Which type of IMU is installed (read-only)
-    // @User: Standard
+    // @Description: Which type of IMU is installed (read-only). 
+    // @User: Advanced
+    // @Values: 0:Unknown,1:APM1-1280,2:APM1-2560,88:APM2,3:SITL,4:PX4v1,5:PX4v2,Flymaple:256,Linux:257
     AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _product_id,   0),
 
     // @Param: ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
     // @Description: Accelerometer scaling of X axis.  Calculated during acceleration calibration routine
-    // @Range 0.8 1.2
+    // @Range: 0.8 1.2
     // @User: Advanced
 
     // @Param: ACCSCAL_Y
     // @DisplayName: Accelerometer scaling of Y axis
     // @Description: Accelerometer scaling of Y axis  Calculated during acceleration calibration routine
-    // @Range 0.8 1.2
+    // @Range: 0.8 1.2
     // @User: Advanced
 
     // @Param: ACCSCAL_Z
     // @DisplayName: Accelerometer scaling of Z axis
     // @Description: Accelerometer scaling of Z axis  Calculated during acceleration calibration routine
-    // @Range 0.8 1.2
+    // @Range: 0.8 1.2
     // @User: Advanced
     AP_GROUPINFO("ACCSCAL",     1, AP_InertialSensor, _accel_scale,  0),
 
@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
 
     // @Param: MPU6K_FILTER
     // @DisplayName: MPU6000 filter frequency
-    // @Description: Filter frequency to ask the MPU6000 to apply to samples. This can be set to a lower value to try to cope with very high vibration levels in aircraft. The default value on ArduPlane and APMrover2 is 20Hz. The default value on ArduCopter is 42Hz. This option takes effect on the next reboot or gyro initialisation
+    // @Description: Filter frequency to ask the MPU6000 to apply to samples. This can be set to a lower value to try to cope with very high vibration levels in aircraft. The default value on ArduPlane, APMrover2 and ArduCopter is 20Hz. This option takes effect on the next reboot or gyro initialisation
     // @Units: Hz
     // @Values: 0:Default,5:5Hz,10:10Hz,20:20Hz,42:42Hz,98:98Hz
     // @User: Advanced
@@ -92,14 +92,16 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_InertialSensor::AP_InertialSensor() {
+AP_InertialSensor::AP_InertialSensor() :
+    _accel(),
+    _gyro()
+{
     AP_Param::setup_object_defaults(this, var_info);        
 }
 
 void
 AP_InertialSensor::init( Start_style style,
-                         Sample_rate sample_rate,
-                         void (*flash_leds_cb)(bool on))
+                         Sample_rate sample_rate)
 {
     _product_id = _init_sensor(sample_rate);
 
@@ -112,7 +114,7 @@ AP_InertialSensor::init( Start_style style,
 
     if (WARM_START != style) {
         // do cold-start calibration for gyro only
-        _init_gyro(flash_leds_cb);
+        _init_gyro();
     }
 }
 
@@ -126,16 +128,16 @@ void AP_InertialSensor::_save_parameters()
 }
 
 void
-AP_InertialSensor::init_gyro(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::init_gyro()
 {
-    _init_gyro(flash_leds_cb);
+    _init_gyro();
 
     // save calibration
     _save_parameters();
 }
 
 void
-AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::_init_gyro()
 {
     Vector3f last_average, best_avg;
     Vector3f ins_gyro;
@@ -145,20 +147,17 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
     hal.scheduler->delay(100);
     hal.console->printf_P(PSTR("Init Gyro"));
 
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
+
     // remove existing gyro offsets
     _gyro_offset = Vector3f(0,0,0);
 
     for(int8_t c = 0; c < 25; c++) {
-        // Mostly we are just flashing the LED's here
-        // to tell the user to keep the IMU still
-        FLASH_LEDS(true);
         hal.scheduler->delay(20);
 
         update();
         ins_gyro = get_gyro();
-
-        FLASH_LEDS(false);
-        hal.scheduler->delay(20);
     }
 
     // the strategy is to average 200 points over 1 second, then do it
@@ -181,11 +180,6 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
             update();
             ins_gyro = get_gyro();
             gyro_sum += ins_gyro;
-            if (i % 40 == 20) {
-                FLASH_LEDS(true);
-            } else if (i % 40 == 0) {
-                FLASH_LEDS(false);
-            }
             hal.scheduler->delay(5);
         }
         gyro_avg = gyro_sum / i;
@@ -200,7 +194,8 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
             // we want the average to be within 0.1 bit, which is 0.04 degrees/s
             last_average = (gyro_avg * 0.5) + (last_average * 0.5);
             _gyro_offset = last_average;
-
+            // stop flashing leds
+            AP_Notify::flags.initialising = false;
             // all done
             return;
         } else if (diff_norm < best_diff) {
@@ -209,6 +204,9 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
         }
         last_average = gyro_avg;
     }
+
+    // stop flashing leds
+    AP_Notify::flags.initialising = false;
 
     // we've kept the user waiting long enough - use the best pair we
     // found so far
@@ -219,16 +217,16 @@ AP_InertialSensor::_init_gyro(void (*flash_leds_cb)(bool on))
 
 
 void
-AP_InertialSensor::init_accel(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::init_accel()
 {
-    _init_accel(flash_leds_cb);
+    _init_accel();
 
     // save calibration
     _save_parameters();
 }
 
 void
-AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
+AP_InertialSensor::_init_accel()
 {
     int8_t flashcount = 0;
     Vector3f ins_accel;
@@ -241,6 +239,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
     hal.scheduler->delay(100);
 
     hal.console->printf_P(PSTR("Init Accel"));
+
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
 
     // clear accelerometer offsets and scaling
     _accel_offset = Vector3f(0,0,0);
@@ -273,21 +274,15 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
             accel_offset = accel_offset * 0.9 + ins_accel * 0.1;
 
             // display some output to the user
-            if(flashcount == 5) {
-                hal.console->printf_P(PSTR("*"));
-                FLASH_LEDS(true);
-            }
-
             if(flashcount >= 10) {
+                hal.console->printf_P(PSTR("*"));
                 flashcount = 0;
-                FLASH_LEDS(false);
             }
             flashcount++;
         }
 
         // null gravity from the Z accel
-        // TO-DO: replace with gravity #define form location.cpp
-        accel_offset.z += GRAVITY;
+        accel_offset.z += GRAVITY_MSS;
 
         total_change = fabsf(prev.x - accel_offset.x) + fabsf(prev.y - accel_offset.y) + fabsf(prev.z - accel_offset.z);
         max_offset = (accel_offset.x > accel_offset.y) ? accel_offset.x : accel_offset.y;
@@ -298,6 +293,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 
     // set the global accel offsets
     _accel_offset = accel_offset;
+
+    // stop flashing the leds
+    AP_Notify::flags.initialising = false;
 
     hal.console->printf_P(PSTR(" "));
 
@@ -310,10 +308,9 @@ AP_InertialSensor::_init_accel(void (*flash_leds_cb)(bool on))
 // http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
 // original sketch available at
 // http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
-bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
-                            AP_InertialSensor_UserInteract* interact,
-                            float &trim_roll,
-                            float &trim_pitch)
+bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact,
+                                        float &trim_roll,
+                                        float &trim_pitch)
 {
     Vector3f samples[6];
     Vector3f new_offsets;
@@ -364,20 +361,33 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
         // clear out any existing samples from ins
         update();
 
-        // wait until we have 32 samples
-        while( num_samples_available() < 32 * SAMPLE_UNIT ) {
+        // average 32 samples
+        samples[i] = Vector3f();
+        uint8_t num_samples = 0;
+        while (num_samples < 32) {
+            if (!wait_for_sample(1000)) {
+                interact->printf_P(PSTR("Failed to get INS sample\n"));
+                return false;
+            }
+            // read samples from ins
+            update();
+            // capture sample
+            samples[i] += get_accel();
             hal.scheduler->delay(10);
+            num_samples++;
         }
-
-        // read samples from ins
-        update();
-
-        // capture sample
-        samples[i] = get_accel();
+        samples[i] /= num_samples;
     }
 
     // run the calibration routine
-    if( _calibrate_accel(samples, new_offsets, new_scaling) ) {
+    bool success = _calibrate_accel(samples, new_offsets, new_scaling);
+
+    interact->printf_P(PSTR("Offsets: %.2f %.2f %.2f\n"),
+                       new_offsets.x, new_offsets.y, new_offsets.z);
+    interact->printf_P(PSTR("Scaling: %.2f %.2f %.2f\n"),
+                       new_scaling.x, new_scaling.y, new_scaling.z);
+
+    if (success) {
         interact->printf_P(PSTR("Calibration successful\n"));
 
         // set and save calibration
@@ -391,14 +401,18 @@ bool AP_InertialSensor::calibrate_accel(void (*flash_leds_cb)(bool on),
         return true;
     }
 
-    interact->printf_P(
-            PSTR("Calibration failed (%.1f %.1f %.1f %.1f %.1f %.1f)\n"),
-             new_offsets.x, new_offsets.y, new_offsets.z,
-             new_scaling.x, new_scaling.y, new_scaling.z);
+    interact->printf_P(PSTR("Calibration FAILED\n"));
     // restore original scaling and offsets
     _accel_offset.set(orig_offset);
     _accel_scale.set(orig_scale);
     return false;
+}
+
+/// calibrated - returns true if the accelerometers have been calibrated
+/// @note this should not be called while flying because it reads from the eeprom which can be slow
+bool AP_InertialSensor::calibrated()
+{
+    return _accel_offset.load();
 }
 
 // _calibrate_model - perform low level accel calibration
@@ -422,7 +436,7 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
 
     // reset
     beta[0] = beta[1] = beta[2] = 0;
-    beta[3] = beta[4] = beta[5] = 1.0f/GRAVITY;
+    beta[3] = beta[4] = beta[5] = 1.0f/GRAVITY_MSS;
     
     while( num_iterations < 20 && change > eps ) {
         num_iterations++;
@@ -452,9 +466,9 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
     }
 
     // copy results out
-    accel_scale.x = beta[3] * GRAVITY;
-    accel_scale.y = beta[4] * GRAVITY;
-    accel_scale.z = beta[5] * GRAVITY;
+    accel_scale.x = beta[3] * GRAVITY_MSS;
+    accel_scale.y = beta[4] * GRAVITY_MSS;
+    accel_scale.z = beta[5] * GRAVITY_MSS;
     accel_offsets.x = beta[0] * accel_scale.x;
     accel_offsets.y = beta[1] * accel_scale.y;
     accel_offsets.z = beta[2] * accel_scale.z;
@@ -463,8 +477,8 @@ bool AP_InertialSensor::_calibrate_accel( Vector3f accel_sample[6],
     if( accel_scale.is_nan() || fabsf(accel_scale.x-1.0f) > 0.1f || fabsf(accel_scale.y-1.0f) > 0.1f || fabsf(accel_scale.z-1.0f) > 0.1f ) {
         success = false;
     }
-    // sanity check offsets (2.0 is roughly 2/10th of a G, 5.0 is roughly half a G)
-    if( accel_offsets.is_nan() || fabsf(accel_offsets.x) > 2.0f || fabsf(accel_offsets.y) > 2.0f || fabsf(accel_offsets.z) > 3.0f ) {
+    // sanity check offsets (3.5 is roughly 3/10th of a G, 5.0 is roughly half a G)
+    if( accel_offsets.is_nan() || fabsf(accel_offsets.x) > 3.5f || fabsf(accel_offsets.y) > 3.5f || fabsf(accel_offsets.z) > 3.5f ) {
         success = false;
     }
 

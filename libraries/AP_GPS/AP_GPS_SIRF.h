@@ -1,17 +1,28 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //
 //  SiRF Binary GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith.
-//
-//	This library is free software; you can redistribute it and / or
-//	modify it under the terms of the GNU Lesser General Public
-//	License as published by the Free Software Foundation; either
-//	version 2.1 of the License, or (at your option) any later version.
 //
 #ifndef __AP_GPS_SIRF_H__
 #define __AP_GPS_SIRF_H__
 
 #include <AP_HAL.h>
+#include <AP_Common.h>
 #include "GPS.h"
 
 #define SIRF_SET_BINARY "$PSRF100,0,38400,8,1,0*3C"
@@ -32,8 +43,7 @@ public:
 	static bool         _detect(uint8_t data);
 
 private:
-    #pragma pack(push,1)
-    struct sirf_geonav {
+    struct PACKED sirf_geonav {
         uint16_t fix_invalid;
         uint16_t fix_type;
         uint16_t week;
@@ -70,7 +80,6 @@ private:
         uint8_t hdop;
         uint8_t mode_info;
     };
-    #pragma pack(pop)
     enum sirf_protocol_bytes {
         PREAMBLE1 = 0xa0,
         PREAMBLE2 = 0xa2,

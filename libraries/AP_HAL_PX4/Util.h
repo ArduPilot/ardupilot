@@ -7,12 +7,23 @@
 
 class PX4::PX4Util : public AP_HAL::Util {
 public:
-    int snprintf(char* str, size_t size, const char *format, ...);
-    int snprintf_P(char* str, size_t size, const prog_char_t *format, ...);
-    int vsnprintf(char* str, size_t size, const char *format, va_list ap);
-    int vsnprintf_P(char* str, size_t size, const prog_char_t *format,
-            va_list ap);
+    PX4Util(void);
     bool run_debug_shell(AP_HAL::BetterStream *stream);
+
+    enum safety_state safety_switch_state(void);
+
+    /*
+      set system clock in UTC microseconds
+     */
+    void set_system_clock(uint64_t time_utc_usec);
+
+    /*
+      get system identifier (STM32 serial number)
+     */
+    bool get_system_id(char buf[40]);
+
+private:
+    int _safety_handle;
 };
 
 #endif // __AP_HAL_PX4_UTIL_H__

@@ -26,12 +26,16 @@ public:
 
 private:
     int _pwm_fd;
+    int _alt_fd;
     uint16_t _freq_hz;
     uint16_t _period[PX4_NUM_OUTPUT_CHANNELS];
     volatile uint8_t _max_channel;
     volatile bool _need_update;
     perf_counter_t  _perf_rcout;
     uint32_t _last_output;
+    unsigned _servo_count;
+    unsigned _alt_servo_count;
+    uint32_t _rate_mask;
 };
 
 #endif // __AP_HAL_PX4_RCOUTPUT_H__
