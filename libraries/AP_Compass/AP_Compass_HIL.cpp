@@ -105,7 +105,7 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
         _hil_mag.rotate(_board_orientation);
     }
 
-    healthy = true;
+    _healthy[0] = true;
 }
 
 void AP_Compass_HIL::accumulate(void)

@@ -52,7 +52,6 @@ class Compass
 public:
     int16_t product_id;                         /// product id
     uint32_t last_update;               ///< micros() time of last update
-    bool healthy;                               ///< true if last read OK
 
     /// Constructor
     ///
@@ -103,6 +102,10 @@ public:
     const Vector3f &get_field(uint8_t i) const { return _field[i]; }
     const Vector3f &get_field(void) const { return get_field(0); }
 
+    /// Return the health of a compass
+    bool healthy(uint8_t i) const { return _healthy[i]; }
+    bool healthy(void) const { return healthy(0); }
+
     /// set the current field as a Vector3f
     void set_field(const Vector3f &field) { _field[0] = field; }
 
@@ -136,7 +139,7 @@ public:
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(void) const {
-        return healthy && _use_for_yaw;
+        return _healthy[0] && _use_for_yaw;
     }
 
     /// Sets the local magnetic field declination.
@@ -214,6 +217,7 @@ public:
     AP_Int8 _learn;                             ///<enable calibration learning
 
 protected:
+    bool _healthy[COMPASS_MAX_INSTANCES];
     Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
 
     AP_Int8 _orientation;

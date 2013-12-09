@@ -73,7 +73,7 @@ void loop()
         unsigned long read_time = hal.scheduler->micros() - timer;
         float heading;
 
-        if (!compass.healthy) {
+        if (!compass.healthy()) {
             hal.console->println("not healthy");
             return;
         }

@@ -61,7 +61,7 @@ extern const AP_HAL::HAL& hal;
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
     if (hal.i2c->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
-        healthy = false;
+        _healthy[0] = false;
         return false;
     }
     return true;
@@ -71,7 +71,7 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
     if (hal.i2c->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
-        healthy = false;
+        _healthy[0] = false;
         return false;
     }
     return true;
@@ -83,10 +83,10 @@ bool AP_Compass_HMC5843::read_raw()
     uint8_t buff[6];
 
     if (hal.i2c->readRegisters(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
-        if (healthy) {
+        if (_healthy[0]) {
 			hal.i2c->setHighSpeed(false);
         }
-        healthy = false;
+        _healthy[0] = false;
         _i2c_sem->give();
         return false;
     }
@@ -123,7 +123,7 @@ void AP_Compass_HMC5843::accumulate(void)
         return;
     }
    uint32_t tnow = hal.scheduler->micros();
-   if (healthy && _accum_count != 0 && (tnow - _last_accum_time) < 13333) {
+   if (_healthy[0] && _accum_count != 0 && (tnow - _last_accum_time) < 13333) {
 	  // the compass gets new data at 75Hz
 	  return;
    }
@@ -191,7 +191,7 @@ AP_Compass_HMC5843::init()
     _base_config = 0;
     if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
         !read_register(ConfigRegA, &_base_config)) {
-        healthy = false;
+        _healthy[0] = false;
         _i2c_sem->give();
         return false;
     }
@@ -280,7 +280,7 @@ AP_Compass_HMC5843::init()
     _initialised = true;
 
 	// perform an initial read
-	healthy = true;
+	_healthy[0] = true;
 	read();
 
     return success;
@@ -295,7 +295,7 @@ bool AP_Compass_HMC5843::read()
         // have the right orientation!)
         return false;
     }
-    if (!healthy) {
+    if (!_healthy[0]) {
         if (hal.scheduler->millis() < _retry_time) {
             return false;
         }
@@ -308,7 +308,7 @@ bool AP_Compass_HMC5843::read()
 
 	if (_accum_count == 0) {
 	   accumulate();
-	   if (!healthy || _accum_count == 0) {
+	   if (!_healthy[0] || _accum_count == 0) {
 		  // try again in 1 second, and set I2c clock speed slower
 		  _retry_time = hal.scheduler->millis() + 1000;
 		  hal.i2c->setHighSpeed(false);
@@ -353,7 +353,7 @@ bool AP_Compass_HMC5843::read()
         _motor_offset.z = 0;
     }
 
-    healthy = true;
+    _healthy[0] = true;
 
     return true;
 }

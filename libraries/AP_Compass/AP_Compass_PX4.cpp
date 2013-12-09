@@ -89,14 +89,8 @@ bool AP_Compass_PX4::read(void)
     accumulate();
 
     // consider the compass healthy if we got a reading in the last 0.2s
-    healthy = (hrt_absolute_time() - _last_timestamp[0] < 200000);
-    if (!healthy || _count[0] == 0) {
-        if (was_healthy) {
-            hal.console->printf("Compass unhealthy deltat=%u _count=%u\n",
-                                (unsigned)(hrt_absolute_time() - _last_timestamp[0]),
-                                (unsigned)_count[0]);
-        }
-        return healthy;
+    for (uint8_t i=0; i<_num_instances; i++) {
+        _healthy[i] = (hrt_absolute_time() - _last_timestamp[i] < 200000);
     }
 
     for (uint8_t i=0; i<_num_instances; i++) {
@@ -136,7 +130,7 @@ bool AP_Compass_PX4::read(void)
 
     last_update = _last_timestamp[0];
     
-    return true;
+    return _healthy[0];
 }
 
 void AP_Compass_PX4::accumulate(void)
