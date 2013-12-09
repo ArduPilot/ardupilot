@@ -192,10 +192,10 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
-    float headY = _field.y * dcm_matrix.c.z - _field.z * dcm_matrix.c.y;
+    float headY = _field[0].y * dcm_matrix.c.z - _field[0].z * dcm_matrix.c.y;
 
     // Tilt compensated magnetic field X component:
-    float headX = _field.x * cos_pitch_sq - dcm_matrix.c.x * (_field.y * dcm_matrix.c.y + _field.z * dcm_matrix.c.z);
+    float headX = _field[0].x * cos_pitch_sq - dcm_matrix.c.x * (_field[0].y * dcm_matrix.c.y + _field[0].z * dcm_matrix.c.z);
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
@@ -258,7 +258,7 @@ Compass::null_offsets(void)
         for (uint8_t i=0; i<_mag_history_size; i++) {
             // fill the history buffer with the current mag vector,
             // with the offset removed
-            _mag_history[i] = Vector3i((_field.x+0.5f) - ofs.x, (_field.y+0.5f) - ofs.y, (_field.z+0.5f) - ofs.z);
+            _mag_history[i] = Vector3i((_field[0].x+0.5f) - ofs.x, (_field[0].y+0.5f) - ofs.y, (_field[0].z+0.5f) - ofs.z);
         }
         _mag_history_index = 0;
         return;
@@ -275,7 +275,7 @@ Compass::null_offsets(void)
     b1 += ofs;
 
     // get the current vector
-    b2 = Vector3f(_field.x, _field.y, _field.z);
+    b2 = Vector3f(_field[0].x, _field[0].y, _field[0].z);
 
     // calculate the delta for this sample
     diff = b2 - b1;
@@ -293,7 +293,7 @@ Compass::null_offsets(void)
     }
 
     // put the vector in the history
-    _mag_history[_mag_history_index] = Vector3i((_field.x+0.5f) - ofs.x, (_field.y+0.5f) - ofs.y, (_field.z+0.5f) - ofs.z);
+    _mag_history[_mag_history_index] = Vector3i((_field[0].x+0.5f) - ofs.x, (_field[0].y+0.5f) - ofs.y, (_field[0].z+0.5f) - ofs.z);
     _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
 
     // equation 6 of Bills paper

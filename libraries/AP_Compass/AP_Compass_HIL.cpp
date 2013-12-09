@@ -63,7 +63,7 @@ bool AP_Compass_HIL::read()
     }
 
     // return last values provided by setHIL function
-    _field = _hil_mag + ofs + _motor_offset;
+    _field[0] = _hil_mag + ofs + _motor_offset;
 
     // values set by setHIL function
     last_update = hal.scheduler->micros();      // record time of update

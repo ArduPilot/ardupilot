@@ -37,6 +37,16 @@
 # error "You must define a default compass orientation for this board"
 #endif
 
+/**
+   maximum number of compass instances available on this platform. If more
+   than 1 then redundent sensors may be available
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#define COMPASS_MAX_INSTANCES 2
+#else
+#define COMPASS_MAX_INSTANCES 1
+#endif
+
 class Compass
 {
 public:
@@ -86,11 +96,15 @@ public:
     ///
     void save_offsets();
 
+    // return the number of compass instances
+    virtual uint8_t get_count(void) const { return 1; }
+
     /// Return the current field as a Vector3f
-    const Vector3f &get_field(void) const { return _field; }
+    const Vector3f &get_field(uint8_t i) const { return _field[i]; }
+    const Vector3f &get_field(void) const { return get_field(0); }
 
     /// set the current field as a Vector3f
-    void set_field(const Vector3f &field) { _field = field; }
+    void set_field(const Vector3f &field) { _field[0] = field; }
 
     /// Returns the current offset values
     ///
@@ -199,7 +213,7 @@ public:
     AP_Int8 _learn;                             ///<enable calibration learning
 
 protected:
-    Vector3f _field;                            ///< magnetic field strength
+    Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
 
     AP_Int8 _orientation;
     AP_Vector3f _offset;

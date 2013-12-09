@@ -316,47 +316,43 @@ bool AP_Compass_HMC5843::read()
 	   }
 	}
 
-	_field.x = _mag_x_accum * calibration[0] / _accum_count;
-	_field.y = _mag_y_accum * calibration[1] / _accum_count;
-	_field.z = _mag_z_accum * calibration[2] / _accum_count;
+	_field[0].x = _mag_x_accum * calibration[0] / _accum_count;
+	_field[0].y = _mag_y_accum * calibration[1] / _accum_count;
+	_field[0].z = _mag_z_accum * calibration[2] / _accum_count;
 	_accum_count = 0;
 	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
     last_update = hal.scheduler->micros(); // record time of update
 
     // rotate to the desired orientation
-    Vector3f rot_mag = Vector3f(_field.x,_field.y,_field.z);
     if (product_id == AP_COMPASS_TYPE_HMC5883L) {
-        rot_mag.rotate(ROTATION_YAW_90);
+        _field[0].rotate(ROTATION_YAW_90);
     }
 
     // apply default board orientation for this compass type. This is
     // a noop on most boards
-    rot_mag.rotate(MAG_BOARD_ORIENTATION);
+    _field[0].rotate(MAG_BOARD_ORIENTATION);
 
     // add user selectable orientation
-    rot_mag.rotate((enum Rotation)_orientation.get());
+    _field[0].rotate((enum Rotation)_orientation.get());
 
     if (!_external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
-        rot_mag.rotate(_board_orientation);
+        _field[0].rotate(_board_orientation);
     }
 
-    rot_mag += _offset.get();
+    _field[0] += _offset.get();
 
     // apply motor compensation
     if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
         _motor_offset = _motor_compensation.get() * _thr_or_curr;
-        rot_mag += _motor_offset;
+        _field[0] += _motor_offset;
     }else{
         _motor_offset.x = 0;
         _motor_offset.y = 0;
         _motor_offset.z = 0;
     }
 
-    _field.x = rot_mag.x;
-    _field.y = rot_mag.y;
-    _field.z = rot_mag.z;
     healthy = true;
 
     return true;
