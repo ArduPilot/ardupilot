@@ -69,9 +69,8 @@ bool AP_Compass_PX4::init(void)
         }
         _count[0] = 0;
         _sum[i].zero();
+        _healthy[i] = false;
     }
-
-    healthy = false;
 
     // give the driver a chance to run, and gather one sample
     hal.scheduler->delay(40);
@@ -84,7 +83,6 @@ bool AP_Compass_PX4::init(void)
 
 bool AP_Compass_PX4::read(void)
 {
-    bool was_healthy = healthy;
     // try to accumulate one more sample, so we have the latest data
     accumulate();
 
