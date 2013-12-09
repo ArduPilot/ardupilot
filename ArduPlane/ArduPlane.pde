@@ -734,7 +734,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { barometer_accumulate,   1,    900 },
     { update_notify,          1,    300 },
     { read_sonars,            1,    500 },
-    { one_second_loop,       50,   3900 },
+    { one_second_loop,       50,   1000 },
+    { log_perf_info,        500,   1000 },
+    { compass_save,        3000,   2500 },
     { check_long_failsafe,   15,   1000 },
     { airspeed_ratio_update, 50,   1000 },
     { update_logging,         5,   1200 },
@@ -968,25 +970,23 @@ static void one_second_loop()
     mavlink_system.sysid = g.sysid_this_mav;
 
     update_aux();
+}
 
-    static uint8_t counter;
-    counter++;
-
-    if (counter % 10 == 0) {
-        if (scheduler.debug() != 0) {
-            hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
-        }
-        if (g.log_bitmask & MASK_LOG_PM)
-            Log_Write_Performance();
-        G_Dt_max = 0;
-        resetPerfData();
+static void log_perf_info()
+{
+    if (scheduler.debug() != 0) {
+        hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
     }
+    if (g.log_bitmask & MASK_LOG_PM)
+        Log_Write_Performance();
+    G_Dt_max = 0;
+    resetPerfData();
+}
 
-    if (counter >= 60) {                                               
-        if(g.compass_enabled) {
-            compass.save_offsets();
-        }
-        counter = 0;
+static void compass_save()
+{
+    if (g.compass_enabled) {
+        compass.save_offsets();
     }
 }
 
