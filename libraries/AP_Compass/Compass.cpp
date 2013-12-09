@@ -22,7 +22,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
-    AP_GROUPINFO("OFS",    1, Compass, _offset, 0),
+    AP_GROUPINFO("OFS",    1, Compass, _offset[0], 0),
 
     // @Param: DEC
     // @DisplayName: Compass declination
@@ -98,6 +98,10 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _external, 0),
 
+#if COMPASS_MAX_INSTANCES > 1
+    AP_GROUPINFO("OFS2",    10, Compass, _offset[1], 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -123,19 +127,15 @@ Compass::init()
 void
 Compass::set_offsets(const Vector3f &offsets)
 {
-    _offset.set(offsets);
+    _offset[0].set(offsets);
 }
 
 void
 Compass::save_offsets()
 {
-    _offset.save();
-}
-
-const Vector3f &
-Compass::get_offsets() const
-{
-    return _offset;
+    for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
+        _offset[k].save();
+    }
 }
 
 void
@@ -248,65 +248,71 @@ Compass::null_offsets(void)
     const float gain = 0.01;
     const float max_change = 10.0;
     const float min_diff = 50.0;
-    Vector3f ofs;
-
-    ofs = _offset.get();
 
     if (!_null_init_done) {
         // first time through
         _null_init_done = true;
-        for (uint8_t i=0; i<_mag_history_size; i++) {
-            // fill the history buffer with the current mag vector,
-            // with the offset removed
-            _mag_history[i] = Vector3i((_field[0].x+0.5f) - ofs.x, (_field[0].y+0.5f) - ofs.y, (_field[0].z+0.5f) - ofs.z);
+        for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
+            const Vector3f &ofs = _offset[k].get();
+            for (uint8_t i=0; i<_mag_history_size; i++) {
+                // fill the history buffer with the current mag vector,
+                // with the offset removed
+                _mag_history[k][i] = Vector3i((_field[k].x+0.5f) - ofs.x, (_field[k].y+0.5f) - ofs.y, (_field[k].z+0.5f) - ofs.z);
+            }
+            _mag_history_index[k] = 0;
         }
-        _mag_history_index = 0;
         return;
     }
 
-    Vector3f b1, b2, diff;
-    float length;
+    for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
+        const Vector3f &ofs = _offset[k].get();
+        Vector3f b1, diff;
+        float length;
 
-    // get a past element
-    b1 = Vector3f(_mag_history[_mag_history_index].x,
-                  _mag_history[_mag_history_index].y,
-                  _mag_history[_mag_history_index].z);
-    // the history buffer doesn't have the offsets
-    b1 += ofs;
+        // get a past element
+        b1 = Vector3f(_mag_history[k][_mag_history_index[k]].x,
+                      _mag_history[k][_mag_history_index[k]].y,
+                      _mag_history[k][_mag_history_index[k]].z);
 
-    // get the current vector
-    b2 = Vector3f(_field[0].x, _field[0].y, _field[0].z);
+        // the history buffer doesn't have the offsets
+        b1 += ofs;
 
-    // calculate the delta for this sample
-    diff = b2 - b1;
-    length = diff.length();
-    if (length < min_diff) {
-        // the mag vector hasn't changed enough - we don't get
-        // enough information from this vector to use it.
-        // Note that we don't put the current vector into the mag
-        // history here. We want to wait for a larger rotation to
-        // build up before calculating an offset change, as accuracy
-        // of the offset change is highly dependent on the size of the
-        // rotation.
-        _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
-        return;
+        // get the current vector
+        const Vector3f &b2 = _field[k];
+
+        // calculate the delta for this sample
+        diff = b2 - b1;
+        length = diff.length();
+        if (length < min_diff) {
+            // the mag vector hasn't changed enough - we don't get
+            // enough information from this vector to use it.
+            // Note that we don't put the current vector into the mag
+            // history here. We want to wait for a larger rotation to
+            // build up before calculating an offset change, as accuracy
+            // of the offset change is highly dependent on the size of the
+            // rotation.
+            _mag_history_index[k] = (_mag_history_index[k] + 1) % _mag_history_size;
+            continue;
+        }
+
+        // put the vector in the history
+        _mag_history[k][_mag_history_index[k]] = Vector3i((_field[k].x+0.5f) - ofs.x, 
+                                                          (_field[k].y+0.5f) - ofs.y, 
+                                                          (_field[k].z+0.5f) - ofs.z);
+        _mag_history_index[k] = (_mag_history_index[k] + 1) % _mag_history_size;
+
+        // equation 6 of Bills paper
+        diff = diff * (gain * (b2.length() - b1.length()) / length);
+
+        // limit the change from any one reading. This is to prevent
+        // single crazy readings from throwing off the offsets for a long
+        // time
+        length = diff.length();
+        if (length > max_change) {
+            diff *= max_change / length;
+        }
+
+        // set the new offsets
+        _offset[k].set(_offset[k].get() - diff);
     }
-
-    // put the vector in the history
-    _mag_history[_mag_history_index] = Vector3i((_field[0].x+0.5f) - ofs.x, (_field[0].y+0.5f) - ofs.y, (_field[0].z+0.5f) - ofs.z);
-    _mag_history_index = (_mag_history_index + 1) % _mag_history_size;
-
-    // equation 6 of Bills paper
-    diff = diff * (gain * (b2.length() - b1.length()) / length);
-
-    // limit the change from any one reading. This is to prevent
-    // single crazy readings from throwing off the offsets for a long
-    // time
-    length = diff.length();
-    if (length > max_change) {
-        diff *= max_change / length;
-    }
-
-    // set the new offsets
-    _offset.set(_offset.get() - diff);
 }

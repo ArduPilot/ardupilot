@@ -341,7 +341,7 @@ bool AP_Compass_HMC5843::read()
         _field[0].rotate(_board_orientation);
     }
 
-    _field[0] += _offset.get();
+    _field[0] += _offset[0].get();
 
     // apply motor compensation
     if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {

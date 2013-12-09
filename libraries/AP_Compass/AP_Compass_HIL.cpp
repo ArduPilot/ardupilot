@@ -51,7 +51,7 @@ void AP_Compass_HIL::_setup_earth_field(void)
 bool AP_Compass_HIL::read()
 {
     // get offsets
-    Vector3f ofs = _offset.get();
+    Vector3f ofs = _offset[0].get();
 
     // apply motor compensation
     if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {

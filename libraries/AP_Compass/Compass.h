@@ -110,7 +110,8 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_offsets() const;
+    const Vector3f &get_offsets(uint8_t i) const { return _offset[i]; }
+    const Vector3f &get_offsets(void) const { return get_offsets(0); }
 
     /// Sets the initial location used to get declination
     ///
@@ -216,7 +217,7 @@ protected:
     Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
 
     AP_Int8 _orientation;
-    AP_Vector3f _offset;
+    AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
     AP_Float _declination;
     AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
     AP_Int8 _auto_declination;                  ///<enable automatic declination code
@@ -226,8 +227,8 @@ protected:
 
     ///< used by offset correction
     static const uint8_t _mag_history_size = 20;
-    uint8_t _mag_history_index;
-    Vector3i _mag_history[_mag_history_size];
+    uint8_t _mag_history_index[COMPASS_MAX_INSTANCES];
+    Vector3i _mag_history[COMPASS_MAX_INSTANCES][_mag_history_size];
 
     // motor compensation
     AP_Int8     _motor_comp_type;               // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
