@@ -123,6 +123,7 @@ bool AP_InertialSensor_PX4::get_accel_health(uint8_t k) const
     return true;
     
 }
+
 uint8_t AP_InertialSensor_PX4::get_accel_count(void) const
 {
     return _num_accel_instances;
@@ -230,6 +231,22 @@ bool AP_InertialSensor_PX4::wait_for_sample(uint16_t timeout_ms)
 bool AP_InertialSensor_PX4::healthy(void) const
 {
     return get_gyro_health(0) && get_accel_health(0);
+}
+
+uint8_t AP_InertialSensor_PX4::_get_primary_gyro(void) const 
+{
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (get_gyro_health(i)) return i;
+    }    
+    return 0;
+}
+
+uint8_t AP_InertialSensor_PX4::_get_primary_accel(void) const 
+{
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (get_accel_health(i)) return i;
+    }    
+    return 0;
 }
 
 #endif // CONFIG_HAL_BOARD

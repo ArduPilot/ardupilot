@@ -94,35 +94,37 @@ public:
     /// @returns	vector of rotational rates in radians/sec
     ///
     const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
-    const Vector3f     &get_gyro(void) const { return get_gyro(0); }
+    const Vector3f     &get_gyro(void) const { return get_gyro(_get_primary_gyro()); }
     virtual void       set_gyro(const Vector3f &gyro) {}
 
     // set gyro offsets in radians/sec
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
-    const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(0); }
+    const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_get_primary_gyro()); }
 
     /// Fetch the current accelerometer values
     ///
     /// @returns	vector of current accelerations in m/s/s
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
-    const Vector3f     &get_accel(void) const { return get_accel(0); }
+    const Vector3f     &get_accel(void) const { return get_accel(_get_primary_accel()); }
     virtual void       set_accel(const Vector3f &accel) {}
 
     // multi-device interface
     virtual bool get_gyro_health(uint8_t instance) const;
+    bool get_gyro_health(void) const { return get_gyro_health(_get_primary_gyro()); }
     virtual uint8_t get_gyro_count(void) const { return 1; };
 
     virtual bool get_accel_health(uint8_t instance) const;
+    bool get_accel_health(void) const { return get_accel_health(_get_primary_accel()); }
     virtual uint8_t get_accel_count(void) const { return 1; };
 
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
-    const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(0); }
+    const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_get_primary_accel()); }
 
     // get accel scale
     const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale[i]; }
-    const Vector3f &get_accel_scale(void) const { return get_accel_scale(0); }
+    const Vector3f &get_accel_scale(void) const { return get_accel_scale(_get_primary_accel()); }
 
     /* Update the sensor data, so that getters are nonblocking.
      * Returns a bool of whether data was updated or not.
@@ -157,9 +159,12 @@ public:
     }
 
     virtual uint16_t error_count(void) const { return 0; }
-    virtual bool healthy(void) const { return true; }
+    virtual bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
 protected:
+
+    virtual uint8_t _get_primary_gyro(void) const { return 0; }
+    virtual uint8_t _get_primary_accel(void) const { return 0; }
 
     // sensor specific init to be overwritten by descendant classes
     virtual uint16_t        _init_sensor( Sample_rate sample_rate ) = 0;
