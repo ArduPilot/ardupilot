@@ -726,21 +726,21 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
-    { update_mount,           1,   1500 },
-    { update_events,		 15,   1500 }, // 20
-    { check_usb_mux,          5,    300 },
+    { update_events,		 15,   1500 },
+    { check_usb_mux,          5,    300 }, // 20
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 },
     { update_notify,          1,    300 },
     { read_sonars,            1,    500 },
     { one_second_loop,       50,   1000 },
+    { check_long_failsafe,   15,   1000 },
+    { read_receiver_rssi,     5,   1000 },
+    { airspeed_ratio_update, 50,   1000 },
+    { update_mount,           1,   1500 }, // 30
     { log_perf_info,        500,   1000 },
     { compass_save,        3000,   2500 },
-    { check_long_failsafe,   15,   1000 },
-    { airspeed_ratio_update, 50,   1000 },
     { update_logging,         5,   1200 },
-    { read_receiver_rssi,     5,   1000 },
 };
 
 // setup the var_info table
