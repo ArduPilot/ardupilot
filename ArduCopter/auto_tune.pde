@@ -33,9 +33,9 @@
 #define AUTO_TUNE_SP_BACKOFF               0.75f    // back off on the Stab P tune
 #define AUTO_TUNE_PI_RATIO_FOR_TESTING      0.1f    // I is set 10x smaller than P during testing
 #define AUTO_TUNE_RP_RATIO_FINAL            1.0f    // I is set 1x P after testing
-#define AUTO_TUNE_RD_MIN                  0.004f    // minimum Rate D value
+#define AUTO_TUNE_RD_MIN                  0.002f    // minimum Rate D value
 #define AUTO_TUNE_RD_MAX                  0.015f    // maximum Rate D value
-#define AUTO_TUNE_RP_MIN                   0.02f    // minimum Rate P value
+#define AUTO_TUNE_RP_MIN                   0.01f    // minimum Rate P value
 #define AUTO_TUNE_RP_MAX                   0.25f    // maximum Rate P value
 #define AUTO_TUNE_SP_MAX                   15.0f    // maximum Stab P value
 #define AUTO_TUNE_SUCCESS_COUNT                4    // how many successful iterations we need to freeze at current gains
