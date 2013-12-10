@@ -85,7 +85,7 @@ public:
 
     // return true if airspeed is enabled, and airspeed use is set
     bool        use(void) const {
-        return _enable && _use && _offset != 0 && _healthy;
+        return _enable && _use && _offset > 0 && _healthy;
     }
 
     // return true if airspeed is enabled
