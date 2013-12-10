@@ -123,7 +123,7 @@ public:
     }
 
     /// set_althold_kP - pass in alt hold controller's P gain
-    void set_althold_kP(float kP) { if(kP>0.0) _althold_kP = kP; }
+    void set_althold_kP(float kP) { if(kP>0.0f) _althold_kP = kP; }
 
     /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
     void set_horizontal_velocity(float velocity_cms) { _wp_speed_cms = velocity_cms; };
