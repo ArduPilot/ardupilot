@@ -379,11 +379,12 @@ public:
     RC_Channel_aux          rc_6;
     RC_Channel_aux          rc_7;
     RC_Channel_aux          rc_8;
-    RC_Channel_aux          rc_10;
-    RC_Channel_aux          rc_11;
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux          rc_9;
+#endif
+    RC_Channel_aux          rc_10;
+    RC_Channel_aux          rc_11;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     RC_Channel_aux          rc_12;
 #endif
 

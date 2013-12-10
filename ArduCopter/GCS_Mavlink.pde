@@ -1105,7 +1105,8 @@ GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
-    struct Location tell_command = {};                                  // command for telemetry
+    struct Location tell_command;
+    memset(&tell_command, 0, sizeof(tell_command));
 
     switch (msg->msgid) {
 
