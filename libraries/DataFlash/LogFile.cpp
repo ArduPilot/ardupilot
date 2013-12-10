@@ -688,8 +688,8 @@ void DataFlash_Class::Log_Write_RCOUT(void)
 void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 {
     uint32_t tstamp = hal.scheduler->millis();
-    const Vector3f &gyro = ins.get_gyro();
-    const Vector3f &accel = ins.get_accel();
+    const Vector3f &gyro = ins.get_gyro(0);
+    const Vector3f &accel = ins.get_accel(0);
     struct log_IMU pkt = {
         LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
         timestamp : tstamp,
@@ -704,8 +704,8 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
         return;
     }
-    const Vector3f &gyro2 = ins.get_gyro();
-    const Vector3f &accel2 = ins.get_accel();
+    const Vector3f &gyro2 = ins.get_gyro(1);
+    const Vector3f &accel2 = ins.get_accel(1);
     struct log_IMU pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_IMU2_MSG),
         timestamp : tstamp,
