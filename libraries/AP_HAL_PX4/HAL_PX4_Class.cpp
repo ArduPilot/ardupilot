@@ -131,7 +131,6 @@ static int main_loop(int argc, char **argv)
 
     perf_counter_t perf_loop = perf_alloc(PC_ELAPSED, "APM_loop");
     perf_counter_t perf_overrun = perf_alloc(PC_COUNT, "APM_overrun");
-    struct hrt_call loop_call;
     struct hrt_call loop_overtime_call;
 
     thread_running = true;
