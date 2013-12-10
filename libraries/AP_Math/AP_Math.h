@@ -19,8 +19,11 @@
 #include "quaternion.h"
 #include "polygon.h"
 
+#ifndef M_PI_F
+ #define M_PI_F 3.141592653589793f
+#endif
 #ifndef PI
- # define PI 3.141592653589793f
+ # define PI M_PI_F
 #endif
 #ifndef M_PI_2
  # define M_PI_2 1.570796326794897f
