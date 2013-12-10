@@ -15,18 +15,18 @@
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
- #define EPM_PIN_1   61    // On pin - AN7
- #define EPM_PIN_2	 62    // Off pin - AN8
+    #define EPM_PIN_1   61    // On pin - AN7
+    #define EPM_PIN_2	 62    // Off pin - AN8
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
- #define EPM_PIN_1   -1    // to be determine 
- #define EPM_PIN_2	 -1    // to be determine
+    #define EPM_PIN_1   -1    // to be determine 
+    #define EPM_PIN_2	 -1    // to be determine
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
- #define EPM_PIN_1   -1    // to be determine 
- #define EPM_PIN_2	 -1    // to be determine
+    #define EPM_PIN_1   -1    // to be determine 
+    #define EPM_PIN_2	 -1    // to be determine
 #else
- #define EPM_PIN_1   -1    // not supported
- #define EPM_PIN_2	 -1    // not supported
- #endif
+    #define EPM_PIN_1   -1    // not supported
+    #define EPM_PIN_2	 -1    // not supported
+#endif
 
 
 
@@ -46,7 +46,7 @@ public:
     void        off();
 	
 	// do nothing
-	void		neutral();
+    void        neutral();
 
 };
 

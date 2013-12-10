@@ -69,8 +69,9 @@ public:
 
 		// EPM object
 		//
+        #if CONFIG_EPM == ENABLED
 		k_param_EPM_Enable,
-		
+		#endif
         // Misc
         //
         k_param_log_bitmask = 20,
@@ -321,8 +322,9 @@ public:
 		
 	// EPM
 	// 
+    #if CONFIG_EPM == ENABLED
 	AP_Int8 		EPM_Enable;
-    
+    #endif
 	
 	// Waypoints
     //
