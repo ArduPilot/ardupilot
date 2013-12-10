@@ -164,6 +164,7 @@ enum log_messages {
     LOG_TECS_MSG,
     LOG_RC_MSG,
     LOG_SONAR_MSG,
+    LOG_COMPASS2_MSG,
     MAX_NUM_LOGS // always at the end
 };
 
