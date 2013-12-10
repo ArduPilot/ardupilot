@@ -293,6 +293,7 @@ enum ap_message {
 #define LOG_DATA_FLOAT_MSG              0x18
 #define LOG_AUTOTUNE_MSG                0x19
 #define LOG_AUTOTUNEDETAILS_MSG         0x1A
+#define LOG_COMPASS2_MSG                0x1B
 #define LOG_INDEX_MSG                   0xF0
 #define MAX_NUM_LOGS                    50
 
