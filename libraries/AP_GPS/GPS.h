@@ -127,11 +127,11 @@ public:
     // last ground speed in m/s. This can be used when we have no GPS
     // lock to return the last ground speed we had with lock
     float last_ground_speed(void) {
-        return static_cast<float>(_last_ground_speed_cm) * 0.01;
+        return static_cast<float>(_last_ground_speed_cm) * 0.01f;
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
-    virtual float get_lag() { return 1.0; }
+    virtual float get_lag() { return 1.0f; }
 
     // the time we got our last fix in system milliseconds
     uint32_t last_fix_time;
