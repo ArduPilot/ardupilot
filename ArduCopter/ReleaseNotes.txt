@@ -1,5 +1,15 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1-rc8 9-Dec-2013
+Changes from 3.1-rc7
+1) add Y6 motor mapping with all top props CW, bottom pros CCW (set FRAME = 10)
+2) Safety Changes:
+    a) ignore yaw input during radio failsafe (previously the copter could return home spinning if yaw was full over at time of failsafe)
+    b) Reduce GPSGLITCH_RADIUS to 2m (was 5m) to catch glitches faster
+3) Bug fixes:
+    a) Optical flow SPI bus rates
+    b) TradHeli main rotor ramp up speed fix
+------------------------------------------------------------------
 ArduCopter 3.1-rc7 22-Nov-2013
 Changes from 3.1-rc6
 1) MOT_SPIN_ARMED default to 70
