@@ -129,6 +129,9 @@
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
 #include <AP_BattMonitor.h>     // Battery monitor library
+#if CONFIG_EPM == ENABLED
+#include <AP_EPM.h>				// EPM cargo gripper stuff
+#endif
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -175,12 +178,12 @@ static AP_Scheduler scheduler;
 static AP_Notify notify;
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 ////////////////////////////////////////////////////////////////////////////////
 static void update_events(void);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
@@ -830,6 +833,12 @@ static AC_Sprayer sprayer(&inertial_nav);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// EPM Cargo Griper
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_EPM == ENABLED
+static AP_EPM EPM;
+#endif
+////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
 void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate);
@@ -911,6 +920,13 @@ void setup() {
 
     // initialise battery monitor
     battery.init();
+	
+    // init EPM
+    #if CONFIG_EPM == ENABLED
+    EPM.init();
+    #endif
+	
+	
 
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
@@ -1006,6 +1022,15 @@ void loop()
 // Main loop - 100hz
 static void fast_loop()
 {
+    
+    // not very pretty
+    #if CONFIG_EPM == ENABLED
+    if(g.EPM_Enable)
+        AP_Notify::flags.external_leds = false;
+	if(!g.EPM_Enable)
+        AP_Notify::flags.external_leds = true;
+    #endif
+   
     // IMU DCM Algorithm
     // --------------------
     read_AHRS();
@@ -1177,7 +1202,7 @@ static void three_hz_loop()
 #if SPRAYER == ENABLED
     sprayer.update();
 #endif
-
+    
     update_events();
 
     if(g.radio_tuning > 0)
@@ -1235,6 +1260,8 @@ static void one_hz_loop()
 #endif
 
     check_usb_mux();
+	
+	
 }
 
 // called at 100hz but data from sensor only arrives at 20 Hz
@@ -1243,7 +1270,7 @@ static void update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
     static uint8_t of_log_counter = 0;
-
+	
     // if new data has arrived, process it
     if( optflow.last_update != last_of_update ) {
         last_of_update = optflow.last_update;
@@ -2217,6 +2244,7 @@ static void tuning(){
         // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
         wp_nav.set_horizontal_velocity(g.rc_6.control_in);
         break;
+	
 
     // Acro roll pitch gain
     case CH6_ACRO_RP_KP:
@@ -2232,7 +2260,8 @@ static void tuning(){
         if (g.rc_6.control_in > 525) relay.on();
         if (g.rc_6.control_in < 475) relay.off();
         break;
-
+		
+		
 #if FRAME_CONFIG == HELI_FRAME
     case CH6_HELI_EXTERNAL_GYRO:
         motors.ext_gyro_gain(g.rc_6.control_in);

@@ -72,7 +72,7 @@
 #define AUX_SWITCH_AUTO             16      // change to auto flight mode
 #define AUX_SWITCH_AUTOTUNE         17      // auto tune
 #define AUX_SWITCH_LAND             18      // change to LAND flight mode
-
+#define AUX_SWITCH_EPM              19      // Operate the EPM cargo gripper low=off, middle=neutral, high=on
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
 #define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
@@ -185,7 +185,6 @@
 #define CH6_DECLINATION                 38  // compass declination in radians
 #define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
 #define CH6_SONAR_GAIN                  41  // sonar gain
-
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
 #define ACRO_TRAINER_LEVELING   1
@@ -351,6 +350,9 @@ enum ap_message {
 #define DATA_ACRO_TRAINER_DISABLED      43
 #define DATA_ACRO_TRAINER_LEVELING      44
 #define DATA_ACRO_TRAINER_LIMITED       45
+#define DATA_EPM_ON                     46
+#define DATA_EPM_OFF                    47
+#define DATA_EPM_NEUTRAL                48
 
 // RADIANS
 #define RADX100 0.000174532925f

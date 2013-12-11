@@ -67,6 +67,11 @@ public:
         // relay object
         k_param_relay,
 
+		// EPM object
+		//
+        #if CONFIG_EPM == ENABLED
+		k_param_EPM_Enable,
+		#endif
         // Misc
         //
         k_param_log_bitmask = 20,
@@ -314,7 +319,14 @@ public:
     AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees
     AP_Int32        angle_rate_max;             // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 
-    // Waypoints
+		
+	// EPM
+	// 
+    #if CONFIG_EPM == ENABLED
+	AP_Int8 		EPM_Enable;
+    #endif
+	
+	// Waypoints
     //
     AP_Int8         command_total;
     AP_Int8         command_index;

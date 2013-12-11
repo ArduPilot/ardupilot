@@ -394,14 +394,24 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function if performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land
+    #if CONFIG_EPM == ENABLED
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM
+    #endif
+    #if CONFIG_EPM == DISABLED
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land 
+    #endif
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  CH7_OPTION),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function if performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land
+    #if CONFIG_EPM == ENABLED
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land, 19:EPM
+    #endif
+    #if CONFIG_EPM == DISABLED
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 8:Multi Mode, 9:Camera Trigger, 10:Sonar, 11:Fence, 12:ResetToArmedYaw, 13:Super Simple Mode, 14:Acro Trainer, 16:Auto, 17:AutoTune, 18:Land 
+    #endif
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  CH8_OPTION),
 
@@ -426,6 +436,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(angle_rate_max, "ANGLE_RATE_MAX",  ANGLE_RATE_MAX),
 
+    #if CONFIG_EPM == ENABLED
+	// @Param: EPM_Enable
+    // @DisplayName: Enable the EPM
+    // @Description: This will allow the EPM to be controlled from CH6 if you set TUNE to EPM ON/OFF (will disable external LEDs)
+    // @Range: 0 1
+    // @User: Standard
+    GSCALAR(EPM_Enable, "EPM_Enable", EPM_Enable_DEFAULT),
+    #endif
+	
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
