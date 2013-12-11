@@ -65,8 +65,10 @@ void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
     if (filter_hz == 0) {
         filter_hz = _default_filter_hz;
     }
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
         ioctl(_gyro_fd[i],  GYROIOCSLOWPASS,  filter_hz);
+    }
+    for (uint8_t i=0; i<_num_accel_instances; i++) {
         ioctl(_accel_fd[i], ACCELIOCSLOWPASS, filter_hz);
     }
 }
@@ -178,7 +180,7 @@ float AP_InertialSensor_PX4::get_gyro_drift_rate(void)
 
 void AP_InertialSensor_PX4::_get_sample(void)
 {
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<_num_accel_instances; i++) {
         struct accel_report	accel_report;
         while (_accel_fd[i] != -1 && 
                ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) &&
@@ -187,7 +189,7 @@ void AP_InertialSensor_PX4::_get_sample(void)
             _last_accel_timestamp[i] = accel_report.timestamp;
         }
     }
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
         struct gyro_report	gyro_report;
         while (_gyro_fd[i] != -1 && 
                ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) &&
