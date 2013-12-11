@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
-       const bool &home_set, gcs_send_t_p gcs_print_func)
+                     const bool &home_set, gcs_send_t_p gcs_print_func)
    : armed(false)
    , arming_method(NONE)
    , ahrs(ahrs_ref)
@@ -58,9 +58,13 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-bool AP_Arming::is_armed() { return armed; }
+bool AP_Arming::is_armed() 
+{ 
+    return require == NONE || armed; 
+}
 
-uint16_t AP_Arming::get_enabled_checks() {
+uint16_t AP_Arming::get_enabled_checks() 
+{
     return checks_to_perform;
 }
 
@@ -68,9 +72,10 @@ void AP_Arming::set_enabled_checks(uint16_t ap) {
     checks_to_perform = ap;
 }
 
-bool AP_Arming::barometer_checks() {
-    if (checks_to_perform & ARMING_CHECK_ALL ||
-            checks_to_perform & ARMING_CHECK_BARO) {
+bool AP_Arming::barometer_checks() 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_BARO)) {
         if (! barometer.healthy) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy!"));
             return false;
@@ -80,9 +85,10 @@ bool AP_Arming::barometer_checks() {
     return true;
 }
 
-bool AP_Arming::compass_checks() {
-    if (checks_to_perform & ARMING_CHECK_ALL ||
-            checks_to_perform & ARMING_CHECK_COMPASS) {
+bool AP_Arming::compass_checks() 
+{
+    if ((checks_to_perform) & ARMING_CHECK_ALL ||
+        (checks_to_perform) & ARMING_CHECK_COMPASS) {
         const Compass* compass = ahrs.get_compass();
 
         //if there is no compass and the user has specifically asked to check
@@ -112,9 +118,10 @@ bool AP_Arming::compass_checks() {
     return true;
 }
 
-bool AP_Arming::gps_checks() {
-    if (checks_to_perform & ARMING_CHECK_ALL ||
-            checks_to_perform & ARMING_CHECK_GPS) {
+bool AP_Arming::gps_checks() 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_GPS)) {
         const GPS *gps = ahrs.get_gps();
 
         //If no GPS and the user has specifically asked to check GPS, then
@@ -129,8 +136,8 @@ bool AP_Arming::gps_checks() {
 
         //GPS OK?
         if (!home_is_set || gps->status() != GPS::GPS_OK_FIX_3D ||              
-                AP_Notify::flags.gps_glitching ||
-                AP_Notify::flags.failsafe_gps) {
+            AP_Notify::flags.gps_glitching ||
+            AP_Notify::flags.failsafe_gps) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
             return false;
         }      
@@ -139,9 +146,10 @@ bool AP_Arming::gps_checks() {
     return true;
 }
 
-bool AP_Arming::battery_checks() {
-    if (checks_to_perform & ARMING_CHECK_ALL ||
-            checks_to_perform & ARMING_CHECK_BATTERY) {
+bool AP_Arming::battery_checks() 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_BATTERY)) {
 
         if (AP_Notify::flags.failsafe_battery) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Battery failsafe on."));
@@ -152,7 +160,8 @@ bool AP_Arming::battery_checks() {
     return true;
 }
 
-bool AP_Arming::hardware_safety_check() {
+bool AP_Arming::hardware_safety_check() 
+{
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Hardware Safety Switch"));
@@ -162,9 +171,10 @@ bool AP_Arming::hardware_safety_check() {
     return true;
 }
 
-bool AP_Arming::manual_transmitter_checks() {
-    if (checks_to_perform & ARMING_CHECK_ALL ||
-            checks_to_perform & ARMING_CHECK_RC) {
+bool AP_Arming::manual_transmitter_checks() 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_RC)) {
 
         if (AP_Notify::flags.failsafe_radio) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Radio failsafe on."));
@@ -179,7 +189,8 @@ bool AP_Arming::manual_transmitter_checks() {
     return true;
 }
 
-bool AP_Arming::pre_arm_checks() {
+bool AP_Arming::pre_arm_checks() 
+{
     if (! hardware_safety_check())
         return false;
 
@@ -203,7 +214,8 @@ bool AP_Arming::pre_arm_checks() {
 }
 
 //returns true if arming occured successfully
-bool AP_Arming::arm(uint8_t method) {
+bool AP_Arming::arm(uint8_t method) 
+{
     if (armed) { //already armed
         return false;
     }
@@ -234,7 +246,8 @@ bool AP_Arming::arm(uint8_t method) {
 }
 
 //returns true if disarming occurred successfully
-bool AP_Arming::disarm() {
+bool AP_Arming::disarm() 
+{
     if (! armed) { // already disarmed
         return false;
     }
@@ -248,17 +261,15 @@ bool AP_Arming::disarm() {
     return true;
 }
 
-uint8_t AP_Arming::arming_required() {
-    return require.get();
+AP_Arming::ArmingRequired AP_Arming::arming_required() 
+{
+    return (AP_Arming::ArmingRequired)require.get();
 }
 
-bool AP_Arming::rudder_arming_enabled() {
+bool AP_Arming::rudder_arming_enabled() 
+{
     if (disable_rudder_arm == 0)
         return true;
 
     return false;
-}
-
-uint8_t AP_Arming::get_arming_method() {
-    return arming_method;
 }

@@ -41,7 +41,7 @@ public:
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
               const bool &home_set, gcs_send_t_p);
 
-    uint8_t arming_required();
+    ArmingRequired arming_required();
     bool arm(uint8_t method);
     bool disarm();
     bool is_armed();
@@ -83,8 +83,6 @@ private:
     bool manual_transmitter_checks();
 
     bool pre_arm_checks();
-
-    uint8_t get_arming_method();
 };
 
 #endif //__AP_ARMING_H__
