@@ -96,7 +96,7 @@ bool AP_Arming::compass_checks() {
             return true;
         }
 
-        if (! compass->healthy) {
+        if (! compass->healthy()) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy!"));
             return false;
         }
