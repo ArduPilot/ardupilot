@@ -773,7 +773,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #endif
 
     // @Group: ARMING_
-    // @Path: ../libararies/AP_Arming/AP_Arming.cpp
+    // @Path: ../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming),
 
     // @Group: RELAY_
