@@ -281,6 +281,8 @@ static void geofence_check(bool altitude_check_only)
 
         geofence_state->old_switch_position = oldSwitchPosition;
 
+        set_guided_WP();
+
         if (control_mode == MANUAL && g.auto_trim) {
             // make sure we don't auto trim the surfaces on this change
             control_mode = STABILIZE;
