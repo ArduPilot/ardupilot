@@ -154,7 +154,7 @@ AP_InertialSensor::_init_gyro()
 
     // cold start
     hal.scheduler->delay(100);
-    hal.console->printf_P(PSTR("Init Gyro"));
+    hal.console->print_P(PSTR("Init Gyro"));
 
     // flash leds to tell user to keep the IMU still
     AP_Notify::flags.initialising = true;
@@ -189,7 +189,7 @@ AP_InertialSensor::_init_gyro()
         float diff_norm[num_gyros];
         uint8_t i;
 
-        hal.console->printf_P(PSTR("*"));
+        hal.console->print_P(PSTR("*"));
 
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_sum[k].zero();
@@ -269,7 +269,7 @@ AP_InertialSensor::_init_accel()
     // cold start
     hal.scheduler->delay(100);
 
-    hal.console->printf_P(PSTR("Init Accel"));
+    hal.console->print_P(PSTR("Init Accel"));
 
     // flash leds to tell user to keep the IMU still
     AP_Notify::flags.initialising = true;
@@ -310,7 +310,7 @@ AP_InertialSensor::_init_accel()
 
             // display some output to the user
             if(flashcount >= 10) {
-                hal.console->printf_P(PSTR("*"));
+                hal.console->print_P(PSTR("*"));
                 flashcount = 0;
             }
             flashcount++;
@@ -349,7 +349,7 @@ AP_InertialSensor::_init_accel()
     // stop flashing the leds
     AP_Notify::flags.initialising = false;
 
-    hal.console->printf_P(PSTR(" "));
+    hal.console->print_P(PSTR(" "));
 
 }
 
