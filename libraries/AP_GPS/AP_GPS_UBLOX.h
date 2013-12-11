@@ -125,7 +125,7 @@ private:
     struct PACKED ubx_nav_solution {
         uint32_t time;
         int32_t time_nsec;
-        int16_t week;
+        uint16_t week;
         uint8_t fix_type;
         uint8_t fix_status;
         int32_t ecef_x;
