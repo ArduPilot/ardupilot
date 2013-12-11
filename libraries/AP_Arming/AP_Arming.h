@@ -38,10 +38,20 @@ public:
     //for the hacky funciton pointer to gcs_send_text_p
     typedef void (*gcs_send_t_p)(gcs_severity, const prog_char_t*);
 
+    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
+              const bool &home_set, gcs_send_t_p);
+
+    uint8_t arming_required();
+    bool arm(uint8_t method);
+    bool disarm();
+    bool is_armed();
+    bool rudder_arming_enabled();
+    uint16_t get_enabled_checks();
+
     //for params
     static const struct AP_Param::GroupInfo        var_info[];
 
-protected:
+private:
     bool                                                armed;
 
     //Parameters
@@ -57,14 +67,6 @@ protected:
     const AP_Baro                                  &barometer;
     const bool                                   &home_is_set;
     gcs_send_t_p                              gcs_send_text_P;
-
-public:
-    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
-                const bool &home_set, gcs_send_t_p);
-
-    bool is_armed();
-
-    uint16_t get_enabled_checks();
 
     void set_enabled_checks(uint16_t);
 
@@ -82,16 +84,7 @@ public:
 
     bool pre_arm_checks();
 
-    bool arm(uint8_t method);
-
-    bool disarm();
-
-    uint8_t arming_required();
-
-    bool rudder_arming_enabled();
-
     uint8_t get_arming_method();
-
 };
 
 #endif //__AP_ARMING_H__
