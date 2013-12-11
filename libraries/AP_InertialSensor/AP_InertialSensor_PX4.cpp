@@ -131,6 +131,10 @@ uint8_t AP_InertialSensor_PX4::get_accel_count(void) const
 
 bool AP_InertialSensor_PX4::update(void) 
 {
+    if (!wait_for_sample(100)) {
+        return false;
+    }
+
     // get the latest sample from the sensor drivers
     _get_sample();
 
@@ -235,7 +239,7 @@ bool AP_InertialSensor_PX4::healthy(void) const
 
 uint8_t AP_InertialSensor_PX4::_get_primary_gyro(void) const 
 {
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<_num_gyro_instances; i++) {
         if (get_gyro_health(i)) return i;
     }    
     return 0;
@@ -243,7 +247,7 @@ uint8_t AP_InertialSensor_PX4::_get_primary_gyro(void) const
 
 uint8_t AP_InertialSensor_PX4::_get_primary_accel(void) const 
 {
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<_num_accel_instances; i++) {
         if (get_accel_health(i)) return i;
     }    
     return 0;

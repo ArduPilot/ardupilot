@@ -71,6 +71,9 @@ uint16_t AP_InertialSensor_Oilpan::_init_sensor( Sample_rate sample_rate)
 
 bool AP_InertialSensor_Oilpan::update()
 {
+    if (!wait_for_sample(100)) {
+        return false;
+    }
     float adc_values[6];
     Vector3f gyro_offset = _gyro_offset[0].get();
     Vector3f accel_scale = _accel_scale[0].get();
