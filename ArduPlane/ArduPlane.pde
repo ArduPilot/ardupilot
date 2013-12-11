@@ -690,19 +690,19 @@ static uint16_t mainLoop_count;
 #if MOUNT == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
+static AP_Mount camera_mount(&current_loc, g_gps, ahrs, 0);
 #endif
 
 #if MOUNT2 == ENABLED
 // current_loc uses the baro/gps soloution for altitude rather than gps only.
 // mabe one could use current_loc for lat/lon too and eliminate g_gps alltogether?
-AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
+static AP_Mount camera_mount2(&current_loc, g_gps, ahrs, 1);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Arming/Disarming mangement class
 ////////////////////////////////////////////////////////////////////////////////
-AP_Arming arming(ahrs, barometer, home_is_set, gcs_send_text_P);
+static AP_Arming arming(ahrs, barometer, home_is_set, gcs_send_text_P);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -774,12 +774,6 @@ void setup() {
     vcc_pin = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
-
-    //if no user intervention require to arm, then just arm already
-    //(maintain old behavior)
-    if (arming.arming_required() == AP_Arming::NO) {
-        arming.arm(AP_Arming::NONE);
-    }
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
@@ -1083,7 +1077,8 @@ static void update_GPS(void)
         }
 #endif        
 
-        if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        if (!arming.is_armed() ||
+            hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
             update_home();
         }
     }

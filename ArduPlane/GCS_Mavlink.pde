@@ -1287,14 +1287,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     if (arming.arm(AP_Arming::MAVLINK)) {
                         //only log if arming was successful
                         Log_Arm_Disarm();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_FAILED;
                     }
-                    result = MAV_RESULT_ACCEPTED;
                 } else if (packet.param1 == 0.0f)  {
                     if (arming.disarm()) {
                         //only log if disarming was successful
                         Log_Arm_Disarm();
+                        result = MAV_RESULT_ACCEPTED;
+                    } else {
+                        result = MAV_RESULT_FAILED;
                     }
-                    result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_UNSUPPORTED;
                 }

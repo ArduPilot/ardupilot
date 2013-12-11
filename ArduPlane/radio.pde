@@ -63,12 +63,13 @@ static void init_rc_out()
 }
 
 // check for pilot input on rudder stick for arming
-static void rudder_arm_check() {
+static void rudder_arm_check() 
+{
     //TODO: ensure rudder arming disallowed during radio calibration
 
     //TODO: waggle ailerons and rudder and beep after rudder arming
     
-    static uint32_t rudder_arm_timer = 0;
+    static uint32_t rudder_arm_timer;
 
     if (arming.is_armed()) {
         //already armed, no need to run remainder of this function
@@ -82,7 +83,7 @@ static void rudder_arm_check() {
     }
 
     //if throttle is not down, then pilot cannot rudder arm
-    if(g.rc_3.control_in > 0 ) {
+    if (g.rc_3.control_in > 0) {
         rudder_arm_timer = 0;
         return;
     }
@@ -95,12 +96,12 @@ static void rudder_arm_check() {
 
     // full left or right rudder starts arming counter
     if (g.rc_4.control_in > 4000 
-            || g.rc_4.control_in < -4000) {
+        || g.rc_4.control_in < -4000) {
         
         uint32_t now = millis();
 
         if (rudder_arm_timer == 0 || 
-              now - rudder_arm_timer < 3000) {
+            now - rudder_arm_timer < 3000) {
 
             if (rudder_arm_timer == 0) rudder_arm_timer = now;
         } else {
