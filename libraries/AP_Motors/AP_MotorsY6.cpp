@@ -30,12 +30,12 @@ void AP_MotorsY6::setup_motors()
 
     if (_flags.frame_orientation >= AP_MOTORS_NEW_PLUS_FRAME) {
         // Y6 motor definition with all top motors spinning clockwise, all bottom motors counter clockwise
-        add_motor_raw(AP_MOTORS_MOT_1, -1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
-        add_motor_raw(AP_MOTORS_MOT_2, -1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-        add_motor_raw(AP_MOTORS_MOT_3,  0.0, -1.333, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
-        add_motor_raw(AP_MOTORS_MOT_4,  0.0, -1.333, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
-        add_motor_raw(AP_MOTORS_MOT_5,  1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
-        add_motor_raw(AP_MOTORS_MOT_6,  1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
+        add_motor_raw(AP_MOTORS_MOT_1, -1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
+        add_motor_raw(AP_MOTORS_MOT_2, -1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+        add_motor_raw(AP_MOTORS_MOT_3,  0.0, -1.000, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
+        add_motor_raw(AP_MOTORS_MOT_4,  0.0, -1.000, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
+        add_motor_raw(AP_MOTORS_MOT_5,  1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5);
+        add_motor_raw(AP_MOTORS_MOT_6,  1.0,  0.500, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6);
     }else{
         // original Y6 motor definition
         add_motor_raw(AP_MOTORS_MOT_1, -1.0,  0.666, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
