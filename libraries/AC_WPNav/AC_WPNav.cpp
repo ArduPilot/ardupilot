@@ -102,7 +102,8 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, APM_PI* pid_
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    // calculate loiter leash
+    // initialise leash lengths
+    calculate_wp_leash_length(true);
     calculate_loiter_leash_length();
 }
 
