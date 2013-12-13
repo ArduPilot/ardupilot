@@ -15,6 +15,8 @@ const extern AP_HAL::HAL& hal;
 #include <drivers/drv_gyro.h>
 #include <drivers/drv_hrt.h>
 
+#include <AP_Notify.h>
+
 uint16_t AP_InertialSensor_PX4::_init_sensor( Sample_rate sample_rate ) 
 {
     // assumes max 2 instances
@@ -78,13 +80,13 @@ void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
 // multi-device interface
 bool AP_InertialSensor_PX4::get_gyro_health(uint8_t instance) const
 {
-    if (instance >= _num_gyro_instances) {
-        return false;
-    }
-    if (_sample_time_usec == 0) {
+    if (_sample_time_usec == 0 || AP_Notify::flags.initialising) {
         // not initialised yet, show as healthy to prevent scary GCS
         // warnings
         return true;
+    }
+    if (instance >= _num_gyro_instances) {
+        return false;
     }
     uint64_t tnow = hrt_absolute_time();
 
@@ -102,13 +104,13 @@ uint8_t AP_InertialSensor_PX4::get_gyro_count(void) const
 
 bool AP_InertialSensor_PX4::get_accel_health(uint8_t k) const
 {
-    if (k >= _num_accel_instances) {
-        return false;
-    }
-    if (_sample_time_usec == 0) {
+    if (_sample_time_usec == 0 || AP_Notify::flags.initialising) {
         // not initialised yet, show as healthy to prevent scary GCS
         // warnings
         return true;
+    }
+    if (k >= _num_accel_instances) {
+        return false;
     }
     uint64_t tnow = hrt_absolute_time();
 
