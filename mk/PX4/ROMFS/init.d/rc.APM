@@ -48,34 +48,6 @@ then
    sh /etc/init.d/rc.error
 fi
 
-########################
-# PX4IO upgrade handling
-echo checking for /etc/px4io/px4io.bin
-if [ -f /etc/px4io/px4io.bin ]
-then
-   echo "Checking for new px4io firmware"
-   if cmp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
-   then
-      echo "No new px4io firmware"
-   else
-      echo Loading /etc/px4io/px4io.bin
-      tone_alarm MBABGP
-      echo Loading /etc/px4io/px4io.bin > /fs/microsd/px4io_update.log
-      if px4io update /etc/px4io/px4io.bin
-      then
-      	cp /etc/px4io/px4io.bin /fs/microsd/px4io.loaded
-      	echo Loaded /etc/px4io/px4io.bin OK >> /fs/microsd/px4io_update.log
-        tone_alarm MSPAA
-      else
-        echo Failed loading /etc/px4io/px4io.bin >> /fs/microsd/px4io_update.log
-        echo "check Safety Button" >> /fs/microsd/APM/px4io_update.log
-	echo "Failed to upgrade PX4IO firmware"
-        tone_alarm MNGGG
-      fi
-   fi
-fi
-
-
 if mkdir /fs/microsd/APM > /dev/null
 then
      echo "Created APM directory"
@@ -119,8 +91,18 @@ if px4io start
 then
     set HAVE_PX4IO true
 else
-    tone_alarm MNGG
-    sleep 2
+    # it may be in bootloader mode
+    echo Loading /etc/px4io/px4io.bin
+    tone_alarm MBABGP
+    if px4io update /etc/px4io/px4io.bin
+    then
+	echo "upgraded PX4IO firmware OK"
+        tone_alarm MSPAA
+    else
+	echo "Failed to upgrade PX4IO firmware"
+        tone_alarm MNGGG
+    fi
+    sleep 1
     if px4io start
     then
         set HAVE_PX4IO true
@@ -133,6 +115,34 @@ if [ $HAVE_PX4IO == true ]
 then
     echo "PX4IO board OK"
     echo "PX4IO board OK" >> $logfile
+    if px4io checkcrc /etc/px4io/px4io.bin
+    then
+        echo "PX4IO CRC OK"
+        echo "PX4IO CRC OK" >> $logfile    
+    else
+        echo "PX4IO CRC failure"
+        echo "PX4IO CRC failure" >> $logfile    
+        tone_alarm MBABGP
+        if px4io forceupdate 14662 /etc/px4io/px4io.bin
+        then
+               sleep 1
+               if px4io start
+               then
+                  echo "PX4IO restart OK"
+                  echo "PX4IO restart OK" >> $logfile    
+                  tone_alarm MSPAA
+               else
+                  echo "PX4IO restart failed"
+                  echo "PX4IO restart failed" >> $logfile    
+                  tone_alarm MNGGG
+                  sh /etc/init.d/rc.error
+               fi
+        else
+               echo "PX4IO update failed"
+               echo "PX4IO update failed" >> $logfile    
+               tone_alarm MNGGG
+        fi
+    fi
 else
     echo "No PX4IO board found"
     echo "No PX4IO board found" >> $logfile
