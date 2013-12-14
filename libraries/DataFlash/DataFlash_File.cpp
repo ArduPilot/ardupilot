@@ -50,8 +50,12 @@ void DataFlash_File::Init(void)
 {
     // create the log directory if need be
     int ret;
-    ret = mkdir(_log_directory, 0777);
-    if (ret == -1 && errno != EEXIST) {
+    struct stat st;
+    ret = stat(_log_directory, &st);
+    if (ret == -1) {
+        ret = mkdir(_log_directory, 0777);
+    }
+    if (ret == -1) {
         hal.console->printf("Failed to create log directory %s", _log_directory);
         return;
     }
