@@ -1,5 +1,14 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1 14-Dec-2013
+Changes from 3.1-rc8
+1) Pixhawk improvements:
+    a) switch to use MPU6k as main accel/gyro
+    b) auto loading of IO-board firmware on startup
+2) RTL fixes:
+    a) initialise waypoint leash length (first RTL stop would be more aggressive than 2nd)
+    b) reduce projected stopping distance for higher speed stops
+------------------------------------------------------------------
 ArduCopter 3.1-rc8 9-Dec-2013
 Changes from 3.1-rc7
 1) add Y6 motor mapping with all top props CW, bottom pros CCW (set FRAME = 10)
