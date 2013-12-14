@@ -80,7 +80,7 @@ void AP_InertialSensor_PX4::_set_filter_frequency(uint8_t filter_hz)
 // multi-device interface
 bool AP_InertialSensor_PX4::get_gyro_health(uint8_t instance) const
 {
-    if (_sample_time_usec == 0 || AP_Notify::flags.initialising) {
+    if (_sample_time_usec == 0 || _last_get_sample_timestamp == 0) {
         // not initialised yet, show as healthy to prevent scary GCS
         // warnings
         return true;
@@ -88,9 +88,8 @@ bool AP_InertialSensor_PX4::get_gyro_health(uint8_t instance) const
     if (instance >= _num_gyro_instances) {
         return false;
     }
-    uint64_t tnow = hrt_absolute_time();
 
-    if ((tnow - _last_gyro_timestamp[instance]) > 2*_sample_time_usec) {
+    if ((_last_get_sample_timestamp - _last_gyro_timestamp[instance]) > 2*_sample_time_usec) {
         // gyros have not updated
         return false;
     }
@@ -104,7 +103,7 @@ uint8_t AP_InertialSensor_PX4::get_gyro_count(void) const
 
 bool AP_InertialSensor_PX4::get_accel_health(uint8_t k) const
 {
-    if (_sample_time_usec == 0 || AP_Notify::flags.initialising) {
+    if (_sample_time_usec == 0 || _last_get_sample_timestamp == 0) {
         // not initialised yet, show as healthy to prevent scary GCS
         // warnings
         return true;
@@ -112,9 +111,8 @@ bool AP_InertialSensor_PX4::get_accel_health(uint8_t k) const
     if (k >= _num_accel_instances) {
         return false;
     }
-    uint64_t tnow = hrt_absolute_time();
 
-    if ((tnow - _last_accel_timestamp[k]) > 2*_sample_time_usec) {
+    if ((_last_get_sample_timestamp - _last_accel_timestamp[k]) > 2*_sample_time_usec) {
         // accels have not updated
         return false;
     }
@@ -200,6 +198,7 @@ void AP_InertialSensor_PX4::_get_sample(void)
             _last_gyro_timestamp[i] = gyro_report.timestamp;
         }
     }
+    _last_get_sample_timestamp = hrt_absolute_time();
 }
 
 bool AP_InertialSensor_PX4::_sample_available(void)

@@ -19,7 +19,8 @@ public:
 
     AP_InertialSensor_PX4() : 
         AP_InertialSensor(),
-        _sample_time_usec(0)
+        _sample_time_usec(0),
+        _last_get_sample_timestamp(0)
         {
         }
 
@@ -48,6 +49,7 @@ private:
     Vector3f _gyro_in[INS_MAX_INSTANCES];
     uint64_t _last_accel_timestamp[INS_MAX_INSTANCES];
     uint64_t _last_gyro_timestamp[INS_MAX_INSTANCES];
+    uint64_t _last_get_sample_timestamp;
     uint64_t _last_sample_timestamp;
     uint32_t _sample_time_usec;
     bool     _have_sample_available;
