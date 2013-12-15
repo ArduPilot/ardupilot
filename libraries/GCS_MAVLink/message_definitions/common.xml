@@ -378,6 +378,15 @@
                <entry value="65536" name="MAV_SYS_STATUS_SENSOR_RC_RECEIVER">
                     <description>0x10000 rc receiver</description>
                </entry>
+               <entry value="131072" name="MAV_SYS_STATUS_SENSOR_3D_GYRO2">
+                    <description>0x20000 2nd 3D gyro</description>
+               </entry>
+               <entry value="262144" name="MAV_SYS_STATUS_SENSOR_3D_ACCEL2">
+                    <description>0x40000 2nd 3D accelerometer</description>
+               </entry>
+               <entry value="524288" name="MAV_SYS_STATUS_SENSOR_3D_MAG2">
+                    <description>0x80000 2nd 3D magnetometer</description>
+               </entry>
           </enum>
           <enum name="MAV_FRAME">
                <entry value="0" name="MAV_FRAME_GLOBAL">
@@ -1774,6 +1783,46 @@
            <field type="int16_t" name="xmag">X Magnetic field (milli tesla)</field>
            <field type="int16_t" name="ymag">Y Magnetic field (milli tesla)</field>
            <field type="int16_t" name="zmag">Z Magnetic field (milli tesla)</field>
+         </message>
+         <message id="117" name="LOG_REQUEST_LIST">
+           <description>Request a list of available logs. On some systems calling this may stop on-board logging until LOG_REQUEST_END is called.</description>
+           <field type="uint8_t" name="target_system">System ID</field>
+           <field type="uint8_t" name="target_component">Component ID</field>
+           <field type="uint16_t" name="start">First log id (0 for first available)</field>
+           <field type="uint16_t" name="end">Last log id (0xffff for last available)</field>
+         </message>
+         <message id="118" name="LOG_ENTRY">
+           <description>Reply to LOG_REQUEST_LIST</description>
+           <field type="uint16_t" name="id">Log id</field>
+           <field type="uint16_t" name="num_logs">Total number of logs</field>
+           <field type="uint16_t" name="last_log_num">High log number</field>
+           <field type="uint32_t" name="time_utc">UTC timestamp of log in seconds since 1970, or 0 if not available</field>
+           <field type="uint32_t" name="size">Size of the log (may be approximate) in bytes</field>
+         </message>
+         <message id="119" name="LOG_REQUEST_DATA">
+           <description>Request a chunk of a log</description>
+           <field type="uint8_t" name="target_system">System ID</field>
+           <field type="uint8_t" name="target_component">Component ID</field>
+           <field type="uint16_t" name="id">Log id (from LOG_ENTRY reply)</field>
+           <field type="uint32_t" name="ofs">Offset into the log</field>
+           <field type="uint32_t" name="count">Number of bytes</field>
+         </message>
+         <message id="120" name="LOG_DATA">
+           <description>Reply to LOG_REQUEST_DATA</description>
+           <field type="uint16_t" name="id">Log id (from LOG_ENTRY reply)</field>
+           <field type="uint32_t" name="ofs">Offset into the log</field>
+           <field type="uint8_t" name="count">Number of bytes (zero for end of log)</field>
+           <field type="uint8_t[90]" name="data">log data</field>
+         </message>
+         <message id="121" name="LOG_ERASE">
+           <description>Erase all logs</description>
+           <field type="uint8_t" name="target_system">System ID</field>
+           <field type="uint8_t" name="target_component">Component ID</field>
+         </message>
+         <message id="122" name="LOG_REQUEST_END">
+           <description>Stop log transfer and resume normal logging</description>
+           <field type="uint8_t" name="target_system">System ID</field>
+           <field type="uint8_t" name="target_component">Component ID</field>
          </message>
          <message id="147" name="BATTERY_STATUS">
                <description>Transmitte battery informations for a accu pack.</description>
