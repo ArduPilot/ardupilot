@@ -1233,7 +1233,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 msg->compid,
                 g.command_total + 1); // + home
 
-            waypoint_timelast_send   = millis();
             waypoint_receiving       = false;
             waypoint_dest_sysid      = msg->sysid;
             waypoint_dest_compid     = msg->compid;
@@ -1337,9 +1336,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 										x,
 										y,
 										z);
-
-            // update last waypoint comm stamp
-            waypoint_timelast_send = millis();
             break;
         }
 
