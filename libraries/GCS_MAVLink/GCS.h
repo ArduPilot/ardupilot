@@ -10,7 +10,45 @@
 #include <AP_HAL.h>
 #include <AP_Common.h>
 #include <GPS.h>
+#include <GCS_MAVLink.h>
+#include <DataFlash.h>
 #include <stdint.h>
+
+//  GCS Message ID's
+/// NOTE: to ensure we never block on sending MAVLink messages
+/// please keep each MSG_ to a single MAVLink message. If need be
+/// create new MSG_ IDs for additional messages on the same
+/// stream
+enum ap_message {
+    MSG_HEARTBEAT,
+    MSG_ATTITUDE,
+    MSG_LOCATION,
+    MSG_EXTENDED_STATUS1,
+    MSG_EXTENDED_STATUS2,
+    MSG_NAV_CONTROLLER_OUTPUT,
+    MSG_CURRENT_WAYPOINT,
+    MSG_VFR_HUD,
+    MSG_RADIO_OUT,
+    MSG_RADIO_IN,
+    MSG_RAW_IMU1,
+    MSG_RAW_IMU2,
+    MSG_RAW_IMU3,
+    MSG_GPS_RAW,
+    MSG_SYSTEM_TIME,
+    MSG_SERVO_OUT,
+    MSG_NEXT_WAYPOINT,
+    MSG_NEXT_PARAM,
+    MSG_STATUSTEXT,
+    MSG_LIMITS_STATUS,
+    MSG_FENCE_STATUS,
+    MSG_AHRS,
+    MSG_SIMSTATE,
+    MSG_HWSTATUS,
+    MSG_WIND,
+    MSG_RANGEFINDER,
+    MSG_RETRY_DEFERRED // this must be last
+};
+
 
 ///
 /// @class	GCS
@@ -87,6 +125,7 @@ protected:
     /// The stream we are communicating over
     AP_HAL::UARTDriver *      _port;
 };
+
 
 //
 // GCS class definitions.
@@ -188,8 +227,7 @@ private:
     uint16_t        waypoint_count;
     uint32_t        waypoint_timelast_receive; // milliseconds
     uint32_t        waypoint_timelast_request; // milliseconds
-    uint16_t        waypoint_send_timeout; // milliseconds
-    uint16_t        waypoint_receive_timeout; // milliseconds
+    const uint16_t  waypoint_receive_timeout; // milliseconds
 
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
@@ -203,6 +241,38 @@ private:
     // millis value to calculate cli timeout relative to.
     // exists so we can separate the cli entry time from the system start time
     uint32_t _cli_timeout;
+
+    uint8_t  _log_listing:1; // sending log list
+    uint8_t  _log_sending:1; // sending log data
+
+    // next log list entry to send
+    uint16_t _log_next_list_entry;
+
+    // last log list entry to send
+    uint16_t _log_last_list_entry;
+
+    // number of log files
+    uint16_t _log_num_logs;
+
+    // log number for data send
+    uint16_t _log_num_data;
+
+    // offset in log
+    uint32_t _log_data_offset;
+
+    // number of bytes left to send
+    uint32_t _log_data_remaining;
+
+    // start page of log data
+    uint16_t _log_data_page;
+
+    void handle_log_request_list(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_request_data(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
+    void handle_log_send(DataFlash_Class &dataflash);
+    void handle_log_send_listing(DataFlash_Class &dataflash);
+    void handle_log_send_data(DataFlash_Class &dataflash);
+
 };
 
 #endif // __GCS_H
