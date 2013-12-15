@@ -595,7 +595,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is shut down and not creating torque
         // also not required if we are using external gyro
-        if (motor_runup_complete() && _tail_type != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
+        if ((_rotor_desired > 0) && _tail_type != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
             yaw_offset = _collective_yaw_effect * abs(_collective_out - _collective_mid_pwm);
         }
     }
