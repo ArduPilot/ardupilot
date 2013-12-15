@@ -518,6 +518,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = hal.scheduler->millis();        
         send_heartbeat(chan);
         return true;
 
@@ -630,9 +631,18 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_rangefinder(chan);
         break;
 
+    case MSG_RAW_IMU2:
+    case MSG_LIMITS_STATUS:
+    case MSG_FENCE_STATUS:
+    case MSG_WIND:
+        // unused
+        break;
+
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
 	}
+
+    
     return true;
 }
 
@@ -802,14 +812,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 };
 
 
-GCS_MAVLINK::GCS_MAVLINK() :
-    packet_drops(0),
-    waypoint_send_timeout(1000), // 1 second
-    waypoint_receive_timeout(1000) // 1 second
-{
-    AP_Param::setup_object_defaults(this, var_info);
-}
-
 void
 GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
 {
@@ -933,6 +935,10 @@ void
 GCS_MAVLINK::data_stream_send(void)
 {
     gcs_out_of_time = false;
+
+    if (!in_mavlink_delay) {
+        handle_log_send(DataFlash);
+    }
 
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
@@ -1878,6 +1884,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
+
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST ... MAVLINK_MSG_ID_LOG_REQUEST_END:
+        if (!in_mavlink_delay) {
+            handle_log_message(msg, DataFlash);
+        }
+        break;
 
     default:
         // forward unknown messages to the other link if there is one
