@@ -18,9 +18,11 @@
  */
 
 
+#include <AP_HAL.h>
 #include <GCS.h>
 #include <DataFlash.h>
-#include <stdio.h>
+
+extern const AP_HAL::HAL& hal;
 
 /**
    handle all types of log download requests from the GCS
@@ -33,6 +35,9 @@ void GCS_MAVLINK::handle_log_message(mavlink_message_t *msg, DataFlash_Class &da
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
         handle_log_request_data(msg, dataflash);
+        break;
+    case MAVLINK_MSG_ID_LOG_ERASE:
+        dataflash.EraseAll();
         break;
     }
         
@@ -48,10 +53,13 @@ void GCS_MAVLINK::handle_log_request_list(mavlink_message_t *msg, DataFlash_Clas
     mavlink_msg_log_request_list_decode(msg, &packet);
     if (mavlink_check_target(packet.target_system, packet.target_component))
         return;
-    _log_listing = true;
+    _log_listing = false;
     _log_sending = false;
 
     _log_num_logs = dataflash.get_num_logs();
+    if (_log_num_logs == 0) {
+        return;
+    }
     int16_t last_log_num = dataflash.find_last_log();
 
     _log_next_list_entry = packet.start;
@@ -63,6 +71,9 @@ void GCS_MAVLINK::handle_log_request_list(mavlink_message_t *msg, DataFlash_Clas
     if (_log_next_list_entry < last_log_num + 1 - _log_num_logs) {
         _log_next_list_entry = last_log_num + 1 - _log_num_logs;
     }
+
+    _log_listing = true;
+    handle_log_send_listing(dataflash);
 }
 
 
@@ -96,7 +107,12 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
     } else {
         _log_data_remaining = size - _log_data_offset;
     }
+    if (_log_data_remaining > packet.count) {
+        _log_data_remaining = packet.count;
+    }
     _log_sending = true;
+
+    handle_log_send_data(dataflash);
 }
 
 /**
@@ -107,7 +123,11 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
     if (_log_listing) {
         handle_log_send_listing(dataflash);
     }
-    uint8_t num_sends = 5;
+    uint8_t num_sends = 1;
+    if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
+        // when on USB we can send a lot more data
+        num_sends = 20;
+    }
     if (stream_slowdown != 0) {
         // we're using a radio and starting to clag up, slowdown log send
         num_sends = 1;
@@ -127,6 +147,10 @@ void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
     if (payload_space < MAVLINK_MSG_ID_LOG_ENTRY_LEN) {
         // no space
+        return;
+    }
+    if (hal.scheduler->millis() - last_heartbeat_time > 3000) {
+        // give a heartbeat a chance
         return;
     }
 
@@ -150,6 +174,10 @@ void GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
         // no space
         return;
     }
+    if (hal.scheduler->millis() - last_heartbeat_time > 3000) {
+        // give a heartbeat a chance
+        return;
+    }
 
     int16_t ret = 0;
     uint32_t len = _log_data_remaining;
@@ -166,7 +194,7 @@ void GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
     mavlink_msg_log_data_send(chan, _log_num_data, _log_data_offset, ret, data);
     _log_data_offset += len;
     _log_data_remaining -= len;
-    if (len < 90) {
+    if (len < 90 || _log_data_remaining == 0) {
         _log_sending = false;
     }
 }

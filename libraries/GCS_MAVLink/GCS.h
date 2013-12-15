@@ -176,6 +176,9 @@ public:
 
     // call to reset the timeout window for entering the cli
     void reset_cli_timeout();
+
+    uint32_t        last_heartbeat_time; // milliseconds
+
 private:
     void        handleMessage(mavlink_message_t * msg);
 
