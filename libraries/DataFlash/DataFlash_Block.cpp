@@ -88,6 +88,9 @@ void DataFlash_Block::StartRead(uint16_t PageAdr)
     df_Read_BufferNum = 0;
     df_Read_PageAdr   = PageAdr;
 
+    // disable writing while reading
+    log_write_started = false;
+
     WaitReady();
 
     // copy flash page to buffer
@@ -181,3 +184,24 @@ bool DataFlash_Block::NeedErase(void)
     StartRead(1);
     return version != DF_LOGGING_FORMAT;
 }
+
+/*
+  find the number of pages in a log
+ */
+int16_t DataFlash_Block::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data)
+{
+    uint16_t data_page_size = df_PageSize - sizeof(struct PageHeader);
+    if (offset >= data_page_size) {
+        page += offset / data_page_size;
+        offset = offset % data_page_size;
+        page = page % df_NumPages;
+    }
+    if (log_write_started || df_Read_PageAdr != page) {
+        StartRead(page);
+    }
+
+    df_Read_BufferIdx = offset + sizeof(struct PageHeader);
+    ReadBlock(data, len);
+    return (int16_t)len;
+}
+

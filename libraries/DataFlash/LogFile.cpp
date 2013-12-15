@@ -136,6 +136,19 @@ void DataFlash_Block::get_log_boundaries(uint16_t log_num, uint16_t & start_page
     }
 }
 
+// find log size and time
+void DataFlash_Block::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc)
+{
+    uint16_t start, end;
+    get_log_boundaries(log_num, start, end);
+    if (end >= start) {
+        size = (end + 1 - start) * (uint32_t)df_PageSize;
+    } else {
+        size = (df_NumPages + end - start) * (uint32_t)df_PageSize;
+    }
+    time_utc = 0;
+}
+
 bool DataFlash_Block::check_wrapped(void)
 {
     StartRead(df_NumPages);
