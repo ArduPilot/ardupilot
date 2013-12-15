@@ -55,6 +55,7 @@
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
+#include <GCS.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
@@ -88,7 +89,6 @@
 static AP_Vehicle::FixedWing aparm;
 
 #include "Parameters.h"
-#include "GCS.h"
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
