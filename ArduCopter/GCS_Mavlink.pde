@@ -937,7 +937,7 @@ GCS_MAVLINK::update(void)
     // Update packet drops counter
     packet_drops += status.packet_rx_drop_count;
 
-    if (!waypoint_receiving && !waypoint_sending) {
+    if (!waypoint_receiving) {
         return;
     }
 
@@ -948,11 +948,6 @@ GCS_MAVLINK::update(void)
         tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
-    }
-
-    // stop waypoint sending if timeout
-    if (waypoint_sending && (tnow - waypoint_timelast_send) > waypoint_send_timeout) {
-        waypoint_sending = false;
     }
 
     // stop waypoint receiving if timeout
@@ -997,7 +992,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 void
 GCS_MAVLINK::data_stream_send(void)
 {
-    if (waypoint_receiving || waypoint_sending) {
+    if (waypoint_receiving) {
         // don't interfere with mission transfer
         return;
     }
@@ -1312,8 +1307,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             msg->compid,
             g.command_total);                     // includes home
 
-        waypoint_timelast_send          = millis();
-        waypoint_sending                        = true;
         waypoint_receiving                      = false;
         waypoint_dest_sysid                     = msg->sysid;
         waypoint_dest_compid            = msg->compid;
@@ -1323,10 +1316,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // XXX read a WP from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_MISSION_REQUEST:     // 40
     {
-        // Check if sending waypiont
-        //if (!waypoint_sending) break;
-        // 5/10/11 - We are trying out relaxing the requirement that we be in waypoint sending mode to respond to a waypoint request.  DEW
-
         // decode
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
@@ -1444,24 +1433,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                                       x,
                                       y,
                                       z);
-
-        // update last waypoint comm stamp
-        waypoint_timelast_send = millis();
         break;
     }
 
-
-    case MAVLINK_MSG_ID_MISSION_ACK:
-    {
-        // decode
-        mavlink_mission_ack_t packet;
-        mavlink_msg_mission_ack_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-
-        // turn off waypoint send
-        waypoint_sending = false;
-        break;
-    }
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
     {
@@ -1572,7 +1546,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         waypoint_timelast_receive = millis();
         waypoint_receiving   = true;
-        waypoint_sending         = false;
         waypoint_request_i   = 0;
         // note that ArduCopter sets waypoint_request_last to
         // command_total-1, whereas plane and rover use
