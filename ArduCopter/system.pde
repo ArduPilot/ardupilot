@@ -479,7 +479,11 @@ static bool set_mode(uint8_t mode)
             set_yaw_mode(YAW_DRIFT);
             set_roll_pitch_mode(ROLL_PITCH_DRIFT);
             set_nav_mode(NAV_NONE);
+#if FRAME_CONFIG == HELI_FRAME
+            set_throttle_mode(THROTTLE_MANUAL_HELI);
+#else            
             set_throttle_mode(THROTTLE_MANUAL_TILT_COMPENSATED);
+#endif // HELI_FRAME            
             break;
 
         case SPORT:
