@@ -573,6 +573,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     switch(id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = hal.scheduler->millis();
         send_heartbeat(chan);
         break;
 
@@ -690,6 +691,12 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
+        break;
+
+    case MSG_FENCE_STATUS:
+    case MSG_WIND:
+    case MSG_RANGEFINDER:
+        // unused
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -862,14 +869,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
 };
 
 
-GCS_MAVLINK::GCS_MAVLINK() :
-    packet_drops(0),
-    waypoint_send_timeout(1000), // 1 second
-    waypoint_receive_timeout(1000) // 1 second
-{
-    AP_Param::setup_object_defaults(this, var_info);
-}
-
 void
 GCS_MAVLINK::init(AP_HAL::UARTDriver* port)
 {
@@ -995,6 +994,10 @@ GCS_MAVLINK::data_stream_send(void)
     if (waypoint_receiving) {
         // don't interfere with mission transfer
         return;
+    }
+
+    if (!in_mavlink_delay && !motors.armed()) {
+        handle_log_send(DataFlash);
     }
 
     gcs_out_of_time = false;
@@ -2003,6 +2006,12 @@ mission_failed:
         }
         break;
     }
+
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST ... MAVLINK_MSG_ID_LOG_REQUEST_END:
+        if (!in_mavlink_delay && !motors.armed()) {
+            handle_log_message(msg, DataFlash);
+        }
+        break;    
 
 /* To-Do: add back support for polygon type fence
 #if AC_FENCE == ENABLED
