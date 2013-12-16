@@ -384,7 +384,7 @@ static bool set_mode(uint8_t mode)
 
     switch(mode) {
         case ACRO:
-            success = true;
+            success = acro_init();
             set_yaw_mode(ACRO_YAW);
             set_roll_pitch_mode(ACRO_RP);
             set_throttle_mode(ACRO_THR);
@@ -392,7 +392,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case STABILIZE:
-            success = true;
+            success = stabilize_init();
             set_yaw_mode(STABILIZE_YAW);
             set_roll_pitch_mode(STABILIZE_RP);
             set_throttle_mode(STABILIZE_THR);
@@ -400,7 +400,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case ALT_HOLD:
-            success = true;
+            success = althold_init();
             set_yaw_mode(ALT_HOLD_YAW);
             set_roll_pitch_mode(ALT_HOLD_RP);
             set_throttle_mode(ALT_HOLD_THR);
@@ -410,15 +410,15 @@ static bool set_mode(uint8_t mode)
         case AUTO:
             // check we have a GPS and at least one mission command (note the home position is always command 0)
             if ((GPS_ok() && g.command_total > 1) || ignore_checks) {
-                success = true;
+                success = auto_init();
                 // roll-pitch, throttle and yaw modes will all be set by the first nav command
                 init_commands();            // clear the command queues. will be reloaded when "run_autopilot" calls "update_commands" function
-            }
+            }            
             break;
 
         case CIRCLE:
             if (GPS_ok() || ignore_checks) {
-                success = true;
+                success = circle_init();
                 set_roll_pitch_mode(CIRCLE_RP);
                 set_throttle_mode(CIRCLE_THR);
                 set_nav_mode(CIRCLE_NAV);
@@ -428,7 +428,7 @@ static bool set_mode(uint8_t mode)
 
         case LOITER:
             if (GPS_ok() || ignore_checks) {
-                success = true;
+                success = loiter_init();
                 set_yaw_mode(LOITER_YAW);
                 set_roll_pitch_mode(LOITER_RP);
                 set_throttle_mode(LOITER_THR);
@@ -448,7 +448,7 @@ static bool set_mode(uint8_t mode)
 
         case GUIDED:
             if (GPS_ok() || ignore_checks) {
-                success = true;
+                success = guided_init();
                 set_yaw_mode(get_wp_yaw_mode(false));
                 set_roll_pitch_mode(GUIDED_RP);
                 set_throttle_mode(GUIDED_THR);
@@ -457,20 +457,20 @@ static bool set_mode(uint8_t mode)
             break;
 
         case LAND:
-            success = true;
+            success = land_init();
             do_land(NULL);  // land at current location
             break;
 
         case RTL:
             if (GPS_ok() || ignore_checks) {
-                success = true;
+                success = rtl_init();
                 do_RTL();
             }
             break;
 
         case OF_LOITER:
             if (g.optflow_enabled || ignore_checks) {
-                success = true;
+                success = ofloiter_init();
                 set_yaw_mode(OF_LOITER_YAW);
                 set_roll_pitch_mode(OF_LOITER_RP);
                 set_throttle_mode(OF_LOITER_THR);
@@ -479,7 +479,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case DRIFT:
-            success = true;
+            success = drift_init();
             set_yaw_mode(YAW_DRIFT);
             set_roll_pitch_mode(ROLL_PITCH_DRIFT);
             set_nav_mode(NAV_NONE);
@@ -487,7 +487,7 @@ static bool set_mode(uint8_t mode)
             break;
 
         case SPORT:
-            success = true;
+            success = sport_init();
             set_yaw_mode(SPORT_YAW);
             set_roll_pitch_mode(SPORT_RP);
             set_throttle_mode(SPORT_THR);

@@ -1,5 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// acro_init - initialise acro controller
+static bool acro_init()
+{
+    return true;
+}
+
 // acro_run - runs the acro controller
 // should be called at 100hz or more
 static void acro_run()
@@ -30,6 +36,12 @@ static void acro_run()
     // To-Do: convert body-frame stabilized angles to earth frame angles and update controll_roll, pitch and yaw?
 
     // body-frame rate controller is run directly from 100hz loop
+}
+
+// stabilize_init - initialise stabilize controller
+static bool stabilize_init()
+{
+    return true;
 }
 
 // stabilize_run - runs the main stabilize controller
@@ -88,10 +100,22 @@ static void stabilize_run()
     // To-Do: add throttle control for stabilize mode here?
 }
 
+// althold_init - initialise althold controller
+static bool althold_init()
+{
+    return true;
+}
+
 // althold_run - runs the althold controller
 // should be called at 100hz or more
 static void althold_run()
 {
+}
+
+// auto_init - initialise auto controller
+static bool auto_init()
+{
+    return true;
 }
 
 // auto_run - runs the auto controller
@@ -127,10 +151,22 @@ static void auto_run()
     // body-frame rate controller is run directly from 100hz loop
 }
 
+// circle_init - initialise circle controller
+static bool circle_init()
+{
+    return true;
+}
+
 // circle_run - runs the circle controller
 // should be called at 100hz or more
 static void circle_run()
 {
+}
+
+// loiter_init - initialise loiter controller
+static bool loiter_init()
+{
+    return true;
 }
 
 // loiter_run - runs the loiter controller
@@ -139,10 +175,22 @@ static void loiter_run()
 {
 }
 
+// guided_init - initialise guided controller
+static bool guided_init()
+{
+    return true;
+}
+
 // guided_run - runs the guided controller
 // should be called at 100hz or more
 static void guided_run()
 {
+}
+
+// land_init - initialise land controller
+static bool land_init()
+{
+    return true;
 }
 
 // land_run - runs the land controller
@@ -152,11 +200,23 @@ static void land_run()
     verify_land();
 }
 
+// rtl_init - initialise rtl controller
+static bool rtl_init()
+{
+    return true;
+}
+
 // rtl_run - runs the return-to-launch controller
 // should be called at 100hz or more
 static void rtl_run()
 {
     verify_RTL();
+}
+
+// ofloiter_init - initialise ofloiter controller
+static bool ofloiter_init()
+{
+    return true;
 }
 
 // ofloiter_run - runs the optical flow loiter controller
@@ -165,10 +225,22 @@ static void ofloiter_run()
 {
 }
 
+// drift_init - initialise drift controller
+static bool drift_init()
+{
+    return true;
+}
+
 // drift_run - runs the drift controller
 // should be called at 100hz or more
 static void drift_run()
 {
+}
+
+// sport_init - initialise sport controller
+static bool sport_init()
+{
+    return true;
 }
 
 // sport_run - runs the sport controller
