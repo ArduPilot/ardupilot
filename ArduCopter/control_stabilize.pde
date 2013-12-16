@@ -36,8 +36,8 @@ static void acro_run()
 // should be called at 100hz or more
 static void stabilize_run()
 {
-    Vector3f angle_target;          // for roll and pitch angle targets
-    Vector3f rate_stab_ef_target;    // for yaw rate target
+    Vector3f angle_target = attitude_control.angle_ef_targets();     // for roll, pitch and yaw angular targets
+    Vector3f rate_stab_ef_target;   // for yaw rate target.  Note Vector3f initialises all values to zero in constructor
     int16_t target_roll, target_pitch;
 
     // apply SIMPLE mode transform to pilot inputs
@@ -49,6 +49,11 @@ static void stabilize_run()
     angle_target.x = target_roll;
     angle_target.y = target_pitch;
 
+    // set target heading to current heading while landed
+    if (ap.land_complete) {
+        angle_target.z = ahrs.yaw_sensor;
+    }
+
     // set earth-frame angular targets
     attitude_control.angle_ef_targets(angle_target);
 
@@ -57,7 +62,9 @@ static void stabilize_run()
     attitude_control.angle_to_rate_ef_pitch();
 
     // get pilot's desired yaw rate
-    rate_stab_ef_target.z = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    if (!failsafe.radio && !ap.land_complete) {
+        rate_stab_ef_target.z = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
 
     // set earth-frame rate stabilize target for yaw with pilot's desired yaw
     // To-Do: this is quite wasteful to update the entire target vector when only yaw is used
@@ -69,6 +76,12 @@ static void stabilize_run()
 
     // convert earth-frame rates to body-frame rates
     attitude_control.rate_ef_targets_to_bf();
+
+    // refetch angle targets for reporting
+    angle_target = attitude_control.angle_ef_targets();
+    control_roll = angle_target.x;
+    control_pitch = angle_target.y;
+    control_yaw = angle_target.z;
 
     // body-frame rate controller is run directly from 100hz loop
 
