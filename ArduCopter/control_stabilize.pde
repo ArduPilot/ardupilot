@@ -21,10 +21,9 @@ static void acro_run()
     attitude_control.rate_stab_bf_targets(rate_target);
 
     // convert stabilize rates to regular rates
-    // To-Do: replace G_Dt below
-    attitude_control.rate_stab_bf_to_rate_bf_roll(G_Dt);
-    attitude_control.rate_stab_bf_to_rate_bf_pitch(G_Dt);
-    attitude_control.rate_stab_bf_to_rate_bf_yaw(G_Dt);
+    attitude_control.rate_stab_bf_to_rate_bf_roll();
+    attitude_control.rate_stab_bf_to_rate_bf_pitch();
+    attitude_control.rate_stab_bf_to_rate_bf_yaw();
 
     // call get_acro_level_rates() here?
 
@@ -66,7 +65,7 @@ static void stabilize_run()
 
     // convert earth-frame stabilize rate to regular rate target
     // To-Do: replace G_Dt below
-    attitude_control.rate_stab_ef_to_rate_ef_yaw(G_Dt);
+    attitude_control.rate_stab_ef_to_rate_ef_yaw();
 
     // convert earth-frame rates to body-frame rates
     attitude_control.rate_ef_targets_to_bf();
