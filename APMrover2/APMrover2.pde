@@ -717,6 +717,12 @@ static void update_logging(void)
 
     if (g.log_bitmask & MASK_LOG_NTUN)
         Log_Write_Nav_Tuning();
+
+    if (g.log_bitmask & MASK_LOG_STEERING) {
+        if (control_mode == STEERING || control_mode == AUTO || control_mode == RTL || control_mode == GUIDED) {
+            Log_Write_Steering();
+        }
+    }
 }
 
 

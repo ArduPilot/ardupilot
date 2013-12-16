@@ -126,6 +126,7 @@ enum ap_message {
 #define LOG_COMPASS_MSG         0x0A
 #define LOG_CAMERA_MSG          0x0B
 #define LOG_COMPASS2_MSG        0x0C
+#define LOG_STEERING_MSG        0x0D
 
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
@@ -144,6 +145,7 @@ enum ap_message {
 #define MASK_LOG_SONAR   		(1<<10)
 #define MASK_LOG_COMPASS   		(1<<11)
 #define MASK_LOG_CAMERA   		(1<<12)
+#define MASK_LOG_STEERING  		(1<<13)
 
 // Waypoint Modes
 // ----------------
