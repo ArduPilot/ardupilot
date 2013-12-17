@@ -320,7 +320,7 @@ static void NOINLINE send_system_time(mavlink_channel_t chan)
 }
 
 #if HIL_MODE != HIL_MODE_DISABLED
-static void NOINLINE send_servo_out(mavlink_channel_t chan)
+void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with
