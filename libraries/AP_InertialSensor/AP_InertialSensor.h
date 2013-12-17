@@ -42,7 +42,8 @@ public:
     enum Sample_rate {
         RATE_50HZ,
         RATE_100HZ,
-        RATE_200HZ
+        RATE_200HZ,
+        RATE_400HZ
     };
 
     /// Perform startup initialisation.
