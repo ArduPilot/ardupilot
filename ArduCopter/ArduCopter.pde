@@ -132,6 +132,9 @@
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
+#if CONFIG_EPM == ENABLED
+#include <AP_EPM.h>				// EPM cargo gripper stuff
+#endif
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -830,6 +833,13 @@ static AC_Sprayer sprayer(&inertial_nav);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// EPM Cargo Griper
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_EPM == ENABLED
+static AP_EPM EPM;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
 void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate);
@@ -912,6 +922,11 @@ void setup() {
     // initialise battery monitor
     battery.init();
 
+    // init EPM
+    #if CONFIG_EPM == ENABLED
+    EPM.init();
+    #endif
+    
 #if CONFIG_SONAR == ENABLED
  #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
     sonar_analog_source = new AP_ADC_AnalogSource(
@@ -1006,6 +1021,15 @@ void loop()
 // Main loop - 100hz
 static void fast_loop()
 {
+
+    // not very pretty, does not work in preventing the led's to blink even when EPM is enabled during boot
+    // 
+    #if CONFIG_EPM == ENABLED
+    if(g.EPM_Enable)
+        AP_Notify::flags.external_leds = false;
+	if(!g.EPM_Enable)
+        AP_Notify::flags.external_leds = true;
+    #endif
     // IMU DCM Algorithm
     // --------------------
     read_AHRS();
