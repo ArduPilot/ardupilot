@@ -42,6 +42,9 @@ public:
     // output_test - spin each motor for a moment to allow the user to confirm the motor order and spin direction
     virtual void        output_test();
 
+	// output_test_individual - spin arbitrary motor for a moment to allow the user to confirm the motor order and spin direction
+	virtual void        output_test_individual( uint8_t motor_num);
+
     // output_min - sends minimum values out to the motors
     virtual void        output_min();
 

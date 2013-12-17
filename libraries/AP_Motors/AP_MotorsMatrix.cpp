@@ -368,6 +368,16 @@ void AP_MotorsMatrix::output_test()
     output_min();
 }
 
+// output_test_individual - spin arbitrary motor for a moment to allow the user to confirm the motor order and spin direction
+void AP_MotorsMatrix::output_test_individual(uint8_t motor_num)
+{
+	// turn on this motor and wait 1/3rd of a second
+	hal.rcout->write(_motor_to_channel_map[motor_num], _rc_throttle->radio_min + _min_throttle);
+	hal.scheduler->delay(300);
+	hal.rcout->write(_motor_to_channel_map[motor_num], _rc_throttle->radio_min);
+	hal.scheduler->delay(2000);
+}
+
 // add_motor
 void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {
