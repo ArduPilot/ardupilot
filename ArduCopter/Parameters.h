@@ -67,6 +67,9 @@ public:
         // relay object
         k_param_relay,
 
+        // EPM object
+        k_param_epm,
+
         // Misc
         //
         k_param_log_bitmask = 20,
@@ -313,7 +316,7 @@ public:
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees
     AP_Int32        angle_rate_max;             // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-
+    
     // Waypoints
     //
     AP_Int8         command_total;
