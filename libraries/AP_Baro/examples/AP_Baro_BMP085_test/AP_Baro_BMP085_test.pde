@@ -15,6 +15,8 @@
 #include <AP_Buffer.h>
 #include <Filter.h>
 #include <AP_Baro.h>
+#include <AP_GPS.h>
+#include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Notify.h>
 

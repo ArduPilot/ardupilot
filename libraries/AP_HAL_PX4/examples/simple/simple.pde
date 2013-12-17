@@ -16,6 +16,9 @@
 #include <Filter.h>
 #include <AP_InertialSensor.h>
 #include <AP_ADC.h>
+#include <AP_InertialSensor.h>
+#include <AP_GPS.h>
+#include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Param.h>
 #include <AP_Baro.h>

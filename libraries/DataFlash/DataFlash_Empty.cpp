@@ -8,8 +8,9 @@
 #define DF_NUM_PAGES 4096
 
 // Public Methods //////////////////////////////////////////////////////////////
-void DataFlash_Empty::Init(void)
+void DataFlash_Empty::Init(const struct LogStructure *structure, uint8_t num_types)
 {
+    DataFlash_Class::Init(structure, num_types);
 	df_PageSize = DF_PAGE_SIZE;
     // reserve last page for config information
     df_NumPages   = DF_NUM_PAGES - 1;

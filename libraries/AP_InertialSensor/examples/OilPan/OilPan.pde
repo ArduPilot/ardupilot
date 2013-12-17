@@ -15,8 +15,10 @@
 #include <AP_Param.h>
 #include <AP_ADC.h>
 #include <AP_InertialSensor.h>
-#include <GCS_MAVLink.h>
 #include <AP_Notify.h>
+#include <AP_GPS.h>
+#include <DataFlash.h>
+#include <GCS_MAVLink.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

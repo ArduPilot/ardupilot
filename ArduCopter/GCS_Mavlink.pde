@@ -573,6 +573,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     switch(id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = hal.scheduler->millis();
         send_heartbeat(chan);
         break;
 
@@ -690,6 +691,12 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus(chan);
+        break;
+
+    case MSG_FENCE_STATUS:
+    case MSG_WIND:
+    case MSG_RANGEFINDER:
+        // unused
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -861,38 +868,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-
-GCS_MAVLINK::GCS_MAVLINK() :
-    packet_drops(0),
-    waypoint_send_timeout(1000), // 1 second
-    waypoint_receive_timeout(1000) // 1 second
-{
-    AP_Param::setup_object_defaults(this, var_info);
-}
-
-void
-GCS_MAVLINK::init(AP_HAL::UARTDriver* port)
-{
-    GCS_Class::init(port);
-    if (port == (AP_HAL::BetterStream*)hal.uartA) {
-        mavlink_comm_0_port = port;
-        chan = MAVLINK_COMM_0;
-        initialised = true;
-    } else if (port == (AP_HAL::BetterStream*)hal.uartC) {
-        mavlink_comm_1_port = port;
-        chan = MAVLINK_COMM_1;
-        initialised = true;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    } else if (port == (AP_HAL::BetterStream*)hal.uartD) {
-        mavlink_comm_2_port = port;
-        chan = MAVLINK_COMM_2;
-        initialised = true;
-#endif
-    }
-    _queued_parameter = NULL;
-    reset_cli_timeout();
-}
-
 void
 GCS_MAVLINK::update(void)
 {
@@ -937,7 +912,7 @@ GCS_MAVLINK::update(void)
     // Update packet drops counter
     packet_drops += status.packet_rx_drop_count;
 
-    if (!waypoint_receiving && !waypoint_sending) {
+    if (!waypoint_receiving) {
         return;
     }
 
@@ -948,11 +923,6 @@ GCS_MAVLINK::update(void)
         tnow > waypoint_timelast_request + 500 + (stream_slowdown*20)) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
-    }
-
-    // stop waypoint sending if timeout
-    if (waypoint_sending && (tnow - waypoint_timelast_send) > waypoint_send_timeout) {
-        waypoint_sending = false;
     }
 
     // stop waypoint receiving if timeout
@@ -997,9 +967,13 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 void
 GCS_MAVLINK::data_stream_send(void)
 {
-    if (waypoint_receiving || waypoint_sending) {
+    if (waypoint_receiving) {
         // don't interfere with mission transfer
         return;
+    }
+
+    if (!in_mavlink_delay && !motors.armed()) {
+        handle_log_send(DataFlash);
     }
 
     gcs_out_of_time = false;
@@ -1312,8 +1286,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             msg->compid,
             g.command_total);                     // includes home
 
-        waypoint_timelast_send          = millis();
-        waypoint_sending                        = true;
         waypoint_receiving                      = false;
         waypoint_dest_sysid                     = msg->sysid;
         waypoint_dest_compid            = msg->compid;
@@ -1323,10 +1295,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // XXX read a WP from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_MISSION_REQUEST:     // 40
     {
-        // Check if sending waypiont
-        //if (!waypoint_sending) break;
-        // 5/10/11 - We are trying out relaxing the requirement that we be in waypoint sending mode to respond to a waypoint request.  DEW
-
         // decode
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
@@ -1444,24 +1412,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                                       x,
                                       y,
                                       z);
-
-        // update last waypoint comm stamp
-        waypoint_timelast_send = millis();
         break;
     }
 
-
-    case MAVLINK_MSG_ID_MISSION_ACK:
-    {
-        // decode
-        mavlink_mission_ack_t packet;
-        mavlink_msg_mission_ack_decode(msg, &packet);
-        if (mavlink_check_target(packet.target_system,packet.target_component)) break;
-
-        // turn off waypoint send
-        waypoint_sending = false;
-        break;
-    }
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
     {
@@ -1572,7 +1525,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         waypoint_timelast_receive = millis();
         waypoint_receiving   = true;
-        waypoint_sending         = false;
         waypoint_request_i   = 0;
         // note that ArduCopter sets waypoint_request_last to
         // command_total-1, whereas plane and rover use
@@ -2031,6 +1983,12 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST ... MAVLINK_MSG_ID_LOG_REQUEST_END:
+        if (!in_mavlink_delay && !motors.armed()) {
+            handle_log_message(msg, DataFlash);
+        }
+        break;    
+
 /* To-Do: add back support for polygon type fence
 #if AC_FENCE == ENABLED
     // receive an AP_Limits fence point from GCS and store in EEPROM
@@ -2069,92 +2027,6 @@ mission_failed:
     }     // end switch
 } // end handle mavlink
 
-uint16_t
-GCS_MAVLINK::_count_parameters()
-{
-    // if we haven't cached the parameter count yet...
-    if (0 == _parameter_count) {
-        AP_Param  *vp;
-        AP_Param::ParamToken token;
-
-        vp = AP_Param::first(&token, NULL);
-        do {
-            _parameter_count++;
-        } while (NULL != (vp = AP_Param::next_scalar(&token, NULL)));
-    }
-    return _parameter_count;
-}
-
-/**
- * queued_param_send - Send the next pending parameter, called from deferred message
- * handling code
- */
-void
-GCS_MAVLINK::queued_param_send()
-{
-    if (!initialised || _queued_parameter == NULL) {
-        return;
-    }
-
-    uint16_t bytes_allowed;
-    uint8_t count;
-    uint32_t tnow = millis();
-
-    // use at most 30% of bandwidth on parameters. The constant 26 is
-    // 1/(1000 * 1/8 * 0.001 * 0.3)
-    bytes_allowed = g.serial1_baud * (tnow - _queued_parameter_send_time_ms) * 26;
-    if (bytes_allowed > comm_get_txspace(chan)) {
-        bytes_allowed = comm_get_txspace(chan);
-    }
-    count = bytes_allowed / (MAVLINK_MSG_ID_PARAM_VALUE_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES);
-
-    while (_queued_parameter != NULL && count--) {
-    AP_Param      *vp;
-    float value;
-
-    // copy the current parameter and prepare to move to the next
-    vp = _queued_parameter;
-
-    // if the parameter can be cast to float, report it here and break out of the loop
-    value = vp->cast_to_float(_queued_parameter_type);
-
-    char param_name[AP_MAX_NAME_SIZE];
-    vp->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
-
-    mavlink_msg_param_value_send(
-        chan,
-        param_name,
-        value,
-        mav_var_type(_queued_parameter_type),
-        _queued_parameter_count,
-        _queued_parameter_index);
-
-    _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
-    _queued_parameter_index++;
-}
-    _queued_parameter_send_time_ms = tnow;
-}
-
-/**
- * queued_waypoint_send - Send the next pending waypoint, called from deferred message
- * handling code
- */
-void
-GCS_MAVLINK::queued_waypoint_send()
-{
-    if (waypoint_receiving &&
-        waypoint_request_i <= waypoint_request_last) {
-        mavlink_msg_mission_request_send(
-            chan,
-            waypoint_dest_sysid,
-            waypoint_dest_compid,
-            waypoint_request_i);
-    }
-}
-
-void GCS_MAVLINK::reset_cli_timeout() {
-      _cli_timeout = millis();
-}
 
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the

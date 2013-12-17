@@ -31,7 +31,7 @@ private:
     bool BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size);
 
 public:
-    void        Init();
+    void        Init(const struct LogStructure *structure, uint8_t num_types);
     void        ReadManufacturerID();
     bool        CardInserted();
 };

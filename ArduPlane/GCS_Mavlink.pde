@@ -129,7 +129,7 @@ static NOINLINE void send_fence_status(mavlink_channel_t chan)
 #endif
 
 
-static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t packet_drops)
+static NOINLINE void send_extended_status1(mavlink_channel_t chan)
 {
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
@@ -320,7 +320,7 @@ static void NOINLINE send_system_time(mavlink_channel_t chan)
 }
 
 #if HIL_MODE != HIL_MODE_DISABLED
-static void NOINLINE send_servo_out(mavlink_channel_t chan)
+void NOINLINE send_servo_out(mavlink_channel_t chan)
 {
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with
@@ -601,7 +601,7 @@ static bool telemetry_delayed(mavlink_channel_t chan)
 
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
+static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id)
 {
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
@@ -620,12 +620,13 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = hal.scheduler->millis();
         send_heartbeat(chan);
         return true;
 
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        send_extended_status1(chan, packet_drops);
+        send_extended_status1(chan);
         break;
 
     case MSG_EXTENDED_STATUS2:
@@ -751,6 +752,10 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
 
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
+
+    case MSG_LIMITS_STATUS:
+        // unused
+        break;
     }
     return true;
 }
@@ -764,7 +769,7 @@ static struct mavlink_queue {
 } mavlink_queue[MAVLINK_COMM_NUM_BUFFERS];
 
 // send a message using mavlink
-static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
+static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id)
 {
     uint8_t i, nextid;
     struct mavlink_queue *q = &mavlink_queue[(uint8_t)chan];
@@ -772,8 +777,7 @@ static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uin
     // see if we can send the deferred messages, if any
     while (q->num_deferred_messages != 0) {
         if (!mavlink_try_send_message(chan,
-                                      q->deferred_messages[q->next_deferred_message],
-                                      packet_drops)) {
+                                      q->deferred_messages[q->next_deferred_message])) {
             break;
         }
         q->next_deferred_message++;
@@ -800,7 +804,7 @@ static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uin
     }
 
     if (q->num_deferred_messages != 0 ||
-        !mavlink_try_send_message(chan, id, packet_drops)) {
+        !mavlink_try_send_message(chan, id)) {
         // can't send it now, so defer it
         if (q->num_deferred_messages == MAX_DEFERRED_MESSAGES) {
             // the defer buffer is full, discard
@@ -826,7 +830,7 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
         mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
         s->severity = (uint8_t)severity;
         strncpy((char *)s->text, str, sizeof(s->text));
-        mavlink_send_message(chan, MSG_STATUSTEXT, 0);
+        mavlink_send_message(chan, MSG_STATUSTEXT);
     } else {
         // send immediately
         mavlink_msg_statustext_send(chan, severity, str);
@@ -920,38 +924,6 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-
-GCS_MAVLINK::GCS_MAVLINK() :
-    packet_drops(0),
-    waypoint_send_timeout(1000), // 1 second
-    waypoint_receive_timeout(1000) // 1 second
-{
-    AP_Param::setup_object_defaults(this, var_info);
-}
-
-void
-GCS_MAVLINK::init(AP_HAL::UARTDriver *port)
-{
-    GCS_Class::init(port);
-    if (port == (AP_HAL::BetterStream*)hal.uartA) {
-        mavlink_comm_0_port = port;
-        chan = MAVLINK_COMM_0;
-        initialised = true;
-    } else if (port == (AP_HAL::BetterStream*)hal.uartC) {
-        mavlink_comm_1_port = port;
-        chan = MAVLINK_COMM_1;
-        initialised = true;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    } else if (port == (AP_HAL::BetterStream*)hal.uartD) {
-        mavlink_comm_2_port = port;
-        chan = MAVLINK_COMM_2;
-        initialised = true;
-#endif
-    }
-    _queued_parameter = NULL;
-    reset_cli_timeout();
-}
-
 void
 GCS_MAVLINK::update(void)
 {
@@ -992,9 +964,6 @@ GCS_MAVLINK::update(void)
             handleMessage(&msg);
         }
     }
-
-    // Update packet drops counter
-    packet_drops += status.packet_rx_drop_count;
 
     if (!waypoint_receiving) {
         return;
@@ -1052,6 +1021,10 @@ void
 GCS_MAVLINK::data_stream_send(void)
 {
     gcs_out_of_time = false;
+
+    if (!in_mavlink_delay) {
+        handle_log_send(DataFlash);
+    }
 
     if (_queued_parameter != NULL) {
         if (streamRates[STREAM_PARAMS].get() <= 0) {
@@ -1148,7 +1121,7 @@ GCS_MAVLINK::data_stream_send(void)
 void
 GCS_MAVLINK::send_message(enum ap_message id)
 {
-    mavlink_send_message(chan,id, packet_drops);
+    mavlink_send_message(chan, id);
 }
 
 void
@@ -1408,7 +1381,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             msg->compid,
             g.command_total + 1);     // + home
 
-        waypoint_timelast_send   = millis();
         waypoint_receiving       = false;
         waypoint_dest_sysid      = msg->sysid;
         waypoint_dest_compid     = msg->compid;
@@ -1526,9 +1498,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                                       x,
                                       y,
                                       z);
-
-        // update last waypoint comm stamp
-        waypoint_timelast_send = millis();
         break;
     }
 
@@ -2208,6 +2177,12 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST ... MAVLINK_MSG_ID_LOG_REQUEST_END:
+        if (!in_mavlink_delay) {
+            handle_log_message(msg, DataFlash);
+        }
+        break;
+
     default:
         // forward unknown messages to the other link if there is one
         for (uint8_t i=0; i<num_gcs; i++) {
@@ -2224,93 +2199,6 @@ mission_failed:
     } // end switch
 } // end handle mavlink
 
-uint16_t
-GCS_MAVLINK::_count_parameters()
-{
-    // if we haven't cached the parameter count yet...
-    if (0 == _parameter_count) {
-        AP_Param  *vp;
-        AP_Param::ParamToken token;
-
-        vp = AP_Param::first(&token, NULL);
-        do {
-            _parameter_count++;
-        } while (NULL != (vp = AP_Param::next_scalar(&token, NULL)));
-    }
-    return _parameter_count;
-}
-
-/**
- * @brief Send the next pending parameter, called from deferred message
- * handling code
- */
-void
-GCS_MAVLINK::queued_param_send()
-{
-    if (!initialised || _queued_parameter == NULL) {
-        return;
-    }
-
-    uint16_t bytes_allowed;
-    uint8_t count;
-    uint32_t tnow = millis();
-
-    // use at most 30% of bandwidth on parameters. The constant 26 is
-    // 1/(1000 * 1/8 * 0.001 * 0.3)
-    bytes_allowed = g.serial1_baud * (tnow - _queued_parameter_send_time_ms) * 26;
-    if (bytes_allowed > comm_get_txspace(chan)) {
-        bytes_allowed = comm_get_txspace(chan);
-    }
-    count = bytes_allowed / (MAVLINK_MSG_ID_PARAM_VALUE_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES);
-
-    while (_queued_parameter != NULL && count--) {
-        AP_Param      *vp;
-        float value;
-
-        // copy the current parameter and prepare to move to the next
-        vp = _queued_parameter;
-
-        // if the parameter can be cast to float, report it here and break out of the loop
-        value = vp->cast_to_float(_queued_parameter_type);
-
-        char param_name[AP_MAX_NAME_SIZE];
-        vp->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
-
-        mavlink_msg_param_value_send(
-            chan,
-            param_name,
-            value,
-            mav_var_type(_queued_parameter_type),
-            _queued_parameter_count,
-            _queued_parameter_index);
-
-        _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
-        _queued_parameter_index++;
-    }
-    _queued_parameter_send_time_ms = tnow;
-}
-
-/**
- * @brief Send the next pending waypoint, called from deferred message
- * handling code
- */
-void
-GCS_MAVLINK::queued_waypoint_send()
-{
-    if (initialised &&
-        waypoint_receiving &&
-        waypoint_request_i <= waypoint_request_last) {
-        mavlink_msg_mission_request_send(
-            chan,
-            waypoint_dest_sysid,
-            waypoint_dest_compid,
-            waypoint_request_i);
-    }
-}
-
-void GCS_MAVLINK::reset_cli_timeout() {
-      _cli_timeout = millis();
-}
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
  *  callback in long running library initialisation routines to allow
@@ -2409,11 +2297,11 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 #if LOGGING_ENABLED == ENABLED
     DataFlash.Log_Write_Message(gcs[0].pending_status.text);
 #endif
-    mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
+    mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT);
     for (uint8_t i=1; i<num_gcs; i++) {
         if (gcs[i].initialised) {
             gcs[i].pending_status = gcs[0].pending_status;
-            mavlink_send_message((mavlink_channel_t)i, MSG_STATUSTEXT, 0);
+            mavlink_send_message((mavlink_channel_t)i, MSG_STATUSTEXT);
         }
     }
 }

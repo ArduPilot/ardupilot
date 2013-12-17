@@ -97,6 +97,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 	int opt;
 
 	signal(SIGFPE, _sig_fpe);
+	// No-op SIGPIPE handler
+	signal(SIGPIPE, SIG_IGN);
 
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
