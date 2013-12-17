@@ -92,6 +92,7 @@ public:
         k_param_gps_hdop_good,
         k_param_battery,
         k_param_fs_batt_mah,
+        k_param_rssi_rc,                 // 38
         k_param_angle_rate_max,         // 38
 
         // 65: AP_Limits Library
@@ -313,6 +314,7 @@ public:
     AP_Int16        rtl_alt_final;
 
     AP_Int8         rssi_pin;
+    AP_Int8         rssi_rc;
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees
     AP_Int32        angle_rate_max;             // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes

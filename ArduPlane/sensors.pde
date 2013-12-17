@@ -77,9 +77,19 @@ static void read_battery(void)
 // RC_CHANNELS_SCALED message
 void read_receiver_rssi(void)
 {
-    rssi_analog_source->set_pin(g.rssi_pin);
-    float ret = rssi_analog_source->voltage_average() * 50;
-    receiver_rssi = constrain_int16(ret, 0, 255);
+	if(g.rssi_pin != -1)
+	{
+		rssi_analog_source->set_pin(g.rssi_pin);
+		float ret = rssi_analog_source->voltage_average() * 50;
+		receiver_rssi = constrain_int16(ret, 0, 255);
+	}
+	else if(g.rssi_rc != -1)
+	{
+		uint16_t pulsewidth = hal.rcin->read(g.rssi_rc - 1);
+                pulsewidth = constrain_int16(pulsewidth, 800, 2000);
+		float ret = (pulsewidth - 800) / 4.7;
+		receiver_rssi = constrain_int16(ret, 0, 255);
+	}
 }
 
 

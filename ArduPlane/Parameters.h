@@ -97,6 +97,7 @@ public:
         k_param_ground_steer_alt,        
         k_param_ground_steer_dps,
         k_param_rally_limit_km,
+        k_param_rssi_rc,
         k_param_hil_err_limit,
         k_param_sonar,
 
@@ -405,6 +406,7 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 rssi_pin;
+    AP_Int8 rssi_rc;
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
