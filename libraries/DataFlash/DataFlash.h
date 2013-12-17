@@ -16,7 +16,7 @@ class DataFlash_Class
 {
 public:
     // initialisation
-    virtual void Init(void) = 0;
+    virtual void Init(const struct LogStructure *structure, uint8_t num_types);
     virtual bool CardInserted(void) = 0;
 
     // erase handling
@@ -34,8 +34,6 @@ public:
     virtual uint16_t get_num_logs(void) = 0;
     virtual void LogReadProcess(uint16_t log_num,
                                 uint16_t start_page, uint16_t end_page, 
-                                uint8_t num_types,
-                                const struct LogStructure *structure,
                                 void (*printMode)(AP_HAL::BetterStream *port, uint8_t mode),
                                 AP_HAL::BetterStream *port) = 0;
     virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
@@ -43,8 +41,7 @@ public:
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
     /* logging methods common to all vehicles */
-    uint16_t StartNewLog(uint8_t num_types,
-                         const struct LogStructure *structure);
+    uint16_t StartNewLog(void);
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const GPS *gps, int32_t relative_alt);
@@ -66,15 +63,17 @@ protected:
     read and print a log entry using the format strings from the given structure
     */
     void _print_log_entry(uint8_t msg_type, 
-                          uint8_t num_types, 
-                          const struct LogStructure *structure,
                           void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                           AP_HAL::BetterStream *port);
     
+    void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
                              enum ap_var_type type);
     void Log_Write_Parameters(void);
     virtual uint16_t start_new_log(void) = 0;
+
+    const struct LogStructure *_structures;
+    uint8_t _num_types;
 
     /*
       read a block

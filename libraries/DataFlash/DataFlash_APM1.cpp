@@ -87,8 +87,9 @@ bool DataFlash_APM1::_sem_take(uint8_t timeout)
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-void DataFlash_APM1::Init(void)
+void DataFlash_APM1::Init(const struct LogStructure *structure, uint8_t num_types)
 {
+    DataFlash_Class::Init(structure, num_types);
     // init to zero
     df_NumPages = 0;
 

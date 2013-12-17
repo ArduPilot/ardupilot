@@ -17,7 +17,7 @@ public:
     DataFlash_File(const char *log_directory);
 
     // initialisation
-    void Init(void);
+    void Init(const struct LogStructure *structure, uint8_t num_types);
     bool CardInserted(void);
 
     // erase handling
@@ -36,8 +36,6 @@ public:
     uint16_t start_new_log(void);
     void LogReadProcess(uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
-                        uint8_t num_types,
-                        const struct LogStructure *structure,
                         void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                         AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);

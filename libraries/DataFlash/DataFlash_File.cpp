@@ -46,8 +46,9 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
 
 
 // initialisation
-void DataFlash_File::Init(void)
+void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_types)
 {
+    DataFlash_Class::Init(structure, num_types);
     // create the log directory if need be
     int ret;
     struct stat st;
@@ -360,8 +361,6 @@ uint16_t DataFlash_File::start_new_log(void)
 */
 void DataFlash_File::LogReadProcess(uint16_t log_num,
                                     uint16_t start_page, uint16_t end_page, 
-                                    uint8_t num_types,
-                                    const struct LogStructure *structure,
                                     void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                                     AP_HAL::BetterStream *port)
 {
@@ -414,7 +413,7 @@ void DataFlash_File::LogReadProcess(uint16_t log_num,
 
             case 2:
                 log_step = 0;
-                _print_log_entry(data, num_types, structure, print_mode, port);
+                _print_log_entry(data, print_mode, port);
                 break;
         }
         if (_read_offset >= (end_page+1) * DATAFLASH_PAGE_SIZE) {
