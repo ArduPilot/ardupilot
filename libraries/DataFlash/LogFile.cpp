@@ -561,14 +561,12 @@ uint16_t DataFlash_Class::StartNewLog(void)
     uint16_t ret;
     ret = start_new_log();
 
-#if 0
     // write log formats so the log is self-describing
     for (uint8_t i=0; i<_num_types; i++) {
         Log_Write_Format(&_structures[i]);
         // avoid corrupting the APM1/APM2 dataflash by writing too fast
         hal.scheduler->delay(10);
     }
-#endif
 
     // and all current parameters
     Log_Write_Parameters();
