@@ -9,7 +9,6 @@
 
 #include <AP_HAL.h>
 #include <AP_Common.h>
-#include <GPS.h>
 #include <GCS_MAVLink.h>
 #include <DataFlash.h>
 #include <stdint.h>
