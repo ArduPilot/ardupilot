@@ -792,8 +792,6 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
 	DataFlash.LogReadProcess(log_num, start_page, end_page, 
-                             sizeof(log_structure)/sizeof(log_structure[0]),
-                             log_structure, 
                              print_flight_mode,
                              cliSerial);
 }
@@ -803,7 +801,7 @@ static void start_logging()
 {
     if (g.log_bitmask != 0 && !ap.logging_started) {
         ap.logging_started = true;
-        DataFlash.StartNewLog(sizeof(log_structure)/sizeof(log_structure[0]), log_structure);
+        DataFlash.StartNewLog();
         DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
 
         // write system identifier as well if available
