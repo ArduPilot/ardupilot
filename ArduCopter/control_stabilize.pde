@@ -97,7 +97,30 @@ static void stabilize_run()
 
     // body-frame rate controller is run directly from 100hz loop
 
-    // To-Do: add throttle control for stabilize mode here?
+    // do not run throttle controllers if motors disarmed
+    if( !motors.armed() || g.rc_3.control_in <= 0) {
+        attitude_control.set_throttle_out(0, false);
+        throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
+        set_target_alt_for_reporting(0);
+    }else{
+        // manual throttle but with angle boost
+        int16_t pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
+        attitude_control.set_throttle_out(pilot_throttle_scaled, false);
+
+        // update estimate of throttle cruise
+        #if FRAME_CONFIG == HELI_FRAME
+        update_throttle_cruise(motors.get_collective_out());
+        #else
+        update_throttle_cruise(pilot_throttle_scaled);
+        #endif  //HELI_FRAME
+
+        if (!ap.takeoff_complete && motors.armed()) {
+            if (pilot_throttle_scaled > g.throttle_cruise) {
+                // we must be in the air by now
+                set_takeoff_complete(true);
+            }
+        }
+    }
 }
 
 // althold_init - initialise althold controller

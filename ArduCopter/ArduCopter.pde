@@ -1101,10 +1101,6 @@ static void throttle_loop()
     // get altitude and climb rate from inertial lib
     read_inertial_altitude();
 
-    // Update the throttle ouput
-    // -------------------------
-    update_throttle_mode();
-
     // check if we've landed
     update_land_detector();
 
