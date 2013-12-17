@@ -212,7 +212,11 @@ static DataFlash_Empty DataFlash;
 ////////////////////////////////////////////////////////////////////////////////
 // the rate we run the main loop at
 ////////////////////////////////////////////////////////////////////////////////
+#if MAIN_LOOP_RATE == 400
+static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_400HZ;
+#else
 static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_100HZ;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
@@ -835,6 +839,72 @@ static void pre_arm_checks(bool display_failure);
 // setup the var_info table
 AP_Param param_loader(var_info, WP_START_BYTE);
 
+#if MAIN_LOOP_RATE == 400
+/*
+  scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
+  should be listed here, along with how often they should be called
+  (in 2.5ms units) and the maximum time they are expected to take (in
+  microseconds)
+  1    = 400hz
+  2    = 200hz
+  4    = 100hz
+  8    = 50hz
+  20   = 20hz
+  40   = 10hz
+  133  = 3hz
+  400  = 1hz
+  4000 = 0.1hz
+  
+ */
+static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+    { rc_loop,               4,     10 },
+    { throttle_loop,         8,     45 },
+    { update_GPS,            8,     90 },
+    { update_nav_mode,       4,     40 },
+    { update_batt_compass,  40,     72 },
+    { read_aux_switches,    40,      5 },
+    { arm_motors_check,     40,      1 },
+    { auto_trim,            40,     14 },
+    { update_altitude,      40,    100 },
+    { run_nav_updates,      40,     80 },
+    { three_hz_loop,       133,      9 },
+    { compass_accumulate,    8,     42 },
+    { barometer_accumulate,  8,     25 },
+#if FRAME_CONFIG == HELI_FRAME
+    { check_dynamic_flight,  8,     10 },
+#endif
+    { update_notify,         8,     10 },
+    { one_hz_loop,         400,     42 },
+    { crash_check,          40,      2 },
+    { gcs_check_input,	     8,    550 },
+    { gcs_send_heartbeat,  400,    150 },
+    { gcs_send_deferred,     8,    720 },
+    { gcs_data_stream_send,  8,    950 },
+#if COPTER_LEDS == ENABLED
+    { update_copter_leds,   40,      5 },
+#endif
+    { update_mount,          8,     45 },
+    { ten_hz_logging_loop,  40,     30 },
+    { fifty_hz_logging_loop, 2,     22 },
+    { perf_update,        4000,     20 },
+    { read_receiver_rssi,   40,      5 },
+#ifdef USERHOOK_FASTLOOP
+    { userhook_FastLoop,     4,     10 },
+#endif
+#ifdef USERHOOK_50HZLOOP
+    { userhook_50Hz,         8,     10 },
+#endif
+#ifdef USERHOOK_MEDIUMLOOP
+    { userhook_MediumLoop,  40,     10 },
+#endif
+#ifdef USERHOOK_SLOWLOOP
+    { userhook_SlowLoop,    120,    10 },
+#endif
+#ifdef USERHOOK_SUPERSLOWLOOP
+    { userhook_SuperSlowLoop,400,   10 },
+#endif
+};
+#else
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called
@@ -842,6 +912,7 @@ AP_Param param_loader(var_info, WP_START_BYTE);
   microseconds)
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
+    { rc_loop,               1,     100 },
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
     { update_nav_mode,       1,     400 },
@@ -885,6 +956,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { userhook_SuperSlowLoop,100,   100 },
 #endif
 };
+#endif
 
 
 void setup() 
@@ -963,8 +1035,8 @@ void loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t time_available = (timer + 10000) - micros();
-    scheduler.run(time_available - 300);
+    uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
+    scheduler.run(time_available);
 }
 
 
@@ -1007,6 +1079,12 @@ static void fast_loop()
     }
 #endif  // OPTFLOW == ENABLED
 
+}
+
+// rc_loops - reads user input from transmitter/receiver
+// called at 100hz
+static void rc_loop()
+{
     // Read radio and 3-position switch on radio
     // -----------------------------------------
     read_radio();
