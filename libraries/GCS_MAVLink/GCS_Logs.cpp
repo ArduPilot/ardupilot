@@ -1,8 +1,9 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+  MAVLink logfile transfer functions
+ */
 
 /*
-  Common GCS MAVLink functions for all vehicle types
-
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -128,6 +129,12 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
         // when on USB we can send a lot more data
         num_sends = 20;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    // assume USB speeds in SITL for the purposes of log download
+    num_sends = 20;
+#endif
+
     if (stream_slowdown != 0) {
         // we're using a radio and starting to clag up, slowdown log send
         num_sends = 1;
@@ -190,6 +197,9 @@ void GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
     if (ret < 0) {
         // report as EOF on error
         ret = 0;
+    }
+    if (ret < 90) {
+        memset(data+ret, 0, 90-ret);
     }
     mavlink_msg_log_data_send(chan, _log_num_data, _log_data_offset, ret, data);
     _log_data_offset += len;
