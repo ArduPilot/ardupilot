@@ -350,12 +350,14 @@ static bool usb_connected;
 ////////////////////////////////////////////////////////////////////////////////
 // This is the state of the flight control system
 // There are multiple states defined such as MANUAL, FBW-A, AUTO
-enum FlightMode control_mode  = INITIALISING;
+static enum FlightMode control_mode  = INITIALISING;
+
 // Used to maintain the state of the previous control switch position
-// This is set to -1 when we need to re-read the switch
-uint8_t oldSwitchPosition;
+// This is set to 254 when we need to re-read the switch
+static uint8_t oldSwitchPosition = 254;
+
 // This is used to enable the inverted flight feature
-bool inverted_flight     = false;
+static bool inverted_flight     = false;
 
 static struct {
     // These are trim values used for elevon control

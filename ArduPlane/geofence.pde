@@ -87,6 +87,7 @@ static void geofence_load(void)
             // not much we can do here except disable it
             goto failed;
         }
+        geofence_state->old_switch_position = 254;
     }
 
     if (g.fence_total <= 0) {
@@ -188,7 +189,7 @@ static void geofence_check(bool altitude_check_only)
             geofence_state->old_switch_position == oldSwitchPosition &&
             guided_WP.lat == geofence_state->boundary[0].x &&
             guided_WP.lng == geofence_state->boundary[0].y) {
-            geofence_state->old_switch_position = 0;
+            geofence_state->old_switch_position = 254;
             reset_control_switch();
         }
         return;
