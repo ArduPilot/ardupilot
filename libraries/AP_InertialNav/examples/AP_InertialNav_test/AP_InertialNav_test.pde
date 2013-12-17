@@ -23,6 +23,7 @@
 #include <AC_PID.h>             // PID library
 #include <APM_PI.h>             // PID library
 #include <AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
+#include <DataFlash.h>
 #include <GCS_MAVLink.h>
 #include <AP_Notify.h>
 
