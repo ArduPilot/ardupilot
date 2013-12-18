@@ -61,6 +61,11 @@ static void stabilize_run()
     angle_target.x = target_roll;
     angle_target.y = target_pitch;
 
+    // get pilot's desired yaw rate
+    if (!failsafe.radio && !ap.land_complete) {
+        rate_stab_ef_target.z = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
     // set target heading to current heading while landed
     if (ap.land_complete) {
         angle_target.z = ahrs.yaw_sensor;
@@ -72,11 +77,6 @@ static void stabilize_run()
     // convert earth-frame angle targets to earth-frame rate targets
     attitude_control.angle_to_rate_ef_roll();
     attitude_control.angle_to_rate_ef_pitch();
-
-    // get pilot's desired yaw rate
-    if (!failsafe.radio && !ap.land_complete) {
-        rate_stab_ef_target.z = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-    }
 
     // set earth-frame rate stabilize target for yaw with pilot's desired yaw
     // To-Do: this is quite wasteful to update the entire target vector when only yaw is used
