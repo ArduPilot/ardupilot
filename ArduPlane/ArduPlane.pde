@@ -408,6 +408,8 @@ static struct {
 
     // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
     uint32_t ch3_timer_ms;
+
+    uint32_t last_valid_rc_ms;
 } failsafe;
 
 

@@ -111,16 +111,21 @@ static void rudder_arm_check()
                 Log_Arm_Disarm();
             }                
         }
-
-    }
-    else { //not at full left or right rudder
+    } else { 
+        // not at full right rudder
         rudder_arm_timer = 0;
-        return;
     }
 }
 
 static void read_radio()
 {
+    if (!hal.rcin->valid_channels()) {
+        control_failsafe(channel_throttle->radio_in);
+        return;
+    }
+
+    failsafe.last_valid_rc_ms = hal.scheduler->millis();
+
     elevon.ch1_temp = channel_roll->read();
     elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
@@ -288,6 +293,10 @@ static bool throttle_failsafe_level(void)
 {
     if (!g.throttle_fs_enabled) {
         return false;
+    }
+    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 2000) {
+        // we haven't had a valid RC frame for 2 seconds
+        return true;
     }
     if (channel_throttle->get_reverse()) {
         return channel_throttle->radio_in >= g.throttle_fs_value;
