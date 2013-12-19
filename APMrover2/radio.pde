@@ -45,6 +45,13 @@ static void init_rc_out()
 
 static void read_radio()
 {
+    if (!hal.rcin->valid_channels()) {
+        control_failsafe(channel_throttle->radio_in);
+        return;
+    }
+
+    failsafe.last_valid_rc_ms = hal.scheduler->millis();
+
     for (uint8_t i=0; i<8; i++) {
         RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
     }
@@ -101,7 +108,11 @@ static void control_failsafe(uint16_t pwm)
 	if (rc_override_active) {
         failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
 	} else if (g.fs_throttle_enabled) {
-        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, pwm < (uint16_t)g.fs_throttle_value);
+        bool failed = pwm < (uint16_t)g.fs_throttle_value;
+        if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 2000) {
+            failed = true;
+        }
+        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
 	}
 }
 
