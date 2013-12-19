@@ -94,10 +94,8 @@ static void rudder_arm_check()
         return;      
     }
 
-    // full left or right rudder starts arming counter
-    if (g.rc_4.control_in > 4000 
-        || g.rc_4.control_in < -4000) {
-        
+    // full right rudder starts arming counter
+    if (g.rc_4.control_in > 4000) {
         uint32_t now = millis();
 
         if (rudder_arm_timer == 0 || 
