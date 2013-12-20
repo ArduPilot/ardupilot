@@ -1267,10 +1267,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } else if (packet.param1 == 0.0f)  {
                     if (arming.disarm()) {
-                        //only log if disarming was successful
                         if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
                             channel_throttle->disable_out();  
                         }
+                        // reset the mission on disarm
+                        change_command(0);
+                        //only log if disarming was successful
                         Log_Arm_Disarm();
                         result = MAV_RESULT_ACCEPTED;
                     } else {
