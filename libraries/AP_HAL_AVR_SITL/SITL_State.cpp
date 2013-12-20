@@ -261,7 +261,7 @@ void SITL_State::_timer_handler(int signum)
 #endif
 
     // simulate RC input at 50Hz
-    if (hal.scheduler->millis() - last_pwm_input >= 20) {
+    if (hal.scheduler->millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
         last_pwm_input = hal.scheduler->millis();
         pwm_valid = true;
     }

@@ -1259,6 +1259,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     // run pre_arm_checks and arm_checks and display failures
                     if (arming.arm(AP_Arming::MAVLINK)) {
                         //only log if arming was successful
+                        channel_throttle->enable_out();                        
                         Log_Arm_Disarm();
                         result = MAV_RESULT_ACCEPTED;
                     } else {
@@ -1266,6 +1267,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } else if (packet.param1 == 0.0f)  {
                     if (arming.disarm()) {
+                        if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
+                            channel_throttle->disable_out();  
+                        }
+                        // reset the mission on disarm
+                        change_command(0);
                         //only log if disarming was successful
                         Log_Arm_Disarm();
                         result = MAV_RESULT_ACCEPTED;
@@ -2158,6 +2164,13 @@ mission_failed:
     {
         mavlink_radio_t packet;
         mavlink_msg_radio_decode(msg, &packet);
+
+        // record if the GCS has been receiving radio messages from
+        // the aircraft
+        if (packet.remrssi != 0) {
+            failsafe.last_radio_status_remrssi_ms = hal.scheduler->millis();
+        }
+
         // use the state of the transmit buffer in the radio to
         // control the stream rate, giving us adaptive software
         // flow control

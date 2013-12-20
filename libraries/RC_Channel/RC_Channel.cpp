@@ -382,6 +382,12 @@ RC_Channel::enable_out()
     hal.rcout->enable_ch(_ch_out);
 }
 
+void
+RC_Channel::disable_out()
+{
+    hal.rcout->disable_ch(_ch_out);
+}
+
 RC_Channel *RC_Channel::rc_channel(uint8_t i)
 {
     if (i >= RC_MAX_CHANNELS) {

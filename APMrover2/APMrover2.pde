@@ -354,6 +354,7 @@ static struct {
     uint32_t rc_override_timer;
     uint32_t start_time;
     uint8_t triggered;
+    uint32_t last_valid_rc_ms;
 } failsafe;
 
 // notification object for LEDs, buzzers etc (parameter set to false disables external leds)

@@ -30,9 +30,9 @@ public:
     };
 
     enum ArmingRequired {
-        NO = 0,
-        YES_MIN_PWM,
-        YES_ZERO_PWM,
+        NO           = 0,
+        YES_MIN_PWM  = 1,
+        YES_ZERO_PWM = 2
     };
 
     //for the hacky funciton pointer to gcs_send_text_p

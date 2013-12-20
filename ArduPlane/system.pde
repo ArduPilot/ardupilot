@@ -377,11 +377,15 @@ static void check_long_failsafe()
             failsafe_long_on_event(FAILSAFE_LONG);
         } else if (!failsafe.rc_override_active && 
                    failsafe.state == FAILSAFE_SHORT && 
-           (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
+                   (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_LONG);
-        } else if (g.gcs_heartbeat_fs_enabled && 
-            failsafe.last_heartbeat_ms != 0 &&
-            (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
+        } else if (g.gcs_heartbeat_fs_enabled != GCS_FAILSAFE_OFF && 
+                   failsafe.last_heartbeat_ms != 0 &&
+                   (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
+            failsafe_long_on_event(FAILSAFE_GCS);
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
+                   failsafe.last_radio_status_remrssi_ms != 0 &&
+                   (tnow - failsafe.last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) {
             failsafe_long_on_event(FAILSAFE_GCS);
         }
     } else {

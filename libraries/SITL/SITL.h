@@ -70,6 +70,7 @@ public:
     AP_Int8  gps_hertz;   // GPS update rate in Hz
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
+	AP_Int8  rc_fail;     // fail RC input
 
     // wind control
     AP_Float wind_speed;

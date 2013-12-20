@@ -41,7 +41,9 @@ static void init_rc_out()
 {
     channel_roll->enable_out();
     channel_pitch->enable_out();
-    channel_throttle->enable_out();
+    if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
+        channel_throttle->enable_out();
+    }
     channel_rudder->enable_out();
     enable_aux_servos();
 
@@ -94,10 +96,8 @@ static void rudder_arm_check()
         return;      
     }
 
-    // full left or right rudder starts arming counter
-    if (g.rc_4.control_in > 4000 
-        || g.rc_4.control_in < -4000) {
-        
+    // full right rudder starts arming counter
+    if (g.rc_4.control_in > 4000) {
         uint32_t now = millis();
 
         if (rudder_arm_timer == 0 || 
@@ -107,20 +107,26 @@ static void rudder_arm_check()
         } else {
             //time to arm!
             if (arming.arm(AP_Arming::RUDDER)) {
+                channel_throttle->enable_out();                        
                 //only log if arming was successful
                 Log_Arm_Disarm();
             }                
         }
-
-    }
-    else { //not at full left or right rudder
+    } else { 
+        // not at full right rudder
         rudder_arm_timer = 0;
-        return;
     }
 }
 
 static void read_radio()
 {
+    if (!hal.rcin->valid_channels()) {
+        control_failsafe(channel_throttle->radio_in);
+        return;
+    }
+
+    failsafe.last_valid_rc_ms = hal.scheduler->millis();
+
     elevon.ch1_temp = channel_roll->read();
     elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
@@ -288,6 +294,10 @@ static bool throttle_failsafe_level(void)
 {
     if (!g.throttle_fs_enabled) {
         return false;
+    }
+    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 2000) {
+        // we haven't had a valid RC frame for 2 seconds
+        return true;
     }
     if (channel_throttle->get_reverse()) {
         return channel_throttle->radio_in >= g.throttle_fs_value;

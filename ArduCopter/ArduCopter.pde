@@ -881,9 +881,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { gcs_send_heartbeat,  100,     150 },
     { gcs_send_deferred,     2,     720 },
     { gcs_data_stream_send,  2,     950 },
-#if COPTER_LEDS == ENABLED
-    { update_copter_leds,   10,      55 },
-#endif
     { update_mount,          2,     450 },
     { ten_hz_logging_loop,  10,     300 },
     { fifty_hz_logging_loop, 2,     220 },
@@ -909,8 +906,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 
 void setup() {
 
-    bool enable_external_leds = true;
-
     // this needs to be the first call, as it fills memory with
     // sentinel values
     memcheck_init();
@@ -918,36 +913,6 @@ void setup() {
 
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
-
-    // init EPM cargo gripper
-#if EPM_ENABLED == ENABLED
-    epm.init();
-    enable_external_leds = !epm.enabled();
-#endif
-
-    // initialise notify system
-    // disable external leds if epm is enabled because of pin conflict on the APM
-    notify.init(enable_external_leds);
-
-    // initialise battery monitor
-    battery.init();
-    
-#if CONFIG_SONAR == ENABLED
- #if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-    sonar_analog_source = new AP_ADC_AnalogSource(
-            &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
- #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-    sonar_analog_source = hal.analogin->channel(
-            CONFIG_SONAR_SOURCE_ANALOG_PIN);
- #else
-  #warning "Invalid CONFIG_SONAR_SOURCE"
- #endif
-    sonar = new AP_RangeFinder_MaxsonarXL(sonar_analog_source,
-            &sonar_mode_filter);
-#endif
-
-    rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
-    board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
     init_ardupilot();
 
