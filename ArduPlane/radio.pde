@@ -41,7 +41,9 @@ static void init_rc_out()
 {
     channel_roll->enable_out();
     channel_pitch->enable_out();
-    channel_throttle->enable_out();
+    if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
+        channel_throttle->enable_out();
+    }
     channel_rudder->enable_out();
     enable_aux_servos();
 
@@ -105,6 +107,7 @@ static void rudder_arm_check()
         } else {
             //time to arm!
             if (arming.arm(AP_Arming::RUDDER)) {
+                channel_throttle->enable_out();                        
                 //only log if arming was successful
                 Log_Arm_Disarm();
             }                
