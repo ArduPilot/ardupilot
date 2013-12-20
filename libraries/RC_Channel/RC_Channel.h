@@ -104,6 +104,7 @@ public:
     uint16_t                                        read() const;
     void                                            input();
     void                                            enable_out();
+    void                                            disable_out();
 
     static const struct AP_Param::GroupInfo         var_info[];
 
