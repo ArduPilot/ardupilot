@@ -410,6 +410,9 @@ static struct {
     uint32_t ch3_timer_ms;
 
     uint32_t last_valid_rc_ms;
+
+    // last RADIO status packet
+    uint32_t last_radio_status_remrssi_ms;
 } failsafe;
 
 

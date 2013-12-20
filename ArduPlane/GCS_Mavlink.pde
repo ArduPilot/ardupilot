@@ -2158,6 +2158,13 @@ mission_failed:
     {
         mavlink_radio_t packet;
         mavlink_msg_radio_decode(msg, &packet);
+
+        // record if the GCS has been receiving radio messages from
+        // the aircraft
+        if (packet.remrssi != 0) {
+            failsafe.last_radio_status_remrssi_ms = hal.scheduler->millis();
+        }
+
         // use the state of the transmit buffer in the radio to
         // control the stream rate, giving us adaptive software
         // flow control
