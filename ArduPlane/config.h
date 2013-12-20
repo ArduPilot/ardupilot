@@ -260,8 +260,6 @@
 // THROTTLE_FS_VALUE
 // SHORT_FAILSAFE_ACTION
 // LONG_FAILSAFE_ACTION
-// GCS_HEARTBEAT_FAILSAFE
-//
 #ifndef THROTTLE_FAILSAFE
  # define THROTTLE_FAILSAFE              ENABLED
 #endif
@@ -274,10 +272,6 @@
 #ifndef LONG_FAILSAFE_ACTION
  # define LONG_FAILSAFE_ACTION           0
 #endif
-#ifndef GCS_HEARTBEAT_FAILSAFE
- # define GCS_HEARTBEAT_FAILSAFE         DISABLED
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // AUTO_TRIM
