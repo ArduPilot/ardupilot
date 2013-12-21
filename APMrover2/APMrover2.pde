@@ -195,6 +195,9 @@ static bool in_log_download;
 
 // All GPS access should be through this pointer.
 static GPS         *g_gps;
+#if GPS2_ENABLE
+static GPS         *g_gps2;
+#endif
 
 // flight modes convenience array
 static AP_Int8		*modes = &g.mode1;
@@ -216,6 +219,9 @@ static AP_Compass_HIL compass;
 // GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
 AP_GPS_Auto     g_gps_driver(&g_gps);
+#if GPS2_ENABLE
+AP_GPS_UBLOX    g_gps2_driver;
+#endif
 
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
 AP_GPS_NMEA     g_gps_driver;
@@ -819,6 +825,19 @@ static void update_GPS_50Hz(void)
 {        
     static uint32_t last_gps_reading;
 	g_gps->update();
+
+#if GPS2_ENABLE
+    static uint32_t last_gps2_reading;
+    if (g_gps2 != NULL) {
+        g_gps2->update();
+        if (g_gps2->last_message_time_ms() != last_gps2_reading) {
+            last_gps2_reading = g_gps2->last_message_time_ms();
+            if (g.log_bitmask & MASK_LOG_GPS) {
+                DataFlash.Log_Write_GPS2(g_gps2);
+            }
+        }
+    }
+#endif
 
     if (g_gps->last_message_time_ms() != last_gps_reading) {
         last_gps_reading = g_gps->last_message_time_ms();

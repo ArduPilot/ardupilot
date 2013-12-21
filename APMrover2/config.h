@@ -100,6 +100,12 @@
 # define CURRENT_PIN_1	   -1
 #endif
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+#define GPS2_ENABLE 1
+#else
+#define GPS2_ENABLE 0
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // IMU Selection
 //
