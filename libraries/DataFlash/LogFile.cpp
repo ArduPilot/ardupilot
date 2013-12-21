@@ -673,6 +673,29 @@ void DataFlash_Class::Log_Write_GPS(const GPS *gps, int32_t relative_alt)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a GPS2 packet
+void DataFlash_Class::Log_Write_GPS2(const GPS *gps)
+{
+    struct log_GPS2 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_GPS2_MSG),
+    	status        : (uint8_t)gps->status(),
+    	gps_week_ms   : gps->time_week_ms,
+    	gps_week      : gps->time_week,
+        num_sats      : gps->num_sats,
+        hdop          : gps->hdop,
+        latitude      : gps->latitude,
+        longitude     : gps->longitude,
+        altitude      : gps->altitude_cm,
+        ground_speed  : gps->ground_speed_cm,
+        ground_course : gps->ground_course_cd,
+        vel_z         : gps->velocity_down(),
+        apm_time      : hal.scheduler->millis(),
+        dgps_numch    : 0,
+        dgps_age      : 0
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write an RCIN packet
 void DataFlash_Class::Log_Write_RCIN(void)
 {
