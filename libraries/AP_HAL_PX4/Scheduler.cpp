@@ -283,6 +283,7 @@ void *PX4Scheduler::_uart_thread(void)
         ((PX4UARTDriver *)hal.uartB)->_timer_tick();
         ((PX4UARTDriver *)hal.uartC)->_timer_tick();
         ((PX4UARTDriver *)hal.uartD)->_timer_tick();
+        ((PX4UARTDriver *)hal.uartE)->_timer_tick();
     }
     return NULL;
 }
