@@ -578,6 +578,7 @@ uint16_t DataFlash_Class::StartNewLog(void)
  */
 void DataFlash_Class::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt)
 {
+    memset(&pkt, 0, sizeof(pkt));
     pkt.head1 = HEAD_BYTE1;
     pkt.head2 = HEAD_BYTE2;
     pkt.msgid = LOG_FORMAT_MSG;
