@@ -588,6 +588,16 @@ void SITL_State::loop_hook(void)
         FD_SET(fd, &fds);
         max_fd = max(fd, max_fd);
     }
+    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartD)->_fd;
+    if (fd != -1) {
+        FD_SET(fd, &fds);
+        max_fd = max(fd, max_fd);
+    }
+    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartE)->_fd;
+    if (fd != -1) {
+        FD_SET(fd, &fds);
+        max_fd = max(fd, max_fd);
+    }
     tv.tv_sec = 0;
     tv.tv_usec = 100;
     fflush(stdout);

@@ -35,11 +35,11 @@ static uint8_t gps_delay;
 SITL_State::gps_data SITL_State::_gps_data[MAX_GPS_DELAY];
 
 // state of GPS emulation
-static struct {
+static struct gps_state {
 	/* pipe emulating UBLOX GPS serial stream */
 	int gps_fd, client_fd;
 	uint32_t last_update; // milliseconds
-} gps_state;
+} gps_state, gps2_state;
 
 /*
   hook for reading from the GPS pipe
@@ -79,6 +79,24 @@ int SITL_State::gps_pipe(void)
 }
 
 /*
+  setup GPS2 input pipe
+ */
+int SITL_State::gps2_pipe(void)
+{
+	int fd[2];
+	if (gps2_state.client_fd != 0) {
+		return gps2_state.client_fd;
+	}
+	pipe(fd);
+	gps2_state.gps_fd    = fd[1];
+	gps2_state.client_fd = fd[0];
+	gps2_state.last_update = _scheduler->millis();
+	AVR_SITL::SITLUARTDriver::_set_nonblocking(gps2_state.gps_fd);
+	AVR_SITL::SITLUARTDriver::_set_nonblocking(fd[0]);
+	return gps2_state.client_fd;
+}
+
+/*
   write some bytes from the simulated GPS
  */
 void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
@@ -92,7 +110,9 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
 				continue;
 			}
 		}
-		write(gps_state.gps_fd, p++, 1);
+		write(gps_state.gps_fd, p, 1);
+		write(gps2_state.gps_fd, p, 1);
+        p++;
 	}
 }
 
@@ -547,8 +567,12 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 	if (gps_state.gps_fd != 0) {
 		read(gps_state.gps_fd, &c, 1);
 	}
+	if (gps2_state.gps_fd != 0) {
+		read(gps2_state.gps_fd, &c, 1);
+	}
 
 	gps_state.last_update = hal.scheduler->millis();
+	gps2_state.last_update = hal.scheduler->millis();
 
 	d.latitude = latitude + glitch_offsets.x;
 	d.longitude = longitude + glitch_offsets.y;
@@ -574,7 +598,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 		}
 	}
 
-	if (gps_state.gps_fd == 0) {
+	if (gps_state.gps_fd == 0 && gps2_state.gps_fd == 0) {
 		return;
 	}
 

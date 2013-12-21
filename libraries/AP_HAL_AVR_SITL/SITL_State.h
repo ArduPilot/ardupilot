@@ -34,6 +34,7 @@ public:
     };
 
     int gps_pipe(void);
+    int gps2_pipe(void);
     ssize_t gps_read(int fd, void *buf, size_t count);
     static uint16_t pwm_output[11];
     static uint16_t last_pwm_output[11];

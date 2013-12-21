@@ -62,6 +62,12 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         _connected = true;
         _fd = _sitlState->gps_pipe();
         break;
+
+    case 4:
+        /* gps2 */
+        _connected = true;
+        _fd = _sitlState->gps2_pipe();
+        break;
         
     default:
         _tcp_start_connection(false);
@@ -120,7 +126,7 @@ int16_t SITLUARTDriver::read(void)
         return -1;
     }
 
-    if (_portNumber == 1) {
+    if (_portNumber == 1 || _portNumber == 4) {
         if (_sitlState->gps_read(_fd, &c, 1) == 1) {
             return (uint8_t)c;
         }
