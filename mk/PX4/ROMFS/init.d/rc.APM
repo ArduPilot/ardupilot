@@ -94,7 +94,7 @@ else
     # it may be in bootloader mode
     echo Loading /etc/px4io/px4io.bin
     tone_alarm MBABGP
-    if px4io update /etc/px4io/px4io.bin
+    if px4io forceupdate 14662 /etc/px4io/px4io.bin
     then
 	echo "upgraded PX4IO firmware OK"
         tone_alarm MSPAA
