@@ -64,10 +64,10 @@ fi
 
 if [ $BOARD == FMUv1 ]
 then
-   set deviceC /dev/ttyS2
+   set deviceC /dev/ttyS1
    if [ -f /fs/microsd/APM/uartD.en ]
    then
-      set deviceD /dev/ttyS1
+      set deviceD /dev/ttyS2
    else
       set deviceD /dev/null
    fi
