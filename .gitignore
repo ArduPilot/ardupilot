@@ -15,10 +15,12 @@
 .*.swp
 .built
 .context
+.cproject
 .depend
 .directory
 .DS_Store
 .metadata/
+.project
 .settings/
 .vagrant
 /tmp/*
