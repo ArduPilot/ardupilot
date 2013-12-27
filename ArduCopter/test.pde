@@ -248,15 +248,11 @@ test_logging(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_motors(uint8_t argc, const Menu::arg *argv)
 {
-	/*
-	for (int i = argc; i > 0; i--)
-	{
-		cliSerial->printf_P(PSTR("Argc is: %d\n"), i);
-		cliSerial->printf_P(PSTR("Argv as string is: %s\n"), argv[i].str);
-		cliSerial->printf_P(PSTR("Argv as long is: %d\n"), argv[i].i);
-	}
-	*/
-	uint8_t motor_to_spinn;
+	// ensure all values have been sent to motors
+	motors.set_update_rate(g.rc_speed);
+	motors.set_frame_orientation(g.frame_orientation);
+	motors.set_min_throttle(g.throttle_min);
+	motors.set_mid_throttle(g.throttle_mid);
 
 	switch (argc)
 	{
@@ -267,23 +263,52 @@ test_motors(uint8_t argc, const Menu::arg *argv)
 			"Front (& right of centerline) motor first, then in clockwise order around frame.\n"
 			"Remember to disconnect battery after this test.\n"
 			"Any key to exit.\n"));
-		motor_to_spinn = 0;
+		
+		// enable motors
+		init_rc_out();
+
+		while (1) {
+			delay(20);
+			read_radio();
+			motors.output_test();
+
+			if (cliSerial->available() > 0) {
+				g.esc_calibrate.set_and_save(0);
+				return(0);
+			}
+		}
+
 		break;
 	case 2 :
-		//cliSerial->printf_P(PSTR("Argument is %d\n"), (uint8_t)argv[1].i);
-		if (argv[1].i > 0 && argv[1].i < AP_MOTORS_MAX_NUM_MOTORS) {
+		if (argv[1].i > 0 && argv[1].i <= AP_MOTORS_MAX_NUM_MOTORS) {
 			cliSerial->printf_P(PSTR(
 				"Connect battery for this test.\n"
-				"Motor connected to corresponding RC output will spin for 1/3 of a second.\n"
+				"Motor connected to corresponding RC output will spin.\n"
 				"Remember to disconnect battery after this test.\n"
 				"Any key to exit.\n"));
-			motor_to_spinn = argv[2].i;
+			uint8_t motor_to_spinn = argv[1].i - 1;
+
+			// enable motors
+			init_rc_out();
+			motors.output_test_individual(motor_to_spinn, true);
+
+			while (1) {
+				delay(20);
+				read_radio();
+
+				if (cliSerial->available() > 0) {
+					motors.output_test_individual(motor_to_spinn, false);
+					g.esc_calibrate.set_and_save(0);
+					return(0);
+				}
+			}
 		}
 		else {
 			cliSerial->printf_P(PSTR(
 				"Please specify a motor between 1 and 8.\n"));
 			return(0);
 		}
+
 		break;
 	default:
 		cliSerial->printf_P(PSTR(
@@ -291,30 +316,6 @@ test_motors(uint8_t argc, const Menu::arg *argv)
 		return(0);
 		break;
 	}
-
-    // ensure all values have been sent to motors
-    motors.set_update_rate(g.rc_speed);
-    motors.set_frame_orientation(g.frame_orientation);
-    motors.set_min_throttle(g.throttle_min);
-    motors.set_mid_throttle(g.throttle_mid);
-
-    // enable motors
-    init_rc_out();
-
-    while(1) {
-        delay(20);
-        read_radio();
-		if (motor_to_spinn == 0) {
-			motors.output_test();
-		}
-		else {
-			motors.output_test_individual(motor_to_spinn);
-		}
-        if(cliSerial->available() > 0) {
-            g.esc_calibrate.set_and_save(0);
-            return(0);
-        }
-    }
 }
 
 static int8_t
