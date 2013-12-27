@@ -286,6 +286,7 @@ test_motors(uint8_t argc, const Menu::arg *argv)
 				"Motor connected to corresponding RC output will spin.\n"
 				"Remember to disconnect battery after this test.\n"
 				"Any key to exit.\n"));
+
 			uint8_t motor_to_spinn = argv[1].i - 1;
 
 			// enable motors
@@ -305,14 +306,17 @@ test_motors(uint8_t argc, const Menu::arg *argv)
 		}
 		else {
 			cliSerial->printf_P(PSTR(
-				"Please specify a motor between 1 and 8.\n"));
+				"Please specify a motor between 1 and %d.\n"), AP_MOTORS_MAX_NUM_MOTORS);
 			return(0);
 		}
 
 		break;
 	default:
 		cliSerial->printf_P(PSTR(
-			"Malformed argument.\n"));
+			"Malformed argument.\n"
+			"Type \"motors\" to spin motors in clockwise order around frame.\n"
+			"Type motors followed by motor number (1-%d) to spin arbitrary motor.\n"
+			"For example \"motors 1\" will spin motor connected to RC output 1.\n"), AP_MOTORS_MAX_NUM_MOTORS);
 		return(0);
 		break;
 	}

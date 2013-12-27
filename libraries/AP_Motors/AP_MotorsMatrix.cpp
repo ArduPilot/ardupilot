@@ -368,7 +368,7 @@ void AP_MotorsMatrix::output_test()
     output_min();
 }
 
-// output_test_individual - spin arbitrary motor for a moment to allow the user to confirm the motor order and spin direction
+// output_test_individual - spin arbitrary motor to allow the user to confirm spin direction and motor order
 void AP_MotorsMatrix::output_test_individual(uint8_t motor_num, bool enable)
 {
 	if (enable)
