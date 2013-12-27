@@ -560,7 +560,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
 	// add in some GPS lag
 	_gps_data[next_gps_index++] = d;
-	if (next_gps_index >= gps_delay) {
+	if (next_gps_index >= gps_delay+1) {
 		next_gps_index = 0;
 	}
 
