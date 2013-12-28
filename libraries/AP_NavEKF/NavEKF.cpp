@@ -12,21 +12,28 @@ void InitialiseFilter()
 	// to set initial NED magnetic field states
 	Mat3f DCM;
 	quat2Tbn(DCM, initQuat);
-	Vector3f initMagNED;
-	Vector3f initMagXYZ;
-	initMagXYZ.x = magData - magBias;
-	initMagNED.x = DCM.x.x*initMagXYZ.x + DCM.x.y*initMagXYZ.y + DCM.x.z*initMagXYZ.z;
-	initMagNED.y = DCM.y.x*initMagXYZ.x + DCM.y.y*initMagXYZ.y + DCM.y.z*initMagXYZ.z;
-	initMagNED.z = DCM.z.x*initMagXYZ.x + DCM.z.y*initMagXYZ.y + DCM.z.z*initMagXYZ.z;
+	Vector3f initMagNED = {0,0,0};
+	Vector3f initMagXYZ = {0,0,0};
+	if (useCompass)
+	{
+		readMagData();
+		initMagXYZ.x = magData - magBias;
+		initMagNED.x = DCM.x.x*initMagXYZ.x + DCM.x.y*initMagXYZ.y + DCM.x.z*initMagXYZ.z;
+		initMagNED.y = DCM.y.x*initMagXYZ.x + DCM.y.y*initMagXYZ.y + DCM.y.z*initMagXYZ.z;
+		initMagNED.z = DCM.z.x*initMagXYZ.x + DCM.z.y*initMagXYZ.y + DCM.z.z*initMagXYZ.z;
+	}
 
 	// calculate initial velocities
 	float initvelNED[3];
 	calcvelNED(initvelNED, gpsCourse, gpsGndSpd, gpsVelD);
 
-	//store initial lat,long and height
-	latRef = gpsLat;
-	lonRef = gpsLon;
-	hgtRef = barometer.get_altitude();
+	// reset reference position only if on-ground to allow for in-air restart
+	if(onGround)
+	{
+		latRef = gpsLat;
+		lonRef = gpsLon
+		hgtRef = barometer.get_altitude();
+	}
 
 	// write to state vector
 	for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
@@ -60,6 +67,8 @@ void  UpdateFilter()
 {
 	if (statesInitialised)
 	{
+		// This function will be called at 100Hz
+		//
 		// Read IMU data and convert to delta angles and velocities
 		readIMUdata();
 		// Run the strapdown INS equations every IMU update
@@ -74,89 +83,87 @@ void  UpdateFilter()
 		dt += dtIMU;
 		// perform a covariance prediction if the total delta angle has exceeded the limit
 		// or the time limit will be exceeded at the next IMU update
-		if ((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))
+		// Do not predict covariance if magnetometer fusion still needs to be performed
+		if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)) && !magFuseStep)
 		{
 			CovariancePrediction();
+			covPredStep = true;
 			summedDelAng = summedDelAng.zero();
 			summedDelVel = summedDelVel.zero();
 			dt = 0.0;
 		}
-		// Check for new Magnetometer Data
-		readMagData();
-		// Check for new GPS Data
-		readGpsData();
-		// Check for new height Data
-		readHgtData();
-		// Check for new TAS data
-		readTasData();
+		else
+		{
+			covPredStep = false;
+		}
+		
+		// Update states using GPS, altimeter, compass and airspeed observations
+		SelectVelPosFusion();
+		SelectMagFusion();
+		SelectTasFusion();
 	}
 }
 
-void FuseGPS()
+void SelectVelPosFusion()
 {
-	// Fuse GPS Measurements
-	if (statesInitialised)
+	// Command fusion of GPS measurements if new ones available
+	readGpsData();
+	if (statesInitialised && newDataGps)
 		{
-			// set fusion flags
 			fuseVelData = true;
 			fusePosData = true;
-			// run the fusion step
-			FuseVelposNED();
-			fuseVelData = false;
-			fusePosData = false;
 		}
 		else
 		{
 			fuseVelData = false;
 			fusePosData = false;
 		}
-}
-
-void FuseHGT()
-{
-	// Fuse GPS Measurements
-	if (statesInitialised)
+	// Fuse height measurements with GPS measurements for efficiency
+	// Don't wait longer than HGTmsecTgt msec between height fusion steps
+	if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecTgt)))
 	{
-		// set fusion flags
 		fuseHgtData = true;
-		// run the fusion step
-		FuseVelposNED();
-		fuseHgtData = false;
+		readHgtData();
 	}
 	else
 	{
 		fuseHgtData = false;
 	}
+	FuseVelposNED();
+	fuseHgtData = false;
 }
 
-void FuseMAG()
+void SelectMagFusion()
 {
 		// Fuse Magnetometer Measurements
-		if (statesInitialised)
+		if (statesInitialised && useCompass && !covPredStep && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
 		{
+			MAGmsecPrev = IMUmsec;
 			fuseMagData = true;
-			FuseMagnetometer();
-			fuseMagData = false;
+			readMagData();
 		}
 		else
 		{
 			fuseMagData = false;
+			// protect against wrap-around
+			if(IMUmsec < MAGmsecPrev) MAGmsecPrev = IMUmsec;
 		}
+		// Magnetometer fusion is always called if enabled because its fusion is spread across 3 time steps
+		// to reduce peak load
+		FuseMagnetometer();
 }
 
-void FuseTAS()
+void SelectTasFusion()
 {
-		// Fuse Airspeed Measurements
-		if (statesInitialised && VtasMeas > 8.0)
-		{
-			fuseVtasData = true;
-			FuseAirspeed();
-			fuseVtasData = false;
-		}
-		else
-		{
-			fuseVtasData = false;
-		}
+	// Fuse Airspeed Measurements
+	if (statesInitialised && useAirspeed && !onGround  && !covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
+	{
+		TASmsecPrev = IMUmsec;
+		readAirSpdData();
+		FuseAirspeed();
+	}
+	// protect against wrap-around
+	if(IMUmsec < TASmsecPrev) TASmsecPrev = IMUmsec;
 }
 
 void  UpdateStrapdownEquationsNED()
@@ -1321,12 +1328,10 @@ void FuseMagnetometer()
 // data fit is the only assumption we can make
 // so we might as well take advantage of the computational efficiencies
 // associated with sequential fusion
-	if (useCompass && (fuseMagData || obsIndex == 1 || obsIndex == 2))
+	if (fuseMagData || obsIndex == 1 || obsIndex == 2)
 	{
-
 		// Sequential fusion of XYZ components to spread processing load across
 		// three prediction time steps.
-
 		// Calculate observation jacobians and Kalman gains
 		if (fuseMagData)
 		{
@@ -1414,10 +1419,11 @@ void FuseMagnetometer()
 			Kfusion[22] = SK_MX[0]*(P[22][21] + P[22][1]*SH_MAG[0] + P[22][3]*SH_MAG[2] + P[22][0]*SK_MX[3] - P[22][2]*SK_MX[2] - P[22][18]*SK_MX[1] + P[22][19]*SK_MX[5] - P[22][20]*SK_MX[4]);
 			Kfusion[23] = SK_MX[0]*(P[23][21] + P[23][1]*SH_MAG[0] + P[23][3]*SH_MAG[2] + P[23][0]*SK_MX[3] - P[23][2]*SK_MX[2] - P[23][18]*SK_MX[1] + P[23][19]*SK_MX[5] - P[23][20]*SK_MX[4]);
 			varInnovMag[0] = 1.0/SK_MX[0];
-
 			// reset the observation index to 0 (we start by fusing the X
 			// measurement)
 			obsIndex = 0;
+			// Set flag to indicate to other processes that magnetometer fusion is performed on this time step
+			magFuseStep = true;
 		}
 		else if (obsIndex == 1) // we are now fusing the Y measurement
 		{
@@ -1465,6 +1471,8 @@ void FuseMagnetometer()
 			Kfusion[22] = SK_MY[0]*(P[22][22] + P[22][0]*SH_MAG[2] + P[22][1]*SH_MAG[1] + P[22][2]*SH_MAG[0] - P[22][3]*SK_MY[2] - P[22][19]*SK_MY[1] - P[22][18]*SK_MY[3] + P[22][20]*SK_MY[4]);
 			Kfusion[23] = SK_MY[0]*(P[23][22] + P[23][0]*SH_MAG[2] + P[23][1]*SH_MAG[1] + P[23][2]*SH_MAG[0] - P[23][3]*SK_MY[2] - P[23][19]*SK_MY[1] - P[23][18]*SK_MY[3] + P[23][20]*SK_MY[4]);
 			varInnovMag[1] = 1.0/SK_MY[0];
+			// Set flag to indicate to other processes that magnetometer fusion is performed on this time step
+			magFuseStep = true;
 		}
 		else if (obsIndex == 2) // we are now fusing the Z measurement
 		{
@@ -1513,6 +1521,8 @@ void FuseMagnetometer()
 			Kfusion[22] = SK_MZ[0]*(P[22][23] + P[22][0]*SH_MAG[1] + P[22][3]*SH_MAG[0] - P[22][1]*SK_MZ[2] + P[22][2]*SK_MZ[3] + P[22][20]*SK_MZ[1] + P[22][18]*SK_MZ[5] - P[22][19]*SK_MZ[4]);
 			Kfusion[23] = SK_MZ[0]*(P[23][23] + P[23][0]*SH_MAG[1] + P[23][3]*SH_MAG[0] - P[23][1]*SK_MZ[2] + P[23][2]*SK_MZ[3] + P[23][20]*SK_MZ[1] + P[23][18]*SK_MZ[5] - P[23][19]*SK_MZ[4]);
 			varInnovMag[2] = 1.0/SK_MZ[0];
+			// Set flag to indicate to other processes that magnetometer fusion is performed on this time step
+			magFuseStep = true;
 		}
 		// Calculate the measurement innovation
 		innovMag[obsIndex] = MagPred[obsIndex] - magData[obsIndex];
@@ -1573,6 +1583,11 @@ void FuseMagnetometer()
 			}
 		}
 		obsIndex = obsIndex + 1;
+	}
+	else
+	{
+		// clear flag to indicate to other processes that magnetometer fusion is not performed on this time step
+		magFuseStep = false;
 	}
 }
 
@@ -1917,9 +1932,14 @@ void readIMUData()
 
 void readGpsData()
 {
+	
+	static uint64_t lastFixTime=0;
+	if ((g_gps->last_fix_time > g_gps->last_fix_time) && (g_gps->status() >= GPS::GPS_OK_FIX_3D))
+	{
+	GPSstatus = g_gps->status();
+	newDataGps = true;
 	RecallStates(statesAtVelTime, (IMUmsec - msecVelDelay));
 	RecallStates(statesAtPosTime, (IMUmsec - msecPosDelay));
-	GPSstatus = g_gps->status();
 	velNED[0] = g_gps->velocity_north(); // (rad)
 	velNED[1] = g_gps->velocity_east(); // (m/s)
 	velNED[2] = g_gps->velocity_down(); // (m/s)
@@ -1928,19 +1948,24 @@ void readGpsData()
 	gpsHgt    = 0.01*g_gps->altitude_cm(); // (m)
 	// Convert GPS measurements to Pos NE
 	calcposNE(posNE, gpsLat, gpsLon, latRef, lonRef);
+	}
 }
 
 void readHgtData()
 {
-	// read barometric altitude in m
-	hgtMea = barometer.get_altitude();
-	RecallStates(statesAtVelTime, (IMUmsec - msecHgtDelay));
+	// ToDo do we check for new height data or grab a height measurement?
+	// Best to do this at the same time as GPS measurement fusion for efficiency
+	hgtMea = barometer.get_altitude() - hgtRef;
+	// recall states from compass measurement time
+	if(newDataHgt) RecallStates(statesAtVelTime, (IMUmsec - msecHgtDelay));
 }
 
 void readMagData()
 {
+	// scale compass data to improve numerical conditioning
 	magData = 0.001*compass.get_field();
 	magBias = 0.001*compass.get_offsets();
+	// Recall states from compass measurement time
 	RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
 }
 

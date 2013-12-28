@@ -111,13 +111,13 @@ void readMagData();
 
 void readAirSpdData();
 
-void FuseGPS();
+void SelectVelPosFusion();
 	
-void FuseHGT();
+void SelectHgtFusion();
 
-void FuseTAS();
+void SelectTasFusion();
 
-void FuseMAG();
+void SelectMagFusion();
 	
 #define GRAVITY_MSS 9.80665
 #define deg2rad 0.017453292
@@ -129,8 +129,8 @@ float KH[24][24]; //  intermediate result used for covariance updates
 float KHP[24][24]; // intermediate result used for covariance updates
 static float P[24][24]; // covariance matrix
 float Kfusion[24]; // Kalman gains
-static float states[24]; // state matrix
-static float storedStates[24][50]; // state vectors stored for the last 50 time steps
+float states[24]; // state matrix
+float storedStates[24][50]; // state vectors stored for the last 50 time steps
 uint32_t statetimeStamp[50]; // time stamp for each state vector stored
 Vector3f correctedDelAng; // delta angles about the xyz body axes corrected for errors (rad)
 Vector3f correctedDelVel; // delta velocities along the XYZ body axes corrected for errors (m/s)
@@ -176,8 +176,16 @@ float eulerEst[3]; // Euler angles calculated from filter states
 float eulerDif[3]; // difference between Euler angle estimated by EKF and the AHRS solution
 const float covTimeStepMax = 0.07; // maximum time allowed between covariance predictions
 const float covDelAngMax = 0.05; // maximum delta angle between covariance predictions
-bool endOfData = false; //boolean set to true when all files have returned data
-
+bool covPredStep = false; // boolean set to true when a covariance prediction step has been performed
+bool magFuseStep = false; // boolean set to true when magnetometer fusion steps are being performed
+bool posVelFuseStep = false; // boolean set to true when position and velocity fusion is being performed
+bool tasFuseStep = false; // boolean set to true when airspeed fusion is being performed
+uint32_t TASmsecPrev = 0; // time stamp of last TAS fusion step
+uint32_t TASmsecTgt = 250; // target interval between TAS fusion steps
+uint32_t TASmsecPrev = 0; // time stamp of last compass fusion step
+uint32_t TASmsecTgt = 200; // target interval between compass fusion steps
+uint32_t HGTmsecPrev = 0; // time stamp of last height measurement fusion step
+uint32_t HGTmsecTgt = 200; // target interval between height measurement fusion steps
 
 // Estimated time delays (msec)
 uint32_t msecVelDelay = 300;
@@ -212,10 +220,5 @@ bool newDataMag;
 
 // AHRS input data variables
 float ahrsEul[3];
-
-// ADS input data variables
-float Veas;
-float EAS2TAS; // ratio 0f true to equivalent airspeed
-bool newAdsData;
 
 };
