@@ -96,7 +96,7 @@ static void init_ardupilot()
 
 	cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
 						 "\n\nFree RAM: %u\n"),
-                    memcheck_available_memory());
+                        hal.util->available_memory());
                     
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.

@@ -84,7 +84,6 @@
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Airspeed.h>    // needed for AHRS build
 #include <AP_Vehicle.h>     // needed for AHRS build
-#include <memcheck.h>
 #include <DataFlash.h>
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <SITL.h>
@@ -582,7 +581,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
   setup is called when the sketch starts
  */
 void setup() {
-	memcheck_init();
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
