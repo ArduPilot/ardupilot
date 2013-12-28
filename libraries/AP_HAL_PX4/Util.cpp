@@ -121,4 +121,17 @@ bool PX4Util::get_system_id(char buf[40])
     return true;
 }
 
+/**
+   how much free memory do we have in bytes.
+*/
+uint16_t PX4Util::available_memory(void) 
+{
+    struct mallinfo mem;
+    mem = mallinfo();
+    if (mem.fordblks > 0xFFFF) {
+        return 0xFFFF;
+    }
+    return mem.fordblks;
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

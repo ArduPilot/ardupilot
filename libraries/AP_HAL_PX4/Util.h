@@ -22,6 +22,8 @@ public:
      */
     bool get_system_id(char buf[40]);
 
+    uint16_t available_memory(void);
+
 private:
     int _safety_handle;
 };
