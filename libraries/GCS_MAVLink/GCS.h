@@ -178,6 +178,9 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
+    // common send functions
+    void send_meminfo(void);
+
 private:
     void        handleMessage(mavlink_message_t * msg);
 
