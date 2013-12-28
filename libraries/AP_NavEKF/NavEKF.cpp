@@ -32,7 +32,7 @@ void InitialiseFilter()
 	{
 		latRef = gpsLat;
 		lonRef = gpsLon
-		hgtRef = barometer.get_altitude();
+		hgtRef = _baro->get_altitude();
 	}
 
 	// write to state vector
@@ -1938,18 +1938,18 @@ void readGpsData()
 {
 	
 	static uint64_t lastFixTime=0;
-	if ((g_gps->last_fix_time > g_gps->last_fix_time) && (g_gps->status() >= GPS::GPS_OK_FIX_3D))
+	if ((_gps->last_fix_time > _gps->last_fix_time) && (_gps->status() >= GPS::GPS_OK_FIX_3D))
 	{
-	GPSstatus = g_gps->status();
+	GPSstatus = _gps->status();
 	newDataGps = true;
 	RecallStates(statesAtVelTime, (IMUmsec - msecVelDelay));
 	RecallStates(statesAtPosTime, (IMUmsec - msecPosDelay));
-	velNED[0] = g_gps->velocity_north(); // (rad)
-	velNED[1] = g_gps->velocity_east(); // (m/s)
-	velNED[2] = g_gps->velocity_down(); // (m/s)
-	gpsLat    = deg2rad*1e-7*g_gps->latitude(); // (rad)
-	gpsLon    = deg2rad*1e-7*g_gps->longitude(); //(rad)
-	gpsHgt    = 0.01*g_gps->altitude_cm(); // (m)
+	velNED[0] = _gps->velocity_north(); // (rad)
+	velNED[1] = _gps->velocity_east(); // (m/s)
+	velNED[2] = _gps->velocity_down(); // (m/s)
+	gpsLat    = deg2rad*1e-7*_gps->latitude(); // (rad)
+	gpsLon    = deg2rad*1e-7*_gps->longitude(); //(rad)
+	gpsHgt    = 0.01*_gps->altitude_cm(); // (m)
 	// Convert GPS measurements to Pos NE
 	calcposNE(posNE, gpsLat, gpsLon, latRef, lonRef);
 	}
@@ -1959,7 +1959,7 @@ void readHgtData()
 {
 	// ToDo do we check for new height data or grab a height measurement?
 	// Best to do this at the same time as GPS measurement fusion for efficiency
-	hgtMea = barometer.get_altitude() - hgtRef;
+	hgtMea = _baro->get_altitude() - hgtRef;
 	// recall states from compass measurement time
 	if(newDataHgt) RecallStates(statesAtVelTime, (IMUmsec - msecHgtDelay));
 }
@@ -1967,8 +1967,8 @@ void readHgtData()
 void readMagData()
 {
 	// scale compass data to improve numerical conditioning
-	magData = 0.001*compass.get_field();
-	magBias = 0.001*compass.get_offsets();
+	magData = 0.001*_compass->get_field();
+	magBias = 0.001*_compass->get_offsets();
 	// Recall states from compass measurement time
 	RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
 }
