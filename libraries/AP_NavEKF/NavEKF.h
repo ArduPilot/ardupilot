@@ -93,7 +93,7 @@ void quat2eul(float eul[3],float quat[4]);
 
 void calcvelNED(float velNED[3], float gpsCourse, float gpsGndSpd, float gpsVelD);
 
-void calcposNED(float posNED[3], float lat, float lon, float hgt, float latRef, float lonRef, float hgtRef);
+void calcposNE(float posNE[2], float lat, float lon, float latRef, float lonRef);
 
 void calcllh(float posNED[3], float lat, float lon, float hgt, float latRef, float lonRef, float hgtRef);
 
