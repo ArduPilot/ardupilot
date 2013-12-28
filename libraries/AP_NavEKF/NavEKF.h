@@ -23,18 +23,20 @@
 
 #include <AP_Math.h>
 #include <AP_AHRS.h>
-#include <AP_Airspeed.h>
 #include <AP_InertialSensor.h>          // ArduPilot Mega IMU Library
+#include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
+#include <AP_AHRS.h>
+#include <AP_Airspeed.h>
 
 class NavEKF
 {
 public:
 
-    // Constructor - don't know how to do this
-    //AP_InertialNav( const AP_AHRS* ahrs, AP_Baro* baro, GPS*& gps) :
-    //    _ahrs(ahrs),
-    //    _baro(baro),
-    //    _gps(gps)
+    // Constructor
+    AP_InertialNav( const AP_AHRS* ahrs, AP_Baro* baro, GPS*& gps) :
+        _ahrs(ahrs),
+        _baro(baro),
+        _gps(gps)
  
     // Initialise the filter states from the AHRS and magnetometer data (if present)
     void InitialiseFilter();
