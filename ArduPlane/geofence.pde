@@ -78,7 +78,7 @@ static void geofence_load(void)
     uint8_t i;
 
     if (geofence_state == NULL) {
-        if (memcheck_available_memory() < 512 + sizeof(struct GeofenceState)) {
+        if (hal.util->available_memory() < 512 + sizeof(struct GeofenceState)) {
             // too risky to enable as we could run out of stack
             goto failed;
         }

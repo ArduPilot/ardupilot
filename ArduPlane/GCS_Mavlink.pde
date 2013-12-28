@@ -246,7 +246,7 @@ static void NOINLINE send_meminfo(mavlink_channel_t chan)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
     extern unsigned __brkval;
-    mavlink_msg_meminfo_send(chan, __brkval, memcheck_available_memory());
+    mavlink_msg_meminfo_send(chan, __brkval, hal.util->available_memory());
 #endif
 }
 

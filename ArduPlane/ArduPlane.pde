@@ -51,7 +51,6 @@
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed.h>
-#include <memcheck.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
@@ -763,10 +762,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 AP_Param param_loader(var_info, WP_START_BYTE);
 
 void setup() {
-    // this needs to be the first call, as it fills memory with
-    // sentinel values
-    memcheck_init();
-
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
