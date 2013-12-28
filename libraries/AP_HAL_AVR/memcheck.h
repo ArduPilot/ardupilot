@@ -2,5 +2,3 @@
 
 unsigned        memcheck_available_memory(void);
 void            memcheck_init(void);
-void            memcheck_update_stackptr(void);
-
