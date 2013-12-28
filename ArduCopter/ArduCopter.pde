@@ -123,7 +123,6 @@
 #include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence.h>           // Arducopter Fence library
-#include <memcheck.h>           // memory limit checker
 #include <SITL.h>               // software in the loop support
 #include <AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper.h>        // RC input mapping library
@@ -904,11 +903,8 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 };
 
 
-void setup() {
-
-    // this needs to be the first call, as it fills memory with
-    // sentinel values
-    memcheck_init();
+void setup() 
+{
     cliSerial = hal.console;
 
     // Load the default values of variables listed in var_info[]s
