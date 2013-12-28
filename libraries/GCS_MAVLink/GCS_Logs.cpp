@@ -127,12 +127,12 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
     uint8_t num_sends = 1;
     if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
         // when on USB we can send a lot more data
-        num_sends = 30;
+        num_sends = 40;
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
     // assume USB speeds in SITL for the purposes of log download
-    num_sends = 20;
+    num_sends = 40;
 #endif
 
     if (stream_slowdown != 0) {
