@@ -68,6 +68,8 @@ private:
     uint32_t _get_log_size(uint16_t log_num);
     uint32_t _get_log_time(uint16_t log_num);
 
+    void stop_logging(void);
+
     void _io_timer(void);
 };
 
