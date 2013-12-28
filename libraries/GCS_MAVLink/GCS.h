@@ -273,7 +273,7 @@ private:
     void handle_log_message(mavlink_message_t *msg, DataFlash_Class &dataflash);
     void handle_log_send(DataFlash_Class &dataflash);
     void handle_log_send_listing(DataFlash_Class &dataflash);
-    void handle_log_send_data(DataFlash_Class &dataflash);
+    bool handle_log_send_data(DataFlash_Class &dataflash);
 
 };
 

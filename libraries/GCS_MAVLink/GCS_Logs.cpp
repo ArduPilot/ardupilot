@@ -113,7 +113,7 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
     }
     _log_sending = true;
 
-    handle_log_send_data(dataflash);
+    handle_log_send(dataflash);
 }
 
 /**
@@ -127,7 +127,7 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
     uint8_t num_sends = 1;
     if (chan == MAVLINK_COMM_0 && hal.gpio->usb_connected()) {
         // when on USB we can send a lot more data
-        num_sends = 20;
+        num_sends = 30;
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
@@ -141,7 +141,7 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
     }
     for (uint8_t i=0; i<num_sends; i++) {
         if (_log_sending) {
-            handle_log_send_data(dataflash);
+            if (!handle_log_send_data(dataflash)) break;
         }
     }
 }
@@ -174,16 +174,16 @@ void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
 /**
    trigger sending of log data if there are some pending
  */
-void GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
+bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
 {
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
     if (payload_space < MAVLINK_MSG_ID_LOG_DATA_LEN) {
         // no space
-        return;
+        return false;
     }
     if (hal.scheduler->millis() - last_heartbeat_time > 3000) {
         // give a heartbeat a chance
-        return;
+        return false;
     }
 
     int16_t ret = 0;
@@ -199,12 +199,13 @@ void GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
         ret = 0;
     }
     if (ret < 90) {
-        memset(data+ret, 0, 90-ret);
+        memset(&data[ret], 0, 90-ret);
     }
     mavlink_msg_log_data_send(chan, _log_num_data, _log_data_offset, ret, data);
     _log_data_offset += len;
     _log_data_remaining -= len;
-    if (len < 90 || _log_data_remaining == 0) {
+    if (ret < 90 || _log_data_remaining == 0) {
         _log_sending = false;
     }
+    return true;
 }
