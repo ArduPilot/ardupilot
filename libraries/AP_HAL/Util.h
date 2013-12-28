@@ -47,6 +47,12 @@ public:
       terminated
      */
     virtual bool get_system_id(char buf[40]) { return false; }
+
+    /**
+       how much free memory do we have in bytes. If more than 0xFFFF
+       then return 0xFFFF. If unknown return 4096
+     */
+    virtual uint16_t available_memory(void) { return 4096; }
 };
 
 #endif // __AP_HAL_UTIL_H__
