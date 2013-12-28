@@ -58,39 +58,38 @@ void InitialiseFilter()
 
 void  UpdateFilter()
 {
-		if (statesInitialised)
+	if (statesInitialised)
+	{
+		// Read IMU data and convert to delta angles and velocities
+		readIMUdata();
+		// Run the strapdown INS equations every IMU update
+		UpdateStrapdownEquationsNED();
+		// store the predicted states for subsequent use by measurement fusion
+		StoreStates();
+		// Check if on ground - status is used by covariance prediction
+		OnGroundCheck();
+		// sum delta angles and time used by covariance prediction
+		summedDelAng = summedDelAng + correctedDelAng;
+		summedDelVel = summedDelVel + correctedDelVel;
+		dt += dtIMU;
+		// perform a covariance prediction if the total delta angle has exceeded the limit
+		// or the time limit will be exceeded at the next IMU update
+		if ((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))
 		{
-			// Read IMU data and convert to delta angles and velocities
-			readIMUdata();
-			// Run the strapdown INS equations every IMU update
-			UpdateStrapdownEquationsNED();
-			// store the predicted states for subsequent use by measurement fusion
-			StoreStates();
-			// Check if on ground - status is used by covariance prediction
-			OnGroundCheck();
-			// sum delta angles and time used by covariance prediction
-			summedDelAng = summedDelAng + correctedDelAng;
-			summedDelVel = summedDelVel + correctedDelVel;
-			dt += dtIMU;
-			// perform a covariance prediction if the total delta angle has exceeded the limit
-			// or the time limit will be exceeded at the next IMU update
-			if ((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))
-			{
-				CovariancePrediction();
-				summedDelAng = summedDelAng.zero();
-				summedDelVel = summedDelVel.zero();
-				dt = 0.0;
-			}
-			// Check for new Magnetometer Data
-			readMagData();
-			// Check for new GPS Data
-			readGpsData();
-			// Check for new height Data
-			readHgtData();
-			// Check for new TAS data
-			readTasData();
-			
+			CovariancePrediction();
+			summedDelAng = summedDelAng.zero();
+			summedDelVel = summedDelVel.zero();
+			dt = 0.0;
 		}
+		// Check for new Magnetometer Data
+		readMagData();
+		// Check for new GPS Data
+		readGpsData();
+		// Check for new height Data
+		readHgtData();
+		// Check for new TAS data
+		readTasData();
+	}
 }
 
 void FuseGPS()
@@ -98,11 +97,6 @@ void FuseGPS()
 	// Fuse GPS Measurements
 	if (statesInitialised)
 		{
-			// Convert GPS measurements to Pos NE, hgt and Vel NED
-			calcvelNED(velNED, gpsCourse, gpsGndSpd, gpsVelD);
-			calcposNED(posNED, gpsLat, gpsLon, gpsHgt, latRef, lonRef, hgtRef);
-			posNE[0] = posNED[0];
-			posNE[1] = posNED[1];
 			// set fusion flags
 			fuseVelData = true;
 			fusePosData = true;
@@ -1852,11 +1846,10 @@ void calcvelNED(float velNED[3], float gpsCourse, float gpsGndSpd, float gpsVelD
 	velNED[2] = gpsVelD;
 }
 
-void calcposNED(float posNED[3], float lat, float lon, float hgt, float latRef, float lonRef, float hgtRef)
+void calcposNE(float posNE[2], float lat, float lon, float latRef, float lonRef)
 {
 	posNED[0] = earthRadius * (lat - latRef);
 	posNED[1] = earthRadius * cos(latRef) * (lon - lonRef);
-	posNED[2] = -(hgt - hgtRef);
 }
 
 void calcLLH(float posNED[3], float lat, float lon, float hgt, float latRef, float lonRef, float hgtRef)
@@ -1924,16 +1917,17 @@ void readIMUData()
 
 void readGpsData()
 {
-	// GPS mode (3 = 3D)
-	GPSstatus = something;
-	gpsCourse = something; // (rad)
-	gpsGndSpd = something; // (m/s)
-	gpsVelD = something; // (m/s)
-	gpsLat = deg2rad*something; // (rad)
-	gpsLon = deg2rad*something; //(rad)
-	gpsHgt = something; // (m)
 	RecallStates(statesAtVelTime, (IMUmsec - msecVelDelay));
 	RecallStates(statesAtPosTime, (IMUmsec - msecPosDelay));
+	GPSstatus = g_gps->status();
+	velNED[0] = g_gps->velocity_north(); // (rad)
+	velNED[1] = g_gps->velocity_east(); // (m/s)
+	velNED[2] = g_gps->velocity_down(); // (m/s)
+	gpsLat    = deg2rad*1e-7*g_gps->latitude(); // (rad)
+	gpsLon    = deg2rad*1e-7*g_gps->longitude(); //(rad)
+	gpsHgt    = 0.01*g_gps->altitude_cm(); // (m)
+	// Convert GPS measurements to Pos NE
+	calcposNE(posNE, gpsLat, gpsLon, latRef, lonRef);
 }
 
 void readHgtData()
