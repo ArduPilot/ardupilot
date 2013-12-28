@@ -118,18 +118,22 @@ void SelectVelPosFusion()
 			fuseVelData = false;
 			fusePosData = false;
 		}
-	// Fuse height measurements with GPS measurements for efficiency
-	// Don't wait longer than HGTmsecTgt msec between height fusion steps
+	// Fuse height measurements at the same time as GPS measurements for efficiency
+	// Don't wait longer than HGTmsecTgt msec between height updates
 	if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecTgt)))
 	{
+		HGTmsecPrev = IMUmsec;
 		fuseHgtData = true;
 		readHgtData();
 	}
 	else
 	{
 		fuseHgtData = false;
+		// protect against wrap-around
+		if(IMUmsec < HGTmsecPrev) HGTmsecPrev = IMUmsec;
+
 	}
-	FuseVelposNED();
+	FuseVelPosNED();
 	fuseHgtData = false;
 }
 
@@ -1050,7 +1054,7 @@ void CovariancePrediction()
 		zeroCols(nextP,16,17);
 	}
 
-	// If the total position variance exceds 1E6 (1000m), then stop covariance
+	// If the total position variance exceeds 1E6 (1000m), then stop covariance
 	// growth by setting the predicted to the previous values
 	// This prevent an ill conditioned matrix from occurring for long periods
 	// without GPS
@@ -1079,7 +1083,7 @@ void CovariancePrediction()
 	}
 }
 
-void FuseVelposNED()
+void FuseVelPosNED()
 {
 
 // declare variables used by fault isolation logic

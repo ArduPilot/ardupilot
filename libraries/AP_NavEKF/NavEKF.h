@@ -59,11 +59,11 @@ public:
 
 private:
 
-void  UpdateStrapdownEquationsNED();
+void UpdateStrapdownEquationsNED();
 
 void CovariancePrediction();
 
-void FuseVelposNED();
+void FuseVelPosNED();
 
 void FuseMagnetometer();
 
