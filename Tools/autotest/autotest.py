@@ -34,44 +34,6 @@ def get_default_params(atype):
     print("Saved defaults for %s to %s" % (atype, dest))
     return True
 
-def dump_logs(atype, logname=None):
-    '''dump DataFlash logs'''
-    print("Dumping logs for %s" % atype)
-
-    if logname is None:
-        logname = atype
-        
-    sil = util.start_SIL(atype)
-    logfile = util.reltopdir('../buildlogs/%s.flashlog' % logname)
-    log = open(logfile, mode='w')
-    mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
-    mavproxy.send('\n\n\n')
-    print("navigating menus")
-    mavproxy.expect(']')
-    mavproxy.send("logs\n")
-    mavproxy.expect("logs enabled:")
-    lognums = []
-    i = mavproxy.expect(["No logs", "(\d+) logs"])
-    if i == 0:
-        numlogs = 0
-    else:
-        numlogs = int(mavproxy.match.group(1))
-    for i in range(numlogs):
-        mavproxy.expect("Log (\d+)")
-        lognums.append(int(mavproxy.match.group(1)))
-    mavproxy.expect("Log]")
-    for i in range(numlogs):
-        print("Dumping log %u (i=%u)" % (lognums[i], i))
-        mavproxy.send("dump %u\n" % lognums[i])
-        mavproxy.expect("logs enabled:", timeout=120)
-        mavproxy.expect("Log]")
-    util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
-    log.close()
-    print("Saved log for %s to %s" % (atype, logfile))
-    return True
-
-
 def build_all():
     '''run the build_all.sh script'''
     print("Running build_all.sh")
@@ -168,21 +130,17 @@ steps = [
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
-    'logs.ArduPlane',
 
     'build2560.APMrover2',
     'build.APMrover2',
     'defaults.APMrover2',
     'drive.APMrover2',
-    'logs.APMrover2',
 
     'build2560.ArduCopter',
     'build.ArduCopter',
     'defaults.ArduCopter',
     'fly.ArduCopter',
-    'logs.ArduCopter',
     'fly.CopterAVC',
-    'logs.CopterAVC',
 
     'convertgpx',
     ]
@@ -236,18 +194,6 @@ def run_step(step):
 
     if step == 'defaults.APMrover2':
         return get_default_params('APMrover2')
-
-    if step == 'logs.ArduPlane':
-        return dump_logs('ArduPlane')
-
-    if step == 'logs.ArduCopter':
-        return dump_logs('ArduCopter')
-
-    if step == 'logs.CopterAVC':
-        return dump_logs('ArduCopter', 'CopterAVC')
-
-    if step == 'logs.APMrover2':
-        return dump_logs('APMrover2')
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(viewerip=opts.viewerip, map=opts.map)
@@ -343,7 +289,7 @@ def write_fullresults():
     global results
     results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
-    results.addglob('DataFlash Log', '*.flashlog')
+    results.addglob('DataFlash Log', '*-log.bin')
     results.addglob("MAVLink log", '*.tlog')
     results.addglob("GPX track", '*.gpx')
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
