@@ -199,7 +199,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	if (('y' != c) && ('Y' != c))
 		return(-1);
 	AP_Param::erase_all();
-	cliSerial->printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
+	cliSerial->printf_P(PSTR("\nFACTORY RESET complete - please reset board to continue"));
 
 	for (;;) {
 	}
