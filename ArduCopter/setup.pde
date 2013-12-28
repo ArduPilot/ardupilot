@@ -560,7 +560,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
         return(-1);
 
     AP_Param::erase_all();
-    cliSerial->printf_P(PSTR("\nReboot APM"));
+    cliSerial->printf_P(PSTR("\nReboot board"));
 
     delay(1000);
 
