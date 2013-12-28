@@ -9,6 +9,7 @@
 
 #include "Scheduler.h"
 #include "utility/ISRRegistry.h"
+#include "memcheck.h"
 using namespace AP_HAL_AVR;
 
 extern const AP_HAL::HAL& hal;
@@ -53,6 +54,8 @@ void AVRScheduler::init(void* _isrregistry) {
     
     /* Turn on global interrupt flag, AVR interupt system will start from this point */
     sei();
+
+    memcheck_init();
 }
 
 uint32_t AVRScheduler::micros() {
