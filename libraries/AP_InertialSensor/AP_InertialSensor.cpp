@@ -409,7 +409,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 break;
         }
         interact->printf_P(
-                PSTR("Place APM %S and press any key.\n"), msg);
+                PSTR("Place vehicle %S and press any key.\n"), msg);
 
         // wait for user input
         interact->blocking_read();
