@@ -137,7 +137,7 @@ public:
     uint32_t last_fix_time;
 
 	// the time we last processed a message in milliseconds
-	uint32_t last_message_time_ms(void) { return _idleTimer; }
+	uint32_t last_message_time_ms(void) const { return _idleTimer; }
 
     // return last fix time since the 1/1/1970 in microseconds
     uint64_t time_epoch_usec(void);
