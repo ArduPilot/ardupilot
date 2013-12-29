@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Range: 0 5
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("GPS_DELAY", 12, AP_AHRS, _gps_delay, 2),
+    AP_GROUPINFO("GPS_DELAY", 12, AP_AHRS, _gps_delay, 1),
 
     AP_GROUPEND
 };
