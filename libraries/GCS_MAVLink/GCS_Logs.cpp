@@ -181,7 +181,6 @@ void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
  */
 bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
 {
-    uint32_t start = hal.scheduler->micros();
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
     if (payload_space < MAVLINK_MSG_ID_LOG_DATA_LEN) {
         // no space
