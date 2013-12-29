@@ -125,6 +125,12 @@ public:
         return *this = *this / num;
     }
 
+    // allow a Matrix3 to be used as an array of vectors, 0 indexed
+    Vector3<T> & operator[](uint8_t i) {
+        Vector3<T> *_v = &a;
+        return _v[i];
+    }
+
     // multiplication by a vector
     Vector3<T> operator         *(const Vector3<T> &v) const;
 
