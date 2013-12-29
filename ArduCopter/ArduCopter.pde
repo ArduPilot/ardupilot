@@ -109,6 +109,7 @@
 #include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
 #include <AC_AttitudeControl.h>  // Attitude control library
+#include <AC_PosControl.h>      // Position control library
 #include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder.h>     // Range finder library
@@ -492,13 +493,6 @@ static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Attitude controller
-////////////////////////////////////////////////////////////////////////////////
-AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.pi_stabilize_roll, g.pi_stabilize_pitch, g.pi_stabilize_yaw,
-                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw,
-                        g.rc_1.servo_out, g.rc_2.servo_out, g.rc_4.servo_out, g.rc_3.servo_out);
-
-////////////////////////////////////////////////////////////////////////////////
 // PIDs
 ////////////////////////////////////////////////////////////////////////////////
 // This is a convienience accessor for the IMU roll rates. It's currently the raw IMU rates
@@ -751,9 +745,16 @@ static float G_Dt = 0.02;
 static AP_InertialNav inertial_nav(&ahrs, &barometer, g_gps, gps_glitch);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Waypoint navigation object
+// Attitude, Position and Waypoint navigation objects
 // To-Do: move inertial nav up or other navigation variables down here
 ////////////////////////////////////////////////////////////////////////////////
+AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.pi_stabilize_roll, g.pi_stabilize_pitch, g.pi_stabilize_yaw,
+                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw,
+                        g.rc_1.servo_out, g.rc_2.servo_out, g.rc_4.servo_out, g.rc_3.servo_out);
+AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
+                        g.pi_alt_hold, g.pid_throttle_rate, g.pid_throttle_accel,
+                        g.pi_loiter_lat, g.pi_loiter_lon, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon,
+                        g.rc_3.servo_out);
 static AC_WPNav wp_nav(&inertial_nav, &ahrs, &g.pi_loiter_lat, &g.pi_loiter_lon, &g.pid_loiter_rate_lat, &g.pid_loiter_rate_lon);
 
 ////////////////////////////////////////////////////////////////////////////////
