@@ -776,6 +776,8 @@ static void update_throttle_cruise(int16_t throttle)
         throttle_avg = throttle_avg * 0.99f + (float)throttle * 0.01f;
         g.throttle_cruise = throttle_avg;
     }
+    // update position controller
+    pos_control.set_throttle_hover(throttle_avg);
 }
 
 #if FRAME_CONFIG == HELI_FRAME
