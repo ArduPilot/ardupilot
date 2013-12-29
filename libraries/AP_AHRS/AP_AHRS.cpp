@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 };
 
 // return airspeed estimate if available
-bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
+bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 {
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();
