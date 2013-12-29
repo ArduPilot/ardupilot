@@ -265,6 +265,9 @@ private:
     // offset in log
     uint32_t _log_data_offset;
 
+    // size of log file
+    uint32_t _log_data_size;
+
     // number of bytes left to send
     uint32_t _log_data_remaining;
 

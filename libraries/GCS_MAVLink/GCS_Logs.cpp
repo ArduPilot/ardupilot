@@ -89,28 +89,33 @@ void GCS_MAVLINK::handle_log_request_data(mavlink_message_t *msg, DataFlash_Clas
         return;
 
     _log_listing = false;
-    _log_sending = false;
+    if (!_log_sending || _log_num_data != packet.id) {
+        _log_sending = false;
 
-    uint16_t num_logs = dataflash.get_num_logs();
-    int16_t last_log_num = dataflash.find_last_log();
-    if (packet.id > last_log_num || packet.id < last_log_num + 1 - num_logs) {
-        return;
+        uint16_t num_logs = dataflash.get_num_logs();
+        int16_t last_log_num = dataflash.find_last_log();
+        if (packet.id > last_log_num || packet.id < last_log_num + 1 - num_logs) {
+            return;
+        }
+
+        uint32_t time_utc, size;
+        dataflash.get_log_info(packet.id, size, time_utc);
+        _log_num_data = packet.id;
+        _log_data_size = size;
+
+        uint16_t end;
+        dataflash.get_log_boundaries(packet.id, _log_data_page, end);
     }
 
-    uint32_t time_utc, size;
-    dataflash.get_log_info(packet.id, size, time_utc);
-    uint16_t end;
-    dataflash.get_log_boundaries(packet.id, _log_data_page, end);
-    _log_num_data = packet.id;
-    _log_data_offset = packet.ofs;
-    if (_log_data_offset >= size) {
+    if (_log_data_offset >= _log_data_size) {
         _log_data_remaining = 0;
     } else {
-        _log_data_remaining = size - _log_data_offset;
+        _log_data_remaining = _log_data_size - _log_data_offset;
     }
     if (_log_data_remaining > packet.count) {
         _log_data_remaining = packet.count;
     }
+    _log_data_offset = packet.ofs;
     _log_sending = true;
 
     handle_log_send(dataflash);
@@ -176,6 +181,7 @@ void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
  */
 bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
 {
+    uint32_t start = hal.scheduler->micros();
     int16_t payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
     if (payload_space < MAVLINK_MSG_ID_LOG_DATA_LEN) {
         // no space
