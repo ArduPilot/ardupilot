@@ -126,6 +126,8 @@ static void stabilize_run()
 // althold_init - initialise althold controller
 static bool althold_init()
 {
+    // project stopping point
+    float alt_target = pos_control.get_stopping_point_z();
     return true;
 }
 
@@ -133,6 +135,92 @@ static bool althold_init()
 // should be called at 100hz or more
 static void althold_run()
 {
+    Vector3f angle_target = attitude_control.angle_ef_targets();     // for roll, pitch and yaw angular targets
+    Vector3f rate_stab_ef_target;   // for yaw rate target.  Note Vector3f initialises all values to zero in constructor
+    int16_t target_roll, target_pitch;
+    int16_t target_climb_rate;
+
+    // if not auto armed set throttle to zero and exit immediately
+    if(ap.auto_armed) {
+        // To-Do: set target angles to zero or current attitude?
+        attitude_control.set_throttle_out(0, false);
+        set_target_alt_for_reporting(0);
+        return;
+    }
+    
+    // apply SIMPLE mode transform to pilot inputs
+    update_simple_mode();
+
+    // get pilot desired lean angles
+    // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
+    get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+    angle_target.x = target_roll;
+    angle_target.y = target_pitch;
+
+    // get pilot's desired yaw rate
+    if (!failsafe.radio && !ap.land_complete) {
+        rate_stab_ef_target.z = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
+    // get pilot desired climb rate
+    target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+
+    // set target heading to current heading while landed
+    if (ap.land_complete) {
+        angle_target.z = ahrs.yaw_sensor;
+    }
+
+    // set earth-frame angular targets
+    attitude_control.angle_ef_targets(angle_target);
+
+    // convert earth-frame angle targets to earth-frame rate targets
+    attitude_control.angle_to_rate_ef_roll();
+    attitude_control.angle_to_rate_ef_pitch();
+
+    // set earth-frame rate stabilize target for yaw with pilot's desired yaw
+    // To-Do: this is quite wasteful to update the entire target vector when only yaw is used
+    attitude_control.rate_stab_ef_targets(rate_stab_ef_target);
+
+    // convert earth-frame stabilize rate to regular rate target
+    // To-Do: replace G_Dt below
+    attitude_control.rate_stab_ef_to_rate_ef_yaw();
+
+    // convert earth-frame rates to body-frame rates
+    attitude_control.rate_ef_targets_to_bf();
+
+    // refetch angle targets for reporting
+    angle_target = attitude_control.angle_ef_targets();
+    control_roll = angle_target.x;
+    control_pitch = angle_target.y;
+    control_yaw = angle_target.z;
+
+    // body-frame rate controller is run directly from 100hz loop
+
+    // To-Do: move throttle control up so we can disable angle and rate controllers?
+    // check if we are taking off
+    if (ap.land_complete) {
+        if (target_climb_rate > 0) {
+            // indicate we are taking off
+            set_land_complete(false);
+            // clear i term when we're taking off
+            set_throttle_takeoff();
+        }else{
+            // move throttle to minimum to keep us on the ground
+            attitude_control.set_throttle_out(0, false);
+            set_target_alt_for_reporting(0);
+        }
+    }
+
+    // check land_complete flag again in case it was changed above
+    if (!ap.land_complete) {
+        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
+            // if sonar is ok, use surface tracking
+            get_throttle_surface_tracking(target_climb_rate);   // this function calls set_target_alt_for_reporting for us
+        }else{
+            // if no sonar fall back stabilize rate controller
+            pos_control.climb_at_rate(target_climb_rate);       // this function calls set_target_alt_for_reporting for us
+        }
+    }
 }
 
 // auto_init - initialise auto controller
