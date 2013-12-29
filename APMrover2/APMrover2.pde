@@ -553,9 +553,10 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 	{ read_radio,             1,   1000 },
     { ahrs_update,            1,   6400 },
     { read_sonars,            1,   2000 },
-    { update_current_mode,    1,   1000 },
-    { set_servos,             1,   1000 },
-    { update_GPS,             5,   2500 },
+    { update_current_mode,    1,   1500 },
+    { set_servos,             1,   1500 },
+    { update_GPS_50Hz,        1,   2500 },
+    { update_GPS_10Hz,        5,   2500 },
     { navigate,               5,   1600 },
     { update_compass,         5,   2000 },
     { update_commands,        5,   1000 },
@@ -803,7 +804,7 @@ static void one_second_loop(void)
     }
 }
 
-static void update_GPS(void)
+static void update_GPS_50Hz(void)
 {        
     static uint32_t last_gps_reading;
 	g_gps->update();
@@ -814,7 +815,11 @@ static void update_GPS(void)
             DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
         }
     }
+}
 
+
+static void update_GPS_10Hz(void)
+{        
     have_position = ahrs.get_projected_position(current_loc);
 
 	if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
