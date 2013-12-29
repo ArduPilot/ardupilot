@@ -106,6 +106,16 @@ void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
     _healthy[0] = true;
 }
 
+// Update raw magnetometer values from HIL mag vector
+//
+void AP_Compass_HIL::setHIL(const Vector3i &mag)
+{
+    _hil_mag.x = mag.x;
+    _hil_mag.y = mag.y;
+    _hil_mag.z = mag.z;
+    _healthy[0] = true;
+}
+
 void AP_Compass_HIL::accumulate(void)
 {
     // nothing to do

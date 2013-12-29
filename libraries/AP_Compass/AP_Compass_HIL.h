@@ -11,6 +11,8 @@ public:
     bool        read(void);
     void        accumulate(void);
     void        setHIL(float roll, float pitch, float yaw);
+    void        setHIL(const Vector3i &mag);
+
 private:
     Vector3f    _hil_mag;
     Vector3f    _Bearth;
