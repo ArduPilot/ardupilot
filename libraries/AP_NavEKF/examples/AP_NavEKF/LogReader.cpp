@@ -127,8 +127,11 @@ bool LogReader::update(uint8_t &type)
                     msg.ground_speed*1.0e-2f, 
                     msg.ground_course*1.0e-2f, 
                     0, 
-                    msg.num_sats);
-        baro.setHIL(600.0 + msg.rel_altitude*1.0e-2f);
+                    msg.status==3?msg.num_sats:0);
+        if (msg.status == 3 && ground_alt_cm == 0) {
+            ground_alt_cm = msg.altitude;
+        }
+        baro.setHIL((ground_alt_cm + msg.rel_altitude)*1.0e-2f);
         break;
     }
 
@@ -157,8 +160,9 @@ bool LogReader::update(uint8_t &type)
 
 void LogReader::wait_timestamp(uint32_t timestamp)
 {
-    while (hal.scheduler->millis() < timestamp) {
-        hal.scheduler->delay(1);
+    uint32_t now = hal.scheduler->millis();
+    if (now < timestamp) {
+        hal.scheduler->time_shift(timestamp - now);
     }
 }
 
