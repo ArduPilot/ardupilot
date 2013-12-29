@@ -559,7 +559,8 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { navigate,               5,   1600 },
     { update_compass,         5,   2000 },
     { update_commands,        5,   1000 },
-    { update_logging,         5,   1000 },
+    { update_logging1,        5,   1000 },
+    { update_logging2,        5,   1000 },
     { gcs_retry_deferred,     1,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
@@ -706,7 +707,7 @@ static void update_compass(void)
 /*
   log some key data - 10Hz
  */
-static void update_logging(void)
+static void update_logging1(void)
 {
     if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
@@ -716,12 +717,21 @@ static void update_logging(void)
 
     if (g.log_bitmask & MASK_LOG_NTUN)
         Log_Write_Nav_Tuning();
+}
 
+/*
+  log some key data - 10Hz
+ */
+static void update_logging2(void)
+{
     if (g.log_bitmask & MASK_LOG_STEERING) {
         if (control_mode == STEERING || control_mode == AUTO || control_mode == RTL || control_mode == GUIDED) {
             Log_Write_Steering();
         }
     }
+
+    if (g.log_bitmask & MASK_LOG_RC)
+        Log_Write_RC();
 }
 
 
