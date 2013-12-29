@@ -285,7 +285,7 @@ static AP_YawController   yawController(ahrs, aparm);
 static AP_SteerController steerController(ahrs);
 
 // Inertial Navigation EKF
-static AP_NavEKF  NavEKF(ahrs, baro, gps);
+static NavEKF NavEKF(ahrs, barometer);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
