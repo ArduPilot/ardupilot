@@ -232,8 +232,9 @@ static void init_ardupilot()
     if(g.compass_enabled)
         init_compass();
 
-    // initialise attitude controller
+    // initialise attitude and position controllers
     attitude_control.set_dt(MAIN_LOOP_SECONDS);
+    pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
     if(g.optflow_enabled) {
