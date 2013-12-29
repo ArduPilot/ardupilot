@@ -1218,7 +1218,7 @@ get_throttle_surface_tracking(int16_t target_rate)
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 
     // call regular rate stabilize alt hold controller
-    get_throttle_rate_stabilized(target_rate + velocity_correction);
+    pos_control.climb_at_rate(target_rate + velocity_correction);
 }
 
 /*
