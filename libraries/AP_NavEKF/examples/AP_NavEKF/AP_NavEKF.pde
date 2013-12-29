@@ -78,9 +78,10 @@ void setup()
     hal.scheduler->register_delay_callback(delay_cb, 5);
 
     ahrs.set_compass(&compass);
+    ahrs.set_fly_forward(true);
+    ahrs.set_wind_estimation(true);
     
     barometer.init();
-    barometer.calibrate();
     compass.init();
     ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
 
@@ -93,6 +94,9 @@ void setup()
         LogReader.wait_type(LOG_IMU_MSG);
         ahrs.update();
     }
+
+    barometer.calibrate();
+    compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 
     NavEKF.InitialiseFilter();
 }

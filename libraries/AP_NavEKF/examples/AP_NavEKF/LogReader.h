@@ -22,6 +22,8 @@ private:
     AP_Compass_HIL &compass;
     GPS *&gps;
 
+    uint32_t ground_alt_cm;
+
     uint8_t num_formats;
     struct log_Format formats[32];
 
