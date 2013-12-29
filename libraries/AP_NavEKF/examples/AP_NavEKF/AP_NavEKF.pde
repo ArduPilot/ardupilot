@@ -84,6 +84,17 @@ void setup()
     compass.init();
     ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
 
+    ::printf("Waiting for 3D fix\n");
+    while (g_gps->status() < GPS::GPS_OK_FIX_3D) {
+        LogReader.wait_type(LOG_GPS_MSG);
+        g_gps->update();
+        compass.read();
+        barometer.read();
+        LogReader.wait_type(LOG_IMU_MSG);
+        ahrs.update();
+    }
+
+    NavEKF.InitialiseFilter();
 }
 
 void loop()
@@ -100,8 +111,10 @@ void loop()
             barometer.read();
             break;
 
-        case LOG_ATTITUDE_MSG:
-            ::printf("t=%.3f AHRS: (%.1f %.1f %.1f) ATT: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
+        case LOG_ATTITUDE_MSG: {
+            Vector3f ekf_euler;
+            NavEKF.getEulerAngles(ekf_euler);
+            ::printf("t=%.3f AHRS: (%.1f %.1f %.1f) ATT: (%.1f %.1f %.1f) EKF: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
                      hal.scheduler->millis() * 0.001f,
                      ahrs.roll_sensor*0.01f, 
                      ahrs.pitch_sensor*0.01f,
@@ -109,11 +122,15 @@ void loop()
                      LogReader.get_attitude().x,
                      LogReader.get_attitude().y,
                      LogReader.get_attitude().z,
+                     degrees(ekf_euler.x),
+                     degrees(ekf_euler.y),
+                     degrees(ekf_euler.z),
                      barometer.get_altitude(),
                      (unsigned)g_gps->status(),
                      g_gps->latitude*1.0e-7f,
                      g_gps->longitude*1.0e-7f);
-            break;
+                break;
+        }
 
         case LOG_COMPASS_MSG:
             compass.read();
@@ -121,6 +138,7 @@ void loop()
 
         case LOG_IMU_MSG:
             ahrs.update();
+            NavEKF.UpdateFilter();
             break;
         }
     }
