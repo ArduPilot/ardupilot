@@ -113,6 +113,7 @@ char *DataFlash_File::_lastlog_file_name(void)
 void DataFlash_File::EraseAll()
 {
     uint16_t log_num;
+    stop_logging();
     for (log_num=0; log_num<MAX_LOG_FILES; log_num++) {
         char *fname = _log_file_name(log_num);
         if (fname == NULL) {

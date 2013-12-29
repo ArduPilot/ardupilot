@@ -156,6 +156,7 @@ uint16_t DataFlash_Block::GetFilePage()
 
 void DataFlash_Block::EraseAll()
 {
+    log_write_started = false;
     for (uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
         BlockErase(j);
         if (j%6 == 0) {
