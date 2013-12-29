@@ -65,6 +65,8 @@ static void delay_cb()
     LogReader.wait_type(LOG_GPS_MSG);
 }
 
+static FILE *plotf;
+
 void setup()
 {
     ::printf("Starting\n");
@@ -99,6 +101,9 @@ void setup()
     compass.set_initial_location(g_gps->latitude, g_gps->longitude);
 
     NavEKF.InitialiseFilter();
+
+    plotf = fopen("plot.dat", "w");
+    fprintf(plotf, "time ATT.Roll ATT.Pitch ATT.Yaw AHRS.Roll AHRS.Pitch AHRS.Yaw EKF.Roll EKF.Pitch EKF.Yaw\n");
 }
 
 void loop()
@@ -107,6 +112,7 @@ void loop()
         uint8_t type;
         if (!LogReader.update(type)) {
             ::printf("End of log\n");
+            fclose(plotf);
             exit(0);
         }
         switch (type) {
@@ -118,14 +124,26 @@ void loop()
         case LOG_ATTITUDE_MSG: {
             Vector3f ekf_euler;
             NavEKF.getEulerAngles(ekf_euler);
-            ::printf("t=%.3f AHRS: (%.1f %.1f %.1f) ATT: (%.1f %.1f %.1f) EKF: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
+            fprintf(plotf, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
+                    hal.scheduler->millis() * 0.001f,
+                    LogReader.get_attitude().x,
+                    LogReader.get_attitude().y,
+                    LogReader.get_attitude().z,
+                    ahrs.roll_sensor*0.01f, 
+                    ahrs.pitch_sensor*0.01f,
+                    ahrs.yaw_sensor*0.01f,
+                    degrees(ekf_euler.x),
+                    degrees(ekf_euler.y),
+                    degrees(ekf_euler.z));
+                    
+            ::printf("t=%.3f ATT: (%.1f %.1f %.1f) AHRS: (%.1f %.1f %.1f) EKF: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
                      hal.scheduler->millis() * 0.001f,
-                     ahrs.roll_sensor*0.01f, 
-                     ahrs.pitch_sensor*0.01f,
-                     ahrs.yaw_sensor*0.01f,
                      LogReader.get_attitude().x,
                      LogReader.get_attitude().y,
                      LogReader.get_attitude().z,
+                     ahrs.roll_sensor*0.01f, 
+                     ahrs.pitch_sensor*0.01f,
+                     ahrs.yaw_sensor*0.01f,
                      degrees(ekf_euler.x),
                      degrees(ekf_euler.y),
                      degrees(ekf_euler.z),
