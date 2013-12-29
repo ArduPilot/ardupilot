@@ -316,4 +316,22 @@ void LinuxScheduler::reboot(bool hold_in_bootloader)
     for(;;);
 }
 
+void LinuxScheduler::time_shift(uint32_t shift_ms)
+{
+    if (shift_ms == 0) {
+        return;
+    }
+
+    // produce a minimal delay so other threads get a chance to run
+    _microsleep(100);
+
+    // shift the sketch start time so that time advances
+    int64_t new_ns = _sketch_start_time.tv_nsec - (shift_ms * 1.0e6);
+    while (new_ns < 0) {
+        new_ns += 1.0e9;
+        _sketch_start_time.tv_sec -= 1;
+    }
+    _sketch_start_time.tv_nsec = new_ns;
+}
+
 #endif // CONFIG_HAL_BOARD
