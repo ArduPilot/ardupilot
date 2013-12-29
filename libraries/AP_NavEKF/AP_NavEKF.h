@@ -101,7 +101,7 @@ private:
 
     void eul2quat(float quat[4], float eul[3]);
 
-    void quat2eul(float eul[3],float quat[4]);
+    void quat2eul(Vector3f &eul, float quat[4]);
 
     void calcvelNED(float velNED[3], float gpsCourse, float gpsGndSpd, float gpsVelD);
 

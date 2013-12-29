@@ -1868,11 +1868,17 @@ void NavEKF::eul2quat(float quat[4], float eul[3])
     quat[3] = u1*u2*u6-u4*u5*u3;
 }
 
-void NavEKF::quat2eul(float y[3], float u[4])
+void NavEKF::quat2eul(Vector3f &y, float u[4])
 {
     y[0] = atan2f((2*(u[2]*u[3]+u[0]*u[1])) , (u[0]*u[0]-u[1]*u[1]-u[2]*u[2]+u[3]*u[3]));
     y[1] = -asinf(2*(u[1]*u[3]-u[0]*u[2]));
     y[2] = atan2f((2*(u[1]*u[2]+u[0]*u[3])) , (u[0]*u[0]+u[1]*u[1]-u[2]*u[2]-u[3]*u[3]));
+}
+
+void NavEKF::getEulerAngles(Vector3f &euler)
+{
+    float q[4] = { states[0], states[1], states[2], states[3] };
+    quat2eul(euler, q);
 }
 
 void NavEKF::calcposNE(float lat, float lon)
