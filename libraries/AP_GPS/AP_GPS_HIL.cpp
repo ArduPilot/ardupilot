@@ -58,7 +58,7 @@ void AP_GPS_HIL::setHIL(uint64_t _time_epoch_ms, float _latitude, float _longitu
     ground_course_cd    = _ground_course*1.0e2f;
     speed_3d_cm         = _speed_3d*1.0e2f;
     num_sats            = _num_sats;
-    fix                 = FIX_3D;
+    fix                 = num_sats>5?FIX_3D:FIX_NONE;
     hdop                = 200;
     _updated            = true;
 }
