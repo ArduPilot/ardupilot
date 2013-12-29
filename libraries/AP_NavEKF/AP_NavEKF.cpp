@@ -2,657 +2,685 @@
 #include <AP_HAL.h>
 #include "AP_NavEKF.h"
 
-void InitialiseFilter()
+extern const AP_HAL::HAL& hal;
+
+#define earthRate 0.000072921f
+
+// constructor
+NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
+    _ahrs(ahrs),
+    _baro(baro),
+    useAirspeed(true),
+    useCompass(true),
+    fusionModeGPS(0),
+    covTimeStepMax(0.07f),
+    covDelAngMax(0.05f),
+    TASmsecTgt(250),
+    MAGmsecTgt(200),
+    HGTmsecTgt(200),
+    msecVelDelay(200),
+    msecPosDelay(200),
+    msecHgtDelay(350),
+    msecMagDelay(30),
+    msecTasDelay(200)
 {
-	// Calculate initial filter quaternion states from ahrs solution
-	float initQuat[4];
-	eul2quat(initQuat, ahrsEul);
-
-	// Calculate initial Tbn matrix and rotate Mag measurements into NED
-	// to set initial NED magnetic field states
-	Matrix3f DCM;
-	quat2Tbn(DCM, initQuat);
-	Vector3f initMagNED = {0,0,0};
-	Vector3f initMagXYZ = {0,0,0};
-	if (useCompass)
-	{
-		readMagData();
-		initMagXYZ.x = magData - magBias;
-		initMagNED.x = DCM.x.x*initMagXYZ.x + DCM.x.y*initMagXYZ.y + DCM.x.z*initMagXYZ.z;
-		initMagNED.y = DCM.y.x*initMagXYZ.x + DCM.y.y*initMagXYZ.y + DCM.y.z*initMagXYZ.z;
-		initMagNED.z = DCM.z.x*initMagXYZ.x + DCM.z.y*initMagXYZ.y + DCM.z.z*initMagXYZ.z;
-	}
-
-	// calculate initial velocities
-	float initvelNED[3];
-	calcvelNED(initvelNED, gpsCourse, gpsGndSpd, gpsVelD);
-
-	// reset reference position only if on-ground to allow for in-air restart
-	if(onGround)
-	{
-		latRef = gpsLat;
-		lonRef = gpsLon
-		hgtRef = _baro->get_altitude();
-	}
-
-	// write to state vector
-	for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
-	for (uint8_t j=0; j<=2; j++) states[j+4] = initvelNED[j]; // velocities
-
-	for (uint8_t j=0; j<=10; j++) states[j+7] = 0.0; // positions, dAngBias, dVelBias, windVel
-	states[18] = initMagNED.x; // Magnetic Field North
-	states[19] = initMagNED.y; // Magnetic Field East
-	states[20] = initMagNED.z; // Magnetic Field Down
-	for (uint8_t j=0; j<=2; j++) states[j+21] = magBias[j]; // Magnetic Field Bias XYZ
-
-	statesInitialised = true;
-
-	// initialise the covariance matrix
-	CovarianceInit();
-
-	//Define Earth rotation vector in the NED navigation frame
-	calcEarthRateNED(earthRateNED, latRef);
-
-	//Initialise summed variables used by covariance prediction
-	summedDelAng.x = 0.0;
-	summedDelAng.y = 0.0;
-	summedDelAng.z = 0.0;
-	summedDelVel.x = 0.0;
-	summedDelVel.y = 0.0;
-	summedDelVel.z = 0.0;
-	dt = 0.0;
+    mag_state.q0 = 1;
+    mag_state.DCM.identity();
 }
 
-void  UpdateFilter()
+void NavEKF::InitialiseFilter(void)
 {
-	if (statesInitialised)
-	{
-		// This function will be called at 100Hz
-		//
-		// Read IMU data and convert to delta angles and velocities
-		readIMUdata();
-		// Run the strapdown INS equations every IMU update
-		UpdateStrapdownEquationsNED();
-		// store the predicted states for subsequent use by measurement fusion
-		StoreStates();
-		// Check if on ground - status is used by covariance prediction
-		OnGroundCheck();
-		// sum delta angles and time used by covariance prediction
-		summedDelAng = summedDelAng + correctedDelAng;
-		summedDelVel = summedDelVel + correctedDelVel;
-		dt += dtIMU;
-		// perform a covariance prediction if the total delta angle has exceeded the limit
-		// or the time limit will be exceeded at the next IMU update
-		// Do not predict covariance if magnetometer fusion still needs to be performed
-		if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)) && !magFuseStep)
-		{
-			CovariancePrediction();
-			covPredStep = true;
-			summedDelAng = summedDelAng.zero();
-			summedDelVel = summedDelVel.zero();
-			dt = 0.0;
-		}
-		else
-		{
-			covPredStep = false;
-		}
-		
-		// Update states using GPS, altimeter, compass and airspeed observations
-		SelectVelPosFusion();
-		SelectMagFusion();
-		SelectTasFusion();
-	}
-}
+     // Calculate initial filter quaternion states from ahrs solution
+     float initQuat[4];
+     eul2quat(initQuat, ahrsEul);
 
-void SelectVelPosFusion()
-{
-	// Command fusion of GPS measurements if new ones available
-	readGpsData();
-	if (statesInitialised && newDataGps)
-		{
-			fuseVelData = true;
-			fusePosData = true;
-		}
-		else
-		{
-			fuseVelData = false;
-			fusePosData = false;
-		}
-	// Fuse height measurements at the same time as GPS measurements for efficiency
-	// Don't wait longer than HGTmsecTgt msec between height updates
-	if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecTgt)))
-	{
-		HGTmsecPrev = IMUmsec;
-		fuseHgtData = true;
-		readHgtData();
-	}
-	else
-	{
-		fuseHgtData = false;
-		// protect against wrap-around
-		if(IMUmsec < HGTmsecPrev) HGTmsecPrev = IMUmsec;
+     // Calculate initial Tbn matrix and rotate Mag measurements into NED
+     // to set initial NED magnetic field states
+     Matrix3f DCM;
 
-	}
-	FuseVelPosNED();
-	fuseHgtData = false;
-}
+     quat2Tbn(DCM, initQuat);
 
-void SelectMagFusion()
-{
-		// Fuse Magnetometer Measurements
-		if (statesInitialised && useCompass && !covPredStep && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
-		{
-			MAGmsecPrev = IMUmsec;
-			fuseMagData = true;
-			readMagData();
-		}
-		else
-		{
-			fuseMagData = false;
-			// protect against wrap-around
-			if(IMUmsec < MAGmsecPrev) MAGmsecPrev = IMUmsec;
-		}
-		// Magnetometer fusion is always called if enabled because its fusion is spread across 3 time steps
-		// to reduce peak load
-		FuseMagnetometer();
-}
+     Vector3f initMagNED;
+     Vector3f initMagXYZ;
 
-void SelectTasFusion()
-{
-	// Fuse Airspeed Measurements
-	if (statesInitialised && useAirspeed && !onGround  && !covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
-	{
-		TASmsecPrev = IMUmsec;
-		readAirSpdData();
-		FuseAirspeed();
-	}
-	// protect against wrap-around
-	if(IMUmsec < TASmsecPrev) TASmsecPrev = IMUmsec;
-}
+     if (useCompass)
+     {
+         readMagData();
+         initMagXYZ = magData - magBias;
+         initMagNED.x = DCM.a.x*initMagXYZ.x + DCM.a.y*initMagXYZ.y + DCM.a.z*initMagXYZ.z;
+         initMagNED.y = DCM.b.x*initMagXYZ.x + DCM.b.y*initMagXYZ.y + DCM.b.z*initMagXYZ.z;
+         initMagNED.z = DCM.c.x*initMagXYZ.x + DCM.c.y*initMagXYZ.y + DCM.c.z*initMagXYZ.z;
+     }
 
-void  UpdateStrapdownEquationsNED()
-{
-	static Vector3f  prevDelAng;
-	Vector3f delVelNav;
-	float q00;
-	float q11;
-	float q22;
-	float q33;
-	float q01;
-	float q02;
-	float q03;
-	float q12;
-	float q13;
-	float q23;
-	static Matrix3f  Tbn;
-	static Matrix3f  Tnb;
-	float rotationMag;
-	float rotScaler;
-	float qUpdated[4];
-	float quatMag;
-	float quatMagInv;
-	float deltaQuat[4];
-	static float lastVelocity[3];
-	const Vector3f gravityNED = {0.0,0.0,GRAVITY_MSS};
+     // calculate initial velocities
+     float initvelNED[3];
 
-// Remove sensor bias errors
-	correctedDelAng.x = dAngIMU.x - states[10];
-	correctedDelAng.y = dAngIMU.y - states[11];
-	correctedDelAng.z = dAngIMU.z - states[12];
-	correctedDelVel.x = dVelIMU.x - states[13];
-	correctedDelVel.y = dVelIMU.y - states[14];
-	correctedDelVel.z = dVelIMU.z - states[15];
+     // reset reference position only if on-ground to allow for in-air restart
+     if(onGround)
+     {
+         latRef = gpsLat;
+         lonRef = gpsLon;
+         hgtRef = _baro.get_altitude();
+     }
 
-// Save current measurements
-	prevDelAng = correctedDelAng;
+     // write to state vector
+     for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
+     for (uint8_t j=0; j<=2; j++) states[j+4] = initvelNED[j]; // velocities
 
-// Apply corrections for earths rotation rate and coning errors
-// * and + operators have been overloaded
-	correctedDelAng   = correctedDelAng - Tnb*earthRateNED*dtIMU + 8.333333333333333e-2*(prevDelAng % correctedDelAng);
+     for (uint8_t j=0; j<=10; j++) states[j+7] = 0.0; // positions, dAngBias, dVelBias, windVel
+     states[18] = initMagNED.x; // Magnetic Field North
+     states[19] = initMagNED.y; // Magnetic Field East
+     states[20] = initMagNED.z; // Magnetic Field Down
+     for (uint8_t j=0; j<=2; j++) states[j+21] = magBias[j]; // Magnetic Field Bias XYZ
 
-// Convert the rotation vector to its equivalent quaternion
-	rotationMag = correctedDelAng.length();
-	if (rotationMag < 1e-12)
-	{
-		deltaQuat[0] = 1.0;
-		deltaQuat[1] = 0.0;
-		deltaQuat[2] = 0.0;
-		deltaQuat[3] = 0.0;
-	}
-	else
-	{
-		deltaQuat[0] = cos(0.5*rotationMag);
-		rotScaler = (sin(0.5*rotationMag))/rotationMag;
-		deltaQuat[1] = correctedDelAng.x*rotScaler;
-		deltaQuat[2] = correctedDelAng.y*rotScaler;
-		deltaQuat[3] = correctedDelAng.z*rotScaler;
-	}
+     statesInitialised = true;
 
-// Update the quaternions by rotating from the previous attitude through
-// the delta angle rotation quaternion
-	qUpdated[0] = states[0]*deltaQuat[0] - states[1]*deltaQuat[1] - states[2]*deltaQuat[2] - states[3]*deltaQuat[3];
-	qUpdated[1] = states[0]*deltaQuat[1] + states[1]*deltaQuat[0] + states[2]*deltaQuat[3] - states[3]*deltaQuat[2];
-	qUpdated[2] = states[0]*deltaQuat[2] + states[2]*deltaQuat[0] + states[3]*deltaQuat[1] - states[1]*deltaQuat[3];
-	qUpdated[3] = states[0]*deltaQuat[3] + states[3]*deltaQuat[0] + states[1]*deltaQuat[2] - states[2]*deltaQuat[1];
+     // initialise the covariance matrix
+     CovarianceInit();
 
-// Normalise the quaternions and update the quaternion states
-	quatMag = sqrt(sq(qUpdated[0]) + sq(qUpdated[1]) + sq(qUpdated[2]) + sq(qUpdated[3]));
-	if (quatMag > 1e-16)
-	{
-		quatMagInv = 1.0/quatMag;
-		states[0] = quatMagInv*qUpdated[0];
-		states[1] = quatMagInv*qUpdated[1];
-		states[2] = quatMagInv*qUpdated[2];
-		states[3] = quatMagInv*qUpdated[3];
-	}
+     //Define Earth rotation vector in the NED navigation frame
+     calcEarthRateNED(earthRateNED, latRef);
 
-// Calculate the body to nav cosine matrix
-	q00 = sq(states[0]);
-	q11 = sq(states[1]);
-	q22 = sq(states[2]);
-	q33 = sq(states[3]);
-	q01 =  states[0]*states[1];
-	q02 =  states[0]*states[2];
-	q03 =  states[0]*states[3];
-	q12 =  states[1]*states[2];
-	q13 =  states[1]*states[3];
-	q23 =  states[2]*states[3];
+     //Initialise summed variables used by covariance prediction
+     summedDelAng.x = 0.0;
+     summedDelAng.y = 0.0;
+     summedDelAng.z = 0.0;
+     summedDelVel.x = 0.0;
+     summedDelVel.y = 0.0;
+     summedDelVel.z = 0.0;
+     dt = 0.0;
+ }
 
-	Tbn.x.x = q00 + q11 - q22 - q33;
-	Tbn.y.y = q00 - q11 + q22 - q33;
-	Tbn.z.z = q00 - q11 - q22 + q33;
-	Tbn.x.y = 2*(q12 - q03);
-	Tbn.x.z = 2*(q13 + q02);
-	Tbn.y.x = 2*(q12 + q03);
-	Tbn.y.z = 2*(q23 - q01);
-	Tbn.z.x = 2*(q13 - q02);
-	Tbn.z.y = 2*(q23 + q01);
+ void NavEKF::UpdateFilter()
+ {
+     if (statesInitialised)
+     {
+         // This function will be called at 100Hz
+         //
+         // Read IMU data and convert to delta angles and velocities
+         readIMUData();
+         // Run the strapdown INS equations every IMU update
+         UpdateStrapdownEquationsNED();
+         // store the predicted states for subsequent use by measurement fusion
+         StoreStates();
+         // Check if on ground - status is used by covariance prediction
+         OnGroundCheck();
+         // sum delta angles and time used by covariance prediction
+         summedDelAng = summedDelAng + correctedDelAng;
+         summedDelVel = summedDelVel + correctedDelVel;
+         dt += dtIMU;
+         // perform a covariance prediction if the total delta angle has exceeded the limit
+         // or the time limit will be exceeded at the next IMU update
+         // Do not predict covariance if magnetometer fusion still needs to be performed
+         if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)) && !magFuseStep)
+         {
+             CovariancePrediction();
+             covPredStep = true;
+             summedDelAng.zero();
+             summedDelVel.zero();
+             dt = 0.0;
+         }
+         else
+         {
+             covPredStep = false;
+         }
 
-	Tnb = Tbn.transpose();
+         // Update states using GPS, altimeter, compass and airspeed observations
+         SelectVelPosFusion();
+         SelectMagFusion();
+         SelectTasFusion();
+     }
+ }
 
-// transform body delta velocities to delta velocities in the nav frame
-// * and + operators have been overloaded
-	//delVelNav = Tbn*correctedDelVel + gravityNED*dtIMU;
-	delVelNav.x = Tbn.x.x*correctedDelVel.x + Tbn.x.y*correctedDelVel.y + Tbn.x.z*correctedDelVel.z + gravityNED.x*dtIMU;
-	delVelNav.y = Tbn.y.x*correctedDelVel.x + Tbn.y.y*correctedDelVel.y + Tbn.y.z*correctedDelVel.z + gravityNED.y*dtIMU;
-	delVelNav.z = Tbn.z.x*correctedDelVel.x + Tbn.z.y*correctedDelVel.y + Tbn.z.z*correctedDelVel.z + gravityNED.z*dtIMU;
+ void NavEKF::SelectVelPosFusion()
+ {
+     // Command fusion of GPS measurements if new ones available
+     readGpsData();
+     if (statesInitialised && newDataGps)
+         {
+             fuseVelData = true;
+             fusePosData = true;
+         }
+         else
+         {
+             fuseVelData = false;
+             fusePosData = false;
+         }
+     // Fuse height measurements at the same time as GPS measurements for efficiency
+     // Don't wait longer than HGTmsecTgt msec between height updates
+     if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecTgt)))
+     {
+         HGTmsecPrev = IMUmsec;
+         fuseHgtData = true;
+         readHgtData();
+     }
+     else
+     {
+         fuseHgtData = false;
+         // protect against wrap-around
+         if(IMUmsec < HGTmsecPrev) HGTmsecPrev = IMUmsec;
 
-// calculate the magnitude of the nav acceleration (required for GPS
-// variance estimation)
-	accNavMag = delVelNav.length()/dtIMU;
+     }
+     FuseVelPosNED();
+     fuseHgtData = false;
+     newDataGps = false;
+ }
 
-// If calculating position save previous velocity
-	lastVelocity[0] = states[4];
-	lastVelocity[1] = states[5];
-	lastVelocity[2] = states[6];
+ void NavEKF::SelectMagFusion()
+ {
+         // Fuse Magnetometer Measurements
+         if (statesInitialised && useCompass && !covPredStep && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
+         {
+             MAGmsecPrev = IMUmsec;
+             fuseMagData = true;
+             readMagData();
+         }
+         else
+         {
+             fuseMagData = false;
+             // protect against wrap-around
+             if(IMUmsec < MAGmsecPrev) MAGmsecPrev = IMUmsec;
+         }
+         // Magnetometer fusion is always called if enabled because its fusion is spread across 3 time steps
+         // to reduce peak load
+         FuseMagnetometer();
+ }
 
-// Sum delta velocities to get velocity
-	states[4] = states[4] + delVelNav.x;
-	states[5] = states[5] + delVelNav.y;
-	states[6] = states[6] + delVelNav.z;
+ void NavEKF::SelectTasFusion()
+ {
+     // Fuse Airspeed Measurements
+     if (statesInitialised && useAirspeed && !onGround  && !covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
+     {
+         TASmsecPrev = IMUmsec;
+         readAirSpdData();
+         FuseAirspeed();
+     }
+     // protect against wrap-around
+     if(IMUmsec < TASmsecPrev) TASmsecPrev = IMUmsec;
+ }
 
-// If calculating postions, do a trapezoidal integration for position
-	states[7] = states[7] + 0.5*(states[4] + lastVelocity[0])*dtIMU;
-	states[8] = states[8] + 0.5*(states[5] + lastVelocity[1])*dtIMU;
-	states[9] = states[9] + 0.5*(states[6] + lastVelocity[2])*dtIMU;
+ void NavEKF::UpdateStrapdownEquationsNED()
+ {
+     Vector3f delVelNav;
+     float q00;
+     float q11;
+     float q22;
+     float q33;
+     float q01;
+     float q02;
+     float q03;
+     float q12;
+     float q13;
+     float q23;
+     float rotationMag;
+     float rotScaler;
+     float qUpdated[4];
+     float quatMag;
+     float quatMagInv;
+     float deltaQuat[4];
+     const Vector3f gravityNED(0, 0, GRAVITY_MSS);
 
-}
+     // Remove sensor bias errors
+     correctedDelAng.x = dAngIMU.x - states[10];
+     correctedDelAng.y = dAngIMU.y - states[11];
+     correctedDelAng.z = dAngIMU.z - states[12];
+     correctedDelVel.x = dVelIMU.x - states[13];
+     correctedDelVel.y = dVelIMU.y - states[14];
+     correctedDelVel.z = dVelIMU.z - states[15];
 
-void CovariancePrediction()
-{
-	// scalars
-	float windVelSigma;
-	float dAngBiasSigma;
-	float dVelBiasSigma;
-	float magEarthSigma;
-	float magBodySigma;
-	float daxCov;
-	float dayCov;
-	float dazCov;
-	float dvxCov;
-	float dvyCov;
-	float dvzCov;
-	float dvx;
-	float dvy;
-	float dvz;
-	float dax;
-	float day;
-	float daz;
-	float q0;
-	float q1;
-	float q2;
-	float q3;
-	float dax_b;
-	float day_b;
-	float daz_b;
-	float dvx_b;
-	float dvy_b;
-	float dvz_b;
+     // Save current measurements
+     prevDelAng = correctedDelAng;
 
-	// arrays
-	float processNoise[24];
-	float SF[21];
-	float SG[8];
-	float SQ[11];
-	float SPP[13];
-	float nextP[24][24];
+     // Apply corrections for earths rotation rate and coning errors
+     // * and + operators have been overloaded
+     correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU + (prevDelAng % correctedDelAng) * 8.333333333333333e-2f;
 
-	// calculate covariance prediction process noise
-	windVelSigma = dt*0.1;
-	dAngBiasSigma = dt*5.0e-7;
-	dVelBiasSigma = dt*1.0e-4;
-	magEarthSigma = dt*1.5e-4;
-	magBodySigma  = dt*1.5e-4;
-	for (uint8_t i= 0; i<=9; i++) processNoise[i]  = 1.0e-9;
-	for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
-	for (uint8_t i=13; i<=15; i++) processNoise[i] = dVelBiasSigma;
-	for (uint8_t i=16; i<=17; i++) processNoise[i] = windVelSigma;
-	for (uint8_t i=18; i<=20; i++) processNoise[i] = magEarthSigma;
-	for (uint8_t i=21; i<=23; i++) processNoise[i] = magBodySigma;
-	for (uint8_t i= 0; i<=23; i++) processNoise[i] = sq(processNoise[i]);
+     // Convert the rotation vector to its equivalent quaternion
+     rotationMag = correctedDelAng.length();
+     if (rotationMag < 1e-12)
+     {
+         deltaQuat[0] = 1.0;
+         deltaQuat[1] = 0.0;
+         deltaQuat[2] = 0.0;
+         deltaQuat[3] = 0.0;
+     }
+     else
+     {
+         deltaQuat[0] = cos(0.5*rotationMag);
+         rotScaler = (sinf(0.5*rotationMag))/rotationMag;
+         deltaQuat[1] = correctedDelAng.x*rotScaler;
+         deltaQuat[2] = correctedDelAng.y*rotScaler;
+         deltaQuat[3] = correctedDelAng.z*rotScaler;
+     }
 
-	// set variables used to calculate covariance growth
-	dvx = summedDelVel.x;
-	dvy = summedDelVel.y;
-	dvz = summedDelVel.z;
-	dax = summedDelAng.x;
-	day = summedDelAng.y;
-	daz = summedDelAng.z;
-	q0 = states[0];
-	q1 = states[1];
-	q2 = states[2];
-	q3 = states[3];
-	dax_b = states[10];
-	day_b = states[11];
-	daz_b = states[12];
-	dvx_b = states[13];
-	dvy_b = states[14];
-	dvz_b = states[15];
-	daxCov = sq(dt*1.4544411e-2);
-	dayCov = sq(dt*1.4544411e-2);
-	dazCov = sq(dt*1.4544411e-2);
-	dvxCov = sq(dt*0.5);
-	dvyCov = sq(dt*0.5);
-	dvzCov = sq(dt*0.5);
+     // Update the quaternions by rotating from the previous attitude through
+     // the delta angle rotation quaternion
+     qUpdated[0] = states[0]*deltaQuat[0] - states[1]*deltaQuat[1] - states[2]*deltaQuat[2] - states[3]*deltaQuat[3];
+     qUpdated[1] = states[0]*deltaQuat[1] + states[1]*deltaQuat[0] + states[2]*deltaQuat[3] - states[3]*deltaQuat[2];
+     qUpdated[2] = states[0]*deltaQuat[2] + states[2]*deltaQuat[0] + states[3]*deltaQuat[1] - states[1]*deltaQuat[3];
+     qUpdated[3] = states[0]*deltaQuat[3] + states[3]*deltaQuat[0] + states[1]*deltaQuat[2] - states[2]*deltaQuat[1];
 
-	// Predicted covariance calculation
-	SF[0] = dvz - dvz_b;
-	SF[1] = dvy - dvy_b;
-	SF[2] = dvx - dvx_b;
-	SF[3] = 2*q1*SF[2] + 2*q2*SF[1] + 2*q3*SF[0];
-	SF[4] = 2*q0*SF[1] - 2*q1*SF[0] + 2*q3*SF[2];
-	SF[5] = 2*q0*SF[2] + 2*q2*SF[0] - 2*q3*SF[1];
-	SF[6] = day/2 - day_b/2;
-	SF[7] = daz/2 - daz_b/2;
-	SF[8] = dax/2 - dax_b/2;
-	SF[9] = dax_b/2 - dax/2;
-	SF[10] = daz_b/2 - daz/2;
-	SF[11] = day_b/2 - day/2;
-	SF[12] = 2*q1*SF[1];
-	SF[13] = 2*q0*SF[0];
-	SF[14] = q1/2;
-	SF[15] = q2/2;
-	SF[16] = q3/2;
-	SF[17] = sq(q3);
-	SF[18] = sq(q2);
-	SF[19] = sq(q1);
-	SF[20] = sq(q0);
+     // Normalise the quaternions and update the quaternion states
+     quatMag = sqrt(sq(qUpdated[0]) + sq(qUpdated[1]) + sq(qUpdated[2]) + sq(qUpdated[3]));
+     if (quatMag > 1e-16)
+     {
+         quatMagInv = 1.0/quatMag;
+         states[0] = quatMagInv*qUpdated[0];
+         states[1] = quatMagInv*qUpdated[1];
+         states[2] = quatMagInv*qUpdated[2];
+         states[3] = quatMagInv*qUpdated[3];
+     }
 
-	SG[0] = q0/2;
-	SG[1] = sq(q3);
-	SG[2] = sq(q2);
-	SG[3] = sq(q1);
-	SG[4] = sq(q0);
-	SG[5] = 2*q2*q3;
-	SG[6] = 2*q1*q3;
-	SG[7] = 2*q1*q2;
+     // Calculate the body to nav cosine matrix
+     q00 = sq(states[0]);
+     q11 = sq(states[1]);
+     q22 = sq(states[2]);
+     q33 = sq(states[3]);
+     q01 =  states[0]*states[1];
+     q02 =  states[0]*states[2];
+     q03 =  states[0]*states[3];
+     q12 =  states[1]*states[2];
+     q13 =  states[1]*states[3];
+     q23 =  states[2]*states[3];
 
-	SQ[0] = dvzCov*(SG[5] - 2*q0*q1)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvyCov*(SG[5] + 2*q0*q1)*(SG[1] - SG[2] + SG[3] - SG[4]) + dvxCov*(SG[6] - 2*q0*q2)*(SG[7] + 2*q0*q3);
-	SQ[1] = dvzCov*(SG[6] + 2*q0*q2)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvxCov*(SG[6] - 2*q0*q2)*(SG[1] + SG[2] - SG[3] - SG[4]) + dvyCov*(SG[5] + 2*q0*q1)*(SG[7] - 2*q0*q3);
-	SQ[2] = dvzCov*(SG[5] - 2*q0*q1)*(SG[6] + 2*q0*q2) - dvyCov*(SG[7] - 2*q0*q3)*(SG[1] - SG[2] + SG[3] - SG[4]) - dvxCov*(SG[7] + 2*q0*q3)*(SG[1] + SG[2] - SG[3] - SG[4]);
-	SQ[3] = (dayCov*q1*SG[0])/2 - (dazCov*q1*SG[0])/2 - (daxCov*q2*q3)/4;
-	SQ[4] = (dazCov*q2*SG[0])/2 - (daxCov*q2*SG[0])/2 - (dayCov*q1*q3)/4;
-	SQ[5] = (daxCov*q3*SG[0])/2 - (dayCov*q3*SG[0])/2 - (dazCov*q1*q2)/4;
-	SQ[6] = (daxCov*q1*q2)/4 - (dazCov*q3*SG[0])/2 - (dayCov*q1*q2)/4;
-	SQ[7] = (dazCov*q1*q3)/4 - (daxCov*q1*q3)/4 - (dayCov*q2*SG[0])/2;
-	SQ[8] = (dayCov*q2*q3)/4 - (daxCov*q1*SG[0])/2 - (dazCov*q2*q3)/4;
-	SQ[9] = sq(SG[0]);
-	SQ[10] = sq(q1);
+     Matrix3f Tbn;
+     Tbn.a.x = q00 + q11 - q22 - q33;
+     Tbn.b.y = q00 - q11 + q22 - q33;
+     Tbn.c.z = q00 - q11 - q22 + q33;
+     Tbn.a.y = 2*(q12 - q03);
+     Tbn.a.z = 2*(q13 + q02);
+     Tbn.b.x = 2*(q12 + q03);
+     Tbn.b.z = 2*(q23 - q01);
+     Tbn.c.x = 2*(q13 - q02);
+     Tbn.c.y = 2*(q23 + q01);
 
-	SPP[0] = SF[12] + SF[13] - 2*q2*SF[2];
-	SPP[1] = SF[17] - SF[18] - SF[19] + SF[20];
-	SPP[2] = SF[17] - SF[18] + SF[19] - SF[20];
-	SPP[3] = SF[17] + SF[18] - SF[19] - SF[20];
-	SPP[4] = 2*q0*SF[2] + 2*q2*SF[0] - 2*q3*SF[1];
-	SPP[5] = 2*q0*SF[1] - 2*q1*SF[0] + 2*q3*SF[2];
-	SPP[6] = 2*q0*q2 - 2*q1*q3;
-	SPP[7] = 2*q0*q1 - 2*q2*q3;
-	SPP[8] = 2*q0*q3 - 2*q1*q2;
-	SPP[9] = 2*q0*q1 + 2*q2*q3;
-	SPP[10] = 2*q0*q3 + 2*q1*q2;
-	SPP[11] = 2*q0*q2 + 2*q1*q3;
-	SPP[12] = SF[16];
+     prevTnb = Tbn.transpose();
 
-	nextP[0][0] = P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12] + (daxCov*SQ[10])/4 + SF[9]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[11]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[10]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SF[14]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]) + SF[15]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]) + SPP[12]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]) + (dayCov*sq(q2))/4 + (dazCov*sq(q3))/4;
-	nextP[0][1] = P[0][1] + SQ[8] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12] + SF[8]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[7]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[11]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) - SF[15]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]) + SPP[12]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]) - (q0*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]))/2;
-	nextP[0][2] = P[0][2] + SQ[7] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12] + SF[6]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[10]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[8]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SF[14]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]) - SPP[12]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]) - (q0*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]))/2;
-	nextP[0][3] = P[0][3] + SQ[6] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12] + SF[7]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[6]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[9]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[15]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]) - SF[14]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]) - (q0*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]))/2;
-	nextP[0][4] = P[0][4] + P[1][4]*SF[9] + P[2][4]*SF[11] + P[3][4]*SF[10] + P[10][4]*SF[14] + P[11][4]*SF[15] + P[12][4]*SPP[12] + SF[5]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[3]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SPP[0]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) - SPP[5]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SPP[3]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12]) - SPP[11]*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12]) + (2*q0*q3 - 2*q1*q2)*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12]);
-	nextP[0][5] = P[0][5] + P[1][5]*SF[9] + P[2][5]*SF[11] + P[3][5]*SF[10] + P[10][5]*SF[14] + P[11][5]*SF[15] + P[12][5]*SPP[12] + SF[4]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[3]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[5]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) - SPP[0]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SPP[2]*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12]) - SPP[10]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12]) + (2*q0*q1 - 2*q2*q3)*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12]);
-	nextP[0][6] = P[0][6] + P[1][6]*SF[9] + P[2][6]*SF[11] + P[3][6]*SF[10] + P[10][6]*SF[14] + P[11][6]*SF[15] + P[12][6]*SPP[12] + SF[4]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[3]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SPP[0]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) - SPP[4]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SPP[6]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12]) - SPP[1]*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12]) - SPP[9]*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12]);
-	nextP[0][7] = P[0][7] + P[1][7]*SF[9] + P[2][7]*SF[11] + P[3][7]*SF[10] + P[10][7]*SF[14] + P[11][7]*SF[15] + P[12][7]*SPP[12] + dt*(P[0][4] + P[1][4]*SF[9] + P[2][4]*SF[11] + P[3][4]*SF[10] + P[10][4]*SF[14] + P[11][4]*SF[15] + P[12][4]*SPP[12]);
-	nextP[0][8] = P[0][8] + P[1][8]*SF[9] + P[2][8]*SF[11] + P[3][8]*SF[10] + P[10][8]*SF[14] + P[11][8]*SF[15] + P[12][8]*SPP[12] + dt*(P[0][5] + P[1][5]*SF[9] + P[2][5]*SF[11] + P[3][5]*SF[10] + P[10][5]*SF[14] + P[11][5]*SF[15] + P[12][5]*SPP[12]);
-	nextP[0][9] = P[0][9] + P[1][9]*SF[9] + P[2][9]*SF[11] + P[3][9]*SF[10] + P[10][9]*SF[14] + P[11][9]*SF[15] + P[12][9]*SPP[12] + dt*(P[0][6] + P[1][6]*SF[9] + P[2][6]*SF[11] + P[3][6]*SF[10] + P[10][6]*SF[14] + P[11][6]*SF[15] + P[12][6]*SPP[12]);
-	nextP[0][10] = P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12];
-	nextP[0][11] = P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12];
-	nextP[0][12] = P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12];
-	nextP[0][13] = P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12];
-	nextP[0][14] = P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12];
-	nextP[0][15] = P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12];
-	nextP[0][16] = P[0][16] + P[1][16]*SF[9] + P[2][16]*SF[11] + P[3][16]*SF[10] + P[10][16]*SF[14] + P[11][16]*SF[15] + P[12][16]*SPP[12];
-	nextP[0][17] = P[0][17] + P[1][17]*SF[9] + P[2][17]*SF[11] + P[3][17]*SF[10] + P[10][17]*SF[14] + P[11][17]*SF[15] + P[12][17]*SPP[12];
-	nextP[0][18] = P[0][18] + P[1][18]*SF[9] + P[2][18]*SF[11] + P[3][18]*SF[10] + P[10][18]*SF[14] + P[11][18]*SF[15] + P[12][18]*SPP[12];
-	nextP[0][19] = P[0][19] + P[1][19]*SF[9] + P[2][19]*SF[11] + P[3][19]*SF[10] + P[10][19]*SF[14] + P[11][19]*SF[15] + P[12][19]*SPP[12];
-	nextP[0][20] = P[0][20] + P[1][20]*SF[9] + P[2][20]*SF[11] + P[3][20]*SF[10] + P[10][20]*SF[14] + P[11][20]*SF[15] + P[12][20]*SPP[12];
-	nextP[0][21] = P[0][21] + P[1][21]*SF[9] + P[2][21]*SF[11] + P[3][21]*SF[10] + P[10][21]*SF[14] + P[11][21]*SF[15] + P[12][21]*SPP[12];
-	nextP[0][22] = P[0][22] + P[1][22]*SF[9] + P[2][22]*SF[11] + P[3][22]*SF[10] + P[10][22]*SF[14] + P[11][22]*SF[15] + P[12][22]*SPP[12];
-	nextP[0][23] = P[0][23] + P[1][23]*SF[9] + P[2][23]*SF[11] + P[3][23]*SF[10] + P[10][23]*SF[14] + P[11][23]*SF[15] + P[12][23]*SPP[12];
-	nextP[1][0] = P[1][0] + SQ[8] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2 + SF[9]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[11]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[10]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SF[14]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2) + SF[15]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2) + SPP[12]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2);
-	nextP[1][1] = P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] + daxCov*SQ[9] - (P[10][1]*q0)/2 + SF[8]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[7]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[11]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) - SF[15]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2) + SPP[12]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2) + (dayCov*sq(q3))/4 + (dazCov*sq(q2))/4 - (q0*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2))/2;
-	nextP[1][2] = P[1][2] + SQ[5] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2 + SF[6]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[10]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[8]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SF[14]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2) - SPP[12]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2) - (q0*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2))/2;
-	nextP[1][3] = P[1][3] + SQ[4] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2 + SF[7]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[6]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[9]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[15]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2) - SF[14]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2) - (q0*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2))/2;
-	nextP[1][4] = P[1][4] + P[0][4]*SF[8] + P[2][4]*SF[7] + P[3][4]*SF[11] - P[12][4]*SF[15] + P[11][4]*SPP[12] - (P[10][4]*q0)/2 + SF[5]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[3]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SPP[0]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) - SPP[5]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SPP[3]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2) + SPP[8]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2) - SPP[11]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2);
-	nextP[1][5] = P[1][5] + P[0][5]*SF[8] + P[2][5]*SF[7] + P[3][5]*SF[11] - P[12][5]*SF[15] + P[11][5]*SPP[12] - (P[10][5]*q0)/2 + SF[4]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[3]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[5]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) - SPP[0]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SPP[2]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2) - SPP[10]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2) + SPP[7]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2);
-	nextP[1][6] = P[1][6] + P[0][6]*SF[8] + P[2][6]*SF[7] + P[3][6]*SF[11] - P[12][6]*SF[15] + P[11][6]*SPP[12] - (P[10][6]*q0)/2 + SF[4]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[3]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SPP[0]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) - SPP[4]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SPP[6]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2) - SPP[1]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2) - SPP[9]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2);
-	nextP[1][7] = P[1][7] + P[0][7]*SF[8] + P[2][7]*SF[7] + P[3][7]*SF[11] - P[12][7]*SF[15] + P[11][7]*SPP[12] - (P[10][7]*q0)/2 + dt*(P[1][4] + P[0][4]*SF[8] + P[2][4]*SF[7] + P[3][4]*SF[11] - P[12][4]*SF[15] + P[11][4]*SPP[12] - (P[10][4]*q0)/2);
-	nextP[1][8] = P[1][8] + P[0][8]*SF[8] + P[2][8]*SF[7] + P[3][8]*SF[11] - P[12][8]*SF[15] + P[11][8]*SPP[12] - (P[10][8]*q0)/2 + dt*(P[1][5] + P[0][5]*SF[8] + P[2][5]*SF[7] + P[3][5]*SF[11] - P[12][5]*SF[15] + P[11][5]*SPP[12] - (P[10][5]*q0)/2);
-	nextP[1][9] = P[1][9] + P[0][9]*SF[8] + P[2][9]*SF[7] + P[3][9]*SF[11] - P[12][9]*SF[15] + P[11][9]*SPP[12] - (P[10][9]*q0)/2 + dt*(P[1][6] + P[0][6]*SF[8] + P[2][6]*SF[7] + P[3][6]*SF[11] - P[12][6]*SF[15] + P[11][6]*SPP[12] - (P[10][6]*q0)/2);
-	nextP[1][10] = P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2;
-	nextP[1][11] = P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2;
-	nextP[1][12] = P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2;
-	nextP[1][13] = P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2;
-	nextP[1][14] = P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2;
-	nextP[1][15] = P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2;
-	nextP[1][16] = P[1][16] + P[0][16]*SF[8] + P[2][16]*SF[7] + P[3][16]*SF[11] - P[12][16]*SF[15] + P[11][16]*SPP[12] - (P[10][16]*q0)/2;
-	nextP[1][17] = P[1][17] + P[0][17]*SF[8] + P[2][17]*SF[7] + P[3][17]*SF[11] - P[12][17]*SF[15] + P[11][17]*SPP[12] - (P[10][17]*q0)/2;
-	nextP[1][18] = P[1][18] + P[0][18]*SF[8] + P[2][18]*SF[7] + P[3][18]*SF[11] - P[12][18]*SF[15] + P[11][18]*SPP[12] - (P[10][18]*q0)/2;
-	nextP[1][19] = P[1][19] + P[0][19]*SF[8] + P[2][19]*SF[7] + P[3][19]*SF[11] - P[12][19]*SF[15] + P[11][19]*SPP[12] - (P[10][19]*q0)/2;
-	nextP[1][20] = P[1][20] + P[0][20]*SF[8] + P[2][20]*SF[7] + P[3][20]*SF[11] - P[12][20]*SF[15] + P[11][20]*SPP[12] - (P[10][20]*q0)/2;
-	nextP[1][21] = P[1][21] + P[0][21]*SF[8] + P[2][21]*SF[7] + P[3][21]*SF[11] - P[12][21]*SF[15] + P[11][21]*SPP[12] - (P[10][21]*q0)/2;
-	nextP[1][22] = P[1][22] + P[0][22]*SF[8] + P[2][22]*SF[7] + P[3][22]*SF[11] - P[12][22]*SF[15] + P[11][22]*SPP[12] - (P[10][22]*q0)/2;
-	nextP[1][23] = P[1][23] + P[0][23]*SF[8] + P[2][23]*SF[7] + P[3][23]*SF[11] - P[12][23]*SF[15] + P[11][23]*SPP[12] - (P[10][23]*q0)/2;
-	nextP[2][0] = P[2][0] + SQ[7] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2 + SF[9]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[11]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[10]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SF[14]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2) + SF[15]*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2) + SPP[12]*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2);
-	nextP[2][1] = P[2][1] + SQ[5] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2 + SF[8]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[7]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[11]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) - SF[15]*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2) + SPP[12]*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2) - (q0*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2))/2;
-	nextP[2][2] = P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] + dayCov*SQ[9] + (dazCov*SQ[10])/4 - (P[11][2]*q0)/2 + SF[6]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[10]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[8]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SF[14]*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2) - SPP[12]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2) + (daxCov*sq(q3))/4 - (q0*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2))/2;
-	nextP[2][3] = P[2][3] + SQ[3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2 + SF[7]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[6]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[9]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[15]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2) - SF[14]*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2) - (q0*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2))/2;
-	nextP[2][4] = P[2][4] + P[0][4]*SF[6] + P[1][4]*SF[10] + P[3][4]*SF[8] + P[12][4]*SF[14] - P[10][4]*SPP[12] - (P[11][4]*q0)/2 + SF[5]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[3]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SPP[0]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) - SPP[5]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SPP[3]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2) + SPP[8]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2) - SPP[11]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2);
-	nextP[2][5] = P[2][5] + P[0][5]*SF[6] + P[1][5]*SF[10] + P[3][5]*SF[8] + P[12][5]*SF[14] - P[10][5]*SPP[12] - (P[11][5]*q0)/2 + SF[4]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[3]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[5]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) - SPP[0]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SPP[2]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2) - SPP[10]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2) + SPP[7]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2);
-	nextP[2][6] = P[2][6] + P[0][6]*SF[6] + P[1][6]*SF[10] + P[3][6]*SF[8] + P[12][6]*SF[14] - P[10][6]*SPP[12] - (P[11][6]*q0)/2 + SF[4]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[3]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SPP[0]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) - SPP[4]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SPP[6]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2) - SPP[1]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2) - SPP[9]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2);
-	nextP[2][7] = P[2][7] + P[0][7]*SF[6] + P[1][7]*SF[10] + P[3][7]*SF[8] + P[12][7]*SF[14] - P[10][7]*SPP[12] - (P[11][7]*q0)/2 + dt*(P[2][4] + P[0][4]*SF[6] + P[1][4]*SF[10] + P[3][4]*SF[8] + P[12][4]*SF[14] - P[10][4]*SPP[12] - (P[11][4]*q0)/2);
-	nextP[2][8] = P[2][8] + P[0][8]*SF[6] + P[1][8]*SF[10] + P[3][8]*SF[8] + P[12][8]*SF[14] - P[10][8]*SPP[12] - (P[11][8]*q0)/2 + dt*(P[2][5] + P[0][5]*SF[6] + P[1][5]*SF[10] + P[3][5]*SF[8] + P[12][5]*SF[14] - P[10][5]*SPP[12] - (P[11][5]*q0)/2);
-	nextP[2][9] = P[2][9] + P[0][9]*SF[6] + P[1][9]*SF[10] + P[3][9]*SF[8] + P[12][9]*SF[14] - P[10][9]*SPP[12] - (P[11][9]*q0)/2 + dt*(P[2][6] + P[0][6]*SF[6] + P[1][6]*SF[10] + P[3][6]*SF[8] + P[12][6]*SF[14] - P[10][6]*SPP[12] - (P[11][6]*q0)/2);
-	nextP[2][10] = P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2;
-	nextP[2][11] = P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2;
-	nextP[2][12] = P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2;
-	nextP[2][13] = P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2;
-	nextP[2][14] = P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2;
-	nextP[2][15] = P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2;
-	nextP[2][16] = P[2][16] + P[0][16]*SF[6] + P[1][16]*SF[10] + P[3][16]*SF[8] + P[12][16]*SF[14] - P[10][16]*SPP[12] - (P[11][16]*q0)/2;
-	nextP[2][17] = P[2][17] + P[0][17]*SF[6] + P[1][17]*SF[10] + P[3][17]*SF[8] + P[12][17]*SF[14] - P[10][17]*SPP[12] - (P[11][17]*q0)/2;
-	nextP[2][18] = P[2][18] + P[0][18]*SF[6] + P[1][18]*SF[10] + P[3][18]*SF[8] + P[12][18]*SF[14] - P[10][18]*SPP[12] - (P[11][18]*q0)/2;
-	nextP[2][19] = P[2][19] + P[0][19]*SF[6] + P[1][19]*SF[10] + P[3][19]*SF[8] + P[12][19]*SF[14] - P[10][19]*SPP[12] - (P[11][19]*q0)/2;
-	nextP[2][20] = P[2][20] + P[0][20]*SF[6] + P[1][20]*SF[10] + P[3][20]*SF[8] + P[12][20]*SF[14] - P[10][20]*SPP[12] - (P[11][20]*q0)/2;
-	nextP[2][21] = P[2][21] + P[0][21]*SF[6] + P[1][21]*SF[10] + P[3][21]*SF[8] + P[12][21]*SF[14] - P[10][21]*SPP[12] - (P[11][21]*q0)/2;
-	nextP[2][22] = P[2][22] + P[0][22]*SF[6] + P[1][22]*SF[10] + P[3][22]*SF[8] + P[12][22]*SF[14] - P[10][22]*SPP[12] - (P[11][22]*q0)/2;
-	nextP[2][23] = P[2][23] + P[0][23]*SF[6] + P[1][23]*SF[10] + P[3][23]*SF[8] + P[12][23]*SF[14] - P[10][23]*SPP[12] - (P[11][23]*q0)/2;
-	nextP[3][0] = P[3][0] + SQ[6] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2 + SF[9]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[11]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[10]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SF[14]*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2) + SF[15]*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2) + SPP[12]*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2);
-	nextP[3][1] = P[3][1] + SQ[4] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2 + SF[8]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[7]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[11]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) - SF[15]*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2) + SPP[12]*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2) - (q0*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2))/2;
-	nextP[3][2] = P[3][2] + SQ[3] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2 + SF[6]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[10]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[8]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SF[14]*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2) - SPP[12]*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2) - (q0*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2))/2;
-	nextP[3][3] = P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] + (dayCov*SQ[10])/4 + dazCov*SQ[9] - (P[12][3]*q0)/2 + SF[7]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[6]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[9]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[15]*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2) - SF[14]*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2) + (daxCov*sq(q2))/4 - (q0*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2))/2;
-	nextP[3][4] = P[3][4] + P[0][4]*SF[7] + P[1][4]*SF[6] + P[2][4]*SF[9] + P[10][4]*SF[15] - P[11][4]*SF[14] - (P[12][4]*q0)/2 + SF[5]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[3]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SPP[0]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) - SPP[5]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SPP[3]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) + SPP[8]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2) - SPP[11]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2);
-	nextP[3][5] = P[3][5] + P[0][5]*SF[7] + P[1][5]*SF[6] + P[2][5]*SF[9] + P[10][5]*SF[15] - P[11][5]*SF[14] - (P[12][5]*q0)/2 + SF[4]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[3]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[5]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) - SPP[0]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SPP[2]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2) - SPP[10]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) + SPP[7]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2);
-	nextP[3][6] = P[3][6] + P[0][6]*SF[7] + P[1][6]*SF[6] + P[2][6]*SF[9] + P[10][6]*SF[15] - P[11][6]*SF[14] - (P[12][6]*q0)/2 + SF[4]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[3]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SPP[0]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) - SPP[4]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SPP[6]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) - SPP[1]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2) - SPP[9]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2);
-	nextP[3][7] = P[3][7] + P[0][7]*SF[7] + P[1][7]*SF[6] + P[2][7]*SF[9] + P[10][7]*SF[15] - P[11][7]*SF[14] - (P[12][7]*q0)/2 + dt*(P[3][4] + P[0][4]*SF[7] + P[1][4]*SF[6] + P[2][4]*SF[9] + P[10][4]*SF[15] - P[11][4]*SF[14] - (P[12][4]*q0)/2);
-	nextP[3][8] = P[3][8] + P[0][8]*SF[7] + P[1][8]*SF[6] + P[2][8]*SF[9] + P[10][8]*SF[15] - P[11][8]*SF[14] - (P[12][8]*q0)/2 + dt*(P[3][5] + P[0][5]*SF[7] + P[1][5]*SF[6] + P[2][5]*SF[9] + P[10][5]*SF[15] - P[11][5]*SF[14] - (P[12][5]*q0)/2);
-	nextP[3][9] = P[3][9] + P[0][9]*SF[7] + P[1][9]*SF[6] + P[2][9]*SF[9] + P[10][9]*SF[15] - P[11][9]*SF[14] - (P[12][9]*q0)/2 + dt*(P[3][6] + P[0][6]*SF[7] + P[1][6]*SF[6] + P[2][6]*SF[9] + P[10][6]*SF[15] - P[11][6]*SF[14] - (P[12][6]*q0)/2);
-	nextP[3][10] = P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2;
-	nextP[3][11] = P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2;
-	nextP[3][12] = P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2;
-	nextP[3][13] = P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2;
-	nextP[3][14] = P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2;
-	nextP[3][15] = P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2;
-	nextP[3][16] = P[3][16] + P[0][16]*SF[7] + P[1][16]*SF[6] + P[2][16]*SF[9] + P[10][16]*SF[15] - P[11][16]*SF[14] - (P[12][16]*q0)/2;
-	nextP[3][17] = P[3][17] + P[0][17]*SF[7] + P[1][17]*SF[6] + P[2][17]*SF[9] + P[10][17]*SF[15] - P[11][17]*SF[14] - (P[12][17]*q0)/2;
-	nextP[3][18] = P[3][18] + P[0][18]*SF[7] + P[1][18]*SF[6] + P[2][18]*SF[9] + P[10][18]*SF[15] - P[11][18]*SF[14] - (P[12][18]*q0)/2;
-	nextP[3][19] = P[3][19] + P[0][19]*SF[7] + P[1][19]*SF[6] + P[2][19]*SF[9] + P[10][19]*SF[15] - P[11][19]*SF[14] - (P[12][19]*q0)/2;
-	nextP[3][20] = P[3][20] + P[0][20]*SF[7] + P[1][20]*SF[6] + P[2][20]*SF[9] + P[10][20]*SF[15] - P[11][20]*SF[14] - (P[12][20]*q0)/2;
-	nextP[3][21] = P[3][21] + P[0][21]*SF[7] + P[1][21]*SF[6] + P[2][21]*SF[9] + P[10][21]*SF[15] - P[11][21]*SF[14] - (P[12][21]*q0)/2;
-	nextP[3][22] = P[3][22] + P[0][22]*SF[7] + P[1][22]*SF[6] + P[2][22]*SF[9] + P[10][22]*SF[15] - P[11][22]*SF[14] - (P[12][22]*q0)/2;
-	nextP[3][23] = P[3][23] + P[0][23]*SF[7] + P[1][23]*SF[6] + P[2][23]*SF[9] + P[10][23]*SF[15] - P[11][23]*SF[14] - (P[12][23]*q0)/2;
-	nextP[4][0] = P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11] + SF[9]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[11]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[10]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SF[14]*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]) + SF[15]*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]) + SPP[12]*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]);
-	nextP[4][1] = P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11] + SF[8]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[7]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[11]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) - SF[15]*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]) + SPP[12]*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]) - (q0*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]))/2;
-	nextP[4][2] = P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11] + SF[6]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[10]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[8]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SF[14]*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]) - SPP[12]*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]) - (q0*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]))/2;
-	nextP[4][3] = P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11] + SF[7]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[6]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[9]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[15]*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]) - SF[14]*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]) - (q0*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]))/2;
-	nextP[4][4] = P[4][4] + P[0][4]*SF[5] + P[1][4]*SF[3] + P[2][4]*SPP[0] - P[3][4]*SPP[5] + P[13][4]*SPP[3] + P[14][4]*SPP[8] - P[15][4]*SPP[11] + dvyCov*sq(SG[7] - 2*q0*q3) + dvzCov*sq(SG[6] + 2*q0*q2) + SF[5]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[3]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SPP[0]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) - SPP[5]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SPP[3]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11]) + SPP[8]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11]) - SPP[11]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11]) + dvxCov*sq(SG[1] + SG[2] - SG[3] - SG[4]);
-	nextP[4][5] = P[4][5] + SQ[2] + P[0][5]*SF[5] + P[1][5]*SF[3] + P[2][5]*SPP[0] - P[3][5]*SPP[5] + P[13][5]*SPP[3] + P[14][5]*SPP[8] - P[15][5]*SPP[11] + SF[4]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[3]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[5]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) - SPP[0]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SPP[2]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11]) - SPP[10]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11]) + SPP[7]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11]);
-	nextP[4][6] = P[4][6] + SQ[1] + P[0][6]*SF[5] + P[1][6]*SF[3] + P[2][6]*SPP[0] - P[3][6]*SPP[5] + P[13][6]*SPP[3] + P[14][6]*SPP[8] - P[15][6]*SPP[11] + SF[4]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[3]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SPP[0]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) - SPP[4]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SPP[6]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11]) - SPP[1]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11]) - SPP[9]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11]);
-	nextP[4][7] = P[4][7] + P[0][7]*SF[5] + P[1][7]*SF[3] + P[2][7]*SPP[0] - P[3][7]*SPP[5] + P[13][7]*SPP[3] + P[14][7]*SPP[8] - P[15][7]*SPP[11] + dt*(P[4][4] + P[0][4]*SF[5] + P[1][4]*SF[3] + P[2][4]*SPP[0] - P[3][4]*SPP[5] + P[13][4]*SPP[3] + P[14][4]*SPP[8] - P[15][4]*SPP[11]);
-	nextP[4][8] = P[4][8] + P[0][8]*SF[5] + P[1][8]*SF[3] + P[2][8]*SPP[0] - P[3][8]*SPP[5] + P[13][8]*SPP[3] + P[14][8]*SPP[8] - P[15][8]*SPP[11] + dt*(P[4][5] + P[0][5]*SF[5] + P[1][5]*SF[3] + P[2][5]*SPP[0] - P[3][5]*SPP[5] + P[13][5]*SPP[3] + P[14][5]*SPP[8] - P[15][5]*SPP[11]);
-	nextP[4][9] = P[4][9] + P[0][9]*SF[5] + P[1][9]*SF[3] + P[2][9]*SPP[0] - P[3][9]*SPP[5] + P[13][9]*SPP[3] + P[14][9]*SPP[8] - P[15][9]*SPP[11] + dt*(P[4][6] + P[0][6]*SF[5] + P[1][6]*SF[3] + P[2][6]*SPP[0] - P[3][6]*SPP[5] + P[13][6]*SPP[3] + P[14][6]*SPP[8] - P[15][6]*SPP[11]);
-	nextP[4][10] = P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11];
-	nextP[4][11] = P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11];
-	nextP[4][12] = P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11];
-	nextP[4][13] = P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11];
-	nextP[4][14] = P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11];
-	nextP[4][15] = P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11];
-	nextP[4][16] = P[4][16] + P[0][16]*SF[5] + P[1][16]*SF[3] + P[2][16]*SPP[0] - P[3][16]*SPP[5] + P[13][16]*SPP[3] + P[14][16]*SPP[8] - P[15][16]*SPP[11];
-	nextP[4][17] = P[4][17] + P[0][17]*SF[5] + P[1][17]*SF[3] + P[2][17]*SPP[0] - P[3][17]*SPP[5] + P[13][17]*SPP[3] + P[14][17]*SPP[8] - P[15][17]*SPP[11];
-	nextP[4][18] = P[4][18] + P[0][18]*SF[5] + P[1][18]*SF[3] + P[2][18]*SPP[0] - P[3][18]*SPP[5] + P[13][18]*SPP[3] + P[14][18]*SPP[8] - P[15][18]*SPP[11];
-	nextP[4][19] = P[4][19] + P[0][19]*SF[5] + P[1][19]*SF[3] + P[2][19]*SPP[0] - P[3][19]*SPP[5] + P[13][19]*SPP[3] + P[14][19]*SPP[8] - P[15][19]*SPP[11];
-	nextP[4][20] = P[4][20] + P[0][20]*SF[5] + P[1][20]*SF[3] + P[2][20]*SPP[0] - P[3][20]*SPP[5] + P[13][20]*SPP[3] + P[14][20]*SPP[8] - P[15][20]*SPP[11];
-	nextP[4][21] = P[4][21] + P[0][21]*SF[5] + P[1][21]*SF[3] + P[2][21]*SPP[0] - P[3][21]*SPP[5] + P[13][21]*SPP[3] + P[14][21]*SPP[8] - P[15][21]*SPP[11];
-	nextP[4][22] = P[4][22] + P[0][22]*SF[5] + P[1][22]*SF[3] + P[2][22]*SPP[0] - P[3][22]*SPP[5] + P[13][22]*SPP[3] + P[14][22]*SPP[8] - P[15][22]*SPP[11];
-	nextP[4][23] = P[4][23] + P[0][23]*SF[5] + P[1][23]*SF[3] + P[2][23]*SPP[0] - P[3][23]*SPP[5] + P[13][23]*SPP[3] + P[14][23]*SPP[8] - P[15][23]*SPP[11];
-	nextP[5][0] = P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7] + SF[9]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[11]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[10]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SF[14]*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]) + SF[15]*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]) + SPP[12]*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]);
-	nextP[5][1] = P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7] + SF[8]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[7]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[11]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) - SF[15]*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]) + SPP[12]*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]) - (q0*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]))/2;
-	nextP[5][2] = P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7] + SF[6]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[10]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[8]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SF[14]*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]) - SPP[12]*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]) - (q0*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]))/2;
-	nextP[5][3] = P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7] + SF[7]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[6]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[9]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[15]*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]) - SF[14]*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]) - (q0*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]))/2;
-	nextP[5][4] = P[5][4] + SQ[2] + P[0][4]*SF[4] + P[2][4]*SF[3] + P[3][4]*SF[5] - P[1][4]*SPP[0] - P[13][4]*SPP[10] + P[14][4]*SPP[2] + P[15][4]*SPP[7] + SF[5]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[3]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SPP[0]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) - SPP[5]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SPP[3]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7]) + SPP[8]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7]) - SPP[11]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7]);
-	nextP[5][5] = P[5][5] + P[0][5]*SF[4] + P[2][5]*SF[3] + P[3][5]*SF[5] - P[1][5]*SPP[0] - P[13][5]*SPP[10] + P[14][5]*SPP[2] + P[15][5]*SPP[7] + dvxCov*sq(SG[7] + 2*q0*q3) + dvzCov*sq(SG[5] - 2*q0*q1) + SF[4]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[3]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[5]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) - SPP[0]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SPP[2]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7]) - SPP[10]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7]) + SPP[7]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7]) + dvyCov*sq(SG[1] - SG[2] + SG[3] - SG[4]);
-	nextP[5][6] = P[5][6] + SQ[0] + P[0][6]*SF[4] + P[2][6]*SF[3] + P[3][6]*SF[5] - P[1][6]*SPP[0] - P[13][6]*SPP[10] + P[14][6]*SPP[2] + P[15][6]*SPP[7] + SF[4]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[3]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SPP[0]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) - SPP[4]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SPP[6]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7]) - SPP[1]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7]) - SPP[9]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7]);
-	nextP[5][7] = P[5][7] + P[0][7]*SF[4] + P[2][7]*SF[3] + P[3][7]*SF[5] - P[1][7]*SPP[0] - P[13][7]*SPP[10] + P[14][7]*SPP[2] + P[15][7]*SPP[7] + dt*(P[5][4] + P[0][4]*SF[4] + P[2][4]*SF[3] + P[3][4]*SF[5] - P[1][4]*SPP[0] - P[13][4]*SPP[10] + P[14][4]*SPP[2] + P[15][4]*SPP[7]);
-	nextP[5][8] = P[5][8] + P[0][8]*SF[4] + P[2][8]*SF[3] + P[3][8]*SF[5] - P[1][8]*SPP[0] - P[13][8]*SPP[10] + P[14][8]*SPP[2] + P[15][8]*SPP[7] + dt*(P[5][5] + P[0][5]*SF[4] + P[2][5]*SF[3] + P[3][5]*SF[5] - P[1][5]*SPP[0] - P[13][5]*SPP[10] + P[14][5]*SPP[2] + P[15][5]*SPP[7]);
-	nextP[5][9] = P[5][9] + P[0][9]*SF[4] + P[2][9]*SF[3] + P[3][9]*SF[5] - P[1][9]*SPP[0] - P[13][9]*SPP[10] + P[14][9]*SPP[2] + P[15][9]*SPP[7] + dt*(P[5][6] + P[0][6]*SF[4] + P[2][6]*SF[3] + P[3][6]*SF[5] - P[1][6]*SPP[0] - P[13][6]*SPP[10] + P[14][6]*SPP[2] + P[15][6]*SPP[7]);
-	nextP[5][10] = P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7];
-	nextP[5][11] = P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7];
-	nextP[5][12] = P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7];
-	nextP[5][13] = P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7];
-	nextP[5][14] = P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7];
-	nextP[5][15] = P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7];
-	nextP[5][16] = P[5][16] + P[0][16]*SF[4] + P[2][16]*SF[3] + P[3][16]*SF[5] - P[1][16]*SPP[0] - P[13][16]*SPP[10] + P[14][16]*SPP[2] + P[15][16]*SPP[7];
-	nextP[5][17] = P[5][17] + P[0][17]*SF[4] + P[2][17]*SF[3] + P[3][17]*SF[5] - P[1][17]*SPP[0] - P[13][17]*SPP[10] + P[14][17]*SPP[2] + P[15][17]*SPP[7];
-	nextP[5][18] = P[5][18] + P[0][18]*SF[4] + P[2][18]*SF[3] + P[3][18]*SF[5] - P[1][18]*SPP[0] - P[13][18]*SPP[10] + P[14][18]*SPP[2] + P[15][18]*SPP[7];
-	nextP[5][19] = P[5][19] + P[0][19]*SF[4] + P[2][19]*SF[3] + P[3][19]*SF[5] - P[1][19]*SPP[0] - P[13][19]*SPP[10] + P[14][19]*SPP[2] + P[15][19]*SPP[7];
-	nextP[5][20] = P[5][20] + P[0][20]*SF[4] + P[2][20]*SF[3] + P[3][20]*SF[5] - P[1][20]*SPP[0] - P[13][20]*SPP[10] + P[14][20]*SPP[2] + P[15][20]*SPP[7];
-	nextP[5][21] = P[5][21] + P[0][21]*SF[4] + P[2][21]*SF[3] + P[3][21]*SF[5] - P[1][21]*SPP[0] - P[13][21]*SPP[10] + P[14][21]*SPP[2] + P[15][21]*SPP[7];
-	nextP[5][22] = P[5][22] + P[0][22]*SF[4] + P[2][22]*SF[3] + P[3][22]*SF[5] - P[1][22]*SPP[0] - P[13][22]*SPP[10] + P[14][22]*SPP[2] + P[15][22]*SPP[7];
-	nextP[5][23] = P[5][23] + P[0][23]*SF[4] + P[2][23]*SF[3] + P[3][23]*SF[5] - P[1][23]*SPP[0] - P[13][23]*SPP[10] + P[14][23]*SPP[2] + P[15][23]*SPP[7];
-	nextP[6][0] = P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1] + SF[9]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[11]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[10]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SF[14]*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]) + SF[15]*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]) + SPP[12]*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]);
-	nextP[6][1] = P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1] + SF[8]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[7]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[11]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) - SF[15]*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]) + SPP[12]*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]) - (q0*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]))/2;
-	nextP[6][2] = P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1] + SF[6]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[10]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[8]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SF[14]*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]) - SPP[12]*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]) - (q0*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]))/2;
-	nextP[6][3] = P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1] + SF[7]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[6]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[9]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[15]*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]) - SF[14]*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]) - (q0*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]))/2;
-	nextP[6][4] = P[6][4] + SQ[1] + P[1][4]*SF[4] + P[3][4]*SF[3] + P[0][4]*SPP[0] - P[2][4]*SPP[4] + P[13][4]*SPP[6] - P[14][4]*SPP[9] - P[15][4]*SPP[1] + SF[5]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[3]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SPP[0]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) - SPP[5]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SPP[3]*(P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1]) + SPP[8]*(P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1]) - SPP[11]*(P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1]);
-	nextP[6][5] = P[6][5] + SQ[0] + P[1][5]*SF[4] + P[3][5]*SF[3] + P[0][5]*SPP[0] - P[2][5]*SPP[4] + P[13][5]*SPP[6] - P[14][5]*SPP[9] - P[15][5]*SPP[1] + SF[4]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[3]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[5]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) - SPP[0]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SPP[2]*(P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1]) - SPP[10]*(P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1]) + SPP[7]*(P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1]);
-	nextP[6][6] = P[6][6] + P[1][6]*SF[4] + P[3][6]*SF[3] + P[0][6]*SPP[0] - P[2][6]*SPP[4] + P[13][6]*SPP[6] - P[14][6]*SPP[9] - P[15][6]*SPP[1] + dvxCov*sq(SG[6] - 2*q0*q2) + dvyCov*sq(SG[5] + 2*q0*q1) + SF[4]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[3]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SPP[0]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) - SPP[4]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SPP[6]*(P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1]) - SPP[1]*(P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1]) - SPP[9]*(P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1]) + dvzCov*sq(SG[1] - SG[2] - SG[3] + SG[4]);
-	nextP[6][7] = P[6][7] + P[1][7]*SF[4] + P[3][7]*SF[3] + P[0][7]*SPP[0] - P[2][7]*SPP[4] + P[13][7]*SPP[6] - P[14][7]*SPP[9] - P[15][7]*SPP[1] + dt*(P[6][4] + P[1][4]*SF[4] + P[3][4]*SF[3] + P[0][4]*SPP[0] - P[2][4]*SPP[4] + P[13][4]*SPP[6] - P[14][4]*SPP[9] - P[15][4]*SPP[1]);
-	nextP[6][8] = P[6][8] + P[1][8]*SF[4] + P[3][8]*SF[3] + P[0][8]*SPP[0] - P[2][8]*SPP[4] + P[13][8]*SPP[6] - P[14][8]*SPP[9] - P[15][8]*SPP[1] + dt*(P[6][5] + P[1][5]*SF[4] + P[3][5]*SF[3] + P[0][5]*SPP[0] - P[2][5]*SPP[4] + P[13][5]*SPP[6] - P[14][5]*SPP[9] - P[15][5]*SPP[1]);
-	nextP[6][9] = P[6][9] + P[1][9]*SF[4] + P[3][9]*SF[3] + P[0][9]*SPP[0] - P[2][9]*SPP[4] + P[13][9]*SPP[6] - P[14][9]*SPP[9] - P[15][9]*SPP[1] + dt*(P[6][6] + P[1][6]*SF[4] + P[3][6]*SF[3] + P[0][6]*SPP[0] - P[2][6]*SPP[4] + P[13][6]*SPP[6] - P[14][6]*SPP[9] - P[15][6]*SPP[1]);
-	nextP[6][10] = P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1];
-	nextP[6][11] = P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1];
-	nextP[6][12] = P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1];
-	nextP[6][13] = P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1];
-	nextP[6][14] = P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1];
-	nextP[6][15] = P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1];
-	nextP[6][16] = P[6][16] + P[1][16]*SF[4] + P[3][16]*SF[3] + P[0][16]*SPP[0] - P[2][16]*SPP[4] + P[13][16]*SPP[6] - P[14][16]*SPP[9] - P[15][16]*SPP[1];
-	nextP[6][17] = P[6][17] + P[1][17]*SF[4] + P[3][17]*SF[3] + P[0][17]*SPP[0] - P[2][17]*SPP[4] + P[13][17]*SPP[6] - P[14][17]*SPP[9] - P[15][17]*SPP[1];
-	nextP[6][18] = P[6][18] + P[1][18]*SF[4] + P[3][18]*SF[3] + P[0][18]*SPP[0] - P[2][18]*SPP[4] + P[13][18]*SPP[6] - P[14][18]*SPP[9] - P[15][18]*SPP[1];
-	nextP[6][19] = P[6][19] + P[1][19]*SF[4] + P[3][19]*SF[3] + P[0][19]*SPP[0] - P[2][19]*SPP[4] + P[13][19]*SPP[6] - P[14][19]*SPP[9] - P[15][19]*SPP[1];
-	nextP[6][20] = P[6][20] + P[1][20]*SF[4] + P[3][20]*SF[3] + P[0][20]*SPP[0] - P[2][20]*SPP[4] + P[13][20]*SPP[6] - P[14][20]*SPP[9] - P[15][20]*SPP[1];
-	nextP[6][21] = P[6][21] + P[1][21]*SF[4] + P[3][21]*SF[3] + P[0][21]*SPP[0] - P[2][21]*SPP[4] + P[13][21]*SPP[6] - P[14][21]*SPP[9] - P[15][21]*SPP[1];
-	nextP[6][22] = P[6][22] + P[1][22]*SF[4] + P[3][22]*SF[3] + P[0][22]*SPP[0] - P[2][22]*SPP[4] + P[13][22]*SPP[6] - P[14][22]*SPP[9] - P[15][22]*SPP[1];
-	nextP[6][23] = P[6][23] + P[1][23]*SF[4] + P[3][23]*SF[3] + P[0][23]*SPP[0] - P[2][23]*SPP[4] + P[13][23]*SPP[6] - P[14][23]*SPP[9] - P[15][23]*SPP[1];
-	nextP[7][0] = P[7][0] + P[4][0]*dt + SF[9]*(P[7][1] + P[4][1]*dt) + SF[11]*(P[7][2] + P[4][2]*dt) + SF[10]*(P[7][3] + P[4][3]*dt) + SF[14]*(P[7][10] + P[4][10]*dt) + SF[15]*(P[7][11] + P[4][11]*dt) + SPP[12]*(P[7][12] + P[4][12]*dt);
-	nextP[7][1] = P[7][1] + P[4][1]*dt + SF[8]*(P[7][0] + P[4][0]*dt) + SF[7]*(P[7][2] + P[4][2]*dt) + SF[11]*(P[7][3] + P[4][3]*dt) - SF[15]*(P[7][12] + P[4][12]*dt) + SPP[12]*(P[7][11] + P[4][11]*dt) - (q0*(P[7][10] + P[4][10]*dt))/2;
-	nextP[7][2] = P[7][2] + P[4][2]*dt + SF[6]*(P[7][0] + P[4][0]*dt) + SF[10]*(P[7][1] + P[4][1]*dt) + SF[8]*(P[7][3] + P[4][3]*dt) + SF[14]*(P[7][12] + P[4][12]*dt) - SPP[12]*(P[7][10] + P[4][10]*dt) - (q0*(P[7][11] + P[4][11]*dt))/2;
-	nextP[7][3] = P[7][3] + P[4][3]*dt + SF[7]*(P[7][0] + P[4][0]*dt) + SF[6]*(P[7][1] + P[4][1]*dt) + SF[9]*(P[7][2] + P[4][2]*dt) + SF[15]*(P[7][10] + P[4][10]*dt) - SF[14]*(P[7][11] + P[4][11]*dt) - (q0*(P[7][12] + P[4][12]*dt))/2;
-	nextP[7][4] = P[7][4] + P[4][4]*dt + SF[3]*(P[7][1] + P[4][1]*dt) + SF[5]*(P[7][0] + P[4][0]*dt) + SPP[0]*(P[7][2] + P[4][2]*dt) - SPP[5]*(P[7][3] + P[4][3]*dt) + SPP[3]*(P[7][13] + P[4][13]*dt) + SPP[8]*(P[7][14] + P[4][14]*dt) - SPP[11]*(P[7][15] + P[4][15]*dt);
-	nextP[7][5] = P[7][5] + P[4][5]*dt + SF[4]*(P[7][0] + P[4][0]*dt) + SF[3]*(P[7][2] + P[4][2]*dt) + SF[5]*(P[7][3] + P[4][3]*dt) - SPP[0]*(P[7][1] + P[4][1]*dt) + SPP[2]*(P[7][14] + P[4][14]*dt) - SPP[10]*(P[7][13] + P[4][13]*dt) + SPP[7]*(P[7][15] + P[4][15]*dt);
-	nextP[7][6] = P[7][6] + P[4][6]*dt + SF[4]*(P[7][1] + P[4][1]*dt) + SF[3]*(P[7][3] + P[4][3]*dt) + SPP[0]*(P[7][0] + P[4][0]*dt) - SPP[4]*(P[7][2] + P[4][2]*dt) - SPP[1]*(P[7][15] + P[4][15]*dt) + SPP[6]*(P[7][13] + P[4][13]*dt) - SPP[9]*(P[7][14] + P[4][14]*dt);
-	nextP[7][7] = P[7][7] + P[4][7]*dt + dt*(P[7][4] + P[4][4]*dt);
-	nextP[7][8] = P[7][8] + P[4][8]*dt + dt*(P[7][5] + P[4][5]*dt);
-	nextP[7][9] = P[7][9] + P[4][9]*dt + dt*(P[7][6] + P[4][6]*dt);
-	nextP[7][10] = P[7][10] + P[4][10]*dt;
-	nextP[7][11] = P[7][11] + P[4][11]*dt;
-	nextP[7][12] = P[7][12] + P[4][12]*dt;
-	nextP[7][13] = P[7][13] + P[4][13]*dt;
-	nextP[7][14] = P[7][14] + P[4][14]*dt;
-	nextP[7][15] = P[7][15] + P[4][15]*dt;
-	nextP[7][16] = P[7][16] + P[4][16]*dt;
-	nextP[7][17] = P[7][17] + P[4][17]*dt;
-	nextP[7][18] = P[7][18] + P[4][18]*dt;
-	nextP[7][19] = P[7][19] + P[4][19]*dt;
-	nextP[7][20] = P[7][20] + P[4][20]*dt;
-	nextP[7][21] = P[7][21] + P[4][21]*dt;
-	nextP[7][22] = P[7][22] + P[4][22]*dt;
-	nextP[7][23] = P[7][23] + P[4][23]*dt;
-	nextP[8][0] = P[8][0] + P[5][0]*dt + SF[9]*(P[8][1] + P[5][1]*dt) + SF[11]*(P[8][2] + P[5][2]*dt) + SF[10]*(P[8][3] + P[5][3]*dt) + SF[14]*(P[8][10] + P[5][10]*dt) + SF[15]*(P[8][11] + P[5][11]*dt) + SPP[12]*(P[8][12] + P[5][12]*dt);
-	nextP[8][1] = P[8][1] + P[5][1]*dt + SF[8]*(P[8][0] + P[5][0]*dt) + SF[7]*(P[8][2] + P[5][2]*dt) + SF[11]*(P[8][3] + P[5][3]*dt) - SF[15]*(P[8][12] + P[5][12]*dt) + SPP[12]*(P[8][11] + P[5][11]*dt) - (q0*(P[8][10] + P[5][10]*dt))/2;
-	nextP[8][2] = P[8][2] + P[5][2]*dt + SF[6]*(P[8][0] + P[5][0]*dt) + SF[10]*(P[8][1] + P[5][1]*dt) + SF[8]*(P[8][3] + P[5][3]*dt) + SF[14]*(P[8][12] + P[5][12]*dt) - SPP[12]*(P[8][10] + P[5][10]*dt) - (q0*(P[8][11] + P[5][11]*dt))/2;
-	nextP[8][3] = P[8][3] + P[5][3]*dt + SF[7]*(P[8][0] + P[5][0]*dt) + SF[6]*(P[8][1] + P[5][1]*dt) + SF[9]*(P[8][2] + P[5][2]*dt) + SF[15]*(P[8][10] + P[5][10]*dt) - SF[14]*(P[8][11] + P[5][11]*dt) - (q0*(P[8][12] + P[5][12]*dt))/2;
-	nextP[8][4] = P[8][4] + P[5][4]*dt + SF[3]*(P[8][1] + P[5][1]*dt) + SF[5]*(P[8][0] + P[5][0]*dt) + SPP[0]*(P[8][2] + P[5][2]*dt) - SPP[5]*(P[8][3] + P[5][3]*dt) + SPP[3]*(P[8][13] + P[5][13]*dt) + SPP[8]*(P[8][14] + P[5][14]*dt) - SPP[11]*(P[8][15] + P[5][15]*dt);
-	nextP[8][5] = P[8][5] + P[5][5]*dt + SF[4]*(P[8][0] + P[5][0]*dt) + SF[3]*(P[8][2] + P[5][2]*dt) + SF[5]*(P[8][3] + P[5][3]*dt) - SPP[0]*(P[8][1] + P[5][1]*dt) + SPP[2]*(P[8][14] + P[5][14]*dt) - SPP[10]*(P[8][13] + P[5][13]*dt) + SPP[7]*(P[8][15] + P[5][15]*dt);
-	nextP[8][6] = P[8][6] + P[5][6]*dt + SF[4]*(P[8][1] + P[5][1]*dt) + SF[3]*(P[8][3] + P[5][3]*dt) + SPP[0]*(P[8][0] + P[5][0]*dt) - SPP[4]*(P[8][2] + P[5][2]*dt) - SPP[1]*(P[8][15] + P[5][15]*dt) + SPP[6]*(P[8][13] + P[5][13]*dt) - SPP[9]*(P[8][14] + P[5][14]*dt);
-	nextP[8][7] = P[8][7] + P[5][7]*dt + dt*(P[8][4] + P[5][4]*dt);
-	nextP[8][8] = P[8][8] + P[5][8]*dt + dt*(P[8][5] + P[5][5]*dt);
-	nextP[8][9] = P[8][9] + P[5][9]*dt + dt*(P[8][6] + P[5][6]*dt);
-	nextP[8][10] = P[8][10] + P[5][10]*dt;
-	nextP[8][11] = P[8][11] + P[5][11]*dt;
-	nextP[8][12] = P[8][12] + P[5][12]*dt;
-	nextP[8][13] = P[8][13] + P[5][13]*dt;
-	nextP[8][14] = P[8][14] + P[5][14]*dt;
-	nextP[8][15] = P[8][15] + P[5][15]*dt;
-	nextP[8][16] = P[8][16] + P[5][16]*dt;
-	nextP[8][17] = P[8][17] + P[5][17]*dt;
-	nextP[8][18] = P[8][18] + P[5][18]*dt;
-	nextP[8][19] = P[8][19] + P[5][19]*dt;
-	nextP[8][20] = P[8][20] + P[5][20]*dt;
-	nextP[8][21] = P[8][21] + P[5][21]*dt;
-	nextP[8][22] = P[8][22] + P[5][22]*dt;
-	nextP[8][23] = P[8][23] + P[5][23]*dt;
-	nextP[9][0] = P[9][0] + P[6][0]*dt + SF[9]*(P[9][1] + P[6][1]*dt) + SF[11]*(P[9][2] + P[6][2]*dt) + SF[10]*(P[9][3] + P[6][3]*dt) + SF[14]*(P[9][10] + P[6][10]*dt) + SF[15]*(P[9][11] + P[6][11]*dt) + SPP[12]*(P[9][12] + P[6][12]*dt);
-	nextP[9][1] = P[9][1] + P[6][1]*dt + SF[8]*(P[9][0] + P[6][0]*dt) + SF[7]*(P[9][2] + P[6][2]*dt) + SF[11]*(P[9][3] + P[6][3]*dt) - SF[15]*(P[9][12] + P[6][12]*dt) + SPP[12]*(P[9][11] + P[6][11]*dt) - (q0*(P[9][10] + P[6][10]*dt))/2;
-	nextP[9][2] = P[9][2] + P[6][2]*dt + SF[6]*(P[9][0] + P[6][0]*dt) + SF[10]*(P[9][1] + P[6][1]*dt) + SF[8]*(P[9][3] + P[6][3]*dt) + SF[14]*(P[9][12] + P[6][12]*dt) - SPP[12]*(P[9][10] + P[6][10]*dt) - (q0*(P[9][11] + P[6][11]*dt))/2;
-	nextP[9][3] = P[9][3] + P[6][3]*dt + SF[7]*(P[9][0] + P[6][0]*dt) + SF[6]*(P[9][1] + P[6][1]*dt) + SF[9]*(P[9][2] + P[6][2]*dt) + SF[15]*(P[9][10] + P[6][10]*dt) - SF[14]*(P[9][11] + P[6][11]*dt) - (q0*(P[9][12] + P[6][12]*dt))/2;
+     // transform body delta velocities to delta velocities in the nav frame
+     // * and + operators have been overloaded
+     //delVelNav = Tbn*correctedDelVel + gravityNED*dtIMU;
+     delVelNav.x = Tbn.a.x*correctedDelVel.x + Tbn.a.y*correctedDelVel.y + Tbn.a.z*correctedDelVel.z + gravityNED.x*dtIMU;
+     delVelNav.y = Tbn.b.x*correctedDelVel.x + Tbn.b.y*correctedDelVel.y + Tbn.b.z*correctedDelVel.z + gravityNED.y*dtIMU;
+     delVelNav.z = Tbn.c.x*correctedDelVel.x + Tbn.c.y*correctedDelVel.y + Tbn.c.z*correctedDelVel.z + gravityNED.z*dtIMU;
+
+     // calculate the magnitude of the nav acceleration (required for GPS
+     // variance estimation)
+     accNavMag = delVelNav.length()/dtIMU;
+
+     // If calculating position save previous velocity
+     Vector3f lastVelocity;
+     lastVelocity.x = states[4];
+     lastVelocity.y = states[5];
+     lastVelocity.z = states[6];
+
+     // Sum delta velocities to get velocity
+     states[4] = states[4] + delVelNav.x;
+     states[5] = states[5] + delVelNav.y;
+     states[6] = states[6] + delVelNav.z;
+
+     // If calculating postions, do a trapezoidal integration for position
+     states[7] = states[7] + 0.5*(states[4] + lastVelocity[0])*dtIMU;
+     states[8] = states[8] + 0.5*(states[5] + lastVelocity[1])*dtIMU;
+     states[9] = states[9] + 0.5*(states[6] + lastVelocity[2])*dtIMU;
+
+ }
+
+ void NavEKF::CovariancePrediction()
+ {
+     // scalars
+     float windVelSigma;
+     float dAngBiasSigma;
+     float dVelBiasSigma;
+     float magEarthSigma;
+     float magBodySigma;
+     float daxCov;
+     float dayCov;
+     float dazCov;
+     float dvxCov;
+     float dvyCov;
+     float dvzCov;
+     float dvx;
+     float dvy;
+     float dvz;
+     float dax;
+     float day;
+     float daz;
+     float q0;
+     float q1;
+     float q2;
+     float q3;
+     float dax_b;
+     float day_b;
+     float daz_b;
+     float dvx_b;
+     float dvy_b;
+     float dvz_b;
+
+     // arrays
+     float processNoise[24];
+     float SF[21];
+     float SG[8];
+     float SQ[11];
+     float SPP[13];
+     float nextP[24][24];
+
+     // calculate covariance prediction process noise
+     windVelSigma  = dt * 0.1f;
+     dAngBiasSigma = dt * 5.0e-7f;
+     dVelBiasSigma = dt * 1.0e-4f;
+     magEarthSigma = dt * 1.5e-4f;
+     magBodySigma  = dt * 1.5e-4f;
+
+     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
+     for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
+     for (uint8_t i=13; i<=15; i++) processNoise[i] = dVelBiasSigma;
+     for (uint8_t i=16; i<=17; i++) processNoise[i] = windVelSigma;
+     for (uint8_t i=18; i<=20; i++) processNoise[i] = magEarthSigma;
+     for (uint8_t i=21; i<=23; i++) processNoise[i] = magBodySigma;
+     for (uint8_t i= 0; i<=23; i++) processNoise[i] = sq(processNoise[i]);
+
+     // set variables used to calculate covariance growth
+     dvx = summedDelVel.x;
+     dvy = summedDelVel.y;
+     dvz = summedDelVel.z;
+     dax = summedDelAng.x;
+     day = summedDelAng.y;
+     daz = summedDelAng.z;
+     q0 = states[0];
+     q1 = states[1];
+     q2 = states[2];
+     q3 = states[3];
+     dax_b = states[10];
+     day_b = states[11];
+     daz_b = states[12];
+     dvx_b = states[13];
+     dvy_b = states[14];
+     dvz_b = states[15];
+     daxCov = sq(dt*1.4544411e-2f);
+     dayCov = sq(dt*1.4544411e-2f);
+     dazCov = sq(dt*1.4544411e-2f);
+     dvxCov = sq(dt*0.5f);
+     dvyCov = sq(dt*0.5f);
+     dvzCov = sq(dt*0.5f);
+
+     // Predicted covariance calculation
+     SF[0] = dvz - dvz_b;
+     SF[1] = dvy - dvy_b;
+     SF[2] = dvx - dvx_b;
+     SF[3] = 2*q1*SF[2] + 2*q2*SF[1] + 2*q3*SF[0];
+     SF[4] = 2*q0*SF[1] - 2*q1*SF[0] + 2*q3*SF[2];
+     SF[5] = 2*q0*SF[2] + 2*q2*SF[0] - 2*q3*SF[1];
+     SF[6] = day/2 - day_b/2;
+     SF[7] = daz/2 - daz_b/2;
+     SF[8] = dax/2 - dax_b/2;
+     SF[9] = dax_b/2 - dax/2;
+     SF[10] = daz_b/2 - daz/2;
+     SF[11] = day_b/2 - day/2;
+     SF[12] = 2*q1*SF[1];
+     SF[13] = 2*q0*SF[0];
+     SF[14] = q1/2;
+     SF[15] = q2/2;
+     SF[16] = q3/2;
+     SF[17] = sq(q3);
+     SF[18] = sq(q2);
+     SF[19] = sq(q1);
+     SF[20] = sq(q0);
+
+     SG[0] = q0/2;
+     SG[1] = sq(q3);
+     SG[2] = sq(q2);
+     SG[3] = sq(q1);
+     SG[4] = sq(q0);
+     SG[5] = 2*q2*q3;
+     SG[6] = 2*q1*q3;
+     SG[7] = 2*q1*q2;
+
+     SQ[0] = dvzCov*(SG[5] - 2*q0*q1)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvyCov*(SG[5] + 2*q0*q1)*(SG[1] - SG[2] + SG[3] - SG[4]) + dvxCov*(SG[6] - 2*q0*q2)*(SG[7] + 2*q0*q3);
+     SQ[1] = dvzCov*(SG[6] + 2*q0*q2)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvxCov*(SG[6] - 2*q0*q2)*(SG[1] + SG[2] - SG[3] - SG[4]) + dvyCov*(SG[5] + 2*q0*q1)*(SG[7] - 2*q0*q3);
+     SQ[2] = dvzCov*(SG[5] - 2*q0*q1)*(SG[6] + 2*q0*q2) - dvyCov*(SG[7] - 2*q0*q3)*(SG[1] - SG[2] + SG[3] - SG[4]) - dvxCov*(SG[7] + 2*q0*q3)*(SG[1] + SG[2] - SG[3] - SG[4]);
+     SQ[3] = (dayCov*q1*SG[0])/2 - (dazCov*q1*SG[0])/2 - (daxCov*q2*q3)/4;
+     SQ[4] = (dazCov*q2*SG[0])/2 - (daxCov*q2*SG[0])/2 - (dayCov*q1*q3)/4;
+     SQ[5] = (daxCov*q3*SG[0])/2 - (dayCov*q3*SG[0])/2 - (dazCov*q1*q2)/4;
+     SQ[6] = (daxCov*q1*q2)/4 - (dazCov*q3*SG[0])/2 - (dayCov*q1*q2)/4;
+     SQ[7] = (dazCov*q1*q3)/4 - (daxCov*q1*q3)/4 - (dayCov*q2*SG[0])/2;
+     SQ[8] = (dayCov*q2*q3)/4 - (daxCov*q1*SG[0])/2 - (dazCov*q2*q3)/4;
+     SQ[9] = sq(SG[0]);
+     SQ[10] = sq(q1);
+
+     SPP[0] = SF[12] + SF[13] - 2*q2*SF[2];
+     SPP[1] = SF[17] - SF[18] - SF[19] + SF[20];
+     SPP[2] = SF[17] - SF[18] + SF[19] - SF[20];
+     SPP[3] = SF[17] + SF[18] - SF[19] - SF[20];
+     SPP[4] = 2*q0*SF[2] + 2*q2*SF[0] - 2*q3*SF[1];
+     SPP[5] = 2*q0*SF[1] - 2*q1*SF[0] + 2*q3*SF[2];
+     SPP[6] = 2*q0*q2 - 2*q1*q3;
+     SPP[7] = 2*q0*q1 - 2*q2*q3;
+     SPP[8] = 2*q0*q3 - 2*q1*q2;
+     SPP[9] = 2*q0*q1 + 2*q2*q3;
+     SPP[10] = 2*q0*q3 + 2*q1*q2;
+     SPP[11] = 2*q0*q2 + 2*q1*q3;
+     SPP[12] = SF[16];
+
+     nextP[0][0] = P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12] + (daxCov*SQ[10])/4 + SF[9]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[11]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[10]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SF[14]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]) + SF[15]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]) + SPP[12]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]) + (dayCov*sq(q2))/4 + (dazCov*sq(q3))/4;
+     nextP[0][1] = P[0][1] + SQ[8] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12] + SF[8]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[7]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[11]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) - SF[15]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]) + SPP[12]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]) - (q0*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]))/2;
+     nextP[0][2] = P[0][2] + SQ[7] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12] + SF[6]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[10]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[8]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SF[14]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]) - SPP[12]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]) - (q0*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]))/2;
+     nextP[0][3] = P[0][3] + SQ[6] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12] + SF[7]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[6]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[9]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[15]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12]) - SF[14]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12]) - (q0*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12]))/2;
+     nextP[0][4] = P[0][4] + P[1][4]*SF[9] + P[2][4]*SF[11] + P[3][4]*SF[10] + P[10][4]*SF[14] + P[11][4]*SF[15] + P[12][4]*SPP[12] + SF[5]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[3]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SPP[0]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) - SPP[5]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SPP[3]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12]) - SPP[11]*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12]) + (2*q0*q3 - 2*q1*q2)*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12]);
+     nextP[0][5] = P[0][5] + P[1][5]*SF[9] + P[2][5]*SF[11] + P[3][5]*SF[10] + P[10][5]*SF[14] + P[11][5]*SF[15] + P[12][5]*SPP[12] + SF[4]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) + SF[3]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SF[5]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) - SPP[0]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SPP[2]*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12]) - SPP[10]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12]) + (2*q0*q1 - 2*q2*q3)*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12]);
+     nextP[0][6] = P[0][6] + P[1][6]*SF[9] + P[2][6]*SF[11] + P[3][6]*SF[10] + P[10][6]*SF[14] + P[11][6]*SF[15] + P[12][6]*SPP[12] + SF[4]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[12]) + SF[3]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[12]) + SPP[0]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[12]) - SPP[4]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[12]) + SPP[6]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12]) - SPP[1]*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12]) - SPP[9]*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12]);
+     nextP[0][7] = P[0][7] + P[1][7]*SF[9] + P[2][7]*SF[11] + P[3][7]*SF[10] + P[10][7]*SF[14] + P[11][7]*SF[15] + P[12][7]*SPP[12] + dt*(P[0][4] + P[1][4]*SF[9] + P[2][4]*SF[11] + P[3][4]*SF[10] + P[10][4]*SF[14] + P[11][4]*SF[15] + P[12][4]*SPP[12]);
+     nextP[0][8] = P[0][8] + P[1][8]*SF[9] + P[2][8]*SF[11] + P[3][8]*SF[10] + P[10][8]*SF[14] + P[11][8]*SF[15] + P[12][8]*SPP[12] + dt*(P[0][5] + P[1][5]*SF[9] + P[2][5]*SF[11] + P[3][5]*SF[10] + P[10][5]*SF[14] + P[11][5]*SF[15] + P[12][5]*SPP[12]);
+     nextP[0][9] = P[0][9] + P[1][9]*SF[9] + P[2][9]*SF[11] + P[3][9]*SF[10] + P[10][9]*SF[14] + P[11][9]*SF[15] + P[12][9]*SPP[12] + dt*(P[0][6] + P[1][6]*SF[9] + P[2][6]*SF[11] + P[3][6]*SF[10] + P[10][6]*SF[14] + P[11][6]*SF[15] + P[12][6]*SPP[12]);
+     nextP[0][10] = P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[12];
+     nextP[0][11] = P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[12];
+     nextP[0][12] = P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[12];
+     nextP[0][13] = P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[12];
+     nextP[0][14] = P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[12];
+     nextP[0][15] = P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[12];
+     nextP[0][16] = P[0][16] + P[1][16]*SF[9] + P[2][16]*SF[11] + P[3][16]*SF[10] + P[10][16]*SF[14] + P[11][16]*SF[15] + P[12][16]*SPP[12];
+     nextP[0][17] = P[0][17] + P[1][17]*SF[9] + P[2][17]*SF[11] + P[3][17]*SF[10] + P[10][17]*SF[14] + P[11][17]*SF[15] + P[12][17]*SPP[12];
+     nextP[0][18] = P[0][18] + P[1][18]*SF[9] + P[2][18]*SF[11] + P[3][18]*SF[10] + P[10][18]*SF[14] + P[11][18]*SF[15] + P[12][18]*SPP[12];
+     nextP[0][19] = P[0][19] + P[1][19]*SF[9] + P[2][19]*SF[11] + P[3][19]*SF[10] + P[10][19]*SF[14] + P[11][19]*SF[15] + P[12][19]*SPP[12];
+     nextP[0][20] = P[0][20] + P[1][20]*SF[9] + P[2][20]*SF[11] + P[3][20]*SF[10] + P[10][20]*SF[14] + P[11][20]*SF[15] + P[12][20]*SPP[12];
+     nextP[0][21] = P[0][21] + P[1][21]*SF[9] + P[2][21]*SF[11] + P[3][21]*SF[10] + P[10][21]*SF[14] + P[11][21]*SF[15] + P[12][21]*SPP[12];
+     nextP[0][22] = P[0][22] + P[1][22]*SF[9] + P[2][22]*SF[11] + P[3][22]*SF[10] + P[10][22]*SF[14] + P[11][22]*SF[15] + P[12][22]*SPP[12];
+     nextP[0][23] = P[0][23] + P[1][23]*SF[9] + P[2][23]*SF[11] + P[3][23]*SF[10] + P[10][23]*SF[14] + P[11][23]*SF[15] + P[12][23]*SPP[12];
+     nextP[1][0] = P[1][0] + SQ[8] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2 + SF[9]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[11]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[10]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SF[14]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2) + SF[15]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2) + SPP[12]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2);
+     nextP[1][1] = P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] + daxCov*SQ[9] - (P[10][1]*q0)/2 + SF[8]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[7]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[11]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) - SF[15]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2) + SPP[12]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2) + (dayCov*sq(q3))/4 + (dazCov*sq(q2))/4 - (q0*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2))/2;
+     nextP[1][2] = P[1][2] + SQ[5] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2 + SF[6]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[10]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[8]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SF[14]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2) - SPP[12]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2) - (q0*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2))/2;
+     nextP[1][3] = P[1][3] + SQ[4] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2 + SF[7]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[6]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[9]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[15]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2) - SF[14]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2) - (q0*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2))/2;
+     nextP[1][4] = P[1][4] + P[0][4]*SF[8] + P[2][4]*SF[7] + P[3][4]*SF[11] - P[12][4]*SF[15] + P[11][4]*SPP[12] - (P[10][4]*q0)/2 + SF[5]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[3]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SPP[0]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) - SPP[5]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SPP[3]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2) + SPP[8]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2) - SPP[11]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2);
+     nextP[1][5] = P[1][5] + P[0][5]*SF[8] + P[2][5]*SF[7] + P[3][5]*SF[11] - P[12][5]*SF[15] + P[11][5]*SPP[12] - (P[10][5]*q0)/2 + SF[4]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) + SF[3]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SF[5]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) - SPP[0]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SPP[2]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2) - SPP[10]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2) + SPP[7]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2);
+     nextP[1][6] = P[1][6] + P[0][6]*SF[8] + P[2][6]*SF[7] + P[3][6]*SF[11] - P[12][6]*SF[15] + P[11][6]*SPP[12] - (P[10][6]*q0)/2 + SF[4]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[12] - (P[10][1]*q0)/2) + SF[3]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[12] - (P[10][3]*q0)/2) + SPP[0]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[12] - (P[10][0]*q0)/2) - SPP[4]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[12] - (P[10][2]*q0)/2) + SPP[6]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2) - SPP[1]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2) - SPP[9]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2);
+     nextP[1][7] = P[1][7] + P[0][7]*SF[8] + P[2][7]*SF[7] + P[3][7]*SF[11] - P[12][7]*SF[15] + P[11][7]*SPP[12] - (P[10][7]*q0)/2 + dt*(P[1][4] + P[0][4]*SF[8] + P[2][4]*SF[7] + P[3][4]*SF[11] - P[12][4]*SF[15] + P[11][4]*SPP[12] - (P[10][4]*q0)/2);
+     nextP[1][8] = P[1][8] + P[0][8]*SF[8] + P[2][8]*SF[7] + P[3][8]*SF[11] - P[12][8]*SF[15] + P[11][8]*SPP[12] - (P[10][8]*q0)/2 + dt*(P[1][5] + P[0][5]*SF[8] + P[2][5]*SF[7] + P[3][5]*SF[11] - P[12][5]*SF[15] + P[11][5]*SPP[12] - (P[10][5]*q0)/2);
+     nextP[1][9] = P[1][9] + P[0][9]*SF[8] + P[2][9]*SF[7] + P[3][9]*SF[11] - P[12][9]*SF[15] + P[11][9]*SPP[12] - (P[10][9]*q0)/2 + dt*(P[1][6] + P[0][6]*SF[8] + P[2][6]*SF[7] + P[3][6]*SF[11] - P[12][6]*SF[15] + P[11][6]*SPP[12] - (P[10][6]*q0)/2);
+     nextP[1][10] = P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[12] - (P[10][10]*q0)/2;
+     nextP[1][11] = P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[12] - (P[10][11]*q0)/2;
+     nextP[1][12] = P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[12] - (P[10][12]*q0)/2;
+     nextP[1][13] = P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[12] - (P[10][13]*q0)/2;
+     nextP[1][14] = P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[12] - (P[10][14]*q0)/2;
+     nextP[1][15] = P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[12] - (P[10][15]*q0)/2;
+     nextP[1][16] = P[1][16] + P[0][16]*SF[8] + P[2][16]*SF[7] + P[3][16]*SF[11] - P[12][16]*SF[15] + P[11][16]*SPP[12] - (P[10][16]*q0)/2;
+     nextP[1][17] = P[1][17] + P[0][17]*SF[8] + P[2][17]*SF[7] + P[3][17]*SF[11] - P[12][17]*SF[15] + P[11][17]*SPP[12] - (P[10][17]*q0)/2;
+     nextP[1][18] = P[1][18] + P[0][18]*SF[8] + P[2][18]*SF[7] + P[3][18]*SF[11] - P[12][18]*SF[15] + P[11][18]*SPP[12] - (P[10][18]*q0)/2;
+     nextP[1][19] = P[1][19] + P[0][19]*SF[8] + P[2][19]*SF[7] + P[3][19]*SF[11] - P[12][19]*SF[15] + P[11][19]*SPP[12] - (P[10][19]*q0)/2;
+     nextP[1][20] = P[1][20] + P[0][20]*SF[8] + P[2][20]*SF[7] + P[3][20]*SF[11] - P[12][20]*SF[15] + P[11][20]*SPP[12] - (P[10][20]*q0)/2;
+     nextP[1][21] = P[1][21] + P[0][21]*SF[8] + P[2][21]*SF[7] + P[3][21]*SF[11] - P[12][21]*SF[15] + P[11][21]*SPP[12] - (P[10][21]*q0)/2;
+     nextP[1][22] = P[1][22] + P[0][22]*SF[8] + P[2][22]*SF[7] + P[3][22]*SF[11] - P[12][22]*SF[15] + P[11][22]*SPP[12] - (P[10][22]*q0)/2;
+     nextP[1][23] = P[1][23] + P[0][23]*SF[8] + P[2][23]*SF[7] + P[3][23]*SF[11] - P[12][23]*SF[15] + P[11][23]*SPP[12] - (P[10][23]*q0)/2;
+     nextP[2][0] = P[2][0] + SQ[7] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2 + SF[9]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[11]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[10]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SF[14]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2) + SF[15]*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2) + SPP[12]*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2);
+     nextP[2][1] = P[2][1] + SQ[5] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2 + SF[8]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[7]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[11]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) - SF[15]*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2) + SPP[12]*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2) - (q0*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2))/2;
+     nextP[2][2] = P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] + dayCov*SQ[9] + (dazCov*SQ[10])/4 - (P[11][2]*q0)/2 + SF[6]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[10]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[8]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SF[14]*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2) - SPP[12]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2) + (daxCov*sq(q3))/4 - (q0*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2))/2;
+     nextP[2][3] = P[2][3] + SQ[3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2 + SF[7]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[6]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[9]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[15]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2) - SF[14]*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2) - (q0*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2))/2;
+     nextP[2][4] = P[2][4] + P[0][4]*SF[6] + P[1][4]*SF[10] + P[3][4]*SF[8] + P[12][4]*SF[14] - P[10][4]*SPP[12] - (P[11][4]*q0)/2 + SF[5]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[3]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SPP[0]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) - SPP[5]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SPP[3]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2) + SPP[8]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2) - SPP[11]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2);
+     nextP[2][5] = P[2][5] + P[0][5]*SF[6] + P[1][5]*SF[10] + P[3][5]*SF[8] + P[12][5]*SF[14] - P[10][5]*SPP[12] - (P[11][5]*q0)/2 + SF[4]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) + SF[3]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SF[5]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) - SPP[0]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SPP[2]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2) - SPP[10]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2) + SPP[7]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2);
+     nextP[2][6] = P[2][6] + P[0][6]*SF[6] + P[1][6]*SF[10] + P[3][6]*SF[8] + P[12][6]*SF[14] - P[10][6]*SPP[12] - (P[11][6]*q0)/2 + SF[4]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[12] - (P[11][1]*q0)/2) + SF[3]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[12] - (P[11][3]*q0)/2) + SPP[0]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[12] - (P[11][0]*q0)/2) - SPP[4]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[12] - (P[11][2]*q0)/2) + SPP[6]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2) - SPP[1]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2) - SPP[9]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2);
+     nextP[2][7] = P[2][7] + P[0][7]*SF[6] + P[1][7]*SF[10] + P[3][7]*SF[8] + P[12][7]*SF[14] - P[10][7]*SPP[12] - (P[11][7]*q0)/2 + dt*(P[2][4] + P[0][4]*SF[6] + P[1][4]*SF[10] + P[3][4]*SF[8] + P[12][4]*SF[14] - P[10][4]*SPP[12] - (P[11][4]*q0)/2);
+     nextP[2][8] = P[2][8] + P[0][8]*SF[6] + P[1][8]*SF[10] + P[3][8]*SF[8] + P[12][8]*SF[14] - P[10][8]*SPP[12] - (P[11][8]*q0)/2 + dt*(P[2][5] + P[0][5]*SF[6] + P[1][5]*SF[10] + P[3][5]*SF[8] + P[12][5]*SF[14] - P[10][5]*SPP[12] - (P[11][5]*q0)/2);
+     nextP[2][9] = P[2][9] + P[0][9]*SF[6] + P[1][9]*SF[10] + P[3][9]*SF[8] + P[12][9]*SF[14] - P[10][9]*SPP[12] - (P[11][9]*q0)/2 + dt*(P[2][6] + P[0][6]*SF[6] + P[1][6]*SF[10] + P[3][6]*SF[8] + P[12][6]*SF[14] - P[10][6]*SPP[12] - (P[11][6]*q0)/2);
+     nextP[2][10] = P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[12] - (P[11][10]*q0)/2;
+     nextP[2][11] = P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[12] - (P[11][11]*q0)/2;
+     nextP[2][12] = P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[12] - (P[11][12]*q0)/2;
+     nextP[2][13] = P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[12] - (P[11][13]*q0)/2;
+     nextP[2][14] = P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[12] - (P[11][14]*q0)/2;
+     nextP[2][15] = P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[12] - (P[11][15]*q0)/2;
+     nextP[2][16] = P[2][16] + P[0][16]*SF[6] + P[1][16]*SF[10] + P[3][16]*SF[8] + P[12][16]*SF[14] - P[10][16]*SPP[12] - (P[11][16]*q0)/2;
+     nextP[2][17] = P[2][17] + P[0][17]*SF[6] + P[1][17]*SF[10] + P[3][17]*SF[8] + P[12][17]*SF[14] - P[10][17]*SPP[12] - (P[11][17]*q0)/2;
+     nextP[2][18] = P[2][18] + P[0][18]*SF[6] + P[1][18]*SF[10] + P[3][18]*SF[8] + P[12][18]*SF[14] - P[10][18]*SPP[12] - (P[11][18]*q0)/2;
+     nextP[2][19] = P[2][19] + P[0][19]*SF[6] + P[1][19]*SF[10] + P[3][19]*SF[8] + P[12][19]*SF[14] - P[10][19]*SPP[12] - (P[11][19]*q0)/2;
+     nextP[2][20] = P[2][20] + P[0][20]*SF[6] + P[1][20]*SF[10] + P[3][20]*SF[8] + P[12][20]*SF[14] - P[10][20]*SPP[12] - (P[11][20]*q0)/2;
+     nextP[2][21] = P[2][21] + P[0][21]*SF[6] + P[1][21]*SF[10] + P[3][21]*SF[8] + P[12][21]*SF[14] - P[10][21]*SPP[12] - (P[11][21]*q0)/2;
+     nextP[2][22] = P[2][22] + P[0][22]*SF[6] + P[1][22]*SF[10] + P[3][22]*SF[8] + P[12][22]*SF[14] - P[10][22]*SPP[12] - (P[11][22]*q0)/2;
+     nextP[2][23] = P[2][23] + P[0][23]*SF[6] + P[1][23]*SF[10] + P[3][23]*SF[8] + P[12][23]*SF[14] - P[10][23]*SPP[12] - (P[11][23]*q0)/2;
+     nextP[3][0] = P[3][0] + SQ[6] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2 + SF[9]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[11]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[10]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SF[14]*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2) + SF[15]*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2) + SPP[12]*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2);
+     nextP[3][1] = P[3][1] + SQ[4] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2 + SF[8]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[7]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[11]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) - SF[15]*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2) + SPP[12]*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2) - (q0*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2))/2;
+     nextP[3][2] = P[3][2] + SQ[3] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2 + SF[6]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[10]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[8]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SF[14]*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2) - SPP[12]*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2) - (q0*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2))/2;
+     nextP[3][3] = P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] + (dayCov*SQ[10])/4 + dazCov*SQ[9] - (P[12][3]*q0)/2 + SF[7]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[6]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[9]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[15]*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2) - SF[14]*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2) + (daxCov*sq(q2))/4 - (q0*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2))/2;
+     nextP[3][4] = P[3][4] + P[0][4]*SF[7] + P[1][4]*SF[6] + P[2][4]*SF[9] + P[10][4]*SF[15] - P[11][4]*SF[14] - (P[12][4]*q0)/2 + SF[5]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[3]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SPP[0]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) - SPP[5]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SPP[3]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) + SPP[8]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2) - SPP[11]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2);
+     nextP[3][5] = P[3][5] + P[0][5]*SF[7] + P[1][5]*SF[6] + P[2][5]*SF[9] + P[10][5]*SF[15] - P[11][5]*SF[14] - (P[12][5]*q0)/2 + SF[4]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[3]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[5]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) - SPP[0]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SPP[2]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2) - SPP[10]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) + SPP[7]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2);
+     nextP[3][6] = P[3][6] + P[0][6]*SF[7] + P[1][6]*SF[6] + P[2][6]*SF[9] + P[10][6]*SF[15] - P[11][6]*SF[14] - (P[12][6]*q0)/2 + SF[4]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[3]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SPP[0]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) - SPP[4]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SPP[6]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) - SPP[1]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2) - SPP[9]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2);
+     nextP[3][7] = P[3][7] + P[0][7]*SF[7] + P[1][7]*SF[6] + P[2][7]*SF[9] + P[10][7]*SF[15] - P[11][7]*SF[14] - (P[12][7]*q0)/2 + dt*(P[3][4] + P[0][4]*SF[7] + P[1][4]*SF[6] + P[2][4]*SF[9] + P[10][4]*SF[15] - P[11][4]*SF[14] - (P[12][4]*q0)/2);
+     nextP[3][8] = P[3][8] + P[0][8]*SF[7] + P[1][8]*SF[6] + P[2][8]*SF[9] + P[10][8]*SF[15] - P[11][8]*SF[14] - (P[12][8]*q0)/2 + dt*(P[3][5] + P[0][5]*SF[7] + P[1][5]*SF[6] + P[2][5]*SF[9] + P[10][5]*SF[15] - P[11][5]*SF[14] - (P[12][5]*q0)/2);
+     nextP[3][9] = P[3][9] + P[0][9]*SF[7] + P[1][9]*SF[6] + P[2][9]*SF[9] + P[10][9]*SF[15] - P[11][9]*SF[14] - (P[12][9]*q0)/2 + dt*(P[3][6] + P[0][6]*SF[7] + P[1][6]*SF[6] + P[2][6]*SF[9] + P[10][6]*SF[15] - P[11][6]*SF[14] - (P[12][6]*q0)/2);
+     nextP[3][10] = P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2;
+     nextP[3][11] = P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2;
+     nextP[3][12] = P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2;
+     nextP[3][13] = P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2;
+     nextP[3][14] = P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2;
+     nextP[3][15] = P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2;
+     nextP[3][16] = P[3][16] + P[0][16]*SF[7] + P[1][16]*SF[6] + P[2][16]*SF[9] + P[10][16]*SF[15] - P[11][16]*SF[14] - (P[12][16]*q0)/2;
+     nextP[3][17] = P[3][17] + P[0][17]*SF[7] + P[1][17]*SF[6] + P[2][17]*SF[9] + P[10][17]*SF[15] - P[11][17]*SF[14] - (P[12][17]*q0)/2;
+     nextP[3][18] = P[3][18] + P[0][18]*SF[7] + P[1][18]*SF[6] + P[2][18]*SF[9] + P[10][18]*SF[15] - P[11][18]*SF[14] - (P[12][18]*q0)/2;
+     nextP[3][19] = P[3][19] + P[0][19]*SF[7] + P[1][19]*SF[6] + P[2][19]*SF[9] + P[10][19]*SF[15] - P[11][19]*SF[14] - (P[12][19]*q0)/2;
+     nextP[3][20] = P[3][20] + P[0][20]*SF[7] + P[1][20]*SF[6] + P[2][20]*SF[9] + P[10][20]*SF[15] - P[11][20]*SF[14] - (P[12][20]*q0)/2;
+     nextP[3][21] = P[3][21] + P[0][21]*SF[7] + P[1][21]*SF[6] + P[2][21]*SF[9] + P[10][21]*SF[15] - P[11][21]*SF[14] - (P[12][21]*q0)/2;
+     nextP[3][22] = P[3][22] + P[0][22]*SF[7] + P[1][22]*SF[6] + P[2][22]*SF[9] + P[10][22]*SF[15] - P[11][22]*SF[14] - (P[12][22]*q0)/2;
+     nextP[3][23] = P[3][23] + P[0][23]*SF[7] + P[1][23]*SF[6] + P[2][23]*SF[9] + P[10][23]*SF[15] - P[11][23]*SF[14] - (P[12][23]*q0)/2;
+     nextP[4][0] = P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11] + SF[9]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[11]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[10]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SF[14]*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]) + SF[15]*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]) + SPP[12]*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]);
+     nextP[4][1] = P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11] + SF[8]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[7]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[11]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) - SF[15]*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]) + SPP[12]*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]) - (q0*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]))/2;
+     nextP[4][2] = P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11] + SF[6]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[10]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[8]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SF[14]*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]) - SPP[12]*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]) - (q0*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]))/2;
+     nextP[4][3] = P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11] + SF[7]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[6]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[9]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[15]*(P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11]) - SF[14]*(P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11]) - (q0*(P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11]))/2;
+     nextP[4][4] = P[4][4] + P[0][4]*SF[5] + P[1][4]*SF[3] + P[2][4]*SPP[0] - P[3][4]*SPP[5] + P[13][4]*SPP[3] + P[14][4]*SPP[8] - P[15][4]*SPP[11] + dvyCov*sq(SG[7] - 2*q0*q3) + dvzCov*sq(SG[6] + 2*q0*q2) + SF[5]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[3]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SPP[0]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) - SPP[5]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SPP[3]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11]) + SPP[8]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11]) - SPP[11]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11]) + dvxCov*sq(SG[1] + SG[2] - SG[3] - SG[4]);
+     nextP[4][5] = P[4][5] + SQ[2] + P[0][5]*SF[5] + P[1][5]*SF[3] + P[2][5]*SPP[0] - P[3][5]*SPP[5] + P[13][5]*SPP[3] + P[14][5]*SPP[8] - P[15][5]*SPP[11] + SF[4]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) + SF[3]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SF[5]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) - SPP[0]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SPP[2]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11]) - SPP[10]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11]) + SPP[7]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11]);
+     nextP[4][6] = P[4][6] + SQ[1] + P[0][6]*SF[5] + P[1][6]*SF[3] + P[2][6]*SPP[0] - P[3][6]*SPP[5] + P[13][6]*SPP[3] + P[14][6]*SPP[8] - P[15][6]*SPP[11] + SF[4]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] + P[2][1]*SPP[0] - P[3][1]*SPP[5] + P[13][1]*SPP[3] + P[14][1]*SPP[8] - P[15][1]*SPP[11]) + SF[3]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] + P[2][3]*SPP[0] - P[3][3]*SPP[5] + P[13][3]*SPP[3] + P[14][3]*SPP[8] - P[15][3]*SPP[11]) + SPP[0]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] + P[2][0]*SPP[0] - P[3][0]*SPP[5] + P[13][0]*SPP[3] + P[14][0]*SPP[8] - P[15][0]*SPP[11]) - SPP[4]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] + P[2][2]*SPP[0] - P[3][2]*SPP[5] + P[13][2]*SPP[3] + P[14][2]*SPP[8] - P[15][2]*SPP[11]) + SPP[6]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11]) - SPP[1]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11]) - SPP[9]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11]);
+     nextP[4][7] = P[4][7] + P[0][7]*SF[5] + P[1][7]*SF[3] + P[2][7]*SPP[0] - P[3][7]*SPP[5] + P[13][7]*SPP[3] + P[14][7]*SPP[8] - P[15][7]*SPP[11] + dt*(P[4][4] + P[0][4]*SF[5] + P[1][4]*SF[3] + P[2][4]*SPP[0] - P[3][4]*SPP[5] + P[13][4]*SPP[3] + P[14][4]*SPP[8] - P[15][4]*SPP[11]);
+     nextP[4][8] = P[4][8] + P[0][8]*SF[5] + P[1][8]*SF[3] + P[2][8]*SPP[0] - P[3][8]*SPP[5] + P[13][8]*SPP[3] + P[14][8]*SPP[8] - P[15][8]*SPP[11] + dt*(P[4][5] + P[0][5]*SF[5] + P[1][5]*SF[3] + P[2][5]*SPP[0] - P[3][5]*SPP[5] + P[13][5]*SPP[3] + P[14][5]*SPP[8] - P[15][5]*SPP[11]);
+     nextP[4][9] = P[4][9] + P[0][9]*SF[5] + P[1][9]*SF[3] + P[2][9]*SPP[0] - P[3][9]*SPP[5] + P[13][9]*SPP[3] + P[14][9]*SPP[8] - P[15][9]*SPP[11] + dt*(P[4][6] + P[0][6]*SF[5] + P[1][6]*SF[3] + P[2][6]*SPP[0] - P[3][6]*SPP[5] + P[13][6]*SPP[3] + P[14][6]*SPP[8] - P[15][6]*SPP[11]);
+     nextP[4][10] = P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] + P[2][10]*SPP[0] - P[3][10]*SPP[5] + P[13][10]*SPP[3] + P[14][10]*SPP[8] - P[15][10]*SPP[11];
+     nextP[4][11] = P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] + P[2][11]*SPP[0] - P[3][11]*SPP[5] + P[13][11]*SPP[3] + P[14][11]*SPP[8] - P[15][11]*SPP[11];
+     nextP[4][12] = P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] + P[2][12]*SPP[0] - P[3][12]*SPP[5] + P[13][12]*SPP[3] + P[14][12]*SPP[8] - P[15][12]*SPP[11];
+     nextP[4][13] = P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] + P[2][13]*SPP[0] - P[3][13]*SPP[5] + P[13][13]*SPP[3] + P[14][13]*SPP[8] - P[15][13]*SPP[11];
+     nextP[4][14] = P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] + P[2][14]*SPP[0] - P[3][14]*SPP[5] + P[13][14]*SPP[3] + P[14][14]*SPP[8] - P[15][14]*SPP[11];
+     nextP[4][15] = P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] + P[2][15]*SPP[0] - P[3][15]*SPP[5] + P[13][15]*SPP[3] + P[14][15]*SPP[8] - P[15][15]*SPP[11];
+     nextP[4][16] = P[4][16] + P[0][16]*SF[5] + P[1][16]*SF[3] + P[2][16]*SPP[0] - P[3][16]*SPP[5] + P[13][16]*SPP[3] + P[14][16]*SPP[8] - P[15][16]*SPP[11];
+     nextP[4][17] = P[4][17] + P[0][17]*SF[5] + P[1][17]*SF[3] + P[2][17]*SPP[0] - P[3][17]*SPP[5] + P[13][17]*SPP[3] + P[14][17]*SPP[8] - P[15][17]*SPP[11];
+     nextP[4][18] = P[4][18] + P[0][18]*SF[5] + P[1][18]*SF[3] + P[2][18]*SPP[0] - P[3][18]*SPP[5] + P[13][18]*SPP[3] + P[14][18]*SPP[8] - P[15][18]*SPP[11];
+     nextP[4][19] = P[4][19] + P[0][19]*SF[5] + P[1][19]*SF[3] + P[2][19]*SPP[0] - P[3][19]*SPP[5] + P[13][19]*SPP[3] + P[14][19]*SPP[8] - P[15][19]*SPP[11];
+     nextP[4][20] = P[4][20] + P[0][20]*SF[5] + P[1][20]*SF[3] + P[2][20]*SPP[0] - P[3][20]*SPP[5] + P[13][20]*SPP[3] + P[14][20]*SPP[8] - P[15][20]*SPP[11];
+     nextP[4][21] = P[4][21] + P[0][21]*SF[5] + P[1][21]*SF[3] + P[2][21]*SPP[0] - P[3][21]*SPP[5] + P[13][21]*SPP[3] + P[14][21]*SPP[8] - P[15][21]*SPP[11];
+     nextP[4][22] = P[4][22] + P[0][22]*SF[5] + P[1][22]*SF[3] + P[2][22]*SPP[0] - P[3][22]*SPP[5] + P[13][22]*SPP[3] + P[14][22]*SPP[8] - P[15][22]*SPP[11];
+     nextP[4][23] = P[4][23] + P[0][23]*SF[5] + P[1][23]*SF[3] + P[2][23]*SPP[0] - P[3][23]*SPP[5] + P[13][23]*SPP[3] + P[14][23]*SPP[8] - P[15][23]*SPP[11];
+     nextP[5][0] = P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7] + SF[9]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[11]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[10]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SF[14]*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]) + SF[15]*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]) + SPP[12]*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]);
+     nextP[5][1] = P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7] + SF[8]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[7]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[11]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) - SF[15]*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]) + SPP[12]*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]) - (q0*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]))/2;
+     nextP[5][2] = P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7] + SF[6]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[10]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[8]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SF[14]*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]) - SPP[12]*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]) - (q0*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]))/2;
+     nextP[5][3] = P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7] + SF[7]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[6]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[9]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[15]*(P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7]) - SF[14]*(P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7]) - (q0*(P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7]))/2;
+     nextP[5][4] = P[5][4] + SQ[2] + P[0][4]*SF[4] + P[2][4]*SF[3] + P[3][4]*SF[5] - P[1][4]*SPP[0] - P[13][4]*SPP[10] + P[14][4]*SPP[2] + P[15][4]*SPP[7] + SF[5]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[3]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SPP[0]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) - SPP[5]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SPP[3]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7]) + SPP[8]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7]) - SPP[11]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7]);
+     nextP[5][5] = P[5][5] + P[0][5]*SF[4] + P[2][5]*SF[3] + P[3][5]*SF[5] - P[1][5]*SPP[0] - P[13][5]*SPP[10] + P[14][5]*SPP[2] + P[15][5]*SPP[7] + dvxCov*sq(SG[7] + 2*q0*q3) + dvzCov*sq(SG[5] - 2*q0*q1) + SF[4]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) + SF[3]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SF[5]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) - SPP[0]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SPP[2]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7]) - SPP[10]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7]) + SPP[7]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7]) + dvyCov*sq(SG[1] - SG[2] + SG[3] - SG[4]);
+     nextP[5][6] = P[5][6] + SQ[0] + P[0][6]*SF[4] + P[2][6]*SF[3] + P[3][6]*SF[5] - P[1][6]*SPP[0] - P[13][6]*SPP[10] + P[14][6]*SPP[2] + P[15][6]*SPP[7] + SF[4]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[10] + P[14][1]*SPP[2] + P[15][1]*SPP[7]) + SF[3]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[10] + P[14][3]*SPP[2] + P[15][3]*SPP[7]) + SPP[0]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[10] + P[14][0]*SPP[2] + P[15][0]*SPP[7]) - SPP[4]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[10] + P[14][2]*SPP[2] + P[15][2]*SPP[7]) + SPP[6]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7]) - SPP[1]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7]) - SPP[9]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7]);
+     nextP[5][7] = P[5][7] + P[0][7]*SF[4] + P[2][7]*SF[3] + P[3][7]*SF[5] - P[1][7]*SPP[0] - P[13][7]*SPP[10] + P[14][7]*SPP[2] + P[15][7]*SPP[7] + dt*(P[5][4] + P[0][4]*SF[4] + P[2][4]*SF[3] + P[3][4]*SF[5] - P[1][4]*SPP[0] - P[13][4]*SPP[10] + P[14][4]*SPP[2] + P[15][4]*SPP[7]);
+     nextP[5][8] = P[5][8] + P[0][8]*SF[4] + P[2][8]*SF[3] + P[3][8]*SF[5] - P[1][8]*SPP[0] - P[13][8]*SPP[10] + P[14][8]*SPP[2] + P[15][8]*SPP[7] + dt*(P[5][5] + P[0][5]*SF[4] + P[2][5]*SF[3] + P[3][5]*SF[5] - P[1][5]*SPP[0] - P[13][5]*SPP[10] + P[14][5]*SPP[2] + P[15][5]*SPP[7]);
+     nextP[5][9] = P[5][9] + P[0][9]*SF[4] + P[2][9]*SF[3] + P[3][9]*SF[5] - P[1][9]*SPP[0] - P[13][9]*SPP[10] + P[14][9]*SPP[2] + P[15][9]*SPP[7] + dt*(P[5][6] + P[0][6]*SF[4] + P[2][6]*SF[3] + P[3][6]*SF[5] - P[1][6]*SPP[0] - P[13][6]*SPP[10] + P[14][6]*SPP[2] + P[15][6]*SPP[7]);
+     nextP[5][10] = P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[10] + P[14][10]*SPP[2] + P[15][10]*SPP[7];
+     nextP[5][11] = P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[10] + P[14][11]*SPP[2] + P[15][11]*SPP[7];
+     nextP[5][12] = P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[10] + P[14][12]*SPP[2] + P[15][12]*SPP[7];
+     nextP[5][13] = P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[10] + P[14][13]*SPP[2] + P[15][13]*SPP[7];
+     nextP[5][14] = P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[10] + P[14][14]*SPP[2] + P[15][14]*SPP[7];
+     nextP[5][15] = P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[10] + P[14][15]*SPP[2] + P[15][15]*SPP[7];
+     nextP[5][16] = P[5][16] + P[0][16]*SF[4] + P[2][16]*SF[3] + P[3][16]*SF[5] - P[1][16]*SPP[0] - P[13][16]*SPP[10] + P[14][16]*SPP[2] + P[15][16]*SPP[7];
+     nextP[5][17] = P[5][17] + P[0][17]*SF[4] + P[2][17]*SF[3] + P[3][17]*SF[5] - P[1][17]*SPP[0] - P[13][17]*SPP[10] + P[14][17]*SPP[2] + P[15][17]*SPP[7];
+     nextP[5][18] = P[5][18] + P[0][18]*SF[4] + P[2][18]*SF[3] + P[3][18]*SF[5] - P[1][18]*SPP[0] - P[13][18]*SPP[10] + P[14][18]*SPP[2] + P[15][18]*SPP[7];
+     nextP[5][19] = P[5][19] + P[0][19]*SF[4] + P[2][19]*SF[3] + P[3][19]*SF[5] - P[1][19]*SPP[0] - P[13][19]*SPP[10] + P[14][19]*SPP[2] + P[15][19]*SPP[7];
+     nextP[5][20] = P[5][20] + P[0][20]*SF[4] + P[2][20]*SF[3] + P[3][20]*SF[5] - P[1][20]*SPP[0] - P[13][20]*SPP[10] + P[14][20]*SPP[2] + P[15][20]*SPP[7];
+     nextP[5][21] = P[5][21] + P[0][21]*SF[4] + P[2][21]*SF[3] + P[3][21]*SF[5] - P[1][21]*SPP[0] - P[13][21]*SPP[10] + P[14][21]*SPP[2] + P[15][21]*SPP[7];
+     nextP[5][22] = P[5][22] + P[0][22]*SF[4] + P[2][22]*SF[3] + P[3][22]*SF[5] - P[1][22]*SPP[0] - P[13][22]*SPP[10] + P[14][22]*SPP[2] + P[15][22]*SPP[7];
+     nextP[5][23] = P[5][23] + P[0][23]*SF[4] + P[2][23]*SF[3] + P[3][23]*SF[5] - P[1][23]*SPP[0] - P[13][23]*SPP[10] + P[14][23]*SPP[2] + P[15][23]*SPP[7];
+     nextP[6][0] = P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1] + SF[9]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[11]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[10]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SF[14]*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]) + SF[15]*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]) + SPP[12]*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]);
+     nextP[6][1] = P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1] + SF[8]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[7]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[11]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) - SF[15]*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]) + SPP[12]*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]) - (q0*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]))/2;
+     nextP[6][2] = P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1] + SF[6]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[10]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[8]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SF[14]*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]) - SPP[12]*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]) - (q0*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]))/2;
+     nextP[6][3] = P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1] + SF[7]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[6]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[9]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[15]*(P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1]) - SF[14]*(P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1]) - (q0*(P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1]))/2;
+     nextP[6][4] = P[6][4] + SQ[1] + P[1][4]*SF[4] + P[3][4]*SF[3] + P[0][4]*SPP[0] - P[2][4]*SPP[4] + P[13][4]*SPP[6] - P[14][4]*SPP[9] - P[15][4]*SPP[1] + SF[5]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[3]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SPP[0]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) - SPP[5]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SPP[3]*(P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1]) + SPP[8]*(P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1]) - SPP[11]*(P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1]);
+     nextP[6][5] = P[6][5] + SQ[0] + P[1][5]*SF[4] + P[3][5]*SF[3] + P[0][5]*SPP[0] - P[2][5]*SPP[4] + P[13][5]*SPP[6] - P[14][5]*SPP[9] - P[15][5]*SPP[1] + SF[4]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) + SF[3]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SF[5]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) - SPP[0]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SPP[2]*(P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1]) - SPP[10]*(P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1]) + SPP[7]*(P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1]);
+     nextP[6][6] = P[6][6] + P[1][6]*SF[4] + P[3][6]*SF[3] + P[0][6]*SPP[0] - P[2][6]*SPP[4] + P[13][6]*SPP[6] - P[14][6]*SPP[9] - P[15][6]*SPP[1] + dvxCov*sq(SG[6] - 2*q0*q2) + dvyCov*sq(SG[5] + 2*q0*q1) + SF[4]*(P[6][1] + P[1][1]*SF[4] + P[3][1]*SF[3] + P[0][1]*SPP[0] - P[2][1]*SPP[4] + P[13][1]*SPP[6] - P[14][1]*SPP[9] - P[15][1]*SPP[1]) + SF[3]*(P[6][3] + P[1][3]*SF[4] + P[3][3]*SF[3] + P[0][3]*SPP[0] - P[2][3]*SPP[4] + P[13][3]*SPP[6] - P[14][3]*SPP[9] - P[15][3]*SPP[1]) + SPP[0]*(P[6][0] + P[1][0]*SF[4] + P[3][0]*SF[3] + P[0][0]*SPP[0] - P[2][0]*SPP[4] + P[13][0]*SPP[6] - P[14][0]*SPP[9] - P[15][0]*SPP[1]) - SPP[4]*(P[6][2] + P[1][2]*SF[4] + P[3][2]*SF[3] + P[0][2]*SPP[0] - P[2][2]*SPP[4] + P[13][2]*SPP[6] - P[14][2]*SPP[9] - P[15][2]*SPP[1]) + SPP[6]*(P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1]) - SPP[1]*(P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1]) - SPP[9]*(P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1]) + dvzCov*sq(SG[1] - SG[2] - SG[3] + SG[4]);
+     nextP[6][7] = P[6][7] + P[1][7]*SF[4] + P[3][7]*SF[3] + P[0][7]*SPP[0] - P[2][7]*SPP[4] + P[13][7]*SPP[6] - P[14][7]*SPP[9] - P[15][7]*SPP[1] + dt*(P[6][4] + P[1][4]*SF[4] + P[3][4]*SF[3] + P[0][4]*SPP[0] - P[2][4]*SPP[4] + P[13][4]*SPP[6] - P[14][4]*SPP[9] - P[15][4]*SPP[1]);
+     nextP[6][8] = P[6][8] + P[1][8]*SF[4] + P[3][8]*SF[3] + P[0][8]*SPP[0] - P[2][8]*SPP[4] + P[13][8]*SPP[6] - P[14][8]*SPP[9] - P[15][8]*SPP[1] + dt*(P[6][5] + P[1][5]*SF[4] + P[3][5]*SF[3] + P[0][5]*SPP[0] - P[2][5]*SPP[4] + P[13][5]*SPP[6] - P[14][5]*SPP[9] - P[15][5]*SPP[1]);
+     nextP[6][9] = P[6][9] + P[1][9]*SF[4] + P[3][9]*SF[3] + P[0][9]*SPP[0] - P[2][9]*SPP[4] + P[13][9]*SPP[6] - P[14][9]*SPP[9] - P[15][9]*SPP[1] + dt*(P[6][6] + P[1][6]*SF[4] + P[3][6]*SF[3] + P[0][6]*SPP[0] - P[2][6]*SPP[4] + P[13][6]*SPP[6] - P[14][6]*SPP[9] - P[15][6]*SPP[1]);
+     nextP[6][10] = P[6][10] + P[1][10]*SF[4] + P[3][10]*SF[3] + P[0][10]*SPP[0] - P[2][10]*SPP[4] + P[13][10]*SPP[6] - P[14][10]*SPP[9] - P[15][10]*SPP[1];
+     nextP[6][11] = P[6][11] + P[1][11]*SF[4] + P[3][11]*SF[3] + P[0][11]*SPP[0] - P[2][11]*SPP[4] + P[13][11]*SPP[6] - P[14][11]*SPP[9] - P[15][11]*SPP[1];
+     nextP[6][12] = P[6][12] + P[1][12]*SF[4] + P[3][12]*SF[3] + P[0][12]*SPP[0] - P[2][12]*SPP[4] + P[13][12]*SPP[6] - P[14][12]*SPP[9] - P[15][12]*SPP[1];
+     nextP[6][13] = P[6][13] + P[1][13]*SF[4] + P[3][13]*SF[3] + P[0][13]*SPP[0] - P[2][13]*SPP[4] + P[13][13]*SPP[6] - P[14][13]*SPP[9] - P[15][13]*SPP[1];
+     nextP[6][14] = P[6][14] + P[1][14]*SF[4] + P[3][14]*SF[3] + P[0][14]*SPP[0] - P[2][14]*SPP[4] + P[13][14]*SPP[6] - P[14][14]*SPP[9] - P[15][14]*SPP[1];
+     nextP[6][15] = P[6][15] + P[1][15]*SF[4] + P[3][15]*SF[3] + P[0][15]*SPP[0] - P[2][15]*SPP[4] + P[13][15]*SPP[6] - P[14][15]*SPP[9] - P[15][15]*SPP[1];
+     nextP[6][16] = P[6][16] + P[1][16]*SF[4] + P[3][16]*SF[3] + P[0][16]*SPP[0] - P[2][16]*SPP[4] + P[13][16]*SPP[6] - P[14][16]*SPP[9] - P[15][16]*SPP[1];
+     nextP[6][17] = P[6][17] + P[1][17]*SF[4] + P[3][17]*SF[3] + P[0][17]*SPP[0] - P[2][17]*SPP[4] + P[13][17]*SPP[6] - P[14][17]*SPP[9] - P[15][17]*SPP[1];
+     nextP[6][18] = P[6][18] + P[1][18]*SF[4] + P[3][18]*SF[3] + P[0][18]*SPP[0] - P[2][18]*SPP[4] + P[13][18]*SPP[6] - P[14][18]*SPP[9] - P[15][18]*SPP[1];
+     nextP[6][19] = P[6][19] + P[1][19]*SF[4] + P[3][19]*SF[3] + P[0][19]*SPP[0] - P[2][19]*SPP[4] + P[13][19]*SPP[6] - P[14][19]*SPP[9] - P[15][19]*SPP[1];
+     nextP[6][20] = P[6][20] + P[1][20]*SF[4] + P[3][20]*SF[3] + P[0][20]*SPP[0] - P[2][20]*SPP[4] + P[13][20]*SPP[6] - P[14][20]*SPP[9] - P[15][20]*SPP[1];
+     nextP[6][21] = P[6][21] + P[1][21]*SF[4] + P[3][21]*SF[3] + P[0][21]*SPP[0] - P[2][21]*SPP[4] + P[13][21]*SPP[6] - P[14][21]*SPP[9] - P[15][21]*SPP[1];
+     nextP[6][22] = P[6][22] + P[1][22]*SF[4] + P[3][22]*SF[3] + P[0][22]*SPP[0] - P[2][22]*SPP[4] + P[13][22]*SPP[6] - P[14][22]*SPP[9] - P[15][22]*SPP[1];
+     nextP[6][23] = P[6][23] + P[1][23]*SF[4] + P[3][23]*SF[3] + P[0][23]*SPP[0] - P[2][23]*SPP[4] + P[13][23]*SPP[6] - P[14][23]*SPP[9] - P[15][23]*SPP[1];
+     nextP[7][0] = P[7][0] + P[4][0]*dt + SF[9]*(P[7][1] + P[4][1]*dt) + SF[11]*(P[7][2] + P[4][2]*dt) + SF[10]*(P[7][3] + P[4][3]*dt) + SF[14]*(P[7][10] + P[4][10]*dt) + SF[15]*(P[7][11] + P[4][11]*dt) + SPP[12]*(P[7][12] + P[4][12]*dt);
+     nextP[7][1] = P[7][1] + P[4][1]*dt + SF[8]*(P[7][0] + P[4][0]*dt) + SF[7]*(P[7][2] + P[4][2]*dt) + SF[11]*(P[7][3] + P[4][3]*dt) - SF[15]*(P[7][12] + P[4][12]*dt) + SPP[12]*(P[7][11] + P[4][11]*dt) - (q0*(P[7][10] + P[4][10]*dt))/2;
+     nextP[7][2] = P[7][2] + P[4][2]*dt + SF[6]*(P[7][0] + P[4][0]*dt) + SF[10]*(P[7][1] + P[4][1]*dt) + SF[8]*(P[7][3] + P[4][3]*dt) + SF[14]*(P[7][12] + P[4][12]*dt) - SPP[12]*(P[7][10] + P[4][10]*dt) - (q0*(P[7][11] + P[4][11]*dt))/2;
+     nextP[7][3] = P[7][3] + P[4][3]*dt + SF[7]*(P[7][0] + P[4][0]*dt) + SF[6]*(P[7][1] + P[4][1]*dt) + SF[9]*(P[7][2] + P[4][2]*dt) + SF[15]*(P[7][10] + P[4][10]*dt) - SF[14]*(P[7][11] + P[4][11]*dt) - (q0*(P[7][12] + P[4][12]*dt))/2;
+     nextP[7][4] = P[7][4] + P[4][4]*dt + SF[3]*(P[7][1] + P[4][1]*dt) + SF[5]*(P[7][0] + P[4][0]*dt) + SPP[0]*(P[7][2] + P[4][2]*dt) - SPP[5]*(P[7][3] + P[4][3]*dt) + SPP[3]*(P[7][13] + P[4][13]*dt) + SPP[8]*(P[7][14] + P[4][14]*dt) - SPP[11]*(P[7][15] + P[4][15]*dt);
+     nextP[7][5] = P[7][5] + P[4][5]*dt + SF[4]*(P[7][0] + P[4][0]*dt) + SF[3]*(P[7][2] + P[4][2]*dt) + SF[5]*(P[7][3] + P[4][3]*dt) - SPP[0]*(P[7][1] + P[4][1]*dt) + SPP[2]*(P[7][14] + P[4][14]*dt) - SPP[10]*(P[7][13] + P[4][13]*dt) + SPP[7]*(P[7][15] + P[4][15]*dt);
+     nextP[7][6] = P[7][6] + P[4][6]*dt + SF[4]*(P[7][1] + P[4][1]*dt) + SF[3]*(P[7][3] + P[4][3]*dt) + SPP[0]*(P[7][0] + P[4][0]*dt) - SPP[4]*(P[7][2] + P[4][2]*dt) - SPP[1]*(P[7][15] + P[4][15]*dt) + SPP[6]*(P[7][13] + P[4][13]*dt) - SPP[9]*(P[7][14] + P[4][14]*dt);
+     nextP[7][7] = P[7][7] + P[4][7]*dt + dt*(P[7][4] + P[4][4]*dt);
+     nextP[7][8] = P[7][8] + P[4][8]*dt + dt*(P[7][5] + P[4][5]*dt);
+     nextP[7][9] = P[7][9] + P[4][9]*dt + dt*(P[7][6] + P[4][6]*dt);
+     nextP[7][10] = P[7][10] + P[4][10]*dt;
+     nextP[7][11] = P[7][11] + P[4][11]*dt;
+     nextP[7][12] = P[7][12] + P[4][12]*dt;
+     nextP[7][13] = P[7][13] + P[4][13]*dt;
+     nextP[7][14] = P[7][14] + P[4][14]*dt;
+     nextP[7][15] = P[7][15] + P[4][15]*dt;
+     nextP[7][16] = P[7][16] + P[4][16]*dt;
+     nextP[7][17] = P[7][17] + P[4][17]*dt;
+     nextP[7][18] = P[7][18] + P[4][18]*dt;
+     nextP[7][19] = P[7][19] + P[4][19]*dt;
+     nextP[7][20] = P[7][20] + P[4][20]*dt;
+     nextP[7][21] = P[7][21] + P[4][21]*dt;
+     nextP[7][22] = P[7][22] + P[4][22]*dt;
+     nextP[7][23] = P[7][23] + P[4][23]*dt;
+     nextP[8][0] = P[8][0] + P[5][0]*dt + SF[9]*(P[8][1] + P[5][1]*dt) + SF[11]*(P[8][2] + P[5][2]*dt) + SF[10]*(P[8][3] + P[5][3]*dt) + SF[14]*(P[8][10] + P[5][10]*dt) + SF[15]*(P[8][11] + P[5][11]*dt) + SPP[12]*(P[8][12] + P[5][12]*dt);
+     nextP[8][1] = P[8][1] + P[5][1]*dt + SF[8]*(P[8][0] + P[5][0]*dt) + SF[7]*(P[8][2] + P[5][2]*dt) + SF[11]*(P[8][3] + P[5][3]*dt) - SF[15]*(P[8][12] + P[5][12]*dt) + SPP[12]*(P[8][11] + P[5][11]*dt) - (q0*(P[8][10] + P[5][10]*dt))/2;
+     nextP[8][2] = P[8][2] + P[5][2]*dt + SF[6]*(P[8][0] + P[5][0]*dt) + SF[10]*(P[8][1] + P[5][1]*dt) + SF[8]*(P[8][3] + P[5][3]*dt) + SF[14]*(P[8][12] + P[5][12]*dt) - SPP[12]*(P[8][10] + P[5][10]*dt) - (q0*(P[8][11] + P[5][11]*dt))/2;
+     nextP[8][3] = P[8][3] + P[5][3]*dt + SF[7]*(P[8][0] + P[5][0]*dt) + SF[6]*(P[8][1] + P[5][1]*dt) + SF[9]*(P[8][2] + P[5][2]*dt) + SF[15]*(P[8][10] + P[5][10]*dt) - SF[14]*(P[8][11] + P[5][11]*dt) - (q0*(P[8][12] + P[5][12]*dt))/2;
+     nextP[8][4] = P[8][4] + P[5][4]*dt + SF[3]*(P[8][1] + P[5][1]*dt) + SF[5]*(P[8][0] + P[5][0]*dt) + SPP[0]*(P[8][2] + P[5][2]*dt) - SPP[5]*(P[8][3] + P[5][3]*dt) + SPP[3]*(P[8][13] + P[5][13]*dt) + SPP[8]*(P[8][14] + P[5][14]*dt) - SPP[11]*(P[8][15] + P[5][15]*dt);
+     nextP[8][5] = P[8][5] + P[5][5]*dt + SF[4]*(P[8][0] + P[5][0]*dt) + SF[3]*(P[8][2] + P[5][2]*dt) + SF[5]*(P[8][3] + P[5][3]*dt) - SPP[0]*(P[8][1] + P[5][1]*dt) + SPP[2]*(P[8][14] + P[5][14]*dt) - SPP[10]*(P[8][13] + P[5][13]*dt) + SPP[7]*(P[8][15] + P[5][15]*dt);
+     nextP[8][6] = P[8][6] + P[5][6]*dt + SF[4]*(P[8][1] + P[5][1]*dt) + SF[3]*(P[8][3] + P[5][3]*dt) + SPP[0]*(P[8][0] + P[5][0]*dt) - SPP[4]*(P[8][2] + P[5][2]*dt) - SPP[1]*(P[8][15] + P[5][15]*dt) + SPP[6]*(P[8][13] + P[5][13]*dt) - SPP[9]*(P[8][14] + P[5][14]*dt);
+     nextP[8][7] = P[8][7] + P[5][7]*dt + dt*(P[8][4] + P[5][4]*dt);
+     nextP[8][8] = P[8][8] + P[5][8]*dt + dt*(P[8][5] + P[5][5]*dt);
+     nextP[8][9] = P[8][9] + P[5][9]*dt + dt*(P[8][6] + P[5][6]*dt);
+     nextP[8][10] = P[8][10] + P[5][10]*dt;
+     nextP[8][11] = P[8][11] + P[5][11]*dt;
+     nextP[8][12] = P[8][12] + P[5][12]*dt;
+     nextP[8][13] = P[8][13] + P[5][13]*dt;
+     nextP[8][14] = P[8][14] + P[5][14]*dt;
+     nextP[8][15] = P[8][15] + P[5][15]*dt;
+     nextP[8][16] = P[8][16] + P[5][16]*dt;
+     nextP[8][17] = P[8][17] + P[5][17]*dt;
+     nextP[8][18] = P[8][18] + P[5][18]*dt;
+     nextP[8][19] = P[8][19] + P[5][19]*dt;
+     nextP[8][20] = P[8][20] + P[5][20]*dt;
+     nextP[8][21] = P[8][21] + P[5][21]*dt;
+     nextP[8][22] = P[8][22] + P[5][22]*dt;
+     nextP[8][23] = P[8][23] + P[5][23]*dt;
+     nextP[9][0] = P[9][0] + P[6][0]*dt + SF[9]*(P[9][1] + P[6][1]*dt) + SF[11]*(P[9][2] + P[6][2]*dt) + SF[10]*(P[9][3] + P[6][3]*dt) + SF[14]*(P[9][10] + P[6][10]*dt) + SF[15]*(P[9][11] + P[6][11]*dt) + SPP[12]*(P[9][12] + P[6][12]*dt);
+     nextP[9][1] = P[9][1] + P[6][1]*dt + SF[8]*(P[9][0] + P[6][0]*dt) + SF[7]*(P[9][2] + P[6][2]*dt) + SF[11]*(P[9][3] + P[6][3]*dt) - SF[15]*(P[9][12] + P[6][12]*dt) + SPP[12]*(P[9][11] + P[6][11]*dt) - (q0*(P[9][10] + P[6][10]*dt))/2;
+     nextP[9][2] = P[9][2] + P[6][2]*dt + SF[6]*(P[9][0] + P[6][0]*dt) + SF[10]*(P[9][1] + P[6][1]*dt) + SF[8]*(P[9][3] + P[6][3]*dt) + SF[14]*(P[9][12] + P[6][12]*dt) - SPP[12]*(P[9][10] + P[6][10]*dt) - (q0*(P[9][11] + P[6][11]*dt))/2;
+     	nextP[9][3] = P[9][3] + P[6][3]*dt + SF[7]*(P[9][0] + P[6][0]*dt) + SF[6]*(P[9][1] + P[6][1]*dt) + SF[9]*(P[9][2] + P[6][2]*dt) + SF[15]*(P[9][10] + P[6][10]*dt) - SF[14]*(P[9][11] + P[6][11]*dt) - (q0*(P[9][12] + P[6][12]*dt))/2;
 	nextP[9][4] = P[9][4] + P[6][4]*dt + SF[3]*(P[9][1] + P[6][1]*dt) + SF[5]*(P[9][0] + P[6][0]*dt) + SPP[0]*(P[9][2] + P[6][2]*dt) - SPP[5]*(P[9][3] + P[6][3]*dt) + SPP[3]*(P[9][13] + P[6][13]*dt) + SPP[8]*(P[9][14] + P[6][14]*dt) - SPP[11]*(P[9][15] + P[6][15]*dt);
 	nextP[9][5] = P[9][5] + P[6][5]*dt + SF[4]*(P[9][0] + P[6][0]*dt) + SF[3]*(P[9][2] + P[6][2]*dt) + SF[5]*(P[9][3] + P[6][3]*dt) - SPP[0]*(P[9][1] + P[6][1]*dt) + SPP[2]*(P[9][14] + P[6][14]*dt) - SPP[10]*(P[9][13] + P[6][13]*dt) + SPP[7]*(P[9][15] + P[6][15]*dt);
 	nextP[9][6] = P[9][6] + P[6][6]*dt + SF[4]*(P[9][1] + P[6][1]*dt) + SF[3]*(P[9][3] + P[6][3]*dt) + SPP[0]*(P[9][0] + P[6][0]*dt) - SPP[4]*(P[9][2] + P[6][2]*dt) - SPP[1]*(P[9][15] + P[6][15]*dt) + SPP[6]*(P[9][13] + P[6][13]*dt) - SPP[9]*(P[9][14] + P[6][14]*dt);
@@ -1083,25 +1111,22 @@ void CovariancePrediction()
 	}
 }
 
-void FuseVelPosNED()
+void NavEKF::FuseVelPosNED()
 {
-
-// declare variables used by fault isolation logic
+    // declare variables used by fault isolation logic
 	uint32_t gpsRetryTime = 30000; // time in msec before GPS fusion will be retried following innovation consistency failure
 	uint32_t gpsRetryTimeNoTAS = 5000; // retry time if no TAS measurement available
 	uint32_t hgtRetryTime = 5000; // height measurement retry time
 	uint32_t horizRetryTime;
-	static uint32_t velFailTime;
-	static uint32_t posFailTime;
-	static uint32_t hgtFailTime;
 	bool velHealth;
 	bool posHealth;
 	bool hgtHealth;
 	bool velTimeout;
 	bool posTimeout;
 	bool hgtTimeout;
+    float Kfusion[24];
 
-// declare variables used to check measurement errors
+ // declare variables used to check measurement errors
 	float velInnov[3] = {0.0,0.0,0.0};
 	float posInnov[2] = {0.0,0.0};
 	float hgtInnov = 0.0;
@@ -1162,11 +1187,11 @@ void FuseVelPosNED()
 			}
 			// apply a 5-sigma threshold
 			velHealth = (sq(velInnov[0]) + sq(velInnov[1]) + sq(velInnov[2])) < 25.0*(varInnovVelPos[0] + varInnovVelPos[1] + varInnovVelPos[2]);
-			velTimeout = (millis() - velFailTime) > horizRetryTime;
+			velTimeout = (hal.scheduler->millis() - velFailTime) > horizRetryTime;
 			if (velHealth || velTimeout)
 			{
 				velHealth = true;
-				velFailTime = millis();
+				velFailTime = hal.scheduler->millis();
 			}
 			else
 			{
@@ -1182,11 +1207,11 @@ void FuseVelPosNED()
 			varInnovVelPos[4] = P[8][8] + R_OBS[4];
 			// apply a 10-sigma threshold
 			posHealth = (sq(posInnov[0]) + sq(posInnov[1])) < 100.0*(varInnovVelPos[3] + varInnovVelPos[4]);
-			posTimeout = (millis() - posFailTime) > horizRetryTime;
+			posTimeout = (hal.scheduler->millis() - posFailTime) > horizRetryTime;
 			if (posHealth || posTimeout)
 			{
 				posHealth = true;
-				posFailTime = millis();
+				posFailTime = hal.scheduler->millis();
 			}
 			else
 			{
@@ -1200,11 +1225,11 @@ void FuseVelPosNED()
 			varInnovVelPos[5] = P[9][9] + R_OBS[5];
 			// apply a 10-sigma threshold
 			hgtHealth = sq(hgtInnov) < 100.0*varInnovVelPos[5];
-			hgtTimeout = (millis() - hgtFailTime) > hgtRetryTime;
+			hgtTimeout = (hal.scheduler->millis() - hgtFailTime) > hgtRetryTime;
 			if (hgtHealth || hgtTimeout)
 			{
 				hgtHealth = true;
-				hgtFailTime = millis();
+				hgtFailTime = hal.scheduler->millis();
 			}
 			else
 			{
@@ -1298,40 +1323,35 @@ void FuseVelPosNED()
 	}
 }
 
-void FuseMagnetometer()
+void NavEKF::FuseMagnetometer()
 {
-
-	static float q0 = 1.0;
-	static float q1 = 0.0;
-	static float q2 = 0.0;
-	static float q3 = 0.0;
-	static float magN = 0.0;
-	static float magE = 0.0;
-	static float magD = 0.0;
-	static float magXbias = 0.0;
-	static float magYbias = 0.0;
-	static float magZbias = 0.0;
-	static uint8_t obsIndex = 0;
-	static float DCM[3][3] =
-	{
-		{1.0,0.0,0.0} ,
-		{0.0,1.0,0.0} ,
-		{0.0,0.0,1.0}
-	};
-	static float MagPred[3] = {0.0,0.0,0.0};
-	static float R_MAG;
-	static float SH_MAG[9] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+	float &q0 = mag_state.q0;
+	float &q1 = mag_state.q1;
+	float &q2 = mag_state.q2;
+	float &q3 = mag_state.q3;
+	float &magN = mag_state.magN;
+	float &magE = mag_state.magE;
+	float &magD = mag_state.magD;
+	float &magXbias = mag_state.magXbias;
+	float &magYbias = mag_state.magYbias;
+	float &magZbias = mag_state.magZbias;
+	uint8_t &obsIndex = mag_state.obsIndex;
+	Matrix3f &DCM = mag_state.DCM;
+	Vector3f &MagPred = mag_state.MagPred;
+	float &R_MAG = mag_state.R_MAG;
+	float *SH_MAG = &mag_state.SH_MAG[0];
 	float H_MAG[24];
 	float SK_MX[6];
 	float SK_MY[5];
 	float SK_MZ[6];
+    float Kfusion[24];
 
-// Perform sequential fusion of Magnetometer measurements.
-// This assumes that the errors in the different components are
-// uncorrelated which is not true, however in the absence of covariance
-// data fit is the only assumption we can make
-// so we might as well take advantage of the computational efficiencies
-// associated with sequential fusion
+    // Perform sequential fusion of Magnetometer measurements.
+    // This assumes that the errors in the different components are
+    // uncorrelated which is not true, however in the absence of covariance
+    // data fit is the only assumption we can make
+    // so we might as well take advantage of the computational efficiencies
+    // associated with sequential fusion
 	if (fuseMagData || obsIndex == 1 || obsIndex == 2)
 	{
 		// Sequential fusion of XYZ components to spread processing load across
@@ -1595,7 +1615,7 @@ void FuseMagnetometer()
 	}
 }
 
-void FuseAirspeed()
+void NavEKF::FuseAirspeed()
 {
 	float vn;
 	float ve;
@@ -1724,7 +1744,7 @@ void FuseAirspeed()
 	}
 }
 
-void zeroRows(float covMat[24][24], uint8_t first, uint8_t last)
+void NavEKF::zeroRows(float covMat[24][24], uint8_t first, uint8_t last)
 {
 	uint8_t row;
 	uint8_t col;
@@ -1737,7 +1757,7 @@ void zeroRows(float covMat[24][24], uint8_t first, uint8_t last)
 	}
 }
 
-void zeroCols(float covMat[24][24], uint8_t first, uint8_t last)
+void NavEKF::zeroCols(float covMat[24][24], uint8_t first, uint8_t last)
 {
 	uint8_t row;
 	uint8_t col;
@@ -1751,29 +1771,27 @@ void zeroCols(float covMat[24][24], uint8_t first, uint8_t last)
 }
 
 // Store states in a history array along with time stamp
-void StoreStates()
+void NavEKF::StoreStates()
 {
-	static uint8_t storeIndex = 0;
 	if (storeIndex > 49) storeIndex = 0;
 	for (uint8_t i=0; i<=23; i++) storedStates[i][storeIndex] = states[i];
-	statetimeStamp[storeIndex] = millis();
+	statetimeStamp[storeIndex] = hal.scheduler->millis();
 	storeIndex = storeIndex + 1;
 }
 
 // Output the state vector stored at the time that best matches that specified by msec
-void RecallStates(float statesForFusion[24], uint32_t msec)
+void NavEKF::RecallStates(float statesForFusion[24], uint32_t msec)
 {
-	long int timeDelta;
-	long int bestTimeDelta = 200;
-	uint8_t storeIndex;
+	uint32_t timeDelta;
+	uint32_t bestTimeDelta = 200;
 	uint8_t bestStoreIndex = 0;
-	for (storeIndex=0; storeIndex<=49; storeIndex++)
+	for (uint8_t i=0; i<=49; i++)
 	{
-		timeDelta = msec - statetimeStamp[storeIndex];
+		timeDelta = msec - statetimeStamp[i];
 		if (timeDelta < 0) timeDelta = -timeDelta;
 		if (timeDelta < bestTimeDelta)
 		{
-			bestStoreIndex = storeIndex;
+			bestStoreIndex = i;
 			bestTimeDelta = timeDelta;
 		}
 	}
@@ -1787,7 +1805,7 @@ void RecallStates(float statesForFusion[24], uint32_t msec)
 	}
 }
 
-void quat2Tnb(Matrix3f &Tnb, float quat[4])
+void NavEKF::quat2Tnb(Matrix3f &Tnb, float quat[4])
 {
 	// Calculate the nav to body cosine matrix
 	float q00 = sq(quat[0]);
@@ -1801,18 +1819,18 @@ void quat2Tnb(Matrix3f &Tnb, float quat[4])
 	float q13 =  quat[1]*quat[3];
 	float q23 =  quat[2]*quat[3];
 
-	Tnb.x.x = q00 + q11 - q22 - q33;
-	Tnb.y.y = q00 - q11 + q22 - q33;
-	Tnb.z.z = q00 - q11 - q22 + q33;
-	Tnb.y.x = 2*(q12 - q03);
-	Tnb.z.x = 2*(q13 + q02);
-	Tnb.x.y = 2*(q12 + q03);
-	Tnb.z.y = 2*(q23 - q01);
-	Tnb.x.z = 2*(q13 - q02);
-	Tnb.y.z = 2*(q23 + q01);
+	Tnb.a.x = q00 + q11 - q22 - q33;
+	Tnb.b.y = q00 - q11 + q22 - q33;
+	Tnb.c.z = q00 - q11 - q22 + q33;
+	Tnb.b.x = 2*(q12 - q03);
+	Tnb.c.x = 2*(q13 + q02);
+	Tnb.a.y = 2*(q12 + q03);
+	Tnb.c.y = 2*(q23 - q01);
+	Tnb.a.z = 2*(q13 - q02);
+	Tnb.b.z = 2*(q23 + q01);
 }
 
-void quat2Tbn(Matrix3f &Tbn, float quat[4])
+void NavEKF::quat2Tbn(Matrix3f &Tbn, float quat[4])
 {
 	// Calculate the body to nav cosine matrix
 	float q00 = sq(quat[0]);
@@ -1826,162 +1844,155 @@ void quat2Tbn(Matrix3f &Tbn, float quat[4])
 	float q13 =  quat[1]*quat[3];
 	float q23 =  quat[2]*quat[3];
 
-	Tbn.x.x = q00 + q11 - q22 - q33;
-	Tbn.y.y = q00 - q11 + q22 - q33;
-	Tbn.z.z = q00 - q11 - q22 + q33;
-	Tbn.x.y = 2*(q12 - q03);
-	Tbn.x.z = 2*(q13 + q02);
-	Tbn.y.x = 2*(q12 + q03);
-	Tbn.y.z = 2*(q23 - q01);
-	Tbn.z.x = 2*(q13 - q02);
-	Tbn.z.y = 2*(q23 + q01);
+	Tbn.a.x = q00 + q11 - q22 - q33;
+	Tbn.b.y = q00 - q11 + q22 - q33;
+	Tbn.c.z = q00 - q11 - q22 + q33;
+	Tbn.a.y = 2*(q12 - q03);
+	Tbn.a.z = 2*(q13 + q02);
+	Tbn.b.x = 2*(q12 + q03);
+	Tbn.b.z = 2*(q23 - q01);
+	Tbn.c.x = 2*(q13 - q02);
+	Tbn.c.y = 2*(q23 + q01);
 }
 
-void eul2quat(float quat[4], float eul[3])
+void NavEKF::eul2quat(float quat[4], float eul[3])
 {
-	float u1 = cos(0.5*eul[0]);
-	float u2 = cos(0.5*eul[1]);
-	float u3 = cos(0.5*eul[2]);
-	float u4 = sin(0.5*eul[0]);
-	float u5 = sin(0.5*eul[1]);
-	float u6 = sin(0.5*eul[2]);
+	float u1 = cosf(0.5*eul[0]);
+	float u2 = cosf(0.5*eul[1]);
+	float u3 = cosf(0.5*eul[2]);
+	float u4 = sinf(0.5*eul[0]);
+	float u5 = sinf(0.5*eul[1]);
+	float u6 = sinf(0.5*eul[2]);
 	quat[0] = u1*u2*u3+u4*u5*u6;
 	quat[1] = u4*u2*u3-u1*u5*u6;
 	quat[2] = u1*u5*u3+u4*u2*u6;
 	quat[3] = u1*u2*u6-u4*u5*u3;
 }
 
-void quat2eul(float y[3], float u[4])
+void NavEKF::quat2eul(float y[3], float u[4])
 {
-	y[0] = atan2((2.0*(u[2]*u[3]+u[0]*u[1])) , (u[0]*u[0]-u[1]*u[1]-u[2]*u[2]+u[3]*u[3]));
-	y[1] = -asin(2.0*(u[1]*u[3]-u[0]*u[2]));
-	y[2] = atan2((2.0*(u[1]*u[2]+u[0]*u[3])) , (u[0]*u[0]+u[1]*u[1]-u[2]*u[2]-u[3]*u[3]));
+	y[0] = atan2f((2.0*(u[2]*u[3]+u[0]*u[1])) , (u[0]*u[0]-u[1]*u[1]-u[2]*u[2]+u[3]*u[3]));
+	y[1] = -asinf(2.0*(u[1]*u[3]-u[0]*u[2]));
+	y[2] = atan2f((2.0*(u[1]*u[2]+u[0]*u[3])) , (u[0]*u[0]+u[1]*u[1]-u[2]*u[2]-u[3]*u[3]));
 }
 
-void calcvelNED(float velNED[3], float gpsCourse, float gpsGndSpd, float gpsVelD)
+void NavEKF::calcposNE(float lat, float lon)
 {
-	velNED[0] = gpsGndSpd*cos(gpsCourse);
-	velNED[1] = gpsGndSpd*sin(gpsCourse);
-	velNED[2] = gpsVelD;
+	posNE[0] = RADIUS_OF_EARTH * (lat - latRef);
+	posNE[1] = RADIUS_OF_EARTH * cosf(latRef) * (lon - lonRef);
 }
 
-void calcposNE(float posNE[2], float lat, float lon, float latRef, float lonRef)
+#if 0
+void NavEKF::calcLLH(float &lat, float &lon, float &hgt)
 {
-	posNED[0] = earthRadius * (lat - latRef);
-	posNED[1] = earthRadius * cos(latRef) * (lon - lonRef);
-}
-
-void calcLLH(float posNED[3], float lat, float lon, float hgt, float latRef, float lonRef, float hgtRef)
-{
-	lat = latRef + posNED[0] * earthRadiusInv;
-	lon = lonRef + posNED[1] * earthRadiusInv / cos(latRef);
+	lat = latRef + posNED[0] / RADIUS_OF_EARTH;
+	lon = lonRef + (posNED[1] / RADIUS_OF_EARTH) / cosf(latRef);
 	hgt = hgtRef - posNED[2];
 }
+#endif
 
-void OnGroundCheck()
+void NavEKF::OnGroundCheck()
 {
 	onGround = (((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0) && (VtasMeas < 8.0));
 }
 
-void CovarianceInit()
+void NavEKF::CovarianceInit()
 {
 	// Calculate the initial covariance matrix P
-	P[1][1]   = 0.25*sq(1.0*deg2rad);
-	P[2][2]   = 0.25*sq(1.0*deg2rad);
-	P[3][3]   = 0.25*sq(10.0*deg2rad);
-	P[4][4]   = sq(0.7);
+	P[1][1]   = 0.25f*sq(1.0*DEG_TO_RAD);
+	P[2][2]   = 0.25f*sq(1.0*DEG_TO_RAD);
+	P[3][3]   = 0.25f*sq(10.0*DEG_TO_RAD);
+	P[4][4]   = sq(0.7f);
 	P[5][5]   = P[4][4];
-	P[6][6]   = sq(0.7);
-	P[7][7]   = sq(15.0);
+	P[6][6]   = sq(0.7f);
+	P[7][7]   = sq(15.0f);
 	P[8][8]   = P[7][7];
-	P[9][9]   = sq(5.0);
-	P[10][10] = sq(0.1*deg2rad*dtIMU);
+	P[9][9]   = sq(5.0f);
+	P[10][10] = sq(radians(0.1f * dtIMU));
 	P[11][11] = P[10][10];
 	P[12][12] = P[10][10];
-	P[13][13] = sq(0.1*0.02);
+	P[13][13] = sq(0.1f * 0.02f);
 	P[14][14] = P[13][13];
 	P[15][15] = P[13][13];
-	P[16][16] = sq(8.0);
+	P[16][16] = sq(8.0f);
 	P[17][17] = P[16][16];
-	P[18][18] = sq(0.02);
+	P[18][18] = sq(0.02f);
 	P[19][19] = P[18][18];
 	P[20][20] = P[18][18];
-	P[21][21] = sq(0.02);
+	P[21][21] = sq(0.02f);
 	P[22][22] = P[21][21];
 	P[23][23] = P[21][21];
 }
 
-void readIMUData()
+void NavEKF::readIMUData()
 {
-	uint32_t IMUusec = 0;
-	static unit32_t lastIMUmsec = 0;
-	Vector3f angRate = {0,0,0}; // angular rate vector in XYZ body axes measured by the IMU (rad/s)
-	Vector3f accel = {0,0,0}; // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
-	Vector3f lastAngRate = {0,0,0};
-	Vector3f lastAccel = {0,0,0};
+	uint32_t IMUusec;
+	Vector3f angRate;     // angular rate vector in XYZ body axes measured by the IMU (rad/s)
+	Vector3f accel;       // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
+	Vector3f lastAngRate;
+	Vector3f lastAccel;
 	
-	IMUusec     = micros();
+	IMUusec     = hal.scheduler->micros();
 	IMUmsec     = IMUusec/1000;
-	dtIMU       = 1.0e-6*(IMUusec - lastIMUusec);
-	if (dtIMU > 0.1) dtIMU = 0.01; // protect against wrap-around on micros()
+	dtIMU       = 1.0e-6f * (IMUusec - lastIMUusec);
 	lastIMUusec = IMUusec;
-	angRate     = ins.get_gyro();
-	accel       = ins.get_accel();
+	angRate     = _ahrs.get_ins().get_gyro();
+	accel       = _ahrs.get_ins().get_accel();
 	
-	dAngIMU     = 0.5*(angRate + lastAngRate)*dtIMU;
+	dAngIMU     = (angRate + lastAngRate) * dtIMU * 0.5f;
 	lastAngRate = angRate;
-	dVelIMU     = 0.5*(accel + lastAccel)*dtIMU;
+	dVelIMU     = (accel + lastAccel) * dtIMU * 0.5f;
 	lastAccel   = accel;
 }
 
-void readGpsData()
-{
-	
-	static uint64_t lastFixTime=0;
-	if ((_gps->last_fix_time > _gps->last_fix_time) && (_gps->status() >= GPS::GPS_OK_FIX_3D))
+void NavEKF::readGpsData()
+{	
+	if ((_ahrs.get_gps()->last_message_time_ms() != lastFixTime) && 
+        (_ahrs.get_gps()->status() >= GPS::GPS_OK_FIX_3D))
 	{
-	GPSstatus = _gps->status();
-	newDataGps = true;
-	RecallStates(statesAtVelTime, (IMUmsec - msecVelDelay));
-	RecallStates(statesAtPosTime, (IMUmsec - msecPosDelay));
-	velNED[0] = _gps->velocity_north(); // (rad)
-	velNED[1] = _gps->velocity_east(); // (m/s)
-	velNED[2] = _gps->velocity_down(); // (m/s)
-	gpsLat    = deg2rad*1e-7*_gps->latitude(); // (rad)
-	gpsLon    = deg2rad*1e-7*_gps->longitude(); //(rad)
-	gpsHgt    = 0.01*_gps->altitude_cm(); // (m)
-	// Convert GPS measurements to Pos NE
-	calcposNE(posNE, gpsLat, gpsLon, latRef, lonRef);
+        lastFixTime = _ahrs.get_gps()->last_message_time_ms();
+        newDataGps = true;
+        RecallStates(statesAtVelTime, (IMUmsec - msecVelDelay));
+        RecallStates(statesAtPosTime, (IMUmsec - msecPosDelay));
+        velNED[0] = _ahrs.get_gps()->velocity_north(); // (rad)
+        velNED[1] = _ahrs.get_gps()->velocity_east(); // (m/s)
+        velNED[2] = _ahrs.get_gps()->velocity_down(); // (m/s)
+        gpsLat    = DEG_TO_RAD * 1e-7f * _ahrs.get_gps()->latitude; // (rad)
+        gpsLon    = DEG_TO_RAD * 1e-7f * _ahrs.get_gps()->longitude; //(rad)
+        gpsHgt    = 0.01f * _ahrs.get_gps()->altitude_cm; // (m)
+        // Convert GPS measurements to Pos NE
+        calcposNE(gpsLat, gpsLon);
 	}
 }
 
-void readHgtData()
+void NavEKF::readHgtData()
 {
 	// ToDo do we check for new height data or grab a height measurement?
 	// Best to do this at the same time as GPS measurement fusion for efficiency
-	hgtMea = _baro->get_altitude() - hgtRef;
+	hgtMea = _baro.get_altitude() - hgtRef;
 	// recall states from compass measurement time
-	if(newDataHgt) RecallStates(statesAtVelTime, (IMUmsec - msecHgtDelay));
+	RecallStates(statesAtVelTime, (IMUmsec - msecHgtDelay));
 }
 
-void readMagData()
+void NavEKF::readMagData()
 {
 	// scale compass data to improve numerical conditioning
-	magData = 0.001*_compass->get_field();
-	magBias = 0.001*_compass->get_offsets();
+	magData = _ahrs.get_compass()->get_field() * 0.001f;
+	magBias = _ahrs.get_compass()->get_offsets() * 0.001f;
 	// Recall states from compass measurement time
 	RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
 }
 
-void readAirSpdData()
+void NavEKF::readAirSpdData()
 {
-	VtasMeas = _airspeed->get_EAS2TAS()*_airspeed->get_airspeed();
-	RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
+	if (!_ahrs.airspeed_estimate_true(&VtasMeas)) {
+        RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
+    }
 }
 
-void calcEarthRateNED(Vector3f &omega, float latitude)
+void NavEKF::calcEarthRateNED(Vector3f &omega, float latitude)
 {
-	omega.x  = earthRate*cos(latitude);
+	omega.x  = earthRate*cosf(latitude);
 	omega.y  = 0.0;
-	omega.z  = -earthRate*sin(latitude);
+	omega.z  = -earthRate*sinf(latitude);
 }
