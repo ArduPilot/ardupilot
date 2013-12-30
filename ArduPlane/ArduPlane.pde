@@ -285,7 +285,9 @@ static AP_YawController   yawController(ahrs, aparm);
 static AP_SteerController steerController(ahrs);
 
 // Inertial Navigation EKF
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 static NavEKF NavEKF(ahrs, barometer);
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -809,7 +811,9 @@ static void ahrs_update()
 #endif
 
     ahrs.update();
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
     NavEKF.UpdateFilter();
+#endif
 
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
