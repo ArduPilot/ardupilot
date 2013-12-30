@@ -2,6 +2,10 @@
 #include <AP_HAL.h>
 #include "AP_NavEKF.h"
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,6 +31,22 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
 {
     mag_state.q0 = 1;
     mag_state.DCM.identity();
+}
+
+static void write_float(float v)
+{
+    static int _fd = -1;
+    if (_fd == -1) {
+        _fd = ::open("/dev/null", O_WRONLY);
+    }
+    write(_fd, &v, sizeof(v));
+}
+
+static void write_floats(float *v, uint8_t n)
+{
+    for (uint8_t i=0; i<n; i++) {
+        write_float(v[i]);
+    }
 }
 
 void NavEKF::InitialiseFilter(void)
@@ -1142,6 +1162,7 @@ void NavEKF::CovariancePrediction()
             P[j][i] = P[i][j];
         }
     }
+
 }
 
 void NavEKF::FuseVelPosNED()
@@ -1150,7 +1171,7 @@ void NavEKF::FuseVelPosNED()
     uint32_t gpsRetryTime = 30000; // time in msec before GPS fusion will be retried following innovation consistency failure
     uint32_t gpsRetryTimeNoTAS = 5000; // retry time if no TAS measurement available
     uint32_t hgtRetryTime = 5000; // height measurement retry time
-    uint32_t horizRetryTime;
+    uint32_t horizRetryTime = 0;
     bool velHealth;
     bool posHealth;
     bool hgtHealth;
@@ -1219,6 +1240,7 @@ void NavEKF::FuseVelPosNED()
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
             }
             // apply a 5-sigma threshold
+
             velHealth = ((sq(velInnov[0]) + sq(velInnov[1]) + sq(velInnov[2])) < (25.0f * (varInnovVelPos[0] + varInnovVelPos[1] + varInnovVelPos[2])));
             velTimeout = (hal.scheduler->millis() - velFailTime) > horizRetryTime;
             if (velHealth || velTimeout)
@@ -1843,11 +1865,15 @@ void NavEKF::RecallStates(float statesForFusion[24], uint32_t msec)
     }
     if (bestTimeDelta < 200) // only output stored state if < 200 msec retrieval error
     {
-        for (uint8_t i=0; i<=23; i++) statesForFusion[i] = storedStates[i][bestStoreIndex];
+        for (uint8_t i=0; i<=23; i++) {
+            statesForFusion[i] = storedStates[i][bestStoreIndex];
+        }
     }
     else // otherwise output current state
     {
-        for (uint8_t i=0; i<=23; i++) statesForFusion[i] = states[i];
+        for (uint8_t i=0; i<=23; i++) {
+            statesForFusion[i] = states[i];
+        }
     }
 }
 
