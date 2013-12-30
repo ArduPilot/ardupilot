@@ -19,7 +19,7 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
-    fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
+    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     TASmsecMax(333), // maximum allowed interal between airspeed measurement updates
@@ -260,7 +260,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     prevDelAng = correctedDelAng;
 
     // Apply corrections for earths rotation rate and coning errors
-    // * and + operators have been overloaded
+    // % * - and + operators have been overloaded
     correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMU + (prevDelAng % correctedDelAng) * 8.333333333333333e-2f;
 
     // Convert the rotation vector to its equivalent quaternion
@@ -396,7 +396,14 @@ void NavEKF::CovariancePrediction()
     dvz_b = states[15];
     daxCov = sq(dt*1.4544411e-2f);
     dayCov = sq(dt*1.4544411e-2f);
-    dazCov = sq(dt*1.4544411e-2f);
+    if (!onGround)
+    {
+        dazCov = sq(dt*1.4544411e-2f);
+    }
+    else
+    {
+        dazCov = sq(dt*1.4544411e-1f); //reduce heading drift when on ground
+    }
     dvxCov = sq(dt*0.5f);
     dvyCov = sq(dt*0.5f);
     dvzCov = sq(dt*0.5f);
@@ -1041,15 +1048,10 @@ void NavEKF::CovariancePrediction()
         nextP[i][i] = nextP[i][i] + processNoise[i];
     }
 
-    // If on ground, inhibit accelerometer bias, wind  and magnetic field state updates by
+    // If on ground or no compasss fitted, inhibit magnetic field state updates by
     // setting the corresponding covariance terms to zero
-    // This is a quick hack - for efficiency should really not calculate terms above when this condition is true
-    if (onGround)
+    if (onGround || !useCompass)
     {
-        zeroRows(nextP,13,15);
-        zeroCols(nextP,13,15);
-        zeroRows(nextP,16,17);
-        zeroCols(nextP,16,17);
         zeroRows(nextP,18,23);
         zeroCols(nextP,18,23);
     }
@@ -1062,18 +1064,9 @@ void NavEKF::CovariancePrediction()
         zeroCols(nextP,13,15);
     }
 
-    // If on ground or no magnnextP[i][j] + nextP[j][i]etometer fitted, inhibit magnetometer bias updates by
-    // setting the coresponding covariance terms to zero. To be efficient, the
-    // corresponding terms should also not be calculated above
-    if (onGround || !useCompass)
-    {
-        zeroRows(nextP,18,23);
-        zeroCols(nextP,18,23);
-    }
 
     // If on ground or not using airspeed sensing, inhibit wind velocity
-    // covariance growth. To be efficient, the corresponding terms should also
-    // not be calculated above
+    // covariance growth.
     if (onGround || !useAirspeed)
     {
         zeroRows(nextP,16,17);
@@ -1135,6 +1128,7 @@ void NavEKF::FuseVelPosNED()
     bool fuseData[6] = {false,false,false,false,false,false};
     uint8_t stateIndex;
     uint8_t obsIndex;
+    uint8_t indexLimit; // used to prevent access to wind and magnetic field states and variances when on ground
 
 // declare variables used by state and covariance update calculations
     float velErr;
@@ -1257,6 +1251,15 @@ void NavEKF::FuseVelPosNED()
         {
             fuseData[5] = true;
         }
+        // Limit access to first 13 states when on ground.
+        if (!onGround)
+        {
+            indexLimit = 23;
+        }
+        else
+        {
+            indexLimit = 12;
+        }
         // Fuse measurements sequentially
         for (obsIndex=0; obsIndex<=5; obsIndex++)
         {
@@ -1283,12 +1286,12 @@ void NavEKF::FuseVelPosNED()
                 SK = 1.0f/varInnovVelPos[obsIndex];
                 // Check the innovation for consistency and don't fuse if > TBD Sigma
                 // Currently disabled for testing
-                for (uint8_t i= 0; i<=23; i++)
+                for (uint8_t i= 0; i<=indexLimit; i++)
                 {
                     Kfusion[i] = P[i][stateIndex]*SK;
                 }
                 // Calculate state corrections and re-normalise the quaternions
-                for (uint8_t i = 0; i<=23; i++)
+                for (uint8_t i = 0; i<=indexLimit; i++)
                 {
                     states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                 }
@@ -1301,16 +1304,16 @@ void NavEKF::FuseVelPosNED()
                 // Update the covariance - take advantage of direct observation of a
                 // single state at index = stateIndex to reduce computations
                 // Optimised implementation of standard equation P = (I - K*H)*P;
-                for (uint8_t i= 0; i<=23; i++)
+                for (uint8_t i= 0; i<=indexLimit; i++)
                 {
-                    for (uint8_t j= 0; j<=23; j++)
+                    for (uint8_t j= 0; j<=indexLimit; j++)
                     {
                         KHP[i][j] = Kfusion[i] * P[stateIndex][j];
                     }
                 }
-                for (uint8_t i= 0; i<=23; i++)
+                for (uint8_t i= 0; i<=indexLimit; i++)
                 {
-                    for (uint8_t j= 0; j<=23; j++)
+                    for (uint8_t j= 0; j<=indexLimit; j++)
                     {
                         P[i][j] = P[i][j] - KHP[i][j];
                     }
@@ -1344,6 +1347,7 @@ void NavEKF::FuseMagnetometer()
     Vector6 SK_MY;
     Vector6 SK_MZ;
     Vector24 Kfusion;
+    uint8_t indexLimit; // used to prevent access to wind and magnetic field states and variances when on ground
 
     // Perform sequential fusion of Magnetometer measurements.
     // This assumes that the errors in the different components are
@@ -1555,8 +1559,17 @@ void NavEKF::FuseMagnetometer()
         // Check the innovation for consistency and don't fuse if > 5Sigma
         if ((innovMag[obsIndex]*innovMag[obsIndex]/varInnovMag[obsIndex]) < 25.0f)
         {
+            // Limit access to first 13 states when on ground.
+            if (!onGround)
+            {
+                indexLimit = 23;
+            }
+            else
+            {
+                indexLimit = 12;
+            }
             // correct the state vector
-            for (uint8_t j= 0; j<=23; j++)
+            for (uint8_t j= 0; j<=indexLimit; j++)
             {
                 states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
             }
@@ -1600,9 +1613,9 @@ void NavEKF::FuseMagnetometer()
                     }
                 }
             }
-            for (uint8_t i = 0; i<=23; i++)
+            for (uint8_t i = 0; i<=indexLimit; i++)
             {
-                for (uint8_t j = 0; j<=23; j++)
+                for (uint8_t j = 0; j<=indexLimit; j++)
                 {
                     P[i][j] = P[i][j] - KHP[i][j];
                 }
