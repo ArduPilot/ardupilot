@@ -28,18 +28,40 @@
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
 #include <AP_Compass.h>
+
+// #define MATH_CHECK_INDEXES 1
+
 #include <vectorN.h>
+
 
 class NavEKF
 {
 public:
-
+#if MATH_CHECK_INDEXES
     typedef VectorN<float,2> Vector2;
+    typedef VectorN<float,3> Vector3;
     typedef VectorN<float,6> Vector6;
     typedef VectorN<float,8> Vector8;
+    typedef VectorN<float,11> Vector11;
+    typedef VectorN<float,13> Vector13;
+    typedef VectorN<float,21> Vector21;
     typedef VectorN<float,24> Vector24;
+    typedef VectorN<VectorN<float,3>,3> Matrix3;
     typedef VectorN<VectorN<float,24>,24> Matrix24;
     typedef VectorN<VectorN<float,50>,24> Matrix24_50;
+#else
+    typedef float Vector2[2];
+    typedef float Vector3[3];
+    typedef float Vector6[6];
+    typedef float Vector8[8];
+    typedef float Vector11[11];
+    typedef float Vector13[13];
+    typedef float Vector21[21];
+    typedef float Vector24[24];
+    typedef float Matrix3[3][3];
+    typedef float Matrix24[24][24];
+    typedef float Matrix24_50[24][50];
+#endif
 
     // Constructor 
     NavEKF(const AP_AHRS &ahrs, AP_Baro &baro);
@@ -141,12 +163,13 @@ private:
 
     bool statesInitialised;
 
+    Vector24 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
+
     Matrix24 KH; //  intermediate result used for covariance updates
     Matrix24 KHP; // intermediate result used for covariance updates
     Matrix24 P; // covariance matrix
-    Vector24 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
     Matrix24_50 storedStates; // state vectors stored for the last 50 time steps
-    VectorN<uint32_t,50> statetimeStamp; // time stamp for each state vector stored
+    uint32_t statetimeStamp[50]; // time stamp for each state vector stored
     Vector3f correctedDelAng; // delta angles about the xyz body axes corrected for errors (rad)
     Vector3f correctedDelVel; // delta velocities along the XYZ body axes corrected for errors (m/s)
     Vector3f summedDelAng; // corrected & summed delta angles about the xyz body axes (rad)
@@ -205,6 +228,12 @@ private:
     const uint32_t MAGmsecMax; // maximum allowed interval between compass fusion steps
     uint32_t HGTmsecPrev; // time stamp of last height measurement fusion step
     const uint32_t HGTmsecMax; // maximum allowed interval between height measurement fusion steps
+
+    // last time compass was updated
+    uint32_t lastMagUpdate;
+
+    // last time airspeed was updated
+    uint32_t lastAirspeedUpdate;
     
     // Estimated time delays (msec) for different measurements relative to IMU
     const uint32_t msecVelDelay;
@@ -234,11 +263,9 @@ private:
     uint32_t MAGtime;
     uint32_t lastMAGtime;
     bool newDataMag;
-    Vector3f magDataPrev;
 
     // TAS input variables
     bool newDataTas;
-    float VtasMeasPrev;
 
     // AHRS input data variables
     Vector3f ahrsEul;
@@ -280,6 +307,15 @@ private:
 
     Vector3f lastAngRate;
     Vector3f lastAccel;
+
+    // CovariancePrediction variables
+    Matrix24 nextP;
+    Vector24 processNoise;
+    Vector21 SF;
+    Vector8 SG;
+    Vector11 SQ;
+    Vector13 SPP;
+
 };
 #endif // AP_NavEKF
 
