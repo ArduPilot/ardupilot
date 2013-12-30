@@ -5,12 +5,6 @@
 #include <AP_HAL.h>
 #include "AP_NavEKF.h"
 #include <stdio.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -40,24 +34,6 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     mag_state.DCM.identity();
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-static void write_float(float v)
-{
-    static int _fd = -1;
-    if (_fd == -1) {
-        _fd = ::open("/dev/null", O_WRONLY);
-    }
-    write(_fd, &v, sizeof(v));
-}
-
-static void write_floats(float *v, uint8_t n)
-{
-    for (uint8_t i=0; i<n; i++) {
-        write_float(v[i]);
-    }
-}
-#endif
-
 void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
@@ -80,9 +56,7 @@ void NavEKF::InitialiseFilter(void)
     {
         readMagData();
         initMagXYZ = magData - magBias;
-        initMagNED.x = DCM.a.x*initMagXYZ.x + DCM.a.y*initMagXYZ.y + DCM.a.z*initMagXYZ.z;
-        initMagNED.y = DCM.b.x*initMagXYZ.x + DCM.b.y*initMagXYZ.y + DCM.b.z*initMagXYZ.z;
-        initMagNED.z = DCM.c.x*initMagXYZ.x + DCM.c.y*initMagXYZ.y + DCM.c.z*initMagXYZ.z;
+        initMagNED = DCM * initMagXYZ;
     }
 
     // read the GPS
@@ -296,7 +270,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     qUpdated[3] = states[0]*deltaQuat[3] + states[3]*deltaQuat[0] + states[1]*deltaQuat[2] - states[2]*deltaQuat[1];
 
     // Normalise the quaternions and update the quaternion states
-    quatMag = sqrt(sq(qUpdated[0]) + sq(qUpdated[1]) + sq(qUpdated[2]) + sq(qUpdated[3]));
+    quatMag = sqrtf(sq(qUpdated[0]) + sq(qUpdated[1]) + sq(qUpdated[2]) + sq(qUpdated[3]));
     if (quatMag > 1e-16f)
     {
         quatMagInv = 1.0f/quatMag;
@@ -1306,14 +1280,12 @@ void NavEKF::FuseVelPosNED()
                 {
                     states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                 }
-                quatMag = sqrt(states[0]*states[0] + states[1]*states[1] + states[2]*states[2] + states[3]*states[3]);
-                if (quatMag > 1e-12f) // divide by  0 protection
-                {
-                    for (uint8_t i = 0; i<=3; i++)
-                    {
-                        states[i] = states[i] / quatMag;
-                    }
+                Quaternion q(states[0], states[1], states[2], states[3]);
+                q.normalize();
+                for (uint8_t i = 0; i<=3; i++) {
+                    states[i] = q[i];
                 }
+
                 // Update the covariance - take advantage of direct observation of a
                 // single state at index = stateIndex to reduce computations
                 // Optimised implementation of standard equation P = (I - K*H)*P;
@@ -1575,7 +1547,7 @@ void NavEKF::FuseMagnetometer()
                 states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
             }
             // normalise the quaternion states
-            float quatMag = sqrt(states[0]*states[0] + states[1]*states[1] + states[2]*states[2] + states[3]*states[3]);
+            float quatMag = sqrtf(states[0]*states[0] + states[1]*states[1] + states[2]*states[2] + states[3]*states[3]);
             if (quatMag > 1e-12f)
             {
                 for (uint8_t j= 0; j<=3; j++)
@@ -1655,12 +1627,12 @@ void NavEKF::FuseAirspeed()
     vwe = statesAtVtasMeasTime[17];
 
     // Calculate the predicted airspeed
-    VtasPred = sqrt((ve - vwe)*(ve - vwe) + (vn - vwn)*(vn - vwn) + vd*vd);
+    VtasPred = sqrtf((ve - vwe)*(ve - vwe) + (vn - vwn)*(vn - vwn) + vd*vd);
     // Perform fusion of True Airspeed measurement
     if (VtasPred > 1.0f)
     {
         // Calculate observation jacobians
-        SH_TAS[0] = 1.0f/(sqrt(sq(ve - vwe) + sq(vn - vwn) + sq(vd)));
+        SH_TAS[0] = 1.0f/(sqrtf(sq(ve - vwe) + sq(vn - vwn) + sq(vd)));
         SH_TAS[1] = (SH_TAS[0]*(2*ve - 2*vwe))*0.5f;
         SH_TAS[2] = (SH_TAS[0]*(2*vn - 2*vwn))*0.5f;
         H_TAS[4] = SH_TAS[2];
@@ -1708,15 +1680,11 @@ void NavEKF::FuseAirspeed()
             {
                 states[j] = states[j] - Kfusion[j] * innovVtas;
             }
-            // normalise the quaternion states
-            quatMag = sqrt(states[0]*states[0] + states[1]*states[1] + states[2]*states[2] + states[3]*states[3]);
-            if (quatMag > 1e-12f)
-            {
-                for (uint8_t j= 0; j<=3; j++)
-                {
-                    float quatMagInv = 1.0f/quatMag;
-                    states[j] = states[j] * quatMagInv;
-                }
+
+            Quaternion q(states[0], states[1], states[2], states[3]);
+            q.normalize();
+            for (uint8_t i = 0; i<=3; i++) {
+                states[i] = q[i];
             }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in H to reduce the
