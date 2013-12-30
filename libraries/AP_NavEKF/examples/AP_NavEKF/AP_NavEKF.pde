@@ -60,11 +60,6 @@ SITL sitl;
 static NavEKF NavEKF(ahrs, barometer);
 static LogReader LogReader(ins, barometer, compass, g_gps);
 
-static void delay_cb()
-{
-    LogReader.wait_type(LOG_GPS_MSG);
-}
-
 static FILE *plotf;
 
 void setup()
@@ -76,8 +71,6 @@ void setup()
     LogReader.wait_type(LOG_IMU_MSG);
     LogReader.wait_type(LOG_GPS_MSG);
     LogReader.wait_type(LOG_IMU_MSG);
-
-    hal.scheduler->register_delay_callback(delay_cb, 5);
 
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
@@ -138,7 +131,24 @@ void loop()
                     degrees(ekf_euler.x),
                     degrees(ekf_euler.y),
                     degrees(ekf_euler.z));
-                    
+
+#if 0
+            ::printf("t=%.3f ATT: (%.1f %.1f %.1f) AHRS: (%.1f %.1f %.1f) EKF: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
+                     hal.scheduler->millis() * 0.001f,
+                     LogReader.get_attitude().x,
+                     LogReader.get_attitude().y,
+                     LogReader.get_attitude().z,
+                     ahrs.roll_sensor*0.01f, 
+                     ahrs.pitch_sensor*0.01f,
+                     ahrs.yaw_sensor*0.01f,
+                     degrees(ekf_euler.x),
+                     degrees(ekf_euler.y),
+                     degrees(ekf_euler.z),
+                     barometer.get_altitude(),
+                     (unsigned)g_gps->status(),
+                     g_gps->latitude*1.0e-7f,
+                     g_gps->longitude*1.0e-7f);
+#endif
                 break;
         }
 
