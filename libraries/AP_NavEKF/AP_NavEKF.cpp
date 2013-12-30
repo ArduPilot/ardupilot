@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL.h>
 #include "AP_NavEKF.h"
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -10,9 +11,9 @@ extern const AP_HAL::HAL& hal;
 NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
-    useAirspeed(true),
+    useAirspeed(false),
     useCompass(true),
-    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
+    fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     TASmsecTgt(250), // target interal between airspeed measurement updates
@@ -32,7 +33,11 @@ void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
     float initQuat[4];
+    ahrsEul[0] = _ahrs.roll_sensor*0.01f*DEG_TO_RAD;
+    ahrsEul[1] = _ahrs.pitch_sensor*0.01f*DEG_TO_RAD;
+    ahrsEul[2] = _ahrs.yaw_sensor*0.01f*DEG_TO_RAD;
     eul2quat(initQuat, ahrsEul);
+//::printf("ahrsEul: (%.3f %.3f %.3f) \n", ahrsEul[0],ahrsEul[1],ahrsEul[2]);
 
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
@@ -52,22 +57,31 @@ void NavEKF::InitialiseFilter(void)
         initMagNED.z = DCM.c.x*initMagXYZ.x + DCM.c.y*initMagXYZ.y + DCM.c.z*initMagXYZ.z;
     }
 
-    // calculate initial velocities
-    float initvelNED[3];
+    // read the GPS
+    readGpsData();
+
+    // read the barometer
+    readHgtData();
 
     // reset reference position only if on-ground to allow for in-air restart
-    if(onGround)
+    OnGroundCheck();
+    if(onGround || !statesInitialised)
     {
         latRef = gpsLat;
         lonRef = gpsLon;
         hgtRef = _baro.get_altitude();
+        calcposNE(gpsLat, gpsLon);
     }
 
     // write to state vector
     for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
-    for (uint8_t j=0; j<=2; j++) states[j+4] = initvelNED[j]; // velocities
-
-    for (uint8_t j=0; j<=10; j++) states[j+7] = 0.0; // positions, dAngBias, dVelBias, windVel
+    states[4] = velNED[0];
+    states[5] = velNED[1];
+    states[6] = velNED[2];
+    states[7] = posNE[0];
+    states[8] = posNE[1];
+    states[9] = hgtRef - _baro.get_altitude() - 5;
+    for (uint8_t j=0; j<=7; j++) states[j+10] = 0.0; // dAngBias, dVelBias, windVel
     states[18] = initMagNED.x; // Magnetic Field North
     states[19] = initMagNED.y; // Magnetic Field East
     states[20] = initMagNED.z; // Magnetic Field Down
@@ -89,6 +103,19 @@ void NavEKF::InitialiseFilter(void)
     summedDelVel.y = 0.0;
     summedDelVel.z = 0.0;
     dt = 0.0;
+
+    //Initialise IMU pre-processing states
+    readIMUData();
+
+//::printf("Initial Vel: (%.1f %.1f %.1f) Pos: (%.1f %.1f %.1f) magNED: (%.3f %.3f %.3f) magXYZ: (%.3f %.3f %.3f)\n", 
+//    states[4],states[5],states[6],
+//    states[7],states[8],states[9],
+//    states[18],states[19],states[20],
+//    states[21],states[22],states[23]);
+//::printf("GPS llh: (%.1f %.1f %.1f) \n", gpsLat,gpsLon,_baro.get_altitude());
+//::printf("Ref llh: (%.1f %.1f %.1f) \n", latRef,lonRef,hgtRef);
+//::printf("onGround: %.1f \n", float(onGround));
+    
 }
 
 void NavEKF::UpdateFilter()
@@ -112,8 +139,9 @@ void NavEKF::UpdateFilter()
         // perform a covariance prediction if the total delta angle has exceeded the limit
         // or the time limit will be exceeded at the next IMU update
         // Do not predict covariance if magnetometer fusion still needs to be performed
-        if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)) && !magFuseStep)
+        if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)))// && !magFuseStep)
         {
+//::printf("Covariance Prediction dt: %.3f\n", dt);
             CovariancePrediction();
             covPredStep = true;
             summedDelAng.zero();
@@ -126,9 +154,9 @@ void NavEKF::UpdateFilter()
         }
 
         // Update states using GPS, altimeter, compass and airspeed observations
-        SelectVelPosFusion();
-        SelectMagFusion();
-        SelectTasFusion();
+        //SelectVelPosFusion();
+        //SelectMagFusion();
+        //SelectTasFusion();
     }
 }
 
@@ -150,6 +178,9 @@ void NavEKF::SelectVelPosFusion()
     // Don't wait longer than HGTmsecTgt msec between height updates
     if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecTgt)))
     {
+//::printf("Meas Hgt: %.1f\n",hgtMea);
+//::printf("Pred Hgt: %.1f\n",-states[9]);
+
         HGTmsecPrev = IMUmsec;
         fuseHgtData = true;
         readHgtData();
@@ -167,12 +198,13 @@ void NavEKF::SelectVelPosFusion()
 
 void NavEKF::SelectMagFusion()
 {
+    readMagData();
     // Fuse Magnetometer Measurements
-    if (statesInitialised && useCompass && !covPredStep && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
+    if (statesInitialised && useCompass && newDataMag)// && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
     {
         MAGmsecPrev = IMUmsec;
         fuseMagData = true;
-        readMagData();
+//::printf("Fuse Mag: (%.3f %.3f %.3f)\n",magData.x,magData.y,magData.z);
     }
     else
     {
@@ -187,11 +219,11 @@ void NavEKF::SelectMagFusion()
 
 void NavEKF::SelectTasFusion()
 {
+    readAirSpdData();
     // Fuse Airspeed Measurements
-    if (statesInitialised && useAirspeed && !onGround  && !covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
+    if (statesInitialised && useAirspeed && !onGround  && newDataTas)//!covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
     {
         TASmsecPrev = IMUmsec;
-        readAirSpdData();
         FuseAirspeed();
     }
     // protect against wrap-around
@@ -302,6 +334,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     delVelNav.y = Tbn.b.x*correctedDelVel.x + Tbn.b.y*correctedDelVel.y + Tbn.b.z*correctedDelVel.z + gravityNED.y*dtIMU;
     delVelNav.z = Tbn.c.x*correctedDelVel.x + Tbn.c.y*correctedDelVel.y + Tbn.c.z*correctedDelVel.z + gravityNED.z*dtIMU;
 
+::printf(" accNav: (%.4f %.4f %.4f) \n", delVelNav.x/dtIMU,delVelNav.y/dtIMU,delVelNav.z/dtIMU);
     // calculate the magnitude of the nav acceleration (required for GPS
     // variance estimation)
     accNavMag = delVelNav.length()/dtIMU;
@@ -312,6 +345,8 @@ void NavEKF::UpdateStrapdownEquationsNED()
     lastVelocity.y = states[5];
     lastVelocity.z = states[6];
 
+//::printf(" Vel: (%.1f %.1f %.1f) Pos: (%.1f %.1f %.1f) \n", states[4],states[5],states[6],states[7],states[8],states[9]);
+
     // Sum delta velocities to get velocity
     states[4] = states[4] + delVelNav.x;
     states[5] = states[5] + delVelNav.y;
@@ -321,7 +356,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     states[7] = states[7] + 0.5f*(states[4] + lastVelocity[0])*dtIMU;
     states[8] = states[8] + 0.5f*(states[5] + lastVelocity[1])*dtIMU;
     states[9] = states[9] + 0.5f*(states[6] + lastVelocity[2])*dtIMU;
-
 }
 
 void NavEKF::CovariancePrediction()
@@ -1223,7 +1257,8 @@ void NavEKF::FuseVelPosNED()
             hgtInnov = statesAtHgtTime[9] + hgtMea;
             varInnovVelPos[5] = P[9][9] + R_OBS[5];
             // apply a 10-sigma threshold
-            hgtHealth = (sq(hgtInnov) < (100.0f * varInnovVelPos[5]));
+//debug
+            hgtHealth = (sq(hgtInnov) < (1e6f * varInnovVelPos[5]));
             hgtTimeout = (hal.scheduler->millis() - hgtFailTime) > hgtRetryTime;
             if (hgtHealth || hgtTimeout)
             {
@@ -1287,6 +1322,18 @@ void NavEKF::FuseVelPosNED()
                 {
                     Kfusion[i] = P[i][stateIndex]*SK;
                 }
+
+if (obsIndex == 5)
+{
+::printf("K_fusion = ");
+                for (uint8_t i= 0; i<=23; i++)
+                {
+                    ::printf("%.2f, ",Kfusion[i]);
+                }
+::printf("\n");
+::printf("index =  %.1f, innov = %.2f, variance = %.4f\n",float(obsIndex),innovVelPos[obsIndex],varInnovVelPos[obsIndex]);
+}
+
                 // Calculate state corrections and re-normalise the quaternions
                 for (uint8_t i = 0; i<=23; i++)
                 {
@@ -1934,8 +1981,8 @@ void NavEKF::readIMUData()
     uint32_t IMUusec;
     Vector3f angRate;     // angular rate vector in XYZ body axes measured by the IMU (rad/s)
     Vector3f accel;       // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
-    Vector3f lastAngRate;
-    Vector3f lastAccel;
+    static Vector3f lastAngRate;
+    static Vector3f lastAccel;
 
     IMUusec     = hal.scheduler->micros();
     IMUmsec     = IMUusec/1000;
@@ -1984,15 +2031,33 @@ void NavEKF::readMagData()
     // scale compass data to improve numerical conditioning
     magData = _ahrs.get_compass()->get_field() * 0.001f;
     magBias = _ahrs.get_compass()->get_offsets() * 0.001f;
-    // Recall states from compass measurement time
-    RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
+    if ((magData.x != magDataPrev.x) && (magData.y != magDataPrev.y) && (magData.z != magDataPrev.z))
+    {
+        magDataPrev = magData;
+        // Recall states from compass measurement time
+        RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
+        newDataMag = true;
+    }
+    else
+    {
+        newDataMag = false;
+    }
 }
 
 void NavEKF::readAirSpdData()
 {
     if (!_ahrs.airspeed_estimate_true(&VtasMeas))
     {
-        RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
+        if (VtasMeas != VtasMeasPrev)
+        {
+            newDataTas = true;
+            VtasMeasPrev = VtasMeas;
+            RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
+        }
+        else
+        {
+            newDataTas = false;
+        }
     }
 }
 

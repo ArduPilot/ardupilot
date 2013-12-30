@@ -88,13 +88,16 @@ void setup()
     ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
 
     ::printf("Waiting for 3D fix\n");
-    while (g_gps->status() < GPS::GPS_OK_FIX_3D) {
+    uint8_t goodFrameCount = 0;
+    while (goodFrameCount <= 10) // wait for readings to stabilise
+    {
         LogReader.wait_type(LOG_GPS_MSG);
         g_gps->update();
         compass.read();
         barometer.read();
         LogReader.wait_type(LOG_IMU_MSG);
         ahrs.update();
+        if ((g_gps->status() >= GPS::GPS_OK_FIX_3D) && (ahrs.yaw_sensor != 0)) goodFrameCount +=1;
     }
 
     barometer.calibrate();
@@ -136,21 +139,6 @@ void loop()
                     degrees(ekf_euler.y),
                     degrees(ekf_euler.z));
                     
-            ::printf("t=%.3f ATT: (%.1f %.1f %.1f) AHRS: (%.1f %.1f %.1f) EKF: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
-                     hal.scheduler->millis() * 0.001f,
-                     LogReader.get_attitude().x,
-                     LogReader.get_attitude().y,
-                     LogReader.get_attitude().z,
-                     ahrs.roll_sensor*0.01f, 
-                     ahrs.pitch_sensor*0.01f,
-                     ahrs.yaw_sensor*0.01f,
-                     degrees(ekf_euler.x),
-                     degrees(ekf_euler.y),
-                     degrees(ekf_euler.z),
-                     barometer.get_altitude(),
-                     (unsigned)g_gps->status(),
-                     g_gps->latitude*1.0e-7f,
-                     g_gps->longitude*1.0e-7f);
                 break;
         }
 
