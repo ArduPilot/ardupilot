@@ -2,6 +2,8 @@
 
 #include <AP_HAL.h>
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+
 // uncomment this to force the optimisation of this code, note that 
 // this makes debugging harder
 // #pragma GCC optimize("O3")
@@ -2011,3 +2013,5 @@ void NavEKF::calcEarthRateNED(Vector3f &omega, float latitude)
     omega.y  = 0;
     omega.z  = -earthRate*sinf(latitude);
 }
+
+#endif // HAL_CPU_CLASS
