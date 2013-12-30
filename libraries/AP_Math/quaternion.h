@@ -64,6 +64,9 @@ public:
     // create eulers from a quaternion
     void        to_euler(float *roll, float *pitch, float *yaw) const;
 
+    float length(void) const;
+    void normalize();
+
     // allow a quaternion to be used as an array, 0 indexed
     float & operator[](uint8_t i) {
         float *_v = &q1;

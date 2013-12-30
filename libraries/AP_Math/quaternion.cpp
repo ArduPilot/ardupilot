@@ -87,3 +87,21 @@ void Quaternion::to_euler(float *roll, float *pitch, float *yaw) const
                       1 - 2.0f*(q3*q3 + q4*q4));
     }
 }
+
+float Quaternion::length(void) const
+{
+    return sqrtf(sq(q1) + sq(q2) + sq(q3) + sq(q4));
+}
+
+void Quaternion::normalize(void)
+{
+    float quatMag = length();
+    if (quatMag > 1e-16f)
+    {
+        float quatMagInv = 1.0f/quatMag;
+        q1 *= quatMagInv;
+        q2 *= quatMagInv;
+        q3 *= quatMagInv;
+        q4 *= quatMagInv;
+    }    
+}
