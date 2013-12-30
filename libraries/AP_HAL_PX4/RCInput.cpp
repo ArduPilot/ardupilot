@@ -89,10 +89,9 @@ void PX4RCInput::_timer_tick(void)
 	if (orb_check(_rc_sub, &rc_updated) == 0 && rc_updated) {
 		orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
 		_last_input = _rcin.timestamp;
-	} else if (hrt_absolute_time() - _last_input > 300000) {
-		// we've lost RC input, force channel 3 low
-		_rcin.values[2] = 900;
 	}
+        // note, we rely on the vehicle code checking valid_channels() 
+        // and a timeout for the last valid input to handle failsafe
 	perf_end(_perf_rcin);
 }
 
