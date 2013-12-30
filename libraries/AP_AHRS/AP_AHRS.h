@@ -98,6 +98,10 @@ public:
         _airspeed = airspeed;
     }
 
+    const AP_Airspeed *get_airspeed(void) const {
+        return _airspeed;
+    }
+
     const GPS *get_gps() const {
         return _gps;
     }
