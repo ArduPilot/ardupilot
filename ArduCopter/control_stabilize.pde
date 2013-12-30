@@ -126,8 +126,8 @@ static void stabilize_run()
 // althold_init - initialise althold controller
 static bool althold_init()
 {
-    // project stopping point
-    float alt_target = pos_control.get_stopping_point_z();
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
     return true;
 }
 
@@ -141,8 +141,9 @@ static void althold_run()
     int16_t target_climb_rate;
 
     // if not auto armed set throttle to zero and exit immediately
-    if(ap.auto_armed) {
+    if(!ap.auto_armed) {
         // To-Do: set target angles to zero or current attitude?
+        // To-Do: reset altitude target if we're somehow not landed?
         attitude_control.set_throttle_out(0, false);
         set_target_alt_for_reporting(0);
         return;
@@ -215,10 +216,10 @@ static void althold_run()
     if (!ap.land_complete) {
         if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
             // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(target_climb_rate);   // this function calls set_target_alt_for_reporting for us
+            get_throttle_surface_tracking(target_climb_rate);
         }else{
             // if no sonar fall back stabilize rate controller
-            pos_control.climb_at_rate(target_climb_rate);       // this function calls set_target_alt_for_reporting for us
+            pos_control.climb_at_rate(target_climb_rate);
         }
     }
 }

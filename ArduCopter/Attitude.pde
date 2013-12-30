@@ -853,13 +853,9 @@ void throttle_accel_deactivate()
 static void
 set_throttle_takeoff()
 {
-    // set alt target
-    controller_desired_alt = current_loc.alt + ALT_HOLD_TAKEOFF_JUMP;
+    // tell position controller to reset alt target and reset I terms
+    pos_control.init_takeoff();
 
-    // clear i term from acceleration controller
-    if (g.pid_throttle_accel.get_integrator() < 0) {
-        g.pid_throttle_accel.reset_I();
-    }
     // tell motors to do a slow start
     motors.slow_start(true);
 }
