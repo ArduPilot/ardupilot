@@ -99,7 +99,7 @@ px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 
 px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 	$(v) make -C $(PX4_ROOT) px4io-v2_default
-	$(v) /bin/rm -f px4io-v1.bin
+	$(v) /bin/rm -f px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.bin px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Images/px4io-v2_default.bin px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.elf px4io-v2.elf
