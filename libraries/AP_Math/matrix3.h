@@ -176,9 +176,9 @@ public:
     // transpose the matrix
     Matrix3<T>          transposed(void) const;
 
-    Matrix3<T>          transpose(void)
+    void transpose(void)
     {
-        return *this = transposed();
+        *this = transposed();
     }
 
     // zero the matrix
