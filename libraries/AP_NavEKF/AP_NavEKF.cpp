@@ -64,7 +64,6 @@ void NavEKF::InitialiseFilter(void)
     ahrsEul[1] = _ahrs.pitch_sensor*0.01f*DEG_TO_RAD;
     ahrsEul[2] = _ahrs.yaw_sensor*0.01f*DEG_TO_RAD;
     eul2quat(initQuat, ahrsEul);
-//::printf("ahrsEul: (%.3f %.3f %.3f) \n", ahrsEul[0],ahrsEul[1],ahrsEul[2]);
 
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
@@ -134,15 +133,6 @@ void NavEKF::InitialiseFilter(void)
     //Initialise IMU pre-processing states
     readIMUData();
 
-//::printf("Initial Vel: (%.1f %.1f %.1f) Pos: (%.1f %.1f %.1f) magNED: (%.3f %.3f %.3f) magXYZ: (%.3f %.3f %.3f)\n", 
-//    states[4],states[5],states[6],
-//    states[7],states[8],states[9],
-//    states[18],states[19],states[20],
-//    states[21],states[22],states[23]);
-//::printf("GPS llh: (%.1f %.1f %.1f) \n", gpsLat,gpsLon,_baro.get_altitude());
-//::printf("Ref llh: (%.1f %.1f %.1f) \n", latRef,lonRef,hgtRef);
-//::printf("onGround: %.1f \n", float(onGround));
-    
 }
 
 void NavEKF::UpdateFilter()
@@ -168,7 +158,6 @@ void NavEKF::UpdateFilter()
         // Do not predict covariance if magnetometer fusion still needs to be performed
         if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)))// && !magFuseStep)
         {
-//::printf("Covariance Prediction dt: %.3f\n", dt);
             CovariancePrediction();
             covPredStep = true;
             summedDelAng.zero();
@@ -182,7 +171,7 @@ void NavEKF::UpdateFilter()
 
         // Update states using GPS, altimeter, compass and airspeed observations
         SelectVelPosFusion();
-        //SelectMagFusion();
+        SelectMagFusion();
         //SelectTasFusion();
     }
 }
@@ -205,9 +194,6 @@ void NavEKF::SelectVelPosFusion()
     // Don't wait longer than HGTmsecTgt msec between height updates
     if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecTgt)))
     {
-//::printf("Meas Hgt: %.1f\n",hgtMea);
-//::printf("Pred Hgt: %.1f\n",-states[9]);
-
         HGTmsecPrev = IMUmsec;
         fuseHgtData = true;
         readHgtData();
@@ -227,7 +213,8 @@ void NavEKF::SelectMagFusion()
 {
     readMagData();
     // Fuse Magnetometer Measurements
-    if (statesInitialised && useCompass && newDataMag)// && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
+    if (statesInitialised && useCompass && newDataMag)
+    //if (statesInitialised && useCompass && newDataMag && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
     {
         MAGmsecPrev = IMUmsec;
         fuseMagData = true;
@@ -248,7 +235,8 @@ void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
     // Fuse Airspeed Measurements
-    if (statesInitialised && useAirspeed && !onGround  && newDataTas)//!covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
+    if (statesInitialised && useAirspeed && !onGround  && newDataTas)
+    //if (statesInitialised && useAirspeed && !onGround  && newDataTas && !covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
     {
         TASmsecPrev = IMUmsec;
         FuseAirspeed();
@@ -329,7 +317,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // * and + operators have been overloaded
     delVelNav = Tbn_temp*correctedDelVel + gravityNED*dtIMU;
 
-//::printf(" accNav: (%.4f %.4f %.4f) \n", delVelNav.x/dtIMU,delVelNav.y/dtIMU,delVelNav.z/dtIMU);
     // calculate the magnitude of the nav acceleration (required for GPS
     // variance estimation)
     accNavMag = delVelNav.length()/dtIMU;
@@ -339,8 +326,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     lastVelocity.x = states[4];
     lastVelocity.y = states[5];
     lastVelocity.z = states[6];
-
-//::printf(" Vel: (%.1f %.1f %.1f) Pos: (%.1f %.1f %.1f) \n", states[4],states[5],states[6],states[7],states[8],states[9]);
 
     // Sum delta velocities to get velocity
     states[4] = states[4] + delVelNav.x;
@@ -1189,8 +1174,6 @@ void NavEKF::FuseVelPosNED()
         for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
         for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
         observation[5] = -hgtMea;
-::printf("observation =  (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f \n",
-observation[0],observation[1],observation[2],observation[3],observation[4],observation[5]);
         // Estimate the GPS Velocity, GPS horiz position and height measurement variances.
         velErr = 0.2f*accNavMag; // additional error in GPS velocities caused by manoeuvring
         posErr = 0.2f*accNavMag; // additional error in GPS position caused by manoeuvring
@@ -1255,8 +1238,7 @@ observation[0],observation[1],observation[2],observation[3],observation[4],obser
             hgtInnov = statesAtHgtTime[9] - observation[5];
             varInnovVelPos[5] = P[9][9] + R_OBS[5];
             // apply a 10-sigma threshold
-//debug
-            hgtHealth = (sq(hgtInnov) < (1e6f * varInnovVelPos[5]));
+            hgtHealth = (sq(hgtInnov) < (100.0f * varInnovVelPos[5]));
             hgtTimeout = (hal.scheduler->millis() - hgtFailTime) > hgtRetryTime;
             if (hgtHealth || hgtTimeout)
             {
@@ -1320,18 +1302,6 @@ observation[0],observation[1],observation[2],observation[3],observation[4],obser
                 {
                     Kfusion[i] = P[i][stateIndex]*SK;
                 }
-
-if (obsIndex == 5)
-{
-::printf("index =  %.1f, obs = %.1f, pred = %.1f, innov = %.2f, variance = %.4f\n",float(obsIndex),observation[obsIndex],statesAtHgtTime[stateIndex],innovVelPos[obsIndex],varInnovVelPos[obsIndex]);
-::printf("K_fusion = ");
-                for (uint8_t i= 0; i<=23; i++)
-                {
-                    ::printf("%.2f, ",Kfusion[i]);
-                }
-::printf("\n");
-}
-
                 // Calculate state corrections and re-normalise the quaternions
                 for (uint8_t i = 0; i<=23; i++)
                 {
