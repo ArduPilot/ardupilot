@@ -65,7 +65,7 @@ static bool find_best_rally_point(const Location &myloc, const Location &homeloc
 // translate a RallyLocation to a Location
 static Location rally_location_to_location(const RallyLocation &r_loc, const Location &homeloc) 
 {
-    Location ret;
+    Location ret = {};
 
     ret.id = MAV_CMD_NAV_LOITER_UNLIM;
     ret.options = MASK_OPTIONS_RELATIVE_ALT;
@@ -84,8 +84,8 @@ static Location rally_location_to_location(const RallyLocation &r_loc, const Loc
 // return best RTL location from current position
 static Location rally_find_best_location(const Location &myloc, const Location &homeloc)
 {
-    RallyLocation ral_loc;
-    Location ret;
+    RallyLocation ral_loc = {};
+    Location ret = {};
     if (find_best_rally_point(myloc, home, ral_loc)) {
         //we have setup Rally points: use them instead of Home for RTL
         ret = rally_location_to_location(ral_loc, home);
