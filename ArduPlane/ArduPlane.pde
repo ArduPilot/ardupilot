@@ -809,6 +809,7 @@ static void ahrs_update()
 #endif
 
     ahrs.update();
+    NavEKF.UpdateFilter();
 
     if (should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();

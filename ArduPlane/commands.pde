@@ -240,6 +240,8 @@ static void init_home()
     guided_WP = home;
     guided_WP.alt += g.RTL_altitude_cm;
 
+    // startup EKF now we have home
+    NavEKF.InitialiseFilter();
 }
 
 /*

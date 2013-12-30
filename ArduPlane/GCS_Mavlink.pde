@@ -528,6 +528,22 @@ static void NOINLINE send_simstate(mavlink_channel_t chan)
 #endif
 }
 
+// report NavEKF state
+static void NOINLINE send_ekf(mavlink_channel_t chan)
+{
+    Vector3f euler;
+    struct Location loc;
+    NavEKF.getEulerAngles(euler);
+    NavEKF.getLLH(loc);
+    mavlink_msg_ekf_send(chan,
+                         euler.x,
+                         euler.y,
+                         euler.z,
+                         loc.alt*1.0e-2f,
+                         loc.lat,
+                         loc.lng);
+}
+
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {
     mavlink_msg_hwstatus_send(
@@ -725,6 +741,8 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
+        CHECK_PAYLOAD_SIZE(EKF);
+        send_ekf(chan);
         break;
 
     case MSG_HWSTATUS:
