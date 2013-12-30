@@ -241,7 +241,9 @@ static void init_home()
     guided_WP.alt += g.RTL_altitude_cm;
 
     // startup EKF now we have home
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
     NavEKF.InitialiseFilter();
+#endif
 }
 
 /*

@@ -203,6 +203,7 @@ struct PACKED log_EKF {
 // Write an EKF packet
 static void Log_Write_EKF(void)
 {
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
     Vector3f euler;
     struct Location loc;
     NavEKF.getEulerAngles(euler);
@@ -218,6 +219,7 @@ static void Log_Write_EKF(void)
         lon     : loc.lng
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+#endif
 }
 
 struct PACKED log_Performance {
