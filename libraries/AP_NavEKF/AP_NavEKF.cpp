@@ -1359,8 +1359,15 @@ void NavEKF::FuseMagnetometer()
     // associated with sequential fusion
     if (fuseMagData || obsIndex == 1 || obsIndex == 2)
     {
-        // Sequential fusion of XYZ components to spread processing load across
-        // three prediction time steps.
+        // Prevent access last 11 states when on ground.
+        if (!onGround)
+        {
+            indexLimit = 23;
+        }
+        else
+        {
+            indexLimit = 12;
+        }
         // Calculate observation jacobians and Kalman gains
         if (fuseMagData)
         {
@@ -1561,15 +1568,6 @@ void NavEKF::FuseMagnetometer()
         // Check the innovation for consistency and don't fuse if > 5Sigma
         if ((innovMag[obsIndex]*innovMag[obsIndex]/varInnovMag[obsIndex]) < 25.0f)
         {
-            // Limit access to first 13 states when on ground.
-            if (!onGround)
-            {
-                indexLimit = 23;
-            }
-            else
-            {
-                indexLimit = 12;
-            }
             // correct the state vector
             for (uint8_t j= 0; j<=indexLimit; j++)
             {
@@ -1588,30 +1586,43 @@ void NavEKF::FuseMagnetometer()
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
-            for (uint8_t i = 0; i<=23; i++)
+            for (uint8_t i = 0; i<=indexLimit; i++)
             {
                 for (uint8_t j = 0; j<=3; j++)
                 {
                     KH[i][j] = Kfusion[i] * H_MAG[j];
                 }
-                for (uint8_t j = 4; j<=17; j++) KH[i][j] = 0.0;
-                for (uint8_t j = 18; j<=23; j++)
+                for (uint8_t j = 4; j<=17; j++) KH[i][j] = 0.0f;
+                if (!onGround)
                 {
-                    KH[i][j] = Kfusion[i] * H_MAG[j];
+                    for (uint8_t j = 18; j<=23; j++)
+                    {
+                        KH[i][j] = Kfusion[i] * H_MAG[j];
+                    }
+                }
+                else
+                {
+                    for (uint8_t j = 18; j<=23; j++)
+                    {
+                        KH[i][j] = 0.0f;
+                    }
                 }
             }
-            for (uint8_t i = 0; i<=23; i++)
+            for (uint8_t i = 0; i<=indexLimit; i++)
             {
-                for (uint8_t j = 0; j<=23; j++)
+                for (uint8_t j = 0; j<=indexLimit; j++)
                 {
                     KHP[i][j] = 0;
                     for (uint8_t k = 0; k<=3; k++)
                     {
                         KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
                     }
-                    for (uint8_t k = 18; k<=23; k++)
+                    if (!onGround)
                     {
-                        KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
+                        for (uint8_t k = 18; k<=23; k++)
+                        {
+                            KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
+                        }
                     }
                 }
             }
