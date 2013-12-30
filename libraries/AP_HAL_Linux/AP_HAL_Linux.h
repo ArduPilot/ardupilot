@@ -27,8 +27,11 @@
  * `void setup()` and `void loop()`, ala Arduino.
  */
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
 #include "HAL_Linux_Class.h"
 #include "AP_HAL_Linux_Main.h"
 
+#endif // CONFIG_HAL_BOARD
 #endif //__AP_HAL_LINUX_H__
 
