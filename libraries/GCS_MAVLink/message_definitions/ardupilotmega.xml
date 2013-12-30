@@ -426,5 +426,14 @@
       </message>
 -->
 
+	  <message name="EKF" id="178">
+	    <description>Status of NavEKF filter</description>
+            <field type="float" name="roll">Roll angle (rad)</field>
+            <field type="float" name="pitch">Pitch angle (rad)</field>
+            <field type="float" name="yaw">Yaw angle (rad)</field>
+            <field type="float" name="altitude">Altitude (MSL)</field>
+            <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
+            <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
+	  </message>
      </messages>
 </mavlink>
