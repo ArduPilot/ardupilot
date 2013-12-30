@@ -171,7 +171,6 @@ private:
     Vector3f velNED; // North, East, Down velocity measurements (m/s)
     Vector2 posNE; // North, East position measurements (m)
     float hgtMea; //  height measurement relative to reference point  (m)
-    Vector3f posNED; // North, East Down position relative to reference point (m)
     Vector24 statesAtVelTime; // States at the effective time of velNED measurements
     Vector24 statesAtPosTime; // States at the effective time of posNE measurements
     Vector24 statesAtHgtTime; // States at the effective time of hgtMea measurement

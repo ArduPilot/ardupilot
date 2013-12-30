@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define MATH_CHECK_INDEXES 1
+// #define MATH_CHECK_INDEXES 1
 
 #include <AP_HAL.h>
 #include "AP_NavEKF.h"
@@ -20,7 +20,7 @@ extern const AP_HAL::HAL& hal;
 NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
-    useAirspeed(false),
+    useAirspeed(true),
     useCompass(true),
     fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
@@ -172,7 +172,7 @@ void NavEKF::UpdateFilter()
         // Update states using GPS, altimeter, compass and airspeed observations
         SelectVelPosFusion();
         SelectMagFusion();
-        //SelectTasFusion();
+        SelectTasFusion();
     }
 }
 
@@ -1887,14 +1887,13 @@ void NavEKF::calcposNE(float lat, float lon)
     posNE[1] = RADIUS_OF_EARTH * cosf(latRef) * (lon - lonRef);
 }
 
-#if 0
-void NavEKF::calcLLH(float &lat, float &lon, float &hgt)
+bool NavEKF::getLLH(struct Location &loc)
 {
-    lat = latRef + posNED[0] / RADIUS_OF_EARTH;
-    lon = lonRef + (posNED[1] / RADIUS_OF_EARTH) / cosf(latRef);
-    hgt = hgtRef - posNED[2];
+    loc.lat = 1.0e7 * degrees(latRef + states[7] / RADIUS_OF_EARTH);
+    loc.lng = 1.0e7 * degrees(lonRef + (states[8] / RADIUS_OF_EARTH) / cosf(latRef));
+    loc.alt = 1.0e2 * (hgtRef - states[9]);
+    return true;
 }
-#endif
 
 void NavEKF::OnGroundCheck()
 {
