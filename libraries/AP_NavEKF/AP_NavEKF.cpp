@@ -26,8 +26,10 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     TASmsecTgt(250), // target interal between airspeed measurement updates
-    MAGmsecTgt(300), // target interval between magnetometer measurement updates
-    HGTmsecTgt(250), // maximum interval between height measurement updates
+    TASmsecMax(500), // maximum allowed interal between airspeed measurement updates
+    MAGmsecTgt(333), // target interval between magnetometer measurement updates
+    MAGmsecMax(500), // maximum allowed interval between magnetometer measurement updates
+    HGTmsecMax(250), // maximum interval between height measurement updates
     msecVelDelay(230), // msec of GPS velocity delay
     msecPosDelay(210), // msec of GPS position delay
     msecHgtDelay(350), // msec of barometric height delay
@@ -156,7 +158,7 @@ void NavEKF::UpdateFilter()
         // perform a covariance prediction if the total delta angle has exceeded the limit
         // or the time limit will be exceeded at the next IMU update
         // Do not predict covariance if magnetometer fusion still needs to be performed
-        if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)))// && !magFuseStep)
+        if ((((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))) && !magFuseRequired)
         {
             CovariancePrediction();
             covPredStep = true;
@@ -191,8 +193,8 @@ void NavEKF::SelectVelPosFusion()
         fusePosData = false;
     }
     // Fuse height measurements at the same time as GPS measurements for efficiency
-    // Don't wait longer than HGTmsecTgt msec between height updates
-    if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecTgt)))
+    // Don't wait longer than HGTmsecMax msec between height updates
+    if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecMax)))
     {
         HGTmsecPrev = IMUmsec;
         fuseHgtData = true;
@@ -212,13 +214,11 @@ void NavEKF::SelectVelPosFusion()
 void NavEKF::SelectMagFusion()
 {
     readMagData();
-    // Fuse Magnetometer Measurements
-    if (statesInitialised && useCompass && newDataMag)
-    //if (statesInitialised && useCompass && newDataMag && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt))
+    // Fuse Magnetometer Measurements - hold off if covariance prediction has occurred, unless maximum time interval exceeded
+    if (statesInitialised && useCompass && newDataMag && ((!covPredStep && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt)) || ((IMUmsec - MAGmsecPrev) >= MAGmsecMax)))
     {
         MAGmsecPrev = IMUmsec;
         fuseMagData = true;
-//::printf("Fuse Mag: (%.3f %.3f %.3f)\n",magData.x,magData.y,magData.z);
     }
     else
     {
@@ -234,9 +234,8 @@ void NavEKF::SelectMagFusion()
 void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
-    // Fuse Airspeed Measurements
-    if (statesInitialised && useAirspeed && !onGround  && newDataTas)
-    //if (statesInitialised && useAirspeed && !onGround  && newDataTas && !covPredStep && !magFuseStep && ((IMUmsec - TASmsecPrev) >= TASmsecTgt))
+    // Fuse Airspeed Measurements - hold off if covariance prediction or magnetometer fusion has been performed, unless maximum time interval exceeded
+    if (statesInitialised && useAirspeed && !onGround  && newDataTas && ((!covPredStep && !magFusePerformed && ((IMUmsec - TASmsecPrev) >= TASmsecTgt)) || ((IMUmsec - TASmsecPrev) >= TASmsecMax)))
     {
         TASmsecPrev = IMUmsec;
         FuseAirspeed();
@@ -1460,8 +1459,9 @@ void NavEKF::FuseMagnetometer()
             // reset the observation index to 0 (we start by fusing the X
             // measurement)
             obsIndex = 0;
-            // Set flag to indicate to other processes that magnetometer fusion is performed on this time step
-            magFuseStep = true;
+            // set flags to indicate to other processes that fusion has been perfomred and is required on the next time step
+            magFusePerformed = true;
+            magFuseRequired = true;
         }
         else if (obsIndex == 1) // we are now fusing the Y measurement
         {
@@ -1509,8 +1509,9 @@ void NavEKF::FuseMagnetometer()
             Kfusion[22] = SK_MY[0]*(P[22][22] + P[22][0]*SH_MAG[2] + P[22][1]*SH_MAG[1] + P[22][2]*SH_MAG[0] - P[22][3]*SK_MY[2] - P[22][19]*SK_MY[1] - P[22][18]*SK_MY[3] + P[22][20]*SK_MY[4]);
             Kfusion[23] = SK_MY[0]*(P[23][22] + P[23][0]*SH_MAG[2] + P[23][1]*SH_MAG[1] + P[23][2]*SH_MAG[0] - P[23][3]*SK_MY[2] - P[23][19]*SK_MY[1] - P[23][18]*SK_MY[3] + P[23][20]*SK_MY[4]);
             varInnovMag[1] = 1.0f/SK_MY[0];
-            // Set flag to indicate to other processes that magnetometer fusion is performed on this time step
-            magFuseStep = true;
+            // set flags to indicate to other processes that fusion has been perfomred and is  required on the next time step
+            magFusePerformed = true;
+            magFuseRequired = true;
         }
         else if (obsIndex == 2) // we are now fusing the Z measurement
         {
@@ -1559,8 +1560,9 @@ void NavEKF::FuseMagnetometer()
             Kfusion[22] = SK_MZ[0]*(P[22][23] + P[22][0]*SH_MAG[1] + P[22][3]*SH_MAG[0] - P[22][1]*SK_MZ[2] + P[22][2]*SK_MZ[3] + P[22][20]*SK_MZ[1] + P[22][18]*SK_MZ[5] - P[22][19]*SK_MZ[4]);
             Kfusion[23] = SK_MZ[0]*(P[23][23] + P[23][0]*SH_MAG[1] + P[23][3]*SH_MAG[0] - P[23][1]*SK_MZ[2] + P[23][2]*SK_MZ[3] + P[23][20]*SK_MZ[1] + P[23][18]*SK_MZ[5] - P[23][19]*SK_MZ[4]);
             varInnovMag[2] = 1.0f/SK_MZ[0];
-            // Set flag to indicate to other processes that magnetometer fusion is performed on this time step
-            magFuseStep = true;
+            // set flags to indicate to other processes that fusion has been perfomred and is not required on the next time step
+            magFusePerformed = true;
+            magFuseRequired = false;
         }
         // Calculate the measurement innovation
         innovMag[obsIndex] = MagPred[obsIndex] - magData[obsIndex];
@@ -1624,8 +1626,9 @@ void NavEKF::FuseMagnetometer()
     }
     else
     {
-        // clear flag to indicate to other processes that magnetometer fusion is not performed on this time step
-        magFuseStep = false;
+        // set flags to indicate to other processes that fusion has not been performed and is not required on the next time step
+    magFusePerformed = false;
+    magFuseRequired = false;
     }
 }
 
@@ -1879,6 +1882,13 @@ void NavEKF::getEulerAngles(Vector3f &euler)
 {
     Quaternion q(states[0], states[1], states[2], states[3]);
     quat2eul(euler, q);
+}
+
+void NavEKF::getVelNED(Vector3f &vel)
+{
+    vel.x = states[4];
+    vel.y = states[5];
+    vel.z = states[6];
 }
 
 void NavEKF::calcposNE(float lat, float lon)
