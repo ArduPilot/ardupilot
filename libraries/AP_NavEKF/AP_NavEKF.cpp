@@ -5,10 +5,12 @@
 #include <AP_HAL.h>
 #include "AP_NavEKF.h"
 #include <stdio.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,6 +38,7 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     mag_state.DCM.identity();
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static void write_float(float v)
 {
     static int _fd = -1;
@@ -51,6 +54,7 @@ static void write_floats(float *v, uint8_t n)
         write_float(v[i]);
     }
 }
+#endif
 
 void NavEKF::InitialiseFilter(void)
 {
