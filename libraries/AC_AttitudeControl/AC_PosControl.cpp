@@ -61,12 +61,11 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 /// z-axis position controller
 ///
 
-/// get_stopping_point_z - returns reasonable stopping altitude in cm above home
-float AC_PosControl::get_stopping_point_z()
+/// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
+void AC_PosControl::set_target_to_stopping_point_z()
 {
     const Vector3f& curr_pos = _inav.get_position();
     const Vector3f& curr_vel = _inav.get_velocity();
-    float target_alt;
     float linear_distance;  // half the distace we swap between linear and sqrt and the distace we offset sqrt
     float linear_velocity;  // the velocity we swap between linear and sqrt
 
@@ -75,23 +74,36 @@ float AC_PosControl::get_stopping_point_z()
 
     if (fabs(curr_vel.z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
-        target_alt = curr_pos.z + curr_vel.z/_pi_alt_pos.kP();
+        _pos_target.z = curr_pos.z + curr_vel.z/_pi_alt_pos.kP();
     } else {
         linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_pi_alt_pos.kP()*_pi_alt_pos.kP());
         if (curr_vel.z > 0){
-            target_alt = curr_pos.z + (linear_distance + curr_vel.z*curr_vel.z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+            _pos_target.z = curr_pos.z + (linear_distance + curr_vel.z*curr_vel.z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
         } else {
-            target_alt = curr_pos.z - (linear_distance + curr_vel.z*curr_vel.z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+            _pos_target.z = curr_pos.z - (linear_distance + curr_vel.z*curr_vel.z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
         }
     }
-    return constrain_float(target_alt, curr_pos.z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos.z + POSCONTROL_STOPPING_DIST_Z_MAX);
+    _pos_target.z = constrain_float(_pos_target.z, curr_pos.z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos.z + POSCONTROL_STOPPING_DIST_Z_MAX);
 }
 
-/// fly_to_z - fly to altitude in cm above home
-void AC_PosControl::fly_to_z(const float alt_cm)
+/// init_takeoff - initialises target altitude if we are taking off
+void AC_PosControl::init_takeoff()
+{
+    const Vector3f& curr_pos = _inav.get_position();
+
+    _pos_target.z = curr_pos.z + POSCONTROL_TAKEOFF_JUMP_CM;
+
+    // clear i term from acceleration controller
+    if (_pid_alt_accel.get_integrator() < 0) {
+        _pid_alt_accel.reset_I();
+    }
+}
+
+/// fly_to_target_z - fly to altitude in cm above home
+void AC_PosControl::fly_to_target_z()
 {
     // call position controller
-    pos_to_rate_z(alt_cm);
+    pos_to_rate_z();
 }
 
 /// climb_at_rate - climb at rate provided in cm/s
@@ -126,19 +138,19 @@ void AC_PosControl::climb_at_rate(const float rate_target_cms)
     }
 
     // call position controller
-    pos_to_rate_z(_pos_target.z);
+    pos_to_rate_z();
 }
 
 // pos_to_rate_z - position to rate controller for Z axis
 // calculates desired rate in earth-frame z axis and passes to rate controller
 // vel_up_max, vel_down_max should have already been set before calling this method
-void AC_PosControl::pos_to_rate_z(float alt_cm)
+void AC_PosControl::pos_to_rate_z()
 {
     const Vector3f& curr_pos = _inav.get_position();
     float linear_distance;  // half the distace we swap between linear and sqrt and the distace we offset sqrt.
 
     // calculate altitude error
-    _pos_error.z = alt_cm - curr_pos.z;
+    _pos_error.z = _pos_target.z - curr_pos.z;
 
     // check kP to avoid division by zero
     if (_pi_alt_pos.kP() != 0) {

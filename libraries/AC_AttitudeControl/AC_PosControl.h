@@ -22,6 +22,7 @@
 #define POSCONTROL_STOPPING_DIST_Z_MAX          200.0f  // max stopping distance vertically   
                                                         // should be 1.5 times larger than POSCONTROL_ACCELERATION.
                                                         // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
+#define POSCONTROL_TAKEOFF_JUMP_CM               20.0f  // during take-off altitude target is set to current altitude + this value
 
 #define POSCONTROL_SPEED                        500.0f  // maximum default loiter speed in cm/s
 #define POSCONTROL_VEL_Z_MIN                   -150.0f  // default minimum climb velocity (i.e. max descent rate).  To-Do: subtract 250 from this?
@@ -50,7 +51,7 @@ public:
 
     /// set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec) { _dt = delta_sec; }
-    float get_dt() { return _dt; }
+    float get_dt() const { return _dt; }
 
     /// set_alt_max - sets maximum altitude above home in cm
     /// set to zero to disable limit
@@ -65,11 +66,19 @@ public:
     /// z position controller
     ///
 
-    /// get_stopping_point_z - returns reasonable stopping altitude in cm above home
-    float get_stopping_point_z();
+    void set_alt_target(float alt_cm) { _pos_target.z = alt_cm; }
+    float get_alt_target() const { return _pos_target.z; }
+    /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
+    float get_desired_alt() const { return _pos_target.z; }
+
+    /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
+    void set_target_to_stopping_point_z();
+
+    /// init_takeoff - initialises target altitude if we are taking off
+    void init_takeoff();
 
     /// fly_to_z - fly to altitude in cm above home
-    void fly_to_z(const float alt_cm);
+    void fly_to_target_z();
 
     /// climb_at_rate - climb at rate provided in cm/s
     void climb_at_rate(const float rate_target_cms);
@@ -108,8 +117,6 @@ public:
     int32_t get_desired_roll() const { return _desired_roll; };
     int32_t get_desired_pitch() const { return _desired_pitch; };
 */
-    /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
-    float get_desired_alt() const { return _pos_target.z; }
 
     /// set_cos_sin_yaw - short-cut to save on calculations to convert from roll-pitch frame to lat-lon frame
     void set_cos_sin_yaw(float cos_yaw, float sin_yaw, float cos_pitch) {
@@ -153,7 +160,11 @@ private:
     } _limit;
 
     // pos_to_rate_z - position to rate controller for Z axis
-    void pos_to_rate_z(float alt_cm);
+    // target altitude should be placed into _pos_target.z using or set with one of these functions
+    //          set_alt_target
+    //          set_target_to_stopping_point_z
+    //          init_takeoff
+    void pos_to_rate_z();
 
     // rate_to_accel_z - calculates desired accel required to achieve the velocity target
     void rate_to_accel_z(float vel_target_z);
