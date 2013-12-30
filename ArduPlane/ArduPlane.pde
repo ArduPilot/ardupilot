@@ -811,8 +811,10 @@ static void ahrs_update()
     ahrs.update();
     NavEKF.UpdateFilter();
 
-    if (should_log(MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+        Log_Write_EKF();
+    }
 
     if (should_log(MASK_LOG_IMU))
         Log_Write_IMU();
@@ -893,8 +895,10 @@ static void barometer_accumulate(void)
  */
 static void update_logging1(void)
 {
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+        Log_Write_EKF();
+    }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
         Log_Write_IMU();

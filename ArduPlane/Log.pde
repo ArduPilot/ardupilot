@@ -174,7 +174,7 @@ struct PACKED log_Attitude {
     uint16_t error_yaw;
 };
 
-// Write an attitude packet. Total length : 10 bytes
+// Write an attitude packet
 static void Log_Write_Attitude(void)
 {
     struct log_Attitude pkt = {
@@ -185,6 +185,37 @@ static void Log_Write_Attitude(void)
         yaw   : (uint16_t)ahrs.yaw_sensor,
         error_rp  : (uint16_t)(ahrs.get_error_rp() * 100),
         error_yaw : (uint16_t)(ahrs.get_error_yaw() * 100)
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+struct PACKED log_EKF {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    float   alt;
+    int32_t lat;
+    int32_t lon;
+};
+
+// Write an EKF packet
+static void Log_Write_EKF(void)
+{
+    Vector3f euler;
+    struct Location loc;
+    NavEKF.getEulerAngles(euler);
+    NavEKF.getLLH(loc);
+    struct log_EKF pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF_MSG),
+        time_ms : hal.scheduler->millis(),
+        roll    : (int16_t)(100*degrees(euler.x)),
+        pitch   : (int16_t)(100*degrees(euler.y)),
+        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)),
+        alt     : loc.alt*1.0e-2f,
+        lat     : loc.lat,
+        lon     : loc.lng
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -579,6 +610,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
+    { LOG_EKF_MSG, sizeof(log_EKF),
+      "EKF", "IccCfLL", "TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" },
     TECS_LOG_FORMAT(LOG_TECS_MSG),
 };
 
@@ -622,6 +655,7 @@ static void Log_Write_Nav_Tuning() {}
 static void Log_Write_TECS_Tuning() {}
 static void Log_Write_Performance() {}
 static void Log_Write_Attitude() {}
+static void Log_Write_EKF() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Camera() {}
 static void Log_Write_Mode(uint8_t mode) {}
