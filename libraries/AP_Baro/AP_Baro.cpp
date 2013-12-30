@@ -142,8 +142,8 @@ float AP_Baro::get_altitude(void)
     }
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    // on AVR use a less exact, but faster, calculation
+#if HAL_CPU_CLASS <= HAL_CPU_CLASS_16
+    // on slower CPUs use a less exact, but faster, calculation
     scaling                                 = (float)_ground_pressure / (float)get_pressure();
     temp                                    = ((float)_ground_temperature) + 273.15f;
     _altitude = logf(scaling) * temp * 29.271267f;
