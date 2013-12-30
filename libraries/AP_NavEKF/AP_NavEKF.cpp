@@ -22,10 +22,8 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
-    TASmsecTgt(250), // target interal between airspeed measurement updates
-    TASmsecMax(500), // maximum allowed interal between airspeed measurement updates
-    MAGmsecTgt(333), // target interval between magnetometer measurement updates
-    MAGmsecMax(500), // maximum allowed interval between magnetometer measurement updates
+    TASmsecMax(333), // maximum allowed interal between airspeed measurement updates
+    MAGmsecMax(333), // maximum allowed interval between magnetometer measurement updates
     HGTmsecMax(250), // maximum interval between height measurement updates
     msecVelDelay(230), // msec of GPS velocity delay
     msecPosDelay(210), // msec of GPS position delay
@@ -143,7 +141,7 @@ void NavEKF::UpdateFilter()
         // perform a covariance prediction if the total delta angle has exceeded the limit
         // or the time limit will be exceeded at the next IMU update
         // Do not predict covariance if magnetometer fusion still needs to be performed
-        if ((((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))) && !magFuseRequired)
+        if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)))
         {
             CovariancePrediction();
             covPredStep = true;
@@ -166,42 +164,52 @@ void NavEKF::UpdateFilter()
 
 void NavEKF::SelectVelPosFusion()
 {
-    // Command fusion of GPS measurements if new ones available
-    readGpsData();
-    if (statesInitialised && newDataGps)
+    if (statesInitialised)
     {
-        fuseVelData = true;
-        fusePosData = true;
-    }
-    else
-    {
-        fuseVelData = false;
-        fusePosData = false;
-    }
-    // Fuse height measurements at the same time as GPS measurements for efficiency
-    // Don't wait longer than HGTmsecMax msec between height updates
-    if (statesInitialised && (newDataGps || ((IMUmsec - HGTmsecPrev) >= HGTmsecMax)))
-    {
-        HGTmsecPrev = IMUmsec;
-        fuseHgtData = true;
+        // Command fusion of GPS measurements if new ones available
+        readGpsData();
         readHgtData();
-    }
-    else
-    {
-        fuseHgtData = false;
+        if (newDataGps)
+        {
+            fuseVelData = true;
+            fusePosData = true;
+            fuseHgtData = true;
+        }
+        // Don't wait longer than HGTmsecMax msec between height updates
+        // if no GPS
+        else if ((IMUmsec - HGTmsecPrev) >= HGTmsecMax)
+        {
+            fuseVelData = false;
+            fusePosData = false;
+            fuseHgtData = true;
+        }
+        else
+        {
+            fuseVelData = false;
+            fusePosData = false;
+            fuseHgtData = false;
+        }
+        // set flag to let other processes know that GPS and/or height fusion has
+        // ocurred in this frame
+        if (fuseVelData || fusePosData || fuseHgtData) 
+        {
+            FuseVelPosNED();
+            newDataGps = false;
+            posVelFuseStep = true;
+        }
+        else
+        {
+            posVelFuseStep = false;
+        }
         // protect against wrap-around
         if(IMUmsec < HGTmsecPrev) HGTmsecPrev = IMUmsec;
-
     }
-    FuseVelPosNED();
-    newDataGps = false;
 }
-
 void NavEKF::SelectMagFusion()
 {
     readMagData();
-    // Fuse Magnetometer Measurements - hold off if covariance prediction has occurred, unless maximum time interval exceeded
-    if (statesInitialised && useCompass && newDataMag && ((!covPredStep && ((IMUmsec - MAGmsecPrev) >= MAGmsecTgt)) || ((IMUmsec - MAGmsecPrev) >= MAGmsecMax)))
+    // Fuse Magnetometer Measurements - hold off if pos/vel fusion has occurred, unless maximum time interval exceeded
+    if (statesInitialised && useCompass && newDataMag && (!posVelFuseStep || ((IMUmsec - MAGmsecPrev) >= MAGmsecMax)))
     {
         MAGmsecPrev = IMUmsec;
         fuseMagData = true;
@@ -212,16 +220,15 @@ void NavEKF::SelectMagFusion()
         // protect against wrap-around
         if(IMUmsec < MAGmsecPrev) MAGmsecPrev = IMUmsec;
     }
-    // Magnetometer fusion is always called if enabled because its fusion is spread across 3 time steps
-    // to reduce peak load
+    // Magnetometer fusion is always called if enabled because its fusion is spread across 3 time steps to reduce peak load
     FuseMagnetometer();
 }
 
 void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
-    // Fuse Airspeed Measurements - hold off if covariance prediction or magnetometer fusion has been performed, unless maximum time interval exceeded
-    if (statesInitialised && useAirspeed && !onGround  && newDataTas && ((!covPredStep && !magFusePerformed && ((IMUmsec - TASmsecPrev) >= TASmsecTgt)) || ((IMUmsec - TASmsecPrev) >= TASmsecMax)))
+    // Fuse Airspeed Measurements - hold off if pos/vel or magnetometer fusion has been performed, unless maximum time interval exceeded
+    if (statesInitialised && useAirspeed && !onGround  && newDataTas && ((!posVelFuseStep && !magFusePerformed) || ((IMUmsec - TASmsecPrev) >= TASmsecMax)))
     {
         TASmsecPrev = IMUmsec;
         FuseAirspeed();

@@ -225,10 +225,8 @@ private:
     bool posVelFuseStep; // boolean set to true when position and velocity fusion is being performed
     bool tasFuseStep; // boolean set to true when airspeed fusion is being performed
     uint32_t TASmsecPrev; // time stamp of last TAS fusion step
-    const uint32_t TASmsecTgt; // target interval between TAS fusion steps
     const uint32_t TASmsecMax; // maximum allowed interval between TAS fusion steps
     uint32_t MAGmsecPrev; // time stamp of last compass fusion step
-    const uint32_t MAGmsecTgt; // target interval between compass fusion steps
     const uint32_t MAGmsecMax; // maximum allowed interval between compass fusion steps
     uint32_t HGTmsecPrev; // time stamp of last height measurement fusion step
     const uint32_t HGTmsecMax; // maximum allowed interval between height measurement fusion steps
