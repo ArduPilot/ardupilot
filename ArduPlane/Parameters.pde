@@ -267,6 +267,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
+
+    // @Param: FENCE_RETALT
+    // @DisplayName: Fence Return Altitude
+    // @Description: Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is <= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT < FENCE_MINALT.  If FENCE_MAXALT < FENCE_MINALT AND FENCE_RETALT is <= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.
+    // @Units: meters
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
 #endif
 
     // @Param: RALLY_TOTAL

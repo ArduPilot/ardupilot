@@ -103,6 +103,9 @@ public:
         // 100: Arming parameters
         k_param_arming = 100,
 
+        // 105: Extra parameters
+        k_param_fence_retalt = 105,
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,         // stream rates for uartA
@@ -328,6 +331,7 @@ public:
     AP_Int8 fence_channel;
     AP_Int16 fence_minalt;    // meters
     AP_Int16 fence_maxalt;    // meters
+    AP_Int16 fence_retalt;    // meters
 #endif
 
     AP_Int8 rally_total;
