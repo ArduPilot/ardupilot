@@ -224,6 +224,11 @@ private:
     uint32_t MAGtime;
     uint32_t lastMAGtime;
     bool newDataMag;
+    Vector3f magDataPrev;
+
+    // TAS input variables
+    bool newDataTas;
+    float VtasMeasPrev;
 
     // AHRS input data variables
     float ahrsEul[3];
