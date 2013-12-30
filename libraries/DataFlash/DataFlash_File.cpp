@@ -9,7 +9,7 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if HAL_OS_POSIX_IO
 #include "DataFlash.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -536,4 +536,5 @@ void DataFlash_File::_io_timer(void)
     }
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // HAL_OS_POSIX_IO
+
