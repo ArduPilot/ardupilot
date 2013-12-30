@@ -1,4 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#define MATH_CHECK_INDEXES 1
+
 #include <AP_HAL.h>
 #include "AP_NavEKF.h"
 #include <stdio.h>
@@ -52,7 +55,7 @@ static void write_floats(float *v, uint8_t n)
 void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
-    float initQuat[4];
+    Quaternion initQuat;
     ahrsEul[0] = _ahrs.roll_sensor*0.01f*DEG_TO_RAD;
     ahrsEul[1] = _ahrs.pitch_sensor*0.01f*DEG_TO_RAD;
     ahrsEul[2] = _ahrs.yaw_sensor*0.01f*DEG_TO_RAD;
@@ -265,10 +268,10 @@ void NavEKF::UpdateStrapdownEquationsNED()
     float q23;
     float rotationMag;
     float rotScaler;
-    float qUpdated[4];
+    Quaternion qUpdated;
     float quatMag;
     float quatMagInv;
-    float deltaQuat[4];
+    Quaternion deltaQuat;
     const Vector3f gravityNED(0, 0, GRAVITY_MSS);
 
     // Remove sensor bias errors
@@ -410,12 +413,12 @@ void NavEKF::CovariancePrediction()
     float dvz_b;
 
     // arrays
-    float processNoise[24];
-    float SF[21];
-    float SG[8];
-    float SQ[11];
-    float SPP[13];
-    float nextP[24][24];
+    Vector24 processNoise;
+    VectorN<float,21> SF;
+    VectorN<float,8> SG;
+    VectorN<float,11> SQ;
+    VectorN<float,13> SPP;
+    Matrix24 nextP;
 
     // calculate covariance prediction process noise
     windVelSigma  = dt * 0.1f;
@@ -1172,17 +1175,17 @@ void NavEKF::FuseVelPosNED()
     uint32_t gpsRetryTimeNoTAS = 5000; // retry time if no TAS measurement available
     uint32_t hgtRetryTime = 5000; // height measurement retry time
     uint32_t horizRetryTime = 0;
-    bool velHealth;
-    bool posHealth;
+    bool velHealth = false;
+    bool posHealth = false;
     bool hgtHealth;
     bool velTimeout;
     bool posTimeout;
     bool hgtTimeout;
-    float Kfusion[24];
+    Vector24 Kfusion;
 
 // declare variables used to check measurement errors
-    float velInnov[3] = {0,0,0};
-    float posInnov[2] = {0,0};
+    Vector3f velInnov;
+    VectorN<float,2> posInnov;
     float hgtInnov = 0;
 
 // declare variables used to control access to arrays
@@ -1193,8 +1196,8 @@ void NavEKF::FuseVelPosNED()
 // declare variables used by state and covariance update calculations
     float velErr;
     float posErr;
-    float R_OBS[6];
-    float observation[6];
+    Vector6 R_OBS;
+    Vector6 observation;
     float SK;
     float quatMag;
 
@@ -1408,11 +1411,11 @@ void NavEKF::FuseMagnetometer()
     Vector3f &MagPred = mag_state.MagPred;
     float &R_MAG = mag_state.R_MAG;
     float *SH_MAG = &mag_state.SH_MAG[0];
-    float H_MAG[24];
-    float SK_MX[6];
-    float SK_MY[5];
-    float SK_MZ[6];
-    float Kfusion[24];
+    Vector24 H_MAG;
+    Vector6 SK_MX;
+    Vector6 SK_MY;
+    Vector6 SK_MZ;
+    Vector24 Kfusion;
 
     // Perform sequential fusion of Magnetometer measurements.
     // This assumes that the errors in the different components are
@@ -1691,10 +1694,10 @@ void NavEKF::FuseAirspeed()
     float vwn;
     float vwe;
     const float R_TAS = 2.0f;
-    float SH_TAS[3];
+    Vector3f SH_TAS;
     float SK_TAS;
-    float H_TAS[24];
-    float Kfusion[24];
+    Vector24 H_TAS;
+    Vector24 Kfusion;
     float VtasPred;
     float quatMag;
 
@@ -1812,7 +1815,7 @@ void NavEKF::FuseAirspeed()
     }
 }
 
-void NavEKF::zeroRows(float covMat[24][24], uint8_t first, uint8_t last)
+void NavEKF::zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last)
 {
     uint8_t row;
     uint8_t col;
@@ -1825,7 +1828,7 @@ void NavEKF::zeroRows(float covMat[24][24], uint8_t first, uint8_t last)
     }
 }
 
-void NavEKF::zeroCols(float covMat[24][24], uint8_t first, uint8_t last)
+void NavEKF::zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last)
 {
     uint8_t row;
     uint8_t col;
@@ -1848,7 +1851,7 @@ void NavEKF::StoreStates()
 }
 
 // Output the state vector stored at the time that best matches that specified by msec
-void NavEKF::RecallStates(float statesForFusion[24], uint32_t msec)
+void NavEKF::RecallStates(Vector24 &statesForFusion, uint32_t msec)
 {
     uint32_t timeDelta;
     uint32_t bestTimeDelta = 200;
@@ -1877,7 +1880,7 @@ void NavEKF::RecallStates(float statesForFusion[24], uint32_t msec)
     }
 }
 
-void NavEKF::quat2Tnb(Matrix3f &Tnb, float quat[4])
+void NavEKF::quat2Tnb(Matrix3f &Tnb, const Quaternion &quat)
 {
     // Calculate the nav to body cosine matrix
     float q00 = sq(quat[0]);
@@ -1902,7 +1905,7 @@ void NavEKF::quat2Tnb(Matrix3f &Tnb, float quat[4])
     Tnb.b.z = 2*(q23 + q01);
 }
 
-void NavEKF::quat2Tbn(Matrix3f &Tbn, float quat[4])
+void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat)
 {
     // Calculate the body to nav cosine matrix
     float q00 = sq(quat[0]);
@@ -1927,7 +1930,7 @@ void NavEKF::quat2Tbn(Matrix3f &Tbn, float quat[4])
     Tbn.c.y = 2*(q23 + q01);
 }
 
-void NavEKF::eul2quat(float quat[4], float eul[3])
+void NavEKF::eul2quat(Quaternion &quat, const Vector3f &eul)
 {
     float u1 = cosf(0.5f*eul[0]);
     float u2 = cosf(0.5f*eul[1]);
@@ -1941,7 +1944,7 @@ void NavEKF::eul2quat(float quat[4], float eul[3])
     quat[3] = u1*u2*u6-u4*u5*u3;
 }
 
-void NavEKF::quat2eul(Vector3f &y, float u[4])
+void NavEKF::quat2eul(Vector3f &y, const Quaternion &u)
 {
     y[0] = atan2f((2*(u[2]*u[3]+u[0]*u[1])) , (u[0]*u[0]-u[1]*u[1]-u[2]*u[2]+u[3]*u[3]));
     y[1] = -asinf(2*(u[1]*u[3]-u[0]*u[2]));
@@ -1950,7 +1953,7 @@ void NavEKF::quat2eul(Vector3f &y, float u[4])
 
 void NavEKF::getEulerAngles(Vector3f &euler)
 {
-    float q[4] = { states[0], states[1], states[2], states[3] };
+    Quaternion q(states[0], states[1], states[2], states[3]);
     quat2eul(euler, q);
 }
 
@@ -2007,8 +2010,6 @@ void NavEKF::readIMUData()
     uint32_t IMUusec;
     Vector3f angRate;     // angular rate vector in XYZ body axes measured by the IMU (rad/s)
     Vector3f accel;       // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
-    static Vector3f lastAngRate;
-    static Vector3f lastAccel;
 
     IMUusec     = hal.scheduler->micros();
     IMUmsec     = IMUusec/1000;

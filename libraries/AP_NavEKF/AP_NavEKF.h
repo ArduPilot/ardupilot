@@ -28,10 +28,18 @@
 #include <AP_AHRS.h>
 #include <AP_Airspeed.h>
 #include <AP_Compass.h>
+#include <vectorN.h>
 
 class NavEKF
 {
 public:
+
+    typedef VectorN<float,2> Vector2;
+    typedef VectorN<float,6> Vector6;
+    typedef VectorN<float,8> Vector8;
+    typedef VectorN<float,24> Vector24;
+    typedef VectorN<VectorN<float,24>,24> Matrix24;
+    typedef VectorN<VectorN<float,50>,24> Matrix24_50;
 
     // Constructor 
     NavEKF(const AP_AHRS &ahrs, AP_Baro &baro);
@@ -81,29 +89,29 @@ private:
     
     void FuseAirspeed();
 
-    void zeroRows(float covMat[24][24], uint8_t first, uint8_t last);
+    void zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last);
 
-    void zeroCols(float covMat[24][24], uint8_t first, uint8_t last);
+    void zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last);
 
-    void quatNorm(float quatOut[4], float quatIn[4]);
+    void quatNorm(Quaternion &quatOut, const Quaternion &quatIn);
 
     // store states along with system time stamp in msces
     void StoreStates(void);
 
     // recall state vector stored at closest time to the one specified by msec
-    void RecallStates(float statesForFusion[24], uint32_t msec);
+    void RecallStates(Vector24 &statesForFusion, uint32_t msec);
 
-    void quat2Tnb(Matrix3f &Tnb, float quat[4]);
+    void quat2Tnb(Matrix3f &Tnb, const Quaternion &quat);
 
-    void quat2Tbn(Matrix3f &Tbn, float quat[4]);
+    void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat);
 
     void calcEarthRateNED(Vector3f &omega, float latitude);
 
-    void eul2quat(float quat[4], float eul[3]);
+    void eul2quat(Quaternion &quat, const Vector3f &eul);
 
-    void quat2eul(Vector3f &eul, float quat[4]);
+    void quat2eul(Vector3f &eul, const Quaternion &quat);
 
-    void calcvelNED(float velNED[3], float gpsCourse, float gpsGndSpd, float gpsVelD);
+    void calcvelNED(Vector3f &velNED, float gpsCourse, float gpsGndSpd, float gpsVelD);
 
     void calcposNE(float lat, float lon);
 
@@ -133,12 +141,12 @@ private:
 
     bool statesInitialised;
 
-    float KH[24][24]; //  intermediate result used for covariance updates
-    float KHP[24][24]; // intermediate result used for covariance updates
-    float P[24][24]; // covariance matrix
-    float states[24]; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
-    float storedStates[24][50]; // state vectors stored for the last 50 time steps
-    uint32_t statetimeStamp[50]; // time stamp for each state vector stored
+    Matrix24 KH; //  intermediate result used for covariance updates
+    Matrix24 KHP; // intermediate result used for covariance updates
+    Matrix24 P; // covariance matrix
+    Vector24 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
+    Matrix24_50 storedStates; // state vectors stored for the last 50 time steps
+    VectorN<uint32_t,50> statetimeStamp; // time stamp for each state vector stored
     Vector3f correctedDelAng; // delta angles about the xyz body axes corrected for errors (rad)
     Vector3f correctedDelVel; // delta velocities along the XYZ body axes corrected for errors (m/s)
     Vector3f summedDelAng; // corrected & summed delta angles about the xyz body axes (rad)
@@ -155,34 +163,34 @@ private:
     const bool useAirspeed; // boolean true if airspeed data is being used
     const bool useCompass; // boolean true if magnetometer data is being used
     const uint8_t fusionModeGPS; // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
-    float innovVelPos[6]; // innovation output for a group of measurements
-    float varInnovVelPos[6]; // innovation variance output for a group of measurements
+    Vector6 innovVelPos; // innovation output for a group of measurements
+    Vector6 varInnovVelPos; // innovation variance output for a group of measurements
     bool fuseVelData; // this boolean causes the velNED measurements to be fused
     bool fusePosData; // this boolean causes the posNE measurements to be fused
     bool fuseHgtData; // this boolean causes the hgtMea measurements to be fused
-    float velNED[3]; // North, East, Down velocity measurements (m/s)
-    float posNE[2]; // North, East position measurements (m)
+    Vector3f velNED; // North, East, Down velocity measurements (m/s)
+    Vector2 posNE; // North, East position measurements (m)
     float hgtMea; //  height measurement relative to reference point  (m)
-    float posNED[3]; // North, East Down position relative to reference point (m)
-    float statesAtVelTime[24]; // States at the effective time of velNED measurements
-    float statesAtPosTime[24]; // States at the effective time of posNE measurements
-    float statesAtHgtTime[24]; // States at the effective time of hgtMea measurement
-    float innovMag[3]; // innovation output from fusion of X,Y,Z compass measurements
-    float varInnovMag[3]; // innovation variance output from fusion of X,Y,Z compass measurements
+    Vector3f posNED; // North, East Down position relative to reference point (m)
+    Vector24 statesAtVelTime; // States at the effective time of velNED measurements
+    Vector24 statesAtPosTime; // States at the effective time of posNE measurements
+    Vector24 statesAtHgtTime; // States at the effective time of hgtMea measurement
+    Vector3f innovMag; // innovation output from fusion of X,Y,Z compass measurements
+    Vector3f varInnovMag; // innovation variance output from fusion of X,Y,Z compass measurements
     bool fuseMagData; // boolean true when magnetometer data is to be fused
     Vector3f magData; // magnetometer flux readings in X,Y,Z body axes
-    float statesAtMagMeasTime[24]; // filter states at the effective time of compass measurements
+    Vector24 statesAtMagMeasTime; // filter states at the effective time of compass measurements
     float innovVtas; // innovation output from fusion of airspeed measurements
     float varInnovVtas; // innovation variance output from fusion of airspeed measurements
     bool fuseVtasData; // boolean true when airspeed data is to be fused
     float VtasMeas; // true airspeed measurement (m/s)
-    float statesAtVtasMeasTime[24]; // filter states at the effective measurement time
+    Vector24 statesAtVtasMeasTime; // filter states at the effective measurement time
     float latRef; // WGS-84 latitude of reference point (rad)
     float lonRef; // WGS-84 longitude of reference point (rad)
     float hgtRef; // WGS-84 height of reference point (m)
     Vector3f magBias; // magnetometer bias vector in XYZ body axes
-    float eulerEst[3]; // Euler angles calculated from filter states
-    float eulerDif[3]; // difference between Euler angle estimated by EKF and the AHRS solution
+    Vector3f eulerEst; // Euler angles calculated from filter states
+    Vector3f eulerDif; // difference between Euler angle estimated by EKF and the AHRS solution
     const float covTimeStepMax; // maximum time allowed between covariance predictions
     const float covDelAngMax; // maximum delta angle between covariance predictions
     bool covPredStep; // boolean set to true when a covariance prediction step has been performed
@@ -205,7 +213,7 @@ private:
 
     // IMU input data variables
     float imuIn;
-    float tempImu[8];
+    Vector8 tempImu;
     uint32_t IMUmsec;
 
     // GPS input data variables
@@ -218,8 +226,8 @@ private:
 
     // Magnetometer input data variables
     float magIn;
-    float tempMag[8];
-    float tempMagPrev[8];
+    Vector8 tempMag;
+    Vector8 tempMagPrev;
     uint32_t MAGframe;
     uint32_t MAGtime;
     uint32_t lastMAGtime;
@@ -231,7 +239,7 @@ private:
     float VtasMeasPrev;
 
     // AHRS input data variables
-    float ahrsEul[3];
+    Vector3f ahrsEul;
 
     // Time stamp when vel, pos or height measurements last failed checks
 	uint32_t velFailTime;
@@ -268,6 +276,8 @@ private:
     // time of alst GPS fix used to determine if new data has arrived
 	uint32_t lastFixTime;
 
+    Vector3f lastAngRate;
+    Vector3f lastAccel;
 };
 #endif // AP_NavEKF
 
