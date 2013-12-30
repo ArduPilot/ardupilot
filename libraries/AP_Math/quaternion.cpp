@@ -20,7 +20,7 @@
 #include "AP_Math.h"
 
 // return the rotation matrix equivalent for this quaternion
-void Quaternion::rotation_matrix(Matrix3f &m)
+void Quaternion::rotation_matrix(Matrix3f &m) const
 {
     float q3q3 = q3 * q3;
     float q3q4 = q3 * q4;
@@ -44,7 +44,7 @@ void Quaternion::rotation_matrix(Matrix3f &m)
 }
 
 // convert a vector from earth to body frame
-void Quaternion::earth_to_body(Vector3f &v)
+void Quaternion::earth_to_body(Vector3f &v) const
 {
     Matrix3f m;
     // we reverse z before and afterwards because of the differing
@@ -72,7 +72,7 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
 }
 
 // create eulers from a quaternion
-void Quaternion::to_euler(float *roll, float *pitch, float *yaw)
+void Quaternion::to_euler(float *roll, float *pitch, float *yaw) const
 {
     if (roll) {
         *roll = (atan2f(2.0f*(q1*q2 + q3*q4),
