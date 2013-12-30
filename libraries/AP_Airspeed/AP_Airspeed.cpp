@@ -212,4 +212,5 @@ void AP_Airspeed::read(void)
     _last_pressure          = airspeed_pressure;
     _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
     _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
+    _last_update_ms         = hal.scheduler->millis();
 }
