@@ -1,3 +1,6 @@
+#include <AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "GPIO.h"
 
@@ -62,3 +65,5 @@ void LinuxDigitalSource::write(uint8_t value) {
 void LinuxDigitalSource::toggle() {
     _v = !_v;
 }
+
+#endif // CONFIG_HAL_BOARD
