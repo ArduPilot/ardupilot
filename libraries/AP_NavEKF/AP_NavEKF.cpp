@@ -60,9 +60,9 @@ void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
     Quaternion initQuat;
-    ahrsEul[0] = _ahrs.roll_sensor*0.01f*DEG_TO_RAD;
-    ahrsEul[1] = _ahrs.pitch_sensor*0.01f*DEG_TO_RAD;
-    ahrsEul[2] = _ahrs.yaw_sensor*0.01f*DEG_TO_RAD;
+    ahrsEul[0] = _ahrs.roll;
+    ahrsEul[1] = _ahrs.pitch;
+    ahrsEul[2] = _ahrs.yaw;
     eul2quat(initQuat, ahrsEul);
 
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
