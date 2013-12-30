@@ -32,6 +32,13 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     msecHgtDelay(350), // msec of barometric height delay
     msecMagDelay(30), // msec of compass delay
     msecTasDelay(210) // msec of true airspeed delay
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
+    _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
+    _perf_FuseVelPosNED(perf_alloc(PC_ELAPSED, "EKF_FuseVelPosNED")),
+    _perf_FuseMagnetometer(perf_alloc(PC_ELAPSED, "EKF_FuseMagnetometer")),
+    _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EKF_FuseAirspeed"))
+#endif
 {
     mag_state.q0 = 1;
     mag_state.DCM.identity();
@@ -116,6 +123,7 @@ void NavEKF::InitialiseFilter(void)
 
 void NavEKF::UpdateFilter()
 {
+    perf_begin(_perf_UpdateFilter);
     if (statesInitialised)
     {
         // This function will be called at 100Hz
@@ -153,6 +161,7 @@ void NavEKF::UpdateFilter()
         SelectMagFusion();
         SelectTasFusion();
     }
+    perf_end(_perf_UpdateFilter);
 }
 
 void NavEKF::SelectVelPosFusion()
@@ -316,6 +325,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
 
 void NavEKF::CovariancePrediction()
 {
+    perf_begin(_perf_CovariancePrediction);
     // scalars
     float windVelSigma;
     float dAngBiasSigma;
@@ -1090,11 +1100,12 @@ void NavEKF::CovariancePrediction()
             P[j][i] = P[i][j];
         }
     }
-
+    perf_end(_perf_CovariancePrediction);
 }
 
 void NavEKF::FuseVelPosNED()
 {
+    perf_begin(_perf_FuseVelPosNED);
     // declare variables used by fault isolation logic
     uint32_t gpsRetryTime = 30000; // time in msec before GPS fusion will be retried following innovation consistency failure
     uint32_t gpsRetryTimeNoTAS = 5000; // retry time if no TAS measurement available
@@ -1300,10 +1311,12 @@ void NavEKF::FuseVelPosNED()
             }
         }
     }
+    perf_end(_perf_FuseVelPosNED);
 }
 
 void NavEKF::FuseMagnetometer()
 {
+    perf_begin(_perf_FuseMagnetometer);
     float &q0 = mag_state.q0;
     float &q1 = mag_state.q1;
     float &q2 = mag_state.q2;
@@ -1596,10 +1609,12 @@ void NavEKF::FuseMagnetometer()
     magFusePerformed = false;
     magFuseRequired = false;
     }
+    perf_end(_perf_FuseMagnetometer);
 }
 
 void NavEKF::FuseAirspeed()
 {
+    perf_begin(_perf_FuseAirspeed);
     float vn;
     float ve;
     float vd;
@@ -1720,6 +1735,7 @@ void NavEKF::FuseAirspeed()
             }
         }
     }
+    perf_end(_perf_FuseAirspeed);
 }
 
 void NavEKF::zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last)
