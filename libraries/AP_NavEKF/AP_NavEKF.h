@@ -33,6 +33,10 @@
 
 #include <vectorN.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <systemlib/perf_counter.h>
+#endif
+
 
 class NavEKF
 {
@@ -316,6 +320,20 @@ private:
     Vector11 SQ;
     Vector13 SPP;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // performance counters
+    perf_counter_t  _perf_UpdateFilter;
+    perf_counter_t  _perf_CovariancePrediction;
+    perf_counter_t  _perf_FuseVelPosNED;
+    perf_counter_t  _perf_FuseMagnetometer;
+    perf_counter_t  _perf_FuseAirspeed;
+#endif
 };
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+#define perf_begin(x)
+#define perf_end(x)
+#endif
+
 #endif // AP_NavEKF
 
