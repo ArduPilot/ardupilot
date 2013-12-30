@@ -20,6 +20,9 @@
 #define QUATERNION_H
 
 #include <math.h>
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 class Quaternion
 {
@@ -64,13 +67,17 @@ public:
     // allow a quaternion to be used as an array, 0 indexed
     float & operator[](uint8_t i) {
         float *_v = &q1;
-        ASSERT(i >= 0 && i < 4);
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 4);
+#endif
         return _v[i];
     }
 
     const float & operator[](uint8_t i) const {
         const float *_v = &q1;
-        ASSERT(i >= 0 && i < 4);
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 4);
+#endif
         return _v[i];
     }
 };

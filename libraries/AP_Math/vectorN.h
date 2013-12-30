@@ -19,29 +19,35 @@
 
 #include <math.h>
 #include <string.h>
-#include "math_assert.h"
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 template <typename T, uint8_t N>
 class VectorN
 {
 public:
     // trivial ctor
-    VectorN<T,N>() {
+    inline VectorN<T,N>() {
         memset(_v, 0, sizeof(T)*N);
     }
 
-    T & operator[](uint8_t i) {
-        ASSERT(i >= 0 && i < N);
+    inline T & operator[](uint8_t i) {
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < N);
+#endif
         return _v[i];
     }
 
-    const T & operator[](uint8_t i) const {
-        ASSERT(i >= 0 && i < N);
+    inline const T & operator[](uint8_t i) const {
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < N);
+#endif
         return _v[i];
     }
 
     // zero the vector
-    void zero()
+    inline void zero()
     {
         memset(_v, 0, sizeof(T)*N);
     }

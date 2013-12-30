@@ -52,7 +52,10 @@
 
 #include <math.h>
 #include <string.h>
-#include "math_assert.h"
+
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 template <typename T>
 class Matrix3;
@@ -115,13 +118,17 @@ public:
     // allow a vector3 to be used as an array, 0 indexed
     T & operator[](uint8_t i) {
         T *_v = &x;
-        ASSERT(i >= 0 && i < 3);
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
         return _v[i];
     }
 
     const T & operator[](uint8_t i) const {
         const T *_v = &x;
-        ASSERT(i >= 0 && i < 3);
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
         return _v[i];
     }
 

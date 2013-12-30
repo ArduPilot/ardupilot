@@ -128,13 +128,17 @@ public:
     // allow a Matrix3 to be used as an array of vectors, 0 indexed
     Vector3<T> & operator[](uint8_t i) {
         Vector3<T> *_v = &a;
-        ASSERT(i >= 0 && i < 3);
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
         return _v[i];
     }
 
     const Vector3<T> & operator[](uint8_t i) const {
         const Vector3<T> *_v = &a;
-        ASSERT(i >= 0 && i < 3);
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 3);
+#endif
         return _v[i];
     }
 
