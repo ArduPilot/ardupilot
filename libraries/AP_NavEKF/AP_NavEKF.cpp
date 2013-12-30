@@ -1,8 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// #define MATH_CHECK_INDEXES 1
-
 #include <AP_HAL.h>
+
+// uncomment this to force the optimisation of this code, note that 
+// this makes debugging harder
+// #pragma GCC optimize("O3")
+
 #include "AP_NavEKF.h"
 #include <stdio.h>
 
@@ -341,14 +344,6 @@ void NavEKF::CovariancePrediction()
     float dvx_b;
     float dvy_b;
     float dvz_b;
-
-    // arrays
-    Vector24 processNoise;
-    VectorN<float,21> SF;
-    VectorN<float,8> SG;
-    VectorN<float,11> SQ;
-    VectorN<float,13> SPP;
-    Matrix24 nextP;
 
     // calculate covariance prediction process noise
     windVelSigma  = dt * 0.1f;
@@ -1072,7 +1067,7 @@ void NavEKF::CovariancePrediction()
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
     // without GPS
-    if ((P[7][7] + P[8][8]) > 1E6)
+    if ((P[7][7] + P[8][8]) > 1e6f)
     {
         for (uint8_t i=7; i<=8; i++)
         {
@@ -1107,7 +1102,7 @@ void NavEKF::FuseVelPosNED()
     uint32_t horizRetryTime = 0;
     bool velHealth = false;
     bool posHealth = false;
-    bool hgtHealth;
+    bool hgtHealth = false;
     bool velTimeout;
     bool posTimeout;
     bool hgtTimeout;
@@ -1115,7 +1110,7 @@ void NavEKF::FuseVelPosNED()
 
 // declare variables used to check measurement errors
     Vector3f velInnov;
-    VectorN<float,2> posInnov;
+    Vector2 posInnov;
     float hgtInnov = 0;
 
 // declare variables used to control access to arrays
@@ -1129,7 +1124,6 @@ void NavEKF::FuseVelPosNED()
     Vector6 R_OBS;
     Vector6 observation;
     float SK;
-    float quatMag;
 
 // Perform sequential fusion of GPS measurements. This assumes that the
 // errors in the different velocity and position components are
@@ -1253,7 +1247,7 @@ void NavEKF::FuseVelPosNED()
                 stateIndex = 4 + obsIndex;
                 // Calculate the measurement innovation, using states from a
                 // different time coordinate if fusing height data
-                if (obsIndex >= 0 && obsIndex <= 2)
+                if (obsIndex <= 2)
                 {
                     innovVelPos[obsIndex] = statesAtVelTime[stateIndex] - observation[obsIndex];
                 }
@@ -1261,7 +1255,7 @@ void NavEKF::FuseVelPosNED()
                 {
                     innovVelPos[obsIndex] = statesAtPosTime[stateIndex] - observation[obsIndex];
                 }
-                else if (obsIndex == 5)
+                else
                 {
                     innovVelPos[obsIndex] = statesAtHgtTime[stateIndex] - observation[obsIndex];
                 }
@@ -1617,7 +1611,6 @@ void NavEKF::FuseAirspeed()
     Vector24 H_TAS;
     Vector24 Kfusion;
     float VtasPred;
-    float quatMag;
 
     // Copy required states to local variable names
     vn = statesAtVtasMeasTime[4];
@@ -1732,26 +1725,18 @@ void NavEKF::FuseAirspeed()
 void NavEKF::zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last)
 {
     uint8_t row;
-    uint8_t col;
     for (row=first; row<=last; row++)
     {
-        for (col=0; col<=23; col++)
-        {
-            covMat[row][col] = 0;
-        }
+        memset(&covMat[row][0], 0, sizeof(float)*24);
     }
 }
 
 void NavEKF::zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last)
 {
     uint8_t row;
-    uint8_t col;
-    for (col=first; col<=last; col++)
+    for (row=0; row<=23; row++)
     {
-        for (row=0; row<=23; row++)
-        {
-            covMat[row][col] = 0;
-        }
+        memset(&covMat[row][first], 0, sizeof(float)*(1+last-first));
     }
 }
 
@@ -1773,7 +1758,6 @@ void NavEKF::RecallStates(Vector24 &statesForFusion, uint32_t msec)
     for (uint8_t i=0; i<=49; i++)
     {
         timeDelta = msec - statetimeStamp[i];
-        if (timeDelta < 0) timeDelta = -timeDelta;
         if (timeDelta < bestTimeDelta)
         {
             bestStoreIndex = i;
@@ -1867,9 +1851,9 @@ void NavEKF::calcposNE(float lat, float lon)
 
 bool NavEKF::getLLH(struct Location &loc)
 {
-    loc.lat = 1.0e7 * degrees(latRef + states[7] / RADIUS_OF_EARTH);
-    loc.lng = 1.0e7 * degrees(lonRef + (states[8] / RADIUS_OF_EARTH) / cosf(latRef));
-    loc.alt = 1.0e2 * (hgtRef - states[9]);
+    loc.lat = 1.0e7f * degrees(latRef + states[7] / RADIUS_OF_EARTH);
+    loc.lng = 1.0e7f * degrees(lonRef + (states[8] / RADIUS_OF_EARTH) / cosf(latRef));
+    loc.alt = 1.0e2f * (hgtRef - states[9]);
     return true;
 }
 
@@ -1957,35 +1941,31 @@ void NavEKF::readHgtData()
 void NavEKF::readMagData()
 {
     // scale compass data to improve numerical conditioning
-    magData = _ahrs.get_compass()->get_field() * 0.001f;
-    magBias = _ahrs.get_compass()->get_offsets() * 0.001f;
-    if ((magData.x != magDataPrev.x) && (magData.y != magDataPrev.y) && (magData.z != magDataPrev.z))
-    {
-        magDataPrev = magData;
+    if (_ahrs.get_compass()->last_update != lastMagUpdate) {
+        lastMagUpdate = _ahrs.get_compass()->last_update;
+
+        magData = _ahrs.get_compass()->get_field() * 0.001f;
+        magBias = _ahrs.get_compass()->get_offsets() * 0.001f;
+
         // Recall states from compass measurement time
         RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
         newDataMag = true;
-    }
-    else
-    {
+    } else {
         newDataMag = false;
     }
 }
 
 void NavEKF::readAirSpdData()
 {
-    if (!_ahrs.airspeed_estimate_true(&VtasMeas))
-    {
-        if (VtasMeas != VtasMeasPrev)
-        {
-            newDataTas = true;
-            VtasMeasPrev = VtasMeas;
-            RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
-        }
-        else
-        {
-            newDataTas = false;
-        }
+    const AP_Airspeed *aspeed = _ahrs.get_airspeed();
+    if (aspeed && 
+        aspeed->last_update_ms() != lastAirspeedUpdate &&
+        _ahrs.airspeed_estimate_true(&VtasMeas)) {
+        lastAirspeedUpdate = aspeed->last_update_ms();
+        newDataTas = true;
+        RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
+    } else {
+        newDataTas = false;
     }
 }
 
