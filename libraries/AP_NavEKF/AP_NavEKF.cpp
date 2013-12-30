@@ -181,7 +181,7 @@ void NavEKF::UpdateFilter()
         }
 
         // Update states using GPS, altimeter, compass and airspeed observations
-        //SelectVelPosFusion();
+        SelectVelPosFusion();
         //SelectMagFusion();
         //SelectTasFusion();
     }
@@ -260,16 +260,6 @@ void NavEKF::SelectTasFusion()
 void NavEKF::UpdateStrapdownEquationsNED()
 {
     Vector3f delVelNav;
-    float q00;
-    float q11;
-    float q22;
-    float q33;
-    float q01;
-    float q02;
-    float q03;
-    float q12;
-    float q13;
-    float q23;
     float rotationMag;
     float rotScaler;
     Quaternion qUpdated;
@@ -330,38 +320,16 @@ void NavEKF::UpdateStrapdownEquationsNED()
     }
 
     // Calculate the body to nav cosine matrix
-    q00 = sq(states[0]);
-    q11 = sq(states[1]);
-    q22 = sq(states[2]);
-    q33 = sq(states[3]);
-    q01 =  states[0]*states[1];
-    q02 =  states[0]*states[2];
-    q03 =  states[0]*states[3];
-    q12 =  states[1]*states[2];
-    q13 =  states[1]*states[3];
-    q23 =  states[2]*states[3];
-
-    Matrix3f Tbn;
-    Tbn.a.x = q00 + q11 - q22 - q33;
-    Tbn.b.y = q00 - q11 + q22 - q33;
-    Tbn.c.z = q00 - q11 - q22 + q33;
-    Tbn.a.y = 2*(q12 - q03);
-    Tbn.a.z = 2*(q13 + q02);
-    Tbn.b.x = 2*(q12 + q03);
-    Tbn.b.z = 2*(q23 - q01);
-    Tbn.c.x = 2*(q13 - q02);
-    Tbn.c.y = 2*(q23 + q01);
-
-    prevTnb = Tbn.transpose();
+    Quaternion q(states[0],states[1],states[2],states[3]);
+    Matrix3f Tbn_temp;
+    q.rotation_matrix(Tbn_temp);
+    prevTnb = Tbn_temp.transposed();
 
     // transform body delta velocities to delta velocities in the nav frame
     // * and + operators have been overloaded
-    //delVelNav = Tbn*correctedDelVel + gravityNED*dtIMU;
-    delVelNav.x = Tbn.a.x*correctedDelVel.x + Tbn.a.y*correctedDelVel.y + Tbn.a.z*correctedDelVel.z + gravityNED.x*dtIMU;
-    delVelNav.y = Tbn.b.x*correctedDelVel.x + Tbn.b.y*correctedDelVel.y + Tbn.b.z*correctedDelVel.z + gravityNED.y*dtIMU;
-    delVelNav.z = Tbn.c.x*correctedDelVel.x + Tbn.c.y*correctedDelVel.y + Tbn.c.z*correctedDelVel.z + gravityNED.z*dtIMU;
+    delVelNav = Tbn_temp*correctedDelVel + gravityNED*dtIMU;
 
-::printf(" accNav: (%.4f %.4f %.4f) \n", delVelNav.x/dtIMU,delVelNav.y/dtIMU,delVelNav.z/dtIMU);
+//::printf(" accNav: (%.4f %.4f %.4f) \n", delVelNav.x/dtIMU,delVelNav.y/dtIMU,delVelNav.z/dtIMU);
     // calculate the magnitude of the nav acceleration (required for GPS
     // variance estimation)
     accNavMag = delVelNav.length()/dtIMU;
@@ -1220,8 +1188,9 @@ void NavEKF::FuseVelPosNED()
         // Form the observation vector
         for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
         for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
-        observation[5] = -(hgtMea);
-
+        observation[5] = -hgtMea;
+::printf("observation =  (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f \n",
+observation[0],observation[1],observation[2],observation[3],observation[4],observation[5]);
         // Estimate the GPS Velocity, GPS horiz position and height measurement variances.
         velErr = 0.2f*accNavMag; // additional error in GPS velocities caused by manoeuvring
         posErr = 0.2f*accNavMag; // additional error in GPS position caused by manoeuvring
@@ -1242,7 +1211,7 @@ void NavEKF::FuseVelPosNED()
             if (fusionModeGPS == 1) imax = 1;
             for (uint8_t i = 0; i<=imax; i++)
             {
-                velInnov[i] = statesAtVelTime[i+4] - velNED[i];
+                velInnov[i] = statesAtVelTime[i+4] - observation[i];
                 stateIndex = 4 + i;
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
             }
@@ -1263,8 +1232,8 @@ void NavEKF::FuseVelPosNED()
         if (fusePosData)
         {
             // test horizontal position measurements
-            posInnov[0] = statesAtPosTime[7] - posNE[0];
-            posInnov[1] = statesAtPosTime[8] - posNE[1];
+            posInnov[0] = statesAtPosTime[7] - observation[3];
+            posInnov[1] = statesAtPosTime[8] - observation[4];
             varInnovVelPos[3] = P[7][7] + R_OBS[3];
             varInnovVelPos[4] = P[8][8] + R_OBS[4];
             // apply a 10-sigma threshold
@@ -1283,7 +1252,7 @@ void NavEKF::FuseVelPosNED()
         // test height measurements
         if (fuseHgtData)
         {
-            hgtInnov = statesAtHgtTime[9] + hgtMea;
+            hgtInnov = statesAtHgtTime[9] - observation[5];
             varInnovVelPos[5] = P[9][9] + R_OBS[5];
             // apply a 10-sigma threshold
 //debug
@@ -1354,13 +1323,13 @@ void NavEKF::FuseVelPosNED()
 
 if (obsIndex == 5)
 {
+::printf("index =  %.1f, obs = %.1f, pred = %.1f, innov = %.2f, variance = %.4f\n",float(obsIndex),observation[obsIndex],statesAtHgtTime[stateIndex],innovVelPos[obsIndex],varInnovVelPos[obsIndex]);
 ::printf("K_fusion = ");
                 for (uint8_t i= 0; i<=23; i++)
                 {
                     ::printf("%.2f, ",Kfusion[i]);
                 }
 ::printf("\n");
-::printf("index =  %.1f, innov = %.2f, variance = %.4f\n",float(obsIndex),innovVelPos[obsIndex],varInnovVelPos[obsIndex]);
 }
 
                 // Calculate state corrections and re-normalise the quaternions
@@ -1891,12 +1860,12 @@ void NavEKF::quat2Tnb(Matrix3f &Tnb, const Quaternion &quat)
     float q11 = sq(quat[1]);
     float q22 = sq(quat[2]);
     float q33 = sq(quat[3]);
-    float q01 =  quat[0]*quat[1];
-    float q02 =  quat[0]*quat[2];
-    float q03 =  quat[0]*quat[3];
-    float q12 =  quat[1]*quat[2];
-    float q13 =  quat[1]*quat[3];
-    float q23 =  quat[2]*quat[3];
+    float q01 = quat[0]*quat[1];
+    float q02 = quat[0]*quat[2];
+    float q03 = quat[0]*quat[3];
+    float q12 = quat[1]*quat[2];
+    float q13 = quat[1]*quat[3];
+    float q23 = quat[2]*quat[3];
 
     Tnb.a.x = q00 + q11 - q22 - q33;
     Tnb.b.y = q00 - q11 + q22 - q33;
@@ -1912,26 +1881,7 @@ void NavEKF::quat2Tnb(Matrix3f &Tnb, const Quaternion &quat)
 void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat)
 {
     // Calculate the body to nav cosine matrix
-    float q00 = sq(quat[0]);
-    float q11 = sq(quat[1]);
-    float q22 = sq(quat[2]);
-    float q33 = sq(quat[3]);
-    float q01 =  quat[0]*quat[1];
-    float q02 =  quat[0]*quat[2];
-    float q03 =  quat[0]*quat[3];
-    float q12 =  quat[1]*quat[2];
-    float q13 =  quat[1]*quat[3];
-    float q23 =  quat[2]*quat[3];
-
-    Tbn.a.x = q00 + q11 - q22 - q33;
-    Tbn.b.y = q00 - q11 + q22 - q33;
-    Tbn.c.z = q00 - q11 - q22 + q33;
-    Tbn.a.y = 2*(q12 - q03);
-    Tbn.a.z = 2*(q13 + q02);
-    Tbn.b.x = 2*(q12 + q03);
-    Tbn.b.z = 2*(q23 - q01);
-    Tbn.c.x = 2*(q13 - q02);
-    Tbn.c.y = 2*(q23 + q01);
+    quat.rotation_matrix(Tbn);
 }
 
 void NavEKF::eul2quat(Quaternion &quat, const Vector3f &eul)
@@ -2054,7 +2004,7 @@ void NavEKF::readHgtData()
     // Best to do this at the same time as GPS measurement fusion for efficiency
     hgtMea = _baro.get_altitude() - hgtRef;
     // recall states from compass measurement time
-    RecallStates(statesAtVelTime, (IMUmsec - msecHgtDelay));
+    RecallStates(statesAtHgtTime, (IMUmsec - msecHgtDelay));
 }
 
 void NavEKF::readMagData()
