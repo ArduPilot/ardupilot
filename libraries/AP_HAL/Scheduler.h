@@ -48,6 +48,8 @@ public:
        optional function to shift forward in time, used by log replay
      */
     virtual void     time_shift(uint32_t shift_ms) {}
+
+    virtual void     stop_clock(uint32_t time_ms) {}
 };
 
 #endif // __AP_HAL_SCHEDULER_H__
