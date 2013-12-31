@@ -160,10 +160,7 @@ bool LogReader::update(uint8_t &type)
 
 void LogReader::wait_timestamp(uint32_t timestamp)
 {
-    uint32_t now = hal.scheduler->millis();
-    if (now < timestamp) {
-        hal.scheduler->time_shift(timestamp - now);
-    }
+    hal.scheduler->stop_clock(timestamp);
 }
 
 bool LogReader::wait_type(uint8_t wtype)
