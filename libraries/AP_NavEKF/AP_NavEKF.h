@@ -220,6 +220,7 @@ private:
     const float covTimeStepMax; // maximum time allowed between covariance predictions
     const float covDelAngMax; // maximum delta angle between covariance predictions
     bool covPredStep; // boolean set to true when a covariance prediction step has been performed
+    const float yawVarScale; // scale factor applied to yaw gyro errors when on ground
     bool magFusePerformed; // boolean set to true when magnetometer fusion has been perfomred in that time step
     bool magFuseRequired; // boolean set to true when magnetometer fusion will be perfomred in the next time step
     bool posVelFuseStep; // boolean set to true when position and velocity fusion is being performed

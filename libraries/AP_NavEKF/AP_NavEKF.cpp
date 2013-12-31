@@ -24,6 +24,7 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
+    yawVarScale(100.0f), // scale factor applied to yaw gyro errors when on ground
     TASmsecMax(333), // maximum allowed interal between airspeed measurement updates
     MAGmsecMax(333), // maximum allowed interval between magnetometer measurement updates
     HGTmsecMax(250), // maximum interval between height measurement updates
@@ -398,14 +399,8 @@ void NavEKF::CovariancePrediction()
     dvz_b = states[15];
     daxCov = sq(dt*1.4544411e-2f);
     dayCov = sq(dt*1.4544411e-2f);
-    if (!onGround)
-    {
-        dazCov = sq(dt*1.4544411e-2f);
-    }
-    else
-    {
-        dazCov = sq(dt*1.4544411e-1f); //reduce heading drift when on ground
-    }
+    dazCov = sq(dt*1.4544411e-2f);
+    if (onGround) dazCov = dazCov * yawVarScale;
     dvxCov = sq(dt*0.5f);
     dvyCov = sq(dt*0.5f);
     dvzCov = sq(dt*0.5f);
