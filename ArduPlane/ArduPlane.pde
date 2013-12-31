@@ -912,15 +912,6 @@ static void update_logging1(void)
 
     if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_IMU))
         Log_Write_IMU();
-    
-    if (g.log_bitmask & MASK_LOG_CTUN)
-        Log_Write_Control_Tuning();
-    
-    if (g.log_bitmask & MASK_LOG_NTUN)
-        Log_Write_Nav_Tuning();
-
-    if (g.log_bitmask & MASK_LOG_RC)
-        Log_Write_RC();
 }
 
 /*
@@ -928,12 +919,6 @@ static void update_logging1(void)
  */
 static void update_logging2(void)
 {
-    if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-        Log_Write_Attitude();
-
-    if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_IMU))
-        Log_Write_IMU();
-    
     if (g.log_bitmask & MASK_LOG_CTUN)
         Log_Write_Control_Tuning();
     
