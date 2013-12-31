@@ -86,6 +86,18 @@ public:
     // return the last calculated NED velocity (m/s)
     void getVelNED(Vector3f &vel);
 
+    // return delta angle bias estimates
+    void getGyroBias(Vector3f &gyroBias);
+
+    // return delta velocity bias estimates
+    void getAccelBias(Vector3f &accelBias);
+
+    // return earth magnetic field estimates
+    void getMagNED(Vector3f &magNED);
+
+    // return body magnetic field estimates
+    void getMagXYZ(Vector3f &magXYZ);
+
     // return the last calculated latitude, longitude and height
     bool getLLH(struct Location &loc);
 
@@ -231,6 +243,7 @@ private:
     const uint32_t MAGmsecMax; // maximum allowed interval between compass fusion steps
     uint32_t HGTmsecPrev; // time stamp of last height measurement fusion step
     const uint32_t HGTmsecMax; // maximum allowed interval between height measurement fusion steps
+    const bool fuseMeNow; // boolean to force fusion whenever data arrives
 
     // last time compass was updated
     uint32_t lastMagUpdate;
@@ -246,6 +259,8 @@ private:
     const uint32_t msecTasDelay;
 
     // IMU input data variables
+    const float dtIMUAvg;
+    float dtIMUAvgInv;
     float imuIn;
     Vector8 tempImu;
     uint32_t IMUmsec;

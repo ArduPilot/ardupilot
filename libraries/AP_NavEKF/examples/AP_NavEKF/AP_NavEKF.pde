@@ -91,6 +91,7 @@ void setup()
         LogReader.wait_type(LOG_IMU_MSG);
         ahrs.update();
         if ((g_gps->status() >= GPS::GPS_OK_FIX_3D) && (ahrs.yaw_sensor != 0)) goodFrameCount +=1;
+        printf("%u\n",hal.scheduler->millis());
     }
 
     barometer.calibrate();
@@ -99,7 +100,7 @@ void setup()
     NavEKF.InitialiseFilter();
 
     plotf = fopen("plot.dat", "w");
-    fprintf(plotf, "time ATT.Roll ATT.Pitch ATT.Yaw AHRS.Roll AHRS.Pitch AHRS.Yaw EKF.Roll EKF.Pitch EKF.Yaw\n");
+    fprintf(plotf, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ AX AY AZ MN ME MD MX MY MZ E1ref E2ref E3ref\n");
 }
 
 void loop()
@@ -119,18 +120,47 @@ void loop()
 
         case LOG_ATTITUDE_MSG: {
             Vector3f ekf_euler;
+            Vector3f velNED;
+            Vector3f posNED;
+            Vector3f gyroBias;
+            Vector3f accelBias;
+            Vector3f magNED;
+            Vector3f magXYZ;
             NavEKF.getEulerAngles(ekf_euler);
-            fprintf(plotf, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
+            NavEKF.getVelNED(velNED);
+            NavEKF.getPosNED(posNED);
+            NavEKF.getGyroBias(gyroBias);
+            NavEKF.getAccelBias(accelBias);
+            NavEKF.getMagNED(magNED);
+            NavEKF.getMagXYZ(magXYZ);
+            float temp = degrees(ekf_euler.z);
+            if (temp < 0.0f) temp = temp + 360.0f;
+            fprintf(plotf, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.3f %.3f %.3f %.4f %.4f %.4f %.4f %.4f %.4f %.1f %.1f %.1f \n",
                     hal.scheduler->millis() * 0.001f,
-                    LogReader.get_attitude().x,
-                    LogReader.get_attitude().y,
-                    LogReader.get_attitude().z,
-                    ahrs.roll_sensor*0.01f, 
-                    ahrs.pitch_sensor*0.01f,
-                    ahrs.yaw_sensor*0.01f,
                     degrees(ekf_euler.x),
                     degrees(ekf_euler.y),
-                    degrees(ekf_euler.z));
+                    temp,
+                    velNED.x, 
+                    velNED.y, 
+                    velNED.z, 
+                    posNED.x, 
+                    posNED.y, 
+                    posNED.z, 
+                    gyroBias.x, 
+                    gyroBias.y, 
+                    gyroBias.z, 
+                    accelBias.x, 
+                    accelBias.y, 
+                    accelBias.z, 
+                    magNED.x, 
+                    magNED.y, 
+                    magNED.z, 
+                    magXYZ.x, 
+                    magXYZ.y, 
+                    magXYZ.z,
+                    LogReader.get_attitude().x,
+                    LogReader.get_attitude().y,
+                    LogReader.get_attitude().z);
 
 #if 0
             ::printf("t=%.3f ATT: (%.1f %.1f %.1f) AHRS: (%.1f %.1f %.1f) EKF: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
@@ -143,7 +173,7 @@ void loop()
                      ahrs.yaw_sensor*0.01f,
                      degrees(ekf_euler.x),
                      degrees(ekf_euler.y),
-                     degrees(ekf_euler.z),
+                     temp,
                      barometer.get_altitude(),
                      (unsigned)g_gps->status(),
                      g_gps->latitude*1.0e-7f,
