@@ -22,17 +22,19 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     useAirspeed(true),
     useCompass(true),
     fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
+    fuseMeNow(true), // forces fusion to occur on the IMU frame that data arrives
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
-    yawVarScale(100.0f), // scale factor applied to yaw gyro errors when on ground
+    yawVarScale(10.0f), // scale factor applied to yaw gyro errors when on ground
     TASmsecMax(333), // maximum allowed interal between airspeed measurement updates
     MAGmsecMax(333), // maximum allowed interval between magnetometer measurement updates
-    HGTmsecMax(250), // maximum interval between height measurement updates
+    HGTmsecMax(1000), // maximum interval between height measurement updates
     msecVelDelay(230), // msec of GPS velocity delay
     msecPosDelay(210), // msec of GPS position delay
     msecHgtDelay(350), // msec of barometric height delay
     msecMagDelay(30), // msec of compass delay
-    msecTasDelay(210) // msec of true airspeed delay
+    msecTasDelay(210), // msec of true airspeed delay
+    dtIMUAvg(0.02f) // expected IMU data interval
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
     _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
@@ -43,12 +45,17 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
 {
     mag_state.q0 = 1;
     mag_state.DCM.identity();
+    dtIMUAvgInv = 1.0f/dtIMUAvg;
 }
 
 void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
     Quaternion initQuat;
+//debug code
+//    ahrsEul[0] = -2.6f*DEG_TO_RAD;//_ahrs.roll;
+//    ahrsEul[1] = +3.4f*DEG_TO_RAD;//_ahrs.pitch;
+//    ahrsEul[2] = -42.0f*DEG_TO_RAD;//_ahrs.yaw;
     ahrsEul[0] = _ahrs.roll;
     ahrsEul[1] = _ahrs.pitch;
     ahrsEul[2] = _ahrs.yaw;
@@ -185,6 +192,7 @@ void NavEKF::SelectVelPosFusion()
             fuseVelData = false;
             fusePosData = false;
             fuseHgtData = true;
+            HGTmsecPrev = IMUmsec;
         }
         else
         {
@@ -212,7 +220,9 @@ void NavEKF::SelectMagFusion()
 {
     readMagData();
     // Fuse Magnetometer Measurements - hold off if pos/vel fusion has occurred, unless maximum time interval exceeded
-    if (statesInitialised && useCompass && newDataMag && (!posVelFuseStep || ((IMUmsec - MAGmsecPrev) >= MAGmsecMax)))
+bool dataReady = statesInitialised && useCompass && newDataMag;
+bool timeout = ((IMUmsec - MAGmsecPrev) >= MAGmsecMax);
+    if (dataReady && (!posVelFuseStep || timeout || fuseMeNow))
     {
         MAGmsecPrev = IMUmsec;
         fuseMagData = true;
@@ -231,7 +241,10 @@ void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
     // Fuse Airspeed Measurements - hold off if pos/vel or magnetometer fusion has been performed, unless maximum time interval exceeded
-    if (statesInitialised && useAirspeed && !onGround  && newDataTas && ((!posVelFuseStep && !magFusePerformed) || ((IMUmsec - TASmsecPrev) >= TASmsecMax)))
+bool dataReady = (statesInitialised && useAirspeed && !onGround  && newDataTas);
+bool clearFrame = (!posVelFuseStep && !magFusePerformed);
+bool timeout = ((IMUmsec - TASmsecPrev) >= TASmsecMax);
+    if (dataReady && (clearFrame || timeout || fuseMeNow))
     {
         TASmsecPrev = IMUmsec;
         FuseAirspeed();
@@ -401,7 +414,7 @@ void NavEKF::CovariancePrediction()
     daxCov = sq(dt*1.4544411e-2f);
     dayCov = sq(dt*1.4544411e-2f);
     dazCov = sq(dt*1.4544411e-2f);
-    if (onGround) dazCov = dazCov * yawVarScale;
+    if (onGround) dazCov = dazCov * sq(yawVarScale);
     dvxCov = sq(dt*0.5f);
     dvyCov = sq(dt*0.5f);
     dvzCov = sq(dt*0.5f);
@@ -1395,7 +1408,7 @@ void NavEKF::FuseMagnetometer()
             MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
             // scale magnetometer observation error with total angular rate
-            R_MAG = 0.0025f + sq(0.05f*dAngIMU.length()/dtIMU);
+            R_MAG = 0.0025f + sq(0.05f*dAngIMU.length()*dtIMUAvgInv);
 
             // Calculate observation jacobians
             SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
@@ -1896,6 +1909,34 @@ bool NavEKF::getPosNED(Vector3f &pos)
     return true;
 }
 
+void NavEKF::getGyroBias(Vector3f &gyroBias)
+{
+    gyroBias.x = states[10]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
+    gyroBias.y = states[11]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
+    gyroBias.z = states[12]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
+}
+
+void NavEKF::getAccelBias(Vector3f &accelBias)
+{
+    accelBias.x = states[13]*dtIMUAvgInv;
+    accelBias.y = states[14]*dtIMUAvgInv;
+    accelBias.z = states[15]*dtIMUAvgInv;
+}
+
+void NavEKF::getMagNED(Vector3f &magNED)
+{
+    magNED.x = states[18]*1000.0f;
+    magNED.y = states[19]*1000.0f;
+    magNED.z = states[20]*1000.0f;
+}
+
+void NavEKF::getMagXYZ(Vector3f &magXYZ)
+{
+    magXYZ.x = states[21]*1000.0f;
+    magXYZ.y = states[22]*1000.0f;
+    magXYZ.z = states[23]*1000.0f;
+}
+
 void NavEKF::calcposNE(float lat, float lon)
 {
     posNE[0] = RADIUS_OF_EARTH * (lat - latRef);
@@ -1927,7 +1968,7 @@ void NavEKF::CovarianceInit()
     P[7][7]   = sq(15.0f);
     P[8][8]   = P[7][7];
     P[9][9]   = sq(5.0f);
-    P[10][10] = sq(radians(0.1f * dtIMU));
+    P[10][10] = sq(radians(0.1f * dtIMUAvg));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     P[13][13] = sq(0.1f * 0.02f);
