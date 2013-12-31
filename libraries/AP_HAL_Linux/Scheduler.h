@@ -40,6 +40,7 @@ public:
     void     reboot(bool hold_in_bootloader);
 
     void     time_shift(uint32_t shift_ms);
+    void     stop_clock(uint32_t time_ms);
 
 private:
     struct timespec _sketch_start_time;    
@@ -77,6 +78,8 @@ private:
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
     void _setup_realtime(uint32_t size);
+
+    uint32_t stopped_clock_ms;
 };
 
 #endif // CONFIG_HAL_BOARD
