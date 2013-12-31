@@ -1887,6 +1887,14 @@ void NavEKF::getVelNED(Vector3f &vel)
     vel.z = states[6];
 }
 
+bool NavEKF::getPosNED(Vector3f &pos)
+{
+    pos.x = states[7];
+    pos.y = states[8];
+    pos.z = states[9];
+    return true;
+}
+
 void NavEKF::calcposNE(float lat, float lon)
 {
     posNE[0] = RADIUS_OF_EARTH * (lat - latRef);
