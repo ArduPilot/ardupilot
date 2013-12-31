@@ -374,6 +374,7 @@ void NavEKF::CovariancePrediction()
 
     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
     for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
+    if (onGround) processNoise[12] = dAngBiasSigma * yawVarScale;
     for (uint8_t i=13; i<=15; i++) processNoise[i] = dVelBiasSigma;
     for (uint8_t i=16; i<=17; i++) processNoise[i] = windVelSigma;
     for (uint8_t i=18; i<=20; i++) processNoise[i] = magEarthSigma;
