@@ -191,6 +191,9 @@ private:
     float _gpsPosVarAccScale; // scale factor applied to position variance due to Vdot
     float _magVar; // magnetometer measurement variance Gauss^2
     float _magVarRateScale; // scale factor applied to magnetometer variance due to Vdot
+    float _easVar; // equivalent airspeed noise variance (m/s)^2
+    float _windStateNoise; // RMS rate of change of wind (m/s^2)
+    float _wndVarHgtRateScale; // scale factor applied to wind process noise from height rate
 
     Vector24 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
 
@@ -211,6 +214,7 @@ private:
     Vector3f dAngIMU; // delta angle vector in XYZ body axes measured by the IMU (rad)
     float dtIMU; // time lapsed since the last IMU measurement (sec)
     float dt; // time lapsed since the last covariance prediction (sec)
+    float hgtRate; // state for rate of change of height filter
     bool onGround; // boolean true when the flight vehicle is on the ground (not flying)
     const bool useAirspeed; // boolean true if airspeed data is being used
     const bool useCompass; // boolean true if magnetometer data is being used
