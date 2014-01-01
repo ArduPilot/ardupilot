@@ -535,6 +535,9 @@ def fly_ArduPlane(viewerip=None, map=False):
                            target_altitude=homeloc.alt+100):
             print("Failed mission")
             failed = True
+        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
+            print("Failed log download")
+            failed = True
     except pexpect.TIMEOUT, e:
         print("Failed with timeout")
         failed = True

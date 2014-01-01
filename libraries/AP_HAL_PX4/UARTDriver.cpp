@@ -44,14 +44,21 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         // leave uninitialised
         return;
     }
+
+    uint16_t min_tx_buffer = 512;
+    uint16_t min_rx_buffer = 512;
+    if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
+        min_tx_buffer = 16384;
+        min_rx_buffer = 1024;
+    }
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
-    if (txS < 512) {
-        txS = 512;
+    if (txS < min_tx_buffer) {
+        txS = min_tx_buffer;
     }
-    if (rxS < 512) {
-        rxS = 512;
+    if (rxS < min_rx_buffer) {
+        rxS = min_rx_buffer;
     }
 
     /*

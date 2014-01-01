@@ -1,3 +1,6 @@
+#include <AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "RCInput.h"
 
@@ -36,3 +39,4 @@ bool LinuxRCInput::set_override(uint8_t channel, int16_t override) {
 void LinuxRCInput::clear_overrides()
 {}
 
+#endif // CONFIG_HAL_BOARD

@@ -44,8 +44,12 @@
  * `void setup()` and `void loop()`, ala Arduino.
  */
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
+
 #include "HAL_FLYMAPLE_Class.h"
 #include "AP_HAL_FLYMAPLE_Main.h"
+
+#endif // CONFIG_HAL_BOARD
 
 #endif //__AP_HAL_FLYMAPLE_H__
 

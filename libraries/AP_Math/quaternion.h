@@ -20,6 +20,9 @@
 #define QUATERNION_H
 
 #include <math.h>
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 class Quaternion
 {
@@ -50,15 +53,32 @@ public:
     }
 
     // return the rotation matrix equivalent for this quaternion
-    void        rotation_matrix(Matrix3f &m);
+    void        rotation_matrix(Matrix3f &m) const;
 
     // convert a vector from earth to body frame
-    void        earth_to_body(Vector3f &v);
+    void        earth_to_body(Vector3f &v) const;
 
     // create a quaternion from Euler angles
     void        from_euler(float roll, float pitch, float yaw);
 
     // create eulers from a quaternion
-    void        to_euler(float *roll, float *pitch, float *yaw);
+    void        to_euler(float *roll, float *pitch, float *yaw) const;
+
+    // allow a quaternion to be used as an array, 0 indexed
+    float & operator[](uint8_t i) {
+        float *_v = &q1;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 4);
+#endif
+        return _v[i];
+    }
+
+    const float & operator[](uint8_t i) const {
+        const float *_v = &q1;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 4);
+#endif
+        return _v[i];
+    }
 };
 #endif // QUATERNION_H

@@ -4,10 +4,7 @@
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
 # To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
-# To enable uartD on FMUv1 on ttyS1 add a /fs/microsd/APM/uartD.en
-# file
-
-# enable uartD by default on PX4v1
+# To enable PWM on FMUv1 on ttyS1 add a /fs/microsd/APM/AUXPWM.en file
 
 set deviceA /dev/ttyACM0
 
@@ -65,11 +62,11 @@ fi
 if [ $BOARD == FMUv1 ]
 then
    set deviceC /dev/ttyS2
-   if [ -f /fs/microsd/APM/uartD.en ]
+   if [ -f /fs/microsd/APM/AUXPWM.en ]
    then
-      set deviceD /dev/ttyS1
-   else
       set deviceD /dev/null
+   else
+      set deviceD /dev/ttyS1
    fi
 else
    set deviceC /dev/ttyS1

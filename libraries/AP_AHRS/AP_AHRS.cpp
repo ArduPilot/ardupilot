@@ -111,13 +111,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @Range: 0 5
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("GPS_DELAY", 12, AP_AHRS, _gps_delay, 2),
+    AP_GROUPINFO("GPS_DELAY", 12, AP_AHRS, _gps_delay, 1),
 
     AP_GROUPEND
 };
 
 // return airspeed estimate if available
-bool AP_AHRS::airspeed_estimate(float *airspeed_ret)
+bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 {
 	if (_airspeed && _airspeed->use()) {
 		*airspeed_ret = _airspeed->get_airspeed();

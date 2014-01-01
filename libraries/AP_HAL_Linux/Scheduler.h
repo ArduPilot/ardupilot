@@ -39,6 +39,8 @@ public:
     void     panic(const prog_char_t *errormsg);
     void     reboot(bool hold_in_bootloader);
 
+    void     time_shift(uint32_t shift_ms);
+
 private:
     struct timespec _sketch_start_time;    
     void _timer_handler(int signum);

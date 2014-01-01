@@ -1,3 +1,6 @@
+#include <AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "RCOutput.h"
 
@@ -36,3 +39,4 @@ uint16_t LinuxRCOutput::read(uint8_t ch) {
 void LinuxRCOutput::read(uint16_t* period_us, uint8_t len)
 {}
 
+#endif // CONFIG_HAL_BOARD

@@ -51,7 +51,6 @@
 #include <AP_Relay.h>       // APM relay
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed.h>
-#include <memcheck.h>
 
 #include <APM_OBC.h>
 #include <APM_Control.h>
@@ -153,8 +152,8 @@ static DataFlash_APM1 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
 static DataFlash_APM2 DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-//static DataFlash_File DataFlash("logs");
-static DataFlash_SITL DataFlash;
+static DataFlash_File DataFlash("logs");
+//static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 static DataFlash_File DataFlash("/fs/microsd/APM/logs");
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -730,8 +729,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { set_servos,             1,   1600 },
     { read_control_switch,    7,   1000 },
     { gcs_retry_deferred,     1,   1000 },
-    { update_GPS,             5,   3700 },
-    { navigate,               5,   3000 }, // 10
+    { update_GPS_50Hz,        1,   2500 },
+    { update_GPS_10Hz,        5,   2500 }, // 10
+    { navigate,               5,   3000 },
     { update_compass,         5,   1200 },
     { read_airspeed,          5,   1200 },
     { update_alt,             5,   3400 },
@@ -740,8 +740,8 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
-    { update_events,		 15,   1500 },
-    { check_usb_mux,          5,    300 }, // 20
+    { update_events,		 15,   1500 }, // 20
+    { check_usb_mux,          5,    300 },
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
     { barometer_accumulate,   1,    900 },
@@ -750,21 +750,18 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { one_second_loop,       50,   1000 },
     { check_long_failsafe,   15,   1000 },
     { read_receiver_rssi,     5,   1000 },
-    { airspeed_ratio_update, 50,   1000 },
-    { update_mount,           1,   1500 }, // 30
+    { airspeed_ratio_update, 50,   1000 }, // 30
+    { update_mount,           1,   1500 },
     { log_perf_info,        500,   1000 },
     { compass_save,        3000,   2500 },
-    { update_logging,         5,   1200 },
+    { update_logging1,        5,   1700 },
+    { update_logging2,        5,   1700 },
 };
 
 // setup the var_info table
 AP_Param param_loader(var_info, WP_START_BYTE);
 
 void setup() {
-    // this needs to be the first call, as it fills memory with
-    // sentinel values
-    memcheck_init();
-
     cliSerial = hal.console;
 
     // load the default values of variables listed in var_info[]
@@ -908,14 +905,20 @@ static void barometer_accumulate(void)
 /*
   do 10Hz logging
  */
-static void update_logging(void)
+static void update_logging1(void)
 {
     if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
 
     if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_IMU))
         Log_Write_IMU();
-    
+}
+
+/*
+  do 10Hz logging - part2
+ */
+static void update_logging2(void)
+{
     if (g.log_bitmask & MASK_LOG_CTUN)
         Log_Write_Control_Tuning();
     
@@ -1028,18 +1031,23 @@ static void airspeed_ratio_update(void)
 /*
   read the GPS and update position
  */
-static void update_GPS(void)
+static void update_GPS_50Hz(void)
 {
     static uint32_t last_gps_reading;
     g_gps->update();
-
     if (g_gps->last_message_time_ms() != last_gps_reading) {
         last_gps_reading = g_gps->last_message_time_ms();
         if (g.log_bitmask & MASK_LOG_GPS) {
             Log_Write_GPS();
         }
     }
+}
 
+/*
+  read update GPS position - 10Hz update
+ */
+static void update_GPS_10Hz(void)
+{
     // get position from AHRS
     have_position = ahrs.get_projected_position(current_loc);
 

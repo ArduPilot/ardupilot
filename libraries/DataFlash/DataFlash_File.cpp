@@ -9,7 +9,7 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if HAL_OS_POSIX_IO
 #include "DataFlash.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -113,6 +113,7 @@ char *DataFlash_File::_lastlog_file_name(void)
 void DataFlash_File::EraseAll()
 {
     uint16_t log_num;
+    stop_logging();
     for (log_num=0; log_num<MAX_LOG_FILES; log_num++) {
         char *fname = _log_file_name(log_num);
         if (fname == NULL) {
@@ -269,7 +270,8 @@ int16_t DataFlash_File::get_log_data(uint16_t log_num, uint16_t page, uint32_t o
         if (fname == NULL) {
             return -1;
         }
-        _read_fd = open(fname, O_RDONLY);
+        stop_logging();
+        _read_fd = ::open(fname, O_RDONLY);
         free(fname);
         if (_read_fd == -1) {
             return -1;            
@@ -314,17 +316,26 @@ uint16_t DataFlash_File::get_num_logs(void)
     return ret;
 }
 
-
 /*
-  start writing to a new log file
+  stop logging
  */
-uint16_t DataFlash_File::start_new_log(void)
+void DataFlash_File::stop_logging(void)
 {
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
         ::close(fd);
     }
+}
+
+
+/*
+  start writing to a new log file
+ */
+uint16_t DataFlash_File::start_new_log(void)
+{
+    stop_logging();
+
     if (_read_fd != -1) {
         ::close(_read_fd);
         _read_fd = -1;
@@ -515,7 +526,7 @@ void DataFlash_File::_io_timer(void)
     assert(_writebuf_head+nbytes <= _writebuf_size);
     ssize_t nwritten = ::write(_write_fd, &_writebuf[_writebuf_head], nbytes);
     if (nwritten <= 0) {
-        hal.console->printf("DataFlash write: %d %d\n", (int)nwritten, (int)errno);
+        //hal.console->printf("DataFlash write: %d %d\n", (int)nwritten, (int)errno);
         close(_write_fd);
         _write_fd = -1;
         _initialised = false;
@@ -525,4 +536,5 @@ void DataFlash_File::_io_timer(void)
     }
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // HAL_OS_POSIX_IO
+

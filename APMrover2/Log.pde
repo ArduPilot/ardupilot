@@ -514,6 +514,12 @@ static void Log_Write_Compass()
 }
 
 
+static void Log_Write_RC(void)
+{
+    DataFlash.Log_Write_RCIN();
+    DataFlash.Log_Write_RCOUT();
+}
+
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
@@ -550,7 +556,7 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"),
-                        (unsigned) memcheck_available_memory());
+                        (unsigned)hal.util->available_memory());
 
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
@@ -587,6 +593,7 @@ static void Log_Write_Mode() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Compass() {}
 static void start_logging() {}
+static void Log_Write_RC(void) {}
 
 #endif // LOGGING_ENABLED
 

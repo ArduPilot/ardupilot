@@ -5,6 +5,7 @@
 #include <AP_HAL_PX4.h>
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
+#include <pthread.h>
 
 class PX4::PX4RCInput : public AP_HAL::RCInput {
 public:
@@ -25,9 +26,10 @@ private:
     struct rc_input_values _rcin;
     int _rc_sub;
     uint64_t _last_read;
-    uint64_t _last_input;
     bool _override_valid;
     perf_counter_t _perf_rcin;
+
+    pthread_mutex_t rcin_mutex;
 };
 
 #endif // __AP_HAL_PX4_RCINPUT_H__

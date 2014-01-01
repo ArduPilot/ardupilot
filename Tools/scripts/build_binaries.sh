@@ -35,7 +35,7 @@ checkout() {
 # check if we should skip this build because we have already
 # built this version
 skip_build() {
-    [ "$FORCE_BUILD" -eq "1" ] && return 1
+    [ "$FORCE_BUILD" = "1" ] && return 1
     tag="$1"
     ddir="$2"
     bname=$(basename $ddir)
@@ -106,6 +106,12 @@ build_arduplane() {
 	    make px4 &&
 	    copyit ArduPlane-v1.px4 $ddir $tag &&
 	    copyit ArduPlane-v2.px4 $ddir $tag
+            if [ "$tag" = "latest" ]; then
+	        copyit px4io-v1.bin $binaries/PX4IO/$hdate/PX4IO $tag
+	        copyit px4io-v1.elf $binaries/PX4IO/$hdate/PX4IO $tag
+	        copyit px4io-v2.bin $binaries/PX4IO/$hdate/PX4IO $tag
+	        copyit px4io-v2.elf $binaries/PX4IO/$hdate/PX4IO $tag
+            fi
 	}
     }
     popd

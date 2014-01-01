@@ -138,3 +138,14 @@ GCS_MAVLINK::queued_waypoint_send()
 void GCS_MAVLINK::reset_cli_timeout() {
       _cli_timeout = hal.scheduler->millis();
 }
+
+void GCS_MAVLINK::send_meminfo(void)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    extern unsigned __brkval;
+#else
+    unsigned __brkval = 0;
+#endif
+    mavlink_msg_meminfo_send(chan, __brkval, hal.util->available_memory());
+}
+

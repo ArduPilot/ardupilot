@@ -1125,6 +1125,10 @@ def fly_ArduCopter(viewerip=None, map=False):
             print("disarm_motors failed")
             failed = True
 
+        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduCopter-log.bin")):
+            print("Failed log download")
+            failed = True
+
     except pexpect.TIMEOUT, e:
         failed = True
 
@@ -1262,6 +1266,10 @@ def fly_CopterAVC(viewerip=None, map=False):
         print("# disarm motors")
         if not disarm_motors(mavproxy, mav):
             print("disarm_motors failed")
+            failed = True
+
+        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/CopterAVC-log.bin")):
+            print("Failed log download")
             failed = True
 
     except pexpect.TIMEOUT, e:
