@@ -195,12 +195,12 @@ struct PACKED log_EKF1 {
     int16_t roll;
     int16_t pitch;
     uint16_t yaw;
-    int16_t velN;
-    int16_t velE;
-    int16_t velD;
-    int16_t posN;
-    int16_t posE;
-    int16_t posD;
+    float velN;
+    float velE;
+    float velD;
+    float posN;
+    float posE;
+    float posD;
     int8_t gyrX;
     int8_t gyrY;
     int8_t gyrZ;
@@ -223,18 +223,18 @@ static void Log_Write_EKF1(void)
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
         time_ms : hal.scheduler->millis(),
-        roll    : (int16_t)(100*degrees(euler.x)),
-        pitch   : (int16_t)(100*degrees(euler.y)),
-        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)),
-        velN    : (int16_t)(100*velNED.x),
-        velE    : (int16_t)(100*velNED.y),
-        velD    : (int16_t)(100*velNED.z),
-        posN    : (int16_t)(100*posNED.x),
-        posE    : (int16_t)(100*posNED.y),
-        posD    : (int16_t)(100*posNED.z),
-        gyrX    : (int8_t)(gyroBias.x),
-        gyrY    : (int8_t)(gyroBias.y),
-        gyrZ    : (int8_t)(gyroBias.z)
+        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg)
+        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg)
+        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg)
+        velN    : (float)(velNED.x), // velocity North (m/s)
+        velE    : (float)(velNED.y), // velocity East (m/s)
+        velD    : (float)(velNED.z), // velocity Down (m/s)
+        posN    : (float)(posNED.x), // metres North
+        posE    : (float)(posNED.y), // metres East
+        posD    : (float)(posNED.z), // metres Down
+        gyrX    : (int8_t)(gyroBias.x), // deg/min
+        gyrY    : (int8_t)(gyroBias.y), // deg/min
+        gyrZ    : (int8_t)(gyroBias.z)  // deg/min
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 #endif
@@ -243,9 +243,9 @@ static void Log_Write_EKF1(void)
 struct PACKED log_EKF2 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
-    int16_t accX;
-    int16_t accY;
-    int16_t accZ;
+    int8_t accX;
+    int8_t accY;
+    int8_t accZ;
     int16_t windN;
     int16_t windE;
     int16_t magN;
@@ -272,9 +272,9 @@ static void Log_Write_EKF2(void)
     struct log_EKF2 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
         time_ms : hal.scheduler->millis(),
-        accX    : (int16_t)(100*accelBias.x),
-        accY    : (int16_t)(100*accelBias.y),
-        accZ    : (int16_t)(100*accelBias.z),
+        accX    : (int8_t)(100*accelBias.x),
+        accY    : (int8_t)(100*accelBias.y),
+        accZ    : (int8_t)(100*accelBias.z),
         windN   : (int16_t)(100*wind.x),
         windE   : (int16_t)(100*wind.y),
         magN    : (int16_t)(magNED.x),
