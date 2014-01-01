@@ -21,7 +21,7 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
-    fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
+    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     fuseMeNow(true), // forces fusion to occur on the IMU frame that data arrives
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
@@ -52,7 +52,11 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     _gpsPosVarAccScale = 0.2f; // scale factor applied to position variance due to Vdot
     _magVar = 0.0025f; // magnetometer measurement variance Gauss^2
     _magVarRateScale = 0.05f; // scale factor applied to magnetometer variance due to angular rate
+    _easVar = 2.0f; // equivalent airspeed noise variance (m/s)^2
+    _windStateNoise = 0.1f; // RMS rate of change of wind (m/s^2)
+    _wndVarHgtRateScale = 0.5f; // scale factor applied to wind process noise from height rate
     // Misc initial conditions
+    hgtRate = 0.0f;
     mag_state.q0 = 1;
     mag_state.DCM.identity();
     dtIMUAvgInv = 1.0f/dtIMUAvg;
@@ -385,7 +389,12 @@ void NavEKF::CovariancePrediction()
     float dvz_b;
 
     // calculate covariance prediction process noise
-    windVelSigma  = dt * 0.1f;
+    // filter height rate using a 10 second time constant filter
+    float alpha = 0.1f * dt;
+    hgtRate = hgtRate * (1.0f - alpha) - states[6] * alpha;
+    // use filtered height rate to increase wind process noise when climbing or descending
+    // this allows for wind gradient effects.
+    windVelSigma  = dt * _windStateNoise * (1.0f + _wndVarHgtRateScale * fabsf(hgtRate));
     dAngBiasSigma = dt * 5.0e-7f;
     dVelBiasSigma = dt * 1.0e-4f;
     magEarthSigma = dt * 1.5e-4f;
@@ -1171,14 +1180,18 @@ void NavEKF::FuseVelPosNED()
         for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
         observation[5] = -hgtMea;
 
-        // Estimate the GPS Velocity, GPS horiz position and height measurement variances.
-        // additional error in GPS velocities caused by manoeuvring
+        // additional error in GPS velocity caused by manoeuvring
         velErr = _gpsVelVarAccScale*accNavMag;
 
         // additional error in GPS position caused by manoeuvring
         posErr = _gpsPosVarAccScale*accNavMag;
-        for (uint8_t i=0; i<=2; i++) R_OBS[i] = _gpsHorizVelVar + velErr*velErr;
-        for (uint8_t i=3; i<=4; i++) R_OBS[i] = _gpsHorizPosVar + posErr*posErr;
+
+        // Estimate the GPS Velocity, GPS horiz position and height measurement variances.
+        R_OBS[0] = _gpsHorizVelVar + sq(velErr);
+        R_OBS[1] = R_OBS[0];
+        R_OBS[2] = _gpsVertVelVar + sq(velErr);
+        R_OBS[3] = _gpsHorizPosVar + sq(posErr);
+        R_OBS[4] = R_OBS[3];
         R_OBS[5] = _gpsVertPosVar;
 
         // Set innovation variances to zero default
@@ -1672,7 +1685,8 @@ void NavEKF::FuseAirspeed()
     float vd;
     float vwn;
     float vwe;
-    const float R_TAS = 2.0f;
+    float EAS2TAS = _ahrs.get_EAS2TAS();
+    const float R_TAS = _easVar*sq(constrain_float(EAS2TAS,1.0f,10.0f));
     Vector3f SH_TAS;
     float SK_TAS;
     Vector24 H_TAS;
