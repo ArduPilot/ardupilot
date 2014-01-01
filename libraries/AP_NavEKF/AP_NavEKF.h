@@ -182,6 +182,16 @@ private:
 
     bool statesInitialised;
 
+    // Tuning Parameters
+    float _gpsHorizVelVar;  // GPS horizontal velocity variance (m/s)^2
+    float _gpsVertVelVar;  // GPS vertical velocity variance (m/s)^2
+    float _gpsHorizPosVar; // GPS horizontal position variance m^2
+    float _gpsVertPosVar;  // GPS vertical position variance m^2
+    float _gpsVelVarAccScale; // scale factor applied to velocity variance due to Vdot
+    float _gpsPosVarAccScale; // scale factor applied to position variance due to Vdot
+    float _magVar; // magnetometer measurement variance Gauss^2
+    float _magVarRateScale; // scale factor applied to magnetometer variance due to Vdot
+
     Vector24 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
 
     Matrix24 KH; //  intermediate result used for covariance updates
