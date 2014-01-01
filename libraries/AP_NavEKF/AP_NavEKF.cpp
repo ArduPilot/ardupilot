@@ -144,6 +144,8 @@ void NavEKF::UpdateFilter()
         StoreStates();
         // Check if on ground - status is used by covariance prediction
         OnGroundCheck();
+//debug code
+        onGround = false;
         // sum delta angles and time used by covariance prediction
         summedDelAng = summedDelAng + correctedDelAng;
         summedDelVel = summedDelVel + correctedDelVel;

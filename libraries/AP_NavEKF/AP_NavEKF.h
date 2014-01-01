@@ -83,22 +83,22 @@ public:
     // reference point (m). Return false if no position is available
     bool getPosNED(Vector3f &pos);
 
-    // return the last calculated NED velocity (m/s)
+    // return NED velocity in m/s
     void getVelNED(Vector3f &vel);
 
-    // return delta angle bias estimates
+    // return bodyaxis gyro bias estimates in deg/hr
     void getGyroBias(Vector3f &gyroBias);
 
-    // return delta velocity bias estimates
+    // return body axis accelerometer bias estimates in m/s^2
     void getAccelBias(Vector3f &accelBias);
 
-    // return the NE wind speed estimates
+    // return the NED wind speed estimates in m/s
     void getWind(Vector3f &wind);
 
-    // return earth magnetic field estimates
+    // return earth magnetic field estimates in measurement units
     void getMagNED(Vector3f &magNED);
 
-    // return body magnetic field estimates
+    // return body magnetic field estimates in measurement units
     void getMagXYZ(Vector3f &magXYZ);
 
     // return the last calculated latitude, longitude and height
