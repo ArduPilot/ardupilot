@@ -21,7 +21,7 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
-    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
+    fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     fuseMeNow(true), // forces fusion to occur on the IMU frame that data arrives
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
@@ -43,6 +43,16 @@ NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
     _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EKF_FuseAirspeed"))
 #endif
 {
+    // Tuning parameters
+    _gpsHorizVelVar = 0.04f;   // GPS horizontal velocity variance (m/s)^2
+    _gpsVertVelVar  = 0.08f;   // GPS vertical velocity variance (m/s)^2
+    _gpsHorizPosVar = 4.0f;    // GPS horizontal position variance m^2
+    _gpsVertPosVar = 4.0f;     // GPS or Baro vertical position variance m^2
+    _gpsVelVarAccScale = 0.2f; // scale factor applied to velocity variance due to Vdot
+    _gpsPosVarAccScale = 0.2f; // scale factor applied to position variance due to Vdot
+    _magVar = 0.0025f; // magnetometer measurement variance Gauss^2
+    _magVarRateScale = 0.05f; // scale factor applied to magnetometer variance due to angular rate
+    // Misc initial conditions
     mag_state.q0 = 1;
     mag_state.DCM.identity();
     dtIMUAvgInv = 1.0f/dtIMUAvg;
@@ -1126,30 +1136,30 @@ void NavEKF::FuseVelPosNED()
     bool hgtTimeout;
     Vector24 Kfusion;
 
-// declare variables used to check measurement errors
+    // declare variables used to check measurement errors
     Vector3f velInnov;
     Vector2 posInnov;
     float hgtInnov = 0;
 
-// declare variables used to control access to arrays
+    // declare variables used to control access to arrays
     bool fuseData[6] = {false,false,false,false,false,false};
     uint8_t stateIndex;
     uint8_t obsIndex;
     uint8_t indexLimit; // used to prevent access to wind and magnetic field states and variances when on ground
 
-// declare variables used by state and covariance update calculations
+    // declare variables used by state and covariance update calculations
     float velErr;
     float posErr;
     Vector6 R_OBS;
     Vector6 observation;
     float SK;
 
-// Perform sequential fusion of GPS measurements. This assumes that the
-// errors in the different velocity and position components are
-// uncorrelated which is not true, however in the absence of covariance
-// data from the GPS receiver it is the only assumption we can make
-// so we might as well take advantage of the computational efficiencies
-// associated with sequential fusion
+    // Perform sequential fusion of GPS measurements. This assumes that the
+    // errors in the different velocity and position components are
+    // uncorrelated which is not true, however in the absence of covariance
+    // data from the GPS receiver it is the only assumption we can make
+    // so we might as well take advantage of the computational efficiencies
+    // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData)
     {
         // set the GPS data timeout depending on whether airspeed data is present
@@ -1160,12 +1170,16 @@ void NavEKF::FuseVelPosNED()
         for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
         for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
         observation[5] = -hgtMea;
+
         // Estimate the GPS Velocity, GPS horiz position and height measurement variances.
-        velErr = 0.2f*accNavMag; // additional error in GPS velocities caused by manoeuvring
-        posErr = 0.2f*accNavMag; // additional error in GPS position caused by manoeuvring
-        for (uint8_t i=0; i<=2; i++) R_OBS[i] = 0.02f + velErr*velErr;
-        for (uint8_t i=3; i<=4; i++) R_OBS[i] = 4.0f + posErr*posErr;
-        R_OBS[5] = 4.0f;
+        // additional error in GPS velocities caused by manoeuvring
+        velErr = _gpsVelVarAccScale*accNavMag;
+
+        // additional error in GPS position caused by manoeuvring
+        posErr = _gpsPosVarAccScale*accNavMag;
+        for (uint8_t i=0; i<=2; i++) R_OBS[i] = _gpsHorizVelVar + velErr*velErr;
+        for (uint8_t i=3; i<=4; i++) R_OBS[i] = _gpsHorizPosVar + posErr*posErr;
+        R_OBS[5] = _gpsVertPosVar;
 
         // Set innovation variances to zero default
         for (uint8_t i = 0; i<=5; i++)
@@ -1404,7 +1418,7 @@ void NavEKF::FuseMagnetometer()
             MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
             // scale magnetometer observation error with total angular rate
-            R_MAG = 0.0025f + sq(0.05f*dAngIMU.length()*dtIMUAvgInv);
+            R_MAG = _magVar + sq(_magVarRateScale*dAngIMU.length()*dtIMUAvgInv);
 
             // Calculate observation jacobians
             SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
