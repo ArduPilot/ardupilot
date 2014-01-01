@@ -1956,7 +1956,11 @@ bool NavEKF::getLLH(struct Location &loc)
 
 void NavEKF::OnGroundCheck()
 {
-    onGround = (((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f) && (VtasMeas < 8.0f));
+    bool noAirSpd;
+    bool noGndSpd;
+    noAirSpd = (_ahrs.airspeed_estimate_true(&VtasMeas) < 8.0f);
+    noGndSpd = ((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
+    onGround = (noAirSpd && noGndSpd);
 }
 
 void NavEKF::CovarianceInit()
