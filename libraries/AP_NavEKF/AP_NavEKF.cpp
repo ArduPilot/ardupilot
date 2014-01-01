@@ -52,10 +52,6 @@ void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
     Quaternion initQuat;
-//debug code
-//    ahrsEul[0] = -2.6f*DEG_TO_RAD;//_ahrs.roll;
-//    ahrsEul[1] = +3.4f*DEG_TO_RAD;//_ahrs.pitch;
-//    ahrsEul[2] = -42.0f*DEG_TO_RAD;//_ahrs.yaw;
     ahrsEul[0] = _ahrs.roll;
     ahrsEul[1] = _ahrs.pitch;
     ahrsEul[2] = _ahrs.yaw;
@@ -144,8 +140,6 @@ void NavEKF::UpdateFilter()
         StoreStates();
         // Check if on ground - status is used by covariance prediction
         OnGroundCheck();
-//debug code
-        onGround = false;
         // sum delta angles and time used by covariance prediction
         summedDelAng = summedDelAng + correctedDelAng;
         summedDelVel = summedDelVel + correctedDelVel;
