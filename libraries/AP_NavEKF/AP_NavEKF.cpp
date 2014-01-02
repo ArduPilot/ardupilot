@@ -9,6 +9,8 @@
 #pragma GCC optimize("O3")
 
 #include "AP_NavEKF.h"
+#include <AP_AHRS.h>
+
 //#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -16,19 +18,19 @@ extern const AP_HAL::HAL& hal;
 #define earthRate 0.000072921f
 
 // constructor
-NavEKF::NavEKF(const AP_AHRS &ahrs, AP_Baro &baro) :
+NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
     fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
-    fuseMeNow(true), // forces fusion to occur on the IMU frame that data arrives
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     yawVarScale(10.0f), // scale factor applied to yaw gyro errors when on ground
     TASmsecMax(333), // maximum allowed interal between airspeed measurement updates
     MAGmsecMax(333), // maximum allowed interval between magnetometer measurement updates
     HGTmsecMax(1000), // maximum interval between height measurement updates
+    fuseMeNow(true), // forces fusion to occur on the IMU frame that data arrives
     msecVelDelay(230), // msec of GPS velocity delay
     msecPosDelay(210), // msec of GPS position delay
     msecHgtDelay(350), // msec of barometric height delay
@@ -66,9 +68,9 @@ void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
     Quaternion initQuat;
-    ahrsEul[0] = _ahrs.roll;
-    ahrsEul[1] = _ahrs.pitch;
-    ahrsEul[2] = _ahrs.yaw;
+    ahrsEul[0] = _ahrs->roll;
+    ahrsEul[1] = _ahrs->pitch;
+    ahrsEul[2] = _ahrs->yaw;
     eul2quat(initQuat, ahrsEul);
 
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
@@ -1685,7 +1687,7 @@ void NavEKF::FuseAirspeed()
     float vd;
     float vwn;
     float vwe;
-    float EAS2TAS = _ahrs.get_EAS2TAS();
+    float EAS2TAS = _ahrs->get_EAS2TAS();
     const float R_TAS = _easVar*sq(constrain_float(EAS2TAS,1.0f,10.0f));
     Vector3f SH_TAS;
     float SK_TAS;
@@ -1860,7 +1862,7 @@ void NavEKF::RecallStates(Vector24 &statesForFusion, uint32_t msec)
     }
 }
 
-void NavEKF::quat2Tnb(Matrix3f &Tnb, const Quaternion &quat)
+void NavEKF::quat2Tnb(Matrix3f &Tnb, const Quaternion &quat) const
 {
     // Calculate the nav to body cosine matrix
     float q00 = sq(quat[0]);
@@ -1885,13 +1887,13 @@ void NavEKF::quat2Tnb(Matrix3f &Tnb, const Quaternion &quat)
     Tnb.b.z = 2*(q23 + q01);
 }
 
-void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat)
+void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
 {
     // Calculate the body to nav cosine matrix
     quat.rotation_matrix(Tbn);
 }
 
-void NavEKF::eul2quat(Quaternion &quat, const Vector3f &eul)
+void NavEKF::eul2quat(Quaternion &quat, const Vector3f &eul) const
 {
     float u1 = cosf(0.5f*eul[0]);
     float u2 = cosf(0.5f*eul[1]);
@@ -1905,27 +1907,27 @@ void NavEKF::eul2quat(Quaternion &quat, const Vector3f &eul)
     quat[3] = u1*u2*u6-u4*u5*u3;
 }
 
-void NavEKF::quat2eul(Vector3f &y, const Quaternion &u)
+void NavEKF::quat2eul(Vector3f &y, const Quaternion &u) const
 {
     y[0] = atan2f((2*(u[2]*u[3]+u[0]*u[1])) , (u[0]*u[0]-u[1]*u[1]-u[2]*u[2]+u[3]*u[3]));
     y[1] = -asinf(2*(u[1]*u[3]-u[0]*u[2]));
     y[2] = atan2f((2*(u[1]*u[2]+u[0]*u[3])) , (u[0]*u[0]+u[1]*u[1]-u[2]*u[2]-u[3]*u[3]));
 }
 
-void NavEKF::getEulerAngles(Vector3f &euler)
+void NavEKF::getEulerAngles(Vector3f &euler) const
 {
     Quaternion q(states[0], states[1], states[2], states[3]);
     quat2eul(euler, q);
 }
 
-void NavEKF::getVelNED(Vector3f &vel)
+void NavEKF::getVelNED(Vector3f &vel) const
 {
     vel.x = states[4];
     vel.y = states[5];
     vel.z = states[6];
 }
 
-bool NavEKF::getPosNED(Vector3f &pos)
+bool NavEKF::getPosNED(Vector3f &pos) const
 {
     pos.x = states[7];
     pos.y = states[8];
@@ -1933,35 +1935,35 @@ bool NavEKF::getPosNED(Vector3f &pos)
     return true;
 }
 
-void NavEKF::getGyroBias(Vector3f &gyroBias)
+void NavEKF::getGyroBias(Vector3f &gyroBias) const
 {
     gyroBias.x = states[10]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
     gyroBias.y = states[11]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
     gyroBias.z = states[12]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
 }
 
-void NavEKF::getAccelBias(Vector3f &accelBias)
+void NavEKF::getAccelBias(Vector3f &accelBias) const
 {
     accelBias.x = states[13]*dtIMUAvgInv;
     accelBias.y = states[14]*dtIMUAvgInv;
     accelBias.z = states[15]*dtIMUAvgInv;
 }
 
-void NavEKF::getWind(Vector3f &wind)
+void NavEKF::getWind(Vector3f &wind) const
 {
     wind.x = states[16];
     wind.y = states[17];
     wind.z = 0.0f; // curently don't estimate this
 }
 
-void NavEKF::getMagNED(Vector3f &magNED)
+void NavEKF::getMagNED(Vector3f &magNED) const
 {
     magNED.x = states[18]*1000.0f;
     magNED.y = states[19]*1000.0f;
     magNED.z = states[20]*1000.0f;
 }
 
-void NavEKF::getMagXYZ(Vector3f &magXYZ)
+void NavEKF::getMagXYZ(Vector3f &magXYZ) const
 {
     magXYZ.x = states[21]*1000.0f;
     magXYZ.y = states[22]*1000.0f;
@@ -1974,7 +1976,7 @@ void NavEKF::calcposNE(float lat, float lon)
     posNE[1] = RADIUS_OF_EARTH * cosf(latRef) * (lon - lonRef);
 }
 
-bool NavEKF::getLLH(struct Location &loc)
+bool NavEKF::getLLH(struct Location &loc) const
 {
     loc.lat = 1.0e7f * degrees(latRef + states[7] / RADIUS_OF_EARTH);
     loc.lng = 1.0e7f * degrees(lonRef + (states[8] / RADIUS_OF_EARTH) / cosf(latRef));
@@ -1987,7 +1989,7 @@ void NavEKF::OnGroundCheck()
     uint8_t lowAirSpd;
     uint8_t lowGndSpd;
     uint8_t lowHgt;
-    lowAirSpd = (uint8_t)(_ahrs.airspeed_estimate_true(&VtasMeas) < 8.0f);
+    lowAirSpd = (uint8_t)(_ahrs->airspeed_estimate_true(&VtasMeas) < 8.0f);
     lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
     lowHgt = (uint8_t)(hgtMea < 15.0f);
     // Go with a majority vote from three criteria
@@ -2032,8 +2034,8 @@ void NavEKF::readIMUData()
     IMUmsec     = IMUusec/1000;
     dtIMU       = 1.0e-6f * (IMUusec - lastIMUusec);
     lastIMUusec = IMUusec;
-    angRate     = _ahrs.get_ins().get_gyro();
-    accel       = _ahrs.get_ins().get_accel();
+    angRate     = _ahrs->get_ins().get_gyro();
+    accel       = _ahrs->get_ins().get_accel();
 
     dAngIMU     = (angRate + lastAngRate) * dtIMU * 0.5f;
     lastAngRate = angRate;
@@ -2043,19 +2045,19 @@ void NavEKF::readIMUData()
 
 void NavEKF::readGpsData()
 {
-    if ((_ahrs.get_gps()->last_message_time_ms() != lastFixTime) &&
-            (_ahrs.get_gps()->status() >= GPS::GPS_OK_FIX_3D))
+    if ((_ahrs->get_gps()->last_message_time_ms() != lastFixTime) &&
+            (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D))
     {
-        lastFixTime = _ahrs.get_gps()->last_message_time_ms();
+        lastFixTime = _ahrs->get_gps()->last_message_time_ms();
         newDataGps = true;
         RecallStates(statesAtVelTime, (IMUmsec - msecVelDelay));
         RecallStates(statesAtPosTime, (IMUmsec - msecPosDelay));
-        velNED[0] = _ahrs.get_gps()->velocity_north(); // (rad)
-        velNED[1] = _ahrs.get_gps()->velocity_east(); // (m/s)
-        velNED[2] = _ahrs.get_gps()->velocity_down(); // (m/s)
-        gpsLat    = DEG_TO_RAD * 1e-7f * _ahrs.get_gps()->latitude; // (rad)
-        gpsLon    = DEG_TO_RAD * 1e-7f * _ahrs.get_gps()->longitude; //(rad)
-        gpsHgt    = 0.01f * _ahrs.get_gps()->altitude_cm; // (m)
+        velNED[0] = _ahrs->get_gps()->velocity_north(); // (rad)
+        velNED[1] = _ahrs->get_gps()->velocity_east(); // (m/s)
+        velNED[2] = _ahrs->get_gps()->velocity_down(); // (m/s)
+        gpsLat    = DEG_TO_RAD * 1e-7f * _ahrs->get_gps()->latitude; // (rad)
+        gpsLon    = DEG_TO_RAD * 1e-7f * _ahrs->get_gps()->longitude; //(rad)
+        gpsHgt    = 0.01f * _ahrs->get_gps()->altitude_cm; // (m)
         // Convert GPS measurements to Pos NE
         calcposNE(gpsLat, gpsLon);
     }
@@ -2073,11 +2075,11 @@ void NavEKF::readHgtData()
 void NavEKF::readMagData()
 {
     // scale compass data to improve numerical conditioning
-    if (_ahrs.get_compass()->last_update != lastMagUpdate) {
-        lastMagUpdate = _ahrs.get_compass()->last_update;
+    if (_ahrs->get_compass()->last_update != lastMagUpdate) {
+        lastMagUpdate = _ahrs->get_compass()->last_update;
 
-        magData = _ahrs.get_compass()->get_field() * 0.001f;
-        magBias = _ahrs.get_compass()->get_offsets() * 0.001f;
+        magData = _ahrs->get_compass()->get_field() * 0.001f;
+        magBias = _ahrs->get_compass()->get_offsets() * 0.001f;
 
         // Recall states from compass measurement time
         RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
@@ -2089,10 +2091,10 @@ void NavEKF::readMagData()
 
 void NavEKF::readAirSpdData()
 {
-    const AP_Airspeed *aspeed = _ahrs.get_airspeed();
+    const AP_Airspeed *aspeed = _ahrs->get_airspeed();
     if (aspeed && 
         aspeed->last_update_ms() != lastAirspeedUpdate &&
-        _ahrs.airspeed_estimate_true(&VtasMeas)) {
+        _ahrs->airspeed_estimate_true(&VtasMeas)) {
         lastAirspeedUpdate = aspeed->last_update_ms();
         newDataTas = true;
         RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
@@ -2101,7 +2103,7 @@ void NavEKF::readAirSpdData()
     }
 }
 
-void NavEKF::calcEarthRateNED(Vector3f &omega, float latitude)
+void NavEKF::calcEarthRateNED(Vector3f &omega, float latitude) const
 {
     omega.x  = earthRate*cosf(latitude);
     omega.y  = 0;

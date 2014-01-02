@@ -22,10 +22,8 @@
 #define AP_NavEKF
 
 #include <AP_Math.h>
-#include <AP_AHRS.h>
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
-#include <AP_AHRS.h>
 #include <AP_Airspeed.h>
 #include <AP_Compass.h>
 
@@ -37,6 +35,8 @@
 #include <systemlib/perf_counter.h>
 #endif
 
+
+class AP_AHRS;
 
 class NavEKF
 {
@@ -68,7 +68,7 @@ public:
 #endif
 
     // Constructor 
-    NavEKF(const AP_AHRS &ahrs, AP_Baro &baro);
+    NavEKF(const AP_AHRS *ahrs, AP_Baro &baro);
  
     // Initialise the filter states from the AHRS and magnetometer data (if present)
     void InitialiseFilter(void);
@@ -77,47 +77,47 @@ public:
     void UpdateFilter(void);
 
     // fill in latitude, longitude and height of the reference point
-    void getRefLLH(struct Location &loc);
+    void getRefLLH(struct Location &loc) const;
 
     // return the last calculated NED position relative to the
     // reference point (m). Return false if no position is available
-    bool getPosNED(Vector3f &pos);
+    bool getPosNED(Vector3f &pos) const;
 
     // return NED velocity in m/s
-    void getVelNED(Vector3f &vel);
+    void getVelNED(Vector3f &vel) const;
 
     // return bodyaxis gyro bias estimates in deg/hr
-    void getGyroBias(Vector3f &gyroBias);
+    void getGyroBias(Vector3f &gyroBias) const;
 
     // return body axis accelerometer bias estimates in m/s^2
-    void getAccelBias(Vector3f &accelBias);
+    void getAccelBias(Vector3f &accelBias) const;
 
     // return the NED wind speed estimates in m/s
-    void getWind(Vector3f &wind);
+    void getWind(Vector3f &wind) const;
 
     // return earth magnetic field estimates in measurement units
-    void getMagNED(Vector3f &magNED);
+    void getMagNED(Vector3f &magNED) const;
 
     // return body magnetic field estimates in measurement units
-    void getMagXYZ(Vector3f &magXYZ);
+    void getMagXYZ(Vector3f &magXYZ) const;
 
     // return the last calculated latitude, longitude and height
-    bool getLLH(struct Location &loc);
+    bool getLLH(struct Location &loc) const;
 
     // return the Euler roll, pitch and yaw angle in radians
-    void getEulerAngles(Vector3f &eulers);
+    void getEulerAngles(Vector3f &eulers) const;
 
     // get the transformation matrix from NED to XYD (body) axes
-    void getRotationNEDToBody(Matrix3f &mat);
+    void getRotationNEDToBody(Matrix3f &mat) const;
 
     // get the transformation matrix from XYZ (body) to NED axes
-    void getRotationBodyToNED(Matrix3f &mat);
+    void getRotationBodyToNED(Matrix3f &mat) const;
 
     // get the quaternions defining the rotation from NED to XYZ (body) axes
-    void getQuaternion(Quaternion &quat);
+    void getQuaternion(Quaternion &quat) const;
 
 private:
-    const AP_AHRS &_ahrs;
+    const AP_AHRS *_ahrs;
     AP_Baro &_baro;
 
     void UpdateStrapdownEquationsNED();
@@ -134,7 +134,7 @@ private:
 
     void zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last);
 
-    void quatNorm(Quaternion &quatOut, const Quaternion &quatIn);
+    void quatNorm(Quaternion &quatOut, const Quaternion &quatIn) const;
 
     // store states along with system time stamp in msces
     void StoreStates(void);
@@ -142,21 +142,21 @@ private:
     // recall state vector stored at closest time to the one specified by msec
     void RecallStates(Vector24 &statesForFusion, uint32_t msec);
 
-    void quat2Tnb(Matrix3f &Tnb, const Quaternion &quat);
+    void quat2Tnb(Matrix3f &Tnb, const Quaternion &quat) const;
 
-    void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat);
+    void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
-    void calcEarthRateNED(Vector3f &omega, float latitude);
+    void calcEarthRateNED(Vector3f &omega, float latitude) const;
 
-    void eul2quat(Quaternion &quat, const Vector3f &eul);
+    void eul2quat(Quaternion &quat, const Vector3f &eul) const;
 
-    void quat2eul(Vector3f &eul, const Quaternion &quat);
+    void quat2eul(Vector3f &eul, const Quaternion &quat) const;
 
-    void calcvelNED(Vector3f &velNED, float gpsCourse, float gpsGndSpd, float gpsVelD);
+    void calcvelNED(Vector3f &velNED, float gpsCourse, float gpsGndSpd, float gpsVelD) const;
 
     void calcposNE(float lat, float lon);
 
-    void calcllh(float &lat, float &lon, float &hgt);
+    void calcllh(float &lat, float &lon, float &hgt) const;
 
     void OnGroundCheck();
 
