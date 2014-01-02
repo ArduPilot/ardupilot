@@ -2110,4 +2110,11 @@ void NavEKF::calcEarthRateNED(Vector3f &omega, float latitude) const
     omega.z  = -earthRate*sinf(latitude);
 }
 
+void NavEKF::getRotationBodyToNED(Matrix3f &mat) const
+{
+    Quaternion q(states[0], states[1], states[2], states[3]);
+    q.rotation_matrix(mat);
+}
+
+
 #endif // HAL_CPU_CLASS
