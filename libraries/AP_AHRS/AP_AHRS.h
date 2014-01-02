@@ -61,6 +61,14 @@ public:
 
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
+
+        // initialise _home
+        _home.id         = MAV_CMD_NAV_WAYPOINT;
+        _home.options    = 0;
+        _home.p1         = 0;
+        _home.alt        = 0;
+        _home.lng        = 0;
+        _home.lat        = 0;
     }
 
     // init sets up INS board orientation
@@ -143,12 +151,6 @@ public:
     // reset the current attitude, used on new IMU calibration
     virtual void reset_attitude(const float &roll, const float &pitch, const float &yaw) = 0;
 
-    // how often our attitude representation has gone out of range
-    uint8_t renorm_range_count;
-
-    // how often our attitude representation has blown up completely
-    uint8_t renorm_blowup_count;
-
     // return the average size of the roll/pitch error estimate
     // since last call
     virtual float get_error_rp(void) = 0;
@@ -161,30 +163,12 @@ public:
     // attitude
     virtual const Matrix3f &get_dcm_matrix(void) const = 0;
 
-    // get our current position, either from GPS or via
-    // dead-reckoning. Return true if a position is available,
-    // otherwise false. This only updates the lat and lng fields
-    // of the Location
-    virtual bool get_position(struct Location &loc) {
-        if (!_gps || _gps->status() <= GPS::NO_FIX) {
-            return false;
-        }
-        loc.lat = _gps->latitude;
-        loc.lng = _gps->longitude;
-        return true;
-    }
-
-    // get our projected position, based on our GPS position plus
-    // heading and ground speed
-    bool get_projected_position(struct Location &loc);
-
-    // return the estimated lag in our position due to GPS lag
-    float get_position_lag(void) const;
+    // get our current position estimate. Return true if a position is available,
+    // otherwise false. This call fills in lat, lng and alt
+    virtual bool get_position(struct Location &loc) = 0;
 
     // return a wind estimation vector, in m/s
-    virtual Vector3f wind_estimate(void) {
-        return Vector3f(0,0,0);
-    }
+    virtual Vector3f wind_estimate(void) = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -275,6 +259,15 @@ public:
     // return secondary position solution if available
     virtual bool get_secondary_position(struct Location &loc) { return false; }
 
+    // get the home location. This is const to prevent any changes to
+    // home without telling AHRS about the change    
+    const struct Location &get_home(void) const { return _home; }
+
+    // set the home location in 10e7 degrees. This should be called
+    // when the vehicle is at this position. It is assumed that the
+    // current barometer and GPS altitudes correspond to this altitude
+    virtual void set_home(int32_t lat, int32_t lon, int32_t alt_cm) = 0;
+
 protected:
     // settable parameters
     AP_Float beta;
@@ -328,6 +321,9 @@ protected:
 	Vector2f _lp; // ground vector low-pass filter
 	Vector2f _hp; // ground vector high-pass filter
     Vector2f _lastGndVelADS; // previous HPF input		
+
+    // reference position for NED positions
+    struct Location _home;
 
     // helper trig variables
     float _cos_roll, _cos_pitch, _cos_yaw;

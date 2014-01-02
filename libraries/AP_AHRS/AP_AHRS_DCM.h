@@ -78,6 +78,8 @@ public:
 
     bool            use_compass(void);
 
+    void set_home(int32_t lat, int32_t lng, int32_t alt_cm);
+
 private:
     float _ki;
     float _ki_yaw;

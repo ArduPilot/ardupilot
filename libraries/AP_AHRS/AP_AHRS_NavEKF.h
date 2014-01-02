@@ -82,6 +82,9 @@ public:
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector(void);
 
+    // set home location
+    void set_home(int32_t lat, int32_t lng, int32_t alt_cm);
+
 private:
     bool using_EKF(void) { return ekf_started && _ekf_use && EKF.healthy(); }
 
