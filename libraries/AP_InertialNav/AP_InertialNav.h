@@ -34,7 +34,7 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav( const AP_AHRS* ahrs, AP_Baro* baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
+    AP_InertialNav( const AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
         _ahrs(ahrs),
         _baro(baro),
         _gps(gps),
@@ -280,8 +280,8 @@ protected:
         uint8_t ignore_error        : 3;                // the number of iterations for which we should ignore errors
     } _flags;
 
-    const AP_AHRS*    const _ahrs;                      // pointer to ahrs object
-    AP_Baro*                _baro;                      // pointer to barometer
+    const AP_AHRS          &_ahrs;                      // reference to ahrs object
+    AP_Baro                &_baro;                      // reference to barometer
     GPS*&                   _gps;                       // pointer to gps
 
     // XY Axis specific variables
