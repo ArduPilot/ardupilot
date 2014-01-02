@@ -531,11 +531,11 @@ static void NOINLINE send_simstate(mavlink_channel_t chan)
 // report NavEKF state
 static void NOINLINE send_ekf(mavlink_channel_t chan)
 {
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+#if AP_AHRS_NAVEKF_AVAILABLE
     Vector3f euler;
     struct Location loc;
-    NavEKF.getEulerAngles(euler);
-    NavEKF.getLLH(loc);
+    ahrs.get_NavEKF().getEulerAngles(euler);
+    ahrs.get_NavEKF().getLLH(loc);
     mavlink_msg_ekf_send(chan,
                          euler.x,
                          euler.y,
