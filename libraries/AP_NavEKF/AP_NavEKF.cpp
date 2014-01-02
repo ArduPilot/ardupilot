@@ -89,6 +89,16 @@ void NavEKF::InitialiseFilter(void)
     lastFixTime = 0;
     lastMagUpdate = 0;
     lastAirspeedUpdate = 0;
+    velFailTime = 0;
+    posFailTime = 0;
+    hgtFailTime = 0;
+    storeIndex = 0;
+    memset(&P[0][0], 0, sizeof(P));
+    memset(&nextP[0][0], 0, sizeof(nextP));
+    memset(&processNoise[0], 0, sizeof(processNoise));
+    memset(&storedStates[0][0], 0, sizeof(storedStates));
+    memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
+
 
     // Calculate initial filter quaternion states from ahrs solution
     Quaternion initQuat;
