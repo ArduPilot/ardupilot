@@ -264,6 +264,12 @@ public:
     AP_Float _kp;
     AP_Float gps_gain;
 
+    // return secondary attitude solution if available, as eulers in radians
+    virtual bool get_secondary_attitude(Vector3f &eulers) { return false; }
+
+    // return secondary position solution if available
+    virtual bool get_secondary_position(struct Location &loc) { return false; }
+
 protected:
     // settable parameters
     AP_Float beta;
