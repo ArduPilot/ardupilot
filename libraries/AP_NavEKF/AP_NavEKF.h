@@ -271,8 +271,6 @@ private:
     // IMU input data variables
     const float dtIMUAvg;
     float dtIMUAvgInv;
-    float imuIn;
-    Vector8 tempImu;
     uint32_t IMUmsec;
 
     // GPS input data variables
