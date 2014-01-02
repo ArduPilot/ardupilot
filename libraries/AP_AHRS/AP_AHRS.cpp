@@ -228,26 +228,6 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     return Vector2f(0.0f, 0.0f);
 }
 
-/*
-  get position projected by groundspeed and heading
- */
-bool AP_AHRS::get_projected_position(struct Location &loc)
-{
-        if (!get_position(loc)) {
-		return false;
-        }
-        location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
-        return true;
-}
-
-/*
-  get the GPS lag in seconds
- */
-float AP_AHRS::get_position_lag(void) const
-{
-    return _gps->get_lag();
-}
-
 // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
 //      should be called after _dcm_matrix is updated
 void AP_AHRS::update_trig(void)

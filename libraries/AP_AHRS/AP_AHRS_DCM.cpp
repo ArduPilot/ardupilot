@@ -134,7 +134,6 @@ AP_AHRS_DCM::check_matrix(void)
 {
     if (_dcm_matrix.is_nan()) {
         //Serial.printf("ERROR: DCM matrix NAN\n");
-        renorm_blowup_count++;
         reset(true);
         return;
     }
@@ -145,7 +144,6 @@ AP_AHRS_DCM::check_matrix(void)
     if (!(_dcm_matrix.c.x < 1.0f &&
           _dcm_matrix.c.x > -1.0f)) {
         // We have an invalid matrix. Force a normalisation.
-        renorm_range_count++;
         normalize();
 
         if (_dcm_matrix.is_nan() ||
@@ -154,7 +152,6 @@ AP_AHRS_DCM::check_matrix(void)
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
             //	   _dcm_matrix.c.x);
-            renorm_blowup_count++;
             reset(true);
         }
     }
@@ -193,7 +190,6 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
 
     if (!(renorm_val < 2.0f && renorm_val > 0.5f)) {
         // this is larger than it should get - log it as a warning
-        renorm_range_count++;
         if (!(renorm_val < 1.0e6f && renorm_val > 1.0e-6f)) {
             // we are getting values which are way out of
             // range, we will reset the matrix and hope we
@@ -201,7 +197,6 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
             // correction before we hit the ground!
             //Serial.printf("ERROR: DCM renormalisation error. renorm_val=%f\n",
             //	   renorm_val);
-            renorm_blowup_count++;
             return false;
         }
     }
@@ -854,7 +849,11 @@ bool AP_AHRS_DCM::get_position(struct Location &loc)
     }
     loc.lat = _last_lat;
     loc.lng = _last_lng;
+    loc.alt = _baro.get_altitude() * 100 + _home.alt;
     location_offset(loc, _position_offset_north, _position_offset_east);
+    if (_flags.fly_forward) {
+        location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
+    }
     return true;
 }
 
@@ -888,4 +887,11 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
         *airspeed_ret = true_airspeed / get_EAS2TAS();
 	}
 	return ret;
+}
+
+void AP_AHRS_DCM::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
+{
+    _home.lat = lat;
+    _home.lng = lng;
+    _home.alt = alt_cm;
 }
