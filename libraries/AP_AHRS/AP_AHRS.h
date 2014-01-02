@@ -37,16 +37,17 @@ class AP_AHRS
 {
 public:
     // Constructor
-    AP_AHRS(AP_InertialSensor &ins, GPS *&gps) :
+    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, GPS *&gps) :
         _compass(NULL),
         _ins(ins),
-        _gps(gps),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
         _cos_yaw(1.0f),
         _sin_roll(0.0f),
         _sin_pitch(0.0f),
-        _sin_yaw(0.0f)
+        _sin_yaw(0.0f),
+        _baro(baro),
+        _gps(gps)
     {
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
@@ -108,6 +109,10 @@ public:
 
     const AP_InertialSensor &get_ins() const {
 	    return _ins;
+    }
+
+    const AP_Baro &get_baro() const {
+	    return _baro;
     }
 
     // accelerometer values in the earth frame in m/s/s
@@ -305,6 +310,7 @@ protected:
     // note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
     //       IMU under us without our noticing.
     AP_InertialSensor   &_ins;
+    AP_Baro             &_baro;
     GPS                 *&_gps;
 
     // a vector to capture the difference between the controller and body frames

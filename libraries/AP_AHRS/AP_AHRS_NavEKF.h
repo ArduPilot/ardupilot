@@ -32,8 +32,8 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
     // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, GPS *&gps, AP_Baro &baro) :
-        AP_AHRS_DCM(ins, gps),
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, GPS *&gps) :
+        AP_AHRS_DCM(ins, baro, gps),
         EKF(this, baro),
         _baro(baro),
         ekf_started(false),
