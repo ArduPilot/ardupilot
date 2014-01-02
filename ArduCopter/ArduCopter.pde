@@ -106,6 +106,7 @@
 #include <AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
 #include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS.h>
+#include <AP_NavEKF.h>
 #include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
 #include <RC_Channel.h>         // RC Channel Library
@@ -733,7 +734,7 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-static AP_InertialNav inertial_nav(&ahrs, &barometer, g_gps, gps_glitch);
+static AP_InertialNav inertial_nav(ahrs, barometer, g_gps, gps_glitch);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Waypoint navigation object
