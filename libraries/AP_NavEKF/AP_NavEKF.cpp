@@ -86,18 +86,19 @@ bool NavEKF::healthy(void)
 
 void NavEKF::InitialiseFilter(void)
 {
+    lastFixTime = 0;
+    lastMagUpdate = 0;
+    lastAirspeedUpdate = 0;
+
     // Calculate initial filter quaternion states from ahrs solution
     Quaternion initQuat;
-    ahrsEul[0] = _ahrs->roll;
-    ahrsEul[1] = _ahrs->pitch;
-    ahrsEul[2] = _ahrs->yaw;
-    eul2quat(initQuat, ahrsEul);
+    initQuat.from_euler(_ahrs->roll, _ahrs->pitch, _ahrs->yaw);
 
     // Calculate initial Tbn matrix and rotate Mag measurements into NED
     // to set initial NED magnetic field states
     Matrix3f DCM;
 
-    quat2Tbn(DCM, initQuat);
+    initQuat.rotation_matrix(DCM);
 
     Vector3f initMagNED;
     Vector3f initMagXYZ;
@@ -115,15 +116,8 @@ void NavEKF::InitialiseFilter(void)
     // read the barometer
     readHgtData();
 
-    // reset reference position only if on-ground to allow for in-air restart
+    // set onground flag
     OnGroundCheck();
-    if(onGround || !statesInitialised)
-    {
-        latRef = gpsLat;
-        lonRef = gpsLon;
-        hgtRef = _baro.get_altitude();
-        calcposNE(gpsLat, gpsLon);
-    }
 
     // write to state vector
     for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
@@ -132,7 +126,7 @@ void NavEKF::InitialiseFilter(void)
     states[6] = velNED[2];
     states[7] = posNE[0];
     states[8] = posNE[1];
-    states[9] = hgtRef - _baro.get_altitude();
+    states[9] = - _baro.get_altitude();
     for (uint8_t j=0; j<=7; j++) states[j+10] = 0.0; // dAngBias, dVelBias, windVel
     states[18] = initMagNED.x; // Magnetic Field North
     states[19] = initMagNED.y; // Magnetic Field East
@@ -145,7 +139,7 @@ void NavEKF::InitialiseFilter(void)
     CovarianceInit();
 
     //Define Earth rotation vector in the NED navigation frame
-    calcEarthRateNED(earthRateNED, latRef);
+    calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
 
     //Initialise summed variables used by covariance prediction
     summedDelAng.x = 0.0;
@@ -158,49 +152,57 @@ void NavEKF::InitialiseFilter(void)
 
     //Initialise IMU pre-processing states
     readIMUData();
-
 }
 
 void NavEKF::UpdateFilter()
 {
-    perf_begin(_perf_UpdateFilter);
-    if (statesInitialised)
-    {
-        // This function will be called at 100Hz
-        //
-        // Read IMU data and convert to delta angles and velocities
-        readIMUData();
-        // Run the strapdown INS equations every IMU update
-        UpdateStrapdownEquationsNED();
-        // store the predicted states for subsequent use by measurement fusion
-        StoreStates();
-        // Check if on ground - status is used by covariance prediction
-        OnGroundCheck();
-        // sum delta angles and time used by covariance prediction
-        summedDelAng = summedDelAng + correctedDelAng;
-        summedDelVel = summedDelVel + correctedDelVel;
-        dt += dtIMU;
-        // perform a covariance prediction if the total delta angle has exceeded the limit
-        // or the time limit will be exceeded at the next IMU update
-        // Do not predict covariance if magnetometer fusion still needs to be performed
-        if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax)))
-        {
-            CovariancePrediction();
-            covPredStep = true;
-            summedDelAng.zero();
-            summedDelVel.zero();
-            dt = 0.0;
-        }
-        else
-        {
-            covPredStep = false;
-        }
-
-        // Update states using GPS, altimeter, compass and airspeed observations
-        SelectVelPosFusion();
-        SelectMagFusion();
-        SelectTasFusion();
+    if (!statesInitialised) {
+        return;
     }
+    
+    perf_begin(_perf_UpdateFilter);
+
+    // This function will be called at 100Hz
+    //
+    // Read IMU data and convert to delta angles and velocities
+    readIMUData();
+
+    if (dtIMU > 0.2f) {
+        // we have stalled for far too long - reset from DCM
+        InitialiseFilter();
+        perf_end(_perf_UpdateFilter);
+        return;
+    }
+
+    // Run the strapdown INS equations every IMU update
+    UpdateStrapdownEquationsNED();
+    // store the predicted states for subsequent use by measurement fusion
+    StoreStates();
+    // Check if on ground - status is used by covariance prediction
+    OnGroundCheck();
+    // sum delta angles and time used by covariance prediction
+    summedDelAng = summedDelAng + correctedDelAng;
+    summedDelVel = summedDelVel + correctedDelVel;
+    dt += dtIMU;
+
+    // perform a covariance prediction if the total delta angle has exceeded the limit
+    // or the time limit will be exceeded at the next IMU update
+    // Do not predict covariance if magnetometer fusion still needs to be performed
+    if (((dt >= (covTimeStepMax - dtIMU)) || (summedDelAng.length() > covDelAngMax))) {
+        CovariancePrediction();
+        covPredStep = true;
+        summedDelAng.zero();
+        summedDelVel.zero();
+        dt = 0.0;
+    } else {
+        covPredStep = false;
+    }
+
+    // Update states using GPS, altimeter, compass and airspeed observations
+    SelectVelPosFusion();
+    SelectMagFusion();
+    SelectTasFusion();
+
     perf_end(_perf_UpdateFilter);
 }
 
@@ -252,8 +254,8 @@ void NavEKF::SelectMagFusion()
 {
     readMagData();
     // Fuse Magnetometer Measurements - hold off if pos/vel fusion has occurred, unless maximum time interval exceeded
-bool dataReady = statesInitialised && useCompass && newDataMag;
-bool timeout = ((IMUmsec - MAGmsecPrev) >= MAGmsecMax);
+    bool dataReady = statesInitialised && useCompass && newDataMag;
+    bool timeout = ((IMUmsec - MAGmsecPrev) >= MAGmsecMax);
     if (dataReady && (!posVelFuseStep || timeout || fuseMeNow))
     {
         MAGmsecPrev = IMUmsec;
@@ -1882,62 +1884,16 @@ void NavEKF::RecallStates(Vector24 &statesForFusion, uint32_t msec)
     }
 }
 
-void NavEKF::quat2Tnb(Matrix3f &Tnb, const Quaternion &quat) const
-{
-    // Calculate the nav to body cosine matrix
-    float q00 = sq(quat[0]);
-    float q11 = sq(quat[1]);
-    float q22 = sq(quat[2]);
-    float q33 = sq(quat[3]);
-    float q01 = quat[0]*quat[1];
-    float q02 = quat[0]*quat[2];
-    float q03 = quat[0]*quat[3];
-    float q12 = quat[1]*quat[2];
-    float q13 = quat[1]*quat[3];
-    float q23 = quat[2]*quat[3];
-
-    Tnb.a.x = q00 + q11 - q22 - q33;
-    Tnb.b.y = q00 - q11 + q22 - q33;
-    Tnb.c.z = q00 - q11 - q22 + q33;
-    Tnb.b.x = 2*(q12 - q03);
-    Tnb.c.x = 2*(q13 + q02);
-    Tnb.a.y = 2*(q12 + q03);
-    Tnb.c.y = 2*(q23 - q01);
-    Tnb.a.z = 2*(q13 - q02);
-    Tnb.b.z = 2*(q23 + q01);
-}
-
 void NavEKF::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
 {
     // Calculate the body to nav cosine matrix
     quat.rotation_matrix(Tbn);
 }
 
-void NavEKF::eul2quat(Quaternion &quat, const Vector3f &eul) const
-{
-    float u1 = cosf(0.5f*eul[0]);
-    float u2 = cosf(0.5f*eul[1]);
-    float u3 = cosf(0.5f*eul[2]);
-    float u4 = sinf(0.5f*eul[0]);
-    float u5 = sinf(0.5f*eul[1]);
-    float u6 = sinf(0.5f*eul[2]);
-    quat[0] = u1*u2*u3+u4*u5*u6;
-    quat[1] = u4*u2*u3-u1*u5*u6;
-    quat[2] = u1*u5*u3+u4*u2*u6;
-    quat[3] = u1*u2*u6-u4*u5*u3;
-}
-
-void NavEKF::quat2eul(Vector3f &y, const Quaternion &u) const
-{
-    y[0] = atan2f((2*(u[2]*u[3]+u[0]*u[1])) , (u[0]*u[0]-u[1]*u[1]-u[2]*u[2]+u[3]*u[3]));
-    y[1] = -asinf(2*(u[1]*u[3]-u[0]*u[2]));
-    y[2] = atan2f((2*(u[1]*u[2]+u[0]*u[3])) , (u[0]*u[0]+u[1]*u[1]-u[2]*u[2]-u[3]*u[3]));
-}
-
 void NavEKF::getEulerAngles(Vector3f &euler) const
 {
     Quaternion q(states[0], states[1], states[2], states[3]);
-    quat2eul(euler, q);
+    q.to_euler(&euler.x, &euler.y, &euler.z);
 }
 
 void NavEKF::getVelNED(Vector3f &vel) const
@@ -1990,17 +1946,12 @@ void NavEKF::getMagXYZ(Vector3f &magXYZ) const
     magXYZ.z = states[23]*1000.0f;
 }
 
-void NavEKF::calcposNE(float lat, float lon)
-{
-    posNE[0] = RADIUS_OF_EARTH * (lat - latRef);
-    posNE[1] = RADIUS_OF_EARTH * cosf(latRef) * (lon - lonRef);
-}
-
 bool NavEKF::getLLH(struct Location &loc) const
 {
-    loc.lat = 1.0e7f * degrees(latRef + states[7] / RADIUS_OF_EARTH);
-    loc.lng = 1.0e7f * degrees(lonRef + (states[8] / RADIUS_OF_EARTH) / cosf(latRef));
-    // loc.alt = 1.0e2f * (hgtRef - states[9]);
+    loc.lat = _ahrs->get_home().lat;
+    loc.lng = _ahrs->get_home().lng;
+    loc.alt = _ahrs->get_home().alt - states[9]*100;
+    location_offset(loc, states[7], states[8]);
     return true;
 }
 
@@ -2011,7 +1962,7 @@ void NavEKF::OnGroundCheck()
     uint8_t lowHgt;
     lowAirSpd = (uint8_t)(_ahrs->airspeed_estimate_true(&VtasMeas) < 8.0f);
     lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
-    lowHgt = (uint8_t)(hgtMea < 15.0f);
+    lowHgt = (uint8_t)(fabsf(hgtMea < 15.0f));
     // Go with a majority vote from three criteria
     onGround = ((lowAirSpd + lowGndSpd + lowHgt) >= 2);
 }
@@ -2075,11 +2026,15 @@ void NavEKF::readGpsData()
         velNED[0] = _ahrs->get_gps()->velocity_north(); // (rad)
         velNED[1] = _ahrs->get_gps()->velocity_east(); // (m/s)
         velNED[2] = _ahrs->get_gps()->velocity_down(); // (m/s)
-        gpsLat    = DEG_TO_RAD * 1e-7f * _ahrs->get_gps()->latitude; // (rad)
-        gpsLon    = DEG_TO_RAD * 1e-7f * _ahrs->get_gps()->longitude; //(rad)
-        gpsHgt    = 0.01f * _ahrs->get_gps()->altitude_cm; // (m)
+
         // Convert GPS measurements to Pos NE
-        calcposNE(gpsLat, gpsLon);
+        struct Location gpsloc;
+        gpsloc.lat = _ahrs->get_gps()->latitude;
+        gpsloc.lng = _ahrs->get_gps()->longitude;
+        Vector2f posdiff = location_diff(_ahrs->get_home(), gpsloc);
+
+        posNE[0] = posdiff.x;
+        posNE[1] = posdiff.y;
     }
 }
 
@@ -2087,7 +2042,7 @@ void NavEKF::readHgtData()
 {
     // ToDo do we check for new height data or grab a height measurement?
     // Best to do this at the same time as GPS measurement fusion for efficiency
-    hgtMea = _baro.get_altitude() - hgtRef;
+    hgtMea = _baro.get_altitude();
     // recall states from compass measurement time
     RecallStates(statesAtHgtTime, (IMUmsec - msecHgtDelay));
 }
@@ -2123,11 +2078,12 @@ void NavEKF::readAirSpdData()
     }
 }
 
-void NavEKF::calcEarthRateNED(Vector3f &omega, float latitude) const
+void NavEKF::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
 {
-    omega.x  = earthRate*cosf(latitude);
+    float lat_rad = radians(latitude*1.0e-7f);
+    omega.x  = earthRate*cosf(lat_rad);
     omega.y  = 0;
-    omega.z  = -earthRate*sinf(latitude);
+    omega.z  = -earthRate*sinf(lat_rad);
 }
 
 void NavEKF::getRotationBodyToNED(Matrix3f &mat) const
