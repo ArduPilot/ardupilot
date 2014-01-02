@@ -41,8 +41,7 @@ enum ch7_option {
 
 // HIL enumerations
 #define HIL_MODE_DISABLED			0
-#define HIL_MODE_ATTITUDE			1
-#define HIL_MODE_SENSORS			2
+#define HIL_MODE_SENSORS			1
 
 // Auto Pilot modes
 // ----------------
