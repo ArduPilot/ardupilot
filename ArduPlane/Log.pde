@@ -189,6 +189,38 @@ static void Log_Write_Attitude(void)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_AHRS2 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    float alt;
+    int32_t lat;
+    int32_t lng;
+};
+
+// Write an AHRS2 packet
+static void Log_Write_AHRS2(void)
+{
+    Vector3f euler;
+    struct Location loc;
+    if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc)) {
+        return;
+    }
+    struct log_AHRS2 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AHRS2_MSG),
+        time_ms : hal.scheduler->millis(),
+        roll  : (int16_t)(degrees(euler.x)*100),
+        pitch : (int16_t)(degrees(euler.y)*100),
+        yaw   : (uint16_t)(wrap_360_cd(degrees(euler.z)*100)),
+        alt   : loc.alt*1.0e-2f,
+        lat   : loc.lat,
+        lng   : loc.lng
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_EKF1 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -673,8 +705,12 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
-    { LOG_EKF1_MSG, sizeof(log_EKF1), "EKF","IccCccccccbbb","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PE,GX,GY,GZ" },
-    { LOG_EKF2_MSG, sizeof(log_EKF2), "EKF","Iccccchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" },
+    { LOG_AHRS2_MSG, sizeof(log_AHRS2), 
+      "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" },
+    { LOG_EKF1_MSG, sizeof(log_EKF1), 
+      "EKF1","IccCffffffbbb","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" },
+    { LOG_EKF2_MSG, sizeof(log_EKF2), 
+      "EKF2","Ibbbcchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" },
     TECS_LOG_FORMAT(LOG_TECS_MSG),
 };
 
