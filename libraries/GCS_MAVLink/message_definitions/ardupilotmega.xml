@@ -426,8 +426,8 @@
       </message>
 -->
 
-	  <message name="EKF" id="178">
-	    <description>Status of NavEKF filter</description>
+	  <message name="AHRS2" id="178">
+	    <description>Status of secondary AHRS filter if available</description>
             <field type="float" name="roll">Roll angle (rad)</field>
             <field type="float" name="pitch">Pitch angle (rad)</field>
             <field type="float" name="yaw">Yaw angle (rad)</field>
