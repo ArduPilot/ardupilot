@@ -82,6 +82,9 @@ public:
     // fill in latitude, longitude and height of the reference point
     void getRefLLH(struct Location &loc) const;
 
+    // set latitude, longitude and height of the reference point
+    void setRefLLH(int32_t lat, int32_t lng, int32_t alt_cm);
+
     // return the last calculated NED position relative to the
     // reference point (m). Return false if no position is available
     bool getPosNED(Vector3f &pos) const;
@@ -145,19 +148,11 @@ private:
     // recall state vector stored at closest time to the one specified by msec
     void RecallStates(Vector24 &statesForFusion, uint32_t msec);
 
-    void quat2Tnb(Matrix3f &Tnb, const Quaternion &quat) const;
-
     void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
-    void calcEarthRateNED(Vector3f &omega, float latitude) const;
-
-    void eul2quat(Quaternion &quat, const Vector3f &eul) const;
-
-    void quat2eul(Vector3f &eul, const Quaternion &quat) const;
+    void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
     void calcvelNED(Vector3f &velNED, float gpsCourse, float gpsGndSpd, float gpsVelD) const;
-
-    void calcposNE(float lat, float lon);
 
     void calcllh(float &lat, float &lon, float &hgt) const;
 
@@ -243,12 +238,7 @@ private:
     bool fuseVtasData; // boolean true when airspeed data is to be fused
     float VtasMeas; // true airspeed measurement (m/s)
     Vector24 statesAtVtasMeasTime; // filter states at the effective measurement time
-    float latRef; // WGS-84 latitude of reference point (rad)
-    float lonRef; // WGS-84 longitude of reference point (rad)
-    float hgtRef; // WGS-84 height of reference point (m)
     Vector3f magBias; // magnetometer bias vector in XYZ body axes
-    Vector3f eulerEst; // Euler angles calculated from filter states
-    Vector3f eulerDif; // difference between Euler angle estimated by EKF and the AHRS solution
     const float covTimeStepMax; // maximum time allowed between covariance predictions
     const float covDelAngMax; // maximum delta angle between covariance predictions
     bool covPredStep; // boolean set to true when a covariance prediction step has been performed
@@ -288,25 +278,14 @@ private:
     // GPS input data variables
     float gpsCourse;
     float gpsGndSpd;
-    float gpsLat;
-    float gpsLon;
-    float gpsHgt;
     bool newDataGps;
 
     // Magnetometer input data variables
     float magIn;
-    Vector8 tempMag;
-    Vector8 tempMagPrev;
-    uint32_t MAGframe;
-    uint32_t MAGtime;
-    uint32_t lastMAGtime;
     bool newDataMag;
 
     // TAS input variables
     bool newDataTas;
-
-    // AHRS input data variables
-    Vector3f ahrsEul;
 
     // Time stamp when vel, pos or height measurements last failed checks
 	uint32_t velFailTime;
