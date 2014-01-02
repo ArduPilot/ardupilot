@@ -47,6 +47,10 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
 void AP_AHRS_NavEKF::update(void)
 {
     AP_AHRS_DCM::update();
+
+    // keep DCM attitude available for get_secondary_attitude()
+    _dcm_attitude(roll, pitch, yaw);
+
     if (!ekf_started) {
         if (start_time_ms == 0) {
             start_time_ms = hal.scheduler->millis();
@@ -137,6 +141,41 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float *airspeed_ret)
 bool AP_AHRS_NavEKF::use_compass(void)
 {
     return AP_AHRS_DCM::use_compass();
+}
+
+
+// return secondary attitude solution if available, as eulers in radians
+bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
+{
+    if (ekf_started && _ekf_use) {
+        // return DCM attitude
+        eulers = _dcm_attitude;
+        return true;
+    }
+    if (ekf_started) {
+        // EKF is secondary
+        EKF.getEulerAngles(eulers);
+        return true;
+    }
+    // no secondary available
+    return false;
+}
+
+// return secondary position solution if available
+bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
+{
+    if (ekf_started && _ekf_use) {
+        // return DCM position
+        AP_AHRS_DCM::get_position(loc);
+        return true;
+    }    
+    if (ekf_started) {
+        // EKF is secondary
+        EKF.getLLH(loc);
+        return true;
+    }
+    // no secondary available
+    return false;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

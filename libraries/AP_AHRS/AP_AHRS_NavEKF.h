@@ -73,11 +73,18 @@ public:
 
     const NavEKF &get_NavEKF(void) const { return EKF; }
 
+    // return secondary attitude solution if available, as eulers in radians
+    bool get_secondary_attitude(Vector3f &eulers);
+
+    // return secondary position solution if available
+    bool get_secondary_position(struct Location &loc);
+
 private:
     NavEKF EKF;
     AP_Baro &_baro;
     bool ekf_started;
     Matrix3f _dcm_matrix;
+    Vector3f _dcm_attitude;
     const uint16_t startup_delay_ms;
     uint32_t start_time_ms;
 };
