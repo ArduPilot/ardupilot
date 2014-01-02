@@ -322,6 +322,7 @@ protected:
 };
 
 #include <AP_AHRS_DCM.h>
+#include <AP_AHRS_NavEKF.h>
 #include <AP_AHRS_HIL.h>
 
 #endif // __AP_AHRS_H__
