@@ -66,10 +66,10 @@ static Parameters g;
 static GPS         *g_gps;
 AP_GPS_Auto     g_gps_driver(&g_gps);
 AP_InertialSensor_MPU6000 ins;
-AP_AHRS_DCM  ahrs(ins, g_gps);
+AP_Baro_HIL      barometer;
+AP_AHRS_DCM  ahrs(ins, barometer, g_gps);
 
 static AP_Compass_HIL compass;
-AP_Baro_HIL      barometer;
 SITL					sitl;
 
 #define SERIAL0_BAUD 115200
