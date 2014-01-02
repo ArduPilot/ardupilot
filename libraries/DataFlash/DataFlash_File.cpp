@@ -531,8 +531,11 @@ void DataFlash_File::_io_timer(void)
         _write_fd = -1;
         _initialised = false;
     } else {
-        ::fsync(_write_fd);
         BUF_ADVANCEHEAD(_writebuf, nwritten);
+        if (hal.scheduler->millis() - last_fsync_ms > 10000) {
+            last_fsync_ms = hal.scheduler->millis();
+            ::fsync(_write_fd);            
+        }
     }
 }
 
