@@ -57,7 +57,7 @@ static AP_AHRS_DCM ahrs(ins, g_gps);
 SITL sitl;
 #endif
 
-static NavEKF NavEKF(ahrs, barometer);
+static NavEKF NavEKF(&ahrs, barometer);
 static LogReader LogReader(ins, barometer, compass, g_gps);
 
 static FILE *plotf;
