@@ -273,7 +273,12 @@ AP_InertialSensor_L3G4200D ins;
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
+// Inertial Navigation EKF
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF ahrs(ins, g_gps, barometer);
+#else
 AP_AHRS_DCM ahrs(ins, g_gps);
+#endif
 
 static AP_L1_Control L1_controller(ahrs);
 static AP_TECS TECS_controller(ahrs, aparm);
@@ -283,11 +288,6 @@ static AP_RollController  rollController(ahrs, aparm);
 static AP_PitchController pitchController(ahrs, aparm);
 static AP_YawController   yawController(ahrs, aparm);
 static AP_SteerController steerController(ahrs);
-
-// Inertial Navigation EKF
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-static NavEKF NavEKF(ahrs, barometer);
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -807,14 +807,10 @@ static void ahrs_update()
 #endif
 
     ahrs.update();
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-    NavEKF.UpdateFilter();
-#endif
 
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_EKF1();
-        Log_Write_EKF2();
+        Log_Write_EKF();
     }
 
     if (should_log(MASK_LOG_IMU))
@@ -898,8 +894,7 @@ static void update_logging1(void)
 {
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        Log_Write_EKF1();
-        Log_Write_EKF2();
+        Log_Write_EKF();
     }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))

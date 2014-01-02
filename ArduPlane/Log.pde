@@ -206,20 +206,37 @@ struct PACKED log_EKF1 {
     int8_t gyrZ;
 };
 
+struct PACKED log_EKF2 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int8_t accX;
+    int8_t accY;
+    int8_t accZ;
+    int16_t windN;
+    int16_t windE;
+    int16_t magN;
+    int16_t magE;
+    int16_t magD;
+    int16_t magX;
+    int16_t magY;
+    int16_t magZ;
+};
+
+
 // Write first EKF packet
-static void Log_Write_EKF1(void)
+static void Log_Write_EKF(void)
 {
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+#if AP_AHRS_NAVEKF_AVAILABLE
     Vector3f euler;
     Vector3f posNED;
     Vector3f velNED;
     Vector3f dAngBias;
     Vector3f dVelBias;
     Vector3f gyroBias;
-    NavEKF.getEulerAngles(euler);
-    NavEKF.getVelNED(velNED);
-    NavEKF.getPosNED(posNED);
-    NavEKF.getGyroBias(gyroBias);
+    ahrs.get_NavEKF().getEulerAngles(euler);
+    ahrs.get_NavEKF().getVelNED(velNED);
+    ahrs.get_NavEKF().getPosNED(posNED);
+    ahrs.get_NavEKF().getGyroBias(gyroBias);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
         time_ms : hal.scheduler->millis(),
@@ -237,39 +254,16 @@ static void Log_Write_EKF1(void)
         gyrZ    : (int8_t)(gyroBias.z)  // deg/min
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif
-}
 
-struct PACKED log_EKF2 {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int8_t accX;
-    int8_t accY;
-    int8_t accZ;
-    int16_t windN;
-    int16_t windE;
-    int16_t magN;
-    int16_t magE;
-    int16_t magD;
-    int16_t magX;
-    int16_t magY;
-    int16_t magZ;
-};
-
-// Write second EKF packet
-static void Log_Write_EKF2(void)
-{
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-    Vector3f euler;
     Vector3f accelBias;
     Vector3f wind;
     Vector3f magNED;
     Vector3f magXYZ;
-    NavEKF.getAccelBias(accelBias);
-    NavEKF.getWind(wind);
-    NavEKF.getMagNED(magNED);
-    NavEKF.getMagXYZ(magXYZ);
-    struct log_EKF2 pkt = {
+    ahrs.get_NavEKF().getAccelBias(accelBias);
+    ahrs.get_NavEKF().getWind(wind);
+    ahrs.get_NavEKF().getMagNED(magNED);
+    ahrs.get_NavEKF().getMagXYZ(magXYZ);
+    struct log_EKF2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
         time_ms : hal.scheduler->millis(),
         accX    : (int8_t)(100*accelBias.x),
@@ -284,9 +278,10 @@ static void Log_Write_EKF2(void)
         magY    : (int16_t)(magXYZ.y),
         magZ    : (int16_t)(magXYZ.z)
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
 #endif
 }
+
 
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
@@ -726,8 +721,7 @@ static void Log_Write_Nav_Tuning() {}
 static void Log_Write_TECS_Tuning() {}
 static void Log_Write_Performance() {}
 static void Log_Write_Attitude() {}
-static void Log_Write_EKF1() {}
-static void Log_Write_EKF2() {}
+static void Log_Write_EKF() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Camera() {}
 static void Log_Write_Mode(uint8_t mode) {}
