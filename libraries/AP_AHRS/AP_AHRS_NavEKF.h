@@ -35,7 +35,9 @@ public:
     AP_AHRS_NavEKF(AP_InertialSensor &ins, GPS *&gps, AP_Baro &baro) :
         AP_AHRS_DCM(ins, gps),
         EKF(this, baro),
-        _baro(baro)
+        _baro(baro),
+        ekf_started(false),
+        startup_delay_ms(5000)
         {
         }
 
@@ -74,6 +76,10 @@ public:
 private:
     NavEKF EKF;
     AP_Baro &_baro;
+    bool ekf_started;
+    Matrix3f _dcm_matrix;
+    const uint16_t startup_delay_ms;
+    uint32_t start_time_ms;
 };
 #endif
 

@@ -116,6 +116,15 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("GPS_DELAY", 12, AP_AHRS, _gps_delay, 1),
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // @Param: EKF_USE
+    // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
+    // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("EKF_USE",  13, AP_AHRS, _ekf_use, 0),
+#endif
+
     AP_GROUPEND
 };
 

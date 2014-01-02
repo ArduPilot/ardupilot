@@ -272,6 +272,7 @@ protected:
     AP_Int8 _board_orientation;
     AP_Int8 _gps_minsats;
     AP_Int8 _gps_delay;
+    AP_Int8 _ekf_use;
 
     // flags structure
     struct ahrs_flags {
