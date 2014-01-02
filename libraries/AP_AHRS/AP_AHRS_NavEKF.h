@@ -79,6 +79,9 @@ public:
     // return secondary position solution if available
     bool get_secondary_position(struct Location &loc);
 
+    // EKF has a better ground speed vector estimate
+    Vector2f groundspeed_vector(void);
+
 private:
     NavEKF EKF;
     AP_Baro &_baro;

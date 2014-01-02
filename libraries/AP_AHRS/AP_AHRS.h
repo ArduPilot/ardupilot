@@ -210,7 +210,7 @@ public:
     }
 
     // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector(void);
+    virtual Vector2f groundspeed_vector(void);
 
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void) const {

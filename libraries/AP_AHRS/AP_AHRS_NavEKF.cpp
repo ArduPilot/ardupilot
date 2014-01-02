@@ -178,4 +178,15 @@ bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
     return false;
 }
 
+// EKF has a better ground speed vector estimate
+Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
+{
+    if (!ekf_started || !_ekf_use) {
+        return AP_AHRS_DCM::groundspeed_vector();
+    }
+    Vector3f vec;
+    EKF.getVelNED(vec);
+    return Vector2f(vec.x, vec.y);
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
