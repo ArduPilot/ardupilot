@@ -533,15 +533,15 @@ static void NOINLINE send_ekf(mavlink_channel_t chan)
 #if AP_AHRS_NAVEKF_AVAILABLE
     Vector3f euler;
     struct Location loc;
-    ahrs.get_NavEKF().getEulerAngles(euler);
-    ahrs.get_NavEKF().getLLH(loc);
-    mavlink_msg_ekf_send(chan,
-                         euler.x,
-                         euler.y,
-                         euler.z,
-                         loc.alt*1.0e-2f,
-                         loc.lat,
-                         loc.lng);
+    if (ahrs.get_secondary_attitude(euler) && ahrs.get_secondary_position(loc)) {
+        mavlink_msg_ahrs2_send(chan,
+                               euler.x,
+                               euler.y,
+                               euler.z,
+                               loc.alt*1.0e-2f,
+                               loc.lat,
+                               loc.lng);
+    }
 #endif
 }
 
@@ -744,7 +744,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
-        CHECK_PAYLOAD_SIZE(EKF);
+        CHECK_PAYLOAD_SIZE(AHRS2);
         send_ekf(chan);
         break;
 
