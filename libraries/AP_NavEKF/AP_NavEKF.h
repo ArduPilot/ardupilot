@@ -76,6 +76,9 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
+    // return true if the filter is healthy
+    bool healthy(void);
+
     // fill in latitude, longitude and height of the reference point
     void getRefLLH(struct Location &loc) const;
 

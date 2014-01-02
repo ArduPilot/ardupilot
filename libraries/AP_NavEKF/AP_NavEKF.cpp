@@ -68,6 +68,22 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     dtIMUAvgInv = 1.0f/dtIMUAvg;
 }
 
+bool NavEKF::healthy(void)
+{
+    if (!statesInitialised) {
+        return false;
+    }
+    Quaternion q(states[0],states[1],states[2],states[3]);
+    if (q.is_nan()) {
+        return false;
+    }
+    if (isnan(states[4]) || isnan(states[5]) || isnan(states[6])) {
+        return false;
+    }
+    // all OK
+    return true;
+}
+
 void NavEKF::InitialiseFilter(void)
 {
     // Calculate initial filter quaternion states from ahrs solution
