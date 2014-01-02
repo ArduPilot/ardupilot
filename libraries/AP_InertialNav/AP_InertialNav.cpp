@@ -50,7 +50,7 @@ void AP_InertialNav::update(float dt)
     // check if new gps readings have arrived and use them to correct position estimates
     check_gps();
 
-    Vector3f accel_ef = _ahrs->get_accel_ef();
+    Vector3f accel_ef = _ahrs.get_accel_ef();
 
     // remove influence of gravity
     accel_ef.z += GRAVITY_MSS;
@@ -310,15 +310,12 @@ void AP_InertialNav::check_baro()
 {
     uint32_t baro_update_time;
 
-    if( _baro == NULL )
-        return;
-
     // calculate time since last baro reading (in ms)
-    baro_update_time = _baro->get_last_update();
+    baro_update_time = _baro.get_last_update();
     if( baro_update_time != _baro_last_update ) {
         const float dt = (float)(baro_update_time - _baro_last_update) * 0.001f; // in seconds
         // call correction method
-        correct_with_baro(_baro->get_altitude()*100, dt);
+        correct_with_baro(_baro.get_altitude()*100, dt);
         _baro_last_update = baro_update_time;
     }
 }
