@@ -124,11 +124,6 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 
 	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
 
-    // update the position for lag. This helps especially for rovers
-    // where waypoints may be very close together
-    Vector2f lag_offset = _groundspeed_vector * _ahrs.get_position_lag();
-    location_offset(_current_loc, lag_offset.x, lag_offset.y);
-
 	// update _target_bearing_cd
 	_target_bearing_cd = get_bearing_cd(_current_loc, next_WP);
 	
@@ -228,11 +223,6 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
     _ahrs.get_position(_current_loc);
 
 	Vector2f _groundspeed_vector = _ahrs.groundspeed_vector();
-
-    // update the position for lag. This helps especially for rovers
-    // where waypoints may be very close together
-    Vector2f lag_offset = _groundspeed_vector * _ahrs.get_position_lag();
-    location_offset(_current_loc, lag_offset.x, lag_offset.y);
 
 	//Calculate groundspeed
 	float groundSpeed = max(_groundspeed_vector.length() , 1.0f);
