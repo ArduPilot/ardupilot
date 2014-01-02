@@ -23,6 +23,8 @@
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
+extern const AP_HAL::HAL& hal;
+
 // return the smoothed gyro vector corrected for drift
 const Vector3f AP_AHRS_NavEKF::get_gyro(void) const
 {
@@ -31,7 +33,10 @@ const Vector3f AP_AHRS_NavEKF::get_gyro(void) const
 
 const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
 {
-    return AP_AHRS_DCM::get_dcm_matrix();
+    if (!ekf_started) {
+        return AP_AHRS_DCM::get_dcm_matrix();
+    }
+    return _dcm_matrix;
 }
 
 const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
@@ -42,26 +47,64 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
 void AP_AHRS_NavEKF::update(void)
 {
     AP_AHRS_DCM::update();
+    if (!ekf_started) {
+        if (start_time_ms == 0) {
+            start_time_ms = hal.scheduler->millis();
+        }
+        // if we have GPS lock and a compass set we can start the EKF
+        if (get_compass() && _gps && _gps->status() >= GPS::GPS_OK_FIX_3D &&
+            hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
+            ekf_started = true;
+            EKF.InitialiseFilter();
+        }
+    }
+    if (ekf_started) {
+        EKF.UpdateFilter();
+        if (_ekf_use) {
+            EKF.getRotationBodyToNED(_dcm_matrix);
+            Vector3f eulers;
+            EKF.getEulerAngles(eulers);
+            roll  = eulers.x;
+            pitch = eulers.y;
+            yaw   = eulers.z;
+            roll_sensor  = degrees(roll) * 100;
+            pitch_sensor = degrees(pitch) * 100;
+            yaw_sensor   = degrees(yaw) * 100;
+            if (yaw_sensor < 0)
+                yaw_sensor += 36000;
+        }
+    }
 }
 
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
     AP_AHRS_DCM::reset(recover_eulers);
+    if (ekf_started) {
+        EKF.InitialiseFilter();        
+    }
 }
 
 // reset the current attitude, used on new IMU calibration
 void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
 {
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
+    if (ekf_started) {
+        EKF.InitialiseFilter();        
+    }
 }
 
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc)
 {
+    if (ekf_started && _ekf_use) {
+        if (EKF.getLLH(loc)) {
+            return true;
+        }
+    }
     return AP_AHRS_DCM::get_position(loc);
 }
 
-// status reporting of estimated error
+// status reporting of estimated errors
 float AP_AHRS_NavEKF::get_error_rp(void)
 {
     return AP_AHRS_DCM::get_error_rp();
@@ -75,7 +118,12 @@ float AP_AHRS_NavEKF::get_error_yaw(void)
 // return a wind estimation vector, in m/s
 Vector3f AP_AHRS_NavEKF::wind_estimate(void)
 {
-    return AP_AHRS_DCM::wind_estimate();
+    if (!ekf_started || !_ekf_use) {
+        return AP_AHRS_DCM::wind_estimate();
+    }
+    Vector3f wind;
+    EKF.getWind(wind);
+    return wind;
 }
 
 // return an airspeed estimate if available. return true
