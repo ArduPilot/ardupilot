@@ -1845,6 +1845,28 @@
            <field type="uint8_t" name="target_system">System ID</field>
            <field type="uint8_t" name="target_component">Component ID</field>
          </message>
+	 <message name="GPS_INJECT_DATA" id="123">
+           <description>data for injecting into the onboard GPS (used for DGPS)</description>
+           <field type="uint8_t" name="target_system">System ID</field>
+           <field type="uint8_t" name="target_component">Component ID</field>
+           <field type="uint8_t" name="len">data length</field>
+           <field type="uint8_t[110]" name="data">raw data (110 is enough for 12 satellites of RTCMv2)</field>
+         </message>
+         <message id="124" name="GPS2_RAW">
+           <description>Second GPS data. Coordinate frame is right-handed, Z-axis up (GPS frame).</description>
+           <field type="uint64_t" name="time_usec">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
+           <field type="uint8_t" name="fix_type">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
+           <field type="int32_t" name="lat">Latitude (WGS84), in degrees * 1E7</field>
+           <field type="int32_t" name="lon">Longitude (WGS84), in degrees * 1E7</field>
+           <field type="int32_t" name="alt">Altitude (WGS84), in meters * 1000 (positive for up)</field>
+           <field type="uint16_t" name="eph">GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX</field>
+           <field type="uint16_t" name="epv">GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX</field>
+           <field type="uint16_t" name="vel">GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX</field>
+           <field type="uint16_t" name="cog">Course over ground (NOT heading, but direction of movement) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX</field>
+           <field type="uint8_t" name="satellites_visible">Number of satellites visible. If unknown, set to 255</field>
+           <field type="uint8_t" name="dgps_numch">Number of DGPS satellites</field>
+           <field type="uint32_t" name="dgps_age">Age of DGPS info</field>
+         </message>
          <message id="125" name="POWER_STATUS">
                <description>Power supply status</description>
                <field type="uint16_t" name="Vcc">5V rail voltage in millivolts</field>
