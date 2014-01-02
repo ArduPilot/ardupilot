@@ -64,7 +64,7 @@ void AP_AHRS_NavEKF::update(void)
     }
     if (ekf_started) {
         EKF.UpdateFilter();
-        if (_ekf_use) {
+        if (using_EKF()) {
             EKF.getRotationBodyToNED(_dcm_matrix);
             Vector3f eulers;
             EKF.getEulerAngles(eulers);
@@ -100,10 +100,8 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc)
 {
-    if (ekf_started && _ekf_use) {
-        if (EKF.getLLH(loc)) {
-            return true;
-        }
+    if (using_EKF() && EKF.getLLH(loc)) {
+        return true;
     }
     return AP_AHRS_DCM::get_position(loc);
 }
@@ -122,7 +120,7 @@ float AP_AHRS_NavEKF::get_error_yaw(void)
 // return a wind estimation vector, in m/s
 Vector3f AP_AHRS_NavEKF::wind_estimate(void)
 {
-    if (!ekf_started || !_ekf_use) {
+    if (!using_EKF()) {
         return AP_AHRS_DCM::wind_estimate();
     }
     Vector3f wind;
@@ -147,7 +145,7 @@ bool AP_AHRS_NavEKF::use_compass(void)
 // return secondary attitude solution if available, as eulers in radians
 bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
 {
-    if (ekf_started && _ekf_use) {
+    if (using_EKF()) {
         // return DCM attitude
         eulers = _dcm_attitude;
         return true;
@@ -164,7 +162,7 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
 // return secondary position solution if available
 bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
 {
-    if (ekf_started && _ekf_use) {
+    if (using_EKF()) {
         // return DCM position
         AP_AHRS_DCM::get_position(loc);
         return true;
@@ -181,7 +179,7 @@ bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
 // EKF has a better ground speed vector estimate
 Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
 {
-    if (!ekf_started || !_ekf_use) {
+    if (!using_EKF()) {
         return AP_AHRS_DCM::groundspeed_vector();
     }
     Vector3f vec;

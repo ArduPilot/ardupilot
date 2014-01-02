@@ -83,6 +83,8 @@ public:
     Vector2f groundspeed_vector(void);
 
 private:
+    bool using_EKF(void) { return ekf_started && _ekf_use && EKF.healthy(); }
+
     NavEKF EKF;
     AP_Baro &_baro;
     bool ekf_started;
