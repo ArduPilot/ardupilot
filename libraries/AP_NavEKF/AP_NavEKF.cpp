@@ -2054,8 +2054,8 @@ void NavEKF::readMagData()
     if (_ahrs->get_compass()->last_update != lastMagUpdate) {
         lastMagUpdate = _ahrs->get_compass()->last_update;
 
-        magData = _ahrs->get_compass()->get_field() * 0.001f;
-        magBias = _ahrs->get_compass()->get_offsets() * 0.001f;
+        magBias = -_ahrs->get_compass()->get_offsets() * 0.001f;
+        magData = _ahrs->get_compass()->get_field() * 0.001f + magBias;
 
         // Recall states from compass measurement time
         RecallStates(statesAtMagMeasTime, (IMUmsec - msecMagDelay));
