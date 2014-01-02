@@ -275,9 +275,9 @@ AP_InertialSensor_L3G4200D ins;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, g_gps, barometer);
+AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
 #else
-AP_AHRS_DCM ahrs(ins, g_gps);
+AP_AHRS_DCM ahrs(ins, barometer, g_gps);
 #endif
 
 static AP_L1_Control L1_controller(ahrs);
