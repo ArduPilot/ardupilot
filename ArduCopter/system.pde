@@ -162,9 +162,7 @@ static void init_ardupilot()
     rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
     board_vcc_analog_source = hal.analogin->channel(ANALOG_INPUT_BOARD_VCC);
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     barometer.init();
-#endif
 
     // init the GCS
     gcs[0].init(hal.uartA);
@@ -218,12 +216,10 @@ static void init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
  #if CONFIG_ADC == ENABLED
     // begin filtering the ADC Gyros
     adc.Init();           // APM ADC library initialization
  #endif // CONFIG_ADC
-#endif // HIL_MODE
 
     // Do GPS init
     g_gps = &g_gps_driver;
@@ -265,11 +261,9 @@ static void init_ardupilot()
     }
 #endif
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     // read Baro pressure at ground
     //-----------------------------
     init_barometer(true);
-#endif
 
     // initialise sonar
 #if CONFIG_SONAR == ENABLED

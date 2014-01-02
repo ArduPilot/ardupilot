@@ -1,8 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// Sensors are not available in HIL_MODE_ATTITUDE
-#if HIL_MODE != HIL_MODE_ATTITUDE
-
  #if CONFIG_SONAR == ENABLED
 static void init_sonar(void)
 {
@@ -64,9 +61,6 @@ static int16_t read_sonar(void)
     return 0;
 #endif
 }
-
-
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 static void init_compass()
 {
