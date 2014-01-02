@@ -318,7 +318,7 @@ AP_GPS_None     g_gps_driver;
 
 static AP_AHRS_DCM ahrs(ins, g_gps);
 
-#elif HIL_MODE == HIL_MODE_SENSORS
+#elif HIL_MODE != HIL_MODE_DISABLED
 // sensor emulators
 static AP_ADC_HIL              adc;
 static AP_Baro_HIL      barometer;
@@ -329,19 +329,6 @@ static AP_AHRS_DCM             ahrs(ins, g_gps);
 
 
  #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- // When building for SITL we use the HIL barometer and compass drivers
-static SITL sitl;
-#endif
-
-#elif HIL_MODE == HIL_MODE_ATTITUDE
-static AP_ADC_HIL              adc;
-static AP_InertialSensor_HIL   ins;
-static AP_AHRS_HIL             ahrs(ins, g_gps);
-static AP_GPS_HIL              g_gps_driver;
-static AP_Compass_HIL          compass;                  // never used
-static AP_Baro_HIL      barometer;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
  // When building for SITL we use the HIL barometer and compass drivers
 static SITL sitl;
 #endif
@@ -1067,7 +1054,6 @@ static void update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     read_battery();
 
-#if HIL_MODE != HIL_MODE_ATTITUDE  // don't execute in HIL mode
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
@@ -1079,7 +1065,6 @@ static void update_batt_compass(void)
             Log_Write_Compass();
         }
     }
-#endif
 
     // record throttle output
     throttle_integrator += g.rc_3.servo_out;
@@ -1364,20 +1349,11 @@ static void read_AHRS(void)
 // read baro and sonar altitude at 20hz
 static void update_altitude()
 {
-#if HIL_MODE == HIL_MODE_ATTITUDE
-    // we are in the SIM, fake out the baro and Sonar
-    baro_alt                = g_gps->altitude_cm;
-
-    if(g.sonar_enabled) {
-        sonar_alt           = baro_alt;
-    }
-#else
     // read in baro altitude
     baro_alt            = read_barometer();
 
     // read in sonar altitude
     sonar_alt           = read_sonar();
-#endif  // HIL_MODE == HIL_MODE_ATTITUDE
 
     // write altitude info to dataflash logs
     if (g.log_bitmask & MASK_LOG_CTUN) {
@@ -1518,7 +1494,6 @@ static void tuning(){
         g.pid_optflow_pitch.kD(tuning_value);
         break;
 
-#if HIL_MODE != HIL_MODE_ATTITUDE                                       // do not allow modifying _kp or _kp_yaw gains in HIL mode
     case CH6_AHRS_YAW_KP:
         ahrs._kp_yaw.set(tuning_value);
         break;
@@ -1526,7 +1501,6 @@ static void tuning(){
     case CH6_AHRS_KP:
         ahrs._kp.set(tuning_value);
         break;
-#endif
 
     case CH6_INAV_TC:
         // To-Do: allowing tuning TC for xy and z separately

@@ -164,10 +164,8 @@ static void init_arm_motors()
         startup_ground(true);
     }
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     // fast baro calibration to reset ground pressure
     init_barometer(false);
-#endif
 
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);

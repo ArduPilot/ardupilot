@@ -946,9 +946,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-#if HIL_MODE != HIL_MODE_ATTITUDE
     GOBJECT(ins,            "INS_", AP_InertialSensor),
-#endif
 
     // @Group: INAV_
     // @Path: ../libraries/AP_InertialNav/AP_InertialNav.cpp
