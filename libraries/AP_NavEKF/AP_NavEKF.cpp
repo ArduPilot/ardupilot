@@ -6,7 +6,11 @@
 
 // uncomment this to force the optimisation of this code, note that 
 // this makes debugging harder
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#pragma GCC optimize("O0")
+#else
 #pragma GCC optimize("O3")
+#endif
 
 #include "AP_NavEKF.h"
 #include <AP_AHRS.h>
@@ -112,7 +116,7 @@ void NavEKF::InitialiseFilter(void)
     states[6] = velNED[2];
     states[7] = posNE[0];
     states[8] = posNE[1];
-    states[9] = hgtRef - _baro.get_altitude() - 5;
+    states[9] = hgtRef - _baro.get_altitude();
     for (uint8_t j=0; j<=7; j++) states[j+10] = 0.0; // dAngBias, dVelBias, windVel
     states[18] = initMagNED.x; // Magnetic Field North
     states[19] = initMagNED.y; // Magnetic Field East
@@ -1980,7 +1984,7 @@ bool NavEKF::getLLH(struct Location &loc) const
 {
     loc.lat = 1.0e7f * degrees(latRef + states[7] / RADIUS_OF_EARTH);
     loc.lng = 1.0e7f * degrees(lonRef + (states[8] / RADIUS_OF_EARTH) / cosf(latRef));
-    loc.alt = 1.0e2f * (hgtRef - states[9]);
+    // loc.alt = 1.0e2f * (hgtRef - states[9]);
     return true;
 }
 
