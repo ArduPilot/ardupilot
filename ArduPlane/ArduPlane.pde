@@ -624,9 +624,7 @@ static int16_t condition_rate;
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
-// The home location used for RTL.  The location is set when we first get stable GPS lock
-static struct   Location home;
-// Flag for if we have g_gps lock and have set the home location
+// Flag for if we have g_gps lock and have set the home location in AHRS
 static bool home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
 static struct   Location prev_WP;
@@ -1046,7 +1044,7 @@ static void update_GPS_50Hz(void)
 static void update_GPS_10Hz(void)
 {
     // get position from AHRS
-    have_position = ahrs.get_projected_position(current_loc);
+    have_position = ahrs.get_position(current_loc);
 
     if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
         g_gps->new_data = false;
@@ -1365,17 +1363,7 @@ static void update_navigation()
 
 static void update_alt()
 {
-    // this function is in place to potentially add a sonar sensor in the future
-    //altitude_sensor = BARO;
-
-    if (barometer.healthy) {
-        // alt_MSL centimeters (centimeters)
-        current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude_cm;
-        current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
-    } else if (g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-        // alt_MSL centimeters (centimeters)
-        current_loc.alt = g_gps->altitude_cm;
-    }
+    barometer.read();
 
     geofence_check(true);
 
@@ -1393,7 +1381,7 @@ static void update_alt()
             }
         }
 
-        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
+        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - ahrs.get_home().alt + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  takeoff_pitch_cd,

@@ -17,8 +17,8 @@ static void update_auto()
     if (g.command_index >= g.command_total) {
         handle_no_commands();
         if(g.command_total == 0) {
-            next_WP.lat             = home.lat + 1000;                  // so we don't have bad calcs
-            next_WP.lng             = home.lng + 1000;                  // so we don't have bad calcs
+            next_WP.lat             = ahrs.get_home().lat + 10;
+            next_WP.lng             = ahrs.get_home().lng + 10;
         }
     } else {
         if(g.command_index != 0) {
@@ -82,7 +82,7 @@ static struct Location get_cmd_with_index(int16_t i)
     if ((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) &&
         (temp.options & MASK_OPTIONS_RELATIVE_ALT) &&
         (temp.lat != 0 || temp.lng != 0 || temp.alt != 0)) {
-        temp.alt += home.alt;
+        temp.alt += ahrs.get_home().alt;
     }
 
     return temp;
@@ -125,7 +125,7 @@ static int32_t read_alt_to_hold()
     if (g.RTL_altitude_cm < 0) {
         return current_loc.alt;
     }
-    return g.RTL_altitude_cm + home.alt;
+    return g.RTL_altitude_cm + ahrs.get_home().alt;
 }
 
 
@@ -219,25 +219,22 @@ static void init_home()
 #endif
     }
 
-    home.id         = MAV_CMD_NAV_WAYPOINT;
-    home.lng        = g_gps->longitude;                                 // Lon * 10**7
-    home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = max(g_gps->altitude_cm, 0);
+    ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
     home_is_set = true;
 
-    gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
+    gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)ahrs.get_home().alt);
 
     // Save Home to EEPROM - Command 0
     // -------------------
-    set_cmd_with_index(home, 0);
+    set_cmd_with_index(ahrs.get_home(), 0);
 
     // Save prev loc
     // -------------
-    next_WP = prev_WP = home;
+    next_WP = prev_WP = ahrs.get_home();
 
     // Load home for a default guided_WP
     // -------------
-    guided_WP = home;
+    guided_WP = ahrs.get_home();
     guided_WP.alt += g.RTL_altitude_cm;
 }
 
@@ -248,8 +245,6 @@ static void init_home()
 */
 static void update_home()
 {
-    home.lng        = g_gps->longitude;                                 // Lon * 10**7
-    home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = max(g_gps->altitude_cm, 0);
+    ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
     barometer.update_calibration();
 }
