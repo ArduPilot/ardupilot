@@ -70,6 +70,7 @@
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_AHRS.h>         // ArduPilot Mega DCM Library
+#include <AP_NavEKF.h>
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
@@ -257,7 +258,31 @@ AP_InertialSensor_Oilpan ins( &adc );
   #error Unrecognised CONFIG_INS_TYPE setting.
 #endif // CONFIG_INS_TYPE
 
-AP_AHRS_DCM ahrs(ins, g_gps);
+
+#if CONFIG_BARO == AP_BARO_BMP085
+static AP_Baro_BMP085 barometer;
+#elif CONFIG_BARO == AP_BARO_PX4
+static AP_Baro_PX4 barometer;
+#elif CONFIG_BARO == AP_BARO_HIL
+static AP_Baro_HIL barometer;
+#elif CONFIG_BARO == AP_BARO_MS5611
+ #if CONFIG_MS5611_SERIAL == AP_BARO_MS5611_SPI
+ static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
+ #elif CONFIG_MS5611_SERIAL == AP_BARO_MS5611_I2C
+ static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::i2c);
+ #else
+ #error Unrecognized CONFIG_MS5611_SERIAL setting.
+ #endif
+#else
+ #error Unrecognized CONFIG_BARO setting
+#endif
+
+// Inertial Navigation EKF
+#if AP_AHRS_NAVEKF_AVAILABLE
+AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
+#else
+AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+#endif
 
 static AP_L1_Control L1_controller(ahrs);
 
