@@ -189,38 +189,6 @@ static void Log_Write_Attitude(void)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_AHRS2 {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    float alt;
-    int32_t lat;
-    int32_t lng;
-};
-
-// Write an AHRS2 packet
-static void Log_Write_AHRS2(void)
-{
-    Vector3f euler;
-    struct Location loc;
-    if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc)) {
-        return;
-    }
-    struct log_AHRS2 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AHRS2_MSG),
-        time_ms : hal.scheduler->millis(),
-        roll  : (int16_t)(degrees(euler.x)*100),
-        pitch : (int16_t)(degrees(euler.y)*100),
-        yaw   : (uint16_t)(wrap_360_cd(degrees(euler.z)*100)),
-        alt   : loc.alt*1.0e-2f,
-        lat   : loc.lat,
-        lng   : loc.lng
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_EKF1 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
@@ -674,6 +642,18 @@ static void Log_Write_Airspeed(void)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+static void Log_Write_AHRS2() 
+{
+    DataFlash.Log_Write_AHRS2(ahrs);
+}
+
+static void Log_Write_SIMSTATE() 
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    sitl.Log_Write_SIMSTATE(DataFlash);
+#endif
+}
+
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
@@ -763,6 +743,8 @@ static void Log_Write_IMU() {}
 static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
+static void Log_Write_AHRS2() {}
+static void Log_Write_SIMSTATE() {}
 
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;
