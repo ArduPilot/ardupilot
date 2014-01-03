@@ -1768,7 +1768,8 @@ bool NavEKF::getLLH(struct Location &loc) const
 
 void NavEKF::OnGroundCheck()
 {
-    uint8_t lowAirSpd = (!_ahrs->airspeed_estimate_true(&VtasMeas) || VtasMeas < 8.0f);
+    const AP_Airspeed *airspeed = _ahrs->get_airspeed();
+    uint8_t lowAirSpd = (!airspeed || !airspeed->use() || airspeed->get_airspeed() * airspeed->get_EAS2TAS() < 8.0f);
     uint8_t lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
     uint8_t lowHgt = (uint8_t)(fabsf(hgtMea < 15.0f));
     // Go with a majority vote from three criteria
@@ -1893,8 +1894,9 @@ void NavEKF::readAirSpdData()
 {
     const AP_Airspeed *aspeed = _ahrs->get_airspeed();
     if (aspeed &&
-        aspeed->last_update_ms() != lastAirspeedUpdate &&
-        _ahrs->airspeed_estimate_true(&VtasMeas)) {
+        aspeed->use() &&
+        aspeed->last_update_ms() != lastAirspeedUpdate) {
+        VtasMeas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         lastAirspeedUpdate = aspeed->last_update_ms();
         newDataTas = true;
         RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
