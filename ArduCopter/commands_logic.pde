@@ -891,10 +891,7 @@ static void do_set_home()
     if(command_cond_queue.p1 == 1) {
         init_home();
     } else {
-        home.id         = MAV_CMD_NAV_WAYPOINT;
-        home.lng        = command_cond_queue.lng;                                       // Lon * 10**7
-        home.lat        = command_cond_queue.lat;                                       // Lat * 10**7
-        home.alt        = 0;
+        ahrs.set_home(command_cond_queue.lat, command_cond_queue.lng, 0);
         //home_is_set 	= true;
         set_home_is_set(true);
     }

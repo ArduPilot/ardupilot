@@ -117,10 +117,7 @@ static int32_t get_RTL_alt()
 static void init_home()
 {
     set_home_is_set(true);
-    home.id         = MAV_CMD_NAV_WAYPOINT;
-    home.lng        = g_gps->longitude;                                 // Lon * 10**7
-    home.lat        = g_gps->latitude;                                  // Lat * 10**7
-    home.alt        = 0;                                                        // Home is always 0
+    ahrs.set_home(g_gps->latitude, g_gps->longitude, 0);
 
     // Save Home to EEPROM
     // -------------------

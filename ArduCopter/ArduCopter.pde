@@ -663,9 +663,8 @@ static uint16_t land_detector;
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
 ////////////////////////////////////////////////////////////////////////////////
-// home location is stored when we have a good GPS lock and arm the copter
-// Can be reset each the copter is re-armed
-static struct   Location home;
+static const struct  Location &home = ahrs.get_home();
+
 // Current location of the copter
 static struct   Location current_loc;
 // Holds the current loaded command from the EEPROM for navigation
