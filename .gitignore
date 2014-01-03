@@ -2,6 +2,7 @@
 *.bin
 *.d
 *.dll
+*.elf
 *.exe
 *.lst
 *.o
