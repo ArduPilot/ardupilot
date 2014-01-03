@@ -19,7 +19,7 @@ public:
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
-    float        	get_delta_time();
+    float        	get_delta_time() const;
     float           get_gyro_drift_rate();
     bool            wait_for_sample(uint16_t timeout_ms);
 

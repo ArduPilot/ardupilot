@@ -32,7 +32,7 @@ bool AP_InertialSensor_HIL::update( void ) {
     return true;
 }
 
-float AP_InertialSensor_HIL::get_delta_time() {
+float AP_InertialSensor_HIL::get_delta_time() const {
     return _delta_time_usec * 1.0e-6;
 }
 

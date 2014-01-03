@@ -167,7 +167,7 @@ bool AP_InertialSensor_PX4::update(void)
     return true;
 }
 
-float AP_InertialSensor_PX4::get_delta_time(void)
+float AP_InertialSensor_PX4::get_delta_time(void) const
 {
     return _sample_time_usec * 1.0e-6f;
 }

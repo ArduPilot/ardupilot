@@ -17,7 +17,7 @@ public:
 
     /* Concrete implementation of AP_InertialSensor functions: */
     bool            update();
-    float        	get_delta_time();    // get_delta_time returns the time period in seconds overwhich the sensor data was collected    
+    float        	get_delta_time() const;
     float           get_gyro_drift_rate();
 
     // wait for a sample to be available, with timeout in milliseconds

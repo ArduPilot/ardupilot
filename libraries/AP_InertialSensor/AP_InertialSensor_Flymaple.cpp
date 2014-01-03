@@ -224,7 +224,7 @@ bool AP_InertialSensor_Flymaple::update(void)
     return true;
 }
 
-float AP_InertialSensor_Flymaple::get_delta_time(void) 
+float AP_InertialSensor_Flymaple::get_delta_time(void) const
 {
     return _delta_time;
 }
