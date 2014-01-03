@@ -1768,12 +1768,9 @@ bool NavEKF::getLLH(struct Location &loc) const
 
 void NavEKF::OnGroundCheck()
 {
-    uint8_t lowAirSpd;
-    uint8_t lowGndSpd;
-    uint8_t lowHgt;
-    lowAirSpd = (uint8_t)(_ahrs->airspeed_estimate_true(&VtasMeas) < 8.0f);
-    lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
-    lowHgt = (uint8_t)(fabsf(hgtMea < 15.0f));
+    uint8_t lowAirSpd = (!_ahrs->airspeed_estimate_true(&VtasMeas) || VtasMeas < 8.0f);
+    uint8_t lowGndSpd = (uint8_t)((sq(velNED[0]) + sq(velNED[1]) + sq(velNED[2])) < 4.0f);
+    uint8_t lowHgt = (uint8_t)(fabsf(hgtMea < 15.0f));
     // Go with a majority vote from three criteria
     onGround = ((lowAirSpd + lowGndSpd + lowHgt) >= 2);
 }
