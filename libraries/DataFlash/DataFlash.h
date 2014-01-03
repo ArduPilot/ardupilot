@@ -11,6 +11,7 @@
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
+#include <AP_AHRS.h>
 #include <stdint.h>
 
 class DataFlash_Class
@@ -52,6 +53,7 @@ public:
     void Log_Write_RCOUT(void);
     void Log_Write_Baro(AP_Baro &baro);
     void Log_Write_Power(void);
+    void Log_Write_AHRS2(AP_AHRS &ahrs);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -210,6 +212,16 @@ struct PACKED log_BARO {
     float   altitude;
     float   pressure;
     int16_t temperature;
+
+struct PACKED log_AHRS {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    float alt;
+    int32_t lat;
+    int32_t lng;
 };
 
 struct PACKED log_POWR {
@@ -240,7 +252,11 @@ struct PACKED log_POWR {
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","ICCH","TimeMS,Vcc,VServo,Flags" }
+      "POWR","ICCH","TimeMS,Vcc,VServo,Flags" } \
+    { LOG_AHR2_MSG, sizeof(log_AHRS), \
+      "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
+    { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
+      "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -253,6 +269,8 @@ struct PACKED log_POWR {
 #define LOG_IMU2_MSG	  135
 #define LOG_BARO_MSG	  136
 #define LOG_POWR_MSG	  137
+#define LOG_AHR2_MSG	  138
+#define LOG_SIMSTATE_MSG  139
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"

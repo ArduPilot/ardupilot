@@ -6,6 +6,7 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_Baro.h>
+#include <AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -276,7 +277,7 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 /*
   read and print a log entry using the format strings from the given structure
  */
-void DataFlash_Class::_print_log_entry(uint8_t msg_type, 
+void DataFlash_Class::_print_log_entry(uint8_t msg_type,
                                        void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                                        AP_HAL::BetterStream *port)
 {
@@ -429,8 +430,8 @@ void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
     for (uint8_t i=0; i<_num_types; i++) {
         const struct LogStructure *s = &_structures[i];
         port->printf_P(PSTR("FMT, %u, %u, %S, %S, %S\n"),
-                       (unsigned)PGM_UINT8(&s->msg_type), 
-                       (unsigned)PGM_UINT8(&s->msg_len), 
+                       (unsigned)PGM_UINT8(&s->msg_type),
+                       (unsigned)PGM_UINT8(&s->msg_len),
                        s->name, s->format, s->labels);
     }
 }
@@ -439,7 +440,7 @@ void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
   Read the log and print it on port
 */
 void DataFlash_Block::LogReadProcess(uint16_t log_num,
-                                     uint16_t start_page, uint16_t end_page, 
+                                     uint16_t start_page, uint16_t end_page,
                                      void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                                      AP_HAL::BetterStream *port)
 {
@@ -544,9 +545,9 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
         uint16_t last_log_start = log_start, last_log_end = log_end;
         uint16_t temp = last_log_num - i + 1;
         get_log_boundaries(temp, log_start, log_end);
-        port->printf_P(PSTR("Log %u,    start %u,   end %u\n"), 
-                       (unsigned)temp, 
-                       (unsigned)log_start, 
+        port->printf_P(PSTR("Log %u,    start %u,   end %u\n"),
+                       (unsigned)temp,
+                       (unsigned)log_start,
                        (unsigned)log_end);
         if (last_log_start == log_start && last_log_end == log_end) {
             // we are printing bogus logs
@@ -619,8 +620,8 @@ void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
 /*
   write a parameter to the log
  */
-void DataFlash_Class::Log_Write_Parameter(const AP_Param *ap, 
-                                          const AP_Param::ParamToken &token, 
+void DataFlash_Class::Log_Write_Parameter(const AP_Param *ap,
+                                          const AP_Param::ParamToken &token,
                                           enum ap_var_type type)
 {
     char name[16];
@@ -791,5 +792,26 @@ void DataFlash_Class::Log_Write_Power(void)
     };
     WriteBlock(&pkt, sizeof(pkt));
 #endif
+}
+
+// Write an AHRS2 packet
+void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
+{
+    Vector3f euler;
+    struct Location loc;
+    if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc)) {
+        return;
+    }
+    struct log_AHRS pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
+        time_ms : hal.scheduler->millis(),
+        roll  : (int16_t)(degrees(euler.x)*100),
+        pitch : (int16_t)(degrees(euler.y)*100),
+        yaw   : (uint16_t)(wrap_360_cd(degrees(euler.z)*100)),
+        alt   : loc.alt*1.0e-2f,
+        lat   : loc.lat,
+        lng   : loc.lng
+    };
+    WriteBlock(&pkt, sizeof(pkt));
 }
 
