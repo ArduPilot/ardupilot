@@ -1812,7 +1812,7 @@ void NavEKF::FixCovarianceErrors()
     {
         for (uint8_t j=0; j<=i-1; j++)
         {
-            float temp = 0.5f*(P[i][j] + P[j][i]);
+            float temp = 0.5f*(nextP[i][j] + nextP[j][i]);
             P[i][j] = temp;
             P[j][i] = temp;
         }
