@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-  24 state EKF based on https://github.com/priseborough/InertialNav
+  21 state EKF based on https://github.com/priseborough/InertialNav
 
   Converted from Matlab to C++ by Paul Riseborough
 
@@ -49,11 +49,11 @@ public:
     typedef VectorN<ftype,8> Vector8;
     typedef VectorN<ftype,11> Vector11;
     typedef VectorN<ftype,13> Vector13;
+    typedef VectorN<ftype,14> Vector14;
     typedef VectorN<ftype,21> Vector21;
-    typedef VectorN<ftype,24> Vector24;
     typedef VectorN<VectorN<ftype,3>,3> Matrix3;
-    typedef VectorN<VectorN<ftype,24>,24> Matrix24;
-    typedef VectorN<VectorN<ftype,50>,24> Matrix24_50;
+    typedef VectorN<VectorN<ftype,21>,21> Matrix21;
+    typedef VectorN<VectorN<ftype,50>,21> Matrix21_50;
 #else
     typedef ftype Vector2[2];
     typedef ftype Vector3[3];
@@ -61,16 +61,16 @@ public:
     typedef ftype Vector8[8];
     typedef ftype Vector11[11];
     typedef ftype Vector13[13];
+    typedef ftype Vector14[14];
     typedef ftype Vector21[21];
-    typedef ftype Vector24[24];
     typedef ftype Matrix3[3][3];
-    typedef ftype Matrix24[24][24];
-    typedef ftype Matrix24_50[24][50];
+    typedef ftype Matrix21[21][21];
+    typedef ftype Matrix21_50[21][50];
 #endif
 
-    // Constructor 
+    // Constructor
     NavEKF(const AP_AHRS *ahrs, AP_Baro &baro);
- 
+
     // Initialise the filter states from the AHRS and magnetometer data (if present)
     void InitialiseFilter(void);
 
@@ -130,18 +130,18 @@ private:
     void UpdateStrapdownEquationsNED();
 
     void CovariancePrediction();
-    
+
     void FixCovarianceErrors();
 
     void FuseVelPosNED();
-    
+
     void FuseMagnetometer();
-    
+
     void FuseAirspeed();
 
-    void zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last);
+    void zeroRows(Matrix21 &covMat, uint8_t first, uint8_t last);
 
-    void zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last);
+    void zeroCols(Matrix21 &covMat, uint8_t first, uint8_t last);
 
     void quatNorm(Quaternion &quatOut, const Quaternion &quatIn) const;
 
@@ -149,7 +149,7 @@ private:
     void StoreStates(void);
 
     // recall state vector stored at closest time to the one specified by msec
-    void RecallStates(Vector24 &statesForFusion, uint32_t msec);
+    void RecallStates(Vector21 &statesForFusion, uint32_t msec);
 
     void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
@@ -174,7 +174,7 @@ private:
     void readAirSpdData();
 
     void SelectVelPosFusion();
-	
+
     void SelectHgtFusion();
 
     void SelectTasFusion();
@@ -196,12 +196,12 @@ private:
     ftype _windStateNoise; // RMS rate of change of wind (m/s^2)
     ftype _wndVarHgtRateScale; // scale factor applied to wind process noise from height rate
 
-    Vector24 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
+    Vector21 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
 
-    Matrix24 KH; //  intermediate result used for covariance updates
-    Matrix24 KHP; // intermediate result used for covariance updates
-    Matrix24 P; // covariance matrix
-    Matrix24_50 storedStates; // state vectors stored for the last 50 time steps
+    Matrix21 KH; //  intermediate result used for covariance updates
+    Matrix21 KHP; // intermediate result used for covariance updates
+    Matrix21 P; // covariance matrix
+    Matrix21_50 storedStates; // state vectors stored for the last 50 time steps
     uint32_t statetimeStamp[50]; // time stamp for each state vector stored
     Vector3f correctedDelAng; // delta angles about the xyz body axes corrected for errors (rad)
     Vector3f correctedDelVel; // delta velocities along the XYZ body axes corrected for errors (m/s)
@@ -228,19 +228,19 @@ private:
     Vector3f velNED; // North, East, Down velocity measurements (m/s)
     Vector2 posNE; // North, East position measurements (m)
     ftype hgtMea; //  height measurement relative to reference point  (m)
-    Vector24 statesAtVelTime; // States at the effective time of velNED measurements
-    Vector24 statesAtPosTime; // States at the effective time of posNE measurements
-    Vector24 statesAtHgtTime; // States at the effective time of hgtMea measurement
+    Vector21 statesAtVelTime; // States at the effective time of velNED measurements
+    Vector21 statesAtPosTime; // States at the effective time of posNE measurements
+    Vector21 statesAtHgtTime; // States at the effective time of hgtMea measurement
     Vector3f innovMag; // innovation output from fusion of X,Y,Z compass measurements
     Vector3f varInnovMag; // innovation variance output from fusion of X,Y,Z compass measurements
     bool fuseMagData; // boolean true when magnetometer data is to be fused
     Vector3f magData; // magnetometer flux readings in X,Y,Z body axes
-    Vector24 statesAtMagMeasTime; // filter states at the effective time of compass measurements
+    Vector21 statesAtMagMeasTime; // filter states at the effective time of compass measurements
     ftype innovVtas; // innovation output from fusion of airspeed measurements
     ftype varInnovVtas; // innovation variance output from fusion of airspeed measurements
     bool fuseVtasData; // boolean true when airspeed data is to be fused
     float VtasMeas; // true airspeed measurement (m/s)
-    Vector24 statesAtVtasMeasTime; // filter states at the effective measurement time
+    Vector21 statesAtVtasMeasTime; // filter states at the effective measurement time
     Vector3f magBias; // magnetometer bias vector in XYZ body axes
     const ftype covTimeStepMax; // maximum time allowed between covariance predictions
     const ftype covDelAngMax; // maximum delta angle between covariance predictions
@@ -263,7 +263,7 @@ private:
 
     // last time airspeed was updated
     uint32_t lastAirspeedUpdate;
-    
+
     // Estimated time delays (msec) for different measurements relative to IMU
     const uint32_t msecVelDelay;
     const uint32_t msecPosDelay;
@@ -295,7 +295,7 @@ private:
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
-    // to 
+    // to
     struct {
     	ftype q0;
         ftype q1;
@@ -324,12 +324,12 @@ private:
     Vector3f lastAccel;
 
     // CovariancePrediction variables
-    Matrix24 nextP;
-    Vector24 processNoise;
-    Vector21 SF;
+    Matrix21 nextP;
+    Vector21 processNoise;
+    Vector14 SF;
     Vector8 SG;
     Vector11 SQ;
-    Vector13 SPP;
+    Vector8 SPP;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // performance counters
