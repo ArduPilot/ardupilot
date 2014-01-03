@@ -978,17 +978,8 @@ void NavEKF::CovariancePrediction()
         }
     }
 
-    // Force symmetry on the covariance matrix to prevent ill-conditioning
-    // of the matrix which would cause the filter to blow-up
-    for (uint8_t i=0; i<=20; i++) P[i][i] = nextP[i][i];
-    for (uint8_t i=1; i<=20; i++)
-    {
-        for (uint8_t j=0; j<=i-1; j++)
-        {
-            P[i][j] = 0.5f*(nextP[i][j] + nextP[j][i]);
-            P[j][i] = P[i][j];
-        }
-    }
+    FixCovarianceErrors();
+
     perf_end(_perf_CovariancePrediction);
 }
 
