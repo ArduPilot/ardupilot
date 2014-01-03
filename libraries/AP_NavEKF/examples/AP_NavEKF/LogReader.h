@@ -14,6 +14,7 @@ public:
     bool update(uint8_t &type);
     bool wait_type(uint8_t type);
     const Vector3f &get_attitude(void) const { return attitude; }
+    const Vector3f &get_sim_attitude(void) const { return sim_attitude; }
 
 private:
     int fd;
@@ -28,6 +29,7 @@ private:
     struct log_Format formats[32];
 
     Vector3f attitude;
+    Vector3f sim_attitude;
 
     void wait_timestamp(uint32_t timestamp);
 };

@@ -102,7 +102,7 @@ void setup()
 
     plotf = fopen("plot.dat", "w");
     plotf2 = fopen("plot2.dat", "w");
-    fprintf(plotf, "time ATT.Roll ATT.Pitch ATT.Yaw AHRS.Roll AHRS.Pitch AHRS.Yaw EKF.Roll EKF.Pitch EKF.Yaw\n");
+    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw ATT.Roll ATT.Pitch ATT.Yaw AHRS.Roll AHRS.Pitch AHRS.Yaw EKF.Roll EKF.Pitch EKF.Yaw\n");
     fprintf(plotf2, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ AX AY AZ MN ME MD MX MY MZ E1ref E2ref E3ref\n");
 }
 
@@ -138,8 +138,11 @@ void loop()
             NavEKF.getMagXYZ(magXYZ);
             float temp = degrees(ekf_euler.z);
             if (temp < 0.0f) temp = temp + 360.0f;
-            fprintf(plotf, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
+            fprintf(plotf, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
                     hal.scheduler->millis() * 0.001f,
+                    LogReader.get_sim_attitude().x,
+                    LogReader.get_sim_attitude().y,
+                    LogReader.get_sim_attitude().z,
                     LogReader.get_attitude().x,
                     LogReader.get_attitude().y,
                     LogReader.get_attitude().z,
