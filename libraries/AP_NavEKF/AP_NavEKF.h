@@ -41,30 +41,31 @@ class AP_AHRS;
 class NavEKF
 {
 public:
+    typedef float ftype;
 #if MATH_CHECK_INDEXES
-    typedef VectorN<float,2> Vector2;
-    typedef VectorN<float,3> Vector3;
-    typedef VectorN<float,6> Vector6;
-    typedef VectorN<float,8> Vector8;
-    typedef VectorN<float,11> Vector11;
-    typedef VectorN<float,13> Vector13;
-    typedef VectorN<float,21> Vector21;
-    typedef VectorN<float,24> Vector24;
-    typedef VectorN<VectorN<float,3>,3> Matrix3;
-    typedef VectorN<VectorN<float,24>,24> Matrix24;
-    typedef VectorN<VectorN<float,50>,24> Matrix24_50;
+    typedef VectorN<ftype,2> Vector2;
+    typedef VectorN<ftype,3> Vector3;
+    typedef VectorN<ftype,6> Vector6;
+    typedef VectorN<ftype,8> Vector8;
+    typedef VectorN<ftype,11> Vector11;
+    typedef VectorN<ftype,13> Vector13;
+    typedef VectorN<ftype,21> Vector21;
+    typedef VectorN<ftype,24> Vector24;
+    typedef VectorN<VectorN<ftype,3>,3> Matrix3;
+    typedef VectorN<VectorN<ftype,24>,24> Matrix24;
+    typedef VectorN<VectorN<ftype,50>,24> Matrix24_50;
 #else
-    typedef float Vector2[2];
-    typedef float Vector3[3];
-    typedef float Vector6[6];
-    typedef float Vector8[8];
-    typedef float Vector11[11];
-    typedef float Vector13[13];
-    typedef float Vector21[21];
-    typedef float Vector24[24];
-    typedef float Matrix3[3][3];
-    typedef float Matrix24[24][24];
-    typedef float Matrix24_50[24][50];
+    typedef ftype Vector2[2];
+    typedef ftype Vector3[3];
+    typedef ftype Vector6[6];
+    typedef ftype Vector8[8];
+    typedef ftype Vector11[11];
+    typedef ftype Vector13[13];
+    typedef ftype Vector21[21];
+    typedef ftype Vector24[24];
+    typedef ftype Matrix3[3][3];
+    typedef ftype Matrix24[24][24];
+    typedef ftype Matrix24_50[24][50];
 #endif
 
     // Constructor 
@@ -183,17 +184,17 @@ private:
     bool statesInitialised;
 
     // Tuning Parameters
-    float _gpsHorizVelVar;  // GPS horizontal velocity variance (m/s)^2
-    float _gpsVertVelVar;  // GPS vertical velocity variance (m/s)^2
-    float _gpsHorizPosVar; // GPS horizontal position variance m^2
-    float _gpsVertPosVar;  // GPS vertical position variance m^2
-    float _gpsVelVarAccScale; // scale factor applied to velocity variance due to Vdot
-    float _gpsPosVarAccScale; // scale factor applied to position variance due to Vdot
-    float _magVar; // magnetometer measurement variance Gauss^2
-    float _magVarRateScale; // scale factor applied to magnetometer variance due to Vdot
-    float _easVar; // equivalent airspeed noise variance (m/s)^2
-    float _windStateNoise; // RMS rate of change of wind (m/s^2)
-    float _wndVarHgtRateScale; // scale factor applied to wind process noise from height rate
+    ftype _gpsHorizVelVar;  // GPS horizontal velocity variance (m/s)^2
+    ftype _gpsVertVelVar;  // GPS vertical velocity variance (m/s)^2
+    ftype _gpsHorizPosVar; // GPS horizontal position variance m^2
+    ftype _gpsVertPosVar;  // GPS vertical position variance m^2
+    ftype _gpsVelVarAccScale; // scale factor applied to velocity variance due to Vdot
+    ftype _gpsPosVarAccScale; // scale factor applied to position variance due to Vdot
+    ftype _magVar; // magnetometer measurement variance Gauss^2
+    ftype _magVarRateScale; // scale factor applied to magnetometer variance due to Vdot
+    ftype _easVar; // equivalent airspeed noise variance (m/s)^2
+    ftype _windStateNoise; // RMS rate of change of wind (m/s^2)
+    ftype _wndVarHgtRateScale; // scale factor applied to wind process noise from height rate
 
     Vector24 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
 
@@ -208,13 +209,13 @@ private:
     Vector3f summedDelVel; // corrected & summed delta velocities along the XYZ body axes (m/s)
 	Vector3f prevDelAng; // previous delta angle use for INS coning error compensation
     Matrix3f prevTnb; // previous nav to body transformation used for INS earth rotation compensation
-    float accNavMag; // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
+    ftype accNavMag; // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
     Vector3f earthRateNED; // earths angular rate vector in NED (rad/s)
     Vector3f dVelIMU; // delta velocity vector in XYZ body axes measured by the IMU (m/s)
     Vector3f dAngIMU; // delta angle vector in XYZ body axes measured by the IMU (rad)
-    float dtIMU; // time lapsed since the last IMU measurement (sec)
-    float dt; // time lapsed since the last covariance prediction (sec)
-    float hgtRate; // state for rate of change of height filter
+    ftype dtIMU; // time lapsed since the last IMU measurement (sec)
+    ftype dt; // time lapsed since the last covariance prediction (sec)
+    ftype hgtRate; // state for rate of change of height filter
     bool onGround; // boolean true when the flight vehicle is on the ground (not flying)
     const bool useAirspeed; // boolean true if airspeed data is being used
     const bool useCompass; // boolean true if magnetometer data is being used
@@ -226,7 +227,7 @@ private:
     bool fuseHgtData; // this boolean causes the hgtMea measurements to be fused
     Vector3f velNED; // North, East, Down velocity measurements (m/s)
     Vector2 posNE; // North, East position measurements (m)
-    float hgtMea; //  height measurement relative to reference point  (m)
+    ftype hgtMea; //  height measurement relative to reference point  (m)
     Vector24 statesAtVelTime; // States at the effective time of velNED measurements
     Vector24 statesAtPosTime; // States at the effective time of posNE measurements
     Vector24 statesAtHgtTime; // States at the effective time of hgtMea measurement
@@ -235,16 +236,16 @@ private:
     bool fuseMagData; // boolean true when magnetometer data is to be fused
     Vector3f magData; // magnetometer flux readings in X,Y,Z body axes
     Vector24 statesAtMagMeasTime; // filter states at the effective time of compass measurements
-    float innovVtas; // innovation output from fusion of airspeed measurements
-    float varInnovVtas; // innovation variance output from fusion of airspeed measurements
+    ftype innovVtas; // innovation output from fusion of airspeed measurements
+    ftype varInnovVtas; // innovation variance output from fusion of airspeed measurements
     bool fuseVtasData; // boolean true when airspeed data is to be fused
     float VtasMeas; // true airspeed measurement (m/s)
     Vector24 statesAtVtasMeasTime; // filter states at the effective measurement time
     Vector3f magBias; // magnetometer bias vector in XYZ body axes
-    const float covTimeStepMax; // maximum time allowed between covariance predictions
-    const float covDelAngMax; // maximum delta angle between covariance predictions
+    const ftype covTimeStepMax; // maximum time allowed between covariance predictions
+    const ftype covDelAngMax; // maximum delta angle between covariance predictions
     bool covPredStep; // boolean set to true when a covariance prediction step has been performed
-    const float yawVarScale; // scale factor applied to yaw gyro errors when on ground
+    const ftype yawVarScale; // scale factor applied to yaw gyro errors when on ground
     bool magFusePerformed; // boolean set to true when magnetometer fusion has been perfomred in that time step
     bool magFuseRequired; // boolean set to true when magnetometer fusion will be perfomred in the next time step
     bool posVelFuseStep; // boolean set to true when position and velocity fusion is being performed
@@ -271,17 +272,17 @@ private:
     const uint32_t msecTasDelay;
 
     // IMU input data variables
-    const float dtIMUAvg;
-    float dtIMUAvgInv;
+    const ftype dtIMUAvg;
+    ftype dtIMUAvgInv;
     uint32_t IMUmsec;
 
     // GPS input data variables
-    float gpsCourse;
-    float gpsGndSpd;
+    ftype gpsCourse;
+    ftype gpsGndSpd;
     bool newDataGps;
 
     // Magnetometer input data variables
-    float magIn;
+    ftype magIn;
     bool newDataMag;
 
     // TAS input variables
@@ -296,21 +297,21 @@ private:
     // magnetometer X,Y,Z measurements are fused across three time steps
     // to 
     struct {
-    	float q0;
-        float q1;
-        float q2;
-        float q3;
-        float magN;
-        float magE;
-        float magD;
-        float magXbias;
-        float magYbias;
-        float magZbias;
+    	ftype q0;
+        ftype q1;
+        ftype q2;
+        ftype q3;
+        ftype magN;
+        ftype magE;
+        ftype magD;
+        ftype magXbias;
+        ftype magYbias;
+        ftype magZbias;
         uint8_t obsIndex;
         Matrix3f DCM;
         Vector3f MagPred;
-        float R_MAG;
-        float SH_MAG[9];
+        ftype R_MAG;
+        ftype SH_MAG[9];
 	} mag_state;
 
     // State vector storage index

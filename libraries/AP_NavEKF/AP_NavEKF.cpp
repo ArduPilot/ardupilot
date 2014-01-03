@@ -1389,21 +1389,21 @@ void NavEKF::FuseVelPosNED()
 void NavEKF::FuseMagnetometer()
 {
     perf_begin(_perf_FuseMagnetometer);
-    float &q0 = mag_state.q0;
-    float &q1 = mag_state.q1;
-    float &q2 = mag_state.q2;
-    float &q3 = mag_state.q3;
-    float &magN = mag_state.magN;
-    float &magE = mag_state.magE;
-    float &magD = mag_state.magD;
-    float &magXbias = mag_state.magXbias;
-    float &magYbias = mag_state.magYbias;
-    float &magZbias = mag_state.magZbias;
+    ftype &q0 = mag_state.q0;
+    ftype &q1 = mag_state.q1;
+    ftype &q2 = mag_state.q2;
+    ftype &q3 = mag_state.q3;
+    ftype &magN = mag_state.magN;
+    ftype &magE = mag_state.magE;
+    ftype &magD = mag_state.magD;
+    ftype &magXbias = mag_state.magXbias;
+    ftype &magYbias = mag_state.magYbias;
+    ftype &magZbias = mag_state.magZbias;
     uint8_t &obsIndex = mag_state.obsIndex;
     Matrix3f &DCM = mag_state.DCM;
     Vector3f &MagPred = mag_state.MagPred;
-    float &R_MAG = mag_state.R_MAG;
-    float *SH_MAG = &mag_state.SH_MAG[0];
+    ftype &R_MAG = mag_state.R_MAG;
+    ftype *SH_MAG = &mag_state.SH_MAG[0];
     Vector24 H_MAG;
     Vector6 SK_MX;
     Vector6 SK_MY;
@@ -1837,7 +1837,7 @@ void NavEKF::zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last)
     uint8_t row;
     for (row=first; row<=last; row++)
     {
-        memset(&covMat[row][0], 0, sizeof(float)*24);
+        memset(&covMat[row][0], 0, sizeof(covMat[0][0])*24);
     }
 }
 
@@ -1846,7 +1846,7 @@ void NavEKF::zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last)
     uint8_t row;
     for (row=0; row<=23; row++)
     {
-        memset(&covMat[row][first], 0, sizeof(float)*(1+last-first));
+        memset(&covMat[row][first], 0, sizeof(covMat[0][0])*(1+last-first));
     }
 }
 
