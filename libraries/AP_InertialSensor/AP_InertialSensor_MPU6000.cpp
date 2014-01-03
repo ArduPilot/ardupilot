@@ -588,7 +588,7 @@ void AP_InertialSensor_MPU6000::_dump_registers(void)
 
 
 // get_delta_time returns the time period in seconds overwhich the sensor data was collected
-float AP_InertialSensor_MPU6000::get_delta_time() 
+float AP_InertialSensor_MPU6000::get_delta_time() const
 {
     // the sensor runs at 200Hz
     return 0.005 * _num_samples;

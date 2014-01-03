@@ -28,7 +28,7 @@ public:
     bool                wait_for_sample(uint16_t timeout_ms);
 
     // get_delta_time returns the time period in seconds overwhich the sensor data was collected
-    float            	get_delta_time();
+    float            	get_delta_time() const;
 
     uint16_t error_count(void) const { return _error_count; }
     bool healthy(void) const { return _error_count <= 4; }

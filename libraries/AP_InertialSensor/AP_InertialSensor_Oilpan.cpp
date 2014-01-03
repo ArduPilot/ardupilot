@@ -112,7 +112,7 @@ bool AP_InertialSensor_Oilpan::update()
     return true;
 }
 
-float AP_InertialSensor_Oilpan::get_delta_time() {
+float AP_InertialSensor_Oilpan::get_delta_time() const {
     return _delta_time_micros * 1.0e-6;
 }
 
