@@ -86,7 +86,7 @@ bool NavEKF::healthy(void)
 
 void NavEKF::InitialiseFilter(void)
 {
-    lastFixTime = 0;
+    lastFixTime_ms = 0;
     lastMagUpdate = 0;
     lastAirspeedUpdate = 0;
     velFailTime = 0;
@@ -256,8 +256,6 @@ void NavEKF::SelectVelPosFusion()
         {
             posVelFuseStep = false;
         }
-        // protect against wrap-around
-        if(IMUmsec < HGTmsecPrev) HGTmsecPrev = IMUmsec;
     }
 }
 void NavEKF::SelectMagFusion()
@@ -274,8 +272,6 @@ void NavEKF::SelectMagFusion()
     else
     {
         fuseMagData = false;
-        // protect against wrap-around
-        if(IMUmsec < MAGmsecPrev) MAGmsecPrev = IMUmsec;
     }
     // Magnetometer fusion is always called if enabled because its fusion is spread across 3 time steps to reduce peak load
     FuseMagnetometer();
@@ -285,16 +281,14 @@ void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
     // Fuse Airspeed Measurements - hold off if pos/vel or magnetometer fusion has been performed, unless maximum time interval exceeded
-bool dataReady = (statesInitialised && useAirspeed && !onGround  && newDataTas);
-bool clearFrame = (!posVelFuseStep && !magFusePerformed);
-bool timeout = ((IMUmsec - TASmsecPrev) >= TASmsecMax);
+    bool dataReady = (statesInitialised && useAirspeed && !onGround  && newDataTas);
+    bool clearFrame = (!posVelFuseStep && !magFusePerformed);
+    bool timeout = ((IMUmsec - TASmsecPrev) >= TASmsecMax);
     if (dataReady && (clearFrame || timeout || fuseMeNow))
     {
         TASmsecPrev = IMUmsec;
         FuseAirspeed();
     }
-    // protect against wrap-around
-    if(IMUmsec < TASmsecPrev) TASmsecPrev = IMUmsec;
 }
 
 void NavEKF::UpdateStrapdownEquationsNED()
@@ -2007,14 +2001,11 @@ void NavEKF::CovarianceInit()
 
 void NavEKF::readIMUData()
 {
-    uint32_t IMUusec;
     Vector3f angRate;     // angular rate vector in XYZ body axes measured by the IMU (rad/s)
     Vector3f accel;       // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
 
-    IMUusec     = hal.scheduler->micros();
-    IMUmsec     = IMUusec/1000;
-    dtIMU       = 1.0e-6f * (IMUusec - lastIMUusec);
-    lastIMUusec = IMUusec;
+    IMUmsec     = hal.scheduler->millis();
+    dtIMU       = _ahrs->get_ins().get_delta_time();
     angRate     = _ahrs->get_ins().get_gyro();
     accel       = _ahrs->get_ins().get_accel();
 
@@ -2026,10 +2017,10 @@ void NavEKF::readIMUData()
 
 void NavEKF::readGpsData()
 {
-    if ((_ahrs->get_gps()->last_message_time_ms() != lastFixTime) &&
+    if ((_ahrs->get_gps()->last_message_time_ms() != lastFixTime_ms) &&
             (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D))
     {
-        lastFixTime = _ahrs->get_gps()->last_message_time_ms();
+        lastFixTime_ms = _ahrs->get_gps()->last_message_time_ms();
         newDataGps = true;
         RecallStates(statesAtVelTime, (IMUmsec - msecVelDelay));
         RecallStates(statesAtPosTime, (IMUmsec - msecPosDelay));
