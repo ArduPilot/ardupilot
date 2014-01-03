@@ -1808,7 +1808,15 @@ void NavEKF::OnGroundCheck()
 
 void NavEKF::CovarianceInit()
 {
-    // Calculate the initial covariance matrix P
+    // zero the matrix
+    for (uint8_t i=1; i<=20; i++)
+    {
+        for (uint8_t j=0; j<=20; j++)
+        {
+            P[i][j] = 0.0f;
+        }
+    }
+    // Set the diagonals
     P[1][1]   = 0.25f*sq(1.0f*DEG_TO_RAD);
     P[2][2]   = 0.25f*sq(1.0f*DEG_TO_RAD);
     P[3][3]   = 0.25f*sq(10.0f*DEG_TO_RAD);
