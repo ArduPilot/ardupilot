@@ -814,6 +814,7 @@ static void ahrs_update()
         Log_Write_Attitude();
         Log_Write_EKF();
         Log_Write_AHRS2();
+        Log_Write_SIMSTATE();
     }
 
     if (should_log(MASK_LOG_IMU))
@@ -899,6 +900,7 @@ static void update_logging1(void)
         Log_Write_Attitude();
         Log_Write_EKF();
         Log_Write_AHRS2();
+        Log_Write_SIMSTATE();
     }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
