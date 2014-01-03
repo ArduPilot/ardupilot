@@ -86,9 +86,9 @@ static Location rally_find_best_location(const Location &myloc, const Location &
 {
     RallyLocation ral_loc = {};
     Location ret = {};
-    if (find_best_rally_point(myloc, ahrs.get_home(), ral_loc)) {
+    if (find_best_rally_point(myloc, home, ral_loc)) {
         //we have setup Rally points: use them instead of Home for RTL
-        ret = rally_location_to_location(ral_loc, ahrs.get_home());
+        ret = rally_location_to_location(ral_loc, home);
     } else {
         ret = homeloc;
         // Altitude to hold over home

@@ -1852,7 +1852,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // add home alt if needed
             if (guided_WP.options & MASK_OPTIONS_RELATIVE_ALT) {
-                guided_WP.alt += ahrs.get_home().alt;
+                guided_WP.alt += home.alt;
             }
 
             set_mode(GUIDED);
@@ -1871,7 +1871,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // add home alt if needed
             if (tell_command.options & MASK_OPTIONS_RELATIVE_ALT) {
-                tell_command.alt += ahrs.get_home().alt;
+                tell_command.alt += home.alt;
             }
 
             next_WP.alt = tell_command.alt;
