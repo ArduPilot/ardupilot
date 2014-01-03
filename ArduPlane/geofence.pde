@@ -154,7 +154,7 @@ static bool geofence_check_minalt(void)
     if (g.fence_minalt == 0) {
         return false;
     }
-    return (adjusted_altitude_cm() < (g.fence_minalt*100.0) + ahrs.get_home().alt);
+    return (adjusted_altitude_cm() < (g.fence_minalt*100.0) + home.alt);
 }
 
 /*
@@ -168,7 +168,7 @@ static bool geofence_check_maxalt(void)
     if (g.fence_maxalt == 0) {
         return false;
     }
-    return (adjusted_altitude_cm() > (g.fence_maxalt*100.0) + ahrs.get_home().alt);
+    return (adjusted_altitude_cm() > (g.fence_maxalt*100.0) + home.alt);
 }
 
 
@@ -268,14 +268,14 @@ static void geofence_check(bool altitude_check_only)
     case FENCE_ACTION_GUIDED_THR_PASS:
         if (g.fence_retalt > 0) {
             //fly to the return point using fence_retalt
-            guided_WP.alt = ahrs.get_home().alt + 100.0*g.fence_retalt;
+            guided_WP.alt = home.alt + 100.0*g.fence_retalt;
         } else if (g.fence_minalt >= g.fence_maxalt) {
             // invalid min/max, use RTL_altitude
-            guided_WP.alt = ahrs.get_home().alt + g.RTL_altitude_cm;
+            guided_WP.alt = home.alt + g.RTL_altitude_cm;
         } else {
             // fly to the return point, with an altitude half way between
             // min and max
-            guided_WP.alt = ahrs.get_home().alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
+            guided_WP.alt = home.alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
         }
         guided_WP.id = 0;
         guided_WP.p1  = 0;

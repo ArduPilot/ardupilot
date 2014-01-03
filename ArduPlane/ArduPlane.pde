@@ -622,6 +622,9 @@ static int16_t condition_rate;
 // 3D Location vectors
 // Location structure defined in AP_Common
 ////////////////////////////////////////////////////////////////////////////////
+// reference to AHRS home
+static const struct Location &home = ahrs.get_home();
+
 // Flag for if we have g_gps lock and have set the home location in AHRS
 static bool home_is_set;
 // The location of the previous waypoint.  Used for track following and altitude ramp calculations
@@ -1379,7 +1382,7 @@ static void update_alt()
             }
         }
 
-        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - ahrs.get_home().alt + (int32_t(g.alt_offset)*100), 
+        SpdHgt_Controller->update_pitch_throttle(target_altitude_cm - home.alt + (int32_t(g.alt_offset)*100), 
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  takeoff_pitch_cd,
