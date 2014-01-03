@@ -51,9 +51,6 @@ public:
 
     /**
      * initializes the object.
-     *
-     * AP_InertialNav::set_home_position(int32_t, int32_t) should be called later,
-     * to enable all "horizontal related" getter-methods.
      */
     void        init();
 
@@ -104,8 +101,6 @@ public:
     /**
      * get_position - returns the current position relative to the home location in cm.
      *
-     * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
-     *
      * @return
      */
     const Vector3f&    get_position() const { return _position; }
@@ -121,16 +116,6 @@ public:
      * @return
      */
     int32_t     get_longitude() const;
-
-    /**
-     * set_home_position - sets home position
-     *
-     * all internal calculations are recorded as the distances from this point.
-     *
-     * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    void        set_home_position(int32_t lon, int32_t lat);
 
     /**
      * get_latitude_diff - returns the current latitude difference from the home location.
@@ -170,6 +155,11 @@ public:
      * @param y : longitude velocity in cm/s
      */
     void        set_velocity_xy(float x, float y);
+
+    /**
+       setup_home_position - reset on home position change
+    */
+    void setup_home_position(void);
 
     //
     // Z Axis methods
@@ -295,8 +285,6 @@ protected:
     uint8_t                 _historic_xy_counter;       // counter used to slow saving of position estimates for later comparison to gps
     AP_BufferFloat_Size5    _hist_position_estimate_x;  // buffer of historic accel based position to account for gpslag
     AP_BufferFloat_Size5    _hist_position_estimate_y;  // buffer of historic accel based position to account for gps lag
-    int32_t                 _base_lat;                  // base latitude  (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-    int32_t                 _base_lon;                  // base longitude (home location) in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
     float                   _lon_to_cm_scaling;         // conversion of longitude to centimeters
 
     // Z Axis specific variables
