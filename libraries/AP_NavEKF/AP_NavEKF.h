@@ -314,11 +314,8 @@ private:
     // State vector storage index
 	uint8_t storeIndex;
 
-    // high precision time stamp for previous IMU data processing
-	uint32_t lastIMUusec;
-
-    // time of alst GPS fix used to determine if new data has arrived
-	uint32_t lastFixTime;
+    // time of last GPS fix used to determine if new data has arrived
+	uint32_t lastFixTime_ms;
 
     Vector3f lastAngRate;
     Vector3f lastAccel;
