@@ -827,7 +827,7 @@ static void update_GPS_50Hz(void)
 
 static void update_GPS_10Hz(void)
 {        
-    have_position = ahrs.get_projected_position(current_loc);
+    have_position = ahrs.get_position(current_loc);
 
 	if (g_gps->new_data && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
 		gps_fix_count++;
