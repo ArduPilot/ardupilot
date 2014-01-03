@@ -1,3 +1,3 @@
 set style data lines
-plot "plot.dat" using "E1", "" using "E1ref"
+plot "plot.dat" using "ATT.Roll", "" using "AHRS.Roll", "" using "EKF.Roll"
 pause -1 "hit return to exit"

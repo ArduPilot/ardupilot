@@ -51,7 +51,7 @@ static AP_Baro_HIL barometer;
 static AP_GPS_HIL gps_driver;
 static GPS *g_gps = &gps_driver;
 static AP_Compass_HIL compass;
-static AP_AHRS_DCM ahrs(ins, g_gps);
+static AP_AHRS_DCM ahrs(ins, barometer, g_gps);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
@@ -61,6 +61,7 @@ static NavEKF NavEKF(&ahrs, barometer);
 static LogReader LogReader(ins, barometer, compass, g_gps);
 
 static FILE *plotf;
+static FILE *plotf2;
 
 void setup()
 {
@@ -100,7 +101,9 @@ void setup()
     NavEKF.InitialiseFilter();
 
     plotf = fopen("plot.dat", "w");
-    fprintf(plotf, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ AX AY AZ MN ME MD MX MY MZ E1ref E2ref E3ref\n");
+    plotf2 = fopen("plot2.dat", "w");
+    fprintf(plotf, "time ATT.Roll ATT.Pitch ATT.Yaw AHRS.Roll AHRS.Pitch AHRS.Yaw EKF.Roll EKF.Pitch EKF.Yaw\n");
+    fprintf(plotf2, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ AX AY AZ MN ME MD MX MY MZ E1ref E2ref E3ref\n");
 }
 
 void loop()
@@ -135,7 +138,18 @@ void loop()
             NavEKF.getMagXYZ(magXYZ);
             float temp = degrees(ekf_euler.z);
             if (temp < 0.0f) temp = temp + 360.0f;
-            fprintf(plotf, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.3f %.3f %.3f %.4f %.4f %.4f %.4f %.4f %.4f %.1f %.1f %.1f \n",
+            fprintf(plotf, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
+                    hal.scheduler->millis() * 0.001f,
+                    LogReader.get_attitude().x,
+                    LogReader.get_attitude().y,
+                    LogReader.get_attitude().z,
+                    ahrs.roll_sensor*0.01f, 
+                    ahrs.pitch_sensor*0.01f,
+                    ahrs.yaw_sensor*0.01f,
+                    degrees(ekf_euler.x),
+                    degrees(ekf_euler.y),
+                    degrees(ekf_euler.z));
+            fprintf(plotf2, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.3f %.3f %.3f %.4f %.4f %.4f %.4f %.4f %.4f %.1f %.1f %.1f \n",
                     hal.scheduler->millis() * 0.001f,
                     degrees(ekf_euler.x),
                     degrees(ekf_euler.y),
