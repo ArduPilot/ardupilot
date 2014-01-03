@@ -424,9 +424,9 @@ void NavEKF::CovariancePrediction()
     // this allows for wind gradient effects.
     windVelSigma  = dt * _windStateNoise * (1.0f + _wndVarHgtRateScale * fabsf(hgtRate));
     dAngBiasSigma = dt * 5.0e-7f;
-    dVelBiasSigma = dt * 1.0e-4f;
-    magEarthSigma = dt * 1.5e-4f;
-    magBodySigma  = dt * 1.5e-4f;
+    dVelBiasSigma = dt * 1.0e-5f;
+    magEarthSigma = dt * 3.0e-4f;
+    magBodySigma  = dt * 3.0e-4f;
 
     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
     for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
@@ -1986,7 +1986,7 @@ void NavEKF::CovarianceInit()
     P[10][10] = sq(radians(0.1f * dtIMUAvg));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
-    P[13][13] = sq(0.1f * 0.02f);
+    P[13][13] = sq(0.1f * dtIMUAvg);
     P[14][14] = P[13][13];
     P[15][15] = P[13][13];
     P[16][16] = sq(8.0f);
@@ -1997,6 +1997,31 @@ void NavEKF::CovarianceInit()
     P[21][21] = sq(0.02f);
     P[22][22] = P[21][21];
     P[23][23] = P[21][21];
+}
+
+void NavEKF::FixCovarianceErrors()
+{
+    // Force symmetry on the covariance matrix to prevent ill-conditioning
+    // of the matrix which would cause the filter to blow-up
+    for (uint8_t i=0; i<=23; i++) P[i][i] = nextP[i][i];
+    for (uint8_t i=1; i<=23; i++)
+    {
+        for (uint8_t j=0; j<=i-1; j++)
+        {
+            float temp = 0.5f*(P[i][j] + P[j][i]);
+            P[i][j] = temp;
+            P[j][i] = temp;
+        }
+    }
+    // Constrain variances to be within set limits
+    constrain_float(P[0][0],0.0f,0.1f);
+    for (uint8_t i=1; i<=3; i++) constrain_float(P[1][1],0.0000001f,0.0076f); // equivalent to 0.1 to 10   degrees error
+    for (uint8_t i=4; i<=6; i++) constrain_float(P[1][1],0.01f,400.0f); // 0.1 to 20 m/s velocity error
+    for (uint8_t i=7; i<=9; i++) constrain_float(P[1][1],0.01f,10000.0f); // 0.1 to 100 m position error
+    for (uint8_t i=10; i<=12; i++) constrain_float(P[1][1],sq(2.9e-4f * dtIMUAvg),sq(0.0175 * dtIMUAvg)); // 1 to 30 deg/min bias error
+    for (uint8_t i=13; i<=15; i++) constrain_float(P[1][1],sq(0.001f * dtIMUAvg),sq(0.1f * dtIMUAvg)); // 1 to 100 mm/sec^2 bias error
+    for (uint8_t i=16; i<=17; i++) constrain_float(P[1][1],0.01f,100.0f); // 0.1 to 10 m/sec wind error
+    for (uint8_t i=18; i<=23; i++) constrain_float(P[1][1],1.0e-6f,1.0e-2f); // 0.001 to 0.1 Gauss error
 }
 
 void NavEKF::readIMUData()

@@ -130,6 +130,8 @@ private:
 
     void CovariancePrediction();
     
+    void FixCovarianceErrors();
+
     void FuseVelPosNED();
     
     void FuseMagnetometer();
