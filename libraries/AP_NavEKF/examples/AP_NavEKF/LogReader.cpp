@@ -151,6 +151,14 @@ bool LogReader::update(uint8_t &type)
         attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
         break;
     }
+
+    case LOG_SIMSTATE_MSG: {
+        struct log_AHRS msg;
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.time_ms);
+        sim_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        break;
+    }
     }
 
     type = f.type;
