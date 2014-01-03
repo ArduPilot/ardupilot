@@ -978,7 +978,19 @@ void NavEKF::CovariancePrediction()
         }
     }
 
-    FixCovarianceErrors();
+    // Copy to output whilst forcing symmetry to prevent ill-conditioning
+    // of the matrix 
+    for (uint8_t i=0; i<=20; i++) P[i][i] = nextP[i][i];
+    for (uint8_t i=1; i<=20; i++)
+    {
+        for (uint8_t j=0; j<=i-1; j++)
+        {
+            P[i][j] = 0.5f*(nextP[i][j] + nextP[j][i]);
+            P[j][i] = P[i][j];
+        }
+    }
+
+    ConstrainVariances();
 
     perf_end(_perf_CovariancePrediction);
 }
@@ -1209,6 +1221,12 @@ void NavEKF::FuseVelPosNED()
             }
         }
     }
+
+    // force the covariance matrix to me symmetrical and limit the variances to prevent
+    // ill-condiioning. 
+    ForceSymmetry();
+    ConstrainVariances();
+
     perf_end(_perf_FuseVelPosNED);
 }
 
@@ -1513,6 +1531,12 @@ void NavEKF::FuseMagnetometer()
     magFusePerformed = false;
     magFuseRequired = false;
     }
+
+    // force the covariance matrix to me symmetrical and limit the variances to prevent
+    // ill-condiioning. 
+    ForceSymmetry();
+    ConstrainVariances();
+
     perf_end(_perf_FuseMagnetometer);
 }
 
@@ -1636,6 +1660,12 @@ void NavEKF::FuseAirspeed()
             }
         }
     }
+
+    // force the covariance matrix to me symmetrical and limit the variances to prevent
+    // ill-condiioning. 
+    ForceSymmetry();
+    ConstrainVariances();
+
     perf_end(_perf_FuseAirspeed);
 }
 
@@ -1801,26 +1831,29 @@ void NavEKF::CovarianceInit()
     P[20][20] = P[18][18];
 }
 
-void NavEKF::FixCovarianceErrors()
+void NavEKF::ForceSymmetry()
 {
     // Force symmetry on the covariance matrix to prevent ill-conditioning
     // of the matrix which would cause the filter to blow-up
-    for (uint8_t i=0; i<=20; i++) P[i][i] = nextP[i][i];
     for (uint8_t i=1; i<=20; i++)
     {
         for (uint8_t j=0; j<=i-1; j++)
         {
-            float temp = 0.5f*(nextP[i][j] + nextP[j][i]);
+            float temp = 0.5f*(P[i][j] + P[j][i]);
             P[i][j] = temp;
             P[j][i] = temp;
         }
     }
+}
+
+void NavEKF::ConstrainVariances()
+{
     // Constrain variances to be within set limits
     for (uint8_t i=0; i<=3; i++) constrain_float(P[1][1],0.0f,0.1f);
-    for (uint8_t i=4; i<=6; i++) constrain_float(P[1][1],0.0f,1000.0f);
-    for (uint8_t i=7; i<=9; i++) constrain_float(P[1][1],0.0f,1.0e6f);
-    for (uint8_t i=10; i<=12; i++) constrain_float(P[1][1],0.0f,sq(0.0175 * dtIMUAvg)); // 60 deg/min bias error
-    for (uint8_t i=13; i<=14; i++) constrain_float(P[1][1],0.0f,400.0f);
+    for (uint8_t i=4; i<=6; i++) constrain_float(P[1][1],0.0f,1.0e3f);
+    for (uint8_t i=7; i<=9; i++) constrain_float(P[1][1],0.0f,1.0e5f);
+    for (uint8_t i=10; i<=12; i++) constrain_float(P[1][1],0.0f,sq(0.0175 * dtIMUAvg));
+    for (uint8_t i=13; i<=14; i++) constrain_float(P[1][1],0.0f,1.0e3f);
     for (uint8_t i=15; i<=20; i++) constrain_float(P[1][1],0.0f,1.0f);
 }
 

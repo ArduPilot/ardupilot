@@ -131,7 +131,9 @@ private:
 
     void CovariancePrediction();
 
-    void FixCovarianceErrors();
+    void ForceSymmetry();
+
+    void ConstrainVariances();
 
     void FuseVelPosNED();
 
