@@ -803,7 +803,7 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
         return;
     }
     struct log_AHRS pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
+        LOG_PACKET_HEADER_INIT(LOG_AHRS2_MSG),
         time_ms : hal.scheduler->millis(),
         roll  : (int16_t)(degrees(euler.x)*100),
         pitch : (int16_t)(degrees(euler.y)*100),
@@ -813,5 +813,64 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
         lng   : loc.lng
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+// Write first EKF packet
+void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
+{
+    Vector3f euler;
+    Vector3f posNED;
+    Vector3f velNED;
+    Vector3f dAngBias;
+    Vector3f dVelBias;
+    Vector3f gyroBias;
+    ahrs.get_NavEKF().getEulerAngles(euler);
+    ahrs.get_NavEKF().getVelNED(velNED);
+    ahrs.get_NavEKF().getPosNED(posNED);
+    ahrs.get_NavEKF().getGyroBias(gyroBias);
+    struct log_EKF1 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
+        time_ms : hal.scheduler->millis(),
+        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg)
+        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg)
+        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg)
+        velN    : (float)(velNED.x), // velocity North (m/s)
+        velE    : (float)(velNED.y), // velocity East (m/s)
+        velD    : (float)(velNED.z), // velocity Down (m/s)
+        posN    : (float)(posNED.x), // metres North
+        posE    : (float)(posNED.y), // metres East
+        posD    : (float)(posNED.z), // metres Down
+        gyrX    : (int8_t)(gyroBias.x), // deg/min
+        gyrY    : (int8_t)(gyroBias.y), // deg/min
+        gyrZ    : (int8_t)(gyroBias.z)  // deg/min
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+
+    Vector3f accelBias;
+    Vector3f wind;
+    Vector3f magNED;
+    Vector3f magXYZ;
+    ahrs.get_NavEKF().getAccelBias(accelBias);
+    ahrs.get_NavEKF().getWind(wind);
+    ahrs.get_NavEKF().getMagNED(magNED);
+    ahrs.get_NavEKF().getMagXYZ(magXYZ);
+    struct log_EKF2 pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
+        time_ms : hal.scheduler->millis(),
+        accX    : (int8_t)(100*accelBias.x),
+        accY    : (int8_t)(100*accelBias.y),
+        accZ    : (int8_t)(100*accelBias.z),
+        windN   : (int16_t)(100*wind.x),
+        windE   : (int16_t)(100*wind.y),
+        magN    : (int16_t)(magNED.x),
+        magE    : (int16_t)(magNED.y),
+        magD    : (int16_t)(magNED.z),
+        magX    : (int16_t)(magXYZ.x),
+        magY    : (int16_t)(magXYZ.y),
+        magZ    : (int16_t)(magXYZ.z)
+    };
+    WriteBlock(&pkt2, sizeof(pkt2));
+#endif
 }
 
