@@ -112,7 +112,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
         roll  : (int16_t)(state.rollDeg*100),
         pitch : (int16_t)(state.pitchDeg*100),
         yaw   : (uint16_t)(wrap_360_cd(yaw*100)),
-        alt   : state.altitude,
+        alt   : (float)state.altitude,
         lat   : (int32_t)(state.latitude*1.0e7),
         lng   : (int32_t)(state.longitude*1.0e7)
     };
