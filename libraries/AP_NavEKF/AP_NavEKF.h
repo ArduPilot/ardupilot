@@ -274,8 +274,6 @@ private:
     const uint32_t msecTasDelay;
 
     // IMU input data variables
-    const ftype dtIMUAvg;
-    ftype dtIMUAvgInv;
     uint32_t IMUmsec;
 
     // GPS input data variables

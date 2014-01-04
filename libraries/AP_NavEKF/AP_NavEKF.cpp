@@ -39,8 +39,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     msecPosDelay(210), // msec of GPS position delay
     msecHgtDelay(350), // msec of barometric height delay
     msecMagDelay(30), // msec of compass delay
-    msecTasDelay(210), // msec of true airspeed delay
-    dtIMUAvg(0.01f) // expected IMU data interval
+    msecTasDelay(210) // msec of true airspeed delay
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
     _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
@@ -65,7 +64,6 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     hgtRate = 0.0f;
     mag_state.q0 = 1;
     mag_state.DCM.identity();
-    dtIMUAvgInv = 1.0f/dtIMUAvg;
 }
 
 bool NavEKF::healthy(void) const
@@ -99,6 +97,8 @@ void NavEKF::InitialiseFilter(void)
     memset(&storedStates[0][0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
 
+    // get initial dtIMU
+    dtIMU = _ahrs->get_ins().get_delta_time();
 
     // Calculate initial filter quaternion states from ahrs solution
     Quaternion initQuat;
@@ -1303,7 +1303,7 @@ void NavEKF::FuseMagnetometer()
             MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
             // scale magnetometer observation error with total angular rate
-            R_MAG = _magVar + sq(_magVarRateScale*dAngIMU.length()*dtIMUAvgInv);
+            R_MAG = _magVar + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
 
             // Calculate observation jacobians
             SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
@@ -1754,9 +1754,9 @@ bool NavEKF::getPosNED(Vector3f &pos) const
 
 void NavEKF::getGyroBias(Vector3f &gyroBias) const
 {
-    gyroBias.x = states[10]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
-    gyroBias.y = states[11]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
-    gyroBias.z = states[12]*60.0f*RAD_TO_DEG*dtIMUAvgInv;
+    gyroBias.x = states[10]*60.0f*RAD_TO_DEG / dtIMU;
+    gyroBias.y = states[11]*60.0f*RAD_TO_DEG / dtIMU;
+    gyroBias.z = states[12]*60.0f*RAD_TO_DEG / dtIMU;
 }
 
 void NavEKF::getAccelBias(Vector3f &accelBias) const
@@ -1826,7 +1826,7 @@ void NavEKF::CovarianceInit()
     P[7][7]   = sq(15.0f);
     P[8][8]   = P[7][7];
     P[9][9]   = sq(5.0f);
-    P[10][10] = sq(radians(0.1f * dtIMUAvg));
+    P[10][10] = sq(radians(0.1f * dtIMU));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     P[13][13] = sq(8.0f);
@@ -1860,7 +1860,7 @@ void NavEKF::ConstrainVariances()
     for (uint8_t i=0; i<=3; i++) constrain_float(P[1][1],0.0f,0.1f);
     for (uint8_t i=4; i<=6; i++) constrain_float(P[1][1],0.0f,1.0e3f);
     for (uint8_t i=7; i<=9; i++) constrain_float(P[1][1],0.0f,1.0e5f);
-    for (uint8_t i=10; i<=12; i++) constrain_float(P[1][1],0.0f,sq(0.0175 * dtIMUAvg));
+    for (uint8_t i=10; i<=12; i++) constrain_float(P[1][1],0.0f,sq(0.0175 * dtIMU));
     for (uint8_t i=13; i<=14; i++) constrain_float(P[1][1],0.0f,1.0e3f);
     for (uint8_t i=15; i<=20; i++) constrain_float(P[1][1],0.0f,1.0f);
 }
