@@ -27,7 +27,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
-    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs,  no velocity, 3 = Force postion and velocity measurements to zero (only used during pre-arm or ground testing)
+    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs,  no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     yawVarScale(1.0f), // scale factor applied to yaw gyro errors when on ground
