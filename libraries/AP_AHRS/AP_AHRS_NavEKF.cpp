@@ -64,8 +64,8 @@ void AP_AHRS_NavEKF::update(void)
     }
     if (ekf_started) {
         EKF.UpdateFilter();
+        EKF.getRotationBodyToNED(_dcm_matrix);
         if (using_EKF()) {
-            EKF.getRotationBodyToNED(_dcm_matrix);
             Vector3f eulers;
             EKF.getEulerAngles(eulers);
             roll  = eulers.x;
