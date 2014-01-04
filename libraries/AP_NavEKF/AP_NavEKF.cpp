@@ -40,7 +40,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     msecHgtDelay(350), // msec of barometric height delay
     msecMagDelay(30), // msec of compass delay
     msecTasDelay(210), // msec of true airspeed delay
-    dtIMUAvg(0.02f) // expected IMU data interval
+    dtIMUAvg(0.01f) // expected IMU data interval
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
     _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
