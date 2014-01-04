@@ -27,7 +27,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
-    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
+    fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     yawVarScale(2.0f), // scale factor applied to yaw gyro errors when on ground
@@ -49,10 +49,10 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 #endif
 {
     // Tuning parameters
-    _gpsHorizVelVar = 0.04f;   // GPS horizontal velocity variance (m/s)^2
-    _gpsVertVelVar  = 0.08f;   // GPS vertical velocity variance (m/s)^2
-    _gpsHorizPosVar = 4.0f;    // GPS horizontal position variance m^2
-    _gpsVertPosVar = 4.0f;     // GPS or Baro vertical position variance m^2
+    _gpsHorizVelVar = 0.5f;    // GPS horizontal velocity variance (m/s)^2
+    _gpsVertVelVar  = 0.5f;    // GPS vertical velocity variance (m/s)^2
+    _gpsHorizPosVar = 2.0f;    // GPS horizontal position variance m^2
+    _gpsVertPosVar = 0.04f;    // GPS or Baro vertical position variance m^2
     _gpsVelVarAccScale = 0.2f; // scale factor applied to velocity variance due to Vdot
     _gpsPosVarAccScale = 0.2f; // scale factor applied to position variance due to Vdot
     _magVar = 0.0025f; // magnetometer measurement variance Gauss^2
