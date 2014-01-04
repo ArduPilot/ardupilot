@@ -90,6 +90,8 @@ public:
     Vector3f get_velocity_NED(void);
     Vector3f get_relative_position_NED(void);
 
+    void set_ekf_use(bool setting) { _ekf_use.set(setting); }
+
 private:
     bool using_EKF(void) const { return ekf_started && _ekf_use && EKF.healthy(); }
 
