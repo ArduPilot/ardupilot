@@ -195,4 +195,30 @@ void AP_AHRS_NavEKF::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
     }
 }
 
+// return true if inertial navigation is active
+bool AP_AHRS_NavEKF::have_inertial_nav(void) const 
+{
+    return using_EKF();
+}
+
+// return a ground velocity in meters/second, North/East/Down order
+Vector3f AP_AHRS_NavEKF::get_velocity_NED(void)
+{
+    if (using_EKF()) {
+        Vector3f vec;
+        EKF.getVelNED(vec);
+        return vec;
+    }
+    return AP_AHRS_DCM::get_velocity_NED();
+}
+
+Vector3f AP_AHRS_NavEKF::get_relative_position_NED(void)
+{
+    Vector3f ret;
+    if (using_EKF() && EKF.getPosNED(ret)) {
+        return ret;
+    }
+    return AP_AHRS_DCM::get_relative_position_NED();
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE

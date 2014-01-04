@@ -201,6 +201,16 @@ public:
     // return a ground vector estimate in meters/second, in North/East order
     virtual Vector2f groundspeed_vector(void);
 
+    // return a ground velocity in meters/second, North/East/Down
+    // order. This will only be accurate if have_inertial_nav() is
+    // true 
+    virtual Vector3f get_velocity_NED(void) = 0;
+
+    // return a position relative to home in meters, North/East/Down
+    // order. This will only be accurate if have_inertial_nav() is
+    // true 
+    virtual Vector3f get_relative_position_NED(void) = 0;
+
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void) const {
         if (!_gps || _gps->status() <= GPS::NO_FIX) {
@@ -267,6 +277,10 @@ public:
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
     virtual void set_home(int32_t lat, int32_t lon, int32_t alt_cm) = 0;
+
+    // return true if the AHRS object supports inertial navigation,
+    // with very accurate position and velocity
+    virtual bool have_inertial_nav(void) const { return false; }
 
 protected:
     // settable parameters

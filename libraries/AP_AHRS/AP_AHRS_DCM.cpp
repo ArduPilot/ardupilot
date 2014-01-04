@@ -895,3 +895,33 @@ void AP_AHRS_DCM::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
     _home.lng = lng;
     _home.alt = alt_cm;
 }
+
+// return a ground velocity in meters/second, North/East/Down order
+Vector3f AP_AHRS_DCM::get_velocity_NED(void)
+{
+    Vector2f xy = groundspeed_vector();
+    Vector3f vec(xy.x, xy.y, 0);
+
+    // if we have GPS lock and GPS has raw velocities then use GPS
+    // vertical velocity for z
+    if (_gps && _gps->status() >= GPS::GPS_OK_FIX_3D) {
+        vec.z = _gps->velocity_down();
+    } else {
+        // otherwise we have no choice but the baro climb rate
+        vec.z = - _baro.get_climb_rate();
+    }
+    return vec;
+}
+
+// return a relative position in meters, NED order This is only
+// approximate. Use the NavEKF version for accurate positioning
+Vector3f AP_AHRS_DCM::get_relative_position_NED(void)
+{
+    struct Location loc;
+    if (!get_position(loc)) {
+        // not available
+        return Vector3f(0,0,0);
+    }
+    Vector2f xy = location_diff(loc, _home);
+    return Vector3f(xy.x, xy.y, (_home.alt - loc.alt) * 1.0e-2f);
+}

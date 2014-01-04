@@ -85,8 +85,13 @@ public:
     // set home location
     void set_home(int32_t lat, int32_t lng, int32_t alt_cm);
 
+    bool have_inertial_nav(void) const;
+
+    Vector3f get_velocity_NED(void);
+    Vector3f get_relative_position_NED(void);
+
 private:
-    bool using_EKF(void) { return ekf_started && _ekf_use && EKF.healthy(); }
+    bool using_EKF(void) const { return ekf_started && _ekf_use && EKF.healthy(); }
 
     NavEKF EKF;
     AP_Baro &_baro;
