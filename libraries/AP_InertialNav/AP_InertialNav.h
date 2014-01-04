@@ -34,7 +34,7 @@ class AP_InertialNav
 public:
 
     // Constructor
-    AP_InertialNav( const AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
+    AP_InertialNav(AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
         _ahrs(ahrs),
         _baro(baro),
         _gps(gps),
@@ -52,7 +52,7 @@ public:
     /**
      * initializes the object.
      */
-    void        init();
+    virtual void init();
 
     /**
      * update - updates velocity and position estimates using latest info from accelerometers
@@ -60,7 +60,7 @@ public:
      *
      * @param dt : time since last update in seconds
      */
-    void        update(float dt);
+    virtual void update(float dt);
 
     //
     // XY Axis specific methods
@@ -80,7 +80,7 @@ public:
      * position_ok - true if inertial based altitude and position can be trusted
      * @return
      */
-    bool        position_ok() const;
+    virtual bool position_ok() const;
 
     /**
      * check_gps - checks if new gps readings have arrived and calls correct_with_gps to
@@ -103,33 +103,33 @@ public:
      *
      * @return
      */
-    const Vector3f&    get_position() const { return _position; }
+    virtual const Vector3f&    get_position() const { return _position; }
 
     /**
      * get_latitude - returns the latitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      * @return
      */
-    int32_t     get_latitude() const;
+    virtual int32_t     get_latitude() const;
 
     /**
      * get_longitude - returns the longitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      * @return
      */
-    int32_t     get_longitude() const;
+    virtual int32_t     get_longitude() const;
 
     /**
      * get_latitude_diff - returns the current latitude difference from the home location.
      *
      * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      */
-    float       get_latitude_diff() const;
+    virtual float       get_latitude_diff() const;
 
     /**
      * get_longitude_diff - returns the current longitude difference from the home location.
      *
      * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      */
-    float       get_longitude_diff() const;
+    virtual float       get_longitude_diff() const;
 
     /**
      * get_velocity - returns the current velocity in cm/s
@@ -139,14 +139,14 @@ public:
      * 				.y : longitude velocity in cm/s
      * 				.z : vertical  velocity in cm/s
      */
-    const Vector3f&    get_velocity() const { return _velocity; }
+    virtual const Vector3f&    get_velocity() const { return _velocity; }
 
     /**
      * get_velocity_xy - returns the current horizontal velocity in cm/s
      *
      * @returns the current horizontal velocity in cm/s
      */
-    float        get_velocity_xy();
+    virtual float        get_velocity_xy();
 
     /**
      * set_velocity_xy - overwrites the current horizontal velocity in cm/s
@@ -179,7 +179,7 @@ public:
      * altitude_ok - returns true if inertial based altitude and position can be trusted
      * @return
      */
-    bool        altitude_ok() const { return true; }
+    virtual bool        altitude_ok() const { return true; }
 
     /**
      * check_baro - checks if new baro readings have arrived and calls correct_with_baro to
@@ -198,10 +198,11 @@ public:
     void        correct_with_baro(float baro_alt, float dt);
 
     /**
-     * get_altitude - get latest altitude estimate in cm
+     * get_altitude - get latest altitude estimate in cm above the
+     * reference position
      * @return
      */
-    float       get_altitude() const { return _position.z; }
+    virtual float       get_altitude() const { return _position.z; }
 
     /**
      * set_altitude - overwrites the current altitude value.
@@ -215,9 +216,9 @@ public:
      *
      * @see get_velocity().z
      *
-     * @return climbrate in cm/s
+     * @return climbrate in cm/s (positive up)
      */
-    float       get_velocity_z() const { return _velocity.z; }
+    virtual float       get_velocity_z() const { return _velocity.z; }
 
     /**
      * set_velocity_z - overwrites the current climbrate.
@@ -229,7 +230,7 @@ public:
     /**
      * error_count - returns number of missed updates from GPS
      */
-    uint8_t     error_count() const { return _error_count; }
+    virtual uint8_t     error_count() const { return _error_count; }
 
     /**
      * ignore_next_error - the next error (if it occurs immediately) will not be added to the error count
@@ -270,7 +271,7 @@ protected:
         uint8_t ignore_error        : 3;                // the number of iterations for which we should ignore errors
     } _flags;
 
-    const AP_AHRS          &_ahrs;                      // reference to ahrs object
+    AP_AHRS                &_ahrs;                      // reference to ahrs object
     AP_Baro                &_baro;                      // reference to barometer
     GPS*&                   _gps;                       // pointer to gps
 

@@ -1,6 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <AP_HAL.h>
 #include "AP_InertialNav.h"
+
+extern const AP_HAL::HAL& hal;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
@@ -19,11 +22,29 @@ void AP_InertialNav_NavEKF::init()
 }
 
 /**
+   update internal state
+*/
+void AP_InertialNav_NavEKF::update(float dt)
+{
+    AP_InertialNav::update(dt);
+    _relpos_cm = _ahrs.get_relative_position_NED() * 100; 
+    _haveabspos = _ahrs.get_position(_abspos);
+    _velocity_cm = _ahrs.get_velocity_NED() * 100;
+
+    // InertialNav is NEU
+    _relpos_cm.z = - _relpos_cm.z;
+    _velocity_cm.z = -_velocity_cm.z;
+}
+
+/**
  * position_ok - true if inertial based altitude and position can be trusted
  * @return
  */
 bool AP_InertialNav_NavEKF::position_ok() const
 {
+    if (_ahrs.have_inertial_nav() && _haveabspos) {
+        return true;
+    }
     return AP_InertialNav::position_ok();
 }
 
@@ -36,6 +57,9 @@ bool AP_InertialNav_NavEKF::position_ok() const
  */
 const Vector3f &AP_InertialNav_NavEKF::get_position(void) const 
 {
+    if (_ahrs.have_inertial_nav()) {
+        return _relpos_cm;
+    }
     return AP_InertialNav::get_position();
 }
 
@@ -44,6 +68,9 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
  */
 int32_t AP_InertialNav_NavEKF::get_latitude() const
 {
+    if (_ahrs.have_inertial_nav() && _haveabspos) {
+        return _abspos.lat;
+    }
     return AP_InertialNav::get_latitude();
 }
 
@@ -53,6 +80,9 @@ int32_t AP_InertialNav_NavEKF::get_latitude() const
  */
 int32_t AP_InertialNav_NavEKF::get_longitude() const
 {
+    if (_ahrs.have_inertial_nav() && _haveabspos) {
+        return _abspos.lng;
+    }
     return AP_InertialNav::get_longitude();
 }
 
@@ -63,6 +93,9 @@ int32_t AP_InertialNav_NavEKF::get_longitude() const
  */
 float AP_InertialNav_NavEKF::get_latitude_diff() const
 {
+    if (_ahrs.have_inertial_nav()) {
+        return _relpos_cm.x / LATLON_TO_CM;
+    }
     return AP_InertialNav::get_latitude_diff();
 }
 
@@ -73,6 +106,9 @@ float AP_InertialNav_NavEKF::get_latitude_diff() const
  */
 float AP_InertialNav_NavEKF::get_longitude_diff() const
 {
+    if (_ahrs.have_inertial_nav()) {
+        return _relpos_cm.y / _lon_to_cm_scaling;
+    }
     return AP_InertialNav::get_longitude_diff();
 }
 
@@ -86,6 +122,9 @@ float AP_InertialNav_NavEKF::get_longitude_diff() const
  */
 const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
 {
+    if (_ahrs.have_inertial_nav()) {
+        return _velocity_cm;
+    }
     return AP_InertialNav::get_velocity();
 }
 
@@ -96,6 +135,9 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
  */
 float AP_InertialNav_NavEKF::get_velocity_xy()
 {
+    if (_ahrs.have_inertial_nav()) {
+        return pythagorous2(_velocity_cm.x, _velocity_cm.y);
+    }
     return AP_InertialNav::get_velocity_xy();
 }
 
@@ -105,6 +147,9 @@ float AP_InertialNav_NavEKF::get_velocity_xy()
  */
 bool AP_InertialNav_NavEKF::altitude_ok() const
 {
+    if (_ahrs.have_inertial_nav() && _haveabspos) {
+        return true;
+    }
     return AP_InertialNav::altitude_ok();
 }
 
@@ -114,6 +159,9 @@ bool AP_InertialNav_NavEKF::altitude_ok() const
  */
 float AP_InertialNav_NavEKF::get_altitude() const
 {
+    if (_ahrs.have_inertial_nav()) {
+        return _relpos_cm.z;
+    }
     return AP_InertialNav::get_altitude();
 }
 
@@ -126,6 +174,9 @@ float AP_InertialNav_NavEKF::get_altitude() const
  */
 float AP_InertialNav_NavEKF::get_velocity_z() const
 {
+    if (_ahrs.have_inertial_nav()) {
+        return _velocity_cm.z;
+    }
     return AP_InertialNav::get_velocity_z();
 }
 
