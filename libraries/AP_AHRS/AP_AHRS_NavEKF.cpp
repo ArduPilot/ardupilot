@@ -33,7 +33,7 @@ const Vector3f AP_AHRS_NavEKF::get_gyro(void) const
 
 const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
 {
-    if (!ekf_started) {
+    if (!using_EKF()) {
         return AP_AHRS_DCM::get_dcm_matrix();
     }
     return _dcm_matrix;
