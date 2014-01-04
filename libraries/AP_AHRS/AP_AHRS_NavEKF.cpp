@@ -52,14 +52,15 @@ void AP_AHRS_NavEKF::update(void)
     _dcm_attitude(roll, pitch, yaw);
 
     if (!ekf_started) {
-        if (start_time_ms == 0) {
-            start_time_ms = hal.scheduler->millis();
-        }
         // if we have GPS lock and a compass set we can start the EKF
-        if (get_compass() && _gps && _gps->status() >= GPS::GPS_OK_FIX_3D &&
-            hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
-            ekf_started = true;
-            EKF.InitialiseFilter();
+        if (get_compass() && _gps && _gps->status() >= GPS::GPS_OK_FIX_3D) {
+            if (start_time_ms == 0) {
+                start_time_ms = hal.scheduler->millis();
+            }
+            if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
+                ekf_started = true;
+                EKF.InitialiseFilter();
+            }
         }
     }
     if (ekf_started) {
