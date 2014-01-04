@@ -80,6 +80,9 @@ public:
 
     void set_home(int32_t lat, int32_t lng, int32_t alt_cm);
 
+    Vector3f get_velocity_NED(void);
+    Vector3f get_relative_position_NED(void);
+
 private:
     float _ki;
     float _ki_yaw;
