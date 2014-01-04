@@ -30,7 +30,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
-    yawVarScale(10.0f), // scale factor applied to yaw gyro errors when on ground
+    yawVarScale(2.0f), // scale factor applied to yaw gyro errors when on ground
     TASmsecMax(333), // maximum allowed interal between airspeed measurement updates
     MAGmsecMax(333), // maximum allowed interval between magnetometer measurement updates
     HGTmsecMax(1000), // maximum interval between height measurement updates
@@ -999,7 +999,7 @@ void NavEKF::FuseVelPosNED()
 {
     perf_begin(_perf_FuseVelPosNED);
     // declare variables used by fault isolation logic
-    uint32_t gpsRetryTime = 30000; // time in msec before GPS fusion will be retried following innovation consistency failure
+    uint32_t gpsRetryTime = 10000; // time in msec before GPS fusion will be retried following innovation consistency failure
     uint32_t gpsRetryTimeNoTAS = 5000; // retry time if no TAS measurement available
     uint32_t hgtRetryTime = 5000; // height measurement retry time
     uint32_t horizRetryTime = 0;
