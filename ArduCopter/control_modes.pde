@@ -109,6 +109,7 @@ static void init_aux_switches()
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
+        case AUX_SWITCH_EKF:
             do_aux_switch_function(g.ch7_option, ap.CH7_flag);
             break;
     }
@@ -122,6 +123,7 @@ static void init_aux_switches()
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
+        case AUX_SWITCH_EKF:
             do_aux_switch_function(g.ch8_option, ap.CH8_flag);
             break;
     }
@@ -371,6 +373,13 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
             }
             break;
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+    case AUX_SWITCH_EKF:
+        ahrs.set_ekf_use(ch_flag==AUX_SWITCH_HIGH);
+        break;
+#endif
+        
     }
 }
 
