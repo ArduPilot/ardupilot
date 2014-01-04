@@ -206,7 +206,7 @@ public:
     void        from_euler(float roll, float pitch, float yaw);
 
     // create eulers from a rotation matrix
-    void        to_euler(float *roll, float *pitch, float *yaw);
+    void        to_euler(float *roll, float *pitch, float *yaw) const;
 
     // apply an additional rotation from a body frame gyro vector
     // to a rotation matrix.
