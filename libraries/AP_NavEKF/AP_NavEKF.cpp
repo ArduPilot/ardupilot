@@ -68,7 +68,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     dtIMUAvgInv = 1.0f/dtIMUAvg;
 }
 
-bool NavEKF::healthy(void)
+bool NavEKF::healthy(void) const
 {
     if (!statesInitialised) {
         return false;

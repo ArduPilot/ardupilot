@@ -78,7 +78,7 @@ public:
     void UpdateFilter(void);
 
     // return true if the filter is healthy
-    bool healthy(void);
+    bool healthy(void) const;
 
     // fill in latitude, longitude and height of the reference point
     void getRefLLH(struct Location &loc) const;
