@@ -187,98 +187,13 @@ static void Log_Write_Attitude(void)
         error_yaw : (uint16_t)(ahrs.get_error_yaw() * 100)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
 
-struct PACKED log_EKF1 {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    float velN;
-    float velE;
-    float velD;
-    float posN;
-    float posE;
-    float posD;
-    int8_t gyrX;
-    int8_t gyrY;
-    int8_t gyrZ;
-};
-
-struct PACKED log_EKF2 {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int8_t accX;
-    int8_t accY;
-    int8_t accZ;
-    int16_t windN;
-    int16_t windE;
-    int16_t magN;
-    int16_t magE;
-    int16_t magD;
-    int16_t magX;
-    int16_t magY;
-    int16_t magZ;
-};
-
-
-// Write first EKF packet
-static void Log_Write_EKF(void)
-{
 #if AP_AHRS_NAVEKF_AVAILABLE
-    Vector3f euler;
-    Vector3f posNED;
-    Vector3f velNED;
-    Vector3f dAngBias;
-    Vector3f dVelBias;
-    Vector3f gyroBias;
-    ahrs.get_NavEKF().getEulerAngles(euler);
-    ahrs.get_NavEKF().getVelNED(velNED);
-    ahrs.get_NavEKF().getPosNED(posNED);
-    ahrs.get_NavEKF().getGyroBias(gyroBias);
-    struct log_EKF1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
-        time_ms : hal.scheduler->millis(),
-        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg)
-        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg)
-        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg)
-        velN    : (float)(velNED.x), // velocity North (m/s)
-        velE    : (float)(velNED.y), // velocity East (m/s)
-        velD    : (float)(velNED.z), // velocity Down (m/s)
-        posN    : (float)(posNED.x), // metres North
-        posE    : (float)(posNED.y), // metres East
-        posD    : (float)(posNED.z), // metres Down
-        gyrX    : (int8_t)(gyroBias.x), // deg/min
-        gyrY    : (int8_t)(gyroBias.y), // deg/min
-        gyrZ    : (int8_t)(gyroBias.z)  // deg/min
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-
-    Vector3f accelBias;
-    Vector3f wind;
-    Vector3f magNED;
-    Vector3f magXYZ;
-    ahrs.get_NavEKF().getAccelBias(accelBias);
-    ahrs.get_NavEKF().getWind(wind);
-    ahrs.get_NavEKF().getMagNED(magNED);
-    ahrs.get_NavEKF().getMagXYZ(magXYZ);
-    struct log_EKF2 pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
-        time_ms : hal.scheduler->millis(),
-        accX    : (int8_t)(100*accelBias.x),
-        accY    : (int8_t)(100*accelBias.y),
-        accZ    : (int8_t)(100*accelBias.z),
-        windN   : (int16_t)(100*wind.x),
-        windE   : (int16_t)(100*wind.y),
-        magN    : (int16_t)(magNED.x),
-        magE    : (int16_t)(magNED.y),
-        magD    : (int16_t)(magNED.z),
-        magX    : (int16_t)(magXYZ.x),
-        magY    : (int16_t)(magXYZ.y),
-        magZ    : (int16_t)(magXYZ.z)
-    };
-    DataFlash.WriteBlock(&pkt2, sizeof(pkt2));
+    DataFlash.Log_Write_EKF(ahrs);
+    DataFlash.Log_Write_AHRS2(ahrs);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+    sitl.Log_Write_SIMSTATE(DataFlash);
 #endif
 }
 
@@ -733,7 +648,6 @@ static void Log_Write_Nav_Tuning() {}
 static void Log_Write_TECS_Tuning() {}
 static void Log_Write_Performance() {}
 static void Log_Write_Attitude() {}
-static void Log_Write_EKF() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Camera() {}
 static void Log_Write_Mode(uint8_t mode) {}
