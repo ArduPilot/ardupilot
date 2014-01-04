@@ -50,10 +50,10 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 #endif
 {
     // Tuning parameters
-    _gpsHorizVelVar = 0.5f;    // GPS horizontal velocity variance (m/s)^2
-    _gpsVertVelVar  = 0.5f;    // GPS vertical velocity variance (m/s)^2
-    _gpsHorizPosVar = 2.0f;    // GPS horizontal position variance m^2
-    _gpsVertPosVar = 0.04f;    // GPS or Baro vertical position variance m^2
+    _gpsHorizVelVar = 0.1f;    // GPS horizontal velocity variance (m/s)^2
+    _gpsVertVelVar  = 0.1f;    // GPS vertical velocity variance (m/s)^2
+    _gpsHorizPosVar = 4.0f;    // GPS horizontal position variance m^2
+    _gpsVertPosVar = 1.0f;    // GPS or Baro vertical position variance m^2
     _gpsVelVarAccScale = 0.2f; // scale factor applied to velocity variance due to Vdot
     _gpsPosVarAccScale = 0.2f; // scale factor applied to position variance due to Vdot
     _magVar = 0.0025f; // magnetometer measurement variance Gauss^2
