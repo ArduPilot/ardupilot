@@ -18,6 +18,7 @@
  */
 
 #include <GCS.h>
+#include <AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -147,5 +148,24 @@ void GCS_MAVLINK::send_meminfo(void)
     unsigned __brkval = 0;
 #endif
     mavlink_msg_meminfo_send(chan, __brkval, hal.util->available_memory());
+}
+
+
+// report AHRS2 state
+void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    Vector3f euler;
+    struct Location loc;
+    if (ahrs.get_secondary_attitude(euler) && ahrs.get_secondary_position(loc)) {
+        mavlink_msg_ahrs2_send(chan,
+                               euler.x,
+                               euler.y,
+                               euler.z,
+                               loc.alt*1.0e-2f,
+                               loc.lat,
+                               loc.lng);
+    }
+#endif
 }
 
