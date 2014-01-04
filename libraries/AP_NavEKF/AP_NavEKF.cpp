@@ -98,7 +98,6 @@ void NavEKF::ResetPosition(void)
 
     // set static mode to force positon and velocity measurements to zero
     staticMode = true;
-
 }
 
 void NavEKF::InitialiseFilter(void)
