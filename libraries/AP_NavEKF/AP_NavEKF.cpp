@@ -27,7 +27,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
-    fusionModeGPS(1), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
+    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs,  no velocity, 3 = Force postion and velocity measurements to zero (only used during pre-arm or ground testing)
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     yawVarScale(2.0f), // scale factor applied to yaw gyro errors when on ground
@@ -35,6 +35,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     MAGmsecMax(333), // maximum allowed interval between magnetometer measurement updates
     HGTmsecMax(1000), // maximum interval between height measurement updates
     fuseMeNow(true), // forces fusion to occur on the IMU frame that data arrives
+    staticMode(false), // staticMode forces position and velocity fusion with zero values
     msecVelDelay(230), // msec of GPS velocity delay
     msecPosDelay(210), // msec of GPS position delay
     msecHgtDelay(350), // msec of barometric height delay
@@ -94,6 +95,9 @@ void NavEKF::ResetPosition(void)
     states[7] = posNE[0];
     states[8] = posNE[1];
     states[9] = - _baro.get_altitude();
+
+    // set static mode to force positon and velocity measurements to zero
+    staticMode = true;
 
 }
 
@@ -259,9 +263,18 @@ void NavEKF::SelectVelPosFusion()
         // if no GPS
         else if ((IMUmsec - HGTmsecPrev) >= HGTmsecMax)
         {
-            fuseVelData = false;
-            fusePosData = false;
-            fuseHgtData = true;
+            // Static mode is used for pre-arm and bench testing and allows operation
+            // without GPS
+            if (staticMode) {
+                fuseVelData = true;
+                fusePosData = true;
+                fuseHgtData = true;
+            }
+            else {
+                fuseVelData = false;
+                fusePosData = false;
+                fuseHgtData = true;
+            }
             HGTmsecPrev = IMUmsec;
         }
         else
@@ -1071,6 +1084,12 @@ void NavEKF::FuseVelPosNED()
         for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
         for (uint8_t i=3; i<=4; i++) observation[i] = posNE[i-3];
         observation[5] = -hgtMea;
+        // zero observations if in static mode (used for pre-arm and bench testing)
+        if (staticMode) {
+            for (uint8_t i=0; i<=2; i++) observation[i] = 0.0f;
+            // cancel static mode (it needs to be set every frame if required)
+            staticMode = false;
+        }
 
         // additional error in GPS velocity caused by manoeuvring
         velErr = _gpsVelVarAccScale*accNavMag;
@@ -1157,7 +1176,7 @@ void NavEKF::FuseVelPosNED()
         }
         // Set range for sequential fusion of velocity and position measurements depending
         // on which data is available and its health
-        if (fuseVelData && fusionModeGPS == 0 && velHealth)
+        if ((fuseVelData && fusionModeGPS == 0 && velHealth) || staticMode)
         {
             fuseData[0] = true;
             fuseData[1] = true;
@@ -1168,12 +1187,12 @@ void NavEKF::FuseVelPosNED()
             fuseData[0] = true;
             fuseData[1] = true;
         }
-        if (fusePosData && fusionModeGPS <= 2 && posHealth)
+        if ((fusePosData && fusionModeGPS <= 2 && posHealth) || staticMode)
         {
             fuseData[3] = true;
             fuseData[4] = true;
         }
-        if (fuseHgtData && hgtHealth)
+        if ((fuseHgtData && hgtHealth) || staticMode)
         {
             fuseData[5] = true;
         }
