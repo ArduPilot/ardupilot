@@ -53,6 +53,9 @@ public:
     void Log_Write_RCOUT(void);
     void Log_Write_Baro(AP_Baro &baro);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
+#if AP_AHRS_NAVEKF_AVAILABLE
+    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
+#endif
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -223,6 +226,41 @@ struct PACKED log_AHRS {
     int32_t lng;
 };
 
+struct PACKED log_EKF1 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    float velN;
+    float velE;
+    float velD;
+    float posN;
+    float posE;
+    float posD;
+    int8_t gyrX;
+    int8_t gyrY;
+    int8_t gyrZ;
+};
+
+struct PACKED log_EKF2 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int8_t accX;
+    int8_t accY;
+    int8_t accZ;
+    int16_t windN;
+    int16_t windE;
+    int16_t magN;
+    int16_t magE;
+    int16_t magD;
+    int16_t magX;
+    int16_t magY;
+    int16_t magZ;
+};
+
+
+
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
@@ -242,10 +280,14 @@ struct PACKED log_AHRS {
       "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" },
-    { LOG_AHR2_MSG, sizeof(log_AHRS), \
+    { LOG_AHRS2_MSG, sizeof(log_AHRS), \
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
-      "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }
+      "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
+    { LOG_EKF1_MSG, sizeof(log_EKF1), \
+      "EKF1","IccCffffffbbb","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
+    { LOG_EKF2_MSG, sizeof(log_EKF2), \
+      "EKF2","Ibbbcchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -256,9 +298,16 @@ struct PACKED log_AHRS {
 #define LOG_RCIN_MSG      133
 #define LOG_RCOUT_MSG     134
 #define LOG_IMU2_MSG	  135
+<<<<<<< HEAD
 #define LOG_BARO_MSG	  136
 #define LOG_AHR2_MSG	  137
 #define LOG_SIMSTATE_MSG  138
+=======
+#define LOG_AHRS2_MSG	  136
+#define LOG_SIMSTATE_MSG  137
+#define LOG_EKF1_MSG      138
+#define LOG_EKF2_MSG      139
+>>>>>>> DataFlash: moved EKF logging to common code
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
