@@ -262,6 +262,7 @@ private:
     uint32_t HGTmsecPrev; // time stamp of last height measurement fusion step
     const uint32_t HGTmsecMax; // maximum allowed interval between height measurement fusion steps
     const bool fuseMeNow; // boolean to force fusion whenever data arrives
+    bool staticMode; // boolean to force positio and velocity measurements to zero for pre-arm or bench testing
 
     // last time compass was updated
     uint32_t lastMagUpdate;
