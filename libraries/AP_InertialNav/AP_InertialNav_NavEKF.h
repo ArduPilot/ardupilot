@@ -14,7 +14,7 @@ class AP_InertialNav_NavEKF : public AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav_NavEKF(const AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
+    AP_InertialNav_NavEKF(AP_AHRS &ahrs, AP_Baro &baro, GPS*& gps, GPS_Glitch& gps_glitch ) :
         AP_InertialNav(ahrs, baro, gps, gps_glitch)
         {
         }
@@ -23,6 +23,11 @@ public:
      * initializes the object.
      */
     void        init();
+
+    /**
+       update internal state
+    */
+    void        update(float dt);
 
     /**
      * position_ok - true if inertial based altitude and position can be trusted
@@ -101,6 +106,12 @@ public:
      * @return climbrate in cm/s
      */
     float       get_velocity_z() const;
+
+private:
+    Vector3f _relpos_cm;   // NEU
+    Vector3f _velocity_cm; // NEU
+    struct Location _abspos;
+    bool _haveabspos;
 };
 
 #endif // __AP_INERTIALNAV_NAVEKF_H__
