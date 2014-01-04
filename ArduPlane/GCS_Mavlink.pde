@@ -528,24 +528,6 @@ static void NOINLINE send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-// report NavEKF state
-static void NOINLINE send_ekf(mavlink_channel_t chan)
-{
-#if AP_AHRS_NAVEKF_AVAILABLE
-    Vector3f euler;
-    struct Location loc;
-    if (ahrs.get_secondary_attitude(euler) && ahrs.get_secondary_position(loc)) {
-        mavlink_msg_ahrs2_send(chan,
-                               euler.x,
-                               euler.y,
-                               euler.z,
-                               loc.alt*1.0e-2f,
-                               loc.lat,
-                               loc.lng);
-    }
-#endif
-}
-
 static void NOINLINE send_hwstatus(mavlink_channel_t chan)
 {
     mavlink_msg_hwstatus_send(
@@ -744,7 +726,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id)
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate(chan);
         CHECK_PAYLOAD_SIZE(AHRS2);
-        send_ekf(chan);
+        gcs[chan-MAVLINK_COMM_0].send_ahrs2(ahrs);
         break;
 
     case MSG_HWSTATUS:
