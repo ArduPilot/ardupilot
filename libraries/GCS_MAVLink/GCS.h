@@ -181,6 +181,7 @@ public:
     // common send functions
     void send_meminfo(void);
     void send_power_status(void);
+    void send_ahrs2(AP_AHRS &ahrs);
 
 private:
     void        handleMessage(mavlink_message_t * msg);
