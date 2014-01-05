@@ -50,17 +50,23 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 #endif
 {
     // Tuning parameters
-    _gpsHorizVelVar = 0.1f;    // GPS horizontal velocity variance (m/s)^2
-    _gpsVertVelVar  = 0.1f;    // GPS vertical velocity variance (m/s)^2
-    _gpsHorizPosVar = 4.0f;    // GPS horizontal position variance m^2
-    _gpsVertPosVar = 1.0f;    // GPS or Baro vertical position variance m^2
+    _gpsHorizVelNoise = 0.3f;    // GPS horizontal velocity noise : m/s
+    _gpsVertVelNoise  = 0.3f;    // GPS vertical velocity noise : m/s
+    _gpsHorizPosNoise = 2.0f;    // GPS horizontal position noise m
+    _gpsVertPosNoise = 1.0f;    // GPS or Baro vertical position variance : m^2
     _gpsVelVarAccScale = 0.2f; // scale factor applied to velocity variance due to Vdot
     _gpsPosVarAccScale = 0.2f; // scale factor applied to position variance due to Vdot
-    _magVar = 0.0025f; // magnetometer measurement variance Gauss^2
+    _magNoise = 0.05f; // magnetometer measurement noise : gauss
     _magVarRateScale = 0.05f; // scale factor applied to magnetometer variance due to angular rate
-    _easVar = 2.0f; // equivalent airspeed noise variance (m/s)^2
-    _windStateNoise = 0.1f; // RMS rate of change of wind (m/s^2)
+    _easNoise = 1.4f; // equivalent airspeed noise : m/s
+    _windStateNoise = 0.1f; // RMS rate of change of wind : (m/s^2)
     _wndVarHgtRateScale = 0.5f; // scale factor applied to wind process noise from height rate
+    _gyrNoise = 1.4544411e-2f; // gyro process noise : rad/s
+    _accNoise = 0.5f; // accelerometer process noise : m/s^2
+    _dAngBiasNoise = 5.0e-7f; // gyro bias state noise : rad/s^2
+    _magEarthNoise = 3.0e-4f; // earth magnetic field process noise : gauss/sec
+    _magBodyNoise  = 3.0e-4f; // earth magnetic field process noise : gauss/sec
+
     // Misc initial conditions
     hgtRate = 0.0f;
     mag_state.q0 = 1;
@@ -457,9 +463,9 @@ void NavEKF::CovariancePrediction()
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
     windVelSigma  = dt * _windStateNoise * (1.0f + _wndVarHgtRateScale * fabsf(hgtRate));
-    dAngBiasSigma = dt * 5.0e-7f;
-    magEarthSigma = dt * 3.0e-4f;
-    magBodySigma  = dt * 3.0e-4f;
+    dAngBiasSigma = dt * _dAngBiasNoise;
+    magEarthSigma = dt * _magEarthNoise;
+    magBodySigma  = dt * _magBodyNoise;
 
     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
     for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
@@ -483,13 +489,13 @@ void NavEKF::CovariancePrediction()
     dax_b = states[10];
     day_b = states[11];
     daz_b = states[12];
-    daxCov = sq(dt*1.4544411e-2f);
-    dayCov = sq(dt*1.4544411e-2f);
-    dazCov = sq(dt*1.4544411e-2f);
+    daxCov = sq(dt*_gyrNoise);
+    dayCov = sq(dt*_gyrNoise);
+    dazCov = sq(dt*_gyrNoise);
     if (onGround) dazCov = dazCov * sq(yawVarScale);
-    dvxCov = sq(dt*0.5f);
-    dvyCov = sq(dt*0.5f);
-    dvzCov = sq(dt*0.5f);
+    dvxCov = sq(dt*_accNoise);
+    dvyCov = sq(dt*_accNoise);
+    dvzCov = sq(dt*_accNoise);
 
     // Predicted covariance calculation
     SF[0] = 2*dvx*q1 + 2*dvy*q2 + 2*dvz*q3;
@@ -1097,12 +1103,12 @@ void NavEKF::FuseVelPosNED()
         posErr = _gpsPosVarAccScale*accNavMag;
 
         // Estimate the GPS Velocity, GPS horiz position and height measurement variances.
-        R_OBS[0] = _gpsHorizVelVar + sq(velErr);
+        R_OBS[0] = sq(_gpsHorizVelNoise) + sq(velErr);
         R_OBS[1] = R_OBS[0];
-        R_OBS[2] = _gpsVertVelVar + sq(velErr);
-        R_OBS[3] = _gpsHorizPosVar + sq(posErr);
+        R_OBS[2] = sq(_gpsVertVelNoise) + sq(velErr);
+        R_OBS[3] = sq(_gpsHorizPosNoise) + sq(posErr);
         R_OBS[4] = R_OBS[3];
-        R_OBS[5] = _gpsVertPosVar;
+        R_OBS[5] = sq(_gpsVertPosNoise);
 
         // Set innovation variances to zero default
         for (uint8_t i = 0; i<=5; i++)
@@ -1347,7 +1353,7 @@ void NavEKF::FuseMagnetometer()
             MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
             // scale magnetometer observation error with total angular rate
-            R_MAG = _magVar + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
+            R_MAG = sq(_magNoise) + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
 
             // Calculate observation jacobians
             SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
@@ -1593,7 +1599,7 @@ void NavEKF::FuseAirspeed()
     float vwn;
     float vwe;
     float EAS2TAS = _ahrs->get_EAS2TAS();
-    const float R_TAS = _easVar*sq(constrain_float(EAS2TAS,1.0f,10.0f));
+    const float R_TAS = sq(_easNoise * constrain_float(EAS2TAS, 0.9f, 10.0f));
     Vector3f SH_TAS;
     float SK_TAS;
     Vector21 H_TAS;

@@ -189,17 +189,22 @@ private:
     bool statesInitialised;
 
     // Tuning Parameters
-    ftype _gpsHorizVelVar;  // GPS horizontal velocity variance (m/s)^2
-    ftype _gpsVertVelVar;  // GPS vertical velocity variance (m/s)^2
-    ftype _gpsHorizPosVar; // GPS horizontal position variance m^2
-    ftype _gpsVertPosVar;  // GPS vertical position variance m^2
+    ftype _gpsHorizVelNoise;    // GPS horizontal velocity noise : m/s
+    ftype _gpsVertVelNoise;    // GPS vertical velocity noise : m/s
+    ftype _gpsHorizPosNoise;    // GPS horizontal position noise m
+    ftype _gpsVertPosNoise;    // GPS or Baro vertical position variance : m^2
     ftype _gpsVelVarAccScale; // scale factor applied to velocity variance due to Vdot
     ftype _gpsPosVarAccScale; // scale factor applied to position variance due to Vdot
-    ftype _magVar; // magnetometer measurement variance Gauss^2
-    ftype _magVarRateScale; // scale factor applied to magnetometer variance due to Vdot
-    ftype _easVar; // equivalent airspeed noise variance (m/s)^2
-    ftype _windStateNoise; // RMS rate of change of wind (m/s^2)
+    ftype _magNoise; // magnetometer measurement noise : gauss
+    ftype _magVarRateScale; // scale factor applied to magnetometer variance due to angular rate
+    ftype _easNoise; // equivalent airspeed noise : m/s
+    ftype _windStateNoise; // rate of change of wind : m/s^2
     ftype _wndVarHgtRateScale; // scale factor applied to wind process noise from height rate
+    ftype _gyrNoise; // gyro process noise : rad/s
+    ftype _accNoise; // accelerometer process noise : m/s^2
+    ftype _dAngBiasNoise; // gyro bias state noise : rad/s^2
+    ftype _magEarthNoise; // earth magnetic field process noise : gauss/sec
+    ftype _magBodyNoise; // earth magnetic field process noise : gauss/sec
 
     Vector21 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
 
