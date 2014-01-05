@@ -3,6 +3,7 @@
 #include <AP_Baro.h>
 #include "AP_Baro_HIL.h"
 #include <AP_HAL.h>
+
 extern const AP_HAL::HAL& hal;
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -21,8 +22,8 @@ uint8_t AP_Baro_HIL::read()
     if (_count != 0) {
         hal.scheduler->suspend_timer_procs();
         result = 1;
-        Press = ((float)_pressure_sum) / _count;
-        Temp = ((float)_temperature_sum) / _count;
+        Press = _pressure_sum / _count;
+        Temp = _temperature_sum / _count;
         _pressure_samples = _count;
         _count = 0;
         _pressure_sum = 0;
