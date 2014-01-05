@@ -50,6 +50,19 @@ struct PACKED log_Plane_Compass {
     int16_t offset_z;
 };
 
+struct PACKED log_Plane_Nav_Tuning {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint16_t yaw;
+    uint32_t wp_distance;
+    uint16_t target_bearing_cd;
+    uint16_t nav_bearing_cd;
+    int16_t altitude_error_cm;
+    int16_t airspeed_cm;
+    float   altitude;
+    uint32_t groundspeed_cm;
+};
+
 struct PACKED log_Copter_Compass {
     LOG_PACKET_HEADER;
     int16_t mag_x;
@@ -96,6 +109,20 @@ struct PACKED log_Copter_Control_Tuning {
     int16_t desired_climb_rate;
 };
 
+struct PACKED log_Copter_INAV {
+    LOG_PACKET_HEADER;
+    int16_t baro_alt;
+    int16_t inav_alt;
+    int16_t inav_climb_rate;
+    float   accel_corr_x;
+    float   accel_corr_y;
+    float   accel_corr_z;
+    int32_t gps_lat_from_home;
+    int32_t gps_lon_from_home;
+    float   inav_lat_from_home;
+    float   inav_lon_from_home;
+};
+
 void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
 {
     switch (type) {
@@ -121,6 +148,20 @@ void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         wait_timestamp(msg.time_ms);
         attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        break;
+    }
+
+    case LOG_PLANE_NTUN_MSG: {
+        struct log_Plane_Nav_Tuning msg;
+        if(sizeof(msg) != length) {
+            printf("Bad NAV_TUNING length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        wait_timestamp(msg.time_ms);
+        if (ground_alt_cm != 0) {
+            baro.setHIL(ground_alt_cm*0.01f + msg.altitude);
+        }
         break;
     }
     }
@@ -151,6 +192,34 @@ void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
         memcpy(&msg, data, sizeof(msg));
         //wait_timestamp(msg.time_ms);
         attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        break;
+    }
+
+    case LOG_COPTER_CONTROL_TUNING_MSG: {
+        struct log_Copter_Control_Tuning msg;
+        if(sizeof(msg) != length) {
+            printf("Bad CONTROL_TUNING length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        //wait_timestamp(msg.time_ms);
+        if (ground_alt_cm != 0) {
+            baro.setHIL(0.01f * (ground_alt_cm + msg.baro_alt));
+        }
+        break;
+    }
+
+    case LOG_COPTER_INAV_MSG: {
+        struct log_Copter_INAV msg;
+        if(sizeof(msg) != length) {
+            printf("Bad INAV length\n");
+            exit(1);
+        }
+        memcpy(&msg, data, sizeof(msg));
+        inavpos = Vector3f(msg.inav_lat_from_home * LATLON_TO_CM * 0.01f, 
+                           msg.inav_lon_from_home * LATLON_TO_CM * 0.01f * 
+                           cosf(gps->latitude * 1.0e-7f * DEG_TO_RAD),
+                           msg.inav_alt*0.01f);
         break;
     }
     }
@@ -246,7 +315,6 @@ bool LogReader::update(uint8_t &type)
         if (msg.status == 3 && ground_alt_cm == 0) {
             ground_alt_cm = msg.altitude;
         }
-        baro.setHIL((ground_alt_cm + msg.rel_altitude)*1.0e-2f);
         break;
     }
 
