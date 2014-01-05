@@ -1091,7 +1091,7 @@ void NavEKF::FuseVelPosNED()
         observation[5] = -hgtMea;
         // zero observations if in static mode (used for pre-arm and bench testing)
         if (staticMode) {
-            for (uint8_t i=0; i<=2; i++) observation[i] = 0.0f;
+            for (uint8_t i=0; i<=5; i++) observation[i] = 0.0f;
             // cancel static mode (it needs to be set every frame if required)
             staticMode = false;
         }
