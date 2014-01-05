@@ -6,7 +6,7 @@
 
 // uncomment this to force the optimisation of this code, note that
 // this makes debugging harder
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #pragma GCC optimize("O0")
 #else
 #pragma GCC optimize("O3")
@@ -15,7 +15,7 @@
 #include "AP_NavEKF.h"
 #include <AP_AHRS.h>
 
-//#include <stdio.h>
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -162,6 +162,17 @@ void NavEKF::InitialiseFilter(void)
 
     //Initialise IMU pre-processing states
     readIMUData();
+
+#if 0
+    ::printf("NavEKF.InitialiseFilter: HOME.Alt=%.2f GPS.Alt=%.2f Baro.Alt=%.2f EKF.Alt=%.2f VEL=(%.2f,%.2f,%.2f)\n", 
+             _ahrs->get_home().alt*0.01f,
+             _ahrs->get_gps()->altitude_cm*0.01f,
+             _baro.get_altitude(),
+             -states[9],
+             velNED[0],
+             velNED[1],
+             velNED[2]);
+#endif
 }
 
 void NavEKF::UpdateFilter()
@@ -1893,6 +1904,7 @@ void NavEKF::readGpsData()
         velNED[0] = _ahrs->get_gps()->velocity_north(); // (rad)
         velNED[1] = _ahrs->get_gps()->velocity_east(); // (m/s)
         velNED[2] = _ahrs->get_gps()->velocity_down(); // (m/s)
+        //::printf("GPSVEL=(%.2f,%.2f,%.2f)\n", velNED[0], velNED[1], velNED[2]);
 
         // Convert GPS measurements to Pos NE
         struct Location gpsloc;
@@ -1910,6 +1922,11 @@ void NavEKF::readHgtData()
     // ToDo do we check for new height data or grab a height measurement?
     // Best to do this at the same time as GPS measurement fusion for efficiency
     hgtMea = _baro.get_altitude();
+#if 0
+    Vector3f pos;
+    getPosNED(pos);
+    //::printf("BARO.Alt=%.2f REL.z=%.2f\n", hgtMea, -pos.z);
+#endif
     // recall states from compass measurement time
     RecallStates(statesAtHgtTime, (IMUmsec - msecHgtDelay));
 }
