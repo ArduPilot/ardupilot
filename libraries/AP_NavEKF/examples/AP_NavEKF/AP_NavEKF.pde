@@ -68,7 +68,8 @@ static LogReader LogReader(ins, barometer, compass, g_gps);
 static FILE *plotf;
 static FILE *plotf2;
 
-static uint32_t gps_fix_count;
+static bool done_baro_init;
+static bool done_home_init;
 
 void setup()
 {
@@ -88,7 +89,6 @@ void setup()
     barometer.init();
     barometer.setHIL(0);
     barometer.read();
-    barometer.update_calibration();
     compass.init();
     inertial_nav.init();
     ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
@@ -105,19 +105,16 @@ void setup()
         uint8_t type;
         if (!LogReader.update(type)) break;
         read_sensors(type);
-        if (type == LOG_GPS_MSG && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
-            gps_fix_count++;
-            if (gps_fix_count == 10) {
-                ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n", 
-                         g_gps->latitude*1.0e-7f, 
-                         g_gps->longitude*1.0e-7f,
-                         g_gps->altitude_cm*0.01f,
-                         hal.scheduler->millis()*0.001f);
-                ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
-                barometer.update_calibration();
-                compass.set_initial_location(g_gps->latitude, g_gps->longitude);
-                inertial_nav.setup_home_position();
-            }
+        if (type == LOG_GPS_MSG && g_gps->status() >= GPS::GPS_OK_FIX_3D && done_baro_init && !done_home_init) {
+            ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n", 
+                     g_gps->latitude*1.0e-7f, 
+                     g_gps->longitude*1.0e-7f,
+                     g_gps->altitude_cm*0.01f,
+                     hal.scheduler->millis()*0.001f);
+            ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
+            compass.set_initial_location(g_gps->latitude, g_gps->longitude);
+            inertial_nav.setup_home_position();
+            done_home_init = true;
         }
     }
 
@@ -141,8 +138,16 @@ static void read_sensors(uint8_t type)
         compass.read();
     } else if (type == LOG_PLANE_NTUN_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) {
         barometer.read();
+        if (!done_baro_init) {
+            done_baro_init = true;
+            barometer.update_calibration();
+        }
     } else if (type == LOG_COPTER_CONTROL_TUNING_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) {
         barometer.read();
+        if (!done_baro_init) {
+            done_baro_init = true;
+            barometer.update_calibration();
+        }
     }
 }
 

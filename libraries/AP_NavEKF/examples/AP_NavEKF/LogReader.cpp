@@ -18,8 +18,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-extern uint32_t gps_fix_count;
-
 LogReader::LogReader(AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, GPS *&_gps) :
     vehicle(VEHICLE_UNKNOWN),
     fd(-1),
