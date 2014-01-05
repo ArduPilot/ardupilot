@@ -1861,9 +1861,9 @@ void NavEKF::CovarianceInit()
         }
     }
     // Set the diagonals
-    P[1][1]   = 0.25f*sq(1.0f*DEG_TO_RAD);
-    P[2][2]   = 0.25f*sq(1.0f*DEG_TO_RAD);
-    P[3][3]   = 0.25f*sq(10.0f*DEG_TO_RAD);
+    P[1][1]   = 0.25f*sq(radians(1.0f));
+    P[2][2]   = 0.25f*sq(radians(1.0f));
+    P[3][3]   = 0.25f*sq(radians(10.0f));
     P[4][4]   = sq(0.7f);
     P[5][5]   = P[4][4];
     P[6][6]   = sq(0.7f);
@@ -1901,12 +1901,12 @@ void NavEKF::ForceSymmetry()
 void NavEKF::ConstrainVariances()
 {
     // Constrain variances to be within set limits
-    for (uint8_t i=0; i<=3; i++) constrain_float(P[1][1],0.0f,0.1f);
-    for (uint8_t i=4; i<=6; i++) constrain_float(P[1][1],0.0f,1.0e3f);
-    for (uint8_t i=7; i<=9; i++) constrain_float(P[1][1],0.0f,1.0e5f);
-    for (uint8_t i=10; i<=12; i++) constrain_float(P[1][1],0.0f,sq(0.0175 * dtIMU));
-    for (uint8_t i=13; i<=14; i++) constrain_float(P[1][1],0.0f,1.0e3f);
-    for (uint8_t i=15; i<=20; i++) constrain_float(P[1][1],0.0f,1.0f);
+    for (uint8_t i=0; i<=3; i++) constrain_float(P[i][i],0.0f,0.1f);
+    for (uint8_t i=4; i<=6; i++) constrain_float(P[i][i],0.0f,1.0e3f);
+    for (uint8_t i=7; i<=9; i++) constrain_float(P[i][i],0.0f,1.0e5f);
+    for (uint8_t i=10; i<=12; i++) constrain_float(P[i][i],0.0f,sq(0.0175 * dtIMU));
+    for (uint8_t i=13; i<=14; i++) constrain_float(P[i][i],0.0f,1.0e3f);
+    for (uint8_t i=15; i<=20; i++) constrain_float(P[i][i],0.0f,1.0f);
 }
 
 void NavEKF::readIMUData()
