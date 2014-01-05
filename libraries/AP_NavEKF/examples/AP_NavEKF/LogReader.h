@@ -8,7 +8,8 @@ enum log_messages {
     // copter specific messages
     LOG_COPTER_ATTITUDE_MSG = 1,
     LOG_COPTER_COMPASS_MSG  = 15,
-    LOG_COPTER_CONTROL_TUNING_MSG = 4
+    LOG_COPTER_CONTROL_TUNING_MSG = 4,
+    LOG_COPTER_INAV_MSG = 17,
 };
 
 
@@ -19,7 +20,9 @@ public:
     bool open_log(const char *logfile);
     bool update(uint8_t &type);
     bool wait_type(uint8_t type);
+
     const Vector3f &get_attitude(void) const { return attitude; }
+    const Vector3f &get_inavpos(void) const { return inavpos; }
     const Vector3f &get_sim_attitude(void) const { return sim_attitude; }
 
     enum vehicle_type { VEHICLE_UNKNOWN, VEHICLE_COPTER, VEHICLE_PLANE, VEHICLE_ROVER };
@@ -40,6 +43,7 @@ private:
 
     Vector3f attitude;
     Vector3f sim_attitude;
+    Vector3f inavpos;
 
     void wait_timestamp(uint32_t timestamp);
 
