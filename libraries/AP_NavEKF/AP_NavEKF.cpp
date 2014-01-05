@@ -27,7 +27,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _baro(baro),
     useAirspeed(true),
     useCompass(true),
-    fusionModeGPS(0), // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs,  no velocity
+    fusionModeGPS(1), // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
     covTimeStepMax(0.07f), // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f), // maximum delta angle between covariance prediction updates
     yawVarScale(1.0f), // scale factor applied to yaw gyro errors when on ground
@@ -50,10 +50,10 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 #endif
 {
     // Tuning parameters
-    _gpsHorizVelNoise = 0.3f;    // GPS horizontal velocity noise : m/s
-    _gpsVertVelNoise  = 0.3f;    // GPS vertical velocity noise : m/s
-    _gpsHorizPosNoise = 2.0f;    // GPS horizontal position noise m
-    _gpsVertPosNoise = 1.0f;    // GPS or Baro vertical position variance : m^2
+    _gpsHorizVelNoise = 0.3f; // GPS horizontal velocity noise : m/s
+    _gpsVertVelNoise  = 0.3f; // GPS vertical velocity noise : m/s
+    _gpsHorizPosNoise = 2.0f; // GPS horizontal position noise m
+    _gpsVertPosNoise = 2.0f; // GPS or Baro vertical position noise : m
     _gpsVelVarAccScale = 0.2f; // scale factor applied to velocity variance due to Vdot
     _gpsPosVarAccScale = 0.2f; // scale factor applied to position variance due to Vdot
     _magNoise = 0.05f; // magnetometer measurement noise : gauss
@@ -65,7 +65,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _accNoise = 0.5f; // accelerometer process noise : m/s^2
     _dAngBiasNoise = 5.0e-7f; // gyro bias state noise : rad/s^2
     _magEarthNoise = 3.0e-4f; // earth magnetic field process noise : gauss/sec
-    _magBodyNoise  = 3.0e-4f; // earth magnetic field process noise : gauss/sec
+    _magBodyNoise  = 3.0e-4f; // body magnetic field process noise : gauss/sec
 
     // Misc initial conditions
     hgtRate = 0.0f;
