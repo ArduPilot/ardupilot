@@ -187,7 +187,7 @@ void NavEKF::InitialiseFilter(void)
     //Initialise IMU pre-processing states
     readIMUData();
 
-#if 0
+#if 1
     ::printf("NavEKF.InitialiseFilter: HOME.Alt=%.2f GPS.Alt=%.2f Baro.Alt=%.2f EKF.Alt=%.2f VEL=(%.2f,%.2f,%.2f)\n", 
              _ahrs->get_home().alt*0.01f,
              _ahrs->get_gps()->altitude_cm*0.01f,
