@@ -274,6 +274,7 @@ void NavEKF::SelectVelPosFusion()
         {
             FuseVelPosNED();
             newDataGps = false;
+            newDataHgt = false;
             posVelFuseStep = true;
         }
         else
