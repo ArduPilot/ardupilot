@@ -201,7 +201,7 @@ private:
     ftype _windStateNoise; // rate of change of wind : m/s^2
     ftype _wndVarHgtRateScale; // scale factor applied to wind process noise from height rate
     ftype _gyrNoise; // gyro process noise : rad/s
-    ftype _accNoise; // accelerometer process noise : m/s^2hgtHealth = (sq(hgtInnov) < maxf((100.0f * varInnovVelPos[5])) , 5.0f);
+    ftype _accNoise; // accelerometer process noise : m/s^2
     ftype _dAngBiasNoise; // gyro bias state noise : rad/s^2
     ftype _magEarthNoise; // earth magnetic field process noise : gauss/sec
     ftype _magBodyNoise; // earth magnetic field process noise : gauss/sec
@@ -296,10 +296,6 @@ private:
 
     // TAS input variables
     bool newDataTas;
-
-    // HGT input variables
-    float hgtMeaPrev;
-    bool newDataHgt;
 
     // Time stamp when vel, pos or height measurements last failed checks
 	uint32_t velFailTime;
