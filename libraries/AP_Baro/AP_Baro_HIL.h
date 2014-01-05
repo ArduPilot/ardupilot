@@ -11,8 +11,8 @@ private:
     uint8_t BMP085_State;
     float Temp;
     float Press;
-    int32_t _pressure_sum;
-    int32_t _temperature_sum;
+    float _pressure_sum;
+    float _temperature_sum;
     volatile uint8_t _count;
 
 public:
