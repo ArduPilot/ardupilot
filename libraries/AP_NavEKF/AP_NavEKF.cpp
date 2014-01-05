@@ -257,36 +257,16 @@ void NavEKF::SelectVelPosFusion()
     {
         // Command fusion of GPS measurements if new ones available
         readGpsData();
-        readHgtData();
         if (newDataGps)
         {
             fuseVelData = true;
             fusePosData = true;
+        }
+        readHgtData();
+        if (newDataHgt || ((IMUmsec - HGTmsecPrev) >= HGTmsecMax))
+        {
             fuseHgtData = true;
-        }
-        // Don't wait longer than HGTmsecMax msec between height updates
-        // if no GPS
-        else if ((IMUmsec - HGTmsecPrev) >= HGTmsecMax)
-        {
-            // Static mode is used for pre-arm and bench testing and allows operation
-            // without GPS
-            if (staticMode) {
-                fuseVelData = true;
-                fusePosData = true;
-                fuseHgtData = true;
-            }
-            else {
-                fuseVelData = false;
-                fusePosData = false;
-                fuseHgtData = true;
-            }
             HGTmsecPrev = IMUmsec;
-        }
-        else
-        {
-            fuseVelData = false;
-            fusePosData = false;
-            fuseHgtData = false;
         }
         // set flag to let other processes know that GPS and/or height fusion has
         // ocurred in this frame
@@ -1958,18 +1938,15 @@ void NavEKF::readGpsData()
 
 void NavEKF::readHgtData()
 {
-    // ToDo do we check for new height data or grab a height measurement?
-    // Best to do this at the same time as GPS measurement fusion for efficiency
-    hgtMea = _baro.get_altitude();
-    if (hgtMeaPrev != hgtMea) {
-        newDataHgt == true;
-        hgtMeaPrev = hgtMea;
+    if (_baro.get_last_update() != lastHgtUpdate) {
+        lastHgtUpdate = _baro.get_last_update();
+        hgtMea = _baro.get_altitude();
+        newDataHgt = true;
+        // recall states from compass measurement time
+        RecallStates(statesAtHgtTime, (IMUmsec - msecHgtDelay));
+    } else {
+        newDataHgt = false;
     }
-    else {
-        newDataHgt == false;
-    }
-    // recall states from compass measurement time
-    RecallStates(statesAtHgtTime, (IMUmsec - msecHgtDelay));
 }
 
 void NavEKF::readMagData()
