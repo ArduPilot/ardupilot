@@ -87,8 +87,10 @@ void LinuxScheduler::_microsleep(uint32_t usec)
 
 void LinuxScheduler::delay(uint16_t ms)
 {
-    uint32_t old_stop = stopped_clock_ms;
-    stopped_clock_ms = 0;
+    if (stopped_clock_ms) {
+        stopped_clock_ms += ms;
+        return;
+    }
     uint32_t start = millis();
     
     while ((millis() - start) < ms) {
@@ -100,7 +102,6 @@ void LinuxScheduler::delay(uint16_t ms)
             }
         }
     }
-    stopped_clock_ms = old_stop;
 }
 
 uint32_t LinuxScheduler::millis() 
