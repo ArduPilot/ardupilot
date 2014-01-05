@@ -71,6 +71,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     hgtRate = 0.0f;
     mag_state.q0 = 1;
     mag_state.DCM.identity();
+    hgtMeaPrev = 0.0f;
+    hgtMea = 0.0f;
 }
 
 bool NavEKF::healthy(void) const
@@ -262,31 +264,12 @@ void NavEKF::SelectVelPosFusion()
         {
             fuseVelData = true;
             fusePosData = true;
-            fuseHgtData = true;
         }
         // Don't wait longer than HGTmsecMax msec between height updates
         // if no GPS
-        else if ((IMUmsec - HGTmsecPrev) >= HGTmsecMax)
+        if (newDataHgt)
         {
-            // Static mode is used for pre-arm and bench testing and allows operation
-            // without GPS
-            if (staticMode) {
-                fuseVelData = true;
-                fusePosData = true;
-                fuseHgtData = true;
-            }
-            else {
-                fuseVelData = false;
-                fusePosData = false;
-                fuseHgtData = true;
-            }
-            HGTmsecPrev = IMUmsec;
-        }
-        else
-        {
-            fuseVelData = false;
-            fusePosData = false;
-            fuseHgtData = false;
+            fuseHgtData = true;
         }
         // set flag to let other processes know that GPS and/or height fusion has
         // ocurred in this frame
@@ -294,6 +277,7 @@ void NavEKF::SelectVelPosFusion()
         {
             FuseVelPosNED();
             newDataGps = false;
+            newDataHgt = false;
             posVelFuseStep = true;
         }
         else
@@ -1958,14 +1942,16 @@ void NavEKF::readGpsData()
 
 void NavEKF::readHgtData()
 {
-    // ToDo do we check for new height data or grab a height measurement?
+    // ToDo - better check for new height data
     // Best to do this at the same time as GPS measurement fusion for efficiency
     hgtMea = _baro.get_altitude();
-#if 0
-    Vector3f pos;
-    getPosNED(pos);
-    //::printf("BARO.Alt=%.2f REL.z=%.2f\n", hgtMea, -pos.z);
-#endif
+    if (hgtMeaPrev != hgtMea) {
+        newDataHgt == true;
+        hgtMeaPrev = hgtMea;
+    }
+    else {
+        newDataHgt == false;
+    }
     // recall states from compass measurement time
     RecallStates(statesAtHgtTime, (IMUmsec - msecHgtDelay));
 }
