@@ -83,22 +83,6 @@ public:
     virtual bool position_ok() const;
 
     /**
-     * check_gps - checks if new gps readings have arrived and calls correct_with_gps to
-     * calculate the horizontal position error
-     * @see correct_with_gps(int32_t lon, int32_t lat, float dt);
-     */
-    void        check_gps();
-
-    /**
-     * correct_with_gps - calculates horizontal position error using gps
-     *
-     * @param now : current time since boot in milliseconds
-     * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
-
-    /**
      * get_position - returns the current position relative to the home location in cm.
      *
      * @return
@@ -182,22 +166,6 @@ public:
     virtual bool        altitude_ok() const { return true; }
 
     /**
-     * check_baro - checks if new baro readings have arrived and calls correct_with_baro to
-     * calculate the vertical position error
-     *
-     * @see correct_with_baro(float baro_alt, float dt);
-     */
-    void        check_baro();
-
-    /**
-     * correct_with_baro - calculates vertical position error using barometer.
-     *
-     * @param baro_alt : altitude in cm
-     * @param dt : time since last baro reading in s
-     */
-    void        correct_with_baro(float baro_alt, float dt);
-
-    /**
      * get_altitude - get latest altitude estimate in cm above the
      * reference position
      * @return
@@ -244,6 +212,39 @@ public:
     Vector3f                accel_correction_ef;        // earth frame accelerometer corrections. here for logging purposes only
 
 protected:
+
+    /**
+     * correct_with_gps - calculates horizontal position error using gps
+     *
+     * @param now : current time since boot in milliseconds
+     * @param lon : longitude in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
+     * @param lat : latitude  in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
+     */
+    void        correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
+
+    /**
+     * check_gps - checks if new gps readings have arrived and calls correct_with_gps to
+     * calculate the horizontal position error
+     * @see correct_with_gps(int32_t lon, int32_t lat, float dt);
+     */
+    void        check_gps();
+
+    /**
+     * check_baro - checks if new baro readings have arrived and calls correct_with_baro to
+     * calculate the vertical position error
+     *
+     * @see correct_with_baro(float baro_alt, float dt);
+     */
+    void        check_baro();
+
+    /**
+     * correct_with_baro - calculates vertical position error using barometer.
+     *
+     * @param baro_alt : altitude in cm
+     * @param dt : time since last baro reading in s
+     */
+    void        correct_with_baro(float baro_alt, float dt);
+
 
     /**
      * update gains from time constant.
