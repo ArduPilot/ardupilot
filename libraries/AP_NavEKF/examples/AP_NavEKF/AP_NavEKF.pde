@@ -39,6 +39,7 @@
 #include <AP_Compass.h>
 #include <AP_Baro.h>
 #include <AP_InertialSensor.h>
+#include <AP_InertialNav.h>
 #include <AP_NavEKF.h>
 #include <stdio.h>
 
@@ -51,21 +52,25 @@ static AP_Baro_HIL barometer;
 static AP_GPS_HIL gps_driver;
 static GPS *g_gps = &gps_driver;
 static AP_Compass_HIL compass;
-static AP_AHRS_DCM ahrs(ins, barometer, g_gps);
+static AP_AHRS_NavEKF ahrs(ins, barometer, g_gps);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
 #endif
 
-static NavEKF NavEKF(&ahrs, barometer);
+static const NavEKF &NavEKF = ahrs.get_NavEKF();
+
 static LogReader LogReader(ins, barometer, compass, g_gps);
 
 static FILE *plotf;
 static FILE *plotf2;
 
+static uint32_t gps_fix_count;
+
 void setup()
 {
     ::printf("Starting\n");
+
     LogReader.open_log("log.bin");
 
     LogReader.wait_type(LOG_GPS_MSG);
@@ -81,29 +86,49 @@ void setup()
     compass.init();
     ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
 
-    ::printf("Waiting for 3D fix\n");
-    uint8_t goodFrameCount = 0;
-    while (goodFrameCount <= 10) // wait for readings to stabilise
-    {
-        LogReader.wait_type(LOG_GPS_MSG);
-        g_gps->update();
-        compass.read();
-        barometer.read();
-        LogReader.wait_type(LOG_IMU_MSG);
-        ahrs.update();
-        if ((g_gps->status() >= GPS::GPS_OK_FIX_3D) && (ahrs.yaw_sensor != 0)) goodFrameCount +=1;
-        printf("%u\n",hal.scheduler->millis());
-    }
-
-    barometer.calibrate();
-    compass.set_initial_location(g_gps->latitude, g_gps->longitude);
-
-    NavEKF.InitialiseFilter();
-
     plotf = fopen("plot.dat", "w");
     plotf2 = fopen("plot2.dat", "w");
-    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw ATT.Roll ATT.Pitch ATT.Yaw AHRS.Roll AHRS.Pitch AHRS.Yaw EKF.Roll EKF.Pitch EKF.Yaw\n");
+    fprintf(plotf, "time SIM.Roll SIM.Pitch SIM.Yaw ATT.Roll ATT.Pitch ATT.Yaw DCM.Roll DCM.Pitch DCM.Yaw EKF.Roll EKF.Pitch EKF.Yaw\n");
     fprintf(plotf2, "time E1 E2 E3 VN VE VD PN PE PD GX GY GZ AX AY AZ MN ME MD MX MY MZ E1ref E2ref E3ref\n");
+
+    ahrs.set_ekf_use(true);
+
+    ::printf("Waiting for InertialNav to start\n");
+    while (!ahrs.have_inertial_nav()) {
+        uint8_t type;
+        if (!LogReader.update(type)) break;
+        read_sensors(type);
+        if (type == LOG_GPS_MSG && g_gps->status() >= GPS::GPS_OK_FIX_3D) {
+            gps_fix_count++;
+            if (gps_fix_count == 2) {
+                ::printf("GPS Lock at %.7f %.7f %.2fm\n", 
+                         g_gps->latitude*1.0e-7f, 
+                         g_gps->longitude*1.0e-7f,
+                         g_gps->altitude_cm*0.01f);
+                ahrs.set_home(g_gps->latitude, g_gps->longitude, g_gps->altitude_cm);
+                barometer.calibrate();
+                compass.set_initial_location(g_gps->latitude, g_gps->longitude);            
+            }
+        }
+    }
+
+    if (!ahrs.have_inertial_nav()) {
+        ::printf("Failed to start NavEKF\n");
+        exit(1);
+    }
+}
+
+static void read_sensors(uint8_t type)
+{
+    if (type == LOG_GPS_MSG) {
+        g_gps->update();
+        barometer.read();
+    } else if (type == LOG_IMU_MSG) {
+        ahrs.update();
+    } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
+               (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER)) {
+        compass.read();
+    }
 }
 
 void loop()
@@ -115,13 +140,10 @@ void loop()
             fclose(plotf);
             exit(0);
         }
-        switch (type) {
-        case LOG_GPS_MSG:
-            g_gps->update();
-            barometer.read();
-            break;
+        read_sensors(type);
 
-        case LOG_ATTITUDE_MSG: {
+        if ((type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
+            (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER)) {
             Vector3f ekf_euler;
             Vector3f velNED;
             Vector3f posNED;
@@ -129,6 +151,8 @@ void loop()
             Vector3f accelBias;
             Vector3f magNED;
             Vector3f magXYZ;
+            Vector3f DCM_attitude;
+            ahrs.get_secondary_attitude(DCM_attitude);
             NavEKF.getEulerAngles(ekf_euler);
             NavEKF.getVelNED(velNED);
             NavEKF.getPosNED(posNED);
@@ -146,9 +170,9 @@ void loop()
                     LogReader.get_attitude().x,
                     LogReader.get_attitude().y,
                     LogReader.get_attitude().z,
-                    ahrs.roll_sensor*0.01f, 
-                    ahrs.pitch_sensor*0.01f,
-                    ahrs.yaw_sensor*0.01f,
+                    degrees(DCM_attitude.x),
+                    degrees(DCM_attitude.y),
+                    degrees(DCM_attitude.z),
                     degrees(ekf_euler.x),
                     degrees(ekf_euler.y),
                     degrees(ekf_euler.z));
@@ -178,35 +202,6 @@ void loop()
                     LogReader.get_attitude().x,
                     LogReader.get_attitude().y,
                     LogReader.get_attitude().z);
-
-#if 0
-            ::printf("t=%.3f ATT: (%.1f %.1f %.1f) AHRS: (%.1f %.1f %.1f) EKF: (%.1f %.1f %.1f) ALT: %.1f GPS: %u %f %f\n", 
-                     hal.scheduler->millis() * 0.001f,
-                     LogReader.get_attitude().x,
-                     LogReader.get_attitude().y,
-                     LogReader.get_attitude().z,
-                     ahrs.roll_sensor*0.01f, 
-                     ahrs.pitch_sensor*0.01f,
-                     ahrs.yaw_sensor*0.01f,
-                     degrees(ekf_euler.x),
-                     degrees(ekf_euler.y),
-                     temp,
-                     barometer.get_altitude(),
-                     (unsigned)g_gps->status(),
-                     g_gps->latitude*1.0e-7f,
-                     g_gps->longitude*1.0e-7f);
-#endif
-                break;
-        }
-
-        case LOG_COMPASS_MSG:
-            compass.read();
-            break;
-
-        case LOG_IMU_MSG:
-            ahrs.update();
-            NavEKF.UpdateFilter();
-            break;
         }
     }
 }
