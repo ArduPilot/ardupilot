@@ -100,12 +100,11 @@ static void stabilize_run()
     // do not run throttle controllers if motors disarmed
     if( !motors.armed() || g.rc_3.control_in <= 0) {
         attitude_control.set_throttle_out(0, false);
-        throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
         set_target_alt_for_reporting(0);
     }else{
         // manual throttle but with angle boost
         int16_t pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
-        attitude_control.set_throttle_out(pilot_throttle_scaled, false);
+        attitude_control.set_throttle_out(pilot_throttle_scaled, true);
 
         // update estimate of throttle cruise
         #if FRAME_CONFIG == HELI_FRAME
@@ -209,12 +208,13 @@ static void althold_run()
             // move throttle to minimum to keep us on the ground
             attitude_control.set_throttle_out(0, false);
             set_target_alt_for_reporting(0);
+            // To-Do: should return here because we don't want throttle out to be overwritten below
         }
     }
 
     // check land_complete flag again in case it was changed above
     if (!ap.land_complete) {
-        if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
+        if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
             // if sonar is ok, use surface tracking
             get_throttle_surface_tracking(target_climb_rate);
         }else{
