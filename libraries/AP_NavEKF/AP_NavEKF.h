@@ -191,6 +191,7 @@ private:
 
     bool statesInitialised;
 
+public:
     // Tuning Parameters
     ftype _gpsHorizVelNoise;    // GPS horizontal velocity noise : m/s
     ftype _gpsVertVelNoise;    // GPS vertical velocity noise : m/s
@@ -208,6 +209,7 @@ private:
     ftype _dAngBiasNoise; // gyro bias state noise : rad/s^2
     ftype _magEarthNoise; // earth magnetic field process noise : gauss/sec
     ftype _magBodyNoise; // earth magnetic field process noise : gauss/sec
+private:
 
     Vector21 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
 
