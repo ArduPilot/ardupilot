@@ -67,9 +67,13 @@ public:
     ///
 
     void set_alt_target(float alt_cm) { _pos_target.z = alt_cm; }
+
+    /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
+    /// To-Do: remove one of the two functions below
     float get_alt_target() const { return _pos_target.z; }
-    /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
-    float get_desired_alt() const { return _pos_target.z; }
+
+    // get_alt_error - returns altitude error in cm
+    float get_alt_error() const;
 
     /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
     void set_target_to_stopping_point_z();

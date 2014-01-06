@@ -61,6 +61,12 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 /// z-axis position controller
 ///
 
+// get_alt_error - returns altitude error in cm
+float AC_PosControl::get_alt_error() const
+{
+    return (_pos_target.z - _inav.get_position().z);
+}
+
 /// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
 void AC_PosControl::set_target_to_stopping_point_z()
 {
@@ -265,7 +271,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // To-Do: where to get hover throttle?
     // To-Do: we had a contraint here but it's now removed, is this ok?  with the motors library handle it ok?
     _attitude_control.set_throttle_out((int16_t)p+i+d+_throttle_hover, true);
-
+    
     // to-do add back in PID logging?
 }
 /*
