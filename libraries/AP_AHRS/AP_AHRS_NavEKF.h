@@ -51,6 +51,8 @@ public:
     void            update(void);
     void            reset(bool recover_eulers = false);
 
+    void            set_correct_centrifugal(bool setting);
+
     // reset the current attitude, used on new IMU calibration
     void reset_attitude(const float &roll, const float &pitch, const float &yaw);
 
