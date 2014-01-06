@@ -367,12 +367,12 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
  // provide 0 to cut motors
 void AC_AttitudeControl::set_throttle_out(int16_t throttle_out, bool apply_angle_boost)
 {
-    if( apply_angle_boost ) {
+    if (apply_angle_boost) {
         _motor_throttle = get_angle_boost(throttle_out);
     }else{
         _motor_throttle = throttle_out;
         // clear angle_boost for logging purposes
-        //angle_boost = 0;
+        _angle_boost = 0;
     }
 
     // update compass with throttle value
@@ -382,7 +382,7 @@ void AC_AttitudeControl::set_throttle_out(int16_t throttle_out, bool apply_angle
 
 // get_angle_boost - returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1000
-int16_t AC_AttitudeControl::get_angle_boost(int16_t throttle_pwm) const
+int16_t AC_AttitudeControl::get_angle_boost(int16_t throttle_pwm)
 {
     float temp = _cos_pitch * _cos_roll;
     int16_t throttle_out;
@@ -394,11 +394,10 @@ int16_t AC_AttitudeControl::get_angle_boost(int16_t throttle_pwm) const
 
     // apply scale and constrain throttle
     // To-Do: move throttle_min and throttle_max into the AP_Vehicles class?
-    //throttle_out = constrain_float((float)(throttle-g.throttle_min) * temp + g.throttle_min, g.throttle_min, 1000);
+    throttle_out = constrain_float((float)(throttle_pwm-_motors.throttle_min()) * temp + _motors.throttle_min(), _motors.throttle_min(), 1000);
 
-    // to allow logging of angle boost
-    // To-Do: expose this so it can be logged?
-    //angle_boost = throttle_out - throttle_pwm;
+    // record angle boost for logging
+    _angle_boost = throttle_out - throttle_pwm;
 
     return throttle_out;
 }

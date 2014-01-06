@@ -55,7 +55,12 @@ public:
         _motor_pitch(motor_pitch),
         _motor_yaw(motor_yaw),
         _motor_throttle(motor_throttle),
-        _dt(AC_ATTITUDE_100HZ_DT)
+        _dt(AC_ATTITUDE_100HZ_DT),
+        _angle_boost(0),
+        _cos_roll(1.0),
+        _cos_pitch(1.0),
+        _sin_roll(0.0),
+        _sin_pitch(0.0)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
 		}
@@ -150,6 +155,9 @@ public:
      // provide 0 to cut motors
      void set_throttle_out(int16_t throttle_pwm, bool apply_angle_boost);
 
+     // angle_boost - accessor for angle boost so it can be logged
+     int16_t angle_boost() const { return _angle_boost; }
+
     //
     // helper functions
     //
@@ -181,7 +189,7 @@ private:
     //
 
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
-    int16_t get_angle_boost(int16_t throttle_pwm) const;
+    int16_t get_angle_boost(int16_t throttle_pwm);
 
     //
     // logging
@@ -224,12 +232,13 @@ private:
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?
     float               _dt;                    // time delta in seconds
-    Vector3f            _angle_ef_target;      // angle controller earth-frame targets
-    Vector3f            _rate_stab_ef_target;  // stabilized rate controller earth-frame rate targets
-    Vector3f            _rate_ef_target;       // rate controller earth-frame targets
-    Vector3f            _rate_stab_bf_target;  // stabilized rate controller body-frame rate targets
-    Vector3f            _rate_stab_bf_error;   // stabilized rate controller body-frame angle errors
-    Vector3f            _rate_bf_target;       // rate controller body-frame targets
+    Vector3f            _angle_ef_target;       // angle controller earth-frame targets
+    Vector3f            _rate_stab_ef_target;   // stabilized rate controller earth-frame rate targets
+    Vector3f            _rate_ef_target;        // rate controller earth-frame targets
+    Vector3f            _rate_stab_bf_target;   // stabilized rate controller body-frame rate targets
+    Vector3f            _rate_stab_bf_error;    // stabilized rate controller body-frame angle errors
+    Vector3f            _rate_bf_target;        // rate controller body-frame targets
+    int16_t             _angle_boost;           // used only for logging
 
     // precalculated values for efficiency saves
     // To-Do: could these be changed to references and passed into the constructor?
