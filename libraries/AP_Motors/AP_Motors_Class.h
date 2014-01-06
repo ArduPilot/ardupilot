@@ -104,6 +104,9 @@ public:
     // this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
     void                set_mid_throttle(uint16_t mid_throttle);
 
+    int16_t             throttle_min() const { return _min_throttle;}
+    int16_t             throttle_max() const { return _max_throttle;}
+
     // output - sends commands to the motors
     void                output();
 
