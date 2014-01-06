@@ -472,51 +472,6 @@ void set_yaw_rate_target( int32_t desired_rate, uint8_t earth_or_body_frame ) {
     }
 }
 
-// update_rate_contoller_targets - converts earth frame rates to body frame rates for rate controllers
-void
-update_rate_contoller_targets()
-{
-    if( rate_targets_frame == EARTH_FRAME ) {
-        // convert earth frame rates to body frame rates
-        roll_rate_target_bf     = roll_rate_target_ef - ahrs.sin_pitch() * yaw_rate_target_ef;
-        pitch_rate_target_bf    = ahrs.cos_roll()  * pitch_rate_target_ef + ahrs.sin_roll() * ahrs.cos_pitch() * yaw_rate_target_ef;
-        yaw_rate_target_bf      = ahrs.cos_pitch() * ahrs.cos_roll() * yaw_rate_target_ef - ahrs.sin_roll() * pitch_rate_target_ef;
-    }else if( rate_targets_frame == BODY_EARTH_FRAME ) {
-        // add converted earth frame rates to body frame rates
-        acro_roll_rate = roll_rate_target_ef - ahrs.sin_pitch() * yaw_rate_target_ef;
-        acro_pitch_rate = ahrs.cos_roll() * pitch_rate_target_ef + ahrs.sin_roll() * ahrs.cos_pitch() * yaw_rate_target_ef;
-        acro_yaw_rate = ahrs.cos_pitch() * ahrs.cos_roll() * yaw_rate_target_ef - ahrs.sin_roll() * pitch_rate_target_ef;
-    }
-}
-
-// run roll, pitch and yaw rate controllers and send output to motors
-// targets for these controllers comes from stabilize controllers
-void
-run_rate_controllers()
-{
-#if FRAME_CONFIG == HELI_FRAME
-    // convert desired roll and pitch rate to roll and pitch swash angles
-    heli_integrated_swash_controller(roll_rate_target_bf, pitch_rate_target_bf);
-    // helicopters only use rate controllers for yaw and only when not using an external gyro
-    if(motors.tail_type() != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
-        g.rc_4.servo_out = get_heli_rate_yaw(yaw_rate_target_bf);
-    }else{
-        // do not use rate controllers for helicotpers with external gyros
-        g.rc_4.servo_out = constrain_int32(yaw_rate_target_bf, -4500, 4500);
-    }
-#else
-    // call rate controllers
-    g.rc_1.servo_out = get_rate_roll(roll_rate_target_bf);
-    g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf);
-    g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
-#endif
-
-    // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
-    if( throttle_accel_controller_active ) {
-        set_throttle_out(get_throttle_accel(throttle_accel_target_ef), true);
-    }
-}
-
 #if FRAME_CONFIG != HELI_FRAME
 static int16_t
 get_rate_roll(int32_t target_rate)
