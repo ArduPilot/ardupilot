@@ -234,7 +234,7 @@ public:
 
     // set the correct centrifugal flag
     // allows arducopter to disable corrections when disarmed
-    void set_correct_centrifugal(bool setting) {
+    virtual void set_correct_centrifugal(bool setting) {
         _flags.correct_centrifugal = setting;
     }
 
