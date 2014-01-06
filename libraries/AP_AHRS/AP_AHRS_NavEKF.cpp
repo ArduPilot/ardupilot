@@ -91,9 +91,8 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 
 void AP_AHRS_NavEKF::set_correct_centrifugal(bool setting)
 {
-    if (ekf_started) {
-        EKF.SetStaticMode(setting);        
-    }
+    AP_AHRS_DCM::set_correct_centrifugal(setting);
+    EKF.SetStaticMode(!setting);
 }
 
 // reset the current attitude, used on new IMU calibration
