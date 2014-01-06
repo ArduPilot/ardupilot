@@ -50,9 +50,9 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 #endif
 {
     // Tuning parameters
-    _gpsHorizVelNoise = 0.3f; // GPS horizontal velocity noise : m/s
+    _gpsHorizVelNoise = 0.7f; // GPS horizontal velocity noise : m/s
     _gpsVertVelNoise  = 0.3f; // GPS vertical velocity noise : m/s
-    _gpsHorizPosNoise = 2.0f; // GPS horizontal position noise m
+    _gpsHorizPosNoise = 1.5f; // GPS horizontal position noise m
     _gpsVertPosNoise = 2.0f; // GPS or Baro vertical position noise : m
     _gpsVelVarAccScale = 0.2f; // scale factor applied to velocity variance due to Vdot
     _gpsPosVarAccScale = 0.2f; // scale factor applied to position variance due to Vdot
@@ -62,7 +62,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _windStateNoise = 0.1f; // RMS rate of change of wind : (m/s^2)
     _wndVarHgtRateScale = 0.5f; // scale factor applied to wind process noise from height rate
     _gyrNoise = 1.4544411e-2f; // gyro process noise : rad/s
-    _accNoise = 0.5f; // accelerometer process noise : m/s^2
+    _accNoise = 0.02f; // accelerometer process noise : m/s^2
     _dAngBiasNoise = 5.0e-7f; // gyro bias state noise : rad/s^2
     _magEarthNoise = 3.0e-4f; // earth magnetic field process noise : gauss/sec
     _magBodyNoise  = 3.0e-4f; // body magnetic field process noise : gauss/sec
