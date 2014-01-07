@@ -799,19 +799,23 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 // start a new log
 static void start_logging() 
 {
-    if (g.log_bitmask != 0 && !ap.logging_started) {
-        ap.logging_started = true;
-        DataFlash.StartNewLog();
-        DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
+    if (g.log_bitmask != 0) {
+        if (!ap.logging_started) {
+            ap.logging_started = true;
+            DataFlash.StartNewLog();
+            DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
 
-        // write system identifier as well if available
-        char sysid[40];
-        if (hal.util->get_system_id(sysid)) {
-            DataFlash.Log_Write_Message(sysid);
+            // write system identifier as well if available
+            char sysid[40];
+            if (hal.util->get_system_id(sysid)) {
+                DataFlash.Log_Write_Message(sysid);
+            }
+
+            // log the flight mode
+            Log_Write_Mode(control_mode);
         }
-
-        // log the flight mode
-        Log_Write_Mode(control_mode);
+        // enable writes
+        DataFlash.EnableWrites(true);
     }
 }
 

@@ -503,6 +503,9 @@ static void init_disarm_motors()
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
 
+    // suspend logging
+    DataFlash.EnableWrites(false);
+
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
 }
