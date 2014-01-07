@@ -8,7 +8,7 @@ static void read_inertia()
     // inertial altitude estimates
     inertial_nav.update(G_Dt);
 
-    if( motors.armed() && (g.log_bitmask & MASK_LOG_INAV) ) {
+    if (g.log_bitmask & MASK_LOG_INAV) {
         log_counter_inav++;
         if( log_counter_inav >= 10 ) {
             log_counter_inav = 0;
