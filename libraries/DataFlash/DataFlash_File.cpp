@@ -142,7 +142,7 @@ void DataFlash_File::EraseAll()
 /* Write a block of data at current offset */
 void DataFlash_File::WriteBlock(const void *pBuffer, uint16_t size)
 {
-    if (_write_fd == -1 || !_initialised) {
+    if (_write_fd == -1 || !_initialised || !_writes_enabled) {
         return;
     }
     uint16_t _head;
