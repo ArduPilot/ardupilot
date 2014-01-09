@@ -1,0 +1,5 @@
+content-types/enabled=true
+content-types/org.eclipse.cdt.core.cSource/file-extensions=c
+content-types/org.eclipse.cdt.core.cxxHeader/file-extensions=hpp,h
+content-types/org.eclipse.cdt.core.cxxSource/file-extensions=pde,cpp
+eclipse.preferences.version=1
