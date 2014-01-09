@@ -239,8 +239,6 @@ struct PACKED log_Optflow {
     uint8_t surface_quality;
     int16_t x_cm;
     int16_t y_cm;
-    float   latitude;
-    float   longitude;
     int32_t roll;
     int32_t pitch;
 };
@@ -256,8 +254,6 @@ static void Log_Write_Optflow()
         surface_quality : optflow.surface_quality,
         x_cm            : (int16_t) optflow.x_cm,
         y_cm            : (int16_t) optflow.y_cm,
-        latitude        : optflow.vlat,
-        longitude       : optflow.vlon,
         roll            : of_roll,
         pitch           : of_pitch
     };
@@ -737,7 +733,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_CURRENT_MSG, sizeof(log_Current),             
       "CURR", "hIhhhf",      "ThrOut,ThrInt,Volt,Curr,Vcc,CurrTot" },
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "hhBccffee",   "Dx,Dy,SQual,X,Y,Lat,Lng,Roll,Pitch" },
+      "OF",   "hhBccee",   "Dx,Dy,SQual,X,Y,Roll,Pitch" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Ecffffffffee",    "WPDst,WPBrg,PErX,PErY,DVelX,DVelY,VelX,VelY,DAcX,DAcY,DRol,DPit" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),     

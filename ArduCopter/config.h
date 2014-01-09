@@ -369,15 +369,6 @@
 #ifndef OPTFLOW                         // sets global enabled/disabled flag for optflow (as seen in CLI)
  # define OPTFLOW                       ENABLED
 #endif
-#ifndef OPTFLOW_ORIENTATION
- # define OPTFLOW_ORIENTATION    AP_OPTICALFLOW_ADNS3080_PINS_FORWARD
-#endif
-#ifndef OPTFLOW_RESOLUTION
- # define OPTFLOW_RESOLUTION     ADNS3080_RESOLUTION_1600
-#endif
-#ifndef OPTFLOW_FOV
- # define OPTFLOW_FOV                    AP_OPTICALFLOW_ADNS3080_08_FOV
-#endif
 // optical flow based loiter PI values
 #ifndef OPTFLOW_ROLL_P
  #define OPTFLOW_ROLL_P 2.5f
