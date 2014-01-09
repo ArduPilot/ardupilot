@@ -108,7 +108,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
 #if MNT_STABILIZE_OPTION == ENABLED
     // @Param: STAB_ROLL
     // @DisplayName: Stabilize mount's roll angle
-    // @Description:enable roll stabilisation relative to Earth
+    // @Description: enable roll stabilisation relative to Earth
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("STAB_ROLL",  4, AP_Mount, _stab_roll, 0),
