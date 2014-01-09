@@ -1,0 +1,3966 @@
+<!-- Dynamically generated list of documented parameters
+This page was generated using Tools/autotest/param_metadata/param_parse.py
+
+DO NOT EDIT
+-->
+
+
+<p style="text-align: right"><a title="Table of Contents" href="/wiki/table-of-contents/"><span style="font-size: medium"><strong>Reference Manual Table of Contents</strong></span></a></p>
+<h3 style="text-align: center">Complete Parameter List</h3>
+<hr />
+
+<p>This is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your APM to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.</p>
+
+<!-- add auto-generated table of contents with "Table of Contents Plus" plugin -->
+[toc exclude="Complete Parameter List"]
+
+
+
+<h1>ArduPlane Parameters</h1>
+
+
+<h2>Eeprom format version number (ArduPlane:FORMAT_VERSION)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This value is incremented when changes are made to the eeprom format</p>
+<ul>
+</ul>
+
+
+<h2>Software Type (ArduPlane:SYSID_SW_TYPE)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)</p>
+<ul>
+</ul>
+
+
+<h2>MAVLink system ID (ArduPlane:SYSID_THISMAV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The identifier of this device in the MAVLink protocol</p>
+<ul>
+<li>Range: 1 255</li>
+</ul>
+
+
+<h2>Ground station MAVLink system ID (ArduPlane:SYSID_MYGCS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.</p>
+<ul>
+<li>Range: 1 255</li>
+</ul>
+
+
+<h2>USB Console Baud Rate (ArduPlane:SERIAL0_BAUD)</h2>
+
+<p>The baud rate used on the USB console</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>1</td><td>1200</td></tr>
+<tr><td>2</td><td>2400</td></tr>
+<tr><td>4</td><td>4800</td></tr>
+<tr><td>9</td><td>9600</td></tr>
+<tr><td>19</td><td>19200</td></tr>
+<tr><td>38</td><td>38400</td></tr>
+<tr><td>57</td><td>57600</td></tr>
+<tr><td>111</td><td>111100</td></tr>
+<tr><td>115</td><td>115200</td></tr>
+</table>
+</ul>
+
+
+<h2>Telemetry Baud Rate (ArduPlane:SERIAL1_BAUD)</h2>
+
+<p>The baud rate used on the first telemetry port</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>1</td><td>1200</td></tr>
+<tr><td>2</td><td>2400</td></tr>
+<tr><td>4</td><td>4800</td></tr>
+<tr><td>9</td><td>9600</td></tr>
+<tr><td>19</td><td>19200</td></tr>
+<tr><td>38</td><td>38400</td></tr>
+<tr><td>57</td><td>57600</td></tr>
+<tr><td>111</td><td>111100</td></tr>
+<tr><td>115</td><td>115200</td></tr>
+</table>
+</ul>
+
+
+<h2>Telemetry Baud Rate (ArduPlane:SERIAL2_BAUD)</h2>
+
+<p>The baud rate used on the second telemetry port</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>1</td><td>1200</td></tr>
+<tr><td>2</td><td>2400</td></tr>
+<tr><td>4</td><td>4800</td></tr>
+<tr><td>9</td><td>9600</td></tr>
+<tr><td>19</td><td>19200</td></tr>
+<tr><td>38</td><td>38400</td></tr>
+<tr><td>57</td><td>57600</td></tr>
+<tr><td>111</td><td>111100</td></tr>
+<tr><td>115</td><td>115200</td></tr>
+</table>
+</ul>
+
+
+<h2>Telemetry startup delay  (ArduPlane:TELEM_DELAY)</h2>
+
+<p>The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>Rudder Mix (ArduPlane:KFF_RDDRMIX)</h2>
+
+<p>The amount of rudder mix to apply during aileron movement 0 = 0 %, 1 = 100%</p>
+<ul>
+<li>Range: 0 1</li>
+<li>Increment: 0.01</li>
+</ul>
+
+
+<h2>Throttle to Pitch Mix (ArduPlane:KFF_THR2PTCH)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Throttle to pitch feed-forward gain.</p>
+<ul>
+<li>Range: 0 5</li>
+<li>Increment: 0.01</li>
+</ul>
+
+
+<h2>Stick Mixing (ArduPlane:STICK_MIXING)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>FBWMixing</td></tr>
+<tr><td>2</td><td>DirectMixing</td></tr>
+</table>
+</ul>
+
+
+<h2>Skip gyro calibration (ArduPlane:SKIP_GYRO_CAL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>When enabled this tells the APM to skip the normal gyroscope calibration at startup, and instead use the saved gyro calibration from the last flight. You should only enable this if you are careful to check that your aircraft has good attitude control before flying, as some boards may have significantly different gyro calibration between boots, especially if the temperature changes a lot. If gyro calibration is skipped then APM relies on using the gyro drift detection code to get the right gyro calibration in the few minutes after it boots. This option is mostly useful where the requirement to hold the plane still while it is booting is a significant problem.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Use FBWA steering in AUTO (ArduPlane:AUTO_FBW_STEER)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>When enabled this option gives FBWA navigation and steering in AUTO mode. This can be used to allow manual stabilised piloting with waypoint logic for triggering payloads. With this enabled the pilot has the same control over the plane as in FBWA mode, and the normal AUTO navigation is completely disabled. This option is not recommended for normal use.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Takeoff throttle min speed (ArduPlane:TKOFF_THR_MINSPD)</h2>
+
+<p>Minimum GPS ground speed in m/s used by the speed check that un-suppresses throttle in auto-takeoff. This can be be used for catapult launches where you want the motor to engage only after the plane leaves the catapult, but it is preferable to use the TKOFF_THR_MINACC and TKOFF_THR_DELAY parameters for cvatapult launches due to the errors associated with GPS measurements. For hand launches with a pusher prop it is strongly advised that this parameter be set to a value no less than 4 m/s to provide additional protection against premature motor start. Note that the GPS velocity will lag the real velocity by about 0.5 seconds. The ground speed check is delayed by the TKOFF_THR_DELAY parameter.</p>
+<ul>
+<li>Range: 0 30</li>
+<li>Increment: 0.1</li>
+<li>Units: m/s</li>
+</ul>
+
+
+<h2>Takeoff throttle min acceleration (ArduPlane:TKOFF_THR_MINACC)</h2>
+
+<p>Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches this should be set to 15.</p>
+<ul>
+<li>Range: 0 30</li>
+<li>Increment: 0.1</li>
+<li>Units: m/s/s</li>
+</ul>
+
+
+<h2>Takeoff throttle delay (ArduPlane:TKOFF_THR_DELAY)</h2>
+
+<p>This parameter sets the time delay (in 1/10ths of a second) that the ground speed check is delayed after the forward acceleration check controlled by TKOFF_THR_MINACC has passed. For hand launches with pusher propellers it is essential that this is set to a value of no less than 2 (0.2 seconds) to ensure that the aircraft is safely clear of the throwers arm before the motor can start. </p>
+<ul>
+<li>Range: 0 15</li>
+<li>Increment: 1</li>
+<li>Units: 0.1 seconds</li>
+</ul>
+
+
+<h2>Level flight roll limit (ArduPlane:LEVEL_ROLL_LIMIT)</h2>
+
+<p>This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.</p>
+<ul>
+<li>Range: 0 45</li>
+<li>Increment: 1</li>
+<li>Units: degrees</li>
+</ul>
+
+
+<h2>Landing Pitch (ArduPlane:LAND_PITCH_CD)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Used in autoland for planes without airspeed sensors in hundredths of a degree</p>
+<ul>
+<li>Units: centi-Degrees</li>
+</ul>
+
+
+<h2>Landing flare altitude (ArduPlane:LAND_FLARE_ALT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch</p>
+<ul>
+<li>Increment: 0.1</li>
+<li>Units: meters</li>
+</ul>
+
+
+<h2>Landing flare time (ArduPlane:LAND_FLARE_SEC)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch</p>
+<ul>
+<li>Increment: 0.1</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>Navigation controller selection (ArduPlane:NAV_CONTROLLER)</h2>
+
+<p>Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental conrtrollers will be added which are selected using this parameter.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Default</td></tr>
+<tr><td>1</td><td>L1Controller</td></tr>
+</table>
+</ul>
+
+
+<h2>GPS to Baro Mix (ArduPlane:ALT_MIX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The percent of mixing between GPS altitude and baro altitude. 0 = 100% gps, 1 = 100% baro. It is highly recommend that you not change this from the default of 1, as GPS altitude is notoriously unreliable. The only time I would recommend changing this is if you have a high altitude enabled GPS, and you are dropping a plane from a high altitude baloon many kilometers off the ground.</p>
+<ul>
+<li>Range: 0 1</li>
+<li>Increment: 0.1</li>
+<li>Units: Percent</li>
+</ul>
+
+
+<h2>Altitude control algorithm (ArduPlane:ALT_CTRL_ALG)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). From time to time we will add other experimental altitude control algorithms which will be seleted using this parameter.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Automatic</td></tr>
+</table>
+</ul>
+
+
+<h2>Altitude offset (ArduPlane:ALT_OFFSET)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission</p>
+<ul>
+<li>Range: -32767 32767</li>
+<li>Increment: 1</li>
+<li>Units: Meters</li>
+</ul>
+
+
+<h2>Number of loaded mission items (ArduPlane:CMD_TOTAL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The number of mission mission items that has been loaded by the ground station. Do not change this manually.</p>
+<ul>
+<li>Range: 1 255</li>
+</ul>
+
+
+<h2>Current mission command index (ArduPlane:CMD_INDEX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The index of the currently running mission item. Do not change this manually.</p>
+<ul>
+<li>Range: 1 255</li>
+</ul>
+
+
+<h2>Waypoint Radius (ArduPlane:WP_RADIUS)</h2>
+
+<p>Defines the distance from a waypoint that when crossed indicates the waypoint has been completed. To avoid the aircraft looping around the waypoint in case it misses by more than the WP_RADIUS an additional check is made to see if the aircraft has crossed a "finish line" passing through the waypoint and perpendicular to the flight path from the previous waypoint. If that finish line is crossed then the waypoint is considered complete.</p>
+<ul>
+<li>Range: 1 32767</li>
+<li>Increment: 1</li>
+<li>Units: Meters</li>
+</ul>
+
+
+<h2>Waypoint Maximum Radius (ArduPlane:WP_MAX_RADIUS)</h2>
+
+<p>Sets the maximum distance to a waypoint for the waypoint to be considered complete. This overrides the "cross the finish line" logic that is normally used to consider a waypoint complete. For normal AUTO behaviour this parameter should be set to zero. Using a non-zero value is only recommended when it is critical that the aircraft does approach within the given radius, and should loop around until it has done so. This can cause the aircraft to loop forever if its turn radius is greater than the maximum radius set.</p>
+<ul>
+<li>Range: 0 32767</li>
+<li>Increment: 1</li>
+<li>Units: Meters</li>
+</ul>
+
+
+<h2>Waypoint Loiter Radius (ArduPlane:WP_LOITER_RAD)</h2>
+
+<p>Defines the distance from the waypoint center, the plane will maintain during a loiter. If you set this value to a negative number then the default loiter direction will be counter-clockwise instead of clockwise.</p>
+<ul>
+<li>Range: 1 32767</li>
+<li>Increment: 1</li>
+<li>Units: Meters</li>
+</ul>
+
+
+<h2>Action on geofence breach (ArduPlane:FENCE_ACTION)</h2>
+
+<p>What to do on fence breach. If this is set to 0 then no action is taken, and geofencing is disabled. If this is set to 1 then the plane will enter GUIDED mode, with the target waypoint as the fence return point. If this is set to 2 then the fence breach is reported to the ground station, but no other action is taken. If set to 3 then the plane enters guided mode but the pilot retains manual throttle control.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>None</td></tr>
+<tr><td>1</td><td>GuidedMode</td></tr>
+<tr><td>2</td><td>ReportOnly</td></tr>
+<tr><td>3</td><td>GuidedModeThrPass</td></tr>
+</table>
+</ul>
+
+
+<h2>Fence Total (ArduPlane:FENCE_TOTAL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Number of geofence points currently loaded</p>
+<ul>
+</ul>
+
+
+<h2>Fence Channel (ArduPlane:FENCE_CHANNEL)</h2>
+
+<p>RC Channel to use to enable geofence. PWM input above 1750 enables the geofence</p>
+<ul>
+</ul>
+
+
+<h2>Fence Minimum Altitude (ArduPlane:FENCE_MINALT)</h2>
+
+<p>Minimum altitude allowed before geofence triggers</p>
+<ul>
+<li>Range: 0 32767</li>
+<li>Increment: 1</li>
+<li>Units: meters</li>
+</ul>
+
+
+<h2>Fence Maximum Altitude (ArduPlane:FENCE_MAXALT)</h2>
+
+<p>Maximum altitude allowed before geofence triggers</p>
+<ul>
+<li>Range: 0 32767</li>
+<li>Increment: 1</li>
+<li>Units: meters</li>
+</ul>
+
+
+<h2>Fence Return Altitude (ArduPlane:FENCE_RETALT)</h2>
+
+<p>Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is &lt;= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT &lt; FENCE_MINALT.  If FENCE_MAXALT &lt; FENCE_MINALT AND FENCE_RETALT is &lt;= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.</p>
+<ul>
+<li>Range: 0 32767</li>
+<li>Increment: 1</li>
+<li>Units: meters</li>
+</ul>
+
+
+<h2>Rally Total (ArduPlane:RALLY_TOTAL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Number of rally points currently loaded</p>
+<ul>
+</ul>
+
+
+<h2>Rally Limit (ArduPlane:RALLY_LIMIT_KM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Maximum distance to rally point. If the closest rally point is more than this number of kilometers from the current position and the home location is closer than any of the rally points from the current position then do RTL to home rather than to the closest rally point. This prevents a leftover rally point from a different airfield being used accidentally. If this is set to 0 then the closest rally point is always used.</p>
+<ul>
+<li>Increment: 0.1</li>
+<li>Units: kilometers</li>
+</ul>
+
+
+<h2>Fly By Wire Minimum Airspeed (ArduPlane:ARSPD_FBW_MIN)</h2>
+
+<p>Airspeed corresponding to minimum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.</p>
+<ul>
+<li>Range: 5 50</li>
+<li>Increment: 1</li>
+<li>Units: m/s</li>
+</ul>
+
+
+<h2>Fly By Wire Maximum Airspeed (ArduPlane:ARSPD_FBW_MAX)</h2>
+
+<p>Airspeed corresponding to maximum throttle in auto throttle modes (FBWB, CRUISE, AUTO, GUIDED, LOITER, CIRCLE and RTL). This is a calibrated (apparent) airspeed.</p>
+<ul>
+<li>Range: 5 50</li>
+<li>Increment: 1</li>
+<li>Units: m/s</li>
+</ul>
+
+
+<h2>Fly By Wire elevator reverse (ArduPlane:FBWB_ELEV_REV)</h2>
+
+<p>Reverse sense of elevator in FBWB and CRUISE modes. When set to 0 up elevator (pulling back on the stick) means to lower altitude. When set to 1, up elevator means to raise altitude.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Fly By Wire B altitude change rate (ArduPlane:FBWB_CLIMB_RATE)</h2>
+
+<p>This sets the rate in m/s at which FBWB and CRUISE modes will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.</p>
+<ul>
+<li>Range: 1-10</li>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Minimum Throttle (ArduPlane:THR_MIN)</h2>
+
+<p>The minimum throttle setting to which the autopilot will apply.</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: Percent</li>
+</ul>
+
+
+<h2>Maximum Throttle (ArduPlane:THR_MAX)</h2>
+
+<p>The maximum throttle setting to which the autopilot will apply.</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: Percent</li>
+</ul>
+
+
+<h2>Throttle slew rate (ArduPlane:THR_SLEWRATE)</h2>
+
+<p>maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second.</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: Percent</li>
+</ul>
+
+
+<h2>Throttle suppress manual passthru (ArduPlane:THR_SUPP_MAN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>When throttle is supressed in auto mode it is normally forced to zero. If you enable this option, then while suppressed it will be manual throttle. This is useful on petrol engines to hold the idle throttle manually while waiting for takeoff</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Throttle passthru in stabilize (ArduPlane:THR_PASS_STAB)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>If this is set then when in STABILIZE, FBWA or ACRO modes the throttle is a direct passthru from the transmitter. This means the THR_MIN and THR_MAX settings are not used in these modes. This is useful for petrol engines where you setup a throttle cut switch that suppresses the throttle below the normal minimum.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Throttle Failsafe Enable (ArduPlane:THR_FAILSAFE)</h2>
+
+<p>The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Throttle Failsafe Value (ArduPlane:THR_FS_VALUE)</h2>
+
+<p>The PWM level on channel 3 below which throttle sailsafe triggers</p>
+<ul>
+<li>Range: 925 1100</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Throttle cruise percentage (ArduPlane:TRIM_THROTTLE)</h2>
+
+<p>The target percentage of throttle to apply for normal flight</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: Percent</li>
+</ul>
+
+
+<h2>Throttle nudge enable (ArduPlane:THROTTLE_NUDGE)</h2>
+
+<p>When enabled, this uses the throttle input in auto-throttle modes to 'nudge' the throttle or airspeed to higher or lower values. When you have an airspeed sensor the nudge affects the target airspeed, so that throttle inputs above 50% will increase the target airspeed from TRIM_ARSPD_CM up to a maximum of ARSPD_FBW_MAX. When no airspeed sensor is enabled the throttle nudge will push up the target throttle for throttle inputs above 50%.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Short failsafe action (ArduPlane:FS_SHORT_ACTN)</h2>
+
+<p>The action to take on a short (FS_SHORT_TIMEOUT) failsafe event in AUTO, GUIDED or LOITER modes. A short failsafe event in stabilization modes will always cause an immediate change to CIRCLE mode. In AUTO mode you can choose whether it will enter CIRCLE mode or continue with the mission. If FS_SHORT_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter CIRCLE mode, and then enter RTL if the failsafe condition persists for FS_LONG_TIMEOUT seconds. If it is set to 2 then the plane will enter FBWA mode with zero throttle and level attitude to glide in.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Continue</td></tr>
+<tr><td>1</td><td>Circle/ReturnToLaunch</td></tr>
+<tr><td>2</td><td>Glide</td></tr>
+</table>
+</ul>
+
+
+<h2>Short failsafe timeout (ArduPlane:FS_SHORT_TIMEOUT)</h2>
+
+<p>The time in seconds that a failsafe condition has to persist before a short failsafe event will occor. This defaults to 1.5 seconds</p>
+<ul>
+<li>Range: 1 100</li>
+<li>Increment: 0.5</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>Long failsafe action (ArduPlane:FS_LONG_ACTN)</h2>
+
+<p>The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event in AUTO, GUIDED or LOITER modes. A long failsafe event in stabilization modes will always cause an RTL (ReturnToLaunch). In AUTO modes you can choose whether it will RTL or continue with the mission. If FS_LONG_ACTN is 0 then it will continue with the mission, if it is 1 then it will enter RTL mode. Note that if FS_SHORT_ACTN is 1, then the aircraft will enter CIRCLE mode after FS_SHORT_TIMEOUT seconds of failsafe, and will always enter RTL after FS_LONG_TIMEOUT seconds of failsafe, regardless of the FS_LONG_ACTN setting. If FS_LONG_ACTN is set to 2 then instead of using RTL it will enter a FBWA glide with zero throttle.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Continue</td></tr>
+<tr><td>1</td><td>ReturnToLaunch</td></tr>
+<tr><td>2</td><td>Glide</td></tr>
+</table>
+</ul>
+
+
+<h2>Long failsafe timeout (ArduPlane:FS_LONG_TIMEOUT)</h2>
+
+<p>The time in seconds that a failsafe condition has to persist before a long failsafe event will occor. This defaults to 20 seconds</p>
+<ul>
+<li>Range: 1 300</li>
+<li>Increment: 0.5</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>Failsafe battery voltage (ArduPlane:FS_BATT_VOLTAGE)</h2>
+
+<p>Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe. If the battery voltage drops below this voltage continuously for 10 seconds then the plane will switch to RTL mode</p>
+<ul>
+<li>Increment: 0.1</li>
+<li>Units: Volts</li>
+</ul>
+
+
+<h2>Failsafe battery milliAmpHours (ArduPlane:FS_BATT_MAH)</h2>
+
+<p>Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the plane will switch to RTL mode immediately</p>
+<ul>
+<li>Increment: 50</li>
+<li>Units: mAh</li>
+</ul>
+
+
+<h2>GCS failsafe enable (ArduPlane:FS_GCS_ENABL)</h2>
+
+<p>Enable ground control station telemetry failsafe. Failsafe will trigger after FS_LONG_TIMEOUT seconds of no MAVLink heartbeat messages. There are two possible enabled settings. Seeing FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggerded on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled 3DR radio indicating that the ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios). WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED. </p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Heartbeat</td></tr>
+<tr><td>2</td><td>HeartbeatAndREMRSSI</td></tr>
+</table>
+</ul>
+
+
+<h2>Flightmode channel (ArduPlane:FLTMODE_CH)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC Channel to use for flight mode control</p>
+<ul>
+</ul>
+
+
+<h2>FlightMode1 (ArduPlane:FLTMODE1)</h2>
+
+<p>Flight mode for switch position 1 (910 to 1230 and above 2049)</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Manual</td></tr>
+<tr><td>1</td><td>CIRCLE</td></tr>
+<tr><td>2</td><td>STABILIZE</td></tr>
+<tr><td>3</td><td>TRAINING</td></tr>
+<tr><td>4</td><td>ACRO</td></tr>
+<tr><td>5</td><td>FBWA</td></tr>
+<tr><td>6</td><td>FBWB</td></tr>
+<tr><td>7</td><td>CRUISE</td></tr>
+<tr><td>10</td><td>Auto</td></tr>
+<tr><td>11</td><td>RTL</td></tr>
+<tr><td>12</td><td>Loiter</td></tr>
+<tr><td>15</td><td>Guided</td></tr>
+</table>
+</ul>
+
+
+<h2>FlightMode2 (ArduPlane:FLTMODE2)</h2>
+
+<p>Flight mode for switch position 2 (1231 to 1360)</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Manual</td></tr>
+<tr><td>1</td><td>CIRCLE</td></tr>
+<tr><td>2</td><td>STABILIZE</td></tr>
+<tr><td>3</td><td>TRAINING</td></tr>
+<tr><td>4</td><td>ACRO</td></tr>
+<tr><td>5</td><td>FBWA</td></tr>
+<tr><td>6</td><td>FBWB</td></tr>
+<tr><td>7</td><td>CRUISE</td></tr>
+<tr><td>10</td><td>Auto</td></tr>
+<tr><td>11</td><td>RTL</td></tr>
+<tr><td>12</td><td>Loiter</td></tr>
+<tr><td>15</td><td>Guided</td></tr>
+</table>
+</ul>
+
+
+<h2>FlightMode3 (ArduPlane:FLTMODE3)</h2>
+
+<p>Flight mode for switch position 3 (1361 to 1490)</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Manual</td></tr>
+<tr><td>1</td><td>CIRCLE</td></tr>
+<tr><td>2</td><td>STABILIZE</td></tr>
+<tr><td>3</td><td>TRAINING</td></tr>
+<tr><td>4</td><td>ACRO</td></tr>
+<tr><td>5</td><td>FBWA</td></tr>
+<tr><td>6</td><td>FBWB</td></tr>
+<tr><td>7</td><td>CRUISE</td></tr>
+<tr><td>10</td><td>Auto</td></tr>
+<tr><td>11</td><td>RTL</td></tr>
+<tr><td>12</td><td>Loiter</td></tr>
+<tr><td>15</td><td>Guided</td></tr>
+</table>
+</ul>
+
+
+<h2>FlightMode4 (ArduPlane:FLTMODE4)</h2>
+
+<p>Flight mode for switch position 4 (1491 to 1620)</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Manual</td></tr>
+<tr><td>1</td><td>CIRCLE</td></tr>
+<tr><td>2</td><td>STABILIZE</td></tr>
+<tr><td>3</td><td>TRAINING</td></tr>
+<tr><td>4</td><td>ACRO</td></tr>
+<tr><td>5</td><td>FBWA</td></tr>
+<tr><td>6</td><td>FBWB</td></tr>
+<tr><td>7</td><td>CRUISE</td></tr>
+<tr><td>10</td><td>Auto</td></tr>
+<tr><td>11</td><td>RTL</td></tr>
+<tr><td>12</td><td>Loiter</td></tr>
+<tr><td>15</td><td>Guided</td></tr>
+</table>
+</ul>
+
+
+<h2>FlightMode5 (ArduPlane:FLTMODE5)</h2>
+
+<p>Flight mode for switch position 5 (1621 to 1749)</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Manual</td></tr>
+<tr><td>1</td><td>CIRCLE</td></tr>
+<tr><td>2</td><td>STABILIZE</td></tr>
+<tr><td>3</td><td>TRAINING</td></tr>
+<tr><td>4</td><td>ACRO</td></tr>
+<tr><td>5</td><td>FBWA</td></tr>
+<tr><td>6</td><td>FBWB</td></tr>
+<tr><td>7</td><td>CRUISE</td></tr>
+<tr><td>10</td><td>Auto</td></tr>
+<tr><td>11</td><td>RTL</td></tr>
+<tr><td>12</td><td>Loiter</td></tr>
+<tr><td>15</td><td>Guided</td></tr>
+</table>
+</ul>
+
+
+<h2>FlightMode6 (ArduPlane:FLTMODE6)</h2>
+
+<p>Flight mode for switch position 6 (1750 to 2049)</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Manual</td></tr>
+<tr><td>1</td><td>CIRCLE</td></tr>
+<tr><td>2</td><td>STABILIZE</td></tr>
+<tr><td>3</td><td>TRAINING</td></tr>
+<tr><td>4</td><td>ACRO</td></tr>
+<tr><td>5</td><td>FBWA</td></tr>
+<tr><td>6</td><td>FBWB</td></tr>
+<tr><td>7</td><td>CRUISE</td></tr>
+<tr><td>10</td><td>Auto</td></tr>
+<tr><td>11</td><td>RTL</td></tr>
+<tr><td>12</td><td>Loiter</td></tr>
+<tr><td>15</td><td>Guided</td></tr>
+</table>
+</ul>
+
+
+<h2>Maximum Bank Angle (ArduPlane:LIM_ROLL_CD)</h2>
+
+<p>The maximum commanded bank angle in either direction</p>
+<ul>
+<li>Range: 0 9000</li>
+<li>Increment: 1</li>
+<li>Units: centi-Degrees</li>
+</ul>
+
+
+<h2>Maximum Pitch Angle (ArduPlane:LIM_PITCH_MAX)</h2>
+
+<p>The maximum commanded pitch up angle</p>
+<ul>
+<li>Range: 0 9000</li>
+<li>Increment: 1</li>
+<li>Units: centi-Degrees</li>
+</ul>
+
+
+<h2>Minimum Pitch Angle (ArduPlane:LIM_PITCH_MIN)</h2>
+
+<p>The minimum commanded pitch down angle</p>
+<ul>
+<li>Range: -9000 0</li>
+<li>Increment: 1</li>
+<li>Units: centi-Degrees</li>
+</ul>
+
+
+<h2>ACRO mode roll rate (ArduPlane:ACRO_ROLL_RATE)</h2>
+
+<p>The maximum roll rate at full stick deflection in ACRO mode</p>
+<ul>
+<li>Range: 10 500</li>
+<li>Increment: 1</li>
+<li>Units: degrees/second</li>
+</ul>
+
+
+<h2>ACRO mode pitch rate (ArduPlane:ACRO_PITCH_RATE)</h2>
+
+<p>The maximum pitch rate at full stick deflection in ACRO mode</p>
+<ul>
+<li>Range: 10 500</li>
+<li>Increment: 1</li>
+<li>Units: degrees/second</li>
+</ul>
+
+
+<h2>ACRO mode attitude locking (ArduPlane:ACRO_LOCKING)</h2>
+
+<p>Enable attitude locking when sticks are released</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Ground steer altitude (ArduPlane:GROUND_STEER_ALT)</h2>
+
+<p>Altitude at which to use the ground steering controller on the rudder. If non-zero then the STEER2SRV controller will be used to control the rudder for altitudes within this limit of the home altitude.</p>
+<ul>
+<li>Range: -100 100</li>
+<li>Increment: 0.1</li>
+<li>Units: Meters</li>
+</ul>
+
+
+<h2>Ground steer rate (ArduPlane:GROUND_STEER_DPS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Ground steering rate in degrees per second for full rudder stick deflection</p>
+<ul>
+<li>Range: 10 360</li>
+<li>Increment: 1</li>
+<li>Units: Meters</li>
+</ul>
+
+
+<h2>Automatic trim adjustment (ArduPlane:TRIM_AUTO)</h2>
+
+<p>Set RC trim PWM levels to current levels when switching away from manual mode. When this option is enabled and you change from MANUAL to any other mode then the APM will take the current position of the control sticks as the trim values for aileron, elevator and rudder. It will use those to set RC1_TRIM, RC2_TRIM and RC4_TRIM. This option is disabled by default as if a pilot is not aware of this option and changes from MANUAL to another mode while control inputs are not centered then the trim could be changed to a dangerously bad value. You can enable this option to assist with trimming your plane, by enabling it before takeoff then switching briefly to MANUAL in flight, and seeing how the plane reacts. You can then switch back to FBWA, trim the surfaces then again test MANUAL mode. Each time you switch from MANUAL the APM will take your control inputs as the new trim. After you have good trim on your aircraft you can disable TRIM_AUTO for future flights.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Elevon mixing (ArduPlane:ELEVON_MIXING)</h2>
+
+<p>Enable elevon mixing  on both input and output. To enable just output mixing see the ELEVON_OUTPUT option.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Elevon reverse (ArduPlane:ELEVON_REVERSE)</h2>
+
+<p>Reverse elevon mixing</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Elevon reverse (ArduPlane:ELEVON_CH1_REV)</h2>
+
+<p>Reverse elevon channel 1</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Elevon reverse (ArduPlane:ELEVON_CH2_REV)</h2>
+
+<p>Reverse elevon channel 2</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>VTail output (ArduPlane:VTAIL_OUTPUT)</h2>
+
+<p>Enable VTail output in software. If enabled then the APM will provide software VTail mixing on the elevator and rudder channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two VTail servos. Note that you must not use VTail output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable VTAIL_OUTPUT. Please also see the MIXING_GAIN parameter for the output gain of the mixer.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>UpUp</td></tr>
+<tr><td>2</td><td>UpDown</td></tr>
+<tr><td>3</td><td>DownUp</td></tr>
+<tr><td>4</td><td>DownDown</td></tr>
+</table>
+</ul>
+
+
+<h2>Elevon output (ArduPlane:ELEVON_OUTPUT)</h2>
+
+<p>Enable software elevon output mixer. If enabled then the APM will provide software elevon mixing on the aileron and elevator channels. There are 4 different mixing modes available, which refer to the 4 ways the elevator can be mapped to the two elevon servos. Note that you must not use elevon output mixing with hardware pass-through of RC values, such as with channel 8 manual control on an APM1. So if you use an APM1 then set FLTMODE_CH to something other than 8 before you enable ELEVON_OUTPUT. Please also see the MIXING_GAIN parameter for the output gain of the mixer.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>UpUp</td></tr>
+<tr><td>2</td><td>UpDown</td></tr>
+<tr><td>3</td><td>DownUp</td></tr>
+<tr><td>4</td><td>DownDown</td></tr>
+</table>
+</ul>
+
+
+<h2>Mixing Gain (ArduPlane:MIXING_GAIN)</h2>
+
+<p>The gain for the Vtail and elevon output mixers. The default is 0.5, which ensures that the mixer doesn't saturate, allowing both input channels to go to extremes while retaining control over the output. Hardware mixers often have a 1.0 gain, which gives more servo throw, but can saturate. If you don't have enough throw on your servos with VTAIL_OUTPUT or ELEVON_OUTPUT enabled then you can raise the gain using MIXING_GAIN. The mixer allows outputs in the range 900 to 2100 microseconds.</p>
+<ul>
+<li>Range: 0.5 1.2</li>
+</ul>
+
+
+<h2>Num Resets (ArduPlane:SYS_NUM_RESETS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Number of APM board resets</p>
+<ul>
+</ul>
+
+
+<h2>Log bitmask (ArduPlane:LOG_BITMASK)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Two byte bitmap of log types to enable in dataflash</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1902</td><td>Default</td></tr>
+<tr><td>2030</td><td>Default+IMU</td></tr>
+</table>
+</ul>
+
+
+<h2>Reset Switch Channel (ArduPlane:RST_SWITCH_CH)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC channel to use to reset to last flight mode	after geofence takeover.</p>
+<ul>
+</ul>
+
+
+<h2>Reset Mission Channel (ArduPlane:RST_MISSION_CH)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC channel to use to reset the mission to the first waypoint. When this channel goes above 1750 the mission is reset. Set RST_MISSION_CH to 0 to disable.</p>
+<ul>
+</ul>
+
+
+<h2>Target airspeed (ArduPlane:TRIM_ARSPD_CM)</h2>
+
+<p>Airspeed in cm/s to aim for when airspeed is enabled in auto mode. This is a calibrated (apparent) airspeed.</p>
+<ul>
+<li>Units: cm/s</li>
+</ul>
+
+
+<h2>speed used for speed scaling calculations (ArduPlane:SCALING_SPEED)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Airspeed in m/s to use when calculating surface speed scaling. Note that changing this value will affect all PID values</p>
+<ul>
+<li>Units: m/s</li>
+</ul>
+
+
+<h2>Minimum ground speed (ArduPlane:MIN_GNDSPD_CM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Minimum ground speed in cm/s when under airspeed control</p>
+<ul>
+<li>Units: cm/s</li>
+</ul>
+
+
+<h2>Pitch angle offset (ArduPlane:TRIM_PITCH_CD)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>offset to add to pitch - used for in-flight pitch trimming. It is recommended that instead of using this parameter you level your plane correctly on the ground for good flight attitude.</p>
+<ul>
+<li>Units: centi-Degrees</li>
+</ul>
+
+
+<h2>RTL altitude (ArduPlane:ALT_HOLD_RTL)</h2>
+
+<p>Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL. Note that when transiting to a Rally Point the alitude of the Rally Point is used instead of ALT_HOLD_RTL.</p>
+<ul>
+<li>Units: centimeters</li>
+</ul>
+
+
+<h2>Minimum altitude for FBWB mode (ArduPlane:ALT_HOLD_FBWCM)</h2>
+
+<p>This is the minimum altitude in centimeters that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.</p>
+<ul>
+<li>Units: centimeters</li>
+</ul>
+
+
+<h2>Enable Compass (ArduPlane:MAG_ENABLE)</h2>
+
+<p>Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Flap 1 percentage (ArduPlane:FLAP_1_PERCNT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Units: Percent</li>
+</ul>
+
+
+<h2>Flap 1 speed (ArduPlane:FLAP_1_SPEED)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The speed in meters per second at which to engage FLAP_1_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: m/s</li>
+</ul>
+
+
+<h2>Flap 2 percentage (ArduPlane:FLAP_2_PERCNT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Units: Percent</li>
+</ul>
+
+
+<h2>Flap 2 speed (ArduPlane:FLAP_2_SPEED)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The speed in meters per second at which to engage FLAP_2_PERCENT of flaps. Note that FLAP_1_SPEED should be greater than or equal to FLAP_2_SPEED</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: m/s</li>
+</ul>
+
+
+<h2>Receiver RSSI sensing pin (ArduPlane:RSSI_PIN)</h2>
+
+<p>This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is 5V for max rssi, 0V for minimum</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Disabled</td></tr>
+<tr><td> 0</td><td>A0</td></tr>
+<tr><td> 1</td><td>A1</td></tr>
+<tr><td> 13</td><td>A13</td></tr>
+</table>
+</ul>
+
+
+<h2>Inverted flight channel (ArduPlane:INVERTEDFLT_CH)</h2>
+
+<p>A RC input channel number to enable inverted flight. If this is non-zero then the APM will monitor the correcponding RC input channel and will enable inverted flight when the channel goes above 1750.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Channel1</td></tr>
+<tr><td>2</td><td>Channel2</td></tr>
+<tr><td>3</td><td>Channel3</td></tr>
+<tr><td>4</td><td>Channel4</td></tr>
+<tr><td>5</td><td>Channel5</td></tr>
+<tr><td>6</td><td>Channel6</td></tr>
+<tr><td>7</td><td>Channel7</td></tr>
+<tr><td>8</td><td>Channel8</td></tr>
+</table>
+</ul>
+
+
+<h2>HIL Servos enable (ArduPlane:HIL_SERVOS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Limit of error in HIL attitude before reset (ArduPlane:HIL_ERR_LIMIT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This controls the maximum error in degrees on any axis before HIL will reset the DCM attitude to match the HIL_STATE attitude. This limit will prevent poor timing on HIL from causing a major attitude error. If the value is zero then no limit applies.</p>
+<ul>
+<li>Range: 0 90</li>
+<li>Increment: 0.1</li>
+<li>Units: degrees</li>
+</ul>
+
+
+<h1>Library Parameters</h1>
+
+
+
+<h1>GND_ Parameters</h1>
+
+
+<h2>Absolute Pressure (GND_ABS_PRESS)</h2>
+
+<p>calibrated ground pressure in Pascals</p>
+<ul>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>ground temperature (GND_TEMP)</h2>
+
+<p>calibrated ground temperature in degrees Celsius</p>
+<ul>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>altitude offset (GND_ALT_OFFSET)</h2>
+
+<p>altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.</p>
+<ul>
+<li>Range: -128 127</li>
+<li>Increment: 1</li>
+<li>Units: meters</li>
+</ul>
+
+
+<h1>CAM_ Parameters</h1>
+
+
+<h2>Camera shutter (trigger) type (CAM_TRIGG_TYPE)</h2>
+
+<p>how to trigger the camera to take a picture</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Servo</td></tr>
+<tr><td>1</td><td>Relay</td></tr>
+</table>
+</ul>
+
+
+<h2>Duration that shutter is held open (CAM_DURATION)</h2>
+
+<p>How long the shutter will be held open in 10ths of a second (i.e. enter 10 for 1second, 50 for 5seconds)</p>
+<ul>
+<li>Range: 0 50</li>
+</ul>
+
+
+<h2>Servo ON PWM value (CAM_SERVO_ON)</h2>
+
+<p>PWM value to move servo to when shutter is activated</p>
+<ul>
+<li>Range: 1000 2000</li>
+</ul>
+
+
+<h2>Servo OFF PWM value (CAM_SERVO_OFF)</h2>
+
+<p>PWM value to move servo to when shutter is deactivated</p>
+<ul>
+<li>Range: 1000 2000</li>
+</ul>
+
+
+<h2>Camera trigger distance (CAM_TRIGG_DIST)</h2>
+
+<p>Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.</p>
+<ul>
+<li>Range: 0 1000</li>
+</ul>
+
+
+<h1>ARMING_ Parameters</h1>
+
+
+<h2>Require Arming Motors  (ARMING_REQUIRE)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td> THR_MIN PWM when disarmed</td></tr>
+<tr><td>2</td><td> 0 PWM when disarmed </td></tr>
+</table>
+</ul>
+
+
+<h2>Disable Rudder Arming (ARMING_DIS_RUD)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Do not allow arming via the rudder input stick.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled (Rudder Arming Allowed)</td></tr>
+<tr><td>1</td><td>Enabled(No Rudder Arming)</td></tr>
+</table>
+</ul>
+
+
+<h2>Arm Checks to Peform (bitmask) (ARMING_CHECK)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Checks prior to arming motor. </p>
+<ul>
+<li>Values: 0: None, 1: All, 2: Barometer, 4: Compass, 8: GPS, 16: INS, 32: Parameters, 64: Manual RC Trasmitter, 128: Board voltage, 256: Battery Level </li>
+</ul>
+
+
+<h1>RELAY_ Parameters</h1>
+
+
+<h2>Relay Pin (RELAY_PIN)</h2>
+
+<p>Digital pin number for relay control.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>13</td><td>APM2 A9 pin</td></tr>
+<tr><td>47</td><td>APM1 relay</td></tr>
+<tr><td>111</td><td>PX4 FMU Relay1</td></tr>
+<tr><td>112</td><td>PX4 FMU Relay2</td></tr>
+<tr><td>113</td><td>PX4IO Relay1</td></tr>
+<tr><td>114</td><td>PX4IO Relay2</td></tr>
+<tr><td>115</td><td>PX4IO ACC1</td></tr>
+<tr><td>116</td><td>PX4IO ACC2</td></tr>
+</table>
+</ul>
+
+
+<h1>SONAR_ Parameters</h1>
+
+
+<h2>Sonar pin (SONAR_PIN)</h2>
+
+<p>Analog pin that sonar is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.</p>
+<ul>
+</ul>
+
+
+<h2>Sonar scaling (SONAR_SCALING)</h2>
+
+<p>Scaling factor between sonar reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.</p>
+<ul>
+<li>Units: meters/Volt</li>
+<li>Increment: 0.001</li>
+</ul>
+
+
+<h2>Sonar offset (SONAR_OFFSET)</h2>
+
+<p>Offset in volts for zero distance</p>
+<ul>
+<li>Units: Volts</li>
+<li>Increment: 0.001</li>
+</ul>
+
+
+<h2>Sonar function (SONAR_FUNCTION)</h2>
+
+<p>Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Linear</td></tr>
+<tr><td>1</td><td>Inverted</td></tr>
+<tr><td>2</td><td>Hyperbolic</td></tr>
+</table>
+</ul>
+
+
+<h2>Sonar minimum distance (SONAR_MIN_CM)</h2>
+
+<p>minimum distance in centimeters that sonar can reliably read</p>
+<ul>
+<li>Units: centimeters</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Sonar maximum distance (SONAR_MAX_CM)</h2>
+
+<p>maximum distance in centimeters that sonar can reliably read</p>
+<ul>
+<li>Units: centimeters</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Sonar enabled (SONAR_ENABLE)</h2>
+
+<p>set to 1 to enable this sonar</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Sonar stop pin (SONAR_STOP_PIN)</h2>
+
+<p>Digital pin that enables/disables sonar measurement. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the sonar and set to 0 to disable it. This can be used to ensure that multiple sonars don't interfere with each other.</p>
+<ul>
+</ul>
+
+
+<h2>Sonar settle time (SONAR_SETTLE_MS)</h2>
+
+<p>The time in milliseconds that the sonar reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the sonar to give a reading after we set the STOP_PIN high. For a sonar with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.</p>
+<ul>
+<li>Units: milliseconds</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>RC1_ Parameters</h1>
+
+
+<h2>RC min PWM (RC1_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC1_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC1_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC1_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC1_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h1>RC2_ Parameters</h1>
+
+
+<h2>RC min PWM (RC2_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC2_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC2_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC2_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC2_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h1>RC3_ Parameters</h1>
+
+
+<h2>RC min PWM (RC3_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC3_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC3_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC3_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC3_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h1>RC4_ Parameters</h1>
+
+
+<h2>RC min PWM (RC4_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC4_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC4_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC4_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC4_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h1>RC5_ Parameters</h1>
+
+
+<h2>RC min PWM (RC5_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC5_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC5_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC5_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC5_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC5_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RC6_ Parameters</h1>
+
+
+<h2>RC min PWM (RC6_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC6_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC6_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC6_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC6_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC6_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RC7_ Parameters</h1>
+
+
+<h2>RC min PWM (RC7_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC7_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC7_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC7_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC7_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC7_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RC8_ Parameters</h1>
+
+
+<h2>RC min PWM (RC8_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC8_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC8_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC8_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC8_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC8_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RC9_ Parameters</h1>
+
+
+<h2>RC min PWM (RC9_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC9_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC9_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC9_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC9_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC9_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RC10_ Parameters</h1>
+
+
+<h2>RC min PWM (RC10_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC10_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC10_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC10_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC10_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC10_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RC11_ Parameters</h1>
+
+
+<h2>RC min PWM (RC11_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC11_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC11_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC11_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC11_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC11_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RC12_ Parameters</h1>
+
+
+<h2>RC min PWM (RC12_MIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC trim PWM (RC12_TRIM)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC max PWM (RC12_MAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.</p>
+<ul>
+<li>Range: 800 2200</li>
+<li>Increment: 1</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>RC reverse (RC12_REV)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Reversed</td></tr>
+<tr><td>1</td><td>Normal</td></tr>
+</table>
+</ul>
+
+
+<h2>RC dead-zone (RC12_DZ)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>dead zone around trim.</p>
+<ul>
+<li>Range: 0 200</li>
+<li>Units: pwm</li>
+</ul>
+
+
+<h2>Servo out function (RC12_FUNCTION)</h2>
+
+<p>Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>RCPassThru</td></tr>
+<tr><td>2</td><td>Flap</td></tr>
+<tr><td>3</td><td>Flap_auto</td></tr>
+<tr><td>4</td><td>Aileron</td></tr>
+<tr><td>5</td><td>flaperon</td></tr>
+<tr><td>6</td><td>mount_pan</td></tr>
+<tr><td>7</td><td>mount_tilt</td></tr>
+<tr><td>8</td><td>mount_roll</td></tr>
+<tr><td>9</td><td>mount_open</td></tr>
+<tr><td>10</td><td>camera_trigger</td></tr>
+<tr><td>11</td><td>release</td></tr>
+<tr><td>12</td><td>mount2_pan</td></tr>
+<tr><td>13</td><td>mount2_tilt</td></tr>
+<tr><td>14</td><td>mount2_roll</td></tr>
+<tr><td>15</td><td>mount2_open</td></tr>
+<tr><td>16</td><td>DifferentialSpoiler1</td></tr>
+<tr><td>17</td><td>DifferentialSpoiler2</td></tr>
+<tr><td>18</td><td>AileronWithInput</td></tr>
+<tr><td>19</td><td>Elevator</td></tr>
+<tr><td>20</td><td>ElevatorWithInput</td></tr>
+<tr><td>21</td><td>Rudder</td></tr>
+</table>
+</ul>
+
+
+<h1>RLL2SRV_ Parameters</h1>
+
+
+<h2>Roll Time Constant (RLL2SRV_T_CONST)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This controls the time constant in seconds from demanded to achieved bank angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.</p>
+<ul>
+<li>Range: 0.4 1.0</li>
+<li>Increment: 0.1</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>Proportional Gain (RLL2SRV_P)</h2>
+
+<p>This is the gain from bank angle to aileron. This gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.</p>
+<ul>
+<li>Range: 0.1 2.0</li>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Damping Gain (RLL2SRV_D)</h2>
+
+<p>This is the gain from roll rate to aileron. This adjusts the damping of the roll control loop. It has the same effect as RLL2SRV_D in the old PID controller but without the spikes in servo demands. This gain helps to reduce rolling in turbulence. It should be increased in 0.01 increments as too high a value can lead to a high frequency roll oscillation that could overstress the airframe.</p>
+<ul>
+<li>Range: 0 0.1</li>
+<li>Increment: 0.01</li>
+</ul>
+
+
+<h2>Integrator Gain (RLL2SRV_I)</h2>
+
+<p>This is the gain from the integral of bank angle to aileron. It has the same effect as RLL2SRV_I in the old PID controller. Increasing this gain causes the controller to trim out steady offsets due to an out of trim aircraft.</p>
+<ul>
+<li>Range: 0 1.0</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h2>Maximum Roll Rate (RLL2SRV_RMAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This sets the maximum roll rate that the controller will demand (degrees/sec). Setting it to zero disables the limit. If this value is set too low, then the roll can't keep up with the navigation demands and the plane will start weaving. If it is set too high (or disabled by setting to zero) then ailerons will get large inputs at the start of turns. A limit of 60 degrees/sec is a good default.</p>
+<ul>
+<li>Range: 0 180</li>
+<li>Increment: 1</li>
+<li>Units: degrees/second</li>
+</ul>
+
+
+<h2>Integrator limit (RLL2SRV_IMAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This limits the number of degrees of aileron in centi-degrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the aircraft is severely out of trim.</p>
+<ul>
+<li>Range: 0 4500</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>PTCH2SRV_ Parameters</h1>
+
+
+<h2>Pitch Time Constant (PTCH2SRV_TCONST)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This controls the time constant in seconds from demanded to achieved pitch angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.</p>
+<ul>
+<li>Range: 0.4 1.0</li>
+<li>Increment: 0.1</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>Proportional Gain (PTCH2SRV_P)</h2>
+
+<p>This is the gain from pitch angle to elevator. This gain works the same way as PTCH2SRV_P in the old PID controller and can be set to the same value.</p>
+<ul>
+<li>Range: 0.1 2.0</li>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Damping Gain (PTCH2SRV_D)</h2>
+
+<p>This is the gain from pitch rate to elevator. This adjusts the damping of the pitch control loop. It has the same effect as PTCH2SRV_D in the old PID controller and can be set to the same value, but without the spikes in servo demands. This gain helps to reduce pitching in turbulence. Some airframes such as flying wings that have poor pitch damping can benefit from increasing this gain term. This should be increased in 0.01 increments as too high a value can lead to a high frequency pitch oscillation that could overstress the airframe.</p>
+<ul>
+<li>Range: 0 0.1</li>
+<li>Increment: 0.01</li>
+</ul>
+
+
+<h2>Integrator Gain (PTCH2SRV_I)</h2>
+
+<p>This is the gain applied to the integral of pitch angle. It has the same effect as PTCH2SRV_I in the old PID controller and can be set to the same value. Increasing this gain causes the controller to trim out constant offsets between demanded and measured pitch angle.</p>
+<ul>
+<li>Range: 0 0.5</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h2>Pitch up max rate (PTCH2SRV_RMAX_UP)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This sets the maximum nose up pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: degrees/second</li>
+</ul>
+
+
+<h2>Pitch down max rate (PTCH2SRV_RMAX_DN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+<li>Units: degrees/second</li>
+</ul>
+
+
+<h2>Roll compensation (PTCH2SRV_RLL)</h2>
+
+<p>This is the gain term that is applied to the pitch rate offset calculated as required to keep the nose level during turns. The default value is 1 which will work for all models. Advanced users can use it to correct for height variation in turns. If height is lost initially in turns this can be increased in small increments of 0.05 to compensate. If height is gained initially in turns then it can be decreased.</p>
+<ul>
+<li>Range: 0.7 1.5</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h2>Integrator limit (PTCH2SRV_IMAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This limits the number of centi-degrees of elevator over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited elevator control effectiveness.</p>
+<ul>
+<li>Range: 0 4500</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>YAW2SRV_ Parameters</h1>
+
+
+<h2>Sideslip control gain (YAW2SRV_SLIP)</h2>
+
+<p>This is the gain from measured lateral acceleration to demanded yaw rate. It should be set to zero unless active control of sideslip is desired. This will only work effectively if there is enough fuselage side area to generate a measureable lateral acceleration when the model sideslips. Flying wings and most gliders cannot use this term. This term should only be adjusted after the basic yaw damper gain YAW2SRV_DAMP is tuned and the YAW2SRV_INT integrator gain has been set. Set this gain to zero if only yaw damping is required.</p>
+<ul>
+<li>Range: 0 4</li>
+<li>Increment: 0.25</li>
+</ul>
+
+
+<h2>Sidelsip control integrator (YAW2SRV_INT)</h2>
+
+<p>This is the integral gain from lateral acceleration error. This gain should only be non-zero if active control over sideslip is desired. If active control over sideslip is required then this can be set to 1.0 as a first try.</p>
+<ul>
+<li>Range: 0 2</li>
+<li>Increment: 0.25</li>
+</ul>
+
+
+<h2>Yaw damping (YAW2SRV_DAMP)</h2>
+
+<p>This is the gain from yaw rate to rudder. It acts as a damper on yaw motion. If a basic yaw damper is required, this gain term can be incremented, whilst leaving the YAW2SRV_SLIP and YAW2SRV_INT gains at zero. Note that unlike with a standard PID controller, if this damping term is zero then the integrator will also be disabled.</p>
+<ul>
+<li>Range: 0 2</li>
+<li>Increment: 0.25</li>
+</ul>
+
+
+<h2>Yaw coordination gain (YAW2SRV_RLL)</h2>
+
+<p>This is the gain term that is applied to the yaw rate offset calculated as required to keep the yaw rate consistent with the turn rate for a coordinated turn. The default value is 1 which will work for all models. Advanced users can use it to correct for any tendency to yaw away from or into the turn once the turn is established. Increase to make the model yaw more initially and decrease to make the model yaw less initially. If values greater than 1.1 or less than 0.9 are required then it normally indicates a problem with the airspeed calibration.</p>
+<ul>
+<li>Range: 0.8 1.2</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h2>Integrator limit (YAW2SRV_IMAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This limits the number of centi-degrees of rudder over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 degrees, so the default value represents a 1/3rd of the total control throw which is adequate for most aircraft unless they are severely out of trim or have very limited rudder control effectiveness.</p>
+<ul>
+<li>Range: 0 4500</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>STEER2SRV_ Parameters</h1>
+
+
+<h2>Steering Time Constant (STEER2SRV_TCONST)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This controls the time constant in seconds from demanded to achieved steering angle. A value of 0.75 is a good default and will work with nearly all rovers. Ground steering in aircraft needs a bit smaller time constant, and a value of 0.5 is recommended for best ground handling in fixed wing aircraft. A value of 0.75 means that the controller will try to correct any deviation between the desired and actual steering angle in 0.75 seconds. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the vehicle can achieve.</p>
+<ul>
+<li>Range: 0.4 1.0</li>
+<li>Increment: 0.1</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>Steering turning gain (STEER2SRV_P)</h2>
+
+<p>The proportional gain for steering. This should be approximately equal to the diameter of the turning circle of the vehicle at low speed and maximum steering angle</p>
+<ul>
+<li>Range: 0.1 10.0</li>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Integrator Gain (STEER2SRV_I)</h2>
+
+<p>This is the gain from the integral of steering angle. Increasing this gain causes the controller to trim out steady offsets due to an out of trim vehicle.</p>
+<ul>
+<li>Range: 0 1.0</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h2>Damping Gain (STEER2SRV_D)</h2>
+
+<p>This adjusts the damping of the steering control loop. This gain helps to reduce steering jitter with vibration. It should be increased in 0.01 increments as too high a value can lead to a high frequency steering oscillation that could overstress the vehicle.</p>
+<ul>
+<li>Range: 0 0.1</li>
+<li>Increment: 0.01</li>
+</ul>
+
+
+<h2>Integrator limit (STEER2SRV_IMAX)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This limits the number of degrees of steering in centi-degrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the vehicle is severely out of trim.</p>
+<ul>
+<li>Range: 0 4500</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Minimum speed (STEER2SRV_MINSPD)</h2>
+
+<p>This is the minimum assumed ground speed in meters/second for steering. Having a minimum speed prevents oscillations when the vehicle first starts moving. The vehicle can still driver slower than this limit, but the steering calculations will be done based on this minimum speed.</p>
+<ul>
+<li>Range: 0 5</li>
+<li>Increment: 0.1</li>
+<li>Units: m/s</li>
+</ul>
+
+
+<h1>COMPASS_ Parameters</h1>
+
+
+<h2>Compass offsets on the X axis (COMPASS_OFS_X)</h2>
+
+<p>Offset to be added to the compass x-axis values to compensate for metal in the frame</p>
+<ul>
+<li>Range: -400 400</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Compass offsets on the Y axis (COMPASS_OFS_Y)</h2>
+
+<p>Offset to be added to the compass y-axis values to compensate for metal in the frame</p>
+<ul>
+<li>Range: -400 400</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Compass offsets on the Z axis (COMPASS_OFS_Z)</h2>
+
+<p>Offset to be added to the compass z-axis values to compensate for metal in the frame</p>
+<ul>
+<li>Range: -400 400</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Compass declination (COMPASS_DEC)</h2>
+
+<p>An angle to compensate between the true north and magnetic north</p>
+<ul>
+<li>Range: -3.142 3.142</li>
+<li>Increment: 0.01</li>
+<li>Units: Radians</li>
+</ul>
+
+
+<h2>Learn compass offsets automatically (COMPASS_LEARN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Enable or disable the automatic learning of compass offsets</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Use compass for yaw (COMPASS_USE)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Enable or disable the use of the compass (instead of the GPS) for determining heading</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Auto Declination (COMPASS_AUTODEC)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Enable or disable the automatic calculation of the declination based on gps location</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Motor interference compensation type (COMPASS_MOTCT)</h2>
+
+<p>Set motor interference compensation type to disabled, throttle or current.  Do not change manually.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Use Throttle</td></tr>
+<tr><td>2</td><td>Use Current</td></tr>
+</table>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Motor interference compensation for body frame X axis (COMPASS_MOT_X)</h2>
+
+<p>Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference</p>
+<ul>
+<li>Range: -1000 1000</li>
+<li>Increment: 1</li>
+<li>Units: Offset per Amp or at Full Throttle</li>
+</ul>
+
+
+<h2>Motor interference compensation for body frame Y axis (COMPASS_MOT_Y)</h2>
+
+<p>Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference</p>
+<ul>
+<li>Range: -1000 1000</li>
+<li>Increment: 1</li>
+<li>Units: Offset per Amp or at Full Throttle</li>
+</ul>
+
+
+<h2>Motor interference compensation for body frame Z axis (COMPASS_MOT_Z)</h2>
+
+<p>Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference</p>
+<ul>
+<li>Range: -1000 1000</li>
+<li>Increment: 1</li>
+<li>Units: Offset per Amp or at Full Throttle</li>
+</ul>
+
+
+<h2>Compass orientation (COMPASS_ORIENT)</h2>
+
+<p>The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>None</td></tr>
+<tr><td>1</td><td>Yaw45</td></tr>
+<tr><td>2</td><td>Yaw90</td></tr>
+<tr><td>3</td><td>Yaw135</td></tr>
+<tr><td>4</td><td>Yaw180</td></tr>
+<tr><td>5</td><td>Yaw225</td></tr>
+<tr><td>6</td><td>Yaw270</td></tr>
+<tr><td>7</td><td>Yaw315</td></tr>
+<tr><td>8</td><td>Roll180</td></tr>
+<tr><td>9</td><td>Roll180Yaw45</td></tr>
+<tr><td>10</td><td>Roll180Yaw90</td></tr>
+<tr><td>11</td><td>Roll180Yaw135</td></tr>
+<tr><td>12</td><td>Pitch180</td></tr>
+<tr><td>13</td><td>Roll180Yaw225</td></tr>
+<tr><td>14</td><td>Roll180Yaw270</td></tr>
+<tr><td>15</td><td>Roll180Yaw315</td></tr>
+<tr><td>16</td><td>Roll90</td></tr>
+<tr><td>17</td><td>Roll90Yaw45</td></tr>
+<tr><td>18</td><td>Roll90Yaw90</td></tr>
+<tr><td>19</td><td>Roll90Yaw135</td></tr>
+<tr><td>20</td><td>Roll270</td></tr>
+<tr><td>21</td><td>Roll270Yaw45</td></tr>
+<tr><td>22</td><td>Roll270Yaw90</td></tr>
+<tr><td>23</td><td>Roll270Yaw136</td></tr>
+<tr><td>24</td><td>Pitch90</td></tr>
+<tr><td>25</td><td>Pitch270</td></tr>
+<tr><td>26</td><td>Pitch180Yaw90</td></tr>
+<tr><td>27</td><td>Pitch180Yaw270</td></tr>
+<tr><td>28</td><td>Roll90Pitch90</td></tr>
+<tr><td>29</td><td>Roll180Pitch90</td></tr>
+<tr><td>30</td><td>Roll270Pitch90</td></tr>
+<tr><td>31</td><td>Roll90Pitch180</td></tr>
+<tr><td>32</td><td>Roll270Pitch180</td></tr>
+<tr><td>33</td><td>Roll90Pitch270</td></tr>
+<tr><td>34</td><td>Roll180Pitch270</td></tr>
+<tr><td>35</td><td>Roll270Pitch270</td></tr>
+<tr><td>36</td><td>Roll90Pitch180Yaw90</td></tr>
+<tr><td>37</td><td>Roll90Yaw270</td></tr>
+</table>
+</ul>
+
+
+<h2>Compass is attached via an external cable (COMPASS_EXTERNAL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Configure compass so it is attached externally. This is auto-detected on PX4, but must be set correctly on an APM2. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Internal</td></tr>
+<tr><td>1</td><td>External</td></tr>
+</table>
+</ul>
+
+
+<h1>SCHED_ Parameters</h1>
+
+
+<h2>Scheduler debug level (SCHED_DEBUG)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>2</td><td>ShowSlips</td></tr>
+<tr><td>3</td><td>ShowOverruns</td></tr>
+</table>
+</ul>
+
+
+<h1>RCMAP_ Parameters</h1>
+
+
+<h2>Roll channel (RCMAP_ROLL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Roll channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Roll is normally on channel 1, but you can move it to any channel with this parameter.</p>
+<ul>
+<li>Range: 1 8</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Pitch channel (RCMAP_PITCH)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Pitch channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Pitch is normally on channel 2, but you can move it to any channel with this parameter.</p>
+<ul>
+<li>Range: 1 8</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Throttle channel (RCMAP_THROTTLE)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Throttle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Throttle is normally on channel 3, but you can move it to any channel with this parameter.</p>
+<ul>
+<li>Range: 1 8</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>Yaw channel (RCMAP_YAW)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Yaw channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Yaw (also known as rudder) is normally on channel 4, but you can move it to any channel with this parameter.</p>
+<ul>
+<li>Range: 1 8</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>SR0_ Parameters</h1>
+
+
+<h2>Raw sensor stream rate (SR0_RAW_SENS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Raw sensor stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extended status stream rate to ground station (SR0_EXT_STAT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extended status stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>RC Channel stream rate to ground station (SR0_RC_CHAN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC Channel stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Raw Control stream rate to ground station (SR0_RAW_CTRL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Raw Control stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Position stream rate to ground station (SR0_POSITION)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Position stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 1 stream rate to ground station (SR0_EXTRA1)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 1 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 2 stream rate to ground station (SR0_EXTRA2)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 2 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 3 stream rate to ground station (SR0_EXTRA3)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 3 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Parameter stream rate to ground station (SR0_PARAMS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Parameter stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h1>SR1_ Parameters</h1>
+
+
+<h2>Raw sensor stream rate (SR1_RAW_SENS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Raw sensor stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extended status stream rate to ground station (SR1_EXT_STAT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extended status stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>RC Channel stream rate to ground station (SR1_RC_CHAN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC Channel stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Raw Control stream rate to ground station (SR1_RAW_CTRL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Raw Control stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Position stream rate to ground station (SR1_POSITION)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Position stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 1 stream rate to ground station (SR1_EXTRA1)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 1 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 2 stream rate to ground station (SR1_EXTRA2)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 2 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 3 stream rate to ground station (SR1_EXTRA3)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 3 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Parameter stream rate to ground station (SR1_PARAMS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Parameter stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h1>SR2_ Parameters</h1>
+
+
+<h2>Raw sensor stream rate (SR2_RAW_SENS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Raw sensor stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extended status stream rate to ground station (SR2_EXT_STAT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extended status stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>RC Channel stream rate to ground station (SR2_RC_CHAN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>RC Channel stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Raw Control stream rate to ground station (SR2_RAW_CTRL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Raw Control stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Position stream rate to ground station (SR2_POSITION)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Position stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 1 stream rate to ground station (SR2_EXTRA1)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 1 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 2 stream rate to ground station (SR2_EXTRA2)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 2 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Extra data type 3 stream rate to ground station (SR2_EXTRA3)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Extra data type 3 stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h2>Parameter stream rate to ground station (SR2_PARAMS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Parameter stream rate to ground station</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+<li>Units: Hz</li>
+</ul>
+
+
+<h1>INS_ Parameters</h1>
+
+
+<h2>IMU Product ID (INS_PRODUCT_ID)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Which type of IMU is installed (read-only). </p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Unknown</td></tr>
+<tr><td>1</td><td>APM1-1280</td></tr>
+<tr><td>2</td><td>APM1-2560</td></tr>
+<tr><td>88</td><td>APM2</td></tr>
+<tr><td>3</td><td>SITL</td></tr>
+<tr><td>4</td><td>PX4v1</td></tr>
+<tr><td>5</td><td>PX4v2</td></tr>
+<tr><td>Flymaple</td><td>256</td></tr>
+<tr><td>Linux</td><td>257</td></tr>
+</table>
+</ul>
+
+
+<h2>Accelerometer scaling of X axis (INS_ACCSCAL_X)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Accelerometer scaling of X axis.  Calculated during acceleration calibration routine</p>
+<ul>
+<li>Range: 0.8 1.2</li>
+</ul>
+
+
+<h2>Accelerometer scaling of Y axis (INS_ACCSCAL_Y)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Accelerometer scaling of Y axis  Calculated during acceleration calibration routine</p>
+<ul>
+<li>Range: 0.8 1.2</li>
+</ul>
+
+
+<h2>Accelerometer scaling of Z axis (INS_ACCSCAL_Z)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Accelerometer scaling of Z axis  Calculated during acceleration calibration routine</p>
+<ul>
+<li>Range: 0.8 1.2</li>
+</ul>
+
+
+<h2>Accelerometer offsets of X axis (INS_ACCOFFS_X)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations</p>
+<ul>
+<li>Range: -300 300</li>
+<li>Units: m/s/s</li>
+</ul>
+
+
+<h2>Accelerometer offsets of Y axis (INS_ACCOFFS_Y)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations</p>
+<ul>
+<li>Range: -300 300</li>
+<li>Units: m/s/s</li>
+</ul>
+
+
+<h2>Accelerometer offsets of Z axis (INS_ACCOFFS_Z)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations</p>
+<ul>
+<li>Range: -300 300</li>
+<li>Units: m/s/s</li>
+</ul>
+
+
+<h2>Gyro offsets of X axis (INS_GYROFFS_X)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Gyro sensor offsets of X axis. This is setup on each boot during gyro calibrations</p>
+<ul>
+<li>Units: rad/s</li>
+</ul>
+
+
+<h2>Gyro offsets of Y axis (INS_GYROFFS_Y)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Gyro sensor offsets of Y axis. This is setup on each boot during gyro calibrations</p>
+<ul>
+<li>Units: rad/s</li>
+</ul>
+
+
+<h2>Gyro offsets of Z axis (INS_GYROFFS_Z)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Gyro sensor offsets of Z axis. This is setup on each boot during gyro calibrations</p>
+<ul>
+<li>Units: rad/s</li>
+</ul>
+
+
+<h2>MPU6000 filter frequency (INS_MPU6K_FILTER)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Filter frequency to ask the MPU6000 to apply to samples. This can be set to a lower value to try to cope with very high vibration levels in aircraft. The default value on ArduPlane, APMrover2 and ArduCopter is 20Hz. This option takes effect on the next reboot or gyro initialisation</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Default</td></tr>
+<tr><td>5</td><td>5Hz</td></tr>
+<tr><td>10</td><td>10Hz</td></tr>
+<tr><td>20</td><td>20Hz</td></tr>
+<tr><td>42</td><td>42Hz</td></tr>
+<tr><td>98</td><td>98Hz</td></tr>
+</table>
+<li>Units: Hz</li>
+</ul>
+
+
+<h1>AHRS_ Parameters</h1>
+
+
+<h2>AHRS GPS gain (AHRS_GPS_GAIN)</h2>
+
+<p>This controls how how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.</p>
+<ul>
+<li>Range: 0.0 1.0</li>
+<li>Increment: .01</li>
+</ul>
+
+
+<h2>AHRS use GPS for navigation (AHRS_GPS_USE)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Yaw P (AHRS_YAW_P)</h2>
+
+<p>This controls the weight the compass or GPS has on the heading. A higher value means the heading will track the yaw source (GPS or compass) more rapidly.</p>
+<ul>
+<li>Range: 0.1 0.4</li>
+<li>Increment: .01</li>
+</ul>
+
+
+<h2>AHRS RP_P (AHRS_RP_P)</h2>
+
+<p>This controls how fast the accelerometers correct the attitude</p>
+<ul>
+<li>Range: 0.1 0.4</li>
+<li>Increment: .01</li>
+</ul>
+
+
+<h2>Maximum wind (AHRS_WIND_MAX)</h2>
+
+<p>This sets the maximum allowable difference between ground speed and airspeed. This allows the plane to cope with a failing airspeed sensor. A value of zero means to use the airspeed as is.</p>
+<ul>
+<li>Range: 0 127</li>
+<li>Increment: 1</li>
+<li>Units: m/s</li>
+</ul>
+
+
+<h2>AHRS Trim Roll (AHRS_TRIM_X)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Compensates for the roll angle difference between the control board and the frame</p>
+<ul>
+<li>Range: -10 10</li>
+<li>Units: Radians</li>
+</ul>
+
+
+<h2>AHRS Trim Pitch (AHRS_TRIM_Y)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Compensates for the pitch angle difference between the control board and the frame</p>
+<ul>
+<li>Range: -10 10</li>
+<li>Units: Radians</li>
+</ul>
+
+
+<h2>AHRS Trim Yaw (AHRS_TRIM_Z)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Not Used</p>
+<ul>
+<li>Range: -10 10</li>
+<li>Units: Radians</li>
+</ul>
+
+
+<h2>Board Orientation (AHRS_ORIENTATION)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Overall board orientation relative to the standard orientation for the board type. This rotates the IMU and compass readings to allow the board to be oriented in your vehicle at any 90 or 45 degree angle. This option takes affect on next boot. After changing you will need to re-level your vehicle.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>None</td></tr>
+<tr><td>1</td><td>Yaw45</td></tr>
+<tr><td>2</td><td>Yaw90</td></tr>
+<tr><td>3</td><td>Yaw135</td></tr>
+<tr><td>4</td><td>Yaw180</td></tr>
+<tr><td>5</td><td>Yaw225</td></tr>
+<tr><td>6</td><td>Yaw270</td></tr>
+<tr><td>7</td><td>Yaw315</td></tr>
+<tr><td>8</td><td>Roll180</td></tr>
+<tr><td>9</td><td>Roll180Yaw45</td></tr>
+<tr><td>10</td><td>Roll180Yaw90</td></tr>
+<tr><td>11</td><td>Roll180Yaw135</td></tr>
+<tr><td>12</td><td>Pitch180</td></tr>
+<tr><td>13</td><td>Roll180Yaw225</td></tr>
+<tr><td>14</td><td>Roll180Yaw270</td></tr>
+<tr><td>15</td><td>Roll180Yaw315</td></tr>
+<tr><td>16</td><td>Roll90</td></tr>
+<tr><td>17</td><td>Roll90Yaw45</td></tr>
+<tr><td>18</td><td>Roll90Yaw90</td></tr>
+<tr><td>19</td><td>Roll90Yaw135</td></tr>
+<tr><td>20</td><td>Roll270</td></tr>
+<tr><td>21</td><td>Roll270Yaw45</td></tr>
+<tr><td>22</td><td>Roll270Yaw90</td></tr>
+<tr><td>23</td><td>Roll270Yaw136</td></tr>
+<tr><td>24</td><td>Pitch90</td></tr>
+<tr><td>25</td><td>Pitch270</td></tr>
+<tr><td>26</td><td>Pitch180Yaw90</td></tr>
+<tr><td>27</td><td>Pitch180Yaw270</td></tr>
+<tr><td>28</td><td>Roll90Pitch90</td></tr>
+<tr><td>29</td><td>Roll180Pitch90</td></tr>
+<tr><td>30</td><td>Roll270Pitch90</td></tr>
+<tr><td>31</td><td>Roll90Pitch180</td></tr>
+<tr><td>32</td><td>Roll270Pitch180</td></tr>
+<tr><td>33</td><td>Roll90Pitch270</td></tr>
+<tr><td>34</td><td>Roll180Pitch270</td></tr>
+<tr><td>35</td><td>Roll270Pitch270</td></tr>
+<tr><td>36</td><td>Roll90Pitch180Yaw90</td></tr>
+<tr><td>37</td><td>Roll90Yaw270</td></tr>
+</table>
+</ul>
+
+
+<h2>AHRS Velocity Complmentary Filter Beta Coefficient (AHRS_COMP_BETA)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This controls the time constant for the cross-over frequency used to fuse AHRS (airspeed and heading) and GPS data to estimate ground velocity. Time constant is 0.1/beta. A larger time constant will use GPS data less and a small time constant will use air data less.</p>
+<ul>
+<li>Range: 0.001 0.5</li>
+<li>Increment: .01</li>
+</ul>
+
+
+<h2>AHRS GPS Minimum satellites (AHRS_GPS_MINSATS)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Minimum number of satellites visible to use GPS for velocity based corrections attitude correction. This defaults to 6, which is about the point at which the velocity numbers from a GPS become too unreliable for accurate correction of the accelerometers.</p>
+<ul>
+<li>Range: 0 10</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h2>AHRS GPS delay steps (AHRS_GPS_DELAY)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>number of GPS samples to delay accels for synchronisation with the GPS velocity data</p>
+<ul>
+<li>Range: 0 5</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>ARSPD_ Parameters</h1>
+
+
+<h2>Airspeed enable (ARSPD_ENABLE)</h2>
+
+<p>enable airspeed sensor</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disable</td></tr>
+<tr><td>1</td><td>Enable</td></tr>
+</table>
+</ul>
+
+
+<h2>Airspeed use (ARSPD_USE)</h2>
+
+<p>use airspeed for flight control</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>1</td><td>Use</td></tr>
+<tr><td>0</td><td>Don't Use</td></tr>
+</table>
+</ul>
+
+
+<h2>Airspeed offset (ARSPD_OFFSET)</h2>
+
+<p>Airspeed calibration offset</p>
+<ul>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Airspeed ratio (ARSPD_RATIO)</h2>
+
+<p>Airspeed calibration ratio</p>
+<ul>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Airspeed pin (ARSPD_PIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>The analog pin number that the airspeed sensor is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated airspeed port on the end of the board. Set to 11 on PX4 for the analog airspeed port. Set to 15 on the Pixhawk for the analog airspeed port. Set to 65 on the PX4 or Pixhawk for an EagleTree or MEAS I2C airspeed sensor.</p>
+<ul>
+</ul>
+
+
+<h2>Automatic airspeed ratio calibration (ARSPD_AUTOCAL)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>If this is enabled then the APM will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%</p>
+<ul>
+</ul>
+
+
+<h1>NAVL1_ Parameters</h1>
+
+
+<h2>L1 control period (NAVL1_PERIOD)</h2>
+
+<p>Period in seconds of L1 tracking loop. This needs to be larger for less responsive airframes. The default of 30 is very conservative, and for most RC aircraft will lead to slow and lazy turns. For smaller more agile aircraft a value closer to 20 is appropriate. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.</p>
+<ul>
+<li>Range: 1-60</li>
+<li>Increment: 1</li>
+<li>Units: seconds</li>
+</ul>
+
+
+<h2>L1 control damping ratio (NAVL1_DAMPING)</h2>
+
+<p>Damping ratio for L1 control. Increase this in increments of 0.05 if you are getting overshoot in path tracking. You should not need a value below 0.7 or above 0.85.</p>
+<ul>
+<li>Range: 0.6-1.0</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h1>TECS_ Parameters</h1>
+
+
+<h2>Maximum Climb Rate (metres/sec) (TECS_CLMB_MAX)</h2>
+
+<p>This is the best climb rate that the aircraft can achieve with the throttle set to THR_MAX and the airspeed set to the default value. For electric aircraft make sure this number can be achieved towards the end of flight when the battery voltage has reduced. The setting of this parameter can be checked by commanding a positive altitude change of 100m in loiter, RTL or guided mode. If the throttle required to climb is close to THR_MAX and the aircraft is maintaining airspeed, then this parameter is set correctly. If the airspeed starts to reduce, then the parameter is set to high, and if the throttle demand require to climb and maintain speed is noticeably less than THR_MAX, then either CLMB_MAX should be increased or THR_MAX reduced.</p>
+<ul>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Minimum Sink Rate (metres/sec) (TECS_SINK_MIN)</h2>
+
+<p>This is the sink rate of the aircraft with the throttle set to THR_MIN and the same airspeed as used to measure CLMB_MAX.</p>
+<ul>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Controller time constant (sec) (TECS_TIME_CONST)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is the time constant of the TECS control algorithm. Smaller values make it faster to respond, large values make it slower to respond.</p>
+<ul>
+<li>Range: 3.0-10.0</li>
+<li>Increment: 0.2</li>
+</ul>
+
+
+<h2>Controller throttle damping (TECS_THR_DAMP)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is the damping gain for the throttle demand loop. Increase to add damping  to correct for oscillations in speed and height.</p>
+<ul>
+<li>Range: 0.1-1.0</li>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Controller integrator (TECS_INTEG_GAIN)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is the integrator gain on the control loop. Increase to increase the rate at which speed and height offsets are trimmed out</p>
+<ul>
+<li>Range: 0.0-0.5</li>
+<li>Increment: 0.02</li>
+</ul>
+
+
+<h2>Vertical Acceleration Limit (metres/sec^2) (TECS_VERT_ACC)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is the maximum vertical acceleration either up or down that the  controller will use to correct speed or height errors.</p>
+<ul>
+<li>Range: 1.0-10.0</li>
+<li>Increment: 0.5</li>
+</ul>
+
+
+<h2>Height complementary filter frequency (radians/sec) (TECS_HGT_OMEGA)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is the cross-over frequency of the complementary filter used to fuse vertical acceleration and baro alt to obtain an estimate of height rate and height.</p>
+<ul>
+<li>Range: 1.0-5.0</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h2>Speed complementary filter frequency (radians/sec) (TECS_SPD_OMEGA)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is the cross-over frequency of the complementary filter used to fuse longitudinal acceleration and airspeed to obtain a lower noise and lag estimate of airspeed.</p>
+<ul>
+<li>Range: 0.5-2.0</li>
+<li>Increment: 0.05</li>
+</ul>
+
+
+<h2>Bank angle compensation gain (TECS_RLL2THR)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Increasing this gain turn increases the amount of throttle that will be used to compensate for the additional drag created by turning. Ideally this should be set to approximately 10 x the extra sink rate in m/s created by a 45 degree bank turn. Increase this gain if the aircraft initially loses energy in turns and reduce if the aircraft initially gains energy in turns. Efficient high aspect-ratio aircraft (eg powered sailplanes) can use a lower value, whereas inefficient low aspect-ratio models (eg delta wings) can use a higher value.</p>
+<ul>
+<li>Range: 5.0 to 30.0</li>
+<li>Increment: 1.0</li>
+</ul>
+
+
+<h2>Weighting applied to speed control (TECS_SPDWEIGHT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This parameter adjusts the amount of weighting that the pitch control applies to speed vs height errors. Setting it to 0.0 will cause the pitch control to control height and ignore speed errors. This will normally improve height accuracy but give larger airspeed errors. Setting it to 2.0 will cause the pitch control loop to control speed and ignore height errors. This will normally reduce airsped errors, but give larger height errors.	A value of 1.0 gives a balanced response and is the default.</p>
+<ul>
+<li>Range: 0.0 to 2.0</li>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Controller pitch damping (TECS_PTCH_DAMP)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>This is the damping gain for the pitch demand loop. Increase to add damping  to correct for oscillations in speed and height.</p>
+<ul>
+<li>Range: 0.1-1.0</li>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h2>Maximum Descent Rate (metres/sec) (TECS_SINK_MAX)</h2>
+
+<p>This sets the maximum descent rate that the controller will use.  If this value is too large, the aircraft will reach the pitch angle limit first and be enable to achieve the descent rate. This should be set to a value that can be achieved at the lower pitch angle limit.</p>
+<ul>
+<li>Increment: 0.1</li>
+</ul>
+
+
+<h1>MNT_ Parameters</h1>
+
+
+<h2>Mount operation mode (MNT_MODE)</h2>
+
+<p>Camera or antenna mount operation mode</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>retract</td></tr>
+<tr><td>1</td><td>neutral</td></tr>
+<tr><td>2</td><td>MavLink_targeting</td></tr>
+<tr><td>3</td><td>RC_targeting</td></tr>
+<tr><td>4</td><td>GPS_point</td></tr>
+</table>
+</ul>
+
+
+<h2>Mount roll angle when in retracted position (MNT_RETRACT_X)</h2>
+
+<p>Mount roll angle when in retracted position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount tilt/pitch angle when in retracted position (MNT_RETRACT_Y)</h2>
+
+<p>Mount tilt/pitch angle when in retracted position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount yaw/pan angle when in retracted position (MNT_RETRACT_Z)</h2>
+
+<p>Mount yaw/pan angle when in retracted position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount roll angle when in neutral position (MNT_NEUTRAL_X)</h2>
+
+<p>Mount roll angle when in neutral position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount tilt/pitch angle when in neutral position (MNT_NEUTRAL_Y)</h2>
+
+<p>Mount tilt/pitch angle when in neutral position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount pan/yaw angle when in neutral position (MNT_NEUTRAL_Z)</h2>
+
+<p>Mount pan/yaw angle when in neutral position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount roll angle command from groundstation (MNT_CONTROL_X)</h2>
+
+<p>Mount roll angle when in MavLink or RC control operation mode</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount tilt/pitch angle command from groundstation (MNT_CONTROL_Y)</h2>
+
+<p>Mount tilt/pitch angle when in MavLink or RC control operation mode</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount pan/yaw angle command from groundstation (MNT_CONTROL_Z)</h2>
+
+<p>Mount pan/yaw angle when in MavLink or RC control operation mode</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Stabilize mount's roll angle (MNT_STAB_ROLL)</h2>
+
+<p>enable roll stabilisation relative to Earth</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Stabilize mount's pitch/tilt angle (MNT_STAB_TILT)</h2>
+
+<p>enable tilt/pitch stabilisation relative to Earth</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Stabilize mount pan/yaw angle (MNT_STAB_PAN)</h2>
+
+<p>enable pan/yaw stabilisation relative to Earth</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>roll RC input channel (MNT_RC_IN_ROLL)</h2>
+
+<p>0 for none, any other for the RC channel to be used to control roll movements</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>5</td><td>RC5</td></tr>
+<tr><td>6</td><td>RC6</td></tr>
+<tr><td>7</td><td>RC7</td></tr>
+<tr><td>8</td><td>RC8</td></tr>
+</table>
+</ul>
+
+
+<h2>Minimum roll angle (MNT_ANGMIN_ROL)</h2>
+
+<p>Minimum physical roll angular position of mount.</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Maximum roll angle (MNT_ANGMAX_ROL)</h2>
+
+<p>Maximum physical roll angular position of the mount</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>tilt (pitch) RC input channel (MNT_RC_IN_TILT)</h2>
+
+<p>0 for none, any other for the RC channel to be used to control tilt (pitch) movements</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>5</td><td>RC5</td></tr>
+<tr><td>6</td><td>RC6</td></tr>
+<tr><td>7</td><td>RC7</td></tr>
+<tr><td>8</td><td>RC8</td></tr>
+</table>
+</ul>
+
+
+<h2>Minimum tilt angle (MNT_ANGMIN_TIL)</h2>
+
+<p>Minimum physical tilt (pitch) angular position of mount.</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Maximum tilt angle (MNT_ANGMAX_TIL)</h2>
+
+<p>Maximum physical tilt (pitch) angular position of the mount</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>pan (yaw) RC input channel (MNT_RC_IN_PAN)</h2>
+
+<p>0 for none, any other for the RC channel to be used to control pan (yaw) movements</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>5</td><td>RC5</td></tr>
+<tr><td>6</td><td>RC6</td></tr>
+<tr><td>7</td><td>RC7</td></tr>
+<tr><td>8</td><td>RC8</td></tr>
+</table>
+</ul>
+
+
+<h2>Minimum pan angle (MNT_ANGMIN_PAN)</h2>
+
+<p>Minimum physical pan (yaw) angular position of mount.</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Maximum pan angle (MNT_ANGMAX_PAN)</h2>
+
+<p>Maximum physical pan (yaw) angular position of the mount</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>mount joystick speed (MNT_JSTICK_SPD)</h2>
+
+<p>0 for position control, small for low speeds, 100 for max speed. A good general value is 10 which gives a movement speed of 3 degrees per second.</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>MNT2_ Parameters</h1>
+
+
+<h2>Mount operation mode (MNT2_MODE)</h2>
+
+<p>Camera or antenna mount operation mode</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>retract</td></tr>
+<tr><td>1</td><td>neutral</td></tr>
+<tr><td>2</td><td>MavLink_targeting</td></tr>
+<tr><td>3</td><td>RC_targeting</td></tr>
+<tr><td>4</td><td>GPS_point</td></tr>
+</table>
+</ul>
+
+
+<h2>Mount roll angle when in retracted position (MNT2_RETRACT_X)</h2>
+
+<p>Mount roll angle when in retracted position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount tilt/pitch angle when in retracted position (MNT2_RETRACT_Y)</h2>
+
+<p>Mount tilt/pitch angle when in retracted position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount yaw/pan angle when in retracted position (MNT2_RETRACT_Z)</h2>
+
+<p>Mount yaw/pan angle when in retracted position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount roll angle when in neutral position (MNT2_NEUTRAL_X)</h2>
+
+<p>Mount roll angle when in neutral position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount tilt/pitch angle when in neutral position (MNT2_NEUTRAL_Y)</h2>
+
+<p>Mount tilt/pitch angle when in neutral position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount pan/yaw angle when in neutral position (MNT2_NEUTRAL_Z)</h2>
+
+<p>Mount pan/yaw angle when in neutral position</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount roll angle command from groundstation (MNT2_CONTROL_X)</h2>
+
+<p>Mount roll angle when in MavLink or RC control operation mode</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount tilt/pitch angle command from groundstation (MNT2_CONTROL_Y)</h2>
+
+<p>Mount tilt/pitch angle when in MavLink or RC control operation mode</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Mount pan/yaw angle command from groundstation (MNT2_CONTROL_Z)</h2>
+
+<p>Mount pan/yaw angle when in MavLink or RC control operation mode</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Stabilize mount's roll angle (MNT2_STAB_ROLL)</h2>
+
+<p>enable roll stabilisation relative to Earth</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Stabilize mount's pitch/tilt angle (MNT2_STAB_TILT)</h2>
+
+<p>enable tilt/pitch stabilisation relative to Earth</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>Stabilize mount pan/yaw angle (MNT2_STAB_PAN)</h2>
+
+<p>enable pan/yaw stabilisation relative to Earth</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>1</td><td>Enabled</td></tr>
+</table>
+</ul>
+
+
+<h2>roll RC input channel (MNT2_RC_IN_ROLL)</h2>
+
+<p>0 for none, any other for the RC channel to be used to control roll movements</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>5</td><td>RC5</td></tr>
+<tr><td>6</td><td>RC6</td></tr>
+<tr><td>7</td><td>RC7</td></tr>
+<tr><td>8</td><td>RC8</td></tr>
+</table>
+</ul>
+
+
+<h2>Minimum roll angle (MNT2_ANGMIN_ROL)</h2>
+
+<p>Minimum physical roll angular position of mount.</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Maximum roll angle (MNT2_ANGMAX_ROL)</h2>
+
+<p>Maximum physical roll angular position of the mount</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>tilt (pitch) RC input channel (MNT2_RC_IN_TILT)</h2>
+
+<p>0 for none, any other for the RC channel to be used to control tilt (pitch) movements</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>5</td><td>RC5</td></tr>
+<tr><td>6</td><td>RC6</td></tr>
+<tr><td>7</td><td>RC7</td></tr>
+<tr><td>8</td><td>RC8</td></tr>
+</table>
+</ul>
+
+
+<h2>Minimum tilt angle (MNT2_ANGMIN_TIL)</h2>
+
+<p>Minimum physical tilt (pitch) angular position of mount.</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Maximum tilt angle (MNT2_ANGMAX_TIL)</h2>
+
+<p>Maximum physical tilt (pitch) angular position of the mount</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>pan (yaw) RC input channel (MNT2_RC_IN_PAN)</h2>
+
+<p>0 for none, any other for the RC channel to be used to control pan (yaw) movements</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>5</td><td>RC5</td></tr>
+<tr><td>6</td><td>RC6</td></tr>
+<tr><td>7</td><td>RC7</td></tr>
+<tr><td>8</td><td>RC8</td></tr>
+</table>
+</ul>
+
+
+<h2>Minimum pan angle (MNT2_ANGMIN_PAN)</h2>
+
+<p>Minimum physical pan (yaw) angular position of mount.</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>Maximum pan angle (MNT2_ANGMAX_PAN)</h2>
+
+<p>Maximum physical pan (yaw) angular position of the mount</p>
+<ul>
+<li>Range: -18000 17999</li>
+<li>Increment: 1</li>
+<li>Units: Centi-Degrees</li>
+</ul>
+
+
+<h2>mount joystick speed (MNT2_JSTICK_SPD)</h2>
+
+<p>0 for position control, small for low speeds, 100 for max speed. A good general value is 10 which gives a movement speed of 3 degrees per second.</p>
+<ul>
+<li>Range: 0 100</li>
+<li>Increment: 1</li>
+</ul>
+
+
+<h1>BATT_ Parameters</h1>
+
+
+<h2>Battery monitoring (BATT_MONITOR)</h2>
+
+<p>Controls enabling monitoring of the battery's voltage and current</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>0</td><td>Disabled</td></tr>
+<tr><td>3</td><td>Voltage Only</td></tr>
+<tr><td>4</td><td>Voltage and Current</td></tr>
+</table>
+</ul>
+
+
+<h2>Battery Voltage sensing pin (BATT_VOLT_PIN)</h2>
+
+<p>Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100. On the Pixhawk powered from the PM connector it should be set to 2.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Disabled</td></tr>
+<tr><td> 0</td><td>A0</td></tr>
+<tr><td> 1</td><td>A1</td></tr>
+<tr><td> 2</td><td>Pixhawk</td></tr>
+<tr><td> 13</td><td>A13</td></tr>
+<tr><td> 100</td><td>PX4</td></tr>
+</table>
+</ul>
+
+
+<h2>Battery Current sensing pin (BATT_CURR_PIN)</h2>
+
+<p>Setting this to 0 ~ 13 will enable battery current sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 12. On the PX4 it should be set to 101. On the Pixhawk powered from the PM connector it should be set to 3.</p>
+<ul>
+<table><th>Value</th><th>Meaning</th>
+<tr><td>-1</td><td>Disabled</td></tr>
+<tr><td> 1</td><td>A1</td></tr>
+<tr><td> 2</td><td>A2</td></tr>
+<tr><td> 3</td><td>Pixhawk</td></tr>
+<tr><td> 12</td><td>A12</td></tr>
+<tr><td> 101</td><td>PX4</td></tr>
+</table>
+</ul>
+
+
+<h2>Voltage Multiplier (BATT_VOLT_MULT)</h2><em>Note: This parameter is for advanced users</em><br>
+
+<p>Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the Pixhawk with the 3DR 4in1 ESC this should be 12.02. For the PX4 using the PX4IO power supply this should be set to 1.</p>
+<ul>
+</ul>
+
+
+<h2>Amps per volt (BATT_AMP_PERVOLT)</h2>
+
+<p>Number of amps that a 1V reading on the current sensor corresponds to. On the APM2 or Pixhawk using the 3DR Power brick this should be set to 17. For the Pixhawk with the 3DR 4in1 ESC this should be 17.</p>
+<ul>
+<li>Units: A/V</li>
+</ul>
+
+
+<h2>AMP offset (BATT_AMP_OFFSET)</h2>
+
+<p>Voltage offset at zero current on current sensor</p>
+<ul>
+<li>Units: Volts</li>
+</ul>
+
+
+<h2>Battery capacity (BATT_CAPACITY)</h2>
+
+<p>Capacity of the battery in mAh when full</p>
+<ul>
+<li>Increment: 50</li>
+<li>Units: mAh</li>
+</ul>

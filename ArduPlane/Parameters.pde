@@ -12,7 +12,16 @@
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &v, {group_info : class::var_info} }
 
 const AP_Param::Info var_info[] PROGMEM = {
+    // @Param: FORMAT_VERSION
+    // @DisplayName: Eeprom format version number
+    // @Description: This value is incremented when changes are made to the eeprom format
+    // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
+
+    // @Param: SYSID_SW_TYPE
+    // @DisplayName: Software Type
+    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
+    // @User: Advanced
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
@@ -134,14 +143,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
-    // @Param: land_pitch_cd
+    // @Param: LAND_PITCH_CD
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland for planes without airspeed sensors in hundredths of a degree
     // @Units: centi-Degrees
     // @User: Advanced
     GSCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
 
-    // @Param: land_flare_alt
+    // @Param: LAND_FLARE_ALT
     // @DisplayName: Landing flare altitude
     // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch
     // @Units: meters
@@ -149,7 +158,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
 
-    // @Param: land_flare_sec
+    // @Param: LAND_FLARE_SEC
     // @DisplayName: Landing flare time
     // @Description: Time before landing point at which to lock heading and flare to the LAND_PITCH_CD pitch
     // @Units: seconds
