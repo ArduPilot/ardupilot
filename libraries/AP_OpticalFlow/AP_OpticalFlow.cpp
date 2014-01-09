@@ -23,13 +23,6 @@
 
 #define FORTYFIVE_DEGREES 0.78539816f
 
-bool AP_OpticalFlow::init()
-{
-    _orientation = ROTATION_NONE;
-    update_conversion_factors();
-    return true;      // just return true by default
-}
-
 // set_orientation - Rotation vector to transform sensor readings to the body
 // frame.
 void AP_OpticalFlow::set_orientation(enum Rotation rotation)
@@ -37,64 +30,8 @@ void AP_OpticalFlow::set_orientation(enum Rotation rotation)
     _orientation = rotation;
 }
 
-// parent method called at 1khz by periodic process
-// this is slowed down to 20hz and each instance's update function is called
-// (only one instance is supported at the moment)
-void AP_OpticalFlow::read(void)
-{
-    _num_calls++;
-
-    if( _num_calls >= AP_OPTICALFLOW_NUM_CALLS_FOR_20HZ ) {
-        _num_calls = 0;
-        // call to update all attached sensors
-        if( _sensor != NULL ) {
-            _sensor->update();
-        }
-    }
-};
-
-// read value from the sensor.  Should be overridden by derived class
-void AP_OpticalFlow::update(void){ }
-
-// reads a value from the sensor (will be sensor specific)
-uint8_t AP_OpticalFlow::read_register(uint8_t address){ return 0; }
-
-// writes a value to one of the sensor's register (will be sensor specific)
-void AP_OpticalFlow::write_register(uint8_t address, uint8_t value) {}
-
-// rotate raw values to arrive at final x,y,dx and dy values
-void AP_OpticalFlow::apply_orientation_matrix()
-{
-    Vector3f rot_vector;
-    rot_vector(raw_dx, raw_dy, 0);
-
-    // next rotate dx and dy
-    rot_vector.rotate(_orientation);
-
-    dx = rot_vector.x;
-    dy = rot_vector.y;
-
-    // add rotated values to totals (perhaps this is pointless as we need
-    // to take into account yaw, roll, pitch)
-    x += dx;
-    y += dy;
-}
-
-// updates conversion factors that are dependent upon field_of_view
-void AP_OpticalFlow::update_conversion_factors()
-{
-    // multiply this number by altitude and pixel change to get horizontal
-    // move (in same units as altitude)
-    conv_factor = ((1.0f / (float)(num_pixels * scaler))
-                   * 2.0f * tanf(field_of_view / 2.0f));
-    // 0.00615
-    radians_to_pixels = (num_pixels * scaler) / field_of_view;
-    // 162.99
-}
-
 // updates internal lon and lat with estimation based on optical flow
-void AP_OpticalFlow::update_position(float roll, float pitch,
-        float sin_yaw, float cos_yaw, float altitude)
+void AP_OpticalFlow::update_position(float roll, float pitch, float sin_yaw, float cos_yaw, float altitude)
 {
     float diff_roll     = roll  - _last_roll;
     float diff_pitch    = pitch - _last_pitch;
@@ -121,10 +58,6 @@ void AP_OpticalFlow::update_position(float roll, float pitch,
         // for example if you are leaned over at 45 deg the ground will
         // appear farther away and motion from opt flow sensor will be less
         y_cm = -change_y * avg_altitude * conv_factor;
-
-        // convert x/y movements into lon/lat movement
-        vlon = x_cm * cos_yaw + y_cm * sin_yaw;
-        vlat = y_cm * cos_yaw - x_cm * sin_yaw;
     }
 
     _last_altitude = altitude;

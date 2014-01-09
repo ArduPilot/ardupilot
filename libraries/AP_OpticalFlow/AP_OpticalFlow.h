@@ -31,52 +31,39 @@
 
 #include <AP_Math.h>
 
-#define AP_OPTICALFLOW_NUM_CALLS_FOR_10HZ     100       // timer process runs at 1khz.  100 iterations = 10hz
-#define AP_OPTICALFLOW_NUM_CALLS_FOR_20HZ     50        // timer process runs at 1khz.  50 iterations = 20hz
-#define AP_OPTICALFLOW_NUM_CALLS_FOR_50HZ     20        // timer process runs at 1khz.  20 iterations = 50hz
-
 class AP_OpticalFlow
 {
 public:
     // constructor
     AP_OpticalFlow() {
-        _sensor = this;
-    };
-    ~AP_OpticalFlow() {
-        _sensor = NULL;
+        _flags.healthy = false;
     };
 
-    virtual bool init(); 
+    virtual void init();
 
-    virtual uint8_t read_register(uint8_t address);
-    virtual void    write_register(uint8_t address, uint8_t value);
+    // healthy - return true if the sensor is healthy
+    bool    healthy() const { return _flags.healthy; }
 
     // Rotation vector to transform sensor readings to the body frame.
-    virtual void    set_orientation(enum Rotation rotation);
+    void    set_orientation(enum Rotation rotation);
 
     // sets field of view of sensor
-    virtual void    set_field_of_view(const float fov) { field_of_view = fov; update_conversion_factors(); };
-
-    // called by timer process to read sensor data from all attached sensors
-    void     read();
+    void    set_field_of_view(const float fov) { field_of_view = fov; };
 
     // read latest values from sensor and fill in x,y and totals.
-    virtual void    update();
+    virtual void update();
 
     // updates internal lon and lat with estimation based on optical flow
-    virtual void    update_position(float roll, float pitch, float sin_yaw, float cos_yaw, float altitude);
+    void    update_position(float roll, float pitch, float sin_yaw, float cos_yaw, float altitude);
 
     // public variables
     int16_t  raw_dx;            // raw sensor change in x and y position (i.e. unrotated)
     int16_t  raw_dy;            // raw sensor change in x and y position (i.e. unrotated)
-    uint8_t  surface_quality;   // image quality (below 15 you really can't trust the x,y values returned)
-    int16_t  x,y;               // total x,y position
+    uint8_t  surface_quality;   // image quality (below 15 you can't trust the dx,dy values returned)
     int16_t  dx,dy;             // rotated change in x and y position
-    float    vlon, vlat;        // position as offsets from original position
     uint32_t last_update;       // millis() time of last update
     float    field_of_view;     // field of view in Radians
     float    scaler;            // number returned from sensor when moved one pixel
-    int16_t  num_pixels;        // number of pixels of resolution in the sensor
 
     // public variables for reporting purposes
     float    exp_change_x, exp_change_y;    // expected change in x, y coordinates
@@ -84,25 +71,17 @@ public:
     float    x_cm, y_cm;                    // x,y position in cm
 
 protected:
-    // pointer to the last instantiated optical flow sensor.  Will be turned
-    // into a table if we ever add support for more than one sensor
-    AP_OpticalFlow *  _sensor;
-    enum Rotation            _orientation;
-    // multiply this number by altitude and pixel change to get horizontal
-    // move (in same units as altitude)
-    float conv_factor;
+
+    struct AP_OpticalFlow_Flags {
+        uint8_t healthy     : 1;    // true if sensor is healthy
+    } _flags;
+
+    enum Rotation   _orientation;
+    float conv_factor;              // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
     float radians_to_pixels;
     float _last_roll;
     float _last_pitch;
     float _last_altitude;
-    // rotate raw values to arrive at final x,y,dx and dy values
-    virtual void apply_orientation_matrix();
-    virtual void update_conversion_factors();
-
-private:
-    // number of times we have been called by 1khz timer process.
-    // We use this to throttle read down to 20hz
-    uint8_t _num_calls;
 };
 
 #include "AP_OpticalFlow_ADNS3080.h"
