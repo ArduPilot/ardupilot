@@ -38,8 +38,8 @@
 #define AP_MOTORS_HELI_SWASH_H1                 1
 
 // default swash min and max angles and positions
-#define AP_MOTORS_HELI_SWASH_ROLL_MAX           4500
-#define AP_MOTORS_HELI_SWASH_PITCH_MAX          4500
+#define AP_MOTORS_HELI_SWASH_ROLL_MAX           2500
+#define AP_MOTORS_HELI_SWASH_PITCH_MAX          2500
 #define AP_MOTORS_HELI_COLLECTIVE_MIN           1250
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
@@ -61,7 +61,7 @@
 #define AP_MOTORS_HELI_EXT_GYRO_GAIN            350
 
 // minimum outputs for direct drive motors
-#define AP_MOTOR_HELI_DIRECTDRIVE_DEFAULT       500
+#define AP_MOTOR_HELI_DDTAIL_DEFAULT       500
 
 
 // main rotor speed control types (ch8 out)
