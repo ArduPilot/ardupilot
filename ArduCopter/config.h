@@ -112,6 +112,7 @@
   # define HELI_ROLL_FF                         0
   # define HELI_YAW_FF                          0  
   # define STABILIZE_THR                        THROTTLE_MANUAL_HELI
+  # define DRIFT_THR                            THROTTLE_MANUAL_HELI
   # define MPU6K_FILTER                         10
   # define HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
   # define HELI_STAB_COLLECTIVE_MAX_DEFAULT     1000
@@ -518,6 +519,11 @@
 
 #ifndef ACRO_LEVEL_MAX_ANGLE
  # define ACRO_LEVEL_MAX_ANGLE      3000
+#endif
+
+// Drift Mode
+#ifndef DRIFT_THR
+ # define DRIFT_THR                 THROTTLE_MANUAL_TILT_COMPENSATED
 #endif
 
 // Sport Mode
