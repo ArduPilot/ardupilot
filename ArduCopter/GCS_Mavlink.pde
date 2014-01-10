@@ -255,7 +255,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         control_yaw / 1.0e2f,
         wp_bearing / 1.0e2f,
         wp_distance / 1.0e2f,
-        altitude_error / 1.0e2f,
+        pos_control.get_alt_error() / 1.0e2f,
         0,
         0);
 }
