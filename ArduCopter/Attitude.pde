@@ -1026,9 +1026,6 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
     // call rate based throttle controller which will update accel based throttle controller targets
     get_throttle_rate(desired_rate);
 
-    // update altitude error reported to GCS
-    altitude_error = alt_error;
-
     // TO-DO: enabled PID logging for this controller
 }
 

@@ -641,8 +641,6 @@ static AP_BattMonitor battery;
 ////////////////////////////////////////////////////////////////////////////////
 // The (throttle) controller desired altitude in cm
 static float controller_desired_alt;
-// The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
-static int32_t altitude_error;
 // The cm/s we are moving up or down based on filtered data - Positive = UP
 static int16_t climb_rate;
 // The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
@@ -1915,7 +1913,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
         case THROTTLE_MANUAL:
         case THROTTLE_MANUAL_TILT_COMPENSATED:
             throttle_accel_deactivate();                // this controller does not use accel based throttle controller
-            altitude_error = 0;                         // clear altitude error reported to GCS
             throttle_initialised = true;
             break;
 
@@ -1939,7 +1936,6 @@ bool set_throttle_mode( uint8_t new_throttle_mode )
 #if FRAME_CONFIG == HELI_FRAME
         case THROTTLE_MANUAL_HELI:
             throttle_accel_deactivate();                // this controller does not use accel based throttle controller
-            altitude_error = 0;                         // clear altitude error reported to GCS
             throttle_initialised = true;
             break;
 #endif
@@ -2115,12 +2111,6 @@ void update_throttle_mode(void)
 static void set_target_alt_for_reporting(float alt_cm)
 {
     target_alt_for_reporting = alt_cm;
-}
-
-// get_target_alt_for_reporting - returns target altitude in cm for reporting purposes (logs and gcs)
-static float get_target_alt_for_reporting()
-{
-    return target_alt_for_reporting;
 }
 
 static void read_AHRS(void)
