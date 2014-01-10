@@ -1007,6 +1007,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
     GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
+    // @Group: ATCON_
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
+    GOBJECT(attitude_control, "ATTCON_", AC_AttitudeControl),
+
+    // @Group: POSCON_
+    // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
+    GOBJECT(pos_control, "POSCON_", AC_PosControl),
+
     // @Group: SR0_
     // @Path: GCS_Mavlink.pde
     GOBJECTN(gcs[0],  gcs0,       "SR0_",     GCS_MAVLINK),
