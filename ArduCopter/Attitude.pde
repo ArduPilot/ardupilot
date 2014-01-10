@@ -1196,7 +1196,20 @@ static void reset_land_detector()
 // returns true if we have landed
 static bool update_land_detector()
 {
-    // detect whether we have landed by watching for low climb rate and minimum throttle
+    // landing is detected if:
+    //   1. climb rate is low and optional land switches have triggered
+    //   2. climb rate is low and throttle out is at a minimum
+
+    // land detection using optional land switch
+    #if LAND_SWITCH == ENABLED
+      if (abs(climb_rate) < 20 && land_switch_is_active()) {
+        set_land_complete(true);
+        land_detector = 0;
+        return ap.land_complete;
+      }
+    #endif
+
+    // land detection based on reaching minimum throttle
     if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
         if (!ap.land_complete) {
             // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)

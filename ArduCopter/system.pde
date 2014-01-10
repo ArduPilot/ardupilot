@@ -266,6 +266,10 @@ static void init_ardupilot()
     init_barometer();
 #endif
 
+#if LAND_SWITCH == ENABLED
+    init_land_switch();
+#endif
+
     // initialise sonar
 #if CONFIG_SONAR == ENABLED
     init_sonar();
