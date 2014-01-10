@@ -314,7 +314,7 @@ static void heli_update_landing_swash()
         case THROTTLE_AUTO:
         default:
             // auto and hold use limited swash when landed
-            motors.set_collective_for_landing(ap.land_complete || !ap.auto_armed);
+            motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
             break;
     }
 }
