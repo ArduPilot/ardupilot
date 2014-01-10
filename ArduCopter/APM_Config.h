@@ -32,6 +32,7 @@
 
 // features below are disabled by default
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
+//#define LAND_SWITCH           ENABLED             // enable land detection (default is two active-high switches connected to AN0 and AN1, see config.h)
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 
 // redefine size of throttle deadband in pwm (0 ~ 1000)
