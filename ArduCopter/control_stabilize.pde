@@ -41,6 +41,9 @@ static void acro_run()
 // stabilize_init - initialise stabilize controller
 static bool stabilize_init()
 {
+    // set target altitude to zero for reporting
+    // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
+    pos_control.set_alt_target(0);
     return true;
 }
 
@@ -144,7 +147,6 @@ static void althold_run()
         // To-Do: set target angles to zero or current attitude?
         // To-Do: reset altitude target if we're somehow not landed?
         attitude_control.set_throttle_out(0, false);
-        set_target_alt_for_reporting(0);
         return;
     }
     
@@ -207,7 +209,6 @@ static void althold_run()
         }else{
             // move throttle to minimum to keep us on the ground
             attitude_control.set_throttle_out(0, false);
-            set_target_alt_for_reporting(0);
             // To-Do: should return here because we don't want throttle out to be overwritten below
         }
     }
