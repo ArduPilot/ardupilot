@@ -51,9 +51,16 @@ static bool stabilize_init(bool ignore_checks)
 // should be called at 100hz or more
 static void stabilize_run()
 {
-    Vector3f angle_target = attitude_control.angle_ef_targets();     // for roll, pitch and yaw angular targets
-    Vector3f rate_stab_ef_target;   // for yaw rate target.  Note Vector3f initialises all values to zero in constructor
     int16_t target_roll, target_pitch;
+    float target_yaw_rate = 0;
+    int16_t pilot_throttle_scaled;
+
+    // if not armed or throttle at zero, set throttle to zero and exit immediately
+    if(!motors.armed() || g.rc_3.control_in <= 0) {
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        return;
+    }
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -61,66 +68,44 @@ static void stabilize_run()
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
     get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
-    angle_target.x = target_roll;
-    angle_target.y = target_pitch;
 
     // get pilot's desired yaw rate
-    if (!failsafe.radio && !ap.land_complete) {
-        rate_stab_ef_target.z = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-    }
+    target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
 
-    // set target heading to current heading while landed
+    // get pilot's desired throttle
+    pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
+
+    // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        angle_target.z = ahrs.yaw_sensor;
+        attitude_control.init_targets();
+    }else{
+        // call attitude controller
+        attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+
+        // body-frame rate controller is run directly from 100hz loop
     }
 
-    // set earth-frame angular targets
-    attitude_control.angle_ef_targets(angle_target);
-
-    // convert earth-frame angle targets to earth-frame rate targets
-    attitude_control.angle_to_rate_ef_roll();
-    attitude_control.angle_to_rate_ef_pitch();
-
-    // set earth-frame rate stabilize target for yaw with pilot's desired yaw
-    // To-Do: this is quite wasteful to update the entire target vector when only yaw is used
-    attitude_control.rate_stab_ef_targets(rate_stab_ef_target);
-
-    // convert earth-frame stabilize rate to regular rate target
-    // To-Do: replace G_Dt below
-    attitude_control.rate_stab_ef_to_rate_ef_yaw();
-
-    // convert earth-frame rates to body-frame rates
-    attitude_control.rate_ef_targets_to_bf();
+    // output pilot's throttle
+    attitude_control.set_throttle_out(pilot_throttle_scaled, true);
 
     // refetch angle targets for reporting
-    angle_target = attitude_control.angle_ef_targets();
+    const Vector3f angle_target = attitude_control.angle_ef_targets();
     control_roll = angle_target.x;
     control_pitch = angle_target.y;
     control_yaw = angle_target.z;
 
-    // body-frame rate controller is run directly from 100hz loop
+    // update estimate of throttle cruise
+    #if FRAME_CONFIG == HELI_FRAME
+    update_throttle_cruise(motors.get_collective_out());
+    #else
+    update_throttle_cruise(pilot_throttle_scaled);
+    #endif  //HELI_FRAME
 
-    // do not run throttle controllers if motors disarmed
-    if( !motors.armed() || g.rc_3.control_in <= 0) {
-        attitude_control.set_throttle_out(0, false);
-        set_target_alt_for_reporting(0);
-    }else{
-        // manual throttle but with angle boost
-        int16_t pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
-        attitude_control.set_throttle_out(pilot_throttle_scaled, true);
-
-        // update estimate of throttle cruise
-        #if FRAME_CONFIG == HELI_FRAME
-        update_throttle_cruise(motors.get_collective_out());
-        #else
-        update_throttle_cruise(pilot_throttle_scaled);
-        #endif  //HELI_FRAME
-
-        if (!ap.takeoff_complete && motors.armed()) {
-            if (pilot_throttle_scaled > g.throttle_cruise) {
-                // we must be in the air by now
-                set_takeoff_complete(true);
-            }
+    // update take-off complete flag
+    if (!ap.takeoff_complete) {
+        if (pilot_throttle_scaled > g.throttle_cruise) {
+            // we must be in the air by now
+            set_takeoff_complete(true);
         }
     }
 }
