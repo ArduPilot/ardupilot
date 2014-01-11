@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // acro_init - initialise acro controller
-static bool acro_init()
+static bool acro_init(bool ignore_checks)
 {
     return true;
 }
@@ -39,7 +39,7 @@ static void acro_run()
 }
 
 // stabilize_init - initialise stabilize controller
-static bool stabilize_init()
+static bool stabilize_init(bool ignore_checks)
 {
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
@@ -126,7 +126,7 @@ static void stabilize_run()
 }
 
 // althold_init - initialise althold controller
-static bool althold_init()
+static bool althold_init(bool ignore_checks)
 {
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
@@ -226,7 +226,7 @@ static void althold_run()
 }
 
 // auto_init - initialise auto controller
-static bool auto_init()
+static bool auto_init(bool ignore_checks)
 {
     return true;
 }
@@ -265,7 +265,7 @@ static void auto_run()
 }
 
 // circle_init - initialise circle controller
-static bool circle_init()
+static bool circle_init(bool ignore_checks)
 {
     return true;
 }
@@ -277,19 +277,90 @@ static void circle_run()
 }
 
 // loiter_init - initialise loiter controller
-static bool loiter_init()
+static bool loiter_init(bool ignore_checks)
 {
-    return true;
+    if (GPS_ok() || ignore_checks) {
+        // set target to current position
+        // To-Do: supply zero velocity below?
+        wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+        return true;
+    }else{
+        return false;
+    }
 }
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
 static void loiter_run()
 {
+    float target_yaw_rate = 0;
+    float target_climb_rate = 0;
+
+    // if not auto armed set throttle to zero and exit immediately
+    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+        wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        return;
+    }
+
+    // process pilot inputs
+    if (!failsafe.radio) {
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // process pilot's roll and pitch input
+        // To-Do: do we need to clear out feed forward if this is not called?
+        wp_nav.move_loiter_target(g.rc_1.control_in, g.rc_2.control_in, G_Dt);
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+
+        // get pilot desired climb rate
+        target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+
+        // check for pilot requested take-off
+        if (target_climb_rate > 0) {
+            // indicate we are taking off
+            set_land_complete(false);
+            // clear i term when we're taking off
+            set_throttle_takeoff();
+        }
+    }
+
+    // when landed reset targets and output zero throttle
+    if (ap.land_complete) {
+        wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+    }else{
+        // run loiter controller
+        wp_nav.update_loiter();
+
+        // call attitude controller
+        attitude_control.angleef_rp_rateef_y(wp_nav.get_desired_roll(), wp_nav.get_desired_pitch(), target_yaw_rate);
+
+        // body-frame rate controller is run directly from 100hz loop
+
+        // run altitude controller
+        if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
+            // if sonar is ok, use surface tracking
+            get_throttle_surface_tracking(target_climb_rate);
+        }else{
+            // if no sonar fall back stabilize rate controller
+            pos_control.climb_at_rate(target_climb_rate);
+        }
+    }
+
+    // refetch angle targets for reporting
+    const Vector3f angle_target = attitude_control.angle_ef_targets();
+    control_roll = angle_target.x;
+    control_pitch = angle_target.y;
+    control_yaw = angle_target.z;
 }
 
 // guided_init - initialise guided controller
-static bool guided_init()
+static bool guided_init(bool ignore_checks)
 {
     return true;
 }
@@ -301,7 +372,7 @@ static void guided_run()
 }
 
 // land_init - initialise land controller
-static bool land_init()
+static bool land_init(bool ignore_checks)
 {
     return true;
 }
@@ -314,7 +385,7 @@ static void land_run()
 }
 
 // rtl_init - initialise rtl controller
-static bool rtl_init()
+static bool rtl_init(bool ignore_checks)
 {
     return true;
 }
@@ -327,7 +398,7 @@ static void rtl_run()
 }
 
 // ofloiter_init - initialise ofloiter controller
-static bool ofloiter_init()
+static bool ofloiter_init(bool ignore_checks)
 {
     return true;
 }
@@ -339,7 +410,7 @@ static void ofloiter_run()
 }
 
 // drift_init - initialise drift controller
-static bool drift_init()
+static bool drift_init(bool ignore_checks)
 {
     return true;
 }
@@ -351,7 +422,7 @@ static void drift_run()
 }
 
 // sport_init - initialise sport controller
-static bool sport_init()
+static bool sport_init(bool ignore_checks)
 {
     return true;
 }
