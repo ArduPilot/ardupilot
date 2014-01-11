@@ -73,6 +73,15 @@ public:
     void set_dt(float delta_sec) { _dt = delta_sec; }
     float get_dt() { return _dt; }
 
+    // init_targets - resets target angles to current angles
+    void init_targets();
+
+    // angleef_rp_rateef_y - attempts to maintain a roll and pitch angle and yaw rate (all earth frame)
+    void angleef_rp_rateef_y(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef);
+
+    // angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
+    void angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef);
+
     //
     // angle controller (earth-frame) methods
     //

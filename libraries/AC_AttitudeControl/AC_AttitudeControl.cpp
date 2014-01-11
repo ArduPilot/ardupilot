@@ -19,6 +19,59 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 };
 
 //
+// high level controllers
+//
+
+// init_targets - resets target angles to current angles
+void AC_AttitudeControl::init_targets()
+{
+    _angle_ef_target.x = _ahrs.roll_sensor;
+    _angle_ef_target.y = _ahrs.pitch_sensor;
+    _angle_ef_target.z = _ahrs.yaw_sensor;
+}
+
+// angleef_rp_rateef_y - attempts to maintain a roll and pitch angle and yaw rate (all earth frame)
+void AC_AttitudeControl::angleef_rp_rateef_y(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef)
+{
+    // set earth-frame angle targets
+    _angle_ef_target.x = roll_angle_ef;
+    _angle_ef_target.y = pitch_angle_ef;
+
+    // convert earth-frame angle targets to earth-frame rate targets
+    angle_to_rate_ef_roll();
+    angle_to_rate_ef_pitch();
+
+    // set earth-frame rate stabilize target for yaw
+    _rate_stab_ef_target.z =  yaw_rate_ef;
+
+    // convert earth-frame stabilize rate to regular rate target
+    rate_stab_ef_to_rate_ef_yaw();
+
+    // convert earth-frame rates to body-frame rates
+    rate_ef_targets_to_bf();
+
+    // body-frame to motor outputs should be called separately
+}
+
+// angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
+void AC_AttitudeControl::angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef)
+{
+    // set earth-frame angle targets
+    _angle_ef_target.x = roll_angle_ef;
+    _angle_ef_target.y = pitch_angle_ef;
+
+    // convert earth-frame angle targets to earth-frame rate targets
+    angle_to_rate_ef_roll();
+    angle_to_rate_ef_pitch();
+    angle_to_rate_ef_yaw();
+
+    // convert earth-frame rates to body-frame rates
+    rate_ef_targets_to_bf();
+
+    // body-frame to motor outputs should be called separately
+}
+
+//
 // angle controller methods
 //
 
