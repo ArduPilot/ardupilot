@@ -1069,6 +1069,9 @@ static void fast_loop()
     // --------------------
     read_inertia();
 
+    // run the attitude controllers
+    update_flight_mode();
+
     // optical flow
     // --------------------
 #if OPTFLOW == ENABLED
@@ -1087,9 +1090,6 @@ static void rc_loop()
     // -----------------------------------------
     read_radio();
     read_control_switch();
-
-    // run the attitude controllers
-    update_flight_mode();
 }
 
 // throttle_loop - should be run at 50 hz
