@@ -137,7 +137,6 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CURRENT);
         TARG(RCOUT);
         TARG(OPTFLOW);
-        TARG(PID);
         TARG(COMPASS);
         TARG(INAV);
         TARG(CAMERA);
@@ -303,15 +302,17 @@ static void Log_Write_Nav_Tuning()
 
 struct PACKED log_Control_Tuning {
     LOG_PACKET_HEADER;
-    int16_t throttle_in;
-    int16_t sonar_alt;
-    int32_t baro_alt;
-    float   next_wp_alt;
-    int16_t desired_sonar_alt;
-    int16_t angle_boost;
-    int16_t climb_rate;
-    int16_t throttle_out;
-    int16_t desired_climb_rate;
+    uint32_t time_ms;
+    int16_t  throttle_in;
+    int16_t  angle_boost;
+    int16_t  throttle_out;
+    float    desired_alt;
+    float    inav_alt;
+    int32_t  baro_alt;
+    int16_t  desired_sonar_alt;
+    int16_t  sonar_alt;
+    int16_t  desired_climb_rate;
+    int16_t  climb_rate;
 };
 
 // Write a control tuning packet
@@ -319,15 +320,17 @@ static void Log_Write_Control_Tuning()
 {
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
+        time_ms             : hal.scheduler->millis(),
         throttle_in         : g.rc_3.control_in,
-        sonar_alt           : sonar_alt,
-        baro_alt            : baro_alt,
-        next_wp_alt         : get_target_alt_for_reporting() / 100.0f,
-        desired_sonar_alt   : (int16_t)target_sonar_alt,
         angle_boost         : angle_boost,
-        climb_rate          : climb_rate,
         throttle_out        : g.rc_3.servo_out,
-        desired_climb_rate  : desired_climb_rate
+        desired_alt         : get_target_alt_for_reporting() / 100.0f,
+        inav_alt            : current_loc.alt / 100.0f,
+        baro_alt            : baro_alt,
+        desired_sonar_alt   : (int16_t)target_sonar_alt,
+        sonar_alt           : sonar_alt,
+        desired_climb_rate  : desired_climb_rate,
+        climb_rate          : climb_rate
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -715,8 +718,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "OF",   "hhBccee",   "Dx,Dy,SQual,X,Y,Roll,Pitch" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Ecffffffffee",    "WPDst,WPBrg,PErX,PErY,DVelX,DVelY,VelX,VelY,DAcX,DAcY,DRol,DPit" },
-    { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),     
-      "CTUN", "hcefchhhh",   "ThrIn,SonAlt,BarAlt,WPAlt,DesSonAlt,AngBst,CRate,ThrOut,DCRate" },
+    { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
+      "CTUN", "Ihhhffecchh", "TimeMS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
       "MAG", "Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" },
     { LOG_COMPASS2_MSG, sizeof(log_Compass),             
