@@ -35,13 +35,22 @@ extern const AP_HAL::HAL& hal;
 DataFlash_File::DataFlash_File(const char *log_directory) :
     _write_fd(-1),
     _read_fd(-1),
+    _read_offset(0),
+    _write_offset(0),
     _initialised(false),
     _log_directory(log_directory),
     _writebuf(NULL),
-    _writebuf_size(4096),
+    _writebuf_size(16*1024),
+    _writebuf_chunk(512), // until multiblock write support works on
+                          // px4, we are best off keeping writes small
     _writebuf_head(0),
     _writebuf_tail(0),
     _last_write_time(0)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    ,_perf_write(perf_alloc(PC_ELAPSED, "DF_write")),
+    _perf_fsync(perf_alloc(PC_ELAPSED, "DF_fsync")),
+    _perf_errors(perf_alloc(PC_COUNT, "DF_errors"))
+#endif
 {}
 
 
@@ -93,7 +102,7 @@ bool DataFlash_File::NeedErase(void)
 char *DataFlash_File::_log_file_name(uint16_t log_num)
 {
     char *buf = NULL;
-    asprintf(&buf, "%s/%u.bin", _log_directory, (unsigned)log_num);
+    asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num);
     return buf;
 }
 
@@ -104,7 +113,7 @@ char *DataFlash_File::_log_file_name(uint16_t log_num)
 char *DataFlash_File::_lastlog_file_name(void)
 {
     char *buf = NULL;
-    asprintf(&buf, "%s/lastlog.txt", _log_directory);
+    asprintf(&buf, "%s/LASTLOG.TXT", _log_directory);
     return buf;
 }
 
@@ -356,6 +365,7 @@ uint16_t DataFlash_File::start_new_log(void)
         _initialised = false;
         return 0xFFFF;
     }
+    _write_offset = 0;
 
     // now update lastlog.txt with the new log number
     fname = _lastlog_file_name();
@@ -508,35 +518,52 @@ void DataFlash_File::_io_timer(void)
         return;
     }
     uint32_t tnow = hal.scheduler->micros();
-    if (nbytes < 512 && 
+    if (nbytes < _writebuf_chunk && 
         tnow - _last_write_time < 2000000UL) {
         // write in 512 byte chunks, but always write at least once
         // per 2 seconds if data is available
         return;
     }
+
+    perf_begin(_perf_write);
+
     _last_write_time = tnow;
-    if (nbytes > 512) {
+    if (nbytes > _writebuf_chunk) {
         // be kind to the FAT PX4 filesystem
-        nbytes = 512;
+        nbytes = _writebuf_chunk;
     }
     if (_writebuf_head > _tail) {
         // only write to the end of the buffer
         nbytes = min(nbytes, _writebuf_size - _writebuf_head);
     }
+
+    // try to align writes on a 512 byte boundary to avoid filesystem
+    // reads
+    if ((nbytes + _write_offset) % 512 != 0) {
+        uint32_t ofs = (nbytes + _write_offset) % 512;
+        if (ofs < nbytes) {
+            nbytes -= ofs;
+        }
+    }
+
     assert(_writebuf_head+nbytes <= _writebuf_size);
     ssize_t nwritten = ::write(_write_fd, &_writebuf[_writebuf_head], nbytes);
     if (nwritten <= 0) {
-        //hal.console->printf("DataFlash write: %d %d\n", (int)nwritten, (int)errno);
+        perf_count(_perf_errors);
         close(_write_fd);
         _write_fd = -1;
         _initialised = false;
     } else {
+        _write_offset += nwritten;
         BUF_ADVANCEHEAD(_writebuf, nwritten);
         if (hal.scheduler->millis() - last_fsync_ms > 10000) {
             last_fsync_ms = hal.scheduler->millis();
+            perf_begin(_perf_fsync);
             ::fsync(_write_fd);            
+            perf_end(_perf_fsync);
         }
     }
+    perf_end(_perf_write);
 }
 
 #endif // HAL_OS_POSIX_IO
