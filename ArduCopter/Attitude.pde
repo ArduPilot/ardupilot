@@ -70,7 +70,6 @@ get_stabilize_yaw(int32_t target_angle)
 {
     int32_t target_rate;
     int32_t angle_error;
-    int32_t output = 0;
 
     // angle error
     angle_error = wrap_180_cd(target_angle - ahrs.yaw_sensor);
@@ -85,17 +84,6 @@ get_stabilize_yaw(int32_t target_angle)
 #if FRAME_CONFIG == HELI_FRAME
     if(motors.tail_type() == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
         g.rc_4.servo_out = constrain_int32(target_rate, -4500, 4500);
-    }
-#endif
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID logging is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_STABILIZE_YAW_KP ) {
-        pid_log_counter++;
-        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            pid_log_counter = 0;
-            Log_Write_PID(CH6_STABILIZE_YAW_KP, angle_error, target_rate, 0, 0, output, tuning_value);
-        }
     }
 #endif
 
@@ -513,17 +501,6 @@ get_rate_roll(int32_t target_rate)
     // constrain output
     output = constrain_int32(output, -5000, 5000);
 
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID logging is on and we are tuning the rate P, I or D gains
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_ROLL_PITCH_KP || g.radio_tuning == CH6_RATE_ROLL_PITCH_KI || g.radio_tuning == CH6_RATE_ROLL_PITCH_KD) ) {
-        pid_log_counter++;                          // Note: get_rate_pitch pid logging relies on this function to update pid_log_counter so if you change the line above you must change the equivalent line in get_rate_pitch
-        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            pid_log_counter = 0;
-            Log_Write_PID(CH6_RATE_ROLL_PITCH_KP, rate_error, p, i, d, output, tuning_value);
-        }
-    }
-#endif
-
     // output control
     return output;
 }
@@ -557,15 +534,6 @@ get_rate_pitch(int32_t target_rate)
     // constrain output
     output = constrain_int32(output, -5000, 5000);
 
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID logging is on and we are tuning the rate P, I or D gains
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_RATE_ROLL_PITCH_KP || g.radio_tuning == CH6_RATE_ROLL_PITCH_KI || g.radio_tuning == CH6_RATE_ROLL_PITCH_KD) ) {
-        if( pid_log_counter == 0 ) {               // relies on get_rate_roll having updated pid_log_counter
-            Log_Write_PID(CH6_RATE_ROLL_PITCH_KP+100, rate_error, p, i, d, output, tuning_value);
-        }
-    }
-#endif
-
     // output control
     return output;
 }
@@ -596,17 +564,6 @@ get_rate_yaw(int32_t target_rate)
 
     output  = p+i+d;
     output = constrain_int32(output, -4500, 4500);
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && g.radio_tuning == CH6_YAW_RATE_KP ) {
-        pid_log_counter++;
-        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            pid_log_counter = 0;
-            Log_Write_PID(CH6_YAW_RATE_KP, rate_error, p, i, d, output, tuning_value);
-        }
-    }
-#endif
 
     // constrain output
     return output;
@@ -645,17 +602,6 @@ get_of_roll(int32_t input_roll)
         }
         // limit amount of change and maximum angle
         of_roll = constrain_int32(new_roll, (of_roll-20), (of_roll+20));
-
- #if LOGGING_ENABLED == ENABLED
-        // log output if PID logging is on and we are tuning the rate P, I or D gains
-        if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
-            pid_log_counter++;              // Note: get_of_pitch pid logging relies on this function updating pid_log_counter so if you change the line above you must change the equivalent line in get_of_pitch
-            if( pid_log_counter >= 5 ) {    // (update rate / desired output rate) = (100hz / 10hz) = 10
-                pid_log_counter = 0;
-                Log_Write_PID(CH6_OPTFLOW_KP, tot_x_cm, p, i, d, of_roll, tuning_value);
-            }
-        }
- #endif // LOGGING_ENABLED == ENABLED
     }
 
     // limit max angle
@@ -699,15 +645,6 @@ get_of_pitch(int32_t input_pitch)
 
         // limit amount of change
         of_pitch = constrain_int32(new_pitch, (of_pitch-20), (of_pitch+20));
-
- #if LOGGING_ENABLED == ENABLED
-        // log output if PID logging is on and we are tuning the rate P, I or D gains
-        if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_OPTFLOW_KP || g.radio_tuning == CH6_OPTFLOW_KI || g.radio_tuning == CH6_OPTFLOW_KD) ) {
-            if( pid_log_counter == 0 ) {        // relies on get_of_roll having updated the pid_log_counter
-                Log_Write_PID(CH6_OPTFLOW_KP+100, tot_y_cm, p, i, d, of_pitch, tuning_value);
-            }
-        }
- #endif // LOGGING_ENABLED == ENABLED
     }
 
     // limit max angle
@@ -919,17 +856,6 @@ get_throttle_accel(int16_t z_target_accel)
 
     output =  constrain_float(p+i+d+g.throttle_cruise, g.throttle_min, g.throttle_max);
 
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_ACCEL_KP || g.radio_tuning == CH6_THROTTLE_ACCEL_KI || g.radio_tuning == CH6_THROTTLE_ACCEL_KD) ) {
-        pid_log_counter++;
-        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
-            pid_log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_ACCEL_KP, z_accel_error, p, i, d, output, tuning_value);
-        }
-    }
-#endif
-
     return output;
 }
 
@@ -1058,17 +984,6 @@ get_throttle_rate(float z_target_speed)
     // consolidate and constrain target acceleration
     output += p;
     output = constrain_int32(output, -32000, 32000);
-
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_THROTTLE_RATE_KP || g.radio_tuning == CH6_THROTTLE_RATE_KD) ) {
-        pid_log_counter++;
-        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (50hz / 10hz) = 5hz
-            pid_log_counter = 0;
-            Log_Write_PID(CH6_THROTTLE_RATE_KP, z_rate_error, p, 0, 0, output, tuning_value);
-        }
-    }
-#endif
 
     // set target for accel based throttle controller
     set_throttle_accel_target(output);

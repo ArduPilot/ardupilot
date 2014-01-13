@@ -250,7 +250,7 @@
 #define LOG_STARTUP_MSG                 0x0A
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
-#define LOG_PID_MSG                     0x0E
+#define LOG_PID_MSG                     0x0E    // deprecated
 #define LOG_COMPASS_MSG                 0x0F
 #define LOG_INAV_MSG                    0x11
 #define LOG_CAMERA_MSG                  0x12
@@ -278,7 +278,7 @@
 #define MASK_LOG_CURRENT                (1<<9)
 #define MASK_LOG_RCOUT                  (1<<10)
 #define MASK_LOG_OPTFLOW                (1<<11)
-#define MASK_LOG_PID                    (1<<12)
+#define MASK_LOG_PID                    (1<<12) // deprecated
 #define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14)
 #define MASK_LOG_CAMERA                 (1<<15)

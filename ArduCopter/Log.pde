@@ -46,7 +46,6 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf_P(PSTR(" CURRENT"));
         if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf_P(PSTR(" RCOUT"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
-        if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
         if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
         if (g.log_bitmask & MASK_LOG_INAV) cliSerial->printf_P(PSTR(" INAV"));
         if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
@@ -647,33 +646,6 @@ static void Log_Write_Data(uint8_t id, float value)
     }
 }
 
-struct PACKED log_PID {
-    LOG_PACKET_HEADER;
-    uint8_t id;
-    int32_t error;
-    int32_t p;
-    int32_t i;
-    int32_t d;
-    int32_t output;
-    float  gain;
-};
-
-// Write an PID packet
-static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain)
-{
-    struct log_PID pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_PID_MSG),
-        id      : pid_id,
-        error   : error,
-        p       : p,
-        i       : i,
-        d       : d,
-        output  : output,
-        gain    : gain
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_Camera {
     LOG_PACKET_HEADER;
     uint32_t gps_time;
@@ -766,8 +738,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "DU32",  "BI",         "Id,Value" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "Bf",         "Id,Value" },
-    { LOG_PID_MSG, sizeof(log_PID),         
-      "PID",   "Biiiiif",    "Id,Error,P,I,D,Out,Gain" },
     { LOG_CAMERA_MSG, sizeof(log_Camera),                 
       "CAM",   "IHLLeccC",   "GPSTime,GPSWeek,Lat,Lng,Alt,Roll,Pitch,Yaw" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
@@ -840,7 +810,6 @@ static void Log_Write_Optflow() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Performance() {}
-static void Log_Write_PID(uint8_t pid_id, int32_t error, int32_t p, int32_t i, int32_t d, int32_t output, float gain) {}
 static void Log_Write_Camera() {}
 static void Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {

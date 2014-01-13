@@ -482,8 +482,6 @@ static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
-// used to limit the rate that the pid controller output is logged so that it doesn't negatively affect performance
-static uint8_t pid_log_counter;
 
 
 ////////////////////////////////////////////////////////////////////////////////
