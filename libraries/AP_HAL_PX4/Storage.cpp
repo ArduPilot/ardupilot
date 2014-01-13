@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "Storage.h"
 using namespace PX4;
@@ -24,11 +25,30 @@ using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
 
+PX4Storage::PX4Storage(void) :
+_fd(-1),
+    _dirty_mask(0),
+    _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
+    _perf_errors(perf_alloc(PC_COUNT, "APM_storage_errors"))
+{
+    // NuttX seems to be happier not having the extra directory
+    // entries for mapping the case of filenames. Keeping it all
+    // uppercase seems to reduce meta-data corruption when rebooting
+    // while writing
+    _storage_name = strdup(STORAGE_DIR "/" SKETCHNAME ".stg");
+    if (_storage_name == NULL) {
+        hal.scheduler->panic("Unable to create storage name");
+    }
+    for (uint8_t i=strlen(STORAGE_DIR "/"); _storage_name[i]; i++) {
+        _storage_name[i] = toupper(_storage_name[i]);
+    }
+}
+
 void PX4Storage::_storage_create(void)
 {
 	mkdir(STORAGE_DIR, 0777);
-	unlink(STORAGE_FILE);
-	int fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
+	unlink(_storage_name);
+	int fd = open(_storage_name, O_RDWR|O_CREAT, 0666);
 	if (fd == -1) {
 		hal.scheduler->panic("Failed to create " STORAGE_FILE);
 	}
@@ -48,11 +68,23 @@ void PX4Storage::_storage_open(void)
 		return;
 	}
 
+        /**
+           NuttX is not properly case insensitive on VFAT. We will create
+           the file as uppercase, but if the file already exists we need
+           to rename it first
+        */
+        struct stat st;
+        if (stat(_storage_name, &st) == -1 && stat(STORAGE_FILE, &st) == 0) {
+            if (rename(STORAGE_FILE, _storage_name) != 0) {
+                unlink(STORAGE_FILE);
+            }
+        }
+
 	_dirty_mask = 0;
-	int fd = open(STORAGE_FILE, O_RDONLY);
+	int fd = open(_storage_name, O_RDONLY);
 	if (fd == -1) {
 		_storage_create();
-		fd = open(STORAGE_FILE, O_RDONLY);
+		fd = open(_storage_name, O_RDONLY);
 		if (fd == -1) {
 			hal.scheduler->panic("Failed to open " STORAGE_FILE);
 		}
@@ -60,7 +92,7 @@ void PX4Storage::_storage_open(void)
 	if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
 		close(fd);
 		_storage_create();
-		fd = open(STORAGE_FILE, O_RDONLY);
+		fd = open(_storage_name, O_RDONLY);
 		if (fd == -1) {
 			hal.scheduler->panic("Failed to open " STORAGE_FILE);
 		}
@@ -185,7 +217,7 @@ void PX4Storage::_timer_tick(void)
 	perf_begin(_perf_storage);
 
 	if (_fd == -1) {
-		_fd = open(STORAGE_FILE, O_WRONLY);
+		_fd = open(_storage_name, O_WRONLY);
 		if (_fd == -1) {
 			perf_end(_perf_storage);
 			perf_count(_perf_errors);
