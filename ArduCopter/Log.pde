@@ -47,7 +47,6 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf_P(PSTR(" RCOUT"));
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
-        if (g.log_bitmask & MASK_LOG_INAV) cliSerial->printf_P(PSTR(" INAV"));
         if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
     }
 
@@ -138,7 +137,6 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(RCOUT);
         TARG(OPTFLOW);
         TARG(COMPASS);
-        TARG(INAV);
         TARG(CAMERA);
  #undef TARG
     }
@@ -263,39 +261,39 @@ static void Log_Write_Optflow()
 
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
-    uint32_t wp_distance;
-    int16_t  wp_bearing;
-    float    pos_error_x;
-    float    pos_error_y;
-    float    desired_velocity_x;
-    float    desired_velocity_y;
-    float    velocity_x;
-    float    velocity_y;
+    uint32_t time_ms;
+    float    desired_pos_x;
+    float    desired_pos_y;
+    float    pos_x;
+    float    pos_y;
+    float    desired_vel_x;
+    float    desired_vel_y;
+    float    vel_x;
+    float    vel_y;
     float    desired_accel_x;
     float    desired_accel_y;
-    int32_t  desired_roll;
-    int32_t  desired_pitch;
 };
 
 // Write an Nav Tuning packet
 static void Log_Write_Nav_Tuning()
 {
+    const Vector3f &desired_position = wp_nav.get_loiter_target();
+    const Vector3f &position = inertial_nav.get_position();
     const Vector3f &velocity = inertial_nav.get_velocity();
 
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
-        wp_distance         : wp_distance,
-        wp_bearing          : (int16_t) (wp_bearing/100),
-        pos_error_x         : wp_nav.dist_error.x,
-        pos_error_y         : wp_nav.dist_error.y,
-        desired_velocity_x  : wp_nav.desired_vel.x,
-        desired_velocity_y  : wp_nav.desired_vel.y,
-        velocity_x          : velocity.x,
-        velocity_y          : velocity.y,
-        desired_accel_x     : wp_nav.desired_accel.x,
-        desired_accel_y     : wp_nav.desired_accel.y,
-        desired_roll        : wp_nav.get_desired_roll(),
-        desired_pitch       : wp_nav.get_desired_pitch()
+        time_ms         : hal.scheduler->millis(),
+        desired_pos_x   : desired_position.x,
+        desired_pos_y   : desired_position.y,
+        pos_x           : position.x,
+        pos_y           : position.y,
+        desired_vel_x   : wp_nav.desired_vel.x,
+        desired_vel_y   : wp_nav.desired_vel.y,
+        vel_x           : velocity.x,
+        vel_y           : velocity.y,
+        desired_accel_x : wp_nav.desired_accel.x,
+        desired_accel_y : wp_nav.desired_accel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -475,41 +473,6 @@ static void Log_Write_Attitude()
         pitch           : (int16_t)ahrs.pitch_sensor,
         control_yaw     : (uint16_t)control_yaw,
         yaw             : (uint16_t)ahrs.yaw_sensor
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
-struct PACKED log_INAV {
-    LOG_PACKET_HEADER;
-    int16_t baro_alt;
-    int16_t inav_alt;
-    int16_t inav_climb_rate;
-    float   accel_corr_x;
-    float   accel_corr_y;
-    float   accel_corr_z;
-    int32_t gps_lat_from_home;
-    int32_t gps_lon_from_home;
-    float   inav_lat_from_home;
-    float   inav_lon_from_home;
-};
-
-// Write an INAV packet
-static void Log_Write_INAV()
-{
-    const Vector3f &accel_corr = inertial_nav.accel_correction_ef;
-
-    struct log_INAV pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_INAV_MSG),
-        baro_alt            : (int16_t)baro_alt,                        // 1 barometer altitude
-        inav_alt            : (int16_t)inertial_nav.get_altitude(),     // 2 accel + baro filtered altitude
-        inav_climb_rate     : (int16_t)inertial_nav.get_velocity_z(),   // 3 accel + baro based climb rate
-        accel_corr_x        : accel_corr.x,                             // 4 accel correction x-axis
-        accel_corr_y        : accel_corr.y,                             // 5 accel correction y-axis
-        accel_corr_z        : accel_corr.z,                             // 6 accel correction z-axis
-        gps_lat_from_home   : g_gps->latitude-home.lat,                 // 7 lat from home
-        gps_lon_from_home   : g_gps->longitude-home.lng,                // 8 lon from home
-        inav_lat_from_home  : inertial_nav.get_latitude_diff(),         // 9 accel based lat from home
-        inav_lon_from_home  : inertial_nav.get_longitude_diff()        // 10 accel based lon from home
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -717,7 +680,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "hhBccee",   "Dx,Dy,SQual,X,Y,Roll,Pitch" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
-      "NTUN", "Ecffffffffee",    "WPDst,WPBrg,PErX,PErY,DVelX,DVelY,VelX,VelY,DAcX,DAcY,DRol,DPit" },
+      "NTUN", "Iffffffffff", "TimeMS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Ihhhffecchh", "TimeMS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_COMPASS_MSG, sizeof(log_Compass),             
@@ -730,8 +693,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "CMD", "BBBBBeLL",     "CTot,CNum,CId,COpt,Prm1,Alt,Lat,Lng" },
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),       
       "ATT", "IccccCC",      "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw" },
-    { LOG_INAV_MSG, sizeof(log_INAV),       
-      "INAV", "cccfffiiff",  "BAlt,IAlt,IClb,ACorrX,ACorrY,ACorrZ,GLat,GLng,ILat,ILng" },
     { LOG_MODE_MSG, sizeof(log_Mode),
       "MODE", "Mh",          "Mode,ThrCrs" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
@@ -809,7 +770,6 @@ static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds) {}
 static void Log_Write_Current() {}
 static void Log_Write_Compass() {}
 static void Log_Write_Attitude() {}
-static void Log_Write_INAV() {}
 static void Log_Write_Data(uint8_t id, int16_t value){}
 static void Log_Write_Data(uint8_t id, uint16_t value){}
 static void Log_Write_Data(uint8_t id, int32_t value){}
