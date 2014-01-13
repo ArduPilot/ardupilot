@@ -37,7 +37,8 @@ else
 fi
 
 set sketch NONE
-set logfile /fs/microsd/APM/boot.log
+rm /fs/microsd/APM/boot.log
+set logfile /fs/microsd/APM/BOOT.LOG
 
 if [ ! -f /bin/ArduPilot ]
 then
