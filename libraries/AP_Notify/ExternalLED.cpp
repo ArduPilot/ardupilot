@@ -63,11 +63,35 @@ void ExternalLED::update(void)
         _counter2 = 0;
     }
 
+    // initialising
+    if (AP_Notify::flags.initialising) {
+        // blink arming and gps leds at 5hz
+        switch(_counter2) {
+            case 0:
+            case 2:
+            case 4:
+            case 6:
+            case 8:
+                armed_led(true);
+                gps_led(false);
+                break;
+            case 1:
+            case 3:
+            case 5:
+            case 7:
+            case 9:
+                armed_led(false);
+                gps_led(true);
+                break;
+        }
+        return;
+    }
+
     // arming led control
     if (AP_Notify::flags.armed) {
         armed_led(true);
     }else{
-        // blink arming lede at 2hz
+        // blink arming led at 2hz
         switch(_counter2) {
             case 0:
             case 1:
