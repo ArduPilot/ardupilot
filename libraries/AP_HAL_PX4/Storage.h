@@ -31,7 +31,7 @@ public:
     void _timer_tick(void);
 
 private:
-    char *_storage_name;
+    const char *_storage_name;
     int _fd;
     volatile bool _initialised;
     void _storage_create(void);
@@ -41,6 +41,8 @@ private:
     volatile uint32_t _dirty_mask;
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
+    bool _have_mtd;
+    void _upgrade_to_mtd(void);
 };
 
 #endif // __AP_HAL_PX4_STORAGE_H__

@@ -21,40 +21,31 @@ using namespace PX4;
 // name the storage file after the sketch so you can use the same sd
 // card for ArduCopter and ArduPlane
 #define STORAGE_DIR "/fs/microsd/APM"
-#define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
+#define OLD_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
+#define OLD_STORAGE_FILE_BAK STORAGE_DIR "/" SKETCHNAME ".bak"
+#define MTD_PARAMS_FILE "/fs/mtd_params"
 
 extern const AP_HAL::HAL& hal;
 
 PX4Storage::PX4Storage(void) :
-_fd(-1),
+    _fd(-1),
     _dirty_mask(0),
     _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
     _perf_errors(perf_alloc(PC_COUNT, "APM_storage_errors"))
 {
-    // NuttX seems to be happier not having the extra directory
-    // entries for mapping the case of filenames. Keeping it all
-    // uppercase seems to reduce meta-data corruption when rebooting
-    // while writing
-    _storage_name = strdup(STORAGE_DIR "/" SKETCHNAME ".stg");
-    if (_storage_name == NULL) {
-        hal.scheduler->panic("Unable to create storage name");
-    }
-    for (uint8_t i=strlen(STORAGE_DIR "/"); _storage_name[i]; i++) {
-        _storage_name[i] = toupper(_storage_name[i]);
-    }
 }
 
 void PX4Storage::_storage_create(void)
 {
 	mkdir(STORAGE_DIR, 0777);
 	unlink(_storage_name);
-	int fd = open(_storage_name, O_RDWR|O_CREAT, 0666);
+        int fd = open(_storage_name, O_RDWR|O_CREAT, 0666);
 	if (fd == -1) {
-		hal.scheduler->panic("Failed to create " STORAGE_FILE);
+		hal.scheduler->panic("Failed to create " OLD_STORAGE_FILE);
 	}
 	for (uint16_t loc=0; loc<sizeof(_buffer); loc += PX4_STORAGE_MAX_WRITE) {
 		if (write(fd, &_buffer[loc], PX4_STORAGE_MAX_WRITE) != PX4_STORAGE_MAX_WRITE) {
-			hal.scheduler->panic("Error filling " STORAGE_FILE);			
+			hal.scheduler->panic("Error filling " OLD_STORAGE_FILE);			
 		}
 	}
 	// ensure the directory is updated with the new size
@@ -62,21 +53,104 @@ void PX4Storage::_storage_create(void)
 	close(fd);
 }
 
+/*
+  upgrade from microSD to MTD (FRAM)
+ */
+void PX4Storage::_upgrade_to_mtd(void)
+{
+    int mtd_fd = open(_storage_name, O_RDONLY);
+    if (mtd_fd == -1) {
+        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+    }
+    uint32_t v;
+    if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
+        hal.scheduler->panic("Failed to read header of " MTD_PARAMS_FILE);
+    }
+    close(mtd_fd);
+    if (v != 0xFFFFFFFF) {
+        // it has some data in it, don't upgrade
+        rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+        return;
+    }
+
+    // the MTD is completely uninitialised - try to get a
+    // copy from OLD_STORAGE_FILE
+    int old_fd = open(OLD_STORAGE_FILE, O_RDONLY);
+    if (old_fd == -1) {
+        ::printf("Failed to open %s\n", OLD_STORAGE_FILE);
+        return;
+    }
+
+    mtd_fd = open(_storage_name, O_WRONLY);
+    if (mtd_fd == -1) {
+        hal.scheduler->panic("Unable to open MTD for upgrade");
+    }
+
+    if (::read(old_fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
+        close(old_fd);
+        close(mtd_fd);
+        ::printf("Failed to read %s\n", OLD_STORAGE_FILE);
+        return;        
+    }
+    close(old_fd);
+    if (::write(mtd_fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
+        hal.scheduler->panic("Unable to write MTD for upgrade");        
+    }
+    close(mtd_fd);
+    rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+}
+            
+
 void PX4Storage::_storage_open(void)
 {
 	if (_initialised) {
 		return;
 	}
 
+        struct stat st;
+        _have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
+
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+        // FMUv2 should always have /fs/mtd_params
+        if (!_have_mtd) {
+            hal.scheduler->panic("Failed to find " MTD_PARAMS_FILE);
+        }
+#endif
+
+        if (_have_mtd) {
+            _storage_name = MTD_PARAMS_FILE;
+        } else {
+            // NuttX seems to be happier not having the extra directory
+            // entries for mapping the case of filenames. Keeping it all
+            // uppercase seems to reduce meta-data corruption when rebooting
+            // while writing
+            if (strcmp(SKETCHNAME, "ArduPlane") == 0) {
+                _storage_name = STORAGE_DIR "/" "PLANE.STG";
+            } else if (strcmp(SKETCHNAME, "ArduCopter") == 0) {
+                _storage_name = STORAGE_DIR "/" "COPTER.STG";
+            } else if (strcmp(SKETCHNAME, "APMrover2") == 0) {
+                _storage_name = STORAGE_DIR "/" "ROVER.STG";
+            } else {
+                _storage_name = OLD_STORAGE_FILE;
+            }
+        }
+
+        /*
+          cope with upgrading from OLD_STORAGE_FILE to MTD
+         */
+        if (_have_mtd && stat(OLD_STORAGE_FILE, &st) == 0) {
+            _upgrade_to_mtd();
+        }
+
         /**
            NuttX is not properly case insensitive on VFAT. We will create
            the file as uppercase, but if the file already exists we need
            to rename it first
         */
-        struct stat st;
-        if (stat(_storage_name, &st) == -1 && stat(STORAGE_FILE, &st) == 0) {
-            if (rename(STORAGE_FILE, _storage_name) != 0) {
-                unlink(STORAGE_FILE);
+        if (!_have_mtd && stat(_storage_name, &st) == -1 && stat(OLD_STORAGE_FILE, &st) == 0) {
+            ::printf("Renaming %s to %s\n", OLD_STORAGE_FILE, _storage_name);
+            if (rename(OLD_STORAGE_FILE, _storage_name) != 0) {
+                unlink(OLD_STORAGE_FILE);
             }
         }
 
@@ -86,7 +160,7 @@ void PX4Storage::_storage_open(void)
 		_storage_create();
 		fd = open(_storage_name, O_RDONLY);
 		if (fd == -1) {
-			hal.scheduler->panic("Failed to open " STORAGE_FILE);
+			hal.scheduler->panic("Failed to open " OLD_STORAGE_FILE);
 		}
 	}
 	if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
@@ -94,10 +168,12 @@ void PX4Storage::_storage_open(void)
 		_storage_create();
 		fd = open(_storage_name, O_RDONLY);
 		if (fd == -1) {
-			hal.scheduler->panic("Failed to open " STORAGE_FILE);
+			hal.scheduler->panic("Failed to open " OLD_STORAGE_FILE);
 		}
-		if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-			hal.scheduler->panic("Failed to read " STORAGE_FILE);
+                ssize_t ret;
+		if ((ret=read(fd, _buffer, sizeof(_buffer))) != sizeof(_buffer)) {
+                    ::printf("read: %d errno=%d\n", (int)ret, (int)errno);
+			hal.scheduler->panic("Failed to read " OLD_STORAGE_FILE);
 		}
 	}
 	close(fd);
