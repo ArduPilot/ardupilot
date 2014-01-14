@@ -25,10 +25,20 @@ checkout() {
     tag="$2"
     git stash
     if [ "$tag" = "latest" ]; then
-	git checkout master || return 1
+	vtag="master"
     else
-	git checkout "$vehicle-$tag" || return 1
+	vtag="$vehicle-$tag"
     fi
+    git checkout "$vtag" || return 1
+    (cd ../PX4NuttX && git checkout "$vtag") || {
+        git checkout master
+        return 1
+    }
+    (cd ../PX4Firmware && git checkout "$vtag") || {
+        git checkout master
+        (cd ../PX4NuttX && git checkout master)
+        return 1
+    }
     return 0
 }
 
@@ -115,7 +125,7 @@ build_arduplane() {
 	}
     }
     popd
-    git checkout master
+    checkout ArduPlane "latest"
 }
 
 # build copter binaries
@@ -149,7 +159,7 @@ build_arducopter() {
 	done
     }
     popd
-    git checkout master
+    checkout ArduCopter "latest"
 }
 
 # build rover binaries
@@ -178,7 +188,7 @@ build_rover() {
 	}
     }
     popd
-    git checkout master
+    checkout APMrover2 "latest"
 }
 
 for build in stable beta latest; do
