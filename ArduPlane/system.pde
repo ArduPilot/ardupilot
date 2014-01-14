@@ -205,7 +205,7 @@ static void init_ardupilot()
     }
 
     startup_ground();
-    if (g.log_bitmask & MASK_LOG_CMD)
+    if (should_log(MASK_LOG_CMD))
         Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
     // choose the nav controller
@@ -359,7 +359,7 @@ static void set_mode(enum FlightMode mode)
         throttle_suppressed = false;
     }
 
-    if (g.log_bitmask & MASK_LOG_MODE)
+    if (should_log(MASK_LOG_MODE))
         Log_Write_Mode(control_mode);
 
     // reset attitude integrators on mode change
@@ -606,4 +606,23 @@ static void servo_write(uint8_t ch, uint16_t pwm)
 #endif
     hal.rcout->enable_ch(ch);
     hal.rcout->write(ch, pwm);
+}
+
+/*
+  should we log a message type now?
+ */
+static bool should_log(uint32_t mask)
+{
+    if (!(mask & g.log_bitmask)) {
+        return false;
+    }
+    bool armed;
+    if (arming.arming_required() == AP_Arming::NO) {
+        // for logging purposes consider us armed if we either don't
+        // have a safety switch, or we have one and it is disarmed
+        armed = (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    } else {
+        armed = arming.is_armed();
+    }
+    return armed || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
 }

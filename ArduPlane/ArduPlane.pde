@@ -825,10 +825,10 @@ static void ahrs_update()
 
     ahrs.update();
 
-    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
+    if (should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
 
-    if (g.log_bitmask & MASK_LOG_IMU)
+    if (should_log(MASK_LOG_IMU))
         Log_Write_IMU();
 
     // calculate a scaled roll limit based on current pitch
@@ -876,7 +876,7 @@ static void update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         compass.null_offsets();
-        if (g.log_bitmask & MASK_LOG_COMPASS) {
+        if (should_log(MASK_LOG_COMPASS)) {
             Log_Write_Compass();
         }
     } else {
@@ -907,10 +907,10 @@ static void barometer_accumulate(void)
  */
 static void update_logging1(void)
 {
-    if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
 
-    if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_IMU))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
         Log_Write_IMU();
 }
 
@@ -919,13 +919,13 @@ static void update_logging1(void)
  */
 static void update_logging2(void)
 {
-    if (g.log_bitmask & MASK_LOG_CTUN)
+    if (should_log(MASK_LOG_CTUN))
         Log_Write_Control_Tuning();
     
-    if (g.log_bitmask & MASK_LOG_NTUN)
+    if (should_log(MASK_LOG_NTUN))
         Log_Write_Nav_Tuning();
 
-    if (g.log_bitmask & MASK_LOG_RC)
+    if (should_log(MASK_LOG_RC))
         Log_Write_RC();
 }
 
@@ -968,7 +968,7 @@ static void update_aux(void)
 
 static void one_second_loop()
 {
-    if (g.log_bitmask & MASK_LOG_CURRENT)
+    if (should_log(MASK_LOG_CURRENT))
         Log_Write_Current();
 
     // send a heartbeat
@@ -991,7 +991,7 @@ static void log_perf_info()
     if (scheduler.debug() != 0) {
         hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
     }
-    if (g.log_bitmask & MASK_LOG_PM)
+    if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     G_Dt_max = 0;
     resetPerfData();
@@ -1037,7 +1037,7 @@ static void update_GPS_50Hz(void)
     g_gps->update();
     if (g_gps->last_message_time_ms() != last_gps_reading) {
         last_gps_reading = g_gps->last_message_time_ms();
-        if (g.log_bitmask & MASK_LOG_GPS) {
+        if (should_log(MASK_LOG_GPS)) {
             Log_Write_GPS();
         }
     }
@@ -1402,7 +1402,7 @@ static void update_alt()
                                                  takeoff_pitch_cd,
                                                  throttle_nudge,
                                                  relative_altitude());
-        if (g.log_bitmask & MASK_LOG_TECS) {
+        if (should_log(MASK_LOG_TECS)) {
             Log_Write_TECS_Tuning();
         }
     }
