@@ -54,6 +54,7 @@ MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
 #MODULES		+= systemcmds/eeprom
 MODULES              += systemcmds/auth
+MODULES         += systemcmds/mtd
 
 #
 # Library modules
