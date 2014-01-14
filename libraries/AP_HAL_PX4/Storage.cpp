@@ -25,6 +25,7 @@ using namespace PX4;
 #define OLD_STORAGE_FILE_BAK STORAGE_DIR "/" SKETCHNAME ".bak"
 #define MTD_PARAMS_FILE "/fs/mtd_params"
 #define MTD_SIGNATURE 0x14012014
+#define STORAGE_RENAME_OLD_FILE 0
 
 extern const AP_HAL::HAL& hal;
 
@@ -122,7 +123,9 @@ void PX4Storage::_upgrade_to_mtd(void)
         hal.scheduler->panic("Unable to write MTD for upgrade");        
     }
     close(mtd_fd);
+#if STORAGE_RENAME_OLD_FILE
     rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+#endif
     ::printf("Upgraded MTD from %s\n", OLD_STORAGE_FILE);
 }
             
@@ -168,7 +171,9 @@ void PX4Storage::_storage_open(void)
             bool good_signature = (_mtd_signature() == MTD_SIGNATURE);
             if (stat(OLD_STORAGE_FILE, &st) == 0) {
                 if (good_signature) {
+#if STORAGE_RENAME_OLD_FILE
                     rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+#endif
                 } else {
                     _upgrade_to_mtd();
                 }
