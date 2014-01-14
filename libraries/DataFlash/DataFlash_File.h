@@ -15,6 +15,7 @@
 #else
 #define perf_begin(x)
 #define perf_end(x)
+#define perf_count(x)
 #endif
 
 

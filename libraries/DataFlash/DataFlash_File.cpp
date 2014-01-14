@@ -383,6 +383,8 @@ uint16_t DataFlash_File::start_new_log(void)
         return 0xFFFF;
     }
     _write_offset = 0;
+    _writebuf_head = 0;
+    _writebuf_tail = 0;
     log_write_started = true;
 
     // now update lastlog.txt with the new log number
