@@ -578,7 +578,9 @@ void DataFlash_File::_io_timer(void)
           chunk, ensuring the directory entry is updated after each
           write.
          */
+#if CONFIG_HAL_BOARD != HAL_BOARD_AVR_SITL
         ::fsync(_write_fd);
+#endif
         BUF_ADVANCEHEAD(_writebuf, nwritten);
     }
     perf_end(_perf_write);
