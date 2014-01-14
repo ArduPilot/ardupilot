@@ -23,6 +23,7 @@
 #include <AP_Math.h>
 #include <stdio.h>
 #include <time.h>
+#include <dirent.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -41,8 +42,7 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
     _log_directory(log_directory),
     _writebuf(NULL),
     _writebuf_size(16*1024),
-    _writebuf_chunk(512), // until multiblock write support works on
-                          // px4, we are best off keeping writes small
+    _writebuf_chunk(4096),
     _writebuf_head(0),
     _writebuf_tail(0),
     _last_write_time(0)
@@ -61,6 +61,22 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
     // create the log directory if need be
     int ret;
     struct stat st;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // try to cope with an existing lowercase log directory
+    // name. NuttX does not handle case insensitive VFAT well
+    DIR *d = opendir("/fs/microsd/APM");
+    if (d != NULL) {
+        for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+            if (strcmp(de->d_name, "logs") == 0) {
+                rename("/fs/microsd/APM/logs", "/fs/microsd/APM/OLDLOGS");
+                break;
+            }
+        }
+        closedir(d);
+    }
+#endif
+
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
@@ -370,7 +386,7 @@ uint16_t DataFlash_File::start_new_log(void)
     // now update lastlog.txt with the new log number
     fname = _lastlog_file_name();
     FILE *f = ::fopen(fname, "w");
-    fprintf(f, "%u\n", (unsigned)log_num);
+    fprintf(f, "%u\r\n", (unsigned)log_num);
     fclose(f);    
     free(fname);
 
@@ -513,6 +529,7 @@ void DataFlash_File::_io_timer(void)
     if (_write_fd == -1 || !_initialised) {
         return;
     }
+
     uint16_t nbytes = BUF_AVAILABLE(_writebuf);
     if (nbytes == 0) {
         return;
@@ -555,13 +572,14 @@ void DataFlash_File::_io_timer(void)
         _initialised = false;
     } else {
         _write_offset += nwritten;
+        /*
+          the best strategy for minimising corruption on microSD cards
+          seems to be to write in 4k chunks and fsync the file on each
+          chunk, ensuring the directory entry is updated after each
+          write.
+         */
+        ::fsync(_write_fd);
         BUF_ADVANCEHEAD(_writebuf, nwritten);
-        if (hal.scheduler->millis() - last_fsync_ms > 10000) {
-            last_fsync_ms = hal.scheduler->millis();
-            perf_begin(_perf_fsync);
-            ::fsync(_write_fd);            
-            perf_end(_perf_fsync);
-        }
     }
     perf_end(_perf_write);
 }

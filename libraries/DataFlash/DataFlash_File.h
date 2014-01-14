@@ -58,7 +58,6 @@ private:
     uint32_t _write_offset;
     volatile bool _initialised;
     const char *_log_directory;
-    uint32_t last_fsync_ms;
 
     /*
       read a block
