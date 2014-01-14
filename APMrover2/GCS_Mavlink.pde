@@ -1854,7 +1854,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_LOG_REQUEST_LIST ... MAVLINK_MSG_ID_LOG_REQUEST_END:
+    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
+    case MAVLINK_MSG_ID_LOG_ERASE:
+        in_log_download = true;
+        // fallthru
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
+        if (!in_mavlink_delay) {
+            handle_log_message(msg, DataFlash);
+        }
+        break;
+    case MAVLINK_MSG_ID_LOG_REQUEST_END:
+        in_log_download = false;
         if (!in_mavlink_delay) {
             handle_log_message(msg, DataFlash);
         }

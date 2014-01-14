@@ -412,7 +412,7 @@ static void do_take_picture()
 {
 #if CAMERA == ENABLED
     camera.trigger_pic();
-    if (g.log_bitmask & MASK_LOG_CAMERA) {
+    if (should_log(MASK_LOG_CAMERA)) {
         Log_Write_Camera();
     }
 #endif
