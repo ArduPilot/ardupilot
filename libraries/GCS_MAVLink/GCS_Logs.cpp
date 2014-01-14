@@ -40,6 +40,9 @@ void GCS_MAVLINK::handle_log_message(mavlink_message_t *msg, DataFlash_Class &da
     case MAVLINK_MSG_ID_LOG_ERASE:
         dataflash.EraseAll();
         break;
+    case MAVLINK_MSG_ID_LOG_REQUEST_END:
+        _log_sending = false;
+        break;
     }
         
 }
