@@ -115,11 +115,9 @@ fi
 if [ $HAVE_PX4IO == true ]
 then
     echo "PX4IO board OK"
-    echo "PX4IO board OK" >> $logfile
     if px4io checkcrc /etc/px4io/px4io.bin
     then
         echo "PX4IO CRC OK"
-        echo "PX4IO CRC OK" >> $logfile    
     else
         echo "PX4IO CRC failure"
         echo "PX4IO CRC failure" >> $logfile    
@@ -174,7 +172,6 @@ fi
 
 
 echo "Starting APM sensors"
-echo "Starting APM sensors" > $logfile
 if ms5611 start
 then
     echo "ms5611 started OK"
@@ -220,7 +217,6 @@ else
     if mpu6000 start
     then
        echo "Found MPU6000"
-       echo "Found MPU6000" >> $logfile
     else
        echo "No MPU6000"
        echo "No MPU6000" >> $logfile
@@ -242,16 +238,15 @@ fi
 # optional ETS airspeed sensor
 if ets_airspeed start
 then
-    echo "Found ETS airspeed sensor" >> $logfile
+    echo "Found ETS airspeed sensor"
 fi
 
 if meas_airspeed start
 then
-    echo "Found MEAS airspeed sensor" >> $logfile
+    echo "Found MEAS airspeed sensor"
 fi
 
 echo "Trying PX4IO board"
-echo "Trying PX4IO board" >> $logfile
 
 # rgbled
 if rgbled start
@@ -272,8 +267,7 @@ then
         fi
 fi
 
-echo Starting ArduPilot
-echo Starting ArduPilot $deviceA $deviceC $deviceD >> $logfile
+echo Starting ArduPilot $deviceA $deviceC $deviceD
 if ArduPilot -d $deviceA -d2 $deviceC -d3 $deviceD start
 then
     echo ArduPilot started OK
@@ -282,5 +276,4 @@ else
 fi
 
 echo "rc.APM finished"
-echo "rc.APM finished" >> $logfile
 
