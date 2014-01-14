@@ -164,6 +164,9 @@ DataFlash_Empty DataFlash;
 #endif
 #endif
 
+// has a log download started?
+static bool in_log_download;
+
 // scaled roll limit based on pitch
 static int32_t roll_limit_cd;
 static int32_t pitch_limit_min_cd;

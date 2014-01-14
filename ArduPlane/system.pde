@@ -142,9 +142,6 @@ static void init_ardupilot()
             gcs[i].reset_cli_timeout();
         }
     }
-    if (g.log_bitmask != 0) {
-        start_logging();
-    }
 #endif
 
     // Register mavlink_delay_cb, which will run anytime you have
@@ -624,5 +621,9 @@ static bool should_log(uint32_t mask)
     } else {
         armed = arming.is_armed();
     }
-    return armed || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = armed || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    if (ret && !DataFlash.logging_started() && !in_log_download) {
+        start_logging();
+    }
+    return ret;
 }
