@@ -15,6 +15,7 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
 {
     _num_types = num_types;
     _structures = structure;
+    _writes_enabled = true;
 }
 
 
