@@ -568,7 +568,9 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 // start a new log
 static void start_logging() 
 {
+    in_mavlink_delay = true;
     DataFlash.StartNewLog();
+    in_mavlink_delay = false;
     DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
 
     // write system identifier as well if available

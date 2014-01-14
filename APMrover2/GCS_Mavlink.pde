@@ -1885,7 +1885,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 static void mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs[0].initialised) return;
+    if (!gcs[0].initialised || in_mavlink_delay) return;
 
     in_mavlink_delay = true;
 
