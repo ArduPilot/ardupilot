@@ -349,6 +349,7 @@ void DataFlash_File::stop_logging(void)
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
+        log_write_started = false;
         ::close(fd);
     }
 }
@@ -382,6 +383,7 @@ uint16_t DataFlash_File::start_new_log(void)
         return 0xFFFF;
     }
     _write_offset = 0;
+    log_write_started = true;
 
     // now update lastlog.txt with the new log number
     fname = _lastlog_file_name();

@@ -52,6 +52,8 @@ public:
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
+    bool logging_started(void) const { return log_write_started; }
+
 	/*
       every logged packet starts with 3 bytes
     */
@@ -76,6 +78,7 @@ protected:
     const struct LogStructure *_structures;
     uint8_t _num_types;
     bool _writes_enabled;
+    bool log_write_started;
 
     /*
       read a block
