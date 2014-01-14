@@ -488,13 +488,6 @@
 // Attitude Control
 //
 
-// definitions for earth frame and body frame
-// used to specify frame to rate controllers
-#define EARTH_FRAME         0
-#define BODY_FRAME          1
-#define BODY_EARTH_FRAME    2
-
-
 // Flight mode roll, pitch, yaw, throttle and navigation definitions
 
 // Stabilize Mode

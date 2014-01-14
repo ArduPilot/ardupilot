@@ -180,6 +180,10 @@
                     // requested
 #define NO_COMMAND 0
 
+// Earth frame and body frame definitions used by rate controllers
+#define EARTH_FRAME         0
+#define BODY_FRAME          1
+#define BODY_EARTH_FRAME    2
 
 // Navigation modes held in nav_mode variable
 #define NAV_NONE        0
