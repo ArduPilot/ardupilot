@@ -55,7 +55,7 @@ public:
         // Misc
         //
         k_param_auto_trim      = 10,
-        k_param_log_bitmask,
+        k_param_log_bitmask_old,  // unused
         k_param_pitch_trim_cd,
         k_param_mix_mode,
         k_param_reverse_elevons,
@@ -99,6 +99,7 @@ public:
         k_param_rally_limit_km,
         k_param_hil_err_limit,
         k_param_sonar,
+        k_param_log_bitmask,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -388,7 +389,7 @@ public:
     AP_Int8 reverse_ch1_elevon;
     AP_Int8 reverse_ch2_elevon;
     AP_Int16 num_resets;
-    AP_Int16 log_bitmask;
+    AP_Int32 log_bitmask;
     AP_Int8 reset_switch_chan;
     AP_Int8 reset_mission_chan;
     AP_Int32 airspeed_cruise_cm;
