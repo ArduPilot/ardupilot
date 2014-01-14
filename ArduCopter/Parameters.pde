@@ -40,12 +40,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SYSID_THISMAV
     // @DisplayName: Mavlink version
     // @Description: Allows reconising the mavlink version
+    // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
 
     // @Param: SYSID_MYGCS
     // @DisplayName: My ground station number
     // @Description: Allows restricting radio overrides to only come from my ground station
+    // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
