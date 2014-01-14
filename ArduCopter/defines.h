@@ -94,24 +94,11 @@
 #define X_FRAME 1
 #define V_FRAME 2
 
-// LED output
-#define NORMAL_LEDS 0
-#define SAVE_TRIM_LEDS 1
-
-
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
-#define TRUE 1
-#define FALSE 0
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
-
-#define DEBUG 0
-#define LOITER_RANGE 60 // for calculating power outside of loiter radius
-
-#define T6 1000000
-#define T7 10000000
 
 // GPS type codes - use the names, not the numbers
 #define GPS_PROTOCOL_NONE       -1
@@ -128,11 +115,6 @@
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_ATTITUDE               1
 #define HIL_MODE_SENSORS                2
-
-// Altitude status definitions
-#define REACHED_ALT                     0
-#define DESCENDING                      1
-#define ASCENDING                       2
 
 // Auto Pilot modes
 // ----------------
