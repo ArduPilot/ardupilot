@@ -37,7 +37,10 @@ else
 fi
 
 set sketch NONE
-rm /fs/microsd/APM/boot.log
+if rm /fs/microsd/APM/boot.log
+then
+   echo "removed old boot.log"
+fi
 set logfile /fs/microsd/APM/BOOT.LOG
 
 if [ ! -f /bin/ArduPilot ]
@@ -256,6 +259,17 @@ then
    echo "rgbled started OK"
 else
    echo "Failed to start rgbled driver" >> $logfile
+fi
+
+if [ $BOARD == FMUv2 ]
+then
+        if mtd start
+        then
+           echo "started mtd driver OK"
+        else
+           echo "failed to start mtd driver"
+           sh /etc/init.d/rc.error           
+        fi
 fi
 
 echo Starting ArduPilot
