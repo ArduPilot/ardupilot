@@ -43,6 +43,8 @@ private:
     perf_counter_t  _perf_errors;
     bool _have_mtd;
     void _upgrade_to_mtd(void);
+    uint32_t _mtd_signature(void);
+    void _mtd_write_signature(void);
 };
 
 #endif // __AP_HAL_PX4_STORAGE_H__

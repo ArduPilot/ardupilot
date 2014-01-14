@@ -24,6 +24,7 @@ using namespace PX4;
 #define OLD_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 #define OLD_STORAGE_FILE_BAK STORAGE_DIR "/" SKETCHNAME ".bak"
 #define MTD_PARAMS_FILE "/fs/mtd_params"
+#define MTD_SIGNATURE 0x14012014
 
 extern const AP_HAL::HAL& hal;
 
@@ -54,25 +55,49 @@ void PX4Storage::_storage_create(void)
 }
 
 /*
-  upgrade from microSD to MTD (FRAM)
+  get signature from bytes at offset 8192-4
  */
-void PX4Storage::_upgrade_to_mtd(void)
+uint32_t PX4Storage::_mtd_signature(void)
 {
     int mtd_fd = open(_storage_name, O_RDONLY);
     if (mtd_fd == -1) {
         hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
     }
     uint32_t v;
+    if (lseek(mtd_fd, 8192-4, SEEK_SET) != 8192-4) {
+        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+    }
     if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
-        hal.scheduler->panic("Failed to read header of " MTD_PARAMS_FILE);
+        hal.scheduler->panic("Failed to read signature from " MTD_PARAMS_FILE);
     }
     close(mtd_fd);
-    if (v != 0xFFFFFFFF) {
-        // it has some data in it, don't upgrade
-        rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
-        return;
-    }
+    return v;
+}
 
+/*
+  put signature bytes at offset 8192-4
+ */
+void PX4Storage::_mtd_write_signature(void)
+{
+    int mtd_fd = open(_storage_name, O_WRONLY);
+    if (mtd_fd == -1) {
+        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+    }
+    uint32_t v = MTD_SIGNATURE;
+    if (lseek(mtd_fd, 8192-4, SEEK_SET) != 8192-4) {
+        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+    }
+    if (write(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
+        hal.scheduler->panic("Failed to write signature in " MTD_PARAMS_FILE);
+    }
+    close(mtd_fd);
+}
+
+/*
+  upgrade from microSD to MTD (FRAM)
+ */
+void PX4Storage::_upgrade_to_mtd(void)
+{
     // the MTD is completely uninitialised - try to get a
     // copy from OLD_STORAGE_FILE
     int old_fd = open(OLD_STORAGE_FILE, O_RDONLY);
@@ -81,7 +106,7 @@ void PX4Storage::_upgrade_to_mtd(void)
         return;
     }
 
-    mtd_fd = open(_storage_name, O_WRONLY);
+    int mtd_fd = open(_storage_name, O_WRONLY);
     if (mtd_fd == -1) {
         hal.scheduler->panic("Unable to open MTD for upgrade");
     }
@@ -98,6 +123,7 @@ void PX4Storage::_upgrade_to_mtd(void)
     }
     close(mtd_fd);
     rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+    ::printf("Upgraded MTD from %s\n", OLD_STORAGE_FILE);
 }
             
 
@@ -138,8 +164,18 @@ void PX4Storage::_storage_open(void)
         /*
           cope with upgrading from OLD_STORAGE_FILE to MTD
          */
-        if (_have_mtd && stat(OLD_STORAGE_FILE, &st) == 0) {
-            _upgrade_to_mtd();
+        if (_have_mtd) {
+            bool good_signature = (_mtd_signature() == MTD_SIGNATURE);
+            if (stat(OLD_STORAGE_FILE, &st) == 0) {
+                if (good_signature) {
+                    rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+                } else {
+                    _upgrade_to_mtd();
+                }
+            }
+            if (!good_signature) {
+                _mtd_write_signature();
+            }
         }
 
         /**
