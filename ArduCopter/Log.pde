@@ -739,7 +739,9 @@ static void start_logging()
     if (g.log_bitmask != 0) {
         if (!ap.logging_started) {
             ap.logging_started = true;
+            in_mavlink_delay = true;
             DataFlash.StartNewLog();
+            in_mavlink_delay = false;
             DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
 
             // write system identifier as well if available
