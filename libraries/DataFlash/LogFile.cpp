@@ -901,7 +901,6 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         sqrtvarVT : (int16_t)(100*sqrtf(tasVar))
     };
     WriteBlock(&pkt4, sizeof(pkt4));
-
-#endif
 }
+#endif
 
