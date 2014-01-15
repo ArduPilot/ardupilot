@@ -64,7 +64,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 {
     int32_t alt;
     print_hit_enter();
-    init_barometer();
+    init_barometer(true);
 
     while(1) {
         delay(100);

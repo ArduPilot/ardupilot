@@ -263,7 +263,7 @@ static void init_ardupilot()
 #if HIL_MODE != HIL_MODE_ATTITUDE
     // read Baro pressure at ground
     //-----------------------------
-    init_barometer();
+    init_barometer(true);
 #endif
 
     // initialise sonar

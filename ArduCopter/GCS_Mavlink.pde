@@ -1177,7 +1177,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } 
             if (packet.param3 == 1) {
 #if HIL_MODE != HIL_MODE_ATTITUDE
-                init_barometer();
+                init_barometer(false);                      // fast barometer calibratoin
 #endif
             }
             if (packet.param4 == 1) {

@@ -169,10 +169,8 @@ static void init_arm_motors()
     }
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
-    // read Baro pressure at ground -
-    // this resets Baro for more accuracy
-    //-----------------------------------
-    init_barometer();
+    // fast baro calibration to reset ground pressure
+    init_barometer(false);
 #endif
 
     // go back to normal AHRS gains
