@@ -31,7 +31,6 @@ public:
     void _timer_tick(void);
 
 private:
-    const char *_storage_name;
     int _fd;
     volatile bool _initialised;
     void _storage_create(void);
