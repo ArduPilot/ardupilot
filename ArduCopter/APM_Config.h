@@ -34,8 +34,9 @@
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define EPM_ENABLED           ENABLED             // enable epm cargo gripper costs 500bytes of flash
 
-// redefine size of throttle deadband in pwm (0 ~ 1000)
-//#define THROTTLE_IN_DEADBAND   100
+// other settings
+//#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
+//#define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM   DISABLED    // when set to DISABLED vehicle will disarm after landing (in LAND mode or RTL) even if pilot has not put throttle to zero
 
 //#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 

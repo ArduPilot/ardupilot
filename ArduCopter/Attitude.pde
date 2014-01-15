@@ -1094,7 +1094,11 @@ get_throttle_land()
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
         // disarm when the landing detector says we've landed and throttle is at min (or we're in failsafe so we have no pilot thorottle input)
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
         if( ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio) ) {
+#else
+        if (ap.land_complete) {
+#endif
             init_disarm_motors();
         }
     }

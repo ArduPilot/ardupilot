@@ -464,6 +464,9 @@
 #ifndef LAND_DETECTOR_TRIGGER
  # define LAND_DETECTOR_TRIGGER 50    // number of 50hz iterations with near zero climb rate and low throttle that triggers landing complete.
 #endif
+#ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM // require pilot to reduce throttle to minimum before vehicle will disarm
+ # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM ENABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
