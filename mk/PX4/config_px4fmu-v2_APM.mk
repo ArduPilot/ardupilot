@@ -42,7 +42,6 @@ MODULES		+= drivers/meas_airspeed
 #
 # System commands
 #
-MODULES		+= systemcmds/ramtron
 MODULES		+= systemcmds/bl_update
 MODULES		+= systemcmds/boardinfo
 MODULES		+= systemcmds/mixer
@@ -52,8 +51,7 @@ MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
 MODULES		+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
-#MODULES		+= systemcmds/eeprom
-MODULES              += systemcmds/auth
+MODULES		+= systemcmds/auth
 MODULES         += systemcmds/mtd
 
 #

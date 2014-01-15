@@ -256,15 +256,12 @@ else
    echo "Failed to start rgbled driver" >> $logfile
 fi
 
-if [ $BOARD == FMUv2 ]
+if mtd start /fs/mtd
 then
-        if mtd start
-        then
-           echo "started mtd driver OK"
-        else
-           echo "failed to start mtd driver"
-           sh /etc/init.d/rc.error           
-        fi
+    echo "started mtd driver OK"
+else
+    echo "failed to start mtd driver"
+    sh /etc/init.d/rc.error           
 fi
 
 echo Starting ArduPilot $deviceA $deviceC $deviceD
