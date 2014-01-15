@@ -18,6 +18,10 @@ static void set_control_channels(void)
     channel_pitch->set_angle(SERVO_MAX);
     channel_rudder->set_angle(SERVO_MAX);
     channel_throttle->set_range(0, 100);
+
+    if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
+    }
 }
 
 /*
@@ -62,6 +66,12 @@ static void init_rc_out()
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     servo_write(CH_12,  g.rc_12.radio_trim);
 #endif
+
+    // setup PX4 to output the min throttle when safety off if arming
+    // is setup for min on disarm
+    if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
+    }
 }
 
 // check for pilot input on rudder stick for arming
