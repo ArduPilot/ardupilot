@@ -548,8 +548,6 @@ static void servo_write(uint8_t ch, uint16_t pwm)
         #error Unrecognised frame type
     #endif
 
-    // debug -- remove me!
-    cliSerial->printf_P(PSTR("\nCh:%d %d %d\n"),(int)ch, (int)pwm, (int)servo_ok);
     if (servo_ok) {
         hal.rcout->enable_ch(ch);
         hal.rcout->write(ch, pwm);
