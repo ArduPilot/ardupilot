@@ -2256,6 +2256,11 @@ static void tuning(){
         // set sonar gain
         g.sonar_gain.set(tuning_value);
         break;
+
+    case CH6_LOIT_SPEED:
+        // set max loiter speed to 0 ~ 1000 cm/s
+        wp_nav.set_loiter_velocity(g.rc_6.control_in);
+        break;
     }
 }
 
