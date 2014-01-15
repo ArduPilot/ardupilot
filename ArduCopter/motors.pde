@@ -523,3 +523,35 @@ set_servos_4()
     motors.output();
 }
 
+// servo_write - writes to a servo after checking the channel is not used for a motor
+static void servo_write(uint8_t ch, uint16_t pwm)
+{
+    bool servo_ok = false;
+
+    #if (FRAME_CONFIG == QUAD_FRAME)
+        // Quads can use RC5 and higher as servos
+        if (ch >= CH_5) servo_ok = true;
+    #elif (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME)
+        // Tri's and Singles can use RC5, RC6, RC8 and higher
+        if (ch == CH_5 || ch == CH_6 || ch >= CH_8) servo_ok = true;
+    #elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+        // Hexa and Y6 can use RC7 and higher
+        if (ch >= CH_7) servo_ok = true;
+    #elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+        // Octa and X8 can use RC9 and higher
+        if (ch >= CH_9) servo_ok = true;
+    #elif (FRAME_CONFIG == HELI_FRAME)
+        // Heli's can use RC5, RC6, RC7, not RC8, and higher
+        if (ch == CH_5 || ch == CH_6 || ch == CH_7 || ch >= CH_9) servo_ok = true;
+    #else
+        // throw compile error if frame type is unrecognise
+        #error Unrecognised frame type
+    #endif
+
+    // debug -- remove me!
+    cliSerial->printf_P(PSTR("\nCh:%d %d %d\n"),(int)ch, (int)pwm, (int)servo_ok);
+    if (servo_ok) {
+        hal.rcout->enable_ch(ch);
+        hal.rcout->write(ch, pwm);
+    }
+}

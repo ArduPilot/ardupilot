@@ -1215,6 +1215,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_SET_SERVO:
+            servo_write(packet.param1 - 1, packet.param2);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             if (packet.param1 == 1 || packet.param1 == 3) {
                 // when packet.param1 == 3 we reboot to hold in bootloader
