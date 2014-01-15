@@ -131,7 +131,7 @@ bool NavEKF::PositionDrifting(void) const
 }
 
 void NavEKF::SetStaticMode(bool setting) {
-        staticMode = !setting;
+        staticMode = setting;
 }
 
 void NavEKF::ResetPosition(void)
