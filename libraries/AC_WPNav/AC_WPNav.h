@@ -70,6 +70,9 @@ public:
     /// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
     void get_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target) const;
 
+    /// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
+    void set_loiter_velocity(float velocity_cms) { _loiter_speed_cms = velocity_cms; };
+
     ///
     /// waypoint controller
     ///
