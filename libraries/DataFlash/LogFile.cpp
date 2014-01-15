@@ -827,9 +827,9 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         posN    : (float)(posNED.x), // metres North
         posE    : (float)(posNED.y), // metres East
         posD    : (float)(posNED.z), // metres Down
-        gyrX    : (int8_t)(gyroBias.x), // deg/min
-        gyrY    : (int8_t)(gyroBias.y), // deg/min
-        gyrZ    : (int8_t)(gyroBias.z)  // deg/min
+        gyrX    : (int8_t)(60*degrees(gyroBias.x)), // deg/min
+        gyrY    : (int8_t)(60*degrees(gyroBias.y)), // deg/min
+        gyrZ    : (int8_t)(60*degrees(gyroBias.z))  // deg/min
     };
     WriteBlock(&pkt, sizeof(pkt));
 
@@ -888,7 +888,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 	float tasVar;
     ahrs.get_NavEKF().getVariances(velVar, posVar, magVar, tasVar);
     struct log_EKF4 pkt4 = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF3_MSG),
+        LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_ms : hal.scheduler->millis(),
         sqrtvarVN : (int16_t)(100*sqrtf(velVar.x)),
         sqrtvarVE : (int16_t)(100*sqrtf(velVar.y)),
