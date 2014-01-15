@@ -21,6 +21,7 @@ public:
     void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
+    void     set_safety_pwm(uint32_t chmask, uint16_t period_us);
 
     void _timer_tick(void);
 
