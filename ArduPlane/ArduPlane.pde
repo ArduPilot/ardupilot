@@ -1014,9 +1014,16 @@ static void airspeed_ratio_update(void)
 {
     if (!airspeed.enabled() ||
         g_gps->status() < GPS::GPS_OK_FIX_3D ||
-        g_gps->ground_speed_cm < 400 ||
-        airspeed.get_airspeed() < aparm.airspeed_min) {
+        g_gps->ground_speed_cm < 400) {
         // don't calibrate when not moving
+        return;        
+    }
+    if (airspeed.get_airspeed() < aparm.airspeed_min && 
+        g_gps->ground_speed_cm < (uint32_t)aparm.airspeed_min*100) {
+        // don't calibrate when flying below the minimum airspeed. We
+        // check both airspeed and ground speed to catch cases where
+        // the airspeed ratio is way too low, which could lead to it
+        // never coming up again
         return;
     }
     if (abs(ahrs.roll_sensor) > roll_limit_cd ||
