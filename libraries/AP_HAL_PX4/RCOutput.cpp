@@ -133,17 +133,7 @@ void PX4RCOutput::enable_ch(uint8_t ch)
     // channels are always enabled ...
 }
 
-void PX4RCOutput::enable_mask(uint32_t chmask)
-{
-    // channels are always enabled ...
-}
-
 void PX4RCOutput::disable_ch(uint8_t ch)
-{
-    // channels are always enabled ...
-}
-
-void PX4RCOutput::disable_mask(uint32_t chmask)
 {
     // channels are always enabled ...
 }
@@ -161,8 +151,6 @@ void PX4RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_DISARMED_PWM, (long unsigned int)&pwm_values);
     if (ret != OK) {
         hal.console->printf("Failed to setup disarmed PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
-    } else {
-        hal.console->printf("Setup disarmed PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
     }
 }
 

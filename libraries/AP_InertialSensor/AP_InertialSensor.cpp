@@ -153,7 +153,6 @@ AP_InertialSensor::_init_gyro()
     bool converged[num_gyros];
 
     // cold start
-    hal.scheduler->delay(100);
     hal.console->print_P(PSTR("Init Gyro"));
 
     // flash leds to tell user to keep the IMU still
@@ -163,12 +162,12 @@ AP_InertialSensor::_init_gyro()
     for (uint8_t k=0; k<num_gyros; k++) {
         _gyro_offset[k] = Vector3f(0,0,0);
         best_diff[k] = 0;
+        last_average[k].zero();
         converged[k] = false;
     }
 
-    for(int8_t c = 0; c < 25; c++) {
-        hal.scheduler->delay(20);
-
+    for(int8_t c = 0; c < 5; c++) {
+        hal.scheduler->delay(5);
         update();
     }
 
@@ -176,10 +175,6 @@ AP_InertialSensor::_init_gyro()
     // again and see if the 2nd average is within a small margin of
     // the first
 
-    for (uint8_t k=0; k<num_gyros; k++) {
-        last_average[k].zero();
-    }
-    
     uint8_t num_converged = 0;
 
     // we try to get a good calibration estimate for up to 10 seconds
@@ -194,7 +189,7 @@ AP_InertialSensor::_init_gyro()
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_sum[k].zero();
         }
-        for (i=0; i<200; i++) {
+        for (i=0; i<50; i++) {
             update();
             for (uint8_t k=0; k<num_gyros; k++) {
                 gyro_sum[k] += get_gyro(k);
@@ -206,13 +201,13 @@ AP_InertialSensor::_init_gyro()
             gyro_diff[k] = last_average[k] - gyro_avg[k];
             diff_norm[k] = gyro_diff[k].length();
         }
-        
+
         for (uint8_t k=0; k<num_gyros; k++) {
             if (converged[k]) continue;
             if (j == 0) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = gyro_avg[k];
-            } else if (gyro_diff[k].length() < ToRad(0.04f)) {
+            } else if (gyro_diff[k].length() < ToRad(0.1f)) {
                 // we want the average to be within 0.1 bit, which is 0.04 degrees/s
                 last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
                 _gyro_offset[k] = last_average[k];            

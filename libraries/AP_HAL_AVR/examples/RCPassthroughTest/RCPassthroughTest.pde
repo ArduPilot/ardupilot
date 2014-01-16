@@ -83,7 +83,9 @@ void loop (void) {
 void setup (void) {
     hal.gpio->pinMode(27, GPIO_OUTPUT);
     hal.gpio->write(27, 0);
-    hal.rcout->enable_mask(0x000000FF);
+    for (uint8_t i=0; i<16; i++) {
+        hal.rcout->enable_ch(i);
+    }
 
     /* Bottom 4 channels at 400hz (like on a quad) */
     hal.rcout->set_freq(0x0000000F, 400);

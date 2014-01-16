@@ -32,10 +32,7 @@ public:
     /* Output active/highZ control, either by single channel at a time
      * or a mask of channels */
     virtual void     enable_ch(uint8_t ch) = 0;
-    virtual void     enable_mask(uint32_t chmask) = 0;
-
     virtual void     disable_ch(uint8_t ch) = 0;
-    virtual void     disable_mask(uint32_t chmask) = 0;
 
     /* Output, either single channel or bulk array of channels */
     virtual void     write(uint8_t ch, uint16_t period_us) = 0;
