@@ -130,14 +130,6 @@ void APM1RCOutput::enable_ch(uint8_t ch) {
     }
 }
 
-void APM1RCOutput::enable_mask(uint32_t chmask) {
-    for (int i = 0; i < 32; i++) {
-        if ((chmask >> i) & 1) {
-            enable_ch(i);
-        }
-    }
-}
-
 void APM1RCOutput::disable_ch(uint8_t ch) {
     switch(ch) {
     case 0:  TCCR5A &= ~(1<<COM5B1); break;  // CH_1 : OC5B

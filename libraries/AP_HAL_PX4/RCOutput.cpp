@@ -133,17 +133,7 @@ void PX4RCOutput::enable_ch(uint8_t ch)
     // channels are always enabled ...
 }
 
-void PX4RCOutput::enable_mask(uint32_t chmask)
-{
-    // channels are always enabled ...
-}
-
 void PX4RCOutput::disable_ch(uint8_t ch)
-{
-    // channels are always enabled ...
-}
-
-void PX4RCOutput::disable_mask(uint32_t chmask)
 {
     // channels are always enabled ...
 }
