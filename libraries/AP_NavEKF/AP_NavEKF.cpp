@@ -1985,6 +1985,7 @@ void NavEKF::getEulerAngles(Vector3f &euler) const
 {
     Quaternion q(states[0], states[1], states[2], states[3]);
     q.to_euler(&euler.x, &euler.y, &euler.z);
+    euler = euler - _ahrs->get_trim();
 }
 
 void NavEKF::getVelNED(Vector3f &vel) const
@@ -2291,8 +2292,10 @@ void NavEKF::ForceYawAlignment()
 
 void NavEKF::getRotationBodyToNED(Matrix3f &mat) const
 {
+    Vector3f trim = _ahrs->get_trim();
     Quaternion q(states[0], states[1], states[2], states[3]);
     q.rotation_matrix(mat);
+    mat.rotateXYinv(trim);
 }
 
 void  NavEKF::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov) const
