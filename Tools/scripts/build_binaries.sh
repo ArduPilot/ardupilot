@@ -23,12 +23,32 @@ binaries=$PWD/../buildlogs/binaries
 checkout() {
     vehicle="$1"
     tag="$2"
+    board="$3"
     git stash
     if [ "$tag" = "latest" ]; then
-	git checkout master || return 1
+	vtag="master"
+	vtag2="master"
     else
-	git checkout "$vehicle-$tag" || return 1
+	vtag="$vehicle-$tag-$board"
+	vtag2="$vehicle-$tag"
     fi
+
+    git checkout "$vtag" || git checkout "$vtag2" || return 1
+
+    pushd ../../PX4NuttX
+    git checkout "$vtag" || git checkout "$vtag2" || git checkout master || {
+        popd
+        return 1
+    }
+    popd
+
+    pushd ../../PX4Firmware
+    git checkout "$vtag" || git checkout "$vtag2" || git checkout master || {
+        popd
+        return 1
+    }
+    popd
+
     return 0
 }
 
@@ -87,9 +107,9 @@ copyit() {
 build_arduplane() {
     tag="$1"
     echo "Building ArduPlane $tag binaries"
-    checkout ArduPlane $tag || return
     pushd ArduPlane
     for b in apm1 apm2 apm1-hilsensors apm2-hilsensors; do
+        checkout ArduPlane $tag $b || continue
 	echo "Building ArduPlane $b binaries"
 	ddir=$binaries/Plane/$hdate/$b
 	skip_build $tag $ddir && continue
@@ -101,6 +121,7 @@ build_arduplane() {
     test -n "$PX4_ROOT" && {
 	echo "Building ArduPlane PX4 binaries"
 	ddir=$binaries/Plane/$hdate/PX4
+        checkout ArduPlane $tag PX4
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
@@ -114,18 +135,18 @@ build_arduplane() {
             fi
 	}
     }
+    checkout ArduPlane "latest" ""
     popd
-    git checkout master
 }
 
 # build copter binaries
 build_arducopter() {
     tag="$1"
-    checkout ArduCopter $tag || return
     echo "Building ArduCopter $tag binaries"
     pushd ArduCopter
     frames="quad tri hexa y6 octa octa-quad heli"
     for b in apm1 apm2; do
+        checkout ArduCopter $tag $b
 	for f in $frames quad-hil heli-hil; do
 	    echo "Building ArduCopter $b-$f binaries"
 	    ddir="$binaries/Copter/$hdate/$b-$f"
@@ -137,6 +158,7 @@ build_arducopter() {
 	done
     done
     test -n "$PX4_ROOT" && {
+        checkout ArduCopter $tag PX4
 	make px4-clean || return
 	for f in $frames quad-hil heli-hil; do
 	    echo "Building ArduCopter PX4-$f binaries"
@@ -148,18 +170,18 @@ build_arducopter() {
 	    copyit ArduCopter-v2.px4 $ddir $tag
 	done
     }
+    checkout ArduCopter "latest" ""
     popd
-    git checkout master
 }
 
 # build rover binaries
 build_rover() {
     tag="$1"
-    checkout APMrover2 $tag || return
     echo "Building APMrover2 $tag binaries"
     pushd APMrover2
     for b in apm1 apm2 apm1-1280; do
 	echo "Building APMrover2 $b binaries"
+        checkout APMrover2 $tag $b || continue
 	ddir=$binaries/Rover/$hdate/$b
 	skip_build $tag $ddir && continue
 	make clean || continue
@@ -170,6 +192,7 @@ build_rover() {
     test -n "$PX4_ROOT" && {
 	echo "Building APMrover2 PX4 binaries"
 	ddir=$binaries/Rover/$hdate/PX4
+        checkout APMrover2 $tag PX4 || continue
 	skip_build $tag $ddir || {
 	    make px4-clean &&
 	    make px4 &&
@@ -177,8 +200,8 @@ build_rover() {
 	    copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag 
 	}
     }
+    checkout APMrover2 "latest" ""
     popd
-    git checkout master
 }
 
 for build in stable beta latest; do

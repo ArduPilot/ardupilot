@@ -112,7 +112,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 static int8_t
 select_logs(uint8_t argc, const Menu::arg *argv)
 {
-    uint16_t bits;
+    uint32_t bits;
 
     if (argc != 2) {
         cliSerial->printf_P(PSTR("missing log type\n"));
@@ -128,7 +128,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
     // bits accordingly.
     //
     if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
-        bits = ~0;
+        bits = 0xFFFFFFFFUL;
     } else {
  #define TARG(_s)        if (!strcasecmp_P(argv[1].str, PSTR(# _s))) bits |= MASK_LOG_ ## _s
         TARG(ATTITUDE_FAST);
@@ -569,6 +569,9 @@ static void start_logging()
 {
     DataFlash.StartNewLog();
     DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+    DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+#endif
 
     // write system identifier as well if available
     char sysid[40];

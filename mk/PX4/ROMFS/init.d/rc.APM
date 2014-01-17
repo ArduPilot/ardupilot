@@ -37,7 +37,11 @@ else
 fi
 
 set sketch NONE
-set logfile /fs/microsd/APM/boot.log
+if rm /fs/microsd/APM/boot.log
+then
+   echo "removed old boot.log"
+fi
+set logfile /fs/microsd/APM/BOOT.LOG
 
 if [ ! -f /bin/ArduPilot ]
 then
@@ -111,11 +115,9 @@ fi
 if [ $HAVE_PX4IO == true ]
 then
     echo "PX4IO board OK"
-    echo "PX4IO board OK" >> $logfile
     if px4io checkcrc /etc/px4io/px4io.bin
     then
         echo "PX4IO CRC OK"
-        echo "PX4IO CRC OK" >> $logfile    
     else
         echo "PX4IO CRC failure"
         echo "PX4IO CRC failure" >> $logfile    
@@ -170,7 +172,6 @@ fi
 
 
 echo "Starting APM sensors"
-echo "Starting APM sensors" > $logfile
 if ms5611 start
 then
     echo "ms5611 started OK"
@@ -216,7 +217,6 @@ else
     if mpu6000 start
     then
        echo "Found MPU6000"
-       echo "Found MPU6000" >> $logfile
     else
        echo "No MPU6000"
        echo "No MPU6000" >> $logfile
@@ -238,16 +238,15 @@ fi
 # optional ETS airspeed sensor
 if ets_airspeed start
 then
-    echo "Found ETS airspeed sensor" >> $logfile
+    echo "Found ETS airspeed sensor"
 fi
 
 if meas_airspeed start
 then
-    echo "Found MEAS airspeed sensor" >> $logfile
+    echo "Found MEAS airspeed sensor"
 fi
 
 echo "Trying PX4IO board"
-echo "Trying PX4IO board" >> $logfile
 
 # rgbled
 if rgbled start
@@ -257,8 +256,41 @@ else
    echo "Failed to start rgbled driver" >> $logfile
 fi
 
-echo Starting ArduPilot
-echo Starting ArduPilot $deviceA $deviceC $deviceD >> $logfile
+if mtd start /fs/mtd
+then
+    echo "started mtd driver OK"
+else
+    echo "failed to start mtd driver"
+    echo "failed to start mtd driver" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if mtd readtest /fs/mtd
+then
+    echo "mtd readtest OK"
+else
+    echo "failed to read mtd"
+    echo "failed to read mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+fi
+
+if [ $BOARD == FMUv2 ]
+then
+  # the ramtron on FMUv2 is very fast and can handle trillions of
+  # writes. This full rw test on each boot ensures it is working
+  # properly. We have one board that failed this, so
+  # the test is arguably worth having
+  if mtd rwtest /fs/mtd
+  then
+    echo "mtd rwtest OK"
+  else
+    echo "failed to test mtd"
+    echo "failed to test mtd" >> $logfile
+    sh /etc/init.d/rc.error           
+  fi
+fi
+
+echo Starting ArduPilot $deviceA $deviceC $deviceD
 if ArduPilot -d $deviceA -d2 $deviceC -d3 $deviceD start
 then
     echo ArduPilot started OK
@@ -267,5 +299,4 @@ else
 fi
 
 echo "rc.APM finished"
-echo "rc.APM finished" >> $logfile
 

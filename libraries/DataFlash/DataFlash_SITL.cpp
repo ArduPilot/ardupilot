@@ -106,6 +106,9 @@ void DataFlash_SITL::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
                                 const void *pHeader, uint8_t hdr_size,
                                 const void *pBuffer, uint16_t size)
 {
+    if (!_writes_enabled) {
+        return;
+    }
     if (hdr_size) {
         memcpy(&buffer[BufferNum][IntPageAdr],
                pHeader,

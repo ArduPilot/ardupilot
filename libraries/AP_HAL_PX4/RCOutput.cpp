@@ -58,7 +58,7 @@ void PX4RCOutput::init(void* unused)
     }
 #ifdef PWM_SERVO_SET_ARM_OK
     if (ioctl(_alt_fd, PWM_SERVO_SET_ARM_OK, 0) != 0) {
-        hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
+        hal.console->printf("RCOutput: Unable to setup alt IO arming OK\n");
     }
 #endif
     if (ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
@@ -115,7 +115,7 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         }
     }
 
-    if (ioctl(_pwm_fd, PWM_SERVO_SELECT_UPDATE_RATE, _rate_mask) != 0) {
+    if (ioctl(_pwm_fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
     }
 }
@@ -133,19 +133,25 @@ void PX4RCOutput::enable_ch(uint8_t ch)
     // channels are always enabled ...
 }
 
-void PX4RCOutput::enable_mask(uint32_t chmask)
-{
-    // channels are always enabled ...
-}
-
 void PX4RCOutput::disable_ch(uint8_t ch)
 {
     // channels are always enabled ...
 }
 
-void PX4RCOutput::disable_mask(uint32_t chmask)
+void PX4RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
 {
-    // channels are always enabled ...
+    struct pwm_output_values pwm_values;
+    memset(&pwm_values, 0, sizeof(pwm_values));
+    for (uint8_t i=0; i<_servo_count; i++) {
+        if ((1UL<<i) & chmask) {
+            pwm_values.values[i] = period_us;
+        }
+        pwm_values.channel_count++;
+    }
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_DISARMED_PWM, (long unsigned int)&pwm_values);
+    if (ret != OK) {
+        hal.console->printf("Failed to setup disarmed PWM for 0x%08x to %u\n", (unsigned)chmask, period_us);
+    }
 }
 
 void PX4RCOutput::write(uint8_t ch, uint16_t period_us)

@@ -54,7 +54,6 @@ private:
     uint16_t df_Read_PageAdr;
     uint16_t df_FileNumber;
     uint16_t df_FilePage;
-    bool log_write_started;
 
     // offset from adding FMT messages to log data
     bool adding_fmt_headers;

@@ -45,12 +45,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SYSID_THIS_MAV
     // @DisplayName: MAVLink system ID
     // @Description: ID used in MAVLink protocol to identify this vehicle
+    // @Range: 1 255
     // @User: Advanced
 	GSCALAR(sysid_this_mav,         "SYSID_THISMAV",    MAV_SYSTEM_ID),
 
     // @Param: SYSID_MYGCS
     // @DisplayName: MAVLink ground station ID
     // @Description: ID used in MAVLink protocol to identify the controlling ground station
+    // @Range: 1 255
     // @User: Advanced
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
 

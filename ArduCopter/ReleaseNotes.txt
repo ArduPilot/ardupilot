@@ -1,5 +1,21 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1.1-rc1 14-Jan-2013
+Changes from 3.1
+1) Pixhawk improvements:
+    a) Telemetry port 2 enabled (for MinimOSD)
+    b) SD card reliability improvements
+    c) parameters moved to FRAM
+    d) faster parameter loading via USB
+    e) Futaba SBUS receiver support
+2) Bug fixes:
+    a) Loiter initialisation fix (Loiter would act like AltHold until flight mode switch changed position)
+    b) ROI commands were not returning Lat, Lon, Alt to mission planner when mission was loaded from APM
+3) TradHeli only fixes:
+    a) Drift now uses same (reduced) collective range as stabilize mode
+    b) AutoTune disabled (for tradheli only)
+    c) Landing collective (smaller than normal collective) used whenever copter is not moving
+------------------------------------------------------------------
 ArduCopter 3.1 14-Dec-2013
 Changes from 3.1-rc8
 1) Pixhawk improvements:

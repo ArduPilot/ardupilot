@@ -568,8 +568,14 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 // start a new log
 static void start_logging() 
 {
+    in_mavlink_delay = true;
     DataFlash.StartNewLog();
+    in_mavlink_delay = false;
     DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
+
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+    DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+#endif
 
     // write system identifier as well if available
     char sysid[40];

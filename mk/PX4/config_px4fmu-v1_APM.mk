@@ -40,7 +40,7 @@ MODULES		+= drivers/mkblctrl
 #
 # System commands
 #
-MODULES		+= systemcmds/eeprom
+MODULES		+= systemcmds/mtd
 MODULES		+= systemcmds/bl_update
 MODULES		+= systemcmds/boardinfo
 MODULES		+= systemcmds/i2c

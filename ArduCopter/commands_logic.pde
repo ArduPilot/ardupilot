@@ -900,49 +900,7 @@ static void do_set_home()
 
 static void do_set_servo()
 {
-    uint8_t channel_num = 0xff;
-
-    switch( command_cond_queue.p1 ) {
-        case 1:
-            channel_num = CH_1;
-            break;
-        case 2:
-            channel_num = CH_2;
-            break;
-        case 3:
-            channel_num = CH_3;
-            break;
-        case 4:
-            channel_num = CH_4;
-            break;
-        case 5:
-            channel_num = CH_5;
-            break;
-        case 6:
-            channel_num = CH_6;
-            break;
-        case 7:
-            channel_num = CH_7;
-            break;
-        case 8:
-            channel_num = CH_8;
-            break;
-        case 9:
-            // not used
-            break;
-        case 10:
-            channel_num = CH_10;
-            break;
-        case 11:
-            channel_num = CH_11;
-            break;
-    }
-
-    // send output to channel
-    if (channel_num != 0xff) {
-        hal.rcout->enable_ch(channel_num);
-        hal.rcout->write(channel_num, command_cond_queue.alt);
-    }
+    servo_write(command_cond_queue.p1 - 1, command_cond_queue.alt);
 }
 
 static void do_set_relay()

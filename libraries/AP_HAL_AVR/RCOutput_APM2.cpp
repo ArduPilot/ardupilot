@@ -123,15 +123,6 @@ void APM2RCOutput::enable_ch(uint8_t ch) {
     }
 }
 
-void APM2RCOutput::enable_mask(uint32_t chmask) {
-    for (int i = 0; i < 32; i++) {
-        uint32_t c = chmask >> i;
-        if (c & 1) {
-            enable_ch(i);
-        }
-    }
-}
-
 void APM2RCOutput::disable_ch(uint8_t ch) {
     switch(ch) {
     case 0: TCCR1A &= ~(1<<COM1B1); break; // CH_1 : OC1B
@@ -144,14 +135,6 @@ void APM2RCOutput::disable_ch(uint8_t ch) {
     case 7: TCCR3A &= ~(1<<COM3A1); break; // CH_8 : OC3A
     case 9: TCCR5A &= ~(1<<COM5B1); break; // CH_10 : OC5B
     case 10: TCCR5A &= ~(1<<COM5C1); break; // CH_11 : OC5C
-    }
-}
-
-void APM2RCOutput::disable_mask(uint32_t chmask) {
-    for (int i = 0; i < 32; i++) {
-        if ((chmask >> i) & 1) {
-            disable_ch(i);
-        }
     }
 }
 

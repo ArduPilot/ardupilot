@@ -1177,7 +1177,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } 
             if (packet.param3 == 1) {
 #if HIL_MODE != HIL_MODE_ATTITUDE
-                init_barometer();
+                init_barometer(false);                      // fast barometer calibratoin
 #endif
             }
             if (packet.param4 == 1) {
@@ -1213,6 +1213,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else {
                 result = MAV_RESULT_UNSUPPORTED;
             }
+            break;
+
+        case MAV_CMD_DO_SET_SERVO:
+            servo_write(packet.param1 - 1, packet.param2);
+            result = MAV_RESULT_ACCEPTED;
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
@@ -1420,6 +1425,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // mark the firmware version in the tlog
         send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
+
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+        send_text_P(SEVERITY_LOW, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+#endif
 
         // send system ID if we can
         char sysid[40];
@@ -2032,7 +2041,7 @@ mission_failed:
 static void mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs[0].initialised) return;
+    if (!gcs[0].initialised || in_mavlink_delay) return;
 
     in_mavlink_delay = true;
 

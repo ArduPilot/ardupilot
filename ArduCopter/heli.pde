@@ -279,17 +279,6 @@ get_heli_rate_yaw(int32_t target_rate)
         pid_saturated = false;                                  // unfreeze integrator
     }
 
-#if LOGGING_ENABLED == ENABLED
-    // log output if PID loggins is on and we are tuning the yaw
-    if( g.log_bitmask & MASK_LOG_PID && (g.radio_tuning == CH6_YAW_RATE_KP || g.radio_tuning == CH6_YAW_RATE_KD) ) {
-        pid_log_counter++;
-        if( pid_log_counter >= 10 ) {               // (update rate / desired output rate) = (100hz / 10hz) = 10
-            pid_log_counter = 0;
-            Log_Write_PID(CH6_YAW_RATE_KP, rate_error, p, i, d, output, tuning_value);
-        }
-    }
-#endif
-
 	return output;                                              // output control
 }
 
@@ -314,7 +303,7 @@ static void heli_update_landing_swash()
         case THROTTLE_AUTO:
         default:
             // auto and hold use limited swash when landed
-            motors.set_collective_for_landing(ap.land_complete || !ap.auto_armed);
+            motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
             break;
     }
 }

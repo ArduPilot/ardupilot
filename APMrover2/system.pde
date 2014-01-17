@@ -173,7 +173,7 @@ static void init_ardupilot()
 	// Do GPS init
 	g_gps = &g_gps_driver;
     // GPS initialisation
-	g_gps->init(hal.uartB, GPS::GPS_ENGINE_AUTOMOTIVE);
+	g_gps->init(hal.uartB, GPS::GPS_ENGINE_AIRBORNE_4G);
 
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
@@ -512,4 +512,26 @@ static void servo_write(uint8_t ch, uint16_t pwm)
     hal.rcout->enable_ch(ch);
     hal.rcout->write(ch, pwm);
 #endif
+}
+
+/*
+  should we log a message type now?
+ */
+static bool should_log(uint32_t mask)
+{
+    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+        return false;
+    }
+    bool armed;
+    armed = (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+
+    bool ret = armed || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    if (ret && !DataFlash.logging_started() && !in_log_download) {
+        // we have to set in_mavlink_delay to prevent logging while
+        // writing headers
+        in_mavlink_delay = true;
+        start_logging();
+        in_mavlink_delay = false;
+    }
+    return ret;
 }

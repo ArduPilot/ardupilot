@@ -64,7 +64,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 {
     int32_t alt;
     print_hit_enter();
-    init_barometer();
+    init_barometer(true);
 
     while(1) {
         delay(100);
@@ -333,10 +333,8 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
         while(1) {
             delay(200);
             optflow.update();
-            cliSerial->printf_P(PSTR("x/dx: %d/%d\t y/dy %d/%d\t squal:%d\n"),
-                            optflow.x,
+            cliSerial->printf_P(PSTR("dx:%d\t dy:%d\t squal:%d\n"),
                             optflow.dx,
-                            optflow.y,
                             optflow.dy,
                             optflow.surface_quality);
 

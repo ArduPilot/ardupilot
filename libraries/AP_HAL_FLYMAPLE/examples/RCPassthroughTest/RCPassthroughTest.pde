@@ -80,7 +80,9 @@ void setup (void) {
 //    hal.scheduler->delay(5000);
     hal.gpio->pinMode(13, GPIO_OUTPUT);
     hal.gpio->write(13, 0);
-    hal.rcout->enable_mask(0x000000FF);
+    for (uint8_t i=0; i<16; i++) {
+        hal.rcout->enable_ch(i);
+    }
 
     /* Bottom 4 channels at 400hz (like on a quad) */
     hal.rcout->set_freq(0x0000000F, 400);

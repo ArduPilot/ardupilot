@@ -165,13 +165,14 @@ static DataFlash_APM2 DataFlash;
 static DataFlash_File DataFlash("logs");
 //static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static DataFlash_File DataFlash("/fs/microsd/APM/logs");
+static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static DataFlash_File DataFlash("logs");
 #else
 DataFlash_Empty DataFlash;
 #endif
 
+static bool in_log_download;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
@@ -648,10 +649,10 @@ static void ahrs_update()
 
     ahrs.update();
 
-    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
+    if (should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
 
-    if (g.log_bitmask & MASK_LOG_IMU)
+    if (should_log(MASK_LOG_IMU))
         DataFlash.Log_Write_IMU(ins);
 }
 
@@ -697,7 +698,7 @@ static void update_compass(void)
         ahrs.set_compass(&compass);
         // update offsets
         compass.null_offsets();
-        if (g.log_bitmask & MASK_LOG_COMPASS) {
+        if (should_log(MASK_LOG_COMPASS)) {
             Log_Write_Compass();
         }
     } else {
@@ -710,13 +711,13 @@ static void update_compass(void)
  */
 static void update_logging1(void)
 {
-    if ((g.log_bitmask & MASK_LOG_ATTITUDE_MED) && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
     
-    if (g.log_bitmask & MASK_LOG_CTUN)
+    if (should_log(MASK_LOG_CTUN))
         Log_Write_Control_Tuning();
 
-    if (g.log_bitmask & MASK_LOG_NTUN)
+    if (should_log(MASK_LOG_NTUN))
         Log_Write_Nav_Tuning();
 }
 
@@ -725,13 +726,13 @@ static void update_logging1(void)
  */
 static void update_logging2(void)
 {
-    if (g.log_bitmask & MASK_LOG_STEERING) {
+    if (should_log(MASK_LOG_STEERING)) {
         if (control_mode == STEERING || control_mode == AUTO || control_mode == RTL || control_mode == GUIDED) {
             Log_Write_Steering();
         }
     }
 
-    if (g.log_bitmask & MASK_LOG_RC)
+    if (should_log(MASK_LOG_RC))
         Log_Write_RC();
 }
 
@@ -760,7 +761,7 @@ static void update_aux(void)
  */
 static void one_second_loop(void)
 {
-	if (g.log_bitmask & MASK_LOG_CURRENT)
+	if (should_log(MASK_LOG_CURRENT))
 		Log_Write_Current();
 	// send a heartbeat
 	gcs_send_message(MSG_HEARTBEAT);
@@ -789,7 +790,7 @@ static void one_second_loop(void)
         if (scheduler.debug() != 0) {
             hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
         }
-        if (g.log_bitmask & MASK_LOG_PM)
+        if (should_log(MASK_LOG_PM))
             Log_Write_Performance();
         G_Dt_max = 0;
         resetPerfData();
@@ -811,7 +812,7 @@ static void update_GPS_50Hz(void)
 
     if (g_gps->last_message_time_ms() != last_gps_reading) {
         last_gps_reading = g_gps->last_message_time_ms();
-        if (g.log_bitmask & MASK_LOG_GPS) {
+        if (should_log(MASK_LOG_GPS)) {
             DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
         }
     }

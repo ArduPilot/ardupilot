@@ -37,7 +37,7 @@ void DataFlash_Block::FinishWrite(void)
 
 void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
 {
-    if (!CardInserted() || !log_write_started) {
+    if (!CardInserted() || !log_write_started || !_writes_enabled) {
         return;
     }
     while (size > 0) {
@@ -168,6 +168,7 @@ void DataFlash_Block::EraseAll()
     StartWrite(df_NumPages+1);
     uint32_t version = DF_LOGGING_FORMAT;
     log_write_started = true;
+    _writes_enabled = true;
     WriteBlock(&version, sizeof(version));
     log_write_started = false;
     FinishWrite();

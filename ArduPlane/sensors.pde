@@ -40,7 +40,7 @@ static void read_sonars(void)
         return;
     }
 
-    if (g.log_bitmask & MASK_LOG_SONAR)
+    if (should_log(MASK_LOG_SONAR))
         Log_Write_Sonar();
 }
 

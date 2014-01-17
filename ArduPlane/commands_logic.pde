@@ -245,7 +245,7 @@ static void do_RTL(void)
 
     setup_glide_slope();
 
-    if (g.log_bitmask & MASK_LOG_MODE)
+    if (should_log(MASK_LOG_MODE))
         Log_Write_Mode(control_mode);
 }
 
@@ -574,7 +574,7 @@ static void do_jump()
     non_nav_command_index = g.command_index;
     non_nav_command_ID = WAIT_COMMAND;
 
-    if (g.log_bitmask & MASK_LOG_CMD) {
+    if (should_log(MASK_LOG_CMD)) {
         Log_Write_Cmd(g.command_index, &next_nav_command);
     }
     handle_process_nav_cmd();
@@ -668,7 +668,7 @@ static void do_take_picture()
 {
 #if CAMERA == ENABLED
     camera.trigger_pic();
-    if (g.log_bitmask & MASK_LOG_CAMERA) {
+    if (should_log(MASK_LOG_CAMERA)) {
         Log_Write_Camera();
     }
 #endif

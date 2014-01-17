@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V3.2-dev"
+#define THISFIRMWARE "ArduCopter V3.1.1-rc1"
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ static DataFlash_APM1 DataFlash;
 static DataFlash_File DataFlash("logs");
 //static DataFlash_SITL DataFlash;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-static DataFlash_File DataFlash("/fs/microsd/APM/logs");
+static DataFlash_File DataFlash("/fs/microsd/APM/LOGS");
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 static DataFlash_File DataFlash("logs");
 #else
@@ -341,8 +341,6 @@ static SITL sitl;
 ////////////////////////////////////////////////////////////////////////////////
  #if OPTFLOW == ENABLED
 static AP_OpticalFlow_ADNS3080 optflow;
- #else
-static AP_OpticalFlow optflow;
  #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -484,8 +482,6 @@ static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
-// used to limit the rate that the pid controller output is logged so that it doesn't negatively affect performance
-static uint8_t pid_log_counter;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1099,7 +1095,7 @@ static void update_batt_compass(void)
             compass.null_offsets();
         }
         // log compass information
-        if (motors.armed() && (g.log_bitmask & MASK_LOG_COMPASS)) {
+        if (g.log_bitmask & MASK_LOG_COMPASS) {
             Log_Write_Compass();
         }
     }
@@ -1113,16 +1109,14 @@ static void update_batt_compass(void)
 // should be run at 10hz
 static void ten_hz_logging_loop()
 {
-    if(motors.armed()) {
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
-            Log_Write_Attitude();
-        }
-        if (g.log_bitmask & MASK_LOG_RCIN) {
-            DataFlash.Log_Write_RCIN();
-        }
-        if (g.log_bitmask & MASK_LOG_RCOUT) {
-            DataFlash.Log_Write_RCOUT();
-        }
+    if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) {
+        Log_Write_Attitude();
+    }
+    if (g.log_bitmask & MASK_LOG_RCIN) {
+        DataFlash.Log_Write_RCIN();
+    }
+    if (g.log_bitmask & MASK_LOG_RCOUT) {
+        DataFlash.Log_Write_RCOUT();
     }
 }
 
@@ -1135,13 +1129,14 @@ static void fifty_hz_logging_loop()
     gcs_send_message(MSG_RADIO_OUT);
 #endif
 
-# if HIL_MODE == HIL_MODE_DISABLED
-    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST && motors.armed()) {
+#if HIL_MODE == HIL_MODE_DISABLED
+    if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST) {
         Log_Write_Attitude();
     }
 
-    if (g.log_bitmask & MASK_LOG_IMU && motors.armed())
+    if (g.log_bitmask & MASK_LOG_IMU) {
         DataFlash.Log_Write_IMU(ins);
+    }
 #endif
 }
 
@@ -1180,8 +1175,9 @@ static void one_hz_loop()
     wp_nav.set_lean_angle_max(g.angle_max);
 
     // log battery info to the dataflash
-    if ((g.log_bitmask & MASK_LOG_CURRENT) && motors.armed())
+    if (g.log_bitmask & MASK_LOG_CURRENT) {
         Log_Write_Current();
+    }
 
     // perform pre-arm checks & display failures every 30 seconds
     static uint8_t pre_arm_display_counter = 15;
@@ -1256,7 +1252,7 @@ static void update_GPS(void)
         last_gps_reading = g_gps->last_message_time_ms();
 
         // log GPS message
-        if ((g.log_bitmask & MASK_LOG_GPS) && motors.armed()) {
+        if (g.log_bitmask & MASK_LOG_GPS) {
             DataFlash.Log_Write_GPS(g_gps, current_loc.alt);
         }
 
@@ -2092,7 +2088,7 @@ static void update_altitude()
 #endif  // HIL_MODE == HIL_MODE_ATTITUDE
 
     // write altitude info to dataflash logs
-    if ((g.log_bitmask & MASK_LOG_CTUN) && motors.armed()) {
+    if (g.log_bitmask & MASK_LOG_CTUN) {
         Log_Write_Control_Tuning();
     }
 }
@@ -2259,6 +2255,11 @@ static void tuning(){
     case CH6_SONAR_GAIN:
         // set sonar gain
         g.sonar_gain.set(tuning_value);
+        break;
+
+    case CH6_LOIT_SPEED:
+        // set max loiter speed to 0 ~ 1000 cm/s
+        wp_nav.set_loiter_velocity(g.rc_6.control_in);
         break;
     }
 }

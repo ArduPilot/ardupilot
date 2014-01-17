@@ -14,13 +14,7 @@ uint16_t EmptyRCOutput::get_freq(uint8_t ch) {
 void EmptyRCOutput::enable_ch(uint8_t ch)
 {}
 
-void EmptyRCOutput::enable_mask(uint32_t chmask)
-{}
-
 void EmptyRCOutput::disable_ch(uint8_t ch)
-{}
-
-void EmptyRCOutput::disable_mask(uint32_t chmask)
 {}
 
 void EmptyRCOutput::write(uint8_t ch, uint16_t period_us)

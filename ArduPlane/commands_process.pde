@@ -92,7 +92,7 @@ static void process_next_command()
             non_nav_command_index = NO_COMMAND;                                 // This will cause the next intervening non-nav command (if any) to be loaded
             non_nav_command_ID = NO_COMMAND;
 
-            if (g.log_bitmask & MASK_LOG_CMD) {
+            if (should_log(MASK_LOG_CMD)) {
                 Log_Write_Cmd(g.command_index, &next_nav_command);
             }
             handle_process_nav_cmd();
@@ -130,7 +130,7 @@ static void process_next_command()
             gcs_send_text_fmt(PSTR("(2) Non-Nav command ID updated to #%i idx=%u"),
                               (unsigned)non_nav_command_ID, (unsigned)non_nav_command_index);
 
-            if (g.log_bitmask & MASK_LOG_CMD) {
+            if (should_log(MASK_LOG_CMD)) {
                 Log_Write_Cmd(g.command_index, &next_nonnav_command);
             }
 

@@ -32,10 +32,7 @@ public:
     /* Output active/highZ control, either by single channel at a time
      * or a mask of channels */
     virtual void     enable_ch(uint8_t ch) = 0;
-    virtual void     enable_mask(uint32_t chmask) = 0;
-
     virtual void     disable_ch(uint8_t ch) = 0;
-    virtual void     disable_mask(uint32_t chmask) = 0;
 
     /* Output, either single channel or bulk array of channels */
     virtual void     write(uint8_t ch, uint16_t period_us) = 0;
@@ -45,6 +42,12 @@ public:
      * array of channels. */
     virtual uint16_t read(uint8_t ch) = 0;
     virtual void     read(uint16_t* period_us, uint8_t len) = 0;
+
+    /*
+      set PWM to send to a set of channels when the safety switch is
+      in the safe state
+     */
+    virtual void     set_safety_pwm(uint32_t chmask, uint16_t period_us) {}
 };
 
 #endif // __AP_HAL_RC_OUTPUT_H__

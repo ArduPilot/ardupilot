@@ -22,6 +22,13 @@
 #include <AP_Compass.h>
 #include <AP_Declination.h>
 #include <SITL.h>
+#include <DataFlash.h>
+#include <AP_GPS.h>
+#include <AP_AHRS.h>
+#include <AP_Airspeed.h>
+#include <AP_Vehicle.h>
+#include <AP_ADC_AnalogSource.h>
+#include <AP_Notify.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

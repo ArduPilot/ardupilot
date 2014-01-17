@@ -8,39 +8,112 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "Storage.h"
 using namespace PX4;
 
 /*
-  This stores 'eeprom' data on the SD card, with a 4k size, and a
-  in-memory buffer. This keeps the latency down.
+  This stores eeprom data in the PX4 MTD interface with a 4k size, and
+  a in-memory buffer. This keeps the latency and devices IOs down.
  */
 
 // name the storage file after the sketch so you can use the same sd
 // card for ArduCopter and ArduPlane
 #define STORAGE_DIR "/fs/microsd/APM"
-#define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
+#define OLD_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
+#define OLD_STORAGE_FILE_BAK STORAGE_DIR "/" SKETCHNAME ".bak"
+#define MTD_PARAMS_FILE "/fs/mtd"
+#define MTD_SIGNATURE 0x14012014
+#define MTD_SIGNATURE_OFFSET (8192-4)
+#define STORAGE_RENAME_OLD_FILE 0
 
 extern const AP_HAL::HAL& hal;
 
-void PX4Storage::_storage_create(void)
+PX4Storage::PX4Storage(void) :
+    _fd(-1),
+    _dirty_mask(0),
+    _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
+    _perf_errors(perf_alloc(PC_COUNT, "APM_storage_errors"))
 {
-	mkdir(STORAGE_DIR, 0777);
-	unlink(STORAGE_FILE);
-	int fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
-	if (fd == -1) {
-		hal.scheduler->panic("Failed to create " STORAGE_FILE);
-	}
-	for (uint16_t loc=0; loc<sizeof(_buffer); loc += PX4_STORAGE_MAX_WRITE) {
-		if (write(fd, &_buffer[loc], PX4_STORAGE_MAX_WRITE) != PX4_STORAGE_MAX_WRITE) {
-			hal.scheduler->panic("Error filling " STORAGE_FILE);			
-		}
-	}
-	// ensure the directory is updated with the new size
-	fsync(fd);
-	close(fd);
 }
+
+/*
+  get signature from bytes at offset MTD_SIGNATURE_OFFSET
+ */
+uint32_t PX4Storage::_mtd_signature(void)
+{
+    int mtd_fd = open(MTD_PARAMS_FILE, O_RDONLY);
+    if (mtd_fd == -1) {
+        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+    }
+    uint32_t v;
+    if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
+        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+    }
+    if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
+        hal.scheduler->panic("Failed to read signature from " MTD_PARAMS_FILE);
+    }
+    close(mtd_fd);
+    return v;
+}
+
+/*
+  put signature bytes at offset MTD_SIGNATURE_OFFSET
+ */
+void PX4Storage::_mtd_write_signature(void)
+{
+    int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
+    if (mtd_fd == -1) {
+        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+    }
+    uint32_t v = MTD_SIGNATURE;
+    if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
+        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+    }
+    if (write(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
+        hal.scheduler->panic("Failed to write signature in " MTD_PARAMS_FILE);
+    }
+    close(mtd_fd);
+}
+
+/*
+  upgrade from microSD to MTD (FRAM)
+ */
+void PX4Storage::_upgrade_to_mtd(void)
+{
+    // the MTD is completely uninitialised - try to get a
+    // copy from OLD_STORAGE_FILE
+    int old_fd = open(OLD_STORAGE_FILE, O_RDONLY);
+    if (old_fd == -1) {
+        ::printf("Failed to open %s\n", OLD_STORAGE_FILE);
+        return;
+    }
+
+    int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
+    if (mtd_fd == -1) {
+        hal.scheduler->panic("Unable to open MTD for upgrade");
+    }
+
+    if (::read(old_fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
+        close(old_fd);
+        close(mtd_fd);
+        ::printf("Failed to read %s\n", OLD_STORAGE_FILE);
+        return;        
+    }
+    close(old_fd);
+    ssize_t ret;
+    if ((ret=::write(mtd_fd, _buffer, sizeof(_buffer))) != sizeof(_buffer)) {
+        ::printf("mtd write of %u bytes returned %d errno=%d\n", sizeof(_buffer), ret, errno);
+        hal.scheduler->panic("Unable to write MTD for upgrade");        
+    }
+    close(mtd_fd);
+#if STORAGE_RENAME_OLD_FILE
+    rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+#endif
+    ::printf("Upgraded MTD from %s\n", OLD_STORAGE_FILE);
+}
+            
 
 void PX4Storage::_storage_open(void)
 {
@@ -48,25 +121,41 @@ void PX4Storage::_storage_open(void)
 		return;
 	}
 
+        struct stat st;
+        _have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
+
+        // PX4 should always have /fs/mtd_params
+        if (!_have_mtd) {
+            hal.scheduler->panic("Failed to find " MTD_PARAMS_FILE);
+        }
+
+        /*
+          cope with upgrading from OLD_STORAGE_FILE to MTD
+         */
+        bool good_signature = (_mtd_signature() == MTD_SIGNATURE);
+        if (stat(OLD_STORAGE_FILE, &st) == 0) {
+            if (good_signature) {
+#if STORAGE_RENAME_OLD_FILE
+                rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+#endif
+            } else {
+                _upgrade_to_mtd();
+            }
+        }
+
+        // we write the signature every time, even if it already is
+        // good, as this gives us a way to detect if the MTD device is
+        // functional. It is better to panic now than to fail to save
+        // parameters in flight
+        _mtd_write_signature();
+
 	_dirty_mask = 0;
-	int fd = open(STORAGE_FILE, O_RDONLY);
+	int fd = open(MTD_PARAMS_FILE, O_RDONLY);
 	if (fd == -1) {
-		_storage_create();
-		fd = open(STORAGE_FILE, O_RDONLY);
-		if (fd == -1) {
-			hal.scheduler->panic("Failed to open " STORAGE_FILE);
-		}
+            hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
 	}
 	if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-		close(fd);
-		_storage_create();
-		fd = open(STORAGE_FILE, O_RDONLY);
-		if (fd == -1) {
-			hal.scheduler->panic("Failed to open " STORAGE_FILE);
-		}
-		if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-			hal.scheduler->panic("Failed to read " STORAGE_FILE);
-		}
+            hal.scheduler->panic("Failed to read " MTD_PARAMS_FILE);
 	}
 	close(fd);
 	_initialised = true;
@@ -185,7 +274,7 @@ void PX4Storage::_timer_tick(void)
 	perf_begin(_perf_storage);
 
 	if (_fd == -1) {
-		_fd = open(STORAGE_FILE, O_WRONLY);
+		_fd = open(MTD_PARAMS_FILE, O_WRONLY);
 		if (_fd == -1) {
 			perf_end(_perf_storage);
 			perf_count(_perf_errors);

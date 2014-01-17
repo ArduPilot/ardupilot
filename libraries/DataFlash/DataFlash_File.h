@@ -10,6 +10,15 @@
 #ifndef DataFlash_File_h
 #define DataFlash_File_h
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#include <systemlib/perf_counter.h>
+#else
+#define perf_begin(x)
+#define perf_end(x)
+#define perf_count(x)
+#endif
+
+
 class DataFlash_File : public DataFlash_Class
 {
 public:
@@ -47,9 +56,9 @@ private:
     int _read_fd;
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
+    uint32_t _write_offset;
     volatile bool _initialised;
     const char *_log_directory;
-    uint32_t last_fsync_ms;
 
     /*
       read a block
@@ -59,6 +68,7 @@ private:
     // write buffer
     uint8_t *_writebuf;
     const uint16_t _writebuf_size;
+    const uint16_t _writebuf_chunk;
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
     uint32_t _last_write_time;
@@ -72,6 +82,13 @@ private:
     void stop_logging(void);
 
     void _io_timer(void);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // performance counters
+    perf_counter_t  _perf_write;
+    perf_counter_t  _perf_fsync;
+    perf_counter_t  _perf_errors;
+#endif
 };
 
 

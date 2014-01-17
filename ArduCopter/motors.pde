@@ -169,10 +169,8 @@ static void init_arm_motors()
     }
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
-    // read Baro pressure at ground -
-    // this resets Baro for more accuracy
-    //-----------------------------------
-    init_barometer();
+    // fast baro calibration to reset ground pressure
+    init_barometer(false);
 #endif
 
     // go back to normal AHRS gains
@@ -503,6 +501,9 @@ static void init_disarm_motors()
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
 
+    // suspend logging
+    DataFlash.EnableWrites(false);
+
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
 }
@@ -520,3 +521,33 @@ set_servos_4()
     motors.output();
 }
 
+// servo_write - writes to a servo after checking the channel is not used for a motor
+static void servo_write(uint8_t ch, uint16_t pwm)
+{
+    bool servo_ok = false;
+
+    #if (FRAME_CONFIG == QUAD_FRAME)
+        // Quads can use RC5 and higher as servos
+        if (ch >= CH_5) servo_ok = true;
+    #elif (FRAME_CONFIG == TRI_FRAME || FRAME_CONFIG == SINGLE_FRAME)
+        // Tri's and Singles can use RC5, RC6, RC8 and higher
+        if (ch == CH_5 || ch == CH_6 || ch >= CH_8) servo_ok = true;
+    #elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+        // Hexa and Y6 can use RC7 and higher
+        if (ch >= CH_7) servo_ok = true;
+    #elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+        // Octa and X8 can use RC9 and higher
+        if (ch >= CH_9) servo_ok = true;
+    #elif (FRAME_CONFIG == HELI_FRAME)
+        // Heli's can use RC5, RC6, RC7, not RC8, and higher
+        if (ch == CH_5 || ch == CH_6 || ch == CH_7 || ch >= CH_9) servo_ok = true;
+    #else
+        // throw compile error if frame type is unrecognise
+        #error Unrecognised frame type
+    #endif
+
+    if (servo_ok) {
+        hal.rcout->enable_ch(ch);
+        hal.rcout->write(ch, pwm);
+    }
+}
