@@ -241,6 +241,13 @@ static void pre_arm_checks(bool display_failure)
             }
             return;
         }
+        // check Baro & inav alt are within 1m
+        if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Alt disparity"));
+            }
+            return;
+        }
     }
 
     // check Compass
@@ -434,6 +441,16 @@ static bool arm_checks(bool display_failure)
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
         return true;
+    }
+
+    // check Baro & inav alt are within 1m
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
+        if(fabs(inertial_nav.get_altitude() - baro_alt) > 100) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Alt disparity"));
+            }
+            return false;
+        }
     }
 
     // check gps is ok if required - note this same check is also done in pre-arm checks
