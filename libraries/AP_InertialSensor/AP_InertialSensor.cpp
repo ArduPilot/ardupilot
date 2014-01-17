@@ -171,15 +171,15 @@ AP_InertialSensor::_init_gyro()
         update();
     }
 
-    // the strategy is to average 200 points over 1 second, then do it
+    // the strategy is to average 50 points over 0.5 seconds, then do it
     // again and see if the 2nd average is within a small margin of
     // the first
 
     uint8_t num_converged = 0;
 
     // we try to get a good calibration estimate for up to 10 seconds
-    // if the gyros are stable, we should get it in 2 seconds
-    for (int16_t j = 0; j <= 10 && num_converged < num_gyros; j++) {
+    // if the gyros are stable, we should get it in 1 second
+    for (int16_t j = 0; j <= 20 && num_converged < num_gyros; j++) {
         Vector3f gyro_sum[num_gyros], gyro_avg[num_gyros], gyro_diff[num_gyros];
         float diff_norm[num_gyros];
         uint8_t i;
