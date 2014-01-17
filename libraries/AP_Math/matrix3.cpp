@@ -98,6 +98,25 @@ void Matrix3<T>::rotateXY(const Vector3<T> &g)
     (*this) += temp_matrix;
 }
 
+// apply an additional inverse rotation to a rotation matrix but 
+// only use X, Y elements from rotation vector
+template <typename T>
+void Matrix3<T>::rotateXYinv(const Vector3<T> &g)
+{
+    Matrix3f temp_matrix;
+    temp_matrix.a.x =   a.z * g.y;
+    temp_matrix.a.y = - a.z * g.x;
+    temp_matrix.a.z = - a.x * g.y + a.y * g.x;
+    temp_matrix.b.x =   b.z * g.y;
+    temp_matrix.b.y = - b.z * g.x;
+    temp_matrix.b.z = - b.x * g.y + b.y * g.x;
+    temp_matrix.c.x =   c.z * g.y;
+    temp_matrix.c.y = - c.z * g.x;
+    temp_matrix.c.z = - c.x * g.y + c.y * g.x;
+
+    (*this) += temp_matrix;
+}
+
 // multiplication by a vector
 template <typename T>
 Vector3<T> Matrix3<T>::operator *(const Vector3<T> &v) const
@@ -161,6 +180,7 @@ void Matrix3<T>::zero(void)
 template void Matrix3<float>::zero(void);
 template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::rotateXY(const Vector3<float> &g);
+template void Matrix3<float>::rotateXYinv(const Vector3<float> &g);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw);
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
