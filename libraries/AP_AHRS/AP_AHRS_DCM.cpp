@@ -499,7 +499,6 @@ Vector3f AP_AHRS_DCM::ra_delayed(const Vector3f &ra)
 void
 AP_AHRS_DCM::drift_correction(float deltat)
 {
-    Matrix3f temp_dcm = _dcm_matrix;
     Vector3f velocity;
     uint32_t last_correction_time;
 
@@ -507,11 +506,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // vector
     drift_correction_yaw();
 
-    // apply trim
-    temp_dcm.rotateXY(_trim);
-
     // rotate accelerometer values into the earth frame
-    _accel_ef = temp_dcm * _ins.get_accel();
+    _accel_ef = _dcm_matrix * _ins.get_accel();
 
     // integrate the accel vector in the earth frame between GPS readings
     _ra_sum += _accel_ef * deltat;
@@ -798,12 +794,15 @@ void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
 
 
 
-// calculate the euler angles which will be used for high level
-// navigation control
+// calculate the euler angles and DCM matrix which will be used for high level
+// navigation control. Apply trim such that a positive trim value results in a 
+// positive vehicle rotation about that axis (ie a negative offset)
 void
 AP_AHRS_DCM::euler_angles(void)
 {
-    _dcm_matrix.to_euler(&roll, &pitch, &yaw);
+    _body_dcm_matrix = _dcm_matrix;
+    _body_dcm_matrix.rotateXYinv(_trim);
+    _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
     roll_sensor     = degrees(roll)  * 100;
     pitch_sensor    = degrees(pitch) * 100;
