@@ -121,6 +121,9 @@ private:
     // P term gain based on spin rate
     float           _P_gain(float spin_rate);
 
+    // P term yaw gain based on rate of change of horiz velocity
+    float           _yaw_gain(Vector3f VdotEF);
+
     // state to support status reporting
     float _renorm_val_sum;
     uint16_t _renorm_val_count;
