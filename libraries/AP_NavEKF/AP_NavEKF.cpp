@@ -43,7 +43,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 {
     // Tuning parameters
     _gpsHorizVelNoise       = 0.15f;    // GPS horizontal velocity measurement noise : m/s
-    _gpsVertVelNoise        = 0.15f;    // GPS vertical velocity measurement noise : m/s
+    _gpsVertVelNoise        = 0.30f;    // GPS vertical velocity measurement noise : m/s
     _gpsHorizPosNoise       = 0.5f;     // GPS horizontal position measurement noise : m
     _baroAltNoise           = 0.5f;     // Baro height measurement noise : m
     _gpsNEVelVarAccScale    = 0.1f;     // scale factor applied to NE velocity measurement variance due to Vdot
@@ -72,7 +72,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     // a 'smoother' trajectory output
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
     _msecHgtAvg             = 100;      // average number of msec between height measurements
-    _fusionModeGPS          = 1;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
+    _fusionModeGPS          = 0;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
     // These parameters control the size of the gate that is applied to reject unreasonable measurements
     // The innovation variancea (contained in the EKF4 log message) are multiplied by these scale factors to determine the +-
     // gate thresholds. If the innovation for a measurement (contained in the EKF3 log message) is outside the gate, that measurement
