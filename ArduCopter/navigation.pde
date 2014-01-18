@@ -99,7 +99,7 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_LOITER:
             // set target to current position
-            wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+            wp_nav.init_loiter_target();
             nav_initialised = true;
             break;
 
@@ -142,7 +142,7 @@ static void update_nav_mode()
         case NAV_LOITER:
             // reset target if we are still on the ground
             if (ap.land_complete) {
-                wp_nav.init_loiter_target(inertial_nav.get_position(),inertial_nav.get_velocity());
+                wp_nav.init_loiter_target();
             }else{
                 // call loiter controller
                 wp_nav.update_loiter();
@@ -228,7 +228,8 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
     circle_angular_velocity = 0;
 
     // initialise loiter target.  Note: feed forward velocity set to zero
-    wp_nav.init_loiter_target(current_position, Vector3f(0,0,0));
+    // To-Do: modify circle to use position controller and pass in zero velocity.  Vector3f(0,0,0)
+    wp_nav.init_loiter_target();
 }
 
 // update_circle - circle position controller's main call which in turn calls loiter controller with updated target position

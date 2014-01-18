@@ -239,7 +239,7 @@ static bool loiter_init(bool ignore_checks)
     if (GPS_ok() || ignore_checks) {
         // set target to current position
         // To-Do: supply zero velocity below?
-        wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+        wp_nav.init_loiter_target();
         return true;
     }else{
         return false;
@@ -255,7 +255,7 @@ static void loiter_run()
 
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || !inertial_nav.position_ok()) {
-        wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+        wp_nav.init_loiter_target();
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
         return;
@@ -287,7 +287,7 @@ static void loiter_run()
 
     // when landed reset targets and output zero throttle
     if (ap.land_complete) {
-        wp_nav.init_loiter_target(inertial_nav.get_position(), inertial_nav.get_velocity());
+        wp_nav.init_loiter_target();
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
     }else{
