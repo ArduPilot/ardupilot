@@ -30,8 +30,9 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(333),            // maximum allowed interval between airspeed measurement updates
-    fuseMeNow(false),            // forces fusion to occur on the IMU frame that data arrives
-    staticMode(true)            // staticMode forces position and velocity fusion with zero values
+    fuseMeNow(false),           // forces fusion to occur on the IMU frame that data arrives
+    staticMode(true),           // staticMode forces position and velocity fusion with zero values
+    staticModeDemanded(true)    // staticMode demand from outside
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -131,7 +132,7 @@ bool NavEKF::PositionDrifting(void) const
 }
 
 void NavEKF::SetStaticMode(bool setting) {
-        staticMode = setting;
+        staticModeDemanded = setting;
 }
 
 void NavEKF::ResetPosition(void)
@@ -181,12 +182,6 @@ void NavEKF::InitialiseFilter(void)
 
     // write to state vector
     for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
-    states[4] = velNED[0];
-    states[5] = velNED[1];
-    states[6] = velNED[2];
-    states[7] = posNE[0];
-    states[8] = posNE[1];
-    states[9] = - _baro.get_altitude();
     for (uint8_t j=10; j<=15; j++) states[j] = 0.0; // dAngBias, dVelBias, windVel
     states[16] = initMagNED.x; // Magnetic Field North
     states[17] = initMagNED.y; // Magnetic Field East
@@ -290,12 +285,6 @@ void NavEKF::InitialiseFilterBootstrap(void)
 
     // write to state vector
     for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
-    states[4] = velNED[0];
-    states[5] = velNED[1];
-    states[6] = velNED[2];
-    states[7] = posNE[0];
-    states[8] = posNE[1];
-    states[9] = - _baro.get_altitude();
     for (uint8_t j=10; j<=15; j++) states[j] = 0.0f; // dAngBias, dVelBias, windVel
     for (uint8_t j=16; j<=18; j++) states[j] = initMagVecNED[j-16]; // Magnetic Field NED
     for (uint8_t j=19; j<=21; j++) states[j] = initMagBias[j-19]; // Magnetic Field Bias XYZ
@@ -335,18 +324,22 @@ void NavEKF::UpdateFilter()
     // Check if on ground
     OnGroundCheck();
 
-    // staticmode is always set to false in the air
+    // Define rules used to set staticMode
+    // staticModeDemanded is used unless we have no compass 
     // If we are not using compass, then staticMode is set to true whenever on ground
-    // When exiting static mode with no compass, do a forced yaw alignment
-    if (!onGround) { // we are flying
-        if (!useCompass && staticMode) { // we are exiting static mode
-            // align yaw angle with GPS velocity and reset quaternion covariances
-            ForceYawAlignment();
-            //TODO protection against inflight heading drift if no compass is fitted.
+    // When exiting static mode with no compass, we do a forced yaw alignment
+    if (!useCompass) { // we have no compass
+        if (!onGround && !staticModeDemanded) { // we are in the air
+            if (staticMode) { // we have just launched
+                // align yaw angle with GPS velocity and reset quaternion covariances
+                ForceYawAlignment();
+            }
+            staticMode = false;
+        } else { // we are on the ground
+            staticMode = true;
         }
-    staticMode = false;
-    } else if (!useCompass) { // we are on ground without a compass
-        staticMode = true;
+    } else {
+        staticMode = staticModeDemanded;
     }
 
     // Run the strapdown INS equations every IMU update
@@ -421,7 +414,7 @@ void NavEKF::SelectVelPosFusion()
     if (fuseVelData || fusePosData || fuseHgtData)
     {
         float avgAccMag = accelSumVelFuse.length() / imuStepsVelFuse;
-        if (!staticMode || avgAccMag < 10.0f) {
+        if (!staticMode || (avgAccMag < 10.0f)) {
             FuseVelPosNED();
         }
         imuStepsVelFuse = 0;
@@ -1268,6 +1261,18 @@ void NavEKF::FuseVelPosNED()
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData)
     {
+
+        // if static mode is active use the current states to perform fusion
+        // against the static measurements. We need to do this because there may
+        // not be measurements present to store states against
+        if (staticMode) {
+            for (uint8_t i=5; i<=9; i++) {
+                statesAtVelTime[i] = states[i];
+                statesAtPosTime[i] = states[i];
+                statesAtHgtTime[i] = states[i];
+            }
+        }
+        
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
         if (useAirspeed) gpsRetryTime = _gpsRetryTimeUseTAS;
@@ -1306,8 +1311,8 @@ void NavEKF::FuseVelPosNED()
             if (_fusionModeGPS == 1) imax = 1;
             for (uint8_t i = 0; i<=imax; i++)
             {
-                velInnov[i] = statesAtVelTime[i+4] - observation[i];
-                stateIndex = 4 + i;
+                stateIndex = i + 4;
+                velInnov[i] = statesAtVelTime[stateIndex] - observation[i];
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS[i];
             }
             // apply an innovation consistency threshold test
@@ -2197,7 +2202,6 @@ void NavEKF::readGpsData()
         gpsloc.lat = _ahrs->get_gps()->latitude;
         gpsloc.lng = _ahrs->get_gps()->longitude;
         Vector2f posdiff = location_diff(_ahrs->get_home(), gpsloc);
-
         posNE[0] = posdiff.x;
         posNE[1] = posdiff.y;
     }
@@ -2355,6 +2359,7 @@ void NavEKF::ZeroVariables()
 	lastFixTime_ms = 0;
     dtIMU = 0;
     dt = 0;
+    hgtMea = 0;
 	prevDelAng.zero();
     lastAngRate.zero();
     lastAccel.zero();
@@ -2363,12 +2368,15 @@ void NavEKF::ZeroVariables()
     lastAccel.zero();
     summedDelAng.zero();
     summedDelVel.zero();
+    accelSumVelFuse.zero();
+    velNED.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
     memset(&nextP[0][0], 0, sizeof(nextP));
     memset(&processNoise[0], 0, sizeof(processNoise));
     memset(&storedStates[0][0], 0, sizeof(storedStates));
     memset(&statetimeStamp[0], 0, sizeof(statetimeStamp));
+    memset(&posNE[0], 0, sizeof(posNE));
 }
 
 #endif // HAL_CPU_CLASS

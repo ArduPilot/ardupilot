@@ -255,6 +255,7 @@ public:
 
 private:
     bool statesInitialised;         // boolean true when filter states have been initialised
+    bool staticModeDemanded;        // boolean true when staticMode has been demanded externally.
     bool velHealth;                 // boolean true if velocity measurements have failed innovation consistency check
     bool posHealth;                 // boolean true if position measurements have failed innovation consistency check
     bool hgtHealth;                 // boolean true if height measurements have failed innovation consistency check
@@ -336,11 +337,11 @@ private:
     bool newDataHgt;                // true when new height data has arrived
     uint32_t lastHgtUpdate;         // time of last height measurement received (msec)
     float hgtVarScaler;             // scaler applied to height measurement variance to allow for oversampling
-	uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
-	uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
-	uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
-	uint8_t storeIndex;             // State vector storage index
-	uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
+    uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
+    uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
+    uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
+    uint8_t storeIndex;             // State vector storage index
+    uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
     Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
     Vector3f lastAccel;             // acceleration from previous IMU sample used for trapezoidal integrator
     Matrix22 nextP;                 // Predicted covariance matrix before addition of process noise to diagonals
