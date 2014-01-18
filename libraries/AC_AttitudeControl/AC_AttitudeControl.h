@@ -35,7 +35,7 @@ class AC_AttitudeControl {
 public:
 	AC_AttitudeControl( AP_AHRS &ahrs,
                         AP_InertialSensor& ins,
-                        const AP_Vehicle::MultiCopter &parms,
+                        const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
                         APM_PI& pi_angle_roll, APM_PI& pi_angle_pitch, APM_PI& pi_angle_yaw,
                         AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw,
@@ -43,7 +43,7 @@ public:
                         ) :
 		_ahrs(ahrs),
         _ins(ins),
-        aparm(parms),
+        _aparm(aparm),
         _motors(motors),
         _pi_angle_roll(pi_angle_roll),
         _pi_angle_pitch(pi_angle_pitch),
@@ -180,6 +180,9 @@ public:
         _sin_pitch = sin_pitch;
     }
 
+    // lean_angle_max - maximum lean angle of the copter in centi-degrees
+    int16_t lean_angle_max() { return _aparm.angle_max; }
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -222,7 +225,7 @@ private:
     // references to external libraries
     AP_AHRS&            _ahrs;
     AP_InertialSensor&  _ins;
-    const AP_Vehicle::MultiCopter &aparm;
+    const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
     APM_PI&	            _pi_angle_roll;
     APM_PI&	            _pi_angle_pitch;

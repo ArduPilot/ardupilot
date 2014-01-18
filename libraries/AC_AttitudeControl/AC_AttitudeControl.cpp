@@ -148,7 +148,7 @@ void AC_AttitudeControl::rate_stab_ef_to_rate_ef_roll()
 
     // ensure targets are within the lean angle limits
     // To-Do: make angle_max part of the AP_Vehicle class
-    _angle_ef_target.x  = constrain_float(_angle_ef_target.x, -aparm.angle_max, aparm.angle_max);
+    _angle_ef_target.x  = constrain_float(_angle_ef_target.x, -_aparm.angle_max, _aparm.angle_max);
 
     // calculate angle error with maximum of +- max_angle_overshoot
     angle_error = wrap_180_cd(_angle_ef_target.x - _ahrs.roll_sensor);
@@ -174,7 +174,7 @@ void AC_AttitudeControl::rate_stab_ef_to_rate_ef_pitch()
 
     // ensure targets are within the lean angle limits
     // To-Do: make angle_max part of the AP_Vehicle class
-    _angle_ef_target.y  = constrain_float(_angle_ef_target.y, -aparm.angle_max, aparm.angle_max);
+    _angle_ef_target.y  = constrain_float(_angle_ef_target.y, -_aparm.angle_max, _aparm.angle_max);
 
     // calculate angle error with maximum of +- max_angle_overshoot
     // To-Do: should we do something better as we cross 90 degrees?
