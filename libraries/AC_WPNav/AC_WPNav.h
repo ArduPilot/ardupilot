@@ -9,6 +9,7 @@
 #include <AC_PID.h>             // PID library
 #include <APM_PI.h>             // PID library
 #include <AP_InertialNav.h>     // Inertial Navigation library
+#include <AC_PosControl.h>      // Position control library
 
 // loiter maximum velocities and accelerations
 #define WPNAV_ACCELERATION              100.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
@@ -40,7 +41,7 @@ class AC_WPNav
 public:
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon);
+    AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosControl& pos_control, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon);
 
     ///
     /// simple loiter controller
@@ -52,8 +53,8 @@ public:
     /// set_loiter_target in cm from home
     void set_loiter_target(const Vector3f& position);
 
-    /// init_loiter_target - set initial loiter target based on current position and velocity
-    void init_loiter_target(const Vector3f& position, const Vector3f& velocity);
+    /// init_loiter_target - sets initial loiter target based on current position and velocity
+    void init_loiter_target() { _pos_control.init_pos_target(_inav->get_position(),_inav->get_velocity()); }
 
     /// move_loiter_target - move destination using pilot input
     void move_loiter_target(float control_roll, float control_pitch, float dt);
@@ -182,6 +183,7 @@ protected:
     // references to inertial nav and ahrs libraries
     const AP_InertialNav* const _inav;
     const AP_AHRS*        const _ahrs;
+    AC_PosControl&              _pos_control;
 
     // pointers to pid controllers
     APM_PI*		const _pid_pos_lat;
@@ -224,7 +226,6 @@ protected:
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
-    float       _distance_to_target;    // distance to loiter target
     float       _wp_leash_xy;           // horizontal leash length in cm
     float       _wp_leash_z;            // horizontal leash length in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint

@@ -71,6 +71,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
 AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, APM_PI* pid_pos_lat, APM_PI* pid_pos_lon, AC_PID* pid_rate_lat, AC_PID* pid_rate_lon) :
     _inav(inav),
     _ahrs(ahrs),
+    _pos_control(pos_control),
     _pid_pos_lat(pid_pos_lat),
     _pid_pos_lon(pid_pos_lon),
     _pid_rate_lat(pid_rate_lat),
@@ -107,6 +108,15 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, APM_PI* pid_
 ///
 /// simple loiter controller
 ///
+
+/// init_loiter_target - sets initial loiter target based on current position and velocity
+void AC_WPNav::init_loiter_target()
+{
+    _pos_control.init_pos_target(_inav->get_position(),_inav->get_velocity());
+    // initialise pilot input
+    _pilot_vel_forward_cms = 0;
+    _pilot_vel_right_cms = 0;
+}
 
 /// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
 void AC_WPNav::get_stopping_point(const Vector3f& position, const Vector3f& velocity, Vector3f &target) const
@@ -240,16 +250,10 @@ void AC_WPNav::translate_loiter_target_movements(float nav_dt)
     }
 }
 
-/// get_distance_to_target - get horizontal distance to loiter target in cm
-float AC_WPNav::get_distance_to_target() const
-{
-    return _distance_to_target;
-}
-
 /// get_bearing_to_target - get bearing to loiter target in centi-degrees
 int32_t AC_WPNav::get_bearing_to_target() const
 {
-    return get_bearing_cd(_inav->get_position(), _target);
+    return get_bearing_cd(_inav->get_position(), _pos_control.get_post_target());
 }
 
 /// update_loiter - run the loiter controller - should be called at 10hz
