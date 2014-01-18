@@ -383,9 +383,9 @@ void NavEKF::UpdateFilter()
 
 void NavEKF::SelectVelPosFusion()
 {
-    // Command fusion of GPS measurements if new ones available
+    // Command fusion of GPS measurements if new ones available or in static mode
     readGpsData();
-    if (newDataGps) {
+    if (newDataGps||staticMode) {
         fuseVelData = true;
         fusePosData = true;
         // Calculate the scale factor to be applied to the measurement variance to account for
@@ -398,9 +398,9 @@ void NavEKF::SelectVelPosFusion()
         fuseVelData = false;
         fusePosData = false;
     }
-    // Command fusion of height measurements if new ones available
+    // Command fusion of height measurements if new ones available or in static mode
     readHgtData();
-    if (newDataHgt)
+    if (newDataHgt||staticMode)
     {
         fuseHgtData = true;
         // Calculate the scale factor to be applied to the measurement variance to account for
@@ -1337,6 +1337,10 @@ void NavEKF::FuseVelPosNED()
             {
                 posHealth = true;
                 posFailTime = hal.scheduler->millis();
+                if (posTimeout)
+                {
+                    ResetPosition();
+                }
             }
             else
             {
@@ -1360,6 +1364,10 @@ void NavEKF::FuseVelPosNED()
             {
                 hgtHealth = true;
                 hgtFailTime = hal.scheduler->millis();
+                if (hgtTimeout)
+                {
+                    ResetPosition();
+                }
             }
             else
             {
