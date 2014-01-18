@@ -279,6 +279,24 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
     return spin_rate/ToRad(50);
 }
 
+// _yaw_gain reduces the gain of the PI controller applied to heading errors
+// when observability from change of velocity is good (eg changing speed or turning)
+// This reduces unwanted roll and pitch coupling due to compass errors for planes.
+// High levels of noise on _accel_ef will cause the gain to drop and could lead to 
+// increased heading drift during straight and level flight, however some gain is
+// always available. TODO check the necessity of adding adjustable acc threshold 
+// and/or filtering accelerations before getting magnitude
+float
+AP_AHRS_DCM::_yaw_gain(Vector3f VdotEF)
+{
+    float VdotEFmag = sqrtf(sq(_accel_ef.x) + sq(_accel_ef.y));
+    if (VdotEFmag <= 4.0f) {
+        return 0.2f*(4.5f - VdotEFmag);
+    }
+    return 0.1f;
+}
+
+
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
@@ -417,8 +435,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     // yaw back to the right value. We use a gain
     // that depends on the spin rate. See the fastRotations.pdf
     // paper from Bill Premerlani
+    // We also adjust the gain depending on the rate of change of horizontal velocity which
+    // is proportional to how observable the heading is from the acceerations and GPS velocity
+    // The accelration derived heading will be more reliable in turns than compass or GPS
 
-    _omega_yaw_P.z = error_z * _P_gain(spin_rate) * _kp_yaw;
+    _omega_yaw_P.z = error_z * _P_gain(spin_rate) * _kp_yaw * _yaw_gain(_accel_ef);
     if (_flags.fast_ground_gains) {
         _omega_yaw_P.z *= 8;
     }
