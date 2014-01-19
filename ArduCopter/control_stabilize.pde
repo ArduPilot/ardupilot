@@ -194,6 +194,8 @@ static void auto_run()
 {
     Vector3f angle_target;
 
+    // run way point controller
+
     // copy latest output from nav controller to stabilize controller
     control_roll = wp_nav.get_desired_roll();
     control_pitch = wp_nav.get_desired_pitch();
