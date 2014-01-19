@@ -1126,7 +1126,7 @@ static bool update_land_detector()
                 land_detector = 0;
             }
         }
-    }else{
+    }else if (g.rc_3.control_in != 0 || failsafe.radio){    // zero throttle locks land_complete as true
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
         if(ap.land_complete) {
