@@ -217,7 +217,7 @@ void AP_MotorsTri::output_test()
 }
 
 // output_test_individual - spin arbitrary motor to allow the user to confirm spin direction and motor order
-void AP_MotorsTri::output_test_individual(uint8_t motor_num, bool enable)
+void AP_MotorsTri::output_test_individual(uint8_t motor_num, bool enable, bool* esc_output)
 {
 	switch (motor_num)
 	{
@@ -228,6 +228,7 @@ void AP_MotorsTri::output_test_individual(uint8_t motor_num, bool enable)
 		else {
 			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_1], _rc_throttle->radio_min);
 		}
+		
 		break;
 	case CH_2:
 		if (enable) {
@@ -236,6 +237,7 @@ void AP_MotorsTri::output_test_individual(uint8_t motor_num, bool enable)
 		else {
 			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_2], _rc_throttle->radio_min);
 		}
+		
 		break;
 	case CH_4:
 		if (enable) {
@@ -244,23 +246,23 @@ void AP_MotorsTri::output_test_individual(uint8_t motor_num, bool enable)
 		else {
 			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_MOT_4], _rc_throttle->radio_min);
 		}
+		
 		break;
 	case AP_MOTORS_CH_TRI_YAW:
-		// channel 7
 		if (enable) {
+			*esc_output = false;
 			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_min);
 			hal.scheduler->delay(1000);
 			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_max);
 			hal.scheduler->delay(1000);
 			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_trim);
 		}
-		else {
-			hal.rcout->write(_motor_to_channel_map[AP_MOTORS_CH_TRI_YAW], _rc_yaw->radio_trim);
-		}
+		
 		break;
 	default:
 		// Send minimum values to all motors
 		output_min();
+		*esc_output = false;
 		break;
 	}
 }

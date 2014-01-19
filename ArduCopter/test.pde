@@ -286,23 +286,29 @@ test_motors(uint8_t argc, const Menu::arg *argv)
 			cliSerial->printf_P(PSTR(
 				"Connect battery for this test.\n"
 				"Motor connected to corresponding RC output will spin.\n"
-				"Remember to disconnect battery after this test.\n"
-				"Any key to exit.\n"));
+				"Remember to disconnect battery after this test.\n"));
 
 			uint8_t motor_to_spinn = argv[1].i - 1;
 
 			// enable motors
 			init_rc_out();
-			motors.output_test_individual(motor_to_spinn, true);
+			// This set to false if output is connected to a servo
+			bool esc_output = true;
+			motors.output_test_individual(motor_to_spinn, true, &esc_output);
 
-			while (1) {
-				delay(20);
-				read_radio();
+			// If motor connected to output, spinn until user exits
+			if (esc_output)
+			{
+				cliSerial->printf_P(PSTR("Any key to exit.\n"));
+				while (1) {
+					delay(20);
+					read_radio();
 
-				if (cliSerial->available() > 0) {
-					motors.output_test_individual(motor_to_spinn, false);
-					g.esc_calibrate.set_and_save(0);
-					return(0);
+					if (cliSerial->available() > 0) {
+						motors.output_test_individual(motor_to_spinn, false, &esc_output);
+						g.esc_calibrate.set_and_save(0);
+						return(0);
+					}
 				}
 			}
 		}

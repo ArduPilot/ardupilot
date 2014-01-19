@@ -146,7 +146,7 @@ public:
     void output_test();
 
 	// output_test_individual - spin arbitrary motor to allow the user to confirm the motor order and spin direction
-	void output_test_individual(uint8_t motor_num, bool enable);
+	void output_test_individual(uint8_t motor_num, bool enable, bool* esc_output);
 
     //
     // heli specific methods
