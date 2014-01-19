@@ -197,12 +197,8 @@ static void auto_run()
     // run way point controller
 
     // copy latest output from nav controller to stabilize controller
-    control_roll = wp_nav.get_desired_roll();
-    control_pitch = wp_nav.get_desired_pitch();
-
-    // copy angle targets for reporting purposes
-    angle_target.x = control_roll;
-    angle_target.y = control_pitch;
+    angle_target.x = wp_nav.get_roll();
+    angle_target.y = wp_nav.get_pitch();
 
     // To-Do: handle pilot input for yaw and different methods to update yaw (ROI, face next wp)
     angle_target.z = control_yaw;
@@ -297,7 +293,7 @@ static void loiter_run()
         wp_nav.update_loiter();
 
         // call attitude controller
-        attitude_control.angleef_rp_rateef_y(wp_nav.get_desired_roll(), wp_nav.get_desired_pitch(), target_yaw_rate);
+        attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
         // body-frame rate controller is run directly from 100hz loop
 
