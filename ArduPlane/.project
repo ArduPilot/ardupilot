@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>Arducopter</name>
+	<name>Arduplane</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -26,9 +26,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>Build.ArduCopter</name>
+			<name>Build.ArduPlane</name>
 			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Build.ArduCopter</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/Build.ArduPlane</locationURI>
 		</link>
 		<link>
 			<name>common</name>

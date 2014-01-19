@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="Arducopter" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.cross.base.470266067" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+				<configuration artifactName="Arduplane" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.cross.base.470266067" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.cross.base.470266067.338678335" name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.base.360531012" name="cdt.managedbuild.toolchain.gnu.cross.base" superClass="cdt.managedbuild.toolchain.gnu.cross.base">
 							<option id="cdt.managedbuild.option.gnu.cross.prefix.615538029" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix"/>
@@ -44,8 +44,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="common|v1.0|libraries|Build.ArduCopter" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Build.ArduCopter"/>
+						<entry excluding="common|v1.0|libraries|Build.ArduPlane" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Build.ArduPlane"/>
 						<entry excluding="GCS_MAVLink/include/mavlink/v0.9/**|**/testsuite.h" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libraries"/>
 					</sourceEntries>
 				</configuration>
@@ -54,12 +54,12 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="Arducopter.null.1525993088" name="Arducopter"/>
+		<project id="Arduplane.null.1525993088" name="Arduplane"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/Arducopter"/>
+			<resource resourceType="PROJECT" workspacePath="/Arduplane"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
