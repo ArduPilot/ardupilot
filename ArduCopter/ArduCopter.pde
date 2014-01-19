@@ -643,11 +643,11 @@ static AP_BattMonitor battery;
 static float controller_desired_alt;
 // The cm/s we are moving up or down based on filtered data - Positive = UP
 static int16_t climb_rate;
-// The altitude as reported by Sonar in cm – Values are 20 to 700 generally.
+// The altitude as reported by Sonar in cm - Values are 20 to 700 generally.
 static int16_t sonar_alt;
 static uint8_t sonar_alt_health;   // true if we can trust the altitude from the sonar
 static float target_sonar_alt;      // desired altitude in cm above the ground
-// The altitude as reported by Baro in cm – Values can be quite high
+// The altitude as reported by Baro in cm - Values can be quite high
 static int32_t baro_alt;
 
 
@@ -1219,12 +1219,6 @@ static void one_hz_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
-    // pass latest alt hold kP value to navigation controller
-    wp_nav.set_althold_kP(g.pi_alt_hold.kP());
-
-    // update latest lean angle to navigation controller
-    wp_nav.set_lean_angle_max(aparm.angle_max);
-
     // log battery info to the dataflash
     if (g.log_bitmask & MASK_LOG_CURRENT) {
         Log_Write_Current();
@@ -1748,8 +1742,8 @@ void update_roll_pitch_mode(void)
 
     case ROLL_PITCH_AUTO:
         // copy latest output from nav controller to stabilize controller
-        control_roll = wp_nav.get_desired_roll();
-        control_pitch = wp_nav.get_desired_pitch();
+        control_roll = wp_nav.get_roll();
+        control_pitch = wp_nav.get_pitch();
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
         break;
@@ -1782,8 +1776,8 @@ void update_roll_pitch_mode(void)
         wp_nav.move_loiter_target(g.rc_1.control_in, g.rc_2.control_in, 0.01f);
 
         // copy latest output from nav controller to stabilize controller
-        control_roll = wp_nav.get_desired_roll();
-        control_pitch = wp_nav.get_desired_pitch();
+        control_roll = wp_nav.get_roll();
+        control_pitch = wp_nav.get_pitch();
 
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);

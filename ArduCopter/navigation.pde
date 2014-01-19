@@ -31,11 +31,11 @@ static void calc_distance_and_bearing()
 
     // get target from loiter or wpinav controller
     if( nav_mode == NAV_LOITER || nav_mode == NAV_CIRCLE ) {
-        wp_distance = wp_nav.get_distance_to_target();
-        wp_bearing = wp_nav.get_bearing_to_target();
+        wp_distance = wp_nav.get_loiter_distance_to_target();
+        wp_bearing = wp_nav.get_loiter_bearing_to_target();
     }else if( nav_mode == NAV_WP ) {
-        wp_distance = wp_nav.get_distance_to_destination();
-        wp_bearing = wp_nav.get_bearing_to_destination();
+        wp_distance = wp_nav.get_wp_distance_to_destination();
+        wp_bearing = wp_nav.get_wp_bearing_to_destination();
     }else{
         wp_distance = 0;
         wp_bearing = 0;
@@ -92,7 +92,7 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_CIRCLE:
             // set center of circle to current position
-            wp_nav.get_stopping_point(inertial_nav.get_position(),inertial_nav.get_velocity(),stopping_point);
+            pos_control.get_stopping_point(stopping_point);
             circle_set_center(stopping_point,ahrs.yaw);
             nav_initialised = true;
             break;
@@ -210,7 +210,7 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
         circle_angle = wrap_PI(heading_in_radians-PI);
 
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_waypoint_acceleration()*g.circle_radius*100.0f));
+        max_velocity = min(wp_nav.get_horizontal_velocity(), safe_sqrt(0.5f*wp_nav.get_wp_acceleration()*g.circle_radius*100.0f));
 
         // angular_velocity in radians per second
         circle_angular_velocity_max = max_velocity/((float)g.circle_radius * 100.0f);

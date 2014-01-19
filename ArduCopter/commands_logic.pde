@@ -250,7 +250,7 @@ static void do_takeoff()
     Vector3f pos = inertial_nav.get_position();
     pos.z = max(pos.z, command_nav_queue.alt);
     pos.z = max(pos.z, 100.0f);
-    wp_nav.set_destination(pos);
+    wp_nav.set_wp_destination(pos);
 
     // prevent flips
     // To-Do: check if this is still necessary
@@ -270,10 +270,10 @@ static void do_nav_wp()
     set_nav_mode(NAV_WP);
 
     // Set wp navigation target
-    wp_nav.set_destination(pv_location_to_vector(command_nav_queue));
+    wp_nav.set_wp_destination(pv_location_to_vector(command_nav_queue));
 
     // initialise original_wp_bearing which is used to check if we have missed the waypoint
-    wp_bearing = wp_nav.get_bearing_to_destination();
+    wp_bearing = wp_nav.get_wp_bearing_to_destination();
     original_wp_bearing = wp_bearing;
 
     // this will be used to remember the time in millis after we reach or pass the WP.
@@ -368,7 +368,7 @@ static void do_loiter_unlimited()
 
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        wp_nav.get_stopping_point(curr_pos,inertial_nav.get_velocity(),target_pos);
+        wp_nav.get_wp_stopping_point(target_pos);
     }else{
         // default to use position provided
         target_pos = pv_location_to_vector(command_nav_queue);
@@ -381,7 +381,7 @@ static void do_loiter_unlimited()
 
     // start way point navigator and provide it the desired location
     set_nav_mode(NAV_WP);
-    wp_nav.set_destination(target_pos);
+    wp_nav.set_wp_destination(target_pos);
 }
 
 // do_circle - initiate moving in a circle
@@ -436,7 +436,7 @@ static void do_loiter_time()
 
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        wp_nav.get_stopping_point(curr_pos,inertial_nav.get_velocity(),target_pos);
+        wp_nav.get_wp_stopping_point(target_pos);
     }else{
         // default to use position provided
         target_pos = pv_location_to_vector(command_nav_queue);
@@ -449,7 +449,7 @@ static void do_loiter_time()
 
     // start way point navigator and provide it the desired location
     set_nav_mode(NAV_WP);
-    wp_nav.set_destination(target_pos);
+    wp_nav.set_wp_destination(target_pos);
 
     // setup loiter timer
     loiter_time     = 0;
@@ -464,8 +464,8 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
     // have we reached our target altitude?
-    set_takeoff_complete(wp_nav.reached_destination());
-    return wp_nav.reached_destination();
+    set_takeoff_complete(wp_nav.reached_wp_destination());
+    return wp_nav.reached_wp_destination();
 }
 
 // verify_land - returns true if landing has been completed
@@ -476,7 +476,7 @@ static bool verify_land()
     switch( land_state ) {
         case LAND_STATE_FLY_TO_LOCATION:
             // check if we've reached the location
-            if (wp_nav.reached_destination()) {
+            if (wp_nav.reached_wp_destination()) {
                 // get destination so we can use it for loiter target
                 Vector3f dest = wp_nav.get_destination();
 
@@ -521,7 +521,7 @@ static bool verify_land()
 static bool verify_nav_wp()
 {
     // check if we have reached the waypoint
-    if( !wp_nav.reached_destination() ) {
+    if( !wp_nav.reached_wp_destination() ) {
         return false;
     }
 
@@ -548,7 +548,7 @@ static bool verify_loiter_unlimited()
 static bool verify_loiter_time()
 {
     // return immediately if we haven't reached our destination
-    if (!wp_nav.reached_destination()) {
+    if (!wp_nav.reached_wp_destination()) {
         return false;
     }
 
@@ -591,11 +591,11 @@ static bool verify_RTL()
 
                 // use projection of safe stopping point based on current location and velocity
                 Vector3f origin, dest;
-                wp_nav.get_stopping_point(inertial_nav.get_position(),inertial_nav.get_velocity(),origin);
+                pos_control.get_stopping_point(origin);
                 dest.x = origin.x;
                 dest.y = origin.y;
                 dest.z = get_RTL_alt();
-                wp_nav.set_origin_and_destination(origin,dest);
+                wp_nav.set_wp_origin_and_destination(origin,dest);
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_INITIAL_CLIMB;
@@ -604,7 +604,7 @@ static bool verify_RTL()
                 set_yaw_mode(get_wp_yaw_mode(true));
 
                 // Set wp navigation target to above home
-                wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
+                wp_nav.set_wp_destination(Vector3f(0,0,get_RTL_alt()));
 
                 // initialise original_wp_bearing which is used to point the nose home
                 wp_bearing = wp_nav.get_bearing_to_destination();
@@ -616,12 +616,12 @@ static bool verify_RTL()
             break;
         case RTL_STATE_INITIAL_CLIMB:
             // check if we've reached the safe altitude
-            if (wp_nav.reached_destination()) {
+            if (wp_nav.reached_wp_destination()) {
                 // set nav mode
                 set_nav_mode(NAV_WP);
 
                 // Set wp navigation target to above home
-                wp_nav.set_destination(Vector3f(0,0,get_RTL_alt()));
+                wp_nav.set_wp_destination(Vector3f(0,0,get_RTL_alt()));
 
                 // initialise original_wp_bearing which is used to point the nose home
                 wp_bearing = wp_nav.get_bearing_to_destination();
@@ -637,7 +637,7 @@ static bool verify_RTL()
 
         case RTL_STATE_RETURNING_HOME:
             // check if we've reached home
-            if (wp_nav.reached_destination()) {
+            if (wp_nav.reached_wp_destination()) {
                 // Note: we remain in NAV_WP nav mode which should hold us above home
 
                 // start timer
@@ -682,7 +682,7 @@ static bool verify_RTL()
                         // set navigation mode
                         set_nav_mode(NAV_WP);
                         // Set wp navigation alt target to rtl_alt_final
-                        wp_nav.set_destination(Vector3f(0,0,g.rtl_alt_final));
+                        wp_nav.set_wp_destination(Vector3f(0,0,g.rtl_alt_final));
                     }
                     // update RTL state
                     rtl_state = RTL_STATE_FINAL_DESCENT;
@@ -692,7 +692,7 @@ static bool verify_RTL()
 
         case RTL_STATE_FINAL_DESCENT:
             // check we have reached final altitude
-            if(current_loc.alt <= g.rtl_alt_final || wp_nav.reached_destination()) {
+            if(current_loc.alt <= g.rtl_alt_final || wp_nav.reached_wp_destination()) {
                 // indicate that we've completed RTL
                 retval = true;
             }
@@ -839,15 +839,15 @@ static void do_guided(const struct Location *cmd)
 
     // set wp_nav's destination
     Vector3f pos = pv_location_to_vector(*cmd);
-    wp_nav.set_destination(pos);
+    wp_nav.set_wp_destination(pos);
 
     // initialise wp_bearing for reporting purposes
-    wp_bearing = wp_nav.get_bearing_to_destination();
+    wp_bearing = wp_nav.get_wp_bearing_to_destination();
 
     // point nose at next waypoint if it is more than 10m away
     if (yaw_mode == YAW_LOOK_AT_NEXT_WP) {
         // get distance to new location
-        wp_distance = wp_nav.get_distance_to_destination();
+        wp_distance = wp_nav.get_wp_distance_to_destination();
         // set original_wp_bearing to point at next waypoint
         if (wp_distance >= 1000 || first_time) {
             original_wp_bearing = wp_bearing;

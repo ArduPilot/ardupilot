@@ -280,23 +280,25 @@ struct PACKED log_Nav_Tuning {
 // Write an Nav Tuning packet
 static void Log_Write_Nav_Tuning()
 {
-    const Vector3f &desired_position = wp_nav.get_loiter_target();
+    const Vector3f &pos_target = pos_controller.get_pos_target();
+    const Vector3f &vel_target = pos_controller.get_vel_target();
+    const Vector3f &accel_target = pos_controller.get_accel_target();
     const Vector3f &position = inertial_nav.get_position();
     const Vector3f &velocity = inertial_nav.get_velocity();
 
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
         time_ms         : hal.scheduler->millis(),
-        desired_pos_x   : desired_position.x,
-        desired_pos_y   : desired_position.y,
+        desired_pos_x   : pos_target.x,
+        desired_pos_y   : pos_target.y,
         pos_x           : position.x,
         pos_y           : position.y,
-        desired_vel_x   : wp_nav.desired_vel.x,
-        desired_vel_y   : wp_nav.desired_vel.y,
+        desired_vel_x   : vel_target.x,
+        desired_vel_y   : vel_target.y,
         vel_x           : velocity.x,
         vel_y           : velocity.y,
-        desired_accel_x : wp_nav.desired_accel.x,
-        desired_accel_y : wp_nav.desired_accel.y
+        desired_accel_x : accel_target.x,
+        desired_accel_y : accel_target.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
