@@ -65,7 +65,7 @@ AP_Camera::servo_pic()
 void
 AP_Camera::relay_pic()
 {
-    _apm_relay->on();
+    _apm_relay->on(0);
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
@@ -99,7 +99,7 @@ AP_Camera::trigger_pic_cleanup()
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
                 break;
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                _apm_relay->off();
+                _apm_relay->off(0);
                 break;
         }
     }
