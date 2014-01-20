@@ -383,7 +383,7 @@ void NavEKF::ResetHeight(void)
     states[9] = -hgtMea;
 }
 
-void NavEKF::InitialiseFilter(void)
+void NavEKF::InitialiseFilterDynamic(void)
 {
     // Set re-used variables to zero
     ZeroVariables();
@@ -420,6 +420,9 @@ void NavEKF::InitialiseFilter(void)
     // write to state vector
     for (uint8_t j=0; j<=3; j++) states[j] = initQuat[j]; // quaternions
     for (uint8_t j=10; j<=15; j++) states[j] = 0.0; // dAngBias, dVelBias, windVel
+    ResetVelocity();
+    ResetPosition();
+    ResetHeight();
     states[16] = initMagNED.x; // Magnetic Field North
     states[17] = initMagNED.y; // Magnetic Field East
     states[18] = initMagNED.z; // Magnetic Field Down
@@ -553,7 +556,7 @@ void NavEKF::UpdateFilter()
 
     if (dtIMU > 0.2f) {
         // we have stalled for far too long - reset from DCM
-        InitialiseFilter();
+        InitialiseFilterDynamic();
         perf_end(_perf_UpdateFilter);
         return;
     }

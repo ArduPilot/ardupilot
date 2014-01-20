@@ -75,9 +75,11 @@ public:
     NavEKF(const AP_AHRS *ahrs, AP_Baro &baro);
 
     // Initialise the filter states from the AHRS and magnetometer data (if present)
-    void InitialiseFilter(void);
+    // This method can be used when the vehicle is moving
+    void InitialiseFilterDynamic(void);
 
-    // Initialise the attitude from accelerometer and magnetometer data (if present)
+    // Initialise the states from accelerometer and magnetometer data (if present)
+    // This method can only be used when the vehicle is static
     void InitialiseFilterBootstrap(void);
 
     // inhibits position and velocity attitude corrections when set to true
