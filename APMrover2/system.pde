@@ -106,6 +106,8 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
+    ServoRelayEvents.set_channel_mask(0xFFF0);
+
     set_control_channels();
 
     // after parameter load setup correct baud rate on uartA

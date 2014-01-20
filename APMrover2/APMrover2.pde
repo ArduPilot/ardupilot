@@ -79,6 +79,7 @@
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <AverageFilter.h>	// Mode Filter from Filter library
 #include <AP_Relay.h>       // APM relay
+#include <AP_ServoRelayEvents.h>
 #include <AP_Mount.h>		// Camera/Antenna mount
 #include <AP_Camera.h>		// Camera triggering
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
@@ -293,6 +294,8 @@ static AP_RangeFinder_analog sonar2;
 // relay support
 AP_Relay relay;
 
+AP_ServoRelayEvents ServoRelayEvents(relay);
+
 // Camera
 #if CAMERA == ENABLED
 static AP_Camera camera(&relay);
@@ -468,22 +471,6 @@ static float wp_distance;
 static int32_t wp_totalDistance;
 
 ////////////////////////////////////////////////////////////////////////////////
-// repeating event control
-////////////////////////////////////////////////////////////////////////////////
-// Flag indicating current event type
-static uint8_t 		event_id;
-// when the event was started in ms
-static int32_t 		event_timer;
-// how long to delay the next firing of event in millis
-static uint16_t 	event_delay;					
-// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
-static int16_t 		event_repeat = 0;
-// per command value, such as PWM for servos
-static int16_t 		event_value; 
-// the value used to cycle events (alternate value to event_value)
-static int16_t 		event_undo_value;
-
-////////////////////////////////////////////////////////////////////////////////
 // Conditional command
 ////////////////////////////////////////////////////////////////////////////////
 // A value used in condition commands (eg delay, change alt, etc.)
@@ -574,7 +561,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_trim_switch,       5,   1000 },
     { read_battery,           5,   1000 },
     { read_receiver_rssi,     5,   1000 },
-    { update_events,         15,   1000 },
+    { update_events,          1,   1000 },
     { check_usb_mux,         15,   1000 },
     { mount_update,           1,    600 },
     { gcs_failsafe_check,     5,    600 },
