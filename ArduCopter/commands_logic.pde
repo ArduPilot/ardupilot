@@ -906,11 +906,11 @@ static void do_set_servo()
 static void do_set_relay()
 {
     if (command_cond_queue.p1 == 1) {
-        relay.on();
+        relay.on(0);
     } else if (command_cond_queue.p1 == 0) {
-        relay.off();
+        relay.off(0);
     }else{
-        relay.toggle();
+        relay.toggle(0);
     }
 }
 

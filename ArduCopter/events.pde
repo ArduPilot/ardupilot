@@ -324,7 +324,7 @@ static void update_events()     // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
         }
 
         if  (event_id == RELAY_TOGGLE) {
-            relay.toggle();
+            relay.toggle(0);
         }
         if (event_repeat > 0) {
             event_repeat--;
