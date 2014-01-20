@@ -48,11 +48,11 @@ void PX4GPIO::init()
         hal.scheduler->panic("Unable to open /dev/tone_alarm");
     }
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
-    _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, O_RDWR);
+    _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, 0);
     if (_gpio_fmu_fd == -1) {
         hal.scheduler->panic("Unable to open GPIO");
     }
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO_1\n");
     }
@@ -66,7 +66,13 @@ void PX4GPIO::init()
 }
 
 void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
-{}
+{
+    switch (pin) {
+    case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5):
+        ioctl(_gpio_fmu_fd, output?GPIO_SET_OUTPUT:GPIO_SET_INPUT, 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0)));
+        break;
+    }
+}
 
 int8_t PX4GPIO::analogPinToDigitalPin(uint8_t pin)
 {
@@ -114,7 +120,14 @@ uint8_t PX4GPIO::read(uint8_t pin) {
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_ACC2)?HIGH:LOW;
 #endif
+
+    case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5): {
+        uint32_t v = 0;
+        ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&v);
+        return (v & (1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0))))?HIGH:LOW;
     }
+    }
+    return LOW;
 }
 
 void PX4GPIO::write(uint8_t pin, uint8_t value)
@@ -186,6 +199,10 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC2);
             break;
 #endif
+
+    case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5):
+        ioctl(_gpio_fmu_fd, value==LOW?GPIO_CLEAR:GPIO_SET, 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0)));
+        break;
     }
 }
 

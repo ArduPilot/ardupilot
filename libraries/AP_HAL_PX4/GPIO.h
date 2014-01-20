@@ -13,6 +13,12 @@
 #define PX4_GPIO_EXT_IO_ACC1_PIN        115
 #define PX4_GPIO_EXT_IO_ACC2_PIN        116
 
+/*
+  start servo channels used as GPIO at 50. Pin 50 is
+  the first FMU servo pin
+ */
+#define PX4_GPIO_FMU_SERVO_PIN(n)       (n+50)
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
  # define HAL_GPIO_A_LED_PIN        27
  # define HAL_GPIO_B_LED_PIN        26
