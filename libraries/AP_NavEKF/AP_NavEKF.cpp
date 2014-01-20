@@ -263,7 +263,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: HGT_RETRY1
     // @DisplayName: Height retry time with vertical velocity measurement (msec)
-    // @Description: This is the number of msec that the the filter will wait if height measurements are failing the innovation consistency check before forcing us of the measurements. This value applies when GPS vertical velocity measurements are being used (EKF_GPS_TYPE = 0).
+    // @Description: This is the number of msec that the the filter will wait if height measurements are failing the innovation consistency check before forcing use of the measurements. This value applies when GPS vertical velocity measurements are being used (EKF_GPS_TYPE = 0).
     // @Range: 1000 - 30000
     // @Increment: 1000
     // @User: advanced
@@ -271,7 +271,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: HGT_RETRY2
     // @DisplayName: Height retry time without vertical velocity measurement (msec)
-    // @Description: This is the number of msec that the the filter will wait if height measurements are failing the innovation consistency check before forcing us of the measurements. This value applies when GPS vertical velocity measurements are NOT being used (EKF_GPS_TYPE = 1 or 2).
+    // @Description: This is the number of msec that the the filter will wait if height measurements are failing the innovation consistency check before forcing use of the measurements. This value applies when GPS vertical velocity measurements are NOT being used (EKF_GPS_TYPE = 1 or 2).
     // @Range: 1000 - 30000
     // @Increment: 1000
     // @User: advanced
@@ -356,10 +356,30 @@ void NavEKF::ResetPosition(void)
 {
     // read the GPS
     readGpsData();
-    readHgtData();
     // write to state vector
     states[7] = posNE[0];
     states[8] = posNE[1];
+}
+
+void NavEKF::ResetVelocity(void)
+{
+    // read the GPS
+    readGpsData();
+    // write to state vector
+    if (_fusionModeGPS <= 1) {
+        states[4] = velNED[0];
+        states[5] = velNED[1];
+    }
+    if (_fusionModeGPS <= 0) {
+        states[6] = velNED[2];
+    }
+}
+
+void NavEKF::ResetHeight(void)
+{
+    // read the altimeter
+    readHgtData();
+    // write to state vector
     states[9] = -hgtMea;
 }
 
@@ -1539,6 +1559,11 @@ void NavEKF::FuseVelPosNED()
             {
                 velHealth = true;
                 velFailTime = hal.scheduler->millis();
+                if (velTimeout)
+                {
+                    ResetVelocity();
+                }
+
             }
             else
             {
@@ -1588,7 +1613,7 @@ void NavEKF::FuseVelPosNED()
                 hgtFailTime = hal.scheduler->millis();
                 if (hgtTimeout)
                 {
-                    ResetPosition();
+                    ResetHeight();
                 }
             }
             else
