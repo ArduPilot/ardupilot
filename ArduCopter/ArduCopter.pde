@@ -2205,8 +2205,8 @@ static void tuning(){
         break;
 
     case CH6_RELAY:
-        if (g.rc_6.control_in > 525) relay.on();
-        if (g.rc_6.control_in < 475) relay.off();
+        if (g.rc_6.control_in > 525) relay.on(0);
+        if (g.rc_6.control_in < 475) relay.off(0);
         break;
 
 #if FRAME_CONFIG == HELI_FRAME
