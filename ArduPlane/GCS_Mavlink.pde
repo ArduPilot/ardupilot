@@ -1309,7 +1309,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_REPEAT_SERVO:
-            do_repeat_servo(packet.param1, packet.param2, packet.param3, packet.param4);
+            do_repeat_servo(packet.param1, packet.param2, packet.param3, packet.param4*1000);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
+        case MAV_CMD_DO_SET_RELAY:
+            do_set_relay(packet.param1, packet.param2);
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
+        case MAV_CMD_DO_REPEAT_RELAY:
+            do_repeat_relay(packet.param1, packet.param2, packet.param3*1000);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1462,8 +1472,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_REPEAT_SERVO:
-            param4 = tell_command.lng;
+            param4 = tell_command.lng*0.001f; // time
+            param3 = tell_command.lat;        // repeat
+            param2 = tell_command.alt;        // pwm
+            param1 = tell_command.p1;         // channel
+            break;
+
         case MAV_CMD_DO_REPEAT_RELAY:
+            param3 = tell_command.lat*0.001f; // time
+            param2 = tell_command.alt;        // count
+            param1 = tell_command.p1;         // relay number
+            break;
+
         case MAV_CMD_DO_CHANGE_SPEED:
             param3 = tell_command.lat;
             param2 = tell_command.alt;
@@ -1763,10 +1783,20 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_REPEAT_SERVO:
-            tell_command.lng = packet.param4;
+            tell_command.lng = packet.param4*1000; // time
+            tell_command.lat = packet.param3;      // count
+            tell_command.alt = packet.param2;      // PWM
+            tell_command.p1  = packet.param1;      // channel
+            break;
+
         case MAV_CMD_DO_REPEAT_RELAY:
+            tell_command.lat = packet.param3*1000; // time
+            tell_command.alt = packet.param2;      // count
+            tell_command.p1  = packet.param1;      // relay number
+            break;
+
         case MAV_CMD_DO_CHANGE_SPEED:
-            tell_command.lat = packet.param3;
+            tell_command.lat = packet.param3*1000; // convert to milliseconds
             tell_command.alt = packet.param2;
             tell_command.p1 = packet.param1;
             break;
