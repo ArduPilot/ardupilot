@@ -149,6 +149,8 @@ public:
     // return the innovation variances for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
     void  getVariances(Vector3f &velVar, Vector3f &posVar, Vector3f &magVar, float &tasVar) const;
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;

@@ -14,6 +14,7 @@
 
 #include "AP_NavEKF.h"
 #include <AP_AHRS.h>
+#include <AP_Param.h>
 
 #include <stdio.h>
 
@@ -22,14 +23,14 @@ extern const AP_HAL::HAL& hal;
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
 // Define tuning parameters
-const AP_Param::GroupInfo AP_NavEKF::var_info[] PROGMEM = {
+const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: TEST PARAM
     // @DisplayName: Blah (units)
     // @Description: Blah blah.
 	// @Increment: 0.1
 	// @User: advanced
-    AP_GROUPINFO("BLAH",    0, AP_NavEKF, _blah, 1.0f),
+    AP_GROUPINFO("BLAH",    0, NavEKF, _blah, 1.0f),
 
     AP_GROUPEND
 };
@@ -55,6 +56,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EKF_FuseAirspeed"))
 #endif
 {
+    AP_Param::setup_object_defaults(this, var_info);
+
     // Tuning parameters
     _gpsHorizVelNoise       = 0.15f;    // GPS horizontal velocity measurement noise : m/s
     _gpsVertVelNoise        = 0.30f;    // GPS vertical velocity measurement noise : m/s
