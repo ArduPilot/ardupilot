@@ -1259,7 +1259,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 } else if (packet.param1 == 0.0f)  {
                     if (arming.disarm()) {
-                        if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
+                        if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
                             channel_throttle->disable_out();  
                         }
                         // reset the mission on disarm
