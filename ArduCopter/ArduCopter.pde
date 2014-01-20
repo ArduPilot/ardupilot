@@ -128,6 +128,7 @@
 #include <AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify.h>          // Notify library
 #include <AP_BattMonitor.h>     // Battery monitor library
+#include <AP_BoardConfig.h>     // board configuration library
 #if SPRAYER == ENABLED
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
@@ -422,6 +423,9 @@ static int8_t control_mode = STABILIZE;
 // This is set to -1 when we need to re-read the switch
 static uint8_t oldSwitchPosition;
 static RCMapper rcmap;
+
+// board specific config
+static AP_BoardConfig BoardConfig;
 
 // receiver RSSI
 static uint8_t receiver_rssi;

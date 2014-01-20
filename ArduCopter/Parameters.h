@@ -70,6 +70,9 @@ public:
         // EPM object
         k_param_epm,
 
+        // BoardConfig object
+        k_param_BoardConfig,
+
         // Misc
         //
         k_param_log_bitmask = 20,

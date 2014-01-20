@@ -123,6 +123,8 @@ static void init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
+    BoardConfig.init();
+
     relay.init();
 
     bool enable_external_leds = true;
