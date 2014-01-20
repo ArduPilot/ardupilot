@@ -90,7 +90,7 @@ static void handle_process_do_command()
         break;
 
     case MAV_CMD_DO_SET_SERVO:
-        do_set_servo();
+        do_set_servo(next_nonnav_command.p1, next_nonnav_command.alt);
         break;
 
     case MAV_CMD_DO_SET_RELAY:
@@ -616,13 +616,22 @@ static void do_set_home()
     }
 }
 
-static void do_set_servo()
+static void do_set_servo(uint8_t channel, uint16_t pwm)
 {
-    servo_write(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
+    if (event_state.type == EVENT_TYPE_SERVO && 
+        event_state.channel == channel) {
+        event_state.repeat = 0;
+    }
+    servo_write(channel-1, pwm);
 }
 
 static void do_set_relay(uint8_t relay_num, uint8_t state)
 {
+    if (event_state.type == EVENT_TYPE_RELAY && 
+        event_state.channel == relay_num) {
+        event_state.repeat = 0;
+    }
+
     if (state == 1) {
         gcs_send_text_fmt(PSTR("Relay on"));
         relay.on(relay_num);
@@ -637,7 +646,6 @@ static void do_set_relay(uint8_t relay_num, uint8_t state)
 
 static void do_repeat_servo(uint8_t channel, uint16_t servo_value, int16_t repeat, uint16_t delay_time_ms)
 {
-    channel = channel - 1;
     if (channel < 5 || channel > 16) {
         // not allowed
         return;
@@ -649,7 +657,7 @@ static void do_repeat_servo(uint8_t channel, uint16_t servo_value, int16_t repea
     event_state.delay_ms    = delay_time_ms / 2;
     event_state.repeat      = repeat * 2;
     event_state.servo_value = servo_value;
-    event_state.undo_value  = RC_Channel::rc_channel(channel)->radio_trim;
+    event_state.undo_value  = RC_Channel::rc_channel(channel-1)->radio_trim;
     update_events();
 }
 
