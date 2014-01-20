@@ -92,6 +92,7 @@
 #include <AP_Navigation.h>
 #include <APM_Control.h>
 #include <AP_L1_Control.h>
+#include <AP_BoardConfig.h>
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
@@ -142,6 +143,9 @@ static AP_Scheduler scheduler;
 
 // mapping between input channels
 static RCMapper rcmap;
+
+// board specific config
+static AP_BoardConfig BoardConfig;
 
 // primary control channels
 static RC_Channel *channel_steer;

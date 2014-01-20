@@ -104,6 +104,8 @@ static void init_ardupilot()
 	
     load_parameters();
 
+    BoardConfig.init();
+
     set_control_channels();
 
     // after parameter load setup correct baud rate on uartA
