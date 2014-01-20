@@ -100,6 +100,7 @@ public:
         k_param_hil_err_limit,
         k_param_sonar,
         k_param_log_bitmask,
+        k_param_BoardConfig,
 
         // 100: Arming parameters
         k_param_arming = 100,
