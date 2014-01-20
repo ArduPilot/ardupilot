@@ -80,9 +80,6 @@ public:
     // Initialise the attitude from accelerometer and magnetometer data (if present)
     void InitialiseFilterBootstrap(void);
 
-    // Reset the position and height states to the last GPS and barometer measurement
-    void ResetPosition(void);
-
     // inhibits position and velocity attitude corrections when set to true
     // setting to true has same effect as ahrs.set_correct_centrifugal(false)
     void SetStaticMode(bool setting);
@@ -216,6 +213,13 @@ private:
     void ForceYawAlignment();
 
     void ZeroVariables();
+
+    void ResetPosition(void);
+
+    void ResetVelocity(void);
+
+    void ResetHeight(void);
+
 
 private:
     // EKF Mavlink Tuneable Parameters
