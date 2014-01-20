@@ -375,11 +375,11 @@ static void do_set_servo()
 static void do_set_relay()
 {
 	if (next_nonnav_command.p1 == 1) {
-		relay.on();
+		relay.on(0);
 	} else if (next_nonnav_command.p1 == 0) {
-		relay.off();
+		relay.off(0);
 	}else{
-		relay.toggle();
+		relay.toggle(0);
 	}
 }
 
