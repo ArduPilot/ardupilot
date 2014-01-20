@@ -32,6 +32,9 @@ public:
     // de-activate the relay
     void        off(uint8_t relay);
 
+    // see if the relay is enabled
+    bool        enabled(uint8_t relay) { return relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1; }
+
     // toggle the relay status
     void        toggle(uint8_t relay);
 
