@@ -25,12 +25,257 @@ extern const AP_HAL::HAL& hal;
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
-    // @Param: TEST PARAM
-    // @DisplayName: Blah (units)
-    // @Description: Blah blah.
-	// @Increment: 0.1
-	// @User: advanced
-    AP_GROUPINFO("BLAH",    0, NavEKF, _blah, 1.0f),
+    // @Param: VELNE_NOISE
+    // @DisplayName: GPS horizontal velocity measurement noise (m/s)
+    // @Description: This is the RMS value of noise in the North and East GPS velocity measurements. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.15 - 1.5
+    // @Increment: 0.05
+    // @User: advanced
+    AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, 0.15f),
+
+    // @Param: VELD_NOISE
+    // @DisplayName: GPS vertical velocity measurement noise (m/s)
+    // @Description: This is the RMS value of noise in the vertical GPS velocity measurement. Increasing it reduces the weighting on this measurement.
+    // @Range: 0.15 - 3.0
+    // @Increment: 0.05
+    // @User: advanced
+    AP_GROUPINFO("VELD_NOISE",    1, NavEKF, _gpsVertVelNoise, 0.30f),
+
+    // @Param: POSNE_NOISE
+    // @DisplayName: GPS horizontal position measurement noise (m)
+    // @Description: This is the RMS value of noise in the GPS horizontal position measurements. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.3 - 5.0
+    // @Increment: 0.1
+    // @User: advanced
+    AP_GROUPINFO("POSNE_NOISE",    2, NavEKF, _gpsHorizPosNoise, 0.50f),
+
+    // @Param: ALT_NOISE
+    // @DisplayName: Altitude measurement noise (m)
+    // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting on this measurement.
+    // @Range: 0.1 - 5.0
+    // @Increment: 0.1
+    // @User: advanced
+    AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, 0.50f),
+
+    // @Param: VELNE_SCALE
+    // @DisplayName: Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    // @Description: Increasing this paramter increases how much the filter reduces its weighting on the GPS horizontal velocity measurement when the vehicle is manoeuvring. GPS units that have poor dynamic accuracy will require a larger value.
+    // @Range: 0.05 - 0.5
+    // @Increment: 0.01
+    // @User: advanced
+    AP_GROUPINFO("VELNE_SCALE",    4, NavEKF, _gpsNEVelVarAccScale, 0.1f),
+
+    // @Param: VELD_SCALE
+    // @DisplayName: Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    // @Description: Increasing this paramter increases how much the filter reduces its weighting on the GPS vertical velocity measurement when the vehicle is manoeuvring. GPS units that have poor dynamic accuracy will require a larger value.
+    // @Range: 0.05 - 0.5
+    // @Increment: 0.01
+    // @User: advanced
+    AP_GROUPINFO("VELD_SCALE",    5, NavEKF, _gpsDVelVarAccScale, 0.15f),
+
+    // @Param: POSNE_SCALE
+    // @DisplayName: Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    // @Description: Increasing this parameter increases how much the filter reduces its weighting on the GPS horizontal position measurements when the vehicle is manoeuvring. GPS units that have poor dynamic accuracy will require a larger value.
+    // @Range: 0.05 - 0.5
+    // @Increment: 0.01
+    // @User: advanced
+    AP_GROUPINFO("POSNE_SCALE",    6, NavEKF, _gpsPosVarAccScale, 0.1f),
+
+    // @Param: MAG_NOISE
+    // @DisplayName: Magntometer measurement noise (Gauss)
+    // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.05 - 0.5
+    // @Increment: 0.05
+    // @User: advanced
+    AP_GROUPINFO("MAG_NOISE",    7, NavEKF, _magNoise, 0.05f),
+
+    // @Param: EAS_NOISE
+    // @DisplayName: Equivalent airspeed measurement noise (m/s)
+    // @Description: This is the RMS value of noise in magnetometer measurements. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.5 - 5.0
+    // @Increment: 0.1
+    // @User: advanced
+    AP_GROUPINFO("EAS_NOISE",    8, NavEKF, _easNoise, 1.4f),
+
+    // @Param: WIND_PNOISE
+    // @DisplayName: Wind velocity states process noise (m/s^2)
+    // @Description: This noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
+    // @Range: 0.01 - 0.5
+    // @Increment: 0.1
+    // @User: advanced
+    AP_GROUPINFO("WIND_PNOISE",    9, NavEKF, _windVelProcessNoise, 0.1f),
+
+    // @Param: WIND_PSCALE
+    // @DisplayName: Scale factor applied to wind states process noise from height rate
+    // @Description: Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind speed estimation noiser.
+    // @Range: 0.0 - 1.0
+    // @Increment: 0.1
+    // @User: advanced
+    AP_GROUPINFO("WIND_PSCALE",    10, NavEKF, _wndVarHgtRateScale, 0.5f),
+
+    // @Param: GYRO_PNOISE
+    // @DisplayName: Rate gyro noise (rad/s)
+    // @Description: This noise controls the growth of estimated error due to gyro measurement errors excluding bias. Increasing it makes the flter trust the gyro measurements less and other measurements more. 
+    // @Range: 0.001 - 0.05
+    // @Increment: 0.001
+    // @User: advanced
+    AP_GROUPINFO("GYRO_PNOISE",    11, NavEKF, _gyrNoise, 0.015f),
+
+    // @Param: ACC_PNOISE
+    // @DisplayName: Accelerometer noise (m/s^2)
+    // @Description: This noise controls the growth of estimated error due to accelerometer measurement errors excluding bias. Increasing it makes the flter trust the accelerometer measurements less and other measurements more. 
+    // @Range: 0.05 - 1.0
+    // @Increment: 0.01
+    // @User: advanced
+    AP_GROUPINFO("ACC_PNOISE",    12, NavEKF, _accNoise, 0.50f),
+
+    // @Param: GBIAS_PNOISE
+    // @DisplayName: Rate gyro bias state process noise (rad/s)
+    // @Description: This noise controls the growth of gyro bias state error estimates. Increasing it makes rate gyro bias estimation faster and noisier.
+    // @Range: 0.0000001 - 0.00001
+    // @User: advanced
+    AP_GROUPINFO("GBIAS_PNOISE",    13, NavEKF, _gyroBiasProcessNoise, 2.0e-6f),
+
+    // @Param: ABIAS_PNOISE
+    // @DisplayName: Accelerometer bias state process noise (m/s^2)
+    // @Description: This noise controls the growth of the vertical acelerometer bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
+    // @Range: 0.0001 - 0.01
+    // @User: advanced
+    AP_GROUPINFO("ABIAS_PNOISE",    14, NavEKF, _accelBiasProcessNoise, 1.0e-3f),
+
+    // @Param: MAGE_PNOISE
+    // @DisplayName: Earth magnetic field states process noise (gauss/s)
+    // @Description: This noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field bias estimation faster and noisier.
+    // @Range: 0.0001 - 0.01
+    // @User: advanced
+    AP_GROUPINFO("MAGE_PNOISE",    15, NavEKF, _magEarthProcessNoise, 3.0e-4f),
+
+    // @Param: MAGB_PNOISE
+    // @DisplayName: Body magnetic field states process noise (gauss/s)
+    // @Description: This noise controls the growth of body magnetic field state error estimates. Increasing it makes compass offset estimation faster and noisier.
+    // @Range: 0.0001 - 0.01
+    // @User: advanced
+    AP_GROUPINFO("MAGB_PNOISE",    16, NavEKF, _magBodyProcessNoise, 3.0e-4f),
+
+    // @Param: VEL_DELAY
+    // @DisplayName: GPS velocity measurement delay (msec)
+    // @Description: This is the number of msec that the GPS velocity measurements lag behind the inertial measurements.
+    // @Range: 0 - 500
+    // @Increment: 10
+    // @User: advanced
+    AP_GROUPINFO("VEL_DELAY",    17, NavEKF, _msecVelDelay, 220),
+
+    // @Param: POS_DELAY
+    // @DisplayName: GPS position measurement delay (msec)
+    // @Description: This is the number of msec that the GPS position measurements lag behind the inertial measurements.
+    // @Range: 0 - 500
+    // @Increment: 10
+    // @User: advanced
+    AP_GROUPINFO("POS_DELAY",    18, NavEKF, _msecPosDelay, 220),
+
+    // @Param: HGT_DELAY
+    // @DisplayName: Height measurement delay (msec)
+    // @Description: This is the number of msec that the height measurements lag behind the inertial measurements.
+    // @Range: 0 - 500
+    // @Increment: 10
+    // @User: advanced
+    AP_GROUPINFO("HGT_DELAY",    19, NavEKF, _msecHgtDelay, 60),
+
+    // @Param: MAG_DELAY
+    // @DisplayName: Magnetometer measurement delay (msec)
+    // @Description: This is the number of msec that the magnetometer measurements lag behind the inertial measurements.
+    // @Range: 0 - 100
+    // @Increment: 10
+    // @User: advanced
+    AP_GROUPINFO("MAG_DELAY",    20, NavEKF, _msecMagDelay, 40),
+
+    // @Param: EAS_DELAY
+    // @DisplayName: Airspeed measurement delay (msec)
+    // @Description: This is the number of msec that the airspeed measurements lag behind the inertial measurements.
+    // @Range: 0 - 500
+    // @Increment: 10
+    // @User: advanced
+    AP_GROUPINFO("EAS_DELAY",    21, NavEKF, _msecTasDelay, 240),
+
+    // @Param: GPS_TYPE
+    // @DisplayName: GPS velocity mode control
+    // @Description: This parameter controls use of GPS velocity measurements : 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
+    // @Range: 0 - 3
+    // @Increment: 1
+    // @User: advanced
+    AP_GROUPINFO("GPS_TYPE",    22, NavEKF, _fusionModeGPS, 0),
+
+    // @Param: VEL_GATE
+    // @DisplayName: GPS velocity measurement gate size
+    // @Description: This parameter sets the number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements willbe rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 3 - 100
+    // @Increment: 1
+    // @User: advanced
+    AP_GROUPINFO("VEL_GATE",    23, NavEKF, _gpsVelInnovGate, 5),
+
+    // @Param: POS_GATE
+    // @DisplayName: GPS position measurement gate size
+    // @Description: This parameter sets the number of standard deviations applied to the GPS position measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 3 - 100
+    // @Increment: 1
+    // @User: advanced
+    AP_GROUPINFO("POS_GATE",    24, NavEKF, _gpsPosInnovGate, 10),
+
+    // @Param: HGT_GATE
+    // @DisplayName: Height measurement gate size
+    // @Description: This parameter sets the number of standard deviations applied to the height measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 3 - 100
+    // @Increment: 1
+    // @User: advanced
+    AP_GROUPINFO("HGT_GATE",    25, NavEKF, _hgtInnovGate, 10),
+
+    // @Param: MAG_GATE
+    // @DisplayName: Magnetometer measurement gate size
+    // @Description: This parameter sets the number of standard deviations applied to the magnetometer measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 3 - 100
+    // @Increment: 1
+    // @User: advanced
+    AP_GROUPINFO("MAG_GATE",    26, NavEKF, _magInnovGate, 5),
+
+    // @Param: EAS_GATE
+    // @DisplayName: Airspeed measurement gate size
+    // @Description: This parameter sets the number of standard deviations applied to the airspeed measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 3 - 100
+    // @Increment: 1
+    // @User: advanced
+    AP_GROUPINFO("EAS_GATE",    27, NavEKF, _tasInnovGate, 10),
+
+    // @Param: GPS_RETRY1
+    // @DisplayName: GPS retry time with airspeed measurements (msec)
+    // @Description: This is the number of msec that the the filter will wait if GPS measurements are failing the innovation consistency check before forcing use of the measurements. This value applies when airspeed measurements are being used.
+    // @Range: 1000 - 30000
+    // @Increment: 1000
+    // @User: advanced
+    AP_GROUPINFO("GPS_RETRY1",    28, NavEKF, _gpsRetryTimeUseTAS, 10000),
+
+    // @Param: GPS_RETRY2
+    // @DisplayName: GPS retry time without airspeed measurements (msec)
+    // @Description: This is the number of msec that the the filter will wait if GPS measurements are failing the innovation consistency check before forcing use of the measurements. This value applies when airspeed measurements are NOT being used.
+    // @Range: 1000 - 30000
+    // @Increment: 1000
+    // @User: advanced
+    AP_GROUPINFO("GPS_RETRY2",    29, NavEKF, _gpsRetryTimeNoTAS, 5000),
+
+    // @Param: HGT_RETRY1
+    // @DisplayName: Height retry time with vertical velocity measurement (msec)
+    // @Description: This is the number of msec that the the filter will wait if height measurements are failing the innovation consistency check before forcing us of the measurements. This value applies when GPS vertical velocity measurements are being used (EKF_GPS_TYPE = 0).
+    // @Range: 1000 - 30000
+    // @Increment: 1000
+    // @User: advanced
+    AP_GROUPINFO("HGT_RETRY1",    30, NavEKF, _hgtRetryTimeMode0, 10000),
+
+    // @Param: HGT_RETRY2
+    // @DisplayName: Height retry time without vertical velocity measurement (msec)
+    // @Description: This is the number of msec that the the filter will wait if height measurements are failing the innovation consistency check before forcing us of the measurements. This value applies when GPS vertical velocity measurements are NOT being used (EKF_GPS_TYPE = 1 or 2).
+    // @Range: 1000 - 30000
+    // @Increment: 1000
+    // @User: advanced
+    AP_GROUPINFO("HGT_RETRY2",    31, NavEKF, _hgtRetryTimeMode12, 5000),
 
     AP_GROUPEND
 };
@@ -44,9 +289,9 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
     TASmsecMax(333),            // maximum allowed interval between airspeed measurement updates
-    fuseMeNow(false),           // forces fusion to occur on the IMU frame that data arrives
-    staticMode(true),           // staticMode forces position and velocity fusion with zero values
-    staticModeDemanded(true)    // staticMode demand from outside
+    fuseMeNow(false),           // forces airspeed fusion to occur on the IMU frame that data arrives
+    staticModeDemanded(true),   // staticMode demanded from outside
+    staticMode(true)            // staticMode forces position and velocity fusion with zero values
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -57,55 +302,11 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
-
     // Tuning parameters
-    _gpsHorizVelNoise       = 0.15f;    // GPS horizontal velocity measurement noise : m/s
-    _gpsVertVelNoise        = 0.30f;    // GPS vertical velocity measurement noise : m/s
-    _gpsHorizPosNoise       = 0.5f;     // GPS horizontal position measurement noise : m
-    _baroAltNoise           = 0.5f;     // Baro height measurement noise : m
-    _gpsNEVelVarAccScale    = 0.1f;     // scale factor applied to NE velocity measurement variance due to Vdot
-    _gpsDVelVarAccScale     = 0.15f;    // scale factor applied to D velocity measurement variance due to Vdot
-    _gpsPosVarAccScale      = 0.1f;     // scale factor applied to position measurement variance due to Vdot
-    _magNoise               = 0.05f;    // magnetometer measurement noise : gauss
     _magVarRateScale        = 0.05f;    // scale factor applied to magnetometer variance due to angular rate
-    _easNoise               = 1.4f;     // equivalent airspeed measurement noise : m/s
-    _windVelProcessNoise    = 0.1f;     // wind velocity states process noise : (m/s^2)
-    _wndVarHgtRateScale     = 0.5f;     // scale factor applied to wind states process noise from height rate
-    _gyrNoise               = 1.5e-2f;  // gyro process noise : rad/s
-    _accNoise               = 0.5f;     // accelerometer process noise : m/s^2
     _gyroBiasNoiseScaler    = 3.0f;     // scale factor applied to gyro bias state process variance when on ground
-    _gyroBiasProcessNoise   = 2.0e-6f;  // gyro bias states process noise : rad/s
-    _accelBiasProcessNoise	= 1.0e-3f;	// accel bias state process noise : m/s^2
-    _magEarthProcessNoise   = 3.0e-4f;  // earth magnetic field states process noise : gauss/sec
-    _magBodyProcessNoise    = 3.0e-4f;  // body magnetic field states process noise : gauss/sec
-    // When a new measurement is available, the filter states used to process it is taken from a delay
-    // buffer. These parameters control how far back in the buffer the states are taken for each measurement
-    _msecVelDelay           = 220;      // effective average delay of GPS velocity measurements rel to IMU (msec)
-    _msecPosDelay           = 220;      // effective average delay of GPS position measurements rel to (msec)
-    _msecHgtDelay           = 60;       // effective average delay of height measurements rel to (msec)
-    _msecMagDelay           = 40;       // effective average delay of magnetometer measurements rel to IMU (msec)
-    _msecTasDelay           = 240;      // effective average delay of airspeed measurements rel to IMU (msec)
-    // These parameters control the way that a single GPS or baro measurement is fused repeatedly to provide
-    // a 'smoother' trajectory output
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
     _msecHgtAvg             = 100;      // average number of msec between height measurements
-    _fusionModeGPS          = 0;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
-    // These parameters control the size of the gate that is applied to reject unreasonable measurements
-    // The innovation variancea (contained in the EKF4 log message) are multiplied by these scale factors to determine the +-
-    // gate thresholds. If the innovation for a measurement (contained in the EKF3 log message) is outside the gate, that measurement
-    // will not be used. Set too tight and good data will be rjected and there is a risk that the system could go free inertial for periods
-    // Set too loose and bad data that could corrupt the EKF solution could be accepted.
-    _gpsVelInnovGate        = 5;        // Number of standard deviations applied to GPS velocity innovation consistency check
-    _gpsPosInnovGate        = 10;        // Number of standard deviations applied to GPS position innovation consistency check
-    _hgtInnovGate           = 10;        // Number of standard deviations applied to height innovation consistency check
-    _magInnovGate           = 5;        // Number of standard deviations applied to magnetometer innovation consistency check
-    _tasInnovGate           = 10;        // Number of standard deviations applied to true airspeed innovation consistency check
-    // these parameters control how long GPS and height measurements can be locked out if they fail the innovation consistency check
-    _gpsRetryTimeUseTAS     = 10000;    // GPS retry time following innovation consistency fail if TAS measurements are used (msec)
-    _gpsRetryTimeNoTAS      = 5000;     // GPS retry time following innovation consistency fail if no TAS measurements are used (msec)
-    _hgtRetryTimeMode0      = 10000;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
-    _hgtRetryTimeMode12     = 5000;     // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
-
     // Misc initial conditions
     hgtRate = 0.0f;
     mag_state.q0 = 1;
