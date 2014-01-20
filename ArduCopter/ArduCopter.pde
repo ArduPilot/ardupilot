@@ -1535,18 +1535,18 @@ static void tuning(){
 #if 0
     case CH6_EKF_VERTICAL_POS:
         // EKF's baro vs accel (higher rely on accels more, baro impact is reduced)
-        ahrs.get_EKF()->_gpsVertPosNoise = tuning_value;
+        ahrs.get_NavEKF()._gpsVertPosNoise = tuning_value;
         break;
 #endif
 
     case CH6_EKF_HORIZONTAL_POS:
         // EKF's gps vs accel (higher rely on accels more, gps impact is reduced)
-        ahrs.get_EKF()->_gpsHorizPosNoise = tuning_value;
+        ahrs.get_NavEKF()._gpsHorizPosNoise = tuning_value;
         break;
 
     case CH6_EKF_ACCEL_NOISE:
         // EKF's accel noise (lower means trust accels more, gps & baro less)
-        ahrs.get_EKF()->_accNoise = tuning_value;
+        ahrs.get_NavEKF()._accNoise = tuning_value;
         break;
 #endif // AP_AHRS_NAVEKF_AVAILABLE
     }
