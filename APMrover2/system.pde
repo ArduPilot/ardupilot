@@ -467,7 +467,7 @@ print_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->print_P(PSTR("Learning"));
         break;
     case STEERING:
-        port->print_P(PSTR("Stearing"));
+        port->print_P(PSTR("Steering"));
         break;
     case AUTO:
         port->print_P(PSTR("AUTO"));
