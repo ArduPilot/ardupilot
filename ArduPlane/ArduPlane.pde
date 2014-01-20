@@ -617,8 +617,8 @@ static struct {
 	// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
     int16_t repeat;
 
-    // RC channel for servos
-    uint8_t rc_channel;
+    // RC channel for servos, relay number for relays
+    uint8_t channel;
 
 	// PWM for servos
 	uint16_t servo_value;

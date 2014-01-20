@@ -94,7 +94,7 @@ static void handle_process_do_command()
         break;
 
     case MAV_CMD_DO_SET_RELAY:
-        do_set_relay();
+        do_set_relay(next_nonnav_command.p1, next_nonnav_command.alt);
         break;
 
     case MAV_CMD_DO_REPEAT_SERVO:
@@ -103,7 +103,8 @@ static void handle_process_do_command()
         break;
 
     case MAV_CMD_DO_REPEAT_RELAY:
-        do_repeat_relay();
+        do_repeat_relay(next_nonnav_command.p1, next_nonnav_command.alt,
+                        next_nonnav_command.lat);
         break;
 
 #if CAMERA == ENABLED
@@ -620,46 +621,45 @@ static void do_set_servo()
     servo_write(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
 }
 
-static void do_set_relay()
+static void do_set_relay(uint8_t relay_num, uint8_t state)
 {
-    if (next_nonnav_command.p1 == 1) {
+    if (state == 1) {
         gcs_send_text_fmt(PSTR("Relay on"));
-        relay.on();
-    } else if (next_nonnav_command.p1 == 0) {
+        relay.on(relay_num);
+    } else if (state == 0) {
         gcs_send_text_fmt(PSTR("Relay off"));
-        relay.off();
-    }else{
+        relay.off(relay_num);
+    } else {
         gcs_send_text_fmt(PSTR("Relay toggle"));
-        relay.toggle();
+        relay.toggle(relay_num);
     }
 }
 
-static void do_repeat_servo(uint8_t channel, uint16_t servo_value,
-                            int16_t repeat, uint8_t delay_time)
+static void do_repeat_servo(uint8_t channel, uint16_t servo_value, int16_t repeat, uint16_t delay_time_ms)
 {
     channel = channel - 1;
-    if (channel < 5 || channel > 8) {
+    if (channel < 5 || channel > 16) {
         // not allowed
         return;
     }
-    event_state.rc_channel = channel;
+    event_state.channel = channel;
     event_state.type = EVENT_TYPE_SERVO;
 
     event_state.start_time_ms  = 0;
-    event_state.delay_ms    = delay_time * 500UL;
+    event_state.delay_ms    = delay_time_ms / 2;
     event_state.repeat      = repeat * 2;
     event_state.servo_value = servo_value;
     event_state.undo_value  = RC_Channel::rc_channel(channel)->radio_trim;
     update_events();
 }
 
-static void do_repeat_relay()
+static void do_repeat_relay(uint8_t relay_num, int16_t count, uint32_t period_ms)
 {
     event_state.type = EVENT_TYPE_RELAY;
+    event_state.channel = relay_num;
     event_state.start_time_ms  = 0;
-    // /2 (half cycle time) * 1000 (convert to milliseconds)
-    event_state.delay_ms        = next_nonnav_command.lat * 500.0;
-    event_state.repeat          = next_nonnav_command.alt * 2;
+    event_state.delay_ms        = period_ms/2; // half cycle time
+    event_state.repeat          = count*2;  // number of full cycles
     update_events();
 }
 

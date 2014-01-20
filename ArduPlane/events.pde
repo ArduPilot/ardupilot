@@ -133,17 +133,17 @@ static void update_events(void)
 
         switch (event_state.type) {
         case EVENT_TYPE_SERVO:
-            hal.rcout->enable_ch(event_state.rc_channel);
+            hal.rcout->enable_ch(event_state.channel);
             if (event_state.repeat & 1) {
-                servo_write(event_state.rc_channel, event_state.undo_value);
+                servo_write(event_state.channel, event_state.undo_value);
             } else {
-                servo_write(event_state.rc_channel, event_state.servo_value);                 
+                servo_write(event_state.channel, event_state.servo_value);                 
             }
             break;
 
         case EVENT_TYPE_RELAY:
             gcs_send_text_fmt(PSTR("Relay toggle"));
-            relay.toggle();
+            relay.toggle(event_state.channel);
             break;
         }
 
