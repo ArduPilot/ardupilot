@@ -115,6 +115,7 @@
 #include <Filter.h>             // Filter library
 #include <AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay.h>           // APM relay
+#include <AP_ServoRelayEvents.h>
 #include <AP_Camera.h>          // Photo or video camera
 #include <AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed.h>        // needed for AHRS build
@@ -726,22 +727,6 @@ static int16_t yaw_look_at_heading_slew;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Repeat Mission Scripting Command
-////////////////////////////////////////////////////////////////////////////////
-// The type of repeating event - Toggle a servo channel, Toggle the APM1 relay, etc
-static uint8_t event_id;
-// Used to manage the timimng of repeating events
-static uint32_t event_timer;
-// How long to delay the next firing of event in millis
-static uint16_t event_delay;
-// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
-static int16_t event_repeat;
-// per command value, such as PWM for servos
-static int16_t event_value;
-// the stored value used to undo commands - such as original PWM command
-static int16_t event_undo_value;
-
-////////////////////////////////////////////////////////////////////////////////
 // Delay Mission Scripting Command
 ////////////////////////////////////////////////////////////////////////////////
 static int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
@@ -785,6 +770,9 @@ static uint8_t auto_trim_counter;
 
 // Reference to the relay object (APM1 -> PORTL 2) (APM2 -> PORTB 7)
 static AP_Relay relay;
+
+// handle repeated servo and relay events
+static AP_ServoRelayEvents ServoRelayEvents(relay);
 
 //Reference to the camera object (it uses the relay object inside it)
 #if CAMERA == ENABLED
