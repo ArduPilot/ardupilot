@@ -74,6 +74,7 @@
 #include <AP_BattMonitor.h> // Battery monitor library
 
 #include <AP_Arming.h>
+#include <AP_BoardConfig.h>
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -126,6 +127,9 @@ static AP_Scheduler scheduler;
  
 // mapping between input channels
 static RCMapper rcmap;
+
+// board specific config
+static AP_BoardConfig BoardConfig;
 
 // primary control channels
 static RC_Channel *channel_roll;
