@@ -75,6 +75,7 @@
 
 #include <AP_Arming.h>
 #include <AP_BoardConfig.h>
+#include <AP_ServoRelayEvents.h>
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -324,6 +325,9 @@ static AP_RangeFinder_analog sonar;
 // Relay
 ////////////////////////////////////////////////////////////////////////////////
 static AP_Relay relay;
+
+// handle servo and relay events
+static AP_ServoRelayEvents ServoRelayEvents(relay);
 
 // Camera
 #if CAMERA == ENABLED
@@ -597,35 +601,6 @@ static struct {
 	// The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
     uint32_t time_max_ms;
 } loiter;
-
-
-// event control state
-enum event_type { 
-    EVENT_TYPE_RELAY=0,
-    EVENT_TYPE_SERVO=1
-};
-
-static struct {
-    enum event_type type;
-
-	// when the event was started in ms
-    uint32_t start_time_ms;
-
-	// how long to delay the next firing of event in millis
-    uint16_t delay_ms;
-
-	// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
-    int16_t repeat;
-
-    // RC channel for servos, relay number for relays
-    uint8_t channel;
-
-	// PWM for servos
-	uint16_t servo_value;
-
-	// the value used to cycle events (alternate value to event_value)
-    uint16_t undo_value;
-} event_state;
 
 
 ////////////////////////////////////////////////////////////////////////////////

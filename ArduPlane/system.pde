@@ -94,6 +94,9 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
+    // allow servo set on all channels except first 4
+    ServoRelayEvents.set_channel_mask(0xFFF0);
+
     set_control_channels();
 
     // reset the uartA baud rate after parameter load
