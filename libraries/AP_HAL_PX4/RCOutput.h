@@ -35,6 +35,9 @@ private:
     unsigned _servo_count;
     unsigned _alt_servo_count;
     uint32_t _rate_mask;
+    uint16_t _enabled_channels;
+
+    void _init_alt_channels(void);
 };
 
 #endif // __AP_HAL_PX4_RCOUTPUT_H__
