@@ -24,6 +24,7 @@ public:
     bool            wait_for_sample(uint16_t timeout_ms);
     bool            get_gyro_health(void) const;
     bool            get_accel_health(void) const;
+    bool            healthy(void) const { return get_gyro_health() && get_accel_health(); } // testing
 
 private:
     uint16_t        _init_sensor( Sample_rate sample_rate );
