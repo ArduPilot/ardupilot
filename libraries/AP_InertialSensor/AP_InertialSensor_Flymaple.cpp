@@ -224,6 +224,36 @@ bool AP_InertialSensor_Flymaple::update(void)
     return true;
 }
 
+bool AP_InertialSensor_Flymaple::get_gyro_health(void) const
+{
+    if (_last_gyro_timestamp == 0) {
+        // not initialised yet, show as healthy to prevent scary GCS
+        // warnings
+        return true;
+    }
+    uint64_t now = hal.scheduler->micros();
+    if ((now - _last_gyro_timestamp) >= (2 * raw_sample_interval_us)) {
+        // gyros have not updated
+        return false;
+    }
+    return true;
+}
+
+bool AP_InertialSensor_Flymaple::get_accel_health(void) const
+{
+    if (_last_accel_timestamp == 0) {
+        // not initialised yet, show as healthy to prevent scary GCS
+        // warnings
+        return true;
+    }
+    uint64_t now = hal.scheduler->micros();
+    if ((now - _last_accel_timestamp) >= (2 * raw_sample_interval_us)) {
+        // gyros have not updated
+        return false;
+    }
+    return true;
+}
+
 float AP_InertialSensor_Flymaple::get_delta_time(void) const
 {
     return _delta_time;
