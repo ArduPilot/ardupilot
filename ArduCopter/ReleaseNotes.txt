@@ -1,5 +1,17 @@
 ArduCopter Release Notes:
 ------------------------------------------------------------------
+ArduCopter 3.1.1-rc2 21-Jan-2013
+Changes from 3.1.1-rc1
+1) Pixhawk improvements (available for APM2 when AC3.2 is released):
+    a) Faster arming
+    b) AHRS_TRIM fix - reduces movement in loiter when yawing
+    c) AUX Out 5 & 6 turned into general purpose I/O pins
+    d) Three more relays added (relays are pins that can be set to 0V or 5V)
+    e) do-set-servo fix to allow servos to be controlled from ground station
+    f) Motorsync CLI test
+    g) PX4 parameters moved from SD card to eeprom
+    h) additional pre-arm checks for baro & inertial nav altitude and lean angle
+------------------------------------------------------------------
 ArduCopter 3.1.1-rc1 14-Jan-2013
 Changes from 3.1
 1) Pixhawk improvements:
