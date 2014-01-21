@@ -90,10 +90,6 @@
 #define OCTA_QUAD_FRAME 7
 #define SINGLE_FRAME 8
 
-#define PLUS_FRAME 0
-#define X_FRAME 1
-#define V_FRAME 2
-
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 

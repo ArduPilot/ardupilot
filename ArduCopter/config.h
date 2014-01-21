@@ -100,9 +100,6 @@
 #ifndef FRAME_CONFIG
  # define FRAME_CONFIG   QUAD_FRAME
 #endif
-#ifndef FRAME_ORIENTATION
- # define FRAME_ORIENTATION      X_FRAME
-#endif
 
 /////////////////////////////////////////////////////////////////////////////////
 // TradHeli defaults
