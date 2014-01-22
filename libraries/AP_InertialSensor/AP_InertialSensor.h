@@ -110,11 +110,11 @@ public:
     virtual void       set_accel(const Vector3f &accel) {}
 
     // multi-device interface
-    virtual bool get_gyro_health(uint8_t instance) const;
+    virtual bool get_gyro_health(uint8_t instance) const { return true; }
     bool get_gyro_health(void) const { return get_gyro_health(_get_primary_gyro()); }
     virtual uint8_t get_gyro_count(void) const { return 1; };
 
-    virtual bool get_accel_health(uint8_t instance) const;
+    virtual bool get_accel_health(uint8_t instance) const { return true; }
     bool get_accel_health(void) const { return get_accel_health(_get_primary_accel()); }
     virtual uint8_t get_accel_count(void) const { return 1; };
 
