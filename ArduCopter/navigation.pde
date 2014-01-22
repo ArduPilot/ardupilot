@@ -121,8 +121,6 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 // called at 100hz
 static void update_nav_mode()
 {
-    static uint8_t log_counter;     // used to slow NTUN logging
-
     // exit immediately if not auto_armed or inertial nav position bad
     if (!ap.auto_armed || !inertial_nav.position_ok()) {
         return;
@@ -139,27 +137,10 @@ static void update_nav_mode()
             update_circle();
             break;
 
-        case NAV_LOITER:
-            // reset target if we are still on the ground
-            if (ap.land_complete) {
-                wp_nav.init_loiter_target();
-            }else{
-                // call loiter controller
-                wp_nav.update_loiter();
-            }
-            break;
-
         case NAV_WP:
             // call waypoint controller
             wp_nav.update_wpnav();
             break;
-    }
-
-    // log to dataflash at 10hz
-    log_counter++;
-    if (log_counter >= 10 && (g.log_bitmask & MASK_LOG_NTUN) && nav_mode != NAV_NONE) {
-        log_counter = 0;
-        Log_Write_Nav_Tuning();
     }
 }
 

@@ -858,7 +858,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { rc_loop,               4,     10 },
     { throttle_loop,         8,     45 },
     { update_GPS,            8,     90 },
-    { update_nav_mode,       4,     40 },
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
     { arm_motors_check,     40,      1 },
@@ -913,7 +912,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { rc_loop,               1,     100 },
     { throttle_loop,         2,     450 },
     { update_GPS,            2,     900 },
-    { update_nav_mode,       1,     400 },
     { update_batt_compass,  10,     720 },
     { read_aux_switches,    10,      50 },
     { arm_motors_check,     10,      10 },
@@ -1168,6 +1166,9 @@ static void ten_hz_logging_loop()
     }
     if (g.log_bitmask & MASK_LOG_RCOUT) {
         DataFlash.Log_Write_RCOUT();
+    }
+    if (g.log_bitmask & MASK_LOG_NTUN && mode_requires_GPS(control_mode)) {
+        Log_Write_Nav_Tuning();
     }
 }
 
