@@ -33,8 +33,12 @@
 #include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>
 #include <AC_AttitudeControl.h>
+#include <AC_PosControl.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+
+// key aircraft parameters passed to multiple libraries
+static AP_Vehicle::MultiCopter aparm;
 
 // INS and Baro declaration
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
@@ -55,14 +59,17 @@ AP_GPS_Auto auto_gps(&gps);
 GPS_Glitch gps_glitch(gps);
 
 AP_Compass_HMC5843 compass;
-AP_AHRS_DCM ahrs(&ins, gps);
+AP_AHRS_DCM ahrs(ins, gps);
 
 // Inertial Nav declaration
-AP_InertialNav inertial_nav(&ahrs, &ins, &baro, gps, gps_glitch);
+AP_InertialNav inertial_nav(&ahrs, &baro, gps, gps_glitch);
 
 // fake PIDs
 APM_PI pi_angle_roll, pi_angle_pitch, pi_angle_yaw;
 AC_PID pid_rate_roll, pid_rate_pitch, pid_rate_yaw;
+APM_PI pi_alt_pos, pi_pos_lat, pi_pos_lon;
+AC_PID pid_alt_rate, pid_alt_accel;
+AC_PID pid_rate_lat, pid_rate_lon;
 
 // fake RC inputs
 RC_Channel rc_roll(CH_1), rc_pitch(CH_2), rc_yaw(CH_4), rc_throttle(CH_3);
@@ -72,7 +79,10 @@ AP_MotorsQuad motors(&rc_roll, &rc_pitch, &rc_throttle, &rc_yaw);
 int16_t motor_roll, motor_pitch, motor_yaw, motor_throttle;
 
 // Attitude Control
-AC_AttitudeControl ac_control(ahrs, ins, motors, pi_angle_roll, pi_angle_pitch, pi_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw, motor_roll, motor_pitch, motor_yaw, motor_throttle);
+AC_AttitudeControl ac_control(ahrs, ins, aparm, motors, pi_angle_roll, pi_angle_pitch, pi_angle_yaw, pid_rate_roll, pid_rate_pitch, pid_rate_yaw, motor_roll, motor_pitch, motor_yaw, motor_throttle);
+
+/// Position Control
+AC_PosControl pos_control(ahrs, inertial_nav, motors, ac_control, pi_alt_pos, pid_alt_rate, pid_alt_accel, pi_pos_lat, pi_pos_lon, pid_rate_lat, pid_rate_lon);
 
 void setup()
 {
