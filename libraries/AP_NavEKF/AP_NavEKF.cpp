@@ -28,7 +28,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: VELNE_NOISE
     // @DisplayName: GPS horizontal velocity measurement noise (m/s)
     // @Description: This is the RMS value of noise in the North and East GPS velocity measurements. Increasing it reduces the weighting on these measurements.
-    // @Range: 0.15 - 1.5
+    // @Range: 0.05 - 5.0
     // @Increment: 0.05
     // @User: advanced
     AP_GROUPINFO("VELNE_NOISE",    0, NavEKF, _gpsHorizVelNoise, 0.15f),
@@ -36,7 +36,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: VELD_NOISE
     // @DisplayName: GPS vertical velocity measurement noise (m/s)
     // @Description: This is the RMS value of noise in the vertical GPS velocity measurement. Increasing it reduces the weighting on this measurement.
-    // @Range: 0.15 - 3.0
+    // @Range: 0.05 - 5.0
     // @Increment: 0.05
     // @User: advanced
     AP_GROUPINFO("VELD_NOISE",    1, NavEKF, _gpsVertVelNoise, 0.30f),
@@ -44,7 +44,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: POSNE_NOISE
     // @DisplayName: GPS horizontal position measurement noise (m)
     // @Description: This is the RMS value of noise in the GPS horizontal position measurements. Increasing it reduces the weighting on these measurements.
-    // @Range: 0.3 - 5.0
+    // @Range: 0.1 - 10.0
     // @Increment: 0.1
     // @User: advanced
     AP_GROUPINFO("POSNE_NOISE",    2, NavEKF, _gpsHorizPosNoise, 0.50f),
@@ -52,7 +52,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: ALT_NOISE
     // @DisplayName: Altitude measurement noise (m)
     // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting on this measurement.
-    // @Range: 0.1 - 5.0
+    // @Range: 0.1 - 10.0
     // @Increment: 0.1
     // @User: advanced
     AP_GROUPINFO("ALT_NOISE",    3, NavEKF, _baroAltNoise, 0.50f),
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: WIND_PNOISE
     // @DisplayName: Wind velocity states process noise (m/s^2)
     // @Description: This noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
-    // @Range: 0.01 - 0.5
+    // @Range: 0.01 - 1.0
     // @Increment: 0.1
     // @User: advanced
     AP_GROUPINFO("WIND_PNOISE",    9, NavEKF, _windVelProcessNoise, 0.1f),
@@ -184,7 +184,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: MAG_DELAY
     // @DisplayName: Magnetometer measurement delay (msec)
     // @Description: This is the number of msec that the magnetometer measurements lag behind the inertial measurements.
-    // @Range: 0 - 100
+    // @Range: 0 - 500
     // @Increment: 10
     // @User: advanced
     AP_GROUPINFO("MAG_DELAY",    20, NavEKF, _msecMagDelay, 40),
@@ -208,7 +208,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: VEL_GATE
     // @DisplayName: GPS velocity measurement gate size
     // @Description: This parameter sets the number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements willbe rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 3 - 100
+    // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
     AP_GROUPINFO("VEL_GATE",    23, NavEKF, _gpsVelInnovGate, 5),
@@ -216,7 +216,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: POS_GATE
     // @DisplayName: GPS position measurement gate size
     // @Description: This parameter sets the number of standard deviations applied to the GPS position measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 3 - 100
+    // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
     AP_GROUPINFO("POS_GATE",    24, NavEKF, _gpsPosInnovGate, 10),
@@ -224,7 +224,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: HGT_GATE
     // @DisplayName: Height measurement gate size
     // @Description: This parameter sets the number of standard deviations applied to the height measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 3 - 100
+    // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
     AP_GROUPINFO("HGT_GATE",    25, NavEKF, _hgtInnovGate, 10),
@@ -232,7 +232,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: MAG_GATE
     // @DisplayName: Magnetometer measurement gate size
     // @Description: This parameter sets the number of standard deviations applied to the magnetometer measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 3 - 100
+    // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
     AP_GROUPINFO("MAG_GATE",    26, NavEKF, _magInnovGate, 5),
@@ -240,7 +240,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Param: EAS_GATE
     // @DisplayName: Airspeed measurement gate size
     // @Description: This parameter sets the number of standard deviations applied to the airspeed measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 3 - 100
+    // @Range: 1 - 100
     // @Increment: 1
     // @User: advanced
     AP_GROUPINFO("EAS_GATE",    27, NavEKF, _tasInnovGate, 10),
@@ -837,11 +837,11 @@ void NavEKF::CovariancePrediction()
 
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
-    windVelSigma  = dt * _windVelProcessNoise * (1.0f + _wndVarHgtRateScale * fabsf(hgtRate));
-    dAngBiasSigma = dt * _gyroBiasProcessNoise;
-    dVelBiasSigma = dt * _accelBiasProcessNoise;
-    magEarthSigma = dt * _magEarthProcessNoise;
-    magBodySigma  = dt * _magBodyProcessNoise;
+    windVelSigma  = dt * constrain_float(_windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
+    dAngBiasSigma = dt * constrain_float(_gyroBiasProcessNoise, 1e-7f, 1e-5f);
+    dVelBiasSigma = dt * constrain_float(_accelBiasProcessNoise, 1e-4f, 1e-2f);
+    magEarthSigma = dt * constrain_float(_magEarthProcessNoise, 1e-4f, 1e-2f);
+    magBodySigma  = dt * constrain_float(_magBodyProcessNoise, 1e-4f, 1e-2f);
     for (uint8_t i= 0; i<=9;  i++) processNoise[i] = 1.0e-9f;
     for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
     // scale gyro bias noise when on ground to allow for faster bias estimation
@@ -872,9 +872,11 @@ void NavEKF::CovariancePrediction()
     day_b = states[11];
     daz_b = states[12];
     dvz_b = states[13];
+    _gyrNoise = constrain_float(_gyrNoise, 1e-3f, 5e-2f);
     daxCov = sq(dt*_gyrNoise);
     dayCov = sq(dt*_gyrNoise);
     dazCov = sq(dt*_gyrNoise);
+    _accNoise = constrain_float(_accNoise, 5e-2f, 1.0f);
     dvxCov = sq(dt*_accNoise);
     dvyCov = sq(dt*_accNoise);
     dvzCov = sq(dt*_accNoise);
@@ -1515,8 +1517,8 @@ void NavEKF::FuseVelPosNED()
         
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
-        if (useAirspeed) gpsRetryTime = _gpsRetryTimeUseTAS;
-        else gpsRetryTime = _gpsRetryTimeNoTAS;
+        if (useAirspeed) gpsRetryTime = constrain_int16(_gpsRetryTimeUseTAS, 1000, 30000);
+        else gpsRetryTime = constrain_int16(_gpsRetryTimeNoTAS, 1000, 30000);
 
         // Form the observation vector
         for (uint8_t i=0; i<=2; i++) observation[i] = velNED[i];
@@ -1529,19 +1531,19 @@ void NavEKF::FuseVelPosNED()
         }
 
         // additional error in GPS velocity caused by manoeuvring
-        NEvelErr = _gpsNEVelVarAccScale * accNavMag;
-        DvelErr  = _gpsDVelVarAccScale  * accNavMag;
+        NEvelErr = constrain_float(_gpsNEVelVarAccScale, 0.05f, 0.5f) * accNavMag;
+        DvelErr  = constrain_float(_gpsDVelVarAccScale,  0.05f, 0.5f) * accNavMag;
 
         // additional error in GPS position caused by manoeuvring
-        posErr = _gpsPosVarAccScale*accNavMag;
+        posErr = constrain_float(_gpsPosVarAccScale, 0.05f, 0.5f) * accNavMag;
 
         // Estimate the GPS Velocity, GPS horiz position and height measurement variances.
-        R_OBS[0] = gpsVarScaler*(sq(_gpsHorizVelNoise) + sq(NEvelErr));
+        R_OBS[0] = gpsVarScaler*(sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(NEvelErr));
         R_OBS[1] = R_OBS[0];
-        R_OBS[2] = gpsVarScaler*(sq(_gpsVertVelNoise) + sq(DvelErr));
-        R_OBS[3] = gpsVarScaler*(sq(_gpsHorizPosNoise) + sq(posErr));
+        R_OBS[2] = gpsVarScaler*(sq(constrain_float(_gpsVertVelNoise, 0.05f, 5.0f)) + sq(DvelErr));
+        R_OBS[3] = gpsVarScaler*(sq(constrain_float(_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr));
         R_OBS[4] = R_OBS[3];
-        R_OBS[5] = hgtVarScaler*sq(_baroAltNoise);
+        R_OBS[5] = hgtVarScaler*sq(constrain_float(_baroAltNoise, 0.1f, 10.0f));
 
         // calculate innovations and check GPS data validity using an innovation consistency check
         if (fuseVelData)
@@ -1602,8 +1604,8 @@ void NavEKF::FuseVelPosNED()
         {
             // set the height data timeout depending on whether vertical velocity data is being used
             uint32_t hgtRetryTime;
-            if (_fusionModeGPS == 0) hgtRetryTime = _hgtRetryTimeMode0;
-            else hgtRetryTime = _hgtRetryTimeMode12;
+            if (_fusionModeGPS == 0) hgtRetryTime = constrain_int16(_hgtRetryTimeMode0, 1000, 30000);
+            else hgtRetryTime = constrain_int16(_hgtRetryTimeMode12, 1000, 30000);
             // calculate height innovations
             hgtInnov = statesAtHgtTime[9] - observation[5];
             varInnovVelPos[5] = P[9][9] + R_OBS[5];
@@ -1795,7 +1797,7 @@ void NavEKF::FuseMagnetometer()
             MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
             // scale magnetometer observation error with total angular rate
-            R_MAG = sq(_magNoise) + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
+            R_MAG = sq(constrain_float(_magNoise, 0.05f, 0.5f)) + sq(_magVarRateScale*dAngIMU.length() / dtIMU);
 
             // Calculate observation jacobians
 			SH_MAG[0] = 2*magD*q3 + 2*magE*q2 + 2*magN*q1;
@@ -2053,7 +2055,7 @@ void NavEKF::FuseAirspeed()
     float vwn;
     float vwe;
     float EAS2TAS = _ahrs->get_EAS2TAS();
-    const float R_TAS = sq(_easNoise * constrain_float(EAS2TAS, 0.9f, 10.0f));
+    const float R_TAS = sq(constrain_float(_easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
     Vector3f SH_TAS;
     float SK_TAS;
     Vector22 H_TAS;
@@ -2435,8 +2437,8 @@ void NavEKF::readGpsData()
     {
         lastFixTime_ms = _ahrs->get_gps()->last_message_time_ms();
         newDataGps = true;
-        RecallStates(statesAtVelTime, (IMUmsec - _msecVelDelay));
-        RecallStates(statesAtPosTime, (IMUmsec - _msecPosDelay));
+        RecallStates(statesAtVelTime, (IMUmsec - constrain_int16(_msecVelDelay, 0, 500)));
+        RecallStates(statesAtPosTime, (IMUmsec - constrain_int16(_msecPosDelay, 0, 500)));
         velNED[0] = _ahrs->get_gps()->velocity_north(); // (rad)
         velNED[1] = _ahrs->get_gps()->velocity_east(); // (m/s)
         velNED[2] = _ahrs->get_gps()->velocity_down(); // (m/s)
@@ -2459,7 +2461,7 @@ void NavEKF::readHgtData()
         hgtMea = _baro.get_altitude();
         newDataHgt = true;
         // recall states from compass measurement time
-        RecallStates(statesAtHgtTime, (IMUmsec - _msecHgtDelay));
+        RecallStates(statesAtHgtTime, (IMUmsec - constrain_int16(_msecHgtDelay, 0, 500)));
     } else {
         newDataHgt = false;
     }
@@ -2475,7 +2477,7 @@ void NavEKF::readMagData()
         magData = _ahrs->get_compass()->get_field() * 0.001f + magBias;
 
         // Recall states from compass measurement time
-        RecallStates(statesAtMagMeasTime, (IMUmsec - _msecMagDelay));
+        RecallStates(statesAtMagMeasTime, (IMUmsec - constrain_int16(_msecMagDelay, 0, 500)));
         newDataMag = true;
     } else {
         newDataMag = false;
@@ -2491,7 +2493,7 @@ void NavEKF::readAirSpdData()
         VtasMeas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         lastAirspeedUpdate = aspeed->last_update_ms();
         newDataTas = true;
-        RecallStates(statesAtVtasMeasTime, (IMUmsec - _msecTasDelay));
+        RecallStates(statesAtVtasMeasTime, (IMUmsec - constrain_int16(_msecTasDelay, 0, 500)));
     } else {
         newDataTas = false;
     }
