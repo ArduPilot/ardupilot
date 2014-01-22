@@ -288,8 +288,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     useCompass(true),           // activates fusion of airspeed data
     covTimeStepMax(0.07f),      // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),        // maximum delta angle between covariance prediction updates
-    TASmsecMax(333),            // maximum allowed interval between airspeed measurement updates
-    fuseMeNow(false),           // forces airspeed fusion to occur on the IMU frame that data arrives
+    TASmsecMax(200),            // maximum allowed interval between airspeed measurement updates
+    fuseMeNow(false),            // forces airspeed fusion to occur on the IMU frame that data arrives
     staticModeDemanded(true),   // staticMode demanded from outside
     staticMode(true)            // staticMode forces position and velocity fusion with zero values
 
@@ -307,6 +307,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _gyroBiasNoiseScaler    = 3.0f;     // scale factor applied to gyro bias state process variance when on ground
     _msecGpsAvg             = 200;      // average number of msec between GPS measurements
     _msecHgtAvg             = 100;      // average number of msec between height measurements
+    dtVelPos                = 0.02;     // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
     // Misc initial conditions
     hgtRate = 0.0f;
     mag_state.q0 = 1;
@@ -618,14 +619,13 @@ void NavEKF::SelectVelPosFusion()
 {
     // Command fusion of GPS measurements if new ones available or in static mode
     readGpsData();
-    if (newDataGps||staticMode) {
+    if (newDataGps) {
         fuseVelData = true;
         fusePosData = true;
-        // Calculate the scale factor to be applied to the measurement variance to account for
-        // the fact we repeat fusion of the same measurement to provide a smoother output
-        gpsVarScaler = _msecGpsAvg/(1000.0f*dtIMU);
+        // reset the counter used to skip updates so that we always fuse data on the frame data arrives
+        skipCounter = 0;
     }
-    // Timeout fusion when data is stale. Needed because we continue to fuse the same
+    // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
     // measurement until the next one arrives
     if (hal.scheduler->millis() > lastFixTime_ms + _msecGpsAvg + 40) {
         fuseVelData = false;
@@ -640,25 +640,40 @@ void NavEKF::SelectVelPosFusion()
         // the fact we repeat fusion of the same measurement to provide a smoother output
         hgtVarScaler = _msecHgtAvg/(1000.0f*dtIMU);
     }
-    // Timeout fusion when data is stale. Needed because we continue to fuse the same
+    // Timeout fusion of height data if stale. Needed because we repeatedly fuse the same
     // measurement until the next one arrives
     if (hal.scheduler->millis() > lastHgtUpdate + _msecHgtAvg + 40) {
         fuseHgtData = false;
     }
-    //Perform fusion of measurement available
-    // If static mode, skip fusion if average rate of change of velocity since last fusion > 10 m/s^2
-    // This prevents acceleraton transients from corrupting the attitude during ground handling
-    // and rapid launches without a magnetometer
+    // Increment data used to calculate average change of velocity
     imuStepsVelFuse += 1;
     accelSumVelFuse = accelSumVelFuse + velDotNED;
-    if (fuseVelData || fusePosData || fuseHgtData)
+    // Perform fusion if conditions are met
+    if (fuseVelData || fusePosData || fuseHgtData || staticMode)
     {
+        // calculate average acceleration used to turn of fusion in static mode
         float avgAccMag = accelSumVelFuse.length() / imuStepsVelFuse;
+        // If static mode, skip fusion if average acceleration since last fusion > 10 m/s^2
+        // This prevents acceleraton transients from corrupting the attitude during ground handling
+        // and rapid launches without a magnetometer
         if (!staticMode || (avgAccMag < 10.0f)) {
-            FuseVelPosNED();
+            // Skip fusion as required to maintain ~dtVelPos time interval between corrections
+            if (skipCounter < uint8_t(floor(dtVelPos/dtIMU + 0.5f))) {
+                // Calculate the scale factor to be applied to the measurement variance to account for
+                // the fact we repeat fusion of the same measurement to provide a smoother output
+                gpsVarScaler = _msecGpsAvg/(1000.0f*dtVelPos);
+                // Fuse selected measurements
+                FuseVelPosNED();
+                // Reset variables used to average acceleration
+                imuStepsVelFuse = 0;
+                accelSumVelFuse.zero();
+                // increment counter used to skip update frames
+                skipCounter += 1;
+            } else {
+                // reset counter used to skip update frames
+                skipCounter = 0;
+            }
         }
-        imuStepsVelFuse = 0;
-        accelSumVelFuse.zero();
     }
     newDataGps = false;
     newDataHgt = false;
@@ -686,13 +701,15 @@ void NavEKF::SelectMagFusion()
 void NavEKF::SelectTasFusion()
 {
     readAirSpdData();
-    // Fuse Airspeed Measurements - hold off if magnetometer fusion has been performed, unless maximum time interval exceeded
-    bool dataReady = (statesInitialised && useAirspeed && !onGround  && newDataTas);
+    // Determine if data is waiting to be fused
+    tasDataWaiting = (statesInitialised && useAirspeed && !onGround && (tasDataWaiting || newDataTas));
     bool timeout = ((IMUmsec - TASmsecPrev) >= TASmsecMax);
-    if (dataReady && (!magFusePerformed || timeout || fuseMeNow))
+    // Fuse Airspeed Measurements - hold off if magnetometer fusion has been performed, unless maximum time interval exceeded
+    if (tasDataWaiting && (!magFusePerformed || timeout || fuseMeNow))
     {
-        TASmsecPrev = IMUmsec;
         FuseAirspeed();
+        TASmsecPrev = IMUmsec;
+        tasDataWaiting = false;
     }
 }
 

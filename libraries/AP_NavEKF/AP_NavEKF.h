@@ -263,7 +263,9 @@ private:
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
     uint16_t _msecHgtAvg;           // average number of msec between height measurements
+    float dtVelPos;                 // number of seconds between position and velocity corrections
 
+    uint8_t skipCounter;            // counter used to skip position and height corrections to achieve _skipRatio
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool staticModeDemanded;        // boolean true when staticMode has been demanded externally.
     bool velHealth;                 // boolean true if velocity measurements have failed innovation consistency check
@@ -344,6 +346,7 @@ private:
     bool newDataMag;                // true when new magnetometer data has arrived
     float gpsVarScaler;             // scaler applied to gps measurement variance to allow for oversampling
     bool newDataTas;                // true when new airspeed data has arrived
+    bool tasDataWaiting;            // true when new airspeed data is waiting to be fused
     bool newDataHgt;                // true when new height data has arrived
     uint32_t lastHgtUpdate;         // time of last height measurement received (msec)
     float hgtVarScaler;             // scaler applied to height measurement variance to allow for oversampling
