@@ -76,6 +76,9 @@ px4: px4-v1 px4-v2
 px4-clean: clean px4-archives-clean
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
+px4-cleandep: clean
+	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
+
 px4-v1-upload: px4-v1
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) px4fmu-v1_APM upload
