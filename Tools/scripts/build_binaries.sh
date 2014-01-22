@@ -39,14 +39,14 @@ checkout() {
 
     git checkout "$vtag" || git checkout "$vtag2" || return 1
 
-    git show
+    git log -1
 
     pushd ../../PX4NuttX
     git checkout "$vtag" || git checkout "$vtag2" || git checkout master || {
         popd
         return 1
     }
-    git show
+    git log -1
     popd
 
     pushd ../../PX4Firmware
@@ -54,7 +54,7 @@ checkout() {
         popd
         return 1
     }
-    git show
+    git log -1
     popd
 
     return 0
