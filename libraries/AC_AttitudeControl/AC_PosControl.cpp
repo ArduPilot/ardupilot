@@ -424,25 +424,21 @@ void AC_PosControl::update_pos_controller(bool use_desired_velocity)
             // translate any adjustments from pilot to loiter target
             desired_vel_to_pos(_dt_xy);
             _xy_step++;
-            hal.console->printf_P(PSTR("0"));
             break;
         case 1:
             // run position controller's position error to desired velocity step
             pos_to_rate_xy(use_desired_velocity,_dt_xy);
             _xy_step++;
-            hal.console->printf_P(PSTR("1"));
             break;
         case 2:
             // run position controller's velocity to acceleration step
             rate_to_accel_xy(_dt_xy);
             _xy_step++;
-            hal.console->printf_P(PSTR("2"));
             break;
         case 3:
             // run position controller's acceleration to lean angle step
             accel_to_lean_angles();
             _xy_step++;
-            hal.console->printf_P(PSTR("3"));
             break;
     }
 }
@@ -602,8 +598,7 @@ void AC_PosControl::accel_to_lean_angles()
 
     // update angle targets that will be passed to stabilize controller
     _roll_target = constrain_float(fast_atan(accel_right*_cos_pitch/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
-    //_pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
-    // To-Do: uncomment above after weird compiler errors disappears
+    _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
 }
 
 /// reset_I_xy - clears I terms from loiter PID controller
