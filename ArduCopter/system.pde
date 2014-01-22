@@ -389,9 +389,6 @@ static bool set_mode(uint8_t mode)
     switch(mode) {
         case ACRO:
             success = acro_init(ignore_checks);
-            set_yaw_mode(ACRO_YAW);
-            set_roll_pitch_mode(ACRO_RP);
-            set_throttle_mode(ACRO_THR);
             set_nav_mode(NAV_NONE);
             break;
 
@@ -427,10 +424,6 @@ static bool set_mode(uint8_t mode)
         case LOITER:
             if (GPS_ok() || ignore_checks) {
                 success = loiter_init(ignore_checks);
-                set_yaw_mode(LOITER_YAW);
-                set_roll_pitch_mode(LOITER_RP);
-                set_throttle_mode(LOITER_THR);
-                set_nav_mode(LOITER_NAV);
             }
             break;
 
@@ -440,7 +433,6 @@ static bool set_mode(uint8_t mode)
                 set_yaw_mode(POSITION_YAW);
                 set_roll_pitch_mode(POSITION_RP);
                 set_throttle_mode(POSITION_THR);
-                set_nav_mode(POSITION_NAV);
             }
             break;
 
