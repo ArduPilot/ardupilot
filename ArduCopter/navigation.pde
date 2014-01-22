@@ -92,7 +92,7 @@ static bool set_nav_mode(uint8_t new_nav_mode)
 
         case NAV_CIRCLE:
             // set center of circle to current position
-            pos_control.get_stopping_point(stopping_point);
+            wp_nav.get_loiter_stopping_point_xy(stopping_point);
             circle_set_center(stopping_point,ahrs.yaw);
             nav_initialised = true;
             break;
@@ -217,7 +217,7 @@ circle_set_center(const Vector3f current_position, float heading_in_radians)
         circle_angular_velocity_max = constrain_float(ToRad(g.circle_rate),-circle_angular_velocity_max,circle_angular_velocity_max);
 
         // angular_velocity in radians per second
-        circle_angular_acceleration = wp_nav.get_waypoint_acceleration()/((float)g.circle_radius * 100);
+        circle_angular_acceleration = wp_nav.get_wp_acceleration()/((float)g.circle_radius * 100);
         if (g.circle_rate < 0.0f) {
             circle_angular_acceleration = -circle_angular_acceleration;
         }

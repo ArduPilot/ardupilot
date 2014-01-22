@@ -315,10 +315,10 @@ static void do_land(const struct Location *cmd)
         // calculate and set desired location above landing target
         Vector3f pos = pv_location_to_vector(*cmd);
         pos.z = min(current_loc.alt, RTL_ALT_MAX);
-        wp_nav.set_destination(pos);
+        wp_nav.set_wp_destination(pos);
 
         // initialise original_wp_bearing which is used to check if we have missed the waypoint
-        wp_bearing = wp_nav.get_bearing_to_destination();
+        wp_bearing = wp_nav.get_wp_bearing_to_destination();
         original_wp_bearing = wp_bearing;
     }else{
         // set landing state
@@ -368,7 +368,7 @@ static void do_loiter_unlimited()
 
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        wp_nav.get_wp_stopping_point(target_pos);
+        wp_nav.get_wp_stopping_point_xy(target_pos);
     }else{
         // default to use position provided
         target_pos = pv_location_to_vector(command_nav_queue);
@@ -436,7 +436,7 @@ static void do_loiter_time()
 
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
-        wp_nav.get_wp_stopping_point(target_pos);
+        wp_nav.get_wp_stopping_point_xy(target_pos);
     }else{
         // default to use position provided
         target_pos = pv_location_to_vector(command_nav_queue);
@@ -478,7 +478,7 @@ static bool verify_land()
             // check if we've reached the location
             if (wp_nav.reached_wp_destination()) {
                 // get destination so we can use it for loiter target
-                Vector3f dest = wp_nav.get_destination();
+                Vector3f dest = wp_nav.get_wp_destination();
 
                 // switch into loiter nav mode
                 set_nav_mode(NAV_LOITER);
@@ -591,7 +591,7 @@ static bool verify_RTL()
 
                 // use projection of safe stopping point based on current location and velocity
                 Vector3f origin, dest;
-                pos_control.get_stopping_point(origin);
+                wp_nav.get_wp_stopping_point_xy(origin);
                 dest.x = origin.x;
                 dest.y = origin.y;
                 dest.z = get_RTL_alt();
@@ -607,7 +607,7 @@ static bool verify_RTL()
                 wp_nav.set_wp_destination(Vector3f(0,0,get_RTL_alt()));
 
                 // initialise original_wp_bearing which is used to point the nose home
-                wp_bearing = wp_nav.get_bearing_to_destination();
+                wp_bearing = wp_nav.get_wp_bearing_to_destination();
                 original_wp_bearing = wp_bearing;
                 
                 // advance to next rtl state
@@ -624,7 +624,7 @@ static bool verify_RTL()
                 wp_nav.set_wp_destination(Vector3f(0,0,get_RTL_alt()));
 
                 // initialise original_wp_bearing which is used to point the nose home
-                wp_bearing = wp_nav.get_bearing_to_destination();
+                wp_bearing = wp_nav.get_wp_bearing_to_destination();
                 original_wp_bearing = wp_bearing;
 
                 // point nose towards home (maybe)

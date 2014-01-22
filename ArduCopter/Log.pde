@@ -280,9 +280,9 @@ struct PACKED log_Nav_Tuning {
 // Write an Nav Tuning packet
 static void Log_Write_Nav_Tuning()
 {
-    const Vector3f &pos_target = pos_controller.get_pos_target();
-    const Vector3f &vel_target = pos_controller.get_vel_target();
-    const Vector3f &accel_target = pos_controller.get_accel_target();
+    const Vector3f &pos_target = pos_control.get_pos_target();
+    const Vector3f &vel_target = pos_control.get_vel_target();
+    const Vector3f &accel_target = pos_control.get_accel_target();
     const Vector3f &position = inertial_nav.get_position();
     const Vector3f &velocity = inertial_nav.get_velocity();
 
@@ -301,6 +301,7 @@ static void Log_Write_Nav_Tuning()
         desired_accel_y : accel_target.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    cliSerial->printf_P(PSTR("\nX:%4.2f Y:%4.2f\n"),(float)pos_target.x,(float)pos_target.y);
 }
 
 struct PACKED log_Control_Tuning {

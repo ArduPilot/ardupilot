@@ -1773,7 +1773,7 @@ void update_roll_pitch_mode(void)
         update_simple_mode();
 
         // update loiter target from user controls
-        wp_nav.move_loiter_target(g.rc_1.control_in, g.rc_2.control_in, 0.01f);
+        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
 
         // copy latest output from nav controller to stabilize controller
         control_roll = wp_nav.get_roll();
