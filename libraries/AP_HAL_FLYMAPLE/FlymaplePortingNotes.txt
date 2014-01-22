@@ -8,9 +8,9 @@ Flymaple has an ARM based Cortex-3 STM32F103RE, 72MHz processor with 10DOF built
 
 Implementation
 
-Unlike the Arduino versions of ardupilot, the Flymaple port uses portions of
-the libmaple library, including the stm32f1 core and some other libaries like
-Wire, HardwareTimer, HArdwareSPI etc.
+Unlike the Arduino versions of ardupilot, the Flymaple port uses portions of a
+custom version of the libmaple library, including the stm32f1 core and some
+other libaries like Wire, HardwareTimer, HArdwareSPI etc.
 
 Most of the changes are confined to new directory libraries/AP_HAL_FLYMAPLE
 which contains the Flymaple specific code. All the HAL modules have
@@ -103,7 +103,6 @@ The sensors are configured so:
 
 ADXL345 Accelerometer
 8g full scale, full resolution mode, 800Hz bandwidth, read at 1kHz sample rate
-per sec
 
 ITG3205 Gyro
 2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate, read at 1kHz sample rate
@@ -115,8 +114,10 @@ AP_InertialSensor_Flymaple.cpp, with the samples passed through a software
 Installation on Linux
 
 Tested with:
-libmaple patched library based on https://github.com/leaflabs/libmaple http://leaflabs.com/docs/unix-toolchain.html
-arm-none-eabi-g++ toolchain, version 4.4.1
+- libmaple patched library based on https://github.com/leaflabs/libmaple (see
+below for more data)
+- http://leaflabs.com/docs/unix-toolchain.html
+- arm-none-eabi-g++ toolchain, version 4.4.1
 on OpenSuSE 12.3
 Mission Planner 1.2.78
 
@@ -285,3 +286,5 @@ Remaining issues:
 protocol.h eg:
 /mnt/disk2/src/ardupilot/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h: In function 'double _MAV_RETURN_double(const mavlink_message_t*, uint8_t)':
 /mnt/disk2/src/ardupilot/libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/../protocol.h:274: warning: cast from 'const char*' to 'const double*' increases required alignment of target type
+
+2. Logging is not implemented.
