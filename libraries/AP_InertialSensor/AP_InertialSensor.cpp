@@ -655,24 +655,5 @@ void AP_InertialSensor::_calculate_trim(Vector3f accel_sample, float& trim_roll,
     }
 }
 
-/**
-   default versions of multi-device accessor functions
- */
-bool AP_InertialSensor::get_gyro_health(uint8_t instance) const
-{
-    if (instance != 0) {
-        return false;
-    }
-    return healthy();
-}
-
-bool AP_InertialSensor::get_accel_health(uint8_t instance) const
-{
-    if (instance != 0) {
-        return false;
-    }
-    return healthy();
-}
-
 #endif // __AVR_ATmega1280__
 
