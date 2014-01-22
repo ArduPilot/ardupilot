@@ -301,7 +301,6 @@ static void Log_Write_Nav_Tuning()
         desired_accel_y : accel_target.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-    cliSerial->printf_P(PSTR("\nX:%4.2f Y:%4.2f\n"),(float)pos_target.x,(float)pos_target.y);
 }
 
 struct PACKED log_Control_Tuning {
