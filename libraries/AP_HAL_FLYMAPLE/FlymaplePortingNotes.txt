@@ -242,6 +242,17 @@ Pitching up                               Y +ve
 
 (ie right hand curl rule relative to the given axis)
 
+Alternative Orientations
+
+Although the default board orientation is as described above, you can alter it
+by changing the AHRS_ORIENTATION parameter.
+
+For example, if you set AHRS_ORIENTATION to 1 (Yaw45), then the board will act
+as if 'Forward' is towards the green row of pin headers (ie the row of digital
+input pins marked 0 to 13, and 'Right' is towards the triple row of pins
+marked PWM. This orientation is good for vehicles where the board must be
+orthogonal to the direction of movement.
+
 PPM-SUM receiver and transmitter channel assignments
 
 Pin 6 of the Flymaple is used for the PPM-SUM receiver input
