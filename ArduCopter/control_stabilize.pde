@@ -266,7 +266,7 @@ static void loiter_run()
 
         // process pilot's roll and pitch input
         // To-Do: do we need to clear out feed forward if this is not called?
-        wp_nav.move_loiter_target(g.rc_1.control_in, g.rc_2.control_in, G_Dt);
+        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
