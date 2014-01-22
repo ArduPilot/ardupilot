@@ -219,7 +219,7 @@ build_rover() {
     tag="$1"
     echo "Building APMrover2 $tag binaries"
     pushd APMrover2
-    for b in apm1 apm2 apm1-1280; do
+    for b in apm1 apm2; do
 	echo "Building APMrover2 $b binaries"
         checkout APMrover2 $tag $b || continue
 	ddir=$binaries/Rover/$hdate/$b
