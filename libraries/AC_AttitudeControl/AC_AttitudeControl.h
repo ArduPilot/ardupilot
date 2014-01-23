@@ -80,7 +80,7 @@ public:
     void angleef_rp_rateef_y(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef);
 
     // angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
-    void angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef);
+    void angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef);
 
     //
     // angle controller (earth-frame) methods

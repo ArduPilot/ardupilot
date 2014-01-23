@@ -54,11 +54,12 @@ void AC_AttitudeControl::angleef_rp_rateef_y(float roll_angle_ef, float pitch_an
 }
 
 // angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
-void AC_AttitudeControl::angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef)
+void AC_AttitudeControl::angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef)
 {
     // set earth-frame angle targets
     _angle_ef_target.x = roll_angle_ef;
     _angle_ef_target.y = pitch_angle_ef;
+    _angle_ef_target.z = yaw_angle_ef;
 
     // convert earth-frame angle targets to earth-frame rate targets
     angle_to_rate_ef_roll();
