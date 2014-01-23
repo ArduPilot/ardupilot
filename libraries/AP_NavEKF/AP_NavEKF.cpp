@@ -2399,8 +2399,8 @@ void NavEKF::ConstrainVariances()
     for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f);
     for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f);
     for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e5f);
-    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175 * dtIMU));
-	P[13][13] = constrain_float(P[13][13],0.0f,sq(10.0 * dtIMU));
+    for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtIMU));
+	P[13][13] = constrain_float(P[13][13],0.0f,sq(10.0f * dtIMU));
     for (uint8_t i=14; i<=15; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f);
     for (uint8_t i=16; i<=21; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f);
 }
@@ -2582,9 +2582,9 @@ void  NavEKF::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &m
     posInnov.x = innovVelPos[3];
     posInnov.y = innovVelPos[4];
     posInnov.z = innovVelPos[5];
-    magInnov.x = 1e3*innovMag[0]; // Convert back to sensor units
-    magInnov.y = 1e3*innovMag[1]; // Convert back to sensor units
-    magInnov.z = 1e3*innovMag[2]; // Convert back to sensor units
+    magInnov.x = 1e3f*innovMag[0]; // Convert back to sensor units
+    magInnov.y = 1e3f*innovMag[1]; // Convert back to sensor units
+    magInnov.z = 1e3f*innovMag[2]; // Convert back to sensor units
     tasInnov   = innovVtas;
 }
 
@@ -2596,9 +2596,9 @@ void  NavEKF::getVariances(Vector3f &velVar, Vector3f &posVar, Vector3f &magVar,
     posVar.x = varInnovVelPos[3];
     posVar.y = varInnovVelPos[4];
     posVar.z = varInnovVelPos[5];
-    magVar.x = 1e6*varInnovMag[0]; // Convert back to sensor units
-    magVar.y = 1e6*varInnovMag[1]; // Convert back to sensor units
-    magVar.z = 1e6*varInnovMag[2]; // Convert back to sensor units
+    magVar.x = 1e6f*varInnovMag[0]; // Convert back to sensor units
+    magVar.y = 1e6f*varInnovMag[1]; // Convert back to sensor units
+    magVar.z = 1e6f*varInnovMag[2]; // Convert back to sensor units
     tasVar   = varInnovVtas;
 }
 
