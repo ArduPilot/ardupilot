@@ -41,21 +41,37 @@ bool ToshibaLED_PX4::hw_init()
         return false;
     }
     ioctl(_rgbled_fd, RGBLED_SET_MODE, (unsigned long)RGBLED_MODE_ON);
+    last.zero();
+    next.zero();
+    hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&ToshibaLED_PX4::update_timer));
     return true;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
 bool ToshibaLED_PX4::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    rgbled_rgbset_t v;
-
-    v.red   = red;
-    v.green = green;
-    v.blue  = blue;
-
-    int ret = ioctl(_rgbled_fd, RGBLED_SET_RGB, (unsigned long)&v);
-    return (ret == 0);
+    hal.scheduler->suspend_timer_procs();
+    next[0] = red;
+    next[1] = green;
+    next[2] = blue;
+    hal.scheduler->resume_timer_procs();
+    return true;
 }
 
+void ToshibaLED_PX4::update_timer(void)
+{
+    if (last == next) {
+        return;
+    }
+    rgbled_rgbset_t v;
+
+    v.red   = next[0];
+    v.green = next[1];
+    v.blue  = next[2];
+
+    ioctl(_rgbled_fd, RGBLED_SET_RGB, (unsigned long)&v);
+
+    last = next;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
