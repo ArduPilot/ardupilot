@@ -276,13 +276,14 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 #endif
-        case AUX_SWITCH_RESETTOARMEDYAW:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_yaw_mode(YAW_RESETTOARMEDYAW);
-            }else{
-                set_yaw_mode(YAW_HOLD);
-            }
-            break;
+        // To-Do: add back support for this feature
+        //case AUX_SWITCH_RESETTOARMEDYAW:
+        //    if (ch_flag == AUX_SWITCH_HIGH) {
+        //        set_yaw_mode(YAW_RESETTOARMEDYAW);
+        //    }else{
+        //        set_yaw_mode(YAW_HOLD);
+        //    }
+        //    break;
 
         case AUX_SWITCH_ACRO_TRAINER:
             switch(ch_flag) {
