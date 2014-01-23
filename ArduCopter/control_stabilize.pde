@@ -30,6 +30,8 @@ static void acro_run()
     attitude_control.rate_stab_bf_to_rate_bf_roll();
     attitude_control.rate_stab_bf_to_rate_bf_pitch();
     attitude_control.rate_stab_bf_to_rate_bf_yaw();
+    // pilot controlled yaw using rate controller
+    //get_yaw_rate_stabilized_bf(pilot_yaw);
 
     // call get_acro_level_rates() here?
 
@@ -182,46 +184,14 @@ static void althold_run()
     control_yaw = angle_target.z;
 }
 
-// auto_init - initialise auto controller
-static bool auto_init(bool ignore_checks)
-{
-    return true;
-}
-
-// auto_run - runs the auto controller
-// should be called at 100hz or more
-static void auto_run()
-{
-    Vector3f angle_target;
-
-    // run way point controller
-
-    // copy latest output from nav controller to stabilize controller
-    angle_target.x = wp_nav.get_roll();
-    angle_target.y = wp_nav.get_pitch();
-
-    // To-Do: handle pilot input for yaw and different methods to update yaw (ROI, face next wp)
-    angle_target.z = control_yaw;
-
-    // To-Do: shorten below by moving these often used steps into a single function in the AC_AttitudeControl lib
-
-    // set earth-frame angular targets
-    attitude_control.angle_ef_targets(angle_target);
-
-    // convert earth-frame angle targets to earth-frame rate targets
-    attitude_control.angle_to_rate_ef_roll();
-    attitude_control.angle_to_rate_ef_pitch();
-    attitude_control.angle_to_rate_ef_yaw();
-
-    // convert earth-frame rates to body-frame rates
-    attitude_control.rate_ef_targets_to_bf();
-
-    // body-frame rate controller is run directly from 100hz loop
-}
-
 // circle_init - initialise circle controller
 static bool circle_init(bool ignore_checks)
 {
+    // set yaw to point to center of circle
+    // yaw_look_at_WP = circle_center;
+    // initialise bearing to current heading
+    //yaw_look_at_WP_bearing = ahrs.yaw_sensor;
+    //yaw_initialised = true;
     return true;
 }
 
@@ -229,6 +199,12 @@ static bool circle_init(bool ignore_checks)
 // should be called at 100hz or more
 static void circle_run()
 {
+    // if we are landed reset yaw target to current heading
+    //if (ap.land_complete) {
+    //    control_yaw = ahrs.yaw_sensor;
+    //}
+    // points toward the center of the circle or does a panorama
+    //get_circle_yaw();
 }
 
 // loiter_init - initialise loiter controller
@@ -236,7 +212,6 @@ static bool loiter_init(bool ignore_checks)
 {
     if (GPS_ok() || ignore_checks) {
         // set target to current position
-        // To-Do: supply zero velocity below?
         wp_nav.init_loiter_target();
         return true;
     }else{
@@ -314,44 +289,6 @@ static void loiter_run()
     control_yaw = angle_target.z;
 }
 
-// guided_init - initialise guided controller
-static bool guided_init(bool ignore_checks)
-{
-    return true;
-}
-
-// guided_run - runs the guided controller
-// should be called at 100hz or more
-static void guided_run()
-{
-}
-
-// land_init - initialise land controller
-static bool land_init(bool ignore_checks)
-{
-    return true;
-}
-
-// land_run - runs the land controller
-// should be called at 100hz or more
-static void land_run()
-{
-    verify_land();
-}
-
-// rtl_init - initialise rtl controller
-static bool rtl_init(bool ignore_checks)
-{
-    return true;
-}
-
-// rtl_run - runs the return-to-launch controller
-// should be called at 100hz or more
-static void rtl_run()
-{
-    verify_RTL();
-}
-
 // ofloiter_init - initialise ofloiter controller
 static bool ofloiter_init(bool ignore_checks)
 {
@@ -374,6 +311,11 @@ static bool drift_init(bool ignore_checks)
 // should be called at 100hz or more
 static void drift_run()
 {
+    // if we have landed reset yaw target to current heading
+    //if (ap.land_complete) {
+    //    control_yaw = ahrs.yaw_sensor;
+    //}
+    //get_yaw_drift();
 }
 
 // sport_init - initialise sport controller
