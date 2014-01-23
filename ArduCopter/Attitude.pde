@@ -588,32 +588,26 @@ static void get_circle_yaw()
 
 // get_look_at_yaw - updates bearing to location held in look_at_yaw_WP and calls stabilize yaw controller
 // should be called at 100hz
-static void get_look_at_yaw()
+static float get_look_at_yaw()
 {
     static uint8_t look_at_yaw_counter = 0;     // used to reduce update rate to 10hz
 
     look_at_yaw_counter++;
-    if( look_at_yaw_counter >= 10 ) {
+    if (look_at_yaw_counter >= 10) {
         look_at_yaw_counter = 0;
         yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
     }
 
-    // slew yaw and call stabilize controller
-    control_yaw = get_yaw_slew(control_yaw, yaw_look_at_WP_bearing, AUTO_YAW_SLEW_RATE);
-    get_stabilize_yaw(control_yaw);
+    return yaw_look_at_WP_bearing;
 }
 
-static void get_look_ahead_yaw(int16_t pilot_yaw)
+static float get_look_ahead_yaw()
 {
     // Commanded Yaw to automatically look ahead.
     if (g_gps->fix && g_gps->ground_speed_cm > YAW_LOOK_AHEAD_MIN_SPEED) {
-        control_yaw = get_yaw_slew(control_yaw, g_gps->ground_course_cd, AUTO_YAW_SLEW_RATE);
-        get_stabilize_yaw(wrap_360_cd(control_yaw + pilot_yaw));   // Allow pilot to "skid" around corners up to 45 degrees
-    }else{
-        control_yaw += pilot_yaw * g.acro_yaw_p * G_Dt;
-        control_yaw = wrap_360_cd(control_yaw);
-        get_stabilize_yaw(control_yaw);
+        yaw_look_ahead_bearing = g_gps->ground_course_cd;
     }
+    return yaw_look_ahead_bearing;
 }
 
 /*************************************************************

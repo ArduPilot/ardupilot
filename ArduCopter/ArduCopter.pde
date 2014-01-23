@@ -657,8 +657,6 @@ static int32_t baro_alt;
 // Flight modes are combinations of Roll/Pitch, Yaw and Throttle control modes
 // Each Flight mode is a unique combination of these modes
 //
-// The current desired control scheme for Yaw
-static uint8_t yaw_mode = STABILIZE_YAW;
 // The current desired control scheme for roll and pitch / navigation
 static uint8_t roll_pitch_mode = STABILIZE_RP;
 // The current desired control scheme for altitude hold
@@ -710,16 +708,20 @@ static uint32_t throttle_integrator;
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Yaw control
 ////////////////////////////////////////////////////////////////////////////////
+// auto flight mode's yaw mode
+static uint8_t auto_yaw_mode = AUTO_YAW_LOOK_AT_NEXT_WP;
 // The Commanded Yaw from the autopilot.
 static int32_t control_yaw;
 // Yaw will point at this location if yaw_mode is set to YAW_LOOK_AT_LOCATION
 static Vector3f yaw_look_at_WP;
 // bearing from current location to the yaw_look_at_WP
-static int32_t yaw_look_at_WP_bearing;
+static float yaw_look_at_WP_bearing;
 // yaw used for YAW_LOOK_AT_HEADING yaw_mode
 static int32_t yaw_look_at_heading;
 // Deg/s we should turn
 static int16_t yaw_look_at_heading_slew;
+// heading when in yaw_look_ahead_bearing
+static float yaw_look_ahead_bearing;
 
 
 
@@ -1357,239 +1359,6 @@ static void update_GPS(void)
 
     // check for loss of gps
     failsafe_gps_check();
-}
-
-// set_yaw_mode - update yaw mode and initialise any variables required
-bool set_yaw_mode(uint8_t new_yaw_mode)
-{
-    // boolean to ensure proper initialisation of throttle modes
-    bool yaw_initialised = false;
-
-    // return immediately if no change
-    if( new_yaw_mode == yaw_mode ) {
-        return true;
-    }
-
-    switch( new_yaw_mode ) {
-        case YAW_HOLD:
-            yaw_initialised = true;
-            break;
-        case YAW_ACRO:
-            yaw_initialised = true;
-            acro_yaw_rate = 0;
-            break;
-        case YAW_LOOK_AT_NEXT_WP:
-            if( ap.home_is_set ) {
-                yaw_initialised = true;
-            }
-            break;
-        case YAW_LOOK_AT_LOCATION:
-            if( ap.home_is_set ) {
-                // update bearing - assumes yaw_look_at_WP has been intialised before set_yaw_mode was called
-                yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), yaw_look_at_WP);
-                yaw_initialised = true;
-            }
-            break;
-        case YAW_CIRCLE:
-            if( ap.home_is_set ) {
-                // set yaw to point to center of circle
-                yaw_look_at_WP = circle_center;
-                // initialise bearing to current heading
-                yaw_look_at_WP_bearing = ahrs.yaw_sensor;
-                yaw_initialised = true;
-            }
-            break;
-        case YAW_LOOK_AT_HEADING:
-            yaw_initialised = true;
-            break;
-        case YAW_LOOK_AT_HOME:
-            if( ap.home_is_set ) {
-                yaw_initialised = true;
-            }
-            break;
-        case YAW_LOOK_AHEAD:
-            if( ap.home_is_set ) {
-                yaw_initialised = true;
-            }
-            break;
-        case YAW_DRIFT:
-            yaw_initialised = true;
-            break;
-        case YAW_RESETTOARMEDYAW:
-            control_yaw = ahrs.yaw_sensor; // store current yaw so we can start rotating back to correct one
-            yaw_initialised = true;
-            break;
-    }
-
-    // if initialisation has been successful update the yaw mode
-    if( yaw_initialised ) {
-        yaw_mode = new_yaw_mode;
-    }
-
-    // return success or failure
-    return yaw_initialised;
-}
-
-// update_yaw_mode - run high level yaw controllers
-// 100hz update rate
-void update_yaw_mode(void)
-{
-    int16_t pilot_yaw = g.rc_4.control_in;
-
-    // do not process pilot's yaw input during radio failsafe
-    if (failsafe.radio) {
-        pilot_yaw = 0;
-    }
-
-    switch(yaw_mode) {
-
-    case YAW_HOLD:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }
-        // heading hold at heading held in control_yaw but allow input from pilot
-        get_yaw_rate_stabilized_ef(pilot_yaw);
-        break;
-
-    case YAW_ACRO:
-        // pilot controlled yaw using rate controller
-        get_yaw_rate_stabilized_bf(pilot_yaw);
-        break;
-
-    case YAW_LOOK_AT_NEXT_WP:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }else{
-            // point towards next waypoint (no pilot input accepted)
-            // we don't use wp_bearing because we don't want the copter to turn too much during flight
-            control_yaw = get_yaw_slew(control_yaw, original_wp_bearing, AUTO_YAW_SLEW_RATE);
-        }
-        get_stabilize_yaw(control_yaw);
-
-        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if (pilot_yaw != 0) {
-            set_yaw_mode(YAW_HOLD);
-        }
-        break;
-
-    case YAW_LOOK_AT_LOCATION:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }
-        // point towards a location held in yaw_look_at_WP
-        get_look_at_yaw();
-
-        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if (pilot_yaw != 0) {
-            set_yaw_mode(YAW_HOLD);
-        }
-        break;
-
-    case YAW_CIRCLE:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }
-        // points toward the center of the circle or does a panorama
-        get_circle_yaw();
-
-        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if (pilot_yaw != 0) {
-            set_yaw_mode(YAW_HOLD);
-        }
-        break;
-
-    case YAW_LOOK_AT_HOME:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }else{
-            // keep heading always pointing at home with no pilot input allowed
-            control_yaw = get_yaw_slew(control_yaw, home_bearing, AUTO_YAW_SLEW_RATE);
-        }
-        get_stabilize_yaw(control_yaw);
-
-        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if (pilot_yaw != 0) {
-            set_yaw_mode(YAW_HOLD);
-        }
-        break;
-
-    case YAW_LOOK_AT_HEADING:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }else{
-            // keep heading pointing in the direction held in yaw_look_at_heading with no pilot input allowed
-            control_yaw = get_yaw_slew(control_yaw, yaw_look_at_heading, yaw_look_at_heading_slew);
-        }
-        get_stabilize_yaw(control_yaw);
-        break;
-
-	case YAW_LOOK_AHEAD:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }
-		// Commanded Yaw to automatically look ahead.
-        get_look_ahead_yaw(pilot_yaw);
-        break;
-
-    case YAW_DRIFT:
-        // if we have landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }
-        get_yaw_drift();
-        break;
-
-    case YAW_RESETTOARMEDYAW:
-        // if we are landed reset yaw target to current heading
-        if (ap.land_complete) {
-            control_yaw = ahrs.yaw_sensor;
-        }else{
-            // changes yaw to be same as when quad was armed
-            control_yaw = get_yaw_slew(control_yaw, initial_armed_bearing, AUTO_YAW_SLEW_RATE);
-        }
-        get_stabilize_yaw(control_yaw);
-
-        // if there is any pilot input, switch to YAW_HOLD mode for the next iteration
-        if (pilot_yaw != 0) {
-            set_yaw_mode(YAW_HOLD);
-        }
-
-        break;
-    }
-}
-
-// get yaw mode based on WP_YAW_BEHAVIOR parameter
-// set rtl parameter to true if this is during an RTL
-uint8_t get_wp_yaw_mode(bool rtl)
-{
-    switch (g.wp_yaw_behavior) {
-        case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
-            return YAW_LOOK_AT_NEXT_WP;
-            break;
-
-        case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
-            if( rtl ) {
-                return YAW_HOLD;
-            }else{
-                return YAW_LOOK_AT_NEXT_WP;
-            }
-            break;
-
-        case WP_YAW_BEHAVIOR_LOOK_AHEAD:
-            return YAW_LOOK_AHEAD;
-            break;
-
-        default:
-            return YAW_HOLD;
-            break;
-    }
 }
 
 // set_roll_pitch_mode - update roll/pitch mode and initialise any variables as required

@@ -238,7 +238,7 @@ static void do_takeoff()
     set_roll_pitch_mode(AUTO_RP);
 
     // set yaw mode
-    set_yaw_mode(YAW_HOLD);
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
 
     // set throttle mode to AUTO although we should already be in this mode
     set_throttle_mode(AUTO_THR);
@@ -286,7 +286,7 @@ static void do_nav_wp()
     }
 
     // set yaw_mode depending upon contents of WP_YAW_BEHAVIOR parameter
-    set_yaw_mode(get_wp_yaw_mode(false));
+    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
 // do_land - initiate landing procedure
@@ -304,7 +304,7 @@ static void do_land(const struct Location *cmd)
         set_roll_pitch_mode(AUTO_RP);
 
         // set yaw_mode depending upon contents of WP_YAW_BEHAVIOR parameter
-        set_yaw_mode(get_wp_yaw_mode(false));
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 
         // set throttle mode
         set_throttle_mode(AUTO_THR);
@@ -340,7 +340,7 @@ static void do_land(const struct Location *cmd)
         }
 
         // hold yaw while landing
-        set_yaw_mode(YAW_HOLD);
+        set_auto_yaw_mode(AUTO_YAW_HOLD);
 
         // set throttle mode to land
         set_throttle_mode(THROTTLE_LAND);
@@ -361,7 +361,7 @@ static void do_loiter_unlimited()
     set_throttle_mode(AUTO_THR);
 
     // hold yaw
-    set_yaw_mode(YAW_HOLD);
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
 
     // get current position
     Vector3f curr_pos = inertial_nav.get_position();
@@ -407,7 +407,7 @@ static void do_circle()
     }
 
     // set yaw to point to center of circle
-    set_yaw_mode(CIRCLE_YAW);
+    set_auto_yaw_mode(CIRCLE_YAW);
 
     // set angle travelled so far to zero
     circle_angle_total = 0;
@@ -429,7 +429,7 @@ static void do_loiter_time()
     set_throttle_mode(AUTO_THR);
 
     // hold yaw
-    set_yaw_mode(YAW_HOLD);
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
 
     // get current position
     Vector3f curr_pos = inertial_nav.get_position();
@@ -491,7 +491,7 @@ static bool verify_land()
                 set_roll_pitch_mode(ROLL_PITCH_LOITER);
 
                 // give pilot control of yaw
-                set_yaw_mode(YAW_HOLD);
+                set_auto_yaw_mode(AUTO_YAW_HOLD);
 
                 // set throttle mode to land
                 set_throttle_mode(THROTTLE_LAND);
@@ -587,7 +587,7 @@ static bool verify_RTL()
             // if we are below rtl alt do initial climb
             if( current_loc.alt < get_RTL_alt() ) {
                 // first stage of RTL is the initial climb so just hold current yaw
-                set_yaw_mode(YAW_HOLD);
+                set_auto_yaw_mode(AUTO_YAW_HOLD);
 
                 // use projection of safe stopping point based on current location and velocity
                 Vector3f origin, dest;
@@ -601,7 +601,7 @@ static bool verify_RTL()
                 rtl_state = RTL_STATE_INITIAL_CLIMB;
             }else{
                 // point nose towards home (maybe)
-                set_yaw_mode(get_wp_yaw_mode(true));
+                set_auto_yaw_mode(get_default_auto_yaw_mode(true));
 
                 // Set wp navigation target to above home
                 wp_nav.set_wp_destination(Vector3f(0,0,get_RTL_alt()));
@@ -628,7 +628,7 @@ static bool verify_RTL()
                 original_wp_bearing = wp_bearing;
 
                 // point nose towards home (maybe)
-                set_yaw_mode(get_wp_yaw_mode(true));
+                set_auto_yaw_mode(get_default_auto_yaw_mode(true));
 
                 // advance to next rtl state
                 rtl_state = RTL_STATE_RETURNING_HOME;
@@ -644,10 +644,10 @@ static bool verify_RTL()
                 rtl_loiter_start_time = millis();
 
                 // give pilot back control of yaw
-                if(get_wp_yaw_mode(true) != YAW_HOLD) {
-                    set_yaw_mode(YAW_RESETTOARMEDYAW); // yaw back to initial yaw on take off
+                if(get_default_auto_yaw_mode(true) != AUTO_YAW_HOLD) {
+                    set_auto_yaw_mode(AUTO_YAW_RESETTOARMEDYAW); // yaw back to initial yaw on take off
                 } else {
-                    set_yaw_mode(YAW_HOLD);
+                    set_auto_yaw_mode(AUTO_YAW_HOLD);
                 }
 
                 // advance to next rtl state
@@ -669,7 +669,7 @@ static bool verify_RTL()
                     wp_nav.set_loiter_target(Vector3f(0,0,0));
 
                     // hold yaw while landing
-                    set_yaw_mode(YAW_HOLD);
+                    set_auto_yaw_mode(AUTO_YAW_HOLD);
 
                     // set throttle mode to land
                     set_throttle_mode(THROTTLE_LAND);
@@ -770,7 +770,7 @@ static void do_yaw()
     }
 
     // set yaw mode
-    set_yaw_mode(YAW_LOOK_AT_HEADING);
+    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
 
     // TO-DO: restore support for clockwise / counter clockwise rotation held in command_cond_queue.p1
     // command_cond_queue.p1; // 0 = undefined, 1 = clockwise, -1 = counterclockwise
@@ -845,7 +845,7 @@ static void do_guided(const struct Location *cmd)
     wp_bearing = wp_nav.get_wp_bearing_to_destination();
 
     // point nose at next waypoint if it is more than 10m away
-    if (yaw_mode == YAW_LOOK_AT_NEXT_WP) {
+    if (auto_yaw_mode == AUTO_YAW_LOOK_AT_NEXT_WP) {
         // get distance to new location
         wp_distance = wp_nav.get_wp_distance_to_destination();
         // set original_wp_bearing to point at next waypoint
@@ -911,7 +911,7 @@ static void do_roi()
     // check if mount type requires us to rotate the quad
     if( camera_mount.get_mount_type() != AP_Mount::k_pan_tilt && camera_mount.get_mount_type() != AP_Mount::k_pan_tilt_roll ) {
         yaw_look_at_WP = pv_location_to_vector(command_cond_queue);
-        set_yaw_mode(YAW_LOOK_AT_LOCATION);
+        set_auto_yaw_mode(AUTO_YAW_LOOK_AT_LOCATION);
     }
     // send the command to the camera mount
     camera_mount.set_roi_cmd(&command_cond_queue);
@@ -925,7 +925,7 @@ static void do_roi()
 #else
     // if we have no camera mount aim the quad at the location
     yaw_look_at_WP = pv_location_to_vector(command_cond_queue);
-    set_yaw_mode(YAW_LOOK_AT_LOCATION);
+    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_LOCATION);
 #endif
 }
 

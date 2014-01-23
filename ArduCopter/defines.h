@@ -15,16 +15,16 @@
 
 // Flight modes
 // ------------
-#define YAW_HOLD                        0       // heading hold at heading in control_yaw but allow input from pilot
+#define AUTO_YAW_HOLD                   0       // pilot controls the heading
+#define AUTO_YAW_LOOK_AT_NEXT_WP        1       // point towards next waypoint (no pilot input accepted)
+#define AUTO_YAW_LOOK_AT_LOCATION       2       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
+#define AUTO_YAW_LOOK_AT_HEADING        3       // point towards a particular angle (not pilot input accepted)
+#define AUTO_YAW_LOOK_AHEAD             4       // point in the direction the copter is moving
+#define AUTO_YAW_RESETTOARMEDYAW        5       // point towards heading at time motors were armed
+
 #define YAW_ACRO                        1       // pilot controlled yaw using rate controller
-#define YAW_LOOK_AT_NEXT_WP             2       // point towards next waypoint (no pilot input accepted)
-#define YAW_LOOK_AT_LOCATION            3       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
 #define YAW_CIRCLE                      4       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
-#define YAW_LOOK_AT_HOME    		    5       // point towards home (no pilot input accepted)
-#define YAW_LOOK_AT_HEADING    		    6       // point towards a particular angle (not pilot input accepted)
-#define YAW_LOOK_AHEAD					7		// WARNING!  CODE IN DEVELOPMENT NOT PROVEN
 #define YAW_DRIFT                       8       //
-#define YAW_RESETTOARMEDYAW				9       // point towards heading at time motors were armed
 
 #define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
 #define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates in body frame
