@@ -46,6 +46,14 @@ public:
         return _v[i];
     }
 
+    // test for equality
+    bool operator ==(const VectorN<T,N> &v) const {
+        for (uint8_t i=0; i<N; i++) {
+            if (_v[i] != v[i]) return false;
+        }
+        return true;
+    }
+
     // zero the vector
     inline void zero()
     {
