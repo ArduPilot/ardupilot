@@ -34,6 +34,7 @@ public:
         k_param_initial_mode,
         k_param_scheduler,
         k_param_relay,
+        k_param_BoardConfig,
 
         // IO pins
         k_param_rssi_pin = 20,

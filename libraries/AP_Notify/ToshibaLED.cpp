@@ -168,8 +168,8 @@ void ToshibaLED::update_colours(void)
         }else{
             // solid blue if armed with no GPS lock
             _red_des = TOSHIBA_LED_OFF;
-            _blue_des = TOSHIBA_LED_OFF;
-            _green_des = TOSHIBA_LED_DIM;
+            _blue_des = TOSHIBA_LED_DIM;
+            _green_des = TOSHIBA_LED_OFF;
         }
         return;
     }else{

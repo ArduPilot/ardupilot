@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.76"
+#define THISFIRMWARE "ArduPlane V2.77"
 /*
    Lead developer: Andrew Tridgell
  
@@ -74,6 +74,8 @@
 #include <AP_BattMonitor.h> // Battery monitor library
 
 #include <AP_Arming.h>
+#include <AP_BoardConfig.h>
+#include <AP_ServoRelayEvents.h>
 
 // Pre-AP_HAL compatibility
 #include "compat.h"
@@ -126,6 +128,9 @@ static AP_Scheduler scheduler;
  
 // mapping between input channels
 static RCMapper rcmap;
+
+// board specific config
+static AP_BoardConfig BoardConfig;
 
 // primary control channels
 static RC_Channel *channel_roll;
@@ -320,6 +325,9 @@ static AP_RangeFinder_analog sonar;
 // Relay
 ////////////////////////////////////////////////////////////////////////////////
 static AP_Relay relay;
+
+// handle servo and relay events
+static AP_ServoRelayEvents ServoRelayEvents(relay);
 
 // Camera
 #if CAMERA == ENABLED
@@ -595,35 +603,6 @@ static struct {
 } loiter;
 
 
-// event control state
-enum event_type { 
-    EVENT_TYPE_RELAY=0,
-    EVENT_TYPE_SERVO=1
-};
-
-static struct {
-    enum event_type type;
-
-	// when the event was started in ms
-    uint32_t start_time_ms;
-
-	// how long to delay the next firing of event in millis
-    uint16_t delay_ms;
-
-	// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
-    int16_t repeat;
-
-    // RC channel for servos
-    uint8_t rc_channel;
-
-	// PWM for servos
-	uint16_t servo_value;
-
-	// the value used to cycle events (alternate value to event_value)
-    uint16_t undo_value;
-} event_state;
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Conditional command
 ////////////////////////////////////////////////////////////////////////////////
@@ -743,7 +722,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { obc_fs_check,           5,   1000 },
     { gcs_update,             1,   1700 },
     { gcs_data_stream_send,   1,   3000 },
-    { update_events,		 15,   1500 }, // 20
+    { update_events,		  1,   1500 }, // 20
     { check_usb_mux,          5,    300 },
     { read_battery,           5,   1000 },
     { compass_accumulate,     1,   1500 },
@@ -987,6 +966,10 @@ static void one_second_loop()
     mavlink_system.sysid = g.sysid_this_mav;
 
     update_aux();
+
+    // update notify flags
+    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
 }
 
 static void log_perf_info()

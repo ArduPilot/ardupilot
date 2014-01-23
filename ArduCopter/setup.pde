@@ -7,7 +7,6 @@ static int8_t   setup_accel_scale       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compass           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_compassmot        (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_erase             (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_frame             (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_flightmodes       (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_optflow           (uint8_t argc, const Menu::arg *argv);
 static int8_t   setup_radio             (uint8_t argc, const Menu::arg *argv);
@@ -26,7 +25,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
     {"compass",                     setup_compass},
     {"compassmot",                  setup_compassmot},
     {"erase",                       setup_erase},
-    {"frame",                       setup_frame},
     {"modes",                       setup_flightmodes},
     {"optflow",                     setup_optflow},
     {"radio",                       setup_radio},
@@ -327,27 +325,6 @@ static int8_t
 setup_erase(uint8_t argc, const Menu::arg *argv)
 {
     zero_eeprom();
-    return 0;
-}
-
-static int8_t
-setup_frame(uint8_t argc, const Menu::arg *argv)
-{
-    if (!strcmp_P(argv[1].str, PSTR("x"))) {
-        g.frame_orientation.set_and_save(X_FRAME);
-    } else if (!strcmp_P(argv[1].str, PSTR("p"))) {
-        g.frame_orientation.set_and_save(PLUS_FRAME);
-    } else if (!strcmp_P(argv[1].str, PSTR("+"))) {
-        g.frame_orientation.set_and_save(PLUS_FRAME);
-    } else if (!strcmp_P(argv[1].str, PSTR("v"))) {
-        g.frame_orientation.set_and_save(V_FRAME);
-    }else{
-        cliSerial->printf_P(PSTR("\nOp:[x,+,v]\n"));
-        report_frame();
-        return 0;
-    }
-
-    report_frame();
     return 0;
 }
 
@@ -733,15 +710,6 @@ static void report_frame()
     cliSerial->printf_P(PSTR("Octa frame\n"));
  #elif FRAME_CONFIG == HELI_FRAME
     cliSerial->printf_P(PSTR("Heli frame\n"));
- #endif
-
- #if FRAME_CONFIG != HELI_FRAME
-    if(g.frame_orientation == X_FRAME)
-        cliSerial->printf_P(PSTR("X mode\n"));
-    else if(g.frame_orientation == PLUS_FRAME)
-        cliSerial->printf_P(PSTR("+ mode\n"));
-    else if(g.frame_orientation == V_FRAME)
-        cliSerial->printf_P(PSTR("V mode\n"));
  #endif
 
     print_blanks(2);

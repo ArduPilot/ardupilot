@@ -8,10 +8,20 @@ cd $HOME/APM || exit 1
 
 test -n "$FORCEBUILD" || {
 (cd APM && git fetch > /dev/null 2>&1)
+
 newtags=$(cd APM && git fetch --tags | wc -l)
 oldhash=$(cd APM && git rev-parse origin/master)
 newhash=$(cd APM && git rev-parse HEAD)
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+
+newtagspx4=$(cd PX4Firmware && git fetch --tags | wc -l)
+oldhashpx4=$(cd PX4Firmware && git rev-parse origin/master)
+newhashpx4=$(cd PX4Firmware && git rev-parse HEAD)
+
+newtagsnuttx=$(cd PX4NuttX && git fetch --tags | wc -l)
+oldhashnuttx=$(cd PX4NuttX && git rev-parse origin/master)
+newhashnuttx=$(cd PX4NuttX && git rev-parse HEAD)
+
+if [ "$oldhash" = "$newhash" -a "$newtags" = "0" -a "$oldhashpx4" = "$newhashpx4" -a "$newtagspx4" = "0" -a "$oldhashnuttx" = "$newhashnuttx" -a "$newtagsnuttx" = "0" ]; then
     echo "no change $oldhash $newhash `date`" >> build.log
     exit 0
 fi
@@ -85,12 +95,22 @@ rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 pushd PX4Firmware
 git fetch origin
 git reset --hard origin/master
+for v in ArduPlane ArduCopter APMrover2; do
+    git tag -d $v-beta || true
+    git tag -d $v-stable || true
+done
+git fetch origin --tags
 git show
 popd
 
 pushd PX4NuttX
 git fetch origin
 git reset --hard origin/master
+for v in ArduPlane ArduCopter APMrover2; do
+    git tag -d $v-beta || true
+    git tag -d $v-stable || true
+done
+git fetch origin --tags
 git show
 popd
 

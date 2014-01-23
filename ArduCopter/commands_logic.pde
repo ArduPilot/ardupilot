@@ -86,20 +86,22 @@ static void process_now_command()
         do_set_home();
         break;
 
-    case MAV_CMD_DO_SET_SERVO:             // 183
-        do_set_servo();
+    case MAV_CMD_DO_SET_SERVO:
+        ServoRelayEvents.do_set_servo(command_cond_queue.p1, command_cond_queue.alt);
         break;
-
-    case MAV_CMD_DO_SET_RELAY:             // 181
-        do_set_relay();
+        
+    case MAV_CMD_DO_SET_RELAY:
+        ServoRelayEvents.do_set_relay(command_cond_queue.p1, command_cond_queue.alt);
         break;
-
-    case MAV_CMD_DO_REPEAT_SERVO:             // 184
-        do_repeat_servo();
+        
+    case MAV_CMD_DO_REPEAT_SERVO:
+        ServoRelayEvents.do_repeat_servo(command_cond_queue.p1, command_cond_queue.alt,
+                                         command_cond_queue.lat, command_cond_queue.lng);
         break;
-
-    case MAV_CMD_DO_REPEAT_RELAY:             // 182
-        do_repeat_relay();
+        
+    case MAV_CMD_DO_REPEAT_RELAY:
+        ServoRelayEvents.do_repeat_relay(command_cond_queue.p1, command_cond_queue.alt,
+                                         command_cond_queue.lat);
         break;
 
     case MAV_CMD_DO_SET_ROI:                // 201
@@ -896,60 +898,6 @@ static void do_set_home()
         //home_is_set 	= true;
         set_home_is_set(true);
     }
-}
-
-static void do_set_servo()
-{
-    servo_write(command_cond_queue.p1 - 1, command_cond_queue.alt);
-}
-
-static void do_set_relay()
-{
-    if (command_cond_queue.p1 == 1) {
-        relay.on();
-    } else if (command_cond_queue.p1 == 0) {
-        relay.off();
-    }else{
-        relay.toggle();
-    }
-}
-
-static void do_repeat_servo()
-{
-    event_id = command_cond_queue.p1 - 1;
-
-    if(command_cond_queue.p1 >= CH_5 + 1 && command_cond_queue.p1 <= CH_8 + 1) {
-
-        event_timer             = 0;
-        event_value             = command_cond_queue.alt;
-        event_repeat    = command_cond_queue.lat * 2;
-        event_delay             = command_cond_queue.lng * 500.0f;         // /2 (half cycle time) * 1000 (convert to milliseconds)
-
-        switch(command_cond_queue.p1) {
-        case CH_5:
-            event_undo_value = g.rc_5.radio_trim;
-            break;
-        case CH_6:
-            event_undo_value = g.rc_6.radio_trim;
-            break;
-        case CH_7:
-            event_undo_value = g.rc_7.radio_trim;
-            break;
-        case CH_8:
-            event_undo_value = g.rc_8.radio_trim;
-            break;
-        }
-        update_events();
-    }
-}
-
-static void do_repeat_relay()
-{
-    event_id                = RELAY_TOGGLE;
-    event_timer             = 0;
-    event_delay             = command_cond_queue.lat * 500.0f;     // /2 (half cycle time) * 1000 (convert to milliseconds)
-    event_repeat    = command_cond_queue.alt * 2;
-    update_events();
 }
 
 // do_roi - starts actions required by MAV_CMD_NAV_ROI
