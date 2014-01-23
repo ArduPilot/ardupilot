@@ -62,9 +62,6 @@ static void run_autopilot()
             // process the active navigation and conditional commands
             verify_commands();
             break;
-        case GUIDED:
-            // no need to do anything - wp_nav should take care of getting us to the desired location
-            break;
         case RTL:
             verify_RTL();
             break;
