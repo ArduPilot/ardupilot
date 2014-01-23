@@ -90,9 +90,6 @@ public:
     ///		results placed in stopping_position vector
     void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
 
-    /// advance_wp_target_along_track - move target location along track from origin to destination
-    void advance_wp_target_along_track(float dt);
-
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
     float get_wp_distance_to_destination();
 
@@ -139,6 +136,9 @@ public:
 
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
     float get_wp_acceleration() const { return _wp_accel_cms.get(); }
+
+    /// advance_wp_target_along_track - move target location along track from origin to destination
+    void advance_wp_target_along_track(float dt);
 
     static const struct AP_Param::GroupInfo var_info[];
 
