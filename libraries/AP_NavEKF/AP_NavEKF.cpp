@@ -1584,6 +1584,7 @@ void NavEKF::FuseVelPosNED()
                 if (velTimeout)
                 {
                     ResetVelocity();
+                    fuseVelData =  false;
                 }
 
             }
@@ -1609,6 +1610,7 @@ void NavEKF::FuseVelPosNED()
                 if (posTimeout)
                 {
                     ResetPosition();
+                    fusePosData = false;
                 }
             }
             else
@@ -1636,6 +1638,7 @@ void NavEKF::FuseVelPosNED()
                 if (hgtTimeout)
                 {
                     ResetHeight();
+                    fuseHgtData = false;
                 }
             }
             else
