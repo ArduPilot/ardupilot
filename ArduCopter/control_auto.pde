@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
- * control_auto.pde - init and run calls for auto, guided, land and RTL flight modes
+ * control_auto.pde - init and run calls for auto and guided flight modes
  */
 
 // auto_init - initialise auto controller
@@ -153,7 +153,7 @@ float get_auto_heading(void)
 
     case AUTO_YAW_RESETTOARMEDYAW:
         // changes yaw to be same as when quad was armed
-        control_yaw = initial_armed_bearing;
+        return initial_armed_bearing;
         break;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
@@ -180,35 +180,3 @@ static bool guided_init(bool ignore_checks)
 static void guided_run()
 {
 }
-
-// land_init - initialise land controller
-static bool land_init(bool ignore_checks)
-{
-    return true;
-}
-
-// land_run - runs the land controller
-// should be called at 100hz or more
-static void land_run()
-{
-    verify_land();
-}
-
-// rtl_init - initialise rtl controller
-static bool rtl_init(bool ignore_checks)
-{
-    if (GPS_ok() || ignore_checks) {
-        do_RTL();
-        return true;
-    }else{
-        return false;
-    }
-}
-
-// rtl_run - runs the return-to-launch controller
-// should be called at 100hz or more
-static void rtl_run()
-{
-    verify_RTL();
-}
-
