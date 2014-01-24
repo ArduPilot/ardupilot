@@ -13,6 +13,8 @@ static bool land_init(bool ignore_checks)
         // set target to current position
         wp_nav.init_loiter_target();
     }
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
     return true;
 }
 
@@ -20,62 +22,120 @@ static bool land_init(bool ignore_checks)
 // should be called at 100hz or more
 static void land_run()
 {
-    int16_t target_roll, target_pitch;
-    float target_yaw_rate;
-    float target_climb_rate;
-
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
-        // To-Do: reset altitude target if we're somehow not landed?
-        attitude_control.init_targets();
-        attitude_control.set_throttle_out(0, false);
-        return;
-    }
-
-    // disarming detector
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-    // disarm when the landing detector says we've landed and throttle is at minimum
-    if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
-        init_disarm_motors();
-        return;
-    }
-#else
-    // disarm when the landing detector says we've landed
-    if (ap.land_complete) {
-        init_disarm_motors();
-        return;
-    }
-#endif
-
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
-    // get pilot desired lean angles
-    // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
-
-    // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-
-    // reset target lean angles and heading while landed
-    if (ap.land_complete) {
-        attitude_control.init_targets();
-        // move throttle to minimum to keep us on the ground
-        attitude_control.set_throttle_out(0, false);
+    if (land_with_gps) {
+        land_gps_run();
     }else{
-        // call attitude controller
-        attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
-        // body-frame rate controller is run directly from 100hz loop
+        land_nogps_run();
+    }
+}
 
-        // call landing throttle controller
-        target_climb_rate = get_throttle_land();
+// land_run - runs the land controller
+//      horizontal position controlled with loiter controller
+//      should be called at 100hz or more
+static void land_gps_run()
+{
+    int16_t roll_control = 0, pitch_control = 0;
+    float target_yaw_rate = 0;
 
-        // call position controller
-        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
-        pos_control.update_z_controller();
+    // if not auto armed or landed set throttle to zero and exit immediately
+    if(!ap.auto_armed || ap.land_complete) {
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        wp_nav.init_loiter_target();
+
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
+        // disarm when the landing detector says we've landed and throttle is at minimum
+        if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
+            init_disarm_motors();
+        }
+#else
+        // disarm when the landing detector says we've landed
+        if (ap.land_complete) {
+            init_disarm_motors();
+        }
+#endif
+        return;
     }
 
-    // refetch angle targets for reporting
+    // process pilot inputs
+    if (!failsafe.radio) {
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // process pilot's roll and pitch input
+        roll_control = g.rc_1.control_in;
+        pitch_control = g.rc_2.control_in;
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
+    // process roll, pitch inputs
+    wp_nav.set_pilot_desired_acceleration(roll_control, pitch_control);
+
+    // run loiter controller
+    wp_nav.update_loiter();
+
+    // call attitude controller
+    attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+
+    // update altitude target and call position controller
+    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
+    pos_control.update_z_controller();
+
+    // re-fetch angle targets for reporting
+    const Vector3f angle_target = attitude_control.angle_ef_targets();
+    control_roll = angle_target.x;
+    control_pitch = angle_target.y;
+    control_yaw = angle_target.z;
+}
+
+// land_nogps_run - runs the land controller
+//      pilot controls roll and pitch angles
+//      should be called at 100hz or more
+static void land_nogps_run()
+{
+    int16_t target_roll = 0, target_pitch = 0;
+    float target_yaw_rate = 0;
+
+    // if not auto armed or landed set throttle to zero and exit immediately
+    if(!ap.auto_armed || ap.land_complete) {
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
+        // disarm when the landing detector says we've landed and throttle is at minimum
+        if (ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio)) {
+            init_disarm_motors();
+        }
+#else
+        // disarm when the landing detector says we've landed
+        if (ap.land_complete) {
+            init_disarm_motors();
+        }
+#endif
+        return;
+    }
+
+    // process pilot inputs
+    if (!failsafe.radio) {
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // get pilot desired lean angles
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
+    // call attitude controller
+    attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
+
+    // call position controller
+    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
+    pos_control.update_z_controller();
+
+    // re-fetch angle targets for reporting
     const Vector3f angle_target = attitude_control.angle_ef_targets();
     control_roll = angle_target.x;
     control_pitch = angle_target.y;
