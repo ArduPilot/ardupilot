@@ -389,17 +389,14 @@ static bool set_mode(uint8_t mode)
     switch(mode) {
         case ACRO:
             success = acro_init(ignore_checks);
-            set_nav_mode(NAV_NONE);
             break;
 
         case STABILIZE:
             success = stabilize_init(ignore_checks);
-            set_nav_mode(NAV_NONE);
             break;
 
         case ALT_HOLD:
             success = althold_init(ignore_checks);
-            set_nav_mode(NAV_NONE);
             break;
 
         case AUTO:
@@ -433,7 +430,6 @@ static bool set_mode(uint8_t mode)
 
         case LAND:
             success = land_init(ignore_checks);
-            do_land(NULL);  // land at current location
             break;
 
         case RTL:
