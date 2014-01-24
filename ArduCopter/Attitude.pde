@@ -931,13 +931,12 @@ get_throttle_rate_stabilized(int16_t target_rate)
 
 // get_throttle_land - high level landing logic
 // sends the desired acceleration in the accel based throttle controller
-// called at 50hz
-static void
-get_throttle_land()
+// called at 100hz
+static void get_throttle_land(float dt)
 {
     // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
     if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-        get_throttle_althold_with_slew(LAND_START_ALT, -wp_nav.get_descent_velocity(), -abs(g.land_speed));
+        pos_control.set_alt_target_with_slew(LAND_START_ALT, dt);
     }else{
         get_throttle_rate_stabilized(-abs(g.land_speed));
 
@@ -987,9 +986,8 @@ static bool update_land_detector()
 }
 
 // get_throttle_surface_tracking - hold copter at the desired distance above the ground
-// updates accel based throttle controller targets
-static void
-get_throttle_surface_tracking(int16_t target_rate)
+//      returns climb rate (in cm/s) which should be passed to the position controller
+static float get_throttle_surface_tracking(int16_t target_rate, float dt)
 {
     static uint32_t last_call_ms = 0;
     float distance_error;
@@ -1005,7 +1003,7 @@ get_throttle_surface_tracking(int16_t target_rate)
 
     // adjust sonar target alt if motors have not hit their limits
     if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
-        target_sonar_alt += target_rate * 0.02f;
+        target_sonar_alt += target_rate * dt;
     }
 
     // do not let target altitude get too far from current altitude above ground
@@ -1017,8 +1015,8 @@ get_throttle_surface_tracking(int16_t target_rate)
     velocity_correction = distance_error * g.sonar_gain;
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 
-    // call regular rate stabilize alt hold controller
-    pos_control.climb_at_rate(target_rate + velocity_correction);
+    // return combined pilot climb rate + rate to correct sonar alt error
+    return (target_rate + velocity_correction);
 }
 
 /*

@@ -1815,7 +1815,7 @@ void update_throttle_mode(void)
             if (!ap.land_complete) {
                 if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
                     // if sonar is ok, use surface tracking
-                    get_throttle_surface_tracking(pilot_climb_rate);    // this function calls set_target_alt_for_reporting for us
+                    get_throttle_surface_tracking(pilot_climb_rate,0.02f);    // this function calls set_target_alt_for_reporting for us
                 }else{
                     // if no sonar fall back stabilize rate controller
                     get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
@@ -1851,7 +1851,7 @@ void update_throttle_mode(void)
 
     case THROTTLE_LAND:
         // landing throttle controller
-        get_throttle_land();
+        get_throttle_land(0.01f);
         set_target_alt_for_reporting(0);
         break;
 
