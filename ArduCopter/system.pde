@@ -403,22 +403,15 @@ static bool set_mode(uint8_t mode)
             break;
 
         case AUTO:
-            // check we have a GPS and at least one mission command (note the home position is always command 0)
-            if ((GPS_ok() && g.command_total > 1) || ignore_checks) {
-                success = auto_init(ignore_checks);
-            }            
+            success = auto_init(ignore_checks);
             break;
 
         case CIRCLE:
-            if (GPS_ok() || ignore_checks) {
-                success = circle_init(ignore_checks);
-            }
+            success = circle_init(ignore_checks);
             break;
 
         case LOITER:
-            if (GPS_ok() || ignore_checks) {
-                success = loiter_init(ignore_checks);
-            }
+            success = loiter_init(ignore_checks);
             break;
 
         case POSITION:
@@ -431,13 +424,11 @@ static bool set_mode(uint8_t mode)
             break;
 
         case GUIDED:
-            if (GPS_ok() || ignore_checks) {
-                success = guided_init(ignore_checks);
-                //set_yaw_mode(get_wp_yaw_mode(false));
-                //set_roll_pitch_mode(GUIDED_RP);
-                //set_throttle_mode(GUIDED_THR);
-                //set_nav_mode(GUIDED_NAV);
-            }
+            success = guided_init(ignore_checks);
+            //set_yaw_mode(get_wp_yaw_mode(false));
+            //set_roll_pitch_mode(GUIDED_RP);
+            //set_throttle_mode(GUIDED_THR);
+            //set_nav_mode(GUIDED_NAV);
             break;
 
         case LAND:
@@ -446,20 +437,15 @@ static bool set_mode(uint8_t mode)
             break;
 
         case RTL:
-            if (GPS_ok() || ignore_checks) {
-                success = rtl_init(ignore_checks);
-                do_RTL();
-            }
+            success = rtl_init(ignore_checks);
             break;
 
         case OF_LOITER:
-            if (g.optflow_enabled || ignore_checks) {
-                success = ofloiter_init(ignore_checks);
-                //set_yaw_mode(OF_LOITER_YAW);
-                //set_roll_pitch_mode(OF_LOITER_RP);
-                //set_throttle_mode(OF_LOITER_THR);
-                //set_nav_mode(OF_LOITER_NAV);
-            }
+            success = ofloiter_init(ignore_checks);
+            //set_yaw_mode(OF_LOITER_YAW);
+            //set_roll_pitch_mode(OF_LOITER_RP);
+            //set_throttle_mode(OF_LOITER_THR);
+            //set_nav_mode(OF_LOITER_NAV);
             break;
 
         case DRIFT:

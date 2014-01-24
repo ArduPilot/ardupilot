@@ -577,13 +577,6 @@ static bool verify_RTL()
 
     switch( rtl_state ) {
         case RTL_STATE_START:
-            // set roll, pitch and yaw modes
-            set_roll_pitch_mode(RTL_RP);
-            set_throttle_mode(RTL_THR);
-
-            // set navigation mode
-            set_nav_mode(NAV_WP);
-
             // if we are below rtl alt do initial climb
             if( current_loc.alt < get_RTL_alt() ) {
                 // first stage of RTL is the initial climb so just hold current yaw
