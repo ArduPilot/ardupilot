@@ -90,20 +90,21 @@ static void handle_process_do_command()
         break;
 
     case MAV_CMD_DO_SET_SERVO:
-        do_set_servo();
+        ServoRelayEvents.do_set_servo(next_nonnav_command.p1, next_nonnav_command.alt);
         break;
 
     case MAV_CMD_DO_SET_RELAY:
-        do_set_relay();
+        ServoRelayEvents.do_set_relay(next_nonnav_command.p1, next_nonnav_command.alt);
         break;
 
     case MAV_CMD_DO_REPEAT_SERVO:
-        do_repeat_servo(next_nonnav_command.p1, next_nonnav_command.alt,
-                        next_nonnav_command.lat, next_nonnav_command.lng);
+        ServoRelayEvents.do_repeat_servo(next_nonnav_command.p1, next_nonnav_command.alt,
+                                         next_nonnav_command.lat, next_nonnav_command.lng);
         break;
 
     case MAV_CMD_DO_REPEAT_RELAY:
-        do_repeat_relay();
+        ServoRelayEvents.do_repeat_relay(next_nonnav_command.p1, next_nonnav_command.alt,
+                                         next_nonnav_command.lat);
         break;
 
 #if CAMERA == ENABLED
@@ -613,54 +614,6 @@ static void do_set_home()
         home.alt        = max(next_nonnav_command.alt, 0);
         home_is_set = true;
     }
-}
-
-static void do_set_servo()
-{
-    servo_write(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
-}
-
-static void do_set_relay()
-{
-    if (next_nonnav_command.p1 == 1) {
-        gcs_send_text_fmt(PSTR("Relay on"));
-        relay.on();
-    } else if (next_nonnav_command.p1 == 0) {
-        gcs_send_text_fmt(PSTR("Relay off"));
-        relay.off();
-    }else{
-        gcs_send_text_fmt(PSTR("Relay toggle"));
-        relay.toggle();
-    }
-}
-
-static void do_repeat_servo(uint8_t channel, uint16_t servo_value,
-                            int16_t repeat, uint8_t delay_time)
-{
-    channel = channel - 1;
-    if (channel < 5 || channel > 8) {
-        // not allowed
-        return;
-    }
-    event_state.rc_channel = channel;
-    event_state.type = EVENT_TYPE_SERVO;
-
-    event_state.start_time_ms  = 0;
-    event_state.delay_ms    = delay_time * 500UL;
-    event_state.repeat      = repeat * 2;
-    event_state.servo_value = servo_value;
-    event_state.undo_value  = RC_Channel::rc_channel(channel)->radio_trim;
-    update_events();
-}
-
-static void do_repeat_relay()
-{
-    event_state.type = EVENT_TYPE_RELAY;
-    event_state.start_time_ms  = 0;
-    // /2 (half cycle time) * 1000 (convert to milliseconds)
-    event_state.delay_ms        = next_nonnav_command.lat * 500.0;
-    event_state.repeat          = next_nonnav_command.alt * 2;
-    update_events();
 }
 
 // do_take_picture - take a picture with the camera library

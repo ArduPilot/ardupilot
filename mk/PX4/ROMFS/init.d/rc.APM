@@ -192,7 +192,17 @@ then
     if hmc5883 start
     then
         echo "hmc5883 started OK"
+        if hmc5883 calibrate
+        then
+          echo "hmc5883 calibrate OK"
+        else 
+          echo "hmc5883 calibrate failed"
+          echo "hmc5883 calibrate failed" >> $logfile
+          sh /etc/init.d/rc.error
+        fi
     else
+        echo "hmc5883 start failed"
+        echo "hmc5883 start failed" >> $logfile
         sh /etc/init.d/rc.error
     fi
     if mpu6000 start
@@ -213,7 +223,16 @@ else
     if hmc5883 start
     then
         echo "Using external magnetometer"
+        if hmc5883 calibrate
+        then
+          echo "hmc5883 calibrate OK"
+        else 
+          echo "hmc5883 calibrate failed"
+          echo "hmc5883 calibrate failed" >> $logfile
+          sh /etc/init.d/rc.error
+        fi
     fi
+
     if mpu6000 start
     then
        echo "Found MPU6000"

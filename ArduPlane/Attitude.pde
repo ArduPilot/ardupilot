@@ -855,16 +855,6 @@ static void set_servos(void)
         channel_rudder->radio_out   = channel_rudder->radio_in;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    // get the servos to the GCS immediately for HIL
-    if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN) {
-        send_radio_out(MAVLINK_COMM_0);
-    }
-    if (!g.hil_servos) {
-        return;
-    }
-#endif
-
     if (g.vtail_output != MIXING_DISABLED) {
         channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
     } else if (g.elevon_output != MIXING_DISABLED) {
@@ -888,6 +878,16 @@ static void set_servos(void)
             break;
         }
     }
+
+#if HIL_MODE != HIL_MODE_DISABLED
+    // get the servos to the GCS immediately for HIL
+    if (comm_get_txspace(MAVLINK_COMM_0) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN) {
+        send_servo_out(MAVLINK_COMM_0);
+    }
+    if (!g.hil_servos) {
+        return;
+    }
+#endif
 
     // send values to the PWM timers for output
     // ----------------------------------------

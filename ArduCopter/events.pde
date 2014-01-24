@@ -307,28 +307,8 @@ static void failsafe_gcs_off_event(void)
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
-static void update_events()     // Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
+static void update_events()
 {
-    if(event_repeat == 0 || (millis() - event_timer) < event_delay)
-        return;
-
-    if(event_repeat != 0) {             // event_repeat = -1 means repeat forever
-        event_timer = millis();
-
-        if (event_id >= CH_5 && event_id <= CH_8) {
-            if(event_repeat%2) {
-                hal.rcout->write(event_id, event_value);                 // send to Servos
-            } else {
-                hal.rcout->write(event_id, event_undo_value);
-            }
-        }
-
-        if  (event_id == RELAY_TOGGLE) {
-            relay.toggle();
-        }
-        if (event_repeat > 0) {
-            event_repeat--;
-        }
-    }
+    ServoRelayEvents.update_events();
 }
 

@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @DisplayName: IMU Product ID
     // @Description: Which type of IMU is installed (read-only). 
     // @User: Advanced
-    // @Values: 0:Unknown,1:APM1-1280,2:APM1-2560,88:APM2,3:SITL,4:PX4v1,5:PX4v2,Flymaple:256,Linux:257
+    // @Values: 0:Unknown,1:APM1-1280,2:APM1-2560,88:APM2,3:SITL,4:PX4v1,5:PX4v2,256:Flymaple,257:Linux
     AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _product_id,   0),
 
     // @Param: ACCSCAL_X
@@ -171,15 +171,15 @@ AP_InertialSensor::_init_gyro()
         update();
     }
 
-    // the strategy is to average 200 points over 1 second, then do it
+    // the strategy is to average 50 points over 0.5 seconds, then do it
     // again and see if the 2nd average is within a small margin of
     // the first
 
     uint8_t num_converged = 0;
 
     // we try to get a good calibration estimate for up to 10 seconds
-    // if the gyros are stable, we should get it in 2 seconds
-    for (int16_t j = 0; j <= 10 && num_converged < num_gyros; j++) {
+    // if the gyros are stable, we should get it in 1 second
+    for (int16_t j = 0; j <= 20 && num_converged < num_gyros; j++) {
         Vector3f gyro_sum[num_gyros], gyro_avg[num_gyros], gyro_diff[num_gyros];
         float diff_norm[num_gyros];
         uint8_t i;
@@ -653,25 +653,6 @@ void AP_InertialSensor::_calculate_trim(Vector3f accel_sample, float& trim_roll,
     if( scaled_accels_x.x < 0 ) {
         trim_pitch = -trim_pitch;
     }
-}
-
-/**
-   default versions of multi-device accessor functions
- */
-bool AP_InertialSensor::get_gyro_health(uint8_t instance) const
-{
-    if (instance != 0) {
-        return false;
-    }
-    return healthy();
-}
-
-bool AP_InertialSensor::get_accel_health(uint8_t instance) const
-{
-    if (instance != 0) {
-        return false;
-    }
-    return healthy();
 }
 
 #endif // __AVR_ATmega1280__

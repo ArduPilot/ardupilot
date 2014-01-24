@@ -104,6 +104,10 @@ static void init_ardupilot()
 	
     load_parameters();
 
+    BoardConfig.init();
+
+    ServoRelayEvents.set_channel_mask(0xFFF0);
+
     set_control_channels();
 
     // after parameter load setup correct baud rate on uartA
@@ -467,7 +471,7 @@ print_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->print_P(PSTR("Learning"));
         break;
     case STEERING:
-        port->print_P(PSTR("Stearing"));
+        port->print_P(PSTR("Steering"));
         break;
     case AUTO:
         port->print_P(PSTR("AUTO"));

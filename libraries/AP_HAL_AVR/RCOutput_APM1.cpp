@@ -146,14 +146,6 @@ void APM1RCOutput::disable_ch(uint8_t ch) {
     }
 }
 
-void APM1RCOutput::disable_mask(uint32_t chmask) {
-    for (int i = 0; i < 32; i++) {
-        if ((chmask >> i) & 1) {
-            disable_ch(i);
-        }
-    }
-}
-
 /* constrain pwm to be between min and max pulsewidth. */
 static inline uint16_t constrain_period(uint16_t p) {
     if (p > RC_INPUT_MAX_PULSEWIDTH) return RC_INPUT_MAX_PULSEWIDTH;

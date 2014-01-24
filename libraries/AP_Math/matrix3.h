@@ -215,6 +215,10 @@ public:
     // apply an additional rotation from a body frame gyro vector
     // to a rotation matrix but only use X, Y elements from gyro vector
     void        rotateXY(const Vector3<T> &g);
+
+    // apply an additional inverse rotation to a rotation matrix but 
+    // only use X, Y elements from rotation vector
+    void        rotateXYinv(const Vector3<T> &g);
 };
 
 typedef Matrix3<int16_t>                Matrix3i;

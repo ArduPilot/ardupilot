@@ -115,40 +115,7 @@ void low_battery_event(void)
     AP_Notify::flags.failsafe_battery = true;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// repeating event control
-
-/*
-  update state for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
-*/
 static void update_events(void)
 {
-    if (event_state.repeat == 0 || (millis() - event_state.start_time_ms) < event_state.delay_ms) {
-        return;
-    }
-
-    // event_repeat = -1 means repeat forever
-    if (event_state.repeat != 0) {
-        event_state.start_time_ms = millis();
-
-        switch (event_state.type) {
-        case EVENT_TYPE_SERVO:
-            hal.rcout->enable_ch(event_state.rc_channel);
-            if (event_state.repeat & 1) {
-                servo_write(event_state.rc_channel, event_state.undo_value);
-            } else {
-                servo_write(event_state.rc_channel, event_state.servo_value);                 
-            }
-            break;
-
-        case EVENT_TYPE_RELAY:
-            gcs_send_text_fmt(PSTR("Relay toggle"));
-            relay.toggle();
-            break;
-        }
-
-        if (event_state.repeat > 0) {
-            event_state.repeat--;
-        }
-    }
+    ServoRelayEvents.update_events();
 }
