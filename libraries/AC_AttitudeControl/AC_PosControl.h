@@ -65,23 +65,39 @@ public:
     /// set_speed_z - sets maximum climb and descent rates
     /// To-Do: call this in the main code as part of flight mode initialisation
     ///     calc_leash_length_z should be called afterwards
-    void set_speed_z(float speed_down, float speed_up) { _speed_down_cms = speed_down; _speed_up_cms = speed_up;}
+    void set_speed_z(float speed_down, float speed_up);
 
     /// set_accel_z - set vertical acceleration in cm/s/s
     ///     calc_leash_length_z should be called afterwards
-    void set_accel_z(float accel_cmss) { _accel_z_cms = accel_cmss; }
+    void set_accel_z(float accel_cmss);
 
-    // set_throttle_hover - update estimated throttle required to maintain hover
+    /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
+    ///     called by pos_to_rate_z if z-axis speed or accelerations are changed
+    void calc_leash_length_z();
+
+    /// set_throttle_hover - update estimated throttle required to maintain hover
     void set_throttle_hover(float throttle) { _throttle_hover = throttle; }
 
-    // set_alt_target - set altitude target in cm above home
+    /// set_alt_target - set altitude target in cm above home
     void set_alt_target(float alt_cm) { _pos_target.z = alt_cm; }
+
+    /// set_alt_target_with_slew - adjusts target towards a final altitude target
+    ///     should be called continuously (with dt set to be the expected time between calls)
+    ///     actual position target will be moved no faster than the speed_down and speed_up
+    ///     target will also be stopped if the motors hit their limits or leash length is exceeded
+    void set_alt_target_with_slew(float alt_cm, float dt);
+
+    /// set_alt_target_from_climb_rate - adjusts target up or down using a climb rate in cm/s
+    ///     should be called continuously (with dt set to be the expected time between calls)
+    ///     actual position target will be moved no faster than the speed_down and speed_up
+    ///     target will also be stopped if the motors hit their limits or leash length is exceeded
+    void set_alt_target_from_climb_rate(float climb_rate_cms, float dt);
 
     /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     /// To-Do: remove one of the two functions below
     float get_alt_target() const { return _pos_target.z; }
 
-    // get_alt_error - returns altitude error in cm
+    /// get_alt_error - returns altitude error in cm
     float get_alt_error() const;
 
     /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
@@ -93,15 +109,12 @@ public:
     /// update_z_controller - fly to altitude in cm above home
     void update_z_controller();
 
-    /// climb_at_rate - climb at rate provided in cm/s
-    void climb_at_rate(const float rate_target_cms);
+    // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
+    float get_leash_down_z() { return _leash_down_z; }
+    float get_leash_up_z() { return _leash_up_z; }
 
     /// althold_kP - returns altitude hold position control PID's kP gain
     float althold_kP() { return _pi_alt_pos.kP(); }
-
-    /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
-    ///     should be called whenever the speed, acceleration or position kP is modified
-    float calc_leash_length_z(float speed_cms, float accel_cms) const { return calc_leash_length(speed_cms, accel_cms, _pi_alt_pos.kP()); }
 
     ///
     /// xy position controller
@@ -109,19 +122,15 @@ public:
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
     ///     calc_leash_length_xy should be called afterwards
-    void set_accel_xy(float accel_cmss) { _accel_cms = accel_cmss; }
+    void set_accel_xy(float accel_cmss);
 
     /// set_speed_xy - set horizontal speed maximum in cm/s
     ///     calc_leash_length_xy should be called afterwards
-    void set_speed_xy(float speed_cms) { _speed_cms = speed_cms; }
-
-    /// set_leash_xy - sets horizontal leash lenght
-    ///     should be based on results from calc_leash_length_xy() method
-    void set_leash_xy(float leash_cm) { _leash = leash_cm; }
+    void set_speed_xy(float speed_cms);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
     ///     should be called whenever the speed, acceleration or position kP is modified
-    float calc_leash_length_xy(float speed_cms, float accel_cms) const { return calc_leash_length(speed_cms, accel_cms, _pi_pos_lon.kP()); }
+    void calc_leash_length_xy();
 
     /// get_pos_target - get target as position vector (from home in cm)
     const Vector3f& get_pos_target() const { return _pos_target; }
@@ -158,6 +167,9 @@ public:
     float get_roll() const { return _roll_target; }
     float get_pitch() const { return _pitch_target; }
 
+    // get_leash_xy - returns horizontal leash length in cm
+    float get_leash_xy() { return _leash; }
+
     /// accessors for reporting
     const Vector3f get_vel_target() { return _vel_target; }
     const Vector3f get_accel_target() { return _accel_target; }
@@ -190,6 +202,10 @@ private:
         uint8_t accel_xy    : 1;    // 1 if we have hit the horizontal accel limit
     } _limit;
 
+    ///
+    /// z controller private methods
+    ///
+
     // pos_to_rate_z - position to rate controller for Z axis
     // target altitude should be placed into _pos_target.z using or set with one of these functions
     //          set_alt_target
@@ -202,6 +218,10 @@ private:
 
     // accel_to_throttle - alt hold's acceleration controller
     void accel_to_throttle(float accel_target_z);
+
+    ///
+    /// xy controller private methods
+    ///
 
     /// desired_vel_to_pos - move position target using desired velocities
     void desired_vel_to_pos(float nav_dt);
@@ -257,6 +277,8 @@ private:
     float       _accel_z_cms;           // max vertical acceleration in cm/s/s
     float       _accel_cms;             // max horizontal acceleration in cm/s/s
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
+    float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
+    float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
     float       _cos_yaw;               // short-cut to save on calcs required to convert roll-pitch frame to lat-lon frame
     float       _sin_yaw;
     float       _cos_pitch;

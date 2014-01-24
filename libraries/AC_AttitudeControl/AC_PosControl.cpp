@@ -66,16 +66,68 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 #else
     _flags.slow_cpu = true;
 #endif
+    _flags.recalc_leash_xy = true;
+    _flags.recalc_leash_z = true;
 }
 
 ///
 /// z-axis position controller
 ///
 
+/// set_speed_z - sets maximum climb and descent rates
+void AC_PosControl::set_speed_z(float speed_down, float speed_up)
+{
+    if ((fabs(_speed_down_cms-speed_down) > 1.0f) || (fabs(_speed_up_cms-speed_up) > 1.0f)) {
+        _speed_down_cms = speed_down;
+        _speed_up_cms = speed_up;
+        _flags.recalc_leash_z = true;
+    }
+}
+
+/// set_accel_z - set vertical acceleration in cm/s/s
+void AC_PosControl::set_accel_z(float accel_cmss)
+{
+    if (fabs(_accel_z_cms-accel_cmss) > 1.0f) {
+        _accel_z_cms = accel_cmss;
+        _flags.recalc_leash_z = true;
+    }
+}
+
+/// set_alt_target_with_slew - adjusts target towards a final altitude target
+///     should be called continuously (with dt set to be the expected time between calls)
+///     actual position target will be moved no faster than the speed_down and speed_up
+///     target will also be stopped if the motors hit their limits or leash length is exceeded
+void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
+{
+    float alt_change = alt_cm-_pos_target.z;
+
+    // adjust desired alt if motors have not hit their limits
+    if ((alt_change<0 && !_motors.limit.throttle_lower) || (alt_change>0 && !_motors.limit.throttle_upper)) {
+        _pos_target.z += constrain_float(alt_change, _speed_down_cms*dt, _speed_up_cms*dt);
+    }
+
+    // do not let target get too far from current altitude
+    float curr_alt = _inav.get_altitude();
+    _pos_target.z = constrain_float(_pos_target.z,curr_alt-_leash_down_z,curr_alt+_leash_up_z);
+}
+
+/// set_alt_target_from_climb_rate - adjusts target up or down using a climb rate in cm/s
+///     should be called continuously (with dt set to be the expected time between calls)
+///     actual position target will be moved no faster than the speed_down and speed_up
+///     target will also be stopped if the motors hit their limits or leash length is exceeded
+void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt)
+{
+    // adjust desired alt if motors have not hit their limits
+    // To-Do: add check of _limit.pos_up and _limit.pos_down?
+    if ((climb_rate_cms<0 && !_motors.limit.throttle_lower) || (climb_rate_cms>0 && !_motors.limit.throttle_upper)) {
+        _pos_target.z += climb_rate_cms * _dt;
+    }
+}
+
 // get_alt_error - returns altitude error in cm
 float AC_PosControl::get_alt_error() const
 {
-    return (_pos_target.z - _inav.get_position().z);
+    return (_pos_target.z - _inav.get_altitude());
 }
 
 /// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
@@ -119,43 +171,24 @@ void AC_PosControl::init_takeoff()
 /// update_z_controller - fly to altitude in cm above home
 void AC_PosControl::update_z_controller()
 {
+    // check if leash lengths need to be recalculated
+    calc_leash_length_z();
+
     // call position controller
     pos_to_rate_z();
 }
 
-/// climb_at_rate - climb at rate provided in cm/s
-void AC_PosControl::climb_at_rate(const float rate_target_cms)
+/// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
+///     called by pos_to_rate_z if z-axis speed or accelerations are changed
+void AC_PosControl::calc_leash_length_z()
 {
-    const Vector3f& curr_pos = _inav.get_position();
-
-    // clear position limit flags
-    _limit.pos_up = false;
-    _limit.pos_down = false;
-
-    // adjust desired alt if motors have not hit their limits
-    // To-Do: should we use some other limits?  this controller's vel limits?
-    if ((rate_target_cms<0 && !_motors.limit.throttle_lower) || (rate_target_cms>0 && !_motors.limit.throttle_upper)) {
-        _pos_target.z += rate_target_cms * _dt;
+    if (_flags.recalc_leash_z) {
+        _leash_up_z = calc_leash_length(_speed_up_cms, _accel_z_cms, _pi_alt_pos.kP());
+        _leash_down_z = calc_leash_length(_speed_down_cms, _accel_z_cms, _pi_alt_pos.kP());
+        _flags.recalc_leash_z = false;
+        // debug -- remove me!
+        hal.console->printf_P(PSTR("\nLLZ:%4.2f %4.2f\n"),(float)_leash_up_z, (float)_leash_down_z);
     }
-
-    // do not let target altitude get too far from current altitude
-    if (_pos_target.z < curr_pos.z - POSCONTROL_LEASH_Z) {
-        _pos_target.z = curr_pos.z - POSCONTROL_LEASH_Z;
-        _limit.pos_down = true;
-    }
-    if (_pos_target.z > curr_pos.z + POSCONTROL_LEASH_Z) {
-        _pos_target.z = curr_pos.z + POSCONTROL_LEASH_Z;
-        _limit.pos_up = true;
-    }
-
-    // do not let target alt get above limit
-    if (_alt_max > 0 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
-    }
-
-    // call position controller
-    pos_to_rate_z();
 }
 
 // pos_to_rate_z - position to rate controller for Z axis
@@ -163,11 +196,31 @@ void AC_PosControl::climb_at_rate(const float rate_target_cms)
 // vel_up_max, vel_down_max should have already been set before calling this method
 void AC_PosControl::pos_to_rate_z()
 {
-    const Vector3f& curr_pos = _inav.get_position();
+    float curr_alt = _inav.get_altitude();
     float linear_distance;  // half the distance we swap between linear and sqrt and the distance we offset sqrt.
 
+    // clear position limit flags
+    _limit.pos_up = false;
+    _limit.pos_down = false;
+
     // calculate altitude error
-    _pos_error.z = _pos_target.z - curr_pos.z;
+    _pos_error.z = _pos_target.z - curr_alt;
+
+    // do not let target altitude get too far from current altitude
+    if (_pos_error.z > _leash_up_z) {
+        _pos_target.z = curr_alt + _leash_up_z;
+        _limit.pos_up = true;
+    }
+    if (_pos_error.z < -_leash_down_z) {
+        _pos_target.z = curr_alt - _leash_down_z;
+        _limit.pos_down = true;
+    }
+
+    // do not let target alt get above limit
+    if (_alt_max > 0 && _pos_target.z > _alt_max) {
+        _pos_target.z = _alt_max;
+        _limit.pos_up = true;
+    }
 
     // check kP to avoid division by zero
     if (_pi_alt_pos.kP() != 0) {
@@ -285,68 +338,47 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     
     // to-do add back in PID logging?
 }
-/*
-// get_throttle_althold_with_slew - altitude controller with slew to avoid step changes in altitude target
-// calls normal althold controller which updates accel based throttle controller targets
-static void
-get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate)
-{
-    float alt_change = target_alt-controller_desired_alt;
-    // adjust desired alt if motors have not hit their limits
-    if ((alt_change<0 && !motors.limit.throttle_lower) || (alt_change>0 && !motors.limit.throttle_upper)) {
-        controller_desired_alt += constrain_float(alt_change, min_climb_rate*0.02f, max_climb_rate*0.02f);
-    }
-
-    // do not let target altitude get too far from current altitude
-    controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
-
-    get_throttle_althold(controller_desired_alt, min_climb_rate-250, max_climb_rate+250);   // 250 is added to give head room to alt hold controller
-}
-
-// get_throttle_rate_stabilized - rate controller with additional 'stabilizer'
-// 'stabilizer' ensure desired rate is being met
-// calls normal throttle rate controller which updates accel based throttle controller targets
-static void
-get_throttle_rate_stabilized(int16_t target_rate)
-{
-    // adjust desired alt if motors have not hit their limits
-    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
-        controller_desired_alt += target_rate * 0.02f;
-    }
-
-    // do not let target altitude get too far from current altitude
-    controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
-
-#if AC_FENCE == ENABLED
-    // do not let target altitude be too close to the fence
-    // To-Do: add this to other altitude controllers
-    if((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        float alt_limit = fence.get_safe_alt() * 100.0f;
-        if (controller_desired_alt > alt_limit) {
-            controller_desired_alt = alt_limit;
-        }
-    }
-#endif
-
-    // update target altitude for reporting purposes
-    set_target_alt_for_reporting(controller_desired_alt);
-
-    get_throttle_althold(controller_desired_alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
-}
-*/
 
 ///
 /// position controller
 ///
+
+/// set_accel_xy - set horizontal acceleration in cm/s/s
+///     calc_leash_length_xy should be called afterwards
+void AC_PosControl::set_accel_xy(float accel_cmss)
+{
+    if (fabs(_accel_cms-accel_cmss) > 1.0f) {
+        _accel_cms = accel_cmss;
+        _flags.recalc_leash_xy = true;
+    }
+}
+
+/// set_speed_xy - set horizontal speed maximum in cm/s
+///     calc_leash_length_xy should be called afterwards
+void AC_PosControl::set_speed_xy(float speed_cms)
+{
+    if (fabs(_speed_cms-speed_cms) > 1.0f) {
+        _speed_cms = speed_cms;
+        _flags.recalc_leash_xy = true;
+    }
+}
 
 /// set_pos_target in cm from home
 void AC_PosControl::set_pos_target(const Vector3f& position)
 {
     _pos_target = position;
 
+    // debug -- remove me!
+    static uint8_t counter = 0;
+    counter++;
+    if (counter >= 10) {
+        counter = 0;
+        hal.console->printf_P(PSTR("\nPosX:%4.2f Y:%4.2f Z:%4.2f\n"), (float)_pos_target.x, (float)_pos_target.y, (float)_pos_target.z);
+    }
     // initialise roll and pitch to current roll and pitch.  This avoids a twitch between when the target is set and the pos controller is first run
-    _roll_target = constrain_int32(_ahrs.roll_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
-    _pitch_target = constrain_int32(_ahrs.pitch_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
+    // To-Do: this initialisation of roll and pitch targets needs to go somewhere between when pos-control is initialised and when it completes it's first cycle
+    //_roll_target = constrain_int32(_ahrs.roll_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
+    //_pitch_target = constrain_int32(_ahrs.pitch_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
 }
 
 /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
@@ -408,6 +440,9 @@ void AC_PosControl::update_pos_controller(bool use_desired_velocity)
         _xy_step = 0;
     }
 
+    // check if xy leash needs to be recalculated
+    calc_leash_length_xy();
+
     // reset step back to 0 if loiter or waypoint parents have triggered an update and we completed the last full cycle
     if (_flags.force_recalc_xy && _xy_step > 3) {
         _flags.force_recalc_xy = false;
@@ -446,6 +481,19 @@ void AC_PosControl::update_pos_controller(bool use_desired_velocity)
 ///
 /// private methods
 ///
+
+/// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
+///     should be called whenever the speed, acceleration or position kP is modified
+void AC_PosControl::calc_leash_length_xy()
+{
+    if (_flags.recalc_leash_xy) {
+        _leash = calc_leash_length(_speed_cms, _accel_cms, _pi_pos_lon.kP());
+        _flags.recalc_leash_xy = false;
+        // debug -- remove me!
+        hal.console->printf_P(PSTR("\nXYA:%4.2f S:%4.2f kP:%4.2f\n"),(float)_accel_cms, (float)_speed_cms, (float)_pi_pos_lon.kP());
+        hal.console->printf_P(PSTR("\nLLXY:%4.2f\n"),(float)_leash);
+    }
+}
 
 /// desired_vel_to_pos - move position target using desired velocities
 void AC_PosControl::desired_vel_to_pos(float nav_dt)
