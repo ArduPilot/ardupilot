@@ -668,8 +668,6 @@ static uint8_t throttle_mode = STABILIZE_THR;
 ////////////////////////////////////////////////////////////////////////////////
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t angle_boost;
-// counter to verify landings
-static uint16_t land_detector;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1851,7 +1849,7 @@ void update_throttle_mode(void)
 
     case THROTTLE_LAND:
         // landing throttle controller
-        get_throttle_land(0.01f);
+        get_throttle_land();
         set_target_alt_for_reporting(0);
         break;
 
