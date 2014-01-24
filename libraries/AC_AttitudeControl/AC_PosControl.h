@@ -65,7 +65,14 @@ public:
     /// set_speed_z - sets maximum climb and descent rates
     /// To-Do: call this in the main code as part of flight mode initialisation
     ///     calc_leash_length_z should be called afterwards
+    ///     speed_down should be a negative number
     void set_speed_z(float speed_down, float speed_up);
+
+    /// get_speed_up - accessor for current up speed in cm/s
+    float get_speed_up() { return _speed_up_cms; }
+
+    /// get_speed_down - accessors for current down speed in cm/s.  Will be a negative number
+    float get_speed_down() { return _speed_down_cms; }
 
     /// set_accel_z - set vertical acceleration in cm/s/s
     ///     calc_leash_length_z should be called afterwards
