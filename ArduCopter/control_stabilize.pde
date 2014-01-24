@@ -170,11 +170,12 @@ static void althold_run()
         // call throttle controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
             // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(target_climb_rate);
-        }else{
-            // if no sonar fall back stabilize rate controller
-            pos_control.climb_at_rate(target_climb_rate);
+            target_climb_rate = get_throttle_surface_tracking(target_climb_rate, G_Dt);
         }
+
+        // call position controller
+        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
+        pos_control.update_z_controller();
     }
 
     // refetch angle targets for reporting
@@ -187,12 +188,16 @@ static void althold_run()
 // circle_init - initialise circle controller
 static bool circle_init(bool ignore_checks)
 {
+    if (GPS_ok() || ignore_checks) {
+        return true;
+    }else{
+        return false;
+    }
     // set yaw to point to center of circle
     // yaw_look_at_WP = circle_center;
     // initialise bearing to current heading
     //yaw_look_at_WP_bearing = ahrs.yaw_sensor;
     //yaw_initialised = true;
-    return true;
 }
 
 // circle_run - runs the circle controller
@@ -275,11 +280,12 @@ static void loiter_run()
         // run altitude controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
             // if sonar is ok, use surface tracking
-            get_throttle_surface_tracking(target_climb_rate);
-        }else{
-            // if no sonar fall back stabilize rate controller
-            pos_control.climb_at_rate(target_climb_rate);
+            target_climb_rate = get_throttle_surface_tracking(target_climb_rate,G_Dt);
         }
+
+        // update altitude target and call position controller
+        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
+        pos_control.update_z_controller();
     }
 
     // refetch angle targets for reporting
@@ -292,7 +298,11 @@ static void loiter_run()
 // ofloiter_init - initialise ofloiter controller
 static bool ofloiter_init(bool ignore_checks)
 {
-    return true;
+    if (g.optflow_enabled || ignore_checks) {
+        return true;
+    }else{
+        return false;
+    }
 }
 
 // ofloiter_run - runs the optical flow loiter controller

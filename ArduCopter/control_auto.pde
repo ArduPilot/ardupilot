@@ -7,12 +7,11 @@
 // auto_init - initialise auto controller
 static bool auto_init(bool ignore_checks)
 {
-    if (GPS_ok() || ignore_checks) {
+    if ((GPS_ok() && g.command_total > 1) || ignore_checks) {
         // set target to current position
         wp_nav.init_loiter_target();
         // initialise auto_yaw_mode
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-        cliSerial->printf_P(PSTR("\nYM:%d\n"),(int)auto_yaw_mode);
         // clear the command queues. will be reloaded when "run_autopilot" calls "update_commands" function
         init_commands();
         return true;
@@ -169,7 +168,11 @@ float get_auto_heading(void)
 // guided_init - initialise guided controller
 static bool guided_init(bool ignore_checks)
 {
-    return true;
+    if (GPS_ok() || ignore_checks) {
+        return true;
+    }else{
+        return false;
+    }
 }
 
 // guided_run - runs the guided controller
@@ -194,7 +197,12 @@ static void land_run()
 // rtl_init - initialise rtl controller
 static bool rtl_init(bool ignore_checks)
 {
-    return true;
+    if (GPS_ok() || ignore_checks) {
+        do_RTL();
+        return true;
+    }else{
+        return false;
+    }
 }
 
 // rtl_run - runs the return-to-launch controller
