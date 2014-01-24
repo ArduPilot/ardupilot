@@ -77,6 +77,24 @@ public:
     /// waypoint controller
     ///
 
+    /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
+    void set_horizontal_velocity(float velocity_cms) { _wp_speed_cms = velocity_cms; };
+
+    /// get_horizontal_velocity - allows main code to retrieve target horizontal velocity for wp navigation
+    float get_horizontal_velocity() { return _wp_speed_cms; };
+
+    /// get_climb_velocity - returns target climb speed in cm/s during missions
+    float get_climb_velocity() const { return _wp_speed_up_cms; };
+
+    /// get_descent_velocity - returns target descent speed in cm/s during missions.  Note: always positive
+    float get_descent_velocity() const { return _wp_speed_down_cms; };
+
+    /// get_wp_radius - access for waypoint radius in cm
+    float get_wp_radius() const { return _wp_radius_cm; }
+
+    /// get_wp_acceleration - returns acceleration in cm/s/s during missions
+    float get_wp_acceleration() const { return _wp_accel_cms.get(); }
+
     /// get_wp_destination waypoint using position vector (distance from home in cm)
     const Vector3f &get_wp_destination() const { return _destination; }
 
@@ -105,6 +123,9 @@ public:
     /// update_wp - update waypoint controller
     void update_wpnav();
 
+    /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
+    void calculate_wp_leash_length();
+
     ///
     /// shared methods
     ///
@@ -118,24 +139,6 @@ public:
 
     /// set_desired_alt - set desired altitude (in cm above home)
     void set_desired_alt(float desired_alt) { _pos_control.set_alt_target(desired_alt); }
-
-    /// set_horizontal_velocity - allows main code to pass target horizontal velocity for wp navigation
-    void set_horizontal_velocity(float velocity_cms) { _wp_speed_cms = velocity_cms; };
-
-    /// get_horizontal_velocity - allows main code to retrieve target horizontal velocity for wp navigation
-    float get_horizontal_velocity() { return _wp_speed_cms; };
-
-    /// get_climb_velocity - returns target climb speed in cm/s during missions
-    float get_climb_velocity() const { return _wp_speed_up_cms; };
-
-    /// get_descent_velocity - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_descent_velocity() const { return _wp_speed_down_cms; };
-
-    /// get_wp_radius - access for waypoint radius in cm
-    float get_wp_radius() const { return _wp_radius_cm; }
-
-    /// get_wp_acceleration - returns acceleration in cm/s/s during missions
-    float get_wp_acceleration() const { return _wp_accel_cms.get(); }
 
     /// advance_wp_target_along_track - move target location along track from origin to destination
     void advance_wp_target_along_track(float dt);
@@ -155,10 +158,6 @@ protected:
 
     /// get_bearing_cd - return bearing in centi-degrees between two positions
     float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
-
-    /// calculate_wp_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
-    ///    set climb param to true if track climbs vertically, false if descending
-    void calculate_wp_leash_length(bool climb);
 
     // references to inertial nav and ahrs libraries
     const AP_InertialNav* const _inav;
@@ -185,7 +184,6 @@ protected:
     uint8_t     _loiter_step;           // used to decide which portion of loiter controller to run during this iteration
     int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
     int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
-    float       _loiter_leash;          // loiter's horizontal leash length in cm.  used to stop the pilot from pushing the target location too far from the current location
     float       _loiter_accel_cms;      // loiter's acceleration in cm/s/s
 
     // waypoint controller internal variables
@@ -196,8 +194,6 @@ protected:
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
-    float       _wp_leash_xy;           // horizontal leash length in cm
-    float       _wp_leash_z;            // horizontal leash length in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
     float       _track_accel;           // acceleration along track
     float       _track_speed;           // speed in cm/s along track

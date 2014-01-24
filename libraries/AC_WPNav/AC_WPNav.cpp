@@ -81,23 +81,16 @@ AC_WPNav::AC_WPNav(const AP_InertialNav* inav, const AP_AHRS* ahrs, AC_PosContro
     _loiter_step(0),
     _pilot_accel_fwd_cms(0),
     _pilot_accel_rgt_cms(0),
-    _loiter_leash(WPNAV_MIN_LEASH_LENGTH),
     _loiter_accel_cms(WPNAV_LOITER_ACCEL_MAX),
     _wp_last_update(0),
     _wp_step(0),
     _track_length(0.0),
     _track_desired(0.0),
-    _wp_leash_xy(WPNAV_MIN_LEASH_LENGTH),
-    _wp_leash_z(WPNAV_MIN_LEASH_LENGTH),
     _track_accel(0.0),
     _track_speed(0.0),
     _track_leash_length(0.0)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // initialise leash lengths
-    calculate_wp_leash_length(true);
-    calculate_loiter_leash_length();
 }
 
 ///
@@ -113,10 +106,9 @@ void AC_WPNav::set_loiter_target(const Vector3f& position)
 	// initialise feed forward velocity to zero
 	_pos_control.set_desired_velocity(0,0);
 
-	// initialise pos controller speed, acceleration and leash length
+	// initialise pos controller speed and acceleration
 	_pos_control.set_speed_xy(_loiter_speed_cms);
     _pos_control.set_accel_xy(_loiter_accel_cms);
-    _pos_control.set_leash_xy(_loiter_leash);
 
     // initialise pilot input
     _pilot_accel_fwd_cms = 0;
@@ -138,17 +130,10 @@ void AC_WPNav::init_loiter_target()
     // To-Do: will this cause problems for circle which calls this continuously?
     _pos_control.set_speed_xy(_loiter_speed_cms);
     _pos_control.set_accel_xy(_loiter_accel_cms);
-    _pos_control.set_leash_xy(_loiter_leash);
 
     // initialise pilot input
     _pilot_accel_fwd_cms = 0;
     _pilot_accel_rgt_cms = 0;
-}
-
-/// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
-void AC_WPNav::calculate_loiter_leash_length()
-{
-    _loiter_leash = _pos_control.calc_leash_length_xy(_loiter_speed_cms,_loiter_accel_cms);
 }
 
 /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
@@ -288,9 +273,15 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
         _pos_delta_unit = pos_delta/_track_length;
     }
 
+    // initialise position controller speed and acceleration
+    _pos_control.set_speed_xy(_wp_speed_cms);
+    _pos_control.set_accel_xy(_wp_accel_cms);
+    _pos_control.set_speed_z(_wp_speed_down_cms, _wp_speed_up_cms);
+    _pos_control.calc_leash_length_xy();
+    _pos_control.calc_leash_length_z();
+
     // calculate leash lengths
-    bool climb = pos_delta.z >= 0;  // climbing vs descending leads to different leash lengths because speed_up_cms and speed_down_cms can be different
-    calculate_wp_leash_length(climb);
+    calculate_wp_leash_length();
 
     // initialise intermediate point to the origin
     _pos_control.set_pos_target(origin);
@@ -336,8 +327,17 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     // calculate the vertical error
     float track_error_z = fabsf(track_error.z);
 
+    // get position control leash lengths
+    float leash_xy = _pos_control.get_leash_xy();
+    float leash_z;
+    if (track_error.z >= 0) {
+        leash_z = _pos_control.get_leash_up_z();
+    }else{
+        leash_z = _pos_control.get_leash_down_z();
+    }
+
     // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-    track_extra_max = min(_track_leash_length*(_wp_leash_z-track_error_z)/_wp_leash_z, _track_leash_length*(_wp_leash_xy-track_error_xy)/_wp_leash_xy);
+    track_extra_max = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
     if(track_extra_max <0) {
         track_desired_max = track_covered;
     }else{
@@ -445,6 +445,46 @@ void AC_WPNav::update_wpnav()
     }
 }
 
+/// calculate_wp_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
+void AC_WPNav::calculate_wp_leash_length()
+{
+    // length of the unit direction vector in the horizontal
+    float pos_delta_unit_xy = sqrt(_pos_delta_unit.x*_pos_delta_unit.x+_pos_delta_unit.y*_pos_delta_unit.y);
+    float pos_delta_unit_z = fabsf(_pos_delta_unit.z);
+
+    float speed_z;
+    float leash_z;
+    if (_pos_delta_unit.z >= 0) {
+        speed_z = _wp_speed_up_cms;
+        leash_z = _pos_control.get_leash_up_z();
+    }else{
+        speed_z = _wp_speed_down_cms;
+        leash_z = _pos_control.get_leash_down_z();
+    }
+
+    // calculate the maximum acceleration, maximum velocity, and leash length in the direction of travel
+    if(pos_delta_unit_z == 0 && pos_delta_unit_xy == 0){
+        _track_accel = 0;
+        _track_speed = 0;
+        _track_leash_length = WPNAV_MIN_LEASH_LENGTH;
+    }else if(_pos_delta_unit.z == 0){
+        _track_accel = _wp_accel_cms/pos_delta_unit_xy;
+        _track_speed = _wp_speed_cms/pos_delta_unit_xy;
+        _track_leash_length = _pos_control.get_leash_xy()/pos_delta_unit_xy;
+    }else if(pos_delta_unit_xy == 0){
+        _track_accel = WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z;
+        _track_speed = speed_z/pos_delta_unit_z;
+        _track_leash_length = leash_z/pos_delta_unit_z;
+    }else{
+        _track_accel = min(WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
+        _track_speed = min(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
+        _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
+    }
+    // debug -- remove me!
+    hal.console->printf_P(PSTR("\nTAC:%4.2f S:%4.2f L:%4.2f\n"),(float)_track_accel, (float)_track_speed, (float)_track_leash_length);
+}
+
+
 ///
 /// shared methods
 ///
@@ -458,80 +498,4 @@ float AC_WPNav::get_bearing_cd(const Vector3f &origin, const Vector3f &destinati
         bearing += 36000;
     }
     return bearing;
-}
-
-/// calculate_wp_leash_length - calculates horizontal and vertical leash lengths for waypoint controller
-void AC_WPNav::calculate_wp_leash_length(bool climb)
-{
-
-    // get loiter position P
-    float kP = _pid_pos_lat->kP();
-    float althold_kP = _pos_control.althold_kP();
-
-    // sanity check acceleration and avoid divide by zero
-    if (_wp_accel_cms <= 0.0f) {
-        _wp_accel_cms = WPNAV_ACCELERATION_MIN;
-    }
-    
-    // avoid divide by zero
-    if (kP <= 0.0f) {
-        _wp_leash_xy = WPNAV_MIN_LEASH_LENGTH;
-        return;
-    }
-    // calculate horizontal leash length
-    if(_wp_speed_cms <= _wp_accel_cms / kP) {
-        // linear leash length based on speed close in
-        _wp_leash_xy = _wp_speed_cms / kP;
-    }else{
-        // leash length grows at sqrt of speed further out
-        _wp_leash_xy = (_wp_accel_cms / (2.0f*kP*kP)) + (_wp_speed_cms*_wp_speed_cms / (2.0f*_wp_accel_cms));
-    }
-
-    // ensure leash is at least 1m long
-    if( _wp_leash_xy < WPNAV_MIN_LEASH_LENGTH ) {
-        _wp_leash_xy = WPNAV_MIN_LEASH_LENGTH;
-    }
-
-    // calculate vertical leash length
-    float speed_vert;
-    if( climb ) {
-        speed_vert = _wp_speed_up_cms;
-    }else{
-        speed_vert = _wp_speed_down_cms;
-    }
-    if(speed_vert <= WPNAV_ALT_HOLD_ACCEL_MAX / althold_kP) {
-        // linear leash length based on speed close in
-        _wp_leash_z = speed_vert / althold_kP;
-    }else{
-        // leash length grows at sqrt of speed further out
-        _wp_leash_z = (WPNAV_ALT_HOLD_ACCEL_MAX / (2.0*althold_kP*althold_kP)) + (speed_vert*speed_vert / (2*WPNAV_ALT_HOLD_ACCEL_MAX));
-    }
-
-    // ensure leash is at least 1m long
-    if( _wp_leash_z < WPNAV_MIN_LEASH_LENGTH ) {
-        _wp_leash_z = WPNAV_MIN_LEASH_LENGTH;
-    }
-
-    // length of the unit direction vector in the horizontal
-    float pos_delta_unit_xy = sqrt(_pos_delta_unit.x*_pos_delta_unit.x+_pos_delta_unit.y*_pos_delta_unit.y);
-    float pos_delta_unit_z = fabsf(_pos_delta_unit.z);
-
-    // calculate the maximum acceleration, maximum velocity, and leash length in the direction of travel
-    if(pos_delta_unit_z == 0 && pos_delta_unit_xy == 0){
-        _track_accel = 0;
-        _track_speed = 0;
-        _track_leash_length = WPNAV_MIN_LEASH_LENGTH;
-    }else if(_pos_delta_unit.z == 0){
-        _track_accel = _wp_accel_cms/pos_delta_unit_xy;
-        _track_speed = _wp_speed_cms/pos_delta_unit_xy;
-        _track_leash_length = _wp_leash_xy/pos_delta_unit_xy;
-    }else if(pos_delta_unit_xy == 0){
-        _track_accel = WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z;
-        _track_speed = speed_vert/pos_delta_unit_z;
-        _track_leash_length = _wp_leash_z/pos_delta_unit_z;
-    }else{	
-        _track_accel = min(WPNAV_ALT_HOLD_ACCEL_MAX/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
-        _track_speed = min(speed_vert/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
-        _track_leash_length = min(_wp_leash_z/pos_delta_unit_z, _wp_leash_xy/pos_delta_unit_xy);
-    }
 }
