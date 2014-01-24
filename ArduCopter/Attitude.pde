@@ -929,62 +929,6 @@ get_throttle_rate_stabilized(int16_t target_rate)
     get_throttle_althold(controller_desired_alt, -g.pilot_velocity_z_max-250, g.pilot_velocity_z_max+250);   // 250 is added to give head room to alt hold controller
 }
 
-// get_throttle_land - high level landing logic
-// sends the desired acceleration in the accel based throttle controller
-// called at 100hz
-static void get_throttle_land(float dt)
-{
-    // if we are above 10m and the sonar does not sense anything perform regular alt hold descent
-    if (current_loc.alt >= LAND_START_ALT && !(g.sonar_enabled && sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-        pos_control.set_alt_target_with_slew(LAND_START_ALT, dt);
-    }else{
-        get_throttle_rate_stabilized(-abs(g.land_speed));
-
-        // disarm when the landing detector says we've landed and throttle is at min (or we're in failsafe so we have no pilot thorottle input)
-#if LAND_REQUIRE_MIN_THROTTLE_TO_DISARM == ENABLED
-        if( ap.land_complete && (g.rc_3.control_in == 0 || failsafe.radio) ) {
-#else
-        if (ap.land_complete) {
-#endif
-            init_disarm_motors();
-        }
-    }
-}
-
-// reset_land_detector - initialises land detector
-static void reset_land_detector()
-{
-    set_land_complete(false);
-    land_detector = 0;
-}
-
-// update_land_detector - checks if we have landed and updates the ap.land_complete flag
-// returns true if we have landed
-static bool update_land_detector()
-{
-    // detect whether we have landed by watching for low climb rate and minimum throttle
-    if (abs(climb_rate) < 20 && motors.limit.throttle_lower) {
-        if (!ap.land_complete) {
-            // run throttle controller if accel based throttle controller is enabled and active (active means it has been given a target)
-            if( land_detector < LAND_DETECTOR_TRIGGER) {
-                land_detector++;
-            }else{
-                set_land_complete(true);
-                land_detector = 0;
-            }
-        }
-    }else if (g.rc_3.control_in != 0 || failsafe.radio){    // zero throttle locks land_complete as true
-        // we've sensed movement up or down so reset land_detector
-        land_detector = 0;
-        if(ap.land_complete) {
-            set_land_complete(false);
-        }
-    }
-
-    // return current state of landing
-    return ap.land_complete;
-}
-
 // get_throttle_surface_tracking - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
 static float get_throttle_surface_tracking(int16_t target_rate, float dt)
@@ -1008,7 +952,7 @@ static float get_throttle_surface_tracking(int16_t target_rate, float dt)
 
     // do not let target altitude get too far from current altitude above ground
     // Note: the 750cm limit is perhaps too wide but is consistent with the regular althold limits and helps ensure a smooth transition
-    target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-750,sonar_alt+750);
+    target_sonar_alt = constrain_float(target_sonar_alt,sonar_alt-pos_control.get_leash_down_z(),sonar_alt+pos_control.get_leash_up_z());
 
     // calc desired velocity correction from target sonar alt vs actual sonar alt
     distance_error = target_sonar_alt-sonar_alt;
