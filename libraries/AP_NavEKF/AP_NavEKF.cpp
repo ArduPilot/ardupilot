@@ -2623,7 +2623,6 @@ void NavEKF::ZeroVariables()
     lastMagUpdate = 0;
     lastAirspeedUpdate = 0;
     lastHgtUpdate = 0;
-	lastFixTime_ms = 0;
     dtIMU = 0;
     dt = 0;
     hgtMea = 0;
