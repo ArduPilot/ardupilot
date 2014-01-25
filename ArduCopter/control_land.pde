@@ -10,8 +10,10 @@ static bool land_init(bool ignore_checks)
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = GPS_ok();
     if (land_with_gps) {
-        // set target to current position
-        wp_nav.init_loiter_target();
+        // set target to stopping point
+        Vector3f stopping_point;
+        wp_nav.get_loiter_stopping_point_xy(stopping_point);
+        wp_nav.set_loiter_target(stopping_point);
     }
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
