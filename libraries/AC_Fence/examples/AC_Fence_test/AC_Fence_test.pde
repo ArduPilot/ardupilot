@@ -1,5 +1,5 @@
 /*
- *       Example of AC_WPNav library .
+ *       Example of AC_Fence library .
  *       DIYDrones.com
  */
 
