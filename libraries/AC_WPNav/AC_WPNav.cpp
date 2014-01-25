@@ -247,6 +247,7 @@ void AC_WPNav::set_wp_destination(const Vector3f& destination)
     }else{
         // otherwise calculate origin from the current position and velocity
         _pos_control.get_stopping_point_xy(_origin);
+        _pos_control.get_stopping_point_z(_origin);
     }
 
     // set origin and destination
@@ -276,7 +277,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     // initialise position controller speed and acceleration
     _pos_control.set_speed_xy(_wp_speed_cms);
     _pos_control.set_accel_xy(_wp_accel_cms);
-    _pos_control.set_speed_z(_wp_speed_down_cms, _wp_speed_up_cms);
+    _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
     _pos_control.calc_leash_length_xy();
     _pos_control.calc_leash_length_z();
 
