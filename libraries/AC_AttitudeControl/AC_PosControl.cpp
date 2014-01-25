@@ -75,6 +75,9 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
 ///
 
 /// set_speed_z - sets maximum climb and descent rates
+/// To-Do: call this in the main code as part of flight mode initialisation
+///     calc_leash_length_z should be called afterwards
+///     speed_down should be a negative number
 void AC_PosControl::set_speed_z(float speed_down, float speed_up)
 {
     if ((fabs(_speed_down_cms-speed_down) > 1.0f) || (fabs(_speed_up_cms-speed_up) > 1.0f)) {
@@ -133,26 +136,33 @@ float AC_PosControl::get_alt_error() const
 /// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
 void AC_PosControl::set_target_to_stopping_point_z()
 {
-    const Vector3f& curr_pos = _inav.get_position();
-    const Vector3f& curr_vel = _inav.get_velocity();
+    get_stopping_point_z(_pos_target);
+}
+
+/// get_stopping_point_z - sets stopping_point.z to a reasonable stopping altitude in cm above home
+void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point)
+{
+    const float curr_pos_z = _inav.get_altitude();
+    const float curr_vel_z = _inav.get_velocity_z();
+
     float linear_distance;  // half the distace we swap between linear and sqrt and the distace we offset sqrt
     float linear_velocity;  // the velocity we swap between linear and sqrt
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear funcction to a sqrt function
     linear_velocity = POSCONTROL_ALT_HOLD_ACCEL_MAX/_pi_alt_pos.kP();
 
-    if (fabs(curr_vel.z) < linear_velocity) {
+    if (fabs(curr_vel_z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
-        _pos_target.z = curr_pos.z + curr_vel.z/_pi_alt_pos.kP();
+        stopping_point.z = curr_pos_z + curr_vel_z/_pi_alt_pos.kP();
     } else {
         linear_distance = POSCONTROL_ALT_HOLD_ACCEL_MAX/(2.0f*_pi_alt_pos.kP()*_pi_alt_pos.kP());
-        if (curr_vel.z > 0){
-            _pos_target.z = curr_pos.z + (linear_distance + curr_vel.z*curr_vel.z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+        if (curr_vel_z > 0){
+            stopping_point.z = curr_pos_z + (linear_distance + curr_vel_z*curr_vel_z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
         } else {
-            _pos_target.z = curr_pos.z - (linear_distance + curr_vel.z*curr_vel.z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
+            stopping_point.z = curr_pos_z - (linear_distance + curr_vel_z*curr_vel_z/(2.0f*POSCONTROL_ALT_HOLD_ACCEL_MAX));
         }
     }
-    _pos_target.z = constrain_float(_pos_target.z, curr_pos.z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos.z + POSCONTROL_STOPPING_DIST_Z_MAX);
+    stopping_point.z = constrain_float(stopping_point.z, curr_pos_z - POSCONTROL_STOPPING_DIST_Z_MAX, curr_pos_z + POSCONTROL_STOPPING_DIST_Z_MAX);
 }
 
 /// init_takeoff - initialises target altitude if we are taking off
