@@ -48,7 +48,7 @@ void AC_AttitudeControl::angleef_rp_rateef_y(float roll_angle_ef, float pitch_an
     rate_stab_ef_to_rate_ef_yaw();
 
     // convert earth-frame rates to body-frame rates
-    rate_ef_targets_to_bf();
+    rate_ef_targets_to_bf(_rate_ef_target, _rate_bf_target);
 
     // body-frame to motor outputs should be called separately
 }
@@ -67,10 +67,30 @@ void AC_AttitudeControl::angleef_rpy(float roll_angle_ef, float pitch_angle_ef, 
     angle_to_rate_ef_yaw();
 
     // convert earth-frame rates to body-frame rates
-    rate_ef_targets_to_bf();
+    rate_ef_targets_to_bf(_rate_ef_target, _rate_bf_target);
 
     // body-frame to motor outputs should be called separately
 }
+
+// rateef_rpy - attempts to maintain a roll, pitch and yaw angle rate (all body frame)
+void AC_AttitudeControl::ratebf_rpy(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf)
+{
+    // Update angle error
+    rate_stab_bf_update_error();
+    
+    // set earth-frame angle targets
+    _rate_stab_bf_target.x = roll_rate_bf;
+    _rate_stab_bf_target.y = pitch_rate_bf;
+    _rate_stab_bf_target.z = yaw_rate_bf;
+
+    // convert stabilize rates to regular rates
+    rate_stab_bf_to_rate_bf_roll();
+    rate_stab_bf_to_rate_bf_pitch();
+    rate_stab_bf_to_rate_bf_yaw();
+
+    // body-frame to motor outputs should be called separately
+}
+
 
 //
 // angle controller methods
@@ -218,9 +238,34 @@ void AC_AttitudeControl::rate_stab_ef_to_rate_ef_yaw()
 // stabilized rate controller (body-frame) methods
 //
 
+
 // rate_stab_bf_to_rate_ef_roll - converts body-frame stabilized rate targets to regular body-frame rate targets for roll, pitch and yaw axis
 //   targets rates in centi-degrees/second taken from _rate_stab_bf_target
 //   results in centi-degrees/sec put into _rate_bf_target
+void AC_AttitudeControl::rate_stab_bf_update_error()
+{
+    // roll - calculate body-frame angle error by integrating body-frame rate error
+    _rate_stab_bf_error.x += (_rate_stab_bf_target.x - (_ins.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
+
+    // roll - limit maximum error
+    _rate_stab_bf_error.x = constrain_float(_rate_stab_bf_error.x, -AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
+
+
+    // pitch - calculate body-frame angle error by integrating body-frame rate error
+    _rate_stab_bf_error.y += (_rate_stab_bf_target.y - (_ins.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
+
+    // pitch - limit maximum error
+    _rate_stab_bf_error.y = constrain_float(_rate_stab_bf_error.y, -AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
+
+
+    // yaw - calculate body-frame angle error by integrating body-frame rate error
+    _rate_stab_bf_error.z += (_rate_stab_bf_target.z - (_ins.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
+
+    // yaw - limit maximum error
+    _rate_stab_bf_error.z = constrain_float(_rate_stab_bf_error.z, -AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
+
+    // To-Do: handle case of motors being disarmed or g.rc_3.servo_out == 0 and set error to zero
+}
 void AC_AttitudeControl::rate_stab_bf_to_rate_bf_roll()
 {
     // calculate rate correction from angle errors
@@ -229,14 +274,6 @@ void AC_AttitudeControl::rate_stab_bf_to_rate_bf_roll()
 
     // set body frame targets for rate controller
     _rate_bf_target.x = _rate_stab_bf_target.x + rate_correction;
-
-    // calculate body-frame angle error by integrating body-frame rate error
-    _rate_stab_bf_error.x += (_rate_stab_bf_target.x - (_ins.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
-
-    // limit maximum error
-    _rate_stab_bf_error.x = constrain_float(_rate_stab_bf_error.x, -AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX);
-
-    // To-Do: handle case of motors being disarmed or g.rc_3.servo_out == 0 and set error to zero
 }
 
 void AC_AttitudeControl::rate_stab_bf_to_rate_bf_pitch()
@@ -247,14 +284,6 @@ void AC_AttitudeControl::rate_stab_bf_to_rate_bf_pitch()
 
     // set body frame targets for rate controller
     _rate_bf_target.y = _rate_stab_bf_target.y + rate_correction;
-
-    // calculate body-frame angle error by integrating body-frame rate error
-    _rate_stab_bf_error.y += (_rate_stab_bf_target.y - (_ins.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
-
-    // limit maximum error
-    _rate_stab_bf_error.y = constrain_float(_rate_stab_bf_error.y, -AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX);
-
-    // To-Do: handle case of motors being disarmed or g.rc_3.servo_out == 0 and set error to zero
 }
 
 void AC_AttitudeControl::rate_stab_bf_to_rate_bf_yaw()
@@ -264,14 +293,6 @@ void AC_AttitudeControl::rate_stab_bf_to_rate_bf_yaw()
 
     // set body frame targets for rate controller
     _rate_bf_target.y = _rate_stab_bf_target.y + rate_correction;
-
-    // calculate body-frame angle error by integrating body-frame rate error
-    _rate_stab_bf_error.z += (_rate_stab_bf_target.z - (_ins.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100)) * _dt;
-
-    // limit maximum error
-    _rate_stab_bf_error.z = constrain_float(_rate_stab_bf_error.z, -AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX);
-
-    // To-Do: handle case of motors being disarmed or g.rc_3.servo_out == 0 and set error to zero
 }
 
 //
@@ -279,12 +300,12 @@ void AC_AttitudeControl::rate_stab_bf_to_rate_bf_yaw()
 //
 
 // rate_ef_targets_to_bf - converts earth frame rate targets to body frame rate targets
-void AC_AttitudeControl::rate_ef_targets_to_bf()
+void AC_AttitudeControl::rate_ef_targets_to_bf(Vector3f rate_ef_target, Vector3f &rate_bf_target)
 {
     // convert earth frame rates to body frame rates
-    _rate_bf_target.x = _rate_ef_target.x - _sin_pitch * _rate_ef_target.z;
-    _rate_bf_target.y = _cos_roll  * _rate_ef_target.y + _sin_roll * _cos_pitch * _rate_ef_target.z;
-    _rate_bf_target.z = _cos_pitch * _cos_roll * _rate_ef_target.z - _sin_roll * _rate_ef_target.y;
+    rate_bf_target.x = rate_ef_target.x - _sin_pitch * rate_ef_target.z;
+    rate_bf_target.y = _cos_roll  * rate_ef_target.y + _sin_roll * _cos_pitch * rate_ef_target.z;
+    rate_bf_target.z = _cos_pitch * _cos_roll * rate_ef_target.z - _sin_roll * rate_ef_target.y;
 }
 
 //

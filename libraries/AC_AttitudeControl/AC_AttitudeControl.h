@@ -82,6 +82,9 @@ public:
     // angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
     void angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef);
 
+    // rateef_rpy - attempts to maintain a roll, pitch and yaw angle rate (all body frame)
+    void ratebf_rpy(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
+
     //
     // angle controller (earth-frame) methods
     //
@@ -127,6 +130,7 @@ public:
     // rate_stab_bf_to_rate_ef_roll - converts body-frame stabilized rate targets to regular body-frame rate targets for roll, pitch and yaw axis
     //   targets rates in centi-degrees/second taken from _rate_stab_bf_target
     //   results in centi-degrees/sec put into _rate_bf_target
+    void rate_stab_bf_update_error();
     void rate_stab_bf_to_rate_bf_roll();
     void rate_stab_bf_to_rate_bf_pitch();
     void rate_stab_bf_to_rate_bf_yaw();
@@ -140,7 +144,7 @@ public:
     void rate_ef_targets(Vector3f& rates_cds) { _rate_ef_target = rates_cds; }
 
     // rate_ef_targets_to_bf - converts earth frame rate targets to body frame rate targets
-    void rate_ef_targets_to_bf();
+    void rate_ef_targets_to_bf(Vector3f rate_ef_target, Vector3f &rate_bf_target);
 
     
     //
