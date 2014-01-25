@@ -355,6 +355,7 @@ private:
     uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
     uint8_t storeIndex;             // State vector storage index
     uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
+    uint32_t secondLastFixTime_ms;  // time of second last GPS fix used to determine how long since last update
     Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
     Vector3f lastAccel;             // acceleration from previous IMU sample used for trapezoidal integrator
     Matrix22 nextP;                 // Predicted covariance matrix before addition of process noise to diagonals
