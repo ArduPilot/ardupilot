@@ -624,6 +624,11 @@ void NavEKF::SelectVelPosFusion()
         fusePosData = true;
         // reset the counter used to skip updates so that we always fuse data on the frame data arrives
         skipCounter = 0;
+        // If a long time sinc last GPS update, then reset position and velocity
+        if ((hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeUseTAS && useAirspeed) || (hal.scheduler->millis() > secondLastFixTime_ms + _gpsRetryTimeNoTAS && !useAirspeed)) {
+            ResetPosition();
+            ResetVelocity();
+        }
     }
     // Timeout fusion of GPS data if stale. Needed because we repeatedly fuse the same
     // measurement until the next one arrives
@@ -2455,6 +2460,7 @@ void NavEKF::readGpsData()
     if ((_ahrs->get_gps()->last_message_time_ms() != lastFixTime_ms) &&
             (_ahrs->get_gps()->status() >= GPS::GPS_OK_FIX_3D))
     {
+        secondLastFixTime_ms = lastFixTime_ms;
         lastFixTime_ms = _ahrs->get_gps()->last_message_time_ms();
         newDataGps = true;
         RecallStates(statesAtVelTime, (IMUmsec - constrain_int16(_msecVelDelay, 0, 500)));
@@ -2611,6 +2617,7 @@ void NavEKF::ZeroVariables()
     posTimeout = false;
     hgtTimeout = false;
     lastFixTime_ms = 0;
+    secondLastFixTime_ms = 0;
     lastMagUpdate = 0;
     lastAirspeedUpdate = 0;
     velFailTime = 0;
