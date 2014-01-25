@@ -170,12 +170,12 @@ static void auto_wp_run()
 // auto_land_start - initialises controller to implement a landing
 static void auto_land_start()
 {
-    // initialise wpnav destination
-    Vector3f destination = inertial_nav.get_position();
-    destination.z = -1000.0f;
+    // set target to stopping point
+    Vector3f stopping_point;
+    wp_nav.get_loiter_stopping_point_xy(stopping_point);
 
     // call location specific land start function
-    auto_land_start(destination);
+    auto_land_start(stopping_point);
 }
 
 // auto_land_start - initialises controller to implement a landing
@@ -183,14 +183,14 @@ static void auto_land_start(const Vector3f& destination)
 {
     auto_mode = Land;
 
-    // initialise wpnav destination
-    wp_nav.set_wp_destination(destination);
+    // initialise loiter target destination
+    wp_nav.set_loiter_target(destination);
+
+    // initialise altitude target to stopping point
+    pos_control.set_target_to_stopping_point_z();
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-    // debug -- remove me!
-    cliSerial->printf_P(PSTR("\nLand X:%4.2f Y:%4.2f Z:%4.2f\n"),(float)destination.x,(float)destination.y,(float)destination.z);
 }
 
 // auto_land_run - lands in auto mode
@@ -201,6 +201,8 @@ static void auto_land_run()
     if(!ap.auto_armed) {
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
+        // set target to current position
+        wp_nav.init_loiter_target();
         return;
     }
 
@@ -211,10 +213,11 @@ static void auto_land_run()
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
     }
 
-    // run waypoint controller
-    wp_nav.update_wpnav();
+    // run loiter controller
+    wp_nav.update_loiter();
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // call z-axis position controller
+    pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
