@@ -15,7 +15,6 @@ static bool acro_init(bool ignore_checks)
 static void acro_run()
 {
     int16_t target_roll, target_pitch, target_yaw;
-    Vector3f rate_target;          // for roll, pitch, yaw body-frame rate targets
 
     // convert the input to the desired body frame rate
     get_pilot_desired_angle_rates(g.rc_1.control_in, g.rc_2.control_in, g.rc_4.control_in, target_roll, target_pitch, target_yaw);
