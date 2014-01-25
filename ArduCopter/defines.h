@@ -213,13 +213,15 @@
 //#define WP_OPTION_					64
 #define WP_OPTION_NEXT_CMD                      128
 
-// RTL state
-#define RTL_STATE_START             0
-#define RTL_STATE_INITIAL_CLIMB     1
-#define RTL_STATE_RETURNING_HOME    2
-#define RTL_STATE_LOITERING_AT_HOME 3
-#define RTL_STATE_FINAL_DESCENT     4
-#define RTL_STATE_LAND              5
+// RTL states
+enum RTLState {
+    Start,
+    InitialClimb,
+    ReturnHome,
+    LoiterAtHome,
+    FinalDescent,
+    Land
+};
 
 // LAND state
 #define LAND_STATE_FLY_TO_LOCATION  0
