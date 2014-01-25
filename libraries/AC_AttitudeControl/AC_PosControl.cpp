@@ -186,8 +186,6 @@ void AC_PosControl::calc_leash_length_z()
         _leash_up_z = calc_leash_length(_speed_up_cms, _accel_z_cms, _pi_alt_pos.kP());
         _leash_down_z = calc_leash_length(_speed_down_cms, _accel_z_cms, _pi_alt_pos.kP());
         _flags.recalc_leash_z = false;
-        // debug -- remove me!
-        hal.console->printf_P(PSTR("\nLLZ:%4.2f %4.2f\n"),(float)_leash_up_z, (float)_leash_down_z);
     }
 }
 
@@ -368,13 +366,6 @@ void AC_PosControl::set_pos_target(const Vector3f& position)
 {
     _pos_target = position;
 
-    // debug -- remove me!
-    static uint8_t counter = 0;
-    counter++;
-    if (counter >= 10) {
-        counter = 0;
-        hal.console->printf_P(PSTR("\nPosX:%4.2f Y:%4.2f Z:%4.2f\n"), (float)_pos_target.x, (float)_pos_target.y, (float)_pos_target.z);
-    }
     // initialise roll and pitch to current roll and pitch.  This avoids a twitch between when the target is set and the pos controller is first run
     // To-Do: this initialisation of roll and pitch targets needs to go somewhere between when pos-control is initialised and when it completes it's first cycle
     //_roll_target = constrain_int32(_ahrs.roll_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
@@ -489,9 +480,6 @@ void AC_PosControl::calc_leash_length_xy()
     if (_flags.recalc_leash_xy) {
         _leash = calc_leash_length(_speed_cms, _accel_cms, _pi_pos_lon.kP());
         _flags.recalc_leash_xy = false;
-        // debug -- remove me!
-        hal.console->printf_P(PSTR("\nXYA:%4.2f S:%4.2f kP:%4.2f\n"),(float)_accel_cms, (float)_speed_cms, (float)_pi_pos_lon.kP());
-        hal.console->printf_P(PSTR("\nLLXY:%4.2f\n"),(float)_leash);
     }
 }
 
