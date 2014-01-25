@@ -480,8 +480,6 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_speed = min(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
         _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }
-    // debug -- remove me!
-    hal.console->printf_P(PSTR("\nTAC:%4.2f S:%4.2f L:%4.2f\n"),(float)_track_accel, (float)_track_speed, (float)_track_leash_length);
 }
 
 
