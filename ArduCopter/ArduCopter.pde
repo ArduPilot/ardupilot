@@ -546,7 +546,6 @@ static uint8_t command_cond_index;
 static float lon_error, lat_error;      // Used to report how many cm we are from the next waypoint or loiter target position
 static int16_t control_roll;            // desired roll angle of copter in centi-degrees
 static int16_t control_pitch;           // desired pitch angle of copter in centi-degrees
-static uint8_t rtl_state;               // records state of rtl (initial climb, returning home, etc)
 static uint8_t land_state;              // records state of land (flying to location, descending)
 
 ////////////////////////////////////////////////////////////////////////////////

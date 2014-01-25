@@ -221,10 +221,7 @@ static bool verify_cond_command()
 static void do_RTL(void)
 {
     // set rtl state
-    rtl_state = RTL_STATE_START;
-
-    // verify_RTL will do the initialisation for us
-    verify_RTL();
+    rtl_init(true);
 }
 
 /********************************************************************************/
@@ -496,143 +493,15 @@ static bool verify_circle()
     return fabsf(circle_angle_total/(2*M_PI)) >= circle_desired_rotations;
 }
 
+// externs to remove compiler warning
+extern bool rtl_state_complete;
+
 // verify_RTL - handles any state changes required to implement RTL
 // do_RTL should have been called once first to initialise all variables
 // returns true with RTL has completed successfully
 static bool verify_RTL()
 {
-    bool retval = false;
-
-    switch( rtl_state ) {
-        case RTL_STATE_START:
-            // if we are below rtl alt do initial climb
-            if( current_loc.alt < get_RTL_alt() ) {
-                // first stage of RTL is the initial climb so just hold current yaw
-                set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-                // use projection of safe stopping point based on current location and velocity
-                Vector3f origin, dest;
-                wp_nav.get_wp_stopping_point_xy(origin);
-                dest.x = origin.x;
-                dest.y = origin.y;
-                dest.z = get_RTL_alt();
-                wp_nav.set_wp_origin_and_destination(origin,dest);
-
-                // advance to next rtl state
-                rtl_state = RTL_STATE_INITIAL_CLIMB;
-            }else{
-                // point nose towards home (maybe)
-                set_auto_yaw_mode(get_default_auto_yaw_mode(true));
-
-                // Set wp navigation target to above home
-                wp_nav.set_wp_destination(Vector3f(0,0,get_RTL_alt()));
-
-                // initialise original_wp_bearing which is used to point the nose home
-                wp_bearing = wp_nav.get_wp_bearing_to_destination();
-                original_wp_bearing = wp_bearing;
-                
-                // advance to next rtl state
-                rtl_state = RTL_STATE_RETURNING_HOME;
-            }
-            break;
-        case RTL_STATE_INITIAL_CLIMB:
-            // check if we've reached the safe altitude
-            if (wp_nav.reached_wp_destination()) {
-                // set nav mode
-                set_nav_mode(NAV_WP);
-
-                // Set wp navigation target to above home
-                wp_nav.set_wp_destination(Vector3f(0,0,get_RTL_alt()));
-
-                // initialise original_wp_bearing which is used to point the nose home
-                wp_bearing = wp_nav.get_wp_bearing_to_destination();
-                original_wp_bearing = wp_bearing;
-
-                // point nose towards home (maybe)
-                set_auto_yaw_mode(get_default_auto_yaw_mode(true));
-
-                // advance to next rtl state
-                rtl_state = RTL_STATE_RETURNING_HOME;
-            }
-            break;
-
-        case RTL_STATE_RETURNING_HOME:
-            // check if we've reached home
-            if (wp_nav.reached_wp_destination()) {
-                // Note: we remain in NAV_WP nav mode which should hold us above home
-
-                // start timer
-                rtl_loiter_start_time = millis();
-
-                // give pilot back control of yaw
-                if(get_default_auto_yaw_mode(true) != AUTO_YAW_HOLD) {
-                    set_auto_yaw_mode(AUTO_YAW_RESETTOARMEDYAW); // yaw back to initial yaw on take off
-                } else {
-                    set_auto_yaw_mode(AUTO_YAW_HOLD);
-                }
-
-                // advance to next rtl state
-                rtl_state = RTL_STATE_LOITERING_AT_HOME;
-            }
-            break;
-
-        case RTL_STATE_LOITERING_AT_HOME:
-            // check if we've loitered long enough
-            if( millis() - rtl_loiter_start_time > (uint32_t)g.rtl_loiter_time.get() ) {
-                // initiate landing or descent
-                if(g.rtl_alt_final == 0 || failsafe.radio) {
-                    // switch to loiter which restores horizontal control to pilot
-                    // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
-                    set_roll_pitch_mode(ROLL_PITCH_LOITER);
-                    // switch into loiter nav mode
-                    set_nav_mode(NAV_LOITER);
-                    // override landing location (loiter defaults to a projection from current location)
-                    wp_nav.set_loiter_target(Vector3f(0,0,0));
-
-                    // hold yaw while landing
-                    set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-                    // set throttle mode to land
-                    set_throttle_mode(THROTTLE_LAND);
-
-                    // update RTL state
-                    rtl_state = RTL_STATE_LAND;
-                }else{
-                    // descend using waypoint controller
-                    if(current_loc.alt > g.rtl_alt_final) {
-                        // set navigation mode
-                        set_nav_mode(NAV_WP);
-                        // Set wp navigation alt target to rtl_alt_final
-                        wp_nav.set_wp_destination(Vector3f(0,0,g.rtl_alt_final));
-                    }
-                    // update RTL state
-                    rtl_state = RTL_STATE_FINAL_DESCENT;
-                }
-            }
-            break;
-
-        case RTL_STATE_FINAL_DESCENT:
-            // check we have reached final altitude
-            if(current_loc.alt <= g.rtl_alt_final || wp_nav.reached_wp_destination()) {
-                // indicate that we've completed RTL
-                retval = true;
-            }
-            break;
-
-        case RTL_STATE_LAND:
-            // rely on land_complete flag to indicate if we have landed
-            retval = ap.land_complete;
-            break;
-
-        default:
-            // this should never happen
-            // TO-DO: log an error
-            retval = true;
-            break;
-    }
-
-    // true is returned if we've successfully completed RTL
-    return retval;
+    return (rtl_state_complete && (rtl_state == FinalDescent || rtl_state == Land));
 }
 
 /********************************************************************************/
