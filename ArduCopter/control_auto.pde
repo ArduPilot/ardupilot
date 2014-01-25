@@ -13,9 +13,9 @@
  */
 
 enum AutoMode {
-    TakeOff,
-    WP,
-    Land
+    Auto_TakeOff,
+    Auto_WP,
+    Auto_Land
 };
 
 static AutoMode auto_mode;   // controls which auto controller is run
@@ -45,15 +45,15 @@ static void auto_run()
     // call the correct auto controller
     switch (auto_mode) {
 
-    case TakeOff:
+    case Auto_TakeOff:
         auto_takeoff_run();
         break;
 
-    case WP:
+    case Auto_WP:
         auto_wp_run();
         break;
 
-    case Land:
+    case Auto_Land:
         auto_land_run();
         break;
     }
@@ -62,7 +62,7 @@ static void auto_run()
 // auto_takeoff_start - initialises waypoint controller to implement take-off
 static void auto_takeoff_start(float final_alt)
 {
-    auto_mode = TakeOff;
+    auto_mode = Auto_TakeOff;
 
     // initialise wpnav destination
     Vector3f target_pos = inertial_nav.get_position();
@@ -112,7 +112,7 @@ static void auto_takeoff_run()
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 static void auto_wp_start(const Vector3f& destination)
 {
-    auto_mode = WP;
+    auto_mode = Auto_WP;
 
     // initialise wpnav
     wp_nav.set_wp_destination(destination);
@@ -181,7 +181,7 @@ static void auto_land_start()
 // auto_land_start - initialises controller to implement a landing
 static void auto_land_start(const Vector3f& destination)
 {
-    auto_mode = Land;
+    auto_mode = Auto_Land;
 
     // initialise loiter target destination
     wp_nav.set_loiter_target(destination);
