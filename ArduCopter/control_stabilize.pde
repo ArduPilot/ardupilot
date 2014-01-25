@@ -1,48 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
- * control_stabilize.pde - init and run calls for acro, stabilize, althold, drift and sport flight modes
+ * control_stabilize.pde - init and run calls for stabilize, althold, drift and sport flight modes
  */
-
-// acro_init - initialise acro controller
-static bool acro_init(bool ignore_checks)
-{
-    return true;
-}
-
-// acro_run - runs the acro controller
-// should be called at 100hz or more
-static void acro_run()
-{
-    Vector3f rate_target;          // for roll, pitch, yaw body-frame rate targets
-
-    // convert the input to the desired body frame rate
-    rate_target.x = g.rc_1.control_in * g.acro_rp_p;
-    rate_target.y = g.rc_2.control_in * g.acro_rp_p;
-    rate_target.z = g.rc_4.control_in * g.acro_yaw_p;
-
-    // To-Do: handle acro trainer here?
-
-    // To-Do: handle helicopter
-
-    acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*cos_pitch_x;
-
-    // set targets for body frame rate controller
-    attitude_control.rate_stab_bf_targets(rate_target);
-
-    // convert stabilize rates to regular rates
-    attitude_control.rate_stab_bf_to_rate_bf_roll();
-    attitude_control.rate_stab_bf_to_rate_bf_pitch();
-    attitude_control.rate_stab_bf_to_rate_bf_yaw();
-    // pilot controlled yaw using rate controller
-    //get_yaw_rate_stabilized_bf(pilot_yaw);
-
-    // call get_acro_level_rates() here?
-
-    // To-Do: convert body-frame stabilized angles to earth frame angles and update controll_roll, pitch and yaw?
-
-    // body-frame rate controller is run directly from 100hz loop
-}
 
 // stabilize_init - initialise stabilize controller
 static bool stabilize_init(bool ignore_checks)
