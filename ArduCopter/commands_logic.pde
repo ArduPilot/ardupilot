@@ -234,43 +234,18 @@ static void do_RTL(void)
 // do_takeoff - initiate takeoff navigation command
 static void do_takeoff()
 {
-    // set roll-pitch mode
-    set_roll_pitch_mode(AUTO_RP);
-
-    // set yaw mode
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-    // set throttle mode to AUTO although we should already be in this mode
-    set_throttle_mode(AUTO_THR);
-
-    // set our nav mode to loiter
-    set_nav_mode(NAV_WP);
-
     // Set wp navigation target to safe altitude above current position
-    Vector3f pos = inertial_nav.get_position();
-    pos.z = max(pos.z, command_nav_queue.alt);
-    pos.z = max(pos.z, 100.0f);
-    wp_nav.set_wp_destination(pos);
-
-    // prevent flips
-    // To-Do: check if this is still necessary
-    reset_I_all();    
+    float takeoff_alt = command_nav_queue.alt;
+    takeoff_alt = max(takeoff_alt,current_loc.alt);
+    takeoff_alt = max(takeoff_alt,100.0f);
+    auto_takeoff_start(takeoff_alt);
 }
 
 // do_nav_wp - initiate move to next waypoint
 static void do_nav_wp()
 {
-    // set roll-pitch mode
-    set_roll_pitch_mode(AUTO_RP);
-
-    // set throttle mode
-    set_throttle_mode(AUTO_THR);
-
-    // set nav mode
-    set_nav_mode(NAV_WP);
-
     // Set wp navigation target
-    wp_nav.set_wp_destination(pv_location_to_vector(command_nav_queue));
+    auto_wp_start(pv_location_to_vector(command_nav_queue));
 
     // initialise original_wp_bearing which is used to check if we have missed the waypoint
     wp_bearing = wp_nav.get_wp_bearing_to_destination();
@@ -284,9 +259,6 @@ static void do_nav_wp()
     if (loiter_time_max == 0 ) {
         wp_nav.set_fast_waypoint(true);
     }
-
-    // set yaw_mode depending upon contents of WP_YAW_BEHAVIOR parameter
-    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
 // do_land - initiate landing procedure
@@ -300,22 +272,10 @@ static void do_land(const struct Location *cmd)
         // set state to fly to location
         land_state = LAND_STATE_FLY_TO_LOCATION;
 
-        // set roll-pitch mode
-        set_roll_pitch_mode(AUTO_RP);
-
-        // set yaw_mode depending upon contents of WP_YAW_BEHAVIOR parameter
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-
-        // set throttle mode
-        set_throttle_mode(AUTO_THR);
-
-        // set nav mode
-        set_nav_mode(NAV_WP);
-
         // calculate and set desired location above landing target
         Vector3f pos = pv_location_to_vector(*cmd);
         pos.z = min(current_loc.alt, RTL_ALT_MAX);
-        wp_nav.set_wp_destination(pos);
+        auto_wp_start(pos);
 
         // initialise original_wp_bearing which is used to check if we have missed the waypoint
         wp_bearing = wp_nav.get_wp_bearing_to_destination();
@@ -324,27 +284,8 @@ static void do_land(const struct Location *cmd)
         // set landing state
         land_state = LAND_STATE_DESCENDING;
 
-        // if we have gps lock, attempt to hold horizontal position
-        if (GPS_ok()) {
-            // switch to loiter which restores horizontal control to pilot
-            // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
-            set_roll_pitch_mode(ROLL_PITCH_LOITER);
-            // switch into loiter nav mode
-            set_nav_mode(NAV_LOITER);
-        }else{
-            // no gps lock so give horizontal control to pilot
-            // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
-            set_roll_pitch_mode(ROLL_PITCH_STABLE);
-            // switch into loiter nav mode
-            set_nav_mode(NAV_NONE);
-        }
-
-        // hold yaw while landing
-        set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-        // set throttle mode to land
-        set_throttle_mode(THROTTLE_LAND);
-
+        // initialise landing controller
+        auto_land_start();
     }
 }
 
@@ -480,21 +421,8 @@ static bool verify_land()
                 // get destination so we can use it for loiter target
                 Vector3f dest = wp_nav.get_wp_destination();
 
-                // switch into loiter nav mode
-                set_nav_mode(NAV_LOITER);
-
-                // override loiter target
-                wp_nav.set_loiter_target(dest);
-
-                // switch to loiter which restores horizontal control to pilot
-                // To-Do: check that we are not in failsafe to ensure we don't process bad roll-pitch commands
-                set_roll_pitch_mode(ROLL_PITCH_LOITER);
-
-                // give pilot control of yaw
-                set_auto_yaw_mode(AUTO_YAW_HOLD);
-
-                // set throttle mode to land
-                set_throttle_mode(THROTTLE_LAND);
+                // initialise landing controller
+                auto_land_start(dest);
 
                 // advance to next state
                 land_state = LAND_STATE_DESCENDING;
