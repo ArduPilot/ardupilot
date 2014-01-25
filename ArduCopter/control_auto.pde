@@ -2,16 +2,33 @@
 
 /*
  * control_auto.pde - init and run calls for auto and guided flight modes
+ *
+ * This file contains the implementation for Land, Waypoint navigation and Takeoff from Auto mode
+ * Command execution code (i.e. command_logic.pde) should:
+ *      a) switch to Auto mode with set_mode() function.  This will cause auto_init to be called
+ *      b) call one of the three auto initialisation functions: auto_wp(), auto_takeoff, auto_land
+ *      c) call one of the verify functions auto_wp_verify(), auto_takeoff_verify, auto_land_verify repeated to check if the command has completed
+ * The main loop (i.e. fast loop) will call update_flight_modes() which will in turn call auto_run() which, based upon the auto_mode variable will call
+ *      correct auto_wp_run, auto_takeoff_run or auto_land_run to actually implement the feature
+ */
+
+enum AutoMode {
+    TakeOff,
+    WP,
+    Land
+};
+
+static AutoMode auto_mode;   // controls which auto controller is run
+
+/*
+ *  While in the auto flight mode, navigation or do/now commands can be run.
+ *  Code in this file implements the navigation commands which
  */
 
 // auto_init - initialise auto controller
 static bool auto_init(bool ignore_checks)
 {
-    if ((GPS_ok() && g.command_total > 1) || ignore_checks) {
-        // set target to current position
-        wp_nav.init_loiter_target();
-        // initialise auto_yaw_mode
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    if ((GPS_ok() && inertial_nav.position_ok() && g.command_total > 1) || ignore_checks) {
         // clear the command queues. will be reloaded when "run_autopilot" calls "update_commands" function
         init_commands();
         return true;
@@ -25,17 +42,101 @@ static bool auto_init(bool ignore_checks)
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
 static void auto_run()
 {
-    float target_yaw_rate = 0;
+    // call the correct auto controller
+    switch (auto_mode) {
 
+    case TakeOff:
+        auto_takeoff_run();
+        break;
+
+    case WP:
+        auto_wp_run();
+        break;
+
+    case Land:
+        auto_land_run();
+        break;
+    }
+}
+
+// auto_takeoff_start - initialises waypoint controller to implement take-off
+static void auto_takeoff_start(float final_alt)
+{
+    auto_mode = TakeOff;
+
+    // initialise wpnav destination
+    Vector3f target_pos = inertial_nav.get_position();
+    target_pos.z = final_alt;
+    wp_nav.set_wp_destination(target_pos);
+
+    // initialise yaw
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+}
+
+// auto_takeoff_run - takeoff in auto mode
+//      called by auto_run at 100hz or more
+static void auto_takeoff_run()
+{
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.position_ok()) {
-        wp_nav.init_loiter_target();
+    if(!ap.auto_armed) {
+        // reset attitude control targets
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        // To-Do: re-initialise wpnav targets
+        return;
+    }
+
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
+    // run waypoint controller
+    wp_nav.update_wpnav();
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    pos_control.update_z_controller();
+
+    // roll & pitch from waypoint controller, yaw rate from pilot
+    attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+
+    // refetch angle targets for reporting
+    const Vector3f angle_target = attitude_control.angle_ef_targets();
+    control_roll = angle_target.x;
+    control_pitch = angle_target.y;
+    control_yaw = angle_target.z;
+}
+
+// auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+static void auto_wp_start(const Vector3f& destination)
+{
+    auto_mode = WP;
+
+    // initialise wpnav
+    wp_nav.set_wp_destination(destination);
+
+    // initialise yaw
+    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+}
+
+// auto_wp_run - runs the auto waypoint controller
+//      called by auto_run at 100hz or more
+static void auto_wp_run()
+{
+    // if not auto armed set throttle to zero and exit immediately
+    if(!ap.auto_armed) {
+        // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
+        //    (of course it would be better if people just used take-off)
+        // To-Do: set motors to slow start
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
         return;
     }
 
     // process pilot's yaw input
+    float target_yaw_rate = 0;
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
@@ -59,7 +160,65 @@ static void auto_run()
         attitude_control.angleef_rpy(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading());
     }
 
-    // body-frame rate controller is run directly from 100hz loop
+    // refetch angle targets for reporting
+    const Vector3f angle_target = attitude_control.angle_ef_targets();
+    control_roll = angle_target.x;
+    control_pitch = angle_target.y;
+    control_yaw = angle_target.z;
+}
+
+// auto_land_start - initialises controller to implement a landing
+static void auto_land_start()
+{
+    // initialise wpnav destination
+    Vector3f destination = inertial_nav.get_position();
+    destination.z = -1000.0f;
+
+    // call location specific land start function
+    auto_land_start(destination);
+}
+
+// auto_land_start - initialises controller to implement a landing
+static void auto_land_start(const Vector3f& destination)
+{
+    auto_mode = Land;
+
+    // initialise wpnav destination
+    wp_nav.set_wp_destination(destination);
+
+    // initialise yaw
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+    // debug -- remove me!
+    cliSerial->printf_P(PSTR("\nLand X:%4.2f Y:%4.2f Z:%4.2f\n"),(float)destination.x,(float)destination.y,(float)destination.z);
+}
+
+// auto_land_run - lands in auto mode
+//      called by auto_run at 100hz or more
+static void auto_land_run()
+{
+    // if not auto armed set throttle to zero and exit immediately
+    if(!ap.auto_armed) {
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        return;
+    }
+
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    }
+
+    // run waypoint controller
+    wp_nav.update_wpnav();
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    pos_control.update_z_controller();
+
+    // roll & pitch from waypoint controller, yaw rate from pilot
+    attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // refetch angle targets for reporting
     const Vector3f angle_target = attitude_control.angle_ef_targets();
