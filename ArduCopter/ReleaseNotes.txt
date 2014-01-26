@@ -4,7 +4,7 @@ ArduCopter 3.1.2-rc1 30-Jan-2014
 Changes from 3.1.1
 1) Pixhawk baro bug fix to SPI communication which could cause large altitude estimate jumps at high temperatures
 ------------------------------------------------------------------
-ArduCopter 3.1.1-rc2 21-Jan-2014
+ArduCopter 3.1.1 26-Jan-2014 / ArduCopter 3.1.1-rc2 21-Jan-2014
 Changes from 3.1.1-rc1
 1) Pixhawk improvements (available for APM2 when AC3.2 is released):
     a) Faster arming
