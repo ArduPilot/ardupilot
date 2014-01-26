@@ -303,8 +303,8 @@
 #define DATA_EPM_ON                     46
 #define DATA_EPM_OFF                    47
 #define DATA_EPM_NEUTRAL                48
-// RADIANS
-#define RADX100 0.000174532925f
+
+// Centi-degrees to radians
 #define DEGX100 5729.57795f
 
 
