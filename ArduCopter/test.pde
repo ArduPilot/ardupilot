@@ -284,7 +284,7 @@ test_motorsync(uint8_t argc, const Menu::arg *argv)
 {
     bool     test_complete = false;
     bool     spin_motors = false;
-    uint32_t spin_start_time;
+    uint32_t spin_start_time = 0;
     uint32_t last_run_time;
     int16_t  last_throttle = 0;
     int16_t  c;
