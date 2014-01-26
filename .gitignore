@@ -1,13 +1,11 @@
 *~
 *.bin
-*.cproject
 *.d
 *.dll
 *.exe
 *.lst
 *.o
 *.obj
-*.project
 *.px4
 *.pyc
 *.tlog
