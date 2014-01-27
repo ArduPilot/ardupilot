@@ -40,7 +40,7 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
 {
 
     // Calculate trainer mode earth frame rate command for roll
-    int32_t target_rate;
+    float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
 
     // calculate rate requests
@@ -51,87 +51,63 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
 
     // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
 
-    acro_level_mix = constrain_float(1-max(max(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*cos_pitch_x;
-
     // Calculate trainer mode earth frame rate command for roll
     int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
-    target_rate = 0;
-
-    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (roll_angle > aparm.angle_max){
-            target_rate =  g.pi_stabilize_roll.get_p(aparm.angle_max-roll_angle);
-        }else if (roll_angle < -aparm.angle_max) {
-            target_rate =  g.pi_stabilize_roll.get_p(-aparm.angle_max-roll_angle);
-        }
-    }
     roll_angle   = constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
-    rate_ef_level.x -= roll_angle * g.acro_balance_roll;
+    rate_ef_level.x = -roll_angle * g.acro_balance_roll;
 
     // Calculate trainer mode earth frame rate command for pitch
     int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
-    target_rate = 0;
-
-    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-        if (pitch_angle > aparm.angle_max){
-            target_rate =  g.pi_stabilize_pitch.get_p(aparm.angle_max-pitch_angle);
-        }else if (pitch_angle < -aparm.angle_max) {
-            target_rate =  g.pi_stabilize_pitch.get_p(-aparm.angle_max-pitch_angle);
-        }
-    }
     pitch_angle  = constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
-    rate_ef_level.y -= pitch_angle * g.acro_balance_pitch;
-    
-    //fix this stuff
+    rate_ef_level.y = -pitch_angle * g.acro_balance_pitch;
 
     // Calculate trainer mode earth frame rate command for yaw
     rate_ef_level.z = 0;
+    
+    // Calculate angle limiting earth frame rate commands
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        if (roll_angle > aparm.angle_max){
+            rate_ef_level.x +=  g.pi_stabilize_roll.get_p(aparm.angle_max-roll_angle);
+        }else if (roll_angle < -aparm.angle_max) {
+            rate_ef_level.x +=  g.pi_stabilize_roll.get_p(-aparm.angle_max-roll_angle);
+        }
+    }
+    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        if (pitch_angle > aparm.angle_max){
+            rate_ef_level.y +=  g.pi_stabilize_pitch.get_p(aparm.angle_max-pitch_angle);
+        }else if (pitch_angle < -aparm.angle_max) {
+            rate_ef_level.y +=  g.pi_stabilize_pitch.get_p(-aparm.angle_max-pitch_angle);
+        }
+    }
 
     // convert earth-frame level rates to body-frame level rates
     attitude_control.rate_ef_targets_to_bf(rate_ef_level, rate_bf_level);
 
-
     // combine earth frame rate corrections with rate requests
-
-    // combine bf roll leveling with requested bf roll rate
     if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         rate_bf_request.x += rate_bf_level.x;
-    }else{
-        // Scale pitch leveling by stick input
-        rate_bf_level.x = (float)rate_bf_level.x*acro_level_mix;
-
-        // Calculate rate limit to prevent change of rate through inverted
-        int32_t rate_limit = labs(labs(rate_bf_request.x)-labs(rate_bf_level.x));
-
-        rate_bf_request.x += acro_roll_rate;
-        rate_bf_request.x = constrain_int32(rate_bf_request.x, -rate_limit, rate_limit);
-    }
-
-    // combine bf pitch leveling with requested bf pitch rate
-    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         rate_bf_request.y += rate_bf_level.y;
-    }else{
-        // Scale pitch leveling by stick input
-        rate_bf_level.y = (float)rate_bf_level.y*acro_level_mix;
-
-        // Calculate rate limit to prevent change of rate through inverted
-        int32_t rate_limit = labs(labs(rate_bf_request.y)-labs(rate_bf_level.y));
-
-        rate_bf_request.y += acro_roll_rate;
-        rate_bf_request.y = constrain_int32(rate_bf_request.y, -rate_limit, rate_limit);
-    }
-
-    // combine bf yaw leveling with requested bf yaw rate
-    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
         rate_bf_request.z += rate_bf_level.z;
     }else{
-        // Scale pitch leveling by stick input
-        rate_bf_level.z = (float)rate_bf_level.z*acro_level_mix;
+        acro_level_mix = constrain_float(1-max(max(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*cos_pitch_x;
+
+        // Scale leveling rates by stick input
+        rate_bf_level = rate_bf_level*acro_level_mix;
+        
+        // Calculate rate limit to prevent change of rate through inverted
+        rate_limit = fabs(fabs(rate_bf_request.x)-fabs(rate_bf_level.x));
+        rate_bf_request.x += rate_bf_level.x;
+        rate_bf_request.x = constrain_float(rate_bf_request.x, -rate_limit, rate_limit);
 
         // Calculate rate limit to prevent change of rate through inverted
-        int32_t rate_limit = labs(labs(rate_bf_request.z)-labs(rate_bf_level.z));
+        rate_limit = fabs(fabs(rate_bf_request.y)-fabs(rate_bf_level.y));
+        rate_bf_request.y += rate_bf_level.y;
+        rate_bf_request.y = constrain_float(rate_bf_request.y, -rate_limit, rate_limit);
 
-        rate_bf_request.z += acro_roll_rate;
-        rate_bf_request.z = constrain_int32(rate_bf_request.z, -rate_limit, rate_limit);
+        // Calculate rate limit to prevent change of rate through inverted
+        rate_limit = fabs(fabs(rate_bf_request.z)-fabs(rate_bf_level.z));
+        rate_bf_request.z += rate_bf_level.z;
+        rate_bf_request.z = constrain_float(rate_bf_request.z, -rate_limit, rate_limit);
     }
 
     // hand back rate request
