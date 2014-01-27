@@ -71,8 +71,7 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
         }else if (roll_angle < -aparm.angle_max) {
             rate_ef_level.x +=  g.pi_stabilize_roll.get_p(-aparm.angle_max-roll_angle);
         }
-    }
-    if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
+        
         if (pitch_angle > aparm.angle_max){
             rate_ef_level.y +=  g.pi_stabilize_pitch.get_p(aparm.angle_max-pitch_angle);
         }else if (pitch_angle < -aparm.angle_max) {
