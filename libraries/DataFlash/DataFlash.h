@@ -10,6 +10,7 @@
 #include <AP_Param.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
+#include <AP_Baro.h>
 #include <stdint.h>
 
 class DataFlash_Class
@@ -49,6 +50,7 @@ public:
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
+    void Log_Write_Baro(AP_Baro &baro);
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
 
@@ -201,6 +203,14 @@ struct PACKED log_RCOUT {
     uint16_t chan8;
 };
 
+struct PACKED log_BARO {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    float   altitude;
+    float   pressure;
+    int16_t temperature;
+};
+
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format" },    \
@@ -217,7 +227,9 @@ struct PACKED log_RCOUT {
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
-      "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }
+      "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
+    { LOG_BARO_MSG, sizeof(log_BARO), \
+      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -228,6 +240,7 @@ struct PACKED log_RCOUT {
 #define LOG_RCIN_MSG      133
 #define LOG_RCOUT_MSG     134
 #define LOG_IMU2_MSG	  135
+#define LOG_BARO_MSG	  136
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
