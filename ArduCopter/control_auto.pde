@@ -15,7 +15,8 @@
 enum AutoMode {
     Auto_TakeOff,
     Auto_WP,
-    Auto_Land
+    Auto_Land,
+    Auto_Circle
 };
 
 static AutoMode auto_mode;   // controls which auto controller is run
@@ -55,6 +56,10 @@ static void auto_run()
 
     case Auto_Land:
         auto_land_run();
+        break;
+
+    case Auto_Circle:
+        auto_circle_run();
         break;
     }
 }
@@ -222,6 +227,33 @@ static void auto_land_run()
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+
+    // refetch angle targets for reporting
+    const Vector3f angle_target = attitude_control.angle_ef_targets();
+    control_roll = angle_target.x;
+    control_pitch = angle_target.y;
+    control_yaw = angle_target.z;
+}
+
+// auto_circle_start - initialises controller to fly a circle in AUTO flight mode
+static void auto_circle_start(const Vector3f& center)
+{
+    // set circle center
+    circle_nav.set_center(center);
+}
+
+// auto_circle_run - circle in AUTO flight mode
+//      called by auto_run at 100hz or more
+void auto_circle_run()
+{
+    // call circle controller
+    circle_nav.update();
+
+    // call z-axis position controller
+    pos_control.update_z_controller();
+
+    // roll & pitch from waypoint controller, yaw rate from pilot
+    attitude_control.angleef_rpy(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw());
 
     // refetch angle targets for reporting
     const Vector3f angle_target = attitude_control.angle_ef_targets();
