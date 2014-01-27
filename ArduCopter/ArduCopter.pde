@@ -125,6 +125,7 @@
 #include <AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
+#include <AC_Circle.h>          // circle navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence.h>           // Arducopter Fence library
 #include <SITL.h>               // software in the loop support
@@ -752,6 +753,7 @@ AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
                         g.pi_alt_hold, g.pid_throttle_rate, g.pid_throttle_accel,
                         g.pi_loiter_lat, g.pi_loiter_lon, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon);
 static AC_WPNav wp_nav(&inertial_nav, &ahrs, pos_control, &g.pi_loiter_lat);
+static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
