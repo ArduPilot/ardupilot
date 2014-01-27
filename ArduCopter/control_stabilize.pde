@@ -149,33 +149,6 @@ static void althold_run()
     control_yaw = angle_target.z;
 }
 
-// circle_init - initialise circle controller
-static bool circle_init(bool ignore_checks)
-{
-    if (GPS_ok() || ignore_checks) {
-        return true;
-    }else{
-        return false;
-    }
-    // set yaw to point to center of circle
-    // yaw_look_at_WP = circle_center;
-    // initialise bearing to current heading
-    //yaw_look_at_WP_bearing = ahrs.yaw_sensor;
-    //yaw_initialised = true;
-}
-
-// circle_run - runs the circle controller
-// should be called at 100hz or more
-static void circle_run()
-{
-    // if we are landed reset yaw target to current heading
-    //if (ap.land_complete) {
-    //    control_yaw = ahrs.yaw_sensor;
-    //}
-    // points toward the center of the circle or does a panorama
-    //get_circle_yaw();
-}
-
 // drift_init - initialise drift controller
 static bool drift_init(bool ignore_checks)
 {
