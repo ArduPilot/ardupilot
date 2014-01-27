@@ -1007,6 +1007,10 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
     GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
+    // @Group: WPNAV_
+    // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
+    GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
+
     // @Group: ATCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
     GOBJECT(attitude_control, "ATTCON_", AC_AttitudeControl),
