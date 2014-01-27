@@ -325,30 +325,22 @@ static void do_loiter_unlimited()
 // do_circle - initiate moving in a circle
 static void do_circle()
 {
-    // set roll-pitch mode (no pilot input)
-    set_roll_pitch_mode(AUTO_RP);
+    Vector3f curr_pos = inertial_nav.get_position();
+    Vector3f circle_center = pv_location_to_vector(command_nav_queue);
 
-    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
-    set_throttle_mode(AUTO_THR);
-
-    // set nav mode to CIRCLE
-    set_nav_mode(NAV_CIRCLE);
-
-    // set target altitude if provided
-    if( command_nav_queue.alt != 0 ) {
-        wp_nav.set_desired_alt(command_nav_queue.alt);
+    // set target altitude if not provided
+    if (circle_center.z == 0) {
+        circle_center.z = curr_pos.z;
     }
 
-    // override default horizontal location target
-    if( command_nav_queue.lat != 0 || command_nav_queue.lng != 0) {
-        circle_set_center(pv_location_to_vector(command_nav_queue), ahrs.yaw);
+    // set lat/lon position if not provided
+    if (command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
+        circle_center.x = curr_pos.x;
+        circle_center.y = curr_pos.y;
     }
 
-    // set yaw to point to center of circle
-    set_auto_yaw_mode(CIRCLE_YAW);
-
-    // set angle travelled so far to zero
-    circle_angle_total = 0;
+    // start auto_circle
+    auto_circle_start(circle_center);
 
     // record number of desired rotations from mission command
     circle_desired_rotations = command_nav_queue.p1;
@@ -490,7 +482,7 @@ static bool verify_loiter_time()
 static bool verify_circle()
 {
     // have we rotated around the center enough times?
-    return fabsf(circle_angle_total/(2*M_PI)) >= circle_desired_rotations;
+    return fabsf(circle_nav.get_angle_total()/(2*M_PI)) >= circle_desired_rotations;
 }
 
 // externs to remove compiler warning
@@ -520,7 +512,7 @@ static void do_change_alt()
 {
     // adjust target appropriately for each nav mode
     switch (nav_mode) {
-        case NAV_CIRCLE:
+        //case NAV_CIRCLE:
         case NAV_LOITER:
             // update loiter target altitude
             wp_nav.set_desired_alt(command_cond_queue.alt);
