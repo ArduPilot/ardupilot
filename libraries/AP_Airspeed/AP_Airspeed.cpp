@@ -49,7 +49,7 @@ extern const AP_HAL::HAL& hal;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
  #define ARSPD_DEFAULT_PIN 16
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- #define ARSPD_DEFAULT_PIN 65
+ #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #else
  #define ARSPD_DEFAULT_PIN 0
 #endif
@@ -122,12 +122,24 @@ float AP_Airspeed::get_pressure(void)
         return 0;
     }
     float pressure = 0;
-    if (_pin == 65) {
+    if (_pin == AP_AIRSPEED_I2C_PIN) {
         _healthy = digital.get_differential_pressure(pressure);
     } else {
         _healthy = analog.get_differential_pressure(pressure);
     }
     return pressure;
+}
+
+// get a temperature reading if possible
+bool AP_Airspeed::get_temperature(float &temperature)
+{
+    if (!_enable) {
+        return false;
+    }
+    if (_pin == AP_AIRSPEED_I2C_PIN) {
+        return digital.get_temperature(temperature);
+    }
+    return false;
 }
 
 // calibrate the airspeed. This must be called at least once before
