@@ -300,7 +300,7 @@ void AC_AttitudeControl::rate_stab_bf_to_rate_bf_yaw()
 //
 
 // rate_ef_targets_to_bf - converts earth frame rate targets to body frame rate targets
-void AC_AttitudeControl::rate_ef_targets_to_bf(Vector3f rate_ef_target, Vector3f &rate_bf_target)
+void AC_AttitudeControl::rate_ef_targets_to_bf(const Vector3f& rate_ef_target, Vector3f& rate_bf_target)
 {
     // convert earth frame rates to body frame rates
     rate_bf_target.x = rate_ef_target.x - _sin_pitch * rate_ef_target.z;

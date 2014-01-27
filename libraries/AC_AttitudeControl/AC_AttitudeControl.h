@@ -144,7 +144,7 @@ public:
     void rate_ef_targets(Vector3f& rates_cds) { _rate_ef_target = rates_cds; }
 
     // rate_ef_targets_to_bf - converts earth frame rate targets to body frame rate targets
-    void rate_ef_targets_to_bf(Vector3f rate_ef_target, Vector3f &rate_bf_target);
+    void rate_ef_targets_to_bf(const Vector3f& rate_ef_target, Vector3f &rate_bf_target);
 
     
     //
@@ -227,8 +227,8 @@ private:
     } log_ACAttControl;
 
     // references to external libraries
-    AP_AHRS&            _ahrs;
-    AP_InertialSensor&  _ins;
+    const AP_AHRS&      _ahrs;
+    const AP_InertialSensor&  _ins;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
     APM_PI&	            _pi_angle_roll;
