@@ -111,7 +111,7 @@ public:
     void set_target_to_stopping_point_z();
 
     /// get_stopping_point_z - sets stopping_point.z to a reasonable stopping altitude in cm above home
-    void get_stopping_point_z(Vector3f& stopping_point);
+    void get_stopping_point_z(Vector3f& stopping_point) const;
 
     /// init_takeoff - initialises target altitude if we are taking off
     void init_takeoff();
@@ -120,11 +120,11 @@ public:
     void update_z_controller();
 
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
-    float get_leash_down_z() { return _leash_down_z; }
-    float get_leash_up_z() { return _leash_up_z; }
+    float get_leash_down_z() const { return _leash_down_z; }
+    float get_leash_up_z() const { return _leash_up_z; }
 
     /// althold_kP - returns altitude hold position control PID's kP gain
-    float althold_kP() { return _pi_alt_pos.kP(); }
+    float althold_kP() const { return _pi_alt_pos.kP(); }
 
     ///
     /// xy position controller
@@ -133,10 +133,12 @@ public:
     /// set_accel_xy - set horizontal acceleration in cm/s/s
     ///     calc_leash_length_xy should be called afterwards
     void set_accel_xy(float accel_cmss);
+    float get_accel_xy() const { return _accel_cms; }
 
     /// set_speed_xy - set horizontal speed maximum in cm/s
     ///     calc_leash_length_xy should be called afterwards
     void set_speed_xy(float speed_cms);
+    float get_speed_xy() const { return _speed_cms; }
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
     ///     should be called whenever the speed, acceleration or position kP is modified
