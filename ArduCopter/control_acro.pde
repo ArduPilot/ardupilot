@@ -80,6 +80,8 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
     }
     pitch_angle  = constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE);
     rate_ef_level.y -= pitch_angle * g.acro_balance_pitch;
+    
+    //fix this stuff
 
     // Calculate trainer mode earth frame rate command for yaw
     rate_ef_level.z = 0;
