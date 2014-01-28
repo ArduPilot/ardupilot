@@ -220,8 +220,8 @@ static bool verify_cond_command()
 // do_RTL - start Return-to-Launch
 static void do_RTL(void)
 {
-    // set rtl state
-    rtl_init(true);
+    // start rtl in auto flight mode
+    auto_rtl_start();
 }
 
 /********************************************************************************/
@@ -292,15 +292,6 @@ static void do_loiter_unlimited()
 {
     Vector3f target_pos;
 
-    // set roll-pitch mode (no pilot input)
-    set_roll_pitch_mode(AUTO_RP);
-
-    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
-    set_throttle_mode(AUTO_THR);
-
-    // hold yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-
     // get current position
     Vector3f curr_pos = inertial_nav.get_position();
 
@@ -318,8 +309,7 @@ static void do_loiter_unlimited()
     }
 
     // start way point navigator and provide it the desired location
-    set_nav_mode(NAV_WP);
-    wp_nav.set_wp_destination(target_pos);
+    auto_wp_start(target_pos);
 }
 
 // do_circle - initiate moving in a circle
@@ -352,15 +342,6 @@ static void do_loiter_time()
 {
     Vector3f target_pos;
 
-    // set roll-pitch mode (no pilot input)
-    set_roll_pitch_mode(AUTO_RP);
-
-    // set throttle mode to AUTO which, if not already active, will default to hold at our current altitude
-    set_throttle_mode(AUTO_THR);
-
-    // hold yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
-
     // get current position
     Vector3f curr_pos = inertial_nav.get_position();
 
@@ -378,8 +359,7 @@ static void do_loiter_time()
     }
 
     // start way point navigator and provide it the desired location
-    set_nav_mode(NAV_WP);
-    wp_nav.set_wp_destination(target_pos);
+    auto_wp_start(target_pos);
 
     // setup loiter timer
     loiter_time     = 0;
@@ -511,18 +491,22 @@ static void do_wait_delay()
 static void do_change_alt()
 {
     // adjust target appropriately for each nav mode
-    switch (nav_mode) {
-        //case NAV_CIRCLE:
-        case NAV_LOITER:
-            // update loiter target altitude
-            wp_nav.set_desired_alt(command_cond_queue.alt);
+    if (control_mode == AUTO) {
+        switch (auto_mode) {
+        case Auto_TakeOff:
+            // To-Do: adjust waypoint target altitude to new provided altitude
             break;
-
-        case NAV_WP:
-            // To-Do: update waypoint nav's destination altitude
+        case Auto_WP:
+            // To-Do; reset origin to current location + stopping distance at new altitude
             break;
+        case Auto_Land:
+            // ignore altitude
+            break;
+        case Auto_Circle:
+            // move circle altitude up to target (we will need to store this target in circle class)
+            break;
+        }
     }
-
     // To-Do: store desired altitude in a variable so that it can be verified later
 }
 
