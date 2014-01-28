@@ -213,6 +213,15 @@
 //#define WP_OPTION_					64
 #define WP_OPTION_NEXT_CMD                      128
 
+// Auto modes
+enum AutoMode {
+    Auto_TakeOff,
+    Auto_WP,
+    Auto_Land,
+    Auto_RTL,
+    Auto_Circle
+};
+
 // RTL states
 enum RTLState {
     Start,
