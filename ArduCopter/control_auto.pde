@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
- * control_auto.pde - init and run calls for auto and guided flight modes
+ * control_auto.pde - init and run calls for auto flight mode
  *
  * This file contains the implementation for Land, Waypoint navigation and Takeoff from Auto mode
  * Command execution code (i.e. command_logic.pde) should:
@@ -373,18 +373,3 @@ float get_auto_heading(void)
     }
 }
 
-// guided_init - initialise guided controller
-static bool guided_init(bool ignore_checks)
-{
-    if (GPS_ok() || ignore_checks) {
-        return true;
-    }else{
-        return false;
-    }
-}
-
-// guided_run - runs the guided controller
-// should be called at 100hz or more
-static void guided_run()
-{
-}
