@@ -295,15 +295,16 @@ static void do_loiter_unlimited()
     // get current position
     Vector3f curr_pos = inertial_nav.get_position();
 
+    // default to use position provided
+    target_pos = pv_location_to_vector(command_nav_queue);
+
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
         wp_nav.get_wp_stopping_point_xy(target_pos);
-    }else{
-        // default to use position provided
-        target_pos = pv_location_to_vector(command_nav_queue);
     }
 
     // use current altitude if not provided
+    // To-Do: use z-axis stopping point instead of current alt
     if( command_nav_queue.alt == 0 ) {
         target_pos.z = curr_pos.z;
     }
@@ -324,6 +325,7 @@ static void do_circle()
     }
 
     // set lat/lon position if not provided
+    // To-Do: use stopping point instead of current location
     if (command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
         circle_center.x = curr_pos.x;
         circle_center.y = curr_pos.y;
@@ -345,12 +347,12 @@ static void do_loiter_time()
     // get current position
     Vector3f curr_pos = inertial_nav.get_position();
 
+    // default to use position provided
+    target_pos = pv_location_to_vector(command_nav_queue);
+
     // use current location if not provided
     if(command_nav_queue.lat == 0 && command_nav_queue.lng == 0) {
         wp_nav.get_wp_stopping_point_xy(target_pos);
-    }else{
-        // default to use position provided
-        target_pos = pv_location_to_vector(command_nav_queue);
     }
 
     // use current altitude if not provided
