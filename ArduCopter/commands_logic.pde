@@ -594,12 +594,9 @@ static bool verify_yaw()
 // this is not actually a mission command but rather a 
 static void do_guided(const struct Location *cmd)
 {
-    bool first_time = false;
     // switch to guided mode if we're not already in guided mode
     if (control_mode != GUIDED) {
-        if (set_mode(GUIDED)) {
-            first_time = true;
-        }else{
+        if (!set_mode(GUIDED)) {
             // if we failed to enter guided mode return immediately
             return;
         }
@@ -607,20 +604,7 @@ static void do_guided(const struct Location *cmd)
 
     // set wp_nav's destination
     Vector3f pos = pv_location_to_vector(*cmd);
-    wp_nav.set_wp_destination(pos);
-
-    // initialise wp_bearing for reporting purposes
-    wp_bearing = wp_nav.get_wp_bearing_to_destination();
-
-    // point nose at next waypoint if it is more than 10m away
-    if (auto_yaw_mode == AUTO_YAW_LOOK_AT_NEXT_WP) {
-        // get distance to new location
-        wp_distance = wp_nav.get_wp_distance_to_destination();
-        // set original_wp_bearing to point at next waypoint
-        if (wp_distance >= 1000 || first_time) {
-            original_wp_bearing = wp_bearing;
-        }
-    }
+    guided_set_destination(pos);
 }
 
 static void do_change_speed()
