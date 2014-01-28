@@ -51,10 +51,10 @@
 #ifdef __AVR_ATmega1280__
 #error ATmega1280 is not supported
 #endif
-//////////////////////////////////////////////////////////////////////////////
-// APM2 HARDWARE DEFAULTS
-//
 
+//////////////////////////////////////////////////////////////////////////////
+// FLIGHT CONTROLLER HARDWARE DEFAULT SETTINGS
+//
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
  # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
