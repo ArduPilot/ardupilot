@@ -82,7 +82,10 @@ public:
     // angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
     void angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef);
 
-    // rateef_rpy - attempts to maintain a roll, pitch and yaw angle rate (all body frame)
+    // rateef_rpy - attempts to maintain a roll, pitch and yaw rate (all earth frame)
+    void rateef_rpy(float roll_rate_ef, float pitch_rate_ef, float yaw_rate_ef);
+
+    // ratebf_rpy - attempts to maintain a roll, pitch and yaw rate (all body frame)
     void ratebf_rpy(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
 
     //

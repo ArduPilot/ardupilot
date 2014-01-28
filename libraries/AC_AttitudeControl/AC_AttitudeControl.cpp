@@ -72,7 +72,26 @@ void AC_AttitudeControl::angleef_rpy(float roll_angle_ef, float pitch_angle_ef, 
     // body-frame to motor outputs should be called separately
 }
 
-// rateef_rpy - attempts to maintain a roll, pitch and yaw angle rate (all body frame)
+// rateef_rpy - attempts to maintain a roll, pitch and yaw rate (all earth frame)
+void AC_AttitudeControl::rateef_rpy(float roll_rate_ef, float pitch_rate_ef, float yaw_rate_ef)
+{
+    // set stabilized earth-frame rate targets
+    _rate_stab_ef_target.x = roll_rate_ef;
+    _rate_stab_ef_target.y = pitch_rate_ef;
+    _rate_stab_ef_target.z = yaw_rate_ef;
+
+    // convert stabilized earth-frame rates to (regular) earth-frames rates
+    rate_stab_ef_to_rate_ef_roll();
+    rate_stab_ef_to_rate_ef_pitch();
+    rate_stab_ef_to_rate_ef_yaw();
+
+    // convert earth-frame rates to body-frame rates
+    rate_ef_targets_to_bf(_rate_ef_target, _rate_bf_target);
+
+    // body-frame to motor outputs should be called separately
+}
+
+// ratebf_rpy - attempts to maintain a roll, pitch and yaw rate (all body frame)
 void AC_AttitudeControl::ratebf_rpy(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf)
 {
     // Update angle error
