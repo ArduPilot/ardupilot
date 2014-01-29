@@ -257,9 +257,6 @@ private:
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m
     AP_Float _baroAltNoise;         // Baro height measurement noise : m^2
-    AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
-    AP_Float _gpsDVelVarAccScale;   // scale factor applied to D velocity measurement variance due to Vdot
-    AP_Float _gpsPosVarAccScale;    // scale factor applied to position measurement variance due to Vdot
     AP_Float _magNoise;             // magnetometer measurement noise : gauss
     AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2
@@ -272,27 +269,31 @@ private:
     AP_Float _accelBiasProcessNoise;// accel bias state process noise : m/s^2
     AP_Int16 _msecVelDelay;         // effective average delay of GPS velocity measurements rel to IMU (msec)
     AP_Int16 _msecPosDelay;         // effective average delay of GPS position measurements rel to (msec)
-    AP_Int16 _msecHgtDelay;         // effective average delay of height measurements rel to (msec)
-    AP_Int16 _msecMagDelay;         // effective average delay of magnetometer measurements rel to IMU (msec)
-    AP_Int16 _msecTasDelay;         // effective average delay of airspeed measurements rel to IMU (msec)
     AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
     AP_Int8  _gpsVelInnovGate;      // Number of standard deviations applied to GPS velocity innovation consistency check
     AP_Int8  _gpsPosInnovGate;      // Number of standard deviations applied to GPS position innovation consistency check
     AP_Int8  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
     AP_Int8  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
     AP_Int8  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
+
+    // Tuning parameters
+    AP_Float _gpsNEVelVarAccScale;  // scale factor applied to NE velocity measurement variance due to Vdot
+    AP_Float _gpsDVelVarAccScale;   // scale factor applied to D velocity measurement variance due to Vdot
+    AP_Float _gpsPosVarAccScale;    // scale factor applied to position measurement variance due to Vdot
+    AP_Int16 _msecHgtDelay;         // effective average delay of height measurements rel to (msec)
+    AP_Int16 _msecMagDelay;         // effective average delay of magnetometer measurements rel to IMU (msec)
+    AP_Int16 _msecTasDelay;         // effective average delay of airspeed measurements rel to IMU (msec)
     AP_Int16 _gpsRetryTimeUseTAS;   // GPS retry time following innovation consistency fail if TAS measurements are used (msec)
     AP_Int16 _gpsRetryTimeNoTAS;    // GPS retry time following innovation consistency fail if no TAS measurements are used (msec)
     AP_Int16 _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0 (msec)
     AP_Int16 _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0 (msec)
-
-    // Tuning parameters
     float _gyroBiasNoiseScaler;     // scale factor applied to gyro bias state process variance when on ground
     float _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
     uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
     uint16_t _msecHgtAvg;           // average number of msec between height measurements
     float dtVelPos;                 // number of seconds between position and velocity corrections
 
+    // Variables
     uint8_t skipCounter;            // counter used to skip position and height corrections to achieve _skipRatio
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool staticModeDemanded;        // boolean true when staticMode has been demanded externally.
