@@ -154,26 +154,37 @@ private:
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;
 
+    // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
+    // calculate the predicted state covariance matrix
     void CovariancePrediction();
 
+    // force symmetry on the state covariance matrix
     void ForceSymmetry();
 
+    // constrain variances (diagonal terms) on the state covariance matrix
     void ConstrainVariances();
 
+    // constrain states
     void ConstrainStates();
 
+    // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
 
+    // fuse magnetometer measurements
     void FuseMagnetometer();
 
+    // fuse true airspeed measurements
     void FuseAirspeed();
 
+    // zero specified range of rows in the state covariance matrix
     void zeroRows(Matrix22 &covMat, uint8_t first, uint8_t last);
 
+    // zero specified range of columns in the state covariance matrix
     void zeroCols(Matrix22 &covMat, uint8_t first, uint8_t last);
 
+    // normalise the quaternion states
     void quatNorm(Quaternion &quatOut, const Quaternion &quatIn) const;
 
     // store states along with system time stamp in msces
@@ -182,44 +193,61 @@ private:
     // recall state vector stored at closest time to the one specified by msec
     void RecallStates(Vector22 &statesForFusion, uint32_t msec);
 
+    // calculate nav to body quaternions from body to nav rotation matrix
     void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
+    // calculate the earth spin vector in NED axes
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
+    // calculate a NED velocity vector from GPS speed, course and down velocity
     void calcvelNED(Vector3f &velNED, float gpsCourse, float gpsGndSpd, float gpsVelD) const;
 
-    void calcllh(float &lat, float &lon, float &hgt) const;
-
+    // calculate from height, airspeed and ground speed whether the flight vehicle is on the ground or flying
     void OnGroundCheck();
 
+    // initialise the covariance matrix
     void CovarianceInit(float roll, float pitch, float yaw);
 
+    // update IMU delta angle and delta velocity measurements
     void readIMUData();
 
+    // check for new valid GPS data and update stored measurement if available
     void readGpsData();
 
+    // check for new altitude measurement data and update stored measurement if available
     void readHgtData();
 
+    // check for new magnetometer data and update store measurements if available
     void readMagData();
 
+    // check for new airspeed data and update stored measurements if available
     void readAirSpdData();
 
+    // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
 
+    // determine when to perform fusion of height measurements
     void SelectHgtFusion();
 
+    // determine when to perform fusion of true airspeed measurements
     void SelectTasFusion();
 
+    // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
 
+    // force alignment of the yaw angle using GPS velocity data
     void ForceYawAlignment();
 
+    // zero stored variables
     void ZeroVariables();
 
+    // reset the horizontal position states uing the last GPS measurement
     void ResetPosition(void);
 
+    // reset velocity states using the last GPS measurement
     void ResetVelocity(void);
 
+    // reset the vertical position state using the last height measurement
     void ResetHeight(void);
 
 
