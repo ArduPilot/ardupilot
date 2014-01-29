@@ -161,7 +161,7 @@ public:
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
-	void rate_controller_run();
+	virtual void rate_controller_run();
 
     //
     // throttle functions
@@ -193,7 +193,7 @@ public:
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-private:
+protected:
 
     //
     // body-frame rate controller
@@ -201,7 +201,7 @@ private:
 	// rate_bf_to_motor_roll - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in centi-degrees/sec) for roll, pitch and yaw
     float rate_bf_to_motor_roll(float rate_target_cds);
     float rate_bf_to_motor_pitch(float rate_target_cds);
-    float rate_bf_to_motor_yaw(float rate_target_cds);
+    virtual float rate_bf_to_motor_yaw(float rate_target_cds);
 
     //
     // throttle methods
