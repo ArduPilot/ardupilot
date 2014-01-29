@@ -631,24 +631,6 @@
  # define LOITER_NAV                NAV_LOITER
 #endif
 
-// POSITION Mode
-#ifndef POSITION_YAW
- # define POSITION_YAW             	YAW_HOLD
-#endif
-
-#ifndef POSITION_RP
- # define POSITION_RP               ROLL_PITCH_LOITER
-#endif
-
-#ifndef POSITION_THR
- # define POSITION_THR              THROTTLE_MANUAL_TILT_COMPENSATED
-#endif
-
-#ifndef POSITION_NAV
- # define POSITION_NAV              NAV_LOITER
-#endif
-
-
 // RTL Mode
 // Note: RTL Yaw behaviour is controlled by WP_YAW_BEHAVIOR parameter
 #ifndef RTL_RP

@@ -346,7 +346,6 @@ static bool mode_requires_GPS(uint8_t mode) {
         case LOITER:
         case RTL:
         case CIRCLE:
-        case POSITION:
         case DRIFT:
             return true;
         default:
@@ -409,12 +408,6 @@ static bool set_mode(uint8_t mode)
 
         case LOITER:
             success = loiter_init(ignore_checks);
-            break;
-
-        case POSITION:
-            if (GPS_ok() || ignore_checks) {
-                success = true;
-            }
             break;
 
         case GUIDED:
@@ -567,9 +560,6 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case CIRCLE:
         port->print_P(PSTR("CIRCLE"));
-        break;
-    case POSITION:
-        port->print_P(PSTR("POSITION"));
         break;
     case LAND:
         port->print_P(PSTR("LAND"));

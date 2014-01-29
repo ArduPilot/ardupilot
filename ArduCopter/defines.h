@@ -123,7 +123,6 @@
 #define LOITER 5                        // Hold a single location
 #define RTL 6                           // AUTO control
 #define CIRCLE 7                        // AUTO control
-#define POSITION 8                      // AUTO control
 #define LAND 9                          // AUTO control
 #define OF_LOITER 10                    // Hold a single location using optical flow sensor
 #define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
