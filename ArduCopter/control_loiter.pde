@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
- * control_loiter.pde - init and run calls for loiter and of_loiter (aka optical flow loiter) flight modes
+ * control_loiter.pde - init and run calls for loiter flight mode
  */
 
 // loiter_init - initialise loiter controller
@@ -87,20 +87,4 @@ static void loiter_run()
     control_roll = angle_target.x;
     control_pitch = angle_target.y;
     control_yaw = angle_target.z;
-}
-
-// ofloiter_init - initialise ofloiter controller
-static bool ofloiter_init(bool ignore_checks)
-{
-    if (g.optflow_enabled || ignore_checks) {
-        return true;
-    }else{
-        return false;
-    }
-}
-
-// ofloiter_run - runs the optical flow loiter controller
-// should be called at 100hz or more
-static void ofloiter_run()
-{
 }
