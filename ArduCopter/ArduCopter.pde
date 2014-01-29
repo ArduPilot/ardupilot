@@ -109,7 +109,8 @@
 #include <AP_AHRS.h>
 #include <APM_PI.h>             // PI library
 #include <AC_PID.h>             // PID library
-#include <AC_AttitudeControl.h>  // Attitude control library
+#include <AC_AttitudeControl.h> // Attitude control library
+#include <AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_PosControl.h>      // Position control library
 #include <RC_Channel.h>         // RC Channel Library
 #include <AP_Motors.h>          // AP Motors library
@@ -757,9 +758,15 @@ static AP_InertialNav inertial_nav(&ahrs, &barometer, g_gps, gps_glitch);
 // Attitude, Position and Waypoint navigation objects
 // To-Do: move inertial nav up or other navigation variables down here
 ////////////////////////////////////////////////////////////////////////////////
+#if FRAME_CONFIG == HELI_FRAME
+AC_AttitudeControl_Heli attitude_control(ahrs, ins, aparm, motors, g.pi_stabilize_roll, g.pi_stabilize_pitch, g.pi_stabilize_yaw,
+                        g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw,
+                        g.rc_1.servo_out, g.rc_2.servo_out, g.rc_4.servo_out, g.rc_3.servo_out);
+#else
 AC_AttitudeControl attitude_control(ahrs, ins, aparm, motors, g.pi_stabilize_roll, g.pi_stabilize_pitch, g.pi_stabilize_yaw,
                         g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw,
                         g.rc_1.servo_out, g.rc_2.servo_out, g.rc_4.servo_out, g.rc_3.servo_out);
+#endif
 AC_PosControl pos_control(ahrs, inertial_nav, motors, attitude_control,
                         g.pi_alt_hold, g.pid_throttle_rate, g.pid_throttle_accel,
                         g.pi_loiter_lat, g.pi_loiter_lon, g.pid_loiter_rate_lat, g.pid_loiter_rate_lon);

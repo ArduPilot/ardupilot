@@ -72,6 +72,8 @@ static void check_dynamic_flight(void)
             if (heli_dynamic_flight_counter >= 100) {
                 heli_flags.dynamic_flight = true;
                 heli_dynamic_flight_counter = 100;
+                // update attitude control's leaky i term setting
+                attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
             }
         }
     }else{
@@ -81,162 +83,11 @@ static void check_dynamic_flight(void)
                 heli_dynamic_flight_counter--;
             }else{
                 heli_flags.dynamic_flight = false;
+                // update attitude control's leaky i term setting
+                attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
             }
         }
     }
-}
-
-// heli_integrated_swash_controller - convert desired roll and pitch rate to roll and pitch swash angles
-// should be called at 100hz
-// output placed directly into g.rc_1.servo_out and g.rc_2.servo_out
-static void heli_integrated_swash_controller(int32_t target_roll_rate, int32_t target_pitch_rate)
-{
-    int32_t         roll_p, roll_i, roll_d, roll_ff;            // used to capture pid values for logging
-    int32_t         pitch_p, pitch_i, pitch_d, pitch_ff;
-	int32_t         current_roll_rate, current_pitch_rate;	    // this iteration's rate
-    int32_t         roll_rate_error, pitch_rate_error;          // simply target_rate - current_rate
-    int32_t         roll_output, pitch_output;                  // output from pid controller
-    static bool     roll_pid_saturated, pitch_pid_saturated;    // tracker from last loop if the PID was saturated
-
-    current_roll_rate = (omega.x * DEGX100);                    // get current roll rate
-    current_pitch_rate = (omega.y * DEGX100);                   // get current pitch rate
-
-    roll_rate_error = target_roll_rate - current_roll_rate;
-    pitch_rate_error = target_pitch_rate - current_pitch_rate;
-
-    roll_p = g.pid_rate_roll.get_p(roll_rate_error);
-    pitch_p = g.pid_rate_pitch.get_p(pitch_rate_error);
-
-    if (roll_pid_saturated){
-        roll_i = g.pid_rate_roll.get_integrator();                                                      // Locked Integrator due to PID saturation on previous cycle
-    } else {
-        if (motors.has_flybar()) {                                                                      // Mechanical Flybars get regular integral for rate auto trim
-            if (target_roll_rate > -50 && target_roll_rate < 50){								        // Frozen at high rates
-                roll_i = g.pid_rate_roll.get_i(roll_rate_error, G_Dt);
-            } else {
-                roll_i = g.pid_rate_roll.get_integrator();
-            }
-        } else {
-            if (heli_flags.dynamic_flight){
-                roll_i = g.pid_rate_roll.get_i(roll_rate_error, G_Dt);
-            } else {
-                roll_i = g.pid_rate_roll.get_leaky_i(roll_rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);
-            }
-        }
-    }
-
-    if (pitch_pid_saturated){
-        pitch_i = g.pid_rate_pitch.get_integrator();                                                    // Locked Integrator due to PID saturation on previous cycle
-    } else {
-        if (motors.has_flybar()) {                                                                      // Mechanical Flybars get regular integral for rate auto trim
-            if (target_pitch_rate > -50 && target_pitch_rate < 50){								        // Frozen at high rates
-                pitch_i = g.pid_rate_pitch.get_i(pitch_rate_error, G_Dt);
-            } else {
-                pitch_i = g.pid_rate_pitch.get_integrator();
-            }
-        } else {
-            if (heli_flags.dynamic_flight){
-                pitch_i = g.pid_rate_pitch.get_i(pitch_rate_error, G_Dt);
-            } else {
-                pitch_i = g.pid_rate_pitch.get_leaky_i(pitch_rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);
-            }
-        }
-    }
-
-    roll_d = g.pid_rate_roll.get_d(target_roll_rate, G_Dt);
-    pitch_d = g.pid_rate_pitch.get_d(target_pitch_rate, G_Dt);
-
-    roll_ff = g.heli_roll_ff * target_roll_rate;
-    pitch_ff = g.heli_pitch_ff * target_pitch_rate;
-    
-    roll_output = roll_p + roll_i + roll_d + roll_ff;
-    pitch_output = pitch_p + pitch_i + pitch_d + pitch_ff;
-
-#if HELI_CC_COMP == ENABLED
-// Do cross-coupling compensation for low rpm helis
-// Credit: Jolyon Saunders
-// Note: This is not widely tested at this time.  Will not be used by default yet.
-    float cc_axis_ratio = 2.0f; // Ratio of compensation on pitch vs roll axes. Number >1 means pitch is affected more than roll
-    float cc_kp = 0.0002f;      // Compensation p term. Setting this to zero gives h_phang only, while increasing it will increase the p term of correction
-    float cc_kd = 0.127f;       // Compensation d term, scaled. This accounts for flexing of the blades, dampers etc. Originally was (motors.ext_gyro_gain * 0.0001)
-    float cc_angle, cc_total_output;
-    uint32_t cc_roll_d, cc_pitch_d, cc_sum_d;
-    int32_t cc_scaled_roll;
-    int32_t cc_roll_output;     // Used to temporarily hold output while rotation is being calculated
-    int32_t cc_pitch_output;    // Used to temporarily hold output while rotation is being calculated
-    static int32_t last_roll_output = 0;
-    static int32_t last_pitch_output = 0;
-
-    cc_scaled_roll  = roll_output / cc_axis_ratio; // apply axis ratio to roll
-    cc_total_output = safe_sqrt(cc_scaled_roll * cc_scaled_roll + pitch_output * pitch_output) * cc_kp;
-    
-    // find the delta component
-    cc_roll_d  = (roll_output - last_roll_output) / cc_axis_ratio;
-    cc_pitch_d = pitch_output - last_pitch_output;
-    cc_sum_d = safe_sqrt(cc_roll_d * cc_roll_d + cc_pitch_d * cc_pitch_d);
-
-    // do the magic.
-    cc_angle = cc_kd * cc_sum_d * cc_total_output - cc_total_output * motors.get_phase_angle();
-
-    // smooth angle variations, apply constraints
-    cc_angle = rate_dynamics_filter.apply(cc_angle);
-    cc_angle = constrain_float(cc_angle, -90.0f, 0.0f);
-    cc_angle = radians(cc_angle);
-
-    // Make swash rate vector
-    Vector2f swashratevector;
-    swashratevector.x = cosf(cc_angle);
-    swashratevector.y = sinf(cc_angle);
-    swashratevector.normalize();
-
-    // rotate the output
-    cc_roll_output  = roll_output;
-    cc_pitch_output = pitch_output;
-    roll_output     = - (cc_pitch_output * swashratevector.y - cc_roll_output * swashratevector.x);
-    pitch_output    =    cc_pitch_output * swashratevector.x + cc_roll_output * swashratevector.y;
-
-    // make current outputs old, for next iteration
-    last_roll_output  = cc_roll_output;
-    last_pitch_output = cc_pitch_output;
-# endif // HELI_CC_COMP   
-    
-#if HELI_PIRO_COMP == ENABLED
-    if (control_mode <= ACRO){
-    
-        int32_t         piro_roll_i, piro_pitch_i;            // used to hold i term while doing prio comp
-    
-        piro_roll_i  = roll_i;
-        piro_pitch_i = pitch_i;
-
-        Vector2f yawratevector;
-        yawratevector.x     = cos(-omega.z/100);
-        yawratevector.y     = sin(-omega.z/100);
-        yawratevector.normalize();
-            
-        roll_i      = piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y;
-        pitch_i     = piro_pitch_i * yawratevector.x + piro_roll_i * yawratevector.y;
-
-        g.pid_rate_pitch.set_integrator(pitch_i);
-        g.pid_rate_roll.set_integrator(roll_i); 
-    }
-#endif //HELI_PIRO_COMP   
-
-    if (labs(roll_output) > 4500){
-        roll_output = constrain_int32(roll_output, -4500, 4500);         // constrain output
-        roll_pid_saturated = true;                                       // freeze integrator next cycle
-    } else {
-        roll_pid_saturated = false;                                      // unfreeze integrator
-    }
-    
-    if (labs(pitch_output) > 4500){
-        pitch_output = constrain_int32(pitch_output, -4500, 4500);        // constrain output
-        pitch_pid_saturated = true;                                       // freeze integrator next cycle
-    } else {
-        pitch_pid_saturated = false;                                      // unfreeze integrator
-    }
-
-    g.rc_1.servo_out = roll_output;
-    g.rc_2.servo_out = pitch_output;
 }
 
 static int16_t
