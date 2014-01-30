@@ -50,10 +50,11 @@ public:
     typedef VectorN<ftype,11> Vector11;
     typedef VectorN<ftype,13> Vector13;
     typedef VectorN<ftype,14> Vector14;
-    typedef VectorN<ftype,21> Vector21;
+    typedef VectorN<ftype,15> Vector15;
+    typedef VectorN<ftype,22> Vector22;
     typedef VectorN<VectorN<ftype,3>,3> Matrix3;
-    typedef VectorN<VectorN<ftype,21>,21> Matrix21;
-    typedef VectorN<VectorN<ftype,50>,21> Matrix21_50;
+    typedef VectorN<VectorN<ftype,22>,22> Matrix22;
+    typedef VectorN<VectorN<ftype,50>,22> Matrix22_50;
 #else
     typedef ftype Vector2[2];
     typedef ftype Vector3[3];
@@ -62,10 +63,11 @@ public:
     typedef ftype Vector11[11];
     typedef ftype Vector13[13];
     typedef ftype Vector14[14];
-    typedef ftype Vector21[21];
+    typedef ftype Vector15[15];
+    typedef ftype Vector22[22];
     typedef ftype Matrix3[3][3];
-    typedef ftype Matrix21[21][21];
-    typedef ftype Matrix21_50[21][50];
+    typedef ftype Matrix22[22][22];
+    typedef ftype Matrix22_50[22][50];
 #endif
 
     // Constructor
@@ -74,10 +76,14 @@ public:
     // Initialise the filter states from the AHRS and magnetometer data (if present)
     void InitialiseFilter(void);
 
-    // Reset the position and height states
+    // Initialise the attitude from accelerometer and magnetometer data (if present)
+    void InitialiseFilterBootstrap(void);
+
+    // Reset the position and height states to the last GPS and barometer measurement
     void ResetPosition(void);
 
-    // inhibits position and velocity aittude corrections when set to false
+    // inhibits position and velocity attitude corrections when set to true
+    // setting to true has same effect as ahrs.set_correct_centrifugal(false)
     void SetStaticMode(bool setting);
 
     // Update Filter States - this should be called whenever new IMU data is available
@@ -85,6 +91,12 @@ public:
 
     // return true if the filter is healthy
     bool healthy(void) const;
+
+    // return true if filter is dead-reckoning height
+    bool HeightDrifting(void) const;
+
+    // return true if filter is dead-reckoning position
+    bool PositionDrifting(void) const;
 
     // fill in latitude, longitude and height of the reference point
     void getRefLLH(struct Location &loc) const;
@@ -106,6 +118,7 @@ public:
     void getAccelBias(Vector3f &accelBias) const;
 
     // return the NED wind speed estimates in m/s
+    // positive is air moving in the direction of the corresponding axis
     void getWind(Vector3f &wind) const;
 
     // return earth magnetic field estimates in measurement units
@@ -129,6 +142,12 @@ public:
     // get the quaternions defining the rotation from NED to XYZ (body) axes
     void getQuaternion(Quaternion &quat) const;
 
+    // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
+    void  getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov) const;
+
+    // return the innovation variances for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
+    void  getVariances(Vector3f &velVar, Vector3f &posVar, Vector3f &magVar, float &tasVar) const;
+
 private:
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;
@@ -141,15 +160,17 @@ private:
 
     void ConstrainVariances();
 
+    void ConstrainStates();
+
     void FuseVelPosNED();
 
     void FuseMagnetometer();
 
     void FuseAirspeed();
 
-    void zeroRows(Matrix21 &covMat, uint8_t first, uint8_t last);
+    void zeroRows(Matrix22 &covMat, uint8_t first, uint8_t last);
 
-    void zeroCols(Matrix21 &covMat, uint8_t first, uint8_t last);
+    void zeroCols(Matrix22 &covMat, uint8_t first, uint8_t last);
 
     void quatNorm(Quaternion &quatOut, const Quaternion &quatIn) const;
 
@@ -157,7 +178,7 @@ private:
     void StoreStates(void);
 
     // recall state vector stored at closest time to the one specified by msec
-    void RecallStates(Vector21 &statesForFusion, uint32_t msec);
+    void RecallStates(Vector22 &statesForFusion, uint32_t msec);
 
     void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
@@ -169,7 +190,7 @@ private:
 
     void OnGroundCheck();
 
-    void CovarianceInit();
+    void CovarianceInit(float roll, float pitch, float yaw);
 
     void readIMUData();
 
@@ -189,131 +210,149 @@ private:
 
     void SelectMagFusion();
 
-    bool statesInitialised;
+    void ForceYawAlignment();
+
+    void ZeroVariables();
 
 public:
     // Tuning Parameters
-    ftype _gpsHorizVelNoise;    // GPS horizontal velocity noise : m/s
-    ftype _gpsVertVelNoise;    // GPS vertical velocity noise : m/s
-    ftype _gpsHorizPosNoise;    // GPS horizontal position noise m
-    ftype _gpsVertPosNoise;    // GPS or Baro vertical position variance : m^2
-    ftype _gpsVelVarAccScale; // scale factor applied to velocity variance due to Vdot
-    ftype _gpsPosVarAccScale; // scale factor applied to position variance due to Vdot
-    ftype _magNoise; // magnetometer measurement noise : gauss
-    ftype _magVarRateScale; // scale factor applied to magnetometer variance due to angular rate
-    ftype _easNoise; // equivalent airspeed noise : m/s
-    ftype _windStateNoise; // rate of change of wind : m/s^2
-    ftype _wndVarHgtRateScale; // scale factor applied to wind process noise from height rate
-    ftype _gyrNoise; // gyro process noise : rad/s
-    ftype _accNoise; // accelerometer process noise : m/s^2
-    ftype _dAngBiasNoise; // gyro bias state noise : rad/s^2
-    ftype _magEarthNoise; // earth magnetic field process noise : gauss/sec
-    ftype _magBodyNoise; // earth magnetic field process noise : gauss/sec
+    ftype _gpsHorizVelNoise;        // GPS horizontal velocity measurement noise : m/s
+    ftype _gpsVertVelNoise;         // GPS vertical velocity measurement noise : m/s
+    ftype _gpsHorizPosNoise;        // GPS horizontal position measurement noise m
+    ftype _baroAltNoise;            // Baro height measurement noise : m^2
+    ftype _gpsNEVelVarAccScale;     // scale factor applied to NE velocity measurement variance due to Vdot
+    ftype _gpsDVelVarAccScale;      // scale factor applied to D velocity measurement variance due to Vdot
+    ftype _gpsPosVarAccScale;       // scale factor applied to position measurement variance due to Vdot
+    ftype _magNoise;                // magnetometer measurement noise : gauss
+    ftype _magVarRateScale;         // scale factor applied to magnetometer variance due to angular rate
+    ftype _easNoise;                // equivalent airspeed measurement noise : m/s
+    ftype _windVelProcessNoise;     // wind velocity state process noise : m/s^2
+    ftype _wndVarHgtRateScale;      // scale factor applied to wind process noise due to height rate
+    ftype _gyrNoise;                // gyro process noise : rad/s
+    ftype _accNoise;                // accelerometer process noise : m/s^2
+    ftype _gyroBiasNoiseScaler;      // scale factor applied to gyro bias state process variance when on ground
+    ftype _gyroBiasProcessNoise;    // gyro bias state process noise : rad/s
+    ftype _accelBiasProcessNoise;	// accel bias state process noise : m/s^2
+    ftype _magEarthProcessNoise;    // earth magnetic field process noise : gauss/sec
+    ftype _magBodyProcessNoise;     // earth magnetic field process noise : gauss/sec
+    uint16_t _msecVelDelay;         // effective average delay of GPS velocity measurements rel to IMU (msec)
+    uint16_t _msecPosDelay;         // effective average delay of GPS position measurements rel to (msec)
+    uint16_t _msecHgtDelay;         // effective average delay of height measurements rel to (msec)
+    uint16_t _msecMagDelay;         // effective average delay of magnetometer measurements rel to IMU (msec)
+    uint16_t _msecTasDelay;         // effective average delay of airspeed measurements rel to IMU (msec)
+    uint16_t _msecGpsAvg;           // average number of msec between GPS measurements
+    uint16_t _msecHgtAvg;           // average number of msec between height measurements
+    uint8_t  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
+    uint8_t  _gpsVelInnovGate;      // Number of standard deviations applied to GPS velocity innovation consistency check
+    uint8_t  _gpsPosInnovGate;      // Number of standard deviations applied to GPS position innovation consistency check
+    uint8_t  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
+    uint8_t  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
+    uint8_t  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
+    uint32_t _gpsRetryTimeUseTAS;   // GPS retry time following innovation consistency fail if TAS measurements are used
+    uint32_t _gpsRetryTimeNoTAS;    // GPS retry time following innovation consistency fail if no TAS measurements are used
+    uint32_t _hgtRetryTimeMode0;    // height measurement retry time following innovation consistency fail if GPS fusion mode is = 0
+    uint32_t _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0
+
 private:
-
-    Vector21 states; // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
-
-    Matrix21 KH; //  intermediate result used for covariance updates
-    Matrix21 KHP; // intermediate result used for covariance updates
-    Matrix21 P; // covariance matrix
-    Matrix21_50 storedStates; // state vectors stored for the last 50 time steps
-    uint32_t statetimeStamp[50]; // time stamp for each state vector stored
-    Vector3f correctedDelAng; // delta angles about the xyz body axes corrected for errors (rad)
-    Vector3f correctedDelVel; // delta velocities along the XYZ body axes corrected for errors (m/s)
-    Vector3f summedDelAng; // corrected & summed delta angles about the xyz body axes (rad)
-    Vector3f summedDelVel; // corrected & summed delta velocities along the XYZ body axes (m/s)
-	Vector3f prevDelAng; // previous delta angle use for INS coning error compensation
-    Matrix3f prevTnb; // previous nav to body transformation used for INS earth rotation compensation
-    ftype accNavMag; // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
-    Vector3f earthRateNED; // earths angular rate vector in NED (rad/s)
-    Vector3f dVelIMU; // delta velocity vector in XYZ body axes measured by the IMU (m/s)
-    Vector3f dAngIMU; // delta angle vector in XYZ body axes measured by the IMU (rad)
-    ftype dtIMU; // time lapsed since the last IMU measurement (sec)
-    ftype dt; // time lapsed since the last covariance prediction (sec)
-    ftype hgtRate; // state for rate of change of height filter
-    bool onGround; // boolean true when the flight vehicle is on the ground (not flying)
-    const bool useAirspeed; // boolean true if airspeed data is being used
-    const bool useCompass; // boolean true if magnetometer data is being used
-    const uint8_t fusionModeGPS; // 0 = GPS outputs 3D velocity, 1 = GPS outputs 2D velocity, 2 = GPS outputs no velocity
-    Vector6 innovVelPos; // innovation output for a group of measurements
-    Vector6 varInnovVelPos; // innovation variance output for a group of measurements
-    bool fuseVelData; // this boolean causes the velNED measurements to be fused
-    bool fusePosData; // this boolean causes the posNE measurements to be fused
-    bool fuseHgtData; // this boolean causes the hgtMea measurements to be fused
-    Vector3f velNED; // North, East, Down velocity measurements (m/s)
-    Vector2 posNE; // North, East position measurements (m)
-    ftype hgtMea; //  height measurement relative to reference point  (m)
-    Vector21 statesAtVelTime; // States at the effective time of velNED measurements
-    Vector21 statesAtPosTime; // States at the effective time of posNE measurements
-    Vector21 statesAtHgtTime; // States at the effective time of hgtMea measurement
-    Vector3f innovMag; // innovation output from fusion of X,Y,Z compass measurements
-    Vector3f varInnovMag; // innovation variance output from fusion of X,Y,Z compass measurements
-    bool fuseMagData; // boolean true when magnetometer data is to be fused
-    Vector3f magData; // magnetometer flux readings in X,Y,Z body axes
-    Vector21 statesAtMagMeasTime; // filter states at the effective time of compass measurements
-    ftype innovVtas; // innovation output from fusion of airspeed measurements
-    ftype varInnovVtas; // innovation variance output from fusion of airspeed measurements
-    bool fuseVtasData; // boolean true when airspeed data is to be fused
-    float VtasMeas; // true airspeed measurement (m/s)
-    Vector21 statesAtVtasMeasTime; // filter states at the effective measurement time
-    Vector3f magBias; // magnetometer bias vector in XYZ body axes
-    const ftype covTimeStepMax; // maximum time allowed between covariance predictions
-    const ftype covDelAngMax; // maximum delta angle between covariance predictions
-    bool covPredStep; // boolean set to true when a covariance prediction step has been performed
-    const ftype yawVarScale; // scale factor applied to yaw gyro errors when on ground
-    bool magFusePerformed; // boolean set to true when magnetometer fusion has been perfomred in that time step
-    bool magFuseRequired; // boolean set to true when magnetometer fusion will be perfomred in the next time step
-    bool posVelFuseStep; // boolean set to true when position and velocity fusion is being performed
-    bool tasFuseStep; // boolean set to true when airspeed fusion is being performed
-    uint32_t TASmsecPrev; // time stamp of last TAS fusion step
-    const uint32_t TASmsecMax; // maximum allowed interval between TAS fusion steps
-    uint32_t MAGmsecPrev; // time stamp of last compass fusion step
-    const uint32_t MAGmsecMax; // maximum allowed interval between compass fusion steps
-    uint32_t HGTmsecPrev; // time stamp of last height measurement fusion step
-    const uint32_t HGTmsecMax; // maximum allowed interval between height measurement fusion steps
-    const bool fuseMeNow; // boolean to force fusion whenever data arrives
-    bool staticMode; // boolean to force position and velocity measurements to zero for pre-arm or bench testing
-
-    // last time compass was updated
-    uint32_t lastMagUpdate;
-
-    // last time airspeed was updated
-    uint32_t lastAirspeedUpdate;
-
-    // Estimated time delays (msec) for different measurements relative to IMU
-    const uint32_t msecVelDelay;
-    const uint32_t msecPosDelay;
-    const uint32_t msecHgtDelay;
-    const uint32_t msecMagDelay;
-    const uint32_t msecTasDelay;
-
-    // IMU input data variables
-    uint32_t IMUmsec;
-
-    // GPS input data variables
-    ftype gpsCourse;
-    ftype gpsGndSpd;
-    bool newDataGps;
-
-    // Magnetometer input data variables
-    ftype magIn;
-    bool newDataMag;
-
-    // TAS input variables
-    bool newDataTas;
-
-    // HGT input variables
-    bool newDataHgt;
-    uint32_t lastHgtUpdate;
-
-    // Time stamp when vel, pos or height measurements last failed checks
-	uint32_t velFailTime;
-	uint32_t posFailTime;
-	uint32_t hgtFailTime;
+    bool statesInitialised;         // boolean true when filter states have been initialised
+    bool velHealth;                 // boolean true if velocity measurements have failed innovation consistency check
+    bool posHealth;                 // boolean true if position measurements have failed innovation consistency check
+    bool hgtHealth;                 // boolean true if height measurements have failed innovation consistency check
+    bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
+    bool posTimeout;                // boolean true if position measurements have failed innovation consistency check and timed out
+    bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
+    Vector22 states;                // state matrix - 4 x quaternions, 3 x Vel, 3 x Pos, 3 x gyro bias, 3 x accel bias, 2 x wind vel, 3 x earth mag field, 3 x body mag field
+    Vector22 Kfusion;               // Kalman gain vector
+    Matrix22 KH;                    // intermediate result used for covariance updates
+    Matrix22 KHP;                   // intermediate result used for covariance updates
+    Matrix22 P;                     // covariance matrix
+    Matrix22_50 storedStates;       // state vectors stored for the last 50 time steps
+    uint32_t statetimeStamp[50];    // time stamp for each state vector stored
+    Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
+    Vector3f correctedDelVel;       // delta velocities along the XYZ body axes corrected for errors (m/s)
+    Vector3f summedDelAng;          // corrected & summed delta angles about the xyz body axes (rad)
+    Vector3f summedDelVel;          // corrected & summed delta velocities along the XYZ body axes (m/s)
+	Vector3f prevDelAng;            // previous delta angle use for INS coning error compensation
+    Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
+    ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
+    Vector3f earthRateNED;          // earths angular rate vector in NED (rad/s)
+    Vector3f dVelIMU;               // delta velocity vector in XYZ body axes measured by the IMU (m/s)
+    Vector3f dAngIMU;               // delta angle vector in XYZ body axes measured by the IMU (rad)
+    ftype dtIMU;                    // time lapsed since the last IMU measurement (sec)
+    ftype dt;                       // time lapsed since the last covariance prediction (sec)
+    ftype hgtRate;                  // state for rate of change of height filter
+    bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
+    const bool useAirspeed;         // boolean true if airspeed data is being used
+    const bool useCompass;          // boolean true if magnetometer data is being used
+    Vector6 innovVelPos;            // innovation output for a group of measurements
+    Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
+    bool fuseVelData;               // this boolean causes the velNED measurements to be fused
+    bool fusePosData;               // this boolean causes the posNE measurements to be fused
+    bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
+    Vector3f velNED;                // North, East, Down velocity measurements (m/s)
+    Vector2 posNE;                  // North, East position measurements (m)
+    ftype hgtMea;                   //  height measurement relative to reference point  (m)
+    Vector22 statesAtVelTime;       // States at the effective time of velNED measurements
+    Vector22 statesAtPosTime;       // States at the effective time of posNE measurements
+    Vector22 statesAtHgtTime;       // States at the effective time of hgtMea measurement
+    Vector3f innovMag;              // innovation output from fusion of X,Y,Z compass measurements
+    Vector3f varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
+    bool fuseMagData;               // boolean true when magnetometer data is to be fused
+    Vector3f magData;               // magnetometer flux readings in X,Y,Z body axes
+    Vector22 statesAtMagMeasTime;   // filter states at the effective time of compass measurements
+    ftype innovVtas;                // innovation output from fusion of airspeed measurements
+    ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
+    bool fuseVtasData;              // boolean true when airspeed data is to be fused
+    float VtasMeas;                 // true airspeed measurement (m/s)
+    Vector22 statesAtVtasMeasTime;  // filter states at the effective measurement time
+    Vector3f magBias;               // magnetometer bias vector in XYZ body axes
+    const ftype covTimeStepMax;     // maximum time allowed between covariance predictions
+    const ftype covDelAngMax;       // maximum delta angle between covariance predictions
+    bool covPredStep;               // boolean set to true when a covariance prediction step has been performed
+    bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
+    bool magFuseRequired;           // boolean set to true when magnetometer fusion will be perfomred in the next time step
+    bool posVelFuseStep;            // boolean set to true when position and velocity fusion is being performed
+    bool tasFuseStep;               // boolean set to true when airspeed fusion is being performed
+    uint32_t TASmsecPrev;           // time stamp of last TAS fusion step
+    const uint32_t TASmsecMax;      // maximum allowed interval between TAS fusion steps
+    uint32_t MAGmsecPrev;           // time stamp of last compass fusion step
+    uint32_t HGTmsecPrev;           // time stamp of last height measurement fusion step
+    const bool fuseMeNow;           // boolean to force fusion whenever data arrives
+    bool staticMode;                // boolean to force position and velocity measurements to zero for pre-arm or bench testing
+    uint32_t lastMagUpdate;         // last time compass was updated
+    uint8_t imuStepsVelFuse;        // Number of IMU time steps from the last velocity fusion
+    Vector3f accelSumVelFuse;       // sum of gravity corrected acceleration since last velocity fusion
+    Vector3f velDotNED;             // rate of change of velocity in NED frame
+    Vector3f velDotNEDfilt;         // low pass filtered velDotNED
+    Vector3f lastVelDotNED;         // velDotNED filter state
+    uint32_t lastAirspeedUpdate;    // last time airspeed was updated
+    uint32_t IMUmsec;               // time that the last IMU value was taken
+    ftype gpsCourse;                // GPS ground course angle(rad) 
+    ftype gpsGndSpd;                // GPS ground speed (m/s)
+    bool newDataGps;                // true when new GPS data has arrived
+    bool newDataMag;                // true when new magnetometer data has arrived
+    float gpsVarScaler;             // scaler applied to gps measurement variance to allow for oversampling
+    bool newDataTas;                // true when new airspeed data has arrived
+    bool newDataHgt;                // true when new height data has arrived
+    uint32_t lastHgtUpdate;         // time of last height measurement received (msec)
+    float hgtVarScaler;             // scaler applied to height measurement variance to allow for oversampling
+	uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
+	uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
+	uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
+	uint8_t storeIndex;             // State vector storage index
+	uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
+    Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
+    Vector3f lastAccel;             // acceleration from previous IMU sample used for trapezoidal integrator
+    Matrix22 nextP;                 // Predicted covariance matrix before addition of process noise to diagonals
+    Vector22 processNoise;          // process noise added to diagonals of predicted covariance matrix
+    Vector15 SF;                    // intermediate variables used to calculate predicted covariance matrix
+    Vector8 SG;                     // intermediate variables used to calculate predicted covariance matrix
+    Vector11 SQ;                    // intermediate variables used to calculate predicted covariance matrix
+    Vector8 SPP;                    // intermediate variables used to calculate predicted covariance matrix
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
-    // to
+    // to level computational load as this is an expensive operation
     struct {
     	ftype q0;
         ftype q1;
@@ -332,22 +371,6 @@ private:
         ftype SH_MAG[9];
 	} mag_state;
 
-    // State vector storage index
-	uint8_t storeIndex;
-
-    // time of last GPS fix used to determine if new data has arrived
-	uint32_t lastFixTime_ms;
-
-    Vector3f lastAngRate;
-    Vector3f lastAccel;
-
-    // CovariancePrediction variables
-    Matrix21 nextP;
-    Vector21 processNoise;
-    Vector14 SF;
-    Vector8 SG;
-    Vector11 SQ;
-    Vector8 SPP;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // performance counters
