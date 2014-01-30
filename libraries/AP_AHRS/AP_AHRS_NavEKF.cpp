@@ -89,6 +89,13 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
     }
 }
 
+void AP_AHRS_NavEKF::set_correct_centrifugal(bool setting)
+{
+    if (ekf_started) {
+        EKF.SetStaticMode(setting);        
+    }
+}
+
 // reset the current attitude, used on new IMU calibration
 void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
 {
@@ -191,9 +198,6 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
 void AP_AHRS_NavEKF::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
 {
     AP_AHRS_DCM::set_home(lat, lng, alt_cm);
-    if (ekf_started) {
-        EKF.ResetPosition();
-    }
 }
 
 // return true if inertial navigation is active
