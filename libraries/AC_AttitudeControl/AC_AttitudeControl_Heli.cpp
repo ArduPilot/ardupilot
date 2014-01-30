@@ -112,7 +112,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
                 pitch_i = _pid_rate_pitch.get_i(rate_pitch_error, _dt);
             }
         }else{
-            if (_flags_heli.leaky_i){
+            if (_flags_heli.leaky_i) {
                 pitch_i = _pid_rate_pitch.get_leaky_i(rate_pitch_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
             }else{
                 pitch_i = _pid_rate_pitch.get_i(rate_pitch_error, _dt);
@@ -217,9 +217,10 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
 float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 {
-    float p,i,d;            // used to capture pid values for logging
+    float pd,i;            // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
+    float yaw_out;
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
@@ -227,28 +228,35 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // calculate error and call pid controller
     rate_error  = rate_target_cds - current_rate;
-    p = _pid_rate_yaw.get_p(rate_error);
-
-    // separately calculate p, i, d values for logging
-    p = _pid_rate_yaw.get_p(rate_error);
+    pd = _pid_rate_yaw.get_p(rate_error) + _pid_rate_yaw.get_d(rate_error, _dt);
 
     // get i term
     i = _pid_rate_yaw.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
-    if (!_motors.limit.yaw || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
-        i = _pid_rate_yaw.get_i(rate_error, _dt);
+    if (!_flags_heli.limit_yaw || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
+        AP_MotorsHeli& heli_motors = (AP_MotorsHeli&)_motors;
+        if (heli_motors.motor_runup_complete()) {
+            i = _pid_rate_yaw.get_i(rate_error, _dt);
+        } else {
+            i = _pid_rate_yaw.get_leaky_i(rate_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
+        }
     }
 
-    // get d value
-    d = _pid_rate_yaw.get_d(rate_error, _dt);
+    // add feed forward
+    yaw_out = (_heli_yaw_ff*rate_target_cds) + pd + i;
 
-    // constrain output and return
-    return constrain_float((p+i+d), -AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
+    // constrain output and update limit flag
+    if (fabs(yaw_out) > AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX) {
+        yaw_out = constrain_float(yaw_out,-AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX,AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
+        _flags_heli.limit_yaw = true;
+    }else{
+        _flags_heli.limit_yaw = false;
+    }
 
-    // To-Do: allow logging of PIDs?
+    // output to motors
+    return yaw_out;
 }
-
 
 //
 // throttle functions
