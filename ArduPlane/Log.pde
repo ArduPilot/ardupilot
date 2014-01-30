@@ -601,10 +601,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
     { LOG_AHRS2_MSG, sizeof(log_AHRS2), 
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" },
-    { LOG_EKF1_MSG, sizeof(log_EKF1), 
-      "EKF1","IccCffffffbbb","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" },
-    { LOG_EKF2_MSG, sizeof(log_EKF2), 
-      "EKF2","Ibbbcchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" },
     TECS_LOG_FORMAT(LOG_TECS_MSG),
 };
 
