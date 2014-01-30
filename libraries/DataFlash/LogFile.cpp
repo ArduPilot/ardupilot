@@ -803,7 +803,7 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
         return;
     }
     struct log_AHRS pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AHRS2_MSG),
+        LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
         time_ms : hal.scheduler->millis(),
         roll  : (int16_t)(degrees(euler.x)*100),
         pitch : (int16_t)(degrees(euler.y)*100),
@@ -816,9 +816,9 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
 }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-// Write first EKF packet
 void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 {
+	// Write first EKF packet
     Vector3f euler;
     Vector3f posNED;
     Vector3f velNED;
@@ -841,12 +841,13 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         posN    : (float)(posNED.x), // metres North
         posE    : (float)(posNED.y), // metres East
         posD    : (float)(posNED.z), // metres Down
-        gyrX    : (int8_t)(gyroBias.x), // deg/min
-        gyrY    : (int8_t)(gyroBias.y), // deg/min
-        gyrZ    : (int8_t)(gyroBias.z)  // deg/min
+        gyrX    : (int8_t)(60*degrees(gyroBias.x)), // deg/min
+        gyrY    : (int8_t)(60*degrees(gyroBias.y)), // deg/min
+        gyrZ    : (int8_t)(60*degrees(gyroBias.z))  // deg/min
     };
     WriteBlock(&pkt, sizeof(pkt));
 
+	// Write second EKF packet
     Vector3f accelBias;
     Vector3f wind;
     Vector3f magNED;
@@ -871,6 +872,50 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
         magZ    : (int16_t)(magXYZ.z)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
-#endif
+
+	// Write third EKF packet
+	Vector3f velInnov;
+	Vector3f posInnov;
+	Vector3f magInnov;
+	float tasInnov;
+    ahrs.get_NavEKF().getInnovations(velInnov, posInnov, magInnov, tasInnov);
+    struct log_EKF3 pkt3 = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF3_MSG),
+        time_ms : hal.scheduler->millis(),
+        innovVN : (int16_t)(100*velInnov.x),
+        innovVE : (int16_t)(100*velInnov.y),
+        innovVD : (int16_t)(100*velInnov.z),
+        innovPN : (int16_t)(100*posInnov.x),
+        innovPE : (int16_t)(100*posInnov.y),
+        innovPD : (int16_t)(100*posInnov.z),
+        innovMX : (int16_t)(magInnov.x),
+        innovMY : (int16_t)(magInnov.y),
+        innovMZ : (int16_t)(magInnov.z),
+        innovVT : (int16_t)(100*tasInnov)
+    };
+    WriteBlock(&pkt3, sizeof(pkt3));
+	
+	// Write fourth EKF packet
+	Vector3f velVar;
+	Vector3f posVar;
+	Vector3f magVar;
+	float tasVar;
+    ahrs.get_NavEKF().getVariances(velVar, posVar, magVar, tasVar);
+    struct log_EKF4 pkt4 = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
+        time_ms : hal.scheduler->millis(),
+        sqrtvarVN : (int16_t)(100*sqrtf(velVar.x)),
+        sqrtvarVE : (int16_t)(100*sqrtf(velVar.y)),
+        sqrtvarVD : (int16_t)(100*sqrtf(velVar.z)),
+        sqrtvarPN : (int16_t)(100*sqrtf(posVar.x)),
+        sqrtvarPE : (int16_t)(100*sqrtf(posVar.y)),
+        sqrtvarPD : (int16_t)(100*sqrtf(posVar.z)),
+        sqrtvarMX : (int16_t)(sqrtf(magVar.x)),
+        sqrtvarMY : (int16_t)(sqrtf(magVar.y)),
+        sqrtvarMZ : (int16_t)(sqrtf(magVar.z)),
+        sqrtvarVT : (int16_t)(100*sqrtf(tasVar))
+    };
+    WriteBlock(&pkt4, sizeof(pkt4));
 }
+#endif
 
