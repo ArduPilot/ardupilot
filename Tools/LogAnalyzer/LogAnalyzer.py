@@ -120,8 +120,7 @@ class TestSuite:
 		print '\n'
 
 	def outputXML(self, xmlFile):
-		# TODO: implement XML output
-
+		# open the file for writing
 		xml = None
 		try:
 			xml = open(xmlFile, 'w')
@@ -129,10 +128,10 @@ class TestSuite:
 			sys.stderr.write("Error opening output xml file: %s" % xmlFile)
 			sys.exit(1)
 
-		print >>xml, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-		print >>xml, "<loganalysis>"
 
 		# output header info
+		print >>xml, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+		print >>xml, "<loganalysis>"
 		print >>xml, "<header>"
 		print >>xml, "  <logfile>"   + self.logfile + "</logfile>"
 		print >>xml, "  <sizekb>"    + `self.logdata.filesizeKB` + "</sizekb>"

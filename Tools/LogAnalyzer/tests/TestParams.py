@@ -43,8 +43,8 @@ class TestParams(Test):
 		if logdata.vehicleType == "ArduCopter":
 			self.__checkParamIsEqual   ("MAG_ENABLE",   1, logdata)
 			self.__checkParamIsLessThan("THR_MIN",    200, logdata)
-			self.__checkParamIsLessThan("THR_MID",    650, logdata)
-			self.__checkParamIsMoreThan("THR_MID",    300, logdata)
+			self.__checkParamIsLessThan("THR_MID",    701, logdata)
+			self.__checkParamIsMoreThan("THR_MID",    299, logdata)
 			# TODO: add more parameter tests, these are just an example...
 		elif logdata.vehicleType == "ArduPlane":
 			# TODO: add parameter checks for plane...
