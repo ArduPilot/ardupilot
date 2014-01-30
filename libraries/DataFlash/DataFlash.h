@@ -238,9 +238,9 @@ struct PACKED log_EKF1 {
     float posN;
     float posE;
     float posD;
-    int8_t gyrX;
-    int8_t gyrY;
-    int8_t gyrZ;
+    int16_t gyrX;
+    int16_t gyrY;
+    int16_t gyrZ;
 };
 
 struct PACKED log_EKF2 {
@@ -259,7 +259,35 @@ struct PACKED log_EKF2 {
     int16_t magZ;
 };
 
+struct PACKED log_EKF3 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t innovVN;
+    int16_t innovVE;
+    int16_t innovVD;
+    int16_t innovPN;
+    int16_t innovPE;
+    int16_t innovPD;
+    int16_t innovMX;
+    int16_t innovMY;
+    int16_t innovMZ;
+    int16_t innovVT;
+};
 
+struct PACKED log_EKF4 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t sqrtvarVN;
+    int16_t sqrtvarVE;
+	int16_t sqrtvarVD;
+    int16_t sqrtvarPN;
+    int16_t sqrtvarPE;
+    int16_t sqrtvarPD;
+    int16_t sqrtvarMX;
+    int16_t sqrtvarMY;
+    int16_t sqrtvarMZ;
+    int16_t sqrtvarVT;
+};
 
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -285,9 +313,13 @@ struct PACKED log_EKF2 {
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_EKF1_MSG, sizeof(log_EKF1), \
-      "EKF1","IccCffffffbbb","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
+      "EKF1","IccCffffffccc","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_EKF2_MSG, sizeof(log_EKF2), \
-      "EKF2","Ibbbcchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" }
+      "EKF2","Ibbbcchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
+    { LOG_EKF3_MSG, sizeof(log_EKF3), \
+      "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
+    { LOG_EKF4_MSG, sizeof(log_EKF4), \
+      "EKF4","Icccccchhhc","TimeMS,SVN,SVE,SVD,SPN,SPE,SPD,SMX,SMY,SMZ,SVT" }
 
 // message types for common messages
 #define LOG_FORMAT_MSG	  128
@@ -298,16 +330,15 @@ struct PACKED log_EKF2 {
 #define LOG_RCIN_MSG      133
 #define LOG_RCOUT_MSG     134
 #define LOG_IMU2_MSG	  135
-<<<<<<< HEAD
 #define LOG_BARO_MSG	  136
 #define LOG_AHR2_MSG	  137
 #define LOG_SIMSTATE_MSG  138
-=======
-#define LOG_AHRS2_MSG	  136
-#define LOG_SIMSTATE_MSG  137
-#define LOG_EKF1_MSG      138
-#define LOG_EKF2_MSG      139
->>>>>>> DataFlash: moved EKF logging to common code
+#define LOG_AHRS2_MSG	  139
+#define LOG_SIMSTATE_MSG  140
+#define LOG_EKF1_MSG      141
+#define LOG_EKF2_MSG      142
+#define LOG_EKF3_MSG      143
+#define LOG_EKF4_MSG      144
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
