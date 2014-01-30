@@ -1448,7 +1448,11 @@ static void update_flight_mode()
 {
     switch (control_mode) {
         case ACRO:
-            acro_run();
+            #if FRAME_CONFIG == HELI_FRAME
+                heli_acro_run();
+            #else
+                acro_run();
+            #endif
             break;
 
         case STABILIZE:
