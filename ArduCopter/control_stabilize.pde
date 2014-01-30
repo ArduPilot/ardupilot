@@ -54,24 +54,12 @@ static void stabilize_run()
     // output pilot's throttle
     attitude_control.set_throttle_out(pilot_throttle_scaled, true);
 
-    // refetch angle targets for reporting
+    // re-fetch angle targets for reporting
     const Vector3f angle_target = attitude_control.angle_ef_targets();
     control_roll = angle_target.x;
     control_pitch = angle_target.y;
     control_yaw = angle_target.z;
 
     // update estimate of throttle cruise
-    #if FRAME_CONFIG == HELI_FRAME
-    update_throttle_cruise(motors.get_collective_out());
-    #else
     update_throttle_cruise(pilot_throttle_scaled);
-    #endif  //HELI_FRAME
-
-    // update take-off complete flag
-    if (!ap.takeoff_complete) {
-        if (pilot_throttle_scaled > g.throttle_cruise) {
-            // we must be in the air by now
-            set_takeoff_complete(true);
-        }
-    }
 }
