@@ -331,7 +331,7 @@ void AP_MotorsHeli::output_test()
 }
 
 // allow_arming - returns true if main rotor is spinning and it is ok to arm
-bool AP_MotorsHeli::allow_arming()
+bool AP_MotorsHeli::allow_arming() const
 {
     // ensure main rotor has started
     if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _servo_rsc->control_in > 0) {
@@ -349,7 +349,7 @@ void AP_MotorsHeli::set_desired_rotor_speed(int16_t desired_speed)
 }
 
 // return true if the main rotor is up to speed
-bool AP_MotorsHeli::motor_runup_complete()
+bool AP_MotorsHeli::motor_runup_complete() const
 {
     // if we have no control of motors, assume pilot has spun them up
     if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_NONE) {
