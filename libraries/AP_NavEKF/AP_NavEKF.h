@@ -74,6 +74,9 @@ public:
     // Initialise the filter states from the AHRS and magnetometer data (if present)
     void InitialiseFilter(void);
 
+    // Reset the position and height states
+    void ResetPosition(void);
+
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 

@@ -82,6 +82,21 @@ bool NavEKF::healthy(void) const
     return true;
 }
 
+void NavEKF::ResetPosition(void)
+{
+    // read the GPS
+    readGpsData();
+
+    // read the barometer
+    readHgtData();
+
+    // write to state vector
+    states[7] = posNE[0];
+    states[8] = posNE[1];
+    states[9] = - _baro.get_altitude();
+
+}
+
 void NavEKF::InitialiseFilter(void)
 {
     lastFixTime_ms = 0;
