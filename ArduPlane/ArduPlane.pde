@@ -148,7 +148,6 @@ static void update_events(void);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
 ////////////////////////////////////////////////////////////////////////////////
@@ -1088,7 +1087,10 @@ static void update_GPS_10Hz(void)
 
         if (!arming.is_armed() ||
             hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+            ahrs.set_correct_centrifugal(false);
             update_home();
+        } else {
+            ahrs.set_correct_centrifugal(true);
         }
     }
 
