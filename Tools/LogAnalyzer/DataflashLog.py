@@ -128,11 +128,11 @@ class DataflashLog:
 	'''APM Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
 	filename = None
 
-	vehicleType     = None # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
-	firmwareVersion = None
+	vehicleType     = "" # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
+	firmwareVersion = ""
 	firmwareHash    = ""
-	freeRAM         = None
-	hardwareType    = None # APM 1, APM 2, PX4, MPNG, etc What is VRBrain? BeagleBone, etc? Needs more testing
+	freeRAM         = 0
+	hardwareType    = "" # APM 1, APM 2, PX4, MPNG, etc What is VRBrain? BeagleBone, etc? Needs more testing
 
 	formats     = {} # name -> Format
 	parameters  = {} # token -> value
@@ -140,9 +140,9 @@ class DataflashLog:
 	modeChanges = {} # lineNum -> (mode,value)
 	channels    = {} # lineLabel -> {dataLabel:Channel}
 
-	filesizeKB   = None
+	filesizeKB   = 0
 	durationSecs = 0
-	lineCount    = None
+	lineCount    = 0
 
 	def getCopterType(self):
 		if self.vehicleType != "ArduCopter":
