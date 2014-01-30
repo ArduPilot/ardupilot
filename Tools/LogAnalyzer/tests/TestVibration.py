@@ -24,7 +24,7 @@ class TestVibration(Test):
 		# TODO: in Pixhawk should we use IMU or IMU2?
 		if not "IMU" in logdata.channels:
 			self.result.status = TestResult.StatusType.UNKNOWN
-			self.result.statusMessage = "No IMU log data found"
+			self.result.statusMessage = "No IMU log data"
 			return
 
 		# find some stable LOITER data to analyze, at least 10 seconds
