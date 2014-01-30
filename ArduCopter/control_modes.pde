@@ -146,7 +146,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
     switch(tmp_function) {
         case AUX_SWITCH_FLIP:
             // flip if switch is on, positive throttle and we're actually flying
-            if((ch_flag == AUX_SWITCH_HIGH) && (g.rc_3.control_in >= 0) && ap.takeoff_complete) {
+            if((ch_flag == AUX_SWITCH_HIGH) && (g.rc_3.control_in >= 0) && !ap.land_complete) {
                 init_flip();
             }
             break;

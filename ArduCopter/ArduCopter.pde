@@ -409,14 +409,13 @@ static union {
         uint8_t logging_started     : 1; // 6   // true if dataflash logging has started
 
         uint8_t do_flip             : 1; // 7   // Used to enable flip code
-        uint8_t takeoff_complete    : 1; // 8
-        uint8_t land_complete       : 1; // 9   // true if we have detected a landing
+        uint8_t land_complete       : 1; // 8   // true if we have detected a landing
 
-        uint8_t new_radio_frame     : 1; // 10      // Set true if we have new PWM data to act on from the Radio
-        uint8_t CH7_flag            : 2; // 11,12   // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH8_flag            : 2; // 13,14   // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t usb_connected       : 1; // 15      // true if APM is powered from USB connection
-        uint8_t yaw_stopped         : 1; // 16      // Used to manage the Yaw hold capabilities
+        uint8_t new_radio_frame     : 1; // 9       // Set true if we have new PWM data to act on from the Radio
+        uint8_t CH7_flag            : 2; // 10,11   // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH8_flag            : 2; // 12,13   // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t usb_connected       : 1; // 14      // true if APM is powered from USB connection
+        uint8_t yaw_stopped         : 1; // 15      // Used to manage the Yaw hold capabilities
 
         uint8_t disable_stab_rate_limit : 1; // 17  // disables limits rate request from the stability controller
 
@@ -1772,14 +1771,6 @@ void update_throttle_mode(void)
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
             #endif  //HELI_FRAME
-
-            // check if we've taken off yet
-            if (!ap.takeoff_complete && motors.armed()) {
-                if (pilot_throttle_scaled > g.throttle_cruise) {
-                    // we must be in the air by now
-                    set_takeoff_complete(true);
-                }
-            }
         }
         set_target_alt_for_reporting(0);
         break;
@@ -1798,13 +1789,6 @@ void update_throttle_mode(void)
 			#else
 			update_throttle_cruise(pilot_throttle_scaled);
             #endif  //HELI_FRAME
-
-            if (!ap.takeoff_complete && motors.armed()) {
-                if (pilot_throttle_scaled > g.throttle_cruise) {
-                    // we must be in the air by now
-                    set_takeoff_complete(true);
-                }
-            }
         }
         set_target_alt_for_reporting(0);
         break;

@@ -94,19 +94,6 @@ static void set_failsafe_gcs(bool b)
 }
 
 // ---------------------------------------------
-void set_takeoff_complete(bool b)
-{
-    // if no change, exit immediately
-    if( ap.takeoff_complete == b )
-        return;
-
-    if(b){
-        Log_Write_Event(DATA_TAKEOFF);
-    }
-    ap.takeoff_complete = b;
-}
-
-// ---------------------------------------------
 void set_land_complete(bool b)
 {
     // if no change, exit immediately

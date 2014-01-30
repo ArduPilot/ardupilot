@@ -376,7 +376,6 @@ static void do_loiter_time()
 static bool verify_takeoff()
 {
     // have we reached our target altitude?
-    set_takeoff_complete(wp_nav.reached_wp_destination());
     return wp_nav.reached_wp_destination();
 }
 

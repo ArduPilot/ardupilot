@@ -520,7 +520,7 @@ static void init_disarm_motors()
 #endif
 
     // we are not in the air
-    set_takeoff_complete(false);
+    set_land_complete(true);
     
     // setup fast AHRS gains to get right attitude
     ahrs.set_fast_gains(true);
