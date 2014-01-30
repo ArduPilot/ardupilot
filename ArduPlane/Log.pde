@@ -599,8 +599,6 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
-    { LOG_AHRS2_MSG, sizeof(log_AHRS2), 
-      "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" },
     TECS_LOG_FORMAT(LOG_TECS_MSG)
 };
 
