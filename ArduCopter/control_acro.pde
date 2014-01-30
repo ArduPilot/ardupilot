@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
- * control_stabilize.pde - init and run calls for acro flight mode
+ * control_acro.pde - init and run calls for acro flight mode
  */
 
 // acro_init - initialise acro controller
