@@ -92,6 +92,9 @@ public:
     // return delta velocity bias estimates
     void getAccelBias(Vector3f &accelBias);
 
+    // return the NE wind speed estimates
+    void getWind(Vector3f &wind);
+
     // return earth magnetic field estimates
     void getMagNED(Vector3f &magNED);
 
