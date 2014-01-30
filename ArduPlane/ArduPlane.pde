@@ -69,6 +69,7 @@
 #include <AP_Vehicle.h>
 #include <AP_SpdHgtControl.h>
 #include <AP_TECS.h>
+#include <AP_NavEKF.h>
 
 #include <AP_Notify.h>      // Notify library
 #include <AP_BattMonitor.h> // Battery monitor library
@@ -283,6 +284,8 @@ static AP_PitchController pitchController(ahrs, aparm);
 static AP_YawController   yawController(ahrs, aparm);
 static AP_SteerController steerController(ahrs);
 
+// Inertial Navigation EKF
+static AP_NavEKF  NavEKF(ahrs, baro, gps);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
