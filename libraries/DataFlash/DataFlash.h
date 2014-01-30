@@ -214,6 +214,7 @@ struct PACKED log_BARO {
     float   altitude;
     float   pressure;
     int16_t temperature;
+};
 
 struct PACKED log_AHRS {
     LOG_PACKET_HEADER;
