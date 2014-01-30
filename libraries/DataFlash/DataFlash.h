@@ -307,7 +307,7 @@ struct PACKED log_EKF4 {
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Ihhhhhhhh",     "TimeMS,Chan1,Chan2,Chan3,Chan4,Chan5,Chan6,Chan7,Chan8" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" },
+      "BARO",  "Iffc",     "TimeMS,Alt,Press,Temp" }, \
     { LOG_AHRS2_MSG, sizeof(log_AHRS), \
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
@@ -331,14 +331,12 @@ struct PACKED log_EKF4 {
 #define LOG_RCOUT_MSG     134
 #define LOG_IMU2_MSG	  135
 #define LOG_BARO_MSG	  136
-#define LOG_AHR2_MSG	  137
+#define LOG_AHRS2_MSG	  137
 #define LOG_SIMSTATE_MSG  138
-#define LOG_AHRS2_MSG	  139
-#define LOG_SIMSTATE_MSG  140
-#define LOG_EKF1_MSG      141
-#define LOG_EKF2_MSG      142
-#define LOG_EKF3_MSG      143
-#define LOG_EKF4_MSG      144
+#define LOG_EKF1_MSG      139
+#define LOG_EKF2_MSG      140
+#define LOG_EKF3_MSG      141
+#define LOG_EKF4_MSG      142
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
