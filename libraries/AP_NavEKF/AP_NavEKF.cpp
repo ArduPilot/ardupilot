@@ -89,21 +89,19 @@ bool NavEKF::healthy(void) const
     return true;
 }
 
+void NavEKF::SetStaticMode(bool setting) {
+        staticMode = !setting;
+}
+
 void NavEKF::ResetPosition(void)
 {
     // read the GPS
     readGpsData();
-
-    // read the barometer
     readHgtData();
-
     // write to state vector
     states[7] = posNE[0];
     states[8] = posNE[1];
-    states[9] = - _baro.get_altitude();
-
-    // set static mode to force positon and velocity measurements to zero
-    staticMode = true;
+    states[9] = -hgtMea;
 }
 
 void NavEKF::InitialiseFilter(void)
@@ -1004,7 +1002,7 @@ void NavEKF::CovariancePrediction()
     }
 
     // Copy to output whilst forcing symmetry to prevent ill-conditioning
-    // of the matrix 
+    // of the matrix
     for (uint8_t i=0; i<=20; i++) P[i][i] = nextP[i][i];
     for (uint8_t i=1; i<=20; i++)
     {
@@ -1073,8 +1071,6 @@ void NavEKF::FuseVelPosNED()
         // zero observations if in static mode (used for pre-arm and bench testing)
         if (staticMode) {
             for (uint8_t i=0; i<=5; i++) observation[i] = 0.0f;
-            // cancel static mode (it needs to be set every frame if required)
-            staticMode = false;
         }
 
         // additional error in GPS velocity caused by manoeuvring
@@ -1254,7 +1250,7 @@ void NavEKF::FuseVelPosNED()
     }
 
     // force the covariance matrix to me symmetrical and limit the variances to prevent
-    // ill-condiioning. 
+    // ill-condiioning.
     ForceSymmetry();
     ConstrainVariances();
 
@@ -1564,7 +1560,7 @@ void NavEKF::FuseMagnetometer()
     }
 
     // force the covariance matrix to me symmetrical and limit the variances to prevent
-    // ill-condiioning. 
+    // ill-condiioning.
     ForceSymmetry();
     ConstrainVariances();
 
@@ -1693,7 +1689,7 @@ void NavEKF::FuseAirspeed()
     }
 
     // force the covariance matrix to me symmetrical and limit the variances to prevent
-    // ill-condiioning. 
+    // ill-condiioning.
     ForceSymmetry();
     ConstrainVariances();
 
@@ -1851,12 +1847,12 @@ void NavEKF::CovarianceInit()
     P[1][1]   = 0.25f*sq(radians(1.0f));
     P[2][2]   = 0.25f*sq(radians(1.0f));
     P[3][3]   = 0.25f*sq(radians(10.0f));
-    P[4][4]   = sq(0.7f);
+    P[4][4]   = 1.0e-9;
     P[5][5]   = P[4][4];
-    P[6][6]   = sq(0.7f);
-    P[7][7]   = sq(15.0f);
+    P[6][6]   = P[4][4];
+    P[7][7]   = sq(_gpsHorizPosNoise);
     P[8][8]   = P[7][7];
-    P[9][9]   = sq(5.0f);
+    P[9][9]   = sq(_gpsVertPosNoise);
     P[10][10] = sq(radians(0.1f * dtIMU));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];

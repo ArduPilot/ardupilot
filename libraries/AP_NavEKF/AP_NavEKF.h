@@ -77,6 +77,9 @@ public:
     // Reset the position and height states
     void ResetPosition(void);
 
+    // inhibits position and velocity aittude corrections when set to false
+    void SetStaticMode(bool setting);
+
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
