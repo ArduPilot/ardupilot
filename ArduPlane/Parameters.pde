@@ -753,6 +753,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
+    // @Param: RSSI_RANGE
+    // @DisplayName: Receiver RSSI voltage range
+    // @Description: Receiver RSSI voltage range
+    // @Units: Volt
+    // @Values: 3.3:3.3V, 5.0:5V
+    // @User: Standard
+    GSCALAR(rssi_range,          "RSSI_RANGE",         5.0),
+
     // @Param: INVERTEDFLT_CH
     // @DisplayName: Inverted flight channel
     // @Description: A RC input channel number to enable inverted flight. If this is non-zero then the APM will monitor the correcponding RC input channel and will enable inverted flight when the channel goes above 1750.

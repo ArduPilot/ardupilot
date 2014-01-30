@@ -180,6 +180,7 @@ public:
         k_param_rssi_pin,
         k_param_battery_volt_pin,   // unused
         k_param_battery_curr_pin,   // unused - 169
+        k_param_rssi_range,
 
         //
         // 170: Radio settings
@@ -411,6 +412,7 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 rssi_pin;
+    AP_Float rssi_range;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.     
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
