@@ -189,34 +189,100 @@ static void Log_Write_Attitude(void)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_EKF {
+struct PACKED log_EKF1 {
     LOG_PACKET_HEADER;
     uint32_t time_ms;
     int16_t roll;
     int16_t pitch;
     uint16_t yaw;
-    float   alt;
-    int32_t lat;
-    int32_t lon;
+    int16_t velN;
+    int16_t velE;
+    int16_t velD;
+    int16_t posN;
+    int16_t posE;
+    int16_t posD;
+    int8_t gyrX;
+    int8_t gyrY;
+    int8_t gyrZ;
 };
 
-// Write an EKF packet
-static void Log_Write_EKF(void)
+// Write first EKF packet
+static void Log_Write_EKF1(void)
 {
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
     Vector3f euler;
-    struct Location loc;
+    Vector3f posNED;
+    Vector3f velNED;
+    Vector3f dAngBias;
+    Vector3f dVelBias;
+    Vector3f gyroBias;
     NavEKF.getEulerAngles(euler);
-    NavEKF.getLLH(loc);
-    struct log_EKF pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF_MSG),
+    NavEKF.getVelNED(velNED);
+    NavEKF.getPosNED(posNED);
+    NavEKF.getGyroBias(gyroBias);
+    struct log_EKF1 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
         time_ms : hal.scheduler->millis(),
         roll    : (int16_t)(100*degrees(euler.x)),
         pitch   : (int16_t)(100*degrees(euler.y)),
         yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)),
-        alt     : loc.alt*1.0e-2f,
-        lat     : loc.lat,
-        lon     : loc.lng
+        velN    : (int16_t)(100*velNED.x),
+        velE    : (int16_t)(100*velNED.y),
+        velD    : (int16_t)(100*velNED.z),
+        posN    : (int16_t)(100*posNED.x),
+        posE    : (int16_t)(100*posNED.y),
+        posD    : (int16_t)(100*posNED.z),
+        gyrX    : (int8_t)(gyroBias.x),
+        gyrY    : (int8_t)(gyroBias.y),
+        gyrZ    : (int8_t)(gyroBias.z)
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+#endif
+}
+
+struct PACKED log_EKF2 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t accX;
+    int16_t accY;
+    int16_t accZ;
+    int16_t windN;
+    int16_t windE;
+    int16_t magN;
+    int16_t magE;
+    int16_t magD;
+    int16_t magX;
+    int16_t magY;
+    int16_t magZ;
+};
+
+// Write second EKF packet
+static void Log_Write_EKF2(void)
+{
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+    Vector3f euler;
+    Vector3f accelBias;
+    Vector3f wind;
+    Vector3f magNED;
+    Vector3f magXYZ;
+    NavEKF.getAccelBias(accelBias);
+    NavEKF.getWind(wind);
+    NavEKF.getMagNED(magNED);
+    NavEKF.getMagXYZ(magXYZ);
+    struct log_EKF2 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
+        time_ms : hal.scheduler->millis(),
+        accX    : (int16_t)(100*accelBias.x),
+        accY    : (int16_t)(100*accelBias.y),
+        accZ    : (int16_t)(100*accelBias.z),
+        windN   : (int16_t)(100*wind.x),
+        windE   : (int16_t)(100*wind.y),
+        magN    : (int16_t)(magNED.x),
+        magE    : (int16_t)(magNED.y),
+        magD    : (int16_t)(magNED.z),
+        magX    : (int16_t)(magXYZ.x),
+        magY    : (int16_t)(magXYZ.y),
+        magZ    : (int16_t)(magXYZ.z)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 #endif
@@ -612,8 +678,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_AIRSPEED_MSG, sizeof(log_AIRSPEED),
       "ARSP",  "Iffc",     "TimeMS,Airspeed,DiffPress,Temp" },
-    { LOG_EKF_MSG, sizeof(log_EKF),
-      "EKF", "IccCfLL", "TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" },
+    { LOG_EKF1_MSG, sizeof(log_EKF1), "EKF","IccCccccccbbb","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PE,GX,GY,GZ" },
+    { LOG_EKF2_MSG, sizeof(log_EKF2), "EKF","Iccccchhhhhh","TimeMS,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" },
     TECS_LOG_FORMAT(LOG_TECS_MSG),
 };
 
@@ -657,7 +723,8 @@ static void Log_Write_Nav_Tuning() {}
 static void Log_Write_TECS_Tuning() {}
 static void Log_Write_Performance() {}
 static void Log_Write_Attitude() {}
-static void Log_Write_EKF() {}
+static void Log_Write_EKF1() {}
+static void Log_Write_EKF2() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Camera() {}
 static void Log_Write_Mode(uint8_t mode) {}

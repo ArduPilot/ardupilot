@@ -144,7 +144,8 @@ enum log_messages {
     LOG_COMPASS2_MSG,
     LOG_ARM_DISARM_MSG,
     LOG_AIRSPEED_MSG,
-    LOG_EKF_MSG,
+    LOG_EKF1_MSG,
+    LOG_EKF2_MSG,
     MAX_NUM_LOGS // always at the end
 };
 
