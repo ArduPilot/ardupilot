@@ -1452,7 +1452,11 @@ static void update_flight_mode()
             break;
 
         case STABILIZE:
-            stabilize_run();
+            #if FRAME_CONFIG == HELI_FRAME
+                heli_stabilize_run();
+            #else
+                stabilize_run();
+            #endif
             break;
 
         case ALT_HOLD:

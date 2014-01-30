@@ -391,7 +391,11 @@ static bool set_mode(uint8_t mode)
             break;
 
         case STABILIZE:
-            success = stabilize_init(ignore_checks);
+            #if FRAME_CONFIG == HELI_FRAME
+                success = heli_stabilize_init(ignore_checks);
+            #else
+                success = stabilize_init(ignore_checks);
+            #endif
             break;
 
         case ALT_HOLD:
