@@ -90,49 +90,6 @@ static void check_dynamic_flight(void)
     }
 }
 
-static int16_t
-get_heli_rate_yaw(int32_t target_rate)
-{
-    int32_t         p,i,d,ff;               // used to capture pid values for logging
-    int32_t         current_rate;           // this iteration's rate
-    int32_t         rate_error;
-    int32_t         output;
-    static bool     pid_saturated;          // tracker from last loop if the PID was saturated
-
-    current_rate = (omega.z * DEGX100);                         // get current rate
-
-    // rate control
-    rate_error = target_rate - current_rate;
-
-    // separately calculate p, i, d values for logging
-    p = g.pid_rate_yaw.get_p(rate_error);
-
-    if (pid_saturated){
-        i = g.pid_rate_yaw.get_integrator();                    // Locked Integrator due to PID saturation on previous cycle
-    } else {
-        if (motors.motor_runup_complete()){
-            i = g.pid_rate_yaw.get_i(rate_error, G_Dt);
-        } else {
-            i = g.pid_rate_yaw.get_leaky_i(rate_error, G_Dt, RATE_INTEGRATOR_LEAK_RATE);	// If motor is not running use leaky I-term to avoid excessive build-up
-        }
-    }
-
-    d = g.pid_rate_yaw.get_d(rate_error, G_Dt);
-
-    ff = g.heli_yaw_ff*target_rate;
-
-    output = p + i + d + ff;
-
-    if (labs(output) > 4500){
-        output = constrain_int32(output, -4500, 4500);          // constrain output
-        pid_saturated = true;                                   // freeze integrator next cycle
-    } else {
-        pid_saturated = false;                                  // unfreeze integrator
-    }
-
-	return output;                                              // output control
-}
-
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
 // should be called soon after update_land_detector in main code
 static void heli_update_landing_swash()
