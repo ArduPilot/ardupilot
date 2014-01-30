@@ -50,3 +50,5 @@ class TestParams(Test):
 			# TODO: add parameter checks for plane...
 			pass
 
+		if self.result.status == TestResult.StatusType.FAIL:
+			self.result.statusMessage = "Bad parameters found:"

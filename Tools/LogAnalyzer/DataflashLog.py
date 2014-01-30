@@ -130,7 +130,7 @@ class DataflashLog:
 
 	vehicleType     = None # ArduCopter, ArduPlane, ArduRover, etc, verbatim as given by header
 	firmwareVersion = None
-	firmwareHash    = None
+	firmwareHash    = ""
 	freeRAM         = None
 	hardwareType    = None # APM 1, APM 2, PX4, MPNG, etc What is VRBrain? BeagleBone, etc? Needs more testing
 
@@ -141,7 +141,7 @@ class DataflashLog:
 	channels    = {} # lineLabel -> {dataLabel:Channel}
 
 	filesizeKB   = None
-	durationSecs = None
+	durationSecs = 0
 	lineCount    = None
 
 	def getCopterType(self):

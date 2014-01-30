@@ -16,7 +16,7 @@ class TestVCC(Test):
 
 		if not "CURR" in logdata.channels:
 			self.result.status = TestResult.StatusType.UNKNOWN
-			self.result.statusMessage = "No CURR log data found"
+			self.result.statusMessage = "No CURR log data"
 			return
 
 		# just a naive min/max test for now
