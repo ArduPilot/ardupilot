@@ -63,7 +63,7 @@ private:
     //
 
     // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
-    int16_t get_angle_boost(int16_t throttle_pwm);
+    virtual int16_t get_angle_boost(int16_t throttle_pwm);
 
     // parameters
     AP_Float _heli_roll_ff;     // body-frame roll rate to motor output feed forward

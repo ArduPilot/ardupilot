@@ -70,11 +70,9 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 {
     float roll_pd, roll_i;                      // used to capture pid values
     float pitch_pd, pitch_i;                    // used to capture pid values
-    float current_rate;                         // this iteration's rate
     float rate_roll_error, rate_pitch_error;    // simply target_rate - current_rate
     float roll_out, pitch_out;
     const Vector3f& gyro = _ins.get_gyro();     // get current rates
-    AP_MotorsHeli& heli_motors = (AP_MotorsHeli&)_motors;
 
     // calculate error
     rate_roll_error = rate_roll_target_cds - gyro.x * AC_ATTITUDE_CONTROL_DEGX100;
@@ -89,7 +87,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_roll || ((roll_i>0&&rate_roll_error<0)||(roll_i<0&&rate_roll_error>0))){
-        if (heli_motors.has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
+        if (((AP_MotorsHeli&)_motors).has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
             if (rate_roll_target_cds > -50 && rate_roll_target_cds < 50){       // Frozen at high rates
                 roll_i = _pid_rate_roll.get_i(rate_roll_error, _dt);
             }
@@ -107,7 +105,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_pitch || ((pitch_i>0&&rate_pitch_error<0)||(pitch_i<0&&rate_pitch_error>0))){
-        if (heli_motors.has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
+        if (((AP_MotorsHeli&)_motors).has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
             if (rate_pitch_target_cds > -50 && rate_pitch_target_cds < 50){     // Frozen at high rates
                 pitch_i = _pid_rate_pitch.get_i(rate_pitch_error, _dt);
             }
@@ -235,8 +233,7 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_yaw || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
-        AP_MotorsHeli& heli_motors = (AP_MotorsHeli&)_motors;
-        if (heli_motors.motor_runup_complete()) {
+        if (((AP_MotorsHeli&)_motors).motor_runup_complete()) {
             i = _pid_rate_yaw.get_i(rate_error, _dt);
         } else {
             i = _pid_rate_yaw.get_leaky_i(rate_error, _dt, AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
@@ -267,19 +264,13 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 int16_t AC_AttitudeControl_Heli::get_angle_boost(int16_t throttle_pwm)
 {
     float temp = _cos_pitch * _cos_roll;
-    int16_t throttle_out;
 
-    temp = constrain_float(temp, 0.5f, 1.0f);
+    temp = 1.0f - constrain_float(temp, 0.5f, 1.0f);
 
-    // reduce throttle if we go inverted
-    temp = constrain_float(9000-max(labs(_ahrs.roll_sensor),labs(_ahrs.pitch_sensor)), 0, 3000) / (3000 * temp);
+    int16_t throttle_above_mid = max(throttle_pwm - ((AP_MotorsHeli&)_motors).get_collective_mid(),0);
 
-    // apply scale and constrain throttle
-    // To-Do: move throttle_min and throttle_max into the AP_Vehicles class?
-    throttle_out = constrain_float((float)(throttle_pwm-_motors.throttle_min()) * temp + _motors.throttle_min(), _motors.throttle_min(), 1000);
+    // to allow logging of angle boost
+    _angle_boost = throttle_above_mid*temp;
 
-    // record angle boost for logging
-    _angle_boost = throttle_out - throttle_pwm;
-
-    return throttle_out;
+    return throttle_pwm + _angle_boost;
 }
