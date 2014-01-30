@@ -10,7 +10,7 @@ void InitialiseFilter()
 
 	// Calculate initial Tbn matrix and rotate Mag measurements into NED
 	// to set initial NED magnetic field states
-	Mat3f DCM;
+	Matrix3f DCM;
 	quat2Tbn(DCM, initQuat);
 	Vector3f initMagNED = {0,0,0};
 	Vector3f initMagXYZ = {0,0,0};
@@ -184,8 +184,8 @@ void  UpdateStrapdownEquationsNED()
 	float q12;
 	float q13;
 	float q23;
-	static Mat3f  Tbn;
-	static Mat3f  Tnb;
+	static Matrix3f  Tbn;
+	static Matrix3f  Tnb;
 	float rotationMag;
 	float rotScaler;
 	float qUpdated[4];
@@ -1352,7 +1352,7 @@ void FuseMagnetometer()
 			magZbias = statesAtMagMeasTime[23];
 
 			// rotate predicted earth components into body axes and calculate
-			// predicted measurments
+			// predicted measurements
 			DCM[0][0] = q0*q0 + q1*q1 - q2*q2 - q3*q3;
 			DCM[0][1] = 2.0*(q1*q2 + q0*q3);
 			DCM[0][2] = 2.0*(q1*q3-q0*q2);
@@ -1787,7 +1787,7 @@ void RecallStates(float statesForFusion[24], uint32_t msec)
 	}
 }
 
-void quat2Tnb(Mat3f &Tnb, float quat[4])
+void quat2Tnb(Matrix3f &Tnb, float quat[4])
 {
 	// Calculate the nav to body cosine matrix
 	float q00 = sq(quat[0]);
@@ -1812,7 +1812,7 @@ void quat2Tnb(Mat3f &Tnb, float quat[4])
 	Tnb.y.z = 2*(q23 + q01);
 }
 
-void quat2Tbn(Mat3f &Tbn, float quat[4])
+void quat2Tbn(Matrix3f &Tbn, float quat[4])
 {
 	// Calculate the body to nav cosine matrix
 	float q00 = sq(quat[0]);
@@ -1975,7 +1975,7 @@ void readMagData()
 
 void readAirSpdData()
 {
-	VtasMeas = airspeed.get_EAS2TAS()*airspeed.get_airspeed();
+	VtasMeas = _airspeed->get_EAS2TAS()*_airspeed->get_airspeed();
 	RecallStates(statesAtVtasMeasTime, (IMUmsec - msecTasDelay));
 }
 
