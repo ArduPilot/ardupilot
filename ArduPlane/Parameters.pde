@@ -973,6 +973,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     GOBJECT(obc,  "FS_", APM_OBC),
 #endif
 
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // @Group: EKF_
+    // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
+    GOBJECT(NavEKF, "EKF_", AP_NavEKF),
+#endif
+
     AP_VAREND
 };
 
