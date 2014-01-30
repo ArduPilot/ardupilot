@@ -45,9 +45,15 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 // init_targets - resets target angles to current angles
 void AC_AttitudeControl::init_targets()
 {
+    // set earth frame angle targets to current lean angles
     _angle_ef_target.x = _ahrs.roll_sensor;
     _angle_ef_target.y = _ahrs.pitch_sensor;
     _angle_ef_target.z = _ahrs.yaw_sensor;
+
+    // clear body frame angle errors
+    _rate_stab_bf_error.x = 0;
+    _rate_stab_bf_error.y = 0;
+    _rate_stab_bf_error.z = 0;
 }
 
 // angleef_rp_rateef_y - attempts to maintain a roll and pitch angle and yaw rate (all earth frame)
