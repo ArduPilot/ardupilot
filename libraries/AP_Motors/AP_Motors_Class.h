@@ -95,7 +95,7 @@ public:
     virtual void        enable() = 0;
 
     // arm, disarm or check status status of motors
-    bool                armed() { return _flags.armed; };
+    bool                armed() const { return _flags.armed; };
     void                armed(bool arm);
 
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
