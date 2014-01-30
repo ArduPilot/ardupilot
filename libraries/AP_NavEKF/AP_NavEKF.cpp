@@ -6,10 +6,10 @@
 
 // uncomment this to force the optimisation of this code, note that 
 // this makes debugging harder
-// #pragma GCC optimize("O3")
+#pragma GCC optimize("O3")
 
 #include "AP_NavEKF.h"
-#include <stdio.h>
+//#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1921,6 +1921,13 @@ void NavEKF::getAccelBias(Vector3f &accelBias)
     accelBias.x = states[13]*dtIMUAvgInv;
     accelBias.y = states[14]*dtIMUAvgInv;
     accelBias.z = states[15]*dtIMUAvgInv;
+}
+
+void NavEKF::getWind(Vector3f &wind)
+{
+    wind.x = states[16];
+    wind.y = states[17];
+    wind.z = 0.0f; // curently don't estimate this
 }
 
 void NavEKF::getMagNED(Vector3f &magNED)
