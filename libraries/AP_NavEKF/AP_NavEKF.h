@@ -26,6 +26,7 @@
 #include <AP_Baro.h>
 #include <AP_Airspeed.h>
 #include <AP_Compass.h>
+#include <AP_Param.h>
 
 // #define MATH_CHECK_INDEXES 1
 
@@ -254,6 +255,9 @@ public:
     uint32_t _hgtRetryTimeMode12;   // height measurement retry time following innovation consistency fail if GPS fusion mode is > 0
 
 private:
+    // EKF tuneable parameters
+    AP_Float _blah;
+
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool staticModeDemanded;        // boolean true when staticMode has been demanded externally.
     bool velHealth;                 // boolean true if velocity measurements have failed innovation consistency check

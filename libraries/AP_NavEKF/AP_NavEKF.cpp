@@ -21,6 +21,19 @@ extern const AP_HAL::HAL& hal;
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
+// Define tuning parameters
+const AP_Param::GroupInfo AP_NavEKF::var_info[] PROGMEM = {
+
+    // @Param: TEST PARAM
+    // @DisplayName: Blah (units)
+    // @Description: Blah blah.
+	// @Increment: 0.1
+	// @User: advanced
+    AP_GROUPINFO("BLAH",    0, AP_NavEKF, _blah, 1.0f),
+
+    AP_GROUPEND
+};
+
 // constructor
 NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     _ahrs(ahrs),
