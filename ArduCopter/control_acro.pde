@@ -7,6 +7,8 @@
 // acro_init - initialise acro controller
 static bool acro_init(bool ignore_checks)
 {
+    // clear stabilized rate errors
+    attitude_control.init_targets();
     return true;
 }
 
@@ -16,21 +18,17 @@ static void acro_run()
 {
     int16_t target_roll, target_pitch, target_yaw;
 
+    // if motors not running reset angle targets
+    if(!motors.armed() || g.rc_3.control_in <= 0) {
+        attitude_control.init_targets();
+        attitude_control.set_throttle_out(0, false);
+        return;
+    }
+
     // convert the input to the desired body frame rate
     get_pilot_desired_angle_rates(g.rc_1.control_in, g.rc_2.control_in, g.rc_4.control_in, target_roll, target_pitch, target_yaw);
 
     attitude_control.ratebf_rpy(target_roll, target_pitch, target_yaw);
-
-    // To-Do: handle helicopter
-
-    // pilot controlled yaw using rate controller
-    //get_yaw_rate_stabilized_bf(pilot_yaw);
-
-    // call get_acro_level_rates() here?
-
-    // To-Do: convert body-frame stabilized angles to earth frame angles and update controll_roll, pitch and yaw?
-
-    // body-frame rate controller is run directly from 100hz loop
 }
 
 
