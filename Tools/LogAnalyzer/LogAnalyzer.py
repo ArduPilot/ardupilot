@@ -80,7 +80,7 @@ class TestSuite:
 				startTime = time.time()
 				test.run(self.logdata)  # RUN THE TEST
 				endTime = time.time()
-				test.execTime = endTime-startTime
+				test.execTime = 1000 * (endTime-startTime)
 
 	def outputPlainText(self, outputStats):
 		print 'Dataflash log analysis report for file: ' + self.logfile
@@ -119,19 +119,80 @@ class TestSuite:
 					print "  %20s     %s" % ("",line)
 		print '\n'
 
-
-		# temp - test some spot values
-		#print "GPS abs alt on line 24126 is " + `self.logdata.channels["GPS"]["Alt"].dictData[24126]`   # 52.03
-		#print "ATT pitch on line 22153 is " + `self.logdata.channels["ATT"]["Pitch"].dictData[22153]`   # -7.03
-		#gpsAlt = self.logdata.channels["GPS"]["Alt"]
-		#print "All GPS Alt data: %s\n\n" % gpsAlt.dictData
-		#gpsAltSeg = gpsAlt.getSegment(426,711)
-		#print "Segment of GPS Alt data from %d to %d: %s\n\n" % (426,711,gpsAltSeg.dictData)
-
 	def outputXML(self, xmlFile):
 		# TODO: implement XML output
-		# ...
-		raise Exception("outputXML() not implemented yet")
+
+		xml = None
+		try:
+			xml = open(xmlFile, 'w')
+		except:
+			sys.stderr.write("Error opening output xml file: %s" % xmlFile)
+			sys.exit(1)
+
+		print >>xml, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+		print >>xml, "<loganalysis>"
+
+		# output header info
+		print >>xml, "<header>"
+		print >>xml, "  <logfile>"   + self.logfile + "</logfile>"
+		print >>xml, "  <sizekb>"    + `self.logdata.filesizeKB` + "</sizekb>"
+		print >>xml, "  <sizelines>" + `self.logdata.lineCount` + "</sizelines>"
+		print >>xml, "  <duration>"  + str(datetime.timedelta(seconds=self.logdata.durationSecs)) + "</duration>"
+		print >>xml, "  <vehicletype>" + self.logdata.vehicleType + "</vehicletype>"
+		if self.logdata.vehicleType == "ArduCopter" and self.logdata.getCopterType():
+			print >>xml, "  <coptertype>"  + self.logdata.getCopterType() + "</coptertype>"
+		print >>xml, "  <firmwareversion>" + self.logdata.firmwareVersion + "</firmwareversion>"
+		print >>xml, "  <firmwarehash>" + self.logdata.firmwareHash + "</firmwarehash>"
+		print >>xml, "  <hardwaretype>" + self.logdata.hardwareType + "</hardwaretype>"
+		print >>xml, "  <freemem>" + `self.logdata.freeRAM` + "</freemem>"
+		print >>xml, "</header>"
+
+		# output parameters
+		print >>xml, "<params>"
+		for param, value in self.logdata.parameters.items():
+			print >>xml, "  <param name=\"%s\" value=\"%s\" />" % (param,`value`)
+			#print >>xml, "    <paramname>"  + param + "</paramname>"
+			#print >>xml, "    <paramvalue>" + `value` + "</paramvalue>"
+			#print >>xml, "  </param>"
+		print >>xml, "</params>"
+
+		# output test results
+		print >>xml, "<results>"
+		for test in self.tests:
+			if not test.enable:
+				continue
+			print >>xml, "  <result>"
+			if test.result.status == TestResult.StatusType.PASS:
+				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <status>PASS</status>"
+				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
+			elif test.result.status == TestResult.StatusType.FAIL:
+				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <status>FAIL</status>"
+				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
+				print >>xml, "    <data>(test data will be embeded here at some point)</data>"
+			elif test.result.status == TestResult.StatusType.WARN:
+				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <status>WARN</status>"
+				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
+				print >>xml, "    <data>(test data will be embeded here at some point)</data>"
+			elif test.result.status == TestResult.StatusType.NA:
+				# skip any that aren't relevant for this vehicle/hardware/etc
+				continue
+			else:
+				print >>xml, "    <name>" + test.name + "</name>"
+				print >>xml, "    <status>UNKNOWN</status>"
+				print >>xml, "    <message>" + test.result.statusMessage + "</message>"
+				print >>xml, "    <extrafeedback>" + test.result.extraFeedback + "</extrafeedback>"
+			print >>xml, "  </result>"
+		print >>xml, "</results>"
+
+		print >>xml, "</loganalysis>"
+
+		xml.close()
 
 
 def main():
@@ -177,6 +238,13 @@ def main():
 		if not args.quiet:
 			print "XML output written to file: %s\n" % args.xml
 
+	# temp - test some spot values - include a bunch of this in a unit test at some point
+	#print "GPS abs alt on line 24126 is " + `self.logdata.channels["GPS"]["Alt"].dictData[24126]`   # 52.03
+	#print "ATT pitch on line 22153 is " + `self.logdata.channels["ATT"]["Pitch"].dictData[22153]`   # -7.03
+	#gpsAlt = self.logdata.channels["GPS"]["Alt"]
+	#print "All GPS Alt data: %s\n\n" % gpsAlt.dictData
+	#gpsAltSeg = gpsAlt.getSegment(426,711)
+	#print "Segment of GPS Alt data from %d to %d: %s\n\n" % (426,711,gpsAltSeg.dictData)
 
 if __name__ == "__main__":
 	main()
