@@ -192,7 +192,7 @@ void AP_AHRS_NavEKF::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
 {
     AP_AHRS_DCM::set_home(lat, lng, alt_cm);
     if (ekf_started) {
-        EKF.InitialiseFilter();
+        EKF.ResetPosition();
     }
 }
 
