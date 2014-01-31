@@ -1062,18 +1062,6 @@ static void fast_loop()
     // --------------------
     read_AHRS();
 
-	// Acrobatic control
-    if (ap.do_flip) {
-        if(abs(g.rc_1.control_in) < 4000) {
-            // calling roll_flip will override the desired roll rate and throttle output
-            roll_flip();
-        }else{
-            // force an exit from the loop if we are not hands off sticks.
-            ap.do_flip = false;
-            Log_Write_Event(DATA_EXIT_FLIP);
-        }
-    }
-
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
 
@@ -1501,6 +1489,10 @@ static void update_flight_mode()
 
         case SPORT:
             sport_run();
+            break;
+
+        case FLIP:
+            flip_run();
             break;
     }
 }

@@ -446,6 +446,10 @@ static bool set_mode(uint8_t mode)
             control_yaw = ahrs.yaw_sensor;
             break;
 
+        case FLIP:
+            success = flip_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -580,6 +584,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case SPORT:
         port->print_P(PSTR("SPORT"));
+        break;
+    case FLIP:
+        port->print_P(PSTR("FLIP"));
         break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);

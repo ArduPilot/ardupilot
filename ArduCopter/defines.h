@@ -127,7 +127,8 @@
 #define OF_LOITER 10                    // Hold a single location using optical flow sensor
 #define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
 #define SPORT 13                        // earth frame rate control
-#define NUM_MODES 14
+#define FLIP        14                  // flip the vehicle on the roll axis
+#define NUM_MODES 15
 
 
 // CH_6 Tuning
@@ -231,6 +232,14 @@ enum RTLState {
     Land
 };
 
+// Flip states
+enum FlipState {
+    Flip_Start,
+    Flip_Roll,
+    Flip_Recover,
+    Flip_Abandon
+};
+
 // LAND state
 #define LAND_STATE_FLY_TO_LOCATION  0
 #define LAND_STATE_DESCENDING       1
@@ -295,9 +304,8 @@ enum RTLState {
 #define DATA_LAND_COMPLETE              18
 #define DATA_NOT_LANDED                 28
 #define DATA_LOST_GPS                   19
-#define DATA_BEGIN_FLIP                 21
-#define DATA_END_FLIP                   22
-#define DATA_EXIT_FLIP                  23
+#define DATA_FLIP_START                 21
+#define DATA_FLIP_END                   22
 #define DATA_SET_HOME                   25
 #define DATA_SET_SIMPLE_ON              26
 #define DATA_SET_SIMPLE_OFF             27
@@ -374,6 +382,7 @@ enum RTLState {
 #define ERROR_SUBSYSTEM_FLIGHT_MODE         10
 #define ERROR_SUBSYSTEM_GPS                 11
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
+#define ERROR_SUBSYSTEM_FLIP                13
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -390,6 +399,8 @@ enum RTLState {
 #define ERROR_CODE_MAIN_INS_DELAY           1
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH        1
+// subsystem specific error codes -- flip
+#define ERROR_CODE_FLIP_ABANDONED           2
 
 // Arming Check Enable/Disable bits
 #define ARMING_CHECK_NONE                   0x00
