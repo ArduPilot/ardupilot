@@ -281,14 +281,7 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 // throttle value should be 0 ~ 1000
 int16_t AC_AttitudeControl_Heli::get_angle_boost(int16_t throttle_pwm)
 {
-    float temp = _cos_pitch * _cos_roll;
-
-    temp = 1.0f - constrain_float(temp, 0.5f, 1.0f);
-
-    int16_t throttle_above_mid = max(throttle_pwm - ((AP_MotorsHeli&)_motors).get_collective_mid(),0);
-
-    // to allow logging of angle boost
-    _angle_boost = throttle_above_mid*temp;
-
-    return throttle_pwm + _angle_boost;
+    // no angle boost for trad helis
+    _angle_boost = 0;
+    return throttle_pwm;
 }
