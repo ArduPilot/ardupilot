@@ -261,7 +261,7 @@ http://www.lemon-rx.com/shop/index.php?route=product/product&path=70&product_id=
 (make sure you use one made after Oct 2013: earlier versions had a proprietary and
 incompatible PPM output).
 
-The raw channel numbers resulting from using this with my Spektrum DMS 6
+The raw channel numbers resulting from using this with my Spektrum DX6i 6
 channel mode 2 transmitter are:
 
 Channel      Assignment
@@ -290,6 +290,12 @@ elevator = speed control
 aileron  = steering
 gear     = mode
 flap     = learn
+
+Notes: 
+
+You may (like me) need to reverse the Roll servo, using the Radio Calibration page
+on Mission Planner, else the vehicle will steer in exactly the wrong direction
+when on Auto, but will be OK on Manual.
 
 Remaining issues:
 
