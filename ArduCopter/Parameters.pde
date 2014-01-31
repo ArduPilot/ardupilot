@@ -1140,6 +1140,11 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
 
 static void load_parameters(void)
 {
+    if (!AP_Param::check_var_info()) {
+        cliSerial->printf_P(PSTR("Bad var table\n"));        
+        hal.scheduler->panic(PSTR("Bad var table"));
+    }
+
     // change the default for the AHRS_GPS_GAIN for ArduCopter
     // if it hasn't been set by the user
     if (!ahrs.gps_gain.load()) {
