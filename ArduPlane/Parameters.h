@@ -101,6 +101,7 @@ public:
         k_param_sonar,
         k_param_log_bitmask,
         k_param_BoardConfig,
+        k_param_rssi_range,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -180,7 +181,6 @@ public:
         k_param_rssi_pin,
         k_param_battery_volt_pin,   // unused
         k_param_battery_curr_pin,   // unused - 169
-        k_param_rssi_range,
 
         //
         // 170: Radio settings
