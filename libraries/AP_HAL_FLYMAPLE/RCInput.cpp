@@ -35,6 +35,7 @@ extern const AP_HAL::HAL& hal;
 /* private variables to communicate with input capture isr */
 volatile uint16_t FLYMAPLERCInput::_pulse_capt[FLYMAPLE_RC_INPUT_NUM_CHANNELS] = {0};  
 volatile uint8_t  FLYMAPLERCInput::_valid_channels = 0;
+volatile uint32_t FLYMAPLERCInput::_last_input_interrupt_time = 0; // Last time the input interrupt ran
 
 // Pin 6 is connected to timer 1 channel 1
 #define FLYMAPLE_RC_INPUT_PIN 6
@@ -50,9 +51,7 @@ FLYMAPLERCInput::FLYMAPLERCInput()
 // This interrupt triggers on a negative transiution of the PPM-SIM pin
 void FLYMAPLERCInput::_timer_capt_cb(void)
 {
-    static int on = 0;
-    on = !on;
-    digitalWrite(13, on);
+    _last_input_interrupt_time = hal.scheduler->millis();
 
     static uint16 previous_count;
     static uint8  channel_ctr;
@@ -78,7 +77,11 @@ void FLYMAPLERCInput::_timer_capt_cb(void)
         pulse_width = current_count - previous_count;
     }
 
-    if (pulse_width > 16000) { // 8ms
+    // Pulse sequence repetition rate is about 22ms.
+    // Longest servo pulse is about 1.8ms
+    // Shortest servo pulse is about 0.5ms
+    // Shortest possible PPM sync pulse with 10 channels is about 4ms = 22 - (10 channels * 1.8)
+    if (pulse_width > 8000) { // 4ms
         // sync pulse detected.  Pass through values if at least a minimum number of channels received
         if( channel_ctr >= FLYMAPLE_RC_INPUT_MIN_CHANNELS ) {
             _valid_channels = channel_ctr;
@@ -88,6 +91,10 @@ void FLYMAPLERCInput::_timer_capt_cb(void)
         }
         channel_ctr = 0;
     } else {
+
+//	if (channel_ctr == 0)
+//	    hal.uartA->printf("ch 0 %d\n", pulse_width);
+
         if (channel_ctr < FLYMAPLE_RC_INPUT_NUM_CHANNELS) {
             _pulse_capt[channel_ctr] = pulse_width;
             channel_ctr++;
@@ -112,7 +119,7 @@ void FLYMAPLERCInput::init(void* machtnichts)
     timer_pause(tdev); // disabled
     timer_set_prescaler(tdev, (CYCLES_PER_MICROSECOND/2) - 1); // 2MHz = 0.5us timer ticks
     timer_set_reload(tdev, FLYMAPLE_TIMER_RELOAD-1);
-    // Without a filter, can get triggering on the wrong edge and otehr problems.
+    // Without a filter, can get triggering on the wrong edge and other problems.
     (tdev->regs).gen->CCMR1 = TIMER_CCMR1_CC1S_INPUT_TI1 | (3 << 4); // no prescaler, input from T1, filter internal clock, N=8
     (tdev->regs).gen->CCER  = TIMER_CCER_CC1P | TIMER_CCER_CC1E; // falling edge, enable capture
     timer_attach_interrupt(tdev, timer_channel, _timer_capt_cb);
@@ -121,6 +128,8 @@ void FLYMAPLERCInput::init(void* machtnichts)
 }
 
 uint8_t FLYMAPLERCInput::valid_channels() {
+    if ((hal.scheduler->millis() - _last_input_interrupt_time) > 50)
+	_valid_channels = 0; // Lost RC Input?
     return _valid_channels;
 }
 
@@ -142,7 +151,6 @@ uint16_t FLYMAPLERCInput::read(uint8_t ch) {
     timer_disable_irq(tdev, timer_channel);
     uint16_t capt = _pulse_capt[ch];
     timer_enable_irq(tdev, timer_channel);
-    _valid_channels = 0;
     /* scale _pulse_capt from 0.5us units to 1us units. */
     uint16_t pulse = constrain_pulse(capt >> 1);
     /* Check for override */
@@ -173,9 +181,7 @@ uint8_t FLYMAPLERCInput::read(uint16_t* periods, uint8_t len) {
             periods[i] = _override[i];
         }
     }
-    uint8_t v = _valid_channels;
-    _valid_channels = 0;
-    return v;
+    return _valid_channels;
 }
 
 bool FLYMAPLERCInput::set_overrides(int16_t *overrides, uint8_t len) {

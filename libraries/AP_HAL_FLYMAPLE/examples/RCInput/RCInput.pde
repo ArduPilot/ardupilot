@@ -12,7 +12,8 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 void multiread(AP_HAL::RCInput* in, uint16_t* channels) {
     /* Multi-channel read method: */
     uint8_t valid;
-    valid = in->read(channels, 8);
+    valid = in->valid_channels();
+    in->read(channels, 8);
     hal.console->printf_P(
             PSTR("multi      read %d: %d %d %d %d %d %d %d %d\r\n"),
             (int) valid, 
