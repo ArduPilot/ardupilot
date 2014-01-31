@@ -513,6 +513,11 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
 
 static void load_parameters(void)
 {
+    if (!AP_Param::check_var_info()) {
+        cliSerial->printf_P(PSTR("Bad var table\n"));        
+        hal.scheduler->panic(PSTR("Bad var table"));
+    }
+
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
 
