@@ -8,12 +8,21 @@ extern const AP_HAL::HAL& hal;
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
 
-    // @Param: DUMMY
-    // @DisplayName: Dummy parameter
-    // @Description: This is the dummy parameters
-	// @Increment: 0.1
-	// @User: User
-    AP_GROUPINFO("DUMMY",    0, AC_AttitudeControl, _dummy_param, 0),
+    // @Param: RATE_RP_MAX
+    // @DisplayName: Angle Rate Roll-Pitch max
+    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    // @Range: 90000 250000
+    // @Increment: 500
+    // @User: Advanced
+    AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_ANGLE_RATE_RP_MAX_DEFAULT),
+
+    // @Param: RATE_Y_MAX
+    // @DisplayName: Angle Rate Yaw max
+    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    // @Range: 90000 250000
+    // @Increment: 500
+    // @User: Advanced
+    AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl, _angle_rate_y_max, AC_ATTITUDE_CONTROL_ANGLE_RATE_Y_MAX_DEFAULT),
 
     AP_GROUPEND
 };
@@ -122,14 +131,14 @@ void AC_AttitudeControl::angle_to_rate_ef_roll()
     // To-Do: is this being converted to int32_t as part of wrap_180_cd?
     float angle_error_cd = wrap_180_cd(_angle_ef_target.x - _ahrs.roll_sensor);
 
-    // limit the error we're feeding to the PID
-    // Does this make any sense to limit the angular error by the maximum lean angle of the copter?  Is it the responsibility of the rate controller to know it's own limits?
-    // To-Do: move aparm.angle_max into the AP_Vehicles class?
-    angle_error_cd = constrain_float(angle_error_cd, -AC_ATTITUDE_ANGLE_CONTROLLER_ANGLE_MAX, AC_ATTITUDE_ANGLE_CONTROLLER_ANGLE_MAX);
-
     // convert to desired earth-frame rate
     // To-Do: replace PI controller with just a single gain?
     _rate_ef_target.x = _pi_angle_roll.kP() * angle_error_cd;
+
+    // constrain rate request
+    if (_flags.limit_angle_to_rate_request) {
+        _rate_ef_target.x = constrain_float(_rate_ef_target.x,-_angle_rate_rp_max,_angle_rate_rp_max);
+    }
 }
 
 // angle_to_rate_ef_pitch - ask the angle controller to calculate the earth frame rate targets for pitch
@@ -139,14 +148,14 @@ void AC_AttitudeControl::angle_to_rate_ef_pitch()
     // To-Do: is this being converted to int32_t as part of wrap_180_cd?
     float angle_error_cd = wrap_180_cd(_angle_ef_target.y - _ahrs.pitch_sensor);
 
-    // limit the error we're feeding to the PID
-    // Does this make any sense to limit the angular error by the maximum lean angle of the copter?  Is it the responsibility of the rate controller to know it's own limits?
-    // To-Do: move aparm.angle_max into the AP_Vehicles class?
-    angle_error_cd = constrain_float(angle_error_cd, -AC_ATTITUDE_ANGLE_CONTROLLER_ANGLE_MAX, AC_ATTITUDE_ANGLE_CONTROLLER_ANGLE_MAX);
-
     // convert to desired earth-frame rate
     // To-Do: replace PI controller with just a single gain?
     _rate_ef_target.y = _pi_angle_pitch.kP() * angle_error_cd;
+
+    // constrain rate request
+    if (_flags.limit_angle_to_rate_request) {
+        _rate_ef_target.y = constrain_float(_rate_ef_target.y,-_angle_rate_rp_max,_angle_rate_rp_max);
+    }
 }
 
 // angle_to_rate_ef_yaw - ask the angle controller to calculate the earth-frame yaw rate in centi-degrees/second
@@ -156,16 +165,16 @@ void AC_AttitudeControl::angle_to_rate_ef_yaw()
     // To-Do: is this being converted to int32_t as part of wrap_180_cd?
     float angle_error_cd = wrap_180_cd(_angle_ef_target.z - _ahrs.yaw_sensor);
 
-    // limit the error we're feeding to the PID
-    angle_error_cd = constrain_float(angle_error_cd, -AC_ATTITUDE_ANGLE_YAW_CONTROLLER_OUT_MAX, AC_ATTITUDE_ANGLE_YAW_CONTROLLER_OUT_MAX);
-
     // convert to desired earth-frame rate in centi-degrees/second
     // To-Do: replace PI controller with just a single gain?
     _rate_ef_target.z = _pi_angle_yaw.kP() * angle_error_cd;
 
-    // To-Do: deal with trad helicopter which do not use yaw rate controllers if using external gyros
+    // constrain rate request
+    if (_flags.limit_angle_to_rate_request) {
+        _rate_ef_target.y = constrain_float(_rate_ef_target.y,-_angle_rate_y_max,_angle_rate_y_max);
+    }
 
-    // To-Do: allow logging of PIDs?
+    // To-Do: deal with trad helicopter which do not use yaw rate controllers if using external gyros
 }
 
 //
@@ -341,9 +350,6 @@ void AC_AttitudeControl::rate_controller_run()
     _motor_roll = rate_bf_to_motor_roll(_rate_bf_target.x);
     _motor_pitch = rate_bf_to_motor_pitch(_rate_bf_target.y);
     _motor_yaw = rate_bf_to_motor_yaw(_rate_bf_target.z);
-
-    // To-Do: what about throttle?
-    //_motor_
 }
 
 //

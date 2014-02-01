@@ -18,6 +18,8 @@
 
 // To-Do: change the name or move to AP_Math?
 #define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f             // constant to convert from radians to centi-degrees
+#define AC_ATTITUDE_CONTROL_ANGLE_RATE_RP_MAX_DEFAULT   18000   // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+#define AC_ATTITUDE_CONTROL_ANGLE_RATE_Y_MAX_DEFAULT    18000   // maximum rotation rate on yaw axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 #define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT 1.0f            // body-frame rate controller timeout in seconds
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX 5000.0f      // body-frame rate controller maximum output (for roll-pitch axis)
 #define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX 4500.0f     // body-frame rate controller maximum output (for yaw axis)
@@ -63,6 +65,9 @@ public:
         _sin_pitch(0.0)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
+
+			// initialise flags
+			_flags.limit_angle_to_rate_request = true;
 		}
 
     //
@@ -87,6 +92,9 @@ public:
 
     // ratebf_rpy - attempts to maintain a roll, pitch and yaw rate (all body frame)
     void ratebf_rpy(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
+
+    // limit_angle_to_rate_request
+    void limit_angle_to_rate_request(bool limit_request) { _flags.limit_angle_to_rate_request = limit_request; }
 
     //
     // angle controller (earth-frame) methods
@@ -158,6 +166,9 @@ public:
     // To-Do: can we return these Vector3fs by reference?  i.e. using "&"?
     Vector3f rate_bf_targets() const { return _rate_bf_target; }
     void rate_bf_targets(Vector3f& rates_cds) { _rate_bf_target = rates_cds; }
+    void rate_bf_roll_target(float rate_cds) { _rate_bf_target.x = rate_cds; }
+    void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
+    void rate_bf_yaw_target(float rate_cds) { _rate_bf_target.z = rate_cds; }
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
@@ -194,6 +205,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
+
+    // attitude control flags
+    struct AttControlFlags {
+        uint8_t limit_angle_to_rate_request :   1;  // 1 if the earth frame angle controller is limiting it's maximum rate request
+    } _flags;
 
     //
     // body-frame rate controller
@@ -246,7 +262,8 @@ protected:
     int16_t&            _motor_throttle;        // g.rc_3.servo_out
 
     // parameters
-    AP_Float            _dummy_param;
+    AP_Float            _angle_rate_rp_max;     // maximum rate request output from the earth-frame angle controller for roll and pitch axis
+    AP_Float            _angle_rate_y_max;      // maximum rate request output from the earth-frame angle controller for yaw axis
 
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?
