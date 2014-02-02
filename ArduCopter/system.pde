@@ -450,6 +450,12 @@ static bool set_mode(uint8_t mode)
             success = flip_init(ignore_checks);
             break;
 
+#if AUTOTUNE_ENABLED == ENABLED
+        case AUTOTUNE:
+            success = autotune_init(ignore_checks);
+            break;
+#endif
+
         default:
             success = false;
             break;
@@ -457,6 +463,8 @@ static bool set_mode(uint8_t mode)
 
     // update flight mode
     if (success) {
+        // perform any cleanup required by previous flight mode
+        exit_mode(control_mode);
         control_mode = mode;
         Log_Write_Mode(control_mode);
     }else{
@@ -466,6 +474,16 @@ static bool set_mode(uint8_t mode)
 
     // return success or failure
     return success;
+}
+
+// exit_mode - high level call to organise cleanup as a flight mode is exited
+static void exit_mode(uint8_t old_control_mode)
+{
+#if AUTOTUNE_ENABLED == ENABLED
+    if (old_control_mode == AUTOTUNE) {
+        autotune_stop();
+    }
+#endif
 }
 
 // update_auto_armed - update status of auto_armed flag
@@ -587,6 +605,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case FLIP:
         port->print_P(PSTR("FLIP"));
+        break;
+    case AUTOTUNE:
+        port->print_P(PSTR("AUTOTUNE"));
         break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);

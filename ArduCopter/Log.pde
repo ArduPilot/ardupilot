@@ -157,7 +157,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-#if AUTOTUNE == ENABLED
+#if AUTOTUNE_ENABLED == ENABLED
 struct PACKED log_AutoTune {
     LOG_PACKET_HEADER;
     uint8_t axis;           // roll or pitch
@@ -774,7 +774,7 @@ static void Log_Write_Cmd(uint8_t num, const struct Location *wp) {}
 static void Log_Write_Mode(uint8_t mode) {}
 static void Log_Write_IMU() {}
 static void Log_Write_GPS() {}
-#if AUTOTUNE == ENABLED
+#if AUTOTUNE_ENABLED == ENABLED
 static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp) {}
 static void Log_Write_AutoTuneDetails(int16_t angle_cd, float rate_cds) {}
 #endif

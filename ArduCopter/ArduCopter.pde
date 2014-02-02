@@ -1397,18 +1397,8 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
         case ROLL_PITCH_SPORT:
             roll_pitch_initialised = true;
             break;
-
-#if AUTOTUNE == ENABLED
-        case ROLL_PITCH_AUTOTUNE:
-            // only enter autotune mode from stabilized roll-pitch mode when armed and flying
-            if (roll_pitch_mode == ROLL_PITCH_STABLE && motors.armed() && !ap.land_complete) {
                 reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
-                // auto_tune_start returns true if it wants the roll-pitch mode changed to autotune
-                roll_pitch_initialised = auto_tune_start();
             }
-            break;
-#endif
-    }
 
     // if initialisation has been successful update the yaw mode
     if( roll_pitch_initialised ) {
@@ -1423,11 +1413,6 @@ bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
 // exit_roll_pitch_mode - peforms any code required when exiting the current roll-pitch mode
 void exit_roll_pitch_mode(uint8_t old_roll_pitch_mode)
 {
-#if AUTOTUNE == ENABLED
-    if (old_roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
-        auto_tune_stop();
-    }
-#endif
 }
 
 // update_flight_mode - calls the appropriate attitude controllers based on flight mode
@@ -1494,6 +1479,12 @@ static void update_flight_mode()
         case FLIP:
             flip_run();
             break;
+
+#if AUTOTUNE_ENABLED == ENABLED
+        case AUTOTUNE:
+            autotune_run();
+            break;
+#endif
     }
 }
 
@@ -1579,26 +1570,7 @@ void update_roll_pitch_mode(void)
         get_roll_rate_stabilized_ef(g.rc_1.control_in);
         get_pitch_rate_stabilized_ef(g.rc_2.control_in);
         break;
-
-#if AUTOTUNE == ENABLED
-    case ROLL_PITCH_AUTOTUNE:
-        // apply SIMPLE mode transform
-        if(ap.simple_mode && ap.new_radio_frame) {
-            update_simple_mode();
         }
-
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
-
-        // pass desired roll, pitch to stabilize attitude controllers
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
-
-        // copy user input for reporting purposes
-        get_autotune_roll_pitch_controller(g.rc_1.control_in, g.rc_2.control_in, g.rc_4.control_in);
-        break;
-#endif
-    }
 
 	#if FRAME_CONFIG != HELI_FRAME
     if(g.rc_3.control_in == 0 && control_mode <= ACRO) {

@@ -340,21 +340,22 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
-#if AUTOTUNE == ENABLED
+#if AUTOTUNE_ENABLED == ENABLED
         case AUX_SWITCH_AUTOTUNE:
             // turn on auto tuner
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
                 case AUX_SWITCH_MIDDLE:
-                    // turn off tuning and return to standard pids
-                    if (roll_pitch_mode == ROLL_PITCH_AUTOTUNE) {
-                        set_roll_pitch_mode(ROLL_PITCH_STABLE);
+                    // stop the autotune and return to original gains
+                    autotune_stop();
+                    // restore flight mode based on flight mode switch position
+                    if (control_mode == AUTOTUNE) {
+                        reset_control_switch();
                     }
                     break;
                 case AUX_SWITCH_HIGH:
-                    // start an auto tuning session
-                    // set roll-pitch mode to our special auto tuning stabilize roll-pitch mode
-                    set_roll_pitch_mode(ROLL_PITCH_AUTOTUNE);
+                    // start an autotuning session
+                    autotune_start();
                     break;
             }
             break;

@@ -128,7 +128,8 @@
 #define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
 #define SPORT 13                        // earth frame rate control
 #define FLIP        14                  // flip the vehicle on the roll axis
-#define NUM_MODES 15
+#define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
+#define NUM_MODES   16
 
 
 // CH_6 Tuning
@@ -313,10 +314,10 @@ enum FlipState {
 #define DATA_AUTOTUNE_INITIALISED       30
 #define DATA_AUTOTUNE_OFF               31
 #define DATA_AUTOTUNE_RESTART           32
-#define DATA_AUTOTUNE_COMPLETE          33
-#define DATA_AUTOTUNE_ABANDONED         34
+#define DATA_AUTOTUNE_SUCCESS           33
+#define DATA_AUTOTUNE_FAILED            34
 #define DATA_AUTOTUNE_REACHED_LIMIT     35
-#define DATA_AUTOTUNE_TESTING           36
+#define DATA_AUTOTUNE_PILOT_TESTING     36
 #define DATA_AUTOTUNE_SAVEDGAINS        37
 #define DATA_SAVE_TRIM                  38
 #define DATA_SAVEWP_ADD_WP              39
@@ -383,6 +384,7 @@ enum FlipState {
 #define ERROR_SUBSYSTEM_GPS                 11
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
 #define ERROR_SUBSYSTEM_FLIP                13
+#define ERROR_SUBSYSTEM_AUTOTUNE            14
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
@@ -401,6 +403,8 @@ enum FlipState {
 #define ERROR_CODE_CRASH_CHECK_CRASH        1
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
+// subsystem specific error codes -- autotune
+#define ERROR_CODE_AUTOTUNE_BAD_GAINS       2
 
 // Arming Check Enable/Disable bits
 #define ARMING_CHECK_NONE                   0x00
