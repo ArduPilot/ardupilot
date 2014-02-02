@@ -581,6 +581,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case LOITER:
         port->print_P(PSTR("Loiter"));
         break;
+    case GUIDED:
+        port->print_P(PSTR("Guided"));
+        break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
         break;
