@@ -10,6 +10,8 @@ static bool stabilize_init(bool ignore_checks)
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
     pos_control.set_alt_target(0);
+
+    // stabilize should never be made to fail
     return true;
 }
 
