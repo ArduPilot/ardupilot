@@ -517,13 +517,16 @@ static void do_within_distance()
 
 static void do_yaw()
 {
+    // get current yaw target
+    int32_t curr_yaw_target = attitude_control.angle_ef_targets().z;
+
     // get final angle, 1 = Relative, 0 = Absolute
     if( command_cond_queue.lng == 0 ) {
         // absolute angle
         yaw_look_at_heading = wrap_360_cd(command_cond_queue.alt * 100);
     }else{
         // relative angle
-        yaw_look_at_heading = wrap_360_cd(control_yaw + command_cond_queue.alt * 100);
+        yaw_look_at_heading = wrap_360_cd(curr_yaw_target + command_cond_queue.alt * 100);
     }
 
     // get turn speed
@@ -531,7 +534,7 @@ static void do_yaw()
         // default to regular auto slew rate
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
     }else{
-        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - control_yaw) / 100) / command_cond_queue.lat;
+        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / command_cond_queue.lat;
         yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
 
