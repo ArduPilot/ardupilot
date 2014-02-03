@@ -159,6 +159,14 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     motor_pitch = pitch_out;
 
 /*
+#if HELI_CC_COMP == ENABLED
+static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
+#endif
+
+#if HELI_CC_COMP == ENABLED
+    rate_dynamics_filter.set_cutoff_frequency(0.01f, 4.0f);
+#endif
+
 #if AC_ATTITUDE_HELI_CC_COMP == ENABLED
 // Do cross-coupling compensation for low rpm helis
 // Credit: Jolyon Saunders
