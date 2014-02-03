@@ -201,17 +201,17 @@ def main():
 	parser = argparse.ArgumentParser(description='Analyze an APM Dataflash log for known issues')
 	parser.add_argument('logfile', type=argparse.FileType('r'), help='path to Dataflash log file')
 	parser.add_argument('-q', '--quiet',  metavar='', action='store_const', const=True, help='quiet mode, do not print results')
-	parser.add_argument('-s', '--stats',  metavar='', action='store_const', const=True, help='output performance stats')
-	parser.add_argument('-i', '--ignore', metavar='', action='store_const', const=True, help='ignore bad data lines')
+	parser.add_argument('-p', '--profile', metavar='', action='store_const', const=True, help='output performance profiling data')
+	parser.add_argument('-s', '--skip_bad', metavar='', action='store_const', const=True, help='skip over corrupt dataflash lines')
 	parser.add_argument('-e', '--empty',  metavar='', action='store_const', const=True, help='run an initial check for an empty log')
 	parser.add_argument('-x', '--xml', type=str, metavar='XML file', nargs='?', const='', default='', help='write output to specified XML file')
 	args = parser.parse_args()
 
 	# load the log
 	startTime = time.time()	
-	logdata = DataflashLog.DataflashLog(args.logfile.name, ignoreBadlines=args.ignore)  # read log
+	logdata = DataflashLog.DataflashLog(args.logfile.name, ignoreBadlines=args.skip_bad)  # read log
 	endTime = time.time()
-	if args.stats:
+	if args.profile:
 		print "Log file read time: %.2f seconds" % (endTime-startTime)
 
 	# check for empty log if requested
@@ -226,12 +226,12 @@ def main():
 	startTime = time.time()	
 	testSuite.run(logdata)  # run tests
 	endTime = time.time()
-	if args.stats:
+	if args.profile:
 		print "Test suite run time: %.2f seconds" % (endTime-startTime)
 
 	# deal with output
 	if not args.quiet:
-		testSuite.outputPlainText(args.stats)
+		testSuite.outputPlainText(args.profile)
 	if args.xml:
 		testSuite.outputXML(args.xml)
 		if not args.quiet:
