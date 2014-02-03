@@ -14,7 +14,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Range: 90000 250000
     // @Increment: 500
     // @User: Advanced
-    AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl_Heli, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_ANGLE_RATE_RP_MAX_DEFAULT),
+    AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl_Heli, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT),
 
     // @Param: RATE_Y_MAX
     // @DisplayName: Angle Rate Yaw max
@@ -22,7 +22,16 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Range: 90000 250000
     // @Increment: 500
     // @User: Advanced
-    AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl_Heli, _angle_rate_y_max, AC_ATTITUDE_CONTROL_ANGLE_RATE_Y_MAX_DEFAULT),
+    AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl_Heli, _angle_rate_y_max, AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT),
+
+    // @Param: SLEW_YAW
+    // @DisplayName: Yaw target slew rate
+    // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
+    // @Unit: Centi-Degrees/Sec
+    // @Range: 500 18000
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_YAW",    2, AC_AttitudeControl_Heli, _slew_yaw, AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT),
 
     // @Param: RATE_RLL_FF
     // @DisplayName: Rate Roll Feed Forward
@@ -30,7 +39,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("RATE_RLL_FF", 2, AC_AttitudeControl_Heli,     _heli_roll_ff,  AC_ATTITUDE_HELI_ROLL_FF),
+    AP_GROUPINFO("RATE_RLL_FF", 3, AC_AttitudeControl_Heli,     _heli_roll_ff,  AC_ATTITUDE_HELI_ROLL_FF),
 
     // @Param: RATE_PIT_FF
     // @DisplayName: Rate Pitch Feed Forward
@@ -38,7 +47,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("RATE_PIT_FF", 3,  AC_AttitudeControl_Heli,    _heli_pitch_ff, AC_ATTITUDE_HELI_ROLL_FF),
+    AP_GROUPINFO("RATE_PIT_FF", 4,  AC_AttitudeControl_Heli,    _heli_pitch_ff, AC_ATTITUDE_HELI_ROLL_FF),
 
     // @Param: RATE_YAW_FF
     // @DisplayName: Rate Yaw Feed Forward
@@ -46,7 +55,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Range: 0 10
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("RATE_YAW_FF", 3, AC_AttitudeControl_Heli,     _heli_yaw_ff,   AC_ATTITUDE_HELI_YAW_FF),
+    AP_GROUPINFO("RATE_YAW_FF", 5, AC_AttitudeControl_Heli,     _heli_yaw_ff,   AC_ATTITUDE_HELI_YAW_FF),
 
     AP_GROUPEND
 };
