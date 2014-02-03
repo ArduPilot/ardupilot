@@ -10,23 +10,24 @@ class TestParams(Test):
 	def __init__(self):
 		self.name = "Parameters"
 
+
+	# helper functions
 	def __checkParamIsEqual(self, paramName, expectedValue, logdata):
 		value = logdata.parameters[paramName]
 		if value != expectedValue:
 			self.result.status = TestResult.StatusType.FAIL
 			self.result.extraFeedback = self.result.extraFeedback + "%s set to %s, expecting %s\n" % (paramName, `value`, `expectedValue`)
-
 	def __checkParamIsLessThan(self, paramName, maxValue, logdata):
 		value = logdata.parameters[paramName]
 		if value >= maxValue:
 			self.result.status = TestResult.StatusType.FAIL
 			self.result.extraFeedback = self.result.extraFeedback + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `maxValue`)
-			
 	def __checkParamIsMoreThan(self, paramName, minValue, logdata):
 		value = logdata.parameters[paramName]
 		if value <= minValue:
 			self.result.status = TestResult.StatusType.FAIL
 			self.result.extraFeedback = self.result.extraFeedback + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `minValue`)
+
 
 	def run(self, logdata):
 		self.result = TestResult()
