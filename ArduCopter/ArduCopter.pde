@@ -402,24 +402,16 @@ static union {
     struct {
         uint8_t home_is_set         : 1; // 0
         uint8_t simple_mode         : 2; // 1,2 // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
-
         uint8_t pre_arm_rc_check    : 1; // 3   // true if rc input pre-arm checks have been completed successfully
         uint8_t pre_arm_check       : 1; // 4   // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
         uint8_t auto_armed          : 1; // 5   // stops auto missions from beginning until throttle is raised
         uint8_t logging_started     : 1; // 6   // true if dataflash logging has started
-
-        uint8_t do_flip             : 1; // 7   // Used to enable flip code
-        uint8_t land_complete       : 1; // 8   // true if we have detected a landing
-
-        uint8_t new_radio_frame     : 1; // 9       // Set true if we have new PWM data to act on from the Radio
-        uint8_t CH7_flag            : 2; // 10,11   // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t CH8_flag            : 2; // 12,13   // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-        uint8_t usb_connected       : 1; // 14      // true if APM is powered from USB connection
-        uint8_t yaw_stopped         : 1; // 15      // Used to manage the Yaw hold capabilities
-
-        uint8_t disable_stab_rate_limit : 1; // 17  // disables limits rate request from the stability controller
-
-        uint8_t rc_receiver_present : 1; // 18  // true if we have an rc receiver present (i.e. if we've ever received an update
+        uint8_t land_complete       : 1; // 7   // true if we have detected a landing
+        uint8_t new_radio_frame     : 1; // 8       // Set true if we have new PWM data to act on from the Radio
+        uint8_t CH7_flag            : 2; // 9,10   // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH8_flag            : 2; // 11,12   // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t usb_connected       : 1; // 13      // true if APM is powered from USB connection
+        uint8_t rc_receiver_present : 1; // 14  // true if we have an rc receiver present (i.e. if we've ever received an update
     };
     uint32_t value;
 } ap;
@@ -496,9 +488,6 @@ static MOTOR_CLASS motors(&g.rc_1, &g.rc_2, &g.rc_3, &g.rc_4);
 ////////////////////////////////////////////////////////////////////////////////
 // PIDs
 ////////////////////////////////////////////////////////////////////////////////
-// This is a convienience accessor for the IMU roll rates. It's currently the raw IMU rates
-// and not the adjusted omega rates, but the name is stuck
-static Vector3f omega;
 // This is used to hold radio tuning values for in-flight CH6 tuning
 float tuning_value;
 
@@ -530,8 +519,6 @@ static int32_t home_bearing;
 static int32_t home_distance;
 // distance between plane and next waypoint in cm.
 static uint32_t wp_distance;
-// navigation mode - options include NAV_NONE, NAV_LOITER, NAV_CIRCLE, NAV_WP
-static uint8_t nav_mode;
 // Register containing the index of the current navigation command in the mission script
 static int16_t command_nav_index;
 // Register containing the index of the previous navigation command in the mission script
@@ -575,62 +562,24 @@ static float super_simple_sin_yaw;
 // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
 static int32_t initial_armed_bearing;
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Rate contoller targets
-////////////////////////////////////////////////////////////////////////////////
-static uint8_t rate_targets_frame = EARTH_FRAME;    // indicates whether rate targets provided in earth or body frame
-static int32_t roll_rate_target_ef;
-static int32_t pitch_rate_target_ef;
-static int32_t yaw_rate_target_ef;
-static int32_t roll_rate_target_bf;     // body frame roll rate target
-static int32_t pitch_rate_target_bf;    // body frame pitch rate target
-static int32_t yaw_rate_target_bf;      // body frame yaw rate target
-
 ////////////////////////////////////////////////////////////////////////////////
 // Throttle variables
 ////////////////////////////////////////////////////////////////////////////////
-static int16_t throttle_accel_target_ef;    // earth frame throttle acceleration target
-static bool throttle_accel_controller_active;   // true when accel based throttle controller is active, false when higher level throttle controllers are providing throttle output directly
 static float throttle_avg;                  // g.throttle_cruise as a float
 static int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
-static float target_alt_for_reporting;      // target altitude in cm for reporting (logs and ground station)
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // ACRO Mode
 ////////////////////////////////////////////////////////////////////////////////
-// Used to control Axis lock
-static int32_t acro_roll;                   // desired roll angle while sport mode
-static int32_t acro_roll_rate;              // desired roll rate while in acro mode
-static int32_t acro_pitch;                  // desired pitch angle while sport mode
-static int32_t acro_pitch_rate;             // desired pitch rate while acro mode
-static int32_t acro_yaw_rate;               // desired yaw rate while acro mode
 static float acro_level_mix;                // scales back roll, pitch and yaw inversely proportional to input from pilot
-
-// Filters
-#if FRAME_CONFIG == HELI_FRAME
-//static LowPassFilterFloat rate_roll_filter;    // Rate Roll filter
-//static LowPassFilterFloat rate_pitch_filter;   // Rate Pitch filter
-#endif // HELI_FRAME
 
 ////////////////////////////////////////////////////////////////////////////////
 // Circle Mode / Loiter control
 ////////////////////////////////////////////////////////////////////////////////
-Vector3f circle_center;     // circle position expressed in cm from home location.  x = lat, y = lon
-// angle from the circle center to the copter's desired location.  Incremented at circle_rate / second
-static float circle_angle;
-// the total angle (in radians) travelled
-static float circle_angle_total;
-// deg : how many times to circle as specified by mission command
-static uint8_t circle_desired_rotations;
-static float circle_angular_acceleration;       // circle mode's angular acceleration
-static float circle_angular_velocity;           // circle mode's angular velocity
-static float circle_angular_velocity_max;       // circle mode's max angular velocity
-// How long we should stay in Loiter Mode for mission scripting (time in seconds)
-static uint16_t loiter_time_max;
-// How long have we been loitering - The start time in millis
-static uint32_t loiter_time;
+static uint8_t circle_desired_rotations;        // how many times to circle as specified by mission command
+static uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
+static uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -650,8 +599,6 @@ static AP_BattMonitor battery;
 ////////////////////////////////////////////////////////////////////////////////
 // Altitude
 ////////////////////////////////////////////////////////////////////////////////
-// The (throttle) controller desired altitude in cm
-static float controller_desired_alt;
 // The cm/s we are moving up or down based on filtered data - Positive = UP
 static int16_t climb_rate;
 // The altitude as reported by Sonar in cm - Values are 20 to 700 generally.
@@ -660,25 +607,6 @@ static uint8_t sonar_alt_health;   // true if we can trust the altitude from the
 static float target_sonar_alt;      // desired altitude in cm above the ground
 // The altitude as reported by Baro in cm - Values can be quite high
 static int32_t baro_alt;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// flight modes
-////////////////////////////////////////////////////////////////////////////////
-// Flight modes are combinations of Roll/Pitch, Yaw and Throttle control modes
-// Each Flight mode is a unique combination of these modes
-//
-// The current desired control scheme for roll and pitch / navigation
-static uint8_t roll_pitch_mode = STABILIZE_RP;
-// The current desired control scheme for altitude hold
-static uint8_t throttle_mode = STABILIZE_THR;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// flight specific
-////////////////////////////////////////////////////////////////////////////////
-// An additional throttle added to keep the copter at the same altitude when banking
-static int16_t angle_boost;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -705,10 +633,8 @@ static int32_t of_pitch;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Navigation Throttle control
+// Throttle integrator
 ////////////////////////////////////////////////////////////////////////////////
-// The Commanded Throttle from the autopilot.
-static int16_t nav_throttle;    // 0-1000 for throttle control
 // This is a simple counter to track the amount of throttle used during flight
 // This could be useful later in determining and debuging current usage and predicting battery life
 static uint32_t throttle_integrator;
@@ -845,7 +771,6 @@ static AP_EPM epm;
 ////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
-void get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_climb_rate);
 static void pre_arm_checks(bool display_failure);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1512,7 +1437,6 @@ static void read_AHRS(void)
 #endif
 
     ahrs.update();
-    omega = ins.get_gyro();
 }
 
 // read baro and sonar altitude at 20hz
