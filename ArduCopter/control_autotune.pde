@@ -116,7 +116,7 @@ static float    tune_roll_rp, tune_roll_rd, tune_roll_sp;                   // c
 static float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp;                // currently being tuned parameter values
 
 // autotune_start - should be called when the ch7/ch8 switch is switched ON
-static bool autotune_start()
+static void autotune_start()
 {
     switch (autotune_state.mode) {
         case AUTOTUNE_MODE_FAILED:
