@@ -16,16 +16,11 @@ static struct {
     uint8_t dynamic_flight  : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
 } heli_flags;
 
-#if HELI_CC_COMP == ENABLED
-static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
-#endif
+
 
 // heli_init - perform any special initialisation required for the tradheli
 static void heli_init()
 {
-#if HELI_CC_COMP == ENABLED
-    rate_dynamics_filter.set_cutoff_frequency(0.01f, 4.0f);
-#endif
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the g.rc_3.servo_out function
@@ -47,7 +42,8 @@ static int16_t get_pilot_desired_collective(int16_t control_in)
 // should be called at 50hz
 static void check_dynamic_flight(void)
 {
-    if (!motors.armed() || throttle_mode == THROTTLE_LAND || !motors.motor_runup_complete()) {
+    if (!motors.armed() || !motors.motor_runup_complete() ||
+        control_mode == LAND || (control_mode==RTL && rtl_state == Land) || (control_mode == AUTO && auto_mode == Auto_Land)) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
         return;
@@ -94,21 +90,36 @@ static void check_dynamic_flight(void)
 // should be called soon after update_land_detector in main code
 static void heli_update_landing_swash()
 {
-    switch(throttle_mode) {
-        case THROTTLE_MANUAL:
-        case THROTTLE_MANUAL_TILT_COMPENSATED:
-        case THROTTLE_MANUAL_HELI:
+    switch(control_mode) {
+        case ACRO:
+        case STABILIZE:
+        case DRIFT:
+        case SPORT:
             // manual modes always uses full swash range
             motors.set_collective_for_landing(false);
             break;
 
-        case THROTTLE_LAND:
+        case LAND:
             // landing always uses limit swash range
             motors.set_collective_for_landing(true);
             break;
 
-        case THROTTLE_HOLD:
-        case THROTTLE_AUTO:
+        case RTL:
+            if (rtl_state == Land) {
+                motors.set_collective_for_landing(true);
+            }else{
+                motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
+            }
+            break;
+
+        case AUTO:
+            if (auto_mode == Auto_Land) {
+                motors.set_collective_for_landing(true);
+            }else{
+                motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
+            }
+            break;
+
         default:
             // auto and hold use limited swash when landed
             motors.set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
