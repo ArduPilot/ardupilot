@@ -61,7 +61,4 @@ static void stabilize_run()
     control_roll = angle_target.x;
     control_pitch = angle_target.y;
     control_yaw = angle_target.z;
-
-    // update estimate of throttle cruise
-    update_throttle_cruise(pilot_throttle_scaled);
 }
