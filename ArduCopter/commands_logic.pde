@@ -259,7 +259,6 @@ static void do_nav_wp()
 }
 
 // do_land - initiate landing procedure
-// caller should set roll_pitch_mode to ROLL_PITCH_AUTO (for no pilot input) or ROLL_PITCH_LOITER (for pilot input)
 static void do_land(const struct Location *cmd)
 {
     // To-Do: check if we have already landed
