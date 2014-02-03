@@ -1619,7 +1619,7 @@ static void tuning(){
 
     case CH6_CIRCLE_RATE:
         // set circle rate
-        g.circle_rate.set(g.rc_6.control_in/25-20);     // allow approximately 45 degree turn rate in either direction
+        circle_nav.set_rate(g.rc_6.control_in/25-20);   // allow approximately 45 degree turn rate in either direction
         break;
 
     case CH6_SONAR_GAIN:
