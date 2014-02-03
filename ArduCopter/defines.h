@@ -22,27 +22,6 @@
 #define AUTO_YAW_LOOK_AHEAD             4       // point in the direction the copter is moving
 #define AUTO_YAW_RESETTOARMEDYAW        5       // point towards heading at time motors were armed
 
-#define YAW_ACRO                        1       // pilot controlled yaw using rate controller
-#define YAW_CIRCLE                      4       // point towards a location held in yaw_look_at_WP (no pilot input accepted)
-#define YAW_DRIFT                       8       //
-
-#define ROLL_PITCH_STABLE           0       // pilot input roll, pitch angles
-#define ROLL_PITCH_ACRO             1       // pilot inputs roll, pitch rotation rates in body frame
-#define ROLL_PITCH_AUTO             2       // no pilot input.  autopilot roll, pitch is sent to stabilize controller inputs
-#define ROLL_PITCH_STABLE_OF        3       // pilot inputs roll, pitch angles which are mixed with optical flow based position controller lean anbles
-#define ROLL_PITCH_DRIFT            4       //
-#define ROLL_PITCH_LOITER           5       // pilot inputs the desired horizontal velocities
-#define ROLL_PITCH_SPORT            6       // pilot inputs roll, pitch rotation rates in earth frame
-#define ROLL_PITCH_AUTOTUNE         7       // description of new roll-pitch mode
-
-#define THROTTLE_MANUAL                     0   // manual throttle mode - pilot input goes directly to motors
-#define THROTTLE_MANUAL_TILT_COMPENSATED    1   // mostly manual throttle but with some tilt compensation
-#define THROTTLE_HOLD                       2   // alt hold plus pilot input of climb rate
-#define THROTTLE_AUTO                       3   // auto pilot altitude controller with target altitude held in next_WP.alt
-#define THROTTLE_LAND                       4   // landing throttle controller
-#define THROTTLE_MANUAL_HELI                5   // pilot manually controlled throttle for traditional helicopters
-
-
 // sonar - for use with CONFIG_SONAR_SOURCE
 #define SONAR_SOURCE_ADC 1
 #define SONAR_SOURCE_ANALOG_PIN 2
@@ -185,17 +164,6 @@
 #define CMD_BLANK 0 // there is no command stored in the mem location
                     // requested
 #define NO_COMMAND 0
-
-// Earth frame and body frame definitions used by rate controllers
-#define EARTH_FRAME         0
-#define BODY_FRAME          1
-#define BODY_EARTH_FRAME    2
-
-// Navigation modes held in nav_mode variable
-#define NAV_NONE        0
-#define NAV_CIRCLE      1
-#define NAV_LOITER      2
-#define NAV_WP          3
 
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
