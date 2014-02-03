@@ -246,11 +246,13 @@ static void NOINLINE send_location(mavlink_channel_t chan)
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 {
+    Vector3f targets;
+    get_angle_targets_for_reporting(targets);
     mavlink_msg_nav_controller_output_send(
         chan,
-        control_roll / 1.0e2f,
-        control_pitch / 1.0e2f,
-        control_yaw / 1.0e2f,
+        targets.x / 1.0e2f,
+        targets.y / 1.0e2f,
+        targets.z / 1.0e2f,
         wp_bearing / 1.0e2f,
         wp_distance / 1.0e2f,
         pos_control.get_alt_error() / 1.0e2f,

@@ -469,14 +469,16 @@ struct PACKED log_Attitude {
 // Write an attitude packet
 static void Log_Write_Attitude()
 {
+    Vector3f targets;
+    get_angle_targets_for_reporting(targets);
     struct log_Attitude pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_ms         : hal.scheduler->millis(),
-        control_roll    : (int16_t)control_roll,
+        control_roll    : (int16_t)targets.x,
         roll            : (int16_t)ahrs.roll_sensor,
-        control_pitch   : (int16_t)control_pitch,
+        control_pitch   : (int16_t)targets.y,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        control_yaw     : (uint16_t)control_yaw,
+        control_yaw     : (uint16_t)targets.z,
         yaw             : (uint16_t)ahrs.yaw_sensor
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
