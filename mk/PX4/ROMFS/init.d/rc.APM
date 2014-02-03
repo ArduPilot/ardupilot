@@ -267,14 +267,6 @@ fi
 
 echo "Trying PX4IO board"
 
-# rgbled
-if rgbled start
-then
-   echo "rgbled started OK"
-else
-   echo "Failed to start rgbled driver" >> $logfile
-fi
-
 if mtd start /fs/mtd
 then
     echo "started mtd driver OK"
