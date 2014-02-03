@@ -27,9 +27,10 @@ static void ofloiter_run()
     float target_climb_rate = 0;
 
     // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || !inertial_nav.position_ok()) {
+    if(!ap.auto_armed) {
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
+        reset_optflow_I();
         return;
     }
 
@@ -60,6 +61,7 @@ static void ofloiter_run()
     if (ap.land_complete) {
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
+        reset_optflow_I();
     }else{
         // mix in user control with optical flow
         target_roll = get_of_roll(target_roll);
@@ -169,4 +171,13 @@ static int32_t get_of_pitch(int32_t input_pitch)
 #else
     return input_pitch;
 #endif
+}
+
+// reset_optflow_I - reset optflow position hold I terms
+static void reset_optflow_I(void)
+{
+    g.pid_optflow_roll.reset_I();
+    g.pid_optflow_pitch.reset_I();
+    of_roll = 0;
+    of_pitch = 0;
 }
