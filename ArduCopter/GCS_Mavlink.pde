@@ -115,15 +115,16 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 
 static NOINLINE void send_attitude(mavlink_channel_t chan)
 {
+    const Vector3f &gyro = ins.get_gyro();
     mavlink_msg_attitude_send(
         chan,
         millis(),
         ahrs.roll,
         ahrs.pitch,
         ahrs.yaw,
-        omega.x,
-        omega.y,
-        omega.z);
+        gyro.x,
+        gyro.y,
+        gyro.z);
 }
 
 #if AC_FENCE == ENABLED
