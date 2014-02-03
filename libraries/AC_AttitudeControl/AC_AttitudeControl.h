@@ -17,14 +17,15 @@
 #include <APM_PI.h>
 
 // To-Do: change the name or move to AP_Math?
-#define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f             // constant to convert from radians to centi-degrees
-#define AC_ATTITUDE_CONTROL_ANGLE_RATE_RP_MAX_DEFAULT   18000   // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-#define AC_ATTITUDE_CONTROL_ANGLE_RATE_Y_MAX_DEFAULT    18000   // maximum rotation rate on yaw axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-#define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT 1.0f            // body-frame rate controller timeout in seconds
-#define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX 5000.0f      // body-frame rate controller maximum output (for roll-pitch axis)
-#define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX 4500.0f     // body-frame rate controller maximum output (for yaw axis)
-#define AC_ATTITUDE_ANGLE_YAW_CONTROLLER_OUT_MAX 4500.0f    // earth-frame angle controller maximum output (for yaw axis)
-#define AC_ATTITUDE_ANGLE_CONTROLLER_ANGLE_MAX 4500.0f      // earth-frame angle controller maximum input angle (To-Do: replace with reference to aparm.angle_max)
+#define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                 // constant to convert from radians to centi-degrees
+#define AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT         18000   // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+#define AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT          18000   // maximum rotation rate on yaw axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT            6000    // default yaw slew rate in centi-degrees/sec (i.e. maximum yaw target change in 1second)
+#define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT             1.0f    // body-frame rate controller timeout in seconds
+#define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          5000.0f // body-frame rate controller maximum output (for roll-pitch axis)
+#define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX         4500.0f // body-frame rate controller maximum output (for yaw axis)
+#define AC_ATTITUDE_ANGLE_YAW_CONTROLLER_OUT_MAX        4500.0f // earth-frame angle controller maximum output (for yaw axis)
+#define AC_ATTITUDE_ANGLE_CONTROLLER_ANGLE_MAX          4500.0f // earth-frame angle controller maximum input angle (To-Do: replace with reference to aparm.angle_max)
 
 #define AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX  3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
 #define AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX 3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
@@ -85,7 +86,8 @@ public:
     void angleef_rp_rateef_y(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef);
 
     // angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
-    void angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef);
+    //  if yaw_slew is true then target yaw movement will be gradually moved to the new target based on the YAW_SLEW parameter
+    void angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef, bool slew_yaw);
 
     // rateef_rpy - attempts to maintain a roll, pitch and yaw rate (all earth frame)
     void rateef_rpy(float roll_rate_ef, float pitch_rate_ef, float yaw_rate_ef);
@@ -264,6 +266,7 @@ protected:
     // parameters
     AP_Float            _angle_rate_rp_max;     // maximum rate request output from the earth-frame angle controller for roll and pitch axis
     AP_Float            _angle_rate_y_max;      // maximum rate request output from the earth-frame angle controller for yaw axis
+    AP_Float            _slew_yaw;              // maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
 
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?

@@ -11,18 +11,29 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @Param: RATE_RP_MAX
     // @DisplayName: Angle Rate Roll-Pitch max
     // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    // @Unit: Centi-Degrees/Sec
     // @Range: 90000 250000
     // @Increment: 500
     // @User: Advanced
-    AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_ANGLE_RATE_RP_MAX_DEFAULT),
+    AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT),
 
     // @Param: RATE_Y_MAX
     // @DisplayName: Angle Rate Yaw max
     // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    // @Unit: Centi-Degrees/Sec
     // @Range: 90000 250000
     // @Increment: 500
     // @User: Advanced
-    AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl, _angle_rate_y_max, AC_ATTITUDE_CONTROL_ANGLE_RATE_Y_MAX_DEFAULT),
+    AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl, _angle_rate_y_max, AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT),
+
+    // @Param: SLEW_YAW
+    // @DisplayName: Yaw target slew rate
+    // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
+    // @Unit: Centi-Degrees/Sec
+    // @Range: 500 18000
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_YAW",    2, AC_AttitudeControl, _slew_yaw, AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT),
 
     AP_GROUPEND
 };
@@ -63,12 +74,16 @@ void AC_AttitudeControl::angleef_rp_rateef_y(float roll_angle_ef, float pitch_an
 }
 
 // angleef_rpy - attempts to maintain a roll, pitch and yaw angle (all earth frame)
-void AC_AttitudeControl::angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef)
+//  if yaw_slew is true then target yaw movement will be gradually moved to the new target based on the SLEW_YAW parameter
+void AC_AttitudeControl::angleef_rpy(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef, bool slew_yaw)
 {
     // set earth-frame angle targets
     _angle_ef_target.x = roll_angle_ef;
     _angle_ef_target.y = pitch_angle_ef;
-    _angle_ef_target.z = yaw_angle_ef;
+    if (slew_yaw && _angle_ef_target.z != yaw_angle_ef) {
+        float slew = _slew_yaw * _dt;
+        _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + constrain_float(wrap_180_cd_float(yaw_angle_ef - _angle_ef_target.z), -slew, slew));
+    }
 
     // convert earth-frame angle targets to earth-frame rate targets
     angle_to_rate_ef_roll();
