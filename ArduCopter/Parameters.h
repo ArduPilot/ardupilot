@@ -86,7 +86,7 @@ public:
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
         k_param_pilot_velocity_z_max,
-        k_param_circle_rate,
+        k_param_circle_rate,                // deprecated - remove
         k_param_sonar_gain,
         k_param_ch8_option,
         k_param_arming_check,
@@ -95,7 +95,7 @@ public:
         k_param_gps_hdop_good,
         k_param_battery,
         k_param_fs_batt_mah,
-        k_param_angle_rate_max,
+        k_param_angle_rate_max,         // remove
         k_param_rssi_range,
         k_param_rc_feel_rp,             // 40
 
@@ -122,9 +122,9 @@ public:
         k_param_heli_servo_2,
         k_param_heli_servo_3,
         k_param_heli_servo_4,
-        k_param_heli_pitch_ff,
-        k_param_heli_roll_ff,
-        k_param_heli_yaw_ff,
+        k_param_heli_pitch_ff,      // remove
+        k_param_heli_roll_ff,       // remove
+        k_param_heli_yaw_ff,        // remove
         k_param_heli_stab_col_min,
         k_param_heli_stab_col_max,  // 88
 
@@ -250,7 +250,7 @@ public:
         k_param_command_index,
         k_param_command_nav_index,   // remove
         k_param_waypoint_radius,     // remove
-        k_param_circle_radius,
+        k_param_circle_radius,       // remove
         k_param_waypoint_speed_max,  // remove
         k_param_land_speed,
         k_param_auto_velocity_z_min, // remove
@@ -323,15 +323,12 @@ public:
     AP_Int8         rssi_pin;
     AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
-    AP_Int32        angle_rate_max;             // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
     
     // Waypoints
     //
     AP_Int8         command_total;
     AP_Int8         command_index;
-    AP_Int16        circle_radius;
-    AP_Float        circle_rate;                // Circle mode's turn rate in deg/s.  positive to rotate clockwise, negative for counter clockwise
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
@@ -371,9 +368,6 @@ public:
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
     RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
-    AP_Float        heli_pitch_ff;												// pitch rate feed-forward
-    AP_Float        heli_roll_ff;												// roll rate feed-forward
-    AP_Float        heli_yaw_ff;												// yaw rate feed-forward
     AP_Int16        heli_stab_col_min;                                          // min collective while pilot directly controls collective in stabilize mode
     AP_Int16        heli_stab_col_max;                                          // min collective while pilot directly controls collective in stabilize mode
 #endif

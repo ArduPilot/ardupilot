@@ -216,24 +216,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(command_index,  "WP_INDEX",         0),
 
-    // @Param: CIRCLE_RADIUS
-    // @DisplayName: Circle radius
-    // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
-    // @Units: Meters
-    // @Range: 1 127
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(circle_radius,  "CIRCLE_RADIUS",    CIRCLE_RADIUS),
-
-    // @Param: CIRCLE_RATE
-    // @DisplayName: Circle rate
-    // @Description: Circle mode's turn rate in degrees / second.  Positive to turn clockwise, negative for counter clockwise
-    // @Units: deg/s
-    // @Range: -90 90
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(circle_rate,  "CIRCLE_RATE",        CIRCLE_RATE),
-
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
     // @Description: Time (in milliseconds) to loiter above home before begining final descent
@@ -430,13 +412,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
-    // @Param: ANGLE_RATE_MAX
-    // @DisplayName: Angle Rate max
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-    // @Range 90000 250000
-    // @User: Advanced
-    GSCALAR(angle_rate_max, "ANGLE_RATE_MAX",  ANGLE_RATE_MAX),
-
     // @Param: RC_FEEL_RP
     // @DisplayName: RC Feel Roll/Pitch
     // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 begin crisp
@@ -457,30 +432,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Group: HS4_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_4,    "HS4_", RC_Channel),
-
-    // @Param: RATE_PIT_FF
-    // @DisplayName: Rate Pitch Feed Forward
-    // @Description: Rate Pitch Feed Forward (for TradHeli Only)
-    // @Range: 0 10
-    // @Increment: 0.01
-    // @User: Standard
-	GSCALAR(heli_pitch_ff, "RATE_PIT_FF",            HELI_PITCH_FF),
-
-    // @Param: RATE_RLL_FF
-    // @DisplayName: Rate Roll Feed Forward
-    // @Description: Rate Roll Feed Forward (for TradHeli Only)
-    // @Range: 0 10
-    // @Increment: 0.01
-    // @User: Standard
-	GSCALAR(heli_roll_ff, "RATE_RLL_FF",            HELI_ROLL_FF),
-
-    // @Param: RATE_YAW_FF
-    // @DisplayName: Rate Yaw Feed Forward
-    // @Description: Rate Yaw Feed Forward (for TradHeli Only)
-    // @Range: 0 10
-    // @Increment: 0.01
-    // @User: Standard
-	GSCALAR(heli_yaw_ff, "RATE_YAW_FF",            HELI_YAW_FF),
 
     // @Param: H_STAB_COL_MIN
     // @DisplayName: Heli Stabilize Throttle Collective Minimum
@@ -1014,7 +965,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #if FRAME_CONFIG == HELI_FRAME
     // @Group: ATCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
-    GOBJECT(attitude_control, "ATTCON_", AC_AttitudeControl_Heli),
+    GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
 #else
     // @Group: ATCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
