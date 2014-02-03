@@ -882,6 +882,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
     { run_nav_updates,      40,     80 },
+    { update_thr_cruise,    40,     10 },
     { three_hz_loop,       133,      9 },
     { compass_accumulate,    8,     42 },
     { barometer_accumulate,  8,     25 },
@@ -936,6 +937,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { auto_trim,            10,     140 },
     { update_altitude,      10,    1000 },
     { run_nav_updates,      10,     800 },
+    { update_thr_cruise,     1,      50 },
     { three_hz_loop,        33,      90 },
     { compass_accumulate,    2,     420 },
     { barometer_accumulate,  2,     250 },
@@ -1146,6 +1148,8 @@ static void update_batt_compass(void)
 
 #if HIL_MODE != HIL_MODE_ATTITUDE  // don't execute in HIL mode
     if(g.compass_enabled) {
+        // update compass with throttle value - used for compassmot
+        compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
         if (compass.read()) {
             compass.null_offsets();
         }
@@ -1365,56 +1369,6 @@ static void update_GPS(void)
     failsafe_gps_check();
 }
 
-// set_roll_pitch_mode - update roll/pitch mode and initialise any variables as required
-bool set_roll_pitch_mode(uint8_t new_roll_pitch_mode)
-{
-    // boolean to ensure proper initialisation of throttle modes
-    bool roll_pitch_initialised = false;
-
-    // return immediately if no change
-    if( new_roll_pitch_mode == roll_pitch_mode ) {
-        return true;
-    }
-
-    switch( new_roll_pitch_mode ) {
-        case ROLL_PITCH_STABLE:
-            reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
-            roll_pitch_initialised = true;
-            break;
-        case ROLL_PITCH_ACRO:
-            // reset acro level rates
-            acro_roll_rate = 0;
-            acro_pitch_rate = 0;
-            roll_pitch_initialised = true;
-            break;
-        case ROLL_PITCH_STABLE_OF:
-        case ROLL_PITCH_DRIFT:
-            reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
-            roll_pitch_initialised = true;
-            break;
-        case ROLL_PITCH_AUTO:
-        case ROLL_PITCH_LOITER:
-        case ROLL_PITCH_SPORT:
-            roll_pitch_initialised = true;
-            break;
-                reset_roll_pitch_in_filters(g.rc_1.control_in, g.rc_2.control_in);
-            }
-
-    // if initialisation has been successful update the yaw mode
-    if( roll_pitch_initialised ) {
-        exit_roll_pitch_mode(roll_pitch_mode);
-        roll_pitch_mode = new_roll_pitch_mode;
-    }
-
-    // return success or failure
-    return roll_pitch_initialised;
-}
-
-// exit_roll_pitch_mode - peforms any code required when exiting the current roll-pitch mode
-void exit_roll_pitch_mode(uint8_t old_roll_pitch_mode)
-{
-}
-
 // update_flight_mode - calls the appropriate attitude controllers based on flight mode
 // called at 100hz or more
 static void update_flight_mode()
@@ -1488,101 +1442,6 @@ static void update_flight_mode()
     }
 }
 
-// update_roll_pitch_mode - run high level roll and pitch controllers
-// 100hz update rate
-void update_roll_pitch_mode(void)
-{
-    switch(roll_pitch_mode) {
-    case ROLL_PITCH_ACRO:
-        // copy user input for reporting purposes
-        control_roll            = g.rc_1.control_in;
-        control_pitch           = g.rc_2.control_in;
-
-#if FRAME_CONFIG == HELI_FRAME
-        // ACRO does not get SIMPLE mode ability
-        if (motors.has_flybar()) {
-            g.rc_1.servo_out = g.rc_1.control_in;
-            g.rc_2.servo_out = g.rc_2.control_in;
-        }else{
-            acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*ahrs.cos_pitch();
-            get_roll_rate_stabilized_bf(g.rc_1.control_in);
-            get_pitch_rate_stabilized_bf(g.rc_2.control_in);
-            get_acro_level_rates();
-        }
-#else  // !HELI_FRAME
-        acro_level_mix = constrain_float(1-max(max(abs(g.rc_1.control_in), abs(g.rc_2.control_in)), abs(g.rc_4.control_in))/4500.0, 0, 1)*ahrs.cos_pitch();
-        get_roll_rate_stabilized_bf(g.rc_1.control_in);
-        get_pitch_rate_stabilized_bf(g.rc_2.control_in);
-        get_acro_level_rates();
-#endif  // HELI_FRAME
-        break;
-
-    case ROLL_PITCH_AUTO:
-        // copy latest output from nav controller to stabilize controller
-        control_roll = wp_nav.get_roll();
-        control_pitch = wp_nav.get_pitch();
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
-        break;
-
-    case ROLL_PITCH_STABLE_OF:
-        // apply SIMPLE mode transform
-        update_simple_mode();
-
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
-
-        // mix in user control with optical flow
-        control_roll = get_of_roll(control_roll);
-        control_pitch = get_of_pitch(control_pitch);
-
-        // call stabilize controller
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
-        break;
-
-    case ROLL_PITCH_DRIFT:
-        get_roll_pitch_drift();
-        break;
-
-    case ROLL_PITCH_LOITER:
-        // apply SIMPLE mode transform
-        update_simple_mode();
-
-        // update loiter target from user controls
-        wp_nav.set_pilot_desired_acceleration(g.rc_1.control_in, g.rc_2.control_in);
-
-        // copy latest output from nav controller to stabilize controller
-        control_roll = wp_nav.get_roll();
-        control_pitch = wp_nav.get_pitch();
-
-        get_stabilize_roll(control_roll);
-        get_stabilize_pitch(control_pitch);
-        break;
-
-    case ROLL_PITCH_SPORT:
-        // apply SIMPLE mode transform
-        update_simple_mode();
-
-        // copy user input for reporting purposes
-        control_roll = g.rc_1.control_in;
-        control_pitch = g.rc_2.control_in;
-        get_roll_rate_stabilized_ef(g.rc_1.control_in);
-        get_pitch_rate_stabilized_ef(g.rc_2.control_in);
-        break;
-        }
-
-	#if FRAME_CONFIG != HELI_FRAME
-    if(g.rc_3.control_in == 0 && control_mode <= ACRO) {
-        reset_rate_I();
-    }
-	#endif //HELI_FRAME
-
-    if(ap.new_radio_frame) {
-        // clear new radio frame info
-        ap.new_radio_frame = false;
-    }
-}
 
 static void
 init_simple_bearing()
@@ -1641,213 +1500,6 @@ void update_super_simple_bearing(bool force_update)
             super_simple_sin_yaw = sinf(angle_rad);
         }
     }
-}
-
-// throttle_mode_manual - returns true if the throttle is directly controlled by the pilot
-bool throttle_mode_manual(uint8_t thr_mode)
-{
-    return (thr_mode == THROTTLE_MANUAL || thr_mode == THROTTLE_MANUAL_TILT_COMPENSATED || thr_mode == THROTTLE_MANUAL_HELI);
-}
-
-// set_throttle_mode - sets the throttle mode and initialises any variables as required
-bool set_throttle_mode( uint8_t new_throttle_mode )
-{
-    // boolean to ensure proper initialisation of throttle modes
-    bool throttle_initialised = false;
-
-    // return immediately if no change
-    if( new_throttle_mode == throttle_mode ) {
-        return true;
-    }
-
-    // initialise any variables required for the new throttle mode
-    switch(new_throttle_mode) {
-        case THROTTLE_MANUAL:
-        case THROTTLE_MANUAL_TILT_COMPENSATED:
-            throttle_accel_deactivate();                // this controller does not use accel based throttle controller
-            throttle_initialised = true;
-            break;
-
-        case THROTTLE_HOLD:
-        case THROTTLE_AUTO:
-            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);     // reset controller desired altitude to current altitude
-            wp_nav.set_desired_alt(controller_desired_alt);                                 // same as above but for loiter controller
-            if (throttle_mode_manual(throttle_mode)) {  // reset the alt hold I terms if previous throttle mode was manual
-                reset_throttle_I();
-                set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
-            }
-            throttle_initialised = true;
-            break;
-
-        case THROTTLE_LAND:
-            reset_land_detector();  // initialise land detector
-            controller_desired_alt = get_initial_alt_hold(current_loc.alt, climb_rate);   // reset controller desired altitude to current altitude
-            throttle_initialised = true;
-            break;
-
-#if FRAME_CONFIG == HELI_FRAME
-        case THROTTLE_MANUAL_HELI:
-            throttle_accel_deactivate();                // this controller does not use accel based throttle controller
-            throttle_initialised = true;
-            break;
-#endif
-    }
-
-    // update the throttle mode
-    if( throttle_initialised ) {
-        throttle_mode = new_throttle_mode;
-
-        // reset some variables used for logging
-        desired_climb_rate = 0;
-        nav_throttle = 0;
-    }
-
-    // return success or failure
-    return throttle_initialised;
-}
-
-// update_throttle_mode - run high level throttle controllers
-// 50 hz update rate
-void update_throttle_mode(void)
-{
-    int16_t pilot_climb_rate;
-    int16_t pilot_throttle_scaled;
-
-    if(ap.do_flip)     // this is pretty bad but needed to flip in AP modes.
-        return;
-
-#if FRAME_CONFIG != HELI_FRAME
-    // do not run throttle controllers if motors disarmed
-    if( !motors.armed() ) {
-        set_throttle_out(0, false);
-        throttle_accel_deactivate();    // do not allow the accel based throttle to override our command
-        set_target_alt_for_reporting(0);
-        return;
-    }
-#endif // FRAME_CONFIG != HELI_FRAME
-
-    switch(throttle_mode) {
-
-    case THROTTLE_MANUAL:
-        // completely manual throttle
-        if(g.rc_3.control_in <= 0){
-            set_throttle_out(0, false);
-        }else{
-            // send pilot's output directly to motors
-            pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
-            set_throttle_out(pilot_throttle_scaled, false);
-
-            // update estimate of throttle cruise
-			#if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.get_collective_out());
-			#else
-			update_throttle_cruise(pilot_throttle_scaled);
-            #endif  //HELI_FRAME
-        }
-        set_target_alt_for_reporting(0);
-        break;
-
-    case THROTTLE_MANUAL_TILT_COMPENSATED:
-        // manual throttle but with angle boost
-        if (g.rc_3.control_in <= 0) {
-            set_throttle_out(0, false); // no need for angle boost with zero throttle
-        }else{
-            pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
-            set_throttle_out(pilot_throttle_scaled, true);
-
-            // update estimate of throttle cruise
-            #if FRAME_CONFIG == HELI_FRAME
-            update_throttle_cruise(motors.get_collective_out());
-			#else
-			update_throttle_cruise(pilot_throttle_scaled);
-            #endif  //HELI_FRAME
-        }
-        set_target_alt_for_reporting(0);
-        break;
-
-    case THROTTLE_HOLD:
-        if(ap.auto_armed) {
-            // alt hold plus pilot input of climb rate
-            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-
-            // special handling if we have landed
-            if (ap.land_complete) {
-                if (pilot_climb_rate > 0) {
-                    // indicate we are taking off
-                    set_land_complete(false);
-                    // clear i term when we're taking off
-                    set_throttle_takeoff();
-                }else{
-                    // move throttle to minimum to keep us on the ground
-                    set_throttle_out(0, false);
-                    // deactivate accel based throttle controller (it will be automatically re-enabled when alt-hold controller next runs)
-                    throttle_accel_deactivate();
-                }
-            }
-            // check land_complete flag again in case it was changed above
-            if (!ap.land_complete) {
-                if( sonar_alt_health >= SONAR_ALT_HEALTH_MAX ) {
-                    // if sonar is ok, use surface tracking
-                    get_throttle_surface_tracking(pilot_climb_rate,0.02f);    // this function calls set_target_alt_for_reporting for us
-                }else{
-                    // if no sonar fall back stabilize rate controller
-                    get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
-                }
-            }
-        }else{
-            // pilot's throttle must be at zero so keep motors off
-            set_throttle_out(0, false);
-            // deactivate accel based throttle controller
-            throttle_accel_deactivate();
-            set_target_alt_for_reporting(0);
-        }
-        break;
-
-    case THROTTLE_AUTO:
-        // auto pilot altitude controller with target altitude held in wp_nav.get_desired_alt()
-        if(ap.auto_armed) {
-            // special handling if we are just taking off
-            if (ap.land_complete) {
-                // tell motors to do a slow start.
-                motors.slow_start(true);
-            }
-            get_throttle_althold_with_slew(wp_nav.get_desired_alt(), -wp_nav.get_descent_velocity(), wp_nav.get_climb_velocity());
-            set_target_alt_for_reporting(wp_nav.get_desired_alt()); // To-Do: return get_destination_alt if we are flying to a waypoint
-        }else{
-            // pilot's throttle must be at zero so keep motors off
-            set_throttle_out(0, false);
-            // deactivate accel based throttle controller
-            throttle_accel_deactivate();
-            set_target_alt_for_reporting(0);
-        }
-        break;
-
-    case THROTTLE_LAND:
-        // landing throttle controller
-        get_throttle_land();
-        set_target_alt_for_reporting(0);
-        break;
-
-#if FRAME_CONFIG == HELI_FRAME
-    case THROTTLE_MANUAL_HELI:
-        // trad heli manual throttle controller
-        // send pilot's output directly to swash plate
-        pilot_throttle_scaled = get_pilot_desired_collective(g.rc_3.control_in);
-        set_throttle_out(pilot_throttle_scaled, false);
-
-        // update estimate of throttle cruise
-        update_throttle_cruise(motors.get_collective_out());
-        set_target_alt_for_reporting(0);
-        break;
-#endif // HELI_FRAME
-
-    }
-}
-
-// set_target_alt_for_reporting - set target altitude in cm for reporting purposes (logs and gcs)
-static void set_target_alt_for_reporting(float alt_cm)
-{
-    target_alt_for_reporting = alt_cm;
 }
 
 static void read_AHRS(void)
