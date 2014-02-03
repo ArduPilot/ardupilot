@@ -209,7 +209,7 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 
 // get_throttle_surface_tracking - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
-static float get_throttle_surface_tracking(int16_t target_rate, float dt)
+static float get_throttle_surface_tracking(int16_t target_rate, float current_alt_target, float dt)
 {
     static uint32_t last_call_ms = 0;
     float distance_error;
@@ -219,7 +219,7 @@ static float get_throttle_surface_tracking(int16_t target_rate, float dt)
 
     // reset target altitude if this controller has just been engaged
     if( now - last_call_ms > 200 ) {
-        target_sonar_alt = sonar_alt + controller_desired_alt - current_loc.alt;
+        target_sonar_alt = sonar_alt + current_alt_target - current_loc.alt;
     }
     last_call_ms = now;
 
