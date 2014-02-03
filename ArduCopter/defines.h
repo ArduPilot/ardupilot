@@ -217,9 +217,6 @@
 #define LAND_STATE_FLY_TO_LOCATION  0
 #define LAND_STATE_DESCENDING       1
 
-//repeating events
-#define RELAY_TOGGLE 5
-
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
 #define TYPE_GROUNDSTART_MSG            0x01
@@ -306,8 +303,8 @@
 #define DATA_EPM_ON                     46
 #define DATA_EPM_OFF                    47
 #define DATA_EPM_NEUTRAL                48
-// RADIANS
-#define RADX100 0.000174532925f
+
+// Centi-degrees to radians
 #define DEGX100 5729.57795f
 
 

@@ -101,6 +101,7 @@ public:
         k_param_sonar,
         k_param_log_bitmask,
         k_param_BoardConfig,
+        k_param_rssi_range,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -411,6 +412,7 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 rssi_pin;
+    AP_Float rssi_range;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.     
     AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
