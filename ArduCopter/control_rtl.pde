@@ -161,12 +161,6 @@ static void rtl_climb_return_descent_run()
 
     // check if we've completed this stage of RTL
     rtl_state_complete = wp_nav.reached_wp_destination();
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // rtl_return_start - initialise return to home
@@ -225,12 +219,6 @@ static void rtl_loiterathome_run()
     // check if we've completed this stage of RTL
     // To-Do: add extra check that we've reached the target yaw
     rtl_state_complete = ((millis() - rtl_loiter_start_time) > (uint32_t)g.rtl_loiter_time.get());
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
@@ -282,11 +270,5 @@ static void rtl_land_run()
 
     // check if we've completed this stage of RTL
     rtl_state_complete = ap.land_complete;
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 

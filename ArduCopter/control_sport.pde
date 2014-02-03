@@ -64,10 +64,4 @@ static void sport_run()
         pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
         pos_control.update_z_controller();
     }
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }

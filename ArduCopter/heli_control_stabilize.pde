@@ -41,12 +41,6 @@ static void heli_stabilize_run()
 
     // output pilot's throttle - note that TradHeli does not used angle-boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false);
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 #endif  //HELI_FRAME

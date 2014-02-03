@@ -71,6 +71,9 @@ static void auto_takeoff_start(float final_alt)
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+    // tell motors to do a slow start
+    motors.slow_start(true);
 }
 
 // auto_takeoff_run - takeoff in auto mode
@@ -82,6 +85,8 @@ static void auto_takeoff_run()
         // reset attitude control targets
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
+        // tell motors to do a slow start
+        motors.slow_start(true);
         // To-Do: re-initialise wpnav targets
         return;
     }
@@ -101,12 +106,6 @@ static void auto_takeoff_run()
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
-
-    // refetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
@@ -129,9 +128,10 @@ static void auto_wp_run()
     if(!ap.auto_armed) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
-        // To-Do: set motors to slow start
         attitude_control.init_targets();
         attitude_control.set_throttle_out(0, false);
+        // tell motors to do a slow start
+        motors.slow_start(true);
         return;
     }
 
@@ -159,12 +159,6 @@ static void auto_wp_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.angleef_rpy(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
-
-    // refetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // auto_land_start - initialises controller to implement a landing
@@ -222,12 +216,6 @@ static void auto_land_run()
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.angleef_rp_rateef_y(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
-
-    // refetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // auto_rtl_start - initialises RTL in AUTO flight mode
@@ -268,12 +256,6 @@ void auto_circle_run()
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.angleef_rpy(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
-
-    // refetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter

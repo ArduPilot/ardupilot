@@ -55,10 +55,4 @@ static void stabilize_run()
 
     // output pilot's throttle
     attitude_control.set_throttle_out(pilot_throttle_scaled, true);
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }

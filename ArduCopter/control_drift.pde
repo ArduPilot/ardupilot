@@ -66,10 +66,4 @@ static void drift_run()
 
     // call attitude controller
     attitude_control.angleef_rp_rateef_y(target_roll, target_pitch, target_yaw_rate);
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }

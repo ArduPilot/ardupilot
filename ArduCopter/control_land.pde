@@ -84,12 +84,6 @@ static void land_gps_run()
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
     pos_control.update_z_controller();
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // land_nogps_run - runs the land controller
@@ -136,12 +130,6 @@ static void land_nogps_run()
     // call position controller
     pos_control.set_alt_target_from_climb_rate(get_throttle_land(), G_Dt);
     pos_control.update_z_controller();
-
-    // re-fetch angle targets for reporting
-    const Vector3f angle_target = attitude_control.angle_ef_targets();
-    control_roll = angle_target.x;
-    control_pitch = angle_target.y;
-    control_yaw = angle_target.z;
 }
 
 // get_throttle_land - high level landing logic
