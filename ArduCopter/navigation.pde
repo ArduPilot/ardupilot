@@ -30,10 +30,10 @@ static void calc_distance_and_bearing()
     Vector3f curr = inertial_nav.get_position();
 
     // get target from loiter or wpinav controller
-    if( nav_mode == NAV_LOITER || nav_mode == NAV_CIRCLE ) {
+    if (control_mode == LOITER || control_mode == CIRCLE) {
         wp_distance = wp_nav.get_loiter_distance_to_target();
         wp_bearing = wp_nav.get_loiter_bearing_to_target();
-    }else if( nav_mode == NAV_WP ) {
+    }else if (control_mode == AUTO) {
         wp_distance = wp_nav.get_wp_distance_to_destination();
         wp_bearing = wp_nav.get_wp_bearing_to_destination();
     }else{
@@ -54,78 +54,12 @@ static void calc_distance_and_bearing()
 // run_autopilot - highest level call to process mission commands
 static void run_autopilot()
 {
-    switch( control_mode ) {
-        case AUTO:
-            // load the next command if the command queues are empty
-            update_commands();
+    if (control_mode == AUTO) {
+        // load the next command if the command queues are empty
+        update_commands();
 
-            // process the active navigation and conditional commands
-            verify_commands();
-            break;
-        case RTL:
-            verify_RTL();
-            break;
-    }
-}
-
-// set_nav_mode - update nav mode and initialise any variables as required
-static bool set_nav_mode(uint8_t new_nav_mode)
-{
-    bool nav_initialised = false;       // boolean to ensure proper initialisation of nav modes
-    Vector3f stopping_point;            // stopping point for circle mode
-
-    // return immediately if no change
-    if( new_nav_mode == nav_mode ) {
-        return true;
-    }
-
-    switch( new_nav_mode ) {
-
-        case NAV_NONE:
-            nav_initialised = true;
-            // initialise global navigation variables including wp_distance
-            reset_nav_params();
-            break;
-
-        case NAV_LOITER:
-            // set target to current position
-            wp_nav.init_loiter_target();
-            nav_initialised = true;
-            break;
-
-        case NAV_WP:
-            nav_initialised = true;
-            break;
-    }
-
-    // if initialisation has been successful update the yaw mode
-    if( nav_initialised ) {
-        nav_mode = new_nav_mode;
-    }
-
-    // return success or failure
-    return nav_initialised;
-}
-
-// update_nav_mode - run navigation controller based on nav_mode
-// called at 100hz
-static void update_nav_mode()
-{
-    // exit immediately if not auto_armed or inertial nav position bad
-    if (!ap.auto_armed || !inertial_nav.position_ok()) {
-        return;
-    }
-
-    switch( nav_mode ) {
-
-        case NAV_NONE:
-            // do nothing
-            break;
-
-        case NAV_WP:
-            // call waypoint controller
-            wp_nav.update_wpnav();
-            break;
+        // process the active navigation and conditional commands
+        verify_commands();
     }
 }
 
@@ -142,11 +76,3 @@ static void reset_nav_params(void)
     lon_error                       = 0;
     lat_error                       = 0;
 }
-
-// get_yaw_slew - reduces rate of change of yaw to a maximum
-// assumes it is called at 100hz so centi-degrees and update rate cancel each other out
-static int32_t get_yaw_slew(int32_t current_yaw, int32_t desired_yaw, int16_t deg_per_sec)
-{
-    return wrap_360_cd(current_yaw + constrain_int16(wrap_180_cd(desired_yaw - current_yaw), -deg_per_sec, deg_per_sec));
-}
-
