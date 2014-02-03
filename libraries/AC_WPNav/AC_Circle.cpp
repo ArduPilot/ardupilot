@@ -170,9 +170,6 @@ void AC_Circle::calc_velocities()
         }
     }
 
-    // debug -- remove me!
-    //hal.console->printf_P(PSTR("\nPan Ang:%4.2f AVM:%4.2f Acc:%4.2f\n"),(float)_angle,(float)_angular_vel_max,(float)_angular_accel);
-
     // initialise other variables
     _angle_total = 0;
     _angular_vel = 0;
