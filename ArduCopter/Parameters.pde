@@ -1018,7 +1018,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 #else
     // @Group: ATCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp
-    GOBJECT(attitude_control, "ATTCON_", AC_AttitudeControl),
+    GOBJECT(attitude_control, "ATC_", AC_AttitudeControl),
 #endif
 
     // @Group: POSCON_
