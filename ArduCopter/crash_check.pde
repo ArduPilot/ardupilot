@@ -26,7 +26,7 @@ void crash_check()
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (control_mode == ACRO || ap.do_flip) {
+    if (control_mode == ACRO || control_mode == FLIP) {
         inverted_count = 0;
         return;
     }
