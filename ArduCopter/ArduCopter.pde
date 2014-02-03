@@ -532,8 +532,6 @@ static uint8_t command_cond_index;
 // NAV_LOCATION - have we reached the desired location?
 // NAV_DELAY    - have we waited at the waypoint the desired time?
 static float lon_error, lat_error;      // Used to report how many cm we are from the next waypoint or loiter target position
-static int16_t control_roll;            // desired roll angle of copter in centi-degrees
-static int16_t control_pitch;           // desired pitch angle of copter in centi-degrees
 static uint8_t land_state;              // records state of land (flying to location, descending)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -645,8 +643,6 @@ static uint32_t throttle_integrator;
 ////////////////////////////////////////////////////////////////////////////////
 // auto flight mode's yaw mode
 static uint8_t auto_yaw_mode = AUTO_YAW_LOOK_AT_NEXT_WP;
-// The Commanded Yaw from the autopilot.
-static int32_t control_yaw;
 // Yaw will point at this location if yaw_mode is set to YAW_LOOK_AT_LOCATION
 static Vector3f yaw_look_at_WP;
 // bearing from current location to the yaw_look_at_WP
