@@ -159,10 +159,6 @@ static void init_arm_motors()
         calc_distance_and_bearing();
     }
 
-    // all I terms are invalid
-    // -----------------------
-    reset_I_all();
-
     if(did_ground_start == false) {
         did_ground_start = true;
         startup_ground(true);

@@ -241,38 +241,7 @@ static float get_throttle_surface_tracking(int16_t target_rate, float current_al
     return (target_rate + velocity_correction);
 }
 
-/*
- *  reset all I integrators
- */
-static void reset_I_all(void)
-{
-    reset_rate_I();
-    reset_throttle_I();
-    reset_optflow_I();
-}
-
-static void reset_rate_I()
-{
-    g.pid_rate_roll.reset_I();
-    g.pid_rate_pitch.reset_I();
-    g.pid_rate_yaw.reset_I();
-}
-
-static void reset_optflow_I(void)
-{
-    g.pid_optflow_roll.reset_I();
-    g.pid_optflow_pitch.reset_I();
-    of_roll = 0;
-    of_pitch = 0;
-}
-
-static void reset_throttle_I(void)
-{
-    // For Altitude Hold
-    g.pi_alt_hold.reset_I();
-    g.pid_throttle_accel.reset_I();
-}
-
+// set_accel_throttle_I_from_pilot_throttle - smooths out transition from pilot controlled throttle to autopilot throttle
 static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
