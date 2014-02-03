@@ -71,7 +71,7 @@ static void ofloiter_run()
         // run altitude controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
             // if sonar is ok, use surface tracking
-            target_climb_rate = get_throttle_surface_tracking(target_climb_rate,G_Dt);
+            target_climb_rate = get_throttle_surface_tracking(target_climb_rate, pos_control.get_alt_target(), G_Dt);
         }
 
         // update altitude target and call position controller
