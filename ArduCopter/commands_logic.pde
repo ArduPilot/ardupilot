@@ -500,6 +500,7 @@ static void do_change_alt()
             // To-Do; reset origin to current location + stopping distance at new altitude
             break;
         case Auto_Land:
+        case Auto_RTL:
             // ignore altitude
             break;
         case Auto_Circle:

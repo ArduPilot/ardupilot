@@ -193,7 +193,6 @@ enum AutoMode {
 
 // RTL states
 enum RTLState {
-    Start,
     InitialClimb,
     ReturnHome,
     LoiterAtHome,
