@@ -143,7 +143,7 @@ static void flip_run()
 
     case Flip_Recover:
         // use originally captured earth-frame angle targets to recover
-        attitude_control.angleef_rpy(curr_ef_targets.x, curr_ef_targets.y, curr_ef_targets.z);
+        attitude_control.angleef_rpy(curr_ef_targets.x, curr_ef_targets.y, curr_ef_targets.z,false);
 
         // increase throttle to gain any lost alitude
         throttle_out += FLIP_THR_INC;

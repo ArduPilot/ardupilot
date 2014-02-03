@@ -58,7 +58,7 @@ static void circle_run()
     if (circle_pilot_yaw_override) {
         attitude_control.angleef_rp_rateef_y(circle_nav.get_roll(), circle_nav.get_pitch(), target_yaw_rate);
     }else{
-        attitude_control.angleef_rpy(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw());
+        attitude_control.angleef_rpy(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
     }
 
     // run altitude controller
