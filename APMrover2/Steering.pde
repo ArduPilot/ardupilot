@@ -144,13 +144,6 @@ static void calc_lateral_acceleration()
  */
 static void calc_nav_steer()
 {
-    float speed = g_gps->ground_speed_cm * 0.01f;
-
-    if (speed < 1.0f) {
-        // gps speed isn't very accurate at low speed
-        speed = 1.0f;
-    }
-
     // add in obstacle avoidance
     lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
 
