@@ -9,6 +9,8 @@
 
 #include "RC_Channel.h"
 
+#define RC_AUX_MAX_CHANNELS 8
+
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
 class RC_Channel_aux : public RC_Channel {
@@ -21,6 +23,12 @@ public:
     RC_Channel_aux(uint8_t ch_out) :
         RC_Channel(ch_out)
     {
+        for (uint8_t i=0; i<RC_AUX_MAX_CHANNELS; i++) {
+            if (_aux_channels[i] == NULL) {
+                _aux_channels[i] = this;
+                break;
+            }
+        }
 		AP_Param::setup_object_defaults(this, var_info);
     }
 
@@ -86,12 +94,14 @@ public:
 						   int16_t value, int16_t angle_min, int16_t angle_max);
 
     static const struct AP_Param::GroupInfo        var_info[];
-};
 
-void update_aux_servo_function(RC_Channel_aux* rc_a = NULL, RC_Channel_aux* rc_b = NULL, 
-							   RC_Channel_aux* rc_c = NULL, RC_Channel_aux* rc_d = NULL, 
-							   RC_Channel_aux* rc_e = NULL, RC_Channel_aux* rc_f = NULL, 
-							   RC_Channel_aux* rc_g = NULL, RC_Channel_aux* rc_h = NULL);
-void enable_aux_servos();
+    // assigned and enable auxillary channels
+    static void enable_aux_servos(void);
+
+private:
+    static uint32_t _function_mask;
+    static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
+    static void update_aux_servo_function(void);
+};
 
 #endif /* RC_CHANNEL_AUX_H_ */
