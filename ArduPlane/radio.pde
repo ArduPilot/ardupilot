@@ -49,7 +49,7 @@ static void init_rc_out()
         channel_throttle->enable_out();
     }
     channel_rudder->enable_out();
-    enable_aux_servos();
+    RC_Channel_aux::enable_aux_servos();
 
     // Initialization of servo outputs
     for (uint8_t i=0; i<8; i++) {

@@ -931,14 +931,7 @@ static void obc_fs_check(void)
  */
 static void update_aux(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_9, &g.rc_10, &g.rc_11, &g.rc_12);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8, &g.rc_10, &g.rc_11);
-#else
-        update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
-#endif
-        enable_aux_servos();
+    RC_Channel_aux::enable_aux_servos();
 
 #if MOUNT == ENABLED
         camera_mount.update_mount_type();
